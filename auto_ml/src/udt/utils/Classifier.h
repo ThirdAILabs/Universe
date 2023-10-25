@@ -45,17 +45,17 @@ class Classifier {
                    const std::vector<CallbackPtr>& callbacks,
                    TrainOptions options, const bolt::DistributedCommPtr& comm);
 
-  py::object train(const thirdai::data::LoaderPtr& dataset, float learning_rate,
+  py::object train(const data::LoaderPtr& dataset, float learning_rate,
                    uint32_t epochs,
                    const std::vector<std::string>& train_metrics,
-                   const thirdai::data::LoaderPtr& val_dataset,
+                   const data::LoaderPtr& val_dataset,
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
                    TrainOptions options, const bolt::DistributedCommPtr& comm);
 
-  py::object train(const thirdai::data::LoaderPtr& data, float learning_rate,
+  py::object train(const data::LoaderPtr& data, float learning_rate,
                    uint32_t epochs, const InputMetrics& train_metrics,
-                   const thirdai::data::LoaderPtr& val_data,
+                   const data::LoaderPtr& val_data,
                    const InputMetrics& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
                    TrainOptions options, const bolt::DistributedCommPtr& comm);
@@ -68,11 +68,11 @@ class Classifier {
                       const InputMetrics& metrics, bool sparse_inference,
                       bool verbose);
 
-  py::object evaluate(thirdai::data::LoaderPtr& dataset,
+  py::object evaluate(data::LoaderPtr& dataset,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool verbose);
 
-  py::object evaluate(const thirdai::data::LoaderPtr& dataset,
+  py::object evaluate(const data::LoaderPtr& dataset,
                       const InputMetrics& metrics, bool sparse_inference,
                       bool verbose);
 
@@ -102,7 +102,7 @@ class Classifier {
       const std::vector<bolt::TensorList>& dataset);
 
   std::optional<float> tuneBinaryClassificationPredictionThreshold(
-      const thirdai::data::LoaderPtr& dataset, const std::string& metric_name);
+      const data::LoaderPtr& dataset, const std::string& metric_name);
 
   bolt::ModelPtr _model;
   bolt::ComputationPtr _emb;

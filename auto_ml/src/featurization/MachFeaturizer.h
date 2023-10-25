@@ -12,11 +12,11 @@ using RlhfSample = std::pair<std::string, std::vector<uint32_t>>;
 
 class MachFeaturizer final : public Featurizer {
  public:
-  MachFeaturizer(data::ColumnDataTypes data_types,
-                 const data::TemporalRelationships& temporal_relationship,
+  MachFeaturizer(ColumnDataTypes data_types,
+                 const TemporalRelationships& temporal_relationship,
                  const std::string& label_column,
                  const dataset::mach::MachIndexPtr& mach_index,
-                 const data::TabularOptions& options);
+                 const TabularOptions& options);
 
   explicit MachFeaturizer(const proto::udt::MachFeaturizer& featurizer);
 
@@ -30,15 +30,14 @@ class MachFeaturizer final : public Featurizer {
   std::pair<bolt::TensorList, bolt::TensorList> featurizeHashesTrainingBatch(
       const MapInputBatch& samples);
 
-  thirdai::data::ColumnMap featurizeDataset(
+  data::ColumnMap featurizeDataset(
       const dataset::DataSourcePtr& data_source,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names);
 
-  thirdai::data::ColumnMap featurizeRlhfSamples(
-      const std::vector<RlhfSample>& samples);
+  data::ColumnMap featurizeRlhfSamples(const std::vector<RlhfSample>& samples);
 
-  bolt::LabeledDataset columnsToTensors(const thirdai::data::ColumnMap& columns,
+  bolt::LabeledDataset columnsToTensors(const data::ColumnMap& columns,
                                         size_t batch_size) const;
 
   std::vector<std::pair<uint32_t, RlhfSample>> getBalancingSamples(
@@ -52,26 +51,25 @@ class MachFeaturizer final : public Featurizer {
   proto::udt::MachFeaturizer* toProto() const;
 
  private:
-  thirdai::data::ColumnMap removeIntermediateColumns(
-      const thirdai::data::ColumnMap& columns);
+  data::ColumnMap removeIntermediateColumns(const data::ColumnMap& columns);
 
-  static thirdai::data::TransformationPtr makeDocIdTransformation(
+  static data::TransformationPtr makeDocIdTransformation(
       const std::string& label_column_name,
-      const data::CategoricalDataTypePtr& label_column_info);
+      const CategoricalDataTypePtr& label_column_info);
 
-  static thirdai::data::TransformationPtr makeLabelTransformations(
+  static data::TransformationPtr makeLabelTransformations(
       const std::string& label_column_name,
-      const data::CategoricalDataTypePtr& label_column_info);
+      const CategoricalDataTypePtr& label_column_info);
 
   // The Mach model takes in two labels, one for the buckets, and one containing
   // the doc ids which is used by the mach metrics. For some inputs, for
   // instance in trainWithHashes, we don't have the doc ids that the model is
   // expecting, this adds a dummy input for the doc ids so that we have the
   // number of labels the model is expecting.
-  static void addDummyDocIds(thirdai::data::ColumnMap& columns);
+  static void addDummyDocIds(data::ColumnMap& columns);
 
-  thirdai::data::TransformationPtr _doc_id_transform;
-  thirdai::data::TransformationPtr _prehashed_labels_transform;
+  data::TransformationPtr _doc_id_transform;
+  data::TransformationPtr _prehashed_labels_transform;
 };
 
 using MachFeaturizerPtr = std::shared_ptr<MachFeaturizer>;

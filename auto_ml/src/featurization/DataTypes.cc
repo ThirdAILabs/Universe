@@ -100,4 +100,4 @@ NodeIDDataTypePtr asNodeID(const DataTypePtr& data_type) {
   return std::dynamic_pointer_cast<NodeIDDataType>(data_type);
 }
 
-}  // namespace thirdai::automl::data
+}  // namespace thirdai::automl

@@ -117,10 +117,9 @@ class UDTClassifier final : public UDTBackend {
   }
 
  private:
-  thirdai::data::TransformationPtr labelTransformation(
-      const std::string& target_name,
-      data::CategoricalDataTypePtr& target_config, uint32_t n_target_classes,
-      bool integer_target) const;
+  data::TransformationPtr labelTransformation(
+      const std::string& target_name, CategoricalDataTypePtr& target_config,
+      uint32_t n_target_classes, bool integer_target) const;
 
   uint32_t labelToNeuronId(
       const std::variant<uint32_t, std::string>& label) const;

@@ -13,13 +13,13 @@ namespace thirdai::automl {
 
 class GraphFeaturizer {
  public:
-  GraphFeaturizer(const data::ColumnDataTypes& data_types,
+  GraphFeaturizer(const ColumnDataTypes& data_types,
                   const std::string& target_col, uint32_t n_target_classes,
-                  const data::TabularOptions& options);
+                  const TabularOptions& options);
 
   explicit GraphFeaturizer(const proto::udt::GraphFeaturizer& featurizer);
 
-  thirdai::data::LoaderPtr indexAndGetDataLoader(
+  data::LoaderPtr indexAndGetDataLoader(
       const dataset::DataSourcePtr& data_source, size_t batch_size,
       bool shuffle, bool verbose,
       dataset::DatasetShuffleConfig shuffle_config =
@@ -36,24 +36,24 @@ class GraphFeaturizer {
   proto::udt::GraphFeaturizer* toProto() const;
 
  private:
-  static std::pair<thirdai::data::TransformationPtr, std::string> nodeId(
-      const data::ColumnDataTypes& data_types);
+  static std::pair<data::TransformationPtr, std::string> nodeId(
+      const ColumnDataTypes& data_types);
 
-  static std::pair<thirdai::data::TransformationPtr, std::string>
-  neighborFeatures(const std::string& nod_id_col);
-
-  static std::pair<thirdai::data::TransformationPtr, std::string> neighborIds(
+  static std::pair<data::TransformationPtr, std::string> neighborFeatures(
       const std::string& nod_id_col);
 
-  static std::pair<thirdai::data::TransformationPtr, data::GraphInfoPtr>
-  graphBuilder(const data::ColumnDataTypes& data_types);
+  static std::pair<data::TransformationPtr, std::string> neighborIds(
+      const std::string& nod_id_col);
 
-  thirdai::data::TransformationPtr _input_transform;
-  thirdai::data::TransformationPtr _label_transform;
-  thirdai::data::TransformationPtr _graph_builder;
+  static std::pair<data::TransformationPtr, GraphInfoPtr> graphBuilder(
+      const ColumnDataTypes& data_types);
 
-  thirdai::data::OutputColumnsList _bolt_input_columns;
-  thirdai::data::OutputColumnsList _bolt_label_columns;
+  data::TransformationPtr _input_transform;
+  data::TransformationPtr _label_transform;
+  data::TransformationPtr _graph_builder;
+
+  data::OutputColumnsList _bolt_input_columns;
+  data::OutputColumnsList _bolt_label_columns;
 
   char _delimiter;
 

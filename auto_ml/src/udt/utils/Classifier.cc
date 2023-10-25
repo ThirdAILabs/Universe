@@ -97,10 +97,10 @@ py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
   return py::cast(history);
 }
 
-py::object Classifier::train(const thirdai::data::LoaderPtr& dataset,
+py::object Classifier::train(const data::LoaderPtr& dataset,
                              float learning_rate, uint32_t epochs,
                              const std::vector<std::string>& train_metrics,
-                             const thirdai::data::LoaderPtr& val_dataset,
+                             const data::LoaderPtr& val_dataset,
                              const std::vector<std::string>& val_metrics,
                              const std::vector<CallbackPtr>& callbacks,
                              TrainOptions options,
@@ -137,11 +137,13 @@ py::object Classifier::train(const thirdai::data::LoaderPtr& dataset,
   return history;
 }
 
-py::object Classifier::train(
-    const thirdai::data::LoaderPtr& data, float learning_rate, uint32_t epochs,
-    const InputMetrics& train_metrics, const thirdai::data::LoaderPtr& val_data,
-    const InputMetrics& val_metrics, const std::vector<CallbackPtr>& callbacks,
-    TrainOptions options, const bolt::DistributedCommPtr& comm) {
+py::object Classifier::train(const data::LoaderPtr& data, float learning_rate,
+                             uint32_t epochs, const InputMetrics& train_metrics,
+                             const data::LoaderPtr& val_data,
+                             const InputMetrics& val_metrics,
+                             const std::vector<CallbackPtr>& callbacks,
+                             TrainOptions options,
+                             const bolt::DistributedCommPtr& comm) {
   std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;
   if (_freeze_hash_tables) {
     freeze_hash_tables_epoch = 1;
@@ -186,7 +188,7 @@ py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
   return py::cast(history);
 }
 
-py::object Classifier::evaluate(thirdai::data::LoaderPtr& dataset,
+py::object Classifier::evaluate(data::LoaderPtr& dataset,
                                 const std::vector<std::string>& metrics,
                                 bool sparse_inference, bool verbose) {
   return evaluate(dataset,
@@ -194,7 +196,7 @@ py::object Classifier::evaluate(thirdai::data::LoaderPtr& dataset,
                   sparse_inference, verbose);
 }
 
-py::object Classifier::evaluate(const thirdai::data::LoaderPtr& dataset,
+py::object Classifier::evaluate(const data::LoaderPtr& dataset,
                                 const InputMetrics& metrics,
                                 bool sparse_inference, bool verbose) {
   bolt::Trainer trainer(_model, std::nullopt, bolt::python::CtrlCCheck{});
@@ -295,7 +297,7 @@ std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> splitDataLabels(
 }
 
 std::optional<float> Classifier::tuneBinaryClassificationPredictionThreshold(
-    const thirdai::data::LoaderPtr& dataset, const std::string& metric_name) {
+    const data::LoaderPtr& dataset, const std::string& metric_name) {
   // The number of samples used is capped to ensure tuning is fast even for
   // larger datasets.
   uint32_t num_batches =

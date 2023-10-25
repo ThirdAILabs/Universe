@@ -112,7 +112,7 @@ UDTMachClassifier::UDTMachClassifier(
       /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes,
       /* num_elements = */ n_target_classes);
 
-  auto temporal_relationships = data::TemporalRelationshipsAutotuner::autotune(
+  auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
       input_data_types, temporal_tracking_relationships,
       tabular_options.lookahead);
 
@@ -164,7 +164,7 @@ py::object UDTMachClassifier::train(
       _featurizer->getDataLoader(data, options.batchSize(), /* shuffle= */ true,
                                  options.verbose, options.shuffle_config);
 
-  thirdai::data::LoaderPtr val_data_loader;
+  data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader = _featurizer->getDataLoader(
         val_data, defaults::BATCH_SIZE, /* shuffle= */ false, options.verbose);
@@ -320,14 +320,14 @@ py::object UDTMachClassifier::scoreBatch(
   // we score wouldn't otherwise be in the top results, thus their buckets have
   // lower similarity and don't get selected by LSH
   auto outputs = _classifier->model()
-                     ->forward(_dataset_factory->featurizeInputBatch(samples),
-                               /* sparse_inference= */ false)
+                     ->forward(_featurizer->featurizeInputBatch(samples),
+                               /* use_sparsity= */ false)
                      .at(0);
 
   size_t batch_size = samples.size();
   std::vector<std::vector<std::pair<uint32_t, double>>> scores(samples.size());
 
-  const auto& index = _mach_label_block->index();
+  const auto& index = getIndex();
 #pragma omp parallel for default(none) shared( \
     entities, outputs, scores, top_k, batch_size, index) if (batch_size > 1)
   for (uint32_t i = 0; i < batch_size; i++) {
@@ -450,7 +450,7 @@ py::object UDTMachClassifier::coldstart(
       /* fast_approximation= */ false, options.batchSize(),
       /* shuffle= */ true, options.verbose, options.shuffle_config);
 
-  thirdai::data::LoaderPtr val_data_loader;
+  data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader =
         _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,

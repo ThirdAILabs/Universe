@@ -75,8 +75,8 @@ class UDTRecurrentClassifier final : public UDTBackend {
   static uint32_t predictionAtStep(const BoltVector& output, uint32_t step,
                                    size_t vocab_size);
 
-  static std::string elementString(
-      uint32_t element_id, const thirdai::data::ThreadSafeVocabularyPtr& vocab);
+  static std::string elementString(uint32_t element_id,
+                                   const data::ThreadSafeVocabularyPtr& vocab);
 
   void addPredictionToSample(MapInput& sample,
                              const std::string& prediction) const;
