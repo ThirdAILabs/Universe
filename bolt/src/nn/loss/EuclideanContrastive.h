@@ -30,6 +30,8 @@ class EuclideanContrastive final : public Loss {
 
   ComputationList labels() const final;
 
+  bool logitsSumToOne() const final { return false; }
+
  private:
   float euclideanDistanceSquared(uint32_t index_in_batch) const;
 
