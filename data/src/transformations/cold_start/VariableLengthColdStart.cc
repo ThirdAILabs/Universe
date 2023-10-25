@@ -44,9 +44,9 @@ VariableLengthColdStart::VariableLengthColdStart(
         "covering_min_length must be <= covering_max_length.");
   }
 
-  if (_slice_max_length.has_value() &&
-      _slice_min_length > *_slice_max_length) {
-    throw std::invalid_argument("slice_min_length must be <= slice_max_length.");
+  if (_slice_max_length.has_value() && _slice_min_length > *_slice_max_length) {
+    throw std::invalid_argument(
+        "slice_min_length must be <= slice_max_length.");
   }
 }
 
@@ -129,30 +129,9 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
     std::string& strong_text, std::string& weak_text) const {
   std::vector<std::string> strong_phrase =
       cold_start::getStrongPhrase(strong_text);
-  std::cout << "STRONG PHRASE: " << std::endl;
-  for (auto word : strong_phrase) {
-    std::cout << word << " ";
-  }
-  std::cout << std::endl;
   std::vector<std::vector<std::string>> phrases = getWeakPhrases(weak_text);
-  std::cout << "WEAK PHRASES: " << std::endl;
-  for (auto phrase : phrases) {
-    for (auto word : phrase) {
-      std::cout << word << " ";
-    }
-    std::cout << std::endl;
-  }
-  std::cout << std::endl;
   cold_start::mergeStrongWithWeak(phrases, strong_phrase,
                                   _strong_sample_num_words, _seed);
-  std::cout << "MERGED PHRASES: " << std::endl;
-  for (auto phrase : phrases) {
-    for (auto word : phrase) {
-      std::cout << word << " ";
-    }
-    std::cout << std::endl;
-  }
-  std::cout << std::endl;
 
   std::mt19937 rng(_seed);
   std::uniform_real_distribution<float> dist(0.0, 1.0);
@@ -190,26 +169,8 @@ std::vector<std::vector<std::string>> VariableLengthColdStart::getWeakPhrases(
   addCoveringPhrases(words, phrases, _covering_min_length, _covering_max_length,
                      _max_covering_samples, _seed);
 
-  std::cout << "COVERING PHRASES: " << std::endl;
-  for (auto phrase : phrases) {
-    for (auto word : phrase) {
-      std::cout << word << " ";
-    }
-    std::cout << std::endl;
-  }
-  std::cout << std::endl;
-
   addRandomSlicePhrases(words, phrases, _slice_min_length, _slice_max_length,
                         _num_slices, _seed);
-
-  std::cout << "SLICE PHRASES: " << std::endl;
-  for (auto phrase : phrases) {
-    for (auto word : phrase) {
-      std::cout << word << " ";
-    }
-    std::cout << std::endl;
-  }
-  std::cout << std::endl;
 
   return phrases;
 }
