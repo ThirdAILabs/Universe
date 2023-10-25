@@ -2,6 +2,7 @@ import os
 
 import pytest
 import requests
+from office365.sharepoint.client_context import ClientContext
 from sqlalchemy import create_engine
 from thirdai import neural_db as ndb
 
@@ -86,7 +87,14 @@ all_connectorDoc_getter = [
         reference_columns=["content"],
         chunk_size=3,
         save_credentials=True,
-    )
+    ),
+    lambda: ndb.SharePoint(
+        ctx=ClientContext(
+            "https://iitkgpacin.sharepoint.com/sites/TestSite2"
+        ).with_user_credentials(
+            username="gautamsharma95.95@kgpian.iitkgp.ac.in", password="MICROSOFT@5fast"
+        )
+    ),
 ]
 
 all_doc_getters = [

@@ -805,6 +805,9 @@ class DocumentConnector(Document):
     def meta_table_id_col(self) -> str:
         return "id_in_document"
 
+    def build_meta_table(self):
+        raise NotImplementedError()
+
     def row_iterator(self):
         id_in_document = 0
         for current_chunk in self.next_chunk():
@@ -818,25 +821,7 @@ class DocumentConnector(Document):
                         id_in_chunk=idx, chunk=current_chunk
                     ),  # Weak text from (idx)th row of the current_batch
                 )
-                self._add_meta_entry(id_in_document, current_chunk=current_chunk)
                 id_in_document += 1
-
-    def _add_meta_entry(self, id_in_document: int, **kwargs):
-        if self.meta_table is None or (
-            len(
-                self.meta_table.loc[
-                    self.meta_table[self.meta_table_id_col] == id_in_document
-                ]
-            )
-            > 0
-        ):
-            # row_iterator is being called twice, so add first time only
-            return
-
-        self.add_meta(id_in_document, **kwargs)
-
-    def add_meta(self, id_in_document: int, **kwargs):
-        raise NotImplementedError()
 
     def next_chunk(self) -> pd.DataFrame:
         raise NotImplementedError()
@@ -850,7 +835,9 @@ class DocumentConnector(Document):
     def save_meta(self, directory: Path):
         # Save the index table
         if self.save_extra_info and self.meta_table is not None:
-            self.meta_table.to_csv(path_or_buf=directory / self.doc_name, index=False)
+            self.meta_table.to_csv(
+                path_or_buf=directory / (self.name + ".csv"), index=False
+            )
 
     def __getstate__(self):
         # Document Connectors are expected to remove their database connector(s)
@@ -898,7 +885,7 @@ class SQLDatabase(DocumentConnector):
             table_name=self.table_name,
             chunk_size=chunk_size,
         )
-
+        self.build_meta_table()
         self.total_rows = self._connector.total_rows()
         if self._save_credentials:
             self.engine_url = engine.url
@@ -913,7 +900,7 @@ class SQLDatabase(DocumentConnector):
 
     @property
     def name(self):
-        return self.database_name + "_" + self.table_name + ".csv"
+        return self.database_name + "_" + self.table_name
 
     @property
     def hash(self):
@@ -925,12 +912,22 @@ class SQLDatabase(DocumentConnector):
         except AttributeError as e:
             raise AttributeError("engine is not available")
 
+    def establish_connection(self, engine: sqlConn):
+        self._connector = SQLConnector(
+            engine=engine,
+            columns=[self.id_col]
+            + self.strong_columns
+            + self.weak_columns
+            + self.reference_columns,
+            table_name=self.table_name,
+        )
+
     @property
     def meta_table(self):
-        return None
+        return self._meta_table
 
-    def add_meta(self, id_in_document: int, **kwargs):
-        pass
+    def build_meta_table(self):
+        self._meta_table = None
 
     def next_chunk(self) -> pd.DataFrame:
         return self._connector.chunk_iterator()
@@ -948,7 +945,6 @@ class SQLDatabase(DocumentConnector):
                         id_in_chunk=idx, chunk=current_chunk
                     ),  # Weak text from (idx)th row of the current_batch
                 )
-                self._add_meta_entry(row_id)
 
     @property
     def size(self) -> int:
@@ -1138,6 +1134,25 @@ class SharePoint(DocumentConnector):
         self.library_path = library_path
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
+
+        self.build_meta_table()
+        self._name = self._connector.site_name + "_" + self.library_path
+        self._source = self._connector.url + "/" + library_path
+        self._hash = hash_string(self._source)
+
+    @property
+    def size(self) -> int:
+        return len(self.meta_table)
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def hash(self) -> str:
+        return self._hash
+
+    def build_meta_table(self):
         self._meta_table = pd.DataFrame(
             columns=[
                 self.meta_table_id_col,
@@ -1147,21 +1162,23 @@ class SharePoint(DocumentConnector):
                 "page",
             ]
         )
-        self._name = self._connector.site_name + "_" + self.library_path
-        self._hash = hash_string(self._connector.url + "/" + library_path)
-        self._size = sum([len(chunk) for chunk in self.next_chunk()])
+        id_in_document = 0
+        for current_chunk in self.next_chunk():
+            current_chunk.drop(columns=["para"], inplace=True)
+            for _, row in current_chunk.iterrows():
+                internal_doc_id = row["internal_doc_id"]
+                server_relative_url = row["server_relative_url"]
+                filename = row["filename"]
+                page = row["page"]
 
-    @property
-    def size(self) -> int:
-        return self._size
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def hash(self) -> str:
-        return self._hash
+                self.meta_table.loc[len(self.meta_table)] = {
+                    self.meta_table_id_col: id_in_document,
+                    "internal_doc_id": internal_doc_id,
+                    "server_relative_url": server_relative_url,
+                    "filename": filename,
+                    "page": page,
+                }
+                id_in_document += 1
 
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
@@ -1183,7 +1200,7 @@ class SharePoint(DocumentConnector):
                 if self.meta_table.iloc[element_id]["page"] is not None
                 else ""
             ),
-            source=self._connector.url + "/" + self.library_path,
+            source=self._source + "/" + self.meta_table.iloc[element_id]["filename"],
             metadata={
                 **self.meta_table.loc[element_id].to_dict(),
                 **self.doc_metadata,
@@ -1193,22 +1210,6 @@ class SharePoint(DocumentConnector):
     @property
     def meta_table(self) -> Optional[pd.DataFrame]:
         return self._meta_table
-
-    def add_meta(self, id_in_document: int, **kwargs):
-        current_chunk = kwargs["current_chunk"]
-
-        internal_doc_id = current_chunk.iloc[id_in_document]["internal_doc_id"]
-        server_relative_url = current_chunk.iloc[id_in_document]["server_relative_url"]
-        filename = current_chunk.iloc[id_in_document]["filename"]
-        page = current_chunk.iloc[id_in_document]["page"]
-
-        self.meta_table.loc[len(self.meta_table)] = {
-            self.meta_table_id_col: id_in_document,
-            "internal_doc_id": internal_doc_id,
-            "server_relative_url": server_relative_url,
-            "filename": filename,
-            "page": page,
-        }
 
     def next_chunk(self) -> pd.DataFrame:
         chunk_df = pd.DataFrame(
