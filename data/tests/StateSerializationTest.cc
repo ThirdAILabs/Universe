@@ -31,8 +31,8 @@ void compareVocab(const VocabMap& expected,
   }
 }
 
-automl::data::GraphInfoPtr makeGraph() {
-  auto graph = std::make_shared<automl::data::GraphInfo>(/* feature_dim= */ 3);
+automl::GraphInfoPtr makeGraph() {
+  auto graph = std::make_shared<automl::GraphInfo>(/* feature_dim= */ 3);
 
   graph->insertNode(10, {10.5, 20.5, 30.5}, {2, 4, 6, 8});
   graph->insertNode(100, {100.5, 200.5, 300.5}, {5, 2, 7});
@@ -41,8 +41,8 @@ automl::data::GraphInfoPtr makeGraph() {
   return graph;
 }
 
-void compareGraphs(const automl::data::GraphInfoPtr& old_graph,
-                   const automl::data::GraphInfoPtr& new_graph) {
+void compareGraphs(const automl::GraphInfoPtr& old_graph,
+                   const automl::GraphInfoPtr& new_graph) {
   ASSERT_EQ(old_graph->featureDim(), new_graph->featureDim());
   ASSERT_EQ(old_graph->nodeFeatures(), new_graph->nodeFeatures());
   ASSERT_EQ(old_graph->neighbors(), new_graph->neighbors());

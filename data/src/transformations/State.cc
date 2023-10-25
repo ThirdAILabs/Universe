@@ -21,7 +21,7 @@ proto::data::ItemHistoryTracker trackerToProto(
       record_proto->set_timestamp(record.timestamp);
     }
 
-    tracker_proto.mutable_trackers()->emplace(key, history_proto);
+    tracker_proto.mutable_trackers()->insert({key, history_proto});
   }
 
   return tracker_proto;
@@ -67,12 +67,12 @@ proto::data::State* State::toProto() const {
   }
 
   for (const auto& [vocab_key, vocab] : _vocabs) {
-    state->mutable_vocabs()->emplace(vocab_key, vocab->toProto());
+    state->mutable_vocabs()->insert({vocab_key, vocab->toProto()});
   }
 
   for (const auto& [tracker_key, tracker] : _item_history_trackers) {
-    state->mutable_item_history_trackers()->emplace(tracker_key,
-                                                    trackerToProto(tracker));
+    state->mutable_item_history_trackers()->insert(
+        {tracker_key, trackerToProto(tracker)});
   }
 
   if (_graph) {

@@ -62,14 +62,14 @@ proto::data::GraphInfo* GraphInfo::toProto() const {
     proto::data::GraphFeatureVector features_proto;
     *features_proto.mutable_features() = {features.begin(), features.end()};
 
-    graph->mutable_node_features()->emplace(node_id, features_proto);
+    graph->mutable_node_features()->insert({node_id, features_proto});
   }
 
   for (const auto& [node_id, neighbors] : _node_id_to_neighbors) {
     proto::data::GraphNeighbors neighbors_proto;
     *neighbors_proto.mutable_neighbors() = {neighbors.begin(), neighbors.end()};
 
-    graph->mutable_neighbors()->emplace(node_id, neighbors_proto);
+    graph->mutable_neighbors()->insert({node_id, neighbors_proto});
   }
 
   return graph;

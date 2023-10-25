@@ -81,7 +81,7 @@ proto::udt::RlhfSampler* RLHFSampler::toProto() const {
       sample_proto->set_source(source);
       *sample_proto->mutable_targets() = {targets.begin(), targets.end()};
     }
-    rlhf_sampler->mutable_samples_per_doc()->emplace(doc, doc_samples);
+    rlhf_sampler->mutable_samples_per_doc()->insert({doc, doc_samples});
   }
 
   rlhf_sampler->set_max_docs(_max_docs);
