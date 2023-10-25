@@ -39,14 +39,14 @@ VariableLengthColdStart::VariableLengthColdStart(
         "word_removal_probaility must be between 0 and 1.0.");
   }
 
-  if (_covering_min_length >= _covering_max_length) {
+  if (_covering_min_length > _covering_max_length) {
     throw std::invalid_argument(
-        "covering_min_length must be < covering_max_length.");
+        "covering_min_length must be <= covering_max_length.");
   }
 
   if (_slice_max_length.has_value() &&
-      _slice_min_length >= *_slice_max_length) {
-    throw std::invalid_argument("slice_min_length must be < slice_max_length.");
+      _slice_min_length > *_slice_max_length) {
+    throw std::invalid_argument("slice_min_length must be <= slice_max_length.");
   }
 }
 

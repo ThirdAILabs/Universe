@@ -67,10 +67,65 @@ def test_vlcs_covering_samples():
     expected_words = sentence.split(" ")
     samples = augmentation.augment_single_row("", sentence)
 
-    word_count = 0
-    for sample in samples[:-1]:
+    word_index = 0
+    for i, sample in enumerate(samples):
         words = sample.strip().split(" ")
-        assert 3 <= len(words) and len(words) <= 5
+
         for word in words:
-            assert expected_words[word_count] == word
-            word_count += 1
+            assert expected_words[word_index] == word
+            word_index += 1
+
+        is_last_sample = i == len(samples) - 1
+        if not is_last_sample:
+            # we don't check the last sample because it may sometimes have
+            # slightly more than the max len
+            length = len(words)
+            assert 3 <= length and length <= 5
+
+
+def test_vlcs_random_slices():
+    augmentation = default_augmentation(
+        slice_min_length=3,
+        slice_max_length=5,
+        num_slices=5,
+        max_covering_samples=0,
+        add_whole_doc=False,
+    )
+    sentence = "This is weak text that has more than a certain amount of words"
+    samples = augmentation.augment_single_row("", sentence)
+
+    for sample in samples:
+        assert sample.strip() in sentence
+
+        length = len(sample.strip().split(" "))
+        assert 3 <= length and length <= 5
+
+
+def test_vlcs_word_removal():
+    augmentation = default_augmentation(
+        slice_min_length=10000,
+        slice_max_length=10000,
+        num_slices=1,
+        max_covering_samples=0,
+        add_whole_doc=False,
+        word_removal_probability=1.0,
+    )
+    sentence = "word " * 10000
+    samples = augmentation.augment_single_row("", sentence)
+
+    assert len(samples) == 1
+    assert samples[0] == ""
+
+    augmentation = default_augmentation(
+        slice_min_length=10000,
+        slice_max_length=10000,
+        num_slices=1,
+        max_covering_samples=0,
+        add_whole_doc=False,
+        word_removal_probability=0.5,
+    )
+    sentence = "word " * 10000
+    samples = augmentation.augment_single_row("", sentence)
+
+    assert len(samples) == 1
+    assert 4500 < len(samples[0].split(" ")) and len(samples[0].split(" ")) < 5500
