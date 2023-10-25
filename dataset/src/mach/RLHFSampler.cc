@@ -7,7 +7,7 @@
 #include <cereal/types/vector.hpp>
 #include <stdexcept>
 
-namespace thirdai::automl::udt {
+namespace thirdai::data::mach {
 
 std::vector<RlhfSample> RLHFSampler::balancingSamples(size_t num_samples) {
   if (num_samples == 0) {
@@ -67,4 +67,4 @@ void RLHFSampler::serialize(Archive& archive) {
   archive(_samples_per_doc, _doc_ids, _max_docs, _max_samples_per_doc);
 }
 
-}  // namespace thirdai::automl::udt
+}  // namespace thirdai::data::mach

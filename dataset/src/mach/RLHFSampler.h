@@ -1,16 +1,19 @@
 #pragma once
 
-#include <bolt_vector/src/BoltVector.h>
-#include <cstddef>
-#include <iterator>
+#include <cereal/access.hpp>
+#include <cstdint>
 #include <random>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
-namespace thirdai::automl::udt {
+namespace thirdai::data::mach {
 
-using RlhfSample = std::pair<std::string, std::vector<uint32_t>>;
+struct RlhfSample {
+  std::vector<uint32_t> input_indices;
+  std::vector<float> input_values;
+  std::vector<uint32_t> mach_buckets;
+};
 
 class RLHFSampler {
  public:
@@ -51,4 +54,4 @@ class RLHFSampler {
   void serialize(Archive& archive);
 };
 
-}  // namespace thirdai::automl::udt
+}  // namespace thirdai::data::mach
