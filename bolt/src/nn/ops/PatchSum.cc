@@ -14,6 +14,12 @@ std::string nextPatchSumOpName() {
 PatchSum::PatchSum(size_t n_patches, size_t patch_dim)
     : Op(nextPatchSumOpName()), _n_patches(n_patches), _patch_dim(patch_dim) {}
 
+PatchSum::PatchSum(const std::string& name,
+                   const proto::bolt::PatchSum& patch_sum_proto)
+    : Op(name),
+      _n_patches(patch_sum_proto.n_patches()),
+      _patch_dim(patch_sum_proto.patch_dim()) {}
+
 void PatchSum::forward(const ComputationList& inputs, TensorPtr& output,
                        uint32_t index_in_batch, bool training) {
   (void)training;
@@ -127,7 +133,14 @@ void PatchSum::setSerializeOptimizer(bool should_serialize_optimizer) {
   (void)should_serialize_optimizer;
 }
 
-ComputationPtr PatchSum::apply(ComputationPtr input) {
+ComputationPtr PatchSum::apply(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("PatchSum op expects a single input.");
+  }
+  return applyUnary(inputs.at(0));
+}
+
+ComputationPtr PatchSum::applyUnary(ComputationPtr input) {
   if (input->dim() != _patch_dim * _n_patches) {
     throw std::invalid_argument(
         "Cannot apply PatchSum expecting " + std::to_string(_n_patches) +
@@ -136,6 +149,29 @@ ComputationPtr PatchSum::apply(ComputationPtr input) {
   }
 
   return Computation::make(shared_from_this(), {std::move(input)});
+}
+
+proto::bolt::Op* PatchSum::toProto(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto* op = new proto::bolt::Op();
+  auto* patch_sum = op->mutable_patch_sum();
+
+  patch_sum->set_n_patches(_n_patches);
+  patch_sum->set_patch_dim(_patch_dim);
+
+  return op;
+}
+
+SerializableParameters PatchSum::serializableParameters(
+    bool with_optimizer) const {
+  (void)with_optimizer;
+  return {};
+}
+
+std::shared_ptr<PatchSum> PatchSum::fromProto(
+    const std::string& name, const proto::bolt::PatchSum& patch_sum_proto) {
+  return std::shared_ptr<PatchSum>(new PatchSum(name, patch_sum_proto));
 }
 
 }  // namespace thirdai::bolt

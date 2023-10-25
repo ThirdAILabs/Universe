@@ -2,6 +2,8 @@
 #include <utils/StringManipulation.h>
 #include <cassert>
 #include <iostream>
+#include <stdexcept>
+#include <string>
 
 namespace thirdai::dataset {
 
@@ -30,6 +32,24 @@ WordpieceTokenizer::WordpieceTokenizer(const std::string& vocab_fpath,
   if (!_token_to_id.count(std::wstring(special_tokens::MASK))) {
     _token_to_id[std::wstring(special_tokens::MASK)] = _token_to_id.size();
     _id_to_token.push_back(std::wstring(special_tokens::MASK));
+  }
+}
+
+WordpieceTokenizer::WordpieceTokenizer(
+    const proto::data::WordpieceTokenizer& wordpiece)
+    : _id_to_token(wordpiece.tokens_size()), _to_lower(wordpiece.lowercase()) {
+  for (const auto& entry : wordpiece.tokens()) {
+    uint32_t id = entry.id();
+
+    std::wstring str;
+    for (const uint32_t c : entry.chars()) {
+      str.push_back(c);
+    }
+    if (id >= _id_to_token.size()) {
+      throw std::invalid_argument("Invalid id found in WordPiece fromProto.");
+    }
+    _id_to_token[id] = str;
+    _token_to_id[str] = id;
   }
 }
 
@@ -182,6 +202,26 @@ std::vector<std::wstring> WordpieceTokenizer::wordpieceTokenize(
   }
 
   return wordpieces;
+}
+
+proto::data::Tokenizer* WordpieceTokenizer::toProto() const {
+  proto::data::Tokenizer* tokenizer = new proto::data::Tokenizer();
+
+  auto* word_piece = tokenizer->mutable_wordpiece();
+
+  for (size_t i = 0; i < _id_to_token.size(); i++) {
+    auto* entry = word_piece->add_tokens();
+    entry->set_id(i);
+    // Protobuf doesn't have wchar so we use uint32. We also add one at a time
+    // to ensure the conversion is done correctly.
+    for (wchar_t c : _id_to_token[i]) {
+      entry->add_chars(c);
+    }
+  }
+
+  word_piece->set_lowercase(_to_lower);
+
+  return tokenizer;
 }
 
 }  // namespace thirdai::dataset

@@ -1,0 +1,18 @@
+syntax = "proto2";
+
+package proto.data;
+
+import "encoders.proto";
+import "tokenizers.proto";
+
+message TextTokenizer {
+  required string input_column = 1;
+  required string output_indices = 2;
+  optional string output_values = 3;
+
+  required Tokenizer tokenizer = 4;
+  required TextEncoder encoder = 5;
+
+  required bool lowercase = 6;
+  required uint64 dim = 7;
+}

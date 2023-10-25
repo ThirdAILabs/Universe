@@ -9,6 +9,18 @@
 
 namespace thirdai::data {
 
+StringHash::StringHash(const proto::data::StringHash& string_hash)
+    : _input_column_name(string_hash.input_column()),
+      _output_column_name(string_hash.output_column()),
+      _seed(string_hash.seed()) {
+  if (string_hash.has_hash_range()) {
+    _output_range = string_hash.hash_range();
+  }
+  if (string_hash.has_delimiter()) {
+    _delimiter = string_hash.delimiter();
+  }
+}
+
 using dataset::parsers::CSV::parseLine;
 
 ColumnMap StringHash::apply(ColumnMap columns, State& state) const {
@@ -70,6 +82,26 @@ void StringHash::buildExplanationMap(const ColumnMap& input, State& state,
   explanations.store(_output_column_name, hash(str),
                      "item '" + str + "' from " +
                          explanations.explain(_input_column_name, str));
+}
+
+proto::data::Transformation* StringHash::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* string_hash = transformation->mutable_string_hash();
+
+  string_hash->set_input_column(_input_column_name);
+  string_hash->set_output_column(_output_column_name);
+
+  if (_output_range) {
+    string_hash->set_hash_range(*_output_range);
+  }
+
+  if (_delimiter) {
+    string_hash->set_delimiter(*_delimiter);
+  }
+
+  string_hash->set_seed(_seed);
+
+  return transformation;
 }
 
 }  // namespace thirdai::data

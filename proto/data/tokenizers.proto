@@ -1,0 +1,32 @@
+syntax = "proto2";
+
+package proto.data;
+
+message WordpieceTokenizer {
+  message Entry {
+    required uint64 id = 1;
+    repeated uint32 chars = 2;
+  }
+
+  repeated Entry tokens = 1;
+  required bool lowercase = 2;
+}
+
+message SplitTokenizer {
+  required uint32 delimiter = 1;
+}
+
+message WordPunctTokenizer {}
+
+message CharKGramTokenizer {
+  required uint32 k = 1;
+}
+
+message Tokenizer {
+  oneof tokenizer {
+    WordpieceTokenizer wordpiece = 1;
+    SplitTokenizer split = 2;
+    WordPunctTokenizer word_punct = 3;
+    CharKGramTokenizer char_kgram = 4;
+  }
+}

@@ -1,6 +1,4 @@
 #include "MachLabel.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
 #include <data/src/columns/ArrayColumns.h>
 #include <exception>
 
@@ -10,6 +8,10 @@ MachLabel::MachLabel(std::string input_column_name,
                      std::string output_column_name)
     : _input_column_name(std::move(input_column_name)),
       _output_column_name(std::move(output_column_name)) {}
+
+MachLabel::MachLabel(const proto::data::MachLabel& mach_label)
+    : _input_column_name(mach_label.input_column()),
+      _output_column_name(mach_label.output_column()) {}
 
 ColumnMap MachLabel::apply(ColumnMap columns, State& state) const {
   auto entities_column = columns.getArrayColumn<uint32_t>(_input_column_name);
@@ -48,15 +50,14 @@ ColumnMap MachLabel::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
-template void MachLabel::serialize(cereal::BinaryInputArchive&);
-template void MachLabel::serialize(cereal::BinaryOutputArchive&);
+proto::data::Transformation* MachLabel::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* mach_label = transformation->mutable_mach_label();
 
-template <class Archive>
-void MachLabel::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _input_column_name,
-          _output_column_name);
+  mach_label->set_input_column(_input_column_name);
+  mach_label->set_output_column(_output_column_name);
+
+  return transformation;
 }
 
 }  // namespace thirdai::data
-
-CEREAL_REGISTER_TYPE(thirdai::data::MachLabel)

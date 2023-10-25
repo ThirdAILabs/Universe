@@ -21,6 +21,7 @@
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/utils/TokenEncoding.h>
+#include <proto/transformations.pb.h>
 #include <pybind11/attr.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/numpy.h>
@@ -239,7 +240,15 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       transformations_submodule, "Transformation")
       .def("__call__", &Transformation::applyStateless, py::arg("columns"))
       .def("__call__", &Transformation::apply, py::arg("columns"),
-           py::arg("state"));
+           py::arg("state"))
+      .def("serialize", [](const TransformationPtr& transformation) {
+        // We need to convert this to a bytes object to avoid Unicode errors in
+        // python.
+        return py::bytes(transformation->serialize());
+      });
+
+  transformations_submodule.def("deserialize", Transformation::deserialize,
+                                py::arg("binary"));
 
   py::class_<Pipeline, Transformation, PipelinePtr>(transformations_submodule,
                                                     "Pipeline")

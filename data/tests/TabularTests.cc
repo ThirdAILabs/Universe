@@ -4,6 +4,7 @@
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Tabular.h>
+#include <data/src/transformations/Transformation.h>
 #include <cstddef>
 #include <memory>
 #include <string>
@@ -155,6 +156,24 @@ TEST(TabularTests, HashDistribution) {
   for (const auto& [_, cnt] : hash_counts) {
     ASSERT_LE(cnt, 4);  // No more than 4 collisions.
   }
+}
+
+TEST(TabularTests, Serialization) {
+  auto columns =
+      makeColumnMap({{"a", {"aa", "bb", "cc", "aa", "bb", "cc"}},
+                     {"b", {"0.5", "1.5", "2.5", "0.2", "1.7", "2.8"}},
+                     {"c", {"aa", "cc", "bb", "bb", "bb", "aa"}}});
+
+  Tabular transform({NumericalColumn("b", 0, 3, 3)},
+                    {CategoricalColumn("a"), CategoricalColumn("c")}, OUTPUT,
+                    /* cross_column_pairgrams= */ true);
+
+  auto transform_copy = Transformation::deserialize(transform.serialize());
+
+  auto output1 = getTabularTokens(transform.applyStateless(columns));
+  auto output2 = getTabularTokens(transform_copy->applyStateless(columns));
+
+  ASSERT_EQ(output1, output2);
 }
 
 }  // namespace thirdai::data::tests

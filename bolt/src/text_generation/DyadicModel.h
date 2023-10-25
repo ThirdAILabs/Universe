@@ -43,17 +43,6 @@ class DyadicModel final : public GenerativeBackend {
   std::shared_ptr<data::DyadicInterval> _dyadic_transform;
   data::OutputColumnsList _bolt_inputs;
   size_t _vocab_size;
-
-  DyadicModel() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<GenerativeBackend>(this), _model,
-            _dyadic_transform, _bolt_inputs, _vocab_size);
-  }
 };
 
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::DyadicModel)

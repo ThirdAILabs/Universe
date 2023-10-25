@@ -10,10 +10,14 @@ class StringIDLookup final : public Transformation {
                  std::string vocab_key, std::optional<size_t> max_vocab_size,
                  std::optional<char> delimiter);
 
+  explicit StringIDLookup(const proto::data::StringIDLookup& string_id_lookup);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
+
+  proto::data::Transformation* toProto() const final;
 
  private:
   std::string _input_column_name;
@@ -22,12 +26,6 @@ class StringIDLookup final : public Transformation {
 
   std::optional<size_t> _max_vocab_size;
   std::optional<char> _delimiter;
-
-  StringIDLookup() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

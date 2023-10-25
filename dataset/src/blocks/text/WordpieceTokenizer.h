@@ -5,6 +5,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include "TextTokenizer.h"
 #include <dataset/src/utils/SafeFileIO.h>
+#include <proto/tokenizers.pb.h>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -19,10 +20,12 @@ constexpr std::wstring_view UNK = L"[UNK]";
 constexpr std::wstring_view MASK = L"[MASK]";
 }  // namespace special_tokens
 
-class WordpieceTokenizer : public TextTokenizer {
+class WordpieceTokenizer final : public TextTokenizer {
  public:
   explicit WordpieceTokenizer(const std::string& vocab_fpath,
                               bool to_lower = true);
+
+  explicit WordpieceTokenizer(const proto::data::WordpieceTokenizer& wordpiece);
 
   static std::shared_ptr<TextTokenizer> make(const std::string& vocab_file,
                                              bool lowercase = true) {
@@ -50,6 +53,8 @@ class WordpieceTokenizer : public TextTokenizer {
     // TODO(david): should we take the whole word here instead of the subword
     return decode({source_token});
   }
+
+  proto::data::Tokenizer* toProto() const final;
 
  private:
   /**

@@ -4,6 +4,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <dataset/src/utils/TokenEncoding.h>
+#include <proto/tokenizers.pb.h>
 #include <utils/StringManipulation.h>
 #include <string>
 
@@ -15,6 +16,8 @@ class TextTokenizer {
 
   virtual std::string getResponsibleWord(const std::string& input,
                                          uint32_t source_token) = 0;
+
+  virtual proto::data::Tokenizer* toProto() const = 0;
 
   virtual ~TextTokenizer() = default;
 
@@ -52,6 +55,12 @@ class NaiveSplitTokenizer : public TextTokenizer {
     return map.at(source_token);
   }
 
+  proto::data::Tokenizer* toProto() const final {
+    proto::data::Tokenizer* tokenizer = new proto::data::Tokenizer();
+    tokenizer->mutable_split()->set_delimiter(_delimiter);
+    return tokenizer;
+  }
+
  private:
   char _delimiter;
 
@@ -84,6 +93,12 @@ class WordPunctTokenizer : public TextTokenizer {
     return map.at(source_token);
   }
 
+  proto::data::Tokenizer* toProto() const final {
+    proto::data::Tokenizer* tokenizer = new proto::data::Tokenizer();
+    tokenizer->mutable_word_punct();
+    return tokenizer;
+  }
+
  private:
   friend class cereal::access;
   template <class Archive>
@@ -114,6 +129,12 @@ class CharKGramTokenizer : public TextTokenizer {
       throw std::invalid_argument("Error in RCA.");
     }
     return map.at(source_token);
+  }
+
+  proto::data::Tokenizer* toProto() const final {
+    proto::data::Tokenizer* tokenizer = new proto::data::Tokenizer();
+    tokenizer->mutable_char_kgram()->set_k(_k);
+    return tokenizer;
   }
 
  private:

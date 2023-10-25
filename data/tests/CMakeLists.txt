@@ -5,6 +5,7 @@ include(GoogleTest)
 set(DATA_TESTS
     TensorConversionTests
     DataLoaderTest
+    StateSerializationTest
     PermutationTest
     EncodePositionTest
     CountTokensTest

@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+package proto.data;
+
+message StringIDLookup {
+  required string input_column = 1;
+  required string output_column = 2;
+  required string vocab_key = 3;
+
+  optional uint64 max_vocab_size = 4;
+  optional uint32 delimiter = 5;
+}

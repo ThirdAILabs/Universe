@@ -2,6 +2,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
+#include <_types/_uint32_t.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <utils/Random.h>
 #include <optional>
@@ -216,6 +217,35 @@ void MachIndex::verifyHash(uint32_t hash) const {
                                 " for index with range " +
                                 std::to_string(numBuckets()) + ".");
   }
+}
+
+proto::data::MachIndex* MachIndex::toProto() const {
+  proto::data::MachIndex* index = new proto::data::MachIndex();
+
+  index->set_num_buckets(numBuckets());
+  index->set_num_hashes(numHashes());
+
+  for (const auto& [entity, hashes] : _entity_to_hashes) {
+    auto* new_entity = index->add_entities();
+    new_entity->set_entity_id(entity);
+    *new_entity->mutable_hashes() = {hashes.begin(), hashes.end()};
+  }
+
+  return index;
+}
+
+std::shared_ptr<MachIndex> MachIndex::fromProto(
+    const proto::data::MachIndex& mach_index) {
+  std::unordered_map<uint32_t, std::vector<uint32_t>> entity_to_hashes;
+
+  for (const auto& entity : mach_index.entities()) {
+    entity_to_hashes[entity.entity_id()] = {entity.hashes().begin(),
+                                            entity.hashes().end()};
+  }
+
+  return std::make_shared<MachIndex>(std::move(entity_to_hashes),
+                                     mach_index.num_buckets(),
+                                     mach_index.num_hashes());
 }
 
 template void MachIndex::serialize(cereal::BinaryInputArchive&);

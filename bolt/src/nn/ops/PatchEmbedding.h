@@ -18,6 +18,10 @@ class PatchEmbedding final
                  size_t rebuild_hash_tables = 4,
                  size_t reconstruct_hash_functions = 100);
 
+  PatchEmbedding(const std::string& name,
+                 const proto::bolt::PatchEmbedding& patch_emb_proto,
+                 DeserializedParameters& parameters);
+
  public:
   static auto make(size_t emb_dim, size_t patch_dim, size_t n_patches,
                    float sparsity, const std::string& activation,
@@ -58,7 +62,19 @@ class PatchEmbedding final
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final;
 
-  ComputationPtr apply(ComputationPtr input);
+  ComputationPtr apply(const ComputationList& inputs) final;
+
+  ComputationPtr applyUnary(ComputationPtr input);
+
+  proto::bolt::Op* toProto(bool with_optimizer) const final;
+
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
+
+  static std::shared_ptr<PatchEmbedding> fromProto(
+      const std::string& name,
+      const proto::bolt::PatchEmbedding& patch_emb_proto,
+      DeserializedParameters& parameters);
 
   void setWeights(const float* new_weights);
 
@@ -73,6 +89,10 @@ class PatchEmbedding final
 
  private:
   size_t patchNonzeros(bool use_sparsity) const;
+
+  std::string weightsName() const { return name() + "_weights"; }
+
+  std::string biasesName() const { return name() + "_biases"; }
 
   std::unique_ptr<FullyConnectedLayer> _kernel;
   size_t _n_patches;

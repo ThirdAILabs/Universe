@@ -5,6 +5,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
+#include <proto/state.pb.h>
 #include <algorithm>
 #include <atomic>
 #include <limits>
@@ -65,12 +66,12 @@ class ThreadSafeVocabulary {
     // resize here so we can access 0 to map.size() - 1 uids with [] syntax
     _uid_to_string.resize(_string_to_uid.size());
     for (auto& [string, uid] : _string_to_uid) {
-      if (uid >= _max_vocab_size) {
+      if (uid >= _string_to_uid.size()) {
         throw std::invalid_argument(
             "[ThreadSafeVocabulary] The provided string_to_uid_map contains a "
             "uid out of the valid range. Provided uid: " +
             std::to_string(uid) + " but expected a uid in the range 0 to " +
-            std::to_string(*_max_vocab_size) + " - 1");
+            std::to_string(_string_to_uid.size()) + " - 1");
       }
       _uid_to_string[uid] = string;
     }
@@ -115,6 +116,36 @@ class ThreadSafeVocabulary {
       std::optional<uint32_t> max_vocab_size = std::nullopt) {
     return std::make_shared<ThreadSafeVocabulary>(std::move(string_to_uid_map),
                                                   max_vocab_size);
+  }
+
+  proto::data::Vocabulary toProto() const {
+    proto::data::Vocabulary vocab;
+
+    if (_max_vocab_size) {
+      vocab.set_max_vocab_size(*_max_vocab_size);
+    }
+
+    for (const auto& word : _uid_to_string) {
+      vocab.add_vocab(word);
+    }
+
+    return vocab;
+  }
+
+  static std::shared_ptr<ThreadSafeVocabulary> fromProto(
+      const proto::data::Vocabulary& vocab) {
+    std::unordered_map<std::string, uint32_t> string_to_id;
+    uint32_t id = 0;
+    for (const auto& word : vocab.vocab()) {
+      string_to_id[word] = id++;
+    }
+
+    std::optional<uint32_t> max_vocab_size;
+    if (vocab.has_max_vocab_size()) {
+      max_vocab_size = vocab.max_vocab_size();
+    }
+
+    return ThreadSafeVocabulary::make(std::move(string_to_id), max_vocab_size);
   }
 
  private:

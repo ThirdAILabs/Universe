@@ -5,6 +5,12 @@
 
 namespace thirdai::data {
 
+StringConcat::StringConcat(const proto::data::StringConcat& string_concat)
+    : _input_column_names(string_concat.input_columns().begin(),
+                          string_concat.input_columns().end()),
+      _output_column_name(string_concat.output_column()),
+      _seperator(string_concat.seperator()) {}
+
 ColumnMap StringConcat::apply(ColumnMap columns, State& state) const {
   (void)state;
 
@@ -32,6 +38,18 @@ ColumnMap StringConcat::apply(ColumnMap columns, State& state) const {
   columns.setColumn(_output_column_name, output_column);
 
   return columns;
+}
+
+proto::data::Transformation* StringConcat::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* string_concat = transformation->mutable_string_concat();
+
+  *string_concat->mutable_input_columns() = {_input_column_names.begin(),
+                                             _input_column_names.end()};
+  string_concat->set_output_column(_output_column_name);
+  string_concat->set_seperator(_seperator);
+
+  return transformation;
 }
 
 }  // namespace thirdai::data

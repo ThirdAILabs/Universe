@@ -4,6 +4,7 @@
 #include <data/src/ColumnMap.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/Datasets.h>
+#include <proto/transformations.pb.h>
 #include <algorithm>
 #include <memory>
 
@@ -16,6 +17,8 @@ class Pipeline final : public Transformation {
  public:
   explicit Pipeline(std::vector<TransformationPtr> transformations = {})
       : _transformations(std::move(transformations)) {}
+
+  explicit Pipeline(const proto::data::Transformation_Pipeline& pipeline);
 
   static auto make(std::vector<TransformationPtr> transformations = {}) {
     return std::make_shared<Pipeline>(std::move(transformations));
@@ -40,22 +43,12 @@ class Pipeline final : public Transformation {
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
+  proto::data::Transformation* toProto() const final;
+
   const auto& transformations() const { return _transformations; }
-
-  void save(const std::string& filename) const;
-
-  void save_stream(std::ostream& output_stream) const;
-
-  static PipelinePtr load(const std::string& filename);
-
-  static PipelinePtr load_stream(std::istream& input_stream);
 
  private:
   std::vector<TransformationPtr> _transformations;
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

@@ -1,0 +1,19 @@
+syntax = "proto2";
+
+package proto.data;
+
+message GraphBuilder {
+  required string node_id_column = 1;
+  required string neighbors_column = 2;
+  repeated string feature_columns = 3;
+}
+
+message NeighborIds {
+  required string node_id_column = 1;
+  required string output_column = 2;
+}
+
+message NeighborFeatures {
+  required string node_id_column = 1;
+  required string output_column = 2;
+}

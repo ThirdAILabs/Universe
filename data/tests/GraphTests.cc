@@ -3,12 +3,27 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Graph.h>
+#include <data/src/transformations/Transformation.h>
+#include <dataset/src/utils/GraphInfo.h>
 #include <memory>
 #include <optional>
 
 namespace thirdai::data::tests {
 
-State buildGraph() {
+TransformationPtr getBuilder(bool serialize = false) {
+  std::vector<std::string> feature_columns = {"feature_1", "feature_2",
+                                              "feature_3", "feature_4"};
+  auto builder =
+      std::make_shared<GraphBuilder>("id", "neighbors", feature_columns);
+
+  if (serialize) {
+    return Transformation::deserialize(builder->serialize());
+  }
+
+  return builder;
+}
+
+State buildGraph(const TransformationPtr& builder) {
   auto graph = std::make_shared<automl::GraphInfo>(/* feature_dim= */ 4);
 
   State state(graph);
@@ -23,19 +38,12 @@ State buildGraph() {
       {"id", ValueColumn<uint32_t>::make({1, 2, 3, 4}, std::nullopt)},
   });
 
-  GraphBuilder builder("id", "neighbors",
-                       {"feature_1", "feature_2", "feature_3", "feature_4"});
-
-  builder.apply(columns, state);
+  builder->apply(columns, state);
 
   return state;
 }
 
-TEST(GraphTests, GraphBuilder) {
-  auto state = buildGraph();
-
-  const auto& graph = state.graph();
-
+void checkGraph(const automl::data::GraphInfoPtr& graph) {
   ASSERT_EQ(graph->neighbors(1), std::vector<uint64_t>({1, 2, 3}));
   ASSERT_EQ(graph->neighbors(2), std::vector<uint64_t>({4, 1}));
   ASSERT_EQ(graph->neighbors(3), std::vector<uint64_t>({2}));
@@ -47,15 +55,29 @@ TEST(GraphTests, GraphBuilder) {
   ASSERT_EQ(graph->featureVector(4), std::vector<float>({30, 31, 32, 33}));
 }
 
-TEST(GraphTests, NeighborIds) {
-  auto state = buildGraph();
+TEST(GraphTests, GraphBuilder) {
+  auto state = buildGraph(getBuilder());
+
+  const auto& graph = state.graph();
+
+  checkGraph(graph);
+}
+
+TEST(GraphTests, GraphBuilderSerialization) {
+  auto state = buildGraph(getBuilder(/* serialize= */ true));
+
+  const auto& graph = state.graph();
+
+  checkGraph(graph);
+}
+
+void checkNeighborIds(const Transformation& neighbor_ids) {
+  auto state = buildGraph(getBuilder());
 
   ColumnMap columns(
       {{"id", ValueColumn<uint32_t>::make({4, 3, 2, 1}, std::nullopt)}});
 
-  NeighborIds neighbor_features("id", "nbrs");
-
-  columns = neighbor_features.apply(columns, state);
+  columns = neighbor_ids.apply(columns, state);
 
   auto output = std::dynamic_pointer_cast<ArrayColumn<uint32_t>>(
       columns.getColumn("nbrs"));
@@ -65,13 +87,25 @@ TEST(GraphTests, NeighborIds) {
   ASSERT_EQ(output->data(), expected_neighbors);
 }
 
-TEST(GraphTests, NeighborFeatures) {
-  auto state = buildGraph();
+TEST(GraphTests, NeighborIds) {
+  NeighborIds neighbor_ids("id", "nbrs");
+
+  checkNeighborIds(neighbor_ids);
+}
+
+TEST(GraphTests, NeighborIdsSerialization) {
+  NeighborIds neighbor_ids("id", "nbrs");
+
+  auto new_transform = Transformation::deserialize(neighbor_ids.serialize());
+
+  checkNeighborIds(*new_transform);
+}
+
+void checkNeighborFeatures(const Transformation& neighbor_features) {
+  auto state = buildGraph(getBuilder());
 
   ColumnMap columns(
       {{"id", ValueColumn<uint32_t>::make({4, 3, 2, 1}, std::nullopt)}});
-
-  NeighborFeatures neighbor_features("id", "normalized_features");
 
   columns = neighbor_features.apply(columns, state);
 
@@ -94,6 +128,21 @@ TEST(GraphTests, NeighborFeatures) {
                       output.at(row).at(col));
     }
   }
+}
+
+TEST(GraphTests, NeighborFeatures) {
+  NeighborFeatures neighbor_features("id", "normalized_features");
+
+  checkNeighborFeatures(neighbor_features);
+}
+
+TEST(GraphTests, NeighborFeaturesSerialization) {
+  NeighborFeatures neighbor_features("id", "normalized_features");
+
+  auto new_transform =
+      Transformation::deserialize(neighbor_features.serialize());
+
+  checkNeighborFeatures(*new_transform);
 }
 
 }  // namespace thirdai::data::tests

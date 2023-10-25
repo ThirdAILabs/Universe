@@ -1,9 +1,10 @@
 #include "TextTokenizer.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <data/src/columns/ArrayColumns.h>
+#include <dataset/src/blocks/text/TextEncoder.h>
+#include <dataset/src/blocks/text/TextTokenizer.h>
+#include <dataset/src/blocks/text/WordpieceTokenizer.h>
+#include <proto/tokenizers.pb.h>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -23,6 +24,49 @@ TextTokenizer::TextTokenizer(std::string input_column,
       _encoder(std::move(encoder)),
       _lowercase(lowercase),
       _dim(dim) {}
+
+TextTokenizer::TextTokenizer(const proto::data::TextTokenizer& text)
+    : _input_column(text.input_column()),
+      _output_indices(text.output_indices()),
+      _lowercase(text.lowercase()),
+      _dim(text.dim()) {
+  if (text.has_output_values()) {
+    _output_values = text.output_values();
+  }
+
+  switch (text.tokenizer().tokenizer_case()) {
+    case proto::data::Tokenizer::kWordpiece:
+      _tokenizer = std::make_shared<dataset::WordpieceTokenizer>(
+          text.tokenizer().wordpiece());
+      break;
+    case proto::data::Tokenizer::kSplit:
+      _tokenizer = dataset::NaiveSplitTokenizer::make(
+          text.tokenizer().split().delimiter());
+      break;
+    case proto::data::Tokenizer::kWordPunct:
+      _tokenizer = dataset::WordPunctTokenizer::make();
+      break;
+    case proto::data::Tokenizer::kCharKgram:
+      _tokenizer =
+          dataset::CharKGramTokenizer::make(text.tokenizer().char_kgram().k());
+      break;
+    default:
+      throw std::invalid_argument(
+          "Invalid text tokenizer specified in fromProto.");
+  }
+
+  switch (text.encoder().encoder_case()) {
+    case proto::data::TextEncoder::kNgram:
+      _encoder = dataset::NGramEncoder::make(text.encoder().ngram().n());
+      break;
+    case proto::data::TextEncoder::kPairgram:
+      _encoder = dataset::PairGramEncoder::make();
+      break;
+    default:
+      throw std::invalid_argument(
+          "Invalid text encoder specified in fromProto.");
+  }
+}
 
 ColumnMap TextTokenizer::apply(ColumnMap columns, State& state) const {
   (void)state;
@@ -95,6 +139,23 @@ void TextTokenizer::buildExplanationMap(const ColumnMap& input, State& state,
   }
 }
 
+proto::data::Transformation* TextTokenizer::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* text = transformation->mutable_text_tokenizer();
+
+  text->set_input_column(_input_column);
+  text->set_output_indices(_output_indices);
+  if (_output_values) {
+    text->set_output_values(*_output_values);
+  }
+  text->set_allocated_tokenizer(_tokenizer->toProto());
+  text->set_allocated_encoder(_encoder->toProto());
+  text->set_lowercase(_lowercase);
+  text->set_dim(_dim);
+
+  return transformation;
+}
+
 std::pair<std::vector<uint32_t>, std::vector<float>>
 TextTokenizer::deduplicateIndices(std::vector<uint32_t>&& tokens) {
   if (tokens.empty()) {
@@ -124,16 +185,4 @@ TextTokenizer::deduplicateIndices(std::vector<uint32_t>&& tokens) {
   return {std::move(indices), std::move(values)};
 }
 
-template void TextTokenizer::serialize(cereal::BinaryInputArchive&);
-template void TextTokenizer::serialize(cereal::BinaryOutputArchive&);
-
-template <class Archive>
-void TextTokenizer::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _input_column,
-          _output_indices, _output_values, _tokenizer, _encoder, _lowercase,
-          _dim);
-}
-
 }  // namespace thirdai::data
-
-CEREAL_REGISTER_TYPE(thirdai::data::TextTokenizer)

@@ -1,7 +1,4 @@
 #include "CategoricalTemporal.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/Transformation.h>
 #include <limits>
@@ -26,6 +23,18 @@ CategoricalTemporal::CategoricalTemporal(
       _should_update_history(should_update_history),
       _include_current_row(include_current_row),
       _time_lag(time_lag) {}
+
+CategoricalTemporal::CategoricalTemporal(
+    const proto::data::CategoricalTemporal& cat_temp)
+    : _user_column(cat_temp.user_column()),
+      _item_column(cat_temp.item_column()),
+      _timestamp_column(cat_temp.timestamp_column()),
+      _output_column(cat_temp.output_column()),
+      _tracker_key(cat_temp.tracker_key()),
+      _track_last_n(cat_temp.track_last_n()),
+      _should_update_history(cat_temp.should_update_history()),
+      _include_current_row(cat_temp.include_current_row()),
+      _time_lag(cat_temp.time_lag()) {}
 
 ColumnMap CategoricalTemporal::apply(ColumnMap columns, State& state) const {
   auto user_col = columns.getValueColumn<std::string>(_user_column);
@@ -112,16 +121,22 @@ void CategoricalTemporal::buildExplanationMap(
   }
 }
 
-template void CategoricalTemporal::serialize(cereal::BinaryInputArchive&);
-template void CategoricalTemporal::serialize(cereal::BinaryOutputArchive&);
+proto::data::Transformation* CategoricalTemporal::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* categorical_temporal = transformation->mutable_categorical_temporal();
 
-template <class Archive>
-void CategoricalTemporal::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _user_column, _item_column,
-          _timestamp_column, _output_column, _tracker_key, _track_last_n,
-          _include_current_row, _should_update_history, _time_lag);
+  categorical_temporal->set_user_column(_user_column);
+  categorical_temporal->set_item_column(_item_column);
+  categorical_temporal->set_timestamp_column(_timestamp_column);
+  categorical_temporal->set_output_column(_output_column);
+  categorical_temporal->set_tracker_key(_tracker_key);
+
+  categorical_temporal->set_track_last_n(_track_last_n);
+  categorical_temporal->set_should_update_history(_should_update_history);
+  categorical_temporal->set_include_current_row(_include_current_row);
+  categorical_temporal->set_time_lag(_time_lag);
+
+  return transformation;
 }
 
 }  // namespace thirdai::data
-
-CEREAL_REGISTER_TYPE(thirdai::data::CategoricalTemporal)

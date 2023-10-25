@@ -1,0 +1,21 @@
+syntax = "proto2";
+
+package proto.data;
+
+message CountTokens {
+  required string input_column = 1;
+  required string output_column = 2;
+  optional uint64 max_tokens = 3;
+}
+
+message HashedPositionEncoding {
+  required string input_column = 1;
+  required string output_column = 2;
+  required uint64 dim = 3;
+}
+
+message OffsetPositionEncoding {
+  required string input_column = 1;
+  required string output_column = 2;
+  required uint64 max_tokens = 3;
+}

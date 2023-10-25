@@ -1,9 +1,8 @@
 #include "Graph.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/vector.hpp>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
+#include <proto/graph.pb.h>
+#include <proto/transformations.pb.h>
 #include <exception>
 #include <limits>
 #include <numeric>
@@ -18,6 +17,12 @@ GraphBuilder::GraphBuilder(std::string node_id_column,
     : _node_id_column(std::move(node_id_column)),
       _neighbors_column(std::move(neighbors_column)),
       _feature_columns(std::move(feature_columns)) {}
+
+GraphBuilder::GraphBuilder(const proto::data::GraphBuilder& graph_builder)
+    : _node_id_column(graph_builder.node_id_column()),
+      _neighbors_column(graph_builder.neighbors_column()),
+      _feature_columns(graph_builder.feature_columns().begin(),
+                       graph_builder.feature_columns().end()) {}
 
 ColumnMap GraphBuilder::apply(ColumnMap columns, State& state) const {
   std::vector<ValueColumnBasePtr<float>> features;
@@ -57,19 +62,26 @@ ColumnMap GraphBuilder::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
-template void GraphBuilder::serialize(cereal::BinaryInputArchive&);
-template void GraphBuilder::serialize(cereal::BinaryOutputArchive&);
+proto::data::Transformation* GraphBuilder::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* graph_builder = transformation->mutable_graph_builder();
 
-template <class Archive>
-void GraphBuilder::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _node_id_column,
-          _neighbors_column, _feature_columns);
+  graph_builder->set_node_id_column(_node_id_column);
+  graph_builder->set_neighbors_column(_neighbors_column);
+  *graph_builder->mutable_feature_columns() = {_feature_columns.begin(),
+                                               _feature_columns.end()};
+
+  return transformation;
 }
 
 NeighborIds::NeighborIds(std::string node_id_column,
                          std::string output_neighbors_column)
     : _node_id_column(std::move(node_id_column)),
       _output_neighbors_column(std::move(output_neighbors_column)) {}
+
+NeighborIds::NeighborIds(const proto::data::NeighborIds& nbr_ids)
+    : _node_id_column(nbr_ids.node_id_column()),
+      _output_neighbors_column(nbr_ids.output_column()) {}
 
 ColumnMap NeighborIds::apply(ColumnMap columns, State& state) const {
   auto node_ids = columns.getValueColumn<uint32_t>(_node_id_column);
@@ -107,19 +119,25 @@ ColumnMap NeighborIds::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
-template void NeighborIds::serialize(cereal::BinaryInputArchive&);
-template void NeighborIds::serialize(cereal::BinaryOutputArchive&);
+proto::data::Transformation* NeighborIds::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* neighbor_ids = transformation->mutable_neighbor_ids();
 
-template <class Archive>
-void NeighborIds::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _node_id_column,
-          _output_neighbors_column);
+  neighbor_ids->set_node_id_column(_node_id_column);
+  neighbor_ids->set_output_column(_output_neighbors_column);
+
+  return transformation;
 }
 
 NeighborFeatures::NeighborFeatures(std::string node_id_column,
                                    std::string output_feature_column)
     : _node_id_column(std::move(node_id_column)),
       _output_features_column(std::move(output_feature_column)) {}
+
+NeighborFeatures::NeighborFeatures(
+    const proto::data::NeighborFeatures& nbr_features)
+    : _node_id_column(nbr_features.node_id_column()),
+      _output_features_column(nbr_features.output_column()) {}
 
 ColumnMap NeighborFeatures::apply(ColumnMap columns, State& state) const {
   auto node_ids = columns.getValueColumn<uint32_t>(_node_id_column);
@@ -173,17 +191,14 @@ ColumnMap NeighborFeatures::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
-template void NeighborFeatures::serialize(cereal::BinaryInputArchive&);
-template void NeighborFeatures::serialize(cereal::BinaryOutputArchive&);
+proto::data::Transformation* NeighborFeatures::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* neighbor_features = transformation->mutable_neighbor_features();
 
-template <class Archive>
-void NeighborFeatures::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _node_id_column,
-          _output_features_column);
+  neighbor_features->set_node_id_column(_node_id_column);
+  neighbor_features->set_output_column(_output_features_column);
+
+  return transformation;
 }
 
 }  // namespace thirdai::data
-
-CEREAL_REGISTER_TYPE(thirdai::data::GraphBuilder)
-CEREAL_REGISTER_TYPE(thirdai::data::NeighborIds)
-CEREAL_REGISTER_TYPE(thirdai::data::NeighborFeatures)

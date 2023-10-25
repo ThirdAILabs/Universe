@@ -1,0 +1,10 @@
+syntax = "proto2";
+
+package proto.data;
+
+message DeduplicateTokens {
+  required string input_indices_column = 1;
+  optional string input_values_column = 2;
+  required string output_indices_column = 3;
+  required string output_values_column = 4;
+}

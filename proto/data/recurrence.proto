@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+package proto.data;
+
+message RecurrenceAugmentation {
+  required string source_input_column = 1;
+  required string target_input_column = 2;
+  required string source_output_column = 3;
+  required string target_output_column = 4;
+  required uint64 target_vocab_size = 5;
+  required uint64 max_seq_len = 6;
+}

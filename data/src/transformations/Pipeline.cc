@@ -1,12 +1,13 @@
 #include "Pipeline.h"
-#include <cereal/access.hpp>
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/polymorphic.hpp>
-#include <cereal/types/vector.hpp>
 #include <data/src/ColumnMap.h>
 
 namespace thirdai::data {
+
+Pipeline::Pipeline(const proto::data::Transformation_Pipeline& pipeline) {
+  for (const auto& transformation : pipeline.transformations()) {
+    _transformations.push_back(Transformation::fromProto(transformation));
+  }
+}
 
 void Pipeline::buildExplanationMap(const ColumnMap& input, State& state,
                                    ExplanationMap& explanations) const {
@@ -20,35 +21,17 @@ void Pipeline::buildExplanationMap(const ColumnMap& input, State& state,
   }
 }
 
-void Pipeline::save(const std::string& filename) const {
-  std::ofstream filestream =
-      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  save_stream(filestream);
-}
+proto::data::Transformation* Pipeline::toProto() const {
+  auto* transformation = new proto::data::Transformation();
 
-void Pipeline::save_stream(std::ostream& output_stream) const {
-  cereal::BinaryOutputArchive oarchive(output_stream);
-  oarchive(*this);
-}
+  auto* pipeline = transformation->mutable_pipeline();
 
-PipelinePtr Pipeline::load(const std::string& filename) {
-  std::ifstream filestream =
-      dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-  return load_stream(filestream);
-}
+  for (const auto& transformation : _transformations) {
+    pipeline->mutable_transformations()->AddAllocated(
+        transformation->toProto());
+  }
 
-PipelinePtr Pipeline::load_stream(std::istream& input_stream) {
-  cereal::BinaryInputArchive iarchive(input_stream);
-  PipelinePtr deserialize_into(new Pipeline());
-  iarchive(*deserialize_into);
-  return deserialize_into;
-}
-
-template <class Archive>
-void Pipeline::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _transformations);
+  return transformation;
 }
 
 }  // namespace thirdai::data
-
-CEREAL_REGISTER_TYPE(thirdai::data::Pipeline)

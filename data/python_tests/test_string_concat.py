@@ -3,8 +3,9 @@ from dataset_utils import get_random_str_column
 from thirdai import data
 
 
+@pytest.mark.parametrize("serialize", [True, False])
 @pytest.mark.unit
-def test_string_concat():
+def test_string_concat(serialize):
     ROWS = 1000
 
     columns = {f"col_{i}": get_random_str_column(ROWS) for i in range(10)}
@@ -14,6 +15,8 @@ def test_string_concat():
     transformation = data.transformations.StringConcat(
         input_columns, "output", seperator="#"
     )
+    if serialize:
+        transformation = data.transformations.deserialize(transformation.serialize())
 
     columns = transformation(columns)
 

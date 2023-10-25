@@ -1,5 +1,6 @@
 #include "PatchEmbedding.h"
 #include <bolt/src/nn/autograd/Computation.h>
+#include <bolt/src/nn/ops/protobuf_utils/Conversions.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <stdexcept>
 
@@ -32,6 +33,19 @@ PatchEmbedding::PatchEmbedding(size_t emb_dim, size_t patch_dim,
   _kernel = std::make_unique<FullyConnectedLayer>(
       config, patch_dim, /* disable_sparse_sparse_updates */ false, use_bias);
 }
+
+PatchEmbedding::PatchEmbedding(
+    const std::string& name, const proto::bolt::PatchEmbedding& patch_emb_proto,
+    DeserializedParameters& parameters)
+    : Op(name),
+      _kernel(std::make_unique<FullyConnectedLayer>(patch_emb_proto.kernel(),
+                                                    parameters)),
+      _n_patches(patch_emb_proto.n_patches()),
+      _rebuild_hash_tables(patch_emb_proto.kernel().rebuild_hash_tables()),
+      _reconstruct_hash_functions(
+          patch_emb_proto.kernel().reconstruct_hash_functions()),
+      _updates_since_rebuild_hash_tables(0),
+      _updates_since_reconstruct_hash_functions(0) {}
 
 void PatchEmbedding::forward(const ComputationList& inputs, TensorPtr& output,
                              uint32_t index_in_batch, bool training) {
@@ -153,7 +167,14 @@ void PatchEmbedding::setSerializeOptimizer(bool should_serialize_optimizer) {
   _kernel->saveWithOptimizer(should_serialize_optimizer);
 }
 
-ComputationPtr PatchEmbedding::apply(ComputationPtr input) {
+ComputationPtr PatchEmbedding::apply(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("PatchEmbedding op expects a single input.");
+  }
+  return applyUnary(inputs.at(0));
+}
+
+ComputationPtr PatchEmbedding::applyUnary(ComputationPtr input) {
   if (input->dim() != _kernel->getInputDim() * _n_patches) {
     std::stringstream error;
     error << "Cannot apply PatchEmbedding op with weight matrix of shape ("
@@ -189,6 +210,39 @@ size_t PatchEmbedding::patchNonzeros(bool use_sparsity) const {
     return _kernel->getSparseDim();
   }
   return _kernel->getDim();
+}
+
+proto::bolt::Op* PatchEmbedding::toProto(bool with_optimizer) const {
+  auto* op = new proto::bolt::Op();
+  auto* patch_emb = op->mutable_patch_emb();
+
+  patch_emb->set_allocated_kernel(_kernel->toProto(name(), with_optimizer));
+  patch_emb->set_n_patches(_n_patches);
+
+  return op;
+}
+
+SerializableParameters PatchEmbedding::serializableParameters(
+    bool with_optimizer) const {
+  (void)with_optimizer;
+  SerializableParameters parameters = {{weightsName(), &_kernel->weights()},
+                                       {biasesName(), &_kernel->biases()}};
+  if (with_optimizer && _kernel->_weight_optimizer &&
+      _kernel->_bias_optimizer) {
+    addOptimizerParameters(*_kernel->_weight_optimizer, weightsName(),
+                           parameters);
+
+    addOptimizerParameters(*_kernel->_bias_optimizer, biasesName(), parameters);
+  }
+
+  return parameters;
+}
+
+std::shared_ptr<PatchEmbedding> PatchEmbedding::fromProto(
+    const std::string& name, const proto::bolt::PatchEmbedding& patch_emb_proto,
+    DeserializedParameters& parameters) {
+  return std::shared_ptr<PatchEmbedding>(
+      new PatchEmbedding(name, patch_emb_proto, parameters));
 }
 
 }  // namespace thirdai::bolt

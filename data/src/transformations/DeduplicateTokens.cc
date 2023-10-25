@@ -2,6 +2,8 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <data/src/transformations/DeduplicateTokens.h>
+#include <proto/deduplicate_tokens.pb.h>
+#include <proto/transformations.pb.h>
 #include <exception>
 #include <new>
 #include <optional>
@@ -9,7 +11,18 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
 namespace thirdai::data {
+
+DeduplicateTokens::DeduplicateTokens(
+    const proto::data::DeduplicateTokens& deduplicate_tokens)
+    : _input_indices_column(deduplicate_tokens.input_indices_column()),
+      _output_indices_column(deduplicate_tokens.output_indices_column()),
+      _output_values_column(deduplicate_tokens.output_values_column()) {
+  if (deduplicate_tokens.has_input_values_column()) {
+    _input_values_column = deduplicate_tokens.input_values_column();
+  }
+}
 
 ColumnMap DeduplicateTokens::apply(ColumnMap columns, State& state) const {
   (void)state;
@@ -67,6 +80,20 @@ ColumnMap DeduplicateTokens::apply(ColumnMap columns, State& state) const {
       ArrayColumn<float>::make(std::move(deduped_values), std::nullopt));
 
   return columns;
+}
+
+proto::data::Transformation* DeduplicateTokens::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* deduplicate_tokens = transformation->mutable_deduplicate_tokens();
+
+  deduplicate_tokens->set_input_indices_column(_input_indices_column);
+  if (_input_values_column) {
+    deduplicate_tokens->set_input_values_column(*_input_values_column);
+  }
+  deduplicate_tokens->set_output_indices_column(_output_indices_column);
+  deduplicate_tokens->set_output_values_column(_output_values_column);
+
+  return transformation;
 }
 
 }  // namespace thirdai::data

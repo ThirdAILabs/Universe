@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+package proto.data;
+
+message DyadicInterval {
+  optional string prompt_column = 1;
+  required string input_column = 2;
+  required string output_interval_prefix = 3;
+  required string target_column = 4;
+  required uint64 n_intervals = 5;
+  required bool bidirectional = 6;
+}

@@ -21,10 +21,14 @@ class FeatureHash final : public Transformation {
               std::string output_indices_column,
               std::string output_values_columns, size_t hash_range);
 
+  explicit FeatureHash(const proto::data::FeatureHash& feature_hash);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
+
+  proto::data::Transformation* toProto() const final;
 
   const auto& inputColumns() const { return _input_columns; }
 
@@ -37,17 +41,11 @@ class FeatureHash final : public Transformation {
     return hashing::MurmurHash(name.data(), name.size(), 932042);
   }
 
-  size_t _hash_range;
-
   std::vector<std::string> _input_columns;
   std::string _output_indices_column;
   std::string _output_values_column;
 
-  FeatureHash() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
+  size_t _hash_range;
 };
 
 }  // namespace thirdai::data

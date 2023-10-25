@@ -13,6 +13,9 @@ class PatchSum final : public Op,
  private:
   PatchSum(size_t n_patches, size_t patch_dim);
 
+  PatchSum(const std::string& name,
+           const proto::bolt::PatchSum& patch_sum_proto);
+
  public:
   static auto make(size_t n_patches, size_t patch_dim) {
     return std::shared_ptr<PatchSum>(new PatchSum(n_patches, patch_dim));
@@ -46,7 +49,17 @@ class PatchSum final : public Op,
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final;
 
-  ComputationPtr apply(ComputationPtr input);
+  ComputationPtr apply(const ComputationList& inputs) final;
+
+  ComputationPtr applyUnary(ComputationPtr input);
+
+  proto::bolt::Op* toProto(bool with_optimizer) const final;
+
+  SerializableParameters serializableParameters(
+      bool with_optimizer) const final;
+
+  static std::shared_ptr<PatchSum> fromProto(
+      const std::string& name, const proto::bolt::PatchSum& patch_sum_proto);
 
  private:
   size_t _n_patches, _patch_dim;

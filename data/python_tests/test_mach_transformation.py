@@ -2,8 +2,9 @@ import pytest
 from thirdai import data, dataset
 
 
+@pytest.mark.parametrize("serialize", [True, False])
 @pytest.mark.unit
-def test_mach_transformation():
+def test_mach_transformation(serialize):
     columns = data.ColumnMap(
         {"ids": data.columns.TokenArrayColumn([[0, 2], [1], [0, 1, 3]])}
     )
@@ -12,6 +13,8 @@ def test_mach_transformation():
         input_column="ids",
         output_column="hashes",
     )
+    if serialize:
+        transformation = data.transformations.deserialize(transformation.serialize())
 
     index = dataset.MachIndex(
         entity_to_hashes={0: [4, 7, 2], 1: [8, 0, 3], 2: [7, 1, 5], 3: [9, 6, 0]},

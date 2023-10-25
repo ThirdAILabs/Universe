@@ -1,7 +1,4 @@
 #include "FeatureHash.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
 #include <data/src/columns/ArrayColumns.h>
@@ -17,10 +14,17 @@ namespace thirdai::data {
 FeatureHash::FeatureHash(std::vector<std::string> input_columns,
                          std::string output_indices_column,
                          std::string output_values_column, size_t hash_range)
-    : _hash_range(hash_range),
-      _input_columns(std::move(input_columns)),
+    : _input_columns(std::move(input_columns)),
       _output_indices_column(std::move(output_indices_column)),
-      _output_values_column(std::move(output_values_column)) {}
+      _output_values_column(std::move(output_values_column)),
+      _hash_range(hash_range) {}
+
+FeatureHash::FeatureHash(const proto::data::FeatureHash& feature_hash)
+    : _input_columns(feature_hash.input_columns().begin(),
+                     feature_hash.input_columns().end()),
+      _output_indices_column(feature_hash.output_indices_column()),
+      _output_values_column(feature_hash.output_values_column()),
+      _hash_range(feature_hash.hash_range()) {}
 
 ColumnMap FeatureHash::apply(ColumnMap columns, State& state) const {
   (void)state;
@@ -128,15 +132,17 @@ void FeatureHash::buildExplanationMap(const ColumnMap& input, State& state,
   }
 }
 
-template void FeatureHash::serialize(cereal::BinaryInputArchive&);
-template void FeatureHash::serialize(cereal::BinaryOutputArchive&);
+proto::data::Transformation* FeatureHash::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* feature_hash = transformation->mutable_feature_hash();
 
-template <class Archive>
-void FeatureHash::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _hash_range, _input_columns,
-          _output_indices_column, _output_values_column);
+  *feature_hash->mutable_input_columns() = {_input_columns.begin(),
+                                            _input_columns.end()};
+  feature_hash->set_output_indices_column(_output_indices_column);
+  feature_hash->set_output_values_column(_output_values_column);
+  feature_hash->set_hash_range(_hash_range);
+
+  return transformation;
 }
 
 }  // namespace thirdai::data
-
-CEREAL_REGISTER_TYPE(thirdai::data::FeatureHash)

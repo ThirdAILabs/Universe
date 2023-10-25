@@ -1,6 +1,4 @@
 #include "Date.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
 #include <data/src/columns/ArrayColumns.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <exception>
@@ -30,6 +28,11 @@ Date::Date(std::string input_column_name, std::string output_column_name,
     : _input_column_name(std::move(input_column_name)),
       _output_column_name(std::move(output_column_name)),
       _format(std::move(format)) {}
+
+Date::Date(const proto::data::Date& date)
+    : _input_column_name(date.input_column()),
+      _output_column_name(date.output_column()),
+      _format(date.format()) {}
 
 ColumnMap Date::apply(ColumnMap columns, State& state) const {
   (void)state;
@@ -109,15 +112,15 @@ void Date::buildExplanationMap(const ColumnMap& input, State& state,
                         " from " + origin);
 }
 
-template void Date::serialize(cereal::BinaryInputArchive&);
-template void Date::serialize(cereal::BinaryOutputArchive&);
+proto::data::Transformation* Date::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* date = transformation->mutable_date();
 
-template <class Archive>
-void Date::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _input_column_name,
-          _output_column_name, _format);
+  date->set_input_column(_input_column_name);
+  date->set_output_column(_output_column_name);
+  date->set_format(_format);
+
+  return transformation;
 }
 
 }  // namespace thirdai::data
-
-CEREAL_REGISTER_TYPE(thirdai::data::Date)

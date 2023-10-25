@@ -5,6 +5,7 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Transformation.h>
+#include <proto/transformations.pb.h>
 #include <exception>
 #include <string>
 #include <unordered_map>
@@ -22,6 +23,13 @@ DyadicInterval::DyadicInterval(std::string input_column,
       _target_column(std::move(target_column)),
       _is_bidirectional(is_bidirectional),
       _n_intervals(n_intervals) {}
+
+DyadicInterval::DyadicInterval(
+    const proto::data::DyadicInterval& dyadic_interval)
+    : _input_column(dyadic_interval.input_column()),
+      _output_interval_prefix(dyadic_interval.output_interval_prefix()),
+      _target_column(dyadic_interval.target_column()),
+      _n_intervals(dyadic_interval.n_intervals()) {}
 
 ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
   (void)state;
@@ -203,14 +211,16 @@ ColumnMap DyadicInterval::inferenceFeaturization(ColumnMap columns) const {
   return columns;
 }
 
-template void DyadicInterval::serialize(cereal::BinaryInputArchive&);
-template void DyadicInterval::serialize(cereal::BinaryOutputArchive&);
+proto::data::Transformation* DyadicInterval::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+  auto* dyadic_interval = transformation->mutable_dyadic_interval();
 
-template <class Archive>
-void DyadicInterval::serialize(Archive& archive) {
-  archive(cereal::base_class<Transformation>(this), _input_column,
-          _output_interval_prefix, _target_column, _n_intervals,
-          _is_bidirectional, _prompt_column);
+  dyadic_interval->set_input_column(_input_column);
+  dyadic_interval->set_output_interval_prefix(_output_interval_prefix);
+  dyadic_interval->set_target_column(_target_column);
+  dyadic_interval->set_n_intervals(_n_intervals);
+
+  return transformation;
 }
 
 }  // namespace thirdai::data
