@@ -1149,10 +1149,11 @@ class SharePoint(DocumentConnector):
         )
         self._name = self._connector.site_name + "_" + self.library_path
         self._hash = hash_string(self._connector.url + "/" + library_path)
+        self._size = sum([len(chunk) for chunk in self.next_chunk()])
 
     @property
     def size(self) -> int:
-        return len(self.meta_table)
+        return self._size
 
     @property
     def name(self) -> str:
@@ -1170,7 +1171,7 @@ class SharePoint(DocumentConnector):
         return list(range(self.size))
 
     def reference(self, element_id: int) -> Reference:
-        if element_id >= len(self.df):
+        if element_id >= self.size:
             _raise_unknown_doc_error(element_id)
 
         return Reference(
