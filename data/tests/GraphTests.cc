@@ -43,7 +43,7 @@ State buildGraph(const TransformationPtr& builder) {
   return state;
 }
 
-void checkGraph(const automl::data::GraphInfoPtr& graph) {
+void checkGraph(const automl::GraphInfoPtr& graph) {
   ASSERT_EQ(graph->neighbors(1), std::vector<uint64_t>({1, 2, 3}));
   ASSERT_EQ(graph->neighbors(2), std::vector<uint64_t>({4, 1}));
   ASSERT_EQ(graph->neighbors(3), std::vector<uint64_t>({2}));
