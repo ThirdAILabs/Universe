@@ -877,10 +877,7 @@ class SQLDatabase(DocumentConnector):
 
         self._connector = SQLConnector(
             engine=engine,
-            columns=[self.id_col]
-            + self.strong_columns
-            + self.weak_columns
-            + self.reference_columns,
+            columns=None,
             table_name=self.table_name,
             chunk_size=chunk_size,
         )
@@ -896,6 +893,9 @@ class SQLDatabase(DocumentConnector):
         self.assert_valid_id()
         self.assert_valid_columns()
         self.assert_uniqueness()
+
+        # setting the columns in the conector object
+        self._connector.columns = list(set([self.id_col] + self.strong_columns + self.weak_columns))
 
     @property
     def name(self):
