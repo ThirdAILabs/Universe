@@ -78,7 +78,7 @@ ModelPtr SeismicClassifier::addClassifierHead(const ModelPtr& emb_model,
 
   auto patch_sum_op =
       std::dynamic_pointer_cast<PatchSum>(emb_model->getOp("patch_sum"));
-  auto patch_sum = patch_emb_op->apply(patch_emb);
+  auto patch_sum = patch_sum_op->apply(patch_emb);
 
   auto emb_op =
       std::dynamic_pointer_cast<FullyConnected>(emb_model->getOp("emb"));

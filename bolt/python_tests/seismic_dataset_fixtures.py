@@ -46,7 +46,9 @@ def subcube_dataset():
 
     yield subcube_dir, SUBCUBE_SHAPE, PATCH_SHAPE
 
-    shutil.rmtree(subcube_dir)
+    if os.path.exists(subcube_dir):
+        # This check is to fix an error that was occuring during teardown.
+        shutil.rmtree(subcube_dir)
 
 
 @pytest.fixture(scope="session")
