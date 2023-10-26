@@ -152,9 +152,9 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
     }
   }
 
-  // if output_samples.size() < 1 then either the weak text is too short,
-  // or there is only strong text, or the sample is empty, in which case
-  // we don't want to add the whole doc since we're in a degenerate case.
+  // if output_samples.size() < 1 then either the weak text is too short, or
+  // there is only strong text, or the sample is empty, in which case we don't
+  // want to add the whole doc since we're in a degenerate case.
   if (_add_whole_doc && output_samples.size() > 1) {
     output_samples.push_back(strong_text + " " + weak_text);
   }
