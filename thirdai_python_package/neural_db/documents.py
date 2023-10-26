@@ -1432,6 +1432,12 @@ class Salesforce(DocumentConnector):
         elif self.weak_columns is None:
             self.weak_columns = []
 
+        if self.reference_columns is None:
+            self.reference_columns = []
+            for field in fields:
+                if field['name'] != self.id_col and field['type'] == 'string':
+                    self.reference_columns.append(field['name'])
+
     def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
 
