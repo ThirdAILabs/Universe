@@ -8,59 +8,59 @@ from seismic_dataset_fixtures import classification_dataset, subcube_dataset
 from thirdai import bolt
 
 
-# @pytest.mark.unit
-# @pytest.mark.parametrize("max_pool", [None, 2])
-# def test_seismic_embedding_model(subcube_dataset, max_pool):
-#     subcube_directory, subcube_shape, patch_shape = subcube_dataset
-#     emb_dim = 100
-#     model = bolt.seismic.SeismicEmbedding(
-#         subcube_shape=subcube_shape[0],
-#         patch_shape=patch_shape[0],
-#         embedding_dim=emb_dim,
-#         size="small",
-#         max_pool=max_pool,
-#     )
+@pytest.mark.unit
+@pytest.mark.parametrize("max_pool", [None, 2])
+def test_seismic_embedding_model(subcube_dataset, max_pool):
+    subcube_directory, subcube_shape, patch_shape = subcube_dataset
+    emb_dim = 100
+    model = bolt.seismic.SeismicEmbedding(
+        subcube_shape=subcube_shape[0],
+        patch_shape=patch_shape[0],
+        embedding_dim=emb_dim,
+        size="small",
+        max_pool=max_pool,
+    )
 
-#     class Validation:
-#         def __init__(self):
-#             self.invocation_cnt = 0
+    class Validation:
+        def __init__(self):
+            self.invocation_cnt = 0
 
-#         def __call__(self, model):
-#             self.invocation_cnt += 1
+        def __call__(self, model):
+            self.invocation_cnt += 1
 
-#     validation_fn = Validation()
+    validation_fn = Validation()
 
-#     model.train(
-#         subcube_directory=subcube_directory,
-#         learning_rate=0.0001,
-#         epochs=1,
-#         batch_size=8,
-#         validation_fn=validation_fn,
-#     )
+    model.train(
+        subcube_directory=subcube_directory,
+        learning_rate=0.0001,
+        epochs=1,
+        batch_size=8,
+        validation_fn=validation_fn,
+    )
 
-#     assert validation_fn.invocation_cnt == 1
+    assert validation_fn.invocation_cnt == 1
 
-#     n_cubes_to_embed = 4
-#     subcubes_to_embed = (
-#         np.random.rand(n_cubes_to_embed, *subcube_shape).astype(np.float32) / 10
-#     )
+    n_cubes_to_embed = 4
+    subcubes_to_embed = (
+        np.random.rand(n_cubes_to_embed, *subcube_shape).astype(np.float32) / 10
+    )
 
-#     embs = model.embeddings(subcubes_to_embed)
+    embs = model.embeddings(subcubes_to_embed)
 
-#     assert embs.shape == (n_cubes_to_embed, emb_dim)
+    assert embs.shape == (n_cubes_to_embed, emb_dim)
 
-#     eval_dir = "./eval_subcubes"
-#     os.makedirs(eval_dir, exist_ok=True)
+    eval_dir = "./eval_subcubes"
+    os.makedirs(eval_dir, exist_ok=True)
 
-#     np.save(os.path.join(eval_dir, "tgt.npy"), subcubes_to_embed[0])
-#     for i in range(n_cubes_to_embed):
-#         np.save(os.path.join(eval_dir, f"candidate_{i}.npy"), subcubes_to_embed[i])
+    np.save(os.path.join(eval_dir, "tgt.npy"), subcubes_to_embed[0])
+    for i in range(n_cubes_to_embed):
+        np.save(os.path.join(eval_dir, f"candidate_{i}.npy"), subcubes_to_embed[i])
 
-#     sims = model.score_subcubes(eval_dir)
+    sims = model.score_subcubes(eval_dir)
 
-#     assert set([x[0] for x in sims]) == set(
-#         f"candidate_{i}.npy" for i in range(n_cubes_to_embed)
-#     )
+    assert set([x[0] for x in sims]) == set(
+        f"candidate_{i}.npy" for i in range(n_cubes_to_embed)
+    )
 
 
 # @pytest.mark.unit
