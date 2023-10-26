@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/optional.hpp>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <data/src/ColumnMap.h>
 
 namespace thirdai::data {
@@ -49,5 +50,10 @@ std::vector<bolt::TensorList> toTensorBatches(
 
 bolt::TensorList toTensors(const ColumnMap& columns,
                            const OutputColumnsList& columns_to_convert);
+
+bolt::LabeledDataset toLabeledDataset(const ColumnMap& column,
+                                      const OutputColumnsList& input_columns,
+                                      const OutputColumnsList& label_columns,
+                                      size_t batch_size);
 
 }  // namespace thirdai::data
