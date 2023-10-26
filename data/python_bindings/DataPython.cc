@@ -59,7 +59,8 @@ void createDataSubmodule(py::module_& dataset_submodule) {
       .def("columns", &ColumnMap::columns)
       .def("shuffle", &ColumnMap::shuffle,
            py::arg("seed") = global_random::nextSeed())
-      .def("concat", &ColumnMap::concat, py::arg("other"))
+      .def("concat", py::overload_cast<ColumnMap&>(&ColumnMap::concat),
+           py::arg("other"))
       .def("split", &ColumnMap::split, py::arg("offset"));
 
   createColumnsSubmodule(dataset_submodule);

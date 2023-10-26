@@ -108,8 +108,24 @@ UDTMachClassifier::UDTMachClassifier(
   }
 
   dataset::mach::MachIndexPtr mach_index = dataset::mach::MachIndex::make(
-      /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes,
-      /* num_elements = */ n_target_classes);
+      /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes);
+
+  std::mt19937 mt(341);
+
+  for (size_t i = 0; i < n_target_classes; i++) {
+    std::vector<uint32_t> hashes(num_hashes);
+    for (uint32_t h = 0; h < num_hashes; h++) {
+      std::uniform_int_distribution<uint32_t> dist(
+          0, mach_index->numBuckets() - 1);
+      auto hash = dist(mt);
+      while (std::find(hashes.begin(), hashes.end(), hash) != hashes.end()) {
+        hash = dist(mt);
+      }
+      hashes[h] = hash;
+    }
+
+    mach_index->insert(i, std::move(hashes));
+  }
 
   auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
       input_data_types, temporal_tracking_relationships,

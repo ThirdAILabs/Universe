@@ -224,7 +224,7 @@ class Mach {
   data::OutputColumnsList _bolt_label_columns;
   std::vector<std::string> _all_bolt_columns;
 
-  std::mt19937 _mt;
+  std::mt19937 _mt{341};
 
   friend class cereal::access;
   template <typename Archive>

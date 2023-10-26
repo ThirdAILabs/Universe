@@ -443,6 +443,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/featurization/GraphFeaturizer.cc
     auto_ml/src/featurization/RecurrentFeaturizer.cc
     auto_ml/src/featurization/ReservedColumns.cc
+    auto_ml/src/rlhf/RLHFSampler.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
