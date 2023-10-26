@@ -26,6 +26,8 @@ class MachIndex {
 
   void insert(uint32_t entity, const std::vector<uint32_t>& hashes);
 
+  void insert(uint32_t entity, std::vector<uint32_t>&& hashes);
+
   const std::vector<uint32_t>& getHashes(uint32_t entity) const {
     if (!_entity_to_hashes.count(entity)) {
       throw std::invalid_argument(

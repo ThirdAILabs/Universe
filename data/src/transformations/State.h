@@ -105,9 +105,9 @@ class State {
 
   void setRlhfSampler(mach::RLHFSampler&& sampler) {
     if (_rlhf_sampler) {
-      std::cout << "Transformation state already contains RLHFSampler. The "
-                   "existing RLHFSampler will be overwritten."
+      std::cout << "Transformation state already contains RLHFSampler."
                 << std::endl;
+      return;
     }
     _rlhf_sampler = std::move(sampler);
   }

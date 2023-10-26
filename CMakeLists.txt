@@ -311,6 +311,7 @@ add_subdirectory(hashing)
 add_subdirectory(hashtable)
 add_subdirectory(compression)
 add_subdirectory(utils)
+add_subdirectory(mach)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
@@ -400,6 +401,7 @@ set(THIRDAI_SOURCES
     dataset/src/blocks/text/WordpieceTokenizer.cc
     dataset/src/mach/MachIndex.cc
     dataset/src/mach/MachBlock.cc
+    dataset/src/mach/RLHFSampler.cc
     dataset/src/utils/GraphInfo.cc
     telemetry/src/PrometheusClient.cc
     data/src/transformations/Binning.cc
@@ -424,6 +426,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/Graph.cc
     data/src/transformations/RegressionBinning.cc
     data/src/transformations/DyadicInterval.cc
+    data/src/transformations/AddMachRlhfSamples.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
@@ -443,7 +446,6 @@ set(THIRDAI_SOURCES
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
-    auto_ml/src/rlhf/RLHFSampler.cc
     utils/src/SymSpellBackend/symspell.cc
     utils/src/SymSpellCpp/SymSpell.cc
     utils/Logging.cc
@@ -517,6 +519,8 @@ pybind11_add_module(
   auto_ml/src/udt/backends/UDTSVMClassifier.cc
   auto_ml/src/udt/backends/UDTGraphClassifier.cc
   auto_ml/src/udt/utils/Classifier.cc
+  mach/src/Mach.cc
+  mach/src/Model.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)
 
