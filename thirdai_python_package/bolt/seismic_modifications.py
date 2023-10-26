@@ -229,10 +229,14 @@ def train_seismic_model(
 
         epoch_end = time.perf_counter()
 
-        output_metrics["epoch_times"].append(epoch_end - epoch_start)
-        output_metrics["train_loss"].append(metrics["train_loss"][-1])
+        epoch_time = epoch_end - epoch_start
+        output_metrics["epoch_times"].append(epoch_time)
+        train_loss = metrics["train_loss"][-1]
+        output_metrics["train_loss"].append(train_loss)
 
-        log(f"train | completed epoch {epoch} | time={epoch_end-epoch_start} ")
+        log(
+            f"train | completed epoch {epoch} | train_loss={train_loss} | time={epoch_time} "
+        )
 
         if validation_fn:
             validation_fn(seismic_model)
