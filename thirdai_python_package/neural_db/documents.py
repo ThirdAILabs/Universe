@@ -1378,6 +1378,30 @@ class Salesforce(DocumentConnector):
     def assert_valid_fields(self):
         all_fields = self._connector.field_metadata()
 
+        fields_set = set([field['name'] for field in all_fields])
+        if (self.strong_columns is not None) and (not set(self.strong_columns).issubset(fields_set)):
+            raise AttributeError("Strong column(s) doesn't exists in the object")
+        if (self.weak_columns is not None) and (not set(self.weak_columns).issubset(fields_set)):
+            raise AttributeError("Weak column(s) doesn't exists in the object")
+        if (self.reference_columns is not None) and (not set(self.reference_columns).issubset(fields_set)):
+            raise AttributeError("Reference column(s) doesn't exists in the object")
+
+        for field in all_fields:
+            if self.strong_columns is not None and field['name'] in self.strong_columns and not field['type'] != 'string':
+                raise AttributeError(f"Strong column '{field['name']}' needs to be type string")
+            if self.weak_columns is not None and field['name'] in self.weak_columns and not field['type'] != 'string':
+                raise AttributeError(f"Weak column '{field['name']}' needs to be type string")
+        
+        if self.strong_columns is None and self.weak_columns is None:
+            self.strong_columns = []
+            self.weak_columns = []
+            for field in all_fields:
+                if field['name'] != self.id_col and field['type'] == 'string':
+                    self.weak_columns.append(field['name'])
+        elif self.strong_columns is None:
+                self.strong_columns = []
+        elif self.weak_columns is None:
+            self.weak_columns = []
 
     def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
