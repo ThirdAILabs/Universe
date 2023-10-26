@@ -41,16 +41,12 @@ def setup_testing_file(missing_values, bad_csv_line, integer_target=False):
     with open(filename, "w") as outfile:
         outfile.write("category,strong,weak1,weak2\n")
         outfile.write("0,this is a title,this is a description,another one\n")
-
         if missing_values:
             outfile.write("1,there will be no descriptions,,")
-
         if bad_csv_line:
             outfile.write("1,theres a new line,\n,")
-
         if not integer_target:
             outfile.write("LMFAO,this is not an integer,,\n")
-
     return filename
 
 
@@ -64,7 +60,6 @@ def run_coldstart(
     integer_target=True,
 ):
     filename = setup_testing_file(missing_values, bad_csv_line, integer_target)
-
     model = bolt.UniversalDeepTransformer(
         data_types={
             "category": bolt.types.categorical(),
@@ -74,7 +69,6 @@ def run_coldstart(
         n_target_classes=3,
         integer_target=integer_target,
     )
-
     model.cold_start(
         filename=filename,
         strong_column_names=strong_columns,
@@ -83,7 +77,6 @@ def run_coldstart(
         epochs=epochs,
         validation=validation,
     )
-
     os.remove(filename)
 
 

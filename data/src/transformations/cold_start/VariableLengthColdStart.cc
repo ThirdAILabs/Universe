@@ -68,8 +68,9 @@ ColumnMap VariableLengthColdStart::apply(ColumnMap columns,
 
   std::exception_ptr exception = nullptr;
 
-#pragma omp parallel for default(none) \
-    shared(label_column, columns, augmented_data, augmented_labels, exception)
+  // #pragma omp parallel for default(none)
+  //     shared(label_column, columns, augmented_data, augmented_labels,
+  //     exception)
   for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
     try {
       std::string labels = label_column->value(row_id);
@@ -83,17 +84,17 @@ ColumnMap VariableLengthColdStart::apply(ColumnMap columns,
       std::vector<std::string> augmented_samples =
           augmentSingleRow(strong_text, weak_text);
 
-#pragma omp critical
-      {
-        for (auto& sample : augmented_samples) {
-          if (!sample.empty()) {
-            augmented_data.emplace_back(std::move(sample));
-            augmented_labels.push_back(labels);
-          }
+      // #pragma omp critical
+      //       {
+      for (auto& sample : augmented_samples) {
+        if (!sample.empty()) {
+          augmented_data.emplace_back(std::move(sample));
+          augmented_labels.push_back(labels);
         }
+        // }
       }
     } catch (std::exception& e) {
-#pragma omp critical
+      // #pragma omp critical
       exception = std::current_exception();
     }
   }
@@ -167,11 +168,11 @@ std::vector<std::vector<std::string>> VariableLengthColdStart::getWeakPhrases(
     text::replacePunctuationWithSpaces(weak_text);
   }
 
-  if (weak_text.empty()) {
+  std::vector<std::string> words = cold_start::splitByWhitespace(weak_text);
+
+  if (words.empty()) {
     return {};
   }
-
-  std::vector<std::string> words = cold_start::splitByWhitespace(weak_text);
 
   std::vector<std::vector<std::string>> phrases;
 

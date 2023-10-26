@@ -175,8 +175,6 @@ py::object UDTMachClassifier::train(
   auto train_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
       data, /* shuffle= */ true, /* shuffle_config= */ options.shuffle_config);
 
-  std::cout << "HAHA END MACH TRAIN" << std::endl;
-
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
                             getMetrics(train_metrics, "train_"),
                             val_dataset_loader, getMetrics(val_metrics, "val_"),
@@ -447,8 +445,6 @@ py::object UDTMachClassifier::coldstart(
     history = train(data_source, learning_rate, /* epochs= */ 1, train_metrics,
                     val_data, val_metrics, callbacks, options, comm);
   }
-
-  std::cout << "HAHA" << std::endl;
 
   return history;
 }
