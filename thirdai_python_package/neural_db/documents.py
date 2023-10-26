@@ -1054,7 +1054,7 @@ class SQLDatabase(DocumentConnector):
             raise AttributeError("Composite primary key is not allowed")
         elif len(primary_keys) == 0 or primary_keys[0] != self.id_col:
             raise AttributeError(f"{self.id_col} needs to be a primary key")
-        
+
         min_id = self._connector.execute(
             query=f"SELECT MIN({self.id_col}) FROM {self.table_name}"
         ).fetchone()[0]
@@ -1085,7 +1085,7 @@ class SQLDatabase(DocumentConnector):
         all_cols = self._connector.cols_metadata()
 
         columns_set = set([col["name"] for col in all_cols])
-    
+
         if (self.strong_columns is not None) and (
             not set(self.strong_columns).issubset(columns_set)
         ):
@@ -1302,17 +1302,25 @@ class Salesforce(DocumentConnector):
         )
         self.build_meta_table()
         self.total_rows = self._connector.total_rows()
+        assert self.total_rows > 0
         self.sf_instance = self._connector.sf_instance
         self._hash = hash_string(self._connector.session_id + self._connector.base_url)
 
         # Integrity_checks
         self.assert_valid_id()
         self.assert_valid_fields()
-        self.assert_uniqueness()
+        self._connector._fields = list(
+            set(
+                [self.id_col]
+                + self.strong_columns
+                + self.weak_columns
+                + self.reference_columns
+            )
+        )
 
     @property
     def size(self) -> int:
-        pass
+        return self.total_rows
 
     @property
     def name(self) -> str:
@@ -1359,47 +1367,68 @@ class Salesforce(DocumentConnector):
 
         elif not (
             self.id_field_type == "double"
-            and id_field["scale"] == 0              # id column needs to be integer
+            and id_field["scale"] == 0  # id column needs to be integer
             and id_field["unique"]
+            and not id_field["nillable"]
         ):
             raise AttributeError("id column needs to be unique")
 
         min_id = self._connector.execute(
             query=f"SELECT MIN({self.id_col}) FROM {self.object_name}"
-        )['records'][0][self.id_col]
+        )["records"][0][self.id_col]
 
         max_id = self._connector.execute(
-            query = f"SELECT MAX({self.id_col}) FROM {self.object_name}"
-        )['records'][0][self.id_col]
+            query=f"SELECT MAX({self.id_col}) FROM {self.object_name}"
+        )["records"][0][self.id_col]
 
         if int(min_id) != 0 or int(max_id) != self.size - 1:
-            raise AttributeError(f"id column needs to be uniques from 0 to {self.size} - 1")
+            raise AttributeError(
+                f"id column needs to be uniques from 0 to {self.size} - 1"
+            )
 
     def assert_valid_fields(self):
         all_fields = self._connector.field_metadata()
 
-        fields_set = set([field['name'] for field in all_fields])
-        if (self.strong_columns is not None) and (not set(self.strong_columns).issubset(fields_set)):
+        fields_set = set([field["name"] for field in all_fields])
+        if (self.strong_columns is not None) and (
+            not set(self.strong_columns).issubset(fields_set)
+        ):
             raise AttributeError("Strong column(s) doesn't exists in the object")
-        if (self.weak_columns is not None) and (not set(self.weak_columns).issubset(fields_set)):
+        if (self.weak_columns is not None) and (
+            not set(self.weak_columns).issubset(fields_set)
+        ):
             raise AttributeError("Weak column(s) doesn't exists in the object")
-        if (self.reference_columns is not None) and (not set(self.reference_columns).issubset(fields_set)):
+        if (self.reference_columns is not None) and (
+            not set(self.reference_columns).issubset(fields_set)
+        ):
             raise AttributeError("Reference column(s) doesn't exists in the object")
 
         for field in all_fields:
-            if self.strong_columns is not None and field['name'] in self.strong_columns and not field['type'] != 'string':
-                raise AttributeError(f"Strong column '{field['name']}' needs to be type string")
-            if self.weak_columns is not None and field['name'] in self.weak_columns and not field['type'] != 'string':
-                raise AttributeError(f"Weak column '{field['name']}' needs to be type string")
-        
+            if (
+                self.strong_columns is not None
+                and field["name"] in self.strong_columns
+                and not field["type"] != "string"
+            ):
+                raise AttributeError(
+                    f"Strong column '{field['name']}' needs to be type string"
+                )
+            if (
+                self.weak_columns is not None
+                and field["name"] in self.weak_columns
+                and not field["type"] != "string"
+            ):
+                raise AttributeError(
+                    f"Weak column '{field['name']}' needs to be type string"
+                )
+
         if self.strong_columns is None and self.weak_columns is None:
             self.strong_columns = []
             self.weak_columns = []
             for field in all_fields:
-                if field['name'] != self.id_col and field['type'] == 'string':
-                    self.weak_columns.append(field['name'])
+                if field["name"] != self.id_col and field["type"] == "string":
+                    self.weak_columns.append(field["name"])
         elif self.strong_columns is None:
-                self.strong_columns = []
+            self.strong_columns = []
         elif self.weak_columns is None:
             self.weak_columns = []
 
@@ -1407,7 +1436,18 @@ class Salesforce(DocumentConnector):
         raise NotImplementedError()
 
     def row_iterator(self):
-        pass
+        for current_chunk in self.next_chunk():
+            for idx, row in current_chunk.iterrows():
+                row_id = row[self.id_col]
+                yield DocumentRow(
+                    element_id=row_id,
+                    strong=self.strong_text_from_chunk(
+                        id_in_chunk=idx, chunk=current_chunk
+                    ),  # Strong text from (idx)th row of the current_batch
+                    weak=self.weak_text_from_chunk(
+                        id_in_chunk=idx, chunk=current_chunk
+                    ),  # Weak text from (idx)th row of the current_batch
+                )
 
     def next_chunk(self) -> pd.DataFrame:
         pass
