@@ -154,7 +154,8 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("learning_rate"), py::arg("epochs"),
            py::arg("train_metrics"), py::arg("val_data"),
            py::arg("val_metrics"), py::arg("callbacks"), py::arg("options"),
-           py::arg("comm") = nullptr, bolt::python::OutputRedirect())
+           py::arg("comm") = nullptr, py::arg("variable_length") = true,
+           bolt::python::OutputRedirect())
       .def("output_correctness", &udt::UDT::outputCorrectness,
            py::arg("samples"), py::arg("labels"),
            py::arg("sparse_inference") = false,

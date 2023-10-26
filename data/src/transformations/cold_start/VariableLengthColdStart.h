@@ -12,7 +12,8 @@ struct VariableLengthConfig {
       std::optional<uint32_t> slice_max_length = std::nullopt,
       uint32_t num_slices = 5, bool add_whole_doc = true,
       bool prefilter_punctuation = true, uint32_t strong_sample_num_words = 3,
-      float word_removal_probability = 0)
+      float word_removal_probability = 0,
+      uint32_t seed = global_random::nextSeed())
       : covering_min_length(covering_min_length),
         covering_max_length(covering_max_length),
         max_covering_samples(max_covering_samples),
@@ -22,7 +23,8 @@ struct VariableLengthConfig {
         add_whole_doc(add_whole_doc),
         prefilter_punctuation(prefilter_punctuation),
         strong_sample_num_words(strong_sample_num_words),
-        word_removal_probability(word_removal_probability) {}
+        word_removal_probability(word_removal_probability),
+        seed(seed) {}
 
   uint32_t covering_min_length;
   uint32_t covering_max_length;
@@ -34,7 +36,12 @@ struct VariableLengthConfig {
   bool prefilter_punctuation;
   uint32_t strong_sample_num_words;
   float word_removal_probability;
+  uint32_t seed;
 };
+
+// we use this so the user to be able to specify three options at once:
+// no variable length, default parameters with var length, or custom parameters
+using VariableLengthConfigOption = std::variant<bool, VariableLengthConfig>;
 
 class VariableLengthColdStart : public Transformation {
  public:
@@ -42,8 +49,7 @@ class VariableLengthColdStart : public Transformation {
       std::vector<std::string> strong_column_names,
       std::vector<std::string> weak_column_names, std::string label_column_name,
       std::string output_column_name,
-      const VariableLengthConfig& config = VariableLengthConfig(),
-      uint32_t seed = global_random::nextSeed());
+      const VariableLengthConfig& config = VariableLengthConfig());
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 

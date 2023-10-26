@@ -415,8 +415,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                          max_covering_samples, slice_min_length,
                          slice_max_length, num_slices, add_whole_doc,
                          prefilter_punctuation, strong_sample_num_words,
-                         word_removal_probability),
-                     seed);
+                         word_removal_probability, seed));
                }),
            py::arg("strong_columns"), py::arg("weak_columns"),
            py::arg("label_column"), py::arg("output_column"),

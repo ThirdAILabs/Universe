@@ -178,11 +178,13 @@ py::object UDTClassifier::coldstart(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::DistributedCommPtr& comm) {
+    const bolt::DistributedCommPtr& comm,
+    const data::VariableLengthConfigOption& variable_length) {
   auto metadata = getColdStartMetaData();
 
   auto data_source = cold_start::preprocessColdStartTrainSource(
-      data, strong_column_names, weak_column_names, _dataset_factory, metadata);
+      data, strong_column_names, weak_column_names, _dataset_factory, metadata,
+      variable_length);
 
   return train(data_source, learning_rate, epochs, train_metrics, val_data,
                val_metrics, callbacks, options, comm);

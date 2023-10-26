@@ -53,11 +53,49 @@ void verifyDataTypes(TabularDatasetFactoryPtr& dataset_factory) {
   }
 }
 
+data::TransformationPtr makeAugmentation(
+    const data::VariableLengthConfigOption& variable_length,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names,
+    const std::string& text_column_name, ColdStartMetaDataPtr& metadata) {
+  if (std::holds_alternative<bool>(variable_length) &&
+      !std::get<bool>(variable_length)) {
+    return std::make_shared<data::ColdStartTextAugmentation>(
+        /* strong_column_names= */ strong_column_names,
+        /* weak_column_names= */ weak_column_names,
+        /* label_column_name= */ metadata->getLabelColumn(),
+        /* output_column_name= */ text_column_name);
+  }
+
+  if (std::holds_alternative<bool>(variable_length) &&
+      std::get<bool>(variable_length)) {
+    return std::make_shared<data::VariableLengthColdStart>(
+        /* strong_column_names= */ strong_column_names,
+        /* weak_column_names= */ weak_column_names,
+        /* label_column_name= */ metadata->getLabelColumn(),
+        /* output_column_name= */ text_column_name);
+  }
+
+  if (std::holds_alternative<data::VariableLengthConfig>(variable_length)) {
+    return std::make_shared<data::VariableLengthColdStart>(
+        /* strong_column_names= */ strong_column_names,
+        /* weak_column_names= */ weak_column_names,
+        /* label_column_name= */ metadata->getLabelColumn(),
+        /* output_column_name= */ text_column_name,
+        /* config= */
+        std::get<data::VariableLengthConfig>(variable_length));
+  }
+
+  throw std::invalid_argument(
+      "Invalid instruction for creating Cold Start Augmentation.");
+}
+
 dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
-    TabularDatasetFactoryPtr& dataset_factory, ColdStartMetaDataPtr& metadata) {
+    TabularDatasetFactoryPtr& dataset_factory, ColdStartMetaDataPtr& metadata,
+    const data::VariableLengthConfigOption& variable_length) {
   verifyDataTypes(dataset_factory);
   std::string text_column_name =
       dataset_factory->inputDataTypes().begin()->first;
@@ -68,13 +106,11 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
   auto dataset = thirdai::data::ColumnMap::createStringColumnMapFromFile(
       csv_data_source, dataset_factory->delimiter());
 
-  thirdai::data::ColdStartTextAugmentation augmentation(
-      /* strong_column_names= */ strong_column_names,
-      /* weak_column_names= */ weak_column_names,
-      /* label_column_name= */ metadata->getLabelColumn(),
-      /* output_column_name= */ text_column_name);
+  data::TransformationPtr augmentation =
+      makeAugmentation(variable_length, strong_column_names, weak_column_names,
+                       text_column_name, metadata);
 
-  auto augmented_data = augmentation.applyStateless(dataset);
+  auto augmented_data = augmentation->applyStateless(dataset);
 
   auto data_source = thirdai::dataset::cold_start::ColdStartDataSource::make(
       /* column_map= */ augmented_data,

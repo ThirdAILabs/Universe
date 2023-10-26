@@ -7,6 +7,7 @@
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
+#include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
@@ -133,7 +134,8 @@ class UDTBackend {
       const dataset::DataSourcePtr& val_data,
       const std::vector<std::string>& val_metrics,
       const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-      const bolt::DistributedCommPtr& comm) {
+      const bolt::DistributedCommPtr& comm,
+      const data::VariableLengthConfigOption& variable_length) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
@@ -145,6 +147,7 @@ class UDTBackend {
     (void)callbacks;
     (void)options;
     (void)comm;
+    (void)variable_length;
     throw notSupported("cold_start");
   }
 

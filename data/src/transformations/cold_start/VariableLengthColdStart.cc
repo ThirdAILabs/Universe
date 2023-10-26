@@ -9,8 +9,7 @@ namespace thirdai::data {
 VariableLengthColdStart::VariableLengthColdStart(
     std::vector<std::string> strong_column_names,
     std::vector<std::string> weak_column_names, std::string label_column_name,
-    std::string output_column_name, const VariableLengthConfig& config,
-    uint32_t seed)
+    std::string output_column_name, const VariableLengthConfig& config)
     : _strong_column_names(std::move(strong_column_names)),
       _weak_column_names(std::move(weak_column_names)),
       _label_column_name(std::move(label_column_name)),
@@ -25,7 +24,7 @@ VariableLengthColdStart::VariableLengthColdStart(
       _prefilter_punctuation(config.prefilter_punctuation),
       _strong_sample_num_words(config.strong_sample_num_words),
       _word_removal_probability(config.word_removal_probability),
-      _seed(seed) {
+      _seed(config.seed) {
   validateGreaterThanZero(_covering_min_length, "covering_min_length");
   validateGreaterThanZero(_covering_max_length, "covering_max_length");
   validateGreaterThanZero(_slice_min_length, "slice_min_length");

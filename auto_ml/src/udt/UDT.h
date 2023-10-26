@@ -128,7 +128,8 @@ class UDT {
                        const std::vector<std::string>& val_metrics,
                        const std::vector<CallbackPtr>& callbacks,
                        TrainOptions options,
-                       const bolt::DistributedCommPtr& comm);
+                       const bolt::DistributedCommPtr& comm,
+                       const data::VariableLengthConfigOption& variable_length);
 
   /**
    * Returns metadata for ColdStart which are needed to be passed to
