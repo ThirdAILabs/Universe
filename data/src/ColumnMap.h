@@ -41,6 +41,8 @@ class ColumnMap {
 
   std::vector<std::string> columns() const;
 
+  ColumnMap keepColumns(const std::vector<std::string>& columns) const;
+
   auto begin() const { return _columns.begin(); }
 
   auto end() const { return _columns.end(); }
@@ -61,6 +63,8 @@ class ColumnMap {
    * possible.
    */
   ColumnMap concat(ColumnMap& other);
+
+  ColumnMap concat(ColumnMap&& other);
 
   /**
    * Splits the ColumnMap in two, returning two new ColumnMaps. Consumes the
