@@ -13,10 +13,12 @@
 namespace thirdai::bolt::seismic {
 
 SeismicClassifier::SeismicClassifier(
-    const std::shared_ptr<SeismicBase>& emb_model, size_t n_classes)
+    const std::shared_ptr<SeismicBase>& emb_model, size_t n_classes,
+    bool freeze_emb_model)
     : SeismicBase(
           /* input_shape_data= */ emb_model->inputShapeData(),
-          /* model= */ addClassifierHead(emb_model->getModel(), n_classes)) {}
+          /* model= */ addClassifierHead(emb_model->getModel(), n_classes,
+                                         freeze_emb_model)) {}
 
 metrics::History SeismicClassifier::trainOnPatches(
     const NumpyArray& subcubes, std::vector<std::vector<uint32_t>> labels,
@@ -66,19 +68,27 @@ float outputSparsity(size_t n_classes) {
 }
 
 ModelPtr SeismicClassifier::addClassifierHead(const ModelPtr& emb_model,
-                                              size_t n_classes) {
+                                              size_t n_classes,
+                                              bool freeze_emb_model) {
   auto patches = Input::make(emb_model->inputDims().at(0));
 
-  auto patch_emb =
-      std::dynamic_pointer_cast<PatchEmbedding>(emb_model->getOp("patch_emb"))
-          ->apply(patches);
+  auto patch_emb_op =
+      std::dynamic_pointer_cast<PatchEmbedding>(emb_model->getOp("patch_emb"));
+  auto patch_emb = patch_emb_op->apply(patches);
 
-  auto patch_sum =
-      std::dynamic_pointer_cast<PatchSum>(emb_model->getOp("patch_sum"))
-          ->apply(patch_emb);
+  auto patch_sum_op =
+      std::dynamic_pointer_cast<PatchSum>(emb_model->getOp("patch_sum"));
+  auto patch_sum = patch_emb_op->apply(patch_emb);
 
-  auto emb = std::dynamic_pointer_cast<FullyConnected>(emb_model->getOp("emb"))
-                 ->apply(patch_sum);
+  auto emb_op =
+      std::dynamic_pointer_cast<FullyConnected>(emb_model->getOp("emb"));
+  auto emb = emb_op->apply(patch_sum);
+
+  if (freeze_emb_model) {
+    patch_emb_op->setTrainable(false);
+    patch_sum_op->setTrainable(false);
+    emb_op->setTrainable(false);
+  }
 
   auto output = FullyConnected::make(n_classes, emb->dim(),
                                      outputSparsity(n_classes), "softmax")

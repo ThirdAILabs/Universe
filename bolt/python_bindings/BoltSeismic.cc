@@ -34,8 +34,9 @@ void createSeismicSubmodule(py::module_& module) {
 
   py::class_<SeismicClassifier, std::shared_ptr<SeismicClassifier>,
              SeismicBase>(seismic, "SeismicClassifier")
-      .def(py::init<const std::shared_ptr<SeismicBase>&, size_t>(),
-           py::arg("emb_model"), py::arg("n_classes"))
+      .def(py::init<const std::shared_ptr<SeismicBase>&, size_t, bool>(),
+           py::arg("emb_model"), py::arg("n_classes"),
+           py::arg("freeze_emb_model") = false)
       .def("train_on_patches", &SeismicClassifier::trainOnPatches,
            py::arg("subcubes"), py::arg("labels"), py::arg("learning_rate"),
            py::arg("batch_size"), py::arg("callbacks"), py::arg("log_interval"),

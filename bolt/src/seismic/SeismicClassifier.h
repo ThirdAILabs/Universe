@@ -8,7 +8,7 @@ namespace thirdai::bolt::seismic {
 class SeismicClassifier final : public SeismicBase {
  public:
   SeismicClassifier(const std::shared_ptr<SeismicBase>& emb_model,
-                    size_t n_classes);
+                    size_t n_classes, bool freeze_emb_model);
 
   metrics::History trainOnPatches(
       const NumpyArray& subcubes, std::vector<std::vector<uint32_t>> labels,
@@ -30,8 +30,8 @@ class SeismicClassifier final : public SeismicBase {
   Dataset makeLabelbatches(std::vector<std::vector<uint32_t>> labels,
                            size_t batch_size);
 
-  static ModelPtr addClassifierHead(const ModelPtr& emb_model,
-                                    size_t n_classes);
+  static ModelPtr addClassifierHead(const ModelPtr& emb_model, size_t n_classes,
+                                    bool freeze_emb_model);
 
   SeismicClassifier() {}
 
