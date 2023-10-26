@@ -67,4 +67,5 @@ def classification_dataset(subcube_dataset):
 
     yield sample_index, subcube_shape, patch_shape, N_CLASSIFICATION_CLASSES
 
-    os.remove(sample_index)
+    if os.path.exists(sample_index):
+        os.remove(sample_index)
