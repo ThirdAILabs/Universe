@@ -200,7 +200,7 @@ setup(
         # MLFLOW is also being fixed.
         "neural_db": neural_db_deps,
         "test": [
-            "pytest",
+            "pytest<=7.4.2",
             "pytest-mock",
             "boto3",
             "moto[server]",
