@@ -1127,7 +1127,7 @@ class SQLDatabase(DocumentConnector):
 
         if self.strong_columns is None and self.weak_columns is None:
             self.strong_columns = []
-
+            self.weak_columns = []
             for col in all_cols:
                 if isinstance(col["type"], String):
                     self.weak_columns.append(col["name"])
