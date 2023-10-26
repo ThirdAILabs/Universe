@@ -5,6 +5,7 @@ from typing import List, Optional
 
 import pandas as pd
 from office365.sharepoint.client_context import ClientContext
+from simple_salesforce import Salesforce
 from sqlalchemy import inspect, text
 from sqlalchemy.engine.base import Connection as sqlConn
 
@@ -145,3 +146,45 @@ class SharePointConnector(Connector):
     @property
     def site_name(self):
         return self.url.split(sep="/")[-1]
+
+
+class SalesforceConnector(Connector):
+    def __init__(
+        self, instance: Salesforce, object_name: str, fields: List[str]
+    ) -> None:
+        self._instance = instance
+        self._object_name = object_name
+        self._fields = fields
+
+    def execute(self, query: str):
+        return self._instance.query(
+            query
+        )  # Returns an OrderedDicts with keys ['totalSize', 'done', 'records']
+
+    def chunk_iterator(self):
+        query = f"SELECT {', '.join(self._fields)} FROM {self._object_name}"
+        results = self._instance.bulk.__getattr__(self._object_name).query(
+            query, lazy_operation=True
+        )
+        for chunk in results:
+            yield chunk  # Number of records in each chunk is 10K. Salesforce doesn't provide the option to set the batch size with the buik api
+
+    def total_rows(self):
+        result = self.execute(query=f"SELECT COUNT() from {self.object_name}")
+        return result["totalSize"]
+
+    def field_metadata(self):
+        object_schema = self._instance.__getattr__(self._object_name).describe()
+        return object_schema["fields"]
+
+    @property
+    def sf_instance(self):
+        return self._instance.sf_instance
+
+    @property
+    def session_id(self):
+        return self._instance.session_id
+
+    @property
+    def base_url(self):
+        return self._instance.base_url

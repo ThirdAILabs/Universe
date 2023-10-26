@@ -13,13 +13,19 @@ from nltk.tokenize import sent_tokenize
 from office365.sharepoint.client_context import ClientContext
 from pytrie import StringTrie
 from requests.models import Response
+from simple_salesforce import Salesforce
 from sqlalchemy import Integer, String, create_engine
 from sqlalchemy.engine.base import Connection as sqlConn
 from thirdai import bolt
 from thirdai.data import get_udt_col_types
 from thirdai.dataset.data_source import PyDataSource
 
-from .connectors import Connector, SharePointConnector, SQLConnector
+from .connectors import (
+    Connector,
+    SalesforceConnector,
+    SharePointConnector,
+    SQLConnector,
+)
 from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
 from .parsing_utils import doc_parse, pdf_parse, url_parse
 from .parsing_utils.unstructured_parse import EmlParse, PptxParse, TxtParse
@@ -895,7 +901,9 @@ class SQLDatabase(DocumentConnector):
         self.assert_uniqueness()
 
         # setting the columns in the conector object
-        self._connector.columns = list(set([self.id_col] + self.strong_columns + self.weak_columns))
+        self._connector.columns = list(
+            set([self.id_col] + self.strong_columns + self.weak_columns)
+        )
 
     @property
     def name(self):
@@ -1047,15 +1055,25 @@ class SQLDatabase(DocumentConnector):
             raise AttributeError("Composite primary key is not allowed")
         elif len(primary_keys) == 0 or primary_keys[0] != self.id_col:
             raise AttributeError(f"{self.id_col} needs to be a primary key")
+        
+        min_id = self._connector.execute(
+            query=f"SELECT MIN({self.id_col}) FROM {self.table_name}"
+        ).fetchone()[0]
+
+        max_id = self._connector.execute(
+            query=f"SELECT MAX({self.id_col}) FROM {self.table_name}"
+        ).fetchone()[0]
+
+        if min_id != 0 or max_id != self.size - 1:
+            raise AttributeError(
+                f"id column needs to be unique from 0 to {self.size - 1}"
+            )
 
     def assert_valid_columns(self):
         all_cols = self._connector.cols_metadata()
 
         columns_set = set([col["name"] for col in all_cols])
-        if not set([self.id_col]).issubset(columns_set):
-            raise AttributeError(
-                f"{self.id_col} is not present in the table '{self.table_name}'"
-            )
+    
         if (self.strong_columns is not None) and (
             not set(self.strong_columns).issubset(columns_set)
         ):
@@ -1107,18 +1125,7 @@ class SQLDatabase(DocumentConnector):
             self.weak_columns = []
 
     def assert_uniqueness(self):
-        min_id = self._connector.execute(
-            query=f"SELECT MIN({self.id_col}) FROM {self.table_name}"
-        ).fetchone()[0]
-
-        max_id = self._connector.execute(
-            query=f"SELECT MAX({self.id_col}) FROM {self.table_name}"
-        ).fetchone()[0]
-
-        if min_id != 0 or max_id != self.size - 1:
-            raise AttributeError(
-                f"id column needs to be unique from 0 to {self.size - 1}"
-            )
+        
 
 
 class SharePoint(DocumentConnector):
@@ -1259,6 +1266,131 @@ class SharePoint(DocumentConnector):
         state = self.__dict__.copy()
         del state["_connector"]
 
+        return state
+
+
+class Salesforce(DocumentConnector):
+    def __init__(
+        self,
+        instance: Salesforce,
+        object_name: str,
+        id_col: str,
+        strong_columns: Optional[List[str]] = None,
+        weak_columns: Optional[List[str]] = None,
+        reference_columns: Optional[List[str]] = None,
+        save_extra_info: bool = True,
+        metadata: dict = {},
+    ) -> None:
+        self.object_name = object_name
+        self.id_col = id_col
+        self.strong_columns = strong_columns
+        self.weak_columns = weak_columns
+        self.reference_columns = reference_columns
+        self._save_extra_info = save_extra_info
+        self.doc_metadata = metadata
+        self._connector = SalesforceConnector(
+            instance=instance, object_name=object_name, fields=None
+        )
+        self.build_meta_table()
+        self.total_rows = self._connector.total_rows()
+        self.sf_instance = self._connector.sf_instance
+        self._hash = hash_string(self._connector.session_id + self._connector.base_url)
+
+        # Integrity_checks
+        self.assert_valid_id()
+        self.assert_valid_fields()
+        self.assert_uniqueness()
+
+    @property
+    def size(self) -> int:
+        pass
+
+    @property
+    def name(self) -> str:
+        return self.object_name
+
+    @property
+    def hash(self) -> str:
+        return self._hash
+
+    def all_entity_ids(self) -> List[int]:
+        return list(range(self.size))
+
+    @property
+    def meta_table(self) -> Optional[pd.DataFrame]:
+        return self._meta_table
+
+    @property
+    def build_meta_table(self):
+        self._meta_table = None
+
+    def assert_valid_id(self):
+        all_fields = self._connector.field_metadata()
+
+        all_field_name = [field["name"] for field in all_fields]
+
+        if self.id_col not in all_field_name:
+            raise AttributeError("Id Columns is not present in the object")
+
+        # Uniqueness or primary constraint
+        id_field = list(filter(lambda field: field["name"] == self.id_col, all_fields))[
+            0
+        ]
+
+        self.id_field_type = id_field["type"]
+        if id_field["autoNumber"]:
+            # id field is auto-incremented string. Have to check for the form of A-{0}
+
+            result = self._connector.execute(
+                query=f"SELECT {self.id_col} FROM {self.object_name} LIMIT 1"
+            )
+            value: str = result["records"][0][self.id_col]
+            if not value.isdigit():
+                raise AttributeError("id column needs to be of the form \{0\}")
+
+        elif not (
+            self.id_field_type == "double"
+            and id_field["scale"] == 0              # id column needs to be integer
+            and id_field["unique"]
+        ):
+            raise AttributeError("id column needs to be unique")
+
+        min_id = self._connector.execute(
+            query=f"SELECT MIN({self.id_col}) FROM {self.object_name}"
+        )['records'][0][self.id_col]
+
+        max_id = self._connector.execute(
+            query = f"SELECT MAX({self.id_col}) FROM {self.object_name}"
+        )['records'][0][self.id_col]
+
+        if int(min_id) != 0 or int(max_id) != self.size - 1:
+            raise AttributeError(f"id column needs to be uniques from 0 to {self.size} - 1")
+
+    def assert_valid_fields(self):
+        all_fields = self._connector.field_metadata()
+
+
+    def reference(self, element_id: int) -> Reference:
+        raise NotImplementedError()
+
+    def row_iterator(self):
+        pass
+
+    def next_chunk(self) -> pd.DataFrame:
+        pass
+
+    def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
+        pass
+
+    def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
+        pass
+
+    def save_meta(self, directory: Path):
+        pass
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state["_connector"]
         return state
 
 
