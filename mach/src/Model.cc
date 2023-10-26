@@ -1,6 +1,5 @@
 #include "Model.h"
 #include <bolt/src/nn/ops/Input.h>
-#include <data/src/TensorConversion.h>
 #include <sstream>
 
 namespace thirdai::mach {
@@ -12,7 +11,7 @@ bolt::ComputationPtr getEmbeddingComputation(const bolt::Model& model) {
   return computations.at(computations.size() - 2);
 }
 
-auto modifyForMach(const bolt::Model& model) {
+bolt::ModelPtr modifyForMach(const bolt::Model& model) {
   size_t n_inputs = model.inputs().size();
   size_t n_outputs = model.outputs().size();
   size_t n_labels = model.labels().size();
@@ -34,9 +33,10 @@ auto modifyForMach(const bolt::Model& model) {
                            /* additional_labels= */ {mach_bucket_label});
 }
 
-auto inferLabelValueFill(const bolt::Model& model) {
+data::ValueFillType inferLabelValueFill(const bolt::Model& model) {
   return model.losses().front()->logitsSumToOne()
              ? data::ValueFillType::SumToOne
              : data::ValueFillType::Ones;
 }
+
 }  // namespace thirdai::mach
