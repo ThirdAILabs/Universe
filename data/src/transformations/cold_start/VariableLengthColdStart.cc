@@ -68,9 +68,8 @@ ColumnMap VariableLengthColdStart::apply(ColumnMap columns,
 
   std::exception_ptr exception = nullptr;
 
-  // #pragma omp parallel for default(none)
-  //     shared(label_column, columns, augmented_data, augmented_labels,
-  //     exception)
+#pragma omp parallel for default(none) \
+    shared(label_column, columns, augmented_data, augmented_labels, exception)
   for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
     try {
       std::string labels = label_column->value(row_id);
@@ -79,22 +78,23 @@ ColumnMap VariableLengthColdStart::apply(ColumnMap columns,
           columns, row_id, _weak_column_names, /* delimiter= */ " ");
 
       std::string strong_text = cold_start::concatenateStringColumnEntries(
-          columns, row_id, _strong_column_names, /* delimiter= */ " ");
+          columns, row_id, _strong_column_names,
+          /* delimiter= */ " ");
 
       std::vector<std::string> augmented_samples =
           augmentSingleRow(strong_text, weak_text);
 
-      // #pragma omp critical
-      //       {
-      for (auto& sample : augmented_samples) {
-        if (!sample.empty()) {
-          augmented_data.emplace_back(std::move(sample));
-          augmented_labels.push_back(labels);
+#pragma omp critical
+      {
+        for (auto& sample : augmented_samples) {
+          if (!sample.empty()) {
+            augmented_data.emplace_back(std::move(sample));
+            augmented_labels.push_back(labels);
+          }
         }
-        // }
       }
     } catch (std::exception& e) {
-      // #pragma omp critical
+#pragma omp critical
       exception = std::current_exception();
     }
   }
@@ -152,9 +152,9 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
     }
   }
 
-  // if output_samples.size() < 1 then either the weak text is too short, or
-  // there is only strong text, or the sample is empty, in which case we don't
-  // want to add the whole doc since we're in a degenerate case.
+  // if output_samples.size() < 1 then either the weak text is too short,
+  // or there is only strong text, or the sample is empty, in which case
+  // we don't want to add the whole doc since we're in a degenerate case.
   if (_add_whole_doc && output_samples.size() > 1) {
     output_samples.push_back(strong_text + " " + weak_text);
   }
