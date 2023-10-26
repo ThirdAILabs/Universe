@@ -63,40 +63,40 @@ def test_seismic_embedding_model(subcube_dataset, max_pool):
     )
 
 
-# @pytest.mark.unit
-# def test_seismic_classifier(classification_dataset):
-#     sample_index, subcube_shape, patch_shape, n_classes = classification_dataset
+@pytest.mark.unit
+def test_seismic_classifier(classification_dataset):
+    sample_index, subcube_shape, patch_shape, n_classes = classification_dataset
 
-#     emb_dim = 100
-#     emb_model = bolt.seismic.SeismicEmbedding(
-#         subcube_shape=subcube_shape[0],
-#         patch_shape=patch_shape[0],
-#         embedding_dim=emb_dim,
-#         size="small",
-#         max_pool=2,
-#     )
+    emb_dim = 100
+    emb_model = bolt.seismic.SeismicEmbedding(
+        subcube_shape=subcube_shape[0],
+        patch_shape=patch_shape[0],
+        embedding_dim=emb_dim,
+        size="small",
+        max_pool=2,
+    )
 
-#     classifier = bolt.seismic.SeismicClassifier(emb_model, n_classes=n_classes)
+    classifier = bolt.seismic.SeismicClassifier(emb_model, n_classes=n_classes)
 
-#     classifier.train(
-#         sample_index_file=sample_index,
-#         learning_rate=0.0001,
-#         epochs=1,
-#         batch_size=8,
-#     )
+    classifier.train(
+        sample_index_file=sample_index,
+        learning_rate=0.0001,
+        epochs=1,
+        batch_size=8,
+    )
 
-#     n_cubes_to_embed = 2
-#     subcubes_to_embed = (
-#         np.random.rand(n_cubes_to_embed, *subcube_shape).astype(np.float32) / 10
-#     )
+    n_cubes_to_embed = 2
+    subcubes_to_embed = (
+        np.random.rand(n_cubes_to_embed, *subcube_shape).astype(np.float32) / 10
+    )
 
-#     assert np.array_equal(
-#         emb_model.embeddings(subcubes_to_embed),
-#         classifier.embeddings(subcubes_to_embed),
-#     )
+    assert np.array_equal(
+        emb_model.embeddings(subcubes_to_embed),
+        classifier.embeddings(subcubes_to_embed),
+    )
 
-#     predictions = classifier.predict(subcubes_to_embed)
-#     assert predictions.shape == (n_cubes_to_embed, n_classes)
+    predictions = classifier.predict(subcubes_to_embed)
+    assert predictions.shape == (n_cubes_to_embed, n_classes)
 
 
 @pytest.mark.unit
