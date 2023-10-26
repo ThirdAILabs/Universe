@@ -413,4 +413,14 @@ data::ColumnMap Mach::associateSamples(data::ColumnMap from_columns,
   return from_columns;
 }
 
+template void Mach::serialize(cereal::BinaryInputArchive&);
+template void Mach::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void Mach::serialize(Archive& archive) {
+  archive(_model, _emb, _mach_sampling_threshold, _freeze_hash_tables, _state,
+          _label_to_buckets, _add_balancing_samples, _bolt_input_columns,
+          _bolt_label_columns, _all_bolt_columns, _mt);
+}
+
 }  // namespace thirdai::mach
