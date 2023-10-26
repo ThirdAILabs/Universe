@@ -54,7 +54,7 @@ void verifyDataTypes(TabularDatasetFactoryPtr& dataset_factory) {
 }
 
 data::TransformationPtr makeAugmentation(
-    const data::VariableLengthConfigOption& variable_length,
+    data::VariableLengthConfigOption variable_length,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     const std::string& text_column_name, ColdStartMetaDataPtr& metadata) {
@@ -95,7 +95,7 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     TabularDatasetFactoryPtr& dataset_factory, ColdStartMetaDataPtr& metadata,
-    const data::VariableLengthConfigOption& variable_length) {
+    data::VariableLengthConfigOption variable_length) {
   verifyDataTypes(dataset_factory);
   std::string text_column_name =
       dataset_factory->inputDataTypes().begin()->first;

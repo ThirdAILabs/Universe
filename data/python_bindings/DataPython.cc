@@ -392,6 +392,21 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       .def("augment_map_input", &ColdStartTextAugmentation::augmentMapInput,
            py::arg("document"));
 
+  py::class_<VariableLengthConfig, std::shared_ptr<VariableLengthConfig>>(
+      transformations_submodule, "VariableLengthConfig")
+      .def(py::init<uint32_t, uint32_t, std::optional<uint32_t>, uint32_t,
+                    std::optional<uint32_t>, uint32_t, bool, bool, uint32_t,
+                    float, uint32_t>(),
+           py::arg("covering_min_length") = 3,
+           py::arg("covering_max_length") = 40,
+           py::arg("max_covering_samples") = std::nullopt,
+           py::arg("slice_min_length") = 3,
+           py::arg("slice_max_length") = std::nullopt,
+           py::arg("num_slices") = 5, py::arg("add_whole_doc") = true,
+           py::arg("prefilter_punctuation") = true,
+           py::arg("strong_sample_num_words") = 3,
+           py::arg("word_removal_probability") = 0, py::arg("seed") = 42803);
+
   py::class_<VariableLengthColdStart, Transformation,
              std::shared_ptr<VariableLengthColdStart>>(
       transformations_submodule, "VariableLengthColdStart")

@@ -88,16 +88,17 @@ class UDTMachClassifier final : public UDTBackend {
     return _dataset_factory->dataTypes();
   }
 
-  py::object coldstart(
-      const dataset::DataSourcePtr& data,
-      const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& train_metrics,
-      const dataset::DataSourcePtr& val_data,
-      const std::vector<std::string>& val_metrics,
-      const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-      const bolt::DistributedCommPtr& comm,
-      const data::VariableLengthConfigOption& variable_length) final;
+  py::object coldstart(const dataset::DataSourcePtr& data,
+                       const std::vector<std::string>& strong_column_names,
+                       const std::vector<std::string>& weak_column_names,
+                       float learning_rate, uint32_t epochs,
+                       const std::vector<std::string>& train_metrics,
+                       const dataset::DataSourcePtr& val_data,
+                       const std::vector<std::string>& val_metrics,
+                       const std::vector<CallbackPtr>& callbacks,
+                       TrainOptions options,
+                       const bolt::DistributedCommPtr& comm,
+                       data::VariableLengthConfigOption variable_length) final;
 
   py::object embedding(const MapInputBatch& sample) final;
 

@@ -113,8 +113,7 @@ def test_vlcs_word_removal():
     sentence = "word " * 10000
     samples = augmentation.augment_single_row("", sentence)
 
-    assert len(samples) == 1
-    assert samples[0] == ""
+    assert len(samples) == 0
 
     augmentation = default_augmentation(
         slice_min_length=10000,
@@ -129,3 +128,59 @@ def test_vlcs_word_removal():
 
     assert len(samples) == 1
     assert 4500 < len(samples[0].split(" ")) and len(samples[0].split(" ")) < 5500
+
+
+def test_vlcs_empty_weak_text():
+    augmentation = default_augmentation()
+    samples = augmentation.augment_single_row("strong text", "")
+    assert len(samples) == 1
+
+
+def test_vlcs_empty_both_text():
+    augmentation = default_augmentation()
+    samples = augmentation.augment_single_row("", "")
+    assert len(samples) == 0
+
+
+def test_vlcs_slice_min_larger_than_text():
+    augmentation = default_augmentation(
+        slice_min_length=4,
+        max_covering_samples=0,
+        num_slices=1,
+        add_whole_doc=False,
+    )
+    samples = augmentation.augment_single_row("", "only three words")
+    assert len(samples) == 1
+
+
+def test_vlcs_covering_min_larger_than_text():
+    augmentation = default_augmentation(
+        covering_min_length=4,
+        num_slices=0,
+        max_covering_samples=1,
+        add_whole_doc=False,
+    )
+    samples = augmentation.augment_single_row("", "only three words")
+    assert len(samples) == 1
+
+
+def test_vlcs_min_not_greater_than_max():
+    with pytest.raises(
+        ValueError,
+        match=r"covering_min_length must be <= covering_max_length.",
+    ):
+        default_augmentation(
+            covering_min_length=4,
+            covering_max_length=3,
+        )
+
+
+def test_vlcs_min_not_greater_than_max():
+    with pytest.raises(
+        ValueError,
+        match=r"slice_min_length must be <= slice_max_length.",
+    ):
+        default_augmentation(
+            slice_min_length=4,
+            slice_max_length=3,
+        )

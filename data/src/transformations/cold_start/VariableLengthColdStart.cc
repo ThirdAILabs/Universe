@@ -145,10 +145,16 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
         output_text.append(" ");
       }
     }
-    output_samples.push_back(output_text);
+
+    if (!output_text.empty()) {
+      output_samples.push_back(output_text);
+    }
   }
 
-  if (_add_whole_doc) {
+  // if output_samples.size() < 1 then either the weak text is too short, or
+  // there is only strong text, or the sample is empty, in which case we don't
+  // want to add the whole doc since we're in a degenerate case.
+  if (_add_whole_doc && output_samples.size() > 1) {
     output_samples.push_back(strong_text + " " + weak_text);
   }
 
@@ -159,6 +165,10 @@ std::vector<std::vector<std::string>> VariableLengthColdStart::getWeakPhrases(
     std::string& weak_text) const {
   if (_prefilter_punctuation) {
     text::replacePunctuationWithSpaces(weak_text);
+  }
+
+  if (weak_text.empty()) {
+    return {};
   }
 
   std::vector<std::string> words = cold_start::splitByWhitespace(weak_text);
@@ -180,7 +190,8 @@ void VariableLengthColdStart::addCoveringPhrases(
     uint32_t max_len, std::optional<uint32_t> max_covering_samples,
     uint32_t seed) {
   std::mt19937 rng(seed);
-  std::uniform_int_distribution<uint32_t> dist(min_len, max_len);
+  min_len = std::min(static_cast<size_t>(min_len), words.size());
+  std::uniform_int_distribution<size_t> dist(min_len, max_len);
 
   size_t start_pos = 0;
   while (start_pos + min_len <= words.size()) {
@@ -207,6 +218,7 @@ void VariableLengthColdStart::addRandomSlicePhrases(
     std::vector<std::vector<std::string>>& phrases, uint32_t min_len,
     std::optional<uint32_t> max_len_opt, uint32_t num_slices, uint32_t seed) {
   std::mt19937 rng(seed);
+  min_len = std::min(static_cast<size_t>(min_len), words.size());
   uint32_t max_len = max_len_opt.has_value()
                          ? std::min<uint32_t>(words.size(), *max_len_opt)
                          : words.size();

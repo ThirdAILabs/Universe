@@ -135,7 +135,7 @@ class UDTBackend {
       const std::vector<std::string>& val_metrics,
       const std::vector<CallbackPtr>& callbacks, TrainOptions options,
       const bolt::DistributedCommPtr& comm,
-      const data::VariableLengthConfigOption& variable_length) {
+      data::VariableLengthConfigOption variable_length) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
