@@ -898,7 +898,6 @@ class SQLDatabase(DocumentConnector):
         # Integrity checks
         self.assert_valid_id()
         self.assert_valid_columns()
-        self.assert_uniqueness()
 
         # setting the columns in the conector object
         self._connector.columns = list(
@@ -1069,6 +1068,19 @@ class SQLDatabase(DocumentConnector):
                 f"id column needs to be unique from 0 to {self.size - 1}"
             )
 
+        min_id = self._connector.execute(
+            query=f"SELECT MIN({self.id_col}) FROM {self.table_name}"
+        ).fetchone()[0]
+
+        max_id = self._connector.execute(
+            query=f"SELECT MAX({self.id_col}) FROM {self.table_name}"
+        ).fetchone()[0]
+
+        if min_id != 0 or max_id != self.size - 1:
+            raise AttributeError(
+                f"id column needs to be unique from 0 to {self.size - 1}"
+            )
+
     def assert_valid_columns(self):
         all_cols = self._connector.cols_metadata()
 
@@ -1123,9 +1135,6 @@ class SQLDatabase(DocumentConnector):
             self.strong_columns = []
         elif self.weak_columns is None:
             self.weak_columns = []
-
-    def assert_uniqueness(self):
-        
 
 
 class SharePoint(DocumentConnector):
