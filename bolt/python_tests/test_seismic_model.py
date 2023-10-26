@@ -91,7 +91,8 @@ def test_seismic_classifier(classification_dataset):
     )
 
     assert np.array_equal(
-        model.embeddings(subcubes_to_embed), classifier.embeddings(subcubes_to_embed)
+        emb_model.embeddings(subcubes_to_embed),
+        classifier.embeddings(subcubes_to_embed),
     )
 
     predictions = classifier.predict(subcubes_to_embed)
