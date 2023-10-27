@@ -14,8 +14,7 @@ namespace thirdai::mach {
 Mach::Mach(const bolt::Model& model, uint32_t num_hashes,
            float mach_sampling_threshold, bool freeze_hash_tables,
            std::string input_indices_column, std::string input_values_column,
-           std::string label_column, std::string bucket_column, bool use_rlhf,
-           uint32_t num_balancing_docs, uint32_t num_balancing_samples_per_doc)
+           std::string label_column, std::string bucket_column)
 
     : _model(modifyForMach(model)),
       _emb(getEmbeddingComputation(*_model)),
@@ -36,10 +35,6 @@ Mach::Mach(const bolt::Model& model, uint32_t num_hashes,
       _all_bolt_columns({std::move(input_indices_column),
                          std::move(input_values_column),
                          std::move(label_column), std::move(bucket_column)}) {
-  if (use_rlhf) {
-    enableRlhf(num_balancing_docs, num_balancing_samples_per_doc);
-  }
-
   updateSamplingStrategy();
 }
 
