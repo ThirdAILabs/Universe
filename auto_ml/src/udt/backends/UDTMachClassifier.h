@@ -15,6 +15,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <mach/src/Mach.h>
 #include <pybind11/pytypes.h>
 #include <optional>
 #include <stdexcept>
@@ -125,15 +126,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   void forget(const Label& label) final;
 
-  void clearIndex() final {
-    getIndex()->clear();
-
-    updateSamplingStrategy();
-
-    if (_rlhf_sampler) {
-      _rlhf_sampler->clear();
-    }
-  }
+  void clearIndex() final { _classifier->eraseAllEntities(); }
 
   void associate(
       const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
@@ -172,7 +165,7 @@ class UDTMachClassifier final : public UDTBackend {
   }
 
   dataset::mach::MachIndexPtr getIndex() const final {
-    return _featurizer->machIndex();
+    return _classifier->index();
   }
 
   void setIndex(const dataset::mach::MachIndexPtr& index) final;
@@ -213,13 +206,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   void enableRlhf(uint32_t num_balancing_docs,
                   uint32_t num_balancing_samples_per_doc) final {
-    if (_rlhf_sampler.has_value()) {
-      std::cout << "rlhf already enabled." << std::endl;
-      return;
-    }
-
-    _rlhf_sampler = std::make_optional<RLHFSampler>(
-        num_balancing_docs, num_balancing_samples_per_doc);
+    _classifier->enableRlhf(num_balancing_docs, num_balancing_samples_per_doc);
   }
 
   std::vector<uint32_t> topHashesForDoc(
@@ -262,15 +249,11 @@ class UDTMachClassifier final : public UDTBackend {
   template <class Archive>
   void serialize(Archive& archive, uint32_t version);
 
-  std::shared_ptr<utils::Classifier> _classifier;
-
+  std::shared_ptr<mach::Mach> _classifier;
   MachFeaturizerPtr _featurizer;
 
   uint32_t _default_top_k_to_return;
   uint32_t _num_buckets_to_eval;
-  float _mach_sampling_threshold;
-
-  std::optional<RLHFSampler> _rlhf_sampler;
 };
 
 }  // namespace thirdai::automl::udt
