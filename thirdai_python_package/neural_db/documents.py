@@ -1456,15 +1456,12 @@ class Salesforce(DocumentConnector):
                 )
 
     def next_chunk(self) -> pd.DataFrame:
-        pass
+        return self._connector.chunk_iterator()
 
     def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
         pass
 
     def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
-        pass
-
-    def save_meta(self, directory: Path):
         pass
 
     def __getstate__(self):
