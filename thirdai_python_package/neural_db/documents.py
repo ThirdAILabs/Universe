@@ -1434,9 +1434,9 @@ class Salesforce(DocumentConnector):
 
         if self.reference_columns is None:
             self.reference_columns = []
-            for field in fields:
-                if field['name'] != self.id_col and field['type'] == 'string':
-                    self.reference_columns.append(field['name'])
+            for field in all_fields:
+                if field["name"] != self.id_col and field["type"] == "string":
+                    self.reference_columns.append(field["name"])
 
     def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()

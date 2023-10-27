@@ -162,17 +162,19 @@ class SalesforceConnector(Connector):
         )  # Returns an OrderedDicts with keys ['totalSize', 'done', 'records']
 
     def chunk_iterator(self):
-        df = pd.DataFrame(columns = self._fields)
+        df = pd.DataFrame(columns=self._fields)
         query = f"SELECT {', '.join(self._fields)} FROM {self._object_name}"
         results = self._instance.bulk.__getattr__(self._object_name).query(
             query, lazy_operation=True
         )
         for chunk in results:
-            df.drop(df.index, inplace = True)
-            for row in chunk:               # Number of records in each chunk is 10K. 
-                del row['attributes']       # Salesforce doesn't provide the option to set the batch size with the buik api
+            df.drop(df.index, inplace=True)
+            for row in chunk:  # Number of records in each chunk is 10K.
+                del row[
+                    "attributes"
+                ]  # Salesforce doesn't provide the option to set the batch size with the buik api
                 df.loc[len(df)] = row
-            yield df  
+            yield df
 
     def total_rows(self):
         result = self.execute(query=f"SELECT COUNT() from {self.object_name}")
