@@ -100,7 +100,6 @@ def build_local_sharepoint_doc():
     doc_files = sorted(doc_files, key=lambda file_path: file_path.split(sep="/")[-1])
 
     ndb_docs = []
-    all_cols = set()
     for file_path in doc_files:
         file_name = file_path.split(sep="/")[-1]
         if file_name.endswith(".pdf"):
