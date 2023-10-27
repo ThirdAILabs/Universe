@@ -133,6 +133,7 @@ void Mach::trainBuckets(data::ColumnMap columns, float learning_rate) {
   _model->trainOnBatch(inputTensors(columns), labelTensors(columns));
   _model->updateParameters(learning_rate);
 }
+
 bolt::metrics::History Mach::evaluate(
     data::ColumnMapIteratorPtr eval_iter,
     const bolt::metrics::InputMetrics& metrics, bool sparse_inference,
@@ -142,6 +143,7 @@ bolt::metrics::History Mach::evaluate(
       loader(std::move(eval_iter), /* train= */ false, TrainOptions()), metrics,
       sparse_inference, verbose);
 }
+
 std::vector<std::vector<std::pair<uint32_t, double>>> Mach::predict(
     const data::ColumnMap& columns, bool sparse_inference, uint32_t top_k,
     uint32_t num_scanned_buckets) {
@@ -174,6 +176,7 @@ std::vector<std::vector<std::pair<uint32_t, double>>> Mach::predict(
 
   return predicted_entities;
 }
+
 std::vector<std::vector<uint32_t>> Mach::predictBuckets(
     const data::ColumnMap& columns, bool sparse_inference,
     std::optional<uint32_t> top_k, bool force_non_empty) {
