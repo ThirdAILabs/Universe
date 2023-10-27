@@ -798,18 +798,18 @@ class DocumentConnector(Document):
 
     @property
     def meta_table(self) -> Optional[pd.DataFrame]:
+        """
+        It stores the mapping from id_in_document to meta_data of the document. It would be used to fetch the document result if the connection is lost.
+        """
         raise NotImplementedError()
 
     @property
     def meta_table_id_col(self) -> str:
         return "id_in_document"
 
-    def build_meta_table(self):
-        raise NotImplementedError()
-
     def row_iterator(self):
         id_in_document = 0
-        for current_chunk in self.next_chunk():
+        for current_chunk in self.chunk_iterator():
             for idx in range(len(current_chunk)):
                 yield DocumentRow(
                     element_id=id_in_document,
@@ -822,14 +822,41 @@ class DocumentConnector(Document):
                 )
                 id_in_document += 1
 
-    def next_chunk(self) -> pd.DataFrame:
+    def chunk_iterator(self) -> pd.DataFrame:
         raise NotImplementedError()
 
     def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
-        raise NotImplementedError()
+        try:
+            row = chunk.iloc[id_in_chunk]
+            return " ".join(
+                [str(row[col]).replace(",", "") for col in self.strong_columns]
+            )
+        except AttributeError as e:
+            return ""
 
     def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
+        try:
+            row = chunk.iloc[id_in_chunk]
+            return " ".join(
+                [str(row[col]).replace(",", "") for col in self.weak_columns]
+            )
+        except AttributeError as e:
+            return ""
+
+    def reference(self, element_id: int) -> Reference:
         raise NotImplementedError()
+
+    def context(self, element_id, radius) -> str:
+        if not 0 <= element_id or not element_id < self.size:
+            raise ("Element id not in document.")
+
+        reference_texts = [
+            self.reference(i).text
+            for i in range(
+                max(0, element_id - radius), min(len(self.df), element_id + radius + 1)
+            )
+        ]
+        return "\n".join(reference_texts)
 
     def save_meta(self, directory: Path):
         # Save the index table
@@ -873,7 +900,6 @@ class SQLDatabase(DocumentConnector):
         self.reference_columns = reference_columns
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
-        self._save_credentials = save_credentials
 
         self._connector = SQLConnector(
             engine=engine,
@@ -883,8 +909,9 @@ class SQLDatabase(DocumentConnector):
         )
         self.build_meta_table()
         self.total_rows = self._connector.total_rows()
-        if self._save_credentials:
+        if save_credentials:
             self.engine_url = engine.url
+
         self.database_name = engine.url.database
         self.engine_uq = str(engine.url) + f"/{self.table_name}"
         self._hash = hash_string(string=self.engine_uq)
@@ -924,16 +951,13 @@ class SQLDatabase(DocumentConnector):
 
     @property
     def meta_table(self):
-        return self._meta_table
+        return None
 
-    def build_meta_table(self):
-        self._meta_table = None
-
-    def next_chunk(self) -> pd.DataFrame:
+    def chunk_iterator(self) -> pd.DataFrame:
         return self._connector.chunk_iterator()
 
     def row_iterator(self):
-        for current_chunk in self.next_chunk():
+        for current_chunk in self.chunk_iterator():
             for idx, row in current_chunk.iterrows():
                 row_id = row[self.id_col]
                 yield DocumentRow(
@@ -1001,7 +1025,7 @@ class SQLDatabase(DocumentConnector):
 
     def __setstate__(self, state):
         # Trying to connect to the database if we have credentials
-        if state["_save_credentials"]:
+        if "engine_url" in state.keys():
             try:
                 state["_connector"] = SQLConnector(
                     engine=create_engine(state["engine_url"]),
@@ -1013,27 +1037,10 @@ class SQLDatabase(DocumentConnector):
                 )
             except Exception as e:
                 print(
-                    f"Failed to establish a connection with the engine at URL: {state['engine_url']}. Only {state['id_col']} will be available."
+                    f"Failed to establish a connection with the engine at URL: {str(state['engine_url'])}. Only {state['id_col']} will be available."
                 )
+
         self.__dict__.update(state)
-
-    def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
-        try:
-            row = chunk.iloc[id_in_chunk]
-            return " ".join(
-                [str(row[col]).replace(",", "") for col in self.strong_columns]
-            )
-        except AttributeError as e:
-            return ""
-
-    def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
-        try:
-            row = chunk.iloc[id_in_chunk]
-            return " ".join(
-                [str(row[col]).replace(",", "") for col in self.weak_columns]
-            )
-        except AttributeError as e:
-            return ""
 
     def assert_valid_id(self):
         all_cols = self._connector.cols_metadata()
@@ -1162,7 +1169,7 @@ class SharePoint(DocumentConnector):
             ]
         )
         id_in_document = 0
-        for current_chunk in self.next_chunk():
+        for current_chunk in self.chunk_iterator():
             current_chunk.drop(columns=["para"], inplace=True)
             for _, row in current_chunk.iterrows():
                 internal_doc_id = row["internal_doc_id"]
@@ -1210,7 +1217,7 @@ class SharePoint(DocumentConnector):
     def meta_table(self) -> Optional[pd.DataFrame]:
         return self._meta_table
 
-    def next_chunk(self) -> pd.DataFrame:
+    def chunk_iterator(self) -> pd.DataFrame:
         chunk_df = pd.DataFrame(
             columns=[
                 "para",
@@ -1340,6 +1347,9 @@ class SentenceLevelExtracted(Extracted):
     @property
     def size(self) -> int:
         return len(self.df)
+
+    def get_strong_columns(self):
+        return ["sentence"]
 
     @property
     def name(self) -> str:

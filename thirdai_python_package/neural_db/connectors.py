@@ -8,7 +8,7 @@ from office365.sharepoint.client_context import ClientContext
 from sqlalchemy import inspect, text
 from sqlalchemy.engine.base import Connection as sqlConn
 
-from .utils import SUPPORTED_EXT
+from .utils import DIRECTORY_CONNECTOR_SUPPORTED_EXT
 
 
 class Connector:
@@ -54,9 +54,10 @@ class SQLConnector(Connector):
         inspector = inspect(self._engine)
         return inspector.get_columns(self.table_name)
 
-    def get_rows(self, cols: List[str] = "*"):
+    def get_all_rows(self, cols: List[str] = "*"):
         if isinstance(cols, list):
             cols = ", ".join(cols)
+
         return self.execute(query=f"SELECT {cols} from {self.table_name}")
 
     def get_primary_keys(self):
@@ -88,14 +89,14 @@ class SharePointConnector(Connector):
             self._ctx.execute_query()
 
             # filtering to only contain files of supported extensions
-            exts = SUPPORTED_EXT[:]
-            exts.remove("csv")
             self._files = list(
                 filter(
-                    lambda file: file.properties["Name"].split(sep=".")[-1] in exts,
+                    lambda file: file.properties["Name"].split(sep=".")[-1]
+                    in DIRECTORY_CONNECTOR_SUPPORTED_EXT,
                     self._files,
                 )
             )
+            self._files = sorted(self._files, key=lambda file: file.properties["Name"])
             self.total_files = len(self._files)
             if not self.total_files > 0:
                 raise FileNotFoundError("No files of supported extension is present")
