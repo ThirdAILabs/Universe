@@ -93,11 +93,11 @@ class Sup:
             if id_delimiter:
                 self.labels = self.labels.apply(
                     lambda label: list(
-                        map(int, str(label).strip(id_delimiter).split(id_delimiter))
+                        str(label).strip(id_delimiter).split(id_delimiter)
                     )
                 )
             else:
-                self.labels = self.labels.apply(lambda label: [int(label)])
+                self.labels = self.labels.apply(lambda label: [str(label)])
 
         elif queries is not None and labels is not None:
             if len(queries) != len(labels):
@@ -120,6 +120,12 @@ class SupDataSource(PyDataSource):
     source. This allows NeuralDB's underlying model to train on all provided
     supervised datasets simultaneously.
     """
+
+    def preprocess_labels(doc: Document, labels: Sequence[str]):
+        doc_id_map = doc.id_map()
+        if not doc_id_map:
+            return map(int, labels)
+        return [doc_id_map[label] for label in labels]
 
     def __init__(
         self,
@@ -163,7 +169,9 @@ class SupDataSource(PyDataSource):
         # Then yield rows
         for sup in self.data:
             id_offset = self._id_offset(sup)
-            for query, labels in zip(sup.queries, sup.labels):
+            for query, labels in zip(
+                sup.queries, SupDataSource.preprocess_labels(sup.labels)
+            ):
                 if self.id_delimiter:
                     label_str = self.id_delimiter.join(
                         [str(id_offset + label) for label in labels]

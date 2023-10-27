@@ -112,3 +112,52 @@ def test_sup_data_source(model_id_delimiter):
             delimiter=model_id_delimiter,
         ),
     ]
+
+
+def test_sup_data_source_with_id_map():
+    with open("mock_unsup.csv", "w") as out:
+        out.write("id,strong\n")
+        out.write("one,this is the first query\n")
+        out.write("two,this is the second query\n")
+
+    doc_manager = DocumentManager(
+        id_column="model_id", strong_column="strong", weak_column="weak"
+    )
+
+    _, source_ids = doc_manager.add(
+        [ndb.CSV("mock_unsup.csv", id_column="id", strong_columns=["strong"])]
+    )
+    source_id = source_ids[0]
+
+    # Test multi label case (with id delimiter)
+    with open("mock_sup.csv", "w") as out:
+        out.write("id,query\n")
+        # make sure that single label rows are also handled correctly in a
+        # multilabel dataset.
+        out.write("one,this is the first query\n")
+        out.write("one:two,this is the second query\n")
+        out.write("one:two:,trailing label delimiter\n")
+
+    sup_doc = ndb.Sup(
+        "mock_sup.csv",
+        query_column="query",
+        id_column="id",
+        id_delimiter=":",
+        source_id=source_id,
+    )
+
+    mock_model_query_col = "model_query"
+    mock_model_id_delimiter = " "
+    data_source = SupDataSource(
+        doc_manager,
+        query_col=mock_model_query_col,
+        data=[sup_doc],
+        id_delimiter=mock_model_id_delimiter,
+    )
+
+    assert data_source.next_batch(TARGET_BATCH_SIZE) == [
+        "model_query,model_id",
+        "this is the first query,0",
+        "this is the second query,0 1",
+        "trailing label delimiter,0 1",
+    ]

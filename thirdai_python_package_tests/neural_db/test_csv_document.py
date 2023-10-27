@@ -111,3 +111,4 @@ def test_csv_with_explicit_columns_without_doc_id_column():
     assert valid_explicit_strong_columns(doc)
     assert valid_explicit_weak_columns(doc)
     assert ids_are_row_numbers(doc)
+
