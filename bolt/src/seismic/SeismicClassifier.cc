@@ -106,7 +106,7 @@ void SeismicClassifier::save(const std::string& filename) const {
 
 void SeismicClassifier::save_stream(std::ostream& output) const {
   cereal::BinaryOutputArchive oarchive(output);
-  getModel()->setSerializeOptimizer(/* should_save_optimizer= */ true);
+  getModel()->setSerializeOptimizer(/* should_save_optimizer= */ false);
   oarchive(*this);
 }
 
