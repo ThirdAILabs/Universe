@@ -939,18 +939,8 @@ class SQLDatabase(DocumentConnector):
         except AttributeError as e:
             raise AttributeError("engine is not available")
 
-    def establish_connection(self, engine: sqlConn):
-        self._connector = SQLConnector(
-            engine=engine,
-            columns=[self.id_col]
-            + self.strong_columns
-            + self.weak_columns
-            + self.reference_columns,
-            table_name=self.table_name,
-        )
-
     @property
-    def meta_table(self):
+    def meta_table(self) -> Optional[pd.DataFrame]:
         return None
 
     def chunk_iterator(self) -> pd.DataFrame:
@@ -1045,10 +1035,11 @@ class SQLDatabase(DocumentConnector):
     def assert_valid_id(self):
         all_cols = self._connector.cols_metadata()
 
-        all_col_name = [col["name"] for col in all_cols]
-
-        if self.id_col not in all_col_name:
+        id_col_meta = list(filter(all_cols, lambda col: col["name"] == self.id_col))
+        if len(id_col_meta) == 0:
             raise AttributeError("id column not present in the table")
+        elif not isinstance(id_col_meta["type"], Integer):
+            raise AttributeError("id column needs to be of type Integer")
 
         primary_keys = self._connector.get_primary_keys()
         if len(primary_keys) > 1:
@@ -1097,9 +1088,7 @@ class SQLDatabase(DocumentConnector):
             )
 
         for col in all_cols:
-            if col["name"] == self.id_col and not isinstance(col["type"], Integer):
-                raise AttributeError("id column needs to be of type Integer")
-            elif (
+            if (
                 self.strong_columns is not None
                 and col["name"] in self.strong_columns
                 and not isinstance(col["type"], String)
@@ -1161,30 +1150,22 @@ class SharePoint(DocumentConnector):
     def build_meta_table(self):
         self._meta_table = pd.DataFrame(
             columns=[
-                self.meta_table_id_col,
                 "internal_doc_id",
                 "server_relative_url",
                 "filename",
                 "page",
             ]
         )
-        id_in_document = 0
         for current_chunk in self.chunk_iterator():
             current_chunk.drop(columns=["para"], inplace=True)
-            for _, row in current_chunk.iterrows():
-                internal_doc_id = row["internal_doc_id"]
-                server_relative_url = row["server_relative_url"]
-                filename = row["filename"]
-                page = row["page"]
+            self._meta_table = pd.concat(
+                [self._meta_table, current_chunk], ignore_index=True
+            )
 
-                self.meta_table.loc[len(self.meta_table)] = {
-                    self.meta_table_id_col: id_in_document,
-                    "internal_doc_id": internal_doc_id,
-                    "server_relative_url": server_relative_url,
-                    "filename": filename,
-                    "page": page,
-                }
-                id_in_document += 1
+        self._meta_table[self.meta_table_id_col] = range(len(self._meta_table))
+        self._meta_table.set_index(
+            keys=self.meta_table_id_col, drop=False, inplace=True
+        )
 
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
@@ -1229,6 +1210,7 @@ class SharePoint(DocumentConnector):
         )
         for file_dict in self._connector.chunk_iterator():
             chunk_df.drop(chunk_df.index, inplace=True)
+            temp_dfs = []
             for server_relative_url, filepath in file_dict.items():
                 if filepath.endswith(".pdf"):
                     doc = PDF(path=filepath, metadata=self.doc_metadata)
@@ -1245,15 +1227,25 @@ class SharePoint(DocumentConnector):
                 temp_df = pd.DataFrame(
                     columns=chunk_df.columns.tolist(), index=range(len(df))
                 )
-                temp_df["para"] = df["para"]
-                temp_df["internal_doc_id"] = range(len(df))
+                para, internal_doc_id, page = zip(
+                    *[
+                        (
+                            doc.weak_text(i),
+                            i,
+                            doc.reference(i).metadata.get("page", None),
+                        )
+                        for i in range(doc.size)
+                    ]
+                )
+                temp_df["para"] = para
+                temp_df["internal_doc_id"] = internal_doc_id
                 temp_df["server_relative_url"] = [server_relative_url] * len(df)
                 temp_df["filename"] = df["filename"]
-                temp_df["page"] = (
-                    df["page"] if "page" in df.columns else ([None] * len(df))
-                )
+                temp_df["page"] = page
 
-                chunk_df = pd.concat([chunk_df, temp_df], ignore_index=True)
+                temp_dfs.append(temp_df)
+
+            chunk_df = pd.concat(temp_dfs, ignore_index=True)
             yield chunk_df
 
     def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:

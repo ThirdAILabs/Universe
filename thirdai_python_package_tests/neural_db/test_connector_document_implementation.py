@@ -9,10 +9,6 @@ pytestmark = [
     pytest.mark.parametrize("get_connector_doc", all_connector_doc_getter),
 ]
 
-DOC_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "document_test_data", "connector_docs"
-)
-
 
 def test_all_batch_fetchable(get_connector_doc):
     doc = get_connector_doc.connector_doc()
