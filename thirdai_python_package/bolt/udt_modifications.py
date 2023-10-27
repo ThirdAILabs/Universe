@@ -233,6 +233,7 @@ def modify_udt():
         verbose: bool = True,
         logging_interval: Optional[int] = None,
         comm=None,
+        variable_length: bool = True,
     ):
         val_data, val_metrics, train_options = _process_validation_and_options(
             validation=None,
@@ -255,6 +256,7 @@ def modify_udt():
             callbacks=callbacks,
             options=train_options,
             comm=comm,
+            variable_length=variable_length,
         )
 
     delattr(bolt.UniversalDeepTransformer, "train")

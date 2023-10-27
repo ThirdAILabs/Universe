@@ -83,6 +83,7 @@ def run_coldstart(
         learning_rate=0.01,
         epochs=epochs,
         validation=validation,
+        variable_length=variable_length,
     )
 
     os.remove(filename)
