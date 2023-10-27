@@ -192,6 +192,7 @@ def modify_udt():
         logging_interval: Optional[int] = None,
         comm=None,
         shuffle_reservoir_size: int = 64000,
+        variable_length: bool = True,
     ):
         data_source = _create_data_source(filename)
 
@@ -217,6 +218,7 @@ def modify_udt():
             callbacks=callbacks,
             options=train_options,
             comm=comm,
+            variable_length=variable_length,
         )
 
     def wrapped_cold_start_on_data_source(
