@@ -3,24 +3,16 @@ import time
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import scipy.ndimage
 import thirdai
 import thirdai._thirdai.bolt as bolt
 import torch
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, default_collate
 
 
-def median_blur(subcube):
-    return scipy.ndimage.median_filter(subcube, size=3)
-
-
-def gaussian_blur(subcube):
-    blur = np.random.choice(np.arange(1.55, 1.95, 0.15))
-    return scipy.ndimage.gaussian_filter(subcube, sigma=blur).astype(np.float32)
-
-
-class SubcubeDataset(Dataset):
+class UnsupervisedSubcubeDataset(Dataset):
     def __init__(self, subcube_directory, subcube_files, blur_subcube_fraction=0.0):
         self.subcube_directory = subcube_directory
         self.subcube_files = subcube_files
@@ -31,22 +23,65 @@ class SubcubeDataset(Dataset):
 
     def __getitem__(self, index):
         filename = self.subcube_files[index]
-        # We don't parse the metadata here because the torch data loader doesn't
-        # like the SubcubeMetadata object being returned by the dataset.
-        metadata = Path(filename).stem
+        metadata = UnsupervisedSubcubeDataset.parse_metadata(Path(filename).stem)
         subcube = np.load(os.path.join(self.subcube_directory, filename))
         subcube = subcube.astype(np.float32)
         if self.blur_subcube_fraction > 0:
             r = np.random.rand()
             if r < (self.blur_subcube_fraction / 2):
-                subcube = median_blur(subcube)
+                subcube = UnsupervisedSubcubeDataset.median_blur(subcube)
             elif r < self.blur_subcube_fraction:
-                subcube = gaussian_blur(subcube)
+                subcube = UnsupervisedSubcubeDataset.gaussian_blur(subcube)
 
         return subcube, metadata
 
+    @staticmethod
+    def parse_metadata(metadata):
+        volume, x, y, z = metadata.split("_")
+        return (volume, int(x), int(y), int(z))
 
-def convert_to_patches(subcubes, patch_shape, max_pool=None):
+    @staticmethod
+    def median_blur(subcube):
+        return scipy.ndimage.median_filter(subcube, size=3)
+
+    @staticmethod
+    def gaussian_blur(subcube):
+        blur = np.random.choice(np.arange(1.55, 1.95, 0.15))
+        return scipy.ndimage.gaussian_filter(subcube, sigma=blur).astype(np.float32)
+
+
+class ClassificationSubcubeDataset(Dataset):
+    def __init__(self, sample_index: pd.DataFrame):
+        if (
+            "labels" not in sample_index.columns
+            or "subcube" not in sample_index.columns
+        ):
+            raise ValueError(
+                "Expected sample index to contain the columns 'labels' and 'subcube'."
+            )
+        self.sample_index = sample_index
+
+    def __len__(self):
+        return len(self.sample_index)
+
+    def __getitem__(self, index):
+        subcube_path = self.sample_index["subcube"].iloc[index]
+        subcube = np.load(subcube_path).astype(np.float32)
+        labels = self.sample_index["labels"].iloc[index]
+        return subcube, labels
+
+
+def collate_fn(batch):
+    data, metadata = zip(*batch)
+    return default_collate(data), metadata
+
+
+def convert_to_patches(subcubes, expected_subcube_shape, patch_shape, max_pool=None):
+    if subcubes.shape[1:] != expected_subcube_shape:
+        raise ValueError(
+            f"Expected subcubes with shape {expected_subcube_shape}. But received subcubes with shape {subcubes.shape[1:]}"
+        )
+
     pd_x, pd_y, pd_z = patch_shape
     if max_pool:
         # Unsqueeze/squeeze are to add/remove the 'channels' dimension
@@ -77,11 +112,16 @@ def convert_to_patches(subcubes, patch_shape, max_pool=None):
     return patches.numpy()
 
 
-def subcube_range_for_worker(n_subcubes: int):
+def get_rank_and_world_size():
     from ray import train
 
     rank = train.get_context().get_world_rank()
     world_size = train.get_context().get_world_size()
+    return rank, world_size
+
+
+def subcube_range_for_worker(n_subcubes: int):
+    rank, world_size = get_rank_and_world_size()
 
     subcubes_for_worker = n_subcubes // world_size
     if rank < (n_subcubes % world_size):
@@ -112,244 +152,336 @@ class TimedIterator:
         return out
 
 
-def parse_metadata(metadata):
-    volume, x, y, z = metadata.split("_")
-    return bolt.seismic.SubcubeMetadata(volume=volume, x=int(x), y=int(y), z=int(z))
-
-
-def modify_seismic():
-    def wrapped_train(
-        self,
-        subcube_directory: str,
-        learning_rate: float,
-        epochs: int,
-        batch_size: int,
-        callbacks=[],
-        log_interval=20,
-        validation_fn=None,
-        blur_subcubes_fraction=0.0,
-        max_data_in_memory=30,  # In Gb
-        comm=None,
-    ):
-        subcube_files = [
-            file for file in os.listdir(subcube_directory) if file.endswith(".npy")
+def train_seismic_model(
+    seismic_model,
+    dataset: Dataset,
+    learning_rate: float,
+    epochs: int,
+    batch_size: int,
+    checkpoint_dir: str = None,
+    checkpoint_interval: int = 1000,
+    log_interval=20,
+    validation_fn=None,
+    max_data_in_memory=30,  # In Gb
+    comm=None,
+):
+    callbacks = []
+    if checkpoint_dir:
+        if not os.path.exists(checkpoint_dir):
+            os.makedirs(checkpoint_dir)
+        callbacks = [
+            bolt.seismic.Checkpoint(
+                seismic_model=seismic_model,
+                checkpoint_dir=checkpoint_dir,
+                interval=checkpoint_interval,
+            )
         ]
 
-        if not subcube_files:
-            raise ValueError(f"Could not find any .npy files in {subcube_directory}.")
+    # Number of bytes per subcube
+    subcube_size = np.prod(seismic_model.subcube_shape) * 4
+    # Load less than 30Gb of subcubes
+    n_subcubes_per_chunk = min(
+        int((10**9) * max_data_in_memory / subcube_size), len(dataset)
+    )
 
-        if comm:
-            # For distributed training give each worker a seperate partition of the subcubes.
-            worker_start, worker_end = subcube_range_for_worker(len(subcube_files))
-            subcube_files = subcube_files[worker_start:worker_end]
+    data_loader = DataLoader(
+        dataset=dataset,
+        batch_size=n_subcubes_per_chunk,
+        shuffle=True,
+        num_workers=2,
+        collate_fn=collate_fn,
+    )
 
-        # Number of bytes per subcube
-        subcube_size = np.prod(self.subcube_shape) * 4
-        # Load less than 30Gb of subcubes
-        n_subcubes_per_chunk = min(
-            int((10**9) * max_data_in_memory / subcube_size), len(subcube_files)
-        )
+    output_metrics = {"epoch_times": [], "train_loss": []}
 
-        output_metrics = {"epoch_times": [], "train_loss": []}
+    for epoch in range(epochs):
+        epoch_start = time.perf_counter()
 
-        for epoch in range(epochs):
-            epoch_start = time.perf_counter()
+        for subcubes, label_or_metadata in TimedIterator(data_loader):
+            patch_start = time.perf_counter()
 
-            data_loader = DataLoader(
-                dataset=SubcubeDataset(
-                    subcube_directory=subcube_directory,
-                    subcube_files=subcube_files,
-                    blur_subcube_fraction=blur_subcubes_fraction,
-                ),
-                batch_size=n_subcubes_per_chunk,
-                shuffle=True,
-                num_workers=2,
+            subcubes = convert_to_patches(
+                subcubes=subcubes,
+                expected_subcube_shape=seismic_model.subcube_shape,
+                patch_shape=seismic_model.patch_shape,
+                max_pool=seismic_model.max_pool,
             )
 
-            for subcubes, metadata in TimedIterator(data_loader):
-                metadata = [parse_metadata(meta) for meta in metadata]
+            patch_end = time.perf_counter()
 
-                patch_start = time.perf_counter()
+            log(
+                f"Converted {subcubes.shape[0]} subcubes to patches in {patch_end - patch_start} seconds.",
+            )
 
-                if subcubes.shape[1:] != self.subcube_shape:
-                    raise ValueError(
-                        f"Expected subcubes with shape {self.subcube_shape}. But received subcubes with shape {subcubes.shape[1:]}"
-                    )
-                subcubes = convert_to_patches(
-                    subcubes=subcubes,
-                    patch_shape=self.patch_shape,
-                    max_pool=self.max_pool,
-                )
-
-                patch_end = time.perf_counter()
-
-                log(
-                    f"Converted {subcubes.shape[0]} subcubes to patches in {patch_end - patch_start} seconds.",
-                )
-
-                metrics = self.train_on_patches(
-                    subcubes=subcubes,
-                    subcube_metadata=metadata,
-                    learning_rate=learning_rate,
-                    batch_size=batch_size,
-                    callbacks=callbacks,
-                    log_interval=log_interval,
-                    comm=comm,
-                )
-
-            epoch_end = time.perf_counter()
-
-            output_metrics["epoch_times"].append(epoch_end - epoch_start)
-            output_metrics["train_loss"].append(metrics["train_loss"][-1])
-
-            log(f"train | completed epoch {epoch} | time={epoch_end-epoch_start} ")
-
-            if validation_fn:
-                validation_fn(self)
-
-        return output_metrics
-
-    def train_distributed(
-        self,
-        subcube_directory: str,
-        learning_rate: float,
-        epochs: int,
-        batch_size: int,
-        run_config,
-        scaling_config,
-        log_file: str,
-        checkpoint_dir: str,
-        log_interval: int = 20,
-        checkpoint_interval: int = 1000,
-        validation_fn=None,
-        blur_subcubes_fraction=0.0,
-        max_data_in_memory=30,  # In Gb
-        communication_backend: str = "gloo",
-    ):
-        import ray
-        import thirdai.distributed_bolt as dist
-        from ray.train.torch import TorchConfig
-
-        from .._distributed_bolt.distributed import Communication
-
-        def train_loop_per_worker(config):
-            import ray
-            from ray import train
-
-            rank = train.get_context().get_world_rank()
-
-            model_ref = config["model_ref"]
-            subcube_directory = config["subcube_directory"]
-            learning_rate = config["learning_rate"]
-            epochs = config["epochs"]
-            batch_size = config["batch_size"] // train.get_context().get_world_size()
-            log_file = config["log_file"]
-            log_interval = config["log_interval"]
-            checkpoint_dir = config["checkpoint_dir"]
-            checkpoint_interval = config["checkpoint_interval"]
-            validation_fn = config["validation_fn"]
-            blur_subcubes_fraction = config["blur_subcubes_fraction"]
-            max_data_in_memory = config["max_data_in_memory"]
-            config["licensing_lambda"]()
-
-            if rank != 0:
-                log_file += f".worker_{rank}"
-            thirdai.logging.setup(log_to_stderr=False, path=log_file, level="info")
-
-            model = ray.get(model_ref)
-
-            callbacks = []
-            if rank == 0:
-                callbacks = [
-                    bolt.seismic.Checkpoint(
-                        seismic_model=model,
-                        checkpoint_dir=checkpoint_dir,
-                        interval=checkpoint_interval,
-                    )
-                ]
-
-            metrics = model.train(
-                subcube_directory=subcube_directory,
+            metrics = seismic_model.train_on_patches(
+                subcubes,
+                # We call this label or metadata becuase in supervised training this will contain
+                # the labels, but in unsupervised training we just use it to pass in metadata
+                # about the subcube. Doing it this way saves having to duplicate a lot of code for
+                # this method.
+                label_or_metadata,
                 learning_rate=learning_rate,
-                epochs=epochs,
                 batch_size=batch_size,
                 callbacks=callbacks,
                 log_interval=log_interval,
-                validation_fn=validation_fn if rank == 0 else None,
-                blur_subcubes_fraction=blur_subcubes_fraction,
-                max_data_in_memory=max_data_in_memory,
-                comm=Communication(),
+                comm=comm,
             )
 
-            checkpoint = None
-            if rank == 0:
-                checkpoint = dist.BoltCheckPoint.from_model(model.model)
+        epoch_end = time.perf_counter()
 
-            train.report(metrics=metrics, checkpoint=checkpoint)
+        epoch_time = epoch_end - epoch_start
+        output_metrics["epoch_times"].append(epoch_time)
+        train_loss = metrics["train_loss"][-1]
+        output_metrics["train_loss"].append(train_loss)
 
-        config = {
-            "model_ref": ray.put(self),
-            "subcube_directory": os.path.abspath(subcube_directory),
-            "learning_rate": learning_rate,
-            "epochs": epochs,
-            "batch_size": batch_size,
-            "log_file": os.path.abspath(log_file),
-            "log_interval": log_interval,
-            "checkpoint_dir": os.path.abspath(checkpoint_dir),
-            "checkpoint_interval": checkpoint_interval,
-            "validation_fn": validation_fn,
-            "blur_subcubes_fraction": blur_subcubes_fraction,
-            "max_data_in_memory": max_data_in_memory,
-        }
-
-        license_state = thirdai._thirdai.licensing._get_license_state()
-        licensing_lambda = lambda: thirdai._thirdai.licensing._set_license_state(
-            license_state
-        )
-        config["licensing_lambda"] = licensing_lambda
-
-        if not os.path.exists(checkpoint_dir):
-            os.makedirs(checkpoint_dir)
-
-        trainer = dist.BoltTrainer(
-            train_loop_per_worker=train_loop_per_worker,
-            train_loop_config=config,
-            scaling_config=scaling_config,
-            backend_config=TorchConfig(backend=communication_backend),
-            run_config=run_config,
+        log(
+            f"train | completed epoch {epoch} | train_loss={train_loss} | time={epoch_time} "
         )
 
-        result = trainer.fit()
+        if validation_fn:
+            validation_fn(seismic_model)
 
-        self.model = dist.BoltCheckPoint.get_model(result.checkpoint)
+        if checkpoint_dir:
+            seismic_model.save(os.path.join(checkpoint_dir, f"epoch_{epoch}_end"))
 
-    def wrapped_embeddings(self, subcubes):
-        subcubes = convert_to_patches(
-            torch.from_numpy(subcubes),
-            patch_shape=self.patch_shape,
-            max_pool=self.max_pool,
+    return output_metrics
+
+
+def train_embedding_model(
+    self,
+    subcube_directory: str,
+    learning_rate: float,
+    epochs: int,
+    batch_size: int,
+    checkpoint_dir: str = None,
+    checkpoint_interval: int = 1000,
+    log_interval=20,
+    validation_fn=None,
+    blur_subcubes_fraction=0.0,
+    max_data_in_memory=30,  # In Gb
+    comm=None,
+):
+    subcube_files = [
+        file for file in os.listdir(subcube_directory) if file.endswith(".npy")
+    ]
+
+    if not subcube_files:
+        raise ValueError(f"Could not find any .npy files in {subcube_directory}.")
+
+    if comm:
+        # For distributed training give each worker a seperate partition of the subcubes.
+        worker_start, worker_end = subcube_range_for_worker(len(subcube_files))
+        subcube_files = subcube_files[worker_start:worker_end]
+
+    dataset = UnsupervisedSubcubeDataset(
+        subcube_directory=subcube_directory,
+        subcube_files=subcube_files,
+        blur_subcube_fraction=blur_subcubes_fraction,
+    )
+
+    return train_seismic_model(
+        seismic_model=self,
+        dataset=dataset,
+        learning_rate=learning_rate,
+        epochs=epochs,
+        batch_size=batch_size,
+        checkpoint_dir=checkpoint_dir,
+        checkpoint_interval=checkpoint_interval,
+        log_interval=log_interval,
+        validation_fn=validation_fn,
+        max_data_in_memory=max_data_in_memory,
+        comm=comm,
+    )
+
+
+def train_classifier(
+    self,
+    sample_index_file: str,
+    learning_rate: float,
+    epochs: int,
+    batch_size: int,
+    checkpoint_dir: str = None,
+    checkpoint_interval: int = 1000,
+    log_interval=20,
+    validation_fn=None,
+    blur_subcubes_fraction=0.0,  # Unused
+    max_data_in_memory=30,  # In Gb
+    comm=None,
+):
+    sample_index = pd.read_csv(sample_index_file)
+    sample_index = sample_index.sample(frac=1.0)
+    if sample_index["labels"].dtype == object:
+        sample_index["labels"] = sample_index["labels"].apply(
+            lambda x: list(map(int, x.split(" ")))
         )
-        return self.embeddings_for_patches(subcubes)
+    elif sample_index["labels"].dtype == int:
+        sample_index["labels"] = sample_index["labels"].apply(lambda x: [x])
 
-    def score_subcubes(self, directory, target_subcube="tgt.npy"):
-        files = [file for file in os.listdir(directory) if file.endswith(".npy")]
-        if target_subcube not in files:
+    if comm:
+        if not sample_index["subcube"].apply(os.path.isabs).all():
             raise ValueError(
-                f"Expected unable to find {target_subcube} in {directory}."
+                "Subcube files in sample index must be specified as absolute paths for distributed training so that they can be accessed from each worker."
             )
-        files.remove(target_subcube)
-        target = np.load(os.path.join(directory, target_subcube))
-        candidates = [np.load(os.path.join(directory, file)) for file in files]
 
-        # Feed in as a batch for best parallelism.
-        embs = self.embeddings(np.stack([target] + candidates))
+    if comm:
+        # For distributed training give each worker a seperate partition of the subcubes.
+        worker_start, worker_end = subcube_range_for_worker(len(sample_index))
+        sample_index = sample_index.iloc[worker_start:worker_end]
 
-        embs /= np.linalg.norm(embs, axis=1, ord=2, keepdims=True)
-        cosine_sims = np.matmul(embs[1:], embs[0])  # The fist embedding is the target.
+    dataset = ClassificationSubcubeDataset(sample_index=sample_index)
 
-        return sorted(list(zip(files, cosine_sims)), key=lambda x: x[1], reverse=True)
+    return train_seismic_model(
+        seismic_model=self,
+        dataset=dataset,
+        learning_rate=learning_rate,
+        epochs=epochs,
+        batch_size=batch_size,
+        checkpoint_dir=checkpoint_dir,
+        checkpoint_interval=checkpoint_interval,
+        log_interval=log_interval,
+        validation_fn=validation_fn,
+        max_data_in_memory=max_data_in_memory,
+        comm=comm,
+    )
 
-    bolt.seismic.SeismicEmbeddingModel.train = wrapped_train
-    bolt.seismic.SeismicEmbeddingModel.train_distributed = train_distributed
-    bolt.seismic.SeismicEmbeddingModel.embeddings = wrapped_embeddings
-    bolt.seismic.SeismicEmbeddingModel.score_subcubes = score_subcubes
+
+def train_distributed(
+    self,
+    data_path: str,
+    learning_rate: float,
+    epochs: int,
+    batch_size: int,
+    run_config,
+    scaling_config,
+    log_file: str,
+    checkpoint_dir: str,
+    log_interval: int = 20,
+    checkpoint_interval: int = 1000,
+    validation_fn=None,
+    blur_subcubes_fraction=0.0,
+    max_data_in_memory=30,  # In Gb
+    communication_backend: str = "gloo",
+):
+    import ray
+    import thirdai.distributed_bolt as dist
+    from ray.train.torch import TorchConfig
+
+    from .._distributed_bolt.distributed import Communication
+
+    def train_loop_per_worker(config):
+        import ray
+        from ray import train
+
+        rank, world_size = get_rank_and_world_size()
+
+        config["licensing_lambda"]()
+
+        log_file = config["log_file"]
+        if rank != 0:
+            log_file += f".worker_{rank}"
+        thirdai.logging.setup(log_to_stderr=False, path=log_file, level="info")
+
+        model = ray.get(config["model_ref"])
+
+        metrics = model.train(
+            config["data_path"],
+            learning_rate=config["learning_rate"],
+            epochs=config["epochs"],
+            batch_size=config["batch_size"] // world_size,
+            checkpoint_dir=config["checkpoint_dir"] if rank == 0 else None,
+            checkpoint_interval=config["checkpoint_interval"],
+            log_interval=config["log_interval"],
+            validation_fn=config["validation_fn"] if rank == 0 else None,
+            blur_subcubes_fraction=config["blur_subcubes_fraction"],
+            max_data_in_memory=config["max_data_in_memory"],
+            comm=Communication(),
+        )
+
+        checkpoint = None
+        if rank == 0:
+            checkpoint = dist.BoltCheckPoint.from_model(model.model)
+
+        train.report(metrics=metrics, checkpoint=checkpoint)
+
+    config = {
+        "model_ref": ray.put(self),
+        "data_path": os.path.abspath(data_path),
+        "learning_rate": learning_rate,
+        "epochs": epochs,
+        "batch_size": batch_size,
+        "log_file": os.path.abspath(log_file),
+        "log_interval": log_interval,
+        "checkpoint_dir": os.path.abspath(checkpoint_dir),
+        "checkpoint_interval": checkpoint_interval,
+        "validation_fn": validation_fn,
+        "blur_subcubes_fraction": blur_subcubes_fraction,
+        "max_data_in_memory": max_data_in_memory,
+    }
+
+    license_state = thirdai._thirdai.licensing._get_license_state()
+    licensing_lambda = lambda: thirdai._thirdai.licensing._set_license_state(
+        license_state
+    )
+    config["licensing_lambda"] = licensing_lambda
+
+    trainer = dist.BoltTrainer(
+        train_loop_per_worker=train_loop_per_worker,
+        train_loop_config=config,
+        scaling_config=scaling_config,
+        backend_config=TorchConfig(backend=communication_backend),
+        run_config=run_config,
+    )
+
+    result = trainer.fit()
+
+    self.model = dist.BoltCheckPoint.get_model(result.checkpoint)
+
+
+def subcube_embeddings(seismic_model, subcubes):
+    subcubes = convert_to_patches(
+        torch.from_numpy(subcubes),
+        expected_subcube_shape=seismic_model.subcube_shape,
+        patch_shape=seismic_model.patch_shape,
+        max_pool=seismic_model.max_pool,
+    )
+    return seismic_model.embeddings_for_patches(subcubes)
+
+
+def classifier_predict(seismic_classifier, subcubes):
+    subcubes = convert_to_patches(
+        torch.from_numpy(subcubes),
+        expected_subcube_shape=seismic_classifier.subcube_shape,
+        patch_shape=seismic_classifier.patch_shape,
+        max_pool=seismic_classifier.max_pool,
+    )
+
+    return seismic_classifier.predictions_for_patches(subcubes)
+
+
+def score_subcubes(seismic_model, directory, target_subcube="tgt.npy"):
+    files = [file for file in os.listdir(directory) if file.endswith(".npy")]
+    if target_subcube not in files:
+        raise ValueError(f"Expected unable to find {target_subcube} in {directory}.")
+    files.remove(target_subcube)
+    target = np.load(os.path.join(directory, target_subcube))
+    candidates = [np.load(os.path.join(directory, file)) for file in files]
+
+    # Feed in as a batch for best parallelism.
+    embs = seismic_model.embeddings(np.stack([target] + candidates))
+
+    cosine_sims = np.matmul(embs[1:], embs[0])  # The fist embedding is the target.
+    magnitudes = np.linalg.norm(embs, axis=1, ord=2)
+    cosine_sims /= magnitudes[1:]  # The magnitude of the candidate embeddings.
+    cosine_sims /= magnitudes[0]  # The magnitude of the target embedding.
+
+    return sorted(list(zip(files, cosine_sims)), key=lambda x: x[1], reverse=True)
+
+
+def modify_seismic():
+    bolt.seismic.SeismicBase.train_distributed = train_distributed
+    bolt.seismic.SeismicBase.embeddings = subcube_embeddings
+    bolt.seismic.SeismicBase.score_subcubes = score_subcubes
+
+    bolt.seismic.SeismicEmbedding.train = train_embedding_model
+    bolt.seismic.SeismicClassifier.train = train_classifier
+    bolt.seismic.SeismicClassifier.predict = classifier_predict
