@@ -927,9 +927,7 @@ class SQLDatabase(DocumentConnector):
         self.assert_valid_columns()
 
         # setting the columns in the conector object
-        self._connector.columns = list(
-            set(self.strong_columns + self.weak_columns)
-        )
+        self._connector.columns = list(set(self.strong_columns + self.weak_columns))
 
     @property
     def name(self):
@@ -1021,9 +1019,7 @@ class SQLDatabase(DocumentConnector):
                     engine=create_engine(state["_engine_url"]),
                     table_name=state["table_name"],
                     id_col=state["id_col"],
-                    columns=list(
-                        set(state["strong_columns"] + state["weak_columns"])
-                    ),
+                    columns=list(set(state["strong_columns"] + state["weak_columns"])),
                     chunk_size=state["chunk_size"],
                 )
             except Exception as e:
@@ -1138,12 +1134,12 @@ class SharePoint(DocumentConnector):
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
 
+        self.strong_column = "strong_text"
+        self.weak_column = "weak_text"
         self.build_meta_table()
         self._name = self._connector.site_name + "_" + self.library_path
         self._source = self._connector.url + "/" + library_path
         self._hash = hash_string(self._source)
-        self.strong_column = "strong_text"
-        self.weak_column = "weak_text"
 
     @property
     def size(self) -> int:
@@ -1183,7 +1179,7 @@ class SharePoint(DocumentConnector):
 
         self._meta_table[self.meta_table_id_col] = range(len(self._meta_table))
         self._meta_table.set_index(
-            keys=self.meta_table_id_col, drop=False, inplace=True
+            keys=self.meta_table_id_col, drop=True, inplace=True
         )
 
     @property
@@ -1200,16 +1196,17 @@ class SharePoint(DocumentConnector):
         if element_id >= self.size:
             _raise_unknown_doc_error(element_id)
 
+        filename = self.meta_table.iloc[element_id]['server_relative_url'].split(sep = "/")[-1]
         return Reference(
             document=self,
             element_id=element_id,
-            text=f"filename: {self.meta_table.iloc[element_id]['filename']}"
+            text=f"filename: {filename}"
             + (
                 f", page no: {self.meta_table.iloc[element_id]['page']}"
                 if self.meta_table.iloc[element_id]["page"] is not None
                 else ""
             ),
-            source=self._source + "/" + self.meta_table.iloc[element_id]["filename"],
+            source=self._source + "/" + filename,
             metadata={
                 **self.meta_table.loc[element_id].to_dict(),
                 **self.doc_metadata,
