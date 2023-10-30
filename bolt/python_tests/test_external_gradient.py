@@ -27,7 +27,8 @@ class WrappedBoltModel:
         return out
 
     def backpropagate(self, grad):
-        grad = bolt.nn.Tensor(grad.numpy())
+        # Bolt expects that the gradient is to minimize the loss
+        grad = bolt.nn.Tensor(-grad.numpy())
         self.model.backpropagate([grad])
 
     def update_parameters(self, lr):
@@ -67,7 +68,7 @@ def test_bolt_with_torch_output():
 
             loss = torch.nn.functional.cross_entropy(out, y)
             loss.backward()
-            bolt_model.backpropagate(-hidden.grad)
+            bolt_model.backpropagate(hidden.grad)
 
             opt.step()
             bolt_model.update_parameters(0.001)
