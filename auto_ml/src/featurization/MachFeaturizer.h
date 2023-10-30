@@ -3,72 +3,173 @@
 #include <cereal/access.hpp>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Dataset.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/featurization/Featurizer.h>
+#include <auto_ml/src/featurization/ReservedColumns.h>
+#include <auto_ml/src/featurization/TabularTransformations.h>
+#include <data/src/ColumnMap.h>
+#include <data/src/ColumnMapIterator.h>
 #include <data/src/TensorConversion.h>
+#include <data/src/columns/ArrayColumns.h>
+#include <data/src/columns/Column.h>
+#include <data/src/columns/ValueColumns.h>
+#include <data/src/transformations/CategoricalTemporal.h>
+#include <data/src/transformations/ColdStartText.h>
+#include <data/src/transformations/Pipeline.h>
+#include <data/src/transformations/State.h>
+#include <data/src/transformations/StringCast.h>
+#include <data/src/transformations/StringConcat.h>
+#include <data/src/transformations/Transformation.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/mach/MachIndex.h>
+#include <algorithm>
+#include <limits>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace thirdai::automl {
 
-using RlhfSample = std::pair<std::string, std::vector<uint32_t>>;
-
-class MachFeaturizer final : public Featurizer {
+class MachFeaturizer final {
  public:
   MachFeaturizer(ColumnDataTypes data_types,
-                 const TemporalRelationships& temporal_relationship,
+                 const CategoricalDataTypePtr& target_config,
+                 const TemporalRelationships& temporal_relationships,
                  const std::string& label_column,
-                 const dataset::mach::MachIndexPtr& mach_index,
                  const TabularOptions& options);
 
-  std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>
-  featurizeForIntroduceDocuments(
-      const dataset::DataSourcePtr& data_source,
+  data::ColumnMapIteratorPtr iter(const dataset::DataSourcePtr& data) const {
+    return data::CsvIterator::make(data, _delimiter);
+  }
+
+  data::ColumnMap columns(const dataset::DataSourcePtr& data) const {
+    return data::CsvIterator::all(data, _delimiter);
+  }
+
+  data::ColumnMap addLabelColumn(data::ColumnMap&& columns,
+                                 uint32_t label) const;
+
+  std::pair<data::ColumnMap, data::ColumnMap> associationColumnMaps(
+      const std::vector<std::pair<std::string, std::string>>& samples) const;
+
+  data::ColumnMap upvoteLabeledColumnMap(
+      const std::vector<std::pair<std::string, uint32_t>>& samples) const;
+
+  data::ColumnMapIteratorPtr labeledTransform(
+      data::ColumnMapIteratorPtr&& iter) const {
+    return data::TransformedIterator::make(
+        iter, trackingLabeledTransformation(), _state);
+  }
+
+  data::ColumnMap labeledTransform(data::ColumnMap&& columns) const {
+    return trackingLabeledTransformation()->apply(std::move(columns), *_state);
+  }
+
+  data::ColumnMapIteratorPtr bucketedTransform(
+      data::ColumnMapIteratorPtr&& iter) const {
+    return data::TransformedIterator::make(
+        iter, trackingBucketedTransformation(), _state);
+  }
+
+  data::ColumnMap bucketedTransform(data::ColumnMap&& columns) const {
+    return trackingBucketedTransformation()->apply(std::move(columns), *_state);
+  }
+
+  data::ColumnMapIteratorPtr trackingUnlabeledTransform(
+      data::ColumnMapIteratorPtr&& iter) const {
+    return data::TransformedIterator::make(iter, _tracking_input_transformation,
+                                           _state);
+  }
+
+  data::ColumnMap trackingUnlabeledTransform(data::ColumnMap&& columns) const {
+    return _tracking_input_transformation->apply(std::move(columns), *_state);
+  }
+
+  data::ColumnMapIteratorPtr constUnlabeledTransform(
+      data::ColumnMapIteratorPtr&& iter) const {
+    return data::TransformedIterator::make(iter, _const_input_transformation,
+                                           _state);
+  }
+
+  data::ColumnMap constUnlabeledTransform(data::ColumnMap&& columns) const {
+    return _const_input_transformation->apply(std::move(columns), *_state);
+  }
+
+  data::ColumnMapIteratorPtr coldstart(
+      data::ColumnMapIteratorPtr&& iter,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
-      bool fast_approximation, size_t batch_size);
+      bool fast_approximation = false) const {
+    return data::TransformedIterator::make(
+        iter,
+        coldstartTransformation(strong_column_names, weak_column_names,
+                                fast_approximation),
+        _state);
+  }
 
-  std::pair<bolt::TensorList, bolt::TensorList> featurizeHashesTrainingBatch(
-      const MapInputBatch& samples);
+  data::ColumnMap coldstart(data::ColumnMap&& columns,
+                            const std::vector<std::string>& strong_column_names,
+                            const std::vector<std::string>& weak_column_names,
+                            bool fast_approximation = false) const {
+    return coldstartTransformation(strong_column_names, weak_column_names,
+                                   fast_approximation)
+        ->applyStateless(std::move(columns));
+  }
 
-  data::ColumnMap featurizeDataset(
-      const dataset::DataSourcePtr& data_source,
-      const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names);
+  void assertNoTemporalFeatures() const {
+    if (hasTemporalTransformations()) {
+      throw std::runtime_error(
+          "This feature is not supported for models with temporal features.");
+    }
+  }
 
-  data::ColumnMap featurizeRlhfSamples(const std::vector<RlhfSample>& samples);
+  void assertTextModel() const {
+    if (!textDatasetConfig()) {
+      throw std::runtime_error(
+          "This feature is only supported for text models.");
+    }
+  }
 
-  bolt::LabeledDataset columnsToTensors(const data::ColumnMap& columns,
-                                        size_t batch_size) const;
+  bool hasTemporalTransformations() const;
 
-  std::vector<std::pair<uint32_t, RlhfSample>> getBalancingSamples(
-      const dataset::DataSourcePtr& data_source,
-      const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names,
-      size_t n_balancing_samples, size_t rows_to_read);
+  void resetTemporalTrackers() { _state->clearHistoryTrackers(); }
 
-  const auto& machIndex() const { return _state->machIndex(); }
+  std::optional<TextDatasetConfig> textDatasetConfig() const {
+    return _text_dataset_config;
+  }
 
  private:
-  data::ColumnMap removeIntermediateColumns(const data::ColumnMap& columns);
+  data::TransformationPtr trackingLabeledTransformation() const {
+    return data::Pipeline::make(
+        {_tracking_input_transformation, _label_transformation});
+  }
 
-  static data::TransformationPtr makeDocIdTransformation(
-      const std::string& label_column_name,
-      const CategoricalDataTypePtr& label_column_info);
+  data::TransformationPtr trackingBucketedTransformation() const {
+    return data::Pipeline::make(
+        {_tracking_input_transformation, _string_to_int_buckets});
+  }
 
-  static data::TransformationPtr makeLabelTransformations(
-      const std::string& label_column_name,
-      const CategoricalDataTypePtr& label_column_info);
-
-  // The Mach model takes in two labels, one for the buckets, and one containing
-  // the doc ids which is used by the mach metrics. For some inputs, for
-  // instance in trainWithHashes, we don't have the doc ids that the model is
-  // expecting, this adds a dummy input for the doc ids so that we have the
-  // number of labels the model is expecting.
-  static void addDummyDocIds(data::ColumnMap& columns);
-
-  data::TransformationPtr _doc_id_transform;
-  data::TransformationPtr _prehashed_labels_transform;
+  data::TransformationPtr coldstartTransformation(
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names,
+      bool fast_approximation) const;
 
   MachFeaturizer() {}
+
+  char _delimiter;
+  std::optional<char> _label_delimiter;
+  data::StatePtr _state;
+
+  data::TransformationPtr _tracking_input_transformation;
+  std::string _input_indices_column;
+  std::string _input_values_column;
+  data::TransformationPtr _const_input_transformation;
+  data::TransformationPtr _label_transformation;
+  data::TransformationPtr _string_to_int_buckets;
+
+  std::optional<TextDatasetConfig> _text_dataset_config;
 
   friend class cereal::access;
   template <class Archive>

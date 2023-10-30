@@ -65,6 +65,8 @@ class State {
 
   explicit State(automl::GraphInfoPtr graph) : _graph(std::move(graph)) {}
 
+  static auto make() { return std::make_shared<State>(); }
+
   static auto make(MachIndexPtr mach_index) {
     return std::make_shared<State>(std::move(mach_index));
   }

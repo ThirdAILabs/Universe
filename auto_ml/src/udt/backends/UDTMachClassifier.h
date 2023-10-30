@@ -5,7 +5,7 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
-#include <auto_ml/src/featurization/NewMachFeaturizer.h>
+#include <auto_ml/src/featurization/MachFeaturizer.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <auto_ml/src/rlhf/RLHFSampler.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -81,11 +81,23 @@ class UDTMachClassifier final : public UDTBackend {
                                bool sparse_inference,
                                std::optional<uint32_t> num_hashes) final;
 
+  void updateTemporalTrackers(const MapInput& sample) final {
+    _data->labeledTransform(data::ColumnMap::fromMapInput(sample));
+  }
+
+  void updateTemporalTrackersBatch(const MapInputBatch& samples) final {
+    _data->labeledTransform(data::ColumnMap::fromMapInputBatch(samples));
+  }
+
+  void resetTemporalTrackers() final { _data->resetTemporalTrackers(); }
+
+  std::optional<TextDatasetConfig> textDatasetConfig() const final {
+    return _data->textDatasetConfig();
+  }
+
   ModelPtr model() const final { return _classifier->model(); }
 
   void setModel(const ModelPtr& model) final;
-
-  FeaturizerPtr featurizer() const final { return _data; }
 
   py::object coldstart(const dataset::DataSourcePtr& data,
                        const std::vector<std::string>& strong_column_names,
@@ -217,7 +229,7 @@ class UDTMachClassifier final : public UDTBackend {
   void serialize(Archive& archive, uint32_t version);
 
   std::shared_ptr<mach::Mach> _classifier;
-  NewMachFeaturizerPtr _data;
+  MachFeaturizerPtr _data;
 
   uint32_t _default_top_k_to_return;
   uint32_t _num_buckets_to_eval;

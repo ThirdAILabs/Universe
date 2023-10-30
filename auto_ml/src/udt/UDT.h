@@ -155,22 +155,14 @@ class UDT {
   }
 
   void updateTemporalTrackers(const MapInput& sample) {
-    if (auto featurizer = _backend->featurizer()) {
-      featurizer->updateTemporalTrackers(sample);
-    }
+    _backend->updateTemporalTrackers(sample);
   }
 
   void updateTemporalTrackersBatch(const MapInputBatch& samples) {
-    if (auto featurizer = _backend->featurizer()) {
-      featurizer->updateTemporalTrackersBatch(samples);
-    }
+    _backend->updateTemporalTrackersBatch(samples);
   }
 
-  void resetTemporalTrackers() {
-    if (auto featurizer = _backend->featurizer()) {
-      featurizer->resetTemporalTrackers();
-    }
-  }
+  void resetTemporalTrackers() { _backend->resetTemporalTrackers(); }
 
   void indexNodes(const dataset::DataSourcePtr& source) {
     return _backend->indexNodes(source);
@@ -204,8 +196,8 @@ class UDT {
   std::vector<uint32_t> modelDims() const;
 
   const TextDatasetConfig& textDatasetConfig() const {
-    if (auto featurizer = _backend->featurizer()) {
-      return featurizer->textDatasetConfig();
+    if (_backend->textDatasetConfig()) {
+      return _backend->textDatasetConfig();
     }
     throw std::invalid_argument(
         "This method is only supported on Text Models.");

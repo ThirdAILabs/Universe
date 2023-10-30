@@ -115,8 +115,6 @@ class UDTBackend {
     throw notSupported("modifying underlying model");
   }
 
-  virtual FeaturizerPtr featurizer() const { return nullptr; }
-
   virtual void verifyCanDistribute() const {
     throw notSupported("train_distributed");
   }
@@ -166,6 +164,18 @@ class UDTBackend {
   virtual std::string className(uint32_t class_id) const {
     (void)class_id;
     throw notSupported("class_name");
+  }
+
+  virtual void updateTemporalTrackers(const MapInput& sample) { (void)sample; }
+
+  virtual void updateTemporalTrackersBatch(const MapInputBatch& samples) {
+    (void)samples;
+  }
+
+  virtual void resetTemporalTrackers() {}
+
+  virtual std::optional<TextDatasetConfig> textDatasetConfig() const {
+    return {};
   }
 
   virtual ColumnDataTypes dataTypes() const {
