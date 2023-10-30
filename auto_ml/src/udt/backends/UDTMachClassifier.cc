@@ -123,7 +123,8 @@ UDTMachClassifier::UDTMachClassifier(
 
   _classifier = mach::Mach::make(
       *model, num_hashes, mach_sampling_threshold, freeze_hash_tables,
-      inputIndicesColumn(), inputValuesColumn(), labelColumn(), bucketColumn());
+      _data->modelInputIndicesColumn(), _data->modelInputValuesColumn(),
+      _data->modelLabelColumn(), _data->modelBucketColumn());
 
   if (user_args.get<bool>("rlhf", "bool", false)) {
     size_t num_balancing_docs = user_args.get<uint32_t>(
