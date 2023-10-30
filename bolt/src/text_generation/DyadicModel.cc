@@ -23,7 +23,8 @@ DyadicModel::DyadicModel(bolt::ModelPtr model, bool is_bidirectional)
   size_t n_intervals = is_bidirectional ? model_inputs / 2 : model_inputs;
 
   _dyadic_transform = std::make_shared<data::DyadicInterval>(
-      "target", std::nullopt, "interval_", "next_word", std::nullopt, n_intervals);
+      "target", std::nullopt, "interval_", "next_word", std::nullopt,
+      n_intervals);
 
   if (_model->outputs().size() != 1) {
     throw std::invalid_argument("Expected model to have a single output.");
