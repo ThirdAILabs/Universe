@@ -35,11 +35,11 @@ MachFeaturizer::MachFeaturizer(
 
   if (target_config->delimiter) {
     _label_transformation = std::make_shared<data::StringToTokenArray>(
-        label_column, FEATURIZED_LABELS, target_config->delimiter.value(),
+        label_column, modelLabelColumn(), target_config->delimiter.value(),
         std::numeric_limits<uint32_t>::max());
   } else {
     _label_transformation = std::make_shared<data::StringToToken>(
-        label_column, FEATURIZED_LABELS, std::numeric_limits<uint32_t>::max());
+        label_column, modelLabelColumn(), std::numeric_limits<uint32_t>::max());
   }
 
   if (data_types.size() == 2 && temporal_relationships.empty()) {

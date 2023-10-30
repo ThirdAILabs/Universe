@@ -38,18 +38,24 @@ namespace mach = dataset::mach;
 
 class Mach {
  public:
-  Mach(const bolt::Model& model, uint32_t num_hashes,
-       float mach_sampling_threshold, bool freeze_hash_tables,
-       std::string input_indices_column, std::string input_values_column,
-       std::string label_column, std::string bucket_column);
+  Mach(uint32_t input_dim, uint32_t num_buckets, const ArgumentMap& args,
+       const std::optional<std::string>& model_config, bool use_sigmoid_bce,
+       uint32_t num_hashes, float mach_sampling_threshold,
+       bool freeze_hash_tables, std::string input_indices_column,
+       std::string input_values_column, std::string label_column,
+       std::string bucket_column);
 
-  static auto make(const bolt::Model& model, uint32_t num_hashes,
+  static auto make(uint32_t input_dim, uint32_t num_buckets,
+                   const ArgumentMap& args,
+                   const std::optional<std::string>& model_config,
+                   bool use_sigmoid_bce, uint32_t num_hashes,
                    float mach_sampling_threshold, bool freeze_hash_tables,
                    std::string input_indices_column,
                    std::string input_values_column, std::string label_column,
                    std::string bucket_column) {
     return std::make_shared<Mach>(
-        model, num_hashes, mach_sampling_threshold, freeze_hash_tables,
+        input_dim, num_buckets, args, model_config, use_sigmoid_bce, num_hashes,
+        mach_sampling_threshold, freeze_hash_tables,
         std::move(input_indices_column), std::move(input_values_column),
         std::move(label_column), std::move(bucket_column));
   }

@@ -39,11 +39,13 @@
 #include <versioning/src/Versions.h>
 #include <algorithm>
 #include <exception>
+#include <iostream>
 #include <iterator>
 #include <limits>
 #include <memory>
 #include <numeric>
 #include <optional>
+#include <ostream>
 #include <random>
 #include <regex>
 #include <stdexcept>
@@ -116,15 +118,12 @@ UDTMachClassifier::UDTMachClassifier(
   bool freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
                                                 defaults::FREEZE_HASH_TABLES);
 
-  auto model = utils::buildModel(
-      /* input_dim= */ input_dim, /* output_dim= */ num_buckets,
-      /* args= */ user_args, /* model_config= */ model_config,
-      /* use_sigmoid_bce = */ true, /* mach= */ true);
-
   _classifier = mach::Mach::make(
-      *model, num_hashes, mach_sampling_threshold, freeze_hash_tables,
-      _data->modelInputIndicesColumn(), _data->modelInputValuesColumn(),
-      _data->modelLabelColumn(), _data->modelBucketColumn());
+      input_dim, num_buckets, user_args, model_config,
+      /* use_sigmoid_bce = */ true, num_hashes, mach_sampling_threshold,
+      freeze_hash_tables, _data->modelInputIndicesColumn(),
+      _data->modelInputValuesColumn(), _data->modelLabelColumn(),
+      _data->modelBucketColumn());
 
   if (user_args.get<bool>("rlhf", "bool", false)) {
     size_t num_balancing_docs = user_args.get<uint32_t>(
