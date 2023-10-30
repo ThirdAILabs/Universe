@@ -1178,9 +1178,7 @@ class SharePoint(DocumentConnector):
         )
 
         self._meta_table[self.meta_table_id_col] = range(len(self._meta_table))
-        self._meta_table.set_index(
-            keys=self.meta_table_id_col, drop=True, inplace=True
-        )
+        self._meta_table.set_index(keys=self.meta_table_id_col, drop=True, inplace=True)
 
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
@@ -1196,7 +1194,9 @@ class SharePoint(DocumentConnector):
         if element_id >= self.size:
             _raise_unknown_doc_error(element_id)
 
-        filename = self.meta_table.iloc[element_id]['server_relative_url'].split(sep = "/")[-1]
+        filename = self.meta_table.iloc[element_id]["server_relative_url"].split(
+            sep="/"
+        )[-1]
         return Reference(
             document=self,
             element_id=element_id,
