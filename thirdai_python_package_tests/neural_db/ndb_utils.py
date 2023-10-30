@@ -201,7 +201,7 @@ all_doc_getters = [
     lambda: ndb.SentenceLevelPDF(PDF_FILE),
     lambda: ndb.SentenceLevelDOCX(DOCX_FILE),
 ]
-all_doc_getters.extend([eq_doc.connector_doc for eq_doc in all_connector_doc_getter])
+all_doc_getters.extend([eq_doc.connector_doc for eq_doc in all_connector_doc_getters])
 
 
 def docs_with_meta():
