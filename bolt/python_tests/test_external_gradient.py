@@ -81,3 +81,23 @@ def test_bolt_with_torch_output():
         acc = preds.eq(test_y).sum().item() / len(preds)
 
     assert acc >= 0.95  # Accuracy should be ~0.99-1.0
+
+
+@pytest.mark.unit
+def test_invalid_grad_dim():
+    model = WrappedBoltModel()
+
+    model.forward(torch.rand(10, N_CLASSES))
+
+    with pytest.raises(ValueError):
+        model.backpropagate(torch.rand(10, N_CLASSES + 1))
+
+
+@pytest.mark.unit
+def test_invalid_grad_batch_size():
+    model = WrappedBoltModel()
+
+    model.forward(torch.rand(10, N_CLASSES))
+
+    with pytest.raises(ValueError):
+        model.backpropagate(torch.rand(11, N_CLASSES))
