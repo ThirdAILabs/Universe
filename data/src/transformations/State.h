@@ -11,6 +11,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <unordered_map>
 
@@ -112,6 +113,8 @@ class State {
       return;
     }
     _rlhf_sampler = std::move(sampler);
+    std::cout << "_rlhf_sampler is nullopt? " << (_rlhf_sampler == std::nullopt)
+              << std::endl;
   }
 
   bool containsVocab(const std::string& key) const {

@@ -14,6 +14,7 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
+#include <data/src/transformations/AddMachRlhfSamples.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/Transformation.h>
@@ -168,6 +169,9 @@ class Mach {
 
   void enableRlhf(uint32_t num_balancing_docs,
                   uint32_t num_balancing_samples_per_doc) {
+    _add_balancing_samples = data::AddMachRlhfSamples::make(
+        inputIndicesColumn(), inputValuesColumn(), labelColumn(),
+        bucketColumn());
     _state->setRlhfSampler(data::mach::RLHFSampler(
         /* max_docs= */ num_balancing_docs,
         /* max_samples_per_doc= */ num_balancing_samples_per_doc));

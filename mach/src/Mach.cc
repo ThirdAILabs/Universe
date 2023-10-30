@@ -1,7 +1,6 @@
 #include "Mach.h"
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
-#include <data/src/transformations/AddMachRlhfSamples.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/State.h>
 #include <dataset/src/mach/MachIndex.h>
@@ -37,9 +36,6 @@ Mach::Mach(uint32_t input_dim, uint32_t num_buckets, const ArgumentMap& args,
           /* num_buckets= */ _model->outputs().front()->dim(),
           /* num_hashes=*/num_hashes))),
       _label_to_buckets(data::MachLabel::make(label_column, bucket_column)),
-      _add_balancing_samples(data::AddMachRlhfSamples::make(
-          input_indices_column, input_values_column, label_column,
-          bucket_column)),
       _bolt_input_columns(
           {data::OutputColumns(input_indices_column, input_values_column)}),
       _bolt_label_columns(
@@ -50,25 +46,19 @@ Mach::Mach(uint32_t input_dim, uint32_t num_buckets, const ArgumentMap& args,
       _all_bolt_columns({std::move(input_indices_column),
                          std::move(input_values_column),
                          std::move(label_column), std::move(bucket_column)}) {
-  std::cout << "MACH" << __LINE__ << std::endl;
   updateSamplingStrategy();
-  std::cout << "MACH" << __LINE__ << std::endl;
 }
 
 void Mach::randomlyIntroduceEntities(const data::ColumnMap& columns) {
-  std::cout << "MACH" << __LINE__ << std::endl;
   const auto& labels = columns.getArrayColumn<uint32_t>(labelColumn());
-  std::cout << "MACH" << __LINE__ << std::endl;
 
   for (size_t row = 0; row < columns.numRows(); row++) {
-    std::cout << "MACH" << __LINE__ << " row " << row << std::endl;
     if (labels->row(row).size() < 1) {
       continue;
     }
 
     std::vector<uint32_t> hashes(index()->numHashes());
     for (uint32_t h = 0; h < index()->numHashes(); h++) {
-      std::cout << "MACH" << __LINE__ << " h " << h << std::endl;
       std::uniform_int_distribution<uint32_t> dist(0,
                                                    index()->numBuckets() - 1);
       auto hash = dist(_mt);
@@ -469,42 +459,33 @@ data::ColumnMap Mach::associateSamples(data::ColumnMap from_columns,
 }
 
 void Mach::updateSamplingStrategy() {
-  std::cout << "MACH" << __LINE__ << std::endl;
   auto output_layer =
       bolt::FullyConnected::cast(_model->opExecutionOrder().back());
-  std::cout << "MACH" << __LINE__ << std::endl;
 
   const auto& neuron_index = output_layer->kernel()->neuronIndex();
-  std::cout << "MACH" << __LINE__ << std::endl;
 
   float index_sparsity = index()->sparsity();
-  std::cout << "MACH" << __LINE__ << std::endl;
   if (index_sparsity > 0 && index_sparsity <= _mach_sampling_threshold) {
     // TODO(Nicholas) add option to specify new neuron index in set sparsity.
     output_layer->setSparsity(index_sparsity, false, false);
     auto new_index = bolt::MachNeuronIndex::make(index());
     output_layer->kernel()->setNeuronIndex(new_index);
-    std::cout << "MACH" << __LINE__ << std::endl;
 
   } else {
     if (std::dynamic_pointer_cast<bolt::MachNeuronIndex>(neuron_index)) {
       float sparsity = autotuneSparsity(index()->numBuckets());
-      std::cout << "MACH" << __LINE__ << std::endl;
 
       auto sampling_config = bolt::DWTASamplingConfig::autotune(
           index()->numBuckets(), sparsity,
           /* experimental_autotune= */ false);
-      std::cout << "MACH" << __LINE__ << std::endl;
 
       output_layer->setSparsity(sparsity, false, false);
-      std::cout << "MACH" << __LINE__ << std::endl;
 
       if (sampling_config) {
         auto new_index = sampling_config->getNeuronIndex(
             output_layer->dim(), output_layer->inputDim());
         output_layer->kernel()->setNeuronIndex(new_index);
       }
-      std::cout << "MACH" << __LINE__ << std::endl;
     }
   }
 }
