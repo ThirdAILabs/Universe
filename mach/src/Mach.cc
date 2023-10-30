@@ -1,5 +1,6 @@
 #include "Mach.h"
 #include "Model.h"
+#include <bolt/src/neuron_index/MachNeuronIndex.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <data/src/transformations/AddMachRlhfSamples.h>
 #include <data/src/transformations/MachLabel.h>
@@ -7,6 +8,7 @@
 #include <dataset/src/mach/MachIndex.h>
 #include <algorithm>
 #include <random>
+#include <strings.h>
 #include <utility>
 
 namespace thirdai::mach {
@@ -60,6 +62,43 @@ void Mach::randomlyIntroduceEntities(const data::ColumnMap& columns) {
 
     index()->insert(labels->row(i)[0], std::move(hashes));
   }
+}
+
+void Mach::introduceEntities(const data::ColumnMap& columns,
+                             std::optional<uint32_t> num_buckets_to_sample_opt,
+                             uint32_t num_random_hashes) {
+  uint32_t num_buckets_to_sample =
+      num_buckets_to_sample_opt.value_or(index()->numHashes());
+
+  std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>> top_k_per_doc;
+
+  bolt::python::CtrlCCheck ctrl_c_check;
+
+  // Note: using sparse inference here could cause issues because the
+  // mach index sampler will only return nonempty buckets, which could
+  // cause new docs to only be mapped to buckets already containing
+  // entities.
+  auto scores = _model->forward(inputTensors(columns)).at(0);
+
+  ctrl_c_check();
+
+  auto doc_ids = columns.getArrayColumn<uint32_t>(labelColumn());
+  for (uint32_t row = 0; row < scores->batchSize(); row++) {
+    uint32_t label = doc_ids->row(row)[0];
+    top_k_per_doc[label].push_back(
+        scores->getVector(row).findKLargestActivations(num_buckets_to_sample));
+    ctrl_c_check();
+  }
+
+  for (auto& [doc, top_ks] : top_k_per_doc) {
+    auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
+                                  num_random_hashes);
+    index()->insert(doc, hashes);
+
+    ctrl_c_check();
+  }
+
+  updateSamplingStrategy();
 }
 
 void Mach::eraseEntity(uint32_t entity) {
@@ -409,6 +448,142 @@ data::ColumnMap Mach::associateSamples(data::ColumnMap from_columns,
   from_columns.setColumn(bucketColumn(), mach_labels);
   addDummyLabels(from_columns);
   return from_columns;
+}
+
+void Mach::updateSamplingStrategy() {
+  auto output_layer =
+      bolt::FullyConnected::cast(_model->opExecutionOrder().back());
+
+  const auto& neuron_index = output_layer->kernel()->neuronIndex();
+
+  float index_sparsity = index()->sparsity();
+  if (index_sparsity > 0 && index_sparsity <= _mach_sampling_threshold) {
+    // TODO(Nicholas) add option to specify new neuron index in set sparsity.
+    output_layer->setSparsity(index_sparsity, false, false);
+    auto new_index = bolt::MachNeuronIndex::make(index());
+    output_layer->kernel()->setNeuronIndex(new_index);
+
+  } else {
+    if (std::dynamic_pointer_cast<bolt::MachNeuronIndex>(neuron_index)) {
+      float sparsity = autotuneSparsity(index()->numBuckets());
+
+      auto sampling_config = bolt::DWTASamplingConfig::autotune(
+          index()->numBuckets(), sparsity,
+          /* experimental_autotune= */ false);
+
+      output_layer->setSparsity(sparsity, false, false);
+
+      if (sampling_config) {
+        auto new_index = sampling_config->getNeuronIndex(
+            output_layer->dim(), output_layer->inputDim());
+        output_layer->kernel()->setNeuronIndex(new_index);
+      }
+    }
+  }
+}
+
+struct BucketScore {
+  uint32_t frequency = 0;
+  float score = 0.0;
+};
+
+struct CompareBuckets {
+  bool operator()(const std::pair<uint32_t, BucketScore>& lhs,
+                  const std::pair<uint32_t, BucketScore>& rhs) {
+    if (lhs.second.frequency == rhs.second.frequency) {
+      return lhs.second.score > rhs.second.score;
+    }
+    return lhs.second.frequency > rhs.second.frequency;
+  }
+};
+
+std::vector<uint32_t> Mach::topHashesForDoc(
+    std::vector<TopKActivationsQueue>&& top_k_per_sample,
+    uint32_t num_buckets_to_sample, uint32_t num_random_hashes) {
+  uint32_t num_hashes = index()->numHashes();
+
+  auto& mach_index = *index();
+
+  if (num_buckets_to_sample < mach_index.numHashes()) {
+    throw std::invalid_argument(
+        "Sampling from fewer buckets than num_hashes is not supported. If "
+        "you'd like to introduce using fewer hashes, please reset the number "
+        "of hashes for the index.");
+  }
+
+  if (num_buckets_to_sample > mach_index.numBuckets()) {
+    throw std::invalid_argument(
+        "Cannot sample more buckets than there are in the index.");
+  }
+
+  std::unordered_map<uint32_t, BucketScore> hash_freq_and_scores;
+  for (auto& top_k : top_k_per_sample) {
+    while (!top_k.empty()) {
+      auto [activation, active_neuron] = top_k.top();
+      if (!hash_freq_and_scores.count(active_neuron)) {
+        hash_freq_and_scores[active_neuron] = BucketScore{1, activation};
+      } else {
+        hash_freq_and_scores[active_neuron].frequency += 1;
+        hash_freq_and_scores[active_neuron].score += activation;
+      }
+      top_k.pop();
+    }
+  }
+
+  // We sort the hashes first by number of occurances and tiebreak with
+  // the higher aggregated score if necessary. We don't only use the
+  // activations since those typically aren't as useful as the
+  // frequencies.
+  std::vector<std::pair<uint32_t, BucketScore>> sorted_hashes(
+      hash_freq_and_scores.begin(), hash_freq_and_scores.end());
+
+  CompareBuckets cmp;
+  std::sort(sorted_hashes.begin(), sorted_hashes.end(), cmp);
+
+  if (num_buckets_to_sample > num_hashes) {
+    // If we are sampling more buckets then we end up using we rerank the
+    // buckets based on size to load balance the index.
+    std::sort(sorted_hashes.begin(),
+              sorted_hashes.begin() + num_buckets_to_sample,
+              [&mach_index, &cmp](const auto& lhs, const auto& rhs) {
+                size_t lhs_size = mach_index.bucketSize(lhs.first);
+                size_t rhs_size = mach_index.bucketSize(rhs.first);
+
+                // Give preference to emptier buckets. If buckets are
+                // equally empty, use one with the best score.
+                if (lhs_size == rhs_size) {
+                  return cmp(lhs, rhs);
+                }
+
+                return lhs_size < rhs_size;
+              });
+  }
+
+  std::vector<uint32_t> new_hashes;
+
+  // We can optionally specify the number of hashes we'd like to be
+  // random for a new document. This is to encourage an even distribution
+  // among buckets.
+  if (num_random_hashes > num_hashes) {
+    throw std::invalid_argument(
+        "num_random_hashes cannot be greater than num hashes.");
+  }
+
+  uint32_t num_informed_hashes = num_hashes - num_random_hashes;
+  for (uint32_t i = 0; i < num_informed_hashes; i++) {
+    auto [hash, freq_score_pair] = sorted_hashes[i];
+    new_hashes.push_back(hash);
+  }
+
+  uint32_t num_buckets = mach_index.numBuckets();
+  std::uniform_int_distribution<uint32_t> int_dist(0, num_buckets - 1);
+  std::mt19937 rand(thirdai::global_random::nextSeed());
+
+  for (uint32_t i = 0; i < num_random_hashes; i++) {
+    new_hashes.push_back(int_dist(rand));
+  }
+
+  return new_hashes;
 }
 
 template void Mach::serialize(cereal::BinaryInputArchive&);

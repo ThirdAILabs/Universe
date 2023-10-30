@@ -65,7 +65,7 @@ data::ColumnMap MachFeaturizer::addLabelColumn(data::ColumnMap&& columns,
     label_column = data::ValueColumn<uint32_t>::make(
         std::move(label_column_data), std::numeric_limits<uint32_t>::max());
   }
-  columns.setColumn(MACH_DOC_IDS, label_column);
+  columns.setColumn(modelLabelColumn(), label_column);
   return columns;
 }
 std::pair<data::ColumnMap, data::ColumnMap>
@@ -100,7 +100,7 @@ data::ColumnMap MachFeaturizer::upvoteLabeledColumnMap(
   return data::ColumnMap(
       {{textDatasetConfig().textColumn(),
         data::ValueColumn<std::string>::make(std::move(from_texts))},
-       {MACH_LABELS,
+       {modelLabelColumn(),
         data::ValueColumn<uint32_t>::make(
             std::move(to_labels), std::numeric_limits<uint32_t>::max())}});
 }

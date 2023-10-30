@@ -67,11 +67,6 @@ uint32_t expectInteger(const Label& label) {
   return std::get<uint32_t>(label);
 }
 
-auto inputIndicesColumn() { return ""; }
-auto inputValuesColumn() { return ""; }
-auto labelColumn() { return ""; }
-auto bucketColumn() { return ""; }
-
 UDTMachClassifier::UDTMachClassifier(
     const ColumnDataTypes& input_data_types,
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
@@ -143,9 +138,10 @@ UDTMachClassifier::UDTMachClassifier(
   std::vector<uint32_t> labels(n_target_classes);
   std::iota(labels.begin(), labels.end(), 0);
   _classifier->randomlyIntroduceEntities(data::ColumnMap(
-      {{labelColumn(), data::ValueColumn<uint32_t>::make(
-                           std::move(labels),
-                           /* dim= */ std::numeric_limits<uint32_t>::max())}}));
+      {{_data->modelLabelColumn(),
+        data::ValueColumn<uint32_t>::make(
+            std::move(labels),
+            /* dim= */ std::numeric_limits<uint32_t>::max())}}));
 }
 
 py::object UDTMachClassifier::train(

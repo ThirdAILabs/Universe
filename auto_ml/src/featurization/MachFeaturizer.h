@@ -152,6 +152,18 @@ class MachFeaturizer final {
     return *_text_dataset_config;
   }
 
+  const std::string& modelInputIndicesColumn() const {
+    return _input_indices_column;
+  }
+
+  const std::string& modelInputValuesColumn() const {
+    return _input_values_column;
+  }
+
+  static const std::string& modelLabelColumn() { return MACH_DOC_IDS; }
+
+  static const std::string& modelBucketColumn() { return MACH_LABELS; }
+
  private:
   data::TransformationPtr trackingLabeledTransformation() const {
     return data::Pipeline::make(

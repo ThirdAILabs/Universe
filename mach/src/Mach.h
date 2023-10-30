@@ -110,8 +110,8 @@ class Mach {
     size_t batch_size = columns.numRows();
     std::vector<std::vector<std::pair<uint32_t, double>>> scores(batch_size);
 
-#pragma omp parallel for default(none) shared( \
-    entities, outputs, scores, top_k, batch_size, index) if (batch_size > 1)
+#pragma omp parallel for default(none) \
+    shared(entities, outputs, scores, top_k, batch_size) if (batch_size > 1)
     for (uint32_t i = 0; i < batch_size; i++) {
       const BoltVector& vector = outputs->getVector(i);
       scores[i] = index()->scoreEntities(vector, entities[i], top_k);
@@ -169,6 +169,10 @@ class Mach {
 
  private:
   void updateSamplingStrategy();
+
+  std::vector<uint32_t> topHashesForDoc(
+      std::vector<TopKActivationsQueue>&& top_k_per_sample,
+      uint32_t num_buckets_to_sample, uint32_t num_random_hashes);
 
   std::optional<data::ColumnMap> balancingColumnMap(uint32_t num_balancers);
 
