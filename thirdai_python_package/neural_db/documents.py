@@ -1080,10 +1080,6 @@ class SQLDatabase(DocumentConnector):
         all_cols = self._connector.cols_metadata()
 
         columns_set = set([col["name"] for col in all_cols])
-<<<<<<< HEAD
-
-=======
->>>>>>> 78223c8e9ca2b799594fea308fff4b5302e99674
         if (self.strong_columns is not None) and (
             not set(self.strong_columns).issubset(columns_set)
         ):
