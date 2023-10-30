@@ -24,6 +24,7 @@
 #include <dataset/src/mach/MachIndex.h>
 #include <algorithm>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -39,6 +40,16 @@ class MachFeaturizer final {
                  const TemporalRelationships& temporal_relationships,
                  const std::string& label_column,
                  const TabularOptions& options);
+
+  static auto make(ColumnDataTypes data_types,
+                   const CategoricalDataTypePtr& target_config,
+                   const TemporalRelationships& temporal_relationships,
+                   const std::string& label_column,
+                   const TabularOptions& options) {
+    return std::make_shared<MachFeaturizer>(
+        std::move(data_types), target_config, temporal_relationships,
+        label_column, options);
+  }
 
   data::ColumnMapIteratorPtr iter(const dataset::DataSourcePtr& data) const {
     return data::CsvIterator::make(data, _delimiter);
@@ -126,7 +137,7 @@ class MachFeaturizer final {
   }
 
   void assertTextModel() const {
-    if (!textDatasetConfig()) {
+    if (!_text_dataset_config) {
       throw std::runtime_error(
           "This feature is only supported for text models.");
     }
@@ -136,8 +147,9 @@ class MachFeaturizer final {
 
   void resetTemporalTrackers() { _state->clearHistoryTrackers(); }
 
-  std::optional<TextDatasetConfig> textDatasetConfig() const {
-    return _text_dataset_config;
+  const TextDatasetConfig& textDatasetConfig() const {
+    assertTextModel();
+    return *_text_dataset_config;
   }
 
  private:

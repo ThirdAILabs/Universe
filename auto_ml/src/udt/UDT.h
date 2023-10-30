@@ -196,11 +196,7 @@ class UDT {
   std::vector<uint32_t> modelDims() const;
 
   const TextDatasetConfig& textDatasetConfig() const {
-    if (_backend->textDatasetConfig()) {
-      return _backend->textDatasetConfig();
-    }
-    throw std::invalid_argument(
-        "This method is only supported on Text Models.");
+    return _backend->textDatasetConfig();
   }
 
   /**

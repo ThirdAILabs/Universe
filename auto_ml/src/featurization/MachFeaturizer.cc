@@ -71,8 +71,6 @@ data::ColumnMap MachFeaturizer::addLabelColumn(data::ColumnMap&& columns,
 std::pair<data::ColumnMap, data::ColumnMap>
 MachFeaturizer::associationColumnMaps(
     const std::vector<std::pair<std::string, std::string>>& samples) const {
-  assertTextModel();
-
   std::vector<std::string> from_texts(samples.size());
   std::vector<std::string> to_texts(samples.size());
   for (uint32_t i = 0; i < samples.size(); i++) {
@@ -81,10 +79,10 @@ MachFeaturizer::associationColumnMaps(
   }
 
   data::ColumnMap from_columns(
-      {{textDatasetConfig()->textColumn(),
+      {{textDatasetConfig().textColumn(),
         data::ValueColumn<std::string>::make(std::move(from_texts))}});
   data::ColumnMap to_columns(
-      {{textDatasetConfig()->textColumn(),
+      {{textDatasetConfig().textColumn(),
         data::ValueColumn<std::string>::make(std::move(to_texts))}});
   return {std::move(from_columns), std::move(to_columns)};
 }
@@ -100,7 +98,7 @@ data::ColumnMap MachFeaturizer::upvoteLabeledColumnMap(
   }
 
   return data::ColumnMap(
-      {{textDatasetConfig()->textColumn(),
+      {{textDatasetConfig().textColumn(),
         data::ValueColumn<std::string>::make(std::move(from_texts))},
        {MACH_LABELS,
         data::ValueColumn<uint32_t>::make(
@@ -117,14 +115,14 @@ data::TransformationPtr MachFeaturizer::coldstartTransformation(
     all_columns.insert(all_columns.end(), strong_column_names.begin(),
                        strong_column_names.end());
     return std::make_shared<data::StringConcat>(
-        all_columns, textDatasetConfig()->textColumn());
+        all_columns, textDatasetConfig().textColumn());
   }
 
   return std::make_shared<data::ColdStartTextAugmentation>(
       /* strong_column_names= */ strong_column_names,
       /* weak_column_names= */ weak_column_names,
-      /* label_column_name= */ textDatasetConfig()->labelColumn(),
-      /* output_column_name= */ textDatasetConfig()->textColumn());
+      /* label_column_name= */ textDatasetConfig().labelColumn(),
+      /* output_column_name= */ textDatasetConfig().textColumn());
 }
 bool MachFeaturizer::hasTemporalTransformations() const {
   std::queue<data::TransformationPtr> queue;

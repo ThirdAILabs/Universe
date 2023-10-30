@@ -92,7 +92,7 @@ class UDTClassifier final : public UDTBackend {
 
   void resetTemporalTrackers() final { _featurizer->resetTemporalTrackers(); }
 
-  std::optional<TextDatasetConfig> textDatasetConfig() const final {
+  const TextDatasetConfig& textDatasetConfig() const final {
     return _featurizer->textDatasetConfig();
   }
 

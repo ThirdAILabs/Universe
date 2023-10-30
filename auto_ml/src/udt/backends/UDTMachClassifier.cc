@@ -13,6 +13,7 @@
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/featurization/MachFeaturizer.h>
 #include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -81,8 +82,6 @@ UDTMachClassifier::UDTMachClassifier(
     config::ArgumentMap user_args)
     : _default_top_k_to_return(defaults::MACH_TOP_K_TO_RETURN),
       _num_buckets_to_eval(defaults::MACH_NUM_BUCKETS_TO_EVAL) {
-  (void)target_config;
-
   // TODO(david) should we freeze hash tables for mach? how does this work
   // with coldstart?
 
@@ -96,8 +95,9 @@ UDTMachClassifier::UDTMachClassifier(
       input_data_types, temporal_tracking_relationships,
       tabular_options.lookahead);
 
-  _data = std::make_shared<NewMachFeaturizer>(
-      input_data_types, temporal_relationships, target_name, tabular_options);
+  _data = MachFeaturizer::make(input_data_types, target_config,
+                               temporal_relationships, target_name,
+                               tabular_options);
 
   uint32_t input_dim = tabular_options.feature_hash_range;
 
@@ -236,37 +236,17 @@ py::object UDTMachClassifier::scoreBatch(
     const MapInputBatch& samples,
     const std::vector<std::vector<Label>>& classes,
     std::optional<uint32_t> top_k) {
-  //   std::vector<std::unordered_set<uint32_t>> entities(classes.size());
-  //   for (uint32_t row = 0; row < classes.size(); row++) {
-  //     entities[row].reserve(classes[row].size());
-  //     for (const auto& entity : classes[row]) {
-  //       entities[row].insert(expectInteger(entity));
-  //     }
-  //   }
+  auto columns = data::ColumnMap::fromMapInputBatch(samples);
+  columns = _data->constUnlabeledTransform(std::move(columns));
+  std::vector<std::unordered_set<uint32_t>> entities(classes.size());
+  for (uint32_t row = 0; row < classes.size(); row++) {
+    entities[row].reserve(classes[row].size());
+    for (const auto& entity : classes[row]) {
+      entities[row].insert(expectInteger(entity));
+    }
+  }
 
-  //   // sparse inference could become an issue here because maybe the entities
-  //   // we score wouldn't otherwise be in the top results, thus their buckets
-  //   have
-  //   // lower similarity and don't get selected by LSH
-  //   auto outputs = _classifier->model()
-  //                      ->forward(_featurizer->featurizeInputBatch(samples),
-  //                                /* use_sparsity= */ false)
-  //                      .at(0);
-
-  //   size_t batch_size = samples.size();
-  //   std::vector<std::vector<std::pair<uint32_t, double>>>
-  //   scores(samples.size());
-
-  //   const auto& index = getIndex();
-  // #pragma omp parallel for default(none) shared( \
-//     entities, outputs, scores, top_k, batch_size, index) if (batch_size >
-  //     1)
-  //   for (uint32_t i = 0; i < batch_size; i++) {
-  //     const BoltVector& vector = outputs->getVector(i);
-  //     scores[i] = index->scoreEntities(vector, entities[i], top_k);
-  //   }
-
-  //   return py::cast(scores);
+  return py::cast(_classifier->score(columns, entities, top_k));
 }
 
 py::object UDTMachClassifier::predictHashes(

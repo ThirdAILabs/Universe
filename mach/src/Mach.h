@@ -20,12 +20,15 @@
 #include <dataset/src/mach/MachIndex.h>
 #include <dataset/src/mach/RLHFSampler.h>
 #include <algorithm>
+#include <csignal>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -86,6 +89,36 @@ class Mach {
   std::vector<std::vector<uint32_t>> predictBuckets(
       const data::ColumnMap& columns, bool sparse_inference,
       std::optional<uint32_t> top_k, bool force_non_empty);
+
+  std::vector<std::vector<std::pair<uint32_t, double>>> score(
+      const data::ColumnMap& columns,
+      std::vector<std::unordered_set<uint32_t>>& entities,
+      std::optional<uint32_t> top_k) {
+    if (columns.numRows() != entities.size()) {
+      throw std::invalid_argument(
+          "Length of entities list must be equal to the number of rows in the "
+          "column.");
+    }
+
+    // sparse inference could become an issue here because maybe the entities
+    // we score wouldn't otherwise be in the top results, thus their buckets
+    // have
+    // lower similarity and don't get selected by LSH
+    auto outputs =
+        _model->forward(inputTensors(columns), /* use_sparsity= */ false).at(0);
+
+    size_t batch_size = columns.numRows();
+    std::vector<std::vector<std::pair<uint32_t, double>>> scores(batch_size);
+
+#pragma omp parallel for default(none) shared( \
+    entities, outputs, scores, top_k, batch_size, index) if (batch_size > 1)
+    for (uint32_t i = 0; i < batch_size; i++) {
+      const BoltVector& vector = outputs->getVector(i);
+      scores[i] = index()->scoreEntities(vector, entities[i], top_k);
+    }
+
+    return scores;
+  }
 
   void upvote(data::ColumnMap upvotes, float learning_rate, uint32_t repeats,
               uint32_t num_balancers, uint32_t epochs, size_t batch_size);

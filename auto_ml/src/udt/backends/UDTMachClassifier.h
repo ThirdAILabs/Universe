@@ -91,7 +91,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   void resetTemporalTrackers() final { _data->resetTemporalTrackers(); }
 
-  std::optional<TextDatasetConfig> textDatasetConfig() const final {
+  const TextDatasetConfig& textDatasetConfig() const final {
     return _data->textDatasetConfig();
   }
 

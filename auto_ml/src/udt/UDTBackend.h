@@ -174,8 +174,9 @@ class UDTBackend {
 
   virtual void resetTemporalTrackers() {}
 
-  virtual std::optional<TextDatasetConfig> textDatasetConfig() const {
-    return {};
+  virtual const TextDatasetConfig& textDatasetConfig() const {
+    throw std::invalid_argument(
+        "This method is only supported on Text Models.");
   }
 
   virtual ColumnDataTypes dataTypes() const {
