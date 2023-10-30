@@ -1314,25 +1314,19 @@ class Salesforce(DocumentConnector):
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
         self._connector = SalesforceConnector(
-            instance=instance, object_name=object_name, fields=None
+            instance=instance, object_name=object_name, id_col=self.id_col, fields=None
         )
-        self.build_meta_table()
+
         self.total_rows = self._connector.total_rows()
         assert self.total_rows > 0
-        self.sf_instance = self._connector.sf_instance
+        # self.sf_instance = self._connector.sf_instances
         self._hash = hash_string(self._connector.session_id + self._connector.base_url)
+        self._source = self._connector.sf_instance + self.object_name
 
         # Integrity_checks
         self.assert_valid_id()
         self.assert_valid_fields()
-        self._connector._fields = list(
-            set(
-                [self.id_col]
-                + self.strong_columns
-                + self.weak_columns
-                + self.reference_columns
-            )
-        )
+        self._connector._fields = list(set(self.strong_columns + self.weak_columns))
 
     @property
     def size(self) -> int:
@@ -1346,16 +1340,28 @@ class Salesforce(DocumentConnector):
     def hash(self) -> str:
         return self._hash
 
+    def chunk_iterator(self) -> pd.DataFrame:
+        return self._connector.chunk_iterator()
+
+    def get_strong_columns(self):
+        return self.strong_columns
+
+    def get_weak_columns(self):
+        return self.weak_columns
+
     def all_entity_ids(self) -> List[int]:
         return list(range(self.size))
 
     @property
-    def meta_table(self) -> Optional[pd.DataFrame]:
-        return self._meta_table
+    def matched_constraints(self) -> Dict[str, ConstraintValue]:
+        """
+        This method is used by DocumentManager while adding this document. Also it is being used in saving the model during pickling.
+        """
+        return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
 
     @property
-    def build_meta_table(self):
-        self._meta_table = None
+    def meta_table(self) -> Optional[pd.DataFrame]:
+        return self._meta_table
 
     def assert_valid_id(self):
         all_fields = self._connector.field_metadata()
@@ -1366,12 +1372,16 @@ class Salesforce(DocumentConnector):
             raise AttributeError("Id Columns is not present in the object")
 
         # Uniqueness or primary constraint
-        id_field = list(filter(lambda field: field["name"] == self.id_col, all_fields))[
-            0
-        ]
+        id_field_meta = list(
+            filter(lambda field: field["name"] == self.id_col, all_fields)
+        )
+        if len(id_field_meta) == 0:
+            raise AttributeError("id col not present in the object")
+        id_field_meta = id_field_meta[0]
 
-        self.id_field_type = id_field["type"]
-        if id_field["autoNumber"]:
+        if not id_field_meta["autoNumber"]:
+            raise AttributeError("id col must be of type Auto-Number")
+        else:
             # id field is auto-incremented string. Have to check for the form of A-{0}
 
             result = self._connector.execute(
@@ -1381,25 +1391,21 @@ class Salesforce(DocumentConnector):
             if not value.isdigit():
                 raise AttributeError("id column needs to be of the form \{0\}")
 
-        elif not (
-            self.id_field_type == "double"
-            and id_field["scale"] == 0  # id column needs to be integer
-            and id_field["unique"]
-            and not id_field["nillable"]
-        ):
-            raise AttributeError("id column needs to be unique")
-
+        expected_min_row_id = 0
         min_id = self._connector.execute(
-            query=f"SELECT MIN({self.id_col}) FROM {self.object_name}"
-        )["records"][0][self.id_col]
+            query=f"SELECT {self.id_col} FROM {self.object_name} WHERE {self.id_col} = '{expected_min_row_id}'"
+        )
 
+        # This one is not required probably because user can't put the auto-number field mannually.
+        # User just can provide the start of the auto-number so if the min_id is 0, then max_id should be size - 1
+        expected_max_row_id = self.size - 1
         max_id = self._connector.execute(
-            query=f"SELECT MAX({self.id_col}) FROM {self.object_name}"
-        )["records"][0][self.id_col]
+            query=f"SELECT {self.id_col} FROM {self.object_name} WHERE {self.id_col} = '{expected_max_row_id}'"
+        )
 
-        if int(min_id) != 0 or int(max_id) != self.size - 1:
+        if not (min_id["totalSize"] == 1 and max_id["totalSize"] == 1):
             raise AttributeError(
-                f"id column needs to be uniques from 0 to {self.size} - 1"
+                f"id column needs to be unique from 0 to {self.size - 1}"
             )
 
     def assert_valid_fields(self):
@@ -1423,7 +1429,7 @@ class Salesforce(DocumentConnector):
             if (
                 self.strong_columns is not None
                 and field["name"] in self.strong_columns
-                and not field["type"] != "string"
+                and field["type"] != "string"
             ):
                 raise AttributeError(
                     f"Strong column '{field['name']}' needs to be type string"
@@ -1431,7 +1437,7 @@ class Salesforce(DocumentConnector):
             if (
                 self.weak_columns is not None
                 and field["name"] in self.weak_columns
-                and not field["type"] != "string"
+                and field["type"] != "string"
             ):
                 raise AttributeError(
                     f"Weak column '{field['name']}' needs to be type string"
@@ -1455,30 +1461,34 @@ class Salesforce(DocumentConnector):
                     self.reference_columns.append(field["name"])
 
     def reference(self, element_id: int) -> Reference:
-        raise NotImplementedError()
+        if element_id >= self.size:
+            _raise_unknown_doc_error(element_id)
 
-    def row_iterator(self):
-        for current_chunk in self.next_chunk():
-            for idx, row in current_chunk.iterrows():
-                row_id = row[self.id_col]
-                yield DocumentRow(
-                    element_id=row_id,
-                    strong=self.strong_text_from_chunk(
-                        id_in_chunk=idx, chunk=current_chunk
-                    ),  # Strong text from (idx)th row of the current_batch
-                    weak=self.weak_text_from_chunk(
-                        id_in_chunk=idx, chunk=current_chunk
-                    ),  # Weak text from (idx)th row of the current_batch
-                )
+        try:
+            result = self._connector.execute(
+                query=f"SELECT {','.join(self.reference_columns)} FROM {self.object_name} WHERE {self.id_col} = '{element_id}'"
+            )["records"][0]
+            del result["attributes"]
+            text = "\n\n".join(
+                [f"{col_name}: {col_text}" for col_name, col_text in result.items()]
+            )
+
+        except Exception as e:
+            text = f"Unable to connect to the object instance, Referenced row with {self.id_col}: {element_id} "
+
+        return Reference(
+            document=self,
+            element_id=element_id,
+            text=text,
+            source=self._source,
+            metadata={
+                "object_name": self.object_name,
+                **self.doc_metadata,
+            },
+        )
 
     def next_chunk(self) -> pd.DataFrame:
         return self._connector.chunk_iterator()
-
-    def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
-        pass
-
-    def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
-        pass
 
     def __getstate__(self):
         state = self.__dict__.copy()

@@ -152,10 +152,15 @@ class SharePointConnector(Connector):
 
 class SalesforceConnector(Connector):
     def __init__(
-        self, instance: Salesforce, object_name: str, fields: List[str]
+        self,
+        instance: Salesforce,
+        object_name: str,
+        id_col: str,
+        fields: Optional[List[str]] = None,
     ) -> None:
         self._instance = instance
         self._object_name = object_name
+        self.id_col = id_col
         self._fields = fields
 
     def execute(self, query: str):
@@ -164,22 +169,19 @@ class SalesforceConnector(Connector):
         )  # Returns an OrderedDicts with keys ['totalSize', 'done', 'records']
 
     def chunk_iterator(self):
-        df = pd.DataFrame(columns=self._fields)
-        query = f"SELECT {', '.join(self._fields)} FROM {self._object_name}"
+        query = f"SELECT {', '.join(self._fields)} FROM {self._object_name} ORDER BY {self.id_col}"
         results = self._instance.bulk.__getattr__(self._object_name).query(
             query, lazy_operation=True
         )
         for chunk in results:
-            df.drop(df.index, inplace=True)
-            for row in chunk:  # Number of records in each chunk is 10K.
-                del row[
-                    "attributes"
-                ]  # Salesforce doesn't provide the option to set the batch size with the buik api
-                df.loc[len(df)] = row
-            yield df
+            chunk_df = pd.DataFrame(
+                chunk
+            )  # Number of records in each chunk is 10K (can't be changed with salesforce bulk API).
+            chunk_df.drop(columns=["attributes"], inplace=True)
+            yield chunk_df
 
     def total_rows(self):
-        result = self.execute(query=f"SELECT COUNT() from {self.object_name}")
+        result = self.execute(query=f"SELECT COUNT() from {self._object_name}")
         return result["totalSize"]
 
     def field_metadata(self):
@@ -191,9 +193,9 @@ class SalesforceConnector(Connector):
         return self._instance.sf_instance
 
     @property
-    def session_id(self):
-        return self._instance.session_id
-
-    @property
     def base_url(self):
         return self._instance.base_url
+
+    @property
+    def session_id(self):
+        return self._instance.session_id
