@@ -1178,7 +1178,7 @@ class SharePoint(DocumentConnector):
         )
 
         self._meta_table[self.meta_table_id_col] = range(len(self._meta_table))
-        self._meta_table.set_index(keys=self.meta_table_id_col, drop=True, inplace=True)
+        self._meta_table.set_index(keys=self.meta_table_id_col, inplace=True)
 
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
