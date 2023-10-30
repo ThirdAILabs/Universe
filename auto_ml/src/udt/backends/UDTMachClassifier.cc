@@ -444,6 +444,7 @@ py::object UDTMachClassifier::coldstart(
 
     history = train(data_source, learning_rate, /* epochs= */ 1, train_metrics,
                     val_data, val_metrics, callbacks, options, comm);
+    data_source->restart();
   }
 
   return history;
