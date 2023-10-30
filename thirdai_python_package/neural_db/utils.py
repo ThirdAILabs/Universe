@@ -2,7 +2,8 @@ import hashlib
 import math
 import random
 
-SUPPORTED_EXT = ["csv", "pdf", "docx", "pptx", "txt", "eml"]
+DIRECTORY_CONNECTOR_SUPPORTED_EXT = ["pdf", "docx", "pptx", "txt", "eml"]
+SUPPORTED_EXT = ["csv"] + DIRECTORY_CONNECTOR_SUPPORTED_EXT
 
 
 def clean_text(text):

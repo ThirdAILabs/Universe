@@ -9,7 +9,7 @@ from simple_salesforce import Salesforce
 from sqlalchemy import inspect, text
 from sqlalchemy.engine.base import Connection as sqlConn
 
-from .utils import SUPPORTED_EXT
+from .utils import DIRECTORY_CONNECTOR_SUPPORTED_EXT
 
 
 class Connector:
@@ -21,12 +21,14 @@ class SQLConnector(Connector):
     def __init__(
         self,
         engine: sqlConn,
-        columns: List[str],
         table_name: str,
+        id_col: str,
+        columns: Optional[List[str]] = None,
         chunk_size: Optional[int] = None,
     ):
         self._engine = engine
-        self.columns = list(set(columns))
+        self.id_col = id_col
+        self.columns = columns
         self.table_name = table_name
         self.chunk_size = chunk_size
         self._connection = self._engine.connect()
@@ -40,9 +42,8 @@ class SQLConnector(Connector):
 
     def chunk_iterator(self):
         return pd.read_sql(
-            sql=self.table_name,
+            sql=f"SELECT {', '.join(self.columns)} FROM {self.table_name} ORDER BY {self.id_col}",
             con=self._connection,
-            columns=self.columns,
             chunksize=self.chunk_size,
         )
 
@@ -55,9 +56,10 @@ class SQLConnector(Connector):
         inspector = inspect(self._engine)
         return inspector.get_columns(self.table_name)
 
-    def get_rows(self, cols: List[str] = "*"):
+    def get_all_rows(self, cols: List[str] = "*"):
         if isinstance(cols, list):
             cols = ", ".join(cols)
+
         return self.execute(query=f"SELECT {cols} from {self.table_name}")
 
     def get_primary_keys(self):
@@ -89,17 +91,17 @@ class SharePointConnector(Connector):
             self._ctx.execute_query()
 
             # filtering to only contain files of supported extensions
-            exts = SUPPORTED_EXT[:]
-            exts.remove("csv")
             self._files = list(
                 filter(
-                    lambda file: file.properties["Name"].split(sep=".")[-1] in exts,
+                    lambda file: file.properties["Name"].split(sep=".")[-1]
+                    in DIRECTORY_CONNECTOR_SUPPORTED_EXT,
                     self._files,
                 )
             )
-            self.total_files = len(self._files)
-            if not self.total_files > 0:
+
+            if not len(self._files) > 0:
                 raise FileNotFoundError("No files of supported extension is present")
+            self._files = sorted(self._files, key=lambda file: file.properties["Name"])
         except Exception as e:
             print("Unable to retrieve files from SharePoint, Error: " + str(e))
 

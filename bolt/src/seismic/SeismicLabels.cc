@@ -9,9 +9,10 @@ namespace thirdai::bolt::seismic {
 std::vector<uint32_t> seismicLabelsFromMetadata(
     const SubcubeMetadata& subcube_metadata, const Shape& subcube_shape,
     size_t label_cube_dim, size_t max_label) {
-  return seismicLabels(subcube_metadata.volume_name, subcube_metadata.x_coord,
-                       subcube_metadata.y_coord, subcube_metadata.z_coord,
-                       subcube_shape, label_cube_dim, max_label);
+  return seismicLabels(
+      std::get<0>(subcube_metadata), std::get<1>(subcube_metadata),
+      std::get<2>(subcube_metadata), std::get<3>(subcube_metadata),
+      subcube_shape, label_cube_dim, max_label);
 }
 
 std::vector<uint32_t> seismicLabels(const std::string& volume, size_t x_coord,
