@@ -22,12 +22,12 @@ class SQLConnector(Connector):
         engine: sqlConn,
         table_name: str,
         id_col: str,
-        train_columns: Optional[List[str]] = None,
+        columns: Optional[List[str]] = None,
         chunk_size: Optional[int] = None,
     ):
         self._engine = engine
         self.id_col = id_col
-        self.train_columns = train_columns
+        self.columns = columns
         self.table_name = table_name
         self.chunk_size = chunk_size
         self._connection = self._engine.connect()
@@ -41,7 +41,7 @@ class SQLConnector(Connector):
 
     def chunk_iterator(self):
         return pd.read_sql(
-            sql=f"SELECT {', '.join(self.train_columns)} FROM {self.table_name} ORDER BY {self.id_col}",
+            sql=f"SELECT {', '.join(self.columns)} FROM {self.table_name} ORDER BY {self.id_col}",
             con=self._connection,
             chunksize=self.chunk_size,
         )
@@ -98,8 +98,7 @@ class SharePointConnector(Connector):
                 )
             )
 
-            self.total_files = len(self._files)
-            if not self.total_files > 0:
+            if not len(self._files) > 0:
                 raise FileNotFoundError("No files of supported extension is present")
             self._files = sorted(self._files, key=lambda file: file.properties["Name"])
         except Exception as e:

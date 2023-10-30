@@ -149,7 +149,7 @@ def build_local_sharepoint_doc():
 
 # This is a list of getter functions that return doc objects so each test can
 # use fresh doc object instances.
-all_connector_doc_getter = [
+all_connector_doc_getters = [
     Equivalent_doc(
         connector_doc=lambda: ndb.SQLDatabase(
             engine=ENGINE,

@@ -1,12 +1,12 @@
 import os
 
 import pytest
-from ndb_utils import all_connector_doc_getter
+from ndb_utils import all_connector_doc_getters
 from thirdai import neural_db as ndb
 
 pytestmark = [
     pytest.mark.unit,
-    pytest.mark.parametrize("get_connector_doc", all_connector_doc_getter),
+    pytest.mark.parametrize("get_connector_doc", all_connector_doc_getters),
 ]
 
 

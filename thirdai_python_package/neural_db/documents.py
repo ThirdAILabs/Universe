@@ -837,7 +837,7 @@ class DocumentConnector(Document):
             return " ".join(
                 [str(row[col]).replace(",", "") for col in self.get_strong_columns()]
             )
-        except AttributeError as e:
+        except Exception as e:
             return ""
 
     def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
@@ -846,7 +846,7 @@ class DocumentConnector(Document):
             return " ".join(
                 [str(row[col]).replace(",", "") for col in self.get_weak_columns()]
             )
-        except AttributeError as e:
+        except Exception as e:
             return ""
 
     def reference(self, element_id: int) -> Reference:
@@ -927,7 +927,7 @@ class SQLDatabase(DocumentConnector):
         self.assert_valid_columns()
 
         # setting the columns in the conector object
-        self._connector.train_columns = list(
+        self._connector.columns = list(
             set(self.strong_columns + self.weak_columns)
         )
 
@@ -985,7 +985,6 @@ class SQLDatabase(DocumentConnector):
             )
 
         except Exception as e:
-            print(str(e))
             text = f"Unable to connect to database, Referenced row with {self.id_col}: {element_id} "
 
         return Reference(
@@ -1022,7 +1021,7 @@ class SQLDatabase(DocumentConnector):
                     engine=create_engine(state["_engine_url"]),
                     table_name=state["table_name"],
                     id_col=state["id_col"],
-                    train_columns=list(
+                    columns=list(
                         set(state["strong_columns"] + state["weak_columns"])
                     ),
                     chunk_size=state["chunk_size"],
