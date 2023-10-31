@@ -302,6 +302,8 @@ bolt::metrics::History Mach::associateTrain(
   train_data = train_data.keepColumns(_all_bolt_columns)
                    .concat(associations.keepColumns(_all_bolt_columns));
 
+  train_data.shuffle();
+
   bolt::Trainer trainer(_model);
   return trainer.train(
       /* train_data= */ data::toLabeledDataset(train_data, _bolt_input_columns,
@@ -448,6 +450,8 @@ void Mach::teach(data::ColumnMap feedback, float learning_rate,
     balancers = balancers->keepColumns(_all_bolt_columns);
     feedback = feedback.concat(*balancers);
   }
+
+  feedback.shuffle();
 
   auto train_data = thirdai::data::toLabeledDataset(
       feedback, _bolt_input_columns, _bolt_label_columns, batch_size);
