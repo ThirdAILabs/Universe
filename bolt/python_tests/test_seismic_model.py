@@ -77,9 +77,10 @@ def test_seismic_embedding_finetuning(subcube_dataset):
         max_pool=2,
     )
 
-    embs = model.forward(np.random.rand(5, *subcube_shape))
+    embs = model.forward(torch.rand(5, *subcube_shape))
     assert embs.shape == (5, emb_dim)
-    model.backpropagate(np.random.rand(*embs.shape))
+    assert embs.requires_grad
+    model.backpropagate(torch.rand(*embs.shape))
     model.update_parameters(0.001)
 
     embs = model.embeddings(np.random.rand(3, *subcube_shape))

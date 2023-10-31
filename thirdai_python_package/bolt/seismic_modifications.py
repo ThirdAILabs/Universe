@@ -447,14 +447,21 @@ def subcube_embeddings(seismic_model, subcubes):
     return seismic_model.embeddings_for_patches(subcubes)
 
 
-def subcube_forward(seismic_model, subcubes):
+def forward_finetuning(seismic_model, subcubes):
     subcubes = convert_to_patches(
-        torch.from_numpy(subcubes),
+        subcubes,
         expected_subcube_shape=seismic_model.subcube_shape,
         patch_shape=seismic_model.patch_shape,
         max_pool=seismic_model.max_pool,
     )
-    return seismic_model.forward_patches(subcubes)
+    out = seismic_model.forward_finetuning(subcubes)
+    out = torch.from_numpy(out)
+    out.requires_grad = True
+    return out
+
+
+def backpropagate_finetuning(seismic_model, grads):
+    seismic_model.backpropagate_finetuning(grads.numpy())
 
 
 def classifier_predict(seismic_classifier, subcubes):
@@ -493,6 +500,7 @@ def modify_seismic():
     bolt.seismic.SeismicBase.score_subcubes = score_subcubes
 
     bolt.seismic.SeismicEmbedding.train = train_embedding_model
-    bolt.seismic.SeismicEmbedding.forward = subcube_forward
+    bolt.seismic.SeismicEmbedding.forward = forward_finetuning
+    bolt.seismic.SeismicEmbedding.backpropagate = backpropagate_finetuning
     bolt.seismic.SeismicClassifier.train = train_classifier
     bolt.seismic.SeismicClassifier.predict = classifier_predict

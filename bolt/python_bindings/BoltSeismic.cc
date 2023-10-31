@@ -31,8 +31,9 @@ void createSeismicSubmodule(py::module_& module) {
            py::arg("learning_rate"), py::arg("batch_size"),
            py::arg("callbacks"), py::arg("log_interval"),
            py::arg("comm") = nullptr)
-      .def("forward_patches", &SeismicEmbedding::forward, py::arg("subcubes"))
-      .def("backpropagate", &SeismicEmbedding::backpropagate,
+      .def("forward_finetuning", &SeismicEmbedding::forward,
+           py::arg("subcubes"))
+      .def("backpropagate_finetuning", &SeismicEmbedding::backpropagate,
            py::arg("gradients"))
       .def("update_parameters", &SeismicEmbedding::updateParameters,
            py::arg("learning_rate"))
