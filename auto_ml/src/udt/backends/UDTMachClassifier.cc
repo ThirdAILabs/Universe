@@ -18,6 +18,7 @@
 #include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <auto_ml/src/udt/utils/Mach.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <data/src/ColumnMap.h>
@@ -30,7 +31,6 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/mach/MachBlock.h>
-#include <mach/src/Mach.h>
 #include <pybind11/cast.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
@@ -120,7 +120,7 @@ UDTMachClassifier::UDTMachClassifier(
                                temporal_relationships, target_name, num_buckets,
                                tabular_options);
 
-  _classifier = mach::Mach::make(
+  _classifier = utils::Mach::make(
       input_dim, num_buckets, user_args, model_config,
       /* use_sigmoid_bce = */ true, num_hashes, mach_sampling_threshold,
       freeze_hash_tables, _data->modelInputIndicesColumn(),

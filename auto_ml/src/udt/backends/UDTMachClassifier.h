@@ -10,13 +10,13 @@
 #include <auto_ml/src/rlhf/RLHFSampler.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
+#include <auto_ml/src/udt/utils/Mach.h>
 #include <data/src/ColumnMap.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
-#include <mach/src/Mach.h>
 #include <pybind11/pytypes.h>
 #include <optional>
 #include <stdexcept>
@@ -233,7 +233,7 @@ class UDTMachClassifier final : public UDTBackend {
   template <class Archive>
   void serialize(Archive& archive, uint32_t version);
 
-  std::shared_ptr<mach::Mach> _classifier;
+  std::shared_ptr<utils::Mach> _classifier;
   MachFeaturizerPtr _data;
 
   uint32_t _default_top_k_to_return;
