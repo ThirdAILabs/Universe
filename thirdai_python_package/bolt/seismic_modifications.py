@@ -86,7 +86,7 @@ def convert_to_patches(subcubes, expected_subcube_shape, patch_shape, max_pool=N
     if max_pool:
         # Unsqueeze/squeeze are to add/remove the 'channels' dimension
         subcubes = F.max_pool3d(
-            subcubes.unsqueeze_(1), kernel_size=max_pool, stride=max_pool
+            subcubes.unsqueeze(1), kernel_size=max_pool, stride=max_pool
         )
         subcubes = subcubes.squeeze_(1)
         # Scale the patch dim since pooling is applied first.
