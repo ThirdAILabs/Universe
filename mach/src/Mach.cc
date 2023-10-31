@@ -125,7 +125,9 @@ void Mach::eraseEntity(uint32_t entity) {
 
 void Mach::eraseAllEntities() {
   index()->clear();
-  _state->rlhfSampler().clear();
+  if (_state->hasRlhfSampler()) {
+    _state->rlhfSampler().clear();
+  }
   updateSamplingStrategy();
 }
 
@@ -418,6 +420,15 @@ std::vector<float> Mach::entityEmbedding(uint32_t entity) const {
   }
 
   return averaged_embedding;
+}
+
+void Mach::enableRlhf(uint32_t num_balancing_docs,
+                      uint32_t num_balancing_samples_per_doc) {
+  _add_balancing_samples = data::AddMachRlhfSamples::make(
+      inputIndicesColumn(), inputValuesColumn(), labelColumn(), bucketColumn());
+  _state->setRlhfSampler(data::mach::RLHFSampler(
+      /* max_docs= */ num_balancing_docs,
+      /* max_samples_per_doc= */ num_balancing_samples_per_doc));
 }
 
 std::optional<data::ColumnMap> Mach::balancingColumnMap(
