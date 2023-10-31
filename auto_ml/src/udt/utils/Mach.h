@@ -1,12 +1,13 @@
 #pragma once
 
-#include "UDTImports.h"
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/DistributedComm.h>
 #include <bolt/src/train/trainer/Trainer.h>
+#include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/udt/UDTBackend.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/Loader.h>
@@ -33,13 +34,14 @@
 #include <utility>
 #include <vector>
 
-namespace thirdai::mach {
+namespace thirdai::automl::udt::utils {
 
 namespace mach = dataset::mach;
 
 class Mach {
  public:
-  Mach(uint32_t input_dim, uint32_t num_buckets, const ArgumentMap& args,
+  Mach(uint32_t input_dim, uint32_t num_buckets,
+       const config::ArgumentMap& args,
        const std::optional<std::string>& model_config, bool use_sigmoid_bce,
        uint32_t num_hashes, float mach_sampling_threshold,
        bool freeze_hash_tables, std::string input_indices_column,
@@ -47,7 +49,7 @@ class Mach {
        std::string bucket_column);
 
   static auto make(uint32_t input_dim, uint32_t num_buckets,
-                   const ArgumentMap& args,
+                   const config::ArgumentMap& args,
                    const std::optional<std::string>& model_config,
                    bool use_sigmoid_bce, uint32_t num_hashes,
                    float mach_sampling_threshold, bool freeze_hash_tables,
@@ -254,4 +256,4 @@ class Mach {
 
 using MachPtr = std::shared_ptr<Mach>;
 
-}  // namespace thirdai::mach
+}  // namespace thirdai::automl::udt::utils

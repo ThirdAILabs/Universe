@@ -1,6 +1,8 @@
 #include "Mach.h"
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/udt/utils/Models.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/Column.h>
 #include <data/src/transformations/MachLabel.h>
@@ -14,7 +16,7 @@
 #include <unordered_map>
 #include <utility>
 
-namespace thirdai::mach {
+namespace thirdai::automl::udt::utils {
 
 bolt::ComputationPtr getEmbeddingComputation(const bolt::Model& model) {
   // This defines the embedding as the second to last computatation in the
@@ -23,7 +25,8 @@ bolt::ComputationPtr getEmbeddingComputation(const bolt::Model& model) {
   return computations.at(computations.size() - 2);
 }
 
-Mach::Mach(uint32_t input_dim, uint32_t num_buckets, const ArgumentMap& args,
+Mach::Mach(uint32_t input_dim, uint32_t num_buckets,
+           const config::ArgumentMap& args,
            const std::optional<std::string>& model_config, bool use_sigmoid_bce,
            uint32_t num_hashes, float mach_sampling_threshold,
            bool freeze_hash_tables, std::string input_indices_column,
@@ -31,7 +34,7 @@ Mach::Mach(uint32_t input_dim, uint32_t num_buckets, const ArgumentMap& args,
            std::string bucket_column)
 
     : _model(buildModel(input_dim, num_buckets, args, model_config,
-                        use_sigmoid_bce)),
+                        use_sigmoid_bce, /* mach= */ true)),
       _emb(getEmbeddingComputation(*_model)),
       _mach_sampling_threshold(mach_sampling_threshold),
       _freeze_hash_tables(freeze_hash_tables),
@@ -652,4 +655,4 @@ void Mach::serialize(Archive& archive) {
           _bolt_label_columns, _all_bolt_columns);
 }
 
-}  // namespace thirdai::mach
+}  // namespace thirdai::automl::udt::utils
