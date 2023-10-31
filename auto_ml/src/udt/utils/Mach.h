@@ -117,11 +117,6 @@ class Mach {
       std::vector<std::unordered_set<uint32_t>>& entities,
       std::optional<uint32_t> top_k);
 
-  std::vector<uint32_t> outputCorrectness(const data::ColumnMap& columns,
-                                          const std::vector<uint32_t>& labels,
-                                          std::optional<uint32_t> num_hashes,
-                                          bool sparse_inference);
-
   bolt::TensorPtr embedding(const data::ColumnMap& columns);
 
   std::vector<float> entityEmbedding(uint32_t entity) const;

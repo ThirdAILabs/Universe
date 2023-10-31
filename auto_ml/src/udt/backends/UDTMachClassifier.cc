@@ -270,10 +270,38 @@ py::object UDTMachClassifier::predictHashesBatch(
 py::object UDTMachClassifier::outputCorrectness(
     const MapInputBatch& samples, const std::vector<uint32_t>& labels,
     bool sparse_inference, std::optional<uint32_t> num_hashes) {
-  return py::cast(_classifier->outputCorrectness(
+  auto top_buckets = _classifier->predictBuckets(
       _data->constUnlabeledTransform(
           data::ColumnMap::fromMapInputBatch(samples)),
-      labels, num_hashes, sparse_inference));
+      sparse_inference, num_hashes, /* force_non_empty= */ true);
+
+  std::vector<uint32_t> matching_buckets(labels.size());
+  std::exception_ptr hashes_err;
+
+#pragma omp parallel for default(none) \
+    shared(labels, top_buckets, matching_buckets, hashes_err)
+  for (uint32_t i = 0; i < labels.size(); i++) {
+    try {
+      std::vector<uint32_t> hashes = getIndex()->getHashes(labels[i]);
+      uint32_t count = 0;
+      for (auto hash : hashes) {
+        if (std::count(top_buckets[i].begin(), top_buckets[i].end(), hash) >
+            0) {
+          count++;
+        }
+      }
+      matching_buckets[i] = count;
+    } catch (const std::exception& e) {
+#pragma omp critical
+      hashes_err = std::current_exception();
+    }
+  }
+
+  if (hashes_err) {
+    std::rethrow_exception(hashes_err);
+  }
+
+  return py::cast(matching_buckets);
 }
 
 void UDTMachClassifier::setModel(const ModelPtr& model) {
