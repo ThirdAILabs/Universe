@@ -4,8 +4,8 @@
 #include <cereal/types/deque.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/unordered_map.hpp>
+#include <auto_ml/src/rlhf/RLHFSampler.h>
 #include <dataset/src/mach/MachIndex.h>
-#include <dataset/src/mach/RLHFSampler.h>
 #include <dataset/src/utils/GraphInfo.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <iostream>
@@ -100,7 +100,7 @@ class State {
 
   bool hasRlhfSampler() { return !!_rlhf_sampler; }
 
-  mach::RLHFSampler& rlhfSampler() {
+  automl::udt::RLHFSampler& rlhfSampler() {
     if (!_rlhf_sampler) {
       throw std::invalid_argument(
           "Transformation state does not contain RLHFSampler.");
@@ -108,7 +108,7 @@ class State {
     return *_rlhf_sampler;
   }
 
-  void setRlhfSampler(mach::RLHFSampler&& sampler) {
+  void setRlhfSampler(automl::udt::RLHFSampler&& sampler) {
     if (_rlhf_sampler) {
       std::cout << "Transformation state already contains RLHFSampler."
                 << std::endl;
@@ -149,7 +149,7 @@ class State {
  private:
   MachIndexPtr _mach_index = nullptr;
 
-  std::optional<mach::RLHFSampler> _rlhf_sampler;
+  std::optional<automl::udt::RLHFSampler> _rlhf_sampler;
 
   std::unordered_map<std::string, ThreadSafeVocabularyPtr> _vocabs;
 

@@ -1,5 +1,5 @@
 #include "AddMachRlhfSamples.h"
-#include <dataset/src/mach/RLHFSampler.h>
+#include <auto_ml/src/rlhf/RLHFSampler.h>
 #include <cstdint>
 
 namespace thirdai::data {
@@ -27,7 +27,7 @@ ColumnMap AddMachRlhfSamples::apply(ColumnMap columns, State& state) const {
       continue;
     }
     uint32_t doc_id = labels->row(i)[0];
-    mach::RlhfSample sample;
+    automl::udt::RlhfSample sample;
     sample.input_indices = {input_indices->row(i).begin(),
                             input_indices->row(i).end()};
     sample.input_values = {input_values->row(i).begin(),

@@ -7,6 +7,7 @@
 #include <bolt/src/train/trainer/DistributedComm.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/rlhf/RLHFSampler.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/ColumnMapIterator.h>
@@ -20,7 +21,6 @@
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/mach/MachIndex.h>
-#include <dataset/src/mach/RLHFSampler.h>
 #include <algorithm>
 #include <csignal>
 #include <cstddef>

@@ -1,8 +1,7 @@
 #pragma once
 
-#include <bolt_vector/src/BoltVector.h>
-#include <cstddef>
-#include <iterator>
+#include <cereal/access.hpp>
+#include <cstdint>
 #include <random>
 #include <unordered_map>
 #include <unordered_set>
@@ -10,7 +9,15 @@
 
 namespace thirdai::automl::udt {
 
-using RlhfSample = std::pair<std::string, std::vector<uint32_t>>;
+struct RlhfSample {
+  std::vector<uint32_t> input_indices;
+  std::vector<float> input_values;
+  std::vector<uint32_t> mach_buckets;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
+};
 
 class RLHFSampler {
  public:
@@ -24,6 +31,8 @@ class RLHFSampler {
   std::vector<RlhfSample> balancingSamples(size_t num_samples);
 
   void addSample(uint32_t doc_id, const RlhfSample& sample);
+
+  void addSample(uint32_t doc_id, RlhfSample&& sample);
 
   void clear() {
     _samples_per_doc = {};
