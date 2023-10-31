@@ -7,6 +7,7 @@
 #include <data/src/columns/Column.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/State.h>
+#include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/mach/MachIndex.h>
 #include <algorithm>
 #include <iostream>
@@ -442,10 +443,11 @@ void Mach::teach(data::ColumnMap feedback, float learning_rate,
                  uint32_t feedback_repetitions, uint32_t num_balancers,
                  uint32_t epochs, size_t batch_size) {
   assertRlhfEnabled();
+  auto balancers = balancingColumnMap(num_balancers * feedback.numRows());
+
   feedback = repeatRows(std::move(feedback), feedback_repetitions);
   feedback = feedback.keepColumns(_all_bolt_columns);
 
-  auto balancers = balancingColumnMap(num_balancers);
   if (balancers) {
     balancers = balancers->keepColumns(_all_bolt_columns);
     feedback = feedback.concat(*balancers);
