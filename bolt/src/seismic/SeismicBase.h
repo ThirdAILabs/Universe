@@ -11,6 +11,7 @@
 #include <pybind11/pybind11.h>
 #include <filesystem>
 #include <istream>
+#include <stdexcept>
 
 namespace py = pybind11;
 
@@ -45,11 +46,7 @@ class SeismicBase {
 
   ModelPtr getModel() const { return _model; }
 
-  void setModel(ModelPtr model, bool embedding_last) {
-    _model = std::move(model);
-    auto computations = _model->computationOrderWithoutInputs();
-    _emb = computations.at(computations.size() - (embedding_last ? 1 : 2));
-  }
+  void setModel(ModelPtr model, bool embedding_last);
 
   size_t labelDim() const {
     auto label_dims = _model->labelDims();

@@ -16,7 +16,10 @@ void createSeismicSubmodule(py::module_& module) {
       .def_property_readonly("subcube_shape", &SeismicBase::subcubeShape)
       .def_property_readonly("patch_shape", &SeismicBase::patchShape)
       .def_property_readonly("max_pool", &SeismicBase::maxPool)
-      .def_property("model", &SeismicBase::getModel, &SeismicBase::setModel);
+      .def_property("model", &SeismicBase::getModel,
+                    [](SeismicBase& self, const ModelPtr& model) {
+                      self.setModel(model, /* embedding_last= */ false);
+                    });
 
   py::class_<SeismicEmbedding, std::shared_ptr<SeismicEmbedding>, SeismicBase>(
       seismic, "SeismicEmbedding")
