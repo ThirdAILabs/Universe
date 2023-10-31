@@ -64,6 +64,41 @@ def test_seismic_embedding_model(subcube_dataset, max_pool):
 
 
 @pytest.mark.unit
+def test_seismic_embedding_finetuning(subcube_dataset):
+    subcube_directory, subcube_shape, patch_shape = subcube_dataset
+
+    emb_dim = 100
+
+    model = bolt.seismic.SeismicEmbedding(
+        subcube_shape=subcube_shape[0],
+        patch_shape=patch_shape[0],
+        embedding_dim=emb_dim,
+        size="small",
+        max_pool=2,
+    )
+
+    embs = model.forward(np.random.rand(5, *subcube_shape))
+    assert embs.shape == (5, emb_dim)
+    model.backpropagate(np.random.rand(*embs.shape))
+    model.update_parameters(0.001)
+
+    embs = model.embeddings(np.random.rand(3, *subcube_shape))
+    assert embs.shape == (3, emb_dim)
+
+    with pytest.raises(
+        ValueError,
+        match="Can not use unsupervised pretraining on a model after using "
+        "finetuning since the decoder has been invalidated.",
+    ):
+        model.train(
+            subcube_directory=subcube_directory,
+            learning_rate=0.0001,
+            epochs=1,
+            batch_size=8,
+        )
+
+
+@pytest.mark.unit
 def test_seismic_classifier(classification_dataset):
     sample_index, subcube_shape, patch_shape, n_classes = classification_dataset
 

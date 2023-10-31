@@ -26,6 +26,12 @@ class SeismicEmbedding final : public SeismicBase {
       size_t batch_size, const std::vector<callbacks::CallbackPtr>& callbacks,
       std::optional<uint32_t> log_interval, const DistributedCommPtr& comm);
 
+  NumpyArray forward(const NumpyArray& subcubes);
+
+  void backpropagate(const NumpyArray& gradients);
+
+  void updateParameters(float learning_rate);
+
   void save(const std::string& filename) const final;
 
   void save_stream(std::ostream& output) const;
@@ -37,6 +43,8 @@ class SeismicEmbedding final : public SeismicBase {
  private:
   Dataset makeLabelBatches(const std::vector<SubcubeMetadata>& subcube_metadata,
                            size_t batch_size) const;
+
+  void switchToFinetuning();
 
   static ModelPtr buildModel(size_t n_patches, size_t patch_dim,
                              size_t embedding_dim, size_t n_output_classes,
@@ -51,6 +59,10 @@ class SeismicEmbedding final : public SeismicBase {
   // TODO(Nicholas): support for list of label cube dims for different
   // granularities.
   size_t _label_cube_dim = 32;
+
+  enum class TrainingType { UnsupervisedPretraining, Finetuning };
+
+  TrainingType _training_type;
 
   SeismicEmbedding() {}
 

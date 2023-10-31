@@ -44,10 +44,10 @@ class SeismicBase {
 
   ModelPtr getModel() const { return _model; }
 
-  void setModel(ModelPtr model) {
+  void setModel(ModelPtr model, bool embedding_last) {
     _model = std::move(model);
     auto computations = _model->computationOrderWithoutInputs();
-    _emb = computations.at(computations.size() - 2);
+    _emb = computations.at(computations.size() - (embedding_last ? 1 : 2));
   }
 
   size_t labelDim() const {

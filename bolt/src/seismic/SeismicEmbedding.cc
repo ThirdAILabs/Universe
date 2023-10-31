@@ -4,6 +4,7 @@
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
+#include <bolt/src/nn/loss/ExternalLoss.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/PatchEmbedding.h>
@@ -61,6 +62,12 @@ metrics::History SeismicEmbedding::trainOnPatches(
     const std::vector<SubcubeMetadata>& subcube_metadata, float learning_rate,
     size_t batch_size, const std::vector<callbacks::CallbackPtr>& callbacks,
     std::optional<uint32_t> log_interval, const DistributedCommPtr& comm) {
+  if (_training_type != TrainingType::UnsupervisedPretraining) {
+    throw std::invalid_argument(
+        "Can not use unsupervised pretraining on a model after using "
+        "finetuning since the decoder has been invalidated.");
+  }
+
   if (static_cast<size_t>(subcubes.shape(0)) != subcube_metadata.size()) {
     throw std::invalid_argument(
         "Expected number of subcubes to match the number of subcube "
@@ -71,6 +78,54 @@ metrics::History SeismicEmbedding::trainOnPatches(
 
   return SeismicBase::trainOnPatches(subcubes, std::move(labels), learning_rate,
                                      batch_size, callbacks, log_interval, comm);
+}
+
+NumpyArray SeismicEmbedding::forward(const NumpyArray& subcubes) {
+  switchToFinetuning();
+
+  auto batch = convertToBatches(subcubes, subcubes.shape(0)).at(0);
+
+  auto emb = _model->forward(batch, /* use_sparsity= */ true).at(0);
+
+  return python::tensorToNumpy(emb, /* single_row_to_vector= */ false);
+}
+
+void SeismicEmbedding::backpropagate(const NumpyArray& gradients) {
+  switchToFinetuning();
+
+  auto grad_tensor = python::fromNumpyDense(gradients, /* with_grad= */ false);
+
+  _model->backpropagate({grad_tensor});
+}
+
+void SeismicEmbedding::updateParameters(float learning_rate) {
+  _model->updateParameters(learning_rate);
+}
+
+void SeismicEmbedding::switchToFinetuning() {
+  if (_training_type == TrainingType::Finetuning) {
+    return;
+  }
+
+  auto patches = Input::make(_model->inputDims().at(0));
+
+  auto patch_emb_op =
+      std::dynamic_pointer_cast<PatchEmbedding>(_model->getOp("patch_emb"));
+  auto patch_emb = patch_emb_op->apply(patches);
+
+  auto patch_sum_op =
+      std::dynamic_pointer_cast<PatchSum>(_model->getOp("patch_sum"));
+  auto patch_sum = patch_sum_op->apply(patch_emb);
+
+  auto emb_op = std::dynamic_pointer_cast<FullyConnected>(_model->getOp("emb"));
+  auto emb = emb_op->apply(patch_sum);
+
+  auto loss = std::make_shared<ExternalLoss>(emb, Input::make(emb->dim()));
+
+  auto model = Model::make({patches}, {emb}, {loss});
+
+  setModel(model, /* embedding_last= */ true);
+  _training_type = TrainingType::Finetuning;
 }
 
 Dataset SeismicEmbedding::makeLabelBatches(
