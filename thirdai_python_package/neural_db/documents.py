@@ -10,7 +10,11 @@ from typing import Any, Dict, List, Optional, Tuple, Type, Union, final
 import numpy as np
 import pandas as pd
 from nltk.tokenize import sent_tokenize
-from office365.sharepoint.client_context import ClientContext
+from office365.sharepoint.client_context import (
+    ClientContext,
+    ClientCredential,
+    UserCredential,
+)
 from pytrie import StringTrie
 from requests.models import Response
 from sqlalchemy import Integer, String, create_engine
@@ -133,7 +137,6 @@ class Reference:
         upvote_ids: List[int] = None,
     ):
         self._id = element_id
-        self.id_in_document = element_id
         self._upvote_ids = upvote_ids if upvote_ids is not None else [element_id]
         self._text = text
         self._source = source
@@ -311,7 +314,6 @@ class DocumentManager:
     def reference(self, element_id: int):
         doc, start_id = self._get_doc_and_start_id(element_id)
         doc_ref = doc.reference(element_id - start_id)
-        doc_ref.hash = doc.hash
         doc_ref._id = element_id
         doc_ref._upvote_ids = [start_id + uid for uid in doc_ref._upvote_ids]
         return doc_ref
@@ -959,6 +961,9 @@ class SQLDatabase(DocumentConnector):
         return None
 
     def chunk_iterator(self) -> pd.DataFrame:
+        if not hasattr(self, "_connector"):
+            raise AttributeError("Connector Not found")
+
         return self._connector.chunk_iterator()
 
     def all_entity_ids(self) -> List[int]:
@@ -1124,6 +1129,7 @@ class SharePoint(DocumentConnector):
         ctx: ClientContext,
         library_path: str = "Shared Documents",
         chunk_size: int = 10485760,
+        credentials: Optional[Dict[str, str]] = None,
         save_extra_info: bool = True,
         metadata: dict = {},
     ) -> None:
@@ -1131,6 +1137,8 @@ class SharePoint(DocumentConnector):
             ctx=ctx, library_path=library_path, chunk_size=chunk_size
         )
         self.library_path = library_path
+        self.chunk_size = chunk_size
+        self.credentials = credentials
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
 
@@ -1138,7 +1146,8 @@ class SharePoint(DocumentConnector):
         self.weak_column = "weak_text"
         self.build_meta_table()
         self._name = self._connector.site_name + "_" + self.library_path
-        self._source = self._connector.url + "/" + library_path
+        self.url = self._connector.url
+        self._source = self.url + "/" + library_path
         self._hash = hash_string(self._source)
 
     @property
@@ -1227,6 +1236,9 @@ class SharePoint(DocumentConnector):
                 "page",
             ]
         )
+        if not hasattr(self, "_connector"):
+            raise AttributeError("Connector not Found")
+
         for file_dict in self._connector.chunk_iterator():
             chunk_df.drop(chunk_df.index, inplace=True)
             temp_dfs = []
@@ -1273,6 +1285,37 @@ class SharePoint(DocumentConnector):
         del state["_connector"]
 
         return state
+
+    def __setstate__(self, state):
+        creds = state["credentials"]
+        if creds is not None:
+            try:
+                if "username" in creds.keys() and "password" in creds.keys():
+                    user_credentials = UserCredential(
+                        user_name=creds["username"], password=creds["password"]
+                    )
+                    ctx = ClientContext(base_url=state["url"]).with_credentials(
+                        user_credentials
+                    )
+                elif "client_id" in creds and "client_secret" in creds:
+                    client_credentials = ClientCredential(
+                        client_id=creds["client_id"],
+                        client_secret=creds["client_secret"],
+                    )
+                    ctx = ClientContext(base_url=state["url"]).with_credentials(
+                        client_credentials
+                    )
+
+                state["_connector"] = SharePointConnector(
+                    ctx=ctx,
+                    library_path=state["library_path"],
+                    chunk_size=state["chunk_size"],
+                )
+            except Exception as e:
+                print(
+                    "Unable to connect to the sharepoint url. Retraining may not be possible. Error: "
+                    + str(e)
+                )
 
 
 class SentenceLevelExtracted(Extracted):

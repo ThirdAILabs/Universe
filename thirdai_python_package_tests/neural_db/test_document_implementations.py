@@ -100,9 +100,11 @@ def test_save_load_meta_method(get_doc):
 
 def test_doc_save_load_method(get_doc):
     doc = get_doc()
-    doc.save("doc_save_dir")
+    doc_dir = "doc_save_dir"
+    doc.save(doc_dir)
     # This calls a static method.
-    loaded_doc = doc.load("doc_save_dir")
+    loaded_doc = doc.load(doc_dir)
+    shutil.rmtree(doc_dir)
 
     assert loaded_doc.name == doc.name
     assert loaded_doc.hash == doc.hash
