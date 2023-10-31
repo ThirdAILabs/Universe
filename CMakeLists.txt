@@ -311,7 +311,6 @@ add_subdirectory(hashing)
 add_subdirectory(hashtable)
 add_subdirectory(compression)
 add_subdirectory(utils)
-add_subdirectory(mach)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
@@ -520,7 +519,6 @@ pybind11_add_module(
   auto_ml/src/udt/backends/UDTSVMClassifier.cc
   auto_ml/src/udt/backends/UDTGraphClassifier.cc
   auto_ml/src/udt/utils/Classifier.cc
-  mach/src/Mach.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)
 
