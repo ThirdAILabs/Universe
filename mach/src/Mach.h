@@ -14,18 +14,22 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
+#include <data/src/transformations/AddMachRlhfSamples.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/mach/MachIndex.h>
 #include <dataset/src/mach/RLHFSampler.h>
 #include <algorithm>
+#include <csignal>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -35,18 +39,24 @@ namespace mach = dataset::mach;
 
 class Mach {
  public:
-  Mach(const bolt::Model& model, uint32_t num_hashes,
-       float mach_sampling_threshold, bool freeze_hash_tables,
-       std::string input_indices_column, std::string input_values_column,
-       std::string label_column, std::string bucket_column);
+  Mach(uint32_t input_dim, uint32_t num_buckets, const ArgumentMap& args,
+       const std::optional<std::string>& model_config, bool use_sigmoid_bce,
+       uint32_t num_hashes, float mach_sampling_threshold,
+       bool freeze_hash_tables, std::string input_indices_column,
+       std::string input_values_column, std::string label_column,
+       std::string bucket_column);
 
-  static auto make(const bolt::Model& model, uint32_t num_hashes,
+  static auto make(uint32_t input_dim, uint32_t num_buckets,
+                   const ArgumentMap& args,
+                   const std::optional<std::string>& model_config,
+                   bool use_sigmoid_bce, uint32_t num_hashes,
                    float mach_sampling_threshold, bool freeze_hash_tables,
                    std::string input_indices_column,
                    std::string input_values_column, std::string label_column,
                    std::string bucket_column) {
     return std::make_shared<Mach>(
-        model, num_hashes, mach_sampling_threshold, freeze_hash_tables,
+        input_dim, num_buckets, args, model_config, use_sigmoid_bce, num_hashes,
+        mach_sampling_threshold, freeze_hash_tables,
         std::move(input_indices_column), std::move(input_values_column),
         std::move(label_column), std::move(bucket_column));
   }
@@ -100,6 +110,11 @@ class Mach {
       uint32_t num_buckets, uint32_t epochs, size_t batch_size,
       const bolt::metrics::InputMetrics& metrics, TrainOptions options);
 
+  std::vector<std::vector<std::pair<uint32_t, double>>> score(
+      const data::ColumnMap& columns,
+      std::vector<std::unordered_set<uint32_t>>& entities,
+      std::optional<uint32_t> top_k);
+
   std::vector<uint32_t> outputCorrectness(const data::ColumnMap& columns,
                                           const std::vector<uint32_t>& labels,
                                           std::optional<uint32_t> num_hashes,
@@ -117,6 +132,8 @@ class Mach {
     return _state->machIndex();
   }
 
+  size_t size() const { return index()->numEntities(); }
+
   void setIndex(dataset::mach::MachIndexPtr new_index) {
     _state->setMachIndex(std::move(new_index));
     updateSamplingStrategy();
@@ -128,14 +145,14 @@ class Mach {
   }
 
   void enableRlhf(uint32_t num_balancing_docs,
-                  uint32_t num_balancing_samples_per_doc) {
-    _state->setRlhfSampler(data::mach::RLHFSampler(
-        /* max_docs= */ num_balancing_docs,
-        /* max_samples_per_doc= */ num_balancing_samples_per_doc));
-  }
+                  uint32_t num_balancing_samples_per_doc);
 
  private:
   void updateSamplingStrategy();
+
+  std::vector<uint32_t> topHashesForDoc(
+      std::vector<TopKActivationsQueue>&& top_k_per_sample,
+      uint32_t num_buckets_to_sample, uint32_t num_random_hashes);
 
   std::optional<data::ColumnMap> balancingColumnMap(uint32_t num_balancers);
 
@@ -169,6 +186,14 @@ class Mach {
         std::vector<uint32_t>(columns.numRows(), 0),
         std::numeric_limits<uint32_t>::max());
     columns.setColumn(labelColumn(), doc_ids);
+  }
+
+  void assertRlhfEnabled() const {
+    if (!_state->hasRlhfSampler()) {
+      throw std::runtime_error(
+          "This model was not configured to support rlhf. Please pass {'rlhf': "
+          "True} in the model options or call enable_rlhf().");
+    }
   }
 
   void addRlhfSamplesIfNeeded(const data::ColumnMap& columns) const {

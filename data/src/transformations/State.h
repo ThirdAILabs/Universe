@@ -11,6 +11,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <unordered_map>
 
@@ -65,6 +66,8 @@ class State {
 
   explicit State(automl::GraphInfoPtr graph) : _graph(std::move(graph)) {}
 
+  static auto make() { return std::make_shared<State>(); }
+
   static auto make(MachIndexPtr mach_index) {
     return std::make_shared<State>(std::move(mach_index));
   }
@@ -94,6 +97,8 @@ class State {
 
     _mach_index = std::move(new_index);
   }
+
+  bool hasRlhfSampler() { return !!_rlhf_sampler; }
 
   mach::RLHFSampler& rlhfSampler() {
     if (!_rlhf_sampler) {

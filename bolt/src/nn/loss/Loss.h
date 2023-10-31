@@ -45,8 +45,6 @@ class Loss {
    */
   virtual ComputationList labels() const = 0;
 
-  virtual bool logitsSumToOne() const = 0;
-
   virtual ~Loss() = default;
 
  private:

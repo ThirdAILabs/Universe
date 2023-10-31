@@ -1,36 +1,50 @@
 #include "Mach.h"
-#include "Model.h"
+#include <bolt/src/neuron_index/MachNeuronIndex.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
-#include <data/src/transformations/AddMachRlhfSamples.h>
+#include <data/src/ColumnMap.h>
+#include <data/src/columns/Column.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/State.h>
 #include <dataset/src/mach/MachIndex.h>
 #include <algorithm>
+#include <iostream>
+#include <ostream>
 #include <random>
+#include <strings.h>
+#include <unordered_map>
 #include <utility>
 
 namespace thirdai::mach {
 
-Mach::Mach(const bolt::Model& model, uint32_t num_hashes,
-           float mach_sampling_threshold, bool freeze_hash_tables,
-           std::string input_indices_column, std::string input_values_column,
-           std::string label_column, std::string bucket_column)
+bolt::ComputationPtr getEmbeddingComputation(const bolt::Model& model) {
+  // This defines the embedding as the second to last computatation in the
+  // computation graph.
+  auto computations = model.computationOrder();
+  return computations.at(computations.size() - 2);
+}
 
-    : _model(modifyForMach(model)),
+Mach::Mach(uint32_t input_dim, uint32_t num_buckets, const ArgumentMap& args,
+           const std::optional<std::string>& model_config, bool use_sigmoid_bce,
+           uint32_t num_hashes, float mach_sampling_threshold,
+           bool freeze_hash_tables, std::string input_indices_column,
+           std::string input_values_column, std::string label_column,
+           std::string bucket_column)
+
+    : _model(buildModel(input_dim, num_buckets, args, model_config,
+                        use_sigmoid_bce)),
       _emb(getEmbeddingComputation(*_model)),
       _mach_sampling_threshold(mach_sampling_threshold),
       _freeze_hash_tables(freeze_hash_tables),
       _state(data::State::make(dataset::mach::MachIndex::make(
-          /* num_buckets= */ model.outputs().front()->dim(),
+          /* num_buckets= */ _model->outputs().front()->dim(),
           /* num_hashes=*/num_hashes))),
       _label_to_buckets(data::MachLabel::make(label_column, bucket_column)),
-      _add_balancing_samples(data::AddMachRlhfSamples::make(
-          input_indices_column, input_values_column, label_column,
-          bucket_column)),
       _bolt_input_columns(
           {data::OutputColumns(input_indices_column, input_values_column)}),
       _bolt_label_columns(
-          {data::OutputColumns(bucket_column, inferLabelValueFill(model)),
+          {data::OutputColumns(bucket_column,
+                               use_sigmoid_bce ? data::ValueFillType::Ones
+                                               : data::ValueFillType::SumToOne),
            data::OutputColumns(label_column)}),
       _all_bolt_columns({std::move(input_indices_column),
                          std::move(input_values_column),
@@ -39,32 +53,70 @@ Mach::Mach(const bolt::Model& model, uint32_t num_hashes,
 }
 
 void Mach::randomlyIntroduceEntities(const data::ColumnMap& columns) {
-  uint32_t num_hashes = index()->numBuckets();
   const auto& labels = columns.getArrayColumn<uint32_t>(labelColumn());
 
-  for (size_t i = 0; i < columns.numRows(); i++) {
-    if (labels->row(i).size() < 1) {
+  for (size_t row = 0; row < columns.numRows(); row++) {
+    if (labels->row(row).size() < 1) {
       continue;
     }
 
-    std::vector<uint32_t> hashes(num_hashes);
-    for (uint32_t i = 0; i < num_hashes; i++) {
+    std::vector<uint32_t> hashes(index()->numHashes());
+    for (uint32_t h = 0; h < index()->numHashes(); h++) {
       std::uniform_int_distribution<uint32_t> dist(0,
                                                    index()->numBuckets() - 1);
       auto hash = dist(_mt);
       while (std::find(hashes.begin(), hashes.end(), hash) != hashes.end()) {
         hash = dist(_mt);
       }
-      hashes[i] = hash;
+      hashes[h] = hash;
     }
 
-    index()->insert(labels->row(i)[0], std::move(hashes));
+    index()->insert(labels->row(row)[0], std::move(hashes));
   }
+}
+
+void Mach::introduceEntities(const data::ColumnMap& columns,
+                             std::optional<uint32_t> num_buckets_to_sample_opt,
+                             uint32_t num_random_hashes) {
+  uint32_t num_buckets_to_sample =
+      num_buckets_to_sample_opt.value_or(index()->numHashes());
+
+  std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>> top_k_per_doc;
+
+  bolt::python::CtrlCCheck ctrl_c_check;
+
+  // Note: using sparse inference here could cause issues because the
+  // mach index sampler will only return nonempty buckets, which could
+  // cause new docs to only be mapped to buckets already containing
+  // entities.
+  auto scores = _model->forward(inputTensors(columns)).at(0);
+
+  ctrl_c_check();
+
+  auto doc_ids = columns.getArrayColumn<uint32_t>(labelColumn());
+  for (uint32_t row = 0; row < scores->batchSize(); row++) {
+    uint32_t label = doc_ids->row(row)[0];
+    top_k_per_doc[label].push_back(
+        scores->getVector(row).findKLargestActivations(num_buckets_to_sample));
+    ctrl_c_check();
+  }
+
+  for (auto& [doc, top_ks] : top_k_per_doc) {
+    auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
+                                  num_random_hashes);
+    index()->insert(doc, hashes);
+
+    ctrl_c_check();
+  }
+
+  updateSamplingStrategy();
 }
 
 void Mach::eraseEntity(uint32_t entity) {
   index()->erase(entity);
-  _state->rlhfSampler().removeDoc(entity);
+  if (_state->hasRlhfSampler()) {
+    _state->rlhfSampler().removeDoc(entity);
+  }
 
   if (index()->numEntities() == 0) {
     std::cout << "Warning. Every learned class has been forgotten. The model "
@@ -78,7 +130,9 @@ void Mach::eraseEntity(uint32_t entity) {
 
 void Mach::eraseAllEntities() {
   index()->clear();
-  _state->rlhfSampler().clear();
+  if (_state->hasRlhfSampler()) {
+    _state->rlhfSampler().clear();
+  }
   updateSamplingStrategy();
 }
 
@@ -144,13 +198,11 @@ std::vector<std::vector<std::pair<uint32_t, double>>> Mach::predict(
     uint32_t num_scanned_buckets) {
   auto outputs = _model->forward(inputTensors(columns), sparse_inference).at(0);
 
-  uint32_t num_classes = index()->numEntities();
-  if (top_k && top_k > num_classes) {
+  if (top_k > size()) {
     throw std::invalid_argument(
         "Cannot return more results than the model is trained to "
-        "predict. "
-        "Model currently can predict one of " +
-        std::to_string(num_classes) + " classes.");
+        "predict. Model currently can predict one of " +
+        std::to_string(size()) + " classes.");
   }
 
   uint32_t batch_size = outputs->batchSize();
@@ -236,6 +288,8 @@ bolt::metrics::History Mach::associateTrain(
     data::ColumnMap train_data, float learning_rate, uint32_t repeats,
     uint32_t num_buckets, uint32_t epochs, size_t batch_size,
     const bolt::metrics::InputMetrics& metrics, TrainOptions options) {
+  assertRlhfEnabled();
+
   auto associations = repeatRows(
       associateSamples(std::move(from_table), to_table, num_buckets), repeats);
 
@@ -260,6 +314,36 @@ bolt::metrics::History Mach::associateTrain(
       /* autotune_rehash_rebuild= */ true,
       /* verbose= */ options.verbose,
       /* logging_interval= */ options.logging_interval);
+}
+
+std::vector<std::vector<std::pair<uint32_t, double>>> Mach::score(
+    const data::ColumnMap& columns,
+    std::vector<std::unordered_set<uint32_t>>& entities,
+    std::optional<uint32_t> top_k) {
+  if (columns.numRows() != entities.size()) {
+    throw std::invalid_argument(
+        "Length of entities list must be equal to the number of rows in the "
+        "column.");
+  }
+
+  // sparse inference could become an issue here because maybe the entities
+  // we score wouldn't otherwise be in the top results, thus their buckets
+  // have
+  // lower similarity and don't get selected by LSH
+  auto outputs =
+      _model->forward(inputTensors(columns), /* use_sparsity= */ false).at(0);
+
+  size_t batch_size = columns.numRows();
+  std::vector<std::vector<std::pair<uint32_t, double>>> scores(batch_size);
+
+#pragma omp parallel for default(none) \
+    shared(entities, outputs, scores, top_k, batch_size) if (batch_size > 1)
+  for (uint32_t i = 0; i < batch_size; i++) {
+    const BoltVector& vector = outputs->getVector(i);
+    scores[i] = index()->scoreEntities(vector, entities[i], top_k);
+  }
+
+  return scores;
 }
 
 std::vector<uint32_t> Mach::outputCorrectness(
@@ -343,6 +427,15 @@ std::vector<float> Mach::entityEmbedding(uint32_t entity) const {
   return averaged_embedding;
 }
 
+void Mach::enableRlhf(uint32_t num_balancing_docs,
+                      uint32_t num_balancing_samples_per_doc) {
+  _add_balancing_samples = data::AddMachRlhfSamples::make(
+      inputIndicesColumn(), inputValuesColumn(), labelColumn(), bucketColumn());
+  _state->setRlhfSampler(data::mach::RLHFSampler(
+      /* max_docs= */ num_balancing_docs,
+      /* max_samples_per_doc= */ num_balancing_samples_per_doc));
+}
+
 std::optional<data::ColumnMap> Mach::balancingColumnMap(
     uint32_t num_balancers) {
   auto balancers = _state->rlhfSampler().balancingSamples(num_balancers);
@@ -363,21 +456,23 @@ std::optional<data::ColumnMap> Mach::balancingColumnMap(
     buckets.push_back(std::move(sample.mach_buckets));
   }
 
-  data::ColumnMap columns({});
+  std::unordered_map<std::string, data::ColumnPtr> columns(
+      {{inputIndicesColumn(),
+        data::ArrayColumn<uint32_t>::make(std::move(indices), inputDim())},
+       {inputValuesColumn(), data::ArrayColumn<float>::make(std::move(values))},
+       {bucketColumn(),
+        data::ArrayColumn<uint32_t>::make(std::move(buckets), numBuckets())}});
 
-  columns.setColumn(inputIndicesColumn(), data::ArrayColumn<uint32_t>::make(
-                                              std::move(indices), inputDim()));
-  columns.setColumn(inputValuesColumn(),
-                    data::ArrayColumn<float>::make(std::move(values)));
-  columns.setColumn(bucketColumn(), data::ArrayColumn<uint32_t>::make(
-                                        std::move(buckets), numBuckets()));
+  data::ColumnMap map(std::move(columns));
+  addDummyLabels(map);
 
-  return columns;
+  return map;
 }
 
 void Mach::teach(data::ColumnMap feedback, float learning_rate,
                  uint32_t feedback_repetitions, uint32_t num_balancers,
                  uint32_t epochs, size_t batch_size) {
+  assertRlhfEnabled();
   feedback = repeatRows(std::move(feedback), feedback_repetitions);
   feedback = feedback.keepColumns(_all_bolt_columns);
 
@@ -409,6 +504,142 @@ data::ColumnMap Mach::associateSamples(data::ColumnMap from_columns,
   from_columns.setColumn(bucketColumn(), mach_labels);
   addDummyLabels(from_columns);
   return from_columns;
+}
+
+void Mach::updateSamplingStrategy() {
+  auto output_layer =
+      bolt::FullyConnected::cast(_model->opExecutionOrder().back());
+
+  const auto& neuron_index = output_layer->kernel()->neuronIndex();
+
+  float index_sparsity = index()->sparsity();
+  if (index_sparsity > 0 && index_sparsity <= _mach_sampling_threshold) {
+    // TODO(Nicholas) add option to specify new neuron index in set sparsity.
+    output_layer->setSparsity(index_sparsity, false, false);
+    auto new_index = bolt::MachNeuronIndex::make(index());
+    output_layer->kernel()->setNeuronIndex(new_index);
+
+  } else {
+    if (std::dynamic_pointer_cast<bolt::MachNeuronIndex>(neuron_index)) {
+      float sparsity = autotuneSparsity(index()->numBuckets());
+
+      auto sampling_config = bolt::DWTASamplingConfig::autotune(
+          index()->numBuckets(), sparsity,
+          /* experimental_autotune= */ false);
+
+      output_layer->setSparsity(sparsity, false, false);
+
+      if (sampling_config) {
+        auto new_index = sampling_config->getNeuronIndex(
+            output_layer->dim(), output_layer->inputDim());
+        output_layer->kernel()->setNeuronIndex(new_index);
+      }
+    }
+  }
+}
+
+struct BucketScore {
+  uint32_t frequency = 0;
+  float score = 0.0;
+};
+
+struct CompareBuckets {
+  bool operator()(const std::pair<uint32_t, BucketScore>& lhs,
+                  const std::pair<uint32_t, BucketScore>& rhs) {
+    if (lhs.second.frequency == rhs.second.frequency) {
+      return lhs.second.score > rhs.second.score;
+    }
+    return lhs.second.frequency > rhs.second.frequency;
+  }
+};
+
+std::vector<uint32_t> Mach::topHashesForDoc(
+    std::vector<TopKActivationsQueue>&& top_k_per_sample,
+    uint32_t num_buckets_to_sample, uint32_t num_random_hashes) {
+  uint32_t num_hashes = index()->numHashes();
+
+  auto& mach_index = *index();
+
+  if (num_buckets_to_sample < mach_index.numHashes()) {
+    throw std::invalid_argument(
+        "Sampling from fewer buckets than num_hashes is not supported. If "
+        "you'd like to introduce using fewer hashes, please reset the number "
+        "of hashes for the index.");
+  }
+
+  if (num_buckets_to_sample > mach_index.numBuckets()) {
+    throw std::invalid_argument(
+        "Cannot sample more buckets than there are in the index.");
+  }
+
+  std::unordered_map<uint32_t, BucketScore> hash_freq_and_scores;
+  for (auto& top_k : top_k_per_sample) {
+    while (!top_k.empty()) {
+      auto [activation, active_neuron] = top_k.top();
+      if (!hash_freq_and_scores.count(active_neuron)) {
+        hash_freq_and_scores[active_neuron] = BucketScore{1, activation};
+      } else {
+        hash_freq_and_scores[active_neuron].frequency += 1;
+        hash_freq_and_scores[active_neuron].score += activation;
+      }
+      top_k.pop();
+    }
+  }
+
+  // We sort the hashes first by number of occurances and tiebreak with
+  // the higher aggregated score if necessary. We don't only use the
+  // activations since those typically aren't as useful as the
+  // frequencies.
+  std::vector<std::pair<uint32_t, BucketScore>> sorted_hashes(
+      hash_freq_and_scores.begin(), hash_freq_and_scores.end());
+
+  CompareBuckets cmp;
+  std::sort(sorted_hashes.begin(), sorted_hashes.end(), cmp);
+
+  if (num_buckets_to_sample > num_hashes) {
+    // If we are sampling more buckets then we end up using we rerank the
+    // buckets based on size to load balance the index.
+    std::sort(sorted_hashes.begin(),
+              sorted_hashes.begin() + num_buckets_to_sample,
+              [&mach_index, &cmp](const auto& lhs, const auto& rhs) {
+                size_t lhs_size = mach_index.bucketSize(lhs.first);
+                size_t rhs_size = mach_index.bucketSize(rhs.first);
+
+                // Give preference to emptier buckets. If buckets are
+                // equally empty, use one with the best score.
+                if (lhs_size == rhs_size) {
+                  return cmp(lhs, rhs);
+                }
+
+                return lhs_size < rhs_size;
+              });
+  }
+
+  std::vector<uint32_t> new_hashes;
+
+  // We can optionally specify the number of hashes we'd like to be
+  // random for a new document. This is to encourage an even distribution
+  // among buckets.
+  if (num_random_hashes > num_hashes) {
+    throw std::invalid_argument(
+        "num_random_hashes cannot be greater than num hashes.");
+  }
+
+  uint32_t num_informed_hashes = num_hashes - num_random_hashes;
+  for (uint32_t i = 0; i < num_informed_hashes; i++) {
+    auto [hash, freq_score_pair] = sorted_hashes[i];
+    new_hashes.push_back(hash);
+  }
+
+  uint32_t num_buckets = mach_index.numBuckets();
+  std::uniform_int_distribution<uint32_t> int_dist(0, num_buckets - 1);
+  std::mt19937 rand(thirdai::global_random::nextSeed());
+
+  for (uint32_t i = 0; i < num_random_hashes; i++) {
+    new_hashes.push_back(int_dist(rand));
+  }
+
+  return new_hashes;
 }
 
 template void Mach::serialize(cereal::BinaryInputArchive&);
