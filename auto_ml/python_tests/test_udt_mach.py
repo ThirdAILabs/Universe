@@ -111,7 +111,6 @@ def evaluate_model(model, supervised_tst):
 
 
 def scifact_model(n_target_classes):
-    print("Before make model")
     model = bolt.UniversalDeepTransformer(
         data_types={
             "QUERY": bolt.types.text(contextual_encoding="local"),
@@ -122,7 +121,6 @@ def scifact_model(n_target_classes):
         integer_target=True,
         options={"extreme_classification": True, "embedding_dimension": 1024},
     )
-    print("After make model")
     return model
 
 
@@ -135,8 +133,6 @@ def train_on_scifact(download_scifact_dataset, coldstart):
     ) = download_scifact_dataset
 
     model = scifact_model(n_target_classes=n_target_classes)
-
-    print("before coldstart")
 
     if coldstart:
         metrics = model.cold_start(
@@ -152,13 +148,10 @@ def train_on_scifact(download_scifact_dataset, coldstart):
         )
         assert metrics["train_precision@1"][-1] > 0.90
 
-    print("Before validation")
     validation = bolt.Validation(
         supervised_tst,
         metrics=["precision@1"],
     )
-
-    print("Before train")
 
     metrics = model.train(
         filename=supervised_trn,
@@ -170,8 +163,6 @@ def train_on_scifact(download_scifact_dataset, coldstart):
         ],
         validation=validation,
     )
-
-    print("after train")
 
     return model, metrics, supervised_tst
 
