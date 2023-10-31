@@ -400,7 +400,6 @@ set(THIRDAI_SOURCES
     dataset/src/blocks/text/WordpieceTokenizer.cc
     dataset/src/mach/MachIndex.cc
     dataset/src/mach/MachBlock.cc
-    dataset/src/mach/RLHFSampler.cc
     dataset/src/utils/GraphInfo.cc
     telemetry/src/PrometheusClient.cc
     data/src/transformations/Binning.cc
@@ -511,6 +510,7 @@ pybind11_add_module(
   auto_ml/src/udt/UDT.cc
   auto_ml/src/udt/utils/Models.cc
   auto_ml/src/udt/utils/Classifier.cc
+  auto_ml/src/udt/utils/Mach.cc
   auto_ml/src/udt/backends/UDTClassifier.cc
   auto_ml/src/udt/backends/UDTMachClassifier.cc
   auto_ml/src/udt/backends/UDTRecurrentClassifier.cc
@@ -518,7 +518,6 @@ pybind11_add_module(
   auto_ml/src/udt/backends/UDTQueryReformulation.cc
   auto_ml/src/udt/backends/UDTSVMClassifier.cc
   auto_ml/src/udt/backends/UDTGraphClassifier.cc
-  auto_ml/src/udt/utils/Classifier.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)
 
