@@ -4,6 +4,7 @@ import pandas as pd
 import thirdai
 import thirdai._thirdai.bolt as bolt
 import thirdai._thirdai.dataset as dataset
+import thirdai._thirdai.data as data
 
 from .udt_docs import *
 
@@ -181,6 +182,7 @@ def modify_udt():
         filename: str,
         strong_column_names: List[str],
         weak_column_names: List[str],
+        variable_length: bool = data.transformations.VariableLengthConfig(),
         learning_rate: float = 0.001,
         epochs: int = 5,
         batch_size: int = None,
@@ -192,7 +194,6 @@ def modify_udt():
         logging_interval: Optional[int] = None,
         comm=None,
         shuffle_reservoir_size: int = 64000,
-        variable_length: bool = True,
     ):
         data_source = _create_data_source(filename)
 
@@ -226,6 +227,7 @@ def modify_udt():
         data_source: dataset.DataSource,
         strong_column_names: List[str],
         weak_column_names: List[str],
+        variable_length: bool = data.transformations.VariableLengthConfig(),
         learning_rate: float = 0.001,
         epochs: int = 5,
         batch_size: int = None,
@@ -235,7 +237,6 @@ def modify_udt():
         verbose: bool = True,
         logging_interval: Optional[int] = None,
         comm=None,
-        variable_length: bool = True,
     ):
         val_data, val_metrics, train_options = _process_validation_and_options(
             validation=None,
@@ -250,6 +251,7 @@ def modify_udt():
             data=data_source,
             strong_column_names=strong_column_names,
             weak_column_names=weak_column_names,
+            variable_length=variable_length,
             learning_rate=learning_rate,
             epochs=epochs,
             train_metrics=metrics,
@@ -258,7 +260,6 @@ def modify_udt():
             callbacks=callbacks,
             options=train_options,
             comm=comm,
-            variable_length=variable_length,
         )
 
     delattr(bolt.UniversalDeepTransformer, "train")

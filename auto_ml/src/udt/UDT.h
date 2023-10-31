@@ -122,13 +122,14 @@ class UDT {
   py::object coldstart(
       const dataset::DataSourcePtr& data,
       const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& train_metrics,
+      const std::vector<std::string>& weak_column_names,
+      std::optional<data::VariableLengthConfig> variable_length,
+      float learning_rate, uint32_t epochs,
+      const std::vector<std::string>& train_metrics,
       const dataset::DataSourcePtr& val_data,
       const std::vector<std::string>& val_metrics,
       const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-      const bolt::DistributedCommPtr& comm,
-      std::optional<data::VariableLengthConfig> variable_length);
+      const bolt::DistributedCommPtr& comm);
 
   /**
    * Returns metadata for ColdStart which are needed to be passed to

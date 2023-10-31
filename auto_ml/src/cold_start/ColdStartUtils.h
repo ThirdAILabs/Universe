@@ -69,7 +69,7 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     TabularDatasetFactoryPtr& dataset_factory, ColdStartMetaDataPtr& metadata,
-    std::optional<data::VariableLengthConfig> variable_length);
+    std::optional<data::VariableLengthConfig> variable_length = std::nullopt);
 
 /**
  * This function concatenates the values from the strong and weak columns into a

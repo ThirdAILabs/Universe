@@ -427,13 +427,14 @@ void UDTMachClassifier::setModel(const ModelPtr& model) {
 py::object UDTMachClassifier::coldstart(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names, float learning_rate,
-    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    const std::vector<std::string>& weak_column_names,
+    std::optional<data::VariableLengthConfig> variable_length,
+    float learning_rate, uint32_t epochs,
+    const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::DistributedCommPtr& comm,
-    std::optional<data::VariableLengthConfig> variable_length) {
+    const bolt::DistributedCommPtr& comm) {
   auto metadata = getColdStartMetaData();
 
   py::object history;
@@ -565,7 +566,7 @@ void UDTMachClassifier::introduceDocuments(
   } else {
     cold_start_data = cold_start::preprocessColdStartTrainSource(
         data, strong_column_names, weak_column_names, _dataset_factory,
-        metadata, /* variable_length= */ false);
+        metadata, /* variable_length= */ std::nullopt);
   }
 
   auto dataset_loader =
@@ -986,7 +987,7 @@ py::object UDTMachClassifier::associateColdStart(
 
   auto cold_start_balancing_data = cold_start::preprocessColdStartTrainSource(
       balancing_data, strong_column_names, weak_column_names, _dataset_factory,
-      metadata, /* variable_length= */ false);
+      metadata, /* variable_length= */ std::nullopt);
 
   return associateTrain(cold_start_balancing_data, source_target_samples,
                         n_buckets, n_association_samples, learning_rate, epochs,
