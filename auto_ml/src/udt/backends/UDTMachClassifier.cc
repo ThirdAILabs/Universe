@@ -1,6 +1,7 @@
 #include "UDTMachClassifier.h"
 #include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
+#include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/neuron_index/LshIndex.h>
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
@@ -38,6 +39,7 @@
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
 #include <algorithm>
+#include <cstddef>
 #include <exception>
 #include <iostream>
 #include <iterator>
@@ -204,11 +206,11 @@ UDTMachClassifier::predictImpl(const MapInputBatch& samples,
         "UDT Extreme Classification does not support the "
         "return_predicted_class flag.");
   }
+  uint32_t k = top_k.value_or(
+      std::min<uint32_t>(_default_top_k_to_return, _classifier->size()));
   return _classifier->predict(_data->constUnlabeledTransform(
                                   data::ColumnMap::fromMapInputBatch(samples)),
-                              sparse_inference,
-                              top_k.value_or(_default_top_k_to_return),
-                              _num_buckets_to_eval);
+                              sparse_inference, k, _num_buckets_to_eval);
 }
 
 py::object UDTMachClassifier::predict(const MapInput& sample,
@@ -303,8 +305,9 @@ py::object UDTMachClassifier::coldstart(
 }
 
 py::object UDTMachClassifier::embedding(const MapInputBatch& sample) {
-  return py::cast(_classifier->embedding(_data->constUnlabeledTransform(
-      data::ColumnMap::fromMapInputBatch(sample))));
+  auto columns = _data->constUnlabeledTransform(
+      data::ColumnMap::fromMapInputBatch(sample));
+  return bolt::python::tensorToNumpy(_classifier->embedding(columns));
 }
 
 py::object UDTMachClassifier::entityEmbedding(const Label& label) {

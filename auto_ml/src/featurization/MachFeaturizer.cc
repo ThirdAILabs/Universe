@@ -1,4 +1,5 @@
 #include "MachFeaturizer.h"
+#include <string>
 
 namespace thirdai::automl {
 
@@ -52,22 +53,15 @@ MachFeaturizer::MachFeaturizer(
     }
   }
 }
+
 data::ColumnMap MachFeaturizer::addLabelColumn(data::ColumnMap&& columns,
                                                uint32_t label) const {
-  data::ColumnPtr label_column;
-  if (_label_delimiter) {
-    std::vector<std::vector<uint32_t>> label_column_data(columns.numRows(),
-                                                         {label});
-    label_column = data::ArrayColumn<uint32_t>::make(
-        std::move(label_column_data), std::numeric_limits<uint32_t>::max());
-  } else {
-    std::vector<uint32_t> label_column_data(columns.numRows(), label);
-    label_column = data::ValueColumn<uint32_t>::make(
-        std::move(label_column_data), std::numeric_limits<uint32_t>::max());
-  }
-  columns.setColumn(modelLabelColumn(), label_column);
+  auto label_column = data::ValueColumn<std::string>::make(
+      {columns.numRows(), std::to_string(label)});
+  columns.setColumn(textDatasetConfig().labelColumn(), label_column);
   return columns;
 }
+
 std::pair<data::ColumnMap, data::ColumnMap>
 MachFeaturizer::associationColumnMaps(
     const std::vector<std::pair<std::string, std::string>>& samples) const {

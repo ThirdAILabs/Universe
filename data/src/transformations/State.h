@@ -98,6 +98,8 @@ class State {
     _mach_index = std::move(new_index);
   }
 
+  bool hasRlhfSampler() { return !!_rlhf_sampler; }
+
   mach::RLHFSampler& rlhfSampler() {
     if (!_rlhf_sampler) {
       throw std::invalid_argument(

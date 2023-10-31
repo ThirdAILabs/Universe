@@ -191,13 +191,11 @@ std::vector<std::vector<std::pair<uint32_t, double>>> Mach::predict(
     uint32_t num_scanned_buckets) {
   auto outputs = _model->forward(inputTensors(columns), sparse_inference).at(0);
 
-  uint32_t num_classes = index()->numEntities();
-  if (top_k && top_k > num_classes) {
+  if (top_k > size()) {
     throw std::invalid_argument(
         "Cannot return more results than the model is trained to "
-        "predict. "
-        "Model currently can predict one of " +
-        std::to_string(num_classes) + " classes.");
+        "predict. Model currently can predict one of " +
+        std::to_string(size()) + " classes.");
   }
 
   uint32_t batch_size = outputs->batchSize();
@@ -283,6 +281,8 @@ bolt::metrics::History Mach::associateTrain(
     data::ColumnMap train_data, float learning_rate, uint32_t repeats,
     uint32_t num_buckets, uint32_t epochs, size_t batch_size,
     const bolt::metrics::InputMetrics& metrics, TrainOptions options) {
+  assertRlhfEnabled();
+
   auto associations = repeatRows(
       associateSamples(std::move(from_table), to_table, num_buckets), repeats);
 
@@ -307,6 +307,36 @@ bolt::metrics::History Mach::associateTrain(
       /* autotune_rehash_rebuild= */ true,
       /* verbose= */ options.verbose,
       /* logging_interval= */ options.logging_interval);
+}
+
+std::vector<std::vector<std::pair<uint32_t, double>>> Mach::score(
+    const data::ColumnMap& columns,
+    std::vector<std::unordered_set<uint32_t>>& entities,
+    std::optional<uint32_t> top_k) {
+  if (columns.numRows() != entities.size()) {
+    throw std::invalid_argument(
+        "Length of entities list must be equal to the number of rows in the "
+        "column.");
+  }
+
+  // sparse inference could become an issue here because maybe the entities
+  // we score wouldn't otherwise be in the top results, thus their buckets
+  // have
+  // lower similarity and don't get selected by LSH
+  auto outputs =
+      _model->forward(inputTensors(columns), /* use_sparsity= */ false).at(0);
+
+  size_t batch_size = columns.numRows();
+  std::vector<std::vector<std::pair<uint32_t, double>>> scores(batch_size);
+
+#pragma omp parallel for default(none) \
+    shared(entities, outputs, scores, top_k, batch_size) if (batch_size > 1)
+  for (uint32_t i = 0; i < batch_size; i++) {
+    const BoltVector& vector = outputs->getVector(i);
+    scores[i] = index()->scoreEntities(vector, entities[i], top_k);
+  }
+
+  return scores;
 }
 
 std::vector<uint32_t> Mach::outputCorrectness(
@@ -425,6 +455,7 @@ std::optional<data::ColumnMap> Mach::balancingColumnMap(
 void Mach::teach(data::ColumnMap feedback, float learning_rate,
                  uint32_t feedback_repetitions, uint32_t num_balancers,
                  uint32_t epochs, size_t batch_size) {
+  assertRlhfEnabled();
   feedback = repeatRows(std::move(feedback), feedback_repetitions);
   feedback = feedback.keepColumns(_all_bolt_columns);
 
