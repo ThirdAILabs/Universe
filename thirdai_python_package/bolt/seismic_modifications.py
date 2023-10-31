@@ -461,7 +461,9 @@ def forward_finetuning(seismic_model, subcubes):
 
 
 def backpropagate_finetuning(seismic_model, grads):
-    seismic_model.backpropagate_finetuning(grads.numpy())
+    # Bolt takes optimizer steps in the direction of the gradients, torch takes
+    # steps opposite the direction of the gradient.
+    seismic_model.backpropagate_finetuning((-grads).numpy())
 
 
 def classifier_predict(seismic_classifier, subcubes):
