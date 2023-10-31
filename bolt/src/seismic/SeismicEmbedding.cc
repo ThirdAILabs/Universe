@@ -37,7 +37,9 @@ std::pair<size_t, float> nOutputClasses(const std::string& model_size) {
 
 SeismicEmbedding::SeismicEmbedding(InputShapeData input_shape_data,
                                    ModelPtr model)
-    : SeismicBase(input_shape_data, std::move(model)) {
+    : SeismicBase(input_shape_data, std::move(model),
+                  /* embedding_last= */ false),
+      _training_type(TrainingType::UnsupervisedPretraining) {
   if (getModel()->labelDims().size() != 1) {
     throw std::invalid_argument("Expected model to only have 1 output layer.");
   }

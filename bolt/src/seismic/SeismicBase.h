@@ -21,7 +21,8 @@ using NumpyArray =
 
 class SeismicBase {
  public:
-  SeismicBase(InputShapeData input_shape_data, ModelPtr model);
+  SeismicBase(InputShapeData input_shape_data, ModelPtr model,
+              bool embedding_last);
 
   SeismicBase() {}  // For serialization only.
 

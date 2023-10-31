@@ -22,9 +22,10 @@
 
 namespace thirdai::bolt::seismic {
 
-SeismicBase::SeismicBase(InputShapeData input_shape_data, ModelPtr model)
+SeismicBase::SeismicBase(InputShapeData input_shape_data, ModelPtr model,
+                         bool embedding_last)
     : _input_shape_data(std::move(input_shape_data)) {
-  setModel(std::move(model), /* embedding_last= */ false);
+  setModel(std::move(model), /* embedding_last= */ embedding_last);
 
 #if THIRDAI_EXPOSE_ALL
   _model->summary();
