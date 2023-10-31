@@ -1,4 +1,5 @@
 #include "MachFeaturizer.h"
+#include <data/src/transformations/StringCast.h>
 #include <string>
 
 namespace thirdai::automl {
@@ -17,7 +18,8 @@ void MachFeaturizer::serialize(Archive& archive) {
 MachFeaturizer::MachFeaturizer(
     ColumnDataTypes data_types, const CategoricalDataTypePtr& target_config,
     const TemporalRelationships& temporal_relationships,
-    const std::string& label_column, const TabularOptions& options)
+    const std::string& label_column, uint32_t num_buckets,
+    const TabularOptions& options)
     : _delimiter(options.delimiter),
       _label_delimiter(target_config->delimiter),
       _state(data::State::make()) {
@@ -42,6 +44,10 @@ MachFeaturizer::MachFeaturizer(
     _label_transformation = std::make_shared<data::StringToToken>(
         label_column, modelLabelColumn(), std::numeric_limits<uint32_t>::max());
   }
+
+  char bucket_delim = ' ';
+  _string_to_int_buckets = std::make_shared<data::StringToTokenArray>(
+      label_column, modelBucketColumn(), bucket_delim, num_buckets);
 
   if (data_types.size() == 2 && temporal_relationships.empty()) {
     auto cat_label = asCategorical(data_types.at(label_column));

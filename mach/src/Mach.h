@@ -190,7 +190,7 @@ class Mach {
 
   void assertRlhfEnabled() const {
     if (!_state->hasRlhfSampler()) {
-      throw std::invalid_argument(
+      throw std::runtime_error(
           "This model was not configured to support rlhf. Please pass {'rlhf': "
           "True} in the model options or call enable_rlhf().");
     }

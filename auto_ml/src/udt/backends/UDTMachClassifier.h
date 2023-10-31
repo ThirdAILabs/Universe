@@ -177,6 +177,11 @@ class UDTMachClassifier final : public UDTBackend {
     }
   }
 
+  void enableRlhf(uint32_t num_balancing_docs,
+                  uint32_t num_balancing_samples_per_doc) final {
+    _classifier->enableRlhf(num_balancing_docs, num_balancing_samples_per_doc);
+  }
+
   dataset::mach::MachIndexPtr getIndex() const final {
     return _classifier->index();
   }

@@ -23,9 +23,11 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/mach/MachIndex.h>
 #include <algorithm>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -38,17 +40,17 @@ class MachFeaturizer final {
   MachFeaturizer(ColumnDataTypes data_types,
                  const CategoricalDataTypePtr& target_config,
                  const TemporalRelationships& temporal_relationships,
-                 const std::string& label_column,
+                 const std::string& label_column, uint32_t num_buckets,
                  const TabularOptions& options);
 
   static auto make(ColumnDataTypes data_types,
                    const CategoricalDataTypePtr& target_config,
                    const TemporalRelationships& temporal_relationships,
-                   const std::string& label_column,
+                   const std::string& label_column, uint32_t num_buckets,
                    const TabularOptions& options) {
     return std::make_shared<MachFeaturizer>(
         std::move(data_types), target_config, temporal_relationships,
-        label_column, options);
+        label_column, num_buckets, options);
   }
 
   data::ColumnMapIteratorPtr iter(const dataset::DataSourcePtr& data) const {

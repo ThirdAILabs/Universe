@@ -90,14 +90,6 @@ UDTMachClassifier::UDTMachClassifier(
         "classification options.");
   }
 
-  auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
-      input_data_types, temporal_tracking_relationships,
-      tabular_options.lookahead);
-
-  _data = MachFeaturizer::make(input_data_types, target_config,
-                               temporal_relationships, target_name,
-                               tabular_options);
-
   uint32_t input_dim = tabular_options.feature_hash_range;
 
   if (user_args.get<bool>("neural_db", "boolean", /* default_val= */ false)) {
@@ -119,6 +111,14 @@ UDTMachClassifier::UDTMachClassifier(
       "mach_sampling_threshold", "float", defaults::MACH_SAMPLING_THRESHOLD);
   bool freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
                                                 defaults::FREEZE_HASH_TABLES);
+
+  auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
+      input_data_types, temporal_tracking_relationships,
+      tabular_options.lookahead);
+
+  _data = MachFeaturizer::make(input_data_types, target_config,
+                               temporal_relationships, target_name, num_buckets,
+                               tabular_options);
 
   _classifier = mach::Mach::make(
       input_dim, num_buckets, user_args, model_config,

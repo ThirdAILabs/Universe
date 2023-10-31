@@ -1,6 +1,8 @@
 #include "Mach.h"
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <data/src/ColumnMap.h>
+#include <data/src/columns/Column.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/State.h>
 #include <dataset/src/mach/MachIndex.h>
@@ -9,6 +11,7 @@
 #include <ostream>
 #include <random>
 #include <strings.h>
+#include <unordered_map>
 #include <utility>
 
 namespace thirdai::mach {
@@ -111,7 +114,9 @@ void Mach::introduceEntities(const data::ColumnMap& columns,
 
 void Mach::eraseEntity(uint32_t entity) {
   index()->erase(entity);
-  _state->rlhfSampler().removeDoc(entity);
+  if (_state->hasRlhfSampler()) {
+    _state->rlhfSampler().removeDoc(entity);
+  }
 
   if (index()->numEntities() == 0) {
     std::cout << "Warning. Every learned class has been forgotten. The model "
@@ -451,16 +456,17 @@ std::optional<data::ColumnMap> Mach::balancingColumnMap(
     buckets.push_back(std::move(sample.mach_buckets));
   }
 
-  data::ColumnMap columns({});
+  std::unordered_map<std::string, data::ColumnPtr> columns(
+      {{inputIndicesColumn(),
+        data::ArrayColumn<uint32_t>::make(std::move(indices), inputDim())},
+       {inputValuesColumn(), data::ArrayColumn<float>::make(std::move(values))},
+       {bucketColumn(),
+        data::ArrayColumn<uint32_t>::make(std::move(buckets), numBuckets())}});
 
-  columns.setColumn(inputIndicesColumn(), data::ArrayColumn<uint32_t>::make(
-                                              std::move(indices), inputDim()));
-  columns.setColumn(inputValuesColumn(),
-                    data::ArrayColumn<float>::make(std::move(values)));
-  columns.setColumn(bucketColumn(), data::ArrayColumn<uint32_t>::make(
-                                        std::move(buckets), numBuckets()));
+  data::ColumnMap map(std::move(columns));
+  addDummyLabels(map);
 
-  return columns;
+  return map;
 }
 
 void Mach::teach(data::ColumnMap feedback, float learning_rate,
