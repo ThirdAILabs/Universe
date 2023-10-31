@@ -24,12 +24,7 @@ from thirdai import bolt
 from thirdai.data import get_udt_col_types
 from thirdai.dataset.data_source import PyDataSource
 
-from .connectors import (
-    Connector,
-    SalesforceConnector,
-    SharePointConnector,
-    SQLConnector,
-)
+from .connectors import SalesforceConnector, SharePointConnector, SQLConnector
 from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
 from .parsing_utils import doc_parse, pdf_parse, url_parse
 from .parsing_utils.unstructured_parse import EmlParse, PptxParse, TxtParse
@@ -1337,7 +1332,7 @@ class SharePoint(DocumentConnector):
                 )
 
 
-class Salesforce(DocumentConnector):
+class SalesForce(DocumentConnector):
     def __init__(
         self,
         instance: Salesforce,
@@ -1348,6 +1343,7 @@ class Salesforce(DocumentConnector):
         reference_columns: Optional[List[str]] = None,
         save_extra_info: bool = True,
         metadata: dict = {},
+        credentials: Optional[Dict[str, str]] = None,
     ) -> None:
         self.object_name = object_name
         self.id_col = id_col
@@ -1356,6 +1352,7 @@ class Salesforce(DocumentConnector):
         self.reference_columns = reference_columns
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
+        self.credentials = credentials
         self._connector = SalesforceConnector(
             instance=instance, object_name=object_name, id_col=self.id_col, fields=None
         )
@@ -1384,6 +1381,8 @@ class Salesforce(DocumentConnector):
         return self._hash
 
     def chunk_iterator(self) -> pd.DataFrame:
+        if not hasattr(self, "_connector"):
+            raise AttributeError("Connector not found")
         return self._connector.chunk_iterator()
 
     def get_strong_columns(self):
@@ -1530,13 +1529,34 @@ class Salesforce(DocumentConnector):
             },
         )
 
-    def next_chunk(self) -> pd.DataFrame:
+    def chunk_iterator(self) -> pd.DataFrame:
+        if not hasattr(self, "_connector"):
+            raise AttributeError("Connector not found")
+
         return self._connector.chunk_iterator()
 
     def __getstate__(self):
         state = self.__dict__.copy()
         del state["_connector"]
         return state
+
+    def __setstate__(self, state):
+        creds = state["credentials"]
+        if creds is not None:
+            try:
+                state["_connector"] = SalesforceConnector(
+                    instance=Salesforce(**creds),
+                    object_name=state["object_name"],
+                    id_col=state["id_col"],
+                    fields=list(set(state["strong_columns"] + state["weak_columns"])),
+                )
+            except Exception as e:
+                print(
+                    "Failed to establish connection with the Salesforce. Retraining may not be possible. Error: "
+                    + str(e)
+                )
+
+        self.__dict__.update(state)
 
 
 class SentenceLevelExtracted(Extracted):
