@@ -331,8 +331,7 @@ std::vector<std::vector<std::pair<uint32_t, double>>> Mach::score(
 
   // sparse inference could become an issue here because maybe the entities
   // we score wouldn't otherwise be in the top results, thus their buckets
-  // have
-  // lower similarity and don't get selected by LSH
+  // have lower similarity and don't get selected by LSH
   auto outputs =
       _model->forward(inputTensors(columns), /* use_sparsity= */ false).at(0);
 
@@ -347,41 +346,6 @@ std::vector<std::vector<std::pair<uint32_t, double>>> Mach::score(
   }
 
   return scores;
-}
-
-std::vector<uint32_t> Mach::outputCorrectness(
-    const data::ColumnMap& columns, const std::vector<uint32_t>& labels,
-    std::optional<uint32_t> num_hashes, bool sparse_inference) {
-  auto top_buckets = predictBuckets(columns, sparse_inference, num_hashes,
-                                    /* force_non_empty= */ true);
-
-  std::vector<uint32_t> matching_buckets(labels.size());
-  std::exception_ptr hashes_err;
-
-#pragma omp parallel for default(none) \
-    shared(labels, top_buckets, matching_buckets, hashes_err)
-  for (uint32_t i = 0; i < labels.size(); i++) {
-    try {
-      std::vector<uint32_t> hashes = index()->getHashes(labels[i]);
-      uint32_t count = 0;
-      for (auto hash : hashes) {
-        if (std::count(top_buckets[i].begin(), top_buckets[i].end(), hash) >
-            0) {
-          count++;
-        }
-      }
-      matching_buckets[i] = count;
-    } catch (const std::exception& e) {
-#pragma omp critical
-      hashes_err = std::current_exception();
-    }
-  }
-
-  if (hashes_err) {
-    std::rethrow_exception(hashes_err);
-  }
-
-  return matching_buckets;
 }
 
 bolt::TensorPtr Mach::embedding(const data::ColumnMap& columns) {
