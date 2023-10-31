@@ -875,7 +875,11 @@ class DocumentConnector(Document):
             )
 
     def __getstate__(self):
-        # Document Connectors are expected to remove their database connector(s)
+        # Document Connectors are expected to remove their connector(s) object
+        raise NotImplementedError()
+
+    def __setstate__(self):
+        # Document Connectors are expected to re-attach their connector(s) objects for passing the test cases
         raise NotImplementedError()
 
 
@@ -962,9 +966,6 @@ class SQLDatabase(DocumentConnector):
         return None
 
     def chunk_iterator(self) -> pd.DataFrame:
-        if not hasattr(self, "_connector"):
-            raise AttributeError("Connector Not found")
-
         return self._connector.chunk_iterator()
 
     def all_entity_ids(self) -> List[int]:
@@ -1330,6 +1331,7 @@ class SharePoint(DocumentConnector):
                     "Unable to connect to the sharepoint url. Retraining may not be possible. Error: "
                     + str(e)
                 )
+        self.__dict__.update(state)
 
 
 class SalesForce(DocumentConnector):
