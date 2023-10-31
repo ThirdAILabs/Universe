@@ -39,10 +39,6 @@ struct VariableLengthConfig {
   uint32_t seed;
 };
 
-// we use this so the user to be able to specify three options at once:
-// no variable length, default parameters with var length, or custom parameters
-using VariableLengthConfigOption = std::variant<bool, VariableLengthConfig>;
-
 class VariableLengthColdStart : public Transformation {
  public:
   VariableLengthColdStart(

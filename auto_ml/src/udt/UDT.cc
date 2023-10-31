@@ -239,17 +239,16 @@ std::vector<dataset::Explanation> UDT::explain(
   return result;
 }
 
-py::object UDT::coldstart(const dataset::DataSourcePtr& data,
-                          const std::vector<std::string>& strong_column_names,
-                          const std::vector<std::string>& weak_column_names,
-                          float learning_rate, uint32_t epochs,
-                          const std::vector<std::string>& train_metrics,
-                          const dataset::DataSourcePtr& val_data,
-                          const std::vector<std::string>& val_metrics,
-                          const std::vector<CallbackPtr>& callbacks,
-                          TrainOptions options,
-                          const bolt::DistributedCommPtr& comm,
-                          data::VariableLengthConfigOption variable_length) {
+py::object UDT::coldstart(
+    const dataset::DataSourcePtr& data,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    const dataset::DataSourcePtr& val_data,
+    const std::vector<std::string>& val_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    const bolt::DistributedCommPtr& comm,
+    std::optional<data::VariableLengthConfig> variable_length) {
   licensing::entitlements().verifyDataSource(data);
 
   return _backend->coldstart(data, strong_column_names, weak_column_names,

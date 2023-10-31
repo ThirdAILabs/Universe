@@ -433,7 +433,7 @@ py::object UDTMachClassifier::coldstart(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm,
-    data::VariableLengthConfigOption variable_length) {
+    std::optional<data::VariableLengthConfig> variable_length) {
   auto metadata = getColdStartMetaData();
 
   py::object history;
@@ -445,6 +445,7 @@ py::object UDTMachClassifier::coldstart(
     history = train(data_source, learning_rate, /* epochs= */ 1, train_metrics,
                     val_data, val_metrics, callbacks, options, comm);
     data->restart();
+    data_source->restart();
   }
 
   return history;

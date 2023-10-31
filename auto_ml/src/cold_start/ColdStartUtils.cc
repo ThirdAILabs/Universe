@@ -54,40 +54,23 @@ void verifyDataTypes(TabularDatasetFactoryPtr& dataset_factory) {
 }
 
 data::TransformationPtr makeAugmentation(
-    data::VariableLengthConfigOption variable_length,
+    std::optional<data::VariableLengthConfig> variable_length,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     const std::string& text_column_name, ColdStartMetaDataPtr& metadata) {
-  if (std::holds_alternative<bool>(variable_length) &&
-      !std::get<bool>(variable_length)) {
-    return std::make_shared<data::ColdStartTextAugmentation>(
-        /* strong_column_names= */ strong_column_names,
-        /* weak_column_names= */ weak_column_names,
-        /* label_column_name= */ metadata->getLabelColumn(),
-        /* output_column_name= */ text_column_name);
-  }
-
-  if (std::holds_alternative<bool>(variable_length) &&
-      std::get<bool>(variable_length)) {
-    return std::make_shared<data::VariableLengthColdStart>(
-        /* strong_column_names= */ strong_column_names,
-        /* weak_column_names= */ weak_column_names,
-        /* label_column_name= */ metadata->getLabelColumn(),
-        /* output_column_name= */ text_column_name);
-  }
-
-  if (std::holds_alternative<data::VariableLengthConfig>(variable_length)) {
+  if (variable_length.has_value()) {
     return std::make_shared<data::VariableLengthColdStart>(
         /* strong_column_names= */ strong_column_names,
         /* weak_column_names= */ weak_column_names,
         /* label_column_name= */ metadata->getLabelColumn(),
         /* output_column_name= */ text_column_name,
-        /* config= */
-        std::get<data::VariableLengthConfig>(variable_length));
+        /* config= */ *variable_length);
   }
-
-  throw std::invalid_argument(
-      "Invalid instruction for creating Cold Start Augmentation.");
+  return std::make_shared<data::ColdStartTextAugmentation>(
+      /* strong_column_names= */ strong_column_names,
+      /* weak_column_names= */ weak_column_names,
+      /* label_column_name= */ metadata->getLabelColumn(),
+      /* output_column_name= */ text_column_name);
 }
 
 dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
@@ -95,7 +78,7 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     TabularDatasetFactoryPtr& dataset_factory, ColdStartMetaDataPtr& metadata,
-    data::VariableLengthConfigOption variable_length) {
+    std::optional<data::VariableLengthConfig> variable_length) {
   verifyDataTypes(dataset_factory);
   std::string text_column_name =
       dataset_factory->inputDataTypes().begin()->first;
