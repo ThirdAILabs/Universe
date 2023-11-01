@@ -405,7 +405,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/Binning.cc
     data/src/transformations/StringHash.cc
     data/src/transformations/TextTokenizer.cc
-    data/src/transformations/cold_start/ColdStartUtils.cc
+    data/src/transformations/cold_start/TextAugmentationUtils.cc
     data/src/transformations/cold_start/ColdStartText.cc
     data/src/transformations/cold_start/VariableLengthColdStart.cc
     data/src/transformations/FeatureHash.cc

@@ -38,12 +38,12 @@ def default_augmentation(
 
 
 def test_vlcs_prefilter_punctuation():
-augmentation = default_augmentation()
-samples = augmentation.augment_single_row(
-    "something is, strong text", "This is (weak) text."
-)
+    augmentation = default_augmentation()
+    samples = augmentation.augment_single_row(
+        "something is, strong text", "This is (weak) text."
+    )
 
-forbidden_chars = [",", "(", ")", "."]
+    forbidden_chars = [",", "(", ")", "."]
     for sample in samples:
         assert all(
             char not in sample for char in forbidden_chars

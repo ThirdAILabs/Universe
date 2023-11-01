@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ColdStartUtils.h"
+#include "TextAugmentationUtils.h"
 #include <data/src/transformations/Transformation.h>
 
 namespace thirdai::data {
@@ -32,7 +32,7 @@ struct VariableLengthConfig {
   uint32_t seed;
 };
 
-class VariableLengthColdStart : public Transformation {
+class VariableLengthColdStart : public cold_start::TextAugmentationBase {
  public:
   VariableLengthColdStart(
       std::vector<std::string> strong_column_names,
@@ -40,14 +40,12 @@ class VariableLengthColdStart : public Transformation {
       std::string output_column_name,
       const VariableLengthConfig& config = VariableLengthConfig());
 
-  ColumnMap apply(ColumnMap columns, State& state) const final;
-
   /**
    * Helper method to perform the augmentation of a single row in the input.
    * Returns the augmented phrases from that input row as strings.
    */
-  std::vector<std::string> augmentSingleRow(const std::string& strong_text,
-                                            const std::string& weak_text) const;
+  std::vector<std::string> augmentSingleRow(
+      const std::string& strong_text, const std::string& weak_text) const final;
 
  private:
   /**
@@ -65,11 +63,6 @@ class VariableLengthColdStart : public Transformation {
                                     PhraseCollection& phrases, size_t min_len,
                                     std::optional<size_t> max_len_opt,
                                     uint32_t num_slices, uint32_t seed);
-
-  std::vector<std::string> _strong_column_names;
-  std::vector<std::string> _weak_column_names;
-  std::string _label_column_name;
-  std::string _output_column_name;
 
   VariableLengthConfig _config;
 };

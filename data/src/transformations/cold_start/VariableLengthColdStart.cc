@@ -53,78 +53,11 @@ VariableLengthColdStart::VariableLengthColdStart(
     std::vector<std::string> strong_column_names,
     std::vector<std::string> weak_column_names, std::string label_column_name,
     std::string output_column_name, const VariableLengthConfig& config)
-    : _strong_column_names(std::move(strong_column_names)),
-      _weak_column_names(std::move(weak_column_names)),
-      _label_column_name(std::move(label_column_name)),
-      _output_column_name(std::move(output_column_name)),
+    : TextAugmentationBase(std::move(strong_column_names),
+                           std::move(weak_column_names),
+                           std::move(label_column_name),
+                           std::move(output_column_name), config.seed),
       _config(config) {}
-
-ColumnMap VariableLengthColdStart::apply(ColumnMap columns,
-                                         State& state) const {
-  (void)state;
-
-  auto label_column = columns.getValueColumn<std::string>(_label_column_name);
-
-  auto strong_concat_transform = StringConcat(
-      _strong_column_names, /* output_column_name= */ "strong_text",
-      /* separator= */ ". ");
-  auto weak_concat_transform =
-      StringConcat(_weak_column_names, /* output_column_name= */ "weak_text",
-                   /* separator= */ " ");
-  columns = strong_concat_transform.apply(columns, state);
-  columns = weak_concat_transform.apply(columns, state);
-  auto strong_column = columns.getValueColumn<std::string>("strong_text");
-  auto weak_column = columns.getValueColumn<std::string>("weak_text");
-
-  std::vector<std::string> augmented_labels;
-  std::vector<std::string> augmented_data;
-
-  std::exception_ptr exception = nullptr;
-
-#pragma omp parallel for default(none)                               \
-    shared(label_column, strong_column, weak_column, augmented_data, \
-           augmented_labels, exception)
-  for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
-    try {
-      std::string labels = label_column->value(row_id);
-      std::string strong_text = strong_column->value(row_id);
-      std::string weak_text = weak_column->value(row_id);
-
-      std::vector<std::string> augmented_samples =
-          augmentSingleRow(strong_text, weak_text);
-
-#pragma omp critical
-      {
-        for (auto& sample : augmented_samples) {
-          if (!sample.empty()) {
-            augmented_data.emplace_back(std::move(sample));
-            augmented_labels.push_back(labels);
-          }
-        }
-      }
-    } catch (std::exception& e) {
-#pragma omp critical
-      exception = std::current_exception();
-    }
-  }
-
-  if (exception) {
-    std::rethrow_exception(exception);
-  }
-
-  auto augmented_label_column =
-      ValueColumn<std::string>::make(std::move(augmented_labels));
-
-  auto augmented_data_column =
-      ValueColumn<std::string>::make(std::move(augmented_data));
-
-  std::unordered_map<std::string, ColumnPtr> new_columns;
-  new_columns.emplace(_label_column_name, augmented_label_column);
-  new_columns.emplace(_output_column_name, augmented_data_column);
-  ColumnMap augmented_column_map(new_columns);
-  augmented_column_map.shuffle(_config.seed);
-  return augmented_column_map;
-}
 
 std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
     const std::string& strong_text, const std::string& weak_text) const {
@@ -152,7 +85,7 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
     }
   }
 
-  // if output_samples.size() < 1 then either the weak text is too short, or
+  // if output_samples.size() <= 1 then either the weak text is too short, or
   // there is only strong text, or the sample is empty, in which case we don't
   // want to add the whole doc since we're in a degenerate case.
   if (_config.add_whole_doc && output_samples.size() > 1) {
