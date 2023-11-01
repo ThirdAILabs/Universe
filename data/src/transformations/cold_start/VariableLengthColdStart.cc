@@ -172,7 +172,7 @@ PhraseCollection VariableLengthColdStart::getWeakPhrases(
     weak_text = text::replacePunctuationWithSpaces(weak_text);
   }
 
-  Phrase weak_phrase = cold_start::splitByWhitespace(weak_text);
+  Phrase weak_phrase = text::tokenizeSentence(weak_text);
 
   if (weak_phrase.empty()) {
     return {};

@@ -80,23 +80,13 @@ Phrase getStrongPhrase(const std::string& strong_text_in,
                        std::optional<uint32_t> max_len) {
   std::string strong_text = text::replacePunctuationWithSpaces(strong_text_in);
   strong_text = text::stripWhitespace(strong_text);
-  Phrase strong_phrase = splitByWhitespace(strong_text);
+  Phrase strong_phrase = text::tokenizeSentence(strong_text);
   if (max_len) {
     if (strong_phrase.size() > max_len.value()) {
       strong_phrase.resize(max_len.value());
     }
   }
   return strong_phrase;
-}
-
-Phrase splitByWhitespace(const std::string& s) {
-  Phrase phrase;
-  std::string word;
-  std::istringstream s_stream(s);
-  while (s_stream >> word) {
-    phrase.push_back(word);
-  }
-  return phrase;
 }
 
 }  // namespace thirdai::data::cold_start
