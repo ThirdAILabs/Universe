@@ -155,6 +155,21 @@ std::vector<uint32_t> GenerativeModel::generate(
   return decoder.next().value_or(std::vector<uint32_t>{});
 }
 
+std::vector<std::vector<uint32_t>> GenerativeModel::generate_batch(
+    const std::vector<std::vector<uint32_t>>& input_tokens_batch, std::vector<std::vector<uint32_t>>& prompt_batch,
+    size_t max_predictions, size_t beam_width,
+    std::optional<float> temperature){
+    uint32_t num_samples = input_tokens_batch.size();
+    std::vector<std::vector<uint32_t>> outputs(num_samples);
+    #pragma omp parallel for default(none) shared(results, input_tokens_batch, prompt_batch, max_predictions, beam_width)
+    for(uint32_t sample_id=0; sample_id<num_samples; sample_id+=1){
+      BeamSearchDecoder decoder(shared_from_this(), std::move(prompt_batch[sample_id]), input_tokens_batch[sample_id],
+                            max_predictions, max_predictions, beam_width,
+                            temperature);
+      outputs[sample_id] = decoder.next().value_or(std::vector<uint32_t>{})
+    }
+  return outputs;
+}
 BeamSearchDecoder GenerativeModel::streamingGenerate(
     const std::vector<uint32_t>& input_tokens, std::vector<uint32_t> prompt,
     size_t prediction_chunk_size, size_t max_predictions, size_t beam_width,
