@@ -4,19 +4,6 @@
 
 namespace thirdai::data::cold_start {
 
-std::string concatenateStringColumnEntries(
-    const ColumnMap& columns, uint64_t row_num,
-    const std::vector<std::string>& column_names,
-    const std::string& delimiter) {
-  std::string output_text;
-  for (const auto& column_name : column_names) {
-    auto column = columns.getValueColumn<std::string>(column_name);
-    output_text.append(column->value(row_num));
-    output_text.append(delimiter);
-  }
-  return output_text;
-}
-
 void mergeStrongWithWeak(std::vector<std::vector<std::string>>& weak_phrases,
                          std::vector<std::string>& strong_phrase,
                          std::optional<uint32_t> strong_sample_num_words,
@@ -58,8 +45,8 @@ void mergeStrongWithWeak(std::vector<std::vector<std::string>>& weak_phrases,
 }
 
 std::vector<std::vector<std::string>> sampleFromPhrases(
-    std::vector<std::vector<std::string>>& phrases, uint32_t num_to_sample,
-    uint32_t num_reps, uint32_t seed) {
+    const std::vector<std::vector<std::string>>& phrases,
+    uint32_t num_to_sample, uint32_t num_reps, uint32_t seed) {
   // Only iterate over the original phrases, as we append new ones to the end.
   if (num_reps == 0) {
     throw std::invalid_argument(
@@ -68,7 +55,7 @@ std::vector<std::vector<std::string>> sampleFromPhrases(
   }
   std::vector<std::vector<std::string>> output_phrases;
   std::mt19937 rng(seed);
-  for (auto& phrase : phrases) {
+  for (const auto& phrase : phrases) {
     if (phrase.size() > num_to_sample) {
       // Then we can downsample some sub-phrases.
       std::vector<uint32_t> permutation(phrase.size());

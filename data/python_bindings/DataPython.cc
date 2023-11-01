@@ -352,7 +352,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       transformations_submodule, "StringConcat")
       .def(py::init<std::vector<std::string>, std::string, std::string>(),
            py::arg("input_columns"), py::arg("output_column"),
-           py::arg("seperator") = "");
+           py::arg("separator") = "");
 
   py::class_<ColdStartTextAugmentation, Transformation,
              std::shared_ptr<ColdStartTextAugmentation>>(

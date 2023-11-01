@@ -5,15 +5,6 @@
 namespace thirdai::data::cold_start {
 
 /**
- * For each column name, gets the string at the specified row in the column.
- * Appends the delimiter to the string. Returns a concatenation of all
- * strings.
- */
-std::string concatenateStringColumnEntries(
-    const ColumnMap& columns, uint64_t row_num,
-    const std::vector<std::string>& column_names, const std::string& delimiter);
-
-/**
  * Concatenates each element from the weak phrases with the strong phrase.
  * If strong_sample_num_words is provided, this also independently samples from
  * the strong phrase for every weak phrase.
@@ -31,8 +22,8 @@ void mergeStrongWithWeak(std::vector<std::vector<std::string>>& weak_phrases,
  * once in the output (not num_reps times).
  */
 std::vector<std::vector<std::string>> sampleFromPhrases(
-    std::vector<std::vector<std::string>>& phrases, uint32_t num_to_sample,
-    uint32_t num_reps, uint32_t seed);
+    const std::vector<std::vector<std::string>>& phrases,
+    uint32_t num_to_sample, uint32_t num_reps, uint32_t seed);
 
 /**
  * Returns a single phrase that takes in the concatenated string of strong

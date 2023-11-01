@@ -2,6 +2,7 @@
 #include "ColdStartUtils.h"
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
+#include <data/src/transformations/StringConcat.h>
 #include <utils/StringManipulation.h>
 #include <algorithm>
 #include <iterator>
@@ -85,22 +86,30 @@ ColumnMap ColdStartTextAugmentation::apply(ColumnMap columns,
 
   auto label_column = columns.getValueColumn<std::string>(_label_column_name);
 
+  auto strong_concat_transform = StringConcat(
+      _strong_column_names, /* output_column_name= */ "strong_text",
+      /* separator= */ ". ");
+  auto weak_concat_transform =
+      StringConcat(_weak_column_names, /* output_column_name= */ "weak_text",
+                   /* separator= */ " ");
+  columns = strong_concat_transform.apply(columns, state);
+  columns = weak_concat_transform.apply(columns, state);
+  auto strong_column = columns.getValueColumn<std::string>("strong_text");
+  auto weak_column = columns.getValueColumn<std::string>("weak_text");
+
   std::vector<std::string> augmented_labels;
   std::vector<std::string> augmented_data;
 
   std::exception_ptr exception = nullptr;
 
-#pragma omp parallel for default(none) \
-    shared(label_column, columns, augmented_data, augmented_labels, exception)
+#pragma omp parallel for default(none)                               \
+    shared(label_column, strong_column, weak_column, augmented_data, \
+           augmented_labels, exception)
   for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
     try {
       std::string labels = label_column->value(row_id);
-
-      std::string weak_text = cold_start::concatenateStringColumnEntries(
-          columns, row_id, _weak_column_names, /* delimiter= */ ". ");
-
-      std::string strong_text = cold_start::concatenateStringColumnEntries(
-          columns, row_id, _strong_column_names, /* delimiter= */ " ");
+      std::string strong_text = strong_column->value(row_id);
+      std::string weak_text = weak_column->value(row_id);
 
       std::vector<std::string> augmented_samples =
           augmentSingleRow(strong_text, weak_text);

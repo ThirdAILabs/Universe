@@ -1,6 +1,7 @@
 #include "VariableLengthColdStart.h"
 #include "ColdStartUtils.h"
 #include <data/src/columns/ValueColumns.h>
+#include <data/src/transformations/StringConcat.h>
 #include <utils/CommonChecks.h>
 #include <utils/StringManipulation.h>
 #include <random>
@@ -65,23 +66,30 @@ ColumnMap VariableLengthColdStart::apply(ColumnMap columns,
 
   auto label_column = columns.getValueColumn<std::string>(_label_column_name);
 
+  auto strong_concat_transform = StringConcat(
+      _strong_column_names, /* output_column_name= */ "strong_text",
+      /* separator= */ ". ");
+  auto weak_concat_transform =
+      StringConcat(_weak_column_names, /* output_column_name= */ "weak_text",
+                   /* separator= */ " ");
+  columns = strong_concat_transform.apply(columns, state);
+  columns = weak_concat_transform.apply(columns, state);
+  auto strong_column = columns.getValueColumn<std::string>("strong_text");
+  auto weak_column = columns.getValueColumn<std::string>("weak_text");
+
   std::vector<std::string> augmented_labels;
   std::vector<std::string> augmented_data;
 
   std::exception_ptr exception = nullptr;
 
-#pragma omp parallel for default(none) \
-    shared(label_column, columns, augmented_data, augmented_labels, exception)
+#pragma omp parallel for default(none)                               \
+    shared(label_column, strong_column, weak_column, augmented_data, \
+           augmented_labels, exception)
   for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
     try {
       std::string labels = label_column->value(row_id);
-
-      std::string weak_text = cold_start::concatenateStringColumnEntries(
-          columns, row_id, _weak_column_names, /* delimiter= */ " ");
-
-      std::string strong_text = cold_start::concatenateStringColumnEntries(
-          columns, row_id, _strong_column_names,
-          /* delimiter= */ " ");
+      std::string strong_text = strong_column->value(row_id);
+      std::string weak_text = weak_column->value(row_id);
 
       std::vector<std::string> augmented_samples =
           augmentSingleRow(strong_text, weak_text);
@@ -105,15 +113,6 @@ ColumnMap VariableLengthColdStart::apply(ColumnMap columns,
     std::rethrow_exception(exception);
   }
 
-  // Shuffle the augmented data and augmented labels (in the same order).
-  // We have to use std::shuffle and two RNGs from <random> with the same state
-  //  for reasons described here: https://stackoverflow.com/a/16969267
-  std::mt19937 rng_1(_config.seed);
-  auto rng_2 = rng_1;
-
-  std::shuffle(augmented_data.begin(), augmented_data.end(), rng_1);
-  std::shuffle(augmented_labels.begin(), augmented_labels.end(), rng_2);
-
   auto augmented_label_column =
       ValueColumn<std::string>::make(std::move(augmented_labels));
 
@@ -124,6 +123,7 @@ ColumnMap VariableLengthColdStart::apply(ColumnMap columns,
   new_columns.emplace(_label_column_name, augmented_label_column);
   new_columns.emplace(_output_column_name, augmented_data_column);
   ColumnMap augmented_column_map(new_columns);
+  augmented_column_map.shuffle(_config.seed);
   return augmented_column_map;
 }
 
@@ -204,6 +204,8 @@ void VariableLengthColdStart::addCoveringPhrases(
   size_t start_pos = 0;
   while (start_pos + min_len <= words.size()) {
     size_t phrase_size = std::min(dist(rng), words.size() - start_pos);
+    // if there are less that min_len words left after chosing this phrase,
+    // include them in this phrase by extending the phrase_size
     if (start_pos + phrase_size + min_len > words.size()) {
       phrase_size += words.size() - phrase_size - start_pos;
     }
