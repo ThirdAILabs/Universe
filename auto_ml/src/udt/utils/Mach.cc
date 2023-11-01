@@ -51,9 +51,7 @@ Mach::Mach(uint32_t input_dim, uint32_t num_buckets,
            data::OutputColumns(label_column)}),
       _all_bolt_columns({std::move(input_indices_column),
                          std::move(input_values_column),
-                         std::move(label_column), std::move(bucket_column)}) {
-  updateSamplingStrategy();
-}
+                         std::move(label_column), std::move(bucket_column)}) {}
 
 void Mach::randomlyIntroduceEntities(const data::ColumnMap& columns) {
   const auto& labels = columns.getArrayColumn<uint32_t>(labelColumn());
@@ -76,6 +74,8 @@ void Mach::randomlyIntroduceEntities(const data::ColumnMap& columns) {
 
     index()->insert(labels->row(row)[0], std::move(hashes));
   }
+
+  updateSamplingStrategy();
 }
 
 void Mach::introduceEntities(const data::ColumnMap& columns,
@@ -442,10 +442,11 @@ void Mach::teach(data::ColumnMap feedback, float learning_rate,
                  uint32_t feedback_repetitions, uint32_t num_balancers,
                  uint32_t epochs, size_t batch_size) {
   assertRlhfEnabled();
+  auto balancers = balancingColumnMap(num_balancers * feedback.numRows());
+
   feedback = repeatRows(std::move(feedback), feedback_repetitions);
   feedback = feedback.keepColumns(_all_bolt_columns);
 
-  auto balancers = balancingColumnMap(num_balancers);
   if (balancers) {
     balancers = balancers->keepColumns(_all_bolt_columns);
     feedback = feedback.concat(*balancers);
