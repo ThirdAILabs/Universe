@@ -90,11 +90,11 @@ std::vector<std::vector<std::string>> sampleFromPhrases(
   return output_phrases;
 }
 
-std::vector<std::string> getStrongPhrase(std::string& s,
+std::vector<std::string> getStrongPhrase(const std::string& strong_text_in,
                                          std::optional<uint32_t> max_len) {
-  text::replacePunctuationWithSpaces(s);
-  text::stripWhitespace(s);
-  std::vector<std::string> strong_phrase = splitByWhitespace(s);
+  std::string strong_text = text::replacePunctuationWithSpaces(strong_text_in);
+  strong_text = text::stripWhitespace(strong_text);
+  std::vector<std::string> strong_phrase = splitByWhitespace(strong_text);
   if (max_len) {
     if (strong_phrase.size() > max_len.value()) {
       strong_phrase.resize(max_len.value());
@@ -103,7 +103,7 @@ std::vector<std::string> getStrongPhrase(std::string& s,
   return strong_phrase;
 }
 
-std::vector<std::string> splitByWhitespace(std::string& s) {
+std::vector<std::string> splitByWhitespace(const std::string& s) {
   std::vector<std::string> phrase;
   std::string word;
   std::istringstream s_stream(s);

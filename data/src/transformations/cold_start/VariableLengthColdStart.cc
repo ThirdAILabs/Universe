@@ -1,10 +1,53 @@
 #include "VariableLengthColdStart.h"
 #include "ColdStartUtils.h"
 #include <data/src/columns/ValueColumns.h>
+#include <utils/CommonChecks.h>
 #include <utils/StringManipulation.h>
 #include <random>
 
 namespace thirdai::data {
+
+VariableLengthConfig::VariableLengthConfig(
+    size_t covering_min_length, size_t covering_max_length,
+    std::optional<uint32_t> max_covering_samples, size_t slice_min_length,
+    std::optional<size_t> slice_max_length, uint32_t num_slices,
+    bool add_whole_doc, bool prefilter_punctuation,
+    uint32_t strong_sample_num_words, float word_removal_probability,
+    uint32_t seed)
+    : covering_min_length(covering_min_length),
+      covering_max_length(covering_max_length),
+      max_covering_samples(max_covering_samples),
+      slice_min_length(slice_min_length),
+      slice_max_length(slice_max_length),
+      num_slices(num_slices),
+      add_whole_doc(add_whole_doc),
+      prefilter_punctuation(prefilter_punctuation),
+      strong_sample_num_words(strong_sample_num_words),
+      word_removal_probability(word_removal_probability),
+      seed(seed) {
+  utils::validateGreaterThanZero(covering_min_length, "covering_min_length");
+  utils::validateGreaterThanZero(covering_max_length, "covering_max_length");
+  utils::validateGreaterThanZero(slice_min_length, "slice_min_length");
+
+  if (slice_max_length) {
+    utils::validateGreaterThanZero(*slice_max_length, "slice_max_length");
+  }
+
+  if (word_removal_probability < 0 or word_removal_probability > 1.0) {
+    throw std::invalid_argument(
+        "word_removal_probaility must be between 0 and 1.0.");
+  }
+
+  if (covering_min_length > covering_max_length) {
+    throw std::invalid_argument(
+        "covering_min_length must be <= covering_max_length.");
+  }
+
+  if (slice_max_length.has_value() && slice_min_length > *slice_max_length) {
+    throw std::invalid_argument(
+        "slice_min_length must be <= slice_max_length.");
+  }
+}
 
 VariableLengthColdStart::VariableLengthColdStart(
     std::vector<std::string> strong_column_names,
@@ -14,48 +57,7 @@ VariableLengthColdStart::VariableLengthColdStart(
       _weak_column_names(std::move(weak_column_names)),
       _label_column_name(std::move(label_column_name)),
       _output_column_name(std::move(output_column_name)),
-      _covering_min_length(config.covering_min_length),
-      _covering_max_length(config.covering_max_length),
-      _max_covering_samples(config.max_covering_samples),
-      _slice_min_length(config.slice_min_length),
-      _slice_max_length(config.slice_max_length),
-      _num_slices(config.num_slices),
-      _add_whole_doc(config.add_whole_doc),
-      _prefilter_punctuation(config.prefilter_punctuation),
-      _strong_sample_num_words(config.strong_sample_num_words),
-      _word_removal_probability(config.word_removal_probability),
-      _seed(config.seed) {
-  validateGreaterThanZero(_covering_min_length, "covering_min_length");
-  validateGreaterThanZero(_covering_max_length, "covering_max_length");
-  validateGreaterThanZero(_slice_min_length, "slice_min_length");
-
-  if (_slice_max_length) {
-    validateGreaterThanZero(*_slice_max_length, "slice_max_length");
-  }
-
-  if (_word_removal_probability < 0 or _word_removal_probability > 1.0) {
-    throw std::invalid_argument(
-        "word_removal_probaility must be between 0 and 1.0.");
-  }
-
-  if (_covering_min_length > _covering_max_length) {
-    throw std::invalid_argument(
-        "covering_min_length must be <= covering_max_length.");
-  }
-
-  if (_slice_max_length.has_value() && _slice_min_length > *_slice_max_length) {
-    throw std::invalid_argument(
-        "slice_min_length must be <= slice_max_length.");
-  }
-}
-
-void VariableLengthColdStart::validateGreaterThanZero(
-    uint32_t parameter, const std::string& parameter_name) {
-  if (parameter <= 0) {
-    throw std::invalid_argument("Invalid length parameter: " + parameter_name +
-                                " must be greater than 0.");
-  }
-}
+      _config(config) {}
 
 ColumnMap VariableLengthColdStart::apply(ColumnMap columns,
                                          State& state) const {
@@ -106,7 +108,7 @@ ColumnMap VariableLengthColdStart::apply(ColumnMap columns,
   // Shuffle the augmented data and augmented labels (in the same order).
   // We have to use std::shuffle and two RNGs from <random> with the same state
   //  for reasons described here: https://stackoverflow.com/a/16969267
-  std::mt19937 rng_1(_seed);
+  std::mt19937 rng_1(_config.seed);
   auto rng_2 = rng_1;
 
   std::shuffle(augmented_data.begin(), augmented_data.end(), rng_1);
@@ -126,22 +128,22 @@ ColumnMap VariableLengthColdStart::apply(ColumnMap columns,
 }
 
 std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
-    std::string& strong_text, std::string& weak_text) const {
+    const std::string& strong_text, const std::string& weak_text) const {
   std::vector<std::string> strong_phrase =
       cold_start::getStrongPhrase(strong_text);
   std::vector<std::vector<std::string>> phrases = getWeakPhrases(weak_text);
-  cold_start::mergeStrongWithWeak(phrases, strong_phrase,
-                                  _strong_sample_num_words, _seed);
+  cold_start::mergeStrongWithWeak(
+      phrases, strong_phrase, _config.strong_sample_num_words, _config.seed);
 
-  std::mt19937 rng(_seed);
+  std::mt19937 rng(_config.seed);
   std::uniform_real_distribution<float> dist(0.0, 1.0);
 
   std::vector<std::string> output_samples;
   for (const auto& phrase : phrases) {
     std::string output_text;
     for (const auto& word : phrase) {
-      if (_word_removal_probability == 0 ||
-          dist(rng) > _word_removal_probability) {
+      if (_config.word_removal_probability == 0 ||
+          dist(rng) > _config.word_removal_probability) {
         output_text.append(word);
         output_text.append(" ");
       }
@@ -155,17 +157,21 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
   // if output_samples.size() < 1 then either the weak text is too short, or
   // there is only strong text, or the sample is empty, in which case we don't
   // want to add the whole doc since we're in a degenerate case.
-  if (_add_whole_doc && output_samples.size() > 1) {
-    output_samples.push_back(strong_text + " " + weak_text);
+  if (_config.add_whole_doc && output_samples.size() > 1) {
+    std::string whole_doc = strong_text + " " + weak_text;
+    if (_config.prefilter_punctuation) {
+      whole_doc = text::replacePunctuationWithSpaces(whole_doc);
+    }
+    output_samples.push_back(whole_doc);
   }
 
   return output_samples;
 }
 
 std::vector<std::vector<std::string>> VariableLengthColdStart::getWeakPhrases(
-    std::string& weak_text) const {
-  if (_prefilter_punctuation) {
-    text::replacePunctuationWithSpaces(weak_text);
+    std::string weak_text) const {
+  if (_config.prefilter_punctuation) {
+    weak_text = text::replacePunctuationWithSpaces(weak_text);
   }
 
   std::vector<std::string> words = cold_start::splitByWhitespace(weak_text);
@@ -176,28 +182,28 @@ std::vector<std::vector<std::string>> VariableLengthColdStart::getWeakPhrases(
 
   std::vector<std::vector<std::string>> phrases;
 
-  addCoveringPhrases(words, phrases, _covering_min_length, _covering_max_length,
-                     _max_covering_samples, _seed);
+  addCoveringPhrases(words, phrases, _config.covering_min_length,
+                     _config.covering_max_length, _config.max_covering_samples,
+                     _config.seed);
 
-  addRandomSlicePhrases(words, phrases, _slice_min_length, _slice_max_length,
-                        _num_slices, _seed);
+  addRandomSlicePhrases(words, phrases, _config.slice_min_length,
+                        _config.slice_max_length, _config.num_slices,
+                        _config.seed);
 
   return phrases;
 }
 
 void VariableLengthColdStart::addCoveringPhrases(
     const std::vector<std::string>& words,
-    std::vector<std::vector<std::string>>& phrases, uint32_t min_len,
-    uint32_t max_len, std::optional<uint32_t> max_covering_samples,
-    uint32_t seed) {
+    std::vector<std::vector<std::string>>& phrases, size_t min_len,
+    size_t max_len, std::optional<size_t> max_covering_samples, uint32_t seed) {
   std::mt19937 rng(seed);
-  min_len = std::min(static_cast<size_t>(min_len), words.size());
+  min_len = std::min(min_len, words.size());
   std::uniform_int_distribution<size_t> dist(min_len, max_len);
 
   size_t start_pos = 0;
   while (start_pos + min_len <= words.size()) {
-    int phrase_size =
-        std::min(static_cast<size_t>(dist(rng)), words.size() - start_pos);
+    size_t phrase_size = std::min(dist(rng), words.size() - start_pos);
     if (start_pos + phrase_size + min_len > words.size()) {
       phrase_size += words.size() - phrase_size - start_pos;
     }
@@ -216,20 +222,19 @@ void VariableLengthColdStart::addCoveringPhrases(
 
 void VariableLengthColdStart::addRandomSlicePhrases(
     const std::vector<std::string>& words,
-    std::vector<std::vector<std::string>>& phrases, uint32_t min_len,
-    std::optional<uint32_t> max_len_opt, uint32_t num_slices, uint32_t seed) {
+    std::vector<std::vector<std::string>>& phrases, size_t min_len,
+    std::optional<size_t> max_len_opt, uint32_t num_slices, uint32_t seed) {
   std::mt19937 rng(seed);
-  min_len = std::min(static_cast<size_t>(min_len), words.size());
-  uint32_t max_len = max_len_opt.has_value()
-                         ? std::min<uint32_t>(words.size(), *max_len_opt)
-                         : words.size();
-  std::uniform_int_distribution<uint32_t> len_dist(min_len, max_len);
+  min_len = std::min(min_len, words.size());
+  size_t max_len = max_len_opt.has_value()
+                       ? std::min(words.size(), *max_len_opt)
+                       : words.size();
+  std::uniform_int_distribution<size_t> len_dist(min_len, max_len);
 
   for (uint32_t i = 0; i < num_slices; i++) {
-    uint32_t len = len_dist(rng);
-    std::uniform_int_distribution<uint32_t> start_pos_dist(0,
-                                                           words.size() - len);
-    uint32_t start_pos = start_pos_dist(rng);
+    size_t len = len_dist(rng);
+    std::uniform_int_distribution<size_t> start_pos_dist(0, words.size() - len);
+    size_t start_pos = start_pos_dist(rng);
     std::vector<std::string> phrase(words.begin() + start_pos,
                                     words.begin() + start_pos + len);
     phrases.push_back(phrase);

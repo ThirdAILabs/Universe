@@ -21,27 +21,29 @@ def default_augmentation(
         weak_columns=["WEAK"],
         label_column="LABELS",
         output_column="OUTPUT",
-        covering_min_length=covering_min_length,
-        covering_max_length=covering_max_length,
-        max_covering_samples=max_covering_samples,
-        slice_min_length=slice_min_length,
-        slice_max_length=slice_max_length,
-        num_slices=num_slices,
-        add_whole_doc=add_whole_doc,
-        prefilter_punctuation=prefilter_punctuation,
-        strong_sample_num_words=strong_sample_num_words,
-        word_removal_probability=word_removal_probability,
-        seed=81,
+        config=data.transformations.VariableLengthConfig(
+            covering_min_length=covering_min_length,
+            covering_max_length=covering_max_length,
+            max_covering_samples=max_covering_samples,
+            slice_min_length=slice_min_length,
+            slice_max_length=slice_max_length,
+            num_slices=num_slices,
+            add_whole_doc=add_whole_doc,
+            prefilter_punctuation=prefilter_punctuation,
+            strong_sample_num_words=strong_sample_num_words,
+            word_removal_probability=word_removal_probability,
+            seed=81,
+        )
     )
 
 
 def test_vlcs_prefilter_punctuation():
-    augmentation = default_augmentation()
-    samples = augmentation.augment_single_row(
-        "something is, strong text", "This is (weak) text."
-    )
+augmentation = default_augmentation()
+samples = augmentation.augment_single_row(
+    "something is, strong text", "This is (weak) text."
+)
 
-    forbidden_chars = [",", "(", ")", "."]
+forbidden_chars = [",", "(", ")", "."]
     for sample in samples:
         assert all(
             char not in sample for char in forbidden_chars

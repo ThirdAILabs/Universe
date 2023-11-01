@@ -40,12 +40,13 @@ std::vector<std::vector<std::string>> sampleFromPhrases(
  * the input string, possibly length restricted).
  */
 std::vector<std::string> getStrongPhrase(
-    std::string& s, std::optional<uint32_t> max_len = std::nullopt);
+    const std::string& strong_text_in,
+    std::optional<uint32_t> max_len = std::nullopt);
 
 /**
  * Creates a phrase by splitting an input string s into whitespace-separated
  * words. Leading and tailing whitespaces are stripped off and ignored.
  */
-std::vector<std::string> splitByWhitespace(std::string& s);
+std::vector<std::string> splitByWhitespace(const std::string& s);
 
 }  // namespace thirdai::data::cold_start

@@ -394,8 +394,8 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
 
   py::class_<VariableLengthConfig, std::shared_ptr<VariableLengthConfig>>(
       transformations_submodule, "VariableLengthConfig")
-      .def(py::init<uint32_t, uint32_t, std::optional<uint32_t>, uint32_t,
-                    std::optional<uint32_t>, uint32_t, bool, bool, uint32_t,
+      .def(py::init<size_t, size_t, std::optional<uint32_t>, size_t,
+                    std::optional<size_t>, uint32_t, bool, bool, uint32_t,
                     float, uint32_t>(),
            py::arg("covering_min_length") = 3,
            py::arg("covering_max_length") = 40,
@@ -410,39 +410,11 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   py::class_<VariableLengthColdStart, Transformation,
              std::shared_ptr<VariableLengthColdStart>>(
       transformations_submodule, "VariableLengthColdStart")
-      .def(py::init(
-               [](std::vector<std::string> strong_column_names,
-                  std::vector<std::string> weak_column_names,
-                  std::string label_column_name, std::string output_column_name,
-                  uint32_t covering_min_length, uint32_t covering_max_length,
-                  std::optional<uint32_t> max_covering_samples,
-                  uint32_t slice_min_length,
-                  std::optional<uint32_t> slice_max_length, uint32_t num_slices,
-                  bool add_whole_doc, bool prefilter_punctuation,
-                  uint32_t strong_sample_num_words,
-                  float word_removal_probability, uint32_t seed) {
-                 return std::make_shared<VariableLengthColdStart>(
-                     std::move(strong_column_names),
-                     std::move(weak_column_names), std::move(label_column_name),
-                     std::move(output_column_name),
-                     VariableLengthConfig(
-                         covering_min_length, covering_max_length,
-                         max_covering_samples, slice_min_length,
-                         slice_max_length, num_slices, add_whole_doc,
-                         prefilter_punctuation, strong_sample_num_words,
-                         word_removal_probability, seed));
-               }),
+      .def(py::init<std::vector<std::string>, std::vector<std::string>,
+                    std::string, std::string, VariableLengthConfig>(),
            py::arg("strong_columns"), py::arg("weak_columns"),
            py::arg("label_column"), py::arg("output_column"),
-           py::arg("covering_min_length") = 3,
-           py::arg("covering_max_length") = 40,
-           py::arg("max_covering_samples") = std::nullopt,
-           py::arg("slice_min_length") = 3,
-           py::arg("slice_max_length") = std::nullopt,
-           py::arg("num_slices") = 5, py::arg("add_whole_doc") = true,
-           py::arg("prefilter_punctuation") = true,
-           py::arg("strong_sample_num_words") = 3,
-           py::arg("word_removal_probability") = 0, py::arg("seed") = 42803)
+           py::arg("config") = VariableLengthConfig())
       .def("augment_single_row", &VariableLengthColdStart::augmentSingleRow,
            py::arg("strong_text"), py::arg("weak_text"));
 

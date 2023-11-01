@@ -108,15 +108,15 @@ bool startsWith(const std::string& to_search_in, const std::string& prefix) {
   return std::string_view(to_search_in.data(), prefix.size()) == prefix;
 }
 
-void stripWhitespace(std::string& s) {
-  auto first_valid = s.find_first_not_of(" \t\f\v\n\r");
-  auto last_valid = s.find_last_not_of(" \t\f\v\n\r");
-  if (first_valid == std::string::npos || last_valid == std::string::npos) {
+std::string stripWhitespace(const std::string& s) {
+  auto not_space = [](char ch) { return !std::isspace(ch); };
+  auto first_valid = std::find_if_not(s.begin(), s.end(), not_space);
+  auto last_valid = std::find_if_not(s.rbegin(), s.rend(), not_space).base();
+  if (first_valid == s.end() || last_valid == s.begin()) {
     // Whole string is whitespace.
-    s = "";
-  } else {
-    s = s.substr(first_valid, last_valid + 1 - first_valid);
+    return "";
   }
+  return std::string(first_valid, last_valid);
 }
 
 /* HELPER METHODS FOR UNICODE STRINGS */
@@ -368,16 +368,20 @@ std::vector<std::wstring> tokenizeByPunctuations(const std::wstring& text) {
   return output;
 }
 
-void replacePunctuationWithSpaces(std::string& string) {
+std::string replacePunctuationWithSpaces(const std::string& input) {
+  std::string result = input;
   std::replace_if(
-      string.begin(), string.end(),
+      result.begin(), result.end(),
       [](const char c) -> bool { return std::ispunct(c); }, ' ');
+  return result;
 }
 
-void replaceNewlinesWithSpaces(std::string& string) {
+std::string replaceNewlinesWithSpaces(const std::string& input) {
+  std::string result = input;
   std::replace_if(
-      string.begin(), string.end(),
+      result.begin(), result.end(),
       [](const char c) -> bool { return c == '\n' || c == '\r'; }, ' ');
+  return result;
 }
 
 }  // namespace thirdai::text

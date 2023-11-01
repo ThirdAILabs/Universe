@@ -43,7 +43,7 @@ inline std::string lower(const std::string_view& str) {
 /**
  *Strips leading and tailing whitespace.
  */
-void stripWhitespace(std::string& s);
+std::string stripWhitespace(const std::string& s);
 
 /**
  * Extracts an integer value from an integer string.
@@ -101,11 +101,11 @@ std::vector<std::wstring> splitOnWhitespace(const std::wstring& text);
 /**
  * Replaces punctuation characters in string with whitespace.
  */
-void replacePunctuationWithSpaces(std::string& string);
+std::string replacePunctuationWithSpaces(const std::string& input);
 
 /**
  * Replaces \n and \r characters in string with whitespace.
  */
-void replaceNewlinesWithSpaces(std::string& string);
+std::string replaceNewlinesWithSpaces(const std::string& input);
 
 }  // namespace thirdai::text

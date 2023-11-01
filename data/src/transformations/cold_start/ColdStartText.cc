@@ -147,7 +147,7 @@ ColumnMap ColdStartTextAugmentation::apply(ColumnMap columns,
 }
 
 std::vector<std::string> ColdStartTextAugmentation::augmentSingleRow(
-    std::string& strong_text, std::string& weak_text) const {
+    const std::string& strong_text, const std::string& weak_text) const {
   // Now that we have both the weak and strong text, pass them into the
   // phrase generation pipeline to self-supervised (label, phrase) pairs.
   Phrase strong_phrase = cold_start::getStrongPhrase(strong_text);
@@ -170,7 +170,7 @@ std::vector<std::string> ColdStartTextAugmentation::augmentSingleRow(
 }
 
 ColdStartTextAugmentation::PhraseCollection
-ColdStartTextAugmentation::getWeakPhrases(std::string& s) const {
+ColdStartTextAugmentation::getWeakPhrases(std::string s) const {
   std::string::iterator phrase_start;
   std::string::iterator phrase_end;
   phrase_start = s.begin();
@@ -190,7 +190,7 @@ ColdStartTextAugmentation::getWeakPhrases(std::string& s) const {
     });
     std::string natural_phrase_text(phrase_start, phrase_end);
     text::replacePunctuationWithSpaces(natural_phrase_text);
-    text::stripWhitespace(natural_phrase_text);
+    natural_phrase_text = text::stripWhitespace(natural_phrase_text);
     phrase_start = phrase_end;
     if (phrase_end != s.end()) {
       ++phrase_end;  // Necessary to not re-find the same punctuation again.
