@@ -22,8 +22,7 @@ using NumpyArray =
 
 class SeismicBase {
  public:
-  SeismicBase(InputShapeData input_shape_data, ModelPtr model,
-              bool embedding_last);
+  SeismicBase(InputShapeData input_shape_data, ModelPtr model);
 
   SeismicBase() {}  // For serialization only.
 
@@ -46,7 +45,7 @@ class SeismicBase {
 
   ModelPtr getModel() const { return _model; }
 
-  void setModel(ModelPtr model, bool embedding_last);
+  virtual void setModel(ModelPtr model);
 
   size_t labelDim() const {
     auto label_dims = _model->labelDims();
@@ -66,9 +65,9 @@ class SeismicBase {
 
   ModelPtr _model;
 
- private:
   ComputationPtr _emb;
 
+ private:
   InputShapeData _input_shape_data;
 
   friend class cereal::access;

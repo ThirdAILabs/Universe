@@ -37,8 +37,7 @@ std::pair<size_t, float> nOutputClasses(const std::string& model_size) {
 
 SeismicEmbedding::SeismicEmbedding(InputShapeData input_shape_data,
                                    ModelPtr model)
-    : SeismicBase(input_shape_data, std::move(model),
-                  /* embedding_last= */ false),
+    : SeismicBase(input_shape_data, std::move(model)),
       _training_type(TrainingType::UnsupervisedPretraining) {
   if (getModel()->labelDims().size() != 1) {
     throw std::invalid_argument("Expected model to only have 1 output layer.");
@@ -126,8 +125,22 @@ void SeismicEmbedding::switchToFinetuning() {
 
   auto model = Model::make({patches}, {emb}, {loss});
 
-  setModel(model, /* embedding_last= */ true);
+  setModel(model);
   _training_type = TrainingType::Finetuning;
+}
+
+void SeismicEmbedding::setModel(ModelPtr model) {
+  _model = std::move(model);
+  auto computations = _model->computationOrderWithoutInputs();
+  size_t emb_pos = _training_type == TrainingType::Finetuning ? 1 : 2;
+  auto new_emb = computations.at(computations.size() - emb_pos);
+  if (_emb && _emb->dim() != new_emb->dim()) {
+    throw std::runtime_error("Cannot set a model with embedding dimension " +
+                             std::to_string(new_emb->dim()) +
+                             " in place of a model with embedding dimension " +
+                             std::to_string(_emb->dim()));
+  }
+  _emb = new_emb;
 }
 
 Dataset SeismicEmbedding::makeLabelBatches(

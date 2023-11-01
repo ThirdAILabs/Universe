@@ -22,10 +22,9 @@
 
 namespace thirdai::bolt::seismic {
 
-SeismicBase::SeismicBase(InputShapeData input_shape_data, ModelPtr model,
-                         bool embedding_last)
+SeismicBase::SeismicBase(InputShapeData input_shape_data, ModelPtr model)
     : _input_shape_data(std::move(input_shape_data)) {
-  setModel(std::move(model), /* embedding_last= */ embedding_last);
+  setModel(std::move(model));
 
 #if THIRDAI_EXPOSE_ALL
   _model->summary();
@@ -105,11 +104,10 @@ Dataset SeismicBase::convertToBatches(const NumpyArray& array,
   return batches;
 }
 
-void SeismicBase::setModel(ModelPtr model, bool embedding_last) {
+void SeismicBase::setModel(ModelPtr model) {
   _model = std::move(model);
   auto computations = _model->computationOrderWithoutInputs();
-  auto new_emb =
-      computations.at(computations.size() - (embedding_last ? 1 : 2));
+  auto new_emb = computations.at(computations.size() - 2);
   if (_emb && _emb->dim() != new_emb->dim()) {
     throw std::runtime_error("Cannot set a model with embedding dimension " +
                              std::to_string(new_emb->dim()) +

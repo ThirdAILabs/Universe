@@ -32,6 +32,8 @@ class SeismicEmbedding final : public SeismicBase {
 
   void updateParameters(float learning_rate);
 
+  void setModel(ModelPtr model) final;
+
   void save(const std::string& filename) const final;
 
   void save_stream(std::ostream& output) const;

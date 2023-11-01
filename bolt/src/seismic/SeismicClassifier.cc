@@ -17,9 +17,8 @@ SeismicClassifier::SeismicClassifier(
     bool freeze_emb_model)
     : SeismicBase(
           /* input_shape_data= */ emb_model->inputShapeData(),
-          /* model= */
-          addClassifierHead(emb_model->getModel(), n_classes, freeze_emb_model),
-          /* embedding_last= */ false) {}
+          /* model= */ addClassifierHead(emb_model->getModel(), n_classes,
+                                         freeze_emb_model)) {}
 
 metrics::History SeismicClassifier::trainOnPatches(
     const NumpyArray& subcubes, std::vector<std::vector<uint32_t>> labels,
