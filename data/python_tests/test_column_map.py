@@ -145,7 +145,7 @@ def test_column_map_concat_with_mismatching_columns():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Cannot call concat on ColumnMaps with different columns. One ColumnMap has columns ['b', 'a'] and the other has columns ['c', 'b', 'a']."
+            "Cannot call concat on ColumnMaps with different columns. One ColumnMap has columns ['b', 'a'] and the other has columns ['b', 'c', 'a']."
         ),
     ):
         columns_a.concat(columns_b)

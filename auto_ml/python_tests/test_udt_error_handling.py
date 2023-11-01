@@ -90,7 +90,7 @@ def test_header_missing_cols():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Unable to find column with name 'c'. ColumnMap contains columns ['__featurized_input_values__', '__b_tokenized__', '__featurized_input_indices__', '__a_tokenized__', 'b', 'a']."
+            "Unable to find column with name 'c'. ColumnMap contains columns ['__b_tokenized__', '__featurized_input_indices__', 'b', '__a_tokenized__', '__featurized_input_values__', 'a']."
         ),
     ):
         model.train("header_missing_cols", epochs=100)
