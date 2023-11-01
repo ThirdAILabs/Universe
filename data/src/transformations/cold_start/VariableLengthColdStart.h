@@ -1,8 +1,12 @@
 #pragma once
 
+#include "ColdStartUtils.h"
 #include <data/src/transformations/Transformation.h>
 
 namespace thirdai::data {
+
+using cold_start::Phrase;
+using cold_start::PhraseCollection;
 
 struct VariableLengthConfig {
   explicit VariableLengthConfig(
@@ -50,19 +54,17 @@ class VariableLengthColdStart : public Transformation {
    * Returns a set of covering samples and random slices according to the
    * parameters specified at construction time.
    */
-  std::vector<std::vector<std::string>> getWeakPhrases(
-      std::string weak_text) const;
+  PhraseCollection getWeakPhrases(std::string weak_text) const;
 
-  static void addCoveringPhrases(const std::vector<std::string>& words,
-                                 std::vector<std::vector<std::string>>& phrases,
+  static void addCoveringPhrases(const Phrase& words, PhraseCollection& phrases,
                                  size_t min_len, size_t max_len,
                                  std::optional<size_t> max_covering_samples,
                                  uint32_t seed);
 
-  static void addRandomSlicePhrases(
-      const std::vector<std::string>& words,
-      std::vector<std::vector<std::string>>& phrases, size_t min_len,
-      std::optional<size_t> max_len_opt, uint32_t num_slices, uint32_t seed);
+  static void addRandomSlicePhrases(const Phrase& words,
+                                    PhraseCollection& phrases, size_t min_len,
+                                    std::optional<size_t> max_len_opt,
+                                    uint32_t num_slices, uint32_t seed);
 
   std::vector<std::string> _strong_column_names;
   std::vector<std::string> _weak_column_names;

@@ -1,5 +1,4 @@
 #include "VariableLengthColdStart.h"
-#include "ColdStartUtils.h"
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/StringConcat.h>
 #include <utils/CommonChecks.h>
@@ -129,9 +128,8 @@ ColumnMap VariableLengthColdStart::apply(ColumnMap columns,
 
 std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
     const std::string& strong_text, const std::string& weak_text) const {
-  std::vector<std::string> strong_phrase =
-      cold_start::getStrongPhrase(strong_text);
-  std::vector<std::vector<std::string>> phrases = getWeakPhrases(weak_text);
+  Phrase strong_phrase = cold_start::getStrongPhrase(strong_text);
+  PhraseCollection phrases = getWeakPhrases(weak_text);
   cold_start::mergeStrongWithWeak(
       phrases, strong_phrase, _config.strong_sample_num_words, _config.seed);
 
@@ -168,25 +166,25 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
   return output_samples;
 }
 
-std::vector<std::vector<std::string>> VariableLengthColdStart::getWeakPhrases(
+PhraseCollection VariableLengthColdStart::getWeakPhrases(
     std::string weak_text) const {
   if (_config.prefilter_punctuation) {
     weak_text = text::replacePunctuationWithSpaces(weak_text);
   }
 
-  std::vector<std::string> words = cold_start::splitByWhitespace(weak_text);
+  Phrase weak_phrase = cold_start::splitByWhitespace(weak_text);
 
-  if (words.empty()) {
+  if (weak_phrase.empty()) {
     return {};
   }
 
-  std::vector<std::vector<std::string>> phrases;
+  PhraseCollection phrases;
 
-  addCoveringPhrases(words, phrases, _config.covering_min_length,
+  addCoveringPhrases(weak_phrase, phrases, _config.covering_min_length,
                      _config.covering_max_length, _config.max_covering_samples,
                      _config.seed);
 
-  addRandomSlicePhrases(words, phrases, _config.slice_min_length,
+  addRandomSlicePhrases(weak_phrase, phrases, _config.slice_min_length,
                         _config.slice_max_length, _config.num_slices,
                         _config.seed);
 
@@ -194,8 +192,7 @@ std::vector<std::vector<std::string>> VariableLengthColdStart::getWeakPhrases(
 }
 
 void VariableLengthColdStart::addCoveringPhrases(
-    const std::vector<std::string>& words,
-    std::vector<std::vector<std::string>>& phrases, size_t min_len,
+    const Phrase& words, PhraseCollection& phrases, size_t min_len,
     size_t max_len, std::optional<size_t> max_covering_samples, uint32_t seed) {
   std::mt19937 rng(seed);
   min_len = std::min(min_len, words.size());
@@ -209,8 +206,8 @@ void VariableLengthColdStart::addCoveringPhrases(
     if (start_pos + phrase_size + min_len > words.size()) {
       phrase_size += words.size() - phrase_size - start_pos;
     }
-    std::vector<std::string> phrase(words.begin() + start_pos,
-                                    words.begin() + start_pos + phrase_size);
+    Phrase phrase(words.begin() + start_pos,
+                  words.begin() + start_pos + phrase_size);
     phrases.push_back(phrase);
     start_pos += phrase_size;
   }
@@ -223,8 +220,7 @@ void VariableLengthColdStart::addCoveringPhrases(
 }
 
 void VariableLengthColdStart::addRandomSlicePhrases(
-    const std::vector<std::string>& words,
-    std::vector<std::vector<std::string>>& phrases, size_t min_len,
+    const Phrase& words, PhraseCollection& phrases, size_t min_len,
     std::optional<size_t> max_len_opt, uint32_t num_slices, uint32_t seed) {
   std::mt19937 rng(seed);
   min_len = std::min(min_len, words.size());
@@ -237,8 +233,7 @@ void VariableLengthColdStart::addRandomSlicePhrases(
     size_t len = len_dist(rng);
     std::uniform_int_distribution<size_t> start_pos_dist(0, words.size() - len);
     size_t start_pos = start_pos_dist(rng);
-    std::vector<std::string> phrase(words.begin() + start_pos,
-                                    words.begin() + start_pos + len);
+    Phrase phrase(words.begin() + start_pos, words.begin() + start_pos + len);
     phrases.push_back(phrase);
   }
 }

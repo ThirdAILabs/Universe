@@ -5,6 +5,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
+#include "ColdStartUtils.h"
 #include <auto_ml/src/Aliases.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/transformations/Transformation.h>
@@ -14,6 +15,9 @@
 #include <vector>
 
 namespace thirdai::data {
+
+using cold_start::Phrase;
+using cold_start::PhraseCollection;
 
 struct ColdStartConfig {
   explicit ColdStartConfig(
@@ -148,9 +152,6 @@ class ColdStartTextAugmentation final : public Transformation {
                                             const std::string& weak_text) const;
 
  private:
-  typedef std::vector<std::string> Phrase;
-  typedef std::vector<Phrase> PhraseCollection;
-
   std::vector<std::string> _strong_column_names;
   std::vector<std::string> _weak_column_names;
   std::string _label_column_name;

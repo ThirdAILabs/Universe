@@ -1,5 +1,4 @@
 #include "ColdStartText.h"
-#include "ColdStartUtils.h"
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/StringConcat.h>
@@ -178,20 +177,20 @@ std::vector<std::string> ColdStartTextAugmentation::augmentSingleRow(
   return output_samples;
 }
 
-ColdStartTextAugmentation::PhraseCollection
-ColdStartTextAugmentation::getWeakPhrases(std::string s) const {
+PhraseCollection ColdStartTextAugmentation::getWeakPhrases(
+    std::string s) const {
   std::string::iterator phrase_start;
   std::string::iterator phrase_end;
   phrase_start = s.begin();
   phrase_end = s.begin();
 
-  ColdStartTextAugmentation::PhraseCollection phrases;
+  PhraseCollection phrases;
   // The natural phrases are not necessarily long enough or short enough
   // on their own. We may have to cut or concatenate them to get phrases
   // of the desired length. We do this in a single pass by storing
   // intermediate results in the following phrase accumulators.
-  ColdStartTextAugmentation::Phrase current_natural_phrase;
-  ColdStartTextAugmentation::Phrase current_chunk_phrase;
+  Phrase current_natural_phrase;
+  Phrase current_chunk_phrase;
 
   while (phrase_end != s.end()) {
     phrase_end = std::find_if(phrase_end, s.end(), [](const char c) -> bool {
