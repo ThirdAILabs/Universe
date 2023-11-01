@@ -62,6 +62,13 @@ class Model : public std::enable_shared_from_this<Model> {
   void trainOnBatch(const TensorList& inputs, const TensorList& labels);
 
   /**
+   * Performs backpropagation for the given labels. Assumes that the current
+   * activations stored in the model's computation graph are for the same batch
+   * that the provided labels are for.
+   */
+  void backpropagate(const TensorList& labels);
+
+  /**
    * Performs the forward pass through the model on a given batch. Differs from
    * forward methods above because the labels can be provided so that they are
    * set and can thus be used in metrics during validation. The labels are not

@@ -340,6 +340,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
     bolt/src/nn/loss/BinaryCrossEntropy.cc
     bolt/src/nn/loss/EuclideanContrastive.cc
+    bolt/src/nn/loss/ExternalLoss.cc
     bolt/src/neuron_index/LshIndex.cc
     bolt/src/neuron_index/RandomSampler.cc
     bolt/src/neuron_index/MachNeuronIndex.cc
@@ -497,7 +498,9 @@ pybind11_add_module(
   bolt/python_bindings/NumpyConversions.cc
   bolt/python_bindings/BoltTextGeneration.cc
   bolt/python_bindings/Porting.cc
-  bolt/src/seismic/SeismicEmbeddingModel.cc
+  bolt/src/seismic/SeismicBase.cc
+  bolt/src/seismic/SeismicEmbedding.cc
+  bolt/src/seismic/SeismicClassifier.cc
   bolt/python_bindings/BoltSeismic.cc
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc
