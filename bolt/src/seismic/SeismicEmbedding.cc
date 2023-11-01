@@ -125,8 +125,8 @@ void SeismicEmbedding::switchToFinetuning() {
 
   auto model = Model::make({patches}, {emb}, {loss});
 
-  setModel(model);
   _training_type = TrainingType::Finetuning;
+  setModel(model);
 }
 
 void SeismicEmbedding::setModel(ModelPtr model) {
