@@ -18,14 +18,15 @@ void mergeStrongWithWeak(PhraseCollection& weak_phrases, Phrase& strong_phrase,
 
 /**
  * Randomly deletes elements from each phrase, resulting in new phrases.
- * Repeats the process num_reps times for each phrase, resulting in (roughly)
- * num_reps * phrases.size() new phrases. Note that if a phrase is not long
- * enough to choose num_to_sample words, then it is kept but only represented
- * once in the output (not num_reps times).
+ * Repeats the process n_sampled_phrases times for each phrase, resulting in
+ * (roughly) n_sampled_phrases * phrases.size() new phrases. Note that if a
+ * phrase is not long enough to choose words_per_sampled_phrase words, then it
+ * is kept but only represented once in the output (not n_sampled_phrases
+ * times).
  */
 PhraseCollection sampleFromPhrases(const PhraseCollection& phrases,
-                                   uint32_t num_to_sample, uint32_t num_reps,
-                                   uint32_t seed);
+                                   uint32_t words_per_sampled_phrase,
+                                   uint32_t n_sampled_phrases, uint32_t seed);
 
 /**
  * Returns a single phrase that takes in the concatenated string of strong

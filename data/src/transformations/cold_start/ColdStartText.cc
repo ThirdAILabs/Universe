@@ -249,8 +249,8 @@ PhraseCollection ColdStartTextAugmentation::getWeakPhrases(
   if (_weak_sample_num_words) {
     phrases = cold_start::sampleFromPhrases(
         /* phrases= */ phrases,
-        /* num_to_sample= */ _weak_sample_num_words.value(),
-        /* num_reps= */ _weak_sample_reps, _seed);
+        /* words_per_sampled_phrase= */ _weak_sample_num_words.value(),
+        /* n_sampled_phrases= */ _weak_sample_reps, _seed);
   }
   return phrases;
 }

@@ -18,11 +18,10 @@ void mergeStrongWithWeak(PhraseCollection& weak_phrases, Phrase& strong_phrase,
   if (strong_sample_num_words) {
     // If we have to sample from the strong phrase, we create N independently
     // sampled sub-strings, where N is the number of weak phrases that we have.
-    downsampled_strong_phrases.push_back(strong_phrase);
     downsampled_strong_phrases = sampleFromPhrases(
-        /* phrases= */ downsampled_strong_phrases,
-        /* num_to_sample= */ strong_sample_num_words.value(),
-        /* num_reps= */ weak_phrases.size(), seed);
+        /* phrases= */ {strong_phrase},
+        /* words_per_sampled_phrase= */ strong_sample_num_words.value(),
+        /* n_sampled_phrases= */ weak_phrases.size(), seed);
   }
   for (uint32_t i = 0; i < weak_phrases.size(); i++) {
     Phrase phrase_to_concatenate;
@@ -44,10 +43,10 @@ void mergeStrongWithWeak(PhraseCollection& weak_phrases, Phrase& strong_phrase,
 }
 
 PhraseCollection sampleFromPhrases(const PhraseCollection& phrases,
-                                   uint32_t num_to_sample, uint32_t num_reps,
-                                   uint32_t seed) {
+                                   uint32_t words_per_sampled_phrase,
+                                   uint32_t n_sampled_phrases, uint32_t seed) {
   // Only iterate over the original phrases, as we append new ones to the end.
-  if (num_reps == 0) {
+  if (n_sampled_phrases == 0) {
     throw std::invalid_argument(
         "Invalid number of sampling repetitions: "
         "must be greater than 0.");
@@ -55,21 +54,22 @@ PhraseCollection sampleFromPhrases(const PhraseCollection& phrases,
   PhraseCollection output_phrases;
   std::mt19937 rng(seed);
   for (const auto& phrase : phrases) {
-    if (phrase.size() > num_to_sample) {
+    if (phrase.size() > words_per_sampled_phrase) {
       // Then we can downsample some sub-phrases.
       std::vector<uint32_t> permutation(phrase.size());
       std::iota(permutation.begin(), permutation.end(), 0);
-      for (uint32_t rep = 0; rep < num_reps; rep++) {
+      for (uint32_t rep = 0; rep < n_sampled_phrases; rep++) {
         std::shuffle(permutation.begin(), permutation.end(), rng);
-        std::sort(permutation.begin(), permutation.begin() + num_to_sample);
+        std::sort(permutation.begin(),
+                  permutation.begin() + words_per_sampled_phrase);
         Phrase new_phrase;
-        for (uint32_t j = 0; j < num_to_sample; j++) {
+        for (uint32_t j = 0; j < words_per_sampled_phrase; j++) {
           new_phrase.push_back(phrase[permutation[j]]);
         }
         output_phrases.push_back(new_phrase);
       }
     } else {
-      // there are not enough words in the phrase to choose num_to_sample.
+      // there are not enough words in the phrase to choose
       output_phrases.push_back(phrase);
     }
   }
