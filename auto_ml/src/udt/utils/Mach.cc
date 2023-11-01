@@ -52,9 +52,7 @@ Mach::Mach(uint32_t input_dim, uint32_t num_buckets,
            data::OutputColumns(label_column)}),
       _all_bolt_columns({std::move(input_indices_column),
                          std::move(input_values_column),
-                         std::move(label_column), std::move(bucket_column)}) {
-  updateSamplingStrategy();
-}
+                         std::move(label_column), std::move(bucket_column)}) {}
 
 void Mach::randomlyIntroduceEntities(const data::ColumnMap& columns) {
   const auto& labels = columns.getArrayColumn<uint32_t>(labelColumn());
@@ -77,6 +75,8 @@ void Mach::randomlyIntroduceEntities(const data::ColumnMap& columns) {
 
     index()->insert(labels->row(row)[0], std::move(hashes));
   }
+
+  updateSamplingStrategy();
 }
 
 void Mach::introduceEntities(const data::ColumnMap& columns,
