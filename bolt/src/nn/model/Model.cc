@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <chrono>
 #include <ctime>
+#include <exception>
 #include <memory>
 #include <numeric>
 #include <optional>
@@ -127,6 +128,39 @@ void Model::trainOnBatch(const TensorList& inputs, const TensorList& labels) {
        index_in_batch++) {
     forwardVector(index_in_batch, /* training= */ true);
     backpropagateVector(index_in_batch, input_batch_size);
+  }
+}
+
+void Model::backpropagate(const TensorList& labels) {
+  requireOptimizer();
+
+  uint32_t batch_size = setLabels(labels);
+
+  _total_training_samples += batch_size;
+  licensing::entitlements().verifyAllowedNumberOfTrainingSamples(
+      _total_training_samples);
+
+  if (!_inputs.empty() && _inputs.at(0)->tensor()->batchSize() != batch_size) {
+    throw std::invalid_argument(
+        "Labels provided to backpropagate do not match batch size of last "
+        "batch.");
+  }
+
+  std::exception_ptr error;
+
+#pragma omp parallel for default(none) shared(batch_size, error)
+  for (uint32_t index_in_batch = 0; index_in_batch < batch_size;
+       index_in_batch++) {
+    try {
+      backpropagateVector(index_in_batch, batch_size);
+    } catch (...) {
+#pragma omp critical
+      error = std::current_exception();
+    }
+  }
+
+  if (error) {
+    std::rethrow_exception(error);
   }
 }
 

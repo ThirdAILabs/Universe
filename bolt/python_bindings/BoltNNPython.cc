@@ -5,6 +5,7 @@
 #include <bolt/src/nn/loss/BinaryCrossEntropy.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/EuclideanContrastive.h>
+#include <bolt/src/nn/loss/ExternalLoss.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Activation.h>
@@ -121,6 +122,7 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("forward",
            py::overload_cast<const TensorList&, bool>(&Model::forward),
            py::arg("inputs"), py::arg("use_sparsity") = false)
+      .def("backpropagate", &Model::backpropagate, py::arg("labels"))
       .def("update_parameters", &Model::updateParameters,
            py::arg("learning_rate"))
       .def("ops", &Model::opExecutionOrder)
@@ -424,6 +426,10 @@ void defineLosses(py::module_& nn) {
       .def(py::init(&EuclideanContrastive::make), py::arg("output_1"),
            py::arg("output_2"), py::arg("labels"),
            py::arg("dissimilar_cutoff_distance"));
+
+  py::class_<ExternalLoss, ExternalLossPtr, Loss>(loss, "ExternalLoss")
+      .def(py::init<ComputationPtr, ComputationPtr>(), py::arg("output"),
+           py::arg("external_gradients"));
 }
 
 }  // namespace thirdai::bolt::python
