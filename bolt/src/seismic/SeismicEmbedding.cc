@@ -256,7 +256,8 @@ template void SeismicEmbedding::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void SeismicEmbedding::serialize(Archive& archive) {
-  archive(cereal::base_class<SeismicBase>(this), _label_cube_dim);
+  archive(cereal::base_class<SeismicBase>(this), _label_cube_dim,
+          _training_type);
 }
 
 }  // namespace thirdai::bolt::seismic
