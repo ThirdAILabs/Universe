@@ -1123,6 +1123,11 @@ class SharePoint(DocumentConnector):
         - ctx (ClientContext): A ClientContext object for SharePoint connection.
         - library_path (str): The server-relative directory path where documents are stored. Default: 'Shared Documents'
         - chunk_size (int): The maximum amount of data (in bytes) that can be fetched at a time. (This limit may not apply if there are no files within this range.) Default: 10MB
+        - credentials (Dict): If provided, trys to reconnect to the sharepoint's endpoint upon loading of the saved model.
+                              REMEMBER: provide the same credentials that was used to create the clientContext in the first place.
+                              SUPPORTED CREDENTIALS: (username, password)
+                                                            OR
+                                                    (client_id, client_secret)
     """
 
     def __init__(
@@ -1170,6 +1175,11 @@ class SharePoint(DocumentConnector):
         return [self.weak_column]
 
     def build_meta_table(self):
+        num_files = self._connector.num_files()
+        if not num_files:
+            raise FileNotFoundError("No supported documents found.")
+        else:
+            print(f"Found {num_files} supported files")
         self._meta_table = pd.DataFrame(
             columns=[
                 "internal_doc_id",
@@ -1279,6 +1289,54 @@ class SharePoint(DocumentConnector):
             chunk_df = pd.concat(temp_dfs, ignore_index=True)
             yield chunk_df
 
+    @staticmethod
+    def dummy_query(ctx: ClientContext):
+        # Authenticatiion fails if this dummy query execution fails
+        ctx.web.get().execute_query()
+
+    @staticmethod
+    def setup_clientContext(
+        base_url: str, credentials: Dict[str, str]
+    ) -> ClientContext:
+        """
+        Method to create a ClientContext object given base_url and credentials in the form (username, password) OR (client_id, client_secret)
+        """
+        ctx = None
+        try:
+            if all([cred in credentials.keys() for cred in ("username", "password")]):
+                user_credentials = UserCredential(
+                    user_name=credentials["username"], password=credentials["password"]
+                )
+                ctx = ClientContext(base_url=base_url).with_credentials(
+                    user_credentials
+                )
+            SharePoint.dummy_query(ctx=ctx)
+        except Exception as userCredError:
+            try:
+                if all(
+                    [
+                        cred in credentials.keys()
+                        for cred in ("client_id", "client_secret")
+                    ]
+                ):
+                    client_credentials = ClientCredential(
+                        client_id=credentials["client_id"],
+                        client_secret=credentials["client_secret"],
+                    )
+                    ctx = ClientContext(base_url=base_url).with_credentials(
+                        client_credentials
+                    )
+                    SharePoint.dummy_query(ctx=ctx)
+            except Exception as clientCredError:
+                pass
+
+        if ctx:
+            return ctx
+        else:
+            print(
+                "Insufficient or incorrect credentials. Also please make sure to provide the credentials in the exact form of keys as mentioned in the help section"
+            )
+
     def __getstate__(self):
         state = self.__dict__.copy()
         del state["_connector"]
@@ -1288,33 +1346,14 @@ class SharePoint(DocumentConnector):
     def __setstate__(self, state):
         creds = state["credentials"]
         if creds is not None:
-            try:
-                if "username" in creds.keys() and "password" in creds.keys():
-                    user_credentials = UserCredential(
-                        user_name=creds["username"], password=creds["password"]
-                    )
-                    ctx = ClientContext(base_url=state["url"]).with_credentials(
-                        user_credentials
-                    )
-                elif "client_id" in creds and "client_secret" in creds:
-                    client_credentials = ClientCredential(
-                        client_id=creds["client_id"],
-                        client_secret=creds["client_secret"],
-                    )
-                    ctx = ClientContext(base_url=state["url"]).with_credentials(
-                        client_credentials
-                    )
-
-                state["_connector"] = SharePointConnector(
-                    ctx=ctx,
-                    library_path=state["library_path"],
-                    chunk_size=state["chunk_size"],
-                )
-            except Exception as e:
-                print(
-                    "Unable to connect to the sharepoint url. Retraining may not be possible. Error: "
-                    + str(e)
-                )
+            ctx = SharePoint.setup_clientContext(
+                base_url=state["url"], credentials=creds
+            )
+            state["_connector"] = SharePointConnector(
+                ctx=ctx,
+                library_path=state["library_path"],
+                chunk_size=state["chunk_size"],
+            )
         self.__dict__.update(state)
 
 

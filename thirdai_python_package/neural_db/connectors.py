@@ -134,7 +134,7 @@ class SharePointConnector(Connector):
             if len(files_dict) > 0:
                 yield files_dict
         except Exception as e:
-            print("Unable to retrieve files from SharePoint, Error: " + str(e))
+            print("Unable to retrieve file(s) from SharePoint, Error: " + str(e))
         finally:
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
@@ -147,3 +147,6 @@ class SharePointConnector(Connector):
     @property
     def site_name(self):
         return self.url.split(sep="/")[-1]
+
+    def num_files(self):
+        return len(self._files)

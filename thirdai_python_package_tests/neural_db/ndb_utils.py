@@ -3,14 +3,14 @@ import os
 import pandas as pd
 import pytest
 import requests
+from document_test_data.connector_docs.credentials.creds import get_creds
 from office365.sharepoint.client_context import ClientContext
 from sqlalchemy import create_engine
 from thirdai import neural_db as ndb
 from thirdai.neural_db import documents
-from document_test_data.connector_docs.credentials.creds import get_creds
-
 
 creds = get_creds()
+
 
 class Equivalent_doc:
     def __init__(self, connector_doc, local_doc) -> None:
@@ -88,7 +88,8 @@ def meta(file_meta):
 
 def build_local_sharepoint_doc():
     from thirdai.neural_db.utils import DIRECTORY_CONNECTOR_SUPPORTED_EXT
-    dir = os.path.join(BASE_DIR, "connector_docs",  "SharePoint")
+
+    dir = os.path.join(BASE_DIR, "connector_docs", "SharePoint")
     files = os.listdir(dir)
     doc_files = []
     for file_name in files:
@@ -150,7 +151,7 @@ def build_local_sharepoint_doc():
 
 # This is a list of getter functions that return doc objects so each test can
 # use fresh doc object instances.
-sharepoint_creds = creds['sharepoint']
+sharepoint_creds = creds["sharepoint"]
 all_connector_doc_getters = [
     Equivalent_doc(
         connector_doc=lambda: ndb.SQLDatabase(
@@ -172,13 +173,16 @@ all_connector_doc_getters = [
         ),
     ),
     Equivalent_doc(
-        connector_doc = lambda: ndb.SharePoint(
-            ctx = ClientContext(
-                sharepoint_creds['site_url']
-            ).with_user_credentials(username = sharepoint_creds['username'], password=sharepoint_creds['password'])
+        connector_doc=lambda: ndb.SharePoint(
+            ctx=ClientContext(sharepoint_creds["site_url"]).with_user_credentials(
+                username=sharepoint_creds["username"],
+                password=sharepoint_creds["password"],
+            ),
+            library_path=sharepoint_creds["library_path"],
+            credentials=sharepoint_creds,  # Passing credentials also to check for the connection setup phase while loading the document
         ),
-        local_doc=build_local_sharepoint_doc
-    )
+        local_doc=build_local_sharepoint_doc,
+    ),
 ]
 
 all_doc_getters = [

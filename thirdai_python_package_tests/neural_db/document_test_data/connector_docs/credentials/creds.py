@@ -10,6 +10,6 @@ def get_creds():
     basedir = os.path.dirname(__file__)
     settings_path = os.path.join(basedir, "creds.yaml")
     if os.path.isfile(settings_path):
-        with open(settings_path, mode = 'r') as f:
+        with open(settings_path, mode="r") as f:
             settings.update(yaml.load(f, Loader=yaml.FullLoader))
     return settings
