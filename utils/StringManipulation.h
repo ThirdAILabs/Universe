@@ -1,4 +1,6 @@
 #pragma once
+
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -97,5 +99,10 @@ std::vector<std::wstring> splitOnWhitespace(const std::wstring& text);
  * Replaces punctuation characters in string with whitespace.
  */
 void replacePunctuationWithSpaces(std::string& string);
+
+/**
+ * Replaces \n and \r characters in string with whitespace.
+ */
+void replaceNewlinesWithSpaces(std::string& string);
 
 }  // namespace thirdai::text

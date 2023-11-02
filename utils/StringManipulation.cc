@@ -363,4 +363,10 @@ void replacePunctuationWithSpaces(std::string& string) {
       [](const char c) -> bool { return std::ispunct(c); }, ' ');
 }
 
+void replaceNewlinesWithSpaces(std::string& string) {
+  std::replace_if(
+      string.begin(), string.end(),
+      [](const char c) -> bool { return c == '\n' || c == '\r'; }, ' ');
+}
+
 }  // namespace thirdai::text

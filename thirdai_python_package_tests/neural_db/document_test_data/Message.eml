@@ -1,0 +1,125 @@
+Delivered-To: sender@example.com
+Received: by 2002:a05:6f02:6799:b0:5b:1710:1289 with SMTP id x25csp146757rcg;
+        Thu, 5 Oct 2023 02:34:45 -0700 (PDT)
+X-Received: by 2002:a05:6e02:1bc7:b0:351:5d8f:d299 with SMTP id x7-20020a056e021bc700b003515d8fd299mr6066626ilv.7.1696498485498;
+        Thu, 05 Oct 2023 02:34:45 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1696498485; cv=none;
+        d=google.com; s=arc-20160816;
+        b=AZpkMDStGteGcTFv2bQKwUYMaOFrszyvebE6MBb91wFDSWsuErJhGqCiW654rmk28L
+         UlQacMMLwzZCVwxLzzNMOxv+zXsbhqNST65arvPVNeAQd9pCc22fOpbEN4yyyiUwgkkB
+         inwG4PmmhBb1DpGjS2pT0tFU/ZCda1zvF8rx0xK9D/3tOGzH2uquztV05Ibvw1dlC+8b
+         2VvcCWZtX/1PI6EDkHbRQsLrlb8Xp0Svm0+bqiSqsfAFh7dLaoi+TPUCGrDGZqDGGDso
+         e627Mnu9dz3EBHgNC0KS8KvZRDSDx/nqf3qN2nA9WAq21Lk8FQamfjAX3dMCPAQa6VAU
+         r9Jw==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20160816;
+        h=to:subject:message-id:date:from:mime-version:dkim-signature;
+        bh=tqQN1YPC3gvnCaDZWuxHofXKa1SQBIg66WASVbaayos=;
+        fh=kiQf/lMPJz39eVL1ueSH8NBQcFmvfVWvrsb/9ERnB9M=;
+        b=jPxuyKZykSfdewiUMxcZ4vYZi1LVaquZhM4QkOgymNFJJ2D+4PKPwIog5fgDaP0f8K
+         wyCttnjNyf1TcDswDrM0Pu8+i/PULz3VK5vcipGTyEnfEiUyNNu1FuuCrk6eX/W/YmtU
+         GWZRZgTE2xOiVpc27qG12eZ+wwyBWUzziDNqlSo8KlaMN2RnrBokJXKuU55pGBpZLzrn
+         sFuasz143G2yl9mBkUJcbDXIfxiSN8m61Ih9Q6AJgTfLFq85oD73auQaJ2XJLLj4Drrb
+         ACBJlB0n+jbQZMgHgY9iZGjVh7D0iALnrN/tYytkhNfwkTdPSrtSfJx1BcgBXIljVTnN
+         nn/g==
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@host.com header.s=20230601 header.b=ZjaXL49y;
+       spf=pass (google.com: domain of sender@host.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=sender@host.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=host.com
+Return-Path: <sender@host.com>
+Received: from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])
+        by mx.google.com with SMTPS id k130-20020a636f88000000b00578fa33f8a9sor361417pgc.5.2023.10.05.02.34.45
+        for <sender@example.com>
+        (Google Transport Security);
+        Thu, 05 Oct 2023 02:34:45 -0700 (PDT)
+Received-SPF: pass (google.com: domain of sender@host.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@host.com header.s=20230601 header.b=ZjaXL49y;
+       spf=pass (google.com: domain of sender@host.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=sender@host.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=host.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=host.com; s=20230601; t=1696498485; x=1697103285; darn=example.com;
+        h=to:subject:message-id:date:from:mime-version:from:to:cc:subject
+         :date:message-id:reply-to;
+        bh=tqQN1YPC3gvnCaDZWuxHofXKa1SQBIg66WASVbaayos=;
+        b=ZjaXL49yznEsdFMdynXsyObD1eST2EuIlF0G1v4NVWKRRlRGu9Bxx1EqWXyxqPH/Pn
+         7D+2Q4dskS34nAkktmxgcTHpJumTXoBsmVhi3KLyDIFWrnbYdF4aY/mQL9wF7Md3EEml
+         jpbL2hO2DGv7wldAHMPyFlgW+2+o15PInOnjM/2N27VPwClzVZiFUSd5l7ai20ax31ym
+         eBMuuQxrCoWJCkrJVkwL9/iMD5BNGoNLvDyx1U/SOxyE2JKmKs2oyKjkelmoOB1Y6veh
+         3ri8M8U1GxuRdwYQN9UXCQmm+ZocGQLIKs01z8mM4cLG9vrX+faVxilsQANTpjpP2nuB
+         1gDQ==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20230601; t=1696498485; x=1697103285;
+        h=to:subject:message-id:date:from:mime-version:x-gm-message-state
+         :from:to:cc:subject:date:message-id:reply-to;
+        bh=tqQN1YPC3gvnCaDZWuxHofXKa1SQBIg66WASVbaayos=;
+        b=DiV0Pvgiqw+WwdE24VHhynIBrSNDL51c5Kmtl1SZob3ioRNiUYRUHsWVCmBAkNPSwW
+         5ehch2LuCdDYqGBb8dAIxwgmreovzS+l68+3ZKAWWG4oUoXF23D221Bq5cF9DQrA/UOl
+         wJnu16TLB5uvfu8TiYUeeley8sls/mgpgR31tR0/lzdE1y188KWthX7VaMvB8a+YlVxf
+         WF9E4khPquSKKfuBQVqmwqF7b9R3rbC/DQrXjWPNr6d0Ig4CMm/FFysUntx4w/+FF46q
+         UgQxE6d1WKy2vBK3lAntw6YMvBvuiX0F0oCZvKt4+AziOVSUxNKfwcgqdlUR5EjArXsr
+         AmNw==
+X-Gm-Message-State: AOJu0YwDzcR7rUCMBjdOJXMTrfD0j3zUMBBn5S+u9KrQSA1ZBaw+UIE4
+	tU9nVVwES6LbOS55QxFTz7w200yPwOHfhwEM/ITjd92Ud3A=
+X-Google-Smtp-Source: AGHT+IEtIH2WJiFRShEHVIKadXLirwaHGqx831hKSH66pfulldR4eCSJqPnGY/JQ3Ed9aELMcfRyw7LYiy4iq8jO6Fk=
+X-Received: by 2002:a17:90a:ee86:b0:277:522d:11e5 with SMTP id
+ i6-20020a17090aee8600b00277522d11e5mr4326354pjz.2.1696498484558; Thu, 05 Oct
+ 2023 02:34:44 -0700 (PDT)
+MIME-Version: 1.0
+From: sender <sender@host.com>
+Date: Thu, 5 Oct 2023 15:04:33 +0530
+Message-ID: <CAJf6b1E9aDDBYusB3HeFui8PrarV8xGnEbZTfwd+Ok4_xj6nXA@mail.host.com>
+Subject: Sample email
+To: sender@example.com
+Content-Type: multipart/alternative; boundary="00000000000088c19e0606f4d5d4"
+
+--00000000000088c19e0606f4d5d4
+Content-Type: text/plain; charset="UTF-8"
+
+Hello,
+
+The sun hung low in the sky, casting long shadows across the tranquil
+meadow. Birds chirped merrily
+in the distance, their songs harmonizing with the gentle rustling of leaves
+in the soft breeze.
+It was a perfect day for a picnic, and Sarah had packed a delicious spread
+of sandwiches, fruit,
+and freshly baked cookies.
+
+As she laid out the checkered blanket, Sarah couldn't help but smile. The
+meadow was her
+favorite spot in the world, a place where she felt completely at peace. She
+had spent
+countless hours here, reading books, sketching the landscape, and simply
+enjoying the
+beauty of nature.
+
+Sarah's dog, Max, bounded around her, his tail wagging excitedly. He knew
+that a picnic meant
+treats and a chance to chase after the occasional butterfly that fluttered
+by. Sarah laughed
+as Max made a playful leap, narrowly missing a particularly colorful
+butterfly.
+
+Regards,
+Sender
+
+--00000000000088c19e0606f4d5d4
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr">Hello,<br><br>The sun hung low in the sky, casting long sh=
+adows across the tranquil meadow. Birds chirped merrily <br>in the distance=
+, their songs harmonizing with the gentle rustling of leaves in the soft br=
+eeze. <br>It was a perfect day for a picnic, and Sarah had packed a delicio=
+us spread of sandwiches, fruit,<br>and freshly baked cookies.<br><br>As she=
+ laid out the checkered blanket, Sarah couldn&#39;t help but smile. The mea=
+dow was her <br>favorite spot in the world, a place where she felt complete=
+ly at peace. She had spent <br>countless hours here, reading books, sketchi=
+ng the landscape, and simply enjoying the <br>beauty of nature.<br><br>Sara=
+h&#39;s dog, Max, bounded around her, his tail wagging excitedly. He knew t=
+hat a picnic meant <br>treats and a chance to chase after the occasional bu=
+tterfly that fluttered by. Sarah laughed <br>as Max made a playful leap, na=
+rrowly missing a particularly colorful butterfly.<br><br>Regards,<br>Sender=
+<br></div>
+
+--00000000000088c19e0606f4d5d4--

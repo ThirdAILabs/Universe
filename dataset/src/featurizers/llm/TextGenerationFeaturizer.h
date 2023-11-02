@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Featurizer.h>
 #include <dataset/src/featurizers/llm/TextContextFeaturizer.h>
@@ -94,6 +95,11 @@ class TextGenerationFeaturizer final : public Featurizer {
       const std::vector<uint32_t>& prompt,
       const std::vector<uint32_t>& context) const;
 
+  bolt::TensorList featurizeInputBatch(
+      const std::vector<uint32_t>& prompt,
+      const std::vector<std::vector<uint32_t>>& tokens,
+      const std::vector<uint32_t>& dims) const;
+
   void save(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;
@@ -111,7 +117,8 @@ class TextGenerationFeaturizer final : public Featurizer {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Featurizer>(this), _context_featurizer);
+    archive(cereal::base_class<Featurizer>(this), _context_featurizer,
+            _featurize_in_chunks);
   }
 
   /**

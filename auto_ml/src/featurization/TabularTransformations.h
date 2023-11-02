@@ -11,10 +11,9 @@ namespace thirdai::automl {
 // with thirdai::data.
 
 std::pair<thirdai::data::TransformationPtr, thirdai::data::OutputColumnsList>
-inputTransformations(const data::ColumnDataTypes& data_types,
+inputTransformations(const ColumnDataTypes& data_types,
                      const std::string& label_column,
-                     const data::TemporalRelationships& temporal_relationships,
-                     const data::TabularOptions& options,
-                     bool should_update_history);
+                     const TemporalRelationships& temporal_relationships,
+                     const TabularOptions& options, bool should_update_history);
 
 }  // namespace thirdai::automl

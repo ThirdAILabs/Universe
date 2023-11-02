@@ -35,6 +35,13 @@ def prepare_documents_test():
         def name(self) -> str:
             return self._identifier
 
+        @property
+        def matched_constraints(self):
+            return {}
+
+        def all_entity_ids(self):
+            return list(range(self.size))
+
         # Expected strings have commas (delimiter) to test that the data source
         # converts it to proper CSV strings.
         def expected_strong_text_for_id(doc_id: str, element_id: int):
@@ -285,8 +292,8 @@ def test_document_manager_sources(prepare_documents_test):
     doc_manager.add([first_doc, second_doc])
     assert first_doc.hash in doc_manager.sources().keys()
     assert second_doc.hash in doc_manager.sources().keys()
-    assert first_doc.name in doc_manager.sources().values()
-    assert second_doc.name in doc_manager.sources().values()
+    assert first_doc.name in [doc.name for doc in doc_manager.sources().values()]
+    assert second_doc.name in [doc.name for doc in doc_manager.sources().values()]
 
 
 @pytest.mark.unit

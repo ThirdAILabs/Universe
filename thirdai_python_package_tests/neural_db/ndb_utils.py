@@ -11,7 +11,7 @@ def create_simple_dataset():
     with open(filename, "w") as file:
         file.writelines(
             [
-                "text,id\n",
+                "text,label\n",
                 "apples are green,0\n",
                 "spinach is green,1\n",
                 "bananas are yellow,2\n",
@@ -32,10 +32,10 @@ def train_simple_neural_db(create_simple_dataset):
 
     doc = ndb.CSV(
         filename,
-        id_column="id",
+        id_column="label",
         strong_columns=["text"],
         weak_columns=["text"],
-        reference_columns=["id", "text"],
+        reference_columns=["label", "text"],
     )
 
     db.insert(sources=[doc], train=True)
@@ -43,13 +43,58 @@ def train_simple_neural_db(create_simple_dataset):
     return db
 
 
-def all_docs():
-    BASE_DIR = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "document_test_data"
-    )
-    CSV_FILE = os.path.join(BASE_DIR, "lorem_ipsum.csv")
-    PDF_FILE = os.path.join(BASE_DIR, "mutual_nda.pdf")
-    DOCX_FILE = os.path.join(BASE_DIR, "four_english_words.docx")
+BASE_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "document_test_data"
+)
+CSV_FILE = os.path.join(BASE_DIR, "lorem_ipsum.csv")
+PDF_FILE = os.path.join(BASE_DIR, "mutual_nda.pdf")
+DOCX_FILE = os.path.join(BASE_DIR, "four_english_words.docx")
+PPTX_FILE = os.path.join(BASE_DIR, "quantum_mechanics.pptx")
+TXT_FILE = os.path.join(BASE_DIR, "nature.txt")
+EML_FILE = os.path.join(BASE_DIR, "Message.eml")
+
+CSV_EXPLICIT_META = "csv-explicit"
+PDF_META = "pdf"
+DOCX_META = "docx"
+URL_NO_RESPONSE_META = "url-no-response"
+PPTX_META = "pptx"
+TXT_META = "txt"
+EML_META = "eml"
+SENTENCE_PDF_META = "sentence-pdf"
+SENTENCE_DOCX_META = "sentence-docx"
+
+
+def meta(file_meta):
+    return {"meta": file_meta}
+
+
+# This is a list of getter functions that return doc objects so each test can
+# use fresh doc object instances.
+all_doc_getters = [
+    lambda: ndb.CSV(
+        CSV_FILE,
+        id_column="category",
+        strong_columns=["text"],
+        weak_columns=["text"],
+        reference_columns=["text"],
+    ),
+    lambda: ndb.CSV(CSV_FILE),
+    lambda: ndb.PDF(PDF_FILE),
+    lambda: ndb.DOCX(DOCX_FILE),
+    lambda: ndb.URL("https://en.wikipedia.org/wiki/Rice_University"),
+    lambda: ndb.URL(
+        "https://en.wikipedia.org/wiki/Rice_University",
+        requests.get("https://en.wikipedia.org/wiki/Rice_University"),
+    ),
+    lambda: ndb.Unstructured(PPTX_FILE),
+    lambda: ndb.Unstructured(TXT_FILE),
+    lambda: ndb.Unstructured(EML_FILE),
+    lambda: ndb.SentenceLevelPDF(PDF_FILE),
+    lambda: ndb.SentenceLevelDOCX(DOCX_FILE),
+]
+
+
+def docs_with_meta():
     return [
         ndb.CSV(
             CSV_FILE,
@@ -57,15 +102,30 @@ def all_docs():
             strong_columns=["text"],
             weak_columns=["text"],
             reference_columns=["text"],
+            metadata=meta(CSV_EXPLICIT_META),
         ),
-        ndb.CSV(CSV_FILE),
-        ndb.PDF(PDF_FILE),
-        ndb.DOCX(DOCX_FILE),
-        ndb.URL("https://en.wikipedia.org/wiki/Rice_University"),
+        ndb.PDF(PDF_FILE, metadata=meta(PDF_META)),
+        ndb.DOCX(DOCX_FILE, metadata=meta(DOCX_META)),
         ndb.URL(
             "https://en.wikipedia.org/wiki/Rice_University",
-            requests.get("https://en.wikipedia.org/wiki/Rice_University"),
+            metadata=meta(URL_NO_RESPONSE_META),
         ),
-        ndb.SentenceLevelPDF(PDF_FILE),
-        ndb.SentenceLevelDOCX(DOCX_FILE),
+        ndb.Unstructured(PPTX_FILE, metadata=meta(PPTX_META)),
+        ndb.Unstructured(TXT_FILE, metadata=meta(TXT_META)),
+        ndb.Unstructured(EML_FILE, metadata=meta(EML_META)),
+        ndb.SentenceLevelPDF(PDF_FILE, metadata=meta(SENTENCE_PDF_META)),
+        ndb.SentenceLevelDOCX(DOCX_FILE, metadata=meta(SENTENCE_DOCX_META)),
     ]
+
+
+metadata_constraints = [
+    CSV_EXPLICIT_META,
+    PDF_META,
+    DOCX_META,
+    URL_NO_RESPONSE_META,
+    PPTX_META,
+    TXT_META,
+    EML_META,
+    SENTENCE_PDF_META,
+    SENTENCE_DOCX_META,
+]

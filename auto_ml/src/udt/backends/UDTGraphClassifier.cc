@@ -11,17 +11,17 @@
 
 namespace thirdai::automl::udt {
 
-UDTGraphClassifier::UDTGraphClassifier(const data::ColumnDataTypes& data_types,
+UDTGraphClassifier::UDTGraphClassifier(const ColumnDataTypes& data_types,
                                        const std::string& target_col,
                                        uint32_t n_target_classes,
                                        bool integer_target,
-                                       const data::TabularOptions& options) {
+                                       const TabularOptions& options) {
   if (!integer_target) {
     throw exceptions::NotImplemented(
         "We do not yet support non integer classes on graphs.");
   }
 
-  _dataset_manager = std::make_shared<data::GraphDatasetManager>(
+  _dataset_manager = std::make_shared<GraphDatasetManager>(
       data_types, target_col, n_target_classes, options);
 
   // TODO(Any): Add customization/autotuning like in UDTClassifier

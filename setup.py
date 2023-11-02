@@ -162,6 +162,8 @@ neural_db_deps = [
     "nltk",
     "unidecode",
     "pydantic",
+    "unstructured[all-docs]",
+    "sortedcontainers",
 ]
 
 # The information here can also be placed in setup.cfg - better separation of
@@ -204,7 +206,7 @@ setup(
             "moto[server]",
             "mlflow",
             "protobuf",
-            "datasets==2.13.1",
+            "datasets",
             "torch",
             "toml",
             "psutil",
@@ -233,9 +235,10 @@ setup(
             "s3fs",
             "gcsfs",
             "nltk",
-            "ray",
+            "ray[default]",
             "torch",
-        ],
+        ]
+        + neural_db_deps,
         # See https://github.com/readthedocs/sphinx_rtd_theme/issues/1343 for why we restrict the sphinx version
         "docs": ["sphinx!=5.2.0.post0", "sphinx_rtd_theme"],
     },

@@ -107,6 +107,7 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<mach::MachIndex, mach::MachIndexPtr>(  // NOLINT
       dataset_submodule, "MachIndex")
+#if THIRDAI_EXPOSE_ALL
       .def(py::init<std::unordered_map<uint32_t, std::vector<uint32_t>>,
                     uint32_t, uint32_t>(),
            py::arg("entity_to_hashes"), py::arg("output_range"),
@@ -118,6 +119,7 @@ void createDatasetSubmodule(py::module_& module) {
       .def("get_entity_hashes", &mach::MachIndex::getHashes, py::arg("entity"))
       .def("get_hash_to_entities", &mach::MachIndex::getEntities,
            py::arg("hash"))
+#endif
       .def("num_hashes", &mach::MachIndex::numHashes)
       .def("output_range", &mach::MachIndex::numBuckets)
       .def("save", &mach::MachIndex::save, py::arg("filename"))

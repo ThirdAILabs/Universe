@@ -1,5 +1,6 @@
 try:
     from . import parsing_utils
+    from .constraint_matcher import AnyOf, EqualTo, GreaterThan, InRange, LessThan
     from .documents import (
         CSV,
         DOCX,
@@ -9,6 +10,7 @@ try:
         Reference,
         SentenceLevelDOCX,
         SentenceLevelPDF,
+        Unstructured,
     )
     from .model_bazaar import Bazaar
     from .neural_db import CancelState, NeuralDB, Strength, Sup

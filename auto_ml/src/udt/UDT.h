@@ -13,6 +13,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace thirdai::automl::udt {
 
@@ -29,9 +30,8 @@ namespace thirdai::automl::udt {
  */
 class UDT {
  public:
-  UDT(data::ColumnDataTypes data_types,
-      const data::UserProvidedTemporalRelationships&
-          temporal_tracking_relationships,
+  UDT(ColumnDataTypes data_types,
+      const UserProvidedTemporalRelationships& temporal_tracking_relationships,
       const std::string& target_col, std::optional<uint32_t> n_target_classes,
       bool integer_target, std::string time_granularity, uint32_t lookahead,
       char delimiter, const std::optional<std::string>& model_config,
@@ -39,7 +39,8 @@ class UDT {
 
   UDT(std::optional<std::string> incorrect_column_name,
       std::string correct_column_name, const std::string& dataset_size,
-      char delimiter, const std::optional<std::string>& model_config,
+      bool use_spell_checker, char delimiter,
+      const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
   UDT(const std::string& file_format, uint32_t n_target_classes,
@@ -89,6 +90,14 @@ class UDT {
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k);
+
+  /**
+   * Performs inference on a batch of samples in parallel and returns the scores
+   * for each of the provided output classes.
+   */
+  py::object scoreBatch(const MapInputBatch& samples,
+                        const std::vector<std::vector<Label>>& classes,
+                        std::optional<uint32_t> top_k);
 
   py::object outputCorrectness(const MapInputBatch& sample,
                                const std::vector<uint32_t>& labels,
@@ -217,7 +226,7 @@ class UDT {
 
   std::vector<uint32_t> modelDims() const;
 
-  data::ColumnDataTypes dataTypes() const { return _backend->dataTypes(); }
+  ColumnDataTypes dataTypes() const { return _backend->dataTypes(); }
 
   /**
    * Used in UDTMachClassifier to introduce new documents to the model from a
@@ -429,11 +438,7 @@ class UDT {
   /**
    * Gets the internal index for UDTMachClassifier.
    */
-  dataset::mach::MachIndexPtr getIndex() {
-    licensing::entitlements().verifyFullAccess();
-
-    return _backend->getIndex();
-  }
+  dataset::mach::MachIndexPtr getIndex() { return _backend->getIndex(); }
 
   /**
    * Sets the internal index for UDTMachClassifier.
@@ -456,7 +461,7 @@ class UDT {
    * backend implements this method then UDT instances that use it will support
    * methods relating to temporal tracking and metadata.
    */
-  data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
+  TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return _backend->tabularDatasetFactory();
   }
 
@@ -481,13 +486,12 @@ class UDT {
  private:
   UDT() {}
 
-  static bool hasGraphInputs(const data::ColumnDataTypes& data_types);
+  static bool hasGraphInputs(const ColumnDataTypes& data_types);
 
   static void throwUnsupportedUDTConfigurationError(
-      const data::CategoricalDataTypePtr& target_as_categorical,
-      const data::NumericalDataTypePtr& target_as_numerical,
-      const data::SequenceDataTypePtr& target_as_sequence,
-      bool has_graph_inputs);
+      const CategoricalDataTypePtr& target_as_categorical,
+      const NumericalDataTypePtr& target_as_numerical,
+      const SequenceDataTypePtr& target_as_sequence, bool has_graph_inputs);
 
   friend class cereal::access;
 
