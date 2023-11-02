@@ -36,11 +36,11 @@ metrics::History SeismicClassifier::trainOnPatches(
       batch_size, callbacks, log_interval, comm);
 }
 
-NumpyArray SeismicClassifier::predictionsForPatches(
-    const NumpyArray& subcubes) {
+NumpyArray SeismicClassifier::predictionsForPatches(const NumpyArray& subcubes,
+                                                    bool sparse_inference) {
   auto batch = convertToBatches(subcubes, subcubes.shape(0)).at(0);
 
-  auto output = _model->forward(batch).at(0);
+  auto output = _model->forward(batch, sparse_inference).at(0);
 
   return python::tensorToNumpy(output, /* single_row_to_vector= */ false);
 }

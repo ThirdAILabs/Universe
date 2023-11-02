@@ -16,7 +16,8 @@ class SeismicClassifier final : public SeismicBase {
       const std::vector<callbacks::CallbackPtr>& callbacks,
       std::optional<uint32_t> log_interval, const DistributedCommPtr& comm);
 
-  NumpyArray predictionsForPatches(const NumpyArray& subcubes);
+  NumpyArray predictionsForPatches(const NumpyArray& subcubes,
+                                   bool sparse_inference);
 
   void save(const std::string& filename) const final;
 

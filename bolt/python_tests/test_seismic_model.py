@@ -45,7 +45,7 @@ def test_seismic_embedding_model(subcube_dataset, max_pool):
         np.random.rand(n_cubes_to_embed, *subcube_shape).astype(np.float32) / 10
     )
 
-    embs = model.embeddings(subcubes_to_embed)
+    embs = model.embeddings(subcubes_to_embed, sparse_inference=True)
 
     assert embs.shape == (n_cubes_to_embed, emb_dim)
 
@@ -131,7 +131,7 @@ def test_seismic_classifier(classification_dataset):
         classifier.embeddings(subcubes_to_embed),
     )
 
-    predictions = classifier.predict(subcubes_to_embed)
+    predictions = classifier.predict(subcubes_to_embed, sparse_inference=True)
     assert predictions.shape == (n_cubes_to_embed, n_classes)
 
 
