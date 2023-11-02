@@ -801,7 +801,7 @@ class DocumentConnector(Document):
     @property
     def meta_table(self) -> Optional[pd.DataFrame]:
         """
-        It stores the mapping from id_in_document to meta_data of the document. It would be used to fetch the document result if the connection is lost.
+        It stores the mapping from id_in_document to meta_data of the document. It could be used to fetch the minimal document result if the connection is lost.
         """
         raise NotImplementedError()
 
@@ -878,7 +878,7 @@ class DocumentConnector(Document):
         raise NotImplementedError()
 
     def __setstate__(self):
-        # Document Connectors are expected to re-attach their connector(s) objects for passing the test cases
+        # Document Connectors are expected to reinitialize their exact same connector(s) objects for passing the test cases
         raise NotImplementedError()
 
 
@@ -901,7 +901,7 @@ class SQLDatabase(DocumentConnector):
         weak_columns: Optional[List[str]] = None,
         reference_columns: Optional[List[str]] = None,
         chunk_size: int = 10_000,
-        save_extra_info: bool = True,
+        save_extra_info: bool = False,
         metadata: dict = {},
         save_credentials: bool = False,
     ) -> None:
@@ -1131,7 +1131,7 @@ class SharePoint(DocumentConnector):
         library_path: str = "Shared Documents",
         chunk_size: int = 10485760,
         credentials: Optional[Dict[str, str]] = None,
-        save_extra_info: bool = True,
+        save_extra_info: bool = False,
         metadata: dict = {},
     ) -> None:
         self._connector = SharePointConnector(
@@ -1237,8 +1237,6 @@ class SharePoint(DocumentConnector):
                 "page",
             ]
         )
-        if not hasattr(self, "_connector"):
-            raise AttributeError("Connector not Found")
 
         for file_dict in self._connector.chunk_iterator():
             chunk_df.drop(chunk_df.index, inplace=True)

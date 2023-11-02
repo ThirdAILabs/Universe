@@ -7,7 +7,10 @@ from office365.sharepoint.client_context import ClientContext
 from sqlalchemy import create_engine
 from thirdai import neural_db as ndb
 from thirdai.neural_db import documents
+from document_test_data.connector_docs.credentials.creds import get_creds
 
+
+creds = get_creds()
 
 class Equivalent_doc:
     def __init__(self, connector_doc, local_doc) -> None:
@@ -67,8 +70,6 @@ DB_URL = "sqlite:///" + os.path.join(BASE_DIR, "connector_docs/SQL/Amazon_polari
 ENGINE = create_engine(DB_URL)
 TABLE_NAME = "Amzn"
 
-SITE_URL = ""
-
 CSV_EXPLICIT_META = "csv-explicit"
 PDF_META = "pdf"
 DOCX_META = "docx"
@@ -87,11 +88,11 @@ def meta(file_meta):
 
 def build_local_sharepoint_doc():
     from thirdai.neural_db.utils import DIRECTORY_CONNECTOR_SUPPORTED_EXT
-
-    files = os.listdir(BASE_DIR)
+    dir = os.path.join(BASE_DIR, "connector_docs",  "SharePoint")
+    files = os.listdir(dir)
     doc_files = []
     for file_name in files:
-        file_path = os.path.join(BASE_DIR, file_name)
+        file_path = os.path.join(dir, file_name)
         if (
             os.path.isfile(file_path)
             and file_name.split(sep=".")[-1] in DIRECTORY_CONNECTOR_SUPPORTED_EXT
@@ -149,6 +150,7 @@ def build_local_sharepoint_doc():
 
 # This is a list of getter functions that return doc objects so each test can
 # use fresh doc object instances.
+sharepoint_creds = creds['sharepoint']
 all_connector_doc_getters = [
     Equivalent_doc(
         connector_doc=lambda: ndb.SQLDatabase(
@@ -169,14 +171,14 @@ all_connector_doc_getters = [
             reference_columns=["content"],
         ),
     ),
-    # Equivalent_doc(
-    #     connector_doc = lambda: ndb.SharePoint(
-    #         ctx = ClientContext(
-    #             SITE_URL
-    #         )
-    #     ),
-    #     local_doc=build_local_sharepoint_doc
-    # )
+    Equivalent_doc(
+        connector_doc = lambda: ndb.SharePoint(
+            ctx = ClientContext(
+                sharepoint_creds['site_url']
+            ).with_user_credentials(username = sharepoint_creds['username'], password=sharepoint_creds['password'])
+        ),
+        local_doc=build_local_sharepoint_doc
+    )
 ]
 
 all_doc_getters = [
