@@ -162,7 +162,7 @@ data::TransformationPtr Featurizer::coldStartTransform(
       /* output_column_name= */ _text_dataset->textColumn());
 }
 
-auto asTransformationList(const data::TransformationPtr& t) {
+auto asPipeline(const data::TransformationPtr& t) {
   return std::dynamic_pointer_cast<data::Pipeline>(t);
 }
 
@@ -180,8 +180,8 @@ bool hasTemporalTransformation(const data::TransformationPtr& t) {
     if (asTemporal(next)) {
       return true;
     }
-    if (auto list = asTransformationList(next)) {
-      for (const auto& transform : list->transformations()) {
+    if (auto pipeline = asPipeline(next)) {
+      for (const auto& transform : pipeline->transformations()) {
         queue.push(transform);
       }
     }
