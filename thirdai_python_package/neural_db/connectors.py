@@ -100,6 +100,8 @@ class SharePointConnector(Connector):
 
             if not len(self._files) > 0:
                 raise FileNotFoundError("No files of supported extension is present")
+
+            # Requires to maintain a fixed
             self._files = sorted(self._files, key=lambda file: file.properties["Name"])
         except Exception as e:
             print("Unable to retrieve files from SharePoint, Error: " + str(e))

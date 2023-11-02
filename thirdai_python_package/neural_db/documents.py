@@ -836,18 +836,14 @@ class DocumentConnector(Document):
     def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
         try:
             row = chunk.iloc[id_in_chunk]
-            return " ".join(
-                [str(row[col]).replace(",", "") for col in self.get_strong_columns()]
-            )
+            return " ".join([str(row[col]) for col in self.get_strong_columns()])
         except Exception as e:
             return ""
 
     def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
         try:
             row = chunk.iloc[id_in_chunk]
-            return " ".join(
-                [str(row[col]).replace(",", "") for col in self.get_weak_columns()]
-            )
+            return " ".join([str(row[col]) for col in self.get_weak_columns()])
         except Exception as e:
             return ""
 
@@ -921,6 +917,8 @@ class SQLDatabase(DocumentConnector):
             chunk_size=chunk_size,
         )
         self.total_rows = self._connector.total_rows()
+        if not self.total_rows > 0:
+            raise FileNotFoundError("Empty table")
         if save_credentials:
             self._engine_url = engine.url
 
@@ -963,6 +961,24 @@ class SQLDatabase(DocumentConnector):
     @property
     def meta_table(self) -> Optional[pd.DataFrame]:
         return None
+
+    def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
+        try:
+            row = chunk.iloc[id_in_chunk]
+            return " ".join(
+                [str(row[col]).replace(",", "") for col in self.get_strong_columns()]
+            )
+        except Exception as e:
+            return ""
+
+    def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
+        try:
+            row = chunk.iloc[id_in_chunk]
+            return " ".join(
+                [str(row[col]).replace(",", "") for col in self.get_weak_columns()]
+            )
+        except Exception as e:
+            return ""
 
     def chunk_iterator(self) -> pd.DataFrame:
         return self._connector.chunk_iterator()
@@ -1139,6 +1155,12 @@ class SharePoint(DocumentConnector):
         save_extra_info: bool = False,
         metadata: dict = {},
     ) -> None:
+        # Executing a dummy query to check for the authentication for the ctx object
+        try:
+            SharePoint.dummy_query(ctx=ctx)
+        except Exception as e:
+            raise Exception("Invalid ClientContext Object. Error: " + str(e))
+
         self._connector = SharePointConnector(
             ctx=ctx, library_path=library_path, chunk_size=chunk_size
         )
@@ -1176,10 +1198,8 @@ class SharePoint(DocumentConnector):
 
     def build_meta_table(self):
         num_files = self._connector.num_files()
-        if not num_files:
-            raise FileNotFoundError("No supported documents found.")
-        else:
-            print(f"Found {num_files} supported files")
+
+        print(f"Found {num_files} supported files")
         self._meta_table = pd.DataFrame(
             columns=[
                 "internal_doc_id",
@@ -1265,7 +1285,7 @@ class SharePoint(DocumentConnector):
 
                 df = doc.df
                 temp_df = pd.DataFrame(
-                    columns=chunk_df.columns.tolist(), index=range(len(df))
+                    columns=chunk_df.columns.tolist(), index=range(doc.size)
                 )
                 strong_text, weak_text, internal_doc_id, page = zip(
                     *[

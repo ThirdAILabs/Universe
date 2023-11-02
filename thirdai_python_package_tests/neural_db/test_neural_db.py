@@ -53,12 +53,12 @@ ARBITRARY_QUERY = "This is an arbitrary search query"
 
 def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document]):
     db.insert(docs, train=False)
-    assert len(db.sources()) == 10
+    assert len(db.sources()) == 11
 
     initial_scores = [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)]
 
     db.insert(docs, train=True)
-    assert len(db.sources()) == 10
+    assert len(db.sources()) == 11
 
     assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
 
@@ -68,6 +68,8 @@ def search_works(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
     correct_result = 0
     correct_source = 0
     for doc in docs:
+        if isinstance(doc, ndb.SharePoint):
+            continue
         source = doc.reference(0).source
         for elem_id in range(doc.size):
             query = doc.reference(elem_id).text
