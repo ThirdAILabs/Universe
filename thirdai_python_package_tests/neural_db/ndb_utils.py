@@ -191,7 +191,6 @@ all_connector_doc_getters = [
                 password=sharepoint_creds["password"],
             ),
             library_path=sharepoint_creds["library_path"],
-            chunk_size=100000000,
             credentials=sharepoint_creds,
         ),
         local_doc=build_local_sharepoint_doc,
