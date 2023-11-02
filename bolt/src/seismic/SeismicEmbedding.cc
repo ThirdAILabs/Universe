@@ -81,7 +81,7 @@ metrics::History SeismicEmbedding::trainOnPatches(
                                      batch_size, callbacks, log_interval, comm);
 }
 
-NumpyArray SeismicEmbedding::forward(const NumpyArray& subcubes) {
+py::object SeismicEmbedding::forward(const NumpyArray& subcubes) {
   switchToFinetuning();
 
   auto batch = convertToBatches(subcubes, subcubes.shape(0)).at(0);

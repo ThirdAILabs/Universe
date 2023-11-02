@@ -60,7 +60,7 @@ metrics::History SeismicBase::trainOnPatches(
   return metrics;
 }
 
-NumpyArray SeismicBase::embeddingsForPatches(const NumpyArray& subcubes,
+py::object SeismicBase::embeddingsForPatches(const NumpyArray& subcubes,
                                              bool sparse_inference) {
   auto batch = convertToBatches(subcubes, subcubes.shape(0)).at(0);
 

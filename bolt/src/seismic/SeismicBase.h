@@ -31,7 +31,7 @@ class SeismicBase {
       size_t batch_size, const std::vector<callbacks::CallbackPtr>& callbacks,
       std::optional<uint32_t> log_interval, const DistributedCommPtr& comm);
 
-  NumpyArray embeddingsForPatches(const NumpyArray& subcubes,
+  py::object embeddingsForPatches(const NumpyArray& subcubes,
                                   bool sparse_inference);
 
   const Shape& subcubeShape() const { return _input_shape_data.subcubeShape(); }
