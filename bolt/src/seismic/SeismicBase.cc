@@ -104,6 +104,19 @@ Dataset SeismicBase::convertToBatches(const NumpyArray& array,
   return batches;
 }
 
+void SeismicBase::setModel(ModelPtr model) {
+  _model = std::move(model);
+  auto computations = _model->computationOrderWithoutInputs();
+  auto new_emb = computations.at(computations.size() - 2);
+  if (_emb && _emb->dim() != new_emb->dim()) {
+    throw std::runtime_error("Cannot set a model with embedding dimension " +
+                             std::to_string(new_emb->dim()) +
+                             " in place of a model with embedding dimension " +
+                             std::to_string(_emb->dim()));
+  }
+  _emb = new_emb;
+}
+
 template void SeismicBase::serialize(cereal::BinaryInputArchive&, uint32_t);
 template void SeismicBase::serialize(cereal::BinaryOutputArchive&, uint32_t);
 
