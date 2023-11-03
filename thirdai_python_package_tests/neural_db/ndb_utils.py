@@ -3,8 +3,9 @@ import os
 import pandas as pd
 import pytest
 import requests
-from document_test_data.connector_docs.connectors_object import base_connectors
 from thirdai import neural_db as ndb
+
+from .document_test_data.connector_docs.connectors_object import base_connectors
 
 
 class Equivalent_doc:
