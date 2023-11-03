@@ -56,7 +56,7 @@ class MachIndex {
       uint32_t num_buckets_to_eval) const;
 
   std::vector<std::pair<uint32_t, double>> scoreEntities(
-      const BoltVector& output, const std::unordered_set<uint32_t>& entities,
+      const BoltVector& output, const std::vector<uint32_t>& entities,
       std::optional<uint32_t> top_k) const;
 
   void erase(uint32_t entity);
@@ -92,16 +92,14 @@ class MachIndex {
  private:
   void verifyHash(uint32_t hash) const;
 
-  std::unordered_set<uint32_t> entitiesInTopBuckets(
+  std::vector<uint32_t> entitiesInTopBuckets(
       const BoltVector& output, uint32_t num_buckets_to_eval) const;
 
   std::unordered_map<uint32_t, double> entityScoresSparse(
-      const BoltVector& output,
-      const std::unordered_set<uint32_t>& entities) const;
+      const BoltVector& output, const std::vector<uint32_t>& entities) const;
 
   std::unordered_map<uint32_t, double> entityScoresDense(
-      const BoltVector& output,
-      const std::unordered_set<uint32_t>& entities) const;
+      const BoltVector& output, const std::vector<uint32_t>& entities) const;
 
   std::unordered_map<uint32_t, std::vector<uint32_t>> _entity_to_hashes;
   std::vector<std::vector<uint32_t>> _buckets;

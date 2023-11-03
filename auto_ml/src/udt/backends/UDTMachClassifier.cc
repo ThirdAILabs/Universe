@@ -298,13 +298,13 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
 
 py::object UDTMachClassifier::scoreBatch(
     const MapInputBatch& samples,
-    const std::vector<std::vector<Label>>& classes,
+    const std::vector<std::vector<uint32_t>>& classes,
     std::optional<uint32_t> top_k) {
-  std::vector<std::unordered_set<uint32_t>> entities(classes.size());
+  std::vector<std::vector<uint32_t>> entities(classes.size());
   for (uint32_t row = 0; row < classes.size(); row++) {
     entities[row].reserve(classes[row].size());
     for (const auto& entity : classes[row]) {
-      entities[row].insert(expectInteger(entity));
+      entities[row].push_back(expectInteger(entity));
     }
   }
 
