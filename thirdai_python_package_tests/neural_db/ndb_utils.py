@@ -1,6 +1,6 @@
 import os
 
-import document_test_data.connector_docs.connectors_object.base_connectors as base_connector
+from document_test_data.connector_docs.connectors_object import base_connectors
 import pandas as pd
 import pytest
 import requests
@@ -63,11 +63,11 @@ TXT_FILE = os.path.join(BASE_DIR, "nature.txt")
 EML_FILE = os.path.join(BASE_DIR, "Message.eml")
 
 # connection instances for connector document
-ENGINE = base_connector.get_sql_engine()
-TABLE_NAME = base_connector.get_sql_table()
+ENGINE = base_connectors.get_sql_engine()
+TABLE_NAME = base_connectors.get_sql_table()
 
-CLIENT_CONTEXT = base_connector.get_client_context()
-LIBRARY_PATH = base_connector.get_library_path()
+CLIENT_CONTEXT = base_connectors.get_client_context()
+LIBRARY_PATH = base_connectors.get_library_path()
 
 CSV_EXPLICIT_META = "csv-explicit"
 PDF_META = "pdf"
