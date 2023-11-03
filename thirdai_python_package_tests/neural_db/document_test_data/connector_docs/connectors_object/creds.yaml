@@ -1,6 +1,6 @@
 sqlite:
   table_name: "Amzn"
-sharepoint:
+sharePoint:
   username: "gautamsharma95.95@kgpian.iitkgp.ac.in"
   password: "PASSWORD3eye"
   site_url: "https://iitkgpacin.sharepoint.com/sites/TestSite2"

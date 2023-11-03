@@ -101,7 +101,7 @@ class SharePointConnector(Connector):
             if not len(self._files) > 0:
                 raise FileNotFoundError("No files of supported extension is present")
 
-            # Requires to maintain a fixed
+            # we need to maintain a fixed order of files because local_docs needs to be also equivalent as detailed in the test cases. For more info: ndb_utls.py::build_local_sharepoint_doc & test_connector_document_implementation.py
             self._files = sorted(self._files, key=lambda file: file.properties["Name"])
         except Exception as e:
             print("Unable to retrieve files from SharePoint, Error: " + str(e))

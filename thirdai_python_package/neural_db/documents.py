@@ -809,6 +809,9 @@ class DocumentConnector(Document):
     def meta_table_id_col(self) -> str:
         return "id_in_document"
 
+    def _get_connector_object_name(self):
+        raise NotImplementedError()
+
     def get_strong_columns(self):
         raise NotImplementedError()
 
@@ -871,11 +874,11 @@ class DocumentConnector(Document):
 
     def __getstate__(self):
         # Document Connectors are expected to remove their connector(s) object
-        raise NotImplementedError()
+        state = self.__dict__.copy()
 
-    def __setstate__(self):
-        # Document Connectors are expected to reinitialize their exact same connector(s) objects for passing the test cases
-        raise NotImplementedError()
+        del state[self._get_connector_object_name()]
+
+        return state
 
 
 class SQLDatabase(DocumentConnector):
@@ -899,7 +902,6 @@ class SQLDatabase(DocumentConnector):
         chunk_size: int = 10_000,
         save_extra_info: bool = False,
         metadata: dict = {},
-        save_credentials: bool = False,
     ) -> None:
         self.table_name = table_name
         self.id_col = id_col
@@ -914,16 +916,15 @@ class SQLDatabase(DocumentConnector):
             engine=engine,
             table_name=self.table_name,
             id_col=self.id_col,
-            chunk_size=chunk_size,
+            chunk_size=self.chunk_size,
         )
         self.total_rows = self._connector.total_rows()
         if not self.total_rows > 0:
             raise FileNotFoundError("Empty table")
-        if save_credentials:
-            self._engine_url = engine.url
 
         self.database_name = engine.url.database
-        self.engine_uq = str(engine.url) + f"/{self.table_name}"
+        self.url = str(engine.url)
+        self.engine_uq = self.url + f"/{self.table_name}"
         self._hash = hash_string(string=self.engine_uq)
 
         # Integrity checks
@@ -945,6 +946,33 @@ class SQLDatabase(DocumentConnector):
     def size(self) -> int:
         # It is verfied by the uniqueness assertion of the id column.
         return self.total_rows
+
+    def setup_connection(self, engine: sqlConn):
+        """
+        This is a helper function to re-establish the connection upon loading the saved ndb model containing this SQLDatabase document.
+        Args:
+            engine: SQLAlchemy Connection object
+                    NOTE: Provide the same connection object.
+        NOTE: Same table would be used to establish connection
+        """
+        try:
+            # The idea is to check for the connector object existence
+            print(
+                f"Connector object already exists with url: {self._connector.get_engine_url()}"
+            )
+        except AttributeError as e:
+            assert engine.url.database == self.database_name
+            assert str(engine.url) == self.url
+            self._connector = SQLConnector(
+                engine=engine,
+                table_name=self.table_name,
+                id_col=self.id_col,
+                columns=list(set(self.strong_columns + self.weak_columns)),
+                chunk_size=self.chunk_size,
+            )
+
+    def _get_connector_object_name(self):
+        return "_connector"
 
     def get_strong_columns(self):
         return self.strong_columns
@@ -1025,31 +1053,6 @@ class SQLDatabase(DocumentConnector):
         This method is used by DocumentManager while adding this document. Also it is being used in saving the model during pickling.
         """
         return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
-
-    def __getstate__(self):
-        state = self.__dict__.copy()
-
-        del state["_connector"]
-
-        return state
-
-    def __setstate__(self, state):
-        # Trying to connect to the database if we have credentials
-        if "_engine_url" in state.keys():
-            try:
-                state["_connector"] = SQLConnector(
-                    engine=create_engine(state["_engine_url"]),
-                    table_name=state["table_name"],
-                    id_col=state["id_col"],
-                    columns=list(set(state["strong_columns"] + state["weak_columns"])),
-                    chunk_size=state["chunk_size"],
-                )
-            except Exception as e:
-                print(
-                    f"Failed to establish a connection with the engine at URL: {str(state['_engine_url'])}. Only {state['id_col']} will be available."
-                )
-
-        self.__dict__.update(state)
 
     def assert_valid_id(self):
         all_cols = self._connector.cols_metadata()
@@ -1139,11 +1142,6 @@ class SharePoint(DocumentConnector):
         - ctx (ClientContext): A ClientContext object for SharePoint connection.
         - library_path (str): The server-relative directory path where documents are stored. Default: 'Shared Documents'
         - chunk_size (int): The maximum amount of data (in bytes) that can be fetched at a time. (This limit may not apply if there are no files within this range.) Default: 10MB
-        - credentials (Dict): If provided, trys to reconnect to the sharepoint's endpoint upon loading of the saved model.
-                              REMEMBER: provide the same credentials that was used to create the clientContext in the first place.
-                              SUPPORTED CREDENTIALS: (username, password)
-                                                            OR
-                                                    (client_id, client_secret)
     """
 
     def __init__(
@@ -1151,7 +1149,6 @@ class SharePoint(DocumentConnector):
         ctx: ClientContext,
         library_path: str = "Shared Documents",
         chunk_size: int = 10485760,
-        credentials: Optional[Dict[str, str]] = None,
         save_extra_info: bool = False,
         metadata: dict = {},
     ) -> None:
@@ -1166,7 +1163,6 @@ class SharePoint(DocumentConnector):
         )
         self.library_path = library_path
         self.chunk_size = chunk_size
-        self.credentials = credentials
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
 
@@ -1189,6 +1185,23 @@ class SharePoint(DocumentConnector):
     @property
     def hash(self) -> str:
         return self._hash
+
+    def setup_connection(self, ctx: ClientContext):
+        """
+        This is a helper function to re-establish the connection upon loading the saved ndb model containing this Sharepoint document.
+        Args:
+            engine: SQLAlchemy Connection object
+                    NOTE: Provide the same connection object.
+        NOTE: Same library path would be used
+        """
+        try:
+            # The idea is to check for the connector object existence
+            print(f"Connector object already exists with url: {self._connector.url}")
+        except AttributeError as e:
+            assert self.url == ctx.web.get().execute_query().url
+            self._connector = SharePointConnector(
+                ctx=ctx, library_path=self.library_path, chunk_size=self.chunk_size
+            )
 
     def get_strong_columns(self):
         return [self.strong_column]
@@ -1309,6 +1322,9 @@ class SharePoint(DocumentConnector):
             chunk_df = pd.concat(temp_dfs, ignore_index=True)
             yield chunk_df
 
+    def _get_connector_object_name(self):
+        return "_connector"
+
     @staticmethod
     def dummy_query(ctx: ClientContext):
         # Authenticatiion fails if this dummy query execution fails
@@ -1352,29 +1368,7 @@ class SharePoint(DocumentConnector):
 
         if ctx:
             return ctx
-        else:
-            print(
-                "Insufficient or incorrect credentials. Also please make sure to provide the credentials in the exact form of keys as mentioned in the help section"
-            )
-
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        del state["_connector"]
-
-        return state
-
-    def __setstate__(self, state):
-        creds = state["credentials"]
-        if creds is not None:
-            ctx = SharePoint.setup_clientContext(
-                base_url=state["url"], credentials=creds
-            )
-            state["_connector"] = SharePointConnector(
-                ctx=ctx,
-                library_path=state["library_path"],
-                chunk_size=state["chunk_size"],
-            )
-        self.__dict__.update(state)
+        raise AttributeError("Incorrect or insufficient credentials")
 
 
 class SentenceLevelExtracted(Extracted):

@@ -1,15 +1,11 @@
 import os
 
+import document_test_data.connector_docs.connectors_object.base_connectors as base_connector
 import pandas as pd
 import pytest
 import requests
-from document_test_data.connector_docs.credentials.creds import get_creds
-from office365.sharepoint.client_context import ClientContext
-from sqlalchemy import create_engine
 from thirdai import neural_db as ndb
 from thirdai.neural_db import documents
-
-creds = get_creds()
 
 
 class Equivalent_doc:
@@ -66,8 +62,12 @@ PPTX_FILE = os.path.join(BASE_DIR, "quantum_mechanics.pptx")
 TXT_FILE = os.path.join(BASE_DIR, "nature.txt")
 EML_FILE = os.path.join(BASE_DIR, "Message.eml")
 
-DB_URL = "sqlite:///" + os.path.join(BASE_DIR, "connector_docs/SQL/Amazon_polarity.db")
-ENGINE = create_engine(DB_URL)
+# connection instances for connector document
+ENGINE = base_connector.get_sql_engine()
+TABLE_NAME = base_connector.get_sql_table()
+
+CLIENT_CONTEXT = base_connector.get_client_context()
+LIBRARY_PATH = base_connector.get_library_path()
 
 CSV_EXPLICIT_META = "csv-explicit"
 PDF_META = "pdf"
@@ -160,21 +160,16 @@ def build_local_sharepoint_doc():
 # This is a list of getter functions that return connector_doc objects so each test can
 # use fresh doc object instances.
 
-# Passing or saving credentials also to check for the connection setup phase while loading the document
-sqlite_creds = creds["sqlite"]
-sharepoint_creds = creds["sharepoint"]
-
 all_connector_doc_getters = [
     Equivalent_doc(
         connector_doc=lambda: ndb.SQLDatabase(
             engine=ENGINE,
-            table_name=sqlite_creds["table_name"],
+            table_name=TABLE_NAME,
             id_col="id",
             strong_columns=["content"],
             weak_columns=["content"],
             reference_columns=["content"],
             chunk_size=3,
-            save_credentials=True,
         ),
         local_doc=lambda: ndb.CSV(
             path=os.path.join(BASE_DIR, "connector_docs", "SQL", "Amazon_polarity.csv"),
@@ -186,12 +181,7 @@ all_connector_doc_getters = [
     ),
     Equivalent_doc(
         connector_doc=lambda: ndb.SharePoint(
-            ctx=ClientContext(sharepoint_creds["site_url"]).with_user_credentials(
-                username=sharepoint_creds["username"],
-                password=sharepoint_creds["password"],
-            ),
-            library_path=sharepoint_creds["library_path"],
-            credentials=sharepoint_creds,
+            ctx=CLIENT_CONTEXT, library_path=LIBRARY_PATH
         ),
         local_doc=build_local_sharepoint_doc,
     ),
@@ -199,7 +189,7 @@ all_connector_doc_getters = [
 
 # This is a list of getter functions that return doc objects so each test can
 # use fresh doc object instances.
-all_doc_getters = [
+all_local_doc_getters = [
     lambda: ndb.CSV(
         CSV_FILE,
         id_column="category",
@@ -221,7 +211,10 @@ all_doc_getters = [
     lambda: ndb.SentenceLevelPDF(PDF_FILE),
     lambda: ndb.SentenceLevelDOCX(DOCX_FILE),
 ]
-all_doc_getters.extend([eq_doc.connector_doc for eq_doc in all_connector_doc_getters])
+
+all_doc_getters = all_local_doc_getters + [
+    eq_doc.connector_doc for eq_doc in all_connector_doc_getters
+]
 
 
 def docs_with_meta():
@@ -245,22 +238,17 @@ def docs_with_meta():
         ndb.Unstructured(EML_FILE, metadata=meta(EML_META)),
         ndb.SQLDatabase(
             engine=ENGINE,
-            table_name=sqlite_creds["table_name"],
+            table_name=TABLE_NAME,
             id_col="id",
             strong_columns=["content"],
             weak_columns=["content"],
             reference_columns=["content"],
             chunk_size=3,
             metadata=meta(SQL_META),
-            save_credentials=True,
         ),
         ndb.SharePoint(
-            ctx=ClientContext(sharepoint_creds["site_url"]).with_user_credentials(
-                username=sharepoint_creds["username"],
-                password=sharepoint_creds["password"],
-            ),
-            library_path=sharepoint_creds["library_path"],
-            credentials=sharepoint_creds,
+            ctx=CLIENT_CONTEXT,
+            library_path=LIBRARY_PATH,
             metadata=meta(SHAREPOINT_META),
         ),
         ndb.SentenceLevelPDF(PDF_FILE, metadata=meta(SENTENCE_PDF_META)),
