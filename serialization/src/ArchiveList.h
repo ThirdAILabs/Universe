@@ -2,6 +2,7 @@
 
 #include <serialization/src/Archive.h>
 #include <memory>
+#include <string>
 
 namespace thirdai::serialization {
 
@@ -25,8 +26,18 @@ class ArchiveList final : public Archive {
 
   auto end() const { return _list.end(); }
 
+  std::string type() const final { return "List"; }
+
  private:
   std::vector<ConstArchivePtr> _list;
+
+  friend class cereal::access;
+
+  template <class Ar>
+  void save(Ar& archive) const;
+
+  template <class Ar>
+  void load(Ar& archive);
 };
 
 }  // namespace thirdai::serialization

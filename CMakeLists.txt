@@ -430,6 +430,11 @@ set(THIRDAI_SOURCES
     data/src/Loader.cc
     data/src/ColumnMapIterator.cc
     data/src/rca/ExplanationMap.cc
+    serialization/src/Archive.cc
+    serialization/src/ArchiveMap.cc
+    serialization/src/ArchiveList.cc
+    serialization/src/ArchiveValue.cc
+    serialization/src/ParameterReference.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/featurization/DataTypes.cc

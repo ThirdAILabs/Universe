@@ -21,8 +21,7 @@ class ArchiveMap final : public Archive {
     if (contains(key)) {
       return _map.at(hash(key));
     }
-    throw std::invalid_argument("Archive contains no element for key '" + key +
-                                "'.");
+    throw std::invalid_argument("Map contains no value for key '" + key + "'.");
   }
 
   ConstArchivePtr& at(const std::string& key) { return _map[hash(key)]; }
@@ -33,6 +32,8 @@ class ArchiveMap final : public Archive {
 
   auto end() const { return _map.end(); }
 
+  std::string type() const final { return "Map"; }
+
  private:
   static uint64_t hash(const std::string& key) {
     // Murmur hash only outputs 32 bits.
@@ -42,6 +43,14 @@ class ArchiveMap final : public Archive {
   }
 
   std::unordered_map<uint64_t, ConstArchivePtr> _map;
+
+  friend class cereal::access;
+
+  template <class Ar>
+  void save(Ar& archive) const;
+
+  template <class Ar>
+  void load(Ar& archive);
 };
 
 }  // namespace thirdai::serialization

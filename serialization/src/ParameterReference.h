@@ -26,6 +26,8 @@ class ParameterReference final : public Archive {
     return std::move(*parameter);
   }
 
+  std::string type() const final { return "ParameterReference"; }
+
  private:
   struct SavableState {
     const std::vector<float>* parameter;
@@ -42,22 +44,13 @@ class ParameterReference final : public Archive {
 
   ParameterReference() {}
 
-  template <typename Archive>
-  void save(Archive& archive) const {
-    if (!std::holds_alternative<SavableState>(_state)) {
-      throw std::invalid_argument(
-          "ParameterReference must be in saveable state to save.");
-    }
-    archive(cereal::base_class<Archive>(this),
-            *std::get<SavableState>(_state).parameter);
-  }
+  friend class cereal::access;
 
-  template <typename Archive>
-  void load(Archive& archive) {
-    auto parameter = std::make_shared<std::vector<float>>();
-    archive(cereal::base_class<Archive>(this), *parameter);
-    _state = LoadedState{parameter};
-  }
+  template <typename Ar>
+  void save(Ar& archive) const;
+
+  template <typename Ar>
+  void load(Ar& archive);
 };
 
 }  // namespace thirdai::serialization
