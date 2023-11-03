@@ -101,6 +101,8 @@ class SharePointConnector(Connector):
 
             if not len(self._files) > 0:
                 raise FileNotFoundError("No files of supported extension is present")
+
+            # we need to maintain a fixed order of files because local_docs needs to be also equivalent as detailed in the test cases. For more info: ndb_utls.py::build_local_sharepoint_doc & test_connector_document_implementation.py
             self._files = sorted(self._files, key=lambda file: file.properties["Name"])
         except Exception as e:
             print("Unable to retrieve files from SharePoint, Error: " + str(e))
@@ -135,7 +137,7 @@ class SharePointConnector(Connector):
             if len(files_dict) > 0:
                 yield files_dict
         except Exception as e:
-            print("Unable to retrieve files from SharePoint, Error: " + str(e))
+            print("Unable to retrieve file(s) from SharePoint, Error: " + str(e))
         finally:
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
@@ -149,6 +151,7 @@ class SharePointConnector(Connector):
     def site_name(self):
         return self.url.split(sep="/")[-1]
 
+<<<<<<< HEAD
 
 class SalesforceConnector(Connector):
     def __init__(
@@ -199,3 +202,7 @@ class SalesforceConnector(Connector):
     @property
     def session_id(self):
         return self._instance.session_id
+=======
+    def num_files(self):
+        return len(self._files)
+>>>>>>> 844584e344912ea14cc3d573c470527679ac8448

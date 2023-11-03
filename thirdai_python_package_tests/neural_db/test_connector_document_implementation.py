@@ -1,6 +1,16 @@
 import os
+import shutil
+from pathlib import Path
+
+import nltk
+
+nltk.download("punkt")
 
 import pytest
+from common_document_tests import assess_doc_methods_properties
+from document_test_data.connector_docs.connectors_object.base_connectors import (
+    get_base_connectors,
+)
 from ndb_utils import all_connector_doc_getters
 from thirdai import neural_db as ndb
 
@@ -28,3 +38,23 @@ def test_document_equivalence(get_connector_doc):
     for row in connector_doc.row_iterator():
         assert row.strong == local_doc.strong_text(row.id)
         assert row.weak == local_doc.weak_text(row.id)
+
+
+def test_connector_reattach(get_connector_doc):
+    connector_doc = get_connector_doc.connector_doc()
+    saved_path = "doc_save_dir"
+    connector_doc.save(saved_path)
+
+    loaded_doc = ndb.Document.load(saved_path)
+    shutil.rmtree(saved_path)
+    with pytest.raises(AttributeError):
+        connector = getattr(loaded_doc, loaded_doc._get_connector_object_name())
+
+    # Setup phase should not throw any error
+    connector_instance = get_base_connectors(loaded_doc)
+    loaded_doc.setup_connection(connector_instance)
+
+
+def test_doc_property(get_connector_doc):
+    connector_doc = get_connector_doc.connector_doc()
+    assess_doc_methods_properties(doc=connector_doc)
