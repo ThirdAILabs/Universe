@@ -1,5 +1,6 @@
 #include "BoltNNPython.h"
 #include "PybindUtils.h"
+#include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/python_bindings/Porting.h>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/loss/BinaryCrossEntropy.h>
@@ -66,35 +67,6 @@ py::object toNumpy(const TensorPtr& tensor, const T* data) {
   // if tensor.active_neurons:
   //      do something
   return py::none();
-}
-
-TensorPtr fromNumpySparse(const NumpyArray<uint32_t>& indices,
-                          const NumpyArray<float>& values, size_t last_dim,
-                          bool with_grad) {
-  if (indices.ndim() != 2) {
-    throw std::invalid_argument("Expected indices to be 2D.");
-  }
-  if (values.ndim() != 2) {
-    throw std::invalid_argument("Expected values to be 2D.");
-  }
-
-  size_t batch_size = indices.shape(0);
-  size_t nonzeros = indices.shape(1);
-
-  return Tensor::fromArray(indices.data(), values.data(), batch_size, last_dim,
-                           nonzeros, /* with_grad= */ with_grad);
-}
-
-TensorPtr fromNumpyDense(const NumpyArray<float>& values, bool with_grad) {
-  if (values.ndim() != 2) {
-    throw std::invalid_argument("Expected values to be 2D.");
-  }
-
-  size_t batch_size = values.shape(0);
-  size_t dim = values.shape(1);
-
-  return Tensor::fromArray(nullptr, values.data(), batch_size, dim,
-                           /* nonzeros= */ dim, /* with_grad= */ with_grad);
 }
 
 void defineTensor(py::module_& nn);
