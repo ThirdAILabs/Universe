@@ -1,11 +1,10 @@
 import os
 
-from document_test_data.connector_docs.connectors_object import base_connectors
 import pandas as pd
 import pytest
 import requests
+from document_test_data.connector_docs.connectors_object import base_connectors
 from thirdai import neural_db as ndb
-from thirdai.neural_db import documents
 
 
 class Equivalent_doc:
