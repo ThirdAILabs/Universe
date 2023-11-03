@@ -7,10 +7,8 @@ import nltk
 nltk.download("punkt")
 
 import pytest
+from base_connectors.base import get_base_connectors
 from document_common_tests import assess_doc_methods_properties
-from document_test_data.connector_docs.connectors_object.base_connectors import (
-    get_base_connectors,
-)
 from ndb_utils import all_connector_doc_getters
 from thirdai import neural_db as ndb
 

@@ -5,15 +5,15 @@ import yaml
 from sqlalchemy import create_engine
 from thirdai import neural_db as ndb
 
-CONNECTOR_DOCS_BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+CONNECTOR_DOCS_BASE_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "../document_test_data/connector_docs")
+)
 
 
 @lru_cache
 def get_creds():
     settings = dict()
-    settings_path = os.path.join(
-        CONNECTOR_DOCS_BASE_DIR, "connectors_object", "creds.yaml"
-    )
+    settings_path = os.path.join(os.path.dirname(__file__), "creds.yaml")
     if os.path.isfile(settings_path):
         with open(settings_path, mode="r") as f:
             settings.update(yaml.load(f, Loader=yaml.FullLoader))
