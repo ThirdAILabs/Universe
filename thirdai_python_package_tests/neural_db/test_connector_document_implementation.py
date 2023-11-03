@@ -7,7 +7,7 @@ import nltk
 nltk.download("punkt")
 
 import pytest
-from common_document_tests import assess_doc_methods_properties
+from document_common_tests import assess_doc_methods_properties
 from document_test_data.connector_docs.connectors_object.base_connectors import (
     get_base_connectors,
 )

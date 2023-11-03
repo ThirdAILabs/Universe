@@ -7,7 +7,7 @@ import nltk
 nltk.download("punkt")
 
 import pytest
-from common_document_tests import assess_doc_methods_properties
+from document_common_tests import assess_doc_methods_properties
 from ndb_utils import all_local_doc_getters
 from thirdai import neural_db as ndb
 
