@@ -151,7 +151,9 @@ class SharePointConnector(Connector):
     def site_name(self):
         return self.url.split(sep="/")[-1]
 
-<<<<<<< HEAD
+    def num_files(self):
+        return len(self._files)
+
 
 class SalesforceConnector(Connector):
     def __init__(
@@ -202,7 +204,3 @@ class SalesforceConnector(Connector):
     @property
     def session_id(self):
         return self._instance.session_id
-=======
-    def num_files(self):
-        return len(self._files)
->>>>>>> 844584e344912ea14cc3d573c470527679ac8448

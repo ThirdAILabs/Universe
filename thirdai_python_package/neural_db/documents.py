@@ -1386,6 +1386,14 @@ class SharePoint(DocumentConnector):
 
 
 class SalesForce(DocumentConnector):
+    """
+    Class for handling the Salesforce object connections and data retrieval for training the neural_db model
+
+    This class encapsulates functionality for connecting to an SQL database, executing SQL queries, and retrieving
+
+    NOTE: It is being expected that the table will remain static in terms of both rows and columns.
+    """
+
     def __init__(
         self,
         instance: Salesforce,
@@ -1396,7 +1404,6 @@ class SalesForce(DocumentConnector):
         reference_columns: Optional[List[str]] = None,
         save_extra_info: bool = True,
         metadata: dict = {},
-        credentials: Optional[Dict[str, str]] = None,
     ) -> None:
         self.object_name = object_name
         self.id_col = id_col
@@ -1405,7 +1412,6 @@ class SalesForce(DocumentConnector):
         self.reference_columns = reference_columns
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
-        self.credentials = credentials
         self._connector = SalesforceConnector(
             instance=instance, object_name=object_name, id_col=self.id_col, fields=None
         )
@@ -1419,6 +1425,8 @@ class SalesForce(DocumentConnector):
         # Integrity_checks
         self.assert_valid_id()
         self.assert_valid_fields()
+
+        # setting the columns in the connector object
         self._connector._fields = list(set(self.strong_columns + self.weak_columns))
 
     @property
@@ -1433,6 +1441,61 @@ class SalesForce(DocumentConnector):
     def hash(self) -> str:
         return self._hash
 
+    def _get_connector_object_name(self):
+        return "_connector"
+
+    def setup_connection(self, instance: Salesforce):
+        """
+        This is a helper function to re-establish the connection upon loading the saved ndb model containing this SalesForce document.
+        Args:
+            instance: Salesforce instance
+                    NOTE: Provide the same connection object.
+        NOTE: Same object would be used to establish connection
+        """
+        try:
+            # The idea is to check for the connector object existence
+            print(
+                f"Connector object already exists with url: {self._connector.get_engine_url()}"
+            )
+        except AttributeError as e:
+            assert self.hash == hash_string(instance.session_id + instance.base_url)
+            self._connector = SalesforceConnector(
+                instance=instance,
+                object_name=self.object_name,
+                id_col=self.id_col,
+                fields=list(set(self.strong_columns + self.weak_columns)),
+            )
+
+    def reference(self, element_id: int) -> Reference:
+        if element_id >= self.size:
+            _raise_unknown_doc_error(element_id)
+
+        try:
+            result = self._connector.execute(
+                query=f"SELECT {','.join(self.reference_columns)} FROM {self.object_name} WHERE {self.id_col} = '{element_id}'"
+            )["records"][0]
+            del result["attributes"]
+            text = "\n\n".join(
+                [f"{col_name}: {col_text}" for col_name, col_text in result.items()]
+            )
+
+        except Exception as e:
+            text = f"Unable to connect to the object instance, Referenced row with {self.id_col}: {element_id} "
+
+        return Reference(
+            document=self,
+            element_id=element_id,
+            text=text,
+            source=self._source,
+            metadata={
+                "object_name": self.object_name,
+                **self.doc_metadata,
+            },
+        )
+
+    def chunk_iterator(self) -> pd.DataFrame:
+        return self._connector.chunk_iterator()
+
     def chunk_iterator(self) -> pd.DataFrame:
         if not hasattr(self, "_connector"):
             raise AttributeError("Connector not found")
@@ -1446,6 +1509,24 @@ class SalesForce(DocumentConnector):
 
     def all_entity_ids(self) -> List[int]:
         return list(range(self.size))
+
+    def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
+        try:
+            row = chunk.iloc[id_in_chunk]
+            return " ".join(
+                [str(row[col]).replace(",", "") for col in self.get_strong_columns()]
+            )
+        except Exception as e:
+            return ""
+
+    def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
+        try:
+            row = chunk.iloc[id_in_chunk]
+            return " ".join(
+                [str(row[col]).replace(",", "") for col in self.get_weak_columns()]
+            )
+        except Exception as e:
+            return ""
 
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
@@ -1520,11 +1601,12 @@ class SalesForce(DocumentConnector):
         ):
             raise AttributeError("Reference column(s) doesn't exists in the object")
 
+        supported_text_type = ("string", "textarea")
         for field in all_fields:
             if (
                 self.strong_columns is not None
                 and field["name"] in self.strong_columns
-                and field["type"] != "string"
+                and field["type"] not in supported_text_type
             ):
                 raise AttributeError(
                     f"Strong column '{field['name']}' needs to be type string"
@@ -1532,7 +1614,7 @@ class SalesForce(DocumentConnector):
             if (
                 self.weak_columns is not None
                 and field["name"] in self.weak_columns
-                and field["type"] != "string"
+                and field["type"] not in supported_text_type
             ):
                 raise AttributeError(
                     f"Weak column '{field['name']}' needs to be type string"
@@ -1542,7 +1624,7 @@ class SalesForce(DocumentConnector):
             self.strong_columns = []
             self.weak_columns = []
             for field in all_fields:
-                if field["name"] != self.id_col and field["type"] == "string":
+                if field["name"] != self.id_col and field["type"] in supported_text_type:
                     self.weak_columns.append(field["name"])
         elif self.strong_columns is None:
             self.strong_columns = []
@@ -1552,64 +1634,8 @@ class SalesForce(DocumentConnector):
         if self.reference_columns is None:
             self.reference_columns = []
             for field in all_fields:
-                if field["name"] != self.id_col and field["type"] == "string":
+                if field["name"] != self.id_col and field["type"] in supported_text_type:
                     self.reference_columns.append(field["name"])
-
-    def reference(self, element_id: int) -> Reference:
-        if element_id >= self.size:
-            _raise_unknown_doc_error(element_id)
-
-        try:
-            result = self._connector.execute(
-                query=f"SELECT {','.join(self.reference_columns)} FROM {self.object_name} WHERE {self.id_col} = '{element_id}'"
-            )["records"][0]
-            del result["attributes"]
-            text = "\n\n".join(
-                [f"{col_name}: {col_text}" for col_name, col_text in result.items()]
-            )
-
-        except Exception as e:
-            text = f"Unable to connect to the object instance, Referenced row with {self.id_col}: {element_id} "
-
-        return Reference(
-            document=self,
-            element_id=element_id,
-            text=text,
-            source=self._source,
-            metadata={
-                "object_name": self.object_name,
-                **self.doc_metadata,
-            },
-        )
-
-    def chunk_iterator(self) -> pd.DataFrame:
-        if not hasattr(self, "_connector"):
-            raise AttributeError("Connector not found")
-
-        return self._connector.chunk_iterator()
-
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        del state["_connector"]
-        return state
-
-    def __setstate__(self, state):
-        creds = state["credentials"]
-        if creds is not None:
-            try:
-                state["_connector"] = SalesforceConnector(
-                    instance=Salesforce(**creds),
-                    object_name=state["object_name"],
-                    id_col=state["id_col"],
-                    fields=list(set(state["strong_columns"] + state["weak_columns"])),
-                )
-            except Exception as e:
-                print(
-                    "Failed to establish connection with the Salesforce. Retraining may not be possible. Error: "
-                    + str(e)
-                )
-
-        self.__dict__.update(state)
 
 
 class SentenceLevelExtracted(Extracted):

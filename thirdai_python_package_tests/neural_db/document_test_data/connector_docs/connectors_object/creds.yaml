@@ -6,6 +6,6 @@ sharePoint:
   site_url: "https://iitkgpacin.sharepoint.com/sites/TestSite2"
   library_path: "Shared Documents"
 salesforce:
-  username: 
-  password: 
-  security_token: 
+  username: "gautamusernam@thirdai.com"
+  password: "PASSWORD3eye"
+  security_token: "iMUS0ixviqXpBIKE32QVxm5Xy"
