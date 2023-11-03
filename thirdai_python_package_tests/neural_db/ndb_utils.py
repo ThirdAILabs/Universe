@@ -3,9 +3,9 @@ import os
 import pandas as pd
 import pytest
 import requests
+from document_test_data.connector_docs.connector_objects import base_connectors
 from thirdai import neural_db as ndb
 
-from document_test_data.connector_docs.connector_objects import base_connectors
 
 class Equivalent_doc:
     def __init__(self, connector_doc, local_doc) -> None:
