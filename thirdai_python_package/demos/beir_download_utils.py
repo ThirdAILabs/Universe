@@ -8,9 +8,11 @@ def write_unsupervised_file(corpus, data_path):
             title = corpus[key]["title"].replace(",", " ")
             title = title.replace("\r", " ")
             title = title.replace("\n", " ")
+            title = " " if title == "" else title
             text = corpus[key]["text"].replace(",", " ")
             text = text.replace("\r", " ")
             text = text.replace("\n", " ")
+            text = " " if text == "" else text
             fw.write(str(count) + "," + title + "," + text + "\n")
             count += 1
 
