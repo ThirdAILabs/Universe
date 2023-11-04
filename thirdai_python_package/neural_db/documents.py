@@ -1169,7 +1169,9 @@ class SharePoint(DocumentConnector):
         self.strong_column = "strong_text"
         self.weak_column = "weak_text"
         self.build_meta_table()
-        self._name = self._connector.site_name + "_" + self.library_path
+        self._name = (
+            self._connector.site_name + "-" + (self.library_path).replace(" ", "_")
+        )
         self.url = self._connector.url
         self._source = self.url + "/" + library_path
         self._hash = hash_string(self._source)
