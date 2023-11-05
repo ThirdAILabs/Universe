@@ -10,6 +10,8 @@ try:
         Reference,
         SentenceLevelDOCX,
         SentenceLevelPDF,
+        SharePoint,
+        SQLDatabase,
         Unstructured,
     )
     from .model_bazaar import Bazaar
