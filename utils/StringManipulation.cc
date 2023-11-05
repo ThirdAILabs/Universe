@@ -108,15 +108,15 @@ bool startsWith(const std::string& to_search_in, const std::string& prefix) {
   return std::string_view(to_search_in.data(), prefix.size()) == prefix;
 }
 
-std::string stripWhitespace(const std::string& s) {
-  auto not_space = [](char ch) { return !std::isspace(ch); };
-  auto first_valid = std::find_if_not(s.begin(), s.end(), not_space);
-  auto last_valid = std::find_if_not(s.rbegin(), s.rend(), not_space).base();
-  if (first_valid == s.end() || last_valid == s.begin()) {
+std::string stripWhitespace(const std::string& s,
+                            const std::string& strip_characters) {
+  auto first_valid = s.find_first_not_of(strip_characters);
+  auto last_valid = s.find_last_not_of(strip_characters);
+  if (first_valid == std::string::npos || last_valid == std::string::npos) {
     // Whole string is whitespace.
     return "";
   }
-  return std::string(first_valid, last_valid);
+  return s.substr(first_valid, last_valid + 1 - first_valid);
 }
 
 /* HELPER METHODS FOR UNICODE STRINGS */

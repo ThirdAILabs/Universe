@@ -40,10 +40,14 @@ inline std::string lower(const std::string_view& str) {
   return lower_name;
 }
 
+const std::string DEFAULT_STRING_STRIP_CHARACTERS = " \t\n\r\v\f";
+
 /**
  *Strips leading and tailing whitespace.
  */
-std::string stripWhitespace(const std::string& s);
+std::string stripWhitespace(
+    const std::string& s,
+    const std::string& strip_characters = DEFAULT_STRING_STRIP_CHARACTERS);
 
 /**
  * Extracts an integer value from an integer string.
