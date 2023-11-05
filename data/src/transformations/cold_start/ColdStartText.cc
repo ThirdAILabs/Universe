@@ -84,8 +84,8 @@ std::vector<std::string> ColdStartTextAugmentation::augmentSingleRow(
   Phrase strong_phrase =
       cold_start::getStrongPhrase(strong_text, _strong_max_len);
   PhraseCollection phrases = getWeakPhrases(weak_text);
-  cold_start::mergeStrongWithWeak(phrases, strong_phrase,
-                                  _strong_sample_num_words, _seed);
+  phrases = cold_start::mergeStrongWithWeak(phrases, strong_phrase,
+                                            _strong_sample_num_words, _seed);
 
   std::vector<std::string> output_samples;
   for (const auto& phrase : phrases) {

@@ -33,9 +33,9 @@ class TextAugmentationBase : public Transformation {
  * If strong_sample_num_words is provided, this also independently samples
  * from the strong phrase for every weak phrase.
  */
-void mergeStrongWithWeak(PhraseCollection& weak_phrases, Phrase& strong_phrase,
-                         std::optional<uint32_t> strong_sample_num_words,
-                         uint32_t seed);
+PhraseCollection mergeStrongWithWeak(
+    const PhraseCollection& weak_phrases, const Phrase& strong_phrase,
+    std::optional<uint32_t> strong_sample_num_words, uint32_t seed);
 
 /**
  * Randomly deletes elements from each phrase, resulting in new phrases.

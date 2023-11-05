@@ -61,8 +61,8 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
     const std::string& strong_text, const std::string& weak_text) const {
   Phrase strong_phrase = cold_start::getStrongPhrase(strong_text);
   PhraseCollection phrases = getWeakPhrases(weak_text);
-  cold_start::mergeStrongWithWeak(phrases, strong_phrase,
-                                  _config.strong_sample_num_words, _seed);
+  phrases = cold_start::mergeStrongWithWeak(
+      phrases, strong_phrase, _config.strong_sample_num_words, _seed);
 
   std::mt19937 rng(_seed);
   std::uniform_real_distribution<float> dist(0.0, 1.0);

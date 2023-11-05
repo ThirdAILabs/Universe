@@ -437,6 +437,15 @@ py::object UDTMachClassifier::coldstart(
     const bolt::DistributedCommPtr& comm) {
   auto metadata = getColdStartMetaData();
 
+  if (!variable_length.has_value()) {
+    auto data_source = cold_start::preprocessColdStartTrainSource(
+        data, strong_column_names, weak_column_names, _dataset_factory,
+        metadata, variable_length);
+
+    return train(data_source, learning_rate, /* epochs= */ 1, train_metrics,
+                 val_data, val_metrics, callbacks, options, comm);
+  }
+
   py::object history;
   for (uint32_t i = 0; i < epochs; i++) {
     auto data_source = cold_start::preprocessColdStartTrainSource(

@@ -82,12 +82,11 @@ ColumnMap TextAugmentationBase::apply(ColumnMap columns, State& state) const {
   return augmented_column_map;
 }
 
-void mergeStrongWithWeak(PhraseCollection& weak_phrases, Phrase& strong_phrase,
-                         std::optional<uint32_t> strong_sample_num_words,
-                         uint32_t seed) {
+PhraseCollection mergeStrongWithWeak(
+    const PhraseCollection& weak_phrases, const Phrase& strong_phrase,
+    std::optional<uint32_t> strong_sample_num_words, uint32_t seed) {
   if (weak_phrases.empty()) {
-    weak_phrases = {strong_phrase};
-    return;
+    return {strong_phrase};
   }
 
   PhraseCollection downsampled_strong_phrases;
@@ -99,23 +98,21 @@ void mergeStrongWithWeak(PhraseCollection& weak_phrases, Phrase& strong_phrase,
         /* words_per_sampled_phrase= */ strong_sample_num_words.value(),
         /* n_sampled_phrases= */ weak_phrases.size(), seed);
   }
+
+  PhraseCollection output_phrases(weak_phrases.size());
   for (uint32_t i = 0; i < weak_phrases.size(); i++) {
-    Phrase phrase_to_concatenate;
+    std::vector<std::string> concat_phrase;
     if (downsampled_strong_phrases.size() > i) {
-      phrase_to_concatenate = downsampled_strong_phrases[i];
+      concat_phrase = downsampled_strong_phrases[i];
     } else {
-      // This can happen if we don't downsample the strong phrase, but also
-      // if the strong phrase is too short to downsample to the desired length.
-      phrase_to_concatenate = strong_phrase;
+      concat_phrase = strong_phrase;
     }
-    uint32_t original_size = weak_phrases[i].size();
-    for (auto& word : phrase_to_concatenate) {
-      weak_phrases[i].push_back(word);
-    }
-    // Make the strong phrase come at the start instead of the end.
-    std::rotate(weak_phrases[i].begin(),
-                weak_phrases[i].begin() + original_size, weak_phrases[i].end());
+    concat_phrase.insert(concat_phrase.end(),
+                         std::make_move_iterator(weak_phrases[i].begin()),
+                         std::make_move_iterator(weak_phrases[i].end()));
+    output_phrases[i] = std::move(concat_phrase);
   }
+  return output_phrases;
 }
 
 PhraseCollection sampleFromPhrases(const PhraseCollection& phrases,
