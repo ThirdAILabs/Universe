@@ -32,8 +32,8 @@ def default_augmentation(
             prefilter_punctuation=prefilter_punctuation,
             strong_sample_num_words=strong_sample_num_words,
             word_removal_probability=word_removal_probability,
-            seed=81,
-        )
+        ),
+        seed=81,
     )
 
 

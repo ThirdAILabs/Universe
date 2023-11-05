@@ -12,8 +12,7 @@ VariableLengthConfig::VariableLengthConfig(
     std::optional<uint32_t> max_covering_samples, size_t slice_min_length,
     std::optional<size_t> slice_max_length, uint32_t num_slices,
     bool add_whole_doc, bool prefilter_punctuation,
-    uint32_t strong_sample_num_words, float word_removal_probability,
-    uint32_t seed)
+    uint32_t strong_sample_num_words, float word_removal_probability)
     : covering_min_length(covering_min_length),
       covering_max_length(covering_max_length),
       max_covering_samples(max_covering_samples),
@@ -23,8 +22,7 @@ VariableLengthConfig::VariableLengthConfig(
       add_whole_doc(add_whole_doc),
       prefilter_punctuation(prefilter_punctuation),
       strong_sample_num_words(strong_sample_num_words),
-      word_removal_probability(word_removal_probability),
-      seed(seed) {
+      word_removal_probability(word_removal_probability) {
   utils::validateGreaterThanZero(covering_min_length, "covering_min_length");
   utils::validateGreaterThanZero(covering_max_length, "covering_max_length");
   utils::validateGreaterThanZero(slice_min_length, "slice_min_length");
@@ -52,21 +50,21 @@ VariableLengthConfig::VariableLengthConfig(
 VariableLengthColdStart::VariableLengthColdStart(
     std::vector<std::string> strong_column_names,
     std::vector<std::string> weak_column_names, std::string label_column_name,
-    std::string output_column_name, const VariableLengthConfig& config)
-    : TextAugmentationBase(std::move(strong_column_names),
-                           std::move(weak_column_names),
-                           std::move(label_column_name),
-                           std::move(output_column_name), config.seed),
+    std::string output_column_name, const VariableLengthConfig& config,
+    uint32_t seed)
+    : TextAugmentationBase(
+          std::move(strong_column_names), std::move(weak_column_names),
+          std::move(label_column_name), std::move(output_column_name), seed),
       _config(config) {}
 
 std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
     const std::string& strong_text, const std::string& weak_text) const {
   Phrase strong_phrase = cold_start::getStrongPhrase(strong_text);
   PhraseCollection phrases = getWeakPhrases(weak_text);
-  cold_start::mergeStrongWithWeak(
-      phrases, strong_phrase, _config.strong_sample_num_words, _config.seed);
+  cold_start::mergeStrongWithWeak(phrases, strong_phrase,
+                                  _config.strong_sample_num_words, _seed);
 
-  std::mt19937 rng(_config.seed);
+  std::mt19937 rng(_seed);
   std::uniform_real_distribution<float> dist(0.0, 1.0);
 
   std::vector<std::string> output_samples;
@@ -115,11 +113,10 @@ PhraseCollection VariableLengthColdStart::getWeakPhrases(
 
   addCoveringPhrases(weak_phrase, phrases, _config.covering_min_length,
                      _config.covering_max_length, _config.max_covering_samples,
-                     _config.seed);
+                     _seed);
 
   addRandomSlicePhrases(weak_phrase, phrases, _config.slice_min_length,
-                        _config.slice_max_length, _config.num_slices,
-                        _config.seed);
+                        _config.slice_max_length, _config.num_slices, _seed);
 
   return phrases;
 }

@@ -142,7 +142,7 @@ def test_coldstart_target_type(integer_target):
 
 @pytest.mark.parametrize(
     "variable_length",
-    [True, False, data.transformations.VariableLengthConfig(num_slices=10, seed=81)],
+    [True, False, data.transformations.VariableLengthConfig(num_slices=10)],
 )
 def test_coldstart_variable_length(variable_length):
     run_coldstart(variable_length=variable_length)

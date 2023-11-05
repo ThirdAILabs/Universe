@@ -68,15 +68,6 @@ ColumnMap TextAugmentationBase::apply(ColumnMap columns, State& state) const {
     std::rethrow_exception(exception);
   }
 
-  // Shuffle the augmented data and augmented labels (in the same order).
-  // We have to use std::shuffle and two RNGs from <random> with the same state
-  //  for reasons described here: https://stackoverflow.com/a/16969267
-  std::mt19937 rng_1(_seed);
-  auto rng_2 = rng_1;
-
-  std::shuffle(augmented_data.begin(), augmented_data.end(), rng_1);
-  std::shuffle(augmented_labels.begin(), augmented_labels.end(), rng_2);
-
   auto augmented_label_column =
       ValueColumn<std::string>::make(std::move(augmented_labels));
 
@@ -87,6 +78,7 @@ ColumnMap TextAugmentationBase::apply(ColumnMap columns, State& state) const {
   new_columns.emplace(_label_column_name, augmented_label_column);
   new_columns.emplace(_output_column_name, augmented_data_column);
   ColumnMap augmented_column_map(new_columns);
+  augmented_column_map.shuffle();
   return augmented_column_map;
 }
 
@@ -94,8 +86,6 @@ void mergeStrongWithWeak(PhraseCollection& weak_phrases, Phrase& strong_phrase,
                          std::optional<uint32_t> strong_sample_num_words,
                          uint32_t seed) {
   if (weak_phrases.empty()) {
-    // TODO(any) evaluate alternatives for if we have no weak phrases. Maybe
-    // sampling from the title?
     weak_phrases = {strong_phrase};
     return;
   }

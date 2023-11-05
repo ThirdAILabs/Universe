@@ -16,8 +16,7 @@ struct VariableLengthConfig {
       std::optional<size_t> slice_max_length = std::nullopt,
       uint32_t num_slices = 5, bool add_whole_doc = true,
       bool prefilter_punctuation = true, uint32_t strong_sample_num_words = 3,
-      float word_removal_probability = 0,
-      uint32_t seed = global_random::nextSeed());
+      float word_removal_probability = 0);
 
   size_t covering_min_length;
   size_t covering_max_length;
@@ -29,7 +28,6 @@ struct VariableLengthConfig {
   bool prefilter_punctuation;
   uint32_t strong_sample_num_words;
   float word_removal_probability;
-  uint32_t seed;
 };
 
 class VariableLengthColdStart : public cold_start::TextAugmentationBase {
@@ -38,7 +36,8 @@ class VariableLengthColdStart : public cold_start::TextAugmentationBase {
       std::vector<std::string> strong_column_names,
       std::vector<std::string> weak_column_names, std::string label_column_name,
       std::string output_column_name,
-      const VariableLengthConfig& config = VariableLengthConfig());
+      const VariableLengthConfig& config = VariableLengthConfig(),
+      uint32_t seed = global_random::nextSeed());
 
   /**
    * Helper method to perform the augmentation of a single row in the input.

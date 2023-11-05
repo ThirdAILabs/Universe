@@ -396,7 +396,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       transformations_submodule, "VariableLengthConfig")
       .def(py::init<size_t, size_t, std::optional<uint32_t>, size_t,
                     std::optional<size_t>, uint32_t, bool, bool, uint32_t,
-                    float, uint32_t>(),
+                    float>(),
            py::arg("covering_min_length") = 3,
            py::arg("covering_max_length") = 40,
            py::arg("max_covering_samples") = std::nullopt,
@@ -405,16 +405,16 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("num_slices") = 5, py::arg("add_whole_doc") = true,
            py::arg("prefilter_punctuation") = true,
            py::arg("strong_sample_num_words") = 3,
-           py::arg("word_removal_probability") = 0, py::arg("seed") = 42803);
+           py::arg("word_removal_probability") = 0);
 
   py::class_<VariableLengthColdStart, Transformation,
              std::shared_ptr<VariableLengthColdStart>>(
       transformations_submodule, "VariableLengthColdStart")
       .def(py::init<std::vector<std::string>, std::vector<std::string>,
-                    std::string, std::string, VariableLengthConfig>(),
+                    std::string, std::string, VariableLengthConfig, uint32_t>(),
            py::arg("strong_columns"), py::arg("weak_columns"),
            py::arg("label_column"), py::arg("output_column"),
-           py::arg("config") = VariableLengthConfig())
+           py::arg("config") = VariableLengthConfig(), py::arg("seed") = 42803)
       .def("augment_single_row", &VariableLengthColdStart::augmentSingleRow,
            py::arg("strong_text"), py::arg("weak_text"));
 
