@@ -5,7 +5,6 @@ import pytest
 import requests
 from thirdai import neural_db as ndb
 
-
 from thirdai_python_package_tests.neural_db.base_connectors import base
 
 
@@ -64,23 +63,17 @@ TXT_FILE = os.path.join(BASE_DIR, "nature.txt")
 EML_FILE = os.path.join(BASE_DIR, "Message.eml")
 
 # connection instances for connector document
-<<<<<<< HEAD
-=======
 # SQL connector attributes
->>>>>>> origin/SalesforceConnector
 ENGINE = base.get_sql_engine()
 TABLE_NAME = base.get_sql_table()
 
 # SharePoint connector attributes
 CLIENT_CONTEXT = base.get_client_context()
 LIBRARY_PATH = base.get_library_path()
-<<<<<<< HEAD
-=======
 
 # SalesForce Connector attributes
 SF_INSTANCE = base.get_salesforce_instance()
 OBJECT_NAME = "Yelp_review__c"
->>>>>>> origin/SalesforceConnector
 
 CSV_EXPLICIT_META = "csv-explicit"
 PDF_META = "pdf"
@@ -91,6 +84,7 @@ TXT_META = "txt"
 EML_META = "eml"
 SQL_META = "sql"
 SHAREPOINT_META = "sharepoint"
+SALESFORCE_META = "salesforce"
 SENTENCE_PDF_META = "sentence-pdf"
 SENTENCE_DOCX_META = "sentence-docx"
 
@@ -281,6 +275,15 @@ def docs_with_meta():
             library_path=LIBRARY_PATH,
             metadata=meta(SHAREPOINT_META),
         ),
+        ndb.SalesForce(
+            instance=SF_INSTANCE,
+            object_name=OBJECT_NAME,
+            id_col="ID__c",
+            strong_columns=["Review__c"],
+            weak_columns=["Review__c"],
+            reference_columns=["Review__c"],
+            metadata=meta(SALESFORCE_META),
+        ),
         ndb.SentenceLevelPDF(PDF_FILE, metadata=meta(SENTENCE_PDF_META)),
         ndb.SentenceLevelDOCX(DOCX_FILE, metadata=meta(SENTENCE_DOCX_META)),
     ]
@@ -296,6 +299,7 @@ metadata_constraints = [
     EML_META,
     SQL_META,
     SHAREPOINT_META,
+    SALESFORCE_META,
     SENTENCE_PDF_META,
     SENTENCE_DOCX_META,
 ]
