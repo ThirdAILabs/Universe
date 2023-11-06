@@ -1,0 +1,162 @@
+Delivered-To: gautam@thirdai.com
+Received: by 2002:adf:f946:0:b0:32f:806a:20ea with SMTP id q6csp274920wrr;
+        Thu, 2 Nov 2023 01:51:02 -0700 (PDT)
+X-Received: by 2002:a05:6808:302:b0:3a7:b011:8960 with SMTP id i2-20020a056808030200b003a7b0118960mr19083993oie.40.1698915061825;
+        Thu, 02 Nov 2023 01:51:01 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1698915061; cv=none;
+        d=google.com; s=arc-20160816;
+        b=e5o/dgbf9C+hjKXapL9fcI+7/z5QA8N4ViI4doG0A4cZsLm42wLPtegiPN/Q0sS4Pz
+         CEzXh8wLz5SZTqG7X9cVW3/qaldR1KZRIM3t3WZJR9xroFvBEGr7+4AsnTgBX5gYFojs
+         /5Mo8dI6pbXAs8csp4AYnOR3RA4dH9411DqUj9ckXbsoa5KkPNZucFOU27gExSbTTa7l
+         DI6eTk04y2s2ohSordVg1n7wu68HYjpOa5wI0rGaQ3HzzGiMOIZYaz8/xAvK3LHK26QW
+         cO9DeIV/gGoCOqkKmSbvYCWJFwluWOxWtAvAwCioCWnzCESVNdcClqB6lOAk+sjmFcf4
+         qO2Q==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20160816;
+        h=to:subject:message-id:date:from:mime-version:dkim-signature;
+        bh=4qNtu7TWZNcJ6qNu9KNxK0rOBkya2TK6GsKELtcVFOA=;
+        fh=uHGIPFklxUhCahSVhLYDAAE7DJ2yiXIQ6Aggvcbz3LA=;
+        b=PYOy2iVVjdyNQoCVzf9Vwq48YBWMlq92c7jh5DgbKuQ/Tei295yFsPTob6TmtFc0Dd
+         w3X+Qjfo1ZC62qfBs7C6ROOPmSTzwctytDHUn6u+/aVQf9XorQhHhoRgW898OHmoCMaG
+         bJdOagN3X0Ivn4Z4ADM5pkN4MXlYUvlwu3qCpBYjwECnBPzEUqJBdeVS/pVfxlajrIWQ
+         zRO7Q2JjvrhlERFZzvy76ptHqAMc+6teN6dSASHv5dqBLOdlRDqakmHQ9EKnkqQSBOc2
+         wO0IG1nf6UtlE+m2MnltGFm3PNSXdgQ3FIHtln+RbSw4p2G5Y4s+jUwfCJ2tCyvL3z/K
+         8zqw==
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@gmail.com header.s=20230601 header.b=msKTaNig;
+       spf=pass (google.com: domain of gautamsharma95.96@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=gautamsharma95.96@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com
+Return-Path: <gautamsharma95.96@gmail.com>
+Received: from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])
+        by mx.google.com with SMTPS id bi31-20020a056808189f00b003b2f331159fsor2217423oib.4.2023.11.02.01.51.01
+        for <gautam@thirdai.com>
+        (Google Transport Security);
+        Thu, 02 Nov 2023 01:51:01 -0700 (PDT)
+Received-SPF: pass (google.com: domain of gautamsharma95.96@gmail.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@gmail.com header.s=20230601 header.b=msKTaNig;
+       spf=pass (google.com: domain of gautamsharma95.96@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=gautamsharma95.96@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20230601; t=1698915061; x=1699519861; darn=thirdai.com;
+        h=to:subject:message-id:date:from:mime-version:from:to:cc:subject
+         :date:message-id:reply-to;
+        bh=4qNtu7TWZNcJ6qNu9KNxK0rOBkya2TK6GsKELtcVFOA=;
+        b=msKTaNigGYdpL6bWj2aD9tlCXTqQZRo6ATl3FoZVbfGWvjg4S4jsX0cdKAjcl9iBWK
+         +LvxC0tIAwuU9qgjGqxL0dSHfFYLfXhEMulrMQFmPvKuxD2D0gDCBzKpyGNx4JeyQNLY
+         7WCKwSpyLQNtR8iMOdlmG7+oBkhOOJ91XSH3l08K3/XWKayUBwgStm+ea5NmeZT5Bsc9
+         MpIfkzyktvDnhtX2lir1423K5AVbUqNDU4MDbBq19mLD4otZMhnum9iM+u72ejUQYmhP
+         80OlOVKlPtq1Wkz82t2URx0FJ/1UCmc1LKd4vxfVEmbVqNVG841/ltZ33E1S6H8iozef
+         TgwA==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20230601; t=1698915061; x=1699519861;
+        h=to:subject:message-id:date:from:mime-version:x-gm-message-state
+         :from:to:cc:subject:date:message-id:reply-to;
+        bh=4qNtu7TWZNcJ6qNu9KNxK0rOBkya2TK6GsKELtcVFOA=;
+        b=OrOfozi6MDhOJFNlBTQZvkwDFpBrzb08LA++l8As/+wqTiPPufgd1PNH6/NQp25F+K
+         E2IlD/1jtUHFfNilnWoVavybPI8ZteSmJYZqPEIhpYtqEuT2wKIgXK8UX82QM+0M9/x7
+         mQysTih4hLlmQ0rW6eiBebLXKy5bgAOV85LBVAdqrmIEZ5c8RjaUkAruCyPW0vxGXHFj
+         l7f6ezuPs/iSDMnxPkxOx9yX62Ih+WTj7MjFaAJm6Q0JcUAF414NNmVB9L7a7UUbVh/n
+         0GjW8S/GWa6sY5VtdjfRwzsxEb4ON3I7s8dYJP6x1LkdOufaUSQol9mWVrrrVdT6uq0o
+         WbNQ==
+X-Gm-Message-State: AOJu0Yx55tf/Rh3XfWw4YbRCHopYOP+Pzyk5cLY/pNgHPXc9VM6BYarG
+	Bi4X7uHB9QbzHiCJYZw+8XZXpPvxi5qHo45JX7aoLvkqEEQ=
+X-Google-Smtp-Source: AGHT+IEsmT8uS+MHg9BJQ/SHXPRc2E1V0LwrKewO07Bli8t9gm45Ll6r8A/GZ8hcaY4TStTfM8fYjgugSqDCMS5ieMA=
+X-Received: by 2002:a05:6808:3089:b0:3ae:2b43:dd21 with SMTP id
+ bl9-20020a056808308900b003ae2b43dd21mr22927238oib.25.1698915060966; Thu, 02
+ Nov 2023 01:51:00 -0700 (PDT)
+MIME-Version: 1.0
+From: Gautam Sharma <gautamsharma95.96@gmail.com>
+Date: Thu, 2 Nov 2023 14:20:44 +0530
+Message-ID: <CAE9X+g=5_xrYxhYyHkPUhVuoSkrBvoQ3EqMSAQLCkO9zFwe0vQ@mail.gmail.com>
+Subject: Sample EML file for sharepoint connector
+To: "gautam@thirdai.com" <gautam@thirdai.com>
+Content-Type: multipart/alternative; boundary="000000000000b66bbf0609277c94"
+
+--000000000000b66bbf0609277c94
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+*Spectre Attack:*
+*Abstract=E2=80=94Modern processors use branch prediction and speculative e=
+xecution
+to maximize performance. For example, if the destination of a branch
+depends on a memory value that is in the process of being read, CPUs will
+try to guess the destination and attempt to execute ahead. When the memory
+value finally arrives, the CPU either discards or commits the speculative
+computation. Speculative logic is unfaithful in how it executes, can access
+the victim=E2=80=99s memory and registers, and can perform operations with
+measurable side effects.*
+
+*Few point: *
+
+   1. Spectre attacks involve inducing a victim to speculatively perform
+   operations that would not occur during correct program execution and whi=
+ch
+   leak the victim=E2=80=99s confidential information via a side channel to=
+ the
+   adversary.
+   2.  This paper describes practical attacks that combine methodology from
+   side channel attacks, fault attacks, and return-oriented programming tha=
+t
+   can read arbitrary memory from the victim=E2=80=99s process.
+   3. More broadly, the paper shows that speculative execution
+   implementations violate the security assumptions underpinning numerous
+   software security mechanisms, including operating system process
+   separation, containerization, just-in-time (JIT) compilation, and
+   countermeasures to cache timing and side-channel attacks.
+   4. These attacks represent a serious threat to actual systems since
+   vulnerable speculative execution capabilities are found in microprocesso=
+rs
+   from Intel, AMD, and ARM that are used in billions of devices.
+
+*Mitigation methods:*
+
+   - Preventing Speculative Execution
+   -  Preventing Access to Secret Data
+   - Preventing Data from Entering Covert Channels
+   - Limiting Data Extraction from Covert Channels
+   - Preventing Branch Poisoning
+
+*Reference link: *https://spectreattack.com/spectre.pdf
+
+--000000000000b66bbf0609277c94
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr"><b>Spectre Attack:</b><div><i>Abstract=E2=80=94Modern proc=
+essors use branch prediction and speculative execution to maximize performa=
+nce. For example, if the
+destination of a branch depends on a memory value that is in the
+process of being read, CPUs will try to guess the destination and
+attempt to execute ahead. When the memory value finally arrives,
+the CPU either discards or commits the speculative computation.
+Speculative logic is unfaithful in how it executes, can access the
+victim=E2=80=99s memory and registers, and can perform operations with
+measurable side effects.</i></div><div><i><br></i></div><div><b>Few point:=
+=C2=A0</b></div><div><ol><li>Spectre attacks involve inducing a victim to s=
+peculatively
+perform operations that would not occur during correct program
+execution and which leak the victim=E2=80=99s confidential information via
+a side channel to the adversary.=C2=A0</li><li>=C2=A0This paper describes p=
+ractical
+attacks that combine methodology from side channel attacks,
+fault attacks, and return-oriented programming that can read
+arbitrary memory from the victim=E2=80=99s process.=C2=A0</li><li>More broa=
+dly, the
+paper shows that speculative execution implementations violate
+the security assumptions underpinning numerous software security mechanisms=
+, including operating system process separation,
+containerization, just-in-time (JIT) compilation, and countermeasures to ca=
+che timing and side-channel attacks.=C2=A0</li><li>These attacks
+represent a serious threat to actual systems since vulnerable
+speculative execution capabilities are found in microprocessors
+from Intel, AMD, and ARM that are used in billions of devices.</li></ol><di=
+v><b>Mitigation methods:</b></div><div><ul><li>Preventing Speculative Execu=
+tion<br></li><li>=C2=A0Preventing Access to Secret Data<br></li><li>Prevent=
+ing Data from Entering Covert Channels<br></li><li>Limiting Data Extraction=
+ from Covert Channels<br></li><li>Preventing Branch Poisoning</li></ul><div=
+><b>Reference link:=C2=A0</b><a href=3D"https://spectreattack.com/spectre.p=
+df">https://spectreattack.com/spectre.pdf</a></div></div><div><b><br></b></=
+div></div></div>
+
+--000000000000b66bbf0609277c94--
