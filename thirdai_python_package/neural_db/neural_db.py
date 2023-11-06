@@ -11,7 +11,7 @@ from thirdai.dataset.data_source import PyDataSource
 
 from . import loggers, teachers
 from .documents import CSV, Document, DocumentManager, Reference
-from .models import CancelState, Mach
+from .models import CancelState, Mach, MachMixture
 from .savable_state import State
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
@@ -88,7 +88,8 @@ class Sup:
             for i, label in enumerate(self.labels):
                 if label == None or label == "":
                     raise ValueError(
-                        f"Got a supervised sample with an empty label, query: '{self.queries[i]}'"
+                        "Got a supervised sample with an empty label, query:"
+                        f" '{self.queries[i]}'"
                     )
             if id_delimiter:
                 self.labels = self.labels.apply(
@@ -109,7 +110,8 @@ class Sup:
         # elif csv is None and
         else:
             raise ValueError(
-                "Sup must be initialized with csv, query_column and id_column, or queries and labels."
+                "Sup must be initialized with csv, query_column and id_column, or"
+                " queries and labels."
             )
         self.source_id = source_id
         self.uses_db_id = uses_db_id
@@ -189,7 +191,9 @@ class NeuralDB:
         # arguments list and confuse users.
         if "savable_state" not in kwargs:
             self._savable_state: State = State(
-                model=Mach(id_col="id", query_col="query", **kwargs),
+                model=MachMixture(
+                    number_models=2, id_col="id", query_col="query", **kwargs
+                ),
                 logger=loggers.LoggerList([loggers.InMemoryLogger()]),
             )
         else:
@@ -236,7 +240,8 @@ class NeuralDB:
 
         if len(data_types) != 2:
             raise ValueError(
-                f"Incompatible UDT model. Expected two data types but found {len(data_types)}."
+                "Incompatible UDT model. Expected two data types but found"
+                f" {len(data_types)}."
             )
         query_col = None
         id_col = None
@@ -271,7 +276,10 @@ class NeuralDB:
                 or csv_weak_columns is None
                 or csv_reference_columns is None
             ):
-                error_msg = "If the `csv` arg is provided, then the following args must also be provided:\n"
+                error_msg = (
+                    "If the `csv` arg is provided, then the following args must also be"
+                    " provided:\n"
+                )
                 error_msg += " - `csv_id_column`\n"
                 error_msg += " - `csv_strong_columns`\n"
                 error_msg += " - `csv_weak_columns`\n"
@@ -338,19 +346,18 @@ class NeuralDB:
 
         ray_version = ray.__version__
         if LooseVersion(ray_version) >= LooseVersion("2.7"):
-            warnings.warn(
-                """
+            warnings.warn("""
                 Using ray version 2.7 or higher requires specifying a remote or NFS storage path. 
                 Support for local checkpoints has been discontinued in these versions. 
                 Refer to https://github.com/ray-project/ray/issues/37177 for details.
-                """.strip()
-            )
+                """.strip())
 
         if not isinstance(documents, list) or not all(
             isinstance(doc, CSV) for doc in documents
         ):
             raise ValueError(
-                "The pretrain_distributed function currently only supports CSV documents."
+                "The pretrain_distributed function currently only supports CSV"
+                " documents."
             )
 
         def training_loop_per_worker(config):

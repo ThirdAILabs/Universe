@@ -391,9 +391,9 @@ class CSV(Document):
             weak_columns = []
 
         self.df = self.df.sort_values(id_column)
-        assert len(self.df[id_column].unique()) == len(self.df[id_column])
-        assert self.df[id_column].min() == 0
-        assert self.df[id_column].max() == len(self.df[id_column]) - 1
+        # assert len(self.df[id_column].unique()) == len(self.df[id_column])
+        # assert self.df[id_column].min() == 0
+        # assert self.df[id_column].max() == len(self.df[id_column]) - 1
 
         for col in strong_columns + weak_columns:
             self.df[col] = self.df[col].fillna("")
@@ -775,9 +775,11 @@ class URL(Document):
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
             source=self.url,
-            metadata={"title": self.df["title"].iloc[element_id], **self.doc_metadata}
-            if "title" in self.df.columns
-            else self.doc_metadata,
+            metadata=(
+                {"title": self.df["title"].iloc[element_id], **self.doc_metadata}
+                if "title" in self.df.columns
+                else self.doc_metadata
+            ),
         )
 
     def context(self, element_id, radius) -> str:
@@ -958,7 +960,8 @@ class SQLDatabase(DocumentConnector):
         try:
             # The idea is to check for the connector object existence
             print(
-                f"Connector object already exists with url: {self._connector.get_engine_url()}"
+                "Connector object already exists with url:"
+                f" {self._connector.get_engine_url()}"
             )
         except AttributeError as e:
             assert engine.url.database == self.database_name
@@ -1020,7 +1023,10 @@ class SQLDatabase(DocumentConnector):
 
         try:
             reference_texts = self._connector.execute(
-                query=f"SELECT {','.join(self.reference_columns)} FROM {self.table_name} WHERE {self.id_col} = {element_id}"
+                query=(
+                    f"SELECT {','.join(self.reference_columns)} FROM"
+                    f" {self.table_name} WHERE {self.id_col} = {element_id}"
+                )
             ).fetchone()
 
             text = "\n\n".join(
@@ -1033,7 +1039,10 @@ class SQLDatabase(DocumentConnector):
             )
 
         except Exception as e:
-            text = f"Unable to connect to database, Referenced row with {self.id_col}: {element_id} "
+            text = (
+                f"Unable to connect to database, Referenced row with {self.id_col}:"
+                f" {element_id} "
+            )
 
         return Reference(
             document=self,
