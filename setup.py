@@ -225,6 +225,7 @@ setup(
             "beir",
             "pyOpenSSL>22.1.0",
             "ray",
+            "grpcio",
         ]
         + neural_db_deps,
         "benchmark": [

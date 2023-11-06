@@ -1083,19 +1083,6 @@ class SQLDatabase(DocumentConnector):
                 f"id column needs to be unique from 0 to {self.size - 1}"
             )
 
-        min_id = self._connector.execute(
-            query=f"SELECT MIN({self.id_col}) FROM {self.table_name}"
-        ).fetchone()[0]
-
-        max_id = self._connector.execute(
-            query=f"SELECT MAX({self.id_col}) FROM {self.table_name}"
-        ).fetchone()[0]
-
-        if min_id != 0 or max_id != self.size - 1:
-            raise AttributeError(
-                f"id column needs to be unique from 0 to {self.size - 1}"
-            )
-
     def assert_valid_columns(self):
         all_cols = self._connector.cols_metadata()
 
@@ -1183,7 +1170,9 @@ class SharePoint(DocumentConnector):
         self.strong_column = "strong_text"
         self.weak_column = "weak_text"
         self.build_meta_table()
-        self._name = self._connector.site_name + "_" + self.library_path
+        self._name = (
+            self._connector.site_name + "-" + (self.library_path).replace(" ", "_")
+        )
         self.url = self._connector.url
         self._source = self.url + "/" + library_path
         self._hash = hash_string(self._source)
