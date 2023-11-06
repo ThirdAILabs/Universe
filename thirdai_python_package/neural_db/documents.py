@@ -937,7 +937,7 @@ class SQLDatabase(DocumentConnector):
 
     @property
     def name(self):
-        return self.database_name + "_" + self.table_name
+        return self.database_name + "-" + self.table_name
 
     @property
     def hash(self):

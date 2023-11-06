@@ -1,6 +1,5 @@
-import shutil
-
 import pandas as pd
+import os
 import pytest
 from thirdai import neural_db as ndb
 
@@ -28,7 +27,7 @@ def make_csv_doc(explicit_columns: bool, doc_id_column: bool = None):
         reference_columns=["strong", "weak"],
     )
 
-    shutil.rmtree(path)
+    os.remove(path)
 
     return ndb_doc
 
