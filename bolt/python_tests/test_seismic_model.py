@@ -136,6 +136,24 @@ def test_seismic_classifier(classification_dataset):
 
 
 @pytest.mark.unit
+def test_seismic_classifier_sparse_inference():
+    emb_model = bolt.seismic.SeismicEmbedding(
+        subcube_shape=16,
+        patch_shape=8,
+        embedding_dim=10,
+        size="small",
+        max_pool=2,
+    )
+
+    classifier = bolt.seismic.SeismicClassifier(emb_model, n_classes=500)
+
+    output = classifier.predict(np.random.rand(1, 16, 16, 16), sparse_inference=True)
+
+    assert output[0].shape == (1, 100)
+    assert output[0].shape == (1, 100)
+
+
+@pytest.mark.unit
 def test_create_patches():
     integer_cube = torch.arange(512).reshape((8, 8, 8)).type(torch.float32)
 
