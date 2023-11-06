@@ -1,11 +1,13 @@
-from typing import List, Tuple
-from .documents import DocumentDataSource, CSV
-import pandas as pd
 import copy
-from io import StringIO
+import os
 import random
 import tempfile
-import os
+from io import StringIO
+from typing import List, Tuple
+
+import pandas as pd
+
+from .documents import CSV, DocumentDataSource
 
 
 class ShardedDataSource:

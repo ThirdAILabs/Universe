@@ -7,7 +7,6 @@ from thirdai import bolt
 
 from .documents import DocumentDataSource
 from .sharded_documents import ShardedDataSource
-
 from .utils import clean_text, random_sample
 
 InferSamples = List
