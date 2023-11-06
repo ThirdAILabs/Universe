@@ -1,3 +1,5 @@
+import shutil
+
 import pandas as pd
 import pytest
 from thirdai import neural_db as ndb
@@ -16,17 +18,19 @@ def make_csv_doc(explicit_columns: bool, doc_id_column: bool = None):
     pd.DataFrame({"doc_id": doc_ids, "strong": strongs, "weak": weaks}).to_csv(
         path, index=False
     )
-
     if not explicit_columns:
-        return ndb.CSV(path)
-
-    return ndb.CSV(
+        ndb_doc = ndb.CSV(path)
+    ndb_doc = ndb.CSV(
         path,
         id_column="doc_id" if doc_id_column else None,
         strong_columns=["strong"],
         weak_columns=["weak"],
         reference_columns=["strong", "weak"],
     )
+
+    shutil.rmtree(path)
+
+    return ndb_doc
 
 
 def strong_columns_empty(doc: ndb.Document):
