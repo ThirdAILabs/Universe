@@ -1,5 +1,6 @@
-import pandas as pd
 import os
+
+import pandas as pd
 import pytest
 from thirdai import neural_db as ndb
 
