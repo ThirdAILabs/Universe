@@ -1087,6 +1087,8 @@ class SQLDatabase(DocumentConnector):
         all_cols = self._connector.cols_metadata()
 
         columns_set = set([col["name"] for col in all_cols])
+
+        # Checking for strong, weak and reference columns (if provided) to be present in column list of the table
         if (self.strong_columns is not None) and (
             not set(self.strong_columns).issubset(columns_set)
         ):
@@ -1106,6 +1108,7 @@ class SQLDatabase(DocumentConnector):
                 f"Reference column(s) doesn't exists in the table '{self.table_name}'"
             )
 
+        # Checking for strong and weak column to have the correct column type
         for col in all_cols:
             if (
                 self.strong_columns is not None
@@ -1134,6 +1137,9 @@ class SQLDatabase(DocumentConnector):
             self.strong_columns = []
         elif self.weak_columns is None:
             self.weak_columns = []
+
+        if self.reference_columns is None:
+            self.reference_columns = list(columns_set)
 
 
 class SharePoint(DocumentConnector):
@@ -1402,13 +1408,13 @@ class SalesForce(DocumentConnector):
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
         self._connector = SalesforceConnector(
-            instance=instance, object_name=object_name, id_col=self.id_col, fields=None
+            instance=instance, object_name=object_name
         )
 
         self.total_rows = self._connector.total_rows()
-        assert self.total_rows > 0
-        # self.sf_instance = self._connector.sf_instances
-        self._hash = hash_string(self._connector.session_id + self._connector.base_url)
+        if not self.total_rows > 0:
+            raise FileNotFoundError("Empty Object")
+        self._hash = hash_string(self._connector.sf_instance + self._connector.base_url)
         self._source = self._connector.sf_instance + self.object_name
 
         # Integrity_checks
@@ -1416,11 +1422,9 @@ class SalesForce(DocumentConnector):
         self.assert_valid_fields()
 
         # setting the columns in the connector object
-        self._connector._fields = list(set(self.strong_columns + self.weak_columns))
-
-    @property
-    def size(self) -> int:
-        return self.total_rows
+        self._connector._fields = [self.id_col] + list(
+            set(self.strong_columns + self.weak_columns)
+        )
 
     @property
     def name(self) -> str:
@@ -1430,12 +1434,13 @@ class SalesForce(DocumentConnector):
     def hash(self) -> str:
         return self._hash
 
-    def _get_connector_object_name(self):
-        return "_connector"
+    @property
+    def size(self) -> int:
+        return self.total_rows
 
     def setup_connection(self, instance: Salesforce):
         """
-        This is a helper function to re-establish the connection upon loading the saved ndb model containing this SalesForce document.
+        This is a helper function to re-establish the connection upon loading a saved ndb model containing this SalesForce document.
         Args:
             instance: Salesforce instance
                     NOTE: Provide the same connection object.
@@ -1444,16 +1449,66 @@ class SalesForce(DocumentConnector):
         try:
             # The idea is to check for the connector object existence
             print(
-                f"Connector object already exists with url: {self._connector.get_engine_url()}"
+                f"Connector object already exists with url: {self._connector.base_url}"
             )
         except AttributeError as e:
-            assert self.hash == hash_string(instance.session_id + instance.base_url)
+            assert self.hash == hash_string(instance.sf_instance + instance.base_url)
             self._connector = SalesforceConnector(
                 instance=instance,
                 object_name=self.object_name,
-                id_col=self.id_col,
-                fields=list(set(self.strong_columns + self.weak_columns)),
+                fields=[self.id_col]
+                + list(set(self.strong_columns + self.weak_columns)),
             )
+
+    def _get_connector_object_name(self):
+        return "_connector"
+
+    def row_iterator(self):
+        for current_chunk in self.chunk_iterator():
+            for idx in range(len(current_chunk)):
+                yield DocumentRow(
+                    element_id=int(current_chunk.iloc[idx][self.id_col]),
+                    strong=self.strong_text_from_chunk(
+                        id_in_chunk=idx, chunk=current_chunk
+                    ),  # Strong text from (idx)th row of the current_batch
+                    weak=self.weak_text_from_chunk(
+                        id_in_chunk=idx, chunk=current_chunk
+                    ),  # Weak text from (idx)th row of the current_batch
+                )
+
+    def get_strong_columns(self):
+        return self.strong_columns
+
+    def get_weak_columns(self):
+        return self.weak_columns
+
+    @property
+    def meta_table(self) -> Optional[pd.DataFrame]:
+        return None
+
+    def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
+        try:
+            row = chunk.iloc[id_in_chunk]
+            return " ".join(
+                [str(row[col]).replace(",", "") for col in self.get_strong_columns()]
+            )
+        except Exception as e:
+            return ""
+
+    def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
+        try:
+            row = chunk.iloc[id_in_chunk]
+            return " ".join(
+                [str(row[col]).replace(",", "") for col in self.get_weak_columns()]
+            )
+        except Exception as e:
+            return ""
+
+    def chunk_iterator(self) -> pd.DataFrame:
+        return self._connector.chunk_iterator()
+
+    def all_entity_ids(self) -> List[int]:
+        return list(range(self.size))
 
     def reference(self, element_id: int) -> Reference:
         if element_id >= self.size:
@@ -1482,51 +1537,12 @@ class SalesForce(DocumentConnector):
             },
         )
 
-    def chunk_iterator(self) -> pd.DataFrame:
-        return self._connector.chunk_iterator()
-
-    def chunk_iterator(self) -> pd.DataFrame:
-        if not hasattr(self, "_connector"):
-            raise AttributeError("Connector not found")
-        return self._connector.chunk_iterator()
-
-    def get_strong_columns(self):
-        return self.strong_columns
-
-    def get_weak_columns(self):
-        return self.weak_columns
-
-    def all_entity_ids(self) -> List[int]:
-        return list(range(self.size))
-
-    def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
-        try:
-            row = chunk.iloc[id_in_chunk]
-            return " ".join(
-                [str(row[col]).replace(",", "") for col in self.get_strong_columns()]
-            )
-        except Exception as e:
-            return ""
-
-    def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
-        try:
-            row = chunk.iloc[id_in_chunk]
-            return " ".join(
-                [str(row[col]).replace(",", "") for col in self.get_weak_columns()]
-            )
-        except Exception as e:
-            return ""
-
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
         """
         This method is used by DocumentManager while adding this document. Also it is being used in saving the model during pickling.
         """
         return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
-
-    @property
-    def meta_table(self) -> Optional[pd.DataFrame]:
-        return self._meta_table
 
     def assert_valid_id(self):
         all_fields = self._connector.field_metadata()
@@ -1577,6 +1593,8 @@ class SalesForce(DocumentConnector):
         all_fields = self._connector.field_metadata()
 
         fields_set = set([field["name"] for field in all_fields])
+
+        # Checking for strong, weak and reference columns (if provided) to be present in column list of the table
         if (self.strong_columns is not None) and (
             not set(self.strong_columns).issubset(fields_set)
         ):
@@ -1590,6 +1608,7 @@ class SalesForce(DocumentConnector):
         ):
             raise AttributeError("Reference column(s) doesn't exists in the object")
 
+        # Checking for strong and weak column to have the correct column type
         supported_text_type = ("string", "textarea")
         for field in all_fields:
             if (
@@ -1598,7 +1617,7 @@ class SalesForce(DocumentConnector):
                 and field["type"] not in supported_text_type
             ):
                 raise AttributeError(
-                    f"Strong column '{field['name']}' needs to be type string"
+                    f"Strong column '{field['name']}' needs to be type from {supported_text_type}"
                 )
             if (
                 self.weak_columns is not None
@@ -1606,14 +1625,17 @@ class SalesForce(DocumentConnector):
                 and field["type"] not in supported_text_type
             ):
                 raise AttributeError(
-                    f"Weak column '{field['name']}' needs to be type string"
+                    f"Weak column '{field['name']}' needs to be type {supported_text_type}"
                 )
 
         if self.strong_columns is None and self.weak_columns is None:
             self.strong_columns = []
             self.weak_columns = []
             for field in all_fields:
-                if field["name"] != self.id_col and field["type"] in supported_text_type:
+                if (
+                    field["name"] != self.id_col
+                    and field["type"] in supported_text_type
+                ):
                     self.weak_columns.append(field["name"])
         elif self.strong_columns is None:
             self.strong_columns = []
@@ -1621,9 +1643,9 @@ class SalesForce(DocumentConnector):
             self.weak_columns = []
 
         if self.reference_columns is None:
-            self.reference_columns = []
+            self.reference_columns = [self.id_col]
             for field in all_fields:
-                if field["name"] != self.id_col and field["type"] in supported_text_type:
+                if field["type"] in supported_text_type:
                     self.reference_columns.append(field["name"])
 
 

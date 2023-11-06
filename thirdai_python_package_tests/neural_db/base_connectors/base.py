@@ -2,6 +2,7 @@ import os
 from functools import lru_cache
 
 import yaml
+from simple_salesforce import Salesforce
 from sqlalchemy import create_engine
 from thirdai import neural_db as ndb
 
@@ -34,7 +35,7 @@ def get_sql_table():
 
 def get_client_context():
     creds = get_creds()
-    sp_creds = creds["sharePoint"]
+    sp_creds = creds["SharePoint"]
     return ndb.SharePoint.setup_clientContext(
         base_url=sp_creds["site_url"], credentials=sp_creds
     )
@@ -42,7 +43,13 @@ def get_client_context():
 
 def get_library_path():
     creds = get_creds()
-    return creds["sharePoint"]["library_path"]
+    return creds["SharePoint"]["library_path"]
+
+
+def get_salesforce_instance():
+    creds = get_creds()
+    sf_creds = creds["SalesForce"]
+    return Salesforce(**sf_creds)
 
 
 def get_base_connectors(doc):
@@ -50,5 +57,7 @@ def get_base_connectors(doc):
         return get_sql_engine()
     elif isinstance(doc, ndb.SharePoint):
         return get_client_context()
+    elif isinstance(doc, ndb.SalesForce):
+        return get_salesforce_instance()
 
     raise TypeError("Unsupported document connector type")

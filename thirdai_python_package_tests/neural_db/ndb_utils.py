@@ -12,6 +12,7 @@ class Equivalent_doc:
         self.connector_doc = connector_doc
         self.local_doc = local_doc
 
+
 from thirdai_python_package_tests.neural_db.base_connectors import base
 
 
@@ -70,11 +71,17 @@ TXT_FILE = os.path.join(BASE_DIR, "nature.txt")
 EML_FILE = os.path.join(BASE_DIR, "Message.eml")
 
 # connection instances for connector document
+# SQL connector attributes
 ENGINE = base.get_sql_engine()
 TABLE_NAME = base.get_sql_table()
 
+# SharePoint connector attributes
 CLIENT_CONTEXT = base.get_client_context()
 LIBRARY_PATH = base.get_library_path()
+
+# SalesForce Connector attributes
+SF_INSTANCE = base.get_salesforce_instance()
+OBJECT_NAME = "Yelp_review__c"
 
 CSV_EXPLICIT_META = "csv-explicit"
 PDF_META = "pdf"
@@ -191,6 +198,23 @@ all_connector_doc_getters = [
             ctx=CLIENT_CONTEXT, library_path=LIBRARY_PATH
         ),
         local_doc=build_local_sharepoint_doc,
+    ),
+    Equivalent_doc(
+        connector_doc=lambda: ndb.SalesForce(
+            instance=SF_INSTANCE,
+            object_name=OBJECT_NAME,
+            id_col="ID__c",
+            strong_columns=["Review__c"],
+            weak_columns=["Review__c"],
+            reference_columns=["Review__c"],
+        ),
+        local_doc=lambda: ndb.CSV(
+            path=os.path.join(BASE_DIR, "connector_docs", "Salesforce", "yelp.csv"),
+            id_column="ID__c",
+            strong_columns=["Review__c"],
+            weak_columns=["Review__c"],
+            reference_columns=["Review__c"],
+        ),
     ),
 ]
 

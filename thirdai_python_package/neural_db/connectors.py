@@ -160,12 +160,10 @@ class SalesforceConnector(Connector):
         self,
         instance: Salesforce,
         object_name: str,
-        id_col: str,
         fields: Optional[List[str]] = None,
     ) -> None:
         self._instance = instance
         self._object_name = object_name
-        self.id_col = id_col
         self._fields = fields
 
     def execute(self, query: str):
@@ -174,14 +172,14 @@ class SalesforceConnector(Connector):
         )  # Returns an OrderedDicts with keys ['totalSize', 'done', 'records']
 
     def chunk_iterator(self):
-        query = f"SELECT {', '.join(self._fields)} FROM {self._object_name} ORDER BY {self.id_col}"
+        query = f"SELECT {', '.join(self._fields)} FROM {self._object_name}"
         results = self._instance.bulk.__getattr__(self._object_name).query(
             query, lazy_operation=True
         )
         for chunk in results:
             chunk_df = pd.DataFrame(
                 chunk
-            )  # Number of records in each chunk is 10K (can't be changed with salesforce bulk API).
+            )  # Number of records in each chunk can atmost 10K (can't be changed with salesforce bulk API).
             chunk_df.drop(columns=["attributes"], inplace=True)
             yield chunk_df
 
@@ -200,7 +198,3 @@ class SalesforceConnector(Connector):
     @property
     def base_url(self):
         return self._instance.base_url
-
-    @property
-    def session_id(self):
-        return self._instance.session_id

@@ -53,12 +53,12 @@ ARBITRARY_QUERY = "This is an arbitrary search query"
 
 def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document]):
     db.insert(docs, train=False)
-    assert len(db.sources()) == 11
+    assert len(db.sources()) == 12
 
     initial_scores = [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)]
 
     db.insert(docs, train=True)
-    assert len(db.sources()) == 11
+    assert len(db.sources()) == 12
 
     assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
 
@@ -632,6 +632,10 @@ def test_neural_db_delete_document():
             metadata={"about": "pizza"},
         ),
     ]
+
+    # Removing ice_cream.csv and pizza.csv
+    os.remove("ice_cream.csv")
+    os.remove("pizza.csv")
 
     for _ in range(5):
         [ice_cream_source_id, _] = db.insert(docs, train=True)
