@@ -62,7 +62,7 @@ def run_coldstart(
     bad_csv_line=False,
     epochs=5,
     integer_target=True,
-    variable_length=True,
+    variable_length=data.transformations.VariableLengthConfig(),
 ):
     filename = setup_testing_file(missing_values, bad_csv_line, integer_target)
 
