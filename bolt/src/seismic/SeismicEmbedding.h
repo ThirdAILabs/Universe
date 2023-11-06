@@ -26,7 +26,7 @@ class SeismicEmbedding final : public SeismicBase {
       size_t batch_size, const std::vector<callbacks::CallbackPtr>& callbacks,
       std::optional<uint32_t> log_interval, const DistributedCommPtr& comm);
 
-  NumpyArray forward(const NumpyArray& subcubes);
+  py::object forward(const NumpyArray& subcubes);
 
   void backpropagate(const NumpyArray& gradients);
 
