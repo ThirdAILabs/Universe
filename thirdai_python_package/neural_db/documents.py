@@ -27,7 +27,7 @@ from .connectors import Connector, SharePointConnector, SQLConnector
 from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
 from .parsing_utils import doc_parse, pdf_parse, url_parse
 from .parsing_utils.unstructured_parse import EmlParse, PptxParse, TxtParse
-from .utils import hash_file, hash_string
+from .utils import hash_file, hash_string, requires_condition
 
 
 class Reference:
@@ -362,8 +362,12 @@ class CSV(Document):
         save_extra_info=True,
         metadata={},
         index_columns=[],
+        has_offset=False,
     ) -> None:
         self.df = pd.read_csv(path)
+
+        # This variable is used to check whether the id's in the CSV are supposed to start with 0 or with some custom offset. We need the latter when we shard the datasource.
+        self.has_offset = has_offset
 
         if reference_columns is None:
             reference_columns = list(self.df.columns)
@@ -391,9 +395,11 @@ class CSV(Document):
             weak_columns = []
 
         self.df = self.df.sort_values(id_column)
-        # assert len(self.df[id_column].unique()) == len(self.df[id_column])
-        # assert self.df[id_column].min() == 0
-        # assert self.df[id_column].max() == len(self.df[id_column]) - 1
+
+        if not self.has_offset:
+            assert len(self.df[id_column].unique()) == len(self.df[id_column])
+            assert self.df[id_column].min() == 0
+            assert self.df[id_column].max() == len(self.df[id_column]) - 1
 
         for col in strong_columns + weak_columns:
             self.df[col] = self.df[col].fillna("")
@@ -421,6 +427,12 @@ class CSV(Document):
     def name(self) -> str:
         return self.path.name
 
+    @requires_condition(
+        check_func=lambda self: not self.has_offset,
+        method_name="matched_constraints",
+        method_class="CSV(Document)",
+        condition_string=" when there is an offset in the CSV document",
+    )
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
         metadata_constraints = {
@@ -453,6 +465,12 @@ class CSV(Document):
         row = self.df.iloc[element_id]
         return " ".join([str(row[col]).replace(",", "") for col in self.weak_columns])
 
+    @requires_condition(
+        check_func=lambda self: not self.has_offset,
+        method_name="reference",
+        method_class="CSV(Document)",
+        condition_string=" when there is an offset in the CSV document",
+    )
     def reference(self, element_id: int) -> Reference:
         if element_id >= len(self.df):
             _raise_unknown_doc_error(element_id)
@@ -497,11 +515,23 @@ class CSV(Document):
 
         self.__dict__.update(state)
 
+    @requires_condition(
+        check_func=lambda self: not self.self_offset,
+        method_name="save_meta",
+        method_class="CSV(Document)",
+        condition_string=" when there is an offset in the CSV document",
+    )
     def save_meta(self, directory: Path):
         # Let's copy the original CSV file to the provided directory
         if self.save_extra_info:
             shutil.copy(self.path, directory)
 
+    @requires_condition(
+        check_func=lambda self: not self.has_offset,
+        method_name="load_meta",
+        method_class="CSV(Document)",
+        condition_string=" when there is an offset in the CSV document",
+    )
     def load_meta(self, directory: Path):
         # Since we've moved the CSV file to the provided directory, let's make
         # sure that we point to this CSV file.

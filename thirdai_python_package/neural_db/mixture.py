@@ -7,6 +7,7 @@ import random
 from .documents import DocumentDataSource
 from .sharded_documents import ShardedDataSource
 from .models import Mach, Model, CancelState, make_balancing_samples
+from .utils import requires_condition
 
 InferSamples = List
 Predictions = Sequence
@@ -189,15 +190,28 @@ class MachMixture(Model):
 
         return results
 
+    @requires_condition(
+        check_func=lambda x: False,
+        method_name="score",
+        method_class="MachMixture",
+        condition_string="when multiple models are initialized",
+    )
     def score(
         self, samples: InferSamples, entities: List[List[int]], n_results: int = None
     ) -> Predictions:
-        raise NotImplementedError()
+        print("Inside the score function of mach mixture")
+        pass
 
+    @requires_condition(
+        check_func=lambda x: False,
+        method_name="score",
+        method_class="MachMixture",
+        condition_string="when multiple models are initialized",
+    )
     def infer_buckets(
         self, samples: InferSamples, n_results: int, **kwargs
     ) -> Predictions:
-        NotImplementedError()
+        pass
 
     def associate(
         self,

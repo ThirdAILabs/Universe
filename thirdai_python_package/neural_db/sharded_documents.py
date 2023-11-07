@@ -75,6 +75,7 @@ class ShardedDataSource:
             id_column=id_column,
             strong_columns=[strong_column],
             weak_columns=[weak_column],
+            has_offset=True,
         )
         shard_object.close()
         return csv_object
