@@ -16,7 +16,7 @@ import uuid
 import os
 
 
-def pdf_file_model(files, in_dim=50_000, emb_dim=2048, num_buckets=50_000, epochs=10):
+def pdf_file_model(files, in_dim=50_000, emb_dim=2048, num_buckets=50_000, epochs=15):
     dfs = [PDF(file).df for file in files]
     dfs = [
         pd.DataFrame(
