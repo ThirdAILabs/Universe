@@ -1,12 +1,12 @@
-from typing import List
-from thirdai import bolt
+import random
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence, Tuple
-import random
+
+from thirdai import bolt
 
 from .documents import DocumentDataSource
+from .models import CancelState, Mach, Model, make_balancing_samples
 from .sharded_documents import ShardedDataSource
-from .models import Mach, Model, CancelState, make_balancing_samples
 from .utils import requires_condition
 
 InferSamples = List
@@ -106,7 +106,6 @@ class MachMixture(Model):
         cancel_state: CancelState = None,
         max_in_memory_batches: int = None,
     ) -> None:
-
         # We need the original number of classes from the original data source so that we can initialize the Mach models this mixture will have
         number_classes = intro_documents.size
 

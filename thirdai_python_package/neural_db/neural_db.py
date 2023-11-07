@@ -11,8 +11,8 @@ from thirdai.dataset.data_source import PyDataSource
 
 from . import loggers, teachers
 from .documents import CSV, Document, DocumentManager, Reference
-from .models import CancelState, Mach
 from .mixture import MachMixture
+from .models import CancelState, Mach
 from .savable_state import State
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
@@ -366,11 +366,13 @@ class NeuralDB:
 
         ray_version = ray.__version__
         if LooseVersion(ray_version) >= LooseVersion("2.7"):
-            warnings.warn("""
+            warnings.warn(
+                """
                 Using ray version 2.7 or higher requires specifying a remote or NFS storage path. 
                 Support for local checkpoints has been discontinued in these versions. 
                 Refer to https://github.com/ray-project/ray/issues/37177 for details.
-                """.strip())
+                """.strip()
+            )
 
         if not isinstance(documents, list) or not all(
             isinstance(doc, CSV) for doc in documents
