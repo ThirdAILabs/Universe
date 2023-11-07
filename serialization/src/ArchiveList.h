@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 
-namespace thirdai::serialization {
+namespace thirdai::ar {
 
 class ArchiveList final : public Archive {
  public:
@@ -40,4 +40,4 @@ class ArchiveList final : public Archive {
   void load(Ar& archive);
 };
 
-}  // namespace thirdai::serialization
+}  // namespace thirdai::ar

@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <variant>
 
-namespace thirdai::serialization {
+namespace thirdai::ar {
 
 class ParameterReference final : public Archive {
  public:
@@ -53,4 +53,4 @@ class ParameterReference final : public Archive {
   void load(Ar& archive);
 };
 
-}  // namespace thirdai::serialization
+}  // namespace thirdai::ar

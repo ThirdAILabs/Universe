@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace thirdai::serialization {
+namespace thirdai::ar {
 
 class Archive;
 using ArchivePtr = std::shared_ptr<Archive>;
@@ -15,12 +15,15 @@ class ArchiveMap;
 class ArchiveList;
 template <typename T>
 class ArchiveValue;
+class ParameterReference;
 
 class Archive {
  public:
   const ArchiveMap& map() const;
 
   const ArchiveList& list() const;
+
+  const ParameterReference& param() const;
 
   bool contains(const std::string& key) const;
 
@@ -46,9 +49,6 @@ class Archive {
   virtual ~Archive() = default;
 
  private:
-  template <typename T>
-  const ArchiveValue<T>* value() const;
-
   friend class cereal::access;
 
   template <class Ar>
@@ -80,4 +80,4 @@ ConstArchivePtr map(std::unordered_map<uint64_t, std::vector<uint64_t>> val);
 
 ConstArchivePtr map(std::unordered_map<uint64_t, std::vector<float>> val);
 
-}  // namespace thirdai::serialization
+}  // namespace thirdai::ar

@@ -6,7 +6,7 @@
 #include <cereal/types/vector.hpp>
 #include "Archive.h"
 
-namespace thirdai::serialization {
+namespace thirdai::ar {
 
 template void ArchiveList::save(cereal::BinaryOutputArchive&) const;
 
@@ -22,6 +22,6 @@ void ArchiveList::load(Ar& archive) {
   archive(cereal::base_class<Archive>(this), _list);
 }
 
-}  // namespace thirdai::serialization
+}  // namespace thirdai::ar
 
-CEREAL_REGISTER_TYPE(thirdai::serialization::ArchiveList);
+CEREAL_REGISTER_TYPE(thirdai::ar::ArchiveList);

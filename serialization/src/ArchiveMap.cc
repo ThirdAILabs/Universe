@@ -5,7 +5,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/unordered_map.hpp>
 
-namespace thirdai::serialization {
+namespace thirdai::ar {
 
 template void ArchiveMap::save(cereal::BinaryOutputArchive&) const;
 
@@ -21,6 +21,6 @@ void ArchiveMap::load(Ar& archive) {
   archive(cereal::base_class<Archive>(this), _map);
 }
 
-}  // namespace thirdai::serialization
+}  // namespace thirdai::ar
 
-CEREAL_REGISTER_TYPE(thirdai::serialization::ArchiveMap);
+CEREAL_REGISTER_TYPE(thirdai::ar::ArchiveMap);

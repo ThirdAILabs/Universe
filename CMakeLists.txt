@@ -309,6 +309,7 @@ add_subdirectory(dataset)
 add_subdirectory(search)
 add_subdirectory(hashing)
 add_subdirectory(hashtable)
+add_subdirectory(serialization)
 add_subdirectory(compression)
 add_subdirectory(utils)
 

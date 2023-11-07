@@ -7,7 +7,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace thirdai::serialization {
+namespace thirdai::ar {
 
 class ArchiveMap final : public Archive {
  public:
@@ -17,7 +17,7 @@ class ArchiveMap final : public Archive {
 
   bool contains(const std::string& key) const { return _map.count(hash(key)); }
 
-  const ConstArchivePtr& at(const std::string& key) const {
+  const ConstArchivePtr& get(const std::string& key) const {
     if (contains(key)) {
       return _map.at(hash(key));
     }
@@ -53,4 +53,4 @@ class ArchiveMap final : public Archive {
   void load(Ar& archive);
 };
 
-}  // namespace thirdai::serialization
+}  // namespace thirdai::ar

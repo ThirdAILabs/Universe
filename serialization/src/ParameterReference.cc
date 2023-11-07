@@ -4,7 +4,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 
-namespace thirdai::serialization {
+namespace thirdai::ar {
 
 template void ParameterReference::save(cereal::BinaryOutputArchive&) const;
 
@@ -27,6 +27,6 @@ void ParameterReference::load(Ar& archive) {
   _state = LoadedState{parameter};
 }
 
-}  // namespace thirdai::serialization
+}  // namespace thirdai::ar
 
-CEREAL_REGISTER_TYPE(thirdai::serialization::ParameterReference)
+CEREAL_REGISTER_TYPE(thirdai::ar::ParameterReference)

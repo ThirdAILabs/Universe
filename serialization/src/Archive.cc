@@ -3,9 +3,10 @@
 #include <serialization/src/ArchiveList.h>
 #include <serialization/src/ArchiveMap.h>
 #include <serialization/src/ArchiveValue.h>
+#include <serialization/src/ParameterReference.h>
 #include <stdexcept>
 
-namespace thirdai::serialization {
+namespace thirdai::ar {
 
 const ArchiveMap& Archive::map() const {
   const auto* map = dynamic_cast<const ArchiveMap*>(this);
@@ -26,34 +27,33 @@ const ArchiveList& Archive::list() const {
   return *list;
 }
 
-template <typename T>
-const ArchiveValue<T>* Archive::value() const {
-  const auto* val = dynamic_cast<const ArchiveValue<T>*>(this);
-  if (!val) {
-    throw std::invalid_argument("Expected to the archive to have type '" +
-                                ArchiveValue<T>::typeName() + "' but found '" +
-                                type() + "'.");
+const ParameterReference& Archive::param() const {
+  const auto& param = dynamic_cast<const ParameterReference*>(this);
+  if (!param) {
+    throw std::invalid_argument(
+        "Expected to the archive to have type ParameterReference but found '" +
+        type() + "'.");
   }
-  return val;
+  return *param;
 }
-
-// NOLINTNEXTLINE (clang-tidy doesn't like macros)
-#define SPECIALIZE_value(...) \
-  template const ArchiveValue<__VA_ARGS__>* Archive::value() const;
-
-APPLY_TO_TYPES(SPECIALIZE_value)
 
 bool Archive::contains(const std::string& key) const {
   return map().contains(key);
 }
 
 const ConstArchivePtr& Archive::at(const std::string& key) const {
-  return map().at(key);
+  return map().get(key);
 }
 
 template <typename T>
 const T& Archive::get() const {
-  return value<T>()->get();
+  const auto* val = dynamic_cast<const ArchiveValue<T>*>(this);
+  if (!val) {
+    throw std::invalid_argument("Expected to the archive to have type '" +
+                                ArchiveValue<T>::typeName() + "' but found '" +
+                                type() + "'.");
+  }
+  return val->get();
 }
 
 // NOLINTNEXTLINE (clang-tidy doesn't like macros)
@@ -63,7 +63,7 @@ APPLY_TO_TYPES(SPECIALIZE_get)
 
 template <typename T>
 bool Archive::is() const {
-  return value<T>();
+  return dynamic_cast<const ArchiveValue<T>*>(this);
 }
 
 // NOLINTNEXTLINE (clang-tidy doesn't like macros)
@@ -163,4 +163,4 @@ ConstArchivePtr map(std::unordered_map<uint64_t, std::vector<float>> val) {
       std::move(val));
 }
 
-}  // namespace thirdai::serialization
+}  // namespace thirdai::ar

@@ -4,8 +4,10 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
-namespace thirdai::serialization {
+namespace thirdai::ar {
 
 template <typename T>
 class ArchiveValue final : public Archive {
@@ -50,4 +52,4 @@ class ArchiveValue final : public Archive {
   EXPR(std::unordered_map<uint64_t, std::vector<uint64_t>>) \
   EXPR(std::unordered_map<uint64_t, std::vector<float>>)
 
-}  // namespace thirdai::serialization
+}  // namespace thirdai::ar
