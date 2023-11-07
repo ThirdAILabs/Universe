@@ -56,8 +56,6 @@ def pdf_file_model(files, in_dim=50_000, emb_dim=2048, num_buckets=50_000, epoch
     )
     os.remove(file_level_coldstart)
     #
-    for df in dfs:
-        df["para"].iloc[0] = "\n".join(df["para"])
     one_reference_per_file_df = pd.concat([df.iloc[:1] for df in dfs])
     ndb_reference_file = f"__ndb_reference_file_{uuid.uuid4()}__.csv"
     one_reference_per_file_df.to_csv(ndb_reference_file, index=False)
@@ -71,8 +69,10 @@ def pdf_file_model(files, in_dim=50_000, emb_dim=2048, num_buckets=50_000, epoch
     )
 
 
-def pdf_para_model(files):
-    bazaar = Bazaar(cache_dir=Path("bazaar_cache"))
+def pdf_para_model(files, bazaar_cache):
+    if not os.path.exists(bazaar_cache):
+        os.mkdir(bazaar_cache)
+    bazaar = Bazaar(cache_dir=Path(bazaar_cache))
     bazaar.fetch()
     para_db = bazaar.get_model("General QnA")
     docs = [PDF(file, metadata={"file": Path(file).name}) for file in files]
