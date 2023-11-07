@@ -1,8 +1,13 @@
-import pandas as pd
+import uuid
 from pathlib import Path
+
+import pandas as pd
 from thirdai._thirdai import bolt
+
+from .constraint_matcher import AnyOf
 from .documents import PDF
-from .neural_db import NeuralDB
+from .lexical_utils import reformulate as lexical_reformulate
+from .lexical_utils import rerank as lexical_rerank
 from .model_bazaar import Bazaar
 from .constraint_matcher import AnyOf
 from .lexical_utils import reformulate as lexical_reformulate, rerank as lexical_rerank
@@ -78,7 +83,7 @@ def hierarchical_search(
     file_db,
     para_db,
     query,
-    top_k_results,
+    top_k_returned,
     top_k_files=5,
     top_k_rerank=100,
     rerank=True,
@@ -90,9 +95,29 @@ def hierarchical_search(
     )
     top_k_filenames = [r.metadata["file"] for r in file_results]
     constraints = {"file": AnyOf(top_k_filenames)}
-    results = para_db.search(query=query, top_k=top_k_rerank, constraints=constraints)
+    return rerank_and_reformulate(
+        para_db,
+        query,
+        top_k_returned=top_k_returned,
+        top_k_rerank=top_k_rerank,
+        rerank=rerank,
+        reformulate=reformulate,
+        constraints=constraints,
+    )
+
+
+def rerank_and_reformulate(
+    db,
+    query,
+    top_k_returned,
+    top_k_rerank=100,
+    rerank=True,
+    reformulate=False,
+    constraints={},
+):
+    results = db.search(query=query, top_k=top_k_rerank, constraints=constraints)
     if reformulate:
-        results = lexical_reformulate(para_db, query, constraints=constraints)
+        results = lexical_reformulate(db, query, constraints=constraints)
     if rerank:
         results = lexical_rerank(query, results)
-    return results[:top_k_results]
+    return results[:top_k_returned]

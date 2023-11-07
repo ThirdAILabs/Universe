@@ -1,7 +1,8 @@
-from collections import defaultdict
-import nltk
 import random
 import re
+from collections import defaultdict
+
+import nltk
 from nltk.corpus import wordnet as wn
 
 nltk.download("averaged_perceptron_tagger")
@@ -88,12 +89,12 @@ def aggregate_search_results(preds_dict, top_k):
     return [x[0] for x in output[:top_k]]
 
 
-def reformulate(db, query, constraints={}):
+def reformulate(db, query, constraints={}, top_k=100):
     expanded_queries = reformulate_query(query)
     preds_dict = defaultdict(list)
     for q in expanded_queries:
-        output_results = db.search(query=q, top_k=100, constraints=constraints)
+        output_results = db.search(query=q, top_k=top_k, constraints=constraints)
         for result in output_results:
             preds_dict[result].extend([result.score])
-    search_results = aggregate_search_results(preds_dict, top_k=100)
+    search_results = aggregate_search_results(preds_dict, top_k=top_k)
     return search_results
