@@ -16,7 +16,7 @@ try:
     )
     from .model_bazaar import Bazaar
     from .neural_db import CancelState, NeuralDB, Strength, Sup
-    import toolbox
+    from . import toolbox
 except ImportError as error:
     raise ImportError(
         "To use thirdai.neural_db, please install the additional dependencies by running 'pip install thirdai[neural_db]'"
