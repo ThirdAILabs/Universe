@@ -10,7 +10,7 @@ import uuid
 import os
 
 
-def pdf_file_model(files, in_dim=50_000, emb_dim=2048, num_buckets=50_000):
+def pdf_file_model(files, in_dim=50_000, emb_dim=2048, num_buckets=50_000, epochs=10):
     dfs = [PDF(file).df for file in files]
     dfs = [
         pd.DataFrame(
@@ -46,7 +46,7 @@ def pdf_file_model(files, in_dim=50_000, emb_dim=2048, num_buckets=50_000):
         strong_column_names=[],
         weak_column_names=["para"],
         learning_rate=0.005,
-        epochs=10,
+        epochs=epochs,
     )
     os.remove(file_level_coldstart)
     #
