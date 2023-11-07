@@ -89,6 +89,7 @@ def hierarchical_search(
     top_k_rerank=100,
     rerank=True,
     reformulate=False,
+    force_unique_files=False,
 ):
     file_results = file_db.search(
         query=query,
@@ -96,7 +97,7 @@ def hierarchical_search(
     )
     top_k_filenames = [r.metadata["file"] for r in file_results]
     constraints = {"file": AnyOf(top_k_filenames)}
-    return rerank_and_reformulate(
+    search_results =  rerank_and_reformulate(
         para_db,
         query,
         top_k_returned=top_k_returned,
@@ -105,6 +106,16 @@ def hierarchical_search(
         reformulate=reformulate,
         constraints=constraints,
     )
+    if force_unique_files:
+        seen = set([])
+        filtered_search_results = []
+        for r in search_results:
+            if r.metadata["file"] in seen:
+                continue
+            seen.add(r.metadata["file"])
+            filtered_search_results.append(r)
+        search_results = filtered_search_results
+    return search_results
 
 
 def rerank_and_reformulate(
