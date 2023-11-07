@@ -21,10 +21,9 @@ try:
         replace_unicode_quotes,
     )
 except Exception as e:
-    print(
+    raise ModuleNotFoundError(
         "To use NeuralDB with these document types please run: pip3 install unstructured[all-docs]"
     )
-    raise
 
 
 from .utils import (
