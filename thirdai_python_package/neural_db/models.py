@@ -287,6 +287,14 @@ class Mach(Model):
         self.balancing_samples = []
         self.model_config = model_config
 
+    def set_mach_sampling_threshold(self, threshold: float):
+        if self.model is None:
+            raise Exception(
+                "Cannot set Sampling Threshold for a model that has not been"
+                " initialized"
+            )
+        self.model.set_mach_sampling_threshold(threshold)
+
     def get_model(self) -> bolt.UniversalDeepTransformer:
         return self.model
 
@@ -321,7 +329,13 @@ class Mach(Model):
         on_progress: Callable = lambda **kwargs: None,
         cancel_state: CancelState = None,
         max_in_memory_batches: int = None,
+        override_number_classes: int = None,
     ) -> None:
+        """
+        override_number_classes : The number of classes for the Mach model
+
+        Note: Given the datasources for introduction and training, we initialize a Mach model that has number_classes set to the size of introduce documents. But if we want to use this Mach model in our mixture of Models, this will not work because each Mach will be initialized with number of classes equal to the size of the datasource shard. Hence, we add override_number_classes parameters which if set, will initialize Mach Model with number of classes passed by the Mach Mixture.
+        """
         if intro_documents.id_column != self.id_col:
             raise ValueError(
                 f"Model configured to use id_col={self.id_col}, received document with"
@@ -330,7 +344,9 @@ class Mach(Model):
 
         if self.model is None:
             self.id_col = intro_documents.id_column
-            self.model = self.model_from_scratch(intro_documents)
+            self.model = self.model_from_scratch(
+                intro_documents, number_classes=override_number_classes
+            )
             learning_rate = 0.005
             freeze_before_train = False
             min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
@@ -369,7 +385,7 @@ class Mach(Model):
         self.n_ids += intro_documents.size
         self.add_balancing_samples(intro_documents)
 
-        if should_train:
+        if should_train and train_documents.size > 0:
             unsupervised_train_on_docs(
                 model=self.model,
                 documents=train_documents,
@@ -395,8 +411,7 @@ class Mach(Model):
             self.get_model().forget(entity)
 
     def model_from_scratch(
-        self,
-        documents: DocumentDataSource,
+        self, documents: DocumentDataSource, number_classes: int = None
     ):
         return bolt.UniversalDeepTransformer(
             data_types={
@@ -404,7 +419,9 @@ class Mach(Model):
                 self.id_col: bolt.types.categorical(delimiter=self.id_delimiter),
             },
             target=self.id_col,
-            n_target_classes=documents.size,
+            n_target_classes=(
+                documents.size if number_classes is None else number_classes
+            ),
             integer_target=True,
             options={
                 "extreme_classification": True,
@@ -529,13 +546,15 @@ class MachMixture(Model):
     def __init__(
         self,
         number_models: int,
-        id_col="DOC_ID",
-        id_delimiter=" ",
-        query_col="QUERY",
-        fhr=50_000,
-        embedding_dimension=2048,
-        extreme_output_dim=10_000,  # for Mach Mixture, we use default dim of 10k
+        id_col: str = "DOC_ID",
+        id_delimiter: str = " ",
+        query_col: str = "QUERY",
+        fhr: int = 50_000,
+        embedding_dimension: int = 2048,
+        extreme_output_dim: int = 10_000,  # for Mach Mixture, we use default dim of 10k
         model_config=None,
+        label_index: dict = {},
+        seed_for_sharding: int = 0,
     ):
         print("Initializing a Mixture of Mach Models")
         self.number_models = number_models
@@ -549,11 +568,23 @@ class MachMixture(Model):
         self.models = None
         self.balancing_samples = []
         self.model_config = model_config
+        self.label_index = label_index
+        self.seed_for_sharding = seed_for_sharding
 
-    def get_models(self) -> List[bolt.UniversalDeepTransformer]:
+    def set_mach_sampling_threshold(self, threshold: float):
+        if self.models is None:
+            raise Exception(
+                "Cannot set Sampling Threshold for a model that has not been"
+                " initialized"
+            )
+
+        for model in self.models:
+            model.set_mach_sampling_threshold(threshold)
+
+    def get_model(self) -> List[bolt.UniversalDeepTransformer]:
         return self.models
 
-    def set_models(self, models):
+    def set_model(self, models):
         self.models = models
 
     def save_meta(self, directory: Path):
@@ -595,16 +626,18 @@ class MachMixture(Model):
         sharded_data_source = ShardedDataSource(
             document_data_source=intro_documents,
             number_shards=self.number_models,
+            label_index=self.label_index,
+            seed=self.seed_for_sharding,
         )
         # Start Sharding the dataset
         print("Begin Sharding the Introduce dataset")
-        introduce_data_sources = sharded_data_source.get_shards()
+        introduce_data_sources = sharded_data_source.shard_data_source()
 
         if not self.models:
             self.id_col = intro_documents.id_column
             self.models = [
                 self.model_from_scratch(intro_documents)
-                for model_index in range(self.number_models)
+                for _ in range(self.number_models)
             ]
             learning_rate = 0.005
             min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
@@ -647,7 +680,11 @@ class MachMixture(Model):
         self.n_ids += intro_documents.size
         self.add_balancing_samples(intro_documents)
 
-        train_data_sources = sharded_data_source.shard_using_index(train_documents)
+        train_data_sources = sharded_data_source.shard_using_index(
+            train_documents,
+            label_index=self.label_index,
+            number_shards=self.number_models,
+        )
 
         if should_train:
             for model, train_data_source_shard in zip(self.models, train_data_sources):
@@ -765,6 +802,16 @@ class MachMixture(Model):
                 epochs=epochs,
             )
 
+    def _shard_upvote_pairs(self, source_target_pairs: List[Tuple[str, int]]):
+        shards = [[] for _ in range(self.number_models)]
+        for pair in source_target_pairs:
+            model_ids = self.label_index.get(pair[1])
+            if model_ids is None:
+                raise Exception(f"The Label {pair[1]} is not a part of Label Index")
+            for model_id in model_ids:
+                shards[model_id].append(pair)
+        return shards
+
     def upvote(
         self,
         pairs: List[Tuple[str, int]],
@@ -773,11 +820,13 @@ class MachMixture(Model):
         learning_rate: float = 0.001,
         epochs: int = 3,
     ):
-        samples = [
-            ({self.get_query_col(): clean_text(text)}, label) for text, label in pairs
-        ]
+        sharded_pairs = self._shard_upvote_pairs(pairs)
 
-        for model in self.models:
+        for model, shard in zip(self.models, sharded_pairs):
+            samples = [
+                ({self.get_query_col(): clean_text(text)}, label)
+                for text, label in shard
+            ]
             model.upvote(
                 source_target_samples=samples,
                 n_upvote_samples=n_upvote_samples,
@@ -794,9 +843,17 @@ class MachMixture(Model):
         learning_rate: float,
         epochs: int,
     ):
-        for model in self.models:
+        sharded_data_source = ShardedDataSource(
+            document_data_source=balancing_data,
+            number_shards=self.number_models,
+            label_index=self.label_index,
+            seed=self.seed_for_sharding,
+        )
+        balancing_data_shards = sharded_data_source.shard_data_source()
+
+        for model, shard in zip(self.models, balancing_data_shards):
             model.associate_cold_start_data_source(
-                balancing_data=balancing_data,
+                balancing_data=shard,
                 strong_column_names=[balancing_data.strong_column],
                 weak_column_names=[balancing_data.weak_column],
                 source_target_samples=self._format_associate_samples(
