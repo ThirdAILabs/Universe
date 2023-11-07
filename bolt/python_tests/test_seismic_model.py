@@ -45,7 +45,7 @@ def test_seismic_embedding_model(subcube_dataset, max_pool):
         np.random.rand(n_cubes_to_embed, *subcube_shape).astype(np.float32) / 10
     )
 
-    embs = model.embeddings(subcubes_to_embed)
+    embs = model.embeddings(subcubes_to_embed, sparse_inference=True)
 
     assert embs.shape == (n_cubes_to_embed, emb_dim)
 
@@ -61,6 +61,42 @@ def test_seismic_embedding_model(subcube_dataset, max_pool):
     assert set([x[0] for x in sims]) == set(
         f"candidate_{i}.npy" for i in range(n_cubes_to_embed)
     )
+
+
+@pytest.mark.unit
+def test_seismic_embedding_finetuning(subcube_dataset):
+    subcube_directory, subcube_shape, patch_shape = subcube_dataset
+
+    emb_dim = 100
+
+    model = bolt.seismic.SeismicEmbedding(
+        subcube_shape=subcube_shape[0],
+        patch_shape=patch_shape[0],
+        embedding_dim=emb_dim,
+        size="small",
+        max_pool=2,
+    )
+
+    embs = model.forward(torch.rand(5, *subcube_shape))
+    assert embs.shape == (5, emb_dim)
+    assert embs.requires_grad
+    model.backpropagate(torch.rand(*embs.shape))
+    model.update_parameters(0.001)
+
+    embs = model.embeddings(np.random.rand(3, *subcube_shape))
+    assert embs.shape == (3, emb_dim)
+
+    with pytest.raises(
+        ValueError,
+        match="Can not use unsupervised pretraining on a model after using "
+        "finetuning since the decoder has been invalidated.",
+    ):
+        model.train(
+            subcube_directory=subcube_directory,
+            learning_rate=0.0001,
+            epochs=1,
+            batch_size=8,
+        )
 
 
 @pytest.mark.unit
@@ -95,8 +131,26 @@ def test_seismic_classifier(classification_dataset):
         classifier.embeddings(subcubes_to_embed),
     )
 
-    predictions = classifier.predict(subcubes_to_embed)
+    predictions = classifier.predict(subcubes_to_embed, sparse_inference=True)
     assert predictions.shape == (n_cubes_to_embed, n_classes)
+
+
+@pytest.mark.unit
+def test_seismic_classifier_sparse_inference():
+    emb_model = bolt.seismic.SeismicEmbedding(
+        subcube_shape=16,
+        patch_shape=8,
+        embedding_dim=10,
+        size="small",
+        max_pool=2,
+    )
+
+    classifier = bolt.seismic.SeismicClassifier(emb_model, n_classes=500)
+
+    output = classifier.predict(np.random.rand(1, 16, 16, 16), sparse_inference=True)
+
+    assert output[0].shape == (1, 100)
+    assert output[0].shape == (1, 100)
 
 
 @pytest.mark.unit
