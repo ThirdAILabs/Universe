@@ -1,5 +1,5 @@
 try:
-    from . import parsing_utils
+    from . import parsing_utils, toolbox
     from .constraint_matcher import AnyOf, EqualTo, GreaterThan, InRange, LessThan
     from .documents import (
         CSV,
@@ -16,7 +16,6 @@ try:
     )
     from .model_bazaar import Bazaar
     from .neural_db import CancelState, NeuralDB, Strength, Sup
-    from . import toolbox
 except ImportError as error:
     raise ImportError(
         "To use thirdai.neural_db, please install the additional dependencies by running 'pip install thirdai[neural_db]'"
