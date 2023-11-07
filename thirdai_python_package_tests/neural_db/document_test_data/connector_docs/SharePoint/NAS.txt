@@ -1,7 +1,0 @@
-The effort of automatically selecting one or more designs for a neural network that would generate models with good outcomes (low losses) for a given dataset is known as neural architecture search. The field of neural architecture search is still developing. There is a lot of research going on, there are many alternative methods to the work, and there isn’t a single optimum way for the task in general — or even for a particular problem like object recognition in photos.
-
-AutoML includes features such as feature engineering, transfer learning, and hyperparameter optimization, as well as neural architecture search. It’s certainly the most difficult machine learning subject currently being studied; even evaluating neural architecture search methods is difficult.  
-
-Searching for neural architecture can be costly and time-consuming. GPU-days, sometimes thousands of GPU-days, are commonly used as a statistic for search and training time. The need to improve neural architecture search is self-evident.
-
-The majority of neural network model advancements, such as image categorization and language translation, have necessitated extensive hand-tuning of the neural network architecture, which is time expensive and error-prone. Data scientists are expensive, even when compared to the cost of high-end GPUs on public clouds, and their availability is limited.
