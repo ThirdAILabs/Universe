@@ -71,7 +71,9 @@ def pdf_file_model(files, in_dim=50_000, emb_dim=2048, num_buckets=50_000, epoch
     )
 
 
-def pdf_para_model(files):
+def pdf_para_model(files, bazaar_cache):
+    if not os.path.exists(bazaar_cache):
+        os.mkdir(bazaar_cache)
     bazaar = Bazaar(cache_dir=Path("bazaar_cache"))
     bazaar.fetch()
     para_db = bazaar.get_model("General QnA")
