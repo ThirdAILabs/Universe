@@ -6,6 +6,7 @@ from thirdai._thirdai import bolt
 
 from .constraint_matcher import AnyOf
 from .documents import PDF
+from .neural_db import NeuralDB
 from .lexical_utils import reformulate as lexical_reformulate
 from .lexical_utils import rerank as lexical_rerank
 from .model_bazaar import Bazaar
