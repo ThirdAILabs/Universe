@@ -18,146 +18,146 @@ from thirdai import neural_db as ndb
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 
-# def test_neural_db_reference_scores(train_simple_neural_db):
-#     db = train_simple_neural_db
+def test_neural_db_reference_scores(train_simple_neural_db):
+    db = train_simple_neural_db
 
-#     results = db.search("are apples green or red ?", top_k=10)
-#     for r in results:
-#         assert 0 <= r.score and r.score <= 1
+    results = db.search("are apples green or red ?", top_k=10)
+    for r in results:
+        assert 0 <= r.score and r.score <= 1
 
-#     scores = [r.score for r in results]
-#     assert scores == sorted(scores, reverse=True)
-
-
-# def db_from_bazaar():
-#     bazaar = ndb.Bazaar(cache_dir=".")
-#     bazaar.fetch()
-#     return bazaar.get_model("General QnA")
+    scores = [r.score for r in results]
+    assert scores == sorted(scores, reverse=True)
 
 
-# def get_upvote_target_id(db: ndb.NeuralDB, query: str, top_k: int):
-#     initial_ids = [r.id for r in db.search(query, top_k)]
-#     target_id = 0
-#     while target_id in initial_ids:
-#         target_id += 1
-#     return target_id
+def db_from_bazaar():
+    bazaar = ndb.Bazaar(cache_dir=".")
+    bazaar.fetch()
+    return bazaar.get_model("General QnA")
 
 
-# ARBITRARY_QUERY = "This is an arbitrary search query"
+def get_upvote_target_id(db: ndb.NeuralDB, query: str, top_k: int):
+    initial_ids = [r.id for r in db.search(query, top_k)]
+    target_id = 0
+    while target_id in initial_ids:
+        target_id += 1
+    return target_id
 
 
-# # Some of the following helper functions depend on others being called before them.
-# # It is best to call them in the order that these helper functions are written.
-# # They are only written as separate functions to make it easier to read.
+ARBITRARY_QUERY = "This is an arbitrary search query"
 
 
-# def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document]):
-#     db.insert(docs, train=False)
-#     assert len(db.sources()) == 9
-
-#     initial_scores = [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)]
-
-#     db.insert(docs, train=True)
-#     assert len(db.sources()) == 9
-
-#     assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
+# Some of the following helper functions depend on others being called before them.
+# It is best to call them in the order that these helper functions are written.
+# They are only written as separate functions to make it easier to read.
 
 
-# def search_works(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
-#     top_k = 5
-#     correct_result = 0
-#     correct_source = 0
-#     for doc in docs:
-#         if isinstance(doc, ndb.SharePoint):
-#             continue
-#         source = doc.reference(0).source
-#         for elem_id in range(doc.size):
-#             query = doc.reference(elem_id).text
-#             results = db.search(query, top_k)
+def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document]):
+    db.insert(docs, train=False)
+    assert len(db.sources()) == 9
 
-#             assert len(results) >= 1
-#             assert len(results) <= top_k
+    initial_scores = [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)]
 
-#             for result in results:
-#                 assert type(result.text) == str
-#                 assert len(result.text) > 0
+    db.insert(docs, train=True)
+    assert len(db.sources()) == 9
 
-#             correct_result += int(query in [r.text for r in results])
-#             correct_source += int(source in [r.source for r in results])
-
-#     assert correct_source / sum([doc.size for doc in docs]) > 0.8
-#     if assert_acc:
-#         assert correct_result / sum([doc.size for doc in docs]) > 0.8
+    assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
 
 
-# def upvote_works(db: ndb.NeuralDB):
-#     # We have more than 10 indexed entities.
-#     target_id = get_upvote_target_id(db, ARBITRARY_QUERY, top_k=10)
-#     db.text_to_result(ARBITRARY_QUERY, target_id)
-#     assert target_id in [r.id for r in db.search(ARBITRARY_QUERY, top_k=10)]
+def search_works(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
+    top_k = 5
+    correct_result = 0
+    correct_source = 0
+    for doc in docs:
+        if isinstance(doc, ndb.SharePoint):
+            continue
+        source = doc.reference(0).source
+        for elem_id in range(doc.size):
+            query = doc.reference(elem_id).text
+            results = db.search(query, top_k)
+
+            assert len(results) >= 1
+            assert len(results) <= top_k
+
+            for result in results:
+                assert type(result.text) == str
+                assert len(result.text) > 0
+
+            correct_result += int(query in [r.text for r in results])
+            correct_source += int(source in [r.source for r in results])
+
+    assert correct_source / sum([doc.size for doc in docs]) > 0.8
+    if assert_acc:
+        assert correct_result / sum([doc.size for doc in docs]) > 0.8
 
 
-# def upvote_batch_works(db: ndb.NeuralDB):
-#     queries = [
-#         "This query is not related to any document.",
-#         "Neither is this one.",
-#         "Wanna get some biryani so we won't have to cook dinner?",
-#     ]
-#     target_ids = [get_upvote_target_id(db, query, top_k=10) for query in queries]
-#     db.text_to_result_batch(list(zip(queries, target_ids)))
-#     for query, target_id in zip(queries, target_ids):
-#         assert target_id in [r.id for r in db.search(query, top_k=10)]
+def upvote_works(db: ndb.NeuralDB):
+    # We have more than 10 indexed entities.
+    target_id = get_upvote_target_id(db, ARBITRARY_QUERY, top_k=10)
+    db.text_to_result(ARBITRARY_QUERY, target_id)
+    assert target_id in [r.id for r in db.search(ARBITRARY_QUERY, top_k=10)]
 
 
-# def associate_works(db: ndb.NeuralDB):
-#     # Since this is still unstable, we only check that associate() updates the
-#     # model in *some* way, but we don't want to make stronger assertions as it
-#     # would make the test flaky.
-#     search_results = db.search(ARBITRARY_QUERY, top_k=5)
-#     initial_scores = [r.score for r in search_results]
-#     initial_ids = [r.id for r in search_results]
-
-#     another_arbitrary_query = "Eating makes me sleepy"
-#     db.associate(ARBITRARY_QUERY, another_arbitrary_query)
-
-#     new_search_results = db.search(ARBITRARY_QUERY, top_k=5)
-#     new_scores = [r.score for r in new_search_results]
-#     new_ids = [r.id for r in new_search_results]
-
-#     assert (initial_scores != new_scores) or (initial_ids != new_ids)
+def upvote_batch_works(db: ndb.NeuralDB):
+    queries = [
+        "This query is not related to any document.",
+        "Neither is this one.",
+        "Wanna get some biryani so we won't have to cook dinner?",
+    ]
+    target_ids = [get_upvote_target_id(db, query, top_k=10) for query in queries]
+    db.text_to_result_batch(list(zip(queries, target_ids)))
+    for query, target_id in zip(queries, target_ids):
+        assert target_id in [r.id for r in db.search(query, top_k=10)]
 
 
-# def save_load_works(db: ndb.NeuralDB):
-#     if os.path.exists("temp.ndb"):
-#         shutil.rmtree("temp.ndb")
-#     db.save("temp.ndb")
-#     search_results = [r.text for r in db.search(ARBITRARY_QUERY, top_k=5)]
+def associate_works(db: ndb.NeuralDB):
+    # Since this is still unstable, we only check that associate() updates the
+    # model in *some* way, but we don't want to make stronger assertions as it
+    # would make the test flaky.
+    search_results = db.search(ARBITRARY_QUERY, top_k=5)
+    initial_scores = [r.score for r in search_results]
+    initial_ids = [r.id for r in search_results]
 
-#     new_db = ndb.NeuralDB.from_checkpoint("temp.ndb")
-#     new_search_results = [r.text for r in new_db.search(ARBITRARY_QUERY, top_k=5)]
+    another_arbitrary_query = "Eating makes me sleepy"
+    db.associate(ARBITRARY_QUERY, another_arbitrary_query)
 
-#     assert search_results == new_search_results
-#     assert db.sources().keys() == new_db.sources().keys()
-#     assert [doc.name for doc in db.sources().values()] == [
-#         doc.name for doc in new_db.sources().values()
-#     ]
+    new_search_results = db.search(ARBITRARY_QUERY, top_k=5)
+    new_scores = [r.score for r in new_search_results]
+    new_ids = [r.id for r in new_search_results]
 
-#     shutil.rmtree("temp.ndb")
-
-
-# def clear_sources_works(db: ndb.NeuralDB):
-#     assert len(db.sources()) > 0
-#     db.clear_sources()
-#     assert len(db.sources()) == 0
+    assert (initial_scores != new_scores) or (initial_ids != new_ids)
 
 
-# def all_methods_work(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
-#     insert_works(db, docs)
-#     search_works(db, docs, assert_acc)
-#     upvote_works(db)
-#     associate_works(db)
-#     save_load_works(db)
-#     clear_sources_works(db)
+def save_load_works(db: ndb.NeuralDB):
+    if os.path.exists("temp.ndb"):
+        shutil.rmtree("temp.ndb")
+    db.save("temp.ndb")
+    search_results = [r.text for r in db.search(ARBITRARY_QUERY, top_k=5)]
+
+    new_db = ndb.NeuralDB.from_checkpoint("temp.ndb")
+    new_search_results = [r.text for r in new_db.search(ARBITRARY_QUERY, top_k=5)]
+
+    assert search_results == new_search_results
+    assert db.sources().keys() == new_db.sources().keys()
+    assert [doc.name for doc in db.sources().values()] == [
+        doc.name for doc in new_db.sources().values()
+    ]
+
+    shutil.rmtree("temp.ndb")
+
+
+def clear_sources_works(db: ndb.NeuralDB):
+    assert len(db.sources()) > 0
+    db.clear_sources()
+    assert len(db.sources()) == 0
+
+
+def all_methods_work(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
+    insert_works(db, docs)
+    search_works(db, docs, assert_acc)
+    upvote_works(db)
+    associate_works(db)
+    save_load_works(db)
+    clear_sources_works(db)
 
 
 # def test_neural_db_loads_from_model_bazaar():
@@ -176,282 +176,282 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
 #     all_methods_work(db, all_docs, assert_acc=True)
 
 
-# def train_model_for_supervised_training_test(model_id_delimiter):
-#     db = ndb.NeuralDB("user", id_delimiter=model_id_delimiter)
+def train_model_for_supervised_training_test(model_id_delimiter):
+    db = ndb.NeuralDB("user", id_delimiter=model_id_delimiter)
 
-#     with open("mock_unsup_1.csv", "w") as out:
-#         out.write("id,strong\n")
-#         out.write("0,first\n")
-#         out.write("1,second\n")
-#         out.write("2,third\n")
-#         out.write("3,fourth\n")
-#         out.write("4,fifth\n")
+    with open("mock_unsup_1.csv", "w") as out:
+        out.write("id,strong\n")
+        out.write("0,first\n")
+        out.write("1,second\n")
+        out.write("2,third\n")
+        out.write("3,fourth\n")
+        out.write("4,fifth\n")
 
-#     with open("mock_unsup_2.csv", "w") as out:
-#         out.write("id,strong\n")
-#         out.write("0,sixth\n")
-#         out.write("1,seventh\n")
-#         out.write("2,eighth\n")
-#         out.write("3,ninth\n")
-#         out.write("4,tenth\n")
+    with open("mock_unsup_2.csv", "w") as out:
+        out.write("id,strong\n")
+        out.write("0,sixth\n")
+        out.write("1,seventh\n")
+        out.write("2,eighth\n")
+        out.write("3,ninth\n")
+        out.write("4,tenth\n")
 
-#     def overfit():
-#         if not db.ready_to_search():
-#             return False
-#         queries = [
-#             "first",
-#             "second",
-#             "third",
-#             "fourth",
-#             "fifth",
-#             "sixth",
-#             "seventh",
-#             "eighth",
-#             "ninth",
-#             "tenth",
-#         ]
-#         for query, label in zip(queries, range(10)):
-#             if db.search(query, top_k=1)[0].id != label:
-#                 return False
-#         return True
+    def overfit():
+        if not db.ready_to_search():
+            return False
+        queries = [
+            "first",
+            "second",
+            "third",
+            "fourth",
+            "fifth",
+            "sixth",
+            "seventh",
+            "eighth",
+            "ninth",
+            "tenth",
+        ]
+        for query, label in zip(queries, range(10)):
+            if db.search(query, top_k=1)[0].id != label:
+                return False
+        return True
 
-#     while not overfit():
-#         source_ids = db.insert(
-#             [
-#                 ndb.CSV("mock_unsup_1.csv", id_column="id", strong_columns=["strong"]),
-#                 ndb.CSV("mock_unsup_2.csv", id_column="id", strong_columns=["strong"]),
-#             ]
-#         )
+    while not overfit():
+        source_ids = db.insert(
+            [
+                ndb.CSV("mock_unsup_1.csv", id_column="id", strong_columns=["strong"]),
+                ndb.CSV("mock_unsup_2.csv", id_column="id", strong_columns=["strong"]),
+            ]
+        )
 
-#     # It is fine to remove these files since we've loaded it in memory.
-#     os.remove("mock_unsup_1.csv")
-#     os.remove("mock_unsup_2.csv")
+    # It is fine to remove these files since we've loaded it in memory.
+    os.remove("mock_unsup_1.csv")
+    os.remove("mock_unsup_2.csv")
 
-#     return db, source_ids
-
-
-# def expect_top_2_results(db, query, expected_results):
-#     result_ids = set([ref.id for ref in db.search(query, top_k=2)])
-#     assert len(result_ids.intersection(set(expected_results))) >= 1
+    return db, source_ids
 
 
-# @pytest.mark.parametrize("model_id_delimiter", [" ", None])
-# def test_neural_db_supervised_training_multilabel_csv(model_id_delimiter):
-#     db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
-
-#     with open("mock_sup_1.csv", "w") as out:
-#         out.write("id,query\n")
-#         # make sure that single label rows are also handled correctly in a
-#         # multilabel dataset.
-#         out.write("4,first\n")
-#         out.write("0:1,fourth\n")
-#         out.write("2:3:,second\n")
-
-#     sup_doc = ndb.Sup(
-#         "mock_sup_1.csv",
-#         query_column="query",
-#         id_column="id",
-#         id_delimiter=":",
-#         source_id=source_ids[0],
-#     )
-
-#     db.supervised_train([sup_doc], learning_rate=0.1, epochs=20)
-
-#     assert db.search("first", top_k=1)[0].id == 4
-#     expect_top_2_results(db, "fourth", [0, 1])
-#     expect_top_2_results(db, "second", [2, 3])
-
-#     with open("mock_sup_2.csv", "w") as out:
-#         out.write("id,query\n")
-#         # make sure that single label rows are also handled correctly in a
-#         # multilabel dataset.
-#         out.write("4,sixth\n")
-#         out.write("0:1,ninth\n")
-#         out.write("2:3:,seventh\n")
-
-#     sup_doc = ndb.Sup(
-#         "mock_sup_2.csv",
-#         query_column="query",
-#         id_column="id",
-#         id_delimiter=":",
-#         source_id=source_ids[1],
-#     )
-
-#     db.supervised_train([sup_doc], learning_rate=0.1, epochs=20)
-
-#     assert db.search("sixth", top_k=1)[0].id == 9
-#     expect_top_2_results(db, "ninth", [5, 6])
-#     expect_top_2_results(db, "seventh", [7, 8])
-
-#     os.remove("mock_sup_1.csv")
-#     os.remove("mock_sup_2.csv")
+def expect_top_2_results(db, query, expected_results):
+    result_ids = set([ref.id for ref in db.search(query, top_k=2)])
+    assert len(result_ids.intersection(set(expected_results))) >= 1
 
 
-# @pytest.mark.parametrize("model_id_delimiter", [" ", None])
-# def test_neural_db_supervised_training_singlelabel_csv(model_id_delimiter):
-#     db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
+def test_neural_db_supervised_training_multilabel_csv(model_id_delimiter):
+    db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
 
-#     with open("mock_sup_1.csv", "w") as out:
-#         out.write("id,query\n")
-#         out.write("4,first\n")
-#         out.write("0,fourth\n")
-#         out.write("2,second\n")
+    with open("mock_sup_1.csv", "w") as out:
+        out.write("id,query\n")
+        # make sure that single label rows are also handled correctly in a
+        # multilabel dataset.
+        out.write("4,first\n")
+        out.write("0:1,fourth\n")
+        out.write("2:3:,second\n")
 
-#     sup_doc = ndb.Sup(
-#         "mock_sup_1.csv",
-#         query_column="query",
-#         id_column="id",
-#         source_id=source_ids[0],
-#     )
+    sup_doc = ndb.Sup(
+        "mock_sup_1.csv",
+        query_column="query",
+        id_column="id",
+        id_delimiter=":",
+        source_id=source_ids[0],
+    )
 
-#     db.supervised_train([sup_doc], learning_rate=0.1, epochs=20)
+    db.supervised_train([sup_doc], learning_rate=0.1, epochs=20)
 
-#     assert db.search("first", top_k=1)[0].id == 4
-#     assert db.search("fourth", top_k=1)[0].id == 0
-#     assert db.search("second", top_k=1)[0].id == 2
+    assert db.search("first", top_k=1)[0].id == 4
+    expect_top_2_results(db, "fourth", [0, 1])
+    expect_top_2_results(db, "second", [2, 3])
 
-#     with open("mock_sup_2.csv", "w") as out:
-#         out.write("id,query\n")
-#         # make sure that single label rows are also handled correctly in a
-#         # multilabel dataset.
-#         out.write("4,sixth\n")
-#         out.write("0,ninth\n")
-#         out.write("2,seventh\n")
+    with open("mock_sup_2.csv", "w") as out:
+        out.write("id,query\n")
+        # make sure that single label rows are also handled correctly in a
+        # multilabel dataset.
+        out.write("4,sixth\n")
+        out.write("0:1,ninth\n")
+        out.write("2:3:,seventh\n")
 
-#     sup_doc = ndb.Sup(
-#         "mock_sup_2.csv",
-#         query_column="query",
-#         id_column="id",
-#         source_id=source_ids[1],
-#     )
+    sup_doc = ndb.Sup(
+        "mock_sup_2.csv",
+        query_column="query",
+        id_column="id",
+        id_delimiter=":",
+        source_id=source_ids[1],
+    )
 
-#     db.supervised_train([sup_doc], learning_rate=0.1, epochs=20)
+    db.supervised_train([sup_doc], learning_rate=0.1, epochs=20)
 
-#     assert db.search("sixth", top_k=1)[0].id == 9
-#     assert db.search("ninth", top_k=1)[0].id == 5
-#     assert db.search("seventh", top_k=1)[0].id == 7
+    assert db.search("sixth", top_k=1)[0].id == 9
+    expect_top_2_results(db, "ninth", [5, 6])
+    expect_top_2_results(db, "seventh", [7, 8])
 
-#     os.remove("mock_sup_1.csv")
-#     os.remove("mock_sup_2.csv")
-
-
-# @pytest.mark.parametrize("model_id_delimiter", [" ", None])
-# def test_neural_db_supervised_training_sequence_input(model_id_delimiter):
-#     db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
-
-#     db.supervised_train(
-#         [
-#             ndb.Sup(
-#                 queries=["first", "fourth", "second"],
-#                 labels=[[4], [0, 1], [2, 3]],
-#                 source_id=source_ids[0],
-#             )
-#         ],
-#         learning_rate=0.1,
-#         epochs=20,
-#     )
-
-#     assert db.search("first", top_k=1)[0].id == 4
-#     expect_top_2_results(db, "fourth", [0, 1])
-#     expect_top_2_results(db, "second", [2, 3])
-
-#     db.supervised_train(
-#         [
-#             ndb.Sup(
-#                 queries=["sixth", "ninth", "seventh"],
-#                 labels=[[4], [0, 1], [2, 3]],
-#                 source_id=source_ids[1],
-#             )
-#         ],
-#         learning_rate=0.1,
-#         epochs=20,
-#     )
-
-#     assert db.search("sixth", top_k=1)[0].id == 9
-#     expect_top_2_results(db, "ninth", [5, 6])
-#     expect_top_2_results(db, "seventh", [7, 8])
+    os.remove("mock_sup_1.csv")
+    os.remove("mock_sup_2.csv")
 
 
-# @pytest.mark.parametrize("model_id_delimiter", [" ", None])
-# def test_neural_db_ref_id_supervised_training_multilabel_csv(model_id_delimiter):
-#     db, _ = train_model_for_supervised_training_test(model_id_delimiter)
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
+def test_neural_db_supervised_training_singlelabel_csv(model_id_delimiter):
+    db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
 
-#     with open("mock_sup.csv", "w") as out:
-#         out.write("id,query\n")
-#         # make sure that single label rows are also handled correctly in a
-#         # multilabel dataset.
-#         out.write("4,first\n")
-#         out.write("0:1,fourth\n")
-#         out.write("8:9:,second\n")
+    with open("mock_sup_1.csv", "w") as out:
+        out.write("id,query\n")
+        out.write("4,first\n")
+        out.write("0,fourth\n")
+        out.write("2,second\n")
 
-#     db.supervised_train_with_ref_ids(
-#         "mock_sup.csv",
-#         query_column="query",
-#         id_column="id",
-#         id_delimiter=":",
-#         learning_rate=0.1,
-#         epochs=20,
-#     )
+    sup_doc = ndb.Sup(
+        "mock_sup_1.csv",
+        query_column="query",
+        id_column="id",
+        source_id=source_ids[0],
+    )
 
-#     assert db.search("first", top_k=1)[0].id == 4
-#     expect_top_2_results(db, "fourth", [0, 1])
-#     expect_top_2_results(db, "second", [8, 9])
+    db.supervised_train([sup_doc], learning_rate=0.1, epochs=20)
 
-#     os.remove("mock_sup.csv")
+    assert db.search("first", top_k=1)[0].id == 4
+    assert db.search("fourth", top_k=1)[0].id == 0
+    assert db.search("second", top_k=1)[0].id == 2
 
+    with open("mock_sup_2.csv", "w") as out:
+        out.write("id,query\n")
+        # make sure that single label rows are also handled correctly in a
+        # multilabel dataset.
+        out.write("4,sixth\n")
+        out.write("0,ninth\n")
+        out.write("2,seventh\n")
 
-# @pytest.mark.parametrize("model_id_delimiter", [" ", None])
-# def test_neural_db_ref_id_supervised_training_singlelabel_csv(model_id_delimiter):
-#     db, _ = train_model_for_supervised_training_test(model_id_delimiter)
+    sup_doc = ndb.Sup(
+        "mock_sup_2.csv",
+        query_column="query",
+        id_column="id",
+        source_id=source_ids[1],
+    )
 
-#     with open("mock_sup.csv", "w") as out:
-#         out.write("id,query\n")
-#         out.write("4,first\n")
-#         out.write("0,fourth\n")
-#         out.write("8,second\n")
+    db.supervised_train([sup_doc], learning_rate=0.1, epochs=20)
 
-#     db.supervised_train_with_ref_ids(
-#         "mock_sup.csv",
-#         query_column="query",
-#         id_column="id",
-#         learning_rate=0.1,
-#         epochs=20,
-#     )
+    assert db.search("sixth", top_k=1)[0].id == 9
+    assert db.search("ninth", top_k=1)[0].id == 5
+    assert db.search("seventh", top_k=1)[0].id == 7
 
-#     assert db.search("first", top_k=1)[0].id == 4
-#     assert db.search("fourth", top_k=1)[0].id == 0
-#     assert db.search("second", top_k=1)[0].id == 8
-
-#     os.remove("mock_sup.csv")
+    os.remove("mock_sup_1.csv")
+    os.remove("mock_sup_2.csv")
 
 
-# @pytest.mark.parametrize("model_id_delimiter", [" ", None])
-# def test_neural_db_ref_id_supervised_training_sequence_input(model_id_delimiter):
-#     db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
+def test_neural_db_supervised_training_sequence_input(model_id_delimiter):
+    db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
 
-#     db.supervised_train_with_ref_ids(
-#         queries=["first", "fourth", "second"],
-#         labels=[[4], [0, 1], [8, 9]],
-#         learning_rate=0.1,
-#         epochs=20,
-#     )
+    db.supervised_train(
+        [
+            ndb.Sup(
+                queries=["first", "fourth", "second"],
+                labels=[[4], [0, 1], [2, 3]],
+                source_id=source_ids[0],
+            )
+        ],
+        learning_rate=0.1,
+        epochs=20,
+    )
 
-#     assert db.search("first", top_k=1)[0].id == 4
-#     expect_top_2_results(db, "fourth", [0, 1])
-#     expect_top_2_results(db, "second", [8, 9])
-#     assert set([ref.id for ref in db.search("fourth", top_k=2)]) == set([0, 1])
-#     assert set([ref.id for ref in db.search("second", top_k=2)]) == set([8, 9])
+    assert db.search("first", top_k=1)[0].id == 4
+    expect_top_2_results(db, "fourth", [0, 1])
+    expect_top_2_results(db, "second", [2, 3])
+
+    db.supervised_train(
+        [
+            ndb.Sup(
+                queries=["sixth", "ninth", "seventh"],
+                labels=[[4], [0, 1], [2, 3]],
+                source_id=source_ids[1],
+            )
+        ],
+        learning_rate=0.1,
+        epochs=20,
+    )
+
+    assert db.search("sixth", top_k=1)[0].id == 9
+    expect_top_2_results(db, "ninth", [5, 6])
+    expect_top_2_results(db, "seventh", [7, 8])
 
 
-# def test_neural_db_constrained_search_with_single_constraint():
-#     db = ndb.NeuralDB()
-#     db.insert(docs_with_meta(), train=False)
-#     for constraint in metadata_constraints:
-#         # Since we always use the same query, we know that we're getting different
-#         # results solely due to the imposed constraints.
-#         references = db.search("hello", top_k=10, constraints={"meta": constraint})
-#         assert len(references) > 0
-#         assert all([constraint == ref.metadata["meta"] for ref in references])
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
+def test_neural_db_ref_id_supervised_training_multilabel_csv(model_id_delimiter):
+    db, _ = train_model_for_supervised_training_test(model_id_delimiter)
+
+    with open("mock_sup.csv", "w") as out:
+        out.write("id,query\n")
+        # make sure that single label rows are also handled correctly in a
+        # multilabel dataset.
+        out.write("4,first\n")
+        out.write("0:1,fourth\n")
+        out.write("8:9:,second\n")
+
+    db.supervised_train_with_ref_ids(
+        "mock_sup.csv",
+        query_column="query",
+        id_column="id",
+        id_delimiter=":",
+        learning_rate=0.1,
+        epochs=20,
+    )
+
+    assert db.search("first", top_k=1)[0].id == 4
+    expect_top_2_results(db, "fourth", [0, 1])
+    expect_top_2_results(db, "second", [8, 9])
+
+    os.remove("mock_sup.csv")
+
+
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
+def test_neural_db_ref_id_supervised_training_singlelabel_csv(model_id_delimiter):
+    db, _ = train_model_for_supervised_training_test(model_id_delimiter)
+
+    with open("mock_sup.csv", "w") as out:
+        out.write("id,query\n")
+        out.write("4,first\n")
+        out.write("0,fourth\n")
+        out.write("8,second\n")
+
+    db.supervised_train_with_ref_ids(
+        "mock_sup.csv",
+        query_column="query",
+        id_column="id",
+        learning_rate=0.1,
+        epochs=20,
+    )
+
+    assert db.search("first", top_k=1)[0].id == 4
+    assert db.search("fourth", top_k=1)[0].id == 0
+    assert db.search("second", top_k=1)[0].id == 8
+
+    os.remove("mock_sup.csv")
+
+
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
+def test_neural_db_ref_id_supervised_training_sequence_input(model_id_delimiter):
+    db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
+
+    db.supervised_train_with_ref_ids(
+        queries=["first", "fourth", "second"],
+        labels=[[4], [0, 1], [8, 9]],
+        learning_rate=0.1,
+        epochs=20,
+    )
+
+    assert db.search("first", top_k=1)[0].id == 4
+    expect_top_2_results(db, "fourth", [0, 1])
+    expect_top_2_results(db, "second", [8, 9])
+    assert set([ref.id for ref in db.search("fourth", top_k=2)]) == set([0, 1])
+    assert set([ref.id for ref in db.search("second", top_k=2)]) == set([8, 9])
+
+
+def test_neural_db_constrained_search_with_single_constraint():
+    db = ndb.NeuralDB()
+    db.insert(docs_with_meta(), train=False)
+    for constraint in metadata_constraints:
+        # Since we always use the same query, we know that we're getting different
+        # results solely due to the imposed constraints.
+        references = db.search("hello", top_k=10, constraints={"meta": constraint})
+        assert len(references) > 0
+        assert all([constraint == ref.metadata["meta"] for ref in references])
 
 
 # def test_neural_db_constrained_search_with_multiple_constraints():
