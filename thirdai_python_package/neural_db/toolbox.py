@@ -6,6 +6,7 @@ from .neural_db import NeuralDB
 from .model_bazaar import Bazaar
 from .constraint_matcher import AnyOf
 from .lexical_utils import reformulate as lexical_reformulate, rerank as lexical_rerank
+import uuid
 
 
 def pdf_file_model(files, in_dim=50_000, emb_dim=2048, num_buckets=50_000):
@@ -20,7 +21,8 @@ def pdf_file_model(files, in_dim=50_000, emb_dim=2048, num_buckets=50_000):
         )
         for i, df in enumerate(dfs)
     ]
-    pd.concat(dfs).to_csv("file_level.csv", index=False)
+    file_level_coldstart = f"__file_level_cs_{uuid.uuid4()}__.csv"
+    pd.concat(dfs).to_csv(file_level_coldstart, index=False)
     #
     udt = bolt.UniversalDeepTransformer(
         data_types={
@@ -39,7 +41,7 @@ def pdf_file_model(files, in_dim=50_000, emb_dim=2048, num_buckets=50_000):
         },
     )
     udt.cold_start(
-        "file_level.csv",
+        file_level_coldstart,
         strong_column_names=[],
         weak_column_names=["para"],
         learning_rate=0.005,
@@ -49,10 +51,11 @@ def pdf_file_model(files, in_dim=50_000, emb_dim=2048, num_buckets=50_000):
     for df in dfs:
         df["para"].iloc[0] = "\n".join(df["para"])
     one_reference_per_file_df = pd.concat([df.iloc[:1] for df in dfs])
-    one_reference_per_file_df.to_csv("one_ref_per_file.csv", index=False)
+    ndb_reference_file = f"__ndb_reference_file_{uuid.uuid4()}__.csv"
+    one_reference_per_file_df.to_csv(ndb_reference_file, index=False)
     return NeuralDB.from_udt(
         udt,
-        csv="one_ref_per_file.csv",
+        csv=ndb_reference_file,
         csv_id_column="doc_id",
         csv_strong_columns=[],
         csv_weak_columns=["para"],
@@ -74,7 +77,7 @@ def hierarchical_search(
     para_db,
     query,
     top_k_results,
-    top_k_files=10,
+    top_k_files=5,
     top_k_rerank=100,
     rerank=True,
     reformulate=False,
