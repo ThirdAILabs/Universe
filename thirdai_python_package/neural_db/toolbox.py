@@ -7,6 +7,7 @@ from .model_bazaar import Bazaar
 from .constraint_matcher import AnyOf
 from .lexical_utils import reformulate as lexical_reformulate, rerank as lexical_rerank
 import uuid
+import os
 
 
 def pdf_file_model(files, in_dim=50_000, emb_dim=2048, num_buckets=50_000):
@@ -47,6 +48,7 @@ def pdf_file_model(files, in_dim=50_000, emb_dim=2048, num_buckets=50_000):
         learning_rate=0.005,
         epochs=10,
     )
+    os.remove(file_level_coldstart)
     #
     for df in dfs:
         df["para"].iloc[0] = "\n".join(df["para"])
