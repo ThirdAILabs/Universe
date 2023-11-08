@@ -1,0 +1,216 @@
+name: Build Wheels & PyPi Upload 2
+
+# Kills old jobs from the same pr if we push a new commit
+# See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# Run on pushes and releases. The actual upload will only happen on a 
+# release.
+# Note this action does not ever upload to the main Pypi repo. For now, do that
+# by downloading the build artifacts and doing it manually. See 
+# https://www.notion.so/Deploy-our-package-to-pypi-60d3c539e4fd4250897af043a329d08f
+# for more details.
+on: 
+  push: 
+    branches: [main]
+    tags: [ 'v*.*.*' ]
+  workflow_dispatch:  
+
+
+jobs:
+  build_wheels:
+    strategy:
+      fail-fast: false
+      matrix:
+        # See https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs#expanding-or-adding-matrix-configurations
+        # for the semantics of using the matrix and the includes.
+        os: [ubuntu-latest-8-cores]
+        # os: [ubuntu-latest-8-cores, windows-2022]
+        # include:
+        #   - name: macos-x86_64
+        #     os: macos-12
+        #     archs: x86_64
+        #     deployment_target: "10.15"
+        #     cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=OFF"
+        #   - name: macos-arm64
+        #     os: macos-12
+        #     archs: arm64
+        #     deployment_target: "11.0"
+        #     cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=ON -DOPENSSL_CROSS_COMPILE_MACOSX_ARM=ON"
+
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+        with:           
+          submodules: 'recursive'
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+
+      - name: Inject local version identifier for non tag builds
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        shell: bash
+        run: |-
+          echo "THIRDAI_BUILD_IDENTIFIER=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Install dependencies with vcpkg
+        if: ${{ startsWith(runner.os, 'windows') }}
+        working-directory: C:\vcpkg
+        run: |
+          $Env:VCPKG_BUILD_TYPE = 'release'
+          $Env:VCPKG_DEFAULT_TRIPLET = 'x64-windows-static'
+          $Env:VCPKG_ROOT = 'C:\'
+          .\vcpkg install zlib:x64-windows-static openssl:x64-windows-static
+          .\vcpkg upgrade --no-dry-run # In case there are new builds available after cache restoration
+        shell: powershell
+
+      - name: Build and test wheels
+        uses: pypa/cibuildwheel@v2.9.0
+        env:
+
+          # We need this to get Openssl1.1 working on Manylinux (which has a 
+          # CentOS base image). See
+          # https://github.com/facebook/folly/issues/1762
+          CIBW_ENVIRONMENT_LINUX: >
+            CMAKE_ARGS="-DOPENSSL_ROOT_DIR:PATH=/usr/lib64/openssl11;/usr/include/openssl11"
+            THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
+          # The following is to relax the discovery timeout (from a default 5) so that
+          # cibuildwheel GitHub workflow does not timeout on test-discovery.
+          # 
+          # KMP_DUPLICATE_LIB_OK is required because some other library
+          # (perhaps numpy) is loading an OpenMP library that is separate from
+          # what we package with.
+          #
+          # TODO(GH-779): Fix the multiple libraries existing.
+          CIBW_ENVIRONMENT_WINDOWS: >
+              CMAKE_ARGS='-DENABLE_COMPRESSION=OFF -DTHIRDAI_GTEST_DISCOVERY_TIMEOUT=30 -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake'
+              KMP_DUPLICATE_LIB_OK=TRUE
+              THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
+          CIBW_ENVIRONMENT_MACOS:
+            CMAKE_ARGS='${{ matrix.cmake_additional_args }}'
+            MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
+            OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
+            OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
+            THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
+         
+          CIBW_BEFORE_BUILD_LINUX: >
+            yum update -y && yum clean all &&
+            yum install openssl11-devel -y &&
+            yum install -y libxslt-devel libxml2-devel
+          CIBW_BEFORE_BUILD_MACOS: brew install openssl
+
+          # Online compile cpython wheels (pytorch does this too), no big 
+          # advantage to JIT compilation of python since most of our processing
+          # happens in C++ (it can actually make it slower!). Also, on some
+          # platforms numpy isn't available so our tests don't work.
+          CIBW_BUILD: "cp*macosx_x86_64 cp*manylinux_x86_64 cp*win_amd64 cp*macosx_arm64"
+          CIBW_BUILD_VERBOSITY: 3
+
+          CIBW_BEFORE_TEST_LINUX: yum install golang libreoffice -y
+          CIBW_BEFORE_BUILD_WINDOWS: python -m pip install delvewheel
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: 'delvewheel repair -w {dest_dir} {wheel}'
+          CIBW_TEST_EXTRAS: "test"
+          CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -k test_neural_db_constrained_search_with_single_constraint -v -s
+          CIBW_TEST_COMMAND_WINDOWS: rem
+
+          # Skip tests on windows
+          # TODO(Jerin): Get tests working on windows wheels
+          CIBW_TEST_SKIP: "*win*"
+
+          # Build both x86_64 and arm64 (apple silicon)
+          CIBW_ARCHS_MACOS: ${{ matrix.archs }}
+
+          # Skip building on CPython <3.8 on the Mac
+          # 3.11 (brought about by cibuildwheel upgrade to 2.9.0) is skipped as
+          # of now because ray is unsupported. We expect ray to be present to
+          # test our distributed pipeline.
+          #
+          # TODO(any): A more future proof solution when stuff starts working.
+          CIBW_SKIP: "cp36-* cp37-* cp38-* cp39-* cp310-*"
+
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v2
+        with:
+          path: ./wheelhouse/*.whl
+      
+      - name: Notify slack fail
+        if: failure() && github.event_name == 'release' && github.event.action == 'published'
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel_id: pypi_package_releases
+          status: FAILED
+          color: danger
+
+
+  upload_to_test_pypi:
+    name: Upload to test pypi
+    needs: [build_wheels]
+    runs-on: ubuntu-latest
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+
+    steps:
+    - uses: actions/setup-python@v2
+
+    - uses: actions/download-artifact@v2
+      with:
+        name: artifact
+        path: dist
+
+    - uses: pypa/gh-action-pypi-publish@v1.5.0
+      with:
+        user: __token__
+        password: ${{ secrets.TEST_PYPI_TOKEN }}
+        repository_url: https://test.pypi.org/legacy/
+    
+    - name: Notify slack fail
+      if: failure()
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@v1
+      with:
+        channel_id: pypi_package_releases
+        status: FAILED
+        color: danger
+
+  upload_to_real_pypi:
+    name: Upload to real pypi
+    needs: [upload_to_test_pypi]
+    runs-on: ubuntu-latest
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+
+    steps:
+    - uses: actions/setup-python@v2
+
+    - uses: actions/download-artifact@v2
+      with:
+        name: artifact
+        path: dist
+
+    - uses: pypa/gh-action-pypi-publish@v1.5.0
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_TOKEN }}
+
+    - name: Notify slack success  # Ref: https://github.com/marketplace/actions/slack-notify-build
+      if: success()
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@v1
+      with:
+        channel_id: pypi_package_releases
+        status: SUCCESS
+        color: good
+
+    - name: Notify slack fail
+      if: failure()
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@v1
+      with:
+        channel_id: pypi_package_releases
+        status: FAILED
+        color: danger

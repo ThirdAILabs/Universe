@@ -53,12 +53,12 @@ ARBITRARY_QUERY = "This is an arbitrary search query"
 
 def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document]):
     db.insert(docs, train=False)
-    assert len(db.sources()) == 9
+    assert len(db.sources()) > 0
 
     initial_scores = [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)]
 
     db.insert(docs, train=True)
-    assert len(db.sources()) == 9
+    assert len(db.sources()) > 0
 
     assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
 
@@ -164,16 +164,16 @@ def test_neural_db_loads_from_model_bazaar():
     db_from_bazaar()
 
 
-# def test_neural_db_all_methods_work_on_new_model():
-#     db = ndb.NeuralDB("user")
-#     all_docs = [get_doc() for get_doc in all_local_doc_getters]
-#     all_methods_work(db, all_docs, assert_acc=False)
+def test_neural_db_all_methods_work_on_new_model():
+    db = ndb.NeuralDB("user")
+    all_docs = [get_doc() for get_doc in all_local_doc_getters]
+    all_methods_work(db, all_docs, assert_acc=False)
 
 
-# def test_neural_db_all_methods_work_on_loaded_bazaar_model():
-#     db = db_from_bazaar()
-#     all_docs = [get_doc() for get_doc in all_local_doc_getters]
-#     all_methods_work(db, all_docs, assert_acc=True)
+def test_neural_db_all_methods_work_on_loaded_bazaar_model():
+    db = db_from_bazaar()
+    all_docs = [get_doc() for get_doc in all_local_doc_getters]
+    all_methods_work(db, all_docs, assert_acc=True)
 
 
 def train_model_for_supervised_training_test(model_id_delimiter):

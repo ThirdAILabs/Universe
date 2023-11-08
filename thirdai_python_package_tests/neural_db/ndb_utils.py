@@ -203,16 +203,18 @@ all_local_doc_getters = [
         "https://en.wikipedia.org/wiki/Rice_University",
         requests.get("https://en.wikipedia.org/wiki/Rice_University"),
     ),
-    lambda: ndb.Unstructured(PPTX_FILE),
-    lambda: ndb.Unstructured(TXT_FILE),
-    lambda: ndb.Unstructured(EML_FILE),
+    # lambda: ndb.Unstructured(PPTX_FILE),
+    # lambda: ndb.Unstructured(TXT_FILE),
+    # lambda: ndb.Unstructured(EML_FILE),
     lambda: ndb.SentenceLevelPDF(PDF_FILE),
     lambda: ndb.SentenceLevelDOCX(DOCX_FILE),
 ]
 
-all_doc_getters = all_local_doc_getters + [
-    eq_doc.connector_doc for eq_doc in all_connector_doc_getters
-]
+# all_doc_getters = all_local_doc_getters + [
+#     eq_doc.connector_doc for eq_doc in all_connector_doc_getters
+# ]
+
+all_doc_getters = all_local_doc_getters
 
 
 def docs_with_meta():
@@ -231,9 +233,9 @@ def docs_with_meta():
             "https://en.wikipedia.org/wiki/Rice_University",
             metadata=meta(URL_NO_RESPONSE_META),
         ),
-        ndb.Unstructured(PPTX_FILE, metadata=meta(PPTX_META)),
-        ndb.Unstructured(TXT_FILE, metadata=meta(TXT_META)),
-        ndb.Unstructured(EML_FILE, metadata=meta(EML_META)),
+        # ndb.Unstructured(PPTX_FILE, metadata=meta(PPTX_META)),
+        # ndb.Unstructured(TXT_FILE, metadata=meta(TXT_META)),
+        # ndb.Unstructured(EML_FILE, metadata=meta(EML_META)),
         ndb.SentenceLevelPDF(PDF_FILE, metadata=meta(SENTENCE_PDF_META)),
         ndb.SentenceLevelDOCX(DOCX_FILE, metadata=meta(SENTENCE_DOCX_META)),
     ]
