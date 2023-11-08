@@ -160,20 +160,20 @@ def all_methods_work(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: boo
     clear_sources_works(db)
 
 
-# def test_neural_db_loads_from_model_bazaar():
-#     db_from_bazaar()
+def test_neural_db_loads_from_model_bazaar():
+    db_from_bazaar()
 
 
-# def test_neural_db_all_methods_work_on_new_model():
-#     db = ndb.NeuralDB("user")
-#     all_docs = [get_doc() for get_doc in all_local_doc_getters]
-#     all_methods_work(db, all_docs, assert_acc=False)
+def test_neural_db_all_methods_work_on_new_model():
+    db = ndb.NeuralDB("user")
+    all_docs = [get_doc() for get_doc in all_local_doc_getters]
+    all_methods_work(db, all_docs, assert_acc=False)
 
 
-# def test_neural_db_all_methods_work_on_loaded_bazaar_model():
-#     db = db_from_bazaar()
-#     all_docs = [get_doc() for get_doc in all_local_doc_getters]
-#     all_methods_work(db, all_docs, assert_acc=True)
+def test_neural_db_all_methods_work_on_loaded_bazaar_model():
+    db = db_from_bazaar()
+    all_docs = [get_doc() for get_doc in all_local_doc_getters]
+    all_methods_work(db, all_docs, assert_acc=True)
 
 
 def train_model_for_supervised_training_test(model_id_delimiter):
