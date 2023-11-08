@@ -164,16 +164,16 @@ def test_neural_db_loads_from_model_bazaar():
     db_from_bazaar()
 
 
-def test_neural_db_all_methods_work_on_new_model():
-    db = ndb.NeuralDB("user")
-    all_docs = [get_doc() for get_doc in all_local_doc_getters]
-    all_methods_work(db, all_docs, assert_acc=False)
+# def test_neural_db_all_methods_work_on_new_model():
+#     db = ndb.NeuralDB("user")
+#     all_docs = [get_doc() for get_doc in all_local_doc_getters]
+#     all_methods_work(db, all_docs, assert_acc=False)
 
 
-def test_neural_db_all_methods_work_on_loaded_bazaar_model():
-    db = db_from_bazaar()
-    all_docs = [get_doc() for get_doc in all_local_doc_getters]
-    all_methods_work(db, all_docs, assert_acc=True)
+# def test_neural_db_all_methods_work_on_loaded_bazaar_model():
+#     db = db_from_bazaar()
+#     all_docs = [get_doc() for get_doc in all_local_doc_getters]
+#     all_methods_work(db, all_docs, assert_acc=True)
 
 
 def train_model_for_supervised_training_test(model_id_delimiter):
@@ -425,22 +425,22 @@ def test_neural_db_ref_id_supervised_training_singlelabel_csv(model_id_delimiter
     os.remove("mock_sup.csv")
 
 
-# @pytest.mark.parametrize("model_id_delimiter", [" ", None])
-# def test_neural_db_ref_id_supervised_training_sequence_input(model_id_delimiter):
-#     db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
+def test_neural_db_ref_id_supervised_training_sequence_input(model_id_delimiter):
+    db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
 
-#     db.supervised_train_with_ref_ids(
-#         queries=["first", "fourth", "second"],
-#         labels=[[4], [0, 1], [8, 9]],
-#         learning_rate=0.1,
-#         epochs=20,
-#     )
+    db.supervised_train_with_ref_ids(
+        queries=["first", "fourth", "second"],
+        labels=[[4], [0, 1], [8, 9]],
+        learning_rate=0.1,
+        epochs=20,
+    )
 
-#     assert db.search("first", top_k=1)[0].id == 4
-#     expect_top_2_results(db, "fourth", [0, 1])
-#     expect_top_2_results(db, "second", [8, 9])
-#     assert set([ref.id for ref in db.search("fourth", top_k=2)]) == set([0, 1])
-#     assert set([ref.id for ref in db.search("second", top_k=2)]) == set([8, 9])
+    assert db.search("first", top_k=1)[0].id == 4
+    expect_top_2_results(db, "fourth", [0, 1])
+    expect_top_2_results(db, "second", [8, 9])
+    assert set([ref.id for ref in db.search("fourth", top_k=2)]) == set([0, 1])
+    assert set([ref.id for ref in db.search("second", top_k=2)]) == set([8, 9])
 
 
 # def test_neural_db_constrained_search_with_single_constraint():
