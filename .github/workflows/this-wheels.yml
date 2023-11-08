@@ -99,6 +99,7 @@ jobs:
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: 'delvewheel repair -w {dest_dir} {wheel}'
           CIBW_TEST_EXTRAS: "test"
           # CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
+          CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -k test_neural_db_constrained_search_with_single_constraint -v -s
           CIBW_TEST_COMMAND_WINDOWS: rem
 
           # Skip tests on windows
@@ -114,7 +115,7 @@ jobs:
           # test our distributed pipeline.
           #
           # TODO(any): A more future proof solution when stuff starts working.
-          CIBW_SKIP: "cp36-* cp37-*"
+          CIBW_SKIP: "cp36-* cp37-* cp38-* cp39-* cp310-*"
 
 
       - name: Upload wheels
