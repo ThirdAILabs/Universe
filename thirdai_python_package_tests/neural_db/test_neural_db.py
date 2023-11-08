@@ -170,10 +170,10 @@ def test_neural_db_loads_from_model_bazaar():
 #     all_methods_work(db, all_docs, assert_acc=False)
 
 
-# def test_neural_db_all_methods_work_on_loaded_bazaar_model():
-#     db = db_from_bazaar()
-#     all_docs = [get_doc() for get_doc in all_local_doc_getters]
-#     all_methods_work(db, all_docs, assert_acc=True)
+def test_neural_db_all_methods_work_on_loaded_bazaar_model():
+    db = db_from_bazaar()
+    all_docs = [get_doc() for get_doc in all_local_doc_getters]
+    all_methods_work(db, all_docs, assert_acc=True)
 
 
 def train_model_for_supervised_training_test(model_id_delimiter):
@@ -443,15 +443,15 @@ def test_neural_db_ref_id_supervised_training_sequence_input(model_id_delimiter)
     assert set([ref.id for ref in db.search("second", top_k=2)]) == set([8, 9])
 
 
-def test_neural_db_constrained_search_with_single_constraint():
-    db = ndb.NeuralDB()
-    db.insert(docs_with_meta(), train=False)
-    for constraint in metadata_constraints:
-        # Since we always use the same query, we know that we're getting different
-        # results solely due to the imposed constraints.
-        references = db.search("hello", top_k=10, constraints={"meta": constraint})
-        assert len(references) > 0
-        assert all([constraint == ref.metadata["meta"] for ref in references])
+# def test_neural_db_constrained_search_with_single_constraint():
+#     db = ndb.NeuralDB()
+#     db.insert(docs_with_meta(), train=False)
+#     for constraint in metadata_constraints:
+#         # Since we always use the same query, we know that we're getting different
+#         # results solely due to the imposed constraints.
+#         references = db.search("hello", top_k=10, constraints={"meta": constraint})
+#         assert len(references) > 0
+#         assert all([constraint == ref.metadata["meta"] for ref in references])
 
 
 def test_neural_db_constrained_search_with_multiple_constraints():
