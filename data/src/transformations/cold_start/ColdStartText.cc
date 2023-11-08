@@ -93,7 +93,7 @@ std::vector<std::string> ColdStartTextAugmentation::augmentSingleRow(
     std::string output_text;
     for (const auto& word : phrase) {
       output_text.append(word);
-      output_text.append(" ");
+      output_text.push_back(' ');
     }
     output_samples.push_back(output_text);
   }
@@ -121,8 +121,7 @@ PhraseCollection ColdStartTextAugmentation::getWeakPhrases(
       return std::ispunct(c);
     });
     std::string natural_phrase_text(phrase_start, phrase_end);
-    natural_phrase_text =
-        text::replacePunctuationWithSpaces(natural_phrase_text);
+    natural_phrase_text = text::replacePunctuation(natural_phrase_text, ' ');
     natural_phrase_text = text::stripWhitespace(natural_phrase_text);
     phrase_start = phrase_end;
     if (phrase_end != s.end()) {

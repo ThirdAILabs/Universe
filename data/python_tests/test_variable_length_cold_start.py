@@ -148,18 +148,19 @@ def test_vlcs_slice_min_larger_than_text():
     augmentation = default_augmentation(
         slice_min_length=4,
         max_covering_samples=0,
-        num_slices=1,
+        num_slices=2,
         add_whole_doc=False,
     )
     samples = augmentation.augment_single_row("", "only three words")
-    assert len(samples) == 1
+    assert len(samples) == 2
+    assert samples[0] == samples[1]
 
 
 def test_vlcs_covering_min_larger_than_text():
     augmentation = default_augmentation(
         covering_min_length=4,
         num_slices=0,
-        max_covering_samples=1,
+        max_covering_samples=2,
         add_whole_doc=False,
     )
     samples = augmentation.augment_single_row("", "only three words")

@@ -101,7 +101,7 @@ PhraseCollection mergeStrongWithWeak(
 
   PhraseCollection output_phrases(weak_phrases.size());
   for (uint32_t i = 0; i < weak_phrases.size(); i++) {
-    std::vector<std::string> concat_phrase;
+    Phrase concat_phrase;
     if (downsampled_strong_phrases.size() > i) {
       concat_phrase = downsampled_strong_phrases[i];
     } else {
@@ -151,7 +151,7 @@ PhraseCollection sampleFromPhrases(const PhraseCollection& phrases,
 
 Phrase getStrongPhrase(const std::string& strong_text_in,
                        std::optional<uint32_t> max_len) {
-  std::string strong_text = text::replacePunctuationWithSpaces(strong_text_in);
+  std::string strong_text = text::replacePunctuation(strong_text_in, ' ');
   strong_text = text::stripWhitespace(strong_text);
   Phrase strong_phrase = text::tokenizeSentence(strong_text);
   if (max_len) {

@@ -103,13 +103,14 @@ std::vector<std::wstring> tokenizeByPunctuations(const std::wstring& text);
 std::vector<std::wstring> splitOnWhitespace(const std::wstring& text);
 
 /**
- * Replaces punctuation characters in string with whitespace.
+ * Replaces punctuation characters in string with a given character.
  */
-std::string replacePunctuationWithSpaces(const std::string& input);
+std::string replacePunctuation(const std::string& input,
+                               char replace_char = ' ');
 
 /**
- * Replaces \n and \r characters in string with whitespace.
+ * Replaces \n and \r characters in string with a given character.
  */
-std::string replaceNewlinesWithSpaces(const std::string& input);
+std::string replaceNewlines(const std::string& input, char replace_char = ' ');
 
 }  // namespace thirdai::text

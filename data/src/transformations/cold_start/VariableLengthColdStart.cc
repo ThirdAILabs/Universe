@@ -74,7 +74,7 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
       if (_config.word_removal_probability == 0 ||
           dist(rng) > _config.word_removal_probability) {
         output_text.append(word);
-        output_text.append(" ");
+        output_text.push_back(' ');
       }
     }
 
@@ -89,7 +89,7 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
   if (_config.add_whole_doc && output_samples.size() > 1) {
     std::string whole_doc = strong_text + " " + weak_text;
     if (_config.prefilter_punctuation) {
-      whole_doc = text::replacePunctuationWithSpaces(whole_doc);
+      whole_doc = text::replacePunctuation(whole_doc, ' ');
     }
     output_samples.push_back(whole_doc);
   }
@@ -100,7 +100,7 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
 PhraseCollection VariableLengthColdStart::getWeakPhrases(
     std::string weak_text) const {
   if (_config.prefilter_punctuation) {
-    weak_text = text::replacePunctuationWithSpaces(weak_text);
+    weak_text = text::replacePunctuation(weak_text, ' ');
   }
 
   Phrase weak_phrase = text::tokenizeSentence(weak_text);

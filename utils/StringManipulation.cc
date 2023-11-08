@@ -368,19 +368,21 @@ std::vector<std::wstring> tokenizeByPunctuations(const std::wstring& text) {
   return output;
 }
 
-std::string replacePunctuationWithSpaces(const std::string& input) {
+std::string replacePunctuation(const std::string& input, char replace_char) {
   std::string result = input;
   std::replace_if(
       result.begin(), result.end(),
-      [](const char c) -> bool { return std::ispunct(c); }, ' ');
+      [](const char c) -> bool { return std::ispunct(c); }, replace_char);
   return result;
 }
 
-std::string replaceNewlinesWithSpaces(const std::string& input) {
+std::string replaceNewlines(const std::string& input,
+                                      char replace_char) {
   std::string result = input;
   std::replace_if(
       result.begin(), result.end(),
-      [](const char c) -> bool { return c == '\n' || c == '\r'; }, ' ');
+      [](const char c) -> bool { return c == '\n' || c == '\r'; },
+      replace_char);
   return result;
 }
 
