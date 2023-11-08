@@ -235,104 +235,104 @@ def expect_top_2_results(db, query, expected_results):
     assert len(result_ids.intersection(set(expected_results))) >= 1
 
 
-# @pytest.mark.parametrize("model_id_delimiter", [" ", None])
-# def test_neural_db_supervised_training_multilabel_csv(model_id_delimiter):
-#     db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
+def test_neural_db_supervised_training_multilabel_csv(model_id_delimiter):
+    db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
 
-#     with open("mock_sup_1.csv", "w") as out:
-#         out.write("id,query\n")
-#         # make sure that single label rows are also handled correctly in a
-#         # multilabel dataset.
-#         out.write("4,first\n")
-#         out.write("0:1,fourth\n")
-#         out.write("2:3:,second\n")
+    with open("mock_sup_1.csv", "w") as out:
+        out.write("id,query\n")
+        # make sure that single label rows are also handled correctly in a
+        # multilabel dataset.
+        out.write("4,first\n")
+        out.write("0:1,fourth\n")
+        out.write("2:3:,second\n")
 
-#     sup_doc = ndb.Sup(
-#         "mock_sup_1.csv",
-#         query_column="query",
-#         id_column="id",
-#         id_delimiter=":",
-#         source_id=source_ids[0],
-#     )
+    sup_doc = ndb.Sup(
+        "mock_sup_1.csv",
+        query_column="query",
+        id_column="id",
+        id_delimiter=":",
+        source_id=source_ids[0],
+    )
 
-#     db.supervised_train([sup_doc], learning_rate=0.1, epochs=20)
+    db.supervised_train([sup_doc], learning_rate=0.1, epochs=20)
 
-#     assert db.search("first", top_k=1)[0].id == 4
-#     expect_top_2_results(db, "fourth", [0, 1])
-#     expect_top_2_results(db, "second", [2, 3])
+    assert db.search("first", top_k=1)[0].id == 4
+    expect_top_2_results(db, "fourth", [0, 1])
+    expect_top_2_results(db, "second", [2, 3])
 
-#     with open("mock_sup_2.csv", "w") as out:
-#         out.write("id,query\n")
-#         # make sure that single label rows are also handled correctly in a
-#         # multilabel dataset.
-#         out.write("4,sixth\n")
-#         out.write("0:1,ninth\n")
-#         out.write("2:3:,seventh\n")
+    with open("mock_sup_2.csv", "w") as out:
+        out.write("id,query\n")
+        # make sure that single label rows are also handled correctly in a
+        # multilabel dataset.
+        out.write("4,sixth\n")
+        out.write("0:1,ninth\n")
+        out.write("2:3:,seventh\n")
 
-#     sup_doc = ndb.Sup(
-#         "mock_sup_2.csv",
-#         query_column="query",
-#         id_column="id",
-#         id_delimiter=":",
-#         source_id=source_ids[1],
-#     )
+    sup_doc = ndb.Sup(
+        "mock_sup_2.csv",
+        query_column="query",
+        id_column="id",
+        id_delimiter=":",
+        source_id=source_ids[1],
+    )
 
-#     db.supervised_train([sup_doc], learning_rate=0.1, epochs=20)
+    db.supervised_train([sup_doc], learning_rate=0.1, epochs=20)
 
-#     assert db.search("sixth", top_k=1)[0].id == 9
-#     expect_top_2_results(db, "ninth", [5, 6])
-#     expect_top_2_results(db, "seventh", [7, 8])
+    assert db.search("sixth", top_k=1)[0].id == 9
+    expect_top_2_results(db, "ninth", [5, 6])
+    expect_top_2_results(db, "seventh", [7, 8])
 
-#     os.remove("mock_sup_1.csv")
-#     os.remove("mock_sup_2.csv")
+    os.remove("mock_sup_1.csv")
+    os.remove("mock_sup_2.csv")
 
 
-# @pytest.mark.parametrize("model_id_delimiter", [" ", None])
-# def test_neural_db_supervised_training_singlelabel_csv(model_id_delimiter):
-#     db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
+def test_neural_db_supervised_training_singlelabel_csv(model_id_delimiter):
+    db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
 
-#     with open("mock_sup_1.csv", "w") as out:
-#         out.write("id,query\n")
-#         out.write("4,first\n")
-#         out.write("0,fourth\n")
-#         out.write("2,second\n")
+    with open("mock_sup_1.csv", "w") as out:
+        out.write("id,query\n")
+        out.write("4,first\n")
+        out.write("0,fourth\n")
+        out.write("2,second\n")
 
-#     sup_doc = ndb.Sup(
-#         "mock_sup_1.csv",
-#         query_column="query",
-#         id_column="id",
-#         source_id=source_ids[0],
-#     )
+    sup_doc = ndb.Sup(
+        "mock_sup_1.csv",
+        query_column="query",
+        id_column="id",
+        source_id=source_ids[0],
+    )
 
-#     db.supervised_train([sup_doc], learning_rate=0.1, epochs=20)
+    db.supervised_train([sup_doc], learning_rate=0.1, epochs=20)
 
-#     assert db.search("first", top_k=1)[0].id == 4
-#     assert db.search("fourth", top_k=1)[0].id == 0
-#     assert db.search("second", top_k=1)[0].id == 2
+    assert db.search("first", top_k=1)[0].id == 4
+    assert db.search("fourth", top_k=1)[0].id == 0
+    assert db.search("second", top_k=1)[0].id == 2
 
-#     with open("mock_sup_2.csv", "w") as out:
-#         out.write("id,query\n")
-#         # make sure that single label rows are also handled correctly in a
-#         # multilabel dataset.
-#         out.write("4,sixth\n")
-#         out.write("0,ninth\n")
-#         out.write("2,seventh\n")
+    with open("mock_sup_2.csv", "w") as out:
+        out.write("id,query\n")
+        # make sure that single label rows are also handled correctly in a
+        # multilabel dataset.
+        out.write("4,sixth\n")
+        out.write("0,ninth\n")
+        out.write("2,seventh\n")
 
-#     sup_doc = ndb.Sup(
-#         "mock_sup_2.csv",
-#         query_column="query",
-#         id_column="id",
-#         source_id=source_ids[1],
-#     )
+    sup_doc = ndb.Sup(
+        "mock_sup_2.csv",
+        query_column="query",
+        id_column="id",
+        source_id=source_ids[1],
+    )
 
-#     db.supervised_train([sup_doc], learning_rate=0.1, epochs=20)
+    db.supervised_train([sup_doc], learning_rate=0.1, epochs=20)
 
-#     assert db.search("sixth", top_k=1)[0].id == 9
-#     assert db.search("ninth", top_k=1)[0].id == 5
-#     assert db.search("seventh", top_k=1)[0].id == 7
+    assert db.search("sixth", top_k=1)[0].id == 9
+    assert db.search("ninth", top_k=1)[0].id == 5
+    assert db.search("seventh", top_k=1)[0].id == 7
 
-#     os.remove("mock_sup_1.csv")
-#     os.remove("mock_sup_2.csv")
+    os.remove("mock_sup_1.csv")
+    os.remove("mock_sup_2.csv")
 
 
 @pytest.mark.parametrize("model_id_delimiter", [" ", None])
