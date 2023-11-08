@@ -516,7 +516,7 @@ class CSV(Document):
         self.__dict__.update(state)
 
     @requires_condition(
-        check_func=lambda self: not self.self_offset,
+        check_func=lambda self: not self.has_offset,
         method_name="save_meta",
         method_class="CSV(Document)",
         condition_string=" when there is an offset in the CSV document",
