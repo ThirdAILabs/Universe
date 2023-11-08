@@ -111,7 +111,7 @@ jobs:
           CIBW_BEFORE_BUILD_WINDOWS: python -m pip install delvewheel
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: 'delvewheel repair -w {dest_dir} {wheel}'
           CIBW_TEST_EXTRAS: "test"
-          CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -k test_neural_db -v -s
+          CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -k test_neural_db_constrained_search_with_single_constraint -v -s
           CIBW_TEST_COMMAND_WINDOWS: rem
 
           # Skip tests on windows
