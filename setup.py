@@ -162,7 +162,7 @@ neural_db_deps = [
     "nltk",
     "unidecode",
     "pydantic",
-    "unstructured[all-docs]",
+    "unstructured[all-docs]<=0.10.28",
     "sortedcontainers",
     "SQLAlchemy",
     "Office365-REST-Python-Client",
