@@ -246,9 +246,9 @@ metadata_constraints = [
     PDF_META,
     DOCX_META,
     URL_NO_RESPONSE_META,
-    PPTX_META,
-    TXT_META,
-    EML_META,
+    # PPTX_META,
+    # TXT_META,
+    # EML_META,
     SENTENCE_PDF_META,
     SENTENCE_DOCX_META,
 ]
