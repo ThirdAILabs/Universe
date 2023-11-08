@@ -335,123 +335,123 @@ def expect_top_2_results(db, query, expected_results):
 #     os.remove("mock_sup_2.csv")
 
 
-# @pytest.mark.parametrize("model_id_delimiter", [" ", None])
-# def test_neural_db_supervised_training_sequence_input(model_id_delimiter):
-#     db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
+def test_neural_db_supervised_training_sequence_input(model_id_delimiter):
+    db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
 
-#     db.supervised_train(
-#         [
-#             ndb.Sup(
-#                 queries=["first", "fourth", "second"],
-#                 labels=[[4], [0, 1], [2, 3]],
-#                 source_id=source_ids[0],
-#             )
-#         ],
-#         learning_rate=0.1,
-#         epochs=20,
-#     )
+    db.supervised_train(
+        [
+            ndb.Sup(
+                queries=["first", "fourth", "second"],
+                labels=[[4], [0, 1], [2, 3]],
+                source_id=source_ids[0],
+            )
+        ],
+        learning_rate=0.1,
+        epochs=20,
+    )
 
-#     assert db.search("first", top_k=1)[0].id == 4
-#     expect_top_2_results(db, "fourth", [0, 1])
-#     expect_top_2_results(db, "second", [2, 3])
+    assert db.search("first", top_k=1)[0].id == 4
+    expect_top_2_results(db, "fourth", [0, 1])
+    expect_top_2_results(db, "second", [2, 3])
 
-#     db.supervised_train(
-#         [
-#             ndb.Sup(
-#                 queries=["sixth", "ninth", "seventh"],
-#                 labels=[[4], [0, 1], [2, 3]],
-#                 source_id=source_ids[1],
-#             )
-#         ],
-#         learning_rate=0.1,
-#         epochs=20,
-#     )
+    db.supervised_train(
+        [
+            ndb.Sup(
+                queries=["sixth", "ninth", "seventh"],
+                labels=[[4], [0, 1], [2, 3]],
+                source_id=source_ids[1],
+            )
+        ],
+        learning_rate=0.1,
+        epochs=20,
+    )
 
-#     assert db.search("sixth", top_k=1)[0].id == 9
-#     expect_top_2_results(db, "ninth", [5, 6])
-#     expect_top_2_results(db, "seventh", [7, 8])
-
-
-# @pytest.mark.parametrize("model_id_delimiter", [" ", None])
-# def test_neural_db_ref_id_supervised_training_multilabel_csv(model_id_delimiter):
-#     db, _ = train_model_for_supervised_training_test(model_id_delimiter)
-
-#     with open("mock_sup.csv", "w") as out:
-#         out.write("id,query\n")
-#         # make sure that single label rows are also handled correctly in a
-#         # multilabel dataset.
-#         out.write("4,first\n")
-#         out.write("0:1,fourth\n")
-#         out.write("8:9:,second\n")
-
-#     db.supervised_train_with_ref_ids(
-#         "mock_sup.csv",
-#         query_column="query",
-#         id_column="id",
-#         id_delimiter=":",
-#         learning_rate=0.1,
-#         epochs=20,
-#     )
-
-#     assert db.search("first", top_k=1)[0].id == 4
-#     expect_top_2_results(db, "fourth", [0, 1])
-#     expect_top_2_results(db, "second", [8, 9])
-
-#     os.remove("mock_sup.csv")
+    assert db.search("sixth", top_k=1)[0].id == 9
+    expect_top_2_results(db, "ninth", [5, 6])
+    expect_top_2_results(db, "seventh", [7, 8])
 
 
-# @pytest.mark.parametrize("model_id_delimiter", [" ", None])
-# def test_neural_db_ref_id_supervised_training_singlelabel_csv(model_id_delimiter):
-#     db, _ = train_model_for_supervised_training_test(model_id_delimiter)
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
+def test_neural_db_ref_id_supervised_training_multilabel_csv(model_id_delimiter):
+    db, _ = train_model_for_supervised_training_test(model_id_delimiter)
 
-#     with open("mock_sup.csv", "w") as out:
-#         out.write("id,query\n")
-#         out.write("4,first\n")
-#         out.write("0,fourth\n")
-#         out.write("8,second\n")
+    with open("mock_sup.csv", "w") as out:
+        out.write("id,query\n")
+        # make sure that single label rows are also handled correctly in a
+        # multilabel dataset.
+        out.write("4,first\n")
+        out.write("0:1,fourth\n")
+        out.write("8:9:,second\n")
 
-#     db.supervised_train_with_ref_ids(
-#         "mock_sup.csv",
-#         query_column="query",
-#         id_column="id",
-#         learning_rate=0.1,
-#         epochs=20,
-#     )
+    db.supervised_train_with_ref_ids(
+        "mock_sup.csv",
+        query_column="query",
+        id_column="id",
+        id_delimiter=":",
+        learning_rate=0.1,
+        epochs=20,
+    )
 
-#     assert db.search("first", top_k=1)[0].id == 4
-#     assert db.search("fourth", top_k=1)[0].id == 0
-#     assert db.search("second", top_k=1)[0].id == 8
+    assert db.search("first", top_k=1)[0].id == 4
+    expect_top_2_results(db, "fourth", [0, 1])
+    expect_top_2_results(db, "second", [8, 9])
 
-#     os.remove("mock_sup.csv")
-
-
-# @pytest.mark.parametrize("model_id_delimiter", [" ", None])
-# def test_neural_db_ref_id_supervised_training_sequence_input(model_id_delimiter):
-#     db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
-
-#     db.supervised_train_with_ref_ids(
-#         queries=["first", "fourth", "second"],
-#         labels=[[4], [0, 1], [8, 9]],
-#         learning_rate=0.1,
-#         epochs=20,
-#     )
-
-#     assert db.search("first", top_k=1)[0].id == 4
-#     expect_top_2_results(db, "fourth", [0, 1])
-#     expect_top_2_results(db, "second", [8, 9])
-#     assert set([ref.id for ref in db.search("fourth", top_k=2)]) == set([0, 1])
-#     assert set([ref.id for ref in db.search("second", top_k=2)]) == set([8, 9])
+    os.remove("mock_sup.csv")
 
 
-# def test_neural_db_constrained_search_with_single_constraint():
-#     db = ndb.NeuralDB()
-#     db.insert(docs_with_meta(), train=False)
-#     for constraint in metadata_constraints:
-#         # Since we always use the same query, we know that we're getting different
-#         # results solely due to the imposed constraints.
-#         references = db.search("hello", top_k=10, constraints={"meta": constraint})
-#         assert len(references) > 0
-#         assert all([constraint == ref.metadata["meta"] for ref in references])
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
+def test_neural_db_ref_id_supervised_training_singlelabel_csv(model_id_delimiter):
+    db, _ = train_model_for_supervised_training_test(model_id_delimiter)
+
+    with open("mock_sup.csv", "w") as out:
+        out.write("id,query\n")
+        out.write("4,first\n")
+        out.write("0,fourth\n")
+        out.write("8,second\n")
+
+    db.supervised_train_with_ref_ids(
+        "mock_sup.csv",
+        query_column="query",
+        id_column="id",
+        learning_rate=0.1,
+        epochs=20,
+    )
+
+    assert db.search("first", top_k=1)[0].id == 4
+    assert db.search("fourth", top_k=1)[0].id == 0
+    assert db.search("second", top_k=1)[0].id == 8
+
+    os.remove("mock_sup.csv")
+
+
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
+def test_neural_db_ref_id_supervised_training_sequence_input(model_id_delimiter):
+    db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
+
+    db.supervised_train_with_ref_ids(
+        queries=["first", "fourth", "second"],
+        labels=[[4], [0, 1], [8, 9]],
+        learning_rate=0.1,
+        epochs=20,
+    )
+
+    assert db.search("first", top_k=1)[0].id == 4
+    expect_top_2_results(db, "fourth", [0, 1])
+    expect_top_2_results(db, "second", [8, 9])
+    assert set([ref.id for ref in db.search("fourth", top_k=2)]) == set([0, 1])
+    assert set([ref.id for ref in db.search("second", top_k=2)]) == set([8, 9])
+
+
+def test_neural_db_constrained_search_with_single_constraint():
+    db = ndb.NeuralDB()
+    db.insert(docs_with_meta(), train=False)
+    for constraint in metadata_constraints:
+        # Since we always use the same query, we know that we're getting different
+        # results solely due to the imposed constraints.
+        references = db.search("hello", top_k=10, constraints={"meta": constraint})
+        assert len(references) > 0
+        assert all([constraint == ref.metadata["meta"] for ref in references])
 
 
 def test_neural_db_constrained_search_with_multiple_constraints():
