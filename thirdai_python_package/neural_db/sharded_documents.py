@@ -10,6 +10,38 @@ from .documents import CSV, DocumentDataSource
 
 
 class ShardedDataSource:
+    """
+    Initialization Variables:
+        * document_data_source -> The data source we are supposed to shard.
+        * number_shards -> The number of shards to create for the data source.
+        * label_index -> A dictionary that tracks what label goes to what shard. This label index is supposed to be a dictionary reference from Mach Mixture class and this class will modify the label_index.
+        * seed -> Seed for sharding the dataset (since we randomly shard the data source)
+
+    External APIs :
+        shard_data_source :
+            Args:
+                self : ShardedDataSource
+            Returns:
+                sharded_data_sources : List[DocumentDataSource]
+                    Each element in the list corresponds to a shard of the original data source
+            Note:
+                Updates the label index with label_id -> shard index map
+
+        shard_using_index:
+            Args:
+                data_source : DocumentDataSource
+                    Data source to shard
+                label_index : dict
+                    Label index used to shard the data source
+                number_shards : int
+                    number of shards to create for the data source.
+            Returns:
+                sharded_data_sources : List[DocumentDataSource]
+                    Each element in the list corresponds to a shard of the original data source.
+            Note:
+                Does not modify the label index.
+    """
+
     def __init__(
         self,
         document_data_source: DocumentDataSource,
@@ -21,20 +53,6 @@ class ShardedDataSource:
         self.number_shards = number_shards
         self.seed = seed
         self.label_index = label_index
-
-    # @staticmethod
-    # def copy_datasource(document_data_source: DocumentDataSource):
-    #     """
-    #     This function makes a deep copy of the Document Data Source. Ideally, we should not have to make a copy of the Document Data Source (we can restart it?)
-    #     """
-    #     new_data_source = DocumentDataSource(
-    #         document_data_source.id_column,
-    #         document_data_source.strong_column,
-    #         document_data_source.weak_column,
-    #     )
-    #     new_data_source.documents = copy.deepcopy(document_data_source.documents)
-    #     new_data_source._size = document_data_source._size
-    #     return new_data_source
 
     @staticmethod
     def _generate_temp_csvs(segments: List[pd.DataFrame]):

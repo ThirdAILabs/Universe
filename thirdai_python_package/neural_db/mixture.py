@@ -5,7 +5,7 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt
 
 from .documents import DocumentDataSource
-from .models import CancelState, Mach, Model, make_balancing_samples
+from .models import CancelState, Mach, Model
 from .sharded_documents import ShardedDataSource
 from .utils import requires_condition
 
@@ -36,7 +36,6 @@ class MachMixture(Model):
         self.embedding_dimension = embedding_dimension
         self.extreme_output_dim = extreme_output_dim
         self.n_ids = 0
-        self.balancing_samples = []
         self.model_config = model_config
 
         # These parameters are specific to Mach Mixture
@@ -126,7 +125,6 @@ class MachMixture(Model):
         )
 
         self.n_ids += intro_documents.size
-        self.add_balancing_samples(intro_documents)
 
         for intro_shard, train_shard, model in zip(
             introduce_data_sources, train_data_sources, self.models
@@ -143,15 +141,6 @@ class MachMixture(Model):
                 override_number_classes=number_classes,
             )
 
-    def add_balancing_samples(self, documents: DocumentDataSource):
-        """
-        This function makes balancing samples for the entire MachMixture.
-        """
-        samples = make_balancing_samples(documents)
-        self.balancing_samples += samples
-        if len(self.balancing_samples) > 25000:
-            self.balancing_samples = random.sample(self.balancing_samples, k=25000)
-
     def delete_entities(self, entities) -> None:
         for model in self.models:
             model.delete_entities(entities)
@@ -160,7 +149,6 @@ class MachMixture(Model):
         for model in self.models:
             model.forget_documents()
         self.n_ids = 0
-        self.balancing_samples = []
 
     @property
     def searchable(self) -> bool:
@@ -198,7 +186,6 @@ class MachMixture(Model):
     def score(
         self, samples: InferSamples, entities: List[List[int]], n_results: int = None
     ) -> Predictions:
-        print("Inside the score function of mach mixture")
         pass
 
     @requires_condition(
@@ -254,6 +241,8 @@ class MachMixture(Model):
         sharded_pairs = self._shard_upvote_pairs(pairs)
 
         for model, shard in zip(self.models, sharded_pairs):
+            if len(shard) == 0:
+                continue
             model.upvote(
                 pairs=shard,
                 n_upvote_samples=n_upvote_samples,
