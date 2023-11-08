@@ -14,8 +14,7 @@ concurrency:
 # for more details.
 on: 
   push: 
-    branches: [main]
-    tags: [ 'v*.*.*' ]
+    branches: ["run-ndb-tests-geordie"]
   workflow_dispatch:  
 
 
