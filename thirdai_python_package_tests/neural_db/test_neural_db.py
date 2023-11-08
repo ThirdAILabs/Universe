@@ -170,6 +170,13 @@ def test_neural_db_all_methods_work_on_new_model():
     all_methods_work(db, all_docs, assert_acc=False)
 
 
+def test_neuralb_db_all_methods_work_on_new_mach_mixture():
+    number_experts = 2
+    db = ndb.NeuralDB("user", number_experts=number_experts)
+    all_docs = [get_doc() for get_doc in all_doc_getters]
+    all_methods_work(db, all_docs, assert_acc=False)
+
+
 def test_neural_db_all_methods_work_on_loaded_bazaar_model():
     db = db_from_bazaar()
     all_docs = [get_doc() for get_doc in all_doc_getters]
