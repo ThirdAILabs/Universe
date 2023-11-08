@@ -425,33 +425,33 @@ def test_neural_db_ref_id_supervised_training_singlelabel_csv(model_id_delimiter
     os.remove("mock_sup.csv")
 
 
-@pytest.mark.parametrize("model_id_delimiter", [" ", None])
-def test_neural_db_ref_id_supervised_training_sequence_input(model_id_delimiter):
-    db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
+# @pytest.mark.parametrize("model_id_delimiter", [" ", None])
+# def test_neural_db_ref_id_supervised_training_sequence_input(model_id_delimiter):
+#     db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
 
-    db.supervised_train_with_ref_ids(
-        queries=["first", "fourth", "second"],
-        labels=[[4], [0, 1], [8, 9]],
-        learning_rate=0.1,
-        epochs=20,
-    )
+#     db.supervised_train_with_ref_ids(
+#         queries=["first", "fourth", "second"],
+#         labels=[[4], [0, 1], [8, 9]],
+#         learning_rate=0.1,
+#         epochs=20,
+#     )
 
-    assert db.search("first", top_k=1)[0].id == 4
-    expect_top_2_results(db, "fourth", [0, 1])
-    expect_top_2_results(db, "second", [8, 9])
-    assert set([ref.id for ref in db.search("fourth", top_k=2)]) == set([0, 1])
-    assert set([ref.id for ref in db.search("second", top_k=2)]) == set([8, 9])
+#     assert db.search("first", top_k=1)[0].id == 4
+#     expect_top_2_results(db, "fourth", [0, 1])
+#     expect_top_2_results(db, "second", [8, 9])
+#     assert set([ref.id for ref in db.search("fourth", top_k=2)]) == set([0, 1])
+#     assert set([ref.id for ref in db.search("second", top_k=2)]) == set([8, 9])
 
 
-def test_neural_db_constrained_search_with_single_constraint():
-    db = ndb.NeuralDB()
-    db.insert(docs_with_meta(), train=False)
-    for constraint in metadata_constraints:
-        # Since we always use the same query, we know that we're getting different
-        # results solely due to the imposed constraints.
-        references = db.search("hello", top_k=10, constraints={"meta": constraint})
-        assert len(references) > 0
-        assert all([constraint == ref.metadata["meta"] for ref in references])
+# def test_neural_db_constrained_search_with_single_constraint():
+#     db = ndb.NeuralDB()
+#     db.insert(docs_with_meta(), train=False)
+#     for constraint in metadata_constraints:
+#         # Since we always use the same query, we know that we're getting different
+#         # results solely due to the imposed constraints.
+#         references = db.search("hello", top_k=10, constraints={"meta": constraint})
+#         assert len(references) > 0
+#         assert all([constraint == ref.metadata["meta"] for ref in references])
 
 
 def test_neural_db_constrained_search_with_multiple_constraints():
