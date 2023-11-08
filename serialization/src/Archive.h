@@ -44,7 +44,11 @@ class Archive {
   template <typename T>
   std::optional<T> getOpt(const std::string& key) const;
 
-  virtual std::string type() const = 0;
+  virtual std::string type() const { return "Unknown"; }
+
+  void serialize(std::ostream& output) const;
+
+  static ConstArchivePtr deserialize(std::istream& input);
 
   virtual ~Archive() = default;
 

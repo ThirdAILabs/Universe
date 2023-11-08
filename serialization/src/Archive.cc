@@ -111,6 +111,18 @@ std::optional<T> Archive::getOpt(const std::string& key) const {
 
 APPLY_TO_TYPES(SPECIALIZE_getOpt)
 
+void Archive::serialize(std::ostream& output) const {
+  cereal::BinaryOutputArchive oarchive(output);
+  oarchive(*this);
+}
+
+ConstArchivePtr Archive::deserialize(std::istream& input) {
+  cereal::BinaryInputArchive iarchive(input);
+  ArchivePtr deserialize_into(new Archive());
+  iarchive(*deserialize_into);
+  return deserialize_into;
+}
+
 template void Archive::save(cereal::BinaryOutputArchive&) const;
 
 template <class Ar>

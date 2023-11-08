@@ -2,22 +2,22 @@
 #include <serialization/src/Archive.h>
 #include <serialization/src/ArchiveMap.h>
 #include <serialization/tests/Utils.h>
+#include <sstream>
 #include <stdexcept>
+#include <unordered_set>
 
 namespace thirdai::ar::tests {
 
-ArchiveMap simpleMap() {
+TEST(ArchiveMapTests, MapAccessing) {
   ArchiveMap map;
 
-  map.at("a") = u64(10);
-  map.at("b") = str("hello");
-  map.at("c") = vec(std::vector<uint32_t>{1, 2, 3});
+  auto a = u64(10);
+  auto b = str("hello");
+  auto c = vec(std::vector<uint32_t>{1, 2, 3});
 
-  return map;
-}
-
-TEST(ArchiveMapTests, MapAccessing) {
-  ArchiveMap map = simpleMap();
+  map.at("a") = a;
+  map.at("b") = b;
+  map.at("c") = c;
 
   ASSERT_EQ(map.size(), 3);
 
@@ -25,36 +25,35 @@ TEST(ArchiveMapTests, MapAccessing) {
   ASSERT_TRUE(map.contains("b"));
   ASSERT_TRUE(map.contains("c"));
 
-  ASSERT_EQ(map.at("a")->get<uint64_t>(), 10);
-  ASSERT_EQ(map.at("b")->get<std::string>(), "hello");
-  std::vector<uint32_t> list_val = {1, 2, 3};
-  ASSERT_EQ(map.at("c")->get<std::vector<uint32_t>>(), list_val);
+  ASSERT_EQ(map.get("a"), a);
+  ASSERT_EQ(map.get("b"), b);
+  ASSERT_EQ(map.get("c"), c);
 
   CHECK_EXCEPTION(map.get("d"), "Map contains no value for key 'd'.",
                   std::invalid_argument);
 }
 
 TEST(ArchiveMapTests, MapIterator) {
-  ArchiveMap map = simpleMap();
+  ArchiveMap map;
 
-  size_t uint_cnt = 0;
-  size_t str_cnt = 0;
-  size_t vec_cnt = 0;
+  auto a = u64(10);
+  auto b = str("hello");
+  auto c = vec(std::vector<uint32_t>{1, 2, 3});
+
+  map.at("a") = a;
+  map.at("b") = b;
+  map.at("c") = c;
+
+  std::unordered_set<ConstArchivePtr> visited;
   for (const auto& [k, v] : map) {
-    if (v->is<uint64_t>()) {
-      uint_cnt++;
-    }
-    if (v->is<std::string>()) {
-      str_cnt++;
-    }
-    if (v->is<std::vector<uint32_t>>()) {
-      vec_cnt++;
-    }
+    ASSERT_FALSE(visited.count(v));
+    visited.insert(v);
   }
 
-  ASSERT_EQ(uint_cnt, 1);
-  ASSERT_EQ(str_cnt, 1);
-  ASSERT_EQ(vec_cnt, 1);
+  ASSERT_EQ(visited.size(), 3);
+  ASSERT_TRUE(visited.count(a));
+  ASSERT_TRUE(visited.count(b));
+  ASSERT_TRUE(visited.count(c));
 }
 
 }  // namespace thirdai::ar::tests
