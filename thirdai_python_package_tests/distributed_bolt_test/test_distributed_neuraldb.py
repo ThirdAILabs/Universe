@@ -2,8 +2,6 @@ import os
 import shutil
 
 import pytest
-import ray
-import thirdai
 import thirdai.distributed_bolt as dist
 from distributed_utils import setup_ray
 from ray.train import RunConfig
