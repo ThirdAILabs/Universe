@@ -461,7 +461,7 @@ class CSV(Document):
             df = filterer.filter_df_column(df, column_name)
         return df[self.id_column].to_list()
 
-    def id_map(self) -> Dict[str, int] | None:
+    def id_map(self) -> Optional[Dict[str, int]]:
         return self.orig_to_assigned_id
 
     def strong_text(self, element_id: int) -> str:
