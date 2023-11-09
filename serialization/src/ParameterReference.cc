@@ -30,3 +30,6 @@ void ParameterReference::load(Ar& archive) {
 }  // namespace thirdai::ar
 
 CEREAL_REGISTER_TYPE(thirdai::ar::ParameterReference)
+// Unregistered type error without this.
+// https://uscilab.github.io/cereal/assets/doxygen/polymorphic_8hpp.html#a8e0d5df9830c0ed7c60451cf2f873ff5
+CEREAL_REGISTER_DYNAMIC_INIT(ParameterReference)
