@@ -6,7 +6,8 @@ set(ARCHIVE_TESTS
     ArchiveMapTests
     ArchiveListTests
     ArchiveValueTests
-    ParameterReferenceTests)
+    ParameterReferenceTests
+    ArchiveTests)
 
 foreach(ARCHIVE_TEST IN LISTS ARCHIVE_TESTS)
   add_executable(${ARCHIVE_TEST} ${ARCHIVE_TEST}.cc)

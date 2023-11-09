@@ -2,8 +2,10 @@
 #include <serialization/src/Archive.h>
 #include <serialization/src/ArchiveMap.h>
 #include <serialization/tests/Utils.h>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <unordered_set>
 
 namespace thirdai::ar::tests {
@@ -37,8 +39,29 @@ TEST(ArchiveMapTests, MapAccessing) {
   ASSERT_EQ(map->get("b"), b);
   ASSERT_EQ(map->get("c"), c);
 
+  ASSERT_EQ(map->getAs<std::string>("b"), "hello");
+  CHECK_EXCEPTION(map->getAs<float>("b"),
+                  "Attempted to convert archive of type 'Value[std::string]' "
+                  "to type 'Value[float]'.",
+                  std::runtime_error)
+
+  ASSERT_EQ(map->getOpt<uint64_t>("x"), std::nullopt);
+  ASSERT_TRUE(map->getOpt<uint64_t>("a").has_value());
+  ASSERT_EQ(map->getOpt<uint64_t>("a"), 10);
+  CHECK_EXCEPTION(map->getOpt<float>("b"),
+                  "Attempted to convert archive of type 'Value[std::string]' "
+                  "to type 'Value[float]'.",
+                  std::runtime_error)
+
+  ASSERT_EQ(map->getOr<uint64_t>("x", 800), 800);
+  ASSERT_EQ(map->getOr<uint64_t>("a", 200), 10);
+  CHECK_EXCEPTION(map->getOr<float>("b", 4.4),
+                  "Attempted to convert archive of type 'Value[std::string]' "
+                  "to type 'Value[float]'.",
+                  std::runtime_error)
+
   CHECK_EXCEPTION(map->get("d"), "Map contains no value for key 'd'.",
-                  std::out_of_range);
+                  std::out_of_range)
 }
 
 TEST(ArchiveMapTests, MapIterator) {
@@ -65,7 +88,7 @@ TEST(ArchiveMapTests, Serialization) {
 
   CHECK_EXCEPTION(loaded->list(),
                   "Expected to the archive to have type List but found 'Map'.",
-                  std::runtime_error);
+                  std::runtime_error)
 
   ASSERT_EQ(loaded->map().size(), 3);
 

@@ -16,6 +16,9 @@ void testArchiveValue(T value) {
 
   ASSERT_EQ(archive->as<T>(), value);
 
+  ASSERT_TRUE(archive->is<T>());
+  ASSERT_FALSE(archive->is<U>());
+
   CHECK_EXCEPTION(archive->as<U>(),
                   "Attempted to convert archive of type '" +
                       ArchiveValue<T>::typeName() + "' to type '" +
@@ -27,6 +30,9 @@ void testArchiveValue(T value) {
   auto loaded = deserialize(buffer);
 
   ASSERT_EQ(loaded->as<T>(), value);
+
+  ASSERT_TRUE(loaded->is<T>());
+  ASSERT_FALSE(loaded->is<U>());
 
   CHECK_EXCEPTION(loaded->as<U>(),
                   "Attempted to convert archive of type '" +
