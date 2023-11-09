@@ -31,7 +31,6 @@ def test_neural_db_training(create_simple_dataset):
     )
 
     ndb.insert(sources=[doc], train=False)
-    thirdai.licensing.activate("F9E549-9C58ED-ACE836-15DE36-D9AB8F-V3")
 
     # we are running just one worker since we get OOM issues with multiple workers
     scaling_config = setup_ray(num_workers=1)
@@ -39,7 +38,7 @@ def test_neural_db_training(create_simple_dataset):
         documents=[doc],
         scaling_config=scaling_config,
         log_folder=LOG_PATH,
-        run_config=RunConfig(storage_path="/home/pratik/ray_results"),
+        run_config=RunConfig(storage_path="~/ray_results"),
     )
 
     shutil.rmtree(LOG_PATH)
