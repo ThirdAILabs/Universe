@@ -432,6 +432,7 @@ set(THIRDAI_SOURCES
     data/src/ColumnMapIterator.cc
     data/src/rca/ExplanationMap.cc
     serialization/src/Archive.cc
+    serialization/src/ArchiveMap.cc
     serialization/src/ArchiveList.cc
     serialization/src/ArchiveValue.cc
     serialization/src/ParameterReference.cc
