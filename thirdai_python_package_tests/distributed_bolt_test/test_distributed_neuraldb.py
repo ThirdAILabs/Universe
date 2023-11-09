@@ -3,6 +3,7 @@ import shutil
 
 import pytest
 import ray
+import thirdai
 import thirdai.distributed_bolt as dist
 from distributed_utils import setup_ray
 from ray.train import RunConfig
@@ -13,6 +14,7 @@ from thirdai_python_package_tests.neural_db.ndb_utils import create_simple_datas
 
 
 @pytest.mark.distributed
+@pytest.mark.release
 def test_neural_db_training(create_simple_dataset):
     LOG_PATH = "/tmp/thirdai"
     os.makedirs(LOG_PATH, exist_ok=True)
@@ -29,6 +31,7 @@ def test_neural_db_training(create_simple_dataset):
     )
 
     ndb.insert(sources=[doc], train=False)
+    thirdai.licensing.activate("F9E549-9C58ED-ACE836-15DE36-D9AB8F-V3")
 
     # we are running just one worker since we get OOM issues with multiple workers
     scaling_config = setup_ray(num_workers=1)
@@ -36,7 +39,7 @@ def test_neural_db_training(create_simple_dataset):
         documents=[doc],
         scaling_config=scaling_config,
         log_folder=LOG_PATH,
-        run_config=RunConfig(storage_path="~/ray_results"),
+        run_config=RunConfig(storage_path="/home/pratik/ray_results"),
     )
 
     shutil.rmtree(LOG_PATH)

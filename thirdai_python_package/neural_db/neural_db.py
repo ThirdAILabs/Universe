@@ -360,8 +360,8 @@ class NeuralDB:
             from ray import train
             from thirdai.dataset import RayCsvDataSource
 
-            if config["licensing_lambda"]:
-                config["licensing_lambda"]()
+            if config["licensing_state"]:
+                thirdai._thirdai.licensing._set_license_state(config["licensing_state"])
 
             strong_column_names = config["strong_column_names"]
             weak_column_names = config["weak_column_names"]
@@ -423,17 +423,10 @@ class NeuralDB:
 
         # we cannot pass the model directly to config given config results in OOM very frequently with bigger model.
         model_ref = ray.put(self._savable_state.model.get_model())
-
-        # If this is a file based license, it will assume the license to available at the same location on each of the
-        # machine
-        licensing_lambda = None
         if hasattr(thirdai._thirdai, "licensing"):
-            license_state = thirdai._thirdai.licensing._get_license_state()
-            licensing_lambda = lambda: thirdai._thirdai.licensing._set_license_state(
-                license_state
-            )
-
-        train_loop_config["licensing_lambda"] = licensing_lambda
+            train_loop_config[
+                "licensing_state"
+            ] = thirdai._thirdai.licensing._get_license_state()
         train_loop_config["strong_column_names"] = documents[0].strong_columns
         train_loop_config["weak_column_names"] = documents[0].weak_columns
         train_loop_config["learning_rate"] = learning_rate
