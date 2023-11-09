@@ -2,12 +2,8 @@ enable_testing()
 
 include(GoogleTest)
 
-set(ARCHIVE_TESTS
-    ArchiveMapTests
-    ArchiveListTests
-    ArchiveValueTests
-    ParameterReferenceTests
-    ArchiveTests)
+set(ARCHIVE_TESTS ArchiveMapTests ArchiveListTests ArchiveValueTests
+                  ParameterReferenceTests ArchiveTests)
 
 foreach(ARCHIVE_TEST IN LISTS ARCHIVE_TESTS)
   add_executable(${ARCHIVE_TEST} ${ARCHIVE_TEST}.cc)

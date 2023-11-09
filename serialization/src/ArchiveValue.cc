@@ -4,7 +4,6 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
-#include <_types/_uint64_t.h>
 #include <unordered_map>
 
 namespace thirdai::ar {
