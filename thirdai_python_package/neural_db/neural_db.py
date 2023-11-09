@@ -498,6 +498,7 @@ class NeuralDB:
         on_success: Callable = no_op,
         on_error: Callable = None,
         cancel_state: CancelState = None,
+        max_in_memory_batches: int = None,
     ) -> List[str]:
         """Inserts sources into the database.
         fast_approximation: much faster insertion with a slight drop in
@@ -526,6 +527,7 @@ class NeuralDB:
             should_train=train,
             on_progress=on_progress,
             cancel_state=cancel_state,
+            max_in_memory_batches=max_in_memory_batches,
         )
         self._savable_state.logger.log(
             session_id=self._user_id,

@@ -162,8 +162,10 @@ neural_db_deps = [
     "nltk",
     "unidecode",
     "pydantic",
-    "unstructured[all-docs]",
+    "unstructured[all-docs]<=0.10.20",
     "sortedcontainers",
+    "SQLAlchemy",
+    "Office365-REST-Python-Client",
 ]
 
 # The information here can also be placed in setup.cfg - better separation of
@@ -223,6 +225,7 @@ setup(
             "beir",
             "pyOpenSSL>22.1.0",
             "ray",
+            "grpcio",
         ]
         + neural_db_deps,
         "benchmark": [

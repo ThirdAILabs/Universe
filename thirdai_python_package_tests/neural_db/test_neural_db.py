@@ -6,7 +6,7 @@ from typing import List
 import pytest
 from ndb_utils import (
     PDF_FILE,
-    all_doc_getters,
+    all_local_doc_getters,
     create_simple_dataset,
     docs_with_meta,
     metadata_constraints,
@@ -68,6 +68,8 @@ def search_works(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
     correct_result = 0
     correct_source = 0
     for doc in docs:
+        if isinstance(doc, ndb.SharePoint):
+            continue
         source = doc.reference(0).source
         for elem_id in range(doc.size):
             query = doc.reference(elem_id).text
@@ -164,13 +166,13 @@ def test_neural_db_loads_from_model_bazaar():
 
 def test_neural_db_all_methods_work_on_new_model():
     db = ndb.NeuralDB("user")
-    all_docs = [get_doc() for get_doc in all_doc_getters]
+    all_docs = [get_doc() for get_doc in all_local_doc_getters]
     all_methods_work(db, all_docs, assert_acc=False)
 
 
 def test_neural_db_all_methods_work_on_loaded_bazaar_model():
     db = db_from_bazaar()
-    all_docs = [get_doc() for get_doc in all_doc_getters]
+    all_docs = [get_doc() for get_doc in all_local_doc_getters]
     all_methods_work(db, all_docs, assert_acc=True)
 
 
