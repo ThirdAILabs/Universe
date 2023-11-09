@@ -1,5 +1,10 @@
 #pragma once
 
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/unordered_map.hpp>
 #include <hashing/src/MurmurHash.h>
 #include <serialization/src/Archive.h>
 #include <memory>
@@ -15,13 +20,15 @@ class ArchiveMap final : public Archive {
     return std::make_shared<ArchiveMap>();
   }
 
-  bool contains(const std::string& key) const { return _map.count(hash(key)); }
+  bool contains(const std::string& key) const final {
+    return _map.count(hash(key));
+  }
 
-  const ConstArchivePtr& get(const std::string& key) const {
+  const ConstArchivePtr& get(const std::string& key) const final {
     if (contains(key)) {
       return _map.at(hash(key));
     }
-    throw std::invalid_argument("Map contains no value for key '" + key + "'.");
+    throw std::out_of_range("Map contains no value for key '" + key + "'.");
   }
 
   ConstArchivePtr& at(const std::string& key) { return _map[hash(key)]; }
@@ -47,10 +54,16 @@ class ArchiveMap final : public Archive {
   friend class cereal::access;
 
   template <class Ar>
-  void save(Ar& archive) const;
+  void save(Ar& archive) const {
+    archive(cereal::base_class<Archive>(this), _map);
+  }
 
   template <class Ar>
-  void load(Ar& archive);
+  void load(Ar& archive) {
+    archive(cereal::base_class<Archive>(this), _map);
+  }
 };
 
 }  // namespace thirdai::ar
+
+CEREAL_REGISTER_TYPE(thirdai::ar::ArchiveMap)

@@ -25,18 +25,18 @@ class Archive {
 
   const ParameterReference& param() const;
 
-  bool contains(const std::string& key) const;
+  virtual bool contains(const std::string& key) const;
 
-  const ConstArchivePtr& at(const std::string& key) const;
+  virtual const ConstArchivePtr& get(const std::string& key) const;
 
   template <typename T>
-  const T& get() const;
+  const T& as() const;
 
   template <typename T>
   bool is() const;
 
   template <typename T>
-  const T& get(const std::string& key) const;
+  const T& getAs(const std::string& key) const;
 
   template <typename T>
   const T& getOr(const std::string& key, const T& fallback) const;
@@ -45,10 +45,6 @@ class Archive {
   std::optional<T> getOpt(const std::string& key) const;
 
   virtual std::string type() const { return "Unknown"; }
-
-  void serialize(std::ostream& output) const;
-
-  static ConstArchivePtr deserialize(std::istream& input);
 
   virtual ~Archive() = default;
 
@@ -61,6 +57,10 @@ class Archive {
   template <class Ar>
   void load(Ar& archive);
 };
+
+void serialize(ConstArchivePtr archive, std::ostream& output);
+
+ConstArchivePtr deserialize(std::istream& input);
 
 ConstArchivePtr boolean(bool val);
 

@@ -18,7 +18,7 @@ class ArchiveValue final : public Archive {
     return std::make_shared<ArchiveValue<T>>(std::move(value));
   }
 
-  const T& get() const { return _value; }
+  const T& value() const { return _value; }
 
   std::string type() const final { return typeName(); }
 

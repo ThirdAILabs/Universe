@@ -3,7 +3,8 @@ enable_testing()
 include(GoogleTest)
 
 set(ARCHIVE_TESTS
-    ArchiveMapTests)
+    ArchiveMapTests
+    ArchiveListTests)
 
 foreach(ARCHIVE_TEST IN LISTS ARCHIVE_TESTS)
   add_executable(${ARCHIVE_TEST} ${ARCHIVE_TEST}.cc)
