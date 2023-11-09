@@ -52,7 +52,7 @@ template <typename T>
 const T& Archive::as() const {
   const auto* val = dynamic_cast<const ArchiveValue<T>*>(this);
   if (!val) {
-    throw std::runtime_error("Expected to convert archive of type '" + type() +
+    throw std::runtime_error("Attempted to convert archive of type '" + type() +
                              "' to type '" + ArchiveValue<T>::typeName() +
                              "'.");
   }
