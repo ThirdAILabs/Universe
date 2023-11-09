@@ -13,6 +13,7 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/featurizers/llm/TextClassificationFeaturizer.h>
 #include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <pybind11/pytypes.h>
@@ -32,6 +33,7 @@ class UDTMachClassifier final : public UDTBackend {
       uint32_t n_target_classes, bool integer_target,
       const TabularOptions& tabular_options,
       const std::optional<std::string>& model_config,
+      std::optional<dataset::TextClassificationFeaturizerPtr>& text_featurizer,
       config::ArgumentMap user_args);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
@@ -269,6 +271,8 @@ class UDTMachClassifier final : public UDTBackend {
   std::shared_ptr<utils::Classifier> _classifier;
 
   dataset::mach::MachBlockPtr _mach_label_block;
+  std::optional<dataset::TextClassificationFeaturizerPtr>
+      _text_classification_featurizer;
   TabularDatasetFactoryPtr _dataset_factory;
   TabularDatasetFactoryPtr _pre_hashed_labels_dataset_factory;
 

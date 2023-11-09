@@ -30,6 +30,7 @@ UDT::UDT(
     const std::string& target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
+    std::optional<dataset::TextClassificationFeaturizerPtr>& text_featurizer,
     const config::ArgumentMap& user_args) {
   TabularOptions tabular_options;
   tabular_options.contextual_columns = user_args.get<bool>(
@@ -80,7 +81,7 @@ UDT::UDT(
       _backend = std::make_unique<UDTMachClassifier>(
           data_types, temporal_tracking_relationships, target_col,
           as_categorical, n_target_classes.value(), integer_target,
-          tabular_options, model_config, user_args);
+          tabular_options, model_config, text_featurizer, user_args);
     } else {
       _backend = std::make_unique<UDTClassifier>(
           data_types, temporal_tracking_relationships, target_col,

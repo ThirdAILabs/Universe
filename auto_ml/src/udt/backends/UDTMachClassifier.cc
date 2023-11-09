@@ -19,9 +19,11 @@
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <data/src/transformations/ColdStartText.h>
 #include <dataset/src/DataSource.h>
+#include <dataset/src/Featurizer.h>
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/featurizers/llm/TextClassificationFeaturizer.h>
 #include <dataset/src/mach/MachBlock.h>
 #include <pybind11/cast.h>
 #include <pybind11/pytypes.h>
@@ -65,8 +67,10 @@ UDTMachClassifier::UDTMachClassifier(
     uint32_t n_target_classes, bool integer_target,
     const TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
+    std::optional<dataset::TextClassificationFeaturizerPtr>& text_featurizer,
     config::ArgumentMap user_args)
-    : _default_top_k_to_return(defaults::MACH_TOP_K_TO_RETURN),
+    : _text_classification_featurizer(text_featurizer),
+      _default_top_k_to_return(defaults::MACH_TOP_K_TO_RETURN),
       _num_buckets_to_eval(defaults::MACH_NUM_BUCKETS_TO_EVAL) {
   uint32_t input_dim = tabular_options.feature_hash_range;
 
@@ -109,6 +113,9 @@ UDTMachClassifier::UDTMachClassifier(
 
   _mach_label_block = dataset::mach::MachBlock::make(target_name, mach_index,
                                                      target_config->delimiter);
+
+  _text_classification_featurizer.value()->use_mach_label_block(
+      _mach_label_block);
 
   bool force_parallel = user_args.get<bool>("force_parallel", "boolean", false);
 
@@ -169,14 +176,28 @@ py::object UDTMachClassifier::train(
     const bolt::DistributedCommPtr& comm) {
   dataset::DatasetLoaderPtr val_dataset_loader;
   if (val_data) {
-    val_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
-        val_data, /* shuffle= */ false);
+    dataset::DatasetLoaderPtr val_dataset_loader;
+    if (_text_classification_featurizer) {
+      val_dataset_loader = _dataset_factory->makeDataLoaderCustomFeaturizer(
+          val_data, false, *_text_classification_featurizer);
+    } else {
+      val_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
+          val_data, /* shuffle= */ true,
+          /* shuffle_config= */ options.shuffle_config);
+    }
   }
 
   addBalancingSamples(data);
 
-  auto train_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
-      data, /* shuffle= */ true, /* shuffle_config= */ options.shuffle_config);
+  dataset::DatasetLoaderPtr train_dataset_loader;
+  if (_text_classification_featurizer) {
+    train_dataset_loader = _dataset_factory->makeDataLoaderCustomFeaturizer(
+        data, false, *_text_classification_featurizer);
+  } else {
+    train_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
+        data, /* shuffle= */ true,
+        /* shuffle_config= */ options.shuffle_config);
+  }
 
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
                             getMetrics(train_metrics, "train_"),
@@ -223,10 +244,14 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
                                        bool sparse_inference, bool verbose,
                                        std::optional<uint32_t> top_k) {
   (void)top_k;
-
-  auto eval_dataset_loader =
-      _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ false);
-
+  dataset::DatasetLoaderPtr eval_dataset_loader;
+  if (_text_classification_featurizer) {
+    eval_dataset_loader = _dataset_factory->makeDataLoaderCustomFeaturizer(
+        data, false, *_text_classification_featurizer);
+  } else {
+    eval_dataset_loader =
+        _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ false);
+  }
   return _classifier->evaluate(eval_dataset_loader, getMetrics(metrics, "val_"),
                                sparse_inference, verbose);
 }

@@ -5,6 +5,7 @@
 #include <dataset/src/blocks/ColumnIdentifier.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
 #include <dataset/src/featurizers/llm/TextContextFeaturizer.h>
+#include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <optional>
 
@@ -12,7 +13,12 @@ namespace thirdai::dataset {
 
 class TextClassificationFeaturizer final : public Featurizer {
  public:
-  size_t getNumDatasets() final { return 4; }
+  size_t getNumDatasets() final {
+    if (_mach_label_block) {
+      return 5;
+    }
+    return 4;
+  }
 
   TextClassificationFeaturizer(const std::string& text_column,
                                const std::string& label_column,
@@ -40,6 +46,14 @@ class TextClassificationFeaturizer final : public Featurizer {
     return _vocab->getString(id);
   }
 
+  void use_mach_label_block(mach::MachBlockPtr mach_label_block) {
+    _mach_label_block = mach_label_block;
+  }
+
+  std::optional<mach::MachBlockPtr> get_mach_label_block() {
+    return _mach_label_block;
+  }
+
  private:
   static BlockPtr labelBlock(const std::string& label_column, uint32_t n_labels,
                              ThreadSafeVocabularyPtr vocab,
@@ -54,12 +68,15 @@ class TextClassificationFeaturizer final : public Featurizer {
   }
 
   ColumnIdentifier _text_column;
+  ColumnIdentifier _label_column;
   char _delimiter;
+  std::optional<char> _label_delimiter;
 
   TextContextFeaturizer _context_featurizer;
 
   ThreadSafeVocabularyPtr _vocab;
   BlockPtr _label_block;
+  std::optional<mach::MachBlockPtr> _mach_label_block;
 };
 
 using TextClassificationFeaturizerPtr =

@@ -29,6 +29,20 @@ class TabularDatasetFactory {
       std::set<std::string> label_col_names, const TabularOptions& options,
       bool force_parallel);
 
+  dataset::DatasetLoaderPtr makeDataLoaderCustomFeaturizer(
+      const dataset::DataSourcePtr& data_source, bool shuffle,
+      const dataset::FeaturizerPtr& featurizer,
+      std::optional<dataset::DatasetShuffleConfig> shuffle_config =
+          std::nullopt) const {
+    if (!shuffle_config.has_value()) {
+      shuffle_config = dataset::DatasetShuffleConfig();
+    }
+    auto csv_data_source =
+        dataset::CsvDataSource::make(data_source, delimiter());
+    return std::make_unique<dataset::DatasetLoader>(
+        csv_data_source, featurizer, shuffle, shuffle_config.value());
+  }
+
   static auto make(
       ColumnDataTypes input_data_types,
       const UserProvidedTemporalRelationships& provided_temporal_relationships,
