@@ -65,6 +65,9 @@ class Document:
     def filter_entity_ids(self, filters: Dict[str, Filter]):
         return self.all_entity_ids()
 
+    def id_map(self) -> Optional[Dict[str, int]]:
+        return None
+
     # This attribute allows certain things to be saved or not saved during
     # the pickling of a savable_state object. For example, if we set this
     # to True for CSV docs, we will save the actual csv file in the pickle.
@@ -352,6 +355,13 @@ class DocumentManager:
 
 
 class CSV(Document):
+    def valid_id_column(column):
+        return (
+            (len(column.unique()) == len(column))
+            and (column.min() == 0)
+            and (column.max() == len(column) - 1)
+        )
+
     def __init__(
         self,
         path: str,
@@ -368,9 +378,19 @@ class CSV(Document):
         if reference_columns is None:
             reference_columns = list(self.df.columns)
 
-        if id_column is None:
-            id_column = "thirdai_index"
-            self.df[id_column] = range(self.df.shape[0])
+        self.orig_to_assigned_id = None
+        self.id_column = id_column
+        orig_id_column = id_column
+        if self.id_column and CSV.valid_id_column(self.df[self.id_column]):
+            self.df = self.df.sort_values(self.id_column)
+        else:
+            self.id_column = "thirdai_index"
+            self.df[self.id_column] = range(self.df.shape[0])
+            if orig_id_column:
+                self.orig_to_assigned_id = {
+                    row[orig_id_column]: row[self.id_column]
+                    for _, row in self.df.iterrows()
+                }
 
         if strong_columns is None and weak_columns is None:
             # autotune column types
@@ -381,7 +401,9 @@ class CSV(Document):
                         text_col_names.append(col_name)
             except:
                 text_col_names = list(self.df.columns)
-                text_col_names.remove(id_column)
+                text_col_names.remove(self.id_column)
+                if orig_id_column:
+                    text_col_names.remove(orig_id_column)
                 self.df[text_col_names] = self.df[text_col_names].astype(str)
             strong_columns = []
             weak_columns = text_col_names
@@ -390,17 +412,11 @@ class CSV(Document):
         elif weak_columns is None:
             weak_columns = []
 
-        self.df = self.df.sort_values(id_column)
-        assert len(self.df[id_column].unique()) == len(self.df[id_column])
-        assert self.df[id_column].min() == 0
-        assert self.df[id_column].max() == len(self.df[id_column]) - 1
-
         for col in strong_columns + weak_columns:
             self.df[col] = self.df[col].fillna("")
 
         self.path = Path(path)
         self._hash = hash_file(path, metadata="csv-" + str(metadata))
-        self.id_column = id_column
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
         self.reference_columns = reference_columns
@@ -444,6 +460,9 @@ class CSV(Document):
                 return []
             df = filterer.filter_df_column(df, column_name)
         return df[self.id_column].to_list()
+
+    def id_map(self) -> Dict[str, int] | None:
+        return self.orig_to_assigned_id
 
     def strong_text(self, element_id: int) -> str:
         row = self.df.iloc[element_id]
@@ -517,6 +536,8 @@ class CSV(Document):
             self.doc_metadata_keys = set()
         if not hasattr(self, "indexed_columns"):
             self.indexed_columns = []
+        if not hasattr(self, "orig_to_assigned_id"):
+            self.orig_to_assigned_id = None
 
 
 # Base class for PDF, DOCX and Unstructured classes because they share the same logic.
