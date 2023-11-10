@@ -677,3 +677,33 @@ def test_neural_db_delete_document():
     # Make sure constrained search index is also updated
     result = db.search("ice cream", top_k=1, constraints={"about": "ice cream"})[0]
     assert result.text == "text: ice cream"
+
+
+def char4(sentence):
+    return [sentence[i : i + 4] for i in range(0, len(sentence) - 3, 2)]
+
+
+def custom_tokenize(sentence):
+    tokens = []
+    sentence = sentence.lower()
+    for word in sentence.split(" "):
+        if len(word) > 4:
+            tokens.extend(char4(word))
+    return set(tokens)
+
+
+def test_neural_db_rerank_search():
+    db = ndb.NeuralDB("user")
+    all_docs = [get_doc() for get_doc in all_local_doc_getters]
+    db.insert(all_docs, train=False)
+
+    query = "The standard chunk of Lorem Ipsum used since the 1500s is reproduced below for those interested. Sections 1.10.32 and 1.10.33 from de Finibus Bonorum et Malorum by Cicero are also reproduced in their exact original form, accompanied by English versions from the 1914 translation by H. Rackham."
+    results = db.search(query, top_k=10, rerank=True)
+
+    query_tokens = custom_tokenize(query)
+    docs_tokens = [custom_tokenize(r.text) for r in results]
+
+    first_ranked_score = len(query_tokens.intersection(docs_tokens[0]))
+    last_ranked_score = len(query_tokens.intersection(docs_tokens[-1]))
+
+    assert first_ranked_score > last_ranked_score

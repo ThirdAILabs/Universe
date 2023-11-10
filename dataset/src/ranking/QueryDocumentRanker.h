@@ -9,7 +9,7 @@ using Scores = std::vector<float>;
 
 class QueryDocumentRanker {
  public:
-  virtual std::tuple<RankedIndices, Scores> rank(
+  virtual std::pair<RankedIndices, Scores> rank(
       const std::string& query, const std::vector<std::string>& documents) = 0;
 
   virtual ~QueryDocumentRanker() = default;
