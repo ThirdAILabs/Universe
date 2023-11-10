@@ -1,45 +1,7 @@
 import torch
 import torch.nn as nn
-from thirdai import data, dataset
+from thirdai import bolt, data, dataset
 import time
-
-
-def to_tokens_and_offsets(rows, batch_size):
-    batches = []
-    for i in range(0, len(rows), batch_size):
-        tokens = []
-        offsets = []
-        for row in rows[i : i + batch_size]:
-            offsets.append(len(tokens))
-            tokens.extend(row)
-        batches.append((torch.tensor(tokens), torch.tensor(offsets)))
-
-    return batches
-
-
-def to_csr(rows, batch_size, dense_dim):
-    batches = []
-    for i in range(0, len(rows), batch_size):
-        indices = []
-        values = []
-        offsets = [0]
-
-        for row in rows[i : i + batch_size]:
-            indices.extend(row)
-            values.extend([1.0] * len(row))
-            offsets.append(len(indices))
-
-        batches.append(
-            torch.sparse_csr_tensor(
-                crow_indices=offsets,
-                col_indices=indices,
-                values=values,
-                size=(len(offsets) - 1, dense_dim),
-                dtype=torch.float32,
-            )
-        )
-
-    return batches
 
 
 class Precision:
@@ -53,9 +15,11 @@ class Precision:
         for pred, _ in predictions[: self.k]:
             if pred in labels:
                 score += 1
-        score /= self.k
+        # score /= self.k
+        # self.total_score += score
+        # self.num_samples += 1
         self.total_score += score
-        self.num_samples += 1
+        self.num_samples += self.k
 
     def name(self):
         return f"precision_at_{self.k}"
@@ -75,12 +39,14 @@ class Recall:
         for pred, _ in predictions[: self.k]:
             if pred in labels:
                 score += 1
-        if len(labels) == 0:
-            score = 0
-        else:
-            score /= min(self.k, len(labels))
+        # if len(labels) == 0:
+        #     score = 0
+        # else:
+        #     score /= min(self.k, len(labels))
+        # self.total_score += score
+        # self.num_samples += 1
         self.total_score += score
-        self.num_samples += 1
+        self.num_samples += min(self.k, len(labels))
 
     def name(self):
         return f"recall_at_{self.k}"
@@ -89,21 +55,16 @@ class Recall:
         return self.total_score / self.num_samples
 
 
-class MachModel(nn.Module):
-    def __init__(self, input_dim, emb_dim, output_dim):
-        super().__init__()
+def bolt_model(input_dim, emb_dim, output_dim):
+    input_ = bolt.nn.Input(input_dim)
+    emb = bolt.nn.Embedding(input_dim=input_dim, dim=emb_dim, activation="relu")(input_)
+    out = bolt.nn.FullyConnected(
+        input_dim=emb_dim, dim=output_dim, sparsity=0.1, activation="sigmoid"
+    )(emb)
 
-        self.emb = nn.EmbeddingBag(num_embeddings=input_dim, embedding_dim=emb_dim)
-        self.emb_bias = nn.Parameter(torch.empty(1024))
-        nn.init.normal_(self.emb_bias, mean=0, std=0.01)
+    loss = bolt.nn.losses.BinaryCrossEntropy(out, bolt.nn.Input(output_dim))
 
-        self.output = nn.Linear(in_features=emb_dim, out_features=output_dim)
-
-    def forward(self, tokens, offsets):
-        out = self.emb(input=tokens, offsets=offsets) + self.emb_bias
-        out = nn.functional.relu(out)
-        out = self.output(out)
-        return out
+    return bolt.nn.Model(inputs=[input_], outputs=[out], losses=[loss])
 
 
 class Mach:
@@ -125,15 +86,15 @@ class Mach:
         csv_delimiter=",",
         label_delimiter=":",
     ):
-        self.model = MachModel(
-            input_dim=input_dim, emb_dim=emb_dim, output_dim=n_buckets
-        )
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
+        self.model = bolt_model(input_dim, emb_dim, n_buckets)
 
         self.index = dataset.MachIndex(
             output_range=n_buckets, num_hashes=n_hashes, num_elements=n_entities
         )
 
+        self.input_dim = input_dim
+
+        self.lr = lr
         self.text_col = text_col
         self.label_col = label_col
         self.char_4_grams = char_4_grams
@@ -141,10 +102,10 @@ class Mach:
         self.label_delimiter = label_delimiter
 
     def _input_dim(self):
-        return self.model.emb.num_embeddings
+        return self.input_dim
 
     def _output_dim(self):
-        return self.model.output.out_features
+        return self.index.output_range()
 
     def _text_transform(self):
         extra_args = (
@@ -192,88 +153,77 @@ class Mach:
         return pipeline
 
     def _load_data(self, filename, pipeline, batch_size):
-        columns = data.CsvIterator.all(
+        data_iter = data.CsvIterator(
             dataset.FileDataSource(filename), delimiter=self.csv_delimiter
         )
 
         state = data.transformations.State(self.index)
-        columns = pipeline(columns, state=state)
-        columns.shuffle()
 
-        inputs = to_tokens_and_offsets(
-            columns[self.token_col].data(),
+        loader = data.Loader(
+            data_iter,
+            pipeline,
+            state,
+            input_columns=[data.OutputColumns(self.token_col)],
+            output_columns=[data.OutputColumns(self.mach_label_col)],
             batch_size=batch_size,
         )
-        labels = to_csr(
-            columns[self.mach_label_col].data(),
-            batch_size=batch_size,
-            dense_dim=self._output_dim(),
-        )
 
-        return list(zip(inputs, labels))
+        return loader.all()
 
     def train(self, filename, batch_size=2048, strong_cols=None, weak_cols=None):
-        self.model.train()
-
         pipeline = self._build_data_pipeline(
             strong_cols=strong_cols, weak_cols=weak_cols
         )
 
+        # batches = zip(*self._load_data(filename, pipeline, batch_size))
         batches = self._load_data(filename, pipeline, batch_size)
 
-        # cnt = 0
-        start = time.perf_counter()
-        for (tokens, offsets), labels in batches:
-            self.optimizer.zero_grad()
+        trainer = bolt.train.Trainer(self.model)
 
-            out = self.model(tokens, offsets)
-            loss = nn.functional.cross_entropy(out, labels.to_dense())
-            loss.backward()
-
-            self.optimizer.step()
-
-            # cnt += 1
-            # if (cnt % 10) == 0:
-            #     print(f"train_loss = {loss.item()}")
-        end = time.perf_counter()
-        print(
-            f"epoch complete - train_loss={round(loss.item(), 4)} - time={round(end -start, 4)}"
+        trainer.train(
+            train_data=batches,
+            learning_rate=self.lr,
+            epochs=1,
+            autotune_rehash_rebuild=True,
         )
+        # start = time.perf_counter()
+        # for inputs, labels in batches:
+        #     self.model.train_on_batch(inputs, labels)
+        #     self.model.update_parameters(self.lr)
+
+        # end = time.perf_counter()
+        # print(f"epoch complete - time={round(end -start, 4)}")
 
     def validate(self, filename, recall_at, precision_at, num_buckets_to_eval=25):
-        self.model.eval()
-
-        data_iter = data.CsvIterator(
+        columns = data.CsvIterator.all(
             dataset.FileDataSource(filename),
             delimiter=self.csv_delimiter,
-            rows_per_load=10000,
         )
-        text_transform = self._text_transform()
-        parse_entities = self._entity_parse_transform()
+        columns = self._text_transform()(columns)
+        columns = self._entity_parse_transform()(columns)
+
+        batch_size = 10_000
+        inputs = data.to_tensors(
+            columns, [data.OutputColumns(self.token_col)], batch_size=batch_size
+        )
+        labels = []
+        for i in range(0, len(columns), batch_size):
+            labels.append(columns[self.entity_col].data()[i : i + batch_size])
 
         top_k = max(max(recall_at), max(precision_at))
 
         metrics = [Recall(k) for k in recall_at] + [Precision(k) for k in precision_at]
 
-        while cols := data_iter.next():
-            cols = text_transform(cols)
-            cols = parse_entities(cols)
-
-            tokens, offsets = to_tokens_and_offsets(
-                cols[self.token_col].data(), batch_size=len(cols)
-            )[0]
-
-            out = nn.functional.softmax(self.model(tokens, offsets), dim=1)
+        for inputs, batch_labels in zip(inputs, labels):
+            out = self.model.forward(inputs)[0].activations
 
             predictions = self.index.decode_batch(
-                out.detach().numpy(),
-                top_k=top_k,
-                num_buckets_to_eval=num_buckets_to_eval,
+                out, top_k=top_k, num_buckets_to_eval=num_buckets_to_eval
             )
 
-            for preds, labels in zip(predictions, cols[self.entity_col]):
+            for preds, lbls in zip(predictions, batch_labels):
                 for metric in metrics:
-                    metric.record(preds, labels)
+                    metric.record(preds, lbls)
 
         metric_vals = {}
         for metric in metrics:
@@ -290,7 +240,7 @@ def scifact():
         n_buckets=1_000,
         n_entities=5183,
         char_4_grams=False,
-        lr=0.05,
+        lr=0.001,
     )
 
     for _ in range(5):
@@ -317,16 +267,6 @@ def scifact():
             recall_at=[5],
             precision_at=[1],
         )
-
-
-def trec_covid():
-    model = Mach(
-        input_dim=100_000,
-        emb_dim=3_000,
-        n_buckets=20_000,
-        n_entities=171_332,
-        char_4_grams=True,
-    )
 
 
 if __name__ == "__main__":
