@@ -1,7 +1,4 @@
-import torch
-import torch.nn as nn
 from thirdai import bolt, data, dataset
-import time
 
 
 class Precision:
@@ -55,11 +52,14 @@ class Recall:
         return self.total_score / self.num_samples
 
 
-def bolt_model(input_dim, emb_dim, output_dim):
+def bolt_model(input_dim, emb_dim, output_dim, output_sparsity):
     input_ = bolt.nn.Input(input_dim)
     emb = bolt.nn.Embedding(input_dim=input_dim, dim=emb_dim, activation="relu")(input_)
     out = bolt.nn.FullyConnected(
-        input_dim=emb_dim, dim=output_dim, sparsity=0.1, activation="sigmoid"
+        input_dim=emb_dim,
+        dim=output_dim,
+        sparsity=output_sparsity,
+        activation="sigmoid",
     )(emb)
 
     loss = bolt.nn.losses.BinaryCrossEntropy(out, bolt.nn.Input(output_dim))
@@ -77,6 +77,7 @@ class Mach:
         input_dim,
         emb_dim,
         n_buckets,
+        output_sparsity,
         n_entities,
         lr=1e-3,
         n_hashes=7,
@@ -86,7 +87,7 @@ class Mach:
         csv_delimiter=",",
         label_delimiter=":",
     ):
-        self.model = bolt_model(input_dim, emb_dim, n_buckets)
+        self.model = bolt_model(input_dim, emb_dim, n_buckets, output_sparsity)
 
         self.index = dataset.MachIndex(
             output_range=n_buckets, num_hashes=n_hashes, num_elements=n_entities
@@ -176,7 +177,6 @@ class Mach:
             strong_cols=strong_cols, weak_cols=weak_cols
         )
 
-        # batches = zip(*self._load_data(filename, pipeline, batch_size))
         batches = self._load_data(filename, pipeline, batch_size)
 
         trainer = bolt.train.Trainer(self.model)
@@ -187,9 +187,13 @@ class Mach:
             epochs=1,
             autotune_rehash_rebuild=True,
         )
+
+        # batches = zip(*self._load_data(filename, pipeline, batch_size))
+
         # start = time.perf_counter()
         # for inputs, labels in batches:
         #     self.model.train_on_batch(inputs, labels)
+
         #     self.model.update_parameters(self.lr)
 
         # end = time.perf_counter()
@@ -239,10 +243,20 @@ def scifact():
         input_dim=100_000,
         emb_dim=1024,
         n_buckets=1_000,
+        output_sparsity=1.0,
         n_entities=5183,
         char_4_grams=False,
-        lr=0.001,
+        lr=0.05,
     )
+    # model = Mach(
+    #     input_dim=100_000,
+    #     emb_dim=1024,
+    #     n_buckets=1_000,
+    #     output_sparsity=0.1,
+    #     n_entities=5183,
+    #     char_4_grams=False,
+    #     lr=0.001,
+    # )
 
     for e in range(5):
         print("\nCold Start")

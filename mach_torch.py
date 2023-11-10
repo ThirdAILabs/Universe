@@ -53,9 +53,11 @@ class Precision:
         for pred, _ in predictions[: self.k]:
             if pred in labels:
                 score += 1
-        score /= self.k
+        # score /= self.k
+        # self.total_score += score
+        # self.num_samples += 1
         self.total_score += score
-        self.num_samples += 1
+        self.num_samples += self.k
 
     def name(self):
         return f"precision_at_{self.k}"
@@ -75,12 +77,14 @@ class Recall:
         for pred, _ in predictions[: self.k]:
             if pred in labels:
                 score += 1
-        if len(labels) == 0:
-            score = 0
-        else:
-            score /= min(self.k, len(labels))
+        # if len(labels) == 0:
+        #     score = 0
+        # else:
+        #     score /= min(self.k, len(labels))
+        # self.total_score += score
+        # self.num_samples += 1
         self.total_score += score
-        self.num_samples += 1
+        self.num_samples += min(self.k, len(labels))
 
     def name(self):
         return f"recall_at_{self.k}"
@@ -103,6 +107,7 @@ class MachModel(nn.Module):
         out = self.emb(input=tokens, offsets=offsets) + self.emb_bias
         out = nn.functional.relu(out)
         out = self.output(out)
+        out = nn.functional.sigmoid(out)
         return out
 
 
@@ -156,6 +161,7 @@ class Mach:
             encoder=dataset.NGramEncoder(n=2),
             **extra_args,
             dim=self._input_dim(),
+            lowercase=True,
         )
 
     def _entity_parse_transform(self):
@@ -227,7 +233,8 @@ class Mach:
             self.optimizer.zero_grad()
 
             out = self.model(tokens, offsets)
-            loss = nn.functional.cross_entropy(out, labels.to_dense())
+            # loss = nn.functional.cross_entropy(out, labels.to_dense())
+            loss = nn.functional.binary_cross_entropy(out, labels.to_dense())
             loss.backward()
 
             self.optimizer.step()
@@ -243,27 +250,25 @@ class Mach:
     def validate(self, filename, recall_at, precision_at, num_buckets_to_eval=25):
         self.model.eval()
 
-        data_iter = data.CsvIterator(
-            dataset.FileDataSource(filename),
-            delimiter=self.csv_delimiter,
-            rows_per_load=10000,
+        columns = data.CsvIterator.all(
+            dataset.FileDataSource(filename), delimiter=self.csv_delimiter
         )
-        text_transform = self._text_transform()
-        parse_entities = self._entity_parse_transform()
+        columns = self._text_transform()(columns)
+        columns = self._entity_parse_transform()(columns)
+
+        batch_size = 10_000
+        inputs = to_tokens_and_offsets(columns[self.token_col].data(), batch_size)
+        label_batches = []
+        for i in range(0, len(columns), batch_size):
+            label_batches.append(columns[self.entity_col].data()[i : i + batch_size])
 
         top_k = max(max(recall_at), max(precision_at))
 
         metrics = [Recall(k) for k in recall_at] + [Precision(k) for k in precision_at]
 
-        while cols := data_iter.next():
-            cols = text_transform(cols)
-            cols = parse_entities(cols)
-
-            tokens, offsets = to_tokens_and_offsets(
-                cols[self.token_col].data(), batch_size=len(cols)
-            )[0]
-
-            out = nn.functional.softmax(self.model(tokens, offsets), dim=1)
+        for (tokens, offsets), labels in zip(inputs, label_batches):
+            out = self.model(tokens, offsets)
+            # out = nn.functional.softmax(self.model(tokens, offsets), dim=1)
 
             predictions = self.index.decode_batch(
                 out.detach().numpy(),
@@ -271,9 +276,9 @@ class Mach:
                 num_buckets_to_eval=num_buckets_to_eval,
             )
 
-            for preds, labels in zip(predictions, cols[self.entity_col]):
+            for sample_preds, sample_labels in zip(predictions, labels):
                 for metric in metrics:
-                    metric.record(preds, labels)
+                    metric.record(sample_preds, sample_labels)
 
         metric_vals = {}
         for metric in metrics:
