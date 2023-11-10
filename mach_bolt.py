@@ -117,6 +117,7 @@ class Mach:
             encoder=dataset.NGramEncoder(n=2),
             **extra_args,
             dim=self._input_dim(),
+            lowercase=True,
         )
 
     def _entity_parse_transform(self):
@@ -243,13 +244,16 @@ def scifact():
         lr=0.001,
     )
 
-    for _ in range(5):
+    for e in range(5):
         print("\nCold Start")
         model.train(
             "/Users/nmeisburger/ThirdAI/data/scifact/unsupervised.csv",
             strong_cols=["TITLE"],
             weak_cols=["TEXT"],
         )
+
+        if e == 0:
+            model.model.freeze_hash_tables()
 
         model.validate(
             "/Users/nmeisburger/ThirdAI/data/scifact/tst_supervised.csv",
