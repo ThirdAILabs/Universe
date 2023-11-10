@@ -162,7 +162,6 @@ neural_db_deps = [
     "nltk",
     "unidecode",
     "pydantic",
-    "unstructured[all-docs]<=0.10.20",
     "sortedcontainers",
     "SQLAlchemy",
     "Office365-REST-Python-Client",
@@ -226,6 +225,7 @@ setup(
             "pyOpenSSL>22.1.0",
             "ray",
             "grpcio",
+            "unstructured[all-docs]<=0.10.20",
         ]
         + neural_db_deps,
         "benchmark": [
@@ -240,6 +240,7 @@ setup(
             "nltk",
             "ray[default]",
             "torch",
+            "unstructured[all-docs]<=0.10.20",
         ]
         + neural_db_deps,
         # See https://github.com/readthedocs/sphinx_rtd_theme/issues/1343 for why we restrict the sphinx version
