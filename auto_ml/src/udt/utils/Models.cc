@@ -74,7 +74,8 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
     hidden = bolt::LayerNorm::make()->apply(hidden);
   }
 
-  auto sparsity = autotuneSparsity(output_dim);
+  // auto sparsity = autotuneSparsity(output_dim);
+  auto sparsity = 1.0;
   const auto* activation = use_sigmoid_bce ? "sigmoid" : "softmax";
   auto output = bolt::FullyConnected::make(
                     output_dim, hidden->dim(), sparsity, activation,

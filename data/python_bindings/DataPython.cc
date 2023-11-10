@@ -74,7 +74,9 @@ void createDataSubmodule(py::module_& dataset_submodule) {
       dataset_submodule, "CsvIterator")
       .def(py::init<DataSourcePtr, char, size_t>(), py::arg("data_source"),
            py::arg("delimiter"),
-           py::arg("rows_per_load") = ColumnMapIterator::DEFAULT_ROWS_PER_LOAD);
+           py::arg("rows_per_load") = ColumnMapIterator::DEFAULT_ROWS_PER_LOAD)
+      .def_static("all", &CsvIterator::all, py::arg("data_source"),
+                  py::arg("delimiter"));
 
   py::class_<JsonIterator, std::shared_ptr<JsonIterator>, ColumnMapIterator>(
       dataset_submodule, "JsonIterator")
