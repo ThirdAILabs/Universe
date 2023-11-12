@@ -299,8 +299,8 @@ bolt::metrics::History Mach::associateTrain(
   addMachLabels(train_data);
   addRlhfSamplesIfNeeded(train_data);
 
-  train_data = train_data.keepColumns(_all_bolt_columns)
-                   .concat(associations.keepColumns(_all_bolt_columns));
+  train_data = train_data.selectColumns(_all_bolt_columns)
+                   .concat(associations.selectColumns(_all_bolt_columns));
 
   train_data.shuffle();
 
@@ -445,10 +445,10 @@ void Mach::teach(data::ColumnMap feedback, float learning_rate,
   auto balancers = balancingColumnMap(num_balancers * feedback.numRows());
 
   feedback = repeatRows(std::move(feedback), feedback_repetitions);
-  feedback = feedback.keepColumns(_all_bolt_columns);
+  feedback = feedback.selectColumns(_all_bolt_columns);
 
   if (balancers) {
-    balancers = balancers->keepColumns(_all_bolt_columns);
+    balancers = balancers->selectColumns(_all_bolt_columns);
     feedback = feedback.concat(*balancers);
   }
 
