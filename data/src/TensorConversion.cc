@@ -105,10 +105,8 @@ bolt::LabeledDataset toLabeledDataset(const ColumnMap& columns,
                                       const OutputColumnsList& input_columns,
                                       const OutputColumnsList& label_columns,
                                       size_t batch_size) {
-  auto inputs =
-      thirdai::data::toTensorBatches(columns, input_columns, batch_size);
-  auto labels =
-      thirdai::data::toTensorBatches(columns, label_columns, batch_size);
+  auto inputs = toTensorBatches(columns, input_columns, batch_size);
+  auto labels = toTensorBatches(columns, label_columns, batch_size);
   return std::make_pair(std::move(inputs), std::move(labels));
 }
 
