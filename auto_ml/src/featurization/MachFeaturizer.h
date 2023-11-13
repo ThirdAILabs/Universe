@@ -1,37 +1,11 @@
 #pragma once
 
 #include <cereal/access.hpp>
-#include <bolt/src/nn/tensor/Tensor.h>
-#include <bolt/src/train/trainer/Dataset.h>
-#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/featurization/Featurizer.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
-#include <auto_ml/src/featurization/TabularTransformations.h>
-#include <data/src/ColumnMap.h>
-#include <data/src/ColumnMapIterator.h>
 #include <data/src/TensorConversion.h>
-#include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
-#include <data/src/columns/ValueColumns.h>
-#include <data/src/transformations/CategoricalTemporal.h>
-#include <data/src/transformations/ColdStartText.h>
 #include <data/src/transformations/Pipeline.h>
-#include <data/src/transformations/State.h>
-#include <data/src/transformations/StringCast.h>
-#include <data/src/transformations/StringConcat.h>
-#include <data/src/transformations/Transformation.h>
-#include <dataset/src/DataSource.h>
-#include <dataset/src/mach/MachIndex.h>
-#include <algorithm>
-#include <iostream>
-#include <limits>
-#include <memory>
-#include <optional>
-#include <ostream>
-#include <stdexcept>
-#include <string>
-#include <utility>
-#include <vector>
 
 namespace thirdai::automl {
 

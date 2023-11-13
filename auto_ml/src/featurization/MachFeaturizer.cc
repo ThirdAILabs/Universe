@@ -1,5 +1,16 @@
 #include "MachFeaturizer.h"
+#include <bolt/src/nn/tensor/Tensor.h>
+#include <bolt/src/train/trainer/Dataset.h>
+#include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/featurization/TabularTransformations.h>
+#include <data/src/ColumnMap.h>
+#include <data/src/ColumnMapIterator.h>
+#include <data/src/columns/ArrayColumns.h>
+#include <data/src/columns/ValueColumns.h>
+#include <data/src/transformations/CategoricalTemporal.h>
+#include <data/src/transformations/ColdStartText.h>
 #include <data/src/transformations/StringCast.h>
+#include <data/src/transformations/StringConcat.h>
 #include <string>
 
 namespace thirdai::automl {
