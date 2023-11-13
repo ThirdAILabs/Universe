@@ -4,6 +4,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/nn/ops/Op.h>
+#include <archive/src/Archive.h>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -59,6 +60,16 @@ std::optional<uint32_t> Input::nonzeros(const ComputationList& inputs,
 }
 
 void Input::initOptimizer() {}
+
+ComputationPtr Input::applyToInputs(const ComputationList& inputs) {
+  (void)inputs;
+  throw std::runtime_error("apply should not be called on Input.");
+}
+
+ar::ConstArchivePtr Input::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+  throw std::runtime_error("toArchive should not be called on Input.");
+}
 
 void Input::disableSparseParameterUpdates() {}
 

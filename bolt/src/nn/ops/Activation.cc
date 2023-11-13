@@ -5,6 +5,8 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Archive.h>
+#include <archive/src/ArchiveMap.h>
 #include <utils/StringManipulation.h>
 #include <cmath>
 #include <memory>
@@ -92,6 +94,26 @@ std::vector<std::vector<float>*> Activation<Impl>::gradients() {
 template <typename Impl>
 std::vector<std::vector<float>*> Activation<Impl>::parameters() {
   return {};
+}
+
+template <typename Impl>
+ComputationPtr Activation<Impl>::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("Expected activation op to have single input.");
+  }
+  return apply(inputs.at(0));
+}
+
+template <typename Impl>
+ar::ConstArchivePtr Activation<Impl>::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = ar::ArchiveMap::make();
+  map->set("name", ar::str(name()));
+  map->set("type", ar::str("activation"));
+  map->set("activation", ar::str(Impl::name()));
+
+  return map;
 }
 
 template <typename Impl>

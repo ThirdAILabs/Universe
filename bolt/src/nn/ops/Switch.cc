@@ -6,6 +6,8 @@
 #include <cereal/types/vector.hpp>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <archive/src/ArchiveList.h>
+#include <archive/src/ArchiveMap.h>
 #include <memory>
 #include <optional>
 #include <sstream>
@@ -113,6 +115,30 @@ std::vector<std::vector<float>*> Switch::parameters() {
                       op_parameters.end());
   }
   return parameters;
+}
+
+ComputationPtr Switch::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument("Expected Switch op to have two inputs.");
+  }
+  return apply(inputs.at(0), inputs.at(1));
+}
+
+ar::ConstArchivePtr Switch::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = ar::ArchiveMap::make();
+
+  map->set("name", ar::str(name()));
+  map->set("type", ar::str("switch"));
+
+  auto list = ar::ArchiveList::make();
+  for (const auto& op : _fc_ops) {
+    list->append(op->toArchive(with_optimizer));
+  }
+  map->set("fc_ops", list);
+
+  return map;
 }
 
 void Switch::summary(std::ostream& summary, const ComputationList& inputs,

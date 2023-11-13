@@ -3,6 +3,8 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <archive/src/Archive.h>
+#include <cstddef>
 
 namespace thirdai::bolt::tests {
 
@@ -19,6 +21,15 @@ class Noop final : public Op, public std::enable_shared_from_this<Noop> {
 
   ComputationPtr apply(const ComputationList& inputs) {
     return Computation::make(shared_from_this(), inputs);
+  }
+
+  ComputationPtr applyToInputs(const ComputationList& inputs) final {
+    return apply(inputs);
+  }
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final {
+    (void)with_optimizer;
+    return nullptr;
   }
 
   void forward(const ComputationList& inputs, TensorPtr& output,

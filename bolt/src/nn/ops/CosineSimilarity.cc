@@ -5,6 +5,7 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/ArchiveMap.h>
 #include <cmath>
 #include <stdexcept>
 #include <unordered_map>
@@ -87,6 +88,23 @@ std::optional<uint32_t> CosineSimilarity::nonzeros(
 }
 
 void CosineSimilarity::initOptimizer() {}
+
+ComputationPtr CosineSimilarity::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument(
+        "Expected CosineSimilarity op to have two inputs.");
+  }
+  return apply(inputs.at(0), inputs.at(1));
+}
+
+ar::ConstArchivePtr CosineSimilarity::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = ar::ArchiveMap::make();
+  map->set("name", ar::str(name()));
+  map->set("type", ar::str("cosine_sim"));
+  return map;
+}
 
 void CosineSimilarity::summary(std::ostream& summary,
                                const ComputationList& inputs,

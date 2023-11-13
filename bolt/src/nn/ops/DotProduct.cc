@@ -5,6 +5,7 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/ArchiveMap.h>
 #include <cmath>
 #include <stdexcept>
 #include <unordered_map>
@@ -91,6 +92,22 @@ std::optional<uint32_t> DotProduct::nonzeros(const ComputationList& inputs,
 }
 
 void DotProduct::initOptimizer() {}
+
+ComputationPtr DotProduct::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument("Expected DotProduct op to have two inputs.");
+  }
+  return apply(inputs.at(0), inputs.at(1));
+}
+
+ar::ConstArchivePtr DotProduct::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = ar::ArchiveMap::make();
+  map->set("name", ar::str(name()));
+  map->set("type", ar::str("dot_product"));
+  return map;
+}
 
 void DotProduct::summary(std::ostream& summary, const ComputationList& inputs,
                          const Computation* output) const {

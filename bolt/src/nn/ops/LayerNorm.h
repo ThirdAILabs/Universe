@@ -38,6 +38,10 @@ class LayerNorm final : public Op,
 
   std::vector<std::vector<float>*> parameters() final;
 
+  ComputationPtr applyToInputs(const ComputationList& inputs) final;
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 

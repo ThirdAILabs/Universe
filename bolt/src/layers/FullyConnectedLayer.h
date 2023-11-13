@@ -16,11 +16,16 @@
 
 namespace thirdai::bolt {
 
+class FullyConnected;
+class PatchEmbedding;
+
 namespace tests {
 class FullyConnectedLayerTestFixture;
 }  // namespace tests
 
 class FullyConnectedLayer final {
+  friend class PatchEmbedding;
+  friend class FullyConnected;
   friend class tests::FullyConnectedLayerTestFixture;
 
  public:

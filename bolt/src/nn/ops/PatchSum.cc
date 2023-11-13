@@ -1,5 +1,7 @@
 #include "PatchSum.h"
 #include <bolt/src/nn/autograd/Computation.h>
+#include <archive/src/Archive.h>
+#include <archive/src/ArchiveMap.h>
 #include <algorithm>
 #include <stdexcept>
 #include <string>
@@ -107,6 +109,27 @@ std::optional<uint32_t> PatchSum::nonzeros(const ComputationList& inputs,
 }
 
 void PatchSum::initOptimizer() {}
+
+ComputationPtr PatchSum::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("Expected PatchSum op to have one input.");
+  }
+  return apply(inputs.at(0));
+}
+
+ar::ConstArchivePtr PatchSum::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = ar::ArchiveMap::make();
+
+  map->set("name", ar::str(name()));
+  map->set("type", ar::str("patch_sum"));
+
+  map->set("n_patches", ar::u64(_n_patches));
+  map->set("patch_dim", ar::u64(_patch_dim));
+
+  return map;
+}
 
 void PatchSum::disableSparseParameterUpdates() {}
 

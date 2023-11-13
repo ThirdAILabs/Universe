@@ -5,6 +5,9 @@
 #include <cereal/types/memory.hpp>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <archive/src/Archive.h>
+#include <archive/src/ArchiveMap.h>
+#include <archive/src/ParameterReference.h>
 
 namespace thirdai::bolt {
 
@@ -90,6 +93,50 @@ std::vector<std::vector<float>*> RobeZ::gradients() {
 
 std::vector<std::vector<float>*> RobeZ::parameters() {
   return {&_kernel->getRawEmbeddingBlock()};
+}
+
+ComputationPtr RobeZ::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("Expected RobeZ op to have one input.");
+  }
+  return apply(inputs.at(0));
+}
+
+ar::ConstArchivePtr RobeZ::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = ar::ArchiveMap::make();
+
+  map->set("name", ar::str(name()));
+  map->set("type", ar::str("robe_z"));
+
+  map->set("num_lookups_per_token", ar::u64(_kernel->_num_lookups_per_token));
+  map->set("lookup_size", ar::u64(_kernel->_lookup_size));
+  map->set("log_embedding_block_size",
+           ar::u64(_kernel->_log_embedding_block_size));
+
+  // TODO(ARCHIVE) reduction to str
+
+  if (_kernel->_num_tokens_per_input) {
+    map->set("num_tokens_per_input", ar::u64(*_kernel->_num_tokens_per_input));
+  }
+  map->set("update_chunk_size", ar::u64(_kernel->_update_chunk_size));
+  map->set("hash_seed", ar::u64(_kernel->_hash_fn.seed()));
+
+  map->set("embeddings", ar::ParameterReference::make(
+                             *_kernel->_embedding_block, shared_from_this()));
+
+  if (with_optimizer && _kernel->_optimizer) {
+    map->set("embedding_opt",
+             optimizerToArchive(*_kernel->_optimizer, shared_from_this(),
+                                _kernel->_embedding_chunks_used.size(),
+                                _kernel->_update_chunk_size));
+  }
+
+  map->set("disable_sparse_parameter_updates",
+           ar::boolean(_kernel->_disable_sparse_parameter_updates));
+
+  return map;
 }
 
 void RobeZ::summary(std::ostream& summary, const ComputationList& inputs,

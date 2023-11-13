@@ -17,12 +17,15 @@
 
 namespace thirdai::bolt {
 
+class RobeZ;
+
 namespace tests {
 class EmbeddingLayerTestFixture;
 }  // namespace tests
 
 class EmbeddingLayer {
   friend class tests::EmbeddingLayerTestFixture;
+  friend class RobeZ;
 
  public:
   explicit EmbeddingLayer(const EmbeddingLayerConfig& config,

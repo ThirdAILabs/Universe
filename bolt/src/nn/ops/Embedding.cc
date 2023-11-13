@@ -7,6 +7,9 @@
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Archive.h>
+#include <archive/src/ArchiveMap.h>
+#include <archive/src/ParameterReference.h>
 #include <algorithm>
 #include <ios>
 #include <random>
@@ -192,6 +195,44 @@ void Embedding::initOptimizer() {
     _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
     _bias_optimizer = AdamOptimizer(_dim);
   }
+}
+
+ComputationPtr Embedding::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument("Expected Embedding op to have one input.");
+  }
+  return apply(inputs.at(0));
+}
+
+ar::ConstArchivePtr Embedding::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = ar::ArchiveMap::make();
+  map->set("name", ar::str(name()));
+  map->set("type", ar::str("emb"));
+  map->set("dim", ar::u64(_dim));
+  map->set("input_dim", ar::u64(_input_dim));
+  map->set("activation", ar::str(activationFunctionToStr(_act_func)));
+  map->set("use_bias", ar::boolean(_bias));
+
+  map->set("embeddings",
+           ar::ParameterReference::make(_embeddings, shared_from_this()));
+  map->set("biases", ar::ParameterReference::make(_biases, shared_from_this()));
+
+  if (with_optimizer && _embedding_optimizer && _bias_optimizer) {
+    map->set("embedding_opt",
+             optimizerToArchive(*_embedding_optimizer, shared_from_this(),
+                                _input_dim, _dim));
+
+    map->set("bias_opt",
+             optimizerToArchive(*_bias_optimizer, shared_from_this(),
+                                /*rows=*/1, _dim));
+  }
+
+  map->set("disable_sparse_parameter_updates",
+           ar::boolean(_disable_sparse_parameter_updates));
+
+  return map;
 }
 
 void Embedding::sparseEmbeddingUpdate(float learning_rate,

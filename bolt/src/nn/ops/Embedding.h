@@ -56,6 +56,10 @@ class Embedding final : public Op,
     return {&_embeddings, &_biases};
   }
 
+  ComputationPtr applyToInputs(const ComputationList& inputs) final;
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 

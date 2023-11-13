@@ -34,6 +34,10 @@ class DotProduct final : public Op,
 
   std::vector<std::vector<float>*> parameters() final { return {}; }
 
+  ComputationPtr applyToInputs(const ComputationList& inputs) final;
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
