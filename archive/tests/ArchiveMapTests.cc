@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include <serialization/src/Archive.h>
-#include <serialization/src/ArchiveMap.h>
-#include <serialization/tests/Utils.h>
+#include <archive/src/Archive.h>
+#include <archive/src/ArchiveMap.h>
+#include <archive/tests/Utils.h>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -17,11 +17,11 @@ simpleMap() {
 
   auto a = u64(10);
   auto b = str("hello");
-  auto c = vec(std::vector<uint32_t>{1, 2, 3});
+  auto c = vecU32({1, 2, 3});
 
-  map->at("a") = a;
-  map->at("b") = b;
-  map->at("c") = c;
+  map->insert("a", a);
+  map->insert("b", b);
+  map->insert("c", c);
 
   return {map, a, b, c};
 }
@@ -40,22 +40,22 @@ TEST(ArchiveMapTests, MapAccessing) {
   ASSERT_EQ(map->get("c"), c);
 
   ASSERT_EQ(map->getAs<std::string>("b"), "hello");
-  CHECK_EXCEPTION(map->getAs<float>("b"),
+  CHECK_EXCEPTION(map->getAs<F32>("b"),
                   "Attempted to convert archive of type 'Value[std::string]' "
                   "to type 'Value[float]'.",
                   std::runtime_error)
 
-  ASSERT_EQ(map->getOpt<uint64_t>("x"), std::nullopt);
-  ASSERT_TRUE(map->getOpt<uint64_t>("a").has_value());
-  ASSERT_EQ(map->getOpt<uint64_t>("a"), 10);
-  CHECK_EXCEPTION(map->getOpt<float>("b"),
+  ASSERT_EQ(map->getOpt<U64>("x"), std::nullopt);
+  ASSERT_TRUE(map->getOpt<U64>("a").has_value());
+  ASSERT_EQ(map->getOpt<U64>("a"), 10);
+  CHECK_EXCEPTION(map->getOpt<F32>("b"),
                   "Attempted to convert archive of type 'Value[std::string]' "
                   "to type 'Value[float]'.",
                   std::runtime_error)
 
-  ASSERT_EQ(map->getOr<uint64_t>("x", 800), 800);
-  ASSERT_EQ(map->getOr<uint64_t>("a", 200), 10);
-  CHECK_EXCEPTION(map->getOr<float>("b", 4.4),
+  ASSERT_EQ(map->getOr<U64>("x", 800), 800);
+  ASSERT_EQ(map->getOr<U64>("a", 200), 10);
+  CHECK_EXCEPTION(map->getOr<F32>("b", 4.4),
                   "Attempted to convert archive of type 'Value[std::string]' "
                   "to type 'Value[float]'.",
                   std::runtime_error)
@@ -92,10 +92,9 @@ TEST(ArchiveMapTests, Serialization) {
 
   ASSERT_EQ(loaded->map().size(), 3);
 
-  ASSERT_EQ(loaded->getAs<uint64_t>("a"), a->as<uint64_t>());
-  ASSERT_EQ(loaded->getAs<std::string>("b"), b->as<std::string>());
-  ASSERT_EQ(loaded->getAs<std::vector<uint32_t>>("c"),
-            c->as<std::vector<uint32_t>>());
+  ASSERT_EQ(loaded->getAs<U64>("a"), a->as<U64>());
+  ASSERT_EQ(loaded->getAs<Str>("b"), b->as<Str>());
+  ASSERT_EQ(loaded->getAs<VecU32>("c"), c->as<VecU32>());
 
   std::unordered_set<ConstArchivePtr> visited;
   for (const auto& [k, v] : loaded->map()) {

@@ -2,7 +2,7 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include <hashing/src/MurmurHash.h>
-#include <serialization/src/Archive.h>
+#include <archive/src/Archive.h>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -17,17 +17,22 @@ class ArchiveMap final : public Archive {
   }
 
   bool contains(const std::string& key) const final {
-    return _map.count(hash(key));
+    return _map.count(encode(key));
   }
 
   const ConstArchivePtr& get(const std::string& key) const final {
     if (contains(key)) {
-      return _map.at(hash(key));
+      return _map.at(encode(key));
     }
     throw std::out_of_range("Map contains no value for key '" + key + "'.");
   }
 
-  ConstArchivePtr& at(const std::string& key) { return _map[hash(key)]; }
+  void insert(const std::string& key, ConstArchivePtr archive) {
+    if (contains(key)) {
+      throw std::runtime_error("Found duplicate entry for key in Archive Map.");
+    }
+    _map[encode(key)] = std::move(archive);
+  }
 
   size_t size() const { return _map.size(); }
 
@@ -38,14 +43,19 @@ class ArchiveMap final : public Archive {
   std::string type() const final { return "Map"; }
 
  private:
-  static uint64_t hash(const std::string& key) {
-    // Murmur hash only outputs 32 bits.
-    uint64_t h1 = hashing::MurmurHash(key.data(), key.size(), 89295);
-    uint64_t h2 = hashing::MurmurHash(key.data(), key.size(), 34072);
-    return (h1 << 32) + h2;
+  static std::string encode(const std::string& key) {
+    // os.urandom(8).hex()
+    const uint8_t cipher[8] = {0x23, 0xbf, 0x35, 0xe9, 0x14, 0xd6, 0x88, 0x42};
+
+    std::string out;
+    for (size_t i = 0; i < key.size(); i++) {
+      out.push_back(key[i] ^ cipher[i % sizeof(cipher)]);
+    }
+
+    return out;
   }
 
-  std::unordered_map<uint64_t, ConstArchivePtr> _map;
+  std::unordered_map<std::string, ConstArchivePtr> _map;
 
   friend class cereal::access;
 

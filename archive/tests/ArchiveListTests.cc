@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include <serialization/src/Archive.h>
-#include <serialization/src/ArchiveList.h>
-#include <serialization/tests/Utils.h>
+#include <archive/src/Archive.h>
+#include <archive/src/ArchiveList.h>
+#include <archive/tests/Utils.h>
 #include <sstream>
 #include <stdexcept>
 #include <unordered_set>
@@ -15,7 +15,7 @@ simpleList() {
 
   auto a = u64(10);
   auto b = str("hello");
-  auto c = vec(std::vector<uint32_t>{1, 2, 3});
+  auto c = vecU32({1, 2, 3});
 
   list->append(a);
   list->append(b);
@@ -61,10 +61,9 @@ TEST(ArchiveListTests, Serialization) {
 
   ASSERT_EQ(loaded->list().size(), 3);
 
-  ASSERT_EQ(loaded->list().at(0)->as<uint64_t>(), a->as<uint64_t>());
-  ASSERT_EQ(loaded->list().at(1)->as<std::string>(), b->as<std::string>());
-  ASSERT_EQ(loaded->list().at(2)->as<std::vector<uint32_t>>(),
-            c->as<std::vector<uint32_t>>());
+  ASSERT_EQ(loaded->list().at(0)->as<U64>(), a->as<U64>());
+  ASSERT_EQ(loaded->list().at(1)->as<Str>(), b->as<Str>());
+  ASSERT_EQ(loaded->list().at(2)->as<VecU32>(), c->as<VecU32>());
 
   std::unordered_set<ConstArchivePtr> visited;
   for (const auto& x : loaded->list()) {

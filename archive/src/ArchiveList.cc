@@ -4,7 +4,6 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
-#include <serialization/src/Archive.h>
 
 namespace thirdai::ar {
 

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include <serialization/src/Archive.h>
-#include <serialization/src/ParameterReference.h>
-#include <serialization/tests/Utils.h>
+#include <archive/src/Archive.h>
+#include <archive/src/ParameterReference.h>
+#include <archive/tests/Utils.h>
 #include <sstream>
 #include <stdexcept>
 
@@ -31,9 +31,9 @@ TEST(ParameterReferenceTests, Serialization) {
 
   const auto* loaded_data_ptr = loaded->param().loadedParameter()->data();
 
-  std::vector<float> loaded_data = loaded->param().takeLoadedParameter();
+  std::vector<float> loaded_data = loaded->param().moveLoadedParameter();
   ASSERT_EQ(loaded_data, data);
-  ASSERT_EQ(loaded_data.data(), loaded_data_ptr);  // Check take doesn't copy.
+  ASSERT_EQ(loaded_data.data(), loaded_data_ptr);  // Check method doesn't copy.
 }
 
 }  // namespace thirdai::ar::tests

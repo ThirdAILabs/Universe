@@ -2,7 +2,7 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/nn/ops/Op.h>
-#include <serialization/src/Archive.h>
+#include <archive/src/Archive.h>
 #include <stdexcept>
 #include <variant>
 
@@ -17,13 +17,21 @@ namespace thirdai::ar {
  */
 class ParameterReference final : public Archive {
  public:
-  ParameterReference(const std::vector<float>& parameter, bolt::OpPtr op)
+  ParameterReference(const std::vector<float>& parameter,
+                     std::shared_ptr<const bolt::Op> op)
       : _state(SavableState{&parameter, std::move(op)}) {}
 
-  static auto make(const std::vector<float>& parameter, bolt::OpPtr op) {
+  static auto make(const std::vector<float>& parameter,
+                   std::shared_ptr<const bolt::Op> op) {
     return std::make_shared<ParameterReference>(parameter, std::move(op));
   }
 
+  /**
+   * Retrieves the loaded parameter after deserialization. This method can only
+   * be called after the parameter reference is loaded, since before it is saved
+   * and loaded the data is stored as a different type to avoid copying it from
+   * the op.
+   */
   std::shared_ptr<std::vector<float>> loadedParameter() const {
     if (std::holds_alternative<LoadedState>(_state)) {
       return std::get<LoadedState>(_state).parameter;
@@ -33,7 +41,11 @@ class ParameterReference final : public Archive {
         "loading.");
   }
 
-  std::vector<float> takeLoadedParameter() const {
+  /**
+   * Same as loadedParameter, but this method takes ownership of the loaded
+   * parameter, so ops can store the parameter without copying it.
+   */
+  std::vector<float> moveLoadedParameter() const {
     auto parameter = loadedParameter();
     return std::move(*parameter);
   }
@@ -44,8 +56,8 @@ class ParameterReference final : public Archive {
   struct SavableState {
     const std::vector<float>* parameter;
     // A shared_ptr to the op is stored to ensure that the lifetime of the op is
-    // at least that of this reference.
-    bolt::OpPtr op;
+    // at least that of this reference to the parameter it stores.
+    std::shared_ptr<const bolt::Op> op;
   };
 
   struct LoadedState {

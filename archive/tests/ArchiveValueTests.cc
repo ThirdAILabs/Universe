@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include <serialization/src/Archive.h>
-#include <serialization/src/ArchiveValue.h>
-#include <serialization/tests/Utils.h>
+#include <archive/src/Archive.h>
+#include <archive/src/ArchiveValue.h>
+#include <archive/tests/Utils.h>
 #include <sstream>
 #include <stdexcept>
 #include <string>
