@@ -85,8 +85,7 @@ ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
           allows us to use the same transformation to featurize the source
           column during training and inference.
         */
-        unrolled_source_data[offset + row_pos] =
-            std::vector(source_row.begin(), source_row.begin() + row_pos);
+        unrolled_source_data[offset + row_pos] = source_row.range(0, row_pos);
         // The next token to be predicted; row_pos-th token or EOS.
         uint32_t target_token =
             row_pos < source_row.size() ? target_row[row_pos] : EOS();

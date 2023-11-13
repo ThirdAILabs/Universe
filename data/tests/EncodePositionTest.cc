@@ -92,15 +92,12 @@ TEST(EncodePositionTest, OffsetPosition) {
 
   auto tokens_offset = columns.getArrayColumn<uint32_t>("tokens_offset");
 
-  std::vector<uint32_t> tokens_offset_vec(tokens_offset->row(0).begin(),
-                                          tokens_offset->row(0).end());
-
-  ASSERT_EQ(tokens_offset_vec[0], 4);   // 0 * 5 + 4
-  ASSERT_EQ(tokens_offset_vec[1], 8);   // 1 * 5 + 3
-  ASSERT_EQ(tokens_offset_vec[2], 12);  // 2 * 5 + 2
-  ASSERT_EQ(tokens_offset_vec[3], 16);  // 3 * 5 + 1
+  ASSERT_EQ(tokens_offset->row(0)[0], 4);   // 0 * 5 + 4
+  ASSERT_EQ(tokens_offset->row(0)[1], 8);   // 1 * 5 + 3
+  ASSERT_EQ(tokens_offset->row(0)[2], 12);  // 2 * 5 + 2
+  ASSERT_EQ(tokens_offset->row(0)[3], 16);  // 3 * 5 + 1
   // For the next one, position is 3 instead of 4 since max_num_tokens is 4.
-  ASSERT_EQ(tokens_offset_vec[4], 15);  // 3 * 5 + 0.
+  ASSERT_EQ(tokens_offset->row(0)[4], 15);  // 3 * 5 + 0.
 }
 
 }  // namespace thirdai::data::tests

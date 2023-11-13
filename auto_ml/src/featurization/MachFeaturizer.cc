@@ -193,10 +193,7 @@ MachFeaturizer::getBalancingSamples(
   std::vector<std::pair<uint32_t, RlhfSample>> samples;
   for (size_t i = 0; i < n_to_return; i++) {
     auto labels = mach_label_col->row(i);
-
-    RlhfSample sample(text_col->value(i),
-                      std::vector<uint32_t>(labels.begin(), labels.end()));
-
+    RlhfSample sample(text_col->value(i), labels.copyToVector());
     samples.emplace_back(doc_id_col->row(i)[0], std::move(sample));
   }
 

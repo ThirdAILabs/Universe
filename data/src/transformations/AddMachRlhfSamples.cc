@@ -28,12 +28,9 @@ ColumnMap AddMachRlhfSamples::apply(ColumnMap columns, State& state) const {
     }
     uint32_t doc_id = labels->row(i)[0];
     automl::udt::RlhfSample sample;
-    sample.input_indices = {input_indices->row(i).begin(),
-                            input_indices->row(i).end()};
-    sample.input_values = {input_values->row(i).begin(),
-                           input_values->row(i).end()};
-    sample.mach_buckets = {mach_buckets->row(i).begin(),
-                           mach_buckets->row(i).end()};
+    sample.input_indices = input_indices->row(i).copyToVector();
+    sample.input_values = input_values->row(i).copyToVector();
+    sample.mach_buckets = mach_buckets->row(i).copyToVector();
     state.rlhfSampler().addSample(doc_id, std::move(sample));
   }
 
