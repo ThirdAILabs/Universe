@@ -262,49 +262,18 @@ auto repeatRows(data::ColumnMap&& columns, uint32_t repetitions) {
   return columns.permute(permutation);
 }
 
-std::optional<data::ColumnMap> Mach::balancingColumnMap(
-    uint32_t num_balancers) {
-  auto balancers = _state->rlhfSampler().balancingSamples(num_balancers);
-  if (balancers.empty()) {
-    return {};
-  }
-
-  std::vector<std::vector<uint32_t>> indices;
-  std::vector<std::vector<float>> values;
-  std::vector<std::vector<uint32_t>> buckets;
-  indices.reserve(balancers.size());
-  values.reserve(balancers.size());
-  buckets.reserve(balancers.size());
-
-  for (auto& sample : balancers) {
-    indices.push_back(std::move(sample.input_indices));
-    values.push_back(std::move(sample.input_values));
-    buckets.push_back(std::move(sample.mach_buckets));
-  }
-
-  std::unordered_map<std::string, data::ColumnPtr> columns(
-      {{inputIndicesColumn(),
-        data::ArrayColumn<uint32_t>::make(std::move(indices), inputDim())},
-       {inputValuesColumn(), data::ArrayColumn<float>::make(std::move(values))},
-       {bucketColumn(),
-        data::ArrayColumn<uint32_t>::make(std::move(buckets), numBuckets())}});
-
-  data::ColumnMap map(std::move(columns));
-  addDummyLabels(map);
-
-  return map;
-}
-
 void Mach::teach(data::ColumnMap feedback, float learning_rate,
                  uint32_t feedback_repetitions, uint32_t num_balancers,
                  uint32_t epochs, size_t batch_size) {
   assertRlhfEnabled();
-  auto balancers = balancingColumnMap(num_balancers * feedback.numRows());
+  auto balancers = _state->rlhfSampler().balancingSamples(num_balancers *
+                                                          feedback.numRows());
 
   feedback = repeatRows(std::move(feedback), feedback_repetitions);
   feedback = feedback.selectColumns(_all_bolt_columns);
 
   if (balancers) {
+    addDummyLabels(*balancers);
     balancers = balancers->selectColumns(_all_bolt_columns);
     feedback = feedback.concat(*balancers);
   }
@@ -465,9 +434,9 @@ std::vector<float> Mach::entityEmbedding(uint32_t entity) const {
 
 void Mach::enableRlhf(uint32_t num_balancing_docs,
                       uint32_t num_balancing_samples_per_doc) {
-  _add_balancing_samples = data::AddMachRlhfSamples::make(
-      inputIndicesColumn(), inputValuesColumn(), labelColumn(), bucketColumn());
+  _add_balancing_samples = data::AddMachRlhfSamples::make();
   _state->setRlhfSampler(RLHFSampler(
+      inputIndicesColumn(), inputValuesColumn(), labelColumn(), bucketColumn(),
       /* max_docs= */ num_balancing_docs,
       /* max_samples_per_doc= */ num_balancing_samples_per_doc));
 }

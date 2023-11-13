@@ -150,8 +150,6 @@ class Mach {
       std::vector<TopKActivationsQueue>&& top_k_per_sample,
       uint32_t num_buckets_to_sample, uint32_t num_random_hashes);
 
-  std::optional<data::ColumnMap> balancingColumnMap(uint32_t num_balancers);
-
   void teach(data::ColumnMap feedback, float learning_rate,
              uint32_t feedback_repetitions, uint32_t num_balancers,
              uint32_t epochs, size_t batch_size);
