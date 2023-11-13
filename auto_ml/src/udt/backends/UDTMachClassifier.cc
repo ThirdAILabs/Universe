@@ -154,8 +154,8 @@ py::object UDTMachClassifier::train(
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
   return py::cast(_classifier->train(
-      _data->labeledTransform(_data->iter(data)),
-      val_data ? _data->labeledTransform(_data->iter(val_data)) : nullptr,
+      _data->applyLabeledTransform(_data->iter(data)),
+      val_data ? _data->applyLabeledTransform(_data->iter(val_data)) : nullptr,
       learning_rate, epochs, getMetrics(train_metrics, "train_"),
       getMetrics(val_metrics, "val_"), callbacks, options, comm));
 }
@@ -164,7 +164,7 @@ py::object UDTMachClassifier::trainBatch(
     const MapInputBatch& batch, float learning_rate,
     const std::vector<std::string>& metrics) {
   _classifier->train(
-      _data->labeledTransform(data::ColumnMap::fromMapInputBatch(batch)),
+      _data->applyLabeledTransform(data::ColumnMap::fromMapInputBatch(batch)),
       learning_rate);
 
   // TODO(Nicholas): Add back metrics
@@ -177,7 +177,7 @@ py::object UDTMachClassifier::trainWithHashes(
     const MapInputBatch& batch, float learning_rate,
     const std::vector<std::string>& metrics) {
   _classifier->trainBuckets(
-      _data->bucketedTransform(data::ColumnMap::fromMapInputBatch(batch)),
+      _data->applyBucketedTransform(data::ColumnMap::fromMapInputBatch(batch)),
       learning_rate);
 
   // TODO(Nicholas): Add back metrics
@@ -192,8 +192,8 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
                                        std::optional<uint32_t> top_k) {
   (void)top_k;
   return py::cast(_classifier->evaluate(
-      _data->labeledTransform(_data->iter(data)), getMetrics(metrics, "eval_"),
-      sparse_inference, verbose));
+      _data->applyLabeledTransform(_data->iter(data)),
+      getMetrics(metrics, "eval_"), sparse_inference, verbose));
 }
 
 std::vector<std::vector<std::pair<uint32_t, double>>>
@@ -207,8 +207,8 @@ UDTMachClassifier::predictImpl(const MapInputBatch& samples,
         "return_predicted_class flag.");
   }
   uint32_t k = top_k.value_or(
-      std::min<uint32_t>(_default_top_k_to_return, _classifier->size()));
-  return _classifier->predict(_data->constUnlabeledTransform(
+      std::min<uint32_t>(_default_top_k_to_return, _classifier->numEntities()));
+  return _classifier->predict(_data->applyConstUnlabeledTransform(
                                   data::ColumnMap::fromMapInputBatch(samples)),
                               sparse_inference, k, _num_buckets_to_eval);
 }
@@ -235,7 +235,7 @@ py::object UDTMachClassifier::scoreBatch(
     const std::vector<std::vector<Label>>& classes,
     std::optional<uint32_t> top_k) {
   auto columns = data::ColumnMap::fromMapInputBatch(samples);
-  columns = _data->constUnlabeledTransform(std::move(columns));
+  columns = _data->applyConstUnlabeledTransform(std::move(columns));
   std::vector<std::unordered_set<uint32_t>> entities(classes.size());
   for (uint32_t row = 0; row < classes.size(); row++) {
     entities[row].reserve(classes[row].size());
@@ -252,7 +252,7 @@ py::object UDTMachClassifier::predictHashes(
     std::optional<uint32_t> num_hashes) {
   return py::cast(
       _classifier
-          ->predictBuckets(_data->constUnlabeledTransform(
+          ->predictBuckets(_data->applyConstUnlabeledTransform(
                                data::ColumnMap::fromMapInput(sample)),
                            sparse_inference, num_hashes, force_non_empty)
           .at(0));
@@ -262,7 +262,7 @@ py::object UDTMachClassifier::predictHashesBatch(
     const MapInputBatch& samples, bool sparse_inference, bool force_non_empty,
     std::optional<uint32_t> num_hashes) {
   return py::cast(_classifier->predictBuckets(
-      _data->constUnlabeledTransform(
+      _data->applyConstUnlabeledTransform(
           data::ColumnMap::fromMapInputBatch(samples)),
       sparse_inference, num_hashes, force_non_empty));
 }
@@ -271,7 +271,7 @@ py::object UDTMachClassifier::outputCorrectness(
     const MapInputBatch& samples, const std::vector<uint32_t>& labels,
     bool sparse_inference, std::optional<uint32_t> num_hashes) {
   auto top_buckets = _classifier->predictBuckets(
-      _data->constUnlabeledTransform(
+      _data->applyConstUnlabeledTransform(
           data::ColumnMap::fromMapInputBatch(samples)),
       sparse_inference, num_hashes, /* force_non_empty= */ true);
 
@@ -321,10 +321,10 @@ py::object UDTMachClassifier::coldstart(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
-  auto train_iter = _data->labeledTransform(_data->coldstart(
+  auto train_iter = _data->applyLabeledTransform(_data->coldstart(
       _data->iter(data), strong_column_names, weak_column_names));
   auto val_iter =
-      val_data ? _data->labeledTransform(_data->iter(val_data)) : nullptr;
+      val_data ? _data->applyLabeledTransform(_data->iter(val_data)) : nullptr;
 
   return py::cast(_classifier->train(
       train_iter, val_iter, learning_rate, epochs,
@@ -333,7 +333,7 @@ py::object UDTMachClassifier::coldstart(
 }
 
 py::object UDTMachClassifier::embedding(const MapInputBatch& sample) {
-  auto columns = _data->constUnlabeledTransform(
+  auto columns = _data->applyConstUnlabeledTransform(
       data::ColumnMap::fromMapInputBatch(sample));
   return bolt::python::tensorToNumpy(_classifier->embedding(columns));
 }
@@ -355,8 +355,9 @@ void UDTMachClassifier::introduceDocuments(
   auto columns = _data->coldstart(_data->loadColumns(data), strong_column_names,
                                   weak_column_names, fast_approximation);
 
-  _classifier->introduceEntities(_data->labeledTransform(std::move(columns)),
-                                 num_buckets_to_sample_opt, num_random_hashes);
+  _classifier->introduceEntities(
+      _data->applyLabeledTransform(std::move(columns)),
+      num_buckets_to_sample_opt, num_random_hashes);
 }
 
 void UDTMachClassifier::introduceDocument(
@@ -368,7 +369,7 @@ void UDTMachClassifier::introduceDocument(
                                        expectInteger(new_label));
   columns = _data->coldstart(std::move(columns), strong_column_names,
                              weak_column_names);
-  columns = _data->labeledTransform(std::move(columns));
+  columns = _data->applyLabeledTransform(std::move(columns));
   _classifier->introduceEntities(columns, num_buckets_to_sample,
                                  num_random_hashes);
 }
@@ -379,7 +380,7 @@ void UDTMachClassifier::introduceLabel(
     uint32_t num_random_hashes) {
   auto columns = _data->addLabelColumn(
       data::ColumnMap::fromMapInputBatch(samples), expectInteger(new_label));
-  columns = _data->labeledTransform(std::move(columns));
+  columns = _data->applyLabeledTransform(std::move(columns));
   _classifier->introduceEntities(columns, num_buckets_to_sample_opt,
                                  num_random_hashes);
 }
@@ -393,8 +394,8 @@ void UDTMachClassifier::associate(
     uint32_t n_buckets, uint32_t n_association_samples,
     uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
   auto [from_columns, to_columns] = _data->associationColumnMaps(rlhf_samples);
-  from_columns = _data->constUnlabeledTransform(std::move(from_columns));
-  to_columns = _data->constUnlabeledTransform(std::move(to_columns));
+  from_columns = _data->applyConstUnlabeledTransform(std::move(from_columns));
+  to_columns = _data->applyConstUnlabeledTransform(std::move(to_columns));
   _classifier->associate(from_columns, to_columns, learning_rate,
                          n_association_samples, n_balancing_samples, n_buckets,
                          epochs, defaults::ASSOCIATE_BATCH_SIZE);
@@ -407,7 +408,8 @@ void UDTMachClassifier::upvote(
   auto upvote_columns = _data->upvoteLabeledColumnMap(rlhf_samples);
   // Apply unlabeled transform since `upvote_columns` already has a properly
   // formatted label column.
-  upvote_columns = _data->constUnlabeledTransform(std::move(upvote_columns));
+  upvote_columns =
+      _data->applyConstUnlabeledTransform(std::move(upvote_columns));
   _classifier->upvote(upvote_columns, learning_rate, n_upvote_samples,
                       n_balancing_samples, epochs,
                       defaults::ASSOCIATE_BATCH_SIZE);
@@ -449,9 +451,9 @@ py::object UDTMachClassifier::associateTrainImpl(
     TrainOptions options) {
   warnOnNonHashBasedMetrics(metrics);
   auto [from_columns, to_columns] = _data->associationColumnMaps(rlhf_samples);
-  from_columns = _data->constUnlabeledTransform(std::move(from_columns));
-  to_columns = _data->constUnlabeledTransform(std::move(to_columns));
-  train_columns = _data->labeledTransform(std::move(train_columns));
+  from_columns = _data->applyConstUnlabeledTransform(std::move(from_columns));
+  to_columns = _data->applyConstUnlabeledTransform(std::move(to_columns));
+  train_columns = _data->applyLabeledTransform(std::move(train_columns));
   return py::cast(_classifier->associateTrain(
       std::move(from_columns), to_columns, std::move(train_columns),
       learning_rate, n_association_samples, n_buckets, epochs,

@@ -44,43 +44,34 @@ class MachFeaturizer final {
   data::ColumnMap upvoteLabeledColumnMap(
       const std::vector<std::pair<std::string, uint32_t>>& samples) const;
 
-  data::ColumnMapIteratorPtr labeledTransform(
+  data::ColumnMapIteratorPtr applyLabeledTransform(
       data::ColumnMapIteratorPtr&& iter) const {
     return data::TransformedIterator::make(
         iter, trackingLabeledTransformation(), _state);
   }
 
-  data::ColumnMap labeledTransform(data::ColumnMap&& columns) const {
+  data::ColumnMap applyLabeledTransform(data::ColumnMap&& columns) const {
     return trackingLabeledTransformation()->apply(std::move(columns), *_state);
   }
 
-  data::ColumnMapIteratorPtr bucketedTransform(
+  data::ColumnMapIteratorPtr applyBucketedTransform(
       data::ColumnMapIteratorPtr&& iter) const {
     return data::TransformedIterator::make(
         iter, trackingBucketedTransformation(), _state);
   }
 
-  data::ColumnMap bucketedTransform(data::ColumnMap&& columns) const {
+  data::ColumnMap applyBucketedTransform(data::ColumnMap&& columns) const {
     return trackingBucketedTransformation()->apply(std::move(columns), *_state);
   }
 
-  data::ColumnMapIteratorPtr trackingUnlabeledTransform(
-      data::ColumnMapIteratorPtr&& iter) const {
-    return data::TransformedIterator::make(iter, _tracking_input_transformation,
-                                           _state);
-  }
-
-  data::ColumnMap trackingUnlabeledTransform(data::ColumnMap&& columns) const {
-    return _tracking_input_transformation->apply(std::move(columns), *_state);
-  }
-
-  data::ColumnMapIteratorPtr constUnlabeledTransform(
+  data::ColumnMapIteratorPtr applyConstUnlabeledTransform(
       data::ColumnMapIteratorPtr&& iter) const {
     return data::TransformedIterator::make(iter, _const_input_transformation,
                                            _state);
   }
 
-  data::ColumnMap constUnlabeledTransform(data::ColumnMap&& columns) const {
+  data::ColumnMap applyConstUnlabeledTransform(
+      data::ColumnMap&& columns) const {
     return _const_input_transformation->apply(std::move(columns), *_state);
   }
 

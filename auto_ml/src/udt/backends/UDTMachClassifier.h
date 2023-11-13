@@ -82,11 +82,11 @@ class UDTMachClassifier final : public UDTBackend {
                                std::optional<uint32_t> num_hashes) final;
 
   void updateTemporalTrackers(const MapInput& sample) final {
-    _data->labeledTransform(data::ColumnMap::fromMapInput(sample));
+    _data->applyLabeledTransform(data::ColumnMap::fromMapInput(sample));
   }
 
   void updateTemporalTrackersBatch(const MapInputBatch& samples) final {
-    _data->labeledTransform(data::ColumnMap::fromMapInputBatch(samples));
+    _data->applyLabeledTransform(data::ColumnMap::fromMapInputBatch(samples));
   }
 
   void resetTemporalTrackers() final { _data->resetTemporalTrackers(); }
