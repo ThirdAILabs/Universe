@@ -56,6 +56,20 @@ void MachIndex::insert(uint32_t entity, std::vector<uint32_t> hashes) {
   _entity_to_hashes[entity] = std::move(hashes);
 }
 
+void MachIndex::insertWithRandomHashes(uint32_t entity) {
+  std::vector<uint32_t> hashes(numHashes());
+  for (uint32_t h = 0; h < numHashes(); h++) {
+    std::uniform_int_distribution<uint32_t> dist(0, numBuckets() - 1);
+    auto hash = dist(_mt);
+    while (std::find(hashes.begin(), hashes.end(), hash) != hashes.end()) {
+      hash = dist(_mt);
+    }
+    hashes[h] = hash;
+  }
+
+  insert(entity, std::move(hashes));
+}
+
 std::vector<std::pair<uint32_t, double>> MachIndex::decode(
     const BoltVector& output, uint32_t top_k,
     uint32_t num_buckets_to_eval) const {
@@ -209,7 +223,7 @@ template void MachIndex::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void MachIndex::serialize(Archive& archive) {
-  archive(_entity_to_hashes, _buckets, _num_hashes);
+  archive(_entity_to_hashes, _buckets, _num_hashes, _mt);
 
   for (uint32_t bucket_id = 0; bucket_id < _buckets.size(); bucket_id++) {
     if (!_buckets[bucket_id].empty()) {

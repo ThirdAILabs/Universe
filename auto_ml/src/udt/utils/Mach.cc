@@ -11,7 +11,6 @@
 #include <algorithm>
 #include <iostream>
 #include <ostream>
-#include <random>
 #include <stdexcept>
 #include <string>
 #include <strings.h>
@@ -59,24 +58,14 @@ void Mach::randomlyIntroduceEntities(const data::ColumnMap& columns) {
   const auto& labels = columns.getArrayColumn<uint32_t>(labelColumn());
 
   for (size_t row = 0; row < columns.numRows(); row++) {
-    if (labels->row(row).size() < 1) {
-      continue;
+    if (labels->row(row).size() != 1) {
+      throw std::invalid_argument(
+          "Found a row with " + std::to_string(labels->row(row).size()) +
+          " labels when introducing entities. Each row of the dataset must "
+          "have exactly one label during introduction.");
     }
-
-    std::vector<uint32_t> hashes(index()->numHashes());
-    for (uint32_t h = 0; h < index()->numHashes(); h++) {
-      std::uniform_int_distribution<uint32_t> dist(0,
-                                                   index()->numBuckets() - 1);
-      auto hash = dist(_mt);
-      while (std::find(hashes.begin(), hashes.end(), hash) != hashes.end()) {
-        hash = dist(_mt);
-      }
-      hashes[h] = hash;
-    }
-
-    index()->insert(labels->row(row)[0], std::move(hashes));
+    index()->insertWithRandomHashes(labels->row(row)[0]);
   }
-
   updateSamplingStrategy();
 }
 
@@ -98,15 +87,15 @@ void Mach::introduceEntities(const data::ColumnMap& columns,
 
   ctrl_c_check();
 
-  auto doc_ids = columns.getArrayColumn<uint32_t>(labelColumn());
+  auto labels = columns.getArrayColumn<uint32_t>(labelColumn());
   for (uint32_t row = 0; row < scores->batchSize(); row++) {
-    if (doc_ids->row(row).size() != 1) {
+    if (labels->row(row).size() != 1) {
       throw std::invalid_argument(
-          "Found a row with " + std::to_string(doc_ids->row(row).size()) +
+          "Found a row with " + std::to_string(labels->row(row).size()) +
           " labels when introducing entities. Each row of the dataset must "
           "have exactly one label during introduction.");
     }
-    uint32_t label = doc_ids->row(row)[0];
+    uint32_t label = labels->row(row)[0];
     top_k_per_doc[label].push_back(
         scores->getVector(row).findKLargestActivations(num_buckets_to_sample));
     ctrl_c_check();
