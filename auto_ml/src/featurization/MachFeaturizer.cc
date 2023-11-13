@@ -11,20 +11,10 @@
 #include <data/src/transformations/ColdStartText.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringConcat.h>
+#include <stdexcept>
 #include <string>
 
 namespace thirdai::automl {
-
-template void MachFeaturizer::serialize(cereal::BinaryInputArchive&);
-template void MachFeaturizer::serialize(cereal::BinaryOutputArchive&);
-
-template <class Archive>
-void MachFeaturizer::serialize(Archive& archive) {
-  archive(_delimiter, _label_delimiter, _state, _tracking_input_transformation,
-          _input_indices_column, _input_values_column,
-          _const_input_transformation, _label_transformation,
-          _string_to_int_buckets, _text_dataset_config);
-}
 
 MachFeaturizer::MachFeaturizer(
     ColumnDataTypes data_types, const CategoricalDataTypePtr& target_config,
@@ -38,6 +28,10 @@ MachFeaturizer::MachFeaturizer(
   std::tie(_tracking_input_transformation, input_columns) =
       inputTransformations(data_types, label_column, temporal_relationships,
                            options, /* should_update_history= */ true);
+
+  if (input_columns.size() > 1) {
+    throw std::runtime_error("Mach cannot use more than one input column.");
+  }
 
   _input_indices_column = input_columns.front().indices();
   _input_values_column = input_columns.front().values().value();
@@ -97,10 +91,9 @@ MachFeaturizer::associationColumnMaps(
         data::ValueColumn<std::string>::make(std::move(to_texts))}});
   return {std::move(from_columns), std::move(to_columns)};
 }
+
 data::ColumnMap MachFeaturizer::upvoteLabeledColumnMap(
     const std::vector<std::pair<std::string, uint32_t>>& samples) const {
-  assertTextModel();
-
   std::vector<std::string> from_texts(samples.size());
   std::vector<uint32_t> to_labels(samples.size());
   for (uint32_t i = 0; i < samples.size(); i++) {
@@ -115,12 +108,11 @@ data::ColumnMap MachFeaturizer::upvoteLabeledColumnMap(
         data::ValueColumn<uint32_t>::make(
             std::move(to_labels), std::numeric_limits<uint32_t>::max())}});
 }
+
 data::TransformationPtr MachFeaturizer::coldstartTransformation(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     bool fast_approximation) const {
-  assertTextModel();
-
   if (fast_approximation) {
     std::vector<std::string> all_columns = weak_column_names;
     all_columns.insert(all_columns.end(), strong_column_names.begin(),
@@ -135,6 +127,7 @@ data::TransformationPtr MachFeaturizer::coldstartTransformation(
       /* label_column_name= */ textDatasetConfig().labelColumn(),
       /* output_column_name= */ textDatasetConfig().textColumn());
 }
+
 bool MachFeaturizer::hasTemporalTransformations() const {
   std::queue<data::TransformationPtr> queue;
   queue.push(_tracking_input_transformation);
@@ -154,4 +147,16 @@ bool MachFeaturizer::hasTemporalTransformations() const {
 
   return false;
 }
+
+template void MachFeaturizer::serialize(cereal::BinaryInputArchive&);
+template void MachFeaturizer::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void MachFeaturizer::serialize(Archive& archive) {
+  archive(_delimiter, _label_delimiter, _state, _tracking_input_transformation,
+          _input_indices_column, _input_values_column,
+          _const_input_transformation, _label_transformation,
+          _string_to_int_buckets, _text_dataset_config);
+}
+
 }  // namespace thirdai::automl

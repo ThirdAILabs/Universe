@@ -112,19 +112,15 @@ class MachFeaturizer final {
     }
   }
 
-  void assertTextModel() const {
-    if (!_text_dataset_config) {
-      throw std::runtime_error(
-          "This feature is only supported for text models.");
-    }
-  }
-
   bool hasTemporalTransformations() const;
 
   void resetTemporalTrackers() { _state->clearHistoryTrackers(); }
 
   const TextDatasetConfig& textDatasetConfig() const {
-    assertTextModel();
+    if (!_text_dataset_config) {
+      throw std::runtime_error(
+          "This feature is only supported for text models.");
+    }
     return *_text_dataset_config;
   }
 
