@@ -32,12 +32,7 @@ MachIndex::MachIndex(uint32_t num_buckets, uint32_t num_hashes)
   }
 }
 
-void MachIndex::insert(uint32_t entity, const std::vector<uint32_t>& hashes) {
-  std::vector<uint32_t> hashes_copy = hashes;
-  insert(entity, std::move(hashes_copy));
-}
-
-void MachIndex::insert(uint32_t entity, std::vector<uint32_t>&& hashes) {
+void MachIndex::insert(uint32_t entity, std::vector<uint32_t> hashes) {
   if (hashes.size() != _num_hashes) {
     std::stringstream error;
     error << "Wrong number of hashes for entity " << entity << " expected "

@@ -12,6 +12,8 @@
 #include <iostream>
 #include <ostream>
 #include <random>
+#include <stdexcept>
+#include <string>
 #include <strings.h>
 #include <unordered_map>
 #include <utility>
@@ -25,10 +27,10 @@ bolt::ComputationPtr getEmbeddingComputation(const bolt::Model& model) {
   return computations.at(computations.size() - 2);
 }
 
-Mach::Mach(uint32_t input_dim, uint32_t num_buckets,
+Mach::Mach(size_t input_dim, size_t num_buckets,
            const config::ArgumentMap& args,
            const std::optional<std::string>& model_config, bool use_sigmoid_bce,
-           uint32_t num_hashes, float mach_sampling_threshold,
+           size_t num_hashes, float mach_sampling_threshold,
            bool freeze_hash_tables, std::string input_indices_column,
            std::string input_values_column, std::string label_column,
            std::string bucket_column)
@@ -98,6 +100,12 @@ void Mach::introduceEntities(const data::ColumnMap& columns,
 
   auto doc_ids = columns.getArrayColumn<uint32_t>(labelColumn());
   for (uint32_t row = 0; row < scores->batchSize(); row++) {
+    if (doc_ids->row(row).size() != 1) {
+      throw std::invalid_argument(
+          "Found a row with " + std::to_string(doc_ids->row(row).size()) +
+          " labels when introducing entities. Each row of the dataset must "
+          "have exactly one label during introduction.");
+    }
     uint32_t label = doc_ids->row(row)[0];
     top_k_per_doc[label].push_back(
         scores->getVector(row).findKLargestActivations(num_buckets_to_sample));
@@ -120,14 +128,6 @@ void Mach::eraseEntity(uint32_t entity) {
   if (_state->hasRlhfSampler()) {
     _state->rlhfSampler().removeDoc(entity);
   }
-
-  if (index()->numEntities() == 0) {
-    std::cout << "Warning. Every learned class has been forgotten. The model "
-                 "will currently return nothing on calls to evaluate, "
-                 "predict, or predictBatch."
-              << std::endl;
-  }
-
   updateSamplingStrategy();
 }
 
@@ -174,14 +174,18 @@ bolt::metrics::History Mach::train(
 
 void Mach::train(data::ColumnMap columns, float learning_rate) {
   addMachLabels(columns);
-  addRlhfSamplesIfNeeded(columns);
+  if (_add_balancing_samples) {
+    _add_balancing_samples->apply(columns, *_state);
+  }
   _model->trainOnBatch(inputTensors(columns), labelTensors(columns));
   _model->updateParameters(learning_rate);
 }
 
 void Mach::trainBuckets(data::ColumnMap columns, float learning_rate) {
   addDummyLabels(columns);
-  addRlhfSamplesIfNeeded(columns);
+  if (_add_balancing_samples) {
+    _add_balancing_samples->apply(columns, *_state);
+  }
   _model->trainOnBatch(inputTensors(columns), labelTensors(columns));
   _model->updateParameters(learning_rate);
 }
@@ -201,11 +205,11 @@ std::vector<std::vector<std::pair<uint32_t, double>>> Mach::predict(
     uint32_t num_scanned_buckets) {
   auto outputs = _model->forward(inputTensors(columns), sparse_inference).at(0);
 
-  if (top_k > size()) {
+  if (top_k > numEntities()) {
     throw std::invalid_argument(
         "Cannot return more results than the model is trained to "
         "predict. Model currently can predict one of " +
-        std::to_string(size()) + " classes.");
+        std::to_string(numEntities()) + " classes.");
   }
 
   uint32_t batch_size = outputs->batchSize();
@@ -263,11 +267,83 @@ std::vector<std::vector<uint32_t>> Mach::predictBuckets(
 
 auto repeatRows(data::ColumnMap&& columns, uint32_t repetitions) {
   std::vector<size_t> permutation(columns.numRows() * repetitions);
-  for (uint32_t rep = 0; rep < repetitions; rep++) {
-    auto begin = permutation.begin() + rep * columns.numRows();
-    std::iota(begin, begin + columns.numRows(), 0);
+  for (size_t i = 0; i < permutation.size(); i++) {
+    permutation[i] = i / repetitions;
   }
   return columns.permute(permutation);
+}
+
+std::optional<data::ColumnMap> Mach::balancingColumnMap(
+    uint32_t num_balancers) {
+  auto balancers = _state->rlhfSampler().balancingSamples(num_balancers);
+  if (balancers.empty()) {
+    return {};
+  }
+
+  std::vector<std::vector<uint32_t>> indices;
+  std::vector<std::vector<float>> values;
+  std::vector<std::vector<uint32_t>> buckets;
+  indices.reserve(balancers.size());
+  values.reserve(balancers.size());
+  buckets.reserve(balancers.size());
+
+  for (auto& sample : balancers) {
+    indices.push_back(std::move(sample.input_indices));
+    values.push_back(std::move(sample.input_values));
+    buckets.push_back(std::move(sample.mach_buckets));
+  }
+
+  std::unordered_map<std::string, data::ColumnPtr> columns(
+      {{inputIndicesColumn(),
+        data::ArrayColumn<uint32_t>::make(std::move(indices), inputDim())},
+       {inputValuesColumn(), data::ArrayColumn<float>::make(std::move(values))},
+       {bucketColumn(),
+        data::ArrayColumn<uint32_t>::make(std::move(buckets), numBuckets())}});
+
+  data::ColumnMap map(std::move(columns));
+  addDummyLabels(map);
+
+  return map;
+}
+
+void Mach::teach(data::ColumnMap feedback, float learning_rate,
+                 uint32_t feedback_repetitions, uint32_t num_balancers,
+                 uint32_t epochs, size_t batch_size) {
+  assertRlhfEnabled();
+  auto balancers = balancingColumnMap(num_balancers * feedback.numRows());
+
+  feedback = repeatRows(std::move(feedback), feedback_repetitions);
+  feedback = feedback.selectColumns(_all_bolt_columns);
+
+  if (balancers) {
+    balancers = balancers->selectColumns(_all_bolt_columns);
+    feedback = feedback.concat(*balancers);
+  }
+
+  feedback.shuffle();
+
+  auto train_data = thirdai::data::toLabeledDataset(
+      feedback, _bolt_input_columns, _bolt_label_columns, batch_size);
+
+  for (uint32_t epoch = 0; epoch < epochs; epoch++) {
+    for (uint32_t batch = 0; batch < train_data.first.size(); batch++) {
+      _model->trainOnBatch(train_data.first.at(batch),
+                           train_data.second.at(batch));
+      _model->updateParameters(learning_rate);
+    }
+  }
+}
+
+data::ColumnMap Mach::associateSamples(data::ColumnMap from_columns,
+                                       const data::ColumnMap& to_columns,
+                                       uint32_t num_buckets) {
+  auto mach_labels = thirdai::data::ArrayColumn<uint32_t>::make(
+      predictBuckets(to_columns, /* sparse_inference= */ false, num_buckets,
+                     /* force_non_empty= */ true),
+      index()->numBuckets());
+  from_columns.setColumn(bucketColumn(), mach_labels);
+  addDummyLabels(from_columns);
+  return from_columns;
 }
 
 void Mach::upvote(data::ColumnMap upvotes, float learning_rate,
@@ -297,7 +373,9 @@ bolt::metrics::History Mach::associateTrain(
       associateSamples(std::move(from_table), to_table, num_buckets), repeats);
 
   addMachLabels(train_data);
-  addRlhfSamplesIfNeeded(train_data);
+  if (_add_balancing_samples) {
+    _add_balancing_samples->apply(train_data, *_state);
+  }
 
   train_data = train_data.selectColumns(_all_bolt_columns)
                    .concat(associations.selectColumns(_all_bolt_columns));
@@ -403,79 +481,6 @@ void Mach::enableRlhf(uint32_t num_balancing_docs,
   _state->setRlhfSampler(RLHFSampler(
       /* max_docs= */ num_balancing_docs,
       /* max_samples_per_doc= */ num_balancing_samples_per_doc));
-}
-
-std::optional<data::ColumnMap> Mach::balancingColumnMap(
-    uint32_t num_balancers) {
-  auto balancers = _state->rlhfSampler().balancingSamples(num_balancers);
-  if (balancers.empty()) {
-    return {};
-  }
-
-  std::vector<std::vector<uint32_t>> indices;
-  std::vector<std::vector<float>> values;
-  std::vector<std::vector<uint32_t>> buckets;
-  indices.reserve(balancers.size());
-  values.reserve(balancers.size());
-  buckets.reserve(balancers.size());
-
-  for (auto& sample : balancers) {
-    indices.push_back(std::move(sample.input_indices));
-    values.push_back(std::move(sample.input_values));
-    buckets.push_back(std::move(sample.mach_buckets));
-  }
-
-  std::unordered_map<std::string, data::ColumnPtr> columns(
-      {{inputIndicesColumn(),
-        data::ArrayColumn<uint32_t>::make(std::move(indices), inputDim())},
-       {inputValuesColumn(), data::ArrayColumn<float>::make(std::move(values))},
-       {bucketColumn(),
-        data::ArrayColumn<uint32_t>::make(std::move(buckets), numBuckets())}});
-
-  data::ColumnMap map(std::move(columns));
-  addDummyLabels(map);
-
-  return map;
-}
-
-void Mach::teach(data::ColumnMap feedback, float learning_rate,
-                 uint32_t feedback_repetitions, uint32_t num_balancers,
-                 uint32_t epochs, size_t batch_size) {
-  assertRlhfEnabled();
-  auto balancers = balancingColumnMap(num_balancers * feedback.numRows());
-
-  feedback = repeatRows(std::move(feedback), feedback_repetitions);
-  feedback = feedback.selectColumns(_all_bolt_columns);
-
-  if (balancers) {
-    balancers = balancers->selectColumns(_all_bolt_columns);
-    feedback = feedback.concat(*balancers);
-  }
-
-  feedback.shuffle();
-
-  auto train_data = thirdai::data::toLabeledDataset(
-      feedback, _bolt_input_columns, _bolt_label_columns, batch_size);
-
-  for (uint32_t epoch = 0; epoch < epochs; epoch++) {
-    for (uint32_t batch = 0; batch < train_data.first.size(); batch++) {
-      _model->trainOnBatch(train_data.first.at(batch),
-                           train_data.second.at(batch));
-      _model->updateParameters(learning_rate);
-    }
-  }
-}
-
-data::ColumnMap Mach::associateSamples(data::ColumnMap from_columns,
-                                       const data::ColumnMap& to_columns,
-                                       uint32_t num_buckets) {
-  auto mach_labels = thirdai::data::ArrayColumn<uint32_t>::make(
-      predictBuckets(to_columns, /* sparse_inference= */ false, num_buckets,
-                     /* force_non_empty= */ true),
-      index()->numBuckets());
-  from_columns.setColumn(bucketColumn(), mach_labels);
-  addDummyLabels(from_columns);
-  return from_columns;
 }
 
 void Mach::updateSamplingStrategy() {

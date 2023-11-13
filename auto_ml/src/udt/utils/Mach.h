@@ -40,18 +40,17 @@ namespace mach = dataset::mach;
 
 class Mach {
  public:
-  Mach(uint32_t input_dim, uint32_t num_buckets,
-       const config::ArgumentMap& args,
+  Mach(size_t input_dim, size_t num_buckets, const config::ArgumentMap& args,
        const std::optional<std::string>& model_config, bool use_sigmoid_bce,
-       uint32_t num_hashes, float mach_sampling_threshold,
+       size_t num_hashes, float mach_sampling_threshold,
        bool freeze_hash_tables, std::string input_indices_column,
        std::string input_values_column, std::string label_column,
        std::string bucket_column);
 
-  static auto make(uint32_t input_dim, uint32_t num_buckets,
+  static auto make(size_t input_dim, size_t num_buckets,
                    const config::ArgumentMap& args,
                    const std::optional<std::string>& model_config,
-                   bool use_sigmoid_bce, uint32_t num_hashes,
+                   bool use_sigmoid_bce, size_t num_hashes,
                    float mach_sampling_threshold, bool freeze_hash_tables,
                    std::string input_indices_column,
                    std::string input_values_column, std::string label_column,
@@ -129,7 +128,7 @@ class Mach {
     return _state->machIndex();
   }
 
-  size_t size() const { return index()->numEntities(); }
+  size_t numEntities() const { return index()->numEntities(); }
 
   void setIndex(dataset::mach::MachIndexPtr new_index) {
     _state->setMachIndex(std::move(new_index));
@@ -190,12 +189,6 @@ class Mach {
       throw std::runtime_error(
           "This model was not configured to support rlhf. Please pass {'rlhf': "
           "True} in the model options or call enable_rlhf().");
-    }
-  }
-
-  void addRlhfSamplesIfNeeded(const data::ColumnMap& columns) const {
-    if (_add_balancing_samples) {
-      _add_balancing_samples->apply(columns, *_state);
     }
   }
 
