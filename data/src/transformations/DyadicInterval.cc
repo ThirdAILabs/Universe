@@ -84,7 +84,7 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
           targets[sample_offset] = tokens[target];
           if (_prompt_column) {
             auto prompt = prompts->row(i);
-            prompt_inputs[sample_offset] = {prompt.begin(), prompt.end()};
+            prompt_inputs[sample_offset] = prompt.copyToVector();
           }
 
           sample_offset++;

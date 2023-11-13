@@ -65,6 +65,8 @@ class RowView {
     return _data[i];
   }
 
+  std::vector<T> copyToVector() const { return {begin(), end()}; };
+
   std::vector<T> range(size_t start, size_t end) const {
     if (end < start || _len < end) {
       throw std::out_of_range("Invalid range [" + std::to_string(start) + ", " +

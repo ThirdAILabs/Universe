@@ -4,6 +4,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/UniversalHash.h>
 #include <memory>
+#include <random>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -24,9 +25,9 @@ class MachIndex {
     return std::make_shared<MachIndex>(num_buckets, num_hashes);
   }
 
-  void insert(uint32_t entity, const std::vector<uint32_t>& hashes);
+  void insert(uint32_t entity, std::vector<uint32_t> hashes);
 
-  void insert(uint32_t entity, std::vector<uint32_t>&& hashes);
+  void insertWithRandomHashes(uint32_t entity);
 
   const std::vector<uint32_t>& getHashes(uint32_t entity) const {
     if (!_entity_to_hashes.count(entity)) {
@@ -106,6 +107,8 @@ class MachIndex {
   uint32_t _num_hashes;
 
   std::unordered_set<uint32_t> _nonempty_buckets;
+
+  std::mt19937 _mt{341};
 
   MachIndex() {}
 

@@ -121,7 +121,7 @@ std::vector<std::string> ColumnMap::columns() const {
   return columns;
 }
 
-ColumnMap ColumnMap::keepColumns(
+ColumnMap ColumnMap::selectColumns(
     const std::vector<std::string>& columns) const {
   std::unordered_map<std::string, ColumnPtr> new_columns;
   for (const auto& name : columns) {

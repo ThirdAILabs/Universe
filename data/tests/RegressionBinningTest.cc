@@ -25,7 +25,7 @@ TEST(RegressionBinningTest, CorrectLabels) {
 
   for (size_t i = 0; i < expected_bins.size(); i++) {
     auto row = bins->row(i);
-    ASSERT_EQ(std::vector<uint32_t>(row.begin(), row.end()), expected_bins[i]);
+    ASSERT_EQ(row.copyToVector(), expected_bins[i]);
   }
 }
 

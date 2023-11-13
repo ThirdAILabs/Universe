@@ -41,7 +41,7 @@ class ColumnMap {
 
   std::vector<std::string> columns() const;
 
-  ColumnMap keepColumns(const std::vector<std::string>& columns) const;
+  ColumnMap selectColumns(const std::vector<std::string>& columns) const;
 
   auto begin() const { return _columns.begin(); }
 

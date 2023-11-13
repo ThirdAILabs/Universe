@@ -11,8 +11,7 @@ namespace thirdai::data::tests {
 
 static void assertRowsEqual(RowView<uint32_t> row,
                             const std::vector<uint32_t>& expected) {
-  std::vector<uint32_t> row_vec(row.begin(), row.end());
-  ASSERT_EQ(row_vec, expected);
+  ASSERT_EQ(row.copyToVector(), expected);
 }
 
 static void assertCorrectCounts(std::vector<std::vector<uint32_t>> tokens_data,
