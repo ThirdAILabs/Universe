@@ -8,6 +8,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/backends/UDTMachClassifier.h>
 #include <dataset/src/DataSource.h>
+#include <dataset/src/featurizers/llm/TextClassificationFeaturizer.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -35,7 +36,8 @@ class UDT {
       const std::string& target_col, std::optional<uint32_t> n_target_classes,
       bool integer_target, std::string time_granularity, uint32_t lookahead,
       char delimiter, const std::optional<std::string>& model_config,
-      const config::ArgumentMap& user_args);
+      const config::ArgumentMap& user_args,
+      std::optional<dataset::TextClassificationFeaturizer> text_featurizer = std::nullopt);
 
   UDT(std::optional<std::string> incorrect_column_name,
       std::string correct_column_name, const std::string& dataset_size,

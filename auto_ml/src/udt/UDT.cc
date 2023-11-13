@@ -30,8 +30,8 @@ UDT::UDT(
     const std::string& target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
-    std::optional<dataset::TextClassificationFeaturizerPtr>& text_featurizer,
-    const config::ArgumentMap& user_args) {
+    const config::ArgumentMap& user_args,
+    std::optional<dataset::TextClassificationFeaturizer> text_featurizer) {
   TabularOptions tabular_options;
   tabular_options.contextual_columns = user_args.get<bool>(
       "contextual_columns", "boolean", defaults::CONTEXTUAL_COLUMNS);

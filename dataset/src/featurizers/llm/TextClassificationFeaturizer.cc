@@ -53,9 +53,9 @@ thirdai::dataset::TextClassificationFeaturizer::featurize(
         auto labels =
             parsers::CSV::parseLine(label_column, _label_delimiter.value());
         std::vector<uint32_t> mach_labels;
-        for (uint32_t label : labels) {
+        for (std::string x : labels) {
           std::vector<uint32_t> mach_label =
-              _mach_label_block.value()->index()->getHashes(x);
+              _mach_label_block.value()->index()->getHashes(stoi(x));
           mach_labels.insert(mach_labels.end(), mach_label.begin(),
                              mach_label.end());
         }

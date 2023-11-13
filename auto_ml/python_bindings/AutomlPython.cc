@@ -52,7 +52,7 @@ std::shared_ptr<udt::UDT> makeUDT(
     const std::string& target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
-    const py::dict& options);
+    const py::dict& options, std::optional<dataset::TextClassificationFeaturizer> text_featurizer);
 
 std::shared_ptr<udt::UDT> makeQueryReformulation(
     std::string source_column, std::string target_column,
@@ -105,6 +105,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
            py::arg("options") = py::dict(), docs::UDT_INIT,
+           py::arg("text_featurizer") = std::nullopt,
            bolt::python::OutputRedirect())
       .def(py::init(&makeQueryReformulation), py::arg("source_column"),
            py::arg("target_column"), py::arg("dataset_size"),
@@ -417,7 +418,7 @@ std::shared_ptr<udt::UDT> makeUDT(
     const std::string& target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
-    const py::dict& options) {
+    const py::dict& options, std::optional<dataset::TextClassificationFeaturizer> text_featurizer) {
   return std::make_shared<udt::UDT>(
       /* data_types = */ std::move(data_types),
       /* temporal_tracking_relationships = */ temporal_tracking_relationships,
@@ -427,7 +428,7 @@ std::shared_ptr<udt::UDT> makeUDT(
       /* time_granularity = */ std::move(time_granularity),
       /* lookahead = */ lookahead, /* delimiter = */ delimiter,
       /* model_config= */ model_config,
-      /* options = */ createArgumentMap(options));
+      /* options = */ createArgumentMap(options), text_featurizer);
 }
 
 std::shared_ptr<udt::UDT> makeQueryReformulation(
