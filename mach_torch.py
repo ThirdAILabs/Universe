@@ -107,7 +107,6 @@ class MachModel(nn.Module):
         out = self.emb(input=tokens, offsets=offsets) + self.emb_bias
         out = nn.functional.relu(out)
         out = self.output(out)
-        out = nn.functional.sigmoid(out)
         return out
 
 
@@ -227,21 +226,20 @@ class Mach:
 
         batches = self._load_data(filename, pipeline, batch_size)
 
-        # cnt = 0
         start = time.perf_counter()
         for (tokens, offsets), labels in batches:
             self.optimizer.zero_grad()
 
             out = self.model(tokens, offsets)
-            # loss = nn.functional.cross_entropy(out, labels.to_dense())
-            loss = nn.functional.binary_cross_entropy(out, labels.to_dense())
+            loss = nn.functional.cross_entropy(out, labels.to_dense())
             loss.backward()
+
+            nn.utils.clip_grad.clip_grad_norm_(
+                self.model.parameters(), max_norm=0.1, norm_type=2
+            )
 
             self.optimizer.step()
 
-            # cnt += 1
-            # if (cnt % 10) == 0:
-            #     print(f"train_loss = {loss.item()}")
         end = time.perf_counter()
         print(
             f"epoch complete - train_loss={round(loss.item(), 4)} - time={round(end -start, 4)}"
@@ -267,8 +265,7 @@ class Mach:
         metrics = [Recall(k) for k in recall_at] + [Precision(k) for k in precision_at]
 
         for (tokens, offsets), labels in zip(inputs, label_batches):
-            out = self.model(tokens, offsets)
-            # out = nn.functional.softmax(self.model(tokens, offsets), dim=1)
+            out = nn.functional.softmax(self.model(tokens, offsets), dim=1)
 
             predictions = self.index.decode_batch(
                 out.detach().numpy(),
@@ -295,7 +292,7 @@ def scifact():
         n_buckets=1_000,
         n_entities=5183,
         char_4_grams=False,
-        lr=0.05,
+        lr=0.01,
     )
 
     for _ in range(5):
