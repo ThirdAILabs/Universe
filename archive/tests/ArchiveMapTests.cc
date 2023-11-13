@@ -19,9 +19,9 @@ simpleMap() {
   auto b = str("hello");
   auto c = vecU32({1, 2, 3});
 
-  map->insert("a", a);
-  map->insert("b", b);
-  map->insert("c", c);
+  map->set("a", a);
+  map->set("b", b);
+  map->set("c", c);
 
   return {map, a, b, c};
 }

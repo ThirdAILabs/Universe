@@ -17,14 +17,14 @@ TEST(ArchiveTests, Serialization) {
   std::vector<uint32_t> vec_val = {1, 2, 3, 4};
   list->append(vecU32(vec_val));
 
-  archive->insert("list", list);
-  archive->insert("int", u64(8642));
+  archive->set("list", list);
+  archive->set("int", u64(8642));
 
   auto sub_archive = ArchiveMap::make();
   MapU64VecF32 map_val = {{1, {2.0, 3.0}}, {10, {20.0, 30.0}}};
-  sub_archive->insert("map", mapU64VecF32(map_val));
+  sub_archive->set("map", mapU64VecF32(map_val));
 
-  archive->insert("sub", sub_archive);
+  archive->set("sub", sub_archive);
 
   std::stringstream buffer;
   serialize(archive, buffer);
