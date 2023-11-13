@@ -98,7 +98,7 @@ class MachModel(nn.Module):
         super().__init__()
 
         self.emb = nn.EmbeddingBag(num_embeddings=input_dim, embedding_dim=emb_dim)
-        self.emb_bias = nn.Parameter(torch.empty(1024))
+        self.emb_bias = nn.Parameter(torch.empty(emb_dim))
         nn.init.normal_(self.emb_bias, mean=0, std=0.01)
 
         self.output = nn.Linear(in_features=emb_dim, out_features=output_dim)
