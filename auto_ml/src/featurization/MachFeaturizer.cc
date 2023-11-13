@@ -128,26 +128,6 @@ data::TransformationPtr MachFeaturizer::coldstartTransformation(
       /* output_column_name= */ textDatasetConfig().textColumn());
 }
 
-bool MachFeaturizer::hasTemporalTransformations() const {
-  std::queue<data::TransformationPtr> queue;
-  queue.push(_tracking_input_transformation);
-
-  while (!queue.empty()) {
-    auto next = queue.front();
-    queue.pop();
-    if (std::dynamic_pointer_cast<data::CategoricalTemporal>(next)) {
-      return true;
-    }
-    if (auto list = std::dynamic_pointer_cast<data::Pipeline>(next)) {
-      for (const auto& transform : list->transformations()) {
-        queue.push(transform);
-      }
-    }
-  }
-
-  return false;
-}
-
 template void MachFeaturizer::serialize(cereal::BinaryInputArchive&);
 template void MachFeaturizer::serialize(cereal::BinaryOutputArchive&);
 

@@ -112,7 +112,9 @@ class MachFeaturizer final {
     }
   }
 
-  bool hasTemporalTransformations() const;
+  bool hasTemporalTransformations() const {
+    return hasTemporalTransformation(_tracking_input_transformation);
+  }
 
   void resetTemporalTrackers() { _state->clearHistoryTrackers(); }
 

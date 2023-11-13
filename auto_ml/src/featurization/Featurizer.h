@@ -129,6 +129,8 @@ class Featurizer {
   void serialize(Archive& archive);
 };
 
+bool hasTemporalTransformation(const data::TransformationPtr& t);
+
 using FeaturizerPtr = std::shared_ptr<Featurizer>;
 
 }  // namespace thirdai::automl
