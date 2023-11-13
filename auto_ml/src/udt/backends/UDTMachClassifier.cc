@@ -352,7 +352,7 @@ void UDTMachClassifier::introduceDocuments(
     std::optional<uint32_t> num_buckets_to_sample_opt,
     uint32_t num_random_hashes, bool fast_approximation, bool verbose) {
   (void)verbose;
-  auto columns = _data->coldstart(_data->columns(data), strong_column_names,
+  auto columns = _data->coldstart(_data->loadColumns(data), strong_column_names,
                                   weak_column_names, fast_approximation);
 
   _classifier->introduceEntities(_data->labeledTransform(std::move(columns)),
@@ -419,7 +419,7 @@ py::object UDTMachClassifier::associateTrain(
     uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
     TrainOptions options) {
-  auto train_columns = _data->columns(balancing_data);
+  auto train_columns = _data->loadColumns(balancing_data);
   return associateTrainImpl(std::move(train_columns), rlhf_samples, n_buckets,
                             n_association_samples, learning_rate, epochs,
                             metrics, options);
@@ -433,7 +433,7 @@ py::object UDTMachClassifier::associateColdStart(
     uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
     TrainOptions options) {
-  auto train_columns = _data->columns(balancing_data);
+  auto train_columns = _data->loadColumns(balancing_data);
   train_columns = _data->coldstart(std::move(train_columns),
                                    strong_column_names, weak_column_names);
   return associateTrainImpl(std::move(train_columns), rlhf_samples, n_buckets,

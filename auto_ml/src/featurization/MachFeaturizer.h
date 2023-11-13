@@ -31,7 +31,7 @@ class MachFeaturizer final {
     return data::CsvIterator::make(data, _delimiter);
   }
 
-  data::ColumnMap columns(const dataset::DataSourcePtr& data) const {
+  data::ColumnMap loadColumns(const dataset::DataSourcePtr& data) const {
     return data::CsvIterator::all(data, _delimiter);
   }
 
