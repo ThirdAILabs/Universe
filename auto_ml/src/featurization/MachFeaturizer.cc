@@ -29,7 +29,7 @@ void MachFeaturizer::serialize(Archive& archive) {
 MachFeaturizer::MachFeaturizer(
     ColumnDataTypes data_types, const CategoricalDataTypePtr& target_config,
     const TemporalRelationships& temporal_relationships,
-    const std::string& label_column, uint32_t num_buckets,
+    const std::string& label_column, size_t num_buckets,
     const TabularOptions& options)
     : _delimiter(options.delimiter),
       _label_delimiter(target_config->delimiter),

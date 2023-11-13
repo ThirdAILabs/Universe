@@ -14,13 +14,13 @@ class MachFeaturizer final {
   MachFeaturizer(ColumnDataTypes data_types,
                  const CategoricalDataTypePtr& target_config,
                  const TemporalRelationships& temporal_relationships,
-                 const std::string& label_column, uint32_t num_buckets,
+                 const std::string& label_column, size_t num_buckets,
                  const TabularOptions& options);
 
   static auto make(ColumnDataTypes data_types,
                    const CategoricalDataTypePtr& target_config,
                    const TemporalRelationships& temporal_relationships,
-                   const std::string& label_column, uint32_t num_buckets,
+                   const std::string& label_column, size_t num_buckets,
                    const TabularOptions& options) {
     return std::make_shared<MachFeaturizer>(
         std::move(data_types), target_config, temporal_relationships,
