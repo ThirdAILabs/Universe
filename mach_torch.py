@@ -245,7 +245,7 @@ class Mach:
             f"epoch complete - train_loss={round(loss.item(), 4)} - time={round(end -start, 4)}"
         )
 
-    def validate(self, filename, recall_at, precision_at, num_buckets_to_eval=25):
+    def validate(self, filename, recall_at=[], precision_at=[], num_buckets_to_eval=25):
         self.model.eval()
 
         columns = data.CsvIterator.all(
@@ -328,7 +328,21 @@ def trec_covid():
         n_buckets=20_000,
         n_entities=171_332,
         char_4_grams=True,
+        lr=0.01,
     )
+
+    for _ in range(5):
+        print("\nCold Start")
+        model.train(
+            "/share/data/trec-covid/unsupervised.csv",
+            strong_cols=["TITLE"],
+            weak_cols=["TEXT"],
+        )
+
+        model.validate(
+            "/share/data/trec-covid/tst_supervised.csv",
+            precision_at=[1, 10],
+        )
 
 
 if __name__ == "__main__":
