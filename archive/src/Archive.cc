@@ -150,7 +150,6 @@ ConstArchivePtr deserialize(std::istream& input) {
   cereal::BinaryInputArchive iarchive(input);
 
   ArchiveWrapper wrapper;
-  // ArchivePtr deserialize_into(new Archive());
   iarchive(wrapper);
   return wrapper._archive;
 }

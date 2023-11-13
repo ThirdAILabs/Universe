@@ -9,6 +9,14 @@
 
 namespace thirdai::ar {
 
+/**
+ * This is for storing concrete C++ types that contain the data needed to
+ * deserialize an object. This class should only be used to store C++ types, not
+ * any custom classes or structs. This is to ensure that it can always be
+ * loaded, since the definition of C++ classes and types are stable. For example
+ * if we added our own custom class here, then changed the fields in it,
+ * serialization would break.
+ */
 template <typename T>
 class ArchiveValue final : public Archive {
  public:
