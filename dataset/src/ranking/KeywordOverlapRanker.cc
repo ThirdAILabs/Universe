@@ -1,5 +1,6 @@
 #include "KeywordOverlapRanker.h"
 #include <utils/StringManipulation.h>
+#include <algorithm>
 #include <string>
 
 namespace thirdai::dataset::ranking {
