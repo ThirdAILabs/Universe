@@ -309,6 +309,7 @@ add_subdirectory(dataset)
 add_subdirectory(search)
 add_subdirectory(hashing)
 add_subdirectory(hashtable)
+add_subdirectory(archive)
 add_subdirectory(compression)
 add_subdirectory(utils)
 
@@ -432,6 +433,11 @@ set(THIRDAI_SOURCES
     data/src/Loader.cc
     data/src/ColumnMapIterator.cc
     data/src/rca/ExplanationMap.cc
+    archive/src/Archive.cc
+    archive/src/ArchiveMap.cc
+    archive/src/ArchiveList.cc
+    archive/src/ArchiveValue.cc
+    archive/src/ParameterReference.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/featurization/DataTypes.cc
