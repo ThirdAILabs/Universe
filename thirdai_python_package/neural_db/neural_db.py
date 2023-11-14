@@ -182,9 +182,7 @@ class SupDataSource(PyDataSource):
 
 
 class NeuralDB:
-    def __init__(
-        self, user_id: str = "user", number_experts: int = 1, **kwargs
-    ) -> None:
+    def __init__(self, user_id: str = "user", number_models: int = 1, **kwargs) -> None:
         """user_id is used for logging purposes only"""
         self._user_id: str = user_id
 
@@ -193,14 +191,14 @@ class NeuralDB:
         # We read savable_state from kwargs so that it doesn't appear in the
         # arguments list and confuse users.
         if "savable_state" not in kwargs:
-            if number_experts <= 0:
+            if number_models <= 0:
                 raise Exception(
-                    f"Invalid Value Passed for number_experts : {number_experts}"
+                    f"Invalid Value Passed for number_models : {number_models}. NeuralDB can only be initialized with a positive number of models."
                 )
-            elif number_experts > 1:
+            elif number_models > 1:
                 self._savable_state: State = State(
                     model=MachMixture(
-                        number_models=number_experts,
+                        number_models=number_models,
                         id_col="id",
                         query_col="query",
                         **kwargs,

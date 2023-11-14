@@ -61,16 +61,14 @@ def requires_condition(
     check_func, method_name: str, method_class: str, condition_string: str = None
 ):
     def decorator(func):
+        error_message = f"The property {method_name} is not implemented for the class {method_class}{condition_string if condition_string else ''}"
         if isinstance(func, property):  # If the decorator is applied to a property.
 
             def wrapped_fget(self):
                 if check_func(self):
                     return func.fget(self)
                 else:
-                    raise NotImplementedError(
-                        f"The property {method_name} is not implemented for the class"
-                        f" {method_class}{condition_string if condition_string else ''}"
-                    )
+                    raise NotImplementedError(error_message)
 
             return property(wrapped_fget, func.fset, func.fdel, func.__doc__)
 
@@ -79,10 +77,7 @@ def requires_condition(
             if check_func(self):
                 return func(self, *args, **kwargs)
             else:
-                raise NotImplementedError(
-                    f"The function {method_name} is not implemented for the class"
-                    f" {method_class}{condition_string if condition_string else ''}"
-                )
+                raise NotImplementedError(error_message)
 
         return wrapper
 

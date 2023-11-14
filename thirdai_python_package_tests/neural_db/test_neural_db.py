@@ -181,8 +181,8 @@ def test_neural_db_all_methods_work_on_new_model():
 
 
 def test_neuralb_db_all_methods_work_on_new_mach_mixture():
-    number_experts = 2
-    db = ndb.NeuralDB("user", number_experts=number_experts)
+    number_models = 2
+    db = ndb.NeuralDB("user", number_models=number_models)
     all_docs = [get_doc() for get_doc in all_doc_getters]
     all_methods_work_mach_mixture(db, all_docs, assert_acc=False)
 
