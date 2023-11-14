@@ -4,21 +4,44 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/unordered_map.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/StringCipher.h>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
 
 namespace thirdai::ar {
 
 template void ArchiveMap::save(cereal::BinaryOutputArchive&) const;
 
+std::unordered_map<std::string, ConstArchivePtr> applyCipherToKeys(
+    const std::unordered_map<std::string, ConstArchivePtr>& input) {
+  std::unordered_map<std::string, ConstArchivePtr> output;
+  output.reserve(input.size());
+
+  for (const auto& [k, v] : input) {
+    std::string cipher_k = cipher(k);
+    if (output.count(cipher_k)) {
+      throw std::runtime_error("Duplicate key detected in Map serialization.");
+    }
+    output[cipher_k] = v;
+  }
+  return output;
+}
+
 template <class Ar>
 void ArchiveMap::save(Ar& archive) const {
-  archive(cereal::base_class<Archive>(this), _map);
+  auto cipher_map = applyCipherToKeys(_map);
+  archive(cereal::base_class<Archive>(this), cipher_map);
 }
 
 template void ArchiveMap::load(cereal::BinaryInputArchive&);
 
 template <class Ar>
 void ArchiveMap::load(Ar& archive) {
-  archive(cereal::base_class<Archive>(this), _map);
+  std::unordered_map<std::string, ConstArchivePtr> cipher_map;
+  archive(cereal::base_class<Archive>(this), cipher_map);
+  _map = applyCipherToKeys(cipher_map);
 }
 
 }  // namespace thirdai::ar

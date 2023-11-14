@@ -4,6 +4,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
+#include <archive/src/StringCipher.h>
 #include <unordered_map>
 
 namespace thirdai::ar {
@@ -65,10 +66,25 @@ ArchiveValue<std::unordered_map<uint64_t, std::vector<float>>>::typeName() {
   return "Value[std::unordered_map<uint64_t, std::vector<float>>]";
 }
 
+template <>
+template <class Ar>
+void ArchiveValue<std::string>::save(Ar& archive) const {
+  std::string cipher_value = cipher(_value);
+  archive(cereal::base_class<Archive>(this), cipher_value);
+}
+
 template <typename T>
 template <class Ar>
 void ArchiveValue<T>::save(Ar& archive) const {
   archive(cereal::base_class<Archive>(this), _value);
+}
+
+template <>
+template <class Ar>
+void ArchiveValue<std::string>::load(Ar& archive) {
+  std::string cipher_value;
+  archive(cereal::base_class<Archive>(this), cipher_value);
+  _value = cipher(cipher_value);
 }
 
 template <typename T>
