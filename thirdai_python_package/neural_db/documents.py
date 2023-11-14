@@ -25,7 +25,7 @@ from thirdai.dataset.data_source import PyDataSource
 
 from .connectors import Connector, SharePointConnector, SQLConnector
 from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
-from .parsing_utils import doc_parse, pdf_parse, url_parse
+from .parsing_utils import doc_parse, pdf_parse, url_parse, sliding_pdf_parse
 from .utils import hash_file, hash_string
 
 
@@ -541,7 +541,9 @@ class CSV(Document):
 
 # Base class for PDF, DOCX and Unstructured classes because they share the same logic.
 class Extracted(Document):
-    def __init__(self, path: str, save_extra_info=True, metadata={}):
+    def __init__(
+        self, path: str, save_extra_info=True, metadata={}, strong_column=None
+    ):
         path = str(path)
         self.df = self.process_data(path)
         self.hash_val = hash_file(path, metadata="extracted-" + str(metadata))
@@ -549,6 +551,7 @@ class Extracted(Document):
 
         self.path = Path(path)
         self.doc_metadata = metadata
+        self.strong_column = strong_column
 
     def process_data(
         self,
@@ -576,7 +579,9 @@ class Extracted(Document):
         return list(range(self.size))
 
     def strong_text(self, element_id: int) -> str:
-        return ""
+        return (
+            "" if not self.strong_column else self.df["strong_column"].iloc[element_id]
+        )
 
     def weak_text(self, element_id: int) -> str:
         return self.df["para"].iloc[element_id]
@@ -686,6 +691,24 @@ class PDF(Extracted):
         path: str,
     ) -> pd.DataFrame:
         return process_pdf(path)
+
+
+class SlidingPDF(Extracted):
+    def __init__(
+        self, path: str, chunk_size=100, stride=50, emphasize_first_words=0, metadata={}
+    ):
+        self.chunk_size = chunk_size
+        self.stride = stride
+        self.emphasize_first_words = emphasize_first_words
+        super().__init__(path=path, metadata=metadata, strong_column="emphasis")
+
+    def process_data(
+        self,
+        path: str,
+    ) -> pd.DataFrame:
+        return sliding_pdf_parse.make_df(
+            path, self.chunk_size, self.stride, self.emphasize_first_words
+        )
 
 
 class DOCX(Extracted):
