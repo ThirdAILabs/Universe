@@ -26,7 +26,6 @@ from thirdai.dataset.data_source import PyDataSource
 from .connectors import Connector, SharePointConnector, SQLConnector
 from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
 from .parsing_utils import doc_parse, pdf_parse, url_parse
-from .parsing_utils.unstructured_parse import EmlParse, PptxParse, TxtParse
 from .utils import hash_file, hash_string
 
 
@@ -715,12 +714,18 @@ class Unstructured(Extracted):
                 "For PDF and DOCX FileTypes, use neuraldb.PDF and neuraldb.DOCX "
             )
         elif path.endswith(".pptx"):
+            from .parsing_utils.unstructured_parse import PptxParse
+
             self.parser = PptxParse(path)
 
         elif path.endswith(".txt"):
+            from .parsing_utils.unstructured_parse import TxtParse
+
             self.parser = TxtParse(path)
 
         elif path.endswith(".eml"):
+            from .parsing_utils.unstructured_parse import EmlParse
+
             self.parser = EmlParse(path)
 
         else:
