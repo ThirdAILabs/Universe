@@ -69,16 +69,21 @@ TEST(ArchiveMapTests, MapAccessing) {
 TEST(ArchiveMapTests, MapIterator) {
   auto [map, a, b, c] = simpleMap();
 
-  std::unordered_set<ConstArchivePtr> visited;
+  std::unordered_map<std::string, ConstArchivePtr> visited;
   for (const auto& [k, v] : *map) {
-    ASSERT_FALSE(visited.count(v));
-    visited.insert(v);
+    ASSERT_FALSE(visited.count(k));
+    visited[k] = v;
   }
 
   ASSERT_EQ(visited.size(), 3);
-  ASSERT_TRUE(visited.count(a));
-  ASSERT_TRUE(visited.count(b));
-  ASSERT_TRUE(visited.count(c));
+
+  ASSERT_TRUE(visited.count("apple"));
+  ASSERT_TRUE(visited.count("bagel"));
+  ASSERT_TRUE(visited.count("chart"));
+
+  ASSERT_EQ(visited.at("apple"), a);
+  ASSERT_EQ(visited.at("bagel"), b);
+  ASSERT_EQ(visited.at("chart"), c);
 }
 
 TEST(ArchiveMapTests, Serialization) {
@@ -103,10 +108,6 @@ TEST(ArchiveMapTests, Serialization) {
     ASSERT_FALSE(visited.count(k));
     visited[k] = v;
   }
-
-  ASSERT_EQ(visited["apple"], a);
-  ASSERT_EQ(visited["bagel"], b);
-  ASSERT_EQ(visited["chart"], c);
 
   ASSERT_EQ(visited.size(), 3);
 }
