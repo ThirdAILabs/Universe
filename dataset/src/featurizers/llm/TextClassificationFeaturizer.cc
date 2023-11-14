@@ -38,7 +38,6 @@ thirdai::dataset::TextClassificationFeaturizer::featurize(
 
       CsvSampleRef sample(row, _delimiter);
       std::string text_column(sample.column(_text_column));
-
       std::vector<uint32_t> text_tokens = token_encoding::tokenIds(text_column);
 
       feature_columns[cur_id++][row_id] =

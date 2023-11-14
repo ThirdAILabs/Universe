@@ -52,7 +52,7 @@ std::shared_ptr<udt::UDT> makeUDT(
     const std::string& target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
-    const py::dict& options, std::optional<dataset::TextClassificationFeaturizer> text_featurizer);
+    const py::dict& options, std::optional<dataset::TextClassificationFeaturizerPtr> text_featurizer);
 
 std::shared_ptr<udt::UDT> makeQueryReformulation(
     std::string source_column, std::string target_column,
@@ -418,7 +418,7 @@ std::shared_ptr<udt::UDT> makeUDT(
     const std::string& target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
-    const py::dict& options, std::optional<dataset::TextClassificationFeaturizer> text_featurizer) {
+    const py::dict& options, std::optional<dataset::TextClassificationFeaturizerPtr> text_featurizer) {
   return std::make_shared<udt::UDT>(
       /* data_types = */ std::move(data_types),
       /* temporal_tracking_relationships = */ temporal_tracking_relationships,

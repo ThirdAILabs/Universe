@@ -69,7 +69,7 @@ UDTMachClassifier::UDTMachClassifier(
     uint32_t n_target_classes, bool integer_target,
     const TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
-    std::optional<dataset::TextClassificationFeaturizer> text_featurizer,
+    std::optional<dataset::TextClassificationFeaturizerPtr> text_featurizer,
     config::ArgumentMap user_args)
     : _text_classification_featurizer(std::move(text_featurizer)),
       _default_top_k_to_return(defaults::MACH_TOP_K_TO_RETURN),
@@ -116,7 +116,7 @@ UDTMachClassifier::UDTMachClassifier(
   _mach_label_block = dataset::mach::MachBlock::make(target_name, mach_index,
                                                      target_config->delimiter);
 
-  _text_classification_featurizer.value().use_mach_label_block(
+  _text_classification_featurizer.value()->use_mach_label_block(
       _mach_label_block);
 
   bool force_parallel = user_args.get<bool>("force_parallel", "boolean", false);
@@ -181,7 +181,7 @@ py::object UDTMachClassifier::train(
     dataset::DatasetLoaderPtr val_dataset_loader;
     if (_text_classification_featurizer) {
       val_dataset_loader = _dataset_factory->makeDataLoaderCustomFeaturizer(
-          val_data, false, std::make_shared<dataset::TextClassificationFeaturizer>(*_text_classification_featurizer));
+          val_data, false, *_text_classification_featurizer);
     } else {
       val_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
           val_data, /* shuffle= */ true,
@@ -194,7 +194,7 @@ py::object UDTMachClassifier::train(
   dataset::DatasetLoaderPtr train_dataset_loader;
   if (_text_classification_featurizer) {
     train_dataset_loader = _dataset_factory->makeDataLoaderCustomFeaturizer(
-        data, false, std::make_shared<dataset::TextClassificationFeaturizer>(*_text_classification_featurizer));
+        data, false, *_text_classification_featurizer);
   } else {
     train_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
         data, /* shuffle= */ true,
@@ -249,7 +249,7 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
   dataset::DatasetLoaderPtr eval_dataset_loader;
   if (_text_classification_featurizer) {
     eval_dataset_loader = _dataset_factory->makeDataLoaderCustomFeaturizer(
-        data, false, std::make_shared<dataset::TextClassificationFeaturizer>(*_text_classification_featurizer));
+        data, false, *_text_classification_featurizer);
   } else {
     eval_dataset_loader =
         _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ false);
