@@ -71,7 +71,6 @@ LIBRARY_PATH = base.get_library_path()
 
 CSV_EXPLICIT_META = "csv-explicit"
 PDF_META = "pdf"
-SLIDING_PDF_META = "sliding-pdf"
 DOCX_META = "docx"
 URL_NO_RESPONSE_META = "url-no-response"
 PPTX_META = "pptx"
@@ -198,7 +197,6 @@ all_local_doc_getters = [
     ),
     lambda: ndb.CSV(CSV_FILE),
     lambda: ndb.PDF(PDF_FILE),
-    lambda: ndb.SlidingPDF(PDF_FILE),
     lambda: ndb.DOCX(DOCX_FILE),
     lambda: ndb.URL("https://en.wikipedia.org/wiki/Rice_University"),
     lambda: ndb.URL(
@@ -228,7 +226,6 @@ def docs_with_meta():
             metadata=meta(CSV_EXPLICIT_META),
         ),
         ndb.PDF(PDF_FILE, metadata=meta(PDF_META)),
-        ndb.SlidingPDF(PDF_FILE, metadata=meta(SLIDING_PDF_META)),
         ndb.DOCX(DOCX_FILE, metadata=meta(DOCX_META)),
         ndb.URL(
             "https://en.wikipedia.org/wiki/Rice_University",

@@ -689,17 +689,6 @@ def process_docx(path: str) -> pd.DataFrame:
 
 
 class PDF(Extracted):
-    def __init__(self, path: str, metadata={}):
-        super().__init__(path=path, metadata=metadata)
-
-    def process_data(
-        self,
-        path: str,
-    ) -> pd.DataFrame:
-        return process_pdf(path)
-
-
-class SlidingPDF(Extracted):
     """Parses a PDF document into chunks of text that can be indexed by
     NeuralDB.
 
@@ -727,6 +716,7 @@ class SlidingPDF(Extracted):
     def __init__(
         self,
         path: str,
+        version: str = "v2",
         chunk_size=100,
         stride=40,
         emphasize_first_words=0,
@@ -734,6 +724,17 @@ class SlidingPDF(Extracted):
         ignore_nonstandard_orientation=True,
         metadata={},
     ):
+        self.version = version
+
+        if version == "v1":
+            super().__init__(path=path, metadata=metadata)
+            return
+
+        if version != "v2":
+            raise ValueError(
+                f"Received invalid version '{version}'. Choose between 'v1' and 'v2'"
+            )
+
         self.chunk_size = chunk_size
         self.stride = stride
         self.emphasize_first_words = emphasize_first_words
@@ -745,6 +746,8 @@ class SlidingPDF(Extracted):
         self,
         path: str,
     ) -> pd.DataFrame:
+        if not hasattr(self, "version") or self.version == "v1":
+            return process_pdf(path)
         return sliding_pdf_parse.make_df(
             path,
             self.chunk_size,
