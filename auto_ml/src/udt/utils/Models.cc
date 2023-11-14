@@ -139,14 +139,16 @@ void verifyCanSetModel(const ModelPtr& curr_model, const ModelPtr& new_model) {
     return true;
   };
 
-  if (!vec_eq(curr_model->inputDims(), new_model->inputDims())) {
-    throw std::invalid_argument("Input dim mismatch in set_model.");
-  }
+  // if (!vec_eq(curr_model->inputDims(), new_model->inputDims())) {
+  //   throw std::invalid_argument("Input dim mismatch in set_model.");
+  // }
 
   if (new_model->outputs().size() != 1 ||
       new_model->outputs().at(0)->dim() != curr_model->outputs().at(0)->dim()) {
     throw std::invalid_argument("Output dim mismatch in set_model.");
   }
+
+  
 
   if (!vec_eq(curr_model->labelDims(), new_model->labelDims())) {
     throw std::invalid_argument("Label dim mismatch in set_model.");
