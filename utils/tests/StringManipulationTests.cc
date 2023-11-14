@@ -126,7 +126,7 @@ TEST(StringManipulationTest, WordLevelCharKGramTest) {
   auto char_words = wordLevelCharKGrams(words, 4);
   assertEqualTokens(char_words, {"Some", "word", "ords"});
 
-  char_words = wordLevelCharKGrams(words, 4, /* min_word_length=*/ 5);
+  char_words = wordLevelCharKGrams(words, 4, /* min_word_length=*/5);
   assertEqualTokens(char_words, {"word", "ords"});
 }
 
