@@ -161,7 +161,7 @@ neural_db_deps = [
     "url-normalize",
     "nltk",
     "unidecode",
-    "pydantic",
+    "pydantic<2.5",
     "unstructured[all-docs]",
     "sortedcontainers",
 ]
