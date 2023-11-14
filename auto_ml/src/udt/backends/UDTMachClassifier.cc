@@ -183,7 +183,7 @@ py::object UDTMachClassifier::train(
           val_data, false, *_text_classification_featurizer);
     } else {
       val_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
-          val_data, /* shuffle= */ true,
+          val_data, /* shuffle= */ false,
           /* shuffle_config= */ options.shuffle_config);
     }
   }
@@ -193,7 +193,7 @@ py::object UDTMachClassifier::train(
   dataset::DatasetLoaderPtr train_dataset_loader;
   if (_text_classification_featurizer) {
     train_dataset_loader = _dataset_factory->makeDataLoaderCustomFeaturizer(
-        data, false, *_text_classification_featurizer);
+        data, true, *_text_classification_featurizer);
   } else {
     train_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
         data, /* shuffle= */ true,
