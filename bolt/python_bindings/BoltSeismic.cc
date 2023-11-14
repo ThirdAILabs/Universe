@@ -12,7 +12,7 @@ void createSeismicSubmodule(py::module_& module) {
 
   py::class_<SeismicBase, std::shared_ptr<SeismicBase>>(seismic, "SeismicBase")
       .def("embeddings_for_patches", &SeismicBase::embeddingsForPatches,
-           py::arg("subcubes"))
+           py::arg("subcubes"), py::arg("sparse_inference") = false)
       .def_property_readonly("subcube_shape", &SeismicBase::subcubeShape)
       .def_property_readonly("patch_shape", &SeismicBase::patchShape)
       .def_property_readonly("max_pool", &SeismicBase::maxPool)
@@ -28,6 +28,12 @@ void createSeismicSubmodule(py::module_& module) {
            py::arg("learning_rate"), py::arg("batch_size"),
            py::arg("callbacks"), py::arg("log_interval"),
            py::arg("comm") = nullptr)
+      .def("forward_finetuning", &SeismicEmbedding::forward,
+           py::arg("subcubes"))
+      .def("backpropagate_finetuning", &SeismicEmbedding::backpropagate,
+           py::arg("gradients"))
+      .def("update_parameters", &SeismicEmbedding::updateParameters,
+           py::arg("learning_rate"))
       .def("save", &SeismicEmbedding::save, py::arg("filename"))
       .def_static("load", &SeismicEmbedding::load, py::arg("filename"))
       .def(bolt::python::getPickleFunction<SeismicEmbedding>());
@@ -42,7 +48,7 @@ void createSeismicSubmodule(py::module_& module) {
            py::arg("batch_size"), py::arg("callbacks"), py::arg("log_interval"),
            py::arg("comm") = nullptr)
       .def("predictions_for_patches", &SeismicClassifier::predictionsForPatches,
-           py::arg("subcubes"))
+           py::arg("subcubes"), py::arg("sparse_inference") = false)
       .def("save", &SeismicClassifier::save, py::arg("filename"))
       .def_static("load", &SeismicClassifier::load, py::arg("filename"))
       .def(bolt::python::getPickleFunction<SeismicClassifier>());

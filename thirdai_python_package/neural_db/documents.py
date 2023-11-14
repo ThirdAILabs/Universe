@@ -5,20 +5,27 @@ import shutil
 import string
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union, final
 
 import numpy as np
 import pandas as pd
 from nltk.tokenize import sent_tokenize
+from office365.sharepoint.client_context import (
+    ClientContext,
+    ClientCredential,
+    UserCredential,
+)
 from pytrie import StringTrie
 from requests.models import Response
+from sqlalchemy import Integer, String, create_engine
+from sqlalchemy.engine.base import Connection as sqlConn
 from thirdai import bolt
 from thirdai.data import get_udt_col_types
 from thirdai.dataset.data_source import PyDataSource
 
+from .connectors import Connector, SharePointConnector, SQLConnector
 from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
 from .parsing_utils import doc_parse, pdf_parse, url_parse
-from .parsing_utils.unstructured_parse import EmlParse, PptxParse, TxtParse
 from .utils import hash_file, hash_string
 
 
@@ -57,6 +64,9 @@ class Document:
     def filter_entity_ids(self, filters: Dict[str, Filter]):
         return self.all_entity_ids()
 
+    def id_map(self) -> Optional[Dict[str, int]]:
+        return None
+
     # This attribute allows certain things to be saved or not saved during
     # the pickling of a savable_state object. For example, if we set this
     # to True for CSV docs, we will save the actual csv file in the pickle.
@@ -90,6 +100,14 @@ class Document:
 
     def load_meta(self, directory: Path):
         pass
+
+    def row_iterator(self):
+        for i in range(self.size):
+            yield DocumentRow(
+                element_id=i,
+                strong=self.strong_text(i),
+                weak=self.weak_text(i),
+            )
 
     def save(self, directory: str):
         dirpath = Path(directory)
@@ -182,12 +200,9 @@ class DocumentDataSource(PyDataSource):
 
     def row_iterator(self):
         for doc, start_id in self.documents:
-            for i in range(doc.size):
-                yield DocumentRow(
-                    element_id=start_id + i,
-                    strong=doc.strong_text(i),
-                    weak=doc.weak_text(i),
-                )
+            for row in doc.row_iterator():
+                row.id = row.id + start_id
+                yield row
 
     @property
     def size(self):
@@ -339,6 +354,13 @@ class DocumentManager:
 
 
 class CSV(Document):
+    def valid_id_column(column):
+        return (
+            (len(column.unique()) == len(column))
+            and (column.min() == 0)
+            and (column.max() == len(column) - 1)
+        )
+
     def __init__(
         self,
         path: str,
@@ -352,14 +374,24 @@ class CSV(Document):
     ) -> None:
         self.df = pd.read_csv(path)
 
-        if reference_columns == None:
+        if reference_columns is None:
             reference_columns = list(self.df.columns)
 
-        if id_column == None:
-            id_column = "thirdai_index"
-            self.df[id_column] = range(self.df.shape[0])
+        self.orig_to_assigned_id = None
+        self.id_column = id_column
+        orig_id_column = id_column
+        if self.id_column and CSV.valid_id_column(self.df[self.id_column]):
+            self.df = self.df.sort_values(self.id_column)
+        else:
+            self.id_column = "thirdai_index"
+            self.df[self.id_column] = range(self.df.shape[0])
+            if orig_id_column:
+                self.orig_to_assigned_id = {
+                    row[orig_id_column]: row[self.id_column]
+                    for _, row in self.df.iterrows()
+                }
 
-        if strong_columns == None and weak_columns == None:
+        if strong_columns is None and weak_columns is None:
             # autotune column types
             text_col_names = []
             try:
@@ -368,26 +400,22 @@ class CSV(Document):
                         text_col_names.append(col_name)
             except:
                 text_col_names = list(self.df.columns)
-                text_col_names.remove(id_column)
+                text_col_names.remove(self.id_column)
+                if orig_id_column:
+                    text_col_names.remove(orig_id_column)
                 self.df[text_col_names] = self.df[text_col_names].astype(str)
             strong_columns = []
             weak_columns = text_col_names
-        elif strong_columns == None:
+        elif strong_columns is None:
             strong_columns = []
-        elif weak_columns == None:
+        elif weak_columns is None:
             weak_columns = []
-
-        self.df = self.df.sort_values(id_column)
-        assert len(self.df[id_column].unique()) == len(self.df[id_column])
-        assert self.df[id_column].min() == 0
-        assert self.df[id_column].max() == len(self.df[id_column]) - 1
 
         for col in strong_columns + weak_columns:
             self.df[col] = self.df[col].fillna("")
 
         self.path = Path(path)
         self._hash = hash_file(path, metadata="csv-" + str(metadata))
-        self.id_column = id_column
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
         self.reference_columns = reference_columns
@@ -431,6 +459,9 @@ class CSV(Document):
                 return []
             df = filterer.filter_df_column(df, column_name)
         return df[self.id_column].to_list()
+
+    def id_map(self) -> Optional[Dict[str, int]]:
+        return self.orig_to_assigned_id
 
     def strong_text(self, element_id: int) -> str:
         row = self.df.iloc[element_id]
@@ -504,9 +535,11 @@ class CSV(Document):
             self.doc_metadata_keys = set()
         if not hasattr(self, "indexed_columns"):
             self.indexed_columns = []
+        if not hasattr(self, "orig_to_assigned_id"):
+            self.orig_to_assigned_id = None
 
 
-# Base class for PDF and DOCX classes because they share the same logic.
+# Base class for PDF, DOCX and Unstructured classes because they share the same logic.
 class Extracted(Document):
     def __init__(self, path: str, save_extra_info=True, metadata={}):
         path = str(path)
@@ -681,12 +714,18 @@ class Unstructured(Extracted):
                 "For PDF and DOCX FileTypes, use neuraldb.PDF and neuraldb.DOCX "
             )
         elif path.endswith(".pptx"):
+            from .parsing_utils.unstructured_parse import PptxParse
+
             self.parser = PptxParse(path)
 
         elif path.endswith(".txt"):
+            from .parsing_utils.unstructured_parse import TxtParse
+
             self.parser = TxtParse(path)
 
         elif path.endswith(".eml"):
+            from .parsing_utils.unstructured_parse import EmlParse
+
             self.parser = EmlParse(path)
 
         else:
@@ -780,6 +819,586 @@ class URL(Document):
             self.doc_metadata = {}
 
 
+class DocumentConnector(Document):
+    @property
+    def hash(self) -> str:
+        raise NotImplementedError()
+
+    @property
+    def meta_table(self) -> Optional[pd.DataFrame]:
+        """
+        It stores the mapping from id_in_document to meta_data of the document. It could be used to fetch the minimal document result if the connection is lost.
+        """
+        raise NotImplementedError()
+
+    @property
+    def meta_table_id_col(self) -> str:
+        return "id_in_document"
+
+    def _get_connector_object_name(self):
+        raise NotImplementedError()
+
+    def get_strong_columns(self):
+        raise NotImplementedError()
+
+    def get_weak_columns(self):
+        raise NotImplementedError()
+
+    def row_iterator(self):
+        id_in_document = 0
+        for current_chunk in self.chunk_iterator():
+            for idx in range(len(current_chunk)):
+                yield DocumentRow(
+                    element_id=id_in_document,
+                    strong=self.strong_text_from_chunk(
+                        id_in_chunk=idx, chunk=current_chunk
+                    ),  # Strong text from (idx)th row of the current_batch
+                    weak=self.weak_text_from_chunk(
+                        id_in_chunk=idx, chunk=current_chunk
+                    ),  # Weak text from (idx)th row of the current_batch
+                )
+                id_in_document += 1
+
+    def chunk_iterator(self) -> pd.DataFrame:
+        raise NotImplementedError()
+
+    def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
+        try:
+            row = chunk.iloc[id_in_chunk]
+            return " ".join([str(row[col]) for col in self.get_strong_columns()])
+        except Exception as e:
+            return ""
+
+    def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
+        try:
+            row = chunk.iloc[id_in_chunk]
+            return " ".join([str(row[col]) for col in self.get_weak_columns()])
+        except Exception as e:
+            return ""
+
+    def reference(self, element_id: int) -> Reference:
+        raise NotImplementedError()
+
+    def context(self, element_id, radius) -> str:
+        if not 0 <= element_id or not element_id < self.size:
+            raise ("Element id not in document.")
+
+        reference_texts = [
+            self.reference(i).text
+            for i in range(
+                max(0, element_id - radius), min(self.size, element_id + radius + 1)
+            )
+        ]
+        return "\n".join(reference_texts)
+
+    def save_meta(self, directory: Path):
+        # Save the index table
+        if self.save_extra_info and self.meta_table is not None:
+            self.meta_table.to_csv(
+                path_or_buf=directory / (self.name + ".csv"), index=False
+            )
+
+    def __getstate__(self):
+        # Document Connectors are expected to remove their connector(s) object
+        state = self.__dict__.copy()
+
+        del state[self._get_connector_object_name()]
+
+        return state
+
+
+class SQLDatabase(DocumentConnector):
+    """
+    class for handling SQL database connections and data retrieval for training the neural_db model
+
+    This class encapsulates functionality for connecting to an SQL database, executing SQL queries, and retrieving
+    data for use in training the model.
+
+    NOTE: It is being expected that the table will remain static in terms of both rows and columns.
+    """
+
+    def __init__(
+        self,
+        engine: sqlConn,
+        table_name: str,
+        id_col: str,
+        strong_columns: Optional[List[str]] = None,
+        weak_columns: Optional[List[str]] = None,
+        reference_columns: Optional[List[str]] = None,
+        chunk_size: int = 10_000,
+        save_extra_info: bool = False,
+        metadata: dict = {},
+    ) -> None:
+        self.table_name = table_name
+        self.id_col = id_col
+        self.strong_columns = strong_columns
+        self.weak_columns = weak_columns
+        self.reference_columns = reference_columns
+        self.chunk_size = chunk_size
+        self._save_extra_info = save_extra_info
+        self.doc_metadata = metadata
+
+        self._connector = SQLConnector(
+            engine=engine,
+            table_name=self.table_name,
+            id_col=self.id_col,
+            chunk_size=self.chunk_size,
+        )
+        self.total_rows = self._connector.total_rows()
+        if not self.total_rows > 0:
+            raise FileNotFoundError("Empty table")
+
+        self.database_name = engine.url.database
+        self.url = str(engine.url)
+        self.engine_uq = self.url + f"/{self.table_name}"
+        self._hash = hash_string(string=self.engine_uq)
+
+        # Integrity checks
+        self.assert_valid_id()
+        self.assert_valid_columns()
+
+        # setting the columns in the conector object
+        self._connector.columns = list(set(self.strong_columns + self.weak_columns))
+
+    @property
+    def name(self):
+        return self.database_name + "_" + self.table_name
+
+    @property
+    def hash(self):
+        return self._hash
+
+    @property
+    def size(self) -> int:
+        # It is verfied by the uniqueness assertion of the id column.
+        return self.total_rows
+
+    def setup_connection(self, engine: sqlConn):
+        """
+        This is a helper function to re-establish the connection upon loading the saved ndb model containing this SQLDatabase document.
+        Args:
+            engine: SQLAlchemy Connection object
+                    NOTE: Provide the same connection object.
+        NOTE: Same table would be used to establish connection
+        """
+        try:
+            # The idea is to check for the connector object existence
+            print(
+                f"Connector object already exists with url: {self._connector.get_engine_url()}"
+            )
+        except AttributeError as e:
+            assert engine.url.database == self.database_name
+            assert str(engine.url) == self.url
+            self._connector = SQLConnector(
+                engine=engine,
+                table_name=self.table_name,
+                id_col=self.id_col,
+                columns=list(set(self.strong_columns + self.weak_columns)),
+                chunk_size=self.chunk_size,
+            )
+
+    def _get_connector_object_name(self):
+        return "_connector"
+
+    def get_strong_columns(self):
+        return self.strong_columns
+
+    def get_weak_columns(self):
+        return self.weak_columns
+
+    def get_engine(self):
+        try:
+            return self._connector._engine
+        except AttributeError as e:
+            raise AttributeError("engine is not available")
+
+    @property
+    def meta_table(self) -> Optional[pd.DataFrame]:
+        return None
+
+    def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
+        try:
+            row = chunk.iloc[id_in_chunk]
+            return " ".join(
+                [str(row[col]).replace(",", "") for col in self.get_strong_columns()]
+            )
+        except Exception as e:
+            return ""
+
+    def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
+        try:
+            row = chunk.iloc[id_in_chunk]
+            return " ".join(
+                [str(row[col]).replace(",", "") for col in self.get_weak_columns()]
+            )
+        except Exception as e:
+            return ""
+
+    def chunk_iterator(self) -> pd.DataFrame:
+        return self._connector.chunk_iterator()
+
+    def all_entity_ids(self) -> List[int]:
+        return list(range(self.size))
+
+    def reference(self, element_id: int) -> Reference:
+        if element_id >= self.size:
+            _raise_unknown_doc_error(element_id)
+
+        try:
+            reference_texts = self._connector.execute(
+                query=f"SELECT {','.join(self.reference_columns)} FROM {self.table_name} WHERE {self.id_col} = {element_id}"
+            ).fetchone()
+
+            text = "\n\n".join(
+                [
+                    f"{col_name}: {col_text}"
+                    for col_name, col_text in zip(
+                        self.reference_columns, reference_texts
+                    )
+                ]
+            )
+
+        except Exception as e:
+            text = f"Unable to connect to database, Referenced row with {self.id_col}: {element_id} "
+
+        return Reference(
+            document=self,
+            element_id=element_id,
+            text=text,
+            source=str(self.engine_uq),
+            metadata={
+                "Database": self.database_name,
+                "Table": self.table_name,
+                **self.doc_metadata,
+            },
+        )
+
+    @property
+    def matched_constraints(self) -> Dict[str, ConstraintValue]:
+        """
+        This method is used by DocumentManager while adding this document. Also it is being used in saving the model during pickling.
+        """
+        return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
+
+    def assert_valid_id(self):
+        all_cols = self._connector.cols_metadata()
+
+        id_col_meta = list(filter(lambda col: col["name"] == self.id_col, all_cols))
+        if len(id_col_meta) == 0:
+            raise AttributeError("id column not present in the table")
+        elif not isinstance(id_col_meta[0]["type"], Integer):
+            raise AttributeError("id column needs to be of type Integer")
+
+        primary_keys = self._connector.get_primary_keys()
+        if len(primary_keys) > 1:
+            raise AttributeError("Composite primary key is not allowed")
+        elif len(primary_keys) == 0 or primary_keys[0] != self.id_col:
+            raise AttributeError(f"{self.id_col} needs to be a primary key")
+
+        min_id = self._connector.execute(
+            query=f"SELECT MIN({self.id_col}) FROM {self.table_name}"
+        ).fetchone()[0]
+
+        max_id = self._connector.execute(
+            query=f"SELECT MAX({self.id_col}) FROM {self.table_name}"
+        ).fetchone()[0]
+
+        if min_id != 0 or max_id != self.size - 1:
+            raise AttributeError(
+                f"id column needs to be unique from 0 to {self.size - 1}"
+            )
+
+    def assert_valid_columns(self):
+        all_cols = self._connector.cols_metadata()
+
+        columns_set = set([col["name"] for col in all_cols])
+        if (self.strong_columns is not None) and (
+            not set(self.strong_columns).issubset(columns_set)
+        ):
+            raise AttributeError(
+                f"Strong column(s) doesn't exists in the table '{self.table_name}'"
+            )
+        if (self.weak_columns is not None) and (
+            not set(self.weak_columns).issubset(columns_set)
+        ):
+            raise AttributeError(
+                f"Weak column(s) doesn't exists in the table '{self.table_name}'"
+            )
+        if (self.reference_columns is not None) and (
+            not set(self.reference_columns).issubset(columns_set)
+        ):
+            raise AttributeError(
+                f"Reference column(s) doesn't exists in the table '{self.table_name}'"
+            )
+
+        for col in all_cols:
+            if (
+                self.strong_columns is not None
+                and col["name"] in self.strong_columns
+                and not isinstance(col["type"], String)
+            ):
+                raise AttributeError(
+                    f"strong column '{col['name']}' needs to be of type String"
+                )
+            elif (
+                self.weak_columns is not None
+                and col["name"] in self.weak_columns
+                and not isinstance(col["type"], String)
+            ):
+                raise AttributeError(
+                    f"weak column '{col['name']}' needs to be of type String"
+                )
+
+        if self.strong_columns is None and self.weak_columns is None:
+            self.strong_columns = []
+            self.weak_columns = []
+            for col in all_cols:
+                if isinstance(col["type"], String):
+                    self.weak_columns.append(col["name"])
+        elif self.strong_columns is None:
+            self.strong_columns = []
+        elif self.weak_columns is None:
+            self.weak_columns = []
+
+
+class SharePoint(DocumentConnector):
+    """
+    Class for handling sharepoint connection, retrieving documents, processing and training the neural_db model
+    Args:
+        - ctx (ClientContext): A ClientContext object for SharePoint connection.
+        - library_path (str): The server-relative directory path where documents are stored. Default: 'Shared Documents'
+        - chunk_size (int): The maximum amount of data (in bytes) that can be fetched at a time. (This limit may not apply if there are no files within this range.) Default: 10MB
+    """
+
+    def __init__(
+        self,
+        ctx: ClientContext,
+        library_path: str = "Shared Documents",
+        chunk_size: int = 10485760,
+        save_extra_info: bool = False,
+        metadata: dict = {},
+    ) -> None:
+        # Executing a dummy query to check for the authentication for the ctx object
+        try:
+            SharePoint.dummy_query(ctx=ctx)
+        except Exception as e:
+            raise Exception("Invalid ClientContext Object. Error: " + str(e))
+
+        self._connector = SharePointConnector(
+            ctx=ctx, library_path=library_path, chunk_size=chunk_size
+        )
+        self.library_path = library_path
+        self.chunk_size = chunk_size
+        self._save_extra_info = save_extra_info
+        self.doc_metadata = metadata
+
+        self.strong_column = "strong_text"
+        self.weak_column = "weak_text"
+        self.build_meta_table()
+        self._name = (
+            self._connector.site_name + "-" + (self.library_path).replace(" ", "_")
+        )
+        self.url = self._connector.url
+        self._source = self.url + "/" + library_path
+        self._hash = hash_string(self._source)
+
+    @property
+    def size(self) -> int:
+        return len(self.meta_table)
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def hash(self) -> str:
+        return self._hash
+
+    def setup_connection(self, ctx: ClientContext):
+        """
+        This is a helper function to re-establish the connection upon loading the saved ndb model containing this Sharepoint document.
+        Args:
+            engine: SQLAlchemy Connection object
+                    NOTE: Provide the same connection object.
+        NOTE: Same library path would be used
+        """
+        try:
+            # The idea is to check for the connector object existence
+            print(f"Connector object already exists with url: {self._connector.url}")
+        except AttributeError as e:
+            assert self.url == ctx.web.get().execute_query().url
+            self._connector = SharePointConnector(
+                ctx=ctx, library_path=self.library_path, chunk_size=self.chunk_size
+            )
+
+    def get_strong_columns(self):
+        return [self.strong_column]
+
+    def get_weak_columns(self):
+        return [self.weak_column]
+
+    def build_meta_table(self):
+        num_files = self._connector.num_files()
+
+        print(f"Found {num_files} supported files")
+        self._meta_table = pd.DataFrame(
+            columns=[
+                "internal_doc_id",
+                "server_relative_url",
+                "page",
+            ]
+        )
+        self._meta_table = pd.concat(
+            [
+                current_chunk.drop(
+                    columns=self.get_strong_columns() + self.get_weak_columns()
+                )
+                for current_chunk in self.chunk_iterator()
+            ],
+            ignore_index=True,
+        )
+
+        self._meta_table[self.meta_table_id_col] = range(len(self._meta_table))
+        self._meta_table.set_index(keys=self.meta_table_id_col, inplace=True)
+
+    @property
+    def matched_constraints(self) -> Dict[str, ConstraintValue]:
+        """
+        Each constraint will get applied to each supported document on the sharepoint
+        """
+        return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
+
+    def all_entity_ids(self) -> List[int]:
+        return list(range(self.size))
+
+    def reference(self, element_id: int) -> Reference:
+        if element_id >= self.size:
+            _raise_unknown_doc_error(element_id)
+
+        filename = self.meta_table.iloc[element_id]["server_relative_url"].split(
+            sep="/"
+        )[-1]
+        return Reference(
+            document=self,
+            element_id=element_id,
+            text=f"filename: {filename}"
+            + (
+                f", page no: {self.meta_table.iloc[element_id]['page']}"
+                if self.meta_table.iloc[element_id]["page"] is not None
+                else ""
+            ),
+            source=self._source + "/" + filename,
+            metadata={
+                **self.meta_table.loc[element_id].to_dict(),
+                **self.doc_metadata,
+            },
+        )
+
+    @property
+    def meta_table(self) -> Optional[pd.DataFrame]:
+        return self._meta_table
+
+    def chunk_iterator(self) -> pd.DataFrame:
+        chunk_df = pd.DataFrame(
+            columns=[
+                self.strong_column,
+                self.weak_column,
+                "internal_doc_id",
+                "server_relative_url",
+                "page",
+            ]
+        )
+
+        for file_dict in self._connector.chunk_iterator():
+            chunk_df.drop(chunk_df.index, inplace=True)
+            temp_dfs = []
+            for server_relative_url, filepath in file_dict.items():
+                if filepath.endswith(".pdf"):
+                    doc = PDF(path=filepath, metadata=self.doc_metadata)
+                elif filepath.endswith(".docx"):
+                    doc = DOCX(path=filepath, metadata=self.doc_metadata)
+                else:
+                    doc = Unstructured(
+                        path=filepath,
+                        save_extra_info=self._save_extra_info,
+                        metadata=self.doc_metadata,
+                    )
+
+                df = doc.df
+                temp_df = pd.DataFrame(
+                    columns=chunk_df.columns.tolist(), index=range(doc.size)
+                )
+                strong_text, weak_text, internal_doc_id, page = zip(
+                    *[
+                        (
+                            doc.strong_text(i),
+                            doc.weak_text(i),
+                            i,
+                            doc.reference(i).metadata.get("page", None),
+                        )
+                        for i in range(doc.size)
+                    ]
+                )
+                temp_df[self.strong_column] = strong_text
+                temp_df[self.weak_column] = weak_text
+                temp_df["internal_doc_id"] = internal_doc_id
+                temp_df["server_relative_url"] = [server_relative_url] * len(df)
+                temp_df["page"] = page
+
+                temp_dfs.append(temp_df)
+
+            chunk_df = pd.concat(temp_dfs, ignore_index=True)
+            yield chunk_df
+
+    def _get_connector_object_name(self):
+        return "_connector"
+
+    @staticmethod
+    def dummy_query(ctx: ClientContext):
+        # Authenticatiion fails if this dummy query execution fails
+        ctx.web.get().execute_query()
+
+    @staticmethod
+    def setup_clientContext(
+        base_url: str, credentials: Dict[str, str]
+    ) -> ClientContext:
+        """
+        Method to create a ClientContext object given base_url and credentials in the form (username, password) OR (client_id, client_secret)
+        """
+        ctx = None
+        try:
+            if all([cred in credentials.keys() for cred in ("username", "password")]):
+                user_credentials = UserCredential(
+                    user_name=credentials["username"], password=credentials["password"]
+                )
+                ctx = ClientContext(base_url=base_url).with_credentials(
+                    user_credentials
+                )
+            SharePoint.dummy_query(ctx=ctx)
+        except Exception as userCredError:
+            try:
+                if all(
+                    [
+                        cred in credentials.keys()
+                        for cred in ("client_id", "client_secret")
+                    ]
+                ):
+                    client_credentials = ClientCredential(
+                        client_id=credentials["client_id"],
+                        client_secret=credentials["client_secret"],
+                    )
+                    ctx = ClientContext(base_url=base_url).with_credentials(
+                        client_credentials
+                    )
+                    SharePoint.dummy_query(ctx=ctx)
+            except Exception as clientCredError:
+                pass
+
+        if ctx:
+            return ctx
+        raise AttributeError("Incorrect or insufficient credentials")
+
+
 class SentenceLevelExtracted(Extracted):
     """Parses a document into sentences and creates a NeuralDB entry for each
     sentence. The strong column of the entry is the sentence itself while the
@@ -858,6 +1477,9 @@ class SentenceLevelExtracted(Extracted):
     @property
     def size(self) -> int:
         return len(self.df)
+
+    def get_strong_columns(self):
+        return ["sentence"]
 
     @property
     def name(self) -> str:

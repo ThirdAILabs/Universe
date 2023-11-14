@@ -11,6 +11,7 @@
 #include <pybind11/pybind11.h>
 #include <filesystem>
 #include <istream>
+#include <stdexcept>
 
 namespace py = pybind11;
 
@@ -30,7 +31,8 @@ class SeismicBase {
       size_t batch_size, const std::vector<callbacks::CallbackPtr>& callbacks,
       std::optional<uint32_t> log_interval, const DistributedCommPtr& comm);
 
-  NumpyArray embeddingsForPatches(const NumpyArray& subcubes);
+  py::object embeddingsForPatches(const NumpyArray& subcubes,
+                                  bool sparse_inference);
 
   const Shape& subcubeShape() const { return _input_shape_data.subcubeShape(); }
 
@@ -44,11 +46,7 @@ class SeismicBase {
 
   ModelPtr getModel() const { return _model; }
 
-  void setModel(ModelPtr model) {
-    _model = std::move(model);
-    auto computations = _model->computationOrderWithoutInputs();
-    _emb = computations.at(computations.size() - 2);
-  }
+  virtual void setModel(ModelPtr model);
 
   size_t labelDim() const {
     auto label_dims = _model->labelDims();
@@ -68,9 +66,9 @@ class SeismicBase {
 
   ModelPtr _model;
 
- private:
   ComputationPtr _emb;
 
+ private:
   InputShapeData _input_shape_data;
 
   friend class cereal::access;

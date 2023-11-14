@@ -16,13 +16,11 @@ class ArchiveMap final : public Archive {
     return std::make_shared<ArchiveMap>();
   }
 
-  bool contains(const std::string& key) const final {
-    return _map.count(cipher(key));
-  }
+  bool contains(const std::string& key) const final { return _map.count(key); }
 
   const ConstArchivePtr& get(const std::string& key) const final {
     if (contains(key)) {
-      return _map.at(cipher(key));
+      return _map.at(key);
     }
     throw std::out_of_range("Map contains no value for key '" + key + "'.");
   }
@@ -31,7 +29,7 @@ class ArchiveMap final : public Archive {
     if (contains(key)) {
       throw std::runtime_error("Found duplicate entry for key in Archive Map.");
     }
-    _map[cipher(key)] = std::move(archive);
+    _map[key] = std::move(archive);
   }
 
   size_t size() const { return _map.size(); }
@@ -43,18 +41,6 @@ class ArchiveMap final : public Archive {
   std::string type() const final { return "Map"; }
 
  private:
-  static std::string cipher(const std::string& key) {
-    // os.urandom(8).hex()
-    const uint8_t keys[8] = {0x23, 0xbf, 0x35, 0xe9, 0x14, 0xd6, 0x88, 0x42};
-
-    std::string out;
-    for (size_t i = 0; i < key.size(); i++) {
-      out.push_back(key[i] ^ keys[i % sizeof(keys)]);
-    }
-
-    return out;
-  }
-
   std::unordered_map<std::string, ConstArchivePtr> _map;
 
   friend class cereal::access;

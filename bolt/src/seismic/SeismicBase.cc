@@ -60,10 +60,11 @@ metrics::History SeismicBase::trainOnPatches(
   return metrics;
 }
 
-NumpyArray SeismicBase::embeddingsForPatches(const NumpyArray& subcubes) {
+py::object SeismicBase::embeddingsForPatches(const NumpyArray& subcubes,
+                                             bool sparse_inference) {
   auto batch = convertToBatches(subcubes, subcubes.shape(0)).at(0);
 
-  _model->forward(batch);
+  _model->forward(batch, sparse_inference);
 
   return python::tensorToNumpy(_emb->tensor(),
                                /* single_row_to_vector= */ false);
@@ -102,6 +103,19 @@ Dataset SeismicBase::convertToBatches(const NumpyArray& array,
   }
 
   return batches;
+}
+
+void SeismicBase::setModel(ModelPtr model) {
+  _model = std::move(model);
+  auto computations = _model->computationOrderWithoutInputs();
+  auto new_emb = computations.at(computations.size() - 2);
+  if (_emb && _emb->dim() != new_emb->dim()) {
+    throw std::runtime_error("Cannot set a model with embedding dimension " +
+                             std::to_string(new_emb->dim()) +
+                             " in place of a model with embedding dimension " +
+                             std::to_string(_emb->dim()));
+  }
+  _emb = new_emb;
 }
 
 template void SeismicBase::serialize(cereal::BinaryInputArchive&, uint32_t);
