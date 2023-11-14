@@ -53,9 +53,7 @@ def get_salesforce_instance():
 
 
 def get_salesforce_object_name():
-    creds = get_creds()
-    sf_creds = creds["SalesForce"]
-    return sf_creds["object_name"]
+    return "Yelp_review__c"
 
 
 def get_base_connectors(doc):
