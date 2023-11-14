@@ -7,7 +7,7 @@ namespace thirdai::ar {
 /**
  * This is to make strings that we save in our binary archives not human
  * readable, to avoid users gleaning architecture details just from looking at
- * works in the binary, for instance "fully_connected", "dim", etc.
+ * keywords in the binary, for instance "fully_connected", "dim", etc.
  */
 inline std::string cipher(const std::string& key) {
   // os.urandom(8).hex()
