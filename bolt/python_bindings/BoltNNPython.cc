@@ -18,6 +18,7 @@
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
+#include <bolt/src/nn/ops/MaxPool1D.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/ops/PatchEmbedding.h>
 #include <bolt/src/nn/ops/PatchSum.h>
@@ -380,6 +381,10 @@ void defineOps(py::module_& nn) {
       .def(py::init(&WeightedSum::make), py::arg("n_chunks"),
            py::arg("chunk_size"))
       .def("__call__", &WeightedSum::apply);
+
+  py::class_<MaxPool1D, MaxPool1DPtr, Op>(nn, "MaxPool1D")
+      .def(py::init(&MaxPool1D::make), py::arg("window_size"))
+      .def("__call__", &MaxPool1D::apply);
 
   nn.def("Input", &Input::make, py::arg("dim"));
 }
