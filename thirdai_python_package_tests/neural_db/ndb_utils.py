@@ -73,7 +73,7 @@ LIBRARY_PATH = base.get_library_path()
 
 # SalesForce Connector attributes
 SF_INSTANCE = base.get_salesforce_instance()
-OBJECT_NAME = "Yelp_review__c"
+OBJECT_NAME = base.get_salesforce_object_name()
 
 CSV_EXPLICIT_META = "csv-explicit"
 PDF_META = "pdf"

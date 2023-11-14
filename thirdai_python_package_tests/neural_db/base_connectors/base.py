@@ -52,6 +52,12 @@ def get_salesforce_instance():
     return Salesforce(**sf_creds)
 
 
+def get_salesforce_object_name():
+    creds = get_creds()
+    sf_creds = creds["SalesForce"]
+    return sf_creds["object_name"]
+
+
 def get_base_connectors(doc):
     if isinstance(doc, ndb.SQLDatabase):
         return get_sql_engine()

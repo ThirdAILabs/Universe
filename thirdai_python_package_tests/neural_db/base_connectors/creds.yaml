@@ -9,3 +9,4 @@ SalesForce:
   username: "gautamusernam@thirdai.com"
   password: "PASSWORD3eye"
   security_token: "iMUS0ixviqXpBIKE32QVxm5Xy"
+  object_name: "Yelp_review__c"
