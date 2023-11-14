@@ -301,8 +301,7 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("text_column"), py::arg("label_column"), py::arg("lrc_len"),
            py::arg("irc_len"), py::arg("src_len"), py::arg("vocab_size"),
            py::arg("n_labels"), py::arg("delimiter") = ',',
-           py::arg("label_delimiter") = ":",
-           py::arg("integer_labels") = false,
+           py::arg("label_delimiter") = ":", py::arg("integer_labels") = false,
            py::arg("normalize_categories") = true);
 
 #endif

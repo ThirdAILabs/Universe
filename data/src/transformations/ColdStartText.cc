@@ -163,7 +163,10 @@ std::vector<std::string> ColdStartTextAugmentation::augmentSingleRow(
     for (const auto& word : phrase) {
       output_text.append(word);
       count++;
-      if(count < total){
+
+      // This check make sure we dont have extra spaces at the end of data, for
+      // parseUtils::tokenIds to parse tokens without any issues.
+      if (count < total) {
         output_text.append(" ");
       }
     }
