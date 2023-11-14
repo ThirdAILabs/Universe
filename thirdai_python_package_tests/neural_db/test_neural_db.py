@@ -679,20 +679,21 @@ def test_neural_db_delete_document():
     assert result.text == "text: ice cream"
 
 
-def char4(sentence):
-    return [sentence[i : i + 4] for i in range(0, len(sentence) - 3, 2)]
-
-
-def custom_tokenize(sentence):
-    tokens = []
-    sentence = sentence.lower()
-    for word in sentence.split(" "):
-        if len(word) > 4:
-            tokens.extend(char4(word))
-    return set(tokens)
-
-
 def test_neural_db_rerank_search():
+    def char4(sentence):
+        return [sentence[i : i + 4] for i in range(0, len(sentence) - 3, 2)]
+
+    def custom_tokenize(sentence):
+        tokens = []
+        sentence = sentence.lower()
+        for word in sentence.split(" "):
+            if len(word) > 4:
+                tokens.extend(char4(word))
+        return set(tokens)
+    
+    def score(query_tokens, docs_tokens):
+        return len(query_tokens.intersection(docs_tokens))
+    
     db = ndb.NeuralDB("user")
     all_docs = [get_doc() for get_doc in all_local_doc_getters]
     db.insert(all_docs, train=False)
@@ -703,7 +704,8 @@ def test_neural_db_rerank_search():
     query_tokens = custom_tokenize(query)
     docs_tokens = [custom_tokenize(r.text) for r in results]
 
-    first_ranked_score = len(query_tokens.intersection(docs_tokens[0]))
-    last_ranked_score = len(query_tokens.intersection(docs_tokens[-1]))
-
-    assert first_ranked_score > last_ranked_score
+    for i in range(1, len(docs_tokens)):
+        prev_score = score(query_tokens, docs_tokens[i - 1])
+        cur_score = score(query_tokens, docs_tokens[i])
+        assert prev_score > cur_score
+        assert results[i - 1].score > results[i].score
