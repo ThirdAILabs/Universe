@@ -157,9 +157,15 @@ std::vector<std::string> ColdStartTextAugmentation::augmentSingleRow(
   for (const auto& phrase : phrases) {
     // Add (label, phrase) to the output data.
     std::string output_text;
+    size_t count = 0;
+    size_t total = phrase.size();
+
     for (const auto& word : phrase) {
       output_text.append(word);
-      output_text.append(" ");
+      count++;
+      if(count < total){
+        output_text.append(" ");
+      }
     }
     output_samples.push_back(output_text);
   }

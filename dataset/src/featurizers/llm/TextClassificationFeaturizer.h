@@ -33,6 +33,7 @@ class TextClassificationFeaturizer final : public Featurizer {
   void processHeader(const std::string& header) final {
     ColumnNumberMap column_numbers(header, _delimiter);
     _text_column.updateColumnNumber(column_numbers);
+    _label_column.updateColumnNumber(column_numbers);
     _label_block->updateColumnNumbers(column_numbers);
   }
 

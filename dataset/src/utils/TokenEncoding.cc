@@ -30,10 +30,8 @@ std::vector<uint32_t> ngrams(std::vector<uint32_t> tokens, uint32_t n) {
 
 std::vector<uint32_t> tokenIds(const std::string& line) {
   std::vector<uint32_t> tokens;
-
   const char* start = line.data();
   const char* line_end = line.data() + line.size();
-
   while (start != line_end) {
     char* end;
     tokens.push_back(std::strtoul(start, &end, /* base= */ 10));
