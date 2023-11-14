@@ -574,9 +574,9 @@ class NeuralDB:
         if rerank:
             ranker = thirdai.dataset.KeywordOverlapRanker()
             indices, scores = ranker.rank(query, [ref.text for ref in references])
+            references = [references[i] for i in indices]
             for i in range(len(references)):
                 references[i]._score = scores[i]
-            references = [references[i] for i in indices]
 
         return references
 

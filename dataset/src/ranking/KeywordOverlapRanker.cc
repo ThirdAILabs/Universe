@@ -53,13 +53,13 @@ std::unordered_set<std::string> KeywordOverlapRanker::findKeywords(
 float KeywordOverlapRanker::overlapScore(
     const std::unordered_set<std::string>& query_keywords,
     const std::unordered_set<std::string>& doc_keywords) {
-  uint32_t value = 0;
+  uint32_t score = 0;
   for (const auto& token : query_keywords) {
     if (doc_keywords.count(token)) {
-      value += 1;
+      score += 1;
     }
   }
-  return value;
+  return score;
 }
 
 }  // namespace thirdai::dataset::ranking
