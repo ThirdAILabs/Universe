@@ -35,7 +35,7 @@ std::unordered_set<std::string> KeywordOverlapRanker::findKeywords(
   }
 
   if (_replace_punct) {
-    string = text::replacePunctuation(string);
+    string = text::replacePunctuation(std::move(string));
   }
 
   std::vector<std::string> words = text::split(string, /* delimiter= */ ' ');

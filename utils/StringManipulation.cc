@@ -126,21 +126,19 @@ bool startsWith(const std::string& to_search_in, const std::string& prefix) {
   return std::string_view(to_search_in.data(), prefix.size()) == prefix;
 }
 
-std::string replacePunctuation(const std::string& input, char replace_char) {
-  std::string result = input;
+std::string replacePunctuation(std::string string, char replace_char) {
   std::replace_if(
-      result.begin(), result.end(),
+      string.begin(), string.end(),
       [](const char c) -> bool { return std::ispunct(c); }, replace_char);
-  return result;
+  return string;
 }
 
-std::string replaceNewlines(const std::string& input, char replace_char) {
-  std::string result = input;
+std::string replaceNewlines(std::string string, char replace_char) {
   std::replace_if(
-      result.begin(), result.end(),
+      string.begin(), string.end(),
       [](const char c) -> bool { return c == '\n' || c == '\r'; },
       replace_char);
-  return result;
+  return string;
 }
 
 /* HELPER METHODS FOR UNICODE STRINGS */

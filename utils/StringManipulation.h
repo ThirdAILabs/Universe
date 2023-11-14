@@ -59,13 +59,12 @@ bool startsWith(const std::string& to_search_in, const std::string& prefix);
 /**
  * Replaces punctuation characters in string with a given character.
  */
-std::string replacePunctuation(const std::string& input,
-                               char replace_char = ' ');
+std::string replacePunctuation(std::string string, char replace_char = ' ');
 
 /**
  * Replaces \n and \r characters in string with a given character.
  */
-std::string replaceNewlines(const std::string& input, char replace_char = ' ');
+std::string replaceNewlines(std::string string, char replace_char = ' ');
 
 /* HELPER METHODS FOR UNICODE STRINGS */
 
