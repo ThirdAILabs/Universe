@@ -7,6 +7,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 
 namespace thirdai::ar::tests {
@@ -97,11 +98,15 @@ TEST(ArchiveMapTests, Serialization) {
   ASSERT_EQ(loaded->getAs<Str>("bagel"), b->as<Str>());
   ASSERT_EQ(loaded->getAs<VecU32>("chart"), c->as<VecU32>());
 
-  std::unordered_set<ConstArchivePtr> visited;
+  std::unordered_map<std::string, ConstArchivePtr> visited;
   for (const auto& [k, v] : loaded->map()) {
-    ASSERT_FALSE(visited.count(v));
-    visited.insert(v);
+    ASSERT_FALSE(visited.count(k));
+    visited[k] = v;
   }
+
+  ASSERT_EQ(visited["apple"], a);
+  ASSERT_EQ(visited["bagel"], b);
+  ASSERT_EQ(visited["chart"], c);
 
   ASSERT_EQ(visited.size(), 3);
 }
