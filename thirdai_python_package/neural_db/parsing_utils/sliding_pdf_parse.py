@@ -8,11 +8,13 @@ import unidecode
 
 def get_fitz_blocks(filename):
     doc = fitz.open(filename)
-    return [
+    blocks = [
         {**block, "page_num": num}
         for num, page in enumerate(doc)
         for block in page.get_text("dict")["blocks"]
     ]
+    doc.close()
+    return blocks
 
 
 def remove_images(blocks):
@@ -24,7 +26,15 @@ def get_text_len(block):
 
 
 def remove_header_footer(blocks):
+    # Inspired by
     # https://github.com/pymupdf/PyMuPDF/discussions/2259#discussioncomment-6669190
+    # TL;DR:
+    # 1. Vectorize each block by their rectangle coordinates + length of text
+    # 2. Use DBSCAN to cheaply cluster these vectors
+    # 3. Only headers and footers are repetitive enough to form its own
+    # cluster, so they will have a unique label while the majority of blocks are
+    # classified as clusterless.
+    # 4. Remove blocks that belong to minority clusters.
     dbscan = DBSCAN()
     samples = np.array([(*block["bbox"], get_text_len(block)) for block in blocks])
     dbscan.fit(samples)
@@ -40,15 +50,18 @@ def remove_nonstandard_orientation(blocks):
         for line in block["lines"]:
             orient_to_count[line["dir"]] += 1
     #
-    standard_orientation = sorted(
+    sorted_count_orient_pairs = sorted(
         [(count, orient) for orient, count in orient_to_count.items()]
-    )[-1][1]
+    )
+    _count, most_frequent_orientation = sorted_count_orient_pairs[-1]
     #
     return [
         {
             **block,
             "lines": [
-                line for line in block["lines"] if line["dir"] == standard_orientation
+                line
+                for line in block["lines"]
+                if line["dir"] == most_frequent_orientation
             ],
         }
         for block in blocks
@@ -112,7 +125,7 @@ def get_lines(blocks):
 
 
 def set_line_text(lines):
-    """Assums span texts are stripped of leading and trailing whitespaces."""
+    """Assumes span texts are stripped of leading and trailing whitespaces."""
     return [
         {**line, "text": " ".join(span["text"] for span in line["spans"])}
         for line in lines
@@ -120,7 +133,7 @@ def set_line_text(lines):
 
 
 def set_line_word_counts(lines):
-    """Assums line texts are set"""
+    """Assumes line texts are set"""
     return [{**line, "word_count": line["text"].count(" ") + 1} for line in lines]
 
 
@@ -160,11 +173,20 @@ def clean_encoding(text):
     return unidecode.unidecode(text.encode("utf-8", "replace").decode("utf-8"))
 
 
-def get_chunks(filename, chunk_words, stride_words, emphasize_first_n_words):
+def get_chunks(
+    filename,
+    chunk_words,
+    stride_words,
+    emphasize_first_n_words,
+    ignore_header_footer,
+    ignore_nonstandard_orientation,
+):
     blocks = get_fitz_blocks(filename)
     blocks = remove_images(blocks)
-    blocks = remove_header_footer(blocks)
-    blocks = remove_nonstandard_orientation(blocks)
+    if ignore_header_footer:
+        blocks = remove_header_footer(blocks)
+    if ignore_nonstandard_orientation:
+        blocks = remove_nonstandard_orientation(blocks)
     blocks = remove_empty_blocks(blocks)
     lines = get_lines(blocks)
     lines = set_line_text(lines)
@@ -175,9 +197,29 @@ def get_chunks(filename, chunk_words, stride_words, emphasize_first_n_words):
     return chunks, chunk_boxes, emphasis
 
 
-def make_df(filename, chunk_words, stride_words, emphasize_first_n_words):
+def make_df(
+    filename,
+    chunk_words,
+    stride_words,
+    emphasize_first_n_words,
+    ignore_header_footer,
+    ignore_nonstandard_orientation,
+):
+    """Arguments:
+    chunk_size: number of words in each chunk of text.
+    stride: number of words between each chunk of text.
+    emphasize_first_words: number of words at the beginning of the file
+        that will be used as strong column for all rows of the resulting
+        dataframe. We do this so that every row can capture important signals
+        like file titles or introductory paragraphs.
+    """
     chunks, chunk_boxes, emphasis = get_chunks(
-        filename, chunk_words, stride_words, emphasize_first_n_words
+        filename,
+        chunk_words,
+        stride_words,
+        emphasize_first_n_words,
+        ignore_header_footer,
+        ignore_nonstandard_orientation,
     )
     return pd.DataFrame(
         {

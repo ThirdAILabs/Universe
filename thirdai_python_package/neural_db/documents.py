@@ -552,6 +552,10 @@ class Extracted(Document):
         self.path = Path(path)
         self.doc_metadata = metadata
         self.strong_column = strong_column
+        if self.strong_column not in self.df.columns:
+            raise RuntimeError(
+                f"Strong column '{self.strong_column}' not found in the dataframe."
+            )
 
     def process_data(
         self,
@@ -580,7 +584,9 @@ class Extracted(Document):
 
     def strong_text(self, element_id: int) -> str:
         return (
-            "" if not self.strong_column else self.df["strong_column"].iloc[element_id]
+            ""
+            if not self.strong_column
+            else self.df[self.strong_column].iloc[element_id]
         )
 
     def weak_text(self, element_id: int) -> str:
@@ -694,12 +700,45 @@ class PDF(Extracted):
 
 
 class SlidingPDF(Extracted):
+    """Parses a PDF document into chunks of text that can be indexed by
+    NeuralDB.
+
+    Initialization arguments:
+        path: path to PDF file
+        chunk_size: number of words in each chunk of text. Defaults to 100
+        stride: number of words between each chunk of text. When stride <
+            chunk_size, the text chunks overlap. When stride = chunk_size, the
+            text chunks do not overlap. Defaults to 40 so adjacent chunks have a
+            60% overlap.
+        emphasize_first_words: number of words at the beginning of the document
+            to be passed into NeuralDB as a strong signal. For example, if your
+            document starts with a descriptive title that is 3 words long, then
+            you can set emphasize_first_words to 3 so that NeuralDB captures
+            this strong signal. Defaults to 0.
+        ignore_header_footer: whether the parser should remove headers and
+            footers. Defaults to True; headers and footers are removed by
+            default.
+        ignore_nonstandard_orientation: whether the parser should remove lines
+            of text that have a nonstandard orientation, such as margins that
+            are oriented vertically. Defaults to True; lines with nonstandard
+            orientation are removed by default.
+    """
+
     def __init__(
-        self, path: str, chunk_size=100, stride=50, emphasize_first_words=0, metadata={}
+        self,
+        path: str,
+        chunk_size=100,
+        stride=40,
+        emphasize_first_words=0,
+        ignore_header_footer=True,
+        ignore_nonstandard_orientation=True,
+        metadata={},
     ):
         self.chunk_size = chunk_size
         self.stride = stride
         self.emphasize_first_words = emphasize_first_words
+        self.ignore_header_footer = ignore_header_footer
+        self.ignore_nonstandard_orientation = ignore_nonstandard_orientation
         super().__init__(path=path, metadata=metadata, strong_column="emphasis")
 
     def process_data(
@@ -707,7 +746,12 @@ class SlidingPDF(Extracted):
         path: str,
     ) -> pd.DataFrame:
         return sliding_pdf_parse.make_df(
-            path, self.chunk_size, self.stride, self.emphasize_first_words
+            path,
+            self.chunk_size,
+            self.stride,
+            self.emphasize_first_words,
+            self.ignore_header_footer,
+            self.ignore_nonstandard_orientation,
         )
 
 
