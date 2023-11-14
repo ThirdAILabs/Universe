@@ -42,10 +42,12 @@ void WeightedSum::forward(const ComputationList& inputs, TensorPtr& output,
 
   const BoltVector& chunks_vec =
       inputs.at(0)->tensor()->getVector(index_in_batch);
-  assert(chunks.isDense());
+  assert(chunks_vec.isDense());
+  assert(chunks_vec.len == _n_chunks * _chunk_size);
 
   BoltVector& sum_vec = output->getVector(index_in_batch);
-  assert(sum.isDense());
+  assert(sum_vec.isDense());
+  assert(sum_vec.len == _chunk_size);
 
   EigenRowMajorArray weights(_weights.data(), _n_chunks, _chunk_size);
 
@@ -61,10 +63,12 @@ void WeightedSum::backpropagate(ComputationList& inputs, TensorPtr& output,
   assert(inputs.size() == 1);
 
   BoltVector& chunks_vec = inputs.at(0)->tensor()->getVector(index_in_batch);
-  assert(chunks.isDense());
+  assert(chunks_vec.isDense());
+  assert(chunks_vec.len == _n_chunks * _chunk_size);
 
   const BoltVector& sum_vec = output->getVector(index_in_batch);
-  assert(sum.isDense());
+  assert(sum_vec.isDense());
+  assert(sum_vec.len == _chunk_size);
 
   EigenVecArray sum_grad(sum_vec.gradients, _chunk_size);
 
