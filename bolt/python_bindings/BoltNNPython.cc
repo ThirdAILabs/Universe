@@ -22,6 +22,7 @@
 #include <bolt/src/nn/ops/PatchEmbedding.h>
 #include <bolt/src/nn/ops/PatchSum.h>
 #include <bolt/src/nn/ops/RobeZ.h>
+#include <bolt/src/nn/ops/WeightedSum.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
 #include <pybind11/cast.h>
@@ -374,6 +375,11 @@ void defineOps(py::module_& nn) {
       .def(py::init(&PatchSum::make), py::arg("n_patches"),
            py::arg("patch_dim"))
       .def("__call__", &PatchSum::apply);
+
+  py::class_<WeightedSum, WeightedSumPtr, Op>(nn, "WeightedSum")
+      .def(py::init(&WeightedSum::make), py::arg("n_chunks"),
+           py::arg("chunk_size"))
+      .def("__call__", &WeightedSum::apply);
 
   nn.def("Input", &Input::make, py::arg("dim"));
 }
