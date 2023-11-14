@@ -2,6 +2,9 @@ import hashlib
 import math
 import random
 
+DIRECTORY_CONNECTOR_SUPPORTED_EXT = ["pdf", "docx", "pptx", "txt", "eml"]
+SUPPORTED_EXT = ["csv"] + DIRECTORY_CONNECTOR_SUPPORTED_EXT
+
 
 def clean_text(text):
     return text.encode("utf-8", "replace").decode("utf-8").lower()
