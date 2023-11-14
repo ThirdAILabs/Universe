@@ -22,7 +22,7 @@ void MaxPool1D::forward(const ComputationList& inputs, TensorPtr& output,
   const BoltVector& input_vec =
       inputs.at(0)->tensor()->getVector(index_in_batch);
   assert(input_vec.isDense());
-  assert(input_vec.len % window_size == 0);
+  assert(input_vec.len % _window_size == 0);
 
   BoltVector& output_vec = output->getVector(index_in_batch);
   assert(output_vec.isDense());
@@ -49,7 +49,7 @@ void MaxPool1D::backpropagate(ComputationList& inputs, TensorPtr& output,
 
   BoltVector& input_vec = inputs.at(0)->tensor()->getVector(index_in_batch);
   assert(input_vec.isDense());
-  assert(input_vec.len % window_size == 0);
+  assert(input_vec.len % _window_size == 0);
 
   if (!input_vec.hasGradients()) {
     return;
