@@ -257,33 +257,6 @@ def docs_with_meta():
         ndb.Unstructured(PPTX_FILE, metadata=meta(PPTX_META)),
         ndb.Unstructured(TXT_FILE, metadata=meta(TXT_META)),
         ndb.Unstructured(EML_FILE, metadata=meta(EML_META)),
-<<<<<<< HEAD
-        ndb.SQLDatabase(
-            engine=ENGINE,
-            table_name=TABLE_NAME,
-            id_col="id",
-            strong_columns=["content"],
-            weak_columns=["content"],
-            reference_columns=["content"],
-            chunk_size=3,
-            metadata=meta(SQL_META),
-        ),
-        ndb.SharePoint(
-            ctx=CLIENT_CONTEXT,
-            library_path=LIBRARY_PATH,
-            metadata=meta(SHAREPOINT_META),
-        ),
-        ndb.SalesForce(
-            instance=SF_INSTANCE,
-            object_name=OBJECT_NAME,
-            id_col="ID__c",
-            strong_columns=["Review__c"],
-            weak_columns=["Review__c"],
-            reference_columns=["Review__c"],
-            metadata=meta(SALESFORCE_META),
-        ),
-=======
->>>>>>> origin/main
         ndb.SentenceLevelPDF(PDF_FILE, metadata=meta(SENTENCE_PDF_META)),
         ndb.SentenceLevelDOCX(DOCX_FILE, metadata=meta(SENTENCE_DOCX_META)),
     ]
@@ -297,12 +270,6 @@ metadata_constraints = [
     PPTX_META,
     TXT_META,
     EML_META,
-<<<<<<< HEAD
-    SQL_META,
-    SHAREPOINT_META,
-    SALESFORCE_META,
-=======
->>>>>>> origin/main
     SENTENCE_PDF_META,
     SENTENCE_DOCX_META,
 ]
