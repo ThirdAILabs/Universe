@@ -11,11 +11,11 @@ namespace thirdai::ar {
  */
 inline std::string cipher(const std::string& key) {
   // os.urandom(8).hex()
-  const uint8_t keys[8] = {0x23, 0xbf, 0x35, 0xe9, 0x14, 0xd6, 0x88, 0x42};
+  const uint8_t seeds[8] = {0x23, 0xbf, 0x35, 0xe9, 0x14, 0xd6, 0x88, 0x42};
 
   std::string out;
   for (size_t i = 0; i < key.size(); i++) {
-    out.push_back(key[i] ^ keys[i % sizeof(keys)]);
+    out.push_back(key[i] ^ seeds[i % sizeof(seeds)]);
   }
 
   return out;
