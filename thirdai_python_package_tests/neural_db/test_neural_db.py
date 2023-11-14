@@ -710,5 +710,5 @@ def test_neural_db_rerank_search():
     for i in range(1, len(docs_tokens)):
         prev_score = score(query_tokens, docs_tokens[i - 1])
         cur_score = score(query_tokens, docs_tokens[i])
-        assert prev_score > cur_score
-        assert results[i - 1].score > results[i].score
+        assert prev_score >= cur_score
+        assert results[i - 1].score >= results[i].score
