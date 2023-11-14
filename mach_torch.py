@@ -98,7 +98,7 @@ class MachModel(nn.Module):
         super().__init__()
 
         self.emb = nn.EmbeddingBag(num_embeddings=input_dim, embedding_dim=emb_dim)
-        self.emb_bias = nn.Parameter(torch.empty(1024))
+        self.emb_bias = nn.Parameter(torch.empty(emb_dim))
         nn.init.normal_(self.emb_bias, mean=0, std=0.01)
 
         self.output = nn.Linear(in_features=emb_dim, out_features=output_dim)
@@ -260,7 +260,7 @@ class Mach:
         for i in range(0, len(columns), batch_size):
             label_batches.append(columns[self.entity_col].data()[i : i + batch_size])
 
-        top_k = max(max(recall_at), max(precision_at))
+        top_k = max(recall_at + precision_at)
 
         metrics = [Recall(k) for k in recall_at] + [Precision(k) for k in precision_at]
 
@@ -346,4 +346,5 @@ def trec_covid():
 
 
 if __name__ == "__main__":
-    scifact()
+    # scifact()
+    trec_covid()
