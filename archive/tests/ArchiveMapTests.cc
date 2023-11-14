@@ -1,19 +1,13 @@
 #include <gtest/gtest.h>
 #include <archive/src/Archive.h>
 #include <archive/src/ArchiveMap.h>
-<<<<<<< HEAD
-=======
 #include <archive/src/StringCipher.h>
->>>>>>> 943361c25720e736bed9e6d22dbafa6fd6dcf771
 #include <archive/tests/Utils.h>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
-<<<<<<< HEAD
-=======
 #include <unordered_map>
->>>>>>> 943361c25720e736bed9e6d22dbafa6fd6dcf771
 #include <unordered_set>
 
 namespace thirdai::ar::tests {
@@ -27,15 +21,9 @@ simpleMap() {
   auto b = str("hello");
   auto c = vecU32({1, 2, 3});
 
-<<<<<<< HEAD
-  map->set("a", a);
-  map->set("b", b);
-  map->set("c", c);
-=======
   map->set("apple", a);
   map->set("bagel", b);
   map->set("chart", c);
->>>>>>> 943361c25720e736bed9e6d22dbafa6fd6dcf771
 
   return {map, a, b, c};
 }
@@ -45,18 +33,6 @@ TEST(ArchiveMapTests, MapAccessing) {
 
   ASSERT_EQ(map->size(), 3);
 
-<<<<<<< HEAD
-  ASSERT_TRUE(map->contains("a"));
-  ASSERT_TRUE(map->contains("b"));
-  ASSERT_TRUE(map->contains("c"));
-
-  ASSERT_EQ(map->get("a"), a);
-  ASSERT_EQ(map->get("b"), b);
-  ASSERT_EQ(map->get("c"), c);
-
-  ASSERT_EQ(map->getAs<std::string>("b"), "hello");
-  CHECK_EXCEPTION(map->getAs<F32>("b"),
-=======
   ASSERT_TRUE(map->contains("apple"));
   ASSERT_TRUE(map->contains("bagel"));
   ASSERT_TRUE(map->contains("chart"));
@@ -67,33 +43,21 @@ TEST(ArchiveMapTests, MapAccessing) {
 
   ASSERT_EQ(map->getAs<std::string>("bagel"), "hello");
   CHECK_EXCEPTION(map->getAs<F32>("bagel"),
->>>>>>> 943361c25720e736bed9e6d22dbafa6fd6dcf771
                   "Attempted to convert archive of type 'Value[std::string]' "
                   "to type 'Value[float]'.",
                   std::runtime_error)
 
   ASSERT_EQ(map->getOpt<U64>("x"), std::nullopt);
-<<<<<<< HEAD
-  ASSERT_TRUE(map->getOpt<U64>("a").has_value());
-  ASSERT_EQ(map->getOpt<U64>("a"), 10);
-  CHECK_EXCEPTION(map->getOpt<F32>("b"),
-=======
   ASSERT_TRUE(map->getOpt<U64>("apple").has_value());
   ASSERT_EQ(map->getOpt<U64>("apple"), 10);
   CHECK_EXCEPTION(map->getOpt<F32>("bagel"),
->>>>>>> 943361c25720e736bed9e6d22dbafa6fd6dcf771
                   "Attempted to convert archive of type 'Value[std::string]' "
                   "to type 'Value[float]'.",
                   std::runtime_error)
 
   ASSERT_EQ(map->getOr<U64>("x", 800), 800);
-<<<<<<< HEAD
-  ASSERT_EQ(map->getOr<U64>("a", 200), 10);
-  CHECK_EXCEPTION(map->getOr<F32>("b", 4.4),
-=======
   ASSERT_EQ(map->getOr<U64>("apple", 200), 10);
   CHECK_EXCEPTION(map->getOr<F32>("bagel", 4.4),
->>>>>>> 943361c25720e736bed9e6d22dbafa6fd6dcf771
                   "Attempted to convert archive of type 'Value[std::string]' "
                   "to type 'Value[float]'.",
                   std::runtime_error)
@@ -135,19 +99,6 @@ TEST(ArchiveMapTests, Serialization) {
 
   ASSERT_EQ(loaded->map().size(), 3);
 
-<<<<<<< HEAD
-  ASSERT_EQ(loaded->getAs<U64>("a"), a->as<U64>());
-  ASSERT_EQ(loaded->getAs<Str>("b"), b->as<Str>());
-  ASSERT_EQ(loaded->getAs<VecU32>("c"), c->as<VecU32>());
-
-  std::unordered_set<ConstArchivePtr> visited;
-  for (const auto& [k, v] : loaded->map()) {
-    ASSERT_FALSE(visited.count(v));
-    visited.insert(v);
-  }
-
-  ASSERT_EQ(visited.size(), 3);
-=======
   ASSERT_EQ(loaded->getAs<U64>("apple"), a->as<U64>());
   ASSERT_EQ(loaded->getAs<Str>("bagel"), b->as<Str>());
   ASSERT_EQ(loaded->getAs<VecU32>("chart"), c->as<VecU32>());
@@ -180,7 +131,6 @@ TEST(ArchiveMapTests, StringKeysAreHidden) {
   ASSERT_NE(serialized.find(cipher("apple")), std::string::npos);
   ASSERT_NE(serialized.find(cipher("bagel")), std::string::npos);
   ASSERT_NE(serialized.find(cipher("chart")), std::string::npos);
->>>>>>> 943361c25720e736bed9e6d22dbafa6fd6dcf771
 }
 
 }  // namespace thirdai::ar::tests
