@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 #include <archive/src/Archive.h>
 #include <archive/src/ArchiveValue.h>
+#include <archive/src/StringCipher.h>
 #include <archive/tests/Utils.h>
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <type_traits>
 #include <unordered_map>
 
 namespace thirdai::ar::tests {
@@ -64,6 +64,19 @@ TEST(ArchiveValueTests, TestFloat) {
 TEST(ArchiveValueTests, TestString) {
   testArchiveValue<std::string, uint64_t>("apple");
   testArchiveValue<std::string, uint64_t>("banana");
+}
+
+TEST(ArchiveValueTests, StringValuesAreHidden) {
+  auto str_archive = str("pineapple");
+
+  std::stringstream buffer;
+  serialize(str_archive, buffer);
+
+  std::string serialized = buffer.str();
+
+  ASSERT_EQ(serialized.find("pineapple"), std::string::npos);
+
+  ASSERT_NE(serialized.find(cipher("pineapple")), std::string::npos);
 }
 
 TEST(ArchiveValueTests, TestVecUint32) {
