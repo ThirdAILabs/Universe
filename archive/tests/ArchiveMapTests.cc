@@ -110,6 +110,10 @@ TEST(ArchiveMapTests, Serialization) {
   }
 
   ASSERT_EQ(visited.size(), 3);
+
+  ASSERT_TRUE(visited.count("apple"));
+  ASSERT_TRUE(visited.count("bagel"));
+  ASSERT_TRUE(visited.count("chart"));
 }
 
 TEST(ArchiveMapTests, StringKeysAreHidden) {
