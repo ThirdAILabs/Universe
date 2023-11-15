@@ -197,7 +197,7 @@ LayerNorm::LayerNorm(const ar::Archive& archive)
       _gamma(archive.get("gamma")->param().moveLoadedParameter()),
       _beta(archive.get("beta")->param().moveLoadedParameter()) {
   if (archive.contains("gamma_opt")) {
-    _gamma_optimizer = optimizerFromArchive(*archive.get("beta_opt"));
+    _gamma_optimizer = optimizerFromArchive(*archive.get("gamma_opt"));
   }
   if (archive.contains("beta_opt")) {
     _beta_optimizer = optimizerFromArchive(*archive.get("beta_opt"));

@@ -447,6 +447,7 @@ ar::ConstArchivePtr Model::toArchive(bool with_optimizer) const {
     comp_ar->set("name", ar::str(comp->name()));
     comp_ar->set("op", ar::str(comp->op()->name()));
     comp_ar->set("inputs", ar::vecStr(comp->inputNames()));
+    computations->append(comp_ar);
   }
   model->set("computations", computations);
 

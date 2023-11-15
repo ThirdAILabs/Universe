@@ -69,7 +69,7 @@ EmbeddingLayer::EmbeddingLayer(const ar::Archive& archive)
       _log_embedding_block_size(archive.u64("log_embedding_block_size")),
       _update_chunk_size(archive.u64("update_chunk_size")),
       _reduction(reductionFromString(archive.str("reduction"))),
-      _num_tokens_per_input(archive.u64("num_tokens_per_input")),
+      _num_tokens_per_input(archive.getOpt<ar::U64>("num_tokens_per_input")),
       _hash_fn(archive.u64("hash_seed")),
       _embedding_block(archive.get("embeddings")->param().loadedParameter()),
       _disable_sparse_parameter_updates(

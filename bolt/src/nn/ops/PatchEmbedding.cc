@@ -160,7 +160,7 @@ ar::ConstArchivePtr PatchEmbedding::toArchive(bool with_optimizer) const {
 
   map->set("neuron_index", neuronIndexToArchive(_kernel->neuronIndex()));
   map->set("index_frozen", ar::boolean(_kernel->_index_frozen));
-  map->set("rebuild_hash_table", ar::u64(_rebuild_hash_tables));
+  map->set("rebuild_hash_tables", ar::u64(_rebuild_hash_tables));
   map->set("reconstruct_hash_functions", ar::u64(_reconstruct_hash_functions));
 
   if (with_optimizer && _kernel->_weight_optimizer &&

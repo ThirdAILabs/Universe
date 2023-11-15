@@ -128,9 +128,13 @@ std::vector<std::vector<float>*> FullyConnected::parameters() {
 }
 
 ComputationPtr FullyConnected::applyToInputs(const ComputationList& inputs) {
-  if (inputs.size() != 2) {
+  // Can have a second input for labels if the output layer. This is only passed
+  // into the apply method when rebuilding the computation graph after
+  // deserialization. We can just ignore it here because the model will match
+  // the sparse output layer with the corresponding labels.
+  if (inputs.size() != 1 && inputs.size() != 2) {
     throw std::invalid_argument(
-        "Expected FullyConnected op to have one input.");
+        "Expected FullyConnected op to have one or input.");
   }
   return apply(inputs.at(0));
 }
@@ -155,7 +159,7 @@ ar::ConstArchivePtr FullyConnected::toArchive(bool with_optimizer) const {
 
   map->set("neuron_index", neuronIndexToArchive(_kernel->neuronIndex()));
   map->set("index_frozen", ar::boolean(_kernel->_index_frozen));
-  map->set("rebuild_hash_table", ar::u64(_rebuild_hash_tables));
+  map->set("rebuild_hash_tables", ar::u64(_rebuild_hash_tables));
   map->set("reconstruct_hash_functions", ar::u64(_reconstruct_hash_functions));
 
   if (with_optimizer && _kernel->_weight_optimizer &&

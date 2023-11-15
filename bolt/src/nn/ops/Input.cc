@@ -78,7 +78,7 @@ void Input::enableSparseParameterUpdates() {}
 void Input::summary(std::ostream& summary, const ComputationList& inputs,
                     const Computation* output) const {
   (void)inputs;
-  summary << "Input(" << name() << ") -> " << output->name()
+  summary << "Input -> " << output->name()
           << " [dim=" << dim() << "]";
 }
 

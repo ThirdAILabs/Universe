@@ -198,7 +198,7 @@ void Embedding::initOptimizer() {
 }
 
 ComputationPtr Embedding::applyToInputs(const ComputationList& inputs) {
-  if (inputs.size() != 2) {
+  if (inputs.size() != 1) {
     throw std::invalid_argument("Expected Embedding op to have one input.");
   }
   return apply(inputs.at(0));
@@ -248,7 +248,8 @@ Embedding::Embedding(const ar::Archive& archive)
       _embeddings(archive.get("embeddings")->param().moveLoadedParameter()),
       _biases(archive.get("biases")->param().moveLoadedParameter()),
       _disable_sparse_parameter_updates(
-          archive.boolean("disable_sparse_parameter_updates")) {
+          archive.boolean("disable_sparse_parameter_updates")),
+      _embeddings_used(archive.u64("input_dim"), false) {
   if (archive.contains("embedding_opt")) {
     _embedding_optimizer = optimizerFromArchive(*archive.get("embedding_opt"));
   }

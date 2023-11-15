@@ -152,7 +152,7 @@ ar::ConstArchivePtr DWTAHashFunction::toArchive() const {
   map->set("hashes_per_table", ar::u64(_hashes_per_table));
   map->set("log_binsize", ar::u64(_log_binsize));
   map->set("input_dim", ar::u64(_dim));
-  map->set("permuatations", ar::u64(_permute));
+  map->set("permutations", ar::u64(_permute));
 
   map->set("bin_map", ar::vecU32(_bin_map));
   map->set("positions", ar::vecU32(_positions));
