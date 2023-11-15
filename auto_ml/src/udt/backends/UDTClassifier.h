@@ -11,6 +11,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <dataset/src/featurizers/llm/TextClassificationFeaturizer.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -24,6 +25,7 @@ class UDTClassifier final : public UDTBackend {
       uint32_t n_target_classes, bool integer_target,
       const TabularOptions& tabular_options,
       const std::optional<std::string>& model_config,
+    std::optional<dataset::TextClassificationFeaturizerPtr> text_featurizer,
       const config::ArgumentMap& user_args);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
@@ -142,6 +144,8 @@ class UDTClassifier final : public UDTBackend {
 
   dataset::ThreadSafeVocabularyPtr _class_name_to_neuron;
   dataset::CategoricalBlockPtr _label_block;
+  std::optional<dataset::TextClassificationFeaturizerPtr>
+      _text_classification_featurizer;
 
   utils::ClassifierPtr _classifier;
 

@@ -33,6 +33,7 @@ UDTClassifier::UDTClassifier(
     uint32_t n_target_classes, bool integer_target,
     const TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
+    std::optional<dataset::TextClassificationFeaturizerPtr> text_featurizer,
     const config::ArgumentMap& user_args)
     : _classifier(utils::Classifier::make(
           utils::buildModel(
@@ -54,6 +55,7 @@ UDTClassifier::UDTClassifier(
       input_data_types, temporal_tracking_relationships,
       {dataset::BlockList({_label_block})}, std::set<std::string>{target_name},
       tabular_options, force_parallel);
+  _text_classification_featurizer = text_featurizer;
 }
 
 py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
@@ -66,13 +68,24 @@ py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
                                 const bolt::DistributedCommPtr& comm) {
   dataset::DatasetLoaderPtr val_dataset_loader;
   if (val_data) {
-    val_dataset_loader =
-        _dataset_factory->getLabeledDatasetLoader(val_data,
-                                                  /* shuffle= */ false);
+    if (_text_classification_featurizer) {
+      val_dataset_loader = _dataset_factory->makeDataLoaderCustomFeaturizer(
+          val_data, false, *_text_classification_featurizer);
+    } else {
+      val_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
+          val_data, /* shuffle= */ false,
+          /* shuffle_config= */ options.shuffle_config);
+    }
   }
-
-  auto train_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
-      data, /* shuffle= */ true, /* shuffle_config= */ options.shuffle_config);
+  dataset::DatasetLoaderPtr train_dataset_loader;
+  if (_text_classification_featurizer) {
+    train_dataset_loader = _dataset_factory->makeDataLoaderCustomFeaturizer(
+        data, true, *_text_classification_featurizer);
+  } else {
+    train_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
+        data, /* shuffle= */ true,
+        /* shuffle_config= */ options.shuffle_config);
+  }
 
   return _classifier->train(train_dataset_loader, learning_rate, epochs,
                             train_metrics, val_dataset_loader, val_metrics,
@@ -128,10 +141,15 @@ py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
                                    std::optional<uint32_t> top_k) {
   (void)top_k;
 
-  auto dataset =
-      _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ false);
-
-  return _classifier->evaluate(dataset, metrics, sparse_inference, verbose);
+  dataset::DatasetLoaderPtr eval_dataset_loader;
+  if (_text_classification_featurizer) {
+    eval_dataset_loader = _dataset_factory->makeDataLoaderCustomFeaturizer(
+        data, false, *_text_classification_featurizer);
+  } else {
+    eval_dataset_loader =
+        _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ false);
+  }
+  return _classifier->evaluate(eval_dataset_loader, metrics, sparse_inference, verbose);
 }
 
 py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,

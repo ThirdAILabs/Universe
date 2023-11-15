@@ -177,7 +177,6 @@ py::object UDTMachClassifier::train(
     const bolt::DistributedCommPtr& comm) {
   dataset::DatasetLoaderPtr val_dataset_loader;
   if (val_data) {
-    dataset::DatasetLoaderPtr val_dataset_loader;
     if (_text_classification_featurizer) {
       val_dataset_loader = _dataset_factory->makeDataLoaderCustomFeaturizer(
           val_data, false, *_text_classification_featurizer);

@@ -86,7 +86,7 @@ UDT::UDT(
       _backend = std::make_unique<UDTClassifier>(
           data_types, temporal_tracking_relationships, target_col,
           as_categorical, n_target_classes.value(), integer_target,
-          tabular_options, model_config, user_args);
+          tabular_options, model_config, text_featurizer, user_args);
     }
   } else if (as_numerical && !has_graph_inputs) {
     _backend = std::make_unique<UDTRegression>(
