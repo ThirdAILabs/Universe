@@ -240,6 +240,8 @@ class Model : public std::enable_shared_from_this<Model> {
 
   ar::ConstArchivePtr toArchive(bool with_optimizer) const;
 
+  static std::shared_ptr<Model> fromArchive(const ar::Archive& archive);
+
   /**
    * Helper function to save the model to a stream.
    */

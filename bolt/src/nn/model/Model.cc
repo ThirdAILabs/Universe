@@ -5,6 +5,7 @@
 #include <bolt/src/nn/autograd/ComputationGraph.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/ops/Switch.h>
 #include <bolt/src/nn/tensor/Tensor.h>
@@ -475,6 +476,77 @@ ar::ConstArchivePtr Model::toArchive(bool with_optimizer) const {
   metadata->set("total_training_samples", ar::u64(_total_training_samples));
   metadata->set("uuid", ar::str(_model_uuid));
   model->set("metadata", metadata);
+
+  return model;
+}
+
+std::shared_ptr<Model> Model::fromArchive(const ar::Archive& archive) {
+  /**
+   * Ops
+   */
+  std::unordered_map<std::string, OpPtr> ops;
+  for (const auto& op : archive.get("ops")->list()) {
+    ops[op->str("name")] = Op::fromArchive(*op);
+  }
+
+  std::unordered_map<std::string, ComputationPtr> computations;
+
+  /**
+   * Inputs
+   */
+  ComputationList inputs;
+  for (const auto& input_ar : archive.get("inputs")->list()) {
+    auto input = Input::make(input_ar->u64("dim"));
+    inputs.push_back(input);
+    computations[input_ar->str("name")] = input;
+  }
+
+  /**
+   * Labels
+   */
+  for (const auto& label_ar : archive.get("labels")->list()) {
+    auto label = Input::make(label_ar->u64("dim"));
+    computations[label_ar->str("name")] = label;
+  }
+
+  /**
+   * Computations
+   */
+  for (const auto& comp : archive.get("computations")->list()) {
+    ComputationList inputs;
+    for (const auto& input : comp->getAs<ar::VecStr>("inputs")) {
+      inputs.push_back(computations.at(input));
+    }
+
+    auto& op = ops[comp->str("op")];
+    computations[comp->str("name")] = op->applyToInputs(inputs);
+  }
+
+  /**
+   * Losses
+   */
+  std::vector<LossPtr> losses;
+  for (const auto& loss : archive.get("losses")->list()) {
+    losses.push_back(Loss::fromArchive(*loss, computations));
+  }
+
+  /**
+   * Outputs
+   */
+  ComputationList outputs;
+  for (const auto& output : archive.getAs<ar::VecStr>("outputs")) {
+    outputs.push_back(computations.at(output));
+  }
+
+  auto model = Model::make(inputs, outputs, losses);
+
+  /**
+   * Metadata
+   */
+  auto metadata = archive.get("metadata");
+  model->_model_uuid = metadata->str("uuid");
+  model->_train_steps = metadata->u64("train_steps");
+  model->_total_training_samples = metadata->u64("total_training_samples");
 
   return model;
 }

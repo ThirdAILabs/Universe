@@ -48,6 +48,10 @@ class Loss {
 
   virtual ar::ConstArchivePtr toArchive() const = 0;
 
+  static std::shared_ptr<Loss> fromArchive(
+      const ar::Archive& archive,
+      const std::unordered_map<std::string, ComputationPtr>& computations);
+
   virtual ~Loss() = default;
 
  private:
