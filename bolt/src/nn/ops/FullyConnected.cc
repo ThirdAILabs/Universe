@@ -11,7 +11,7 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <archive/src/Archive.h>
-#include <archive/src/ArchiveMap.h>
+#include <archive/src/Map.h>
 #include <archive/src/ParameterReference.h>
 #include <cstring>
 #include <memory>
@@ -138,7 +138,7 @@ ComputationPtr FullyConnected::applyToInputs(const ComputationList& inputs) {
 ar::ConstArchivePtr FullyConnected::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::ArchiveMap::make();
+  auto map = ar::Map::make();
   map->set("name", ar::str(name()));
   map->set("type", ar::str(type()));
 
@@ -181,11 +181,10 @@ std::shared_ptr<FullyConnected> FullyConnected::fromArchive(
 }
 
 FullyConnected::FullyConnected(const ar::Archive& archive)
-    : Op(archive.getAs<ar::Str>("name")),
+    : Op(archive.str("name")),
       _kernel(std::make_shared<FullyConnectedLayer>(archive)),
-      _rebuild_hash_tables(archive.getAs<ar::U64>("rebuild_hash_tables")),
-      _reconstruct_hash_functions(
-          archive.getAs<ar::U64>("reconstruct_hash_functions")),
+      _rebuild_hash_tables(archive.u64("rebuild_hash_tables")),
+      _reconstruct_hash_functions(archive.u64("reconstruct_hash_functions")),
       _updates_since_rebuild_hash_tables(0),
       _updates_since_reconstruct_hash_functions(0) {}
 

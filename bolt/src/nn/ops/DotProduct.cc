@@ -5,7 +5,7 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
-#include <archive/src/ArchiveMap.h>
+#include <archive/src/Map.h>
 #include <cmath>
 #include <stdexcept>
 #include <unordered_map>
@@ -103,7 +103,7 @@ ComputationPtr DotProduct::applyToInputs(const ComputationList& inputs) {
 ar::ConstArchivePtr DotProduct::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::ArchiveMap::make();
+  auto map = ar::Map::make();
   map->set("name", ar::str(name()));
   map->set("type", ar::str(type()));
   return map;
@@ -112,7 +112,7 @@ ar::ConstArchivePtr DotProduct::toArchive(bool with_optimizer) const {
 std::shared_ptr<DotProduct> DotProduct::fromArchive(
     const ar::Archive& archive) {
   auto op = DotProduct::make();
-  op->setName(archive.getAs<ar::Str>("name"));
+  op->setName(archive.str("name"));
   return op;
 }
 

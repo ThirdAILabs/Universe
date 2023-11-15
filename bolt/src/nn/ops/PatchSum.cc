@@ -1,7 +1,7 @@
 #include "PatchSum.h"
 #include <bolt/src/nn/autograd/Computation.h>
 #include <archive/src/Archive.h>
-#include <archive/src/ArchiveMap.h>
+#include <archive/src/Map.h>
 #include <algorithm>
 #include <memory>
 #include <stdexcept>
@@ -121,7 +121,7 @@ ComputationPtr PatchSum::applyToInputs(const ComputationList& inputs) {
 ar::ConstArchivePtr PatchSum::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::ArchiveMap::make();
+  auto map = ar::Map::make();
 
   map->set("name", ar::str(name()));
   map->set("type", ar::str(type()));
@@ -137,9 +137,9 @@ std::shared_ptr<PatchSum> PatchSum::fromArchive(const ar::Archive& archive) {
 }
 
 PatchSum::PatchSum(const ar::Archive& archive)
-    : Op(archive.getAs<ar::Str>("name")),
-      _n_patches(archive.getAs<ar::U64>("n_patches")),
-      _patch_dim(archive.getAs<ar::U64>("patch_dim")) {}
+    : Op(archive.str("name")),
+      _n_patches(archive.u64("n_patches")),
+      _patch_dim(archive.u64("patch_dim")) {}
 
 void PatchSum::disableSparseParameterUpdates() {}
 

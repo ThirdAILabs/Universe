@@ -8,7 +8,7 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <archive/src/Archive.h>
-#include <archive/src/ArchiveMap.h>
+#include <archive/src/Map.h>
 #include <archive/src/ParameterReference.h>
 #include <cmath>
 #include <stdexcept>
@@ -168,7 +168,7 @@ ComputationPtr LayerNorm::applyToInputs(const ComputationList& inputs) {
 }
 
 ar::ConstArchivePtr LayerNorm::toArchive(bool with_optimizer) const {
-  auto map = ar::ArchiveMap::make();
+  auto map = ar::Map::make();
 
   map->set("name", ar::str(name()));
   map->set("type", ar::str(type()));
@@ -193,7 +193,7 @@ std::shared_ptr<LayerNorm> LayerNorm::fromArchive(const ar::Archive& archive) {
 }
 
 LayerNorm::LayerNorm(const ar::Archive& archive)
-    : Op(archive.getAs<ar::Str>("name")),
+    : Op(archive.str("name")),
       _gamma(archive.get("gamma")->param().moveLoadedParameter()),
       _beta(archive.get("beta")->param().moveLoadedParameter()) {
   if (archive.contains("gamma_opt")) {

@@ -6,7 +6,7 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
-#include <archive/src/ArchiveMap.h>
+#include <archive/src/Map.h>
 #include <memory>
 #include <numeric>
 #include <stdexcept>
@@ -115,7 +115,7 @@ ComputationPtr Concatenate::applyToInputs(const ComputationList& inputs) {
 ar::ConstArchivePtr Concatenate::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::ArchiveMap::make();
+  auto map = ar::Map::make();
   map->set("name", ar::str(name()));
   map->set("type", ar::str(type()));
   return map;
@@ -124,7 +124,7 @@ ar::ConstArchivePtr Concatenate::toArchive(bool with_optimizer) const {
 std::shared_ptr<Concatenate> Concatenate::fromArchive(
     const ar::Archive& archive) {
   auto op = Concatenate::make();
-  op->setName(archive.getAs<ar::Str>("name"));
+  op->setName(archive.str("name"));
   return op;
 }
 

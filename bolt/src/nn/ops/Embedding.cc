@@ -8,7 +8,7 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <archive/src/Archive.h>
-#include <archive/src/ArchiveMap.h>
+#include <archive/src/Map.h>
 #include <archive/src/ParameterReference.h>
 #include <algorithm>
 #include <ios>
@@ -207,7 +207,7 @@ ComputationPtr Embedding::applyToInputs(const ComputationList& inputs) {
 ar::ConstArchivePtr Embedding::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::ArchiveMap::make();
+  auto map = ar::Map::make();
   map->set("name", ar::str(name()));
   map->set("type", ar::str(type()));
   map->set("dim", ar::u64(_dim));
@@ -240,15 +240,15 @@ std::shared_ptr<Embedding> Embedding::fromArchive(const ar::Archive& archive) {
 }
 
 Embedding::Embedding(const ar::Archive& archive)
-    : Op(archive.getAs<ar::Str>("name")),
-      _dim(archive.getAs<ar::U64>("dim")),
-      _input_dim(archive.getAs<ar::U64>("input_dim")),
-      _bias(archive.getAs<ar::Boolean>("use_bias")),
-      _act_func(getActivationFunction(archive.getAs<ar::Str>("activation"))),
+    : Op(archive.str("name")),
+      _dim(archive.u64("dim")),
+      _input_dim(archive.u64("input_dim")),
+      _bias(archive.boolean("use_bias")),
+      _act_func(getActivationFunction(archive.str("activation"))),
       _embeddings(archive.get("embeddings")->param().moveLoadedParameter()),
       _biases(archive.get("biases")->param().moveLoadedParameter()),
       _disable_sparse_parameter_updates(
-          archive.getAs<ar::Boolean>("disable_sparse_parameter_updates")) {
+          archive.boolean("disable_sparse_parameter_updates")) {
   if (archive.contains("embedding_opt")) {
     _embedding_optimizer = optimizerFromArchive(*archive.get("embedding_opt"));
   }

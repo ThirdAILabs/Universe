@@ -7,8 +7,8 @@
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
-#include <archive/src/ArchiveList.h>
-#include <archive/src/ArchiveMap.h>
+#include <archive/src/List.h>
+#include <archive/src/Map.h>
 #include <memory>
 #include <optional>
 #include <sstream>
@@ -128,12 +128,12 @@ ComputationPtr Switch::applyToInputs(const ComputationList& inputs) {
 ar::ConstArchivePtr Switch::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::ArchiveMap::make();
+  auto map = ar::Map::make();
 
   map->set("name", ar::str(name()));
   map->set("type", ar::str(type()));
 
-  auto list = ar::ArchiveList::make();
+  auto list = ar::List::make();
   for (const auto& op : _fc_ops) {
     list->append(op->toArchive(with_optimizer));
   }
@@ -146,8 +146,7 @@ std::shared_ptr<Switch> Switch::fromArchive(const ar::Archive& archive) {
   return std::shared_ptr<Switch>(new Switch(archive));
 }
 
-Switch::Switch(const ar::Archive& archive)
-    : Op(archive.getAs<ar::Str>("name")) {
+Switch::Switch(const ar::Archive& archive) : Op(archive.str("name")) {
   for (const auto& op_archive : archive.get("fc_ops")->list()) {
     _fc_ops.push_back(FullyConnected::fromArchive(*op_archive));
   }

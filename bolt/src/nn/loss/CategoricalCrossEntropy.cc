@@ -3,6 +3,7 @@
 #include <cereal/details/helpers.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <archive/src/Map.h>
 #include <cmath>
 #include <optional>
 
@@ -36,6 +37,22 @@ float CategoricalCrossEntropy::singleLoss(float activation, float label) const {
 float CategoricalCrossEntropy::singleGradient(float activation, float label,
                                               uint32_t batch_size) const {
   return (label - activation) / batch_size;
+}
+
+ar::ConstArchivePtr CategoricalCrossEntropy::toArchive() const {
+  auto map = ar::Map::make();
+  map->set("type", ar::str(type()));
+  map->set("output", ar::str(_output->name()));
+  map->set("labels", ar::str(_labels->name()));
+
+  return map;
+}
+
+std::shared_ptr<CategoricalCrossEntropy> CategoricalCrossEntropy::fromArchive(
+    const ar::Archive& archive,
+    const std::unordered_map<std::string, ComputationPtr>& computations) {
+  return CategoricalCrossEntropy::make(computations.at(archive.str("output")),
+                                       computations.at(archive.str("labels")));
 }
 
 template void CategoricalCrossEntropy::serialize(cereal::BinaryInputArchive&);

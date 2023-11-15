@@ -14,7 +14,7 @@
 #include <bolt/src/nn/ops/RobeZ.h>
 #include <bolt/src/nn/ops/Switch.h>
 #include <archive/src/Archive.h>
-#include <archive/src/ArchiveMap.h>
+#include <archive/src/Map.h>
 #include <archive/src/ParameterReference.h>
 #include <stdexcept>
 #include <string>
@@ -22,7 +22,7 @@
 namespace thirdai::bolt {
 
 std::shared_ptr<Op> Op::fromArchive(const ar::Archive& archive) {
-  std::string type = archive.getAs<std::string>("type");
+  std::string type = archive.str("type");
 
   if (type == Activation<ReluImpl>::type()) {
     return activationOpFromArchive(archive);
@@ -72,7 +72,7 @@ std::shared_ptr<Op> Op::fromArchive(const ar::Archive& archive) {
 ar::ConstArchivePtr optimizerToArchive(const AdamOptimizer& optimizer,
                                        const std::shared_ptr<const Op>& op,
                                        size_t rows, size_t cols) {
-  auto map = ar::ArchiveMap::make();
+  auto map = ar::Map::make();
 
   map->set("type", ar::str("adam"));
 
@@ -90,7 +90,7 @@ ar::ConstArchivePtr optimizerToArchive(const AdamOptimizer& optimizer,
 }
 
 AdamOptimizer optimizerFromArchive(const ar::Archive& archive) {
-  if (archive.getAs<ar::Str>("type") != "adam") {
+  if (archive.str("type") != "adam") {
     throw std::invalid_argument("Expected optimizer to have type 'adam'.");
   }
   AdamOptimizer optimizer;

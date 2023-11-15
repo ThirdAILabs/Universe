@@ -9,8 +9,8 @@
 #include <bolt/src/nn/ops/Switch.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <archive/src/Archive.h>
-#include <archive/src/ArchiveList.h>
-#include <archive/src/ArchiveMap.h>
+#include <archive/src/List.h>
+#include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <licensing/src/CheckLicense.h>
 #include <utils/UUID.h>
@@ -401,19 +401,19 @@ void Model::enableSparseParameterUpdates() {
 }
 
 ar::ConstArchivePtr placeholder(const std::string& name, size_t dim) {
-  auto placeholder = ar::ArchiveMap::make();
+  auto placeholder = ar::Map::make();
   placeholder->set("name", ar::str(name));
   placeholder->set("dim", ar::u64(dim));
   return placeholder;
 }
 
 ar::ConstArchivePtr Model::toArchive(bool with_optimizer) const {
-  auto model = ar::ArchiveMap::make();
+  auto model = ar::Map::make();
 
   /**
    * Ops
    */
-  auto ops = ar::ArchiveList::make();
+  auto ops = ar::List::make();
   for (const auto& op : _ops) {
     ops->append(op->toArchive(with_optimizer));
   }
@@ -422,7 +422,7 @@ ar::ConstArchivePtr Model::toArchive(bool with_optimizer) const {
   /**
    * Inputs
    */
-  auto inputs = ar::ArchiveList::make();
+  auto inputs = ar::List::make();
   for (const auto& input : _inputs) {
     inputs->append(placeholder(input->name(), input->dim()));
   }
@@ -431,7 +431,7 @@ ar::ConstArchivePtr Model::toArchive(bool with_optimizer) const {
   /**
    * Labels
    */
-  auto labels = ar::ArchiveList::make();
+  auto labels = ar::List::make();
   for (const auto& label : _labels) {
     labels->append(placeholder(label->name(), label->dim()));
   }
@@ -440,9 +440,9 @@ ar::ConstArchivePtr Model::toArchive(bool with_optimizer) const {
   /**
    * Computations
    */
-  auto computations = ar::ArchiveList::make();
+  auto computations = ar::List::make();
   for (const auto& comp : _computation_order) {
-    auto comp_ar = ar::ArchiveMap::make();
+    auto comp_ar = ar::Map::make();
     comp_ar->set("name", ar::str(comp->name()));
     comp_ar->set("op", ar::str(comp->op()->name()));
     comp_ar->set("inputs", ar::vecStr(comp->inputNames()));
@@ -452,7 +452,7 @@ ar::ConstArchivePtr Model::toArchive(bool with_optimizer) const {
   /**
    * Losses
    */
-  auto losses = ar::ArchiveList::make();
+  auto losses = ar::List::make();
   for (const auto& loss : _losses) {
     losses->append(loss->toArchive());
   }
@@ -470,7 +470,7 @@ ar::ConstArchivePtr Model::toArchive(bool with_optimizer) const {
   /**
    * Metadata
    */
-  auto metadata = ar::ArchiveMap::make();
+  auto metadata = ar::Map::make();
   metadata->set("train_steps", ar::u64(_train_steps));
   metadata->set("total_training_samples", ar::u64(_total_training_samples));
   metadata->set("uuid", ar::str(_model_uuid));

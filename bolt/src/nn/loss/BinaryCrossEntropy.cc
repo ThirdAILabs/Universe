@@ -2,6 +2,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <archive/src/Map.h>
 #include <algorithm>
 #include <cmath>
 #include <optional>
@@ -27,6 +28,22 @@ float BinaryCrossEntropy::singleLoss(float activation, float label) const {
 float BinaryCrossEntropy::singleGradient(float activation, float label,
                                          uint32_t batch_size) const {
   return (label - activation) / batch_size;
+}
+
+ar::ConstArchivePtr BinaryCrossEntropy::toArchive() const {
+  auto map = ar::Map::make();
+  map->set("type", ar::str(type()));
+  map->set("output", ar::str(_output->name()));
+  map->set("labels", ar::str(_labels->name()));
+
+  return map;
+}
+
+std::shared_ptr<BinaryCrossEntropy> BinaryCrossEntropy::fromArchive(
+    const ar::Archive& archive,
+    const std::unordered_map<std::string, ComputationPtr>& computations) {
+  return BinaryCrossEntropy::make(computations.at(archive.str("output")),
+                                  computations.at(archive.str("labels")));
 }
 
 template void BinaryCrossEntropy::serialize(cereal::BinaryInputArchive&);

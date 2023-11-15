@@ -7,7 +7,7 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <archive/src/Archive.h>
-#include <archive/src/ArchiveMap.h>
+#include <archive/src/Map.h>
 #include <archive/src/ParameterReference.h>
 #include <memory>
 
@@ -107,7 +107,7 @@ ComputationPtr RobeZ::applyToInputs(const ComputationList& inputs) {
 ar::ConstArchivePtr RobeZ::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::ArchiveMap::make();
+  auto map = ar::Map::make();
 
   map->set("name", ar::str(name()));
   map->set("type", ar::str(type()));
@@ -146,7 +146,7 @@ std::shared_ptr<RobeZ> RobeZ::fromArchive(const ar::Archive& archive) {
 }
 
 RobeZ::RobeZ(const ar::Archive& archive)
-    : Op(archive.getAs<ar::Str>("name")),
+    : Op(archive.str("name")),
       _kernel(std::make_unique<EmbeddingLayer>(archive)) {}
 
 void RobeZ::summary(std::ostream& summary, const ComputationList& inputs,

@@ -2,7 +2,7 @@
 #include "bolt/src/nn/autograd/Computation.h"
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
-#include <archive/src/ArchiveMap.h>
+#include <archive/src/Map.h>
 #include <memory>
 #include <stdexcept>
 
@@ -118,7 +118,7 @@ ComputationPtr DlrmAttention::applyToInputs(const ComputationList& inputs) {
 ar::ConstArchivePtr DlrmAttention::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::ArchiveMap::make();
+  auto map = ar::Map::make();
   map->set("name", ar::str(name()));
   map->set("type", ar::str(type()));
   return map;
@@ -127,7 +127,7 @@ ar::ConstArchivePtr DlrmAttention::toArchive(bool with_optimizer) const {
 std::shared_ptr<DlrmAttention> DlrmAttention::fromArchive(
     const ar::Archive& archive) {
   auto op = DlrmAttention::make();
-  op->setName(archive.getAs<ar::Str>("name"));
+  op->setName(archive.str("name"));
   return op;
 }
 

@@ -6,7 +6,7 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <archive/src/Archive.h>
-#include <archive/src/ArchiveMap.h>
+#include <archive/src/Map.h>
 #include <utils/StringManipulation.h>
 #include <cmath>
 #include <memory>
@@ -108,7 +108,7 @@ template <typename Impl>
 ar::ConstArchivePtr Activation<Impl>::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::ArchiveMap::make();
+  auto map = ar::Map::make();
   map->set("name", ar::str(name()));
   map->set("type", ar::str(type()));
   map->set("activation", ar::str(Impl::name()));
@@ -119,12 +119,12 @@ ar::ConstArchivePtr Activation<Impl>::toArchive(bool with_optimizer) const {
 OpPtr activationOpFromArchive(const ar::Archive& archive) {
   OpPtr op;
 
-  if (archive.getAs<ar::Str>("activation") == ReluImpl::name()) {
+  if (archive.str("activation") == ReluImpl::name()) {
     op = Relu::make();
-  } else if (archive.getAs<ar::Str>("activation") == TanhImpl::name()) {
+  } else if (archive.str("activation") == TanhImpl::name()) {
     op = Tanh::make();
   }
-  op->setName(archive.getAs<ar::Str>("name"));
+  op->setName(archive.str("name"));
 
   return op;
 }

@@ -63,18 +63,17 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
 }
 
 EmbeddingLayer::EmbeddingLayer(const ar::Archive& archive)
-    : _num_lookups_per_token(archive.getAs<ar::U64>("num_lookups_per_token")),
-      _lookup_size(archive.getAs<ar::U64>("lookup_size")),
+    : _num_lookups_per_token(archive.u64("num_lookups_per_token")),
+      _lookup_size(archive.u64("lookup_size")),
       _total_embedding_dim(_num_lookups_per_token * _lookup_size),
-      _log_embedding_block_size(
-          archive.getAs<ar::U64>("log_embedding_block_size")),
-      _update_chunk_size(archive.getAs<ar::U64>("update_chunk_size")),
+      _log_embedding_block_size(archive.u64("log_embedding_block_size")),
+      _update_chunk_size(archive.u64("update_chunk_size")),
       // TODO(ARCHIVE): reduction
-      _num_tokens_per_input(archive.getOpt<ar::U64>("num_tokens_per_input")),
-      _hash_fn(archive.getAs<ar::U64>("hash_seed")),
+      _num_tokens_per_input(archive.u64("num_tokens_per_input")),
+      _hash_fn(archive.u64("hash_seed")),
       _embedding_block(archive.get("embeddings")->param().loadedParameter()),
       _disable_sparse_parameter_updates(
-          archive.getAs<ar::U64>("disable_sparse_parameter_updates")) {
+          archive.boolean("disable_sparse_parameter_updates")) {
   if (_reduction == EmbeddingReductionType::CONCATENATION) {
     if (!_num_tokens_per_input) {
       throw std::invalid_argument(

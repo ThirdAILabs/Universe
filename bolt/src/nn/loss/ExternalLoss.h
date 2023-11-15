@@ -18,6 +18,14 @@ class ExternalLoss final : public Loss {
 
   ComputationList labels() const final { return {_external_gradients}; }
 
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::shared_ptr<ExternalLoss> fromArchive(
+      const ar::Archive& archive,
+      const std::unordered_map<std::string, ComputationPtr>& computations);
+
+  static std::string type() { return "external_loss"; }
+
  private:
   ComputationPtr _output;
   ComputationPtr _external_gradients;
