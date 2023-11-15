@@ -760,6 +760,13 @@ class PDF(Extracted):
             self.ignore_nonstandard_orientation,
         )
 
+    @staticmethod
+    def highlighted_doc(reference: Reference):
+        old_highlights = pdf_parse.highlighted_doc(reference.source, reference.metadata)
+        if old_highlights:
+            return old_highlights
+        return sliding_pdf_parse.highlighted_doc(reference.source, reference.metadata)
+
 
 class DOCX(Extracted):
     def __init__(self, path: str, metadata={}):
