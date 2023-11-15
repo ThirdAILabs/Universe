@@ -719,7 +719,7 @@ class PDF(Extracted):
     def __init__(
         self,
         path: str,
-        version: str = "v2",
+        version: str = "v1",
         chunk_size=100,
         stride=40,
         emphasize_first_words=0,
