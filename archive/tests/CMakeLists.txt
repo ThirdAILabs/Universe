@@ -2,7 +2,7 @@ enable_testing()
 
 include(GoogleTest)
 
-set(ARCHIVE_TESTS ArchiveMapTests ArchiveListTests ArchiveValueTests
+set(ARCHIVE_TESTS MapTests ListTests ValueTests
                   ParameterReferenceTests ArchiveTests)
 
 foreach(ARCHIVE_TEST IN LISTS ARCHIVE_TESTS)

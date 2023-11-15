@@ -1,4 +1,4 @@
-#include "ArchiveMap.h"
+#include "Map.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
@@ -12,7 +12,7 @@
 
 namespace thirdai::ar {
 
-template void ArchiveMap::save(cereal::BinaryOutputArchive&) const;
+template void Map::save(cereal::BinaryOutputArchive&) const;
 
 std::unordered_map<std::string, ConstArchivePtr> applyCipherToKeys(
     const std::unordered_map<std::string, ConstArchivePtr>& input) {
@@ -30,15 +30,15 @@ std::unordered_map<std::string, ConstArchivePtr> applyCipherToKeys(
 }
 
 template <class Ar>
-void ArchiveMap::save(Ar& archive) const {
+void Map::save(Ar& archive) const {
   auto cipher_map = applyCipherToKeys(_map);
   archive(cereal::base_class<Archive>(this), cipher_map);
 }
 
-template void ArchiveMap::load(cereal::BinaryInputArchive&);
+template void Map::load(cereal::BinaryInputArchive&);
 
 template <class Ar>
-void ArchiveMap::load(Ar& archive) {
+void Map::load(Ar& archive) {
   std::unordered_map<std::string, ConstArchivePtr> cipher_map;
   archive(cereal::base_class<Archive>(this), cipher_map);
   _map = applyCipherToKeys(cipher_map);
@@ -46,7 +46,7 @@ void ArchiveMap::load(Ar& archive) {
 
 }  // namespace thirdai::ar
 
-CEREAL_REGISTER_TYPE(thirdai::ar::ArchiveMap)
+CEREAL_REGISTER_TYPE(thirdai::ar::Map)
 // Unregistered type error without this.
 // https://uscilab.github.io/cereal/assets/doxygen/polymorphic_8hpp.html#a8e0d5df9830c0ed7c60451cf2f873ff5
-CEREAL_REGISTER_DYNAMIC_INIT(ArchiveMap)  // NOLINT
+CEREAL_REGISTER_DYNAMIC_INIT(Map)  // NOLINT

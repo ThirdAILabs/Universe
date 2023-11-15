@@ -8,14 +8,13 @@
 
 namespace thirdai::ar {
 
-class ArchiveList final : public Archive {
+class List final : public Archive {
  public:
-  explicit ArchiveList(std::vector<ConstArchivePtr> list = {})
+  explicit List(std::vector<ConstArchivePtr> list = {})
       : _list(std::move(list)) {}
 
-  static std::shared_ptr<ArchiveList> make(
-      std::vector<ConstArchivePtr> list = {}) {
-    return std::make_shared<ArchiveList>(std::move(list));
+  static std::shared_ptr<List> make(std::vector<ConstArchivePtr> list = {}) {
+    return std::make_shared<List>(std::move(list));
   }
 
   void append(const ConstArchivePtr& archive) { _list.push_back(archive); }
@@ -53,4 +52,4 @@ class ArchiveList final : public Archive {
 
 // Unregistered type error without this.
 // https://uscilab.github.io/cereal/assets/doxygen/polymorphic_8hpp.html#a8e0d5df9830c0ed7c60451cf2f873ff5
-CEREAL_FORCE_DYNAMIC_INIT(ArchiveList)  // NOLINT
+CEREAL_FORCE_DYNAMIC_INIT(List)  // NOLINT

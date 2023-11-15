@@ -10,11 +10,9 @@
 
 namespace thirdai::ar {
 
-class ArchiveMap final : public Archive {
+class Map final : public Archive {
  public:
-  static std::shared_ptr<ArchiveMap> make() {
-    return std::make_shared<ArchiveMap>();
-  }
+  static std::shared_ptr<Map> make() { return std::make_shared<Map>(); }
 
   bool contains(const std::string& key) const final { return _map.count(key); }
 
@@ -56,4 +54,4 @@ class ArchiveMap final : public Archive {
 
 // Unregistered type error without this.
 // https://uscilab.github.io/cereal/assets/doxygen/polymorphic_8hpp.html#a8e0d5df9830c0ed7c60451cf2f873ff5
-CEREAL_FORCE_DYNAMIC_INIT(ArchiveMap)  // NOLINT
+CEREAL_FORCE_DYNAMIC_INIT(Map)  // NOLINT
