@@ -552,7 +552,7 @@ class Extracted(Document):
         self.path = Path(path)
         self.doc_metadata = metadata
         self.strong_column = strong_column
-        if self.strong_column not in self.df.columns:
+        if self.strong_column and self.strong_column not in self.df.columns:
             raise RuntimeError(
                 f"Strong column '{self.strong_column}' not found in the dataframe."
             )
@@ -664,6 +664,9 @@ class Extracted(Document):
 
         if not hasattr(self, "doc_metadata"):
             self.doc_metadata = {}
+
+        if not hasattr(self, "strong_column"):
+            self.strong_column = None
 
 
 def process_pdf(path: str) -> pd.DataFrame:
