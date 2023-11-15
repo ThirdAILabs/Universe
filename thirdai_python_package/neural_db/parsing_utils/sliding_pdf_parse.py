@@ -228,6 +228,6 @@ def make_df(
             "display": chunks,
             "emphasis": [emphasis for _ in chunks],
             # chunk_boxes is a list of (page_num, bbox) pairs
-            "highlight": str(chunk_boxes),
+            "chunk_boxes": str(chunk_boxes),
         }
     )
