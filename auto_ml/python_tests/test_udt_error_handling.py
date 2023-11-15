@@ -119,7 +119,8 @@ def test_invalid_column_name_in_udt_predict(mach):
             "target": bolt.types.categorical(),
         },
         target="target",
-        n_target_classes=2,
+        n_target_classes=10,
+        integer_target=True,
         options={
             "extreme_classification": mach,
         },
