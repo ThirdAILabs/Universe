@@ -2,9 +2,12 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/vector.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <algorithm>
 #include <limits>
+#include <memory>
 #include <numeric>
 #include <optional>
 #include <random>
@@ -139,6 +142,44 @@ void DWTAHashFunction::compactHashes(const uint32_t* hashes,
     final_hashes[i] = index;
   }
 }
+
+ar::ConstArchivePtr DWTAHashFunction::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+
+  map->set("num_tables", ar::u64(_num_tables));
+  map->set("hashes_per_table", ar::u64(_hashes_per_table));
+  map->set("log_binsize", ar::u64(_log_binsize));
+  map->set("input_dim", ar::u64(_dim));
+  map->set("permuatations", ar::u64(_permute));
+
+  map->set("bin_map", ar::vecU32(_bin_map));
+  map->set("positions", ar::vecU32(_positions));
+
+  map->set("rand_double_hash_seed", ar::u64(_rand_double_hash_seed));
+
+  return map;
+}
+
+std::shared_ptr<DWTAHashFunction> DWTAHashFunction::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_shared<DWTAHashFunction>(archive);
+}
+
+DWTAHashFunction::DWTAHashFunction(const ar::Archive& archive)
+    : HashFunction(
+          archive.u64("num_tables"),
+          1 << (archive.u64("hashes_per_table") * archive.u64("log_binsize"))),
+      _hashes_per_table(archive.u64("hashes_per_table")),
+      _num_hashes(archive.u64("num_tables") * archive.u64("hashes_per_table")),
+      _dim(archive.u64("input_dim")),
+      _binsize(1 << archive.u64("log_binsize")),
+      _log_binsize(archive.u64("log_binsize")),
+      _permute(archive.u64("permutations")),
+      _bin_map(archive.getAs<ar::VecU32>("bin_map")),
+      _positions(archive.getAs<ar::VecU32>("positions")),
+      _rand_double_hash_seed(archive.u64("rand_double_hash_seed")) {}
 
 void DWTAHashFunction::save(const std::string& filename) const {
   auto output_stream =

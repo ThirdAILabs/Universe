@@ -116,9 +116,7 @@ ar::ConstArchivePtr RobeZ::toArchive(bool with_optimizer) const {
   map->set("lookup_size", ar::u64(_kernel->_lookup_size));
   map->set("log_embedding_block_size",
            ar::u64(_kernel->_log_embedding_block_size));
-
-  // TODO(ARCHIVE) reduction to str
-
+  map->set("reduction", ar::str(reductionToString(_kernel->_reduction)));
   if (_kernel->_num_tokens_per_input) {
     map->set("num_tokens_per_input", ar::u64(*_kernel->_num_tokens_per_input));
   }

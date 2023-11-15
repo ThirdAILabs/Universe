@@ -312,4 +312,9 @@ class FullyConnectedLayer final {
   }
 };
 
+ar::ConstArchivePtr neuronIndexToArchive(const NeuronIndexPtr& neuron_index);
+
+NeuronIndexPtr neuronIndexFromArchive(const ar::Archive& archive, size_t dim,
+                                      size_t prev_dim, float sparsity);
+
 }  // namespace thirdai::bolt
