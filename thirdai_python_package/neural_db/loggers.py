@@ -29,7 +29,17 @@ class Logger:
 
 
 class InMemoryLogger(Logger):
-    def make_log(session_id=[], action=[], args=[], train_samples=[]):
+    def make_log(session_id=None, action=None, args=None, train_samples=None):
+        # arguments default to None instead of [] due to Python's mutable
+        # default argument behavior. https://docs.python-guide.org/writing/gotchas/
+        if session_id is None:
+            session_id = []
+        if action is None:
+            action = []
+        if args is None:
+            args = []
+        if train_samples is None:
+            train_samples = []
         return pd.DataFrame(
             {
                 "session_id": session_id,

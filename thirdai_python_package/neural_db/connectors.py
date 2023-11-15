@@ -32,7 +32,11 @@ class SQLConnector(Connector):
         self.chunk_size = chunk_size
         self._connection = self._engine.connect()
 
-    def execute(self, query: str, param={}):
+    def execute(self, query: str, param=None):
+        # param defaults to None instead of {} due to Python's mutable
+        # default argument behavior. https://docs.python-guide.org/writing/gotchas/
+        if param is None:
+            param = {}
         result = self._connection.execute(statement=text(query), parameters=param)
         return result
 

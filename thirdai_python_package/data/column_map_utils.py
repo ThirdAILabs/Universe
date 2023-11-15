@@ -19,7 +19,7 @@ def _is_string_column(column):
     return all([isinstance(s, str) for s in column])
 
 
-def pandas_to_columnmap(df, dense_int_cols=set(), int_col_dims={}):
+def pandas_to_columnmap(df, dense_int_cols=set(), int_col_dims=None):
     """
     Converts a pandas dataframe to a ColumnMap object. This method assumes that
     integer type columns are sparse. If you want to force an integer column to
@@ -30,6 +30,10 @@ def pandas_to_columnmap(df, dense_int_cols=set(), int_col_dims={}):
     column name . Finally, note that the pandas array should have valid headers,
     as these will be the names of the column in the ColumnMap.
     """
+    # int_col_dims defaults to None instead of {} due to Python's mutable
+    # default argument behavior. https://docs.python-guide.org/writing/gotchas/
+    if int_col_dims is None:
+        int_col_dims = {}
     column_map = {}
     for column_name in df:
         column_np = df[column_name].to_numpy()

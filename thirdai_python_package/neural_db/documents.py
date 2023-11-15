@@ -369,9 +369,17 @@ class CSV(Document):
         weak_columns: Optional[List[str]] = None,
         reference_columns: Optional[List[str]] = None,
         save_extra_info=True,
-        metadata={},
-        index_columns=[],
+        metadata=None,
+        index_columns=None,
     ) -> None:
+        # metadata and index_columns default to None instead of {} and [] due to
+        # Python's mutable default argument behavior.
+        # https://docs.python-guide.org/writing/gotchas/
+        if metadata is None:
+            metadata = {}
+        if index_columns is None:
+            index_columns = []
+
         self.df = pd.read_csv(path)
 
         if reference_columns is None:
@@ -542,8 +550,13 @@ class CSV(Document):
 # Base class for PDF, DOCX and Unstructured classes because they share the same logic.
 class Extracted(Document):
     def __init__(
-        self, path: str, save_extra_info=True, metadata={}, strong_column=None
+        self, path: str, save_extra_info=True, metadata=None, strong_column=None
     ):
+        # metadata defaults to None instead of {} due to Python's mutable
+        # default argument behavior. https://docs.python-guide.org/writing/gotchas/
+        if metadata is None:
+            metadata = {}
+
         path = str(path)
         self.df = self.process_data(path)
         self.hash_val = hash_file(path, metadata="extracted-" + str(metadata))
@@ -725,8 +738,13 @@ class PDF(Extracted):
         emphasize_first_words=0,
         ignore_header_footer=True,
         ignore_nonstandard_orientation=True,
-        metadata={},
+        metadata=None,
     ):
+        # metadata defaults to None instead of {} due to Python's mutable
+        # default argument behavior. https://docs.python-guide.org/writing/gotchas/
+        if metadata is None:
+            metadata = {}
+
         self.version = version
 
         if version == "v1":
@@ -762,7 +780,11 @@ class PDF(Extracted):
 
 
 class DOCX(Extracted):
-    def __init__(self, path: str, metadata={}):
+    def __init__(self, path: str, metadata=None):
+        # metadata defaults to None instead of {} due to Python's mutable
+        # default argument behavior. https://docs.python-guide.org/writing/gotchas/
+        if metadata is None:
+            metadata = {}
         super().__init__(path=path, metadata=metadata)
 
     def process_data(
@@ -774,8 +796,12 @@ class DOCX(Extracted):
 
 class Unstructured(Extracted):
     def __init__(
-        self, path: Union[str, Path], save_extra_info: bool = True, metadata={}
+        self, path: Union[str, Path], save_extra_info: bool = True, metadata=None
     ):
+        # metadata defaults to None instead of {} due to Python's mutable
+        # default argument behavior. https://docs.python-guide.org/writing/gotchas/
+        if metadata is None:
+            metadata = {}
         super().__init__(path=path, save_extra_info=save_extra_info, metadata=metadata)
 
     def process_data(
@@ -819,8 +845,13 @@ class URL(Document):
         url_response: Response = None,
         save_extra_info: bool = True,
         title_is_strong: bool = False,
-        metadata={},
+        metadata=None,
     ):
+        # metadata defaults to None instead of {} due to Python's mutable
+        # default argument behavior. https://docs.python-guide.org/writing/gotchas/
+        if metadata is None:
+            metadata = {}
+
         self.url = url
         self.df = self.process_data(url, url_response)
         self.hash_val = hash_string(url + str(metadata))
@@ -1480,7 +1511,12 @@ class SentenceLevelExtracted(Extracted):
     sentence to increase recall.
     """
 
-    def __init__(self, path: str, save_extra_info: bool = True, metadata={}):
+    def __init__(self, path: str, save_extra_info: bool = True, metadata=None):
+        # metadata defaults to None instead of {} due to Python's mutable
+        # default argument behavior. https://docs.python-guide.org/writing/gotchas/
+        if metadata is None:
+            metadata = {}
+
         self.path = Path(path)
         self.df = self.parse_sentences(self.process_data(path))
         self.hash_val = hash_file(
@@ -1609,7 +1645,11 @@ class SentenceLevelExtracted(Extracted):
 
 
 class SentenceLevelPDF(SentenceLevelExtracted):
-    def __init__(self, path: str, metadata={}):
+    def __init__(self, path: str, metadata=None):
+        # metadata defaults to None instead of {} due to Python's mutable
+        # default argument behavior. https://docs.python-guide.org/writing/gotchas/
+        if metadata is None:
+            metadata = {}
         super().__init__(path=path, metadata=metadata)
 
     def process_data(
@@ -1620,7 +1660,11 @@ class SentenceLevelPDF(SentenceLevelExtracted):
 
 
 class SentenceLevelDOCX(SentenceLevelExtracted):
-    def __init__(self, path: str, metadata={}):
+    def __init__(self, path: str, metadata=None):
+        # metadata defaults to None instead of {} due to Python's mutable
+        # default argument behavior. https://docs.python-guide.org/writing/gotchas/
+        if metadata is None:
+            metadata = {}
         super().__init__(path=path, metadata=metadata)
 
     def process_data(
