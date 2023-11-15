@@ -113,4 +113,21 @@ TEST(StringManipulationTest, TestTokenizeSentenceAccentedCharacters) {
   assertEqualTokens(words, {"Soufflé"});
 }
 
+TEST(StringManipulationTest, CharKGramTest) {
+  std::string sentence = "Some words";
+  auto words = charKGrams(sentence, 4);
+  assertEqualTokens(words,
+                    {"Some", "ome ", "me w", "e wo", " wor", "word", "ords"});
+}
+
+TEST(StringManipulationTest, WordLevelCharKGramTest) {
+  std::string sentence = "Some words";
+  auto words = split(sentence, /* delimiter=*/' ');
+  auto char_words = wordLevelCharKGrams(words, 4);
+  assertEqualTokens(char_words, {"Some", "word", "ords"});
+
+  char_words = wordLevelCharKGrams(words, 4, /* min_word_length=*/5);
+  assertEqualTokens(char_words, {"word", "ords"});
+}
+
 }  // namespace thirdai::text

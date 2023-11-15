@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <archive/src/Archive.h>
-#include <archive/src/ArchiveList.h>
+#include <archive/src/List.h>
 #include <archive/tests/Utils.h>
 #include <sstream>
 #include <stdexcept>
@@ -8,10 +8,10 @@
 
 namespace thirdai::ar::tests {
 
-std::tuple<std::shared_ptr<ArchiveList>, ConstArchivePtr, ConstArchivePtr,
+std::tuple<std::shared_ptr<List>, ConstArchivePtr, ConstArchivePtr,
            ConstArchivePtr>
 simpleList() {
-  auto list = ArchiveList::make();
+  auto list = List::make();
 
   auto a = u64(10);
   auto b = str("hello");
@@ -24,7 +24,7 @@ simpleList() {
   return {list, a, b, c};
 }
 
-TEST(ArchiveListTests, ListIndexing) {
+TEST(ListTests, ListIndexing) {
   auto [list, a, b, c] = simpleList();
 
   ASSERT_EQ(list->size(), 3);
@@ -37,7 +37,7 @@ TEST(ArchiveListTests, ListIndexing) {
                   std::out_of_range);
 }
 
-TEST(ArchiveListTests, ListIterator) {
+TEST(ListTests, ListIterator) {
   auto [list, a, b, c] = simpleList();
 
   std::vector<ConstArchivePtr> expected = {a, b, c};
@@ -48,7 +48,7 @@ TEST(ArchiveListTests, ListIterator) {
   ASSERT_EQ(cnt, 3);
 }
 
-TEST(ArchiveListTests, Serialization) {
+TEST(ListTests, Serialization) {
   auto [list, a, b, c] = simpleList();
 
   std::stringstream buffer;
