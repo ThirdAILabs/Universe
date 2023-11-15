@@ -1,9 +1,10 @@
+from collections import Counter, defaultdict
+
 import fitz
-from sklearn.cluster import DBSCAN
-from collections import defaultdict, Counter
 import numpy as np
 import pandas as pd
 import unidecode
+from sklearn.cluster import DBSCAN
 
 
 def get_fitz_blocks(filename):

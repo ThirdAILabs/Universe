@@ -25,7 +25,7 @@ from thirdai.dataset.data_source import PyDataSource
 
 from .connectors import Connector, SharePointConnector, SQLConnector
 from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
-from .parsing_utils import doc_parse, pdf_parse, url_parse, sliding_pdf_parse
+from .parsing_utils import doc_parse, pdf_parse, sliding_pdf_parse, url_parse
 from .utils import hash_file, hash_string
 
 
