@@ -180,7 +180,7 @@ void ColdStartTextAugmentation::stripWhitespace(std::string& s) {
 
 ColdStartTextAugmentation::Phrase ColdStartTextAugmentation::getStrongPhrase(
     std::string& s) const {
-  text::replacePunctuationWithSpaces(s);
+  s = text::replacePunctuation(std::move(s));
   stripWhitespace(s);
   Phrase strong_phrase = splitByWhitespace(s);
   if (_strong_max_len) {
@@ -222,7 +222,8 @@ ColdStartTextAugmentation::getWeakPhrases(std::string& s) const {
       return std::ispunct(c);
     });
     std::string natural_phrase_text(phrase_start, phrase_end);
-    text::replacePunctuationWithSpaces(natural_phrase_text);
+    natural_phrase_text =
+        text::replacePunctuation(std::move(natural_phrase_text));
     stripWhitespace(natural_phrase_text);
     phrase_start = phrase_end;
     if (phrase_end != s.end()) {
