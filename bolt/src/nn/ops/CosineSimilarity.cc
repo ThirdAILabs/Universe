@@ -102,8 +102,15 @@ ar::ConstArchivePtr CosineSimilarity::toArchive(bool with_optimizer) const {
 
   auto map = ar::ArchiveMap::make();
   map->set("name", ar::str(name()));
-  map->set("type", ar::str("cosine_sim"));
+  map->set("type", ar::str(type()));
   return map;
+}
+
+std::shared_ptr<CosineSimilarity> CosineSimilarity::fromArchive(
+    const ar::Archive& archive) {
+  auto op = CosineSimilarity::make();
+  op->setName(archive.getAs<ar::Str>("name"));
+  return op;
 }
 
 void CosineSimilarity::summary(std::ostream& summary,

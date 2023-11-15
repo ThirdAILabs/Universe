@@ -144,7 +144,7 @@ ar::ConstArchivePtr PatchEmbedding::toArchive(bool with_optimizer) const {
 
   auto map = ar::ArchiveMap::make();
   map->set("name", ar::str(name()));
-  map->set("type", ar::str("patch_emb"));
+  map->set("type", ar::str(type()));
 
   map->set("n_patches", ar::u64(_n_patches));
   map->set("dim", ar::u64(patchEmbeddingDim()));
@@ -179,6 +179,21 @@ ar::ConstArchivePtr PatchEmbedding::toArchive(bool with_optimizer) const {
 
   return map;
 }
+
+std::shared_ptr<PatchEmbedding> PatchEmbedding::fromArchive(
+    const ar::Archive& archive) {
+  return std::shared_ptr<PatchEmbedding>(new PatchEmbedding(archive));
+}
+
+PatchEmbedding::PatchEmbedding(const ar::Archive& archive)
+    : Op(archive.getAs<ar::Str>("name")),
+      _kernel(std::make_unique<FullyConnectedLayer>(archive)),
+      _n_patches(archive.getAs<ar::U64>("n_patches")),
+      _rebuild_hash_tables(archive.getAs<ar::U64>("rebuild_hash_tables")),
+      _reconstruct_hash_functions(
+          archive.getAs<ar::U64>("reconstruct_hash_functions")),
+      _updates_since_rebuild_hash_tables(0),
+      _updates_since_reconstruct_hash_functions(0) {}
 
 void PatchEmbedding::summary(std::ostream& summary,
                              const ComputationList& inputs,

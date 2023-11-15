@@ -105,8 +105,15 @@ ar::ConstArchivePtr DotProduct::toArchive(bool with_optimizer) const {
 
   auto map = ar::ArchiveMap::make();
   map->set("name", ar::str(name()));
-  map->set("type", ar::str("dot_product"));
+  map->set("type", ar::str(type()));
   return map;
+}
+
+std::shared_ptr<DotProduct> DotProduct::fromArchive(
+    const ar::Archive& archive) {
+  auto op = DotProduct::make();
+  op->setName(archive.getAs<ar::Str>("name"));
+  return op;
 }
 
 void DotProduct::summary(std::ostream& summary, const ComputationList& inputs,

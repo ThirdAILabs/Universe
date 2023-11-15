@@ -3,11 +3,13 @@
 #include <cereal/specialize.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
+#include <bolt/src/layers/EmbeddingLayer.h>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <archive/src/Archive.h>
 #include <archive/src/ArchiveMap.h>
 #include <archive/src/ParameterReference.h>
+#include <memory>
 
 namespace thirdai::bolt {
 
@@ -108,7 +110,7 @@ ar::ConstArchivePtr RobeZ::toArchive(bool with_optimizer) const {
   auto map = ar::ArchiveMap::make();
 
   map->set("name", ar::str(name()));
-  map->set("type", ar::str("robe_z"));
+  map->set("type", ar::str(type()));
 
   map->set("num_lookups_per_token", ar::u64(_kernel->_num_lookups_per_token));
   map->set("lookup_size", ar::u64(_kernel->_lookup_size));
@@ -138,6 +140,14 @@ ar::ConstArchivePtr RobeZ::toArchive(bool with_optimizer) const {
 
   return map;
 }
+
+std::shared_ptr<RobeZ> RobeZ::fromArchive(const ar::Archive& archive) {
+  return std::shared_ptr<RobeZ>(new RobeZ(archive));
+}
+
+RobeZ::RobeZ(const ar::Archive& archive)
+    : Op(archive.getAs<ar::Str>("name")),
+      _kernel(std::make_unique<EmbeddingLayer>(archive)) {}
 
 void RobeZ::summary(std::ostream& summary, const ComputationList& inputs,
                     const Computation* output) const {

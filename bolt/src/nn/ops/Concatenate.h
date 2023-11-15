@@ -41,10 +41,14 @@ class Concatenate final : public Op,
 
   ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
 
+  static std::shared_ptr<Concatenate> fromArchive(const ar::Archive& archive);
+
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
   ComputationPtr apply(const ComputationList& inputs);
+
+  static std::string type() { return "concat"; }
 
  private:
   Concatenate();

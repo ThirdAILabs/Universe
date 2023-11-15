@@ -42,6 +42,8 @@ class LayerNorm final : public Op,
 
   ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
 
+  static std::shared_ptr<LayerNorm> fromArchive(const ar::Archive& archive);
+
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
@@ -51,8 +53,12 @@ class LayerNorm final : public Op,
 
   const auto& beta() const { return _beta; }
 
+  static std::string type() { return "layer_norm"; }
+
  private:
   LayerNorm();
+
+  explicit LayerNorm(const ar::Archive& archive);
 
   LayerNorm(const float* gamma, const float* beta, size_t dim);
 

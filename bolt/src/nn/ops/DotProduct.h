@@ -38,10 +38,14 @@ class DotProduct final : public Op,
 
   ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
 
+  static std::shared_ptr<DotProduct> fromArchive(const ar::Archive& archive);
+
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
   ComputationPtr apply(ComputationPtr lhs, ComputationPtr rhs);
+
+  static std::string type() { return "dot_product"; }
 
  private:
   DotProduct() {}

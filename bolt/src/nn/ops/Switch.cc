@@ -4,6 +4,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
+#include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <archive/src/ArchiveList.h>
@@ -130,7 +131,7 @@ ar::ConstArchivePtr Switch::toArchive(bool with_optimizer) const {
   auto map = ar::ArchiveMap::make();
 
   map->set("name", ar::str(name()));
-  map->set("type", ar::str("switch"));
+  map->set("type", ar::str(type()));
 
   auto list = ar::ArchiveList::make();
   for (const auto& op : _fc_ops) {
@@ -139,6 +140,17 @@ ar::ConstArchivePtr Switch::toArchive(bool with_optimizer) const {
   map->set("fc_ops", list);
 
   return map;
+}
+
+std::shared_ptr<Switch> Switch::fromArchive(const ar::Archive& archive) {
+  return std::shared_ptr<Switch>(new Switch(archive));
+}
+
+Switch::Switch(const ar::Archive& archive)
+    : Op(archive.getAs<ar::Str>("name")) {
+  for (const auto& op_archive : archive.get("fc_ops")->list()) {
+    _fc_ops.push_back(FullyConnected::fromArchive(*op_archive));
+  }
 }
 
 void Switch::summary(std::ostream& summary, const ComputationList& inputs,

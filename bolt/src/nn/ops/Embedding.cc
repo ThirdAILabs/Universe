@@ -209,7 +209,7 @@ ar::ConstArchivePtr Embedding::toArchive(bool with_optimizer) const {
 
   auto map = ar::ArchiveMap::make();
   map->set("name", ar::str(name()));
-  map->set("type", ar::str("emb"));
+  map->set("type", ar::str(type()));
   map->set("dim", ar::u64(_dim));
   map->set("input_dim", ar::u64(_input_dim));
   map->set("activation", ar::str(activationFunctionToStr(_act_func)));
@@ -233,6 +233,28 @@ ar::ConstArchivePtr Embedding::toArchive(bool with_optimizer) const {
            ar::boolean(_disable_sparse_parameter_updates));
 
   return map;
+}
+
+std::shared_ptr<Embedding> Embedding::fromArchive(const ar::Archive& archive) {
+  return std::shared_ptr<Embedding>(new Embedding(archive));
+}
+
+Embedding::Embedding(const ar::Archive& archive)
+    : Op(archive.getAs<ar::Str>("name")),
+      _dim(archive.getAs<ar::U64>("dim")),
+      _input_dim(archive.getAs<ar::U64>("input_dim")),
+      _bias(archive.getAs<ar::Boolean>("use_bias")),
+      _act_func(getActivationFunction(archive.getAs<ar::Str>("activation"))),
+      _embeddings(archive.get("embeddings")->param().moveLoadedParameter()),
+      _biases(archive.get("biases")->param().moveLoadedParameter()),
+      _disable_sparse_parameter_updates(
+          archive.getAs<ar::Boolean>("disable_sparse_parameter_updates")) {
+  if (archive.contains("embedding_opt")) {
+    _embedding_optimizer = optimizerFromArchive(*archive.get("embedding_opt"));
+  }
+  if (archive.contains("bias_opt")) {
+    _bias_optimizer = optimizerFromArchive(*archive.get("bias_opt"));
+  }
 }
 
 void Embedding::sparseEmbeddingUpdate(float learning_rate,

@@ -61,6 +61,8 @@ class Activation final : public Op,
 
   ComputationPtr apply(ComputationPtr input);
 
+  static std::string type() { return "activation"; }
+
  private:
   Activation();
 
@@ -70,6 +72,8 @@ class Activation final : public Op,
 
   uint32_t _dim = 0;
 };
+
+OpPtr activationOpFromArchive(const ar::Archive& archive);
 
 using Relu = Activation<ReluImpl>;
 using ReluPtr = std::shared_ptr<Relu>;

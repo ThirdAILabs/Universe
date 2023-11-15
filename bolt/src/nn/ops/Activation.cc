@@ -110,10 +110,23 @@ ar::ConstArchivePtr Activation<Impl>::toArchive(bool with_optimizer) const {
 
   auto map = ar::ArchiveMap::make();
   map->set("name", ar::str(name()));
-  map->set("type", ar::str("activation"));
+  map->set("type", ar::str(type()));
   map->set("activation", ar::str(Impl::name()));
 
   return map;
+}
+
+OpPtr activationOpFromArchive(const ar::Archive& archive) {
+  OpPtr op;
+
+  if (archive.getAs<ar::Str>("activation") == ReluImpl::name()) {
+    op = Relu::make();
+  } else if (archive.getAs<ar::Str>("activation") == TanhImpl::name()) {
+    op = Tanh::make();
+  }
+  op->setName(archive.getAs<ar::Str>("name"));
+
+  return op;
 }
 
 template <typename Impl>

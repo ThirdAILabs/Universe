@@ -117,8 +117,15 @@ ar::ConstArchivePtr Concatenate::toArchive(bool with_optimizer) const {
 
   auto map = ar::ArchiveMap::make();
   map->set("name", ar::str(name()));
-  map->set("type", ar::str("concat"));
+  map->set("type", ar::str(type()));
   return map;
+}
+
+std::shared_ptr<Concatenate> Concatenate::fromArchive(
+    const ar::Archive& archive) {
+  auto op = Concatenate::make();
+  op->setName(archive.getAs<ar::Str>("name"));
+  return op;
 }
 
 void Concatenate::summary(std::ostream& summary, const ComputationList& inputs,

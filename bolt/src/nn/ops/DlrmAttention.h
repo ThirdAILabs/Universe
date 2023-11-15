@@ -60,10 +60,14 @@ class DlrmAttention final : public Op,
 
   ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
 
+  static std::shared_ptr<DlrmAttention> fromArchive(const ar::Archive& archive);
+
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
   ComputationPtr apply(ComputationPtr fc_input, ComputationPtr emb_input);
+
+  static std::string type() { return "dlrm_attention"; }
 
  private:
   DlrmAttention() {}

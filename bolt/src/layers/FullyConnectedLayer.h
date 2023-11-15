@@ -10,6 +10,7 @@
 #include <hashing/src/DWTA.h>
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/SampledHashTable.h>
+#include <archive/src/Archive.h>
 #include <cstdint>
 #include <optional>
 #include <random>
@@ -40,6 +41,8 @@ class FullyConnectedLayer final {
                       uint64_t prev_dim,
                       bool disable_sparse_parameter_updates = false,
                       bool use_bias = true);
+
+  explicit FullyConnectedLayer(const ar::Archive& archive);
 
   void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels);

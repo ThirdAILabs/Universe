@@ -4,6 +4,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Op.h>
@@ -139,7 +140,7 @@ ar::ConstArchivePtr FullyConnected::toArchive(bool with_optimizer) const {
 
   auto map = ar::ArchiveMap::make();
   map->set("name", ar::str(name()));
-  map->set("type", ar::str("fc"));
+  map->set("type", ar::str(type()));
 
   map->set("dim", ar::u64(dim()));
   map->set("input_dim", ar::u64(inputDim()));
@@ -173,6 +174,20 @@ ar::ConstArchivePtr FullyConnected::toArchive(bool with_optimizer) const {
 
   return map;
 }
+
+std::shared_ptr<FullyConnected> FullyConnected::fromArchive(
+    const ar::Archive& archive) {
+  return std::shared_ptr<FullyConnected>(new FullyConnected(archive));
+}
+
+FullyConnected::FullyConnected(const ar::Archive& archive)
+    : Op(archive.getAs<ar::Str>("name")),
+      _kernel(std::make_shared<FullyConnectedLayer>(archive)),
+      _rebuild_hash_tables(archive.getAs<ar::U64>("rebuild_hash_tables")),
+      _reconstruct_hash_functions(
+          archive.getAs<ar::U64>("reconstruct_hash_functions")),
+      _updates_since_rebuild_hash_tables(0),
+      _updates_since_reconstruct_hash_functions(0) {}
 
 void FullyConnected::summary(std::ostream& summary,
                              const ComputationList& inputs,

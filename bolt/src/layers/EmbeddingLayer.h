@@ -8,6 +8,7 @@
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/UniversalHash.h>
+#include <archive/src/Archive.h>
 #include <utils/Random.h>
 #include <cmath>
 #include <ctime>
@@ -30,6 +31,8 @@ class EmbeddingLayer {
  public:
   explicit EmbeddingLayer(const EmbeddingLayerConfig& config,
                           uint32_t seed = global_random::nextSeed());
+
+  explicit EmbeddingLayer(const ar::Archive& archive);
 
   void forward(const BoltVector& tokens, BoltVector& output);
 

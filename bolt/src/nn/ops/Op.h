@@ -130,6 +130,8 @@ class Op {
 
   virtual ar::ConstArchivePtr toArchive(bool with_optimizer) const = 0;
 
+  static std::shared_ptr<Op> fromArchive(const ar::Archive& archive);
+
   /**
    * Appends a line to the summary to describe the op when applied to the given
    * inputs and yielding the given output. Ideally this should be in the form:
@@ -176,8 +178,10 @@ class Op {
 };
 
 ar::ConstArchivePtr optimizerToArchive(const AdamOptimizer& optimizer,
-                                       std::shared_ptr<const Op> op,
+                                       const std::shared_ptr<const Op>& op,
                                        size_t rows, size_t cols);
+
+AdamOptimizer optimizerFromArchive(const ar::Archive& archive);
 
 using OpPtr = std::shared_ptr<Op>;
 

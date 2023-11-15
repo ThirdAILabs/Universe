@@ -14,6 +14,8 @@ class Embedding final : public Op,
   Embedding(size_t dim, size_t input_dim, const std::string& activation,
             bool bias);
 
+  explicit Embedding(const ar::Archive& archive);
+
  public:
   static auto make(size_t dim, size_t input_dim, const std::string& activation,
                    bool bias = true) {
@@ -60,6 +62,8 @@ class Embedding final : public Op,
 
   ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
 
+  static std::shared_ptr<Embedding> fromArchive(const ar::Archive& archive);
+
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
@@ -90,6 +94,8 @@ class Embedding final : public Op,
   static auto cast(const OpPtr& op) {
     return std::dynamic_pointer_cast<Embedding>(op);
   }
+
+  static std::string type() { return "emb"; }
 
  private:
   void applyActivationFunction(float* activations);

@@ -18,6 +18,8 @@ class PatchEmbedding final
                  size_t rebuild_hash_tables = 4,
                  size_t reconstruct_hash_functions = 100);
 
+  explicit PatchEmbedding(const ar::Archive& archive);
+
  public:
   static auto make(size_t emb_dim, size_t patch_dim, size_t n_patches,
                    float sparsity, const std::string& activation,
@@ -57,6 +59,9 @@ class PatchEmbedding final
 
   ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
 
+  static std::shared_ptr<PatchEmbedding> fromArchive(
+      const ar::Archive& archive);
+
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
@@ -74,6 +79,8 @@ class PatchEmbedding final
   uint32_t patchEmbeddingDim() const;
 
   uint32_t patchDim() const;
+
+  static std::string type() { return "patch_emb"; }
 
  private:
   size_t patchNonzeros(bool use_sparsity) const;

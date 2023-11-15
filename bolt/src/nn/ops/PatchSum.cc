@@ -3,6 +3,7 @@
 #include <archive/src/Archive.h>
 #include <archive/src/ArchiveMap.h>
 #include <algorithm>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
@@ -123,13 +124,22 @@ ar::ConstArchivePtr PatchSum::toArchive(bool with_optimizer) const {
   auto map = ar::ArchiveMap::make();
 
   map->set("name", ar::str(name()));
-  map->set("type", ar::str("patch_sum"));
+  map->set("type", ar::str(type()));
 
   map->set("n_patches", ar::u64(_n_patches));
   map->set("patch_dim", ar::u64(_patch_dim));
 
   return map;
 }
+
+std::shared_ptr<PatchSum> PatchSum::fromArchive(const ar::Archive& archive) {
+  return std::shared_ptr<PatchSum>(new PatchSum(archive));
+}
+
+PatchSum::PatchSum(const ar::Archive& archive)
+    : Op(archive.getAs<ar::Str>("name")),
+      _n_patches(archive.getAs<ar::U64>("n_patches")),
+      _patch_dim(archive.getAs<ar::U64>("patch_dim")) {}
 
 void PatchSum::disableSparseParameterUpdates() {}
 

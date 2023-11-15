@@ -171,7 +171,7 @@ ar::ConstArchivePtr LayerNorm::toArchive(bool with_optimizer) const {
   auto map = ar::ArchiveMap::make();
 
   map->set("name", ar::str(name()));
-  map->set("type", ar::str("layer_norm"));
+  map->set("type", ar::str(type()));
 
   map->set("gamma", ar::ParameterReference::make(_gamma, shared_from_this()));
   map->set("beta", ar::ParameterReference::make(_beta, shared_from_this()));
@@ -186,6 +186,22 @@ ar::ConstArchivePtr LayerNorm::toArchive(bool with_optimizer) const {
   }
 
   return map;
+}
+
+std::shared_ptr<LayerNorm> LayerNorm::fromArchive(const ar::Archive& archive) {
+  return std::shared_ptr<LayerNorm>(new LayerNorm(archive));
+}
+
+LayerNorm::LayerNorm(const ar::Archive& archive)
+    : Op(archive.getAs<ar::Str>("name")),
+      _gamma(archive.get("gamma")->param().moveLoadedParameter()),
+      _beta(archive.get("beta")->param().moveLoadedParameter()) {
+  if (archive.contains("gamma_opt")) {
+    _gamma_optimizer = optimizerFromArchive(*archive.get("beta_opt"));
+  }
+  if (archive.contains("beta_opt")) {
+    _beta_optimizer = optimizerFromArchive(*archive.get("beta_opt"));
+  }
 }
 
 void LayerNorm::disableSparseParameterUpdates() {}

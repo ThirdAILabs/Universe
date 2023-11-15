@@ -120,8 +120,15 @@ ar::ConstArchivePtr DlrmAttention::toArchive(bool with_optimizer) const {
 
   auto map = ar::ArchiveMap::make();
   map->set("name", ar::str(name()));
-  map->set("type", ar::str("dlrm_attention"));
+  map->set("type", ar::str(type()));
   return map;
+}
+
+std::shared_ptr<DlrmAttention> DlrmAttention::fromArchive(
+    const ar::Archive& archive) {
+  auto op = DlrmAttention::make();
+  op->setName(archive.getAs<ar::Str>("name"));
+  return op;
 }
 
 void DlrmAttention::summary(std::ostream& summary,

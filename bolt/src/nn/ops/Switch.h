@@ -65,6 +65,8 @@ class Switch final : public Op, public std::enable_shared_from_this<Switch> {
 
   ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
 
+  static std::shared_ptr<Switch> fromArchive(const ar::Archive& archive);
+
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
@@ -103,6 +105,8 @@ class Switch final : public Op, public std::enable_shared_from_this<Switch> {
     return std::dynamic_pointer_cast<Switch>(op);
   }
 
+  static std::string type() { return "switch"; }
+
  private:
   Switch(uint32_t n_layers, uint32_t dim, uint32_t input_dim, float sparsity,
          const std::string& activation, const SamplingConfigPtr& sampling,
@@ -110,6 +114,8 @@ class Switch final : public Op, public std::enable_shared_from_this<Switch> {
          uint32_t rebuild_hash_tables = std::numeric_limits<uint32_t>::max(),
          uint32_t reconstruct_hash_functions =
              std::numeric_limits<uint32_t>::max());
+
+  explicit Switch(const ar::Archive& archive);
 
   FullyConnectedPtr getFcOpForInputs(const ComputationList& inputs,
                                      uint32_t index_in_batch);
