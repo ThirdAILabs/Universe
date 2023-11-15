@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <archive/src/Archive.h>
-#include <archive/src/ArchiveMap.h>
+#include <archive/src/Map.h>
 #include <archive/src/StringCipher.h>
 #include <archive/tests/Utils.h>
 #include <optional>
@@ -12,10 +12,10 @@
 
 namespace thirdai::ar::tests {
 
-std::tuple<std::shared_ptr<ArchiveMap>, ConstArchivePtr, ConstArchivePtr,
+std::tuple<std::shared_ptr<Map>, ConstArchivePtr, ConstArchivePtr,
            ConstArchivePtr>
 simpleMap() {
-  auto map = ArchiveMap::make();
+  auto map = Map::make();
 
   auto a = u64(10);
   auto b = str("hello");
@@ -28,7 +28,7 @@ simpleMap() {
   return {map, a, b, c};
 }
 
-TEST(ArchiveMapTests, MapAccessing) {
+TEST(MapTests, MapAccessing) {
   auto [map, a, b, c] = simpleMap();
 
   ASSERT_EQ(map->size(), 3);
@@ -66,7 +66,7 @@ TEST(ArchiveMapTests, MapAccessing) {
                   std::out_of_range)
 }
 
-TEST(ArchiveMapTests, MapIterator) {
+TEST(MapTests, MapIterator) {
   auto [map, a, b, c] = simpleMap();
 
   std::unordered_map<std::string, ConstArchivePtr> visited;
@@ -86,7 +86,7 @@ TEST(ArchiveMapTests, MapIterator) {
   ASSERT_EQ(visited.at("chart"), c);
 }
 
-TEST(ArchiveMapTests, Serialization) {
+TEST(MapTests, Serialization) {
   auto [map, a, b, c] = simpleMap();
 
   std::stringstream buffer;
@@ -116,7 +116,7 @@ TEST(ArchiveMapTests, Serialization) {
   ASSERT_TRUE(visited.count("chart"));
 }
 
-TEST(ArchiveMapTests, StringKeysAreHidden) {
+TEST(MapTests, StringKeysAreHidden) {
   auto [map, a, b, c] = simpleMap();
 
   std::stringstream buffer;

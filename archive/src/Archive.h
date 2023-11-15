@@ -12,23 +12,23 @@ class Archive;
 using ArchivePtr = std::shared_ptr<Archive>;
 using ConstArchivePtr = std::shared_ptr<const Archive>;
 
-class ArchiveMap;
-class ArchiveList;
+class Map;
+class List;
 template <typename T>
-class ArchiveValue;
+class Value;
 class ParameterReference;
 
 class Archive {
  public:
   /**
-   * Casts the archive to an ArchiveMap. Throws if it is not an ArchiveMap.
+   * Casts the archive to an Map. Throws if it is not an Map.
    */
-  const ArchiveMap& map() const;
+  const Map& map() const;
 
   /**
-   * Casts the archive to an ArchiveList. Throws if it is not an ArchiveList.
+   * Casts the archive to an List. Throws if it is not an List.
    */
-  const ArchiveList& list() const;
+  const List& list() const;
 
   /**
    * Casts the archive to an ParameterReference. Throws if it is not an
@@ -38,20 +38,20 @@ class Archive {
 
   /**
    * Checks if the archive contains a value for the given key. This is only
-   * implemented for map archives, this will throw if it's not a ArchiveMap.
+   * implemented for map archives, this will throw if it's not a Map.
    */
   virtual bool contains(const std::string& key) const;
 
   /**
    * Retrieves the archive corresponding to the given key. This is only
-   * implemented for map archives, this will throw if it's not a ArchiveMap.
+   * implemented for map archives, this will throw if it's not a Map.
    */
   virtual const ConstArchivePtr& get(const std::string& key) const;
 
   /**
-   * Casts archive to a ArchiveValue of the given type and returns the value it
-   * stores. Throws if the archive is not a ArchiveValue of the given type. This
-   * can be used like `uint64_t val = archive->as<uint64_t>();`.
+   * Casts archive to a Value of the given type and returns the value it stores.
+   * Throws if the archive is not a Value of the given type. This can be used
+   * like `uint64_t val = archive->as<uint64_t>();`.
    *
    * Implementation note: this is not a method because C++ does not support
    * templated virtual methods, so in order to make it a part of the interface
@@ -61,8 +61,8 @@ class Archive {
   const T& as() const;
 
   /**
-   * Returns if the archive is a ArchiveValue storing the given C++ type. This
-   * can be used like `if (archive->is<uint64_t>()) { ... }`.
+   * Returns if the archive is a Value storing the given C++ type. This can be
+   * used like `if (archive->is<uint64_t>()) { ... }`.
    */
   template <typename T>
   bool is() const;
@@ -76,6 +76,13 @@ class Archive {
    */
   template <typename T>
   const T& getAs(const std::string& key) const;
+
+  // These are helper methods for common types.
+  uint64_t u64(const std::string& key) const { return getAs<uint64_t>(key); }
+
+  const std::string& str(const std::string& key) const {
+    return getAs<std::string>(key);
+  }
 
   /**
    * Helper method to provide a default value if a archive doesn't not contain a
@@ -135,12 +142,10 @@ void serialize(ConstArchivePtr archive, std::ostream& output);
 ConstArchivePtr deserialize(std::istream& input);
 
 /**
- * The following are helper methods for constructing ArchiveValue's for the
- * supported types. This is to provide simpler and more readable code, so that a
- * user can write
- *    map->at("key") = ar::u64(10);
- * instead of
- *    map->at("key") = ar::ArchiveValue<uint64_t>::make(10);
+ * The following are helper methods for constructing Value's for the supported
+ * types. This is to provide simpler and more readable code, so that a user can
+ * write map->at("key") = ar::u64(10); instead of map->at("key") =
+ * ar::Value<uint64_t>::make(10);
  *
  * Notes on supported types:
  *  - We are only supporting uint64_t and int64_t because you can always up/down

@@ -434,9 +434,9 @@ set(THIRDAI_SOURCES
     data/src/ColumnMapIterator.cc
     data/src/rca/ExplanationMap.cc
     archive/src/Archive.cc
-    archive/src/ArchiveMap.cc
-    archive/src/ArchiveList.cc
-    archive/src/ArchiveValue.cc
+    archive/src/Map.cc
+    archive/src/List.cc
+    archive/src/Value.cc
     archive/src/ParameterReference.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc

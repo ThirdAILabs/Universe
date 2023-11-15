@@ -18,12 +18,12 @@ namespace thirdai::ar {
  * serialization would break.
  */
 template <typename T>
-class ArchiveValue final : public Archive {
+class Value final : public Archive {
  public:
-  explicit ArchiveValue(T value) : _value(std::move(value)) {}
+  explicit Value(T value) : _value(std::move(value)) {}
 
-  static std::shared_ptr<ArchiveValue<T>> make(T value) {
-    return std::make_shared<ArchiveValue<T>>(std::move(value));
+  static std::shared_ptr<Value<T>> make(T value) {
+    return std::make_shared<Value<T>>(std::move(value));
   }
 
   const T& value() const { return _value; }
@@ -35,7 +35,7 @@ class ArchiveValue final : public Archive {
  private:
   T _value;
 
-  ArchiveValue() {}
+  Value() {}
 
   friend class cereal::access;
 

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <archive/src/Archive.h>
-#include <archive/src/ArchiveList.h>
-#include <archive/src/ArchiveMap.h>
+#include <archive/src/List.h>
+#include <archive/src/Map.h>
 #include <archive/tests/Utils.h>
 #include <sstream>
 #include <stdexcept>
@@ -10,9 +10,9 @@
 namespace thirdai::ar::tests {
 
 TEST(ArchiveTests, Serialization) {
-  auto archive = ArchiveMap::make();
+  auto archive = Map::make();
 
-  auto list = ArchiveList::make();
+  auto list = List::make();
   list->append(str("abc"));
   std::vector<uint32_t> vec_val = {1, 2, 3, 4};
   list->append(vecU32(vec_val));
@@ -20,7 +20,7 @@ TEST(ArchiveTests, Serialization) {
   archive->set("list", list);
   archive->set("int", u64(8642));
 
-  auto sub_archive = ArchiveMap::make();
+  auto sub_archive = Map::make();
   MapU64VecF32 map_val = {{1, {2.0, 3.0}}, {10, {20.0, 30.0}}};
   sub_archive->set("map", mapU64VecF32(map_val));
 
