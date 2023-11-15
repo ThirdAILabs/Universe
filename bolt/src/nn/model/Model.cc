@@ -8,6 +8,9 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/ops/Switch.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <archive/src/Archive.h>
+#include <archive/src/ArchiveList.h>
+#include <archive/src/ArchiveMap.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <licensing/src/CheckLicense.h>
 #include <utils/UUID.h>
@@ -395,6 +398,85 @@ void Model::enableSparseParameterUpdates() {
   for (const auto& op : _ops) {
     op->enableSparseParameterUpdates();
   }
+}
+
+ar::ConstArchivePtr placeholder(const std::string& name, size_t dim) {
+  auto placeholder = ar::ArchiveMap::make();
+  placeholder->set("name", ar::str(name));
+  placeholder->set("dim", ar::u64(dim));
+  return placeholder;
+}
+
+ar::ConstArchivePtr Model::toArchive(bool with_optimizer) const {
+  auto model = ar::ArchiveMap::make();
+
+  /**
+   * Ops
+   */
+  auto ops = ar::ArchiveList::make();
+  for (const auto& op : _ops) {
+    ops->append(op->toArchive(with_optimizer));
+  }
+  model->set("ops", ops);
+
+  /**
+   * Inputs
+   */
+  auto inputs = ar::ArchiveList::make();
+  for (const auto& input : _inputs) {
+    inputs->append(placeholder(input->name(), input->dim()));
+  }
+  model->set("inputs", inputs);
+
+  /**
+   * Labels
+   */
+  auto labels = ar::ArchiveList::make();
+  for (const auto& label : _labels) {
+    labels->append(placeholder(label->name(), label->dim()));
+  }
+  model->set("labels", labels);
+
+  /**
+   * Computations
+   */
+  auto computations = ar::ArchiveList::make();
+  for (const auto& comp : _computation_order) {
+    auto comp_ar = ar::ArchiveMap::make();
+    comp_ar->set("name", ar::str(comp->name()));
+    comp_ar->set("op", ar::str(comp->op()->name()));
+    comp_ar->set("inputs", ar::vecStr(comp->inputNames()));
+  }
+  model->set("computations", computations);
+
+  /**
+   * Losses
+   */
+  auto losses = ar::ArchiveList::make();
+  for (const auto& loss : _losses) {
+    losses->append(loss->toArchive());
+  }
+  model->set("losses", losses);
+
+  /**
+   * Outputs
+   */
+  std::vector<std::string> output_names;
+  for (const auto& output : _outputs) {
+    output_names.push_back(output->name());
+  }
+  model->set("outputs", ar::vecStr(output_names));
+
+  /**
+   * Metadata
+   */
+  auto metadata = ar::ArchiveMap::make();
+  metadata->set("train_steps", ar::u64(_train_steps));
+  metadata->set("total_training_samples", ar::u64(_total_training_samples));
+  metadata->set("uuid", ar::str(_model_uuid));
+  model->set("metadata", metadata);
+
+  return model;
 }
 
 void Model::freezeHashTables(bool insert_labels_if_not_found) {

@@ -5,6 +5,7 @@
 #include <bolt/src/nn/model/AllocationManager.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <archive/src/Archive.h>
 #include <licensing/src/CheckLicense.h>
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
 #include <utils/UUID.h>
@@ -236,6 +237,8 @@ class Model : public std::enable_shared_from_this<Model> {
   void disableSparseParameterUpdates();
 
   void enableSparseParameterUpdates();
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const;
 
   /**
    * Helper function to save the model to a stream.
