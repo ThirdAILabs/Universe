@@ -433,7 +433,7 @@ class CSV(Document):
             + str(sorted(self.weak_columns))
             + str(sorted(self.reference_columns))
             + str(sorted(self.indexed_columns))
-            + str(self.doc_metadata),
+            + str(sorted(list(self.doc_metadata.items()))),
         )
 
     @property
