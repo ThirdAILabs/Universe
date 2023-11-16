@@ -11,14 +11,11 @@ using Shape = std::tuple<size_t, size_t, size_t>;
 
 class InputShapeData {
  public:
-  InputShapeData(size_t subcube_dim, size_t patch_dim,
-                 std::optional<size_t> max_pool_dim)
-      : _subcube_shape(subcube_dim, subcube_dim, subcube_dim),
-        _patch_shape(patch_dim, patch_dim, patch_dim) {
-    if (max_pool_dim) {
-      _max_pool = {*max_pool_dim, *max_pool_dim, *max_pool_dim};
-    }
-
+  InputShapeData(Shape subcube_shape, Shape patch_shape,
+                 std::optional<Shape> max_pool_shape)
+      : _subcube_shape(std::move(subcube_shape)),
+        _patch_shape(std::move(patch_shape)),
+        _max_pool(std::move(max_pool_shape)) {
     checkNonzeroDims(_subcube_shape);
     checkNonzeroDims(_patch_shape);
     if (_max_pool) {

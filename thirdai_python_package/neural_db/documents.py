@@ -25,10 +25,8 @@ from thirdai.dataset.data_source import PyDataSource
 
 from .connectors import Connector, SharePointConnector, SQLConnector
 from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
-from .parsing_utils import doc_parse, pdf_parse, url_parse
-from .parsing_utils.unstructured_parse import EmlParse, PptxParse, TxtParse
 from .utils import hash_file, hash_string, requires_condition
-
+from .parsing_utils import doc_parse, pdf_parse, sliding_pdf_parse, url_parse
 
 class Reference:
     pass
@@ -64,6 +62,9 @@ class Document:
 
     def filter_entity_ids(self, filters: Dict[str, Filter]):
         return self.all_entity_ids()
+
+    def id_map(self) -> Optional[Dict[str, int]]:
+        return None
 
     # This attribute allows certain things to be saved or not saved during
     # the pickling of a savable_state object. For example, if we set this
@@ -352,6 +353,13 @@ class DocumentManager:
 
 
 class CSV(Document):
+    def valid_id_column(column):
+        return (
+            (len(column.unique()) == len(column))
+            and (column.min() == 0)
+            and (column.max() == len(column) - 1)
+        )
+
     def __init__(
         self,
         path: str,
@@ -372,9 +380,19 @@ class CSV(Document):
         if reference_columns is None:
             reference_columns = list(self.df.columns)
 
-        if id_column is None:
-            id_column = "thirdai_index"
-            self.df[id_column] = range(self.df.shape[0])
+        self.orig_to_assigned_id = None
+        self.id_column = id_column
+        orig_id_column = id_column
+        if self.id_column and CSV.valid_id_column(self.df[self.id_column]):
+            self.df = self.df.sort_values(self.id_column)
+        else:
+            self.id_column = "thirdai_index"
+            self.df[self.id_column] = range(self.df.shape[0])
+            if orig_id_column:
+                self.orig_to_assigned_id = {
+                    row[orig_id_column]: row[self.id_column]
+                    for _, row in self.df.iterrows()
+                }
 
         if strong_columns is None and weak_columns is None:
             # autotune column types
@@ -385,7 +403,9 @@ class CSV(Document):
                         text_col_names.append(col_name)
             except:
                 text_col_names = list(self.df.columns)
-                text_col_names.remove(id_column)
+                text_col_names.remove(self.id_column)
+                if orig_id_column:
+                    text_col_names.remove(orig_id_column)
                 self.df[text_col_names] = self.df[text_col_names].astype(str)
             strong_columns = []
             weak_columns = text_col_names
@@ -406,7 +426,6 @@ class CSV(Document):
 
         self.path = Path(path)
         self._hash = hash_file(path, metadata="csv-" + str(metadata))
-        self.id_column = id_column
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
         self.reference_columns = reference_columns
@@ -456,6 +475,9 @@ class CSV(Document):
                 return []
             df = filterer.filter_df_column(df, column_name)
         return df[self.id_column].to_list()
+
+    def id_map(self) -> Optional[Dict[str, int]]:
+        return self.orig_to_assigned_id
 
     def strong_text(self, element_id: int) -> str:
         row = self.df[self.df[self.id_column] == element_id]
@@ -555,11 +577,15 @@ class CSV(Document):
             self.doc_metadata_keys = set()
         if not hasattr(self, "indexed_columns"):
             self.indexed_columns = []
+        if not hasattr(self, "orig_to_assigned_id"):
+            self.orig_to_assigned_id = None
 
 
 # Base class for PDF, DOCX and Unstructured classes because they share the same logic.
 class Extracted(Document):
-    def __init__(self, path: str, save_extra_info=True, metadata={}):
+    def __init__(
+        self, path: str, save_extra_info=True, metadata={}, strong_column=None
+    ):
         path = str(path)
         self.df = self.process_data(path)
         self.hash_val = hash_file(path, metadata="extracted-" + str(metadata))
@@ -567,6 +593,11 @@ class Extracted(Document):
 
         self.path = Path(path)
         self.doc_metadata = metadata
+        self.strong_column = strong_column
+        if self.strong_column and self.strong_column not in self.df.columns:
+            raise RuntimeError(
+                f"Strong column '{self.strong_column}' not found in the dataframe."
+            )
 
     def process_data(
         self,
@@ -594,7 +625,11 @@ class Extracted(Document):
         return list(range(self.size))
 
     def strong_text(self, element_id: int) -> str:
-        return ""
+        return (
+            ""
+            if not self.strong_column
+            else self.df[self.strong_column].iloc[element_id]
+        )
 
     def weak_text(self, element_id: int) -> str:
         return self.df["para"].iloc[element_id]
@@ -672,6 +707,9 @@ class Extracted(Document):
         if not hasattr(self, "doc_metadata"):
             self.doc_metadata = {}
 
+        if not hasattr(self, "strong_column"):
+            self.strong_column = None
+
 
 def process_pdf(path: str) -> pd.DataFrame:
     elements, success = pdf_parse.process_pdf_file(path)
@@ -696,14 +734,73 @@ def process_docx(path: str) -> pd.DataFrame:
 
 
 class PDF(Extracted):
-    def __init__(self, path: str, metadata={}):
-        super().__init__(path=path, metadata=metadata)
+    """Parses a PDF document into chunks of text that can be indexed by
+    NeuralDB.
+
+    Initialization arguments:
+        path: path to PDF file
+        chunk_size: number of words in each chunk of text. Defaults to 100
+        stride: number of words between each chunk of text. When stride <
+            chunk_size, the text chunks overlap. When stride = chunk_size, the
+            text chunks do not overlap. Defaults to 40 so adjacent chunks have a
+            60% overlap.
+        emphasize_first_words: number of words at the beginning of the document
+            to be passed into NeuralDB as a strong signal. For example, if your
+            document starts with a descriptive title that is 3 words long, then
+            you can set emphasize_first_words to 3 so that NeuralDB captures
+            this strong signal. Defaults to 0.
+        ignore_header_footer: whether the parser should remove headers and
+            footers. Defaults to True; headers and footers are removed by
+            default.
+        ignore_nonstandard_orientation: whether the parser should remove lines
+            of text that have a nonstandard orientation, such as margins that
+            are oriented vertically. Defaults to True; lines with nonstandard
+            orientation are removed by default.
+    """
+
+    def __init__(
+        self,
+        path: str,
+        version: str = "v1",
+        chunk_size=100,
+        stride=40,
+        emphasize_first_words=0,
+        ignore_header_footer=True,
+        ignore_nonstandard_orientation=True,
+        metadata={},
+    ):
+        self.version = version
+
+        if version == "v1":
+            super().__init__(path=path, metadata=metadata)
+            return
+
+        if version != "v2":
+            raise ValueError(
+                f"Received invalid version '{version}'. Choose between 'v1' and 'v2'"
+            )
+
+        self.chunk_size = chunk_size
+        self.stride = stride
+        self.emphasize_first_words = emphasize_first_words
+        self.ignore_header_footer = ignore_header_footer
+        self.ignore_nonstandard_orientation = ignore_nonstandard_orientation
+        super().__init__(path=path, metadata=metadata, strong_column="emphasis")
 
     def process_data(
         self,
         path: str,
     ) -> pd.DataFrame:
-        return process_pdf(path)
+        if not hasattr(self, "version") or self.version == "v1":
+            return process_pdf(path)
+        return sliding_pdf_parse.make_df(
+            path,
+            self.chunk_size,
+            self.stride,
+            self.emphasize_first_words,
+            self.ignore_header_footer,
+            self.ignore_nonstandard_orientation,
+        )
 
 
 class DOCX(Extracted):
@@ -732,12 +829,18 @@ class Unstructured(Extracted):
                 "For PDF and DOCX FileTypes, use neuraldb.PDF and neuraldb.DOCX "
             )
         elif path.endswith(".pptx"):
+            from .parsing_utils.unstructured_parse import PptxParse
+
             self.parser = PptxParse(path)
 
         elif path.endswith(".txt"):
+            from .parsing_utils.unstructured_parse import TxtParse
+
             self.parser = TxtParse(path)
 
         elif path.endswith(".eml"):
+            from .parsing_utils.unstructured_parse import EmlParse
+
             self.parser = EmlParse(path)
 
         else:

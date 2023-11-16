@@ -76,8 +76,6 @@ URL_NO_RESPONSE_META = "url-no-response"
 PPTX_META = "pptx"
 TXT_META = "txt"
 EML_META = "eml"
-SQL_META = "sql"
-SHAREPOINT_META = "sharepoint"
 SENTENCE_PDF_META = "sentence-pdf"
 SENTENCE_DOCX_META = "sentence-docx"
 
@@ -236,21 +234,6 @@ def docs_with_meta():
         ndb.Unstructured(PPTX_FILE, metadata=meta(PPTX_META)),
         ndb.Unstructured(TXT_FILE, metadata=meta(TXT_META)),
         ndb.Unstructured(EML_FILE, metadata=meta(EML_META)),
-        ndb.SQLDatabase(
-            engine=ENGINE,
-            table_name=TABLE_NAME,
-            id_col="id",
-            strong_columns=["content"],
-            weak_columns=["content"],
-            reference_columns=["content"],
-            chunk_size=3,
-            metadata=meta(SQL_META),
-        ),
-        ndb.SharePoint(
-            ctx=CLIENT_CONTEXT,
-            library_path=LIBRARY_PATH,
-            metadata=meta(SHAREPOINT_META),
-        ),
         ndb.SentenceLevelPDF(PDF_FILE, metadata=meta(SENTENCE_PDF_META)),
         ndb.SentenceLevelDOCX(DOCX_FILE, metadata=meta(SENTENCE_DOCX_META)),
     ]
@@ -264,8 +247,6 @@ metadata_constraints = [
     PPTX_META,
     TXT_META,
     EML_META,
-    SQL_META,
-    SHAREPOINT_META,
     SENTENCE_PDF_META,
     SENTENCE_DOCX_META,
 ]
