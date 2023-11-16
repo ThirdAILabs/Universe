@@ -107,7 +107,6 @@ class UDTRunner(Runner):
         test_data_sample = test_data.iloc[
             np.random.randint(0, len(test_data), size=num_samples)
         ]
-
         inference_samples = []
         sample_col_names = config.get_data_types(path_prefix).keys()
         for _, row in test_data_sample.iterrows():
@@ -124,5 +123,4 @@ class UDTRunner(Runner):
         average_predict_time_ms = float(
             np.around(1000 * (end_time - start_time) / num_samples, decimals=3)
         )
-
         return average_predict_time_ms

@@ -59,7 +59,6 @@ class TemporalRunner(Runner):
             sample = dict(row)
             sample = {x: str(y) for x, y in sample.items()}
             model.index(sample)
-
         del train_data
 
         average_predict_time_ms = cls.get_average_predict_time(
