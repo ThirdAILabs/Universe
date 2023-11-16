@@ -9,6 +9,7 @@ from ndb_utils import (
     all_local_doc_getters,
     docs_with_meta,
     metadata_constraints,
+    train_simple_neural_db,
     num_duplicate_docs,
 )
 from thirdai import bolt
