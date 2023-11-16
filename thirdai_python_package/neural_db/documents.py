@@ -458,12 +458,20 @@ class CSV(Document):
         return df[self.id_column].to_list()
 
     def strong_text(self, element_id: int) -> str:
-        row = self.df.iloc[element_id]
-        return " ".join([str(row[col]).replace(",", "") for col in self.strong_columns])
+        row = self.df[self.df[self.id_column] == element_id]
+        return " ".join([str(row[col].values[0]).replace(",", "") for col in self.strong_columns])
 
     def weak_text(self, element_id: int) -> str:
-        row = self.df.iloc[element_id]
-        return " ".join([str(row[col]).replace(",", "") for col in self.weak_columns])
+        row = self.df[self.df[self.id_column] == element_id]
+        return " ".join([str(row[col].values[0]).replace(",", "") for col in self.weak_columns])
+
+    def row_iterator(self):
+        for i in list(self.df[self.id_column]):
+            yield DocumentRow(
+                element_id=i,
+                strong=self.strong_text(i),
+                weak=self.weak_text(i),
+            )
 
     @requires_condition(
         check_func=lambda self: not self.has_offset,

@@ -201,6 +201,7 @@ class NeuralDB:
                         number_models=number_models,
                         id_col="id",
                         query_col="query",
+                        label_index={},
                         **kwargs,
                     ),
                     logger=loggers.LoggerList([loggers.InMemoryLogger()]),
