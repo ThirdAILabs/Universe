@@ -6,22 +6,11 @@ from thirdai import bolt
 
 from ..configs.dlrm_configs import DLRMConfig
 from .runner import Runner
-import mlflow
-import psutil
 
 
 def compute_roc_auc(activations, test_labels_path, mlflow_callback=None, step=0):
     with open(test_labels_path) as file:
-        _lines = file.readlines()
-
-        gb_used = psutil.Process().memory_info().rss / (1024**3)
-        print("After loading labels for roc auc: ", gb_used)
-        mlflow.log_metric("ram_used_gb", gb_used)
-
-        test_labels = np.array([int(line[0]) for line in _lines])
-
-        gb_used = psutil.Process().memory_info().rss / (1024**3)
-        mlflow.log_metric("ram_used_gb", gb_used)
+        test_labels = np.array([int(line[0]) for line in file.readlines()])
 
     if len(activations) != len(test_labels):
         raise ValueError(f"Length of activations must match the length of test labels")
@@ -35,9 +24,6 @@ def compute_roc_auc(activations, test_labels_path, mlflow_callback=None, step=0)
         raise ValueError(
             "Activations must have shape (n,1) or (n,2) to compute the AUC"
         )
-
-    gb_used = psutil.Process().memory_info().rss / (1024**3)
-    mlflow.log_metric("ram_used_gb", gb_used)
 
     auc = roc_auc_score(y_true=test_labels, y_score=scores)
     print(f"AUC : {auc}")
@@ -77,9 +63,6 @@ class DLRMRunner(Runner):
                 scores.append(
                     np.copy(model.forward(x, use_sparsity=False)[0].activations)
                 )
-
-                gb_used = psutil.Process().memory_info().rss / (1024**3)
-                mlflow.log_metric("ram_used_gb", gb_used)
 
             compute_roc_auc(
                 activations=np.concatenate(scores),

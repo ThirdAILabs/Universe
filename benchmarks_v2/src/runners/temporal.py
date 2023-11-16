@@ -7,8 +7,6 @@ import pandas as pd
 from ..configs.temporal_configs import *
 from ..configs.utils import AdditionalMetricCallback
 from .runner import Runner
-import psutil
-import mlflow
 
 
 class TemporalRunner(Runner):
@@ -61,9 +59,6 @@ class TemporalRunner(Runner):
             sample = dict(row)
             sample = {x: str(y) for x, y in sample.items()}
             model.index(sample)
-
-        gb_used = psutil.Process().memory_info().rss / (1024**3)
-        mlflow.log_metric("ram_used_gb", gb_used)
 
         del train_data
 

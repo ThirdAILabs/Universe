@@ -11,8 +11,6 @@ from ..configs.mach_configs import *
 from ..configs.udt_configs import *
 from ..configs.utils import AdditionalMetricCallback
 from .runner import Runner
-import mlflow
-import psutil
 
 
 class UDTRunner(Runner):
@@ -110,9 +108,6 @@ class UDTRunner(Runner):
             np.random.randint(0, len(test_data), size=num_samples)
         ]
 
-        gb_used = psutil.Process().memory_info().rss / (1024**3)
-        mlflow.log_metric("ram_used_gb", gb_used)
-
         inference_samples = []
         sample_col_names = config.get_data_types(path_prefix).keys()
         for _, row in test_data_sample.iterrows():
@@ -122,9 +117,6 @@ class UDTRunner(Runner):
             sample = {x: str(y) for x, y in sample.items() if x in sample_col_names}
             inference_samples.append((sample, label))
 
-        gb_used = psutil.Process().memory_info().rss / (1024**3)
-        mlflow.log_metric("ram_used_gb", gb_used)
-
         start_time = time.time()
         for sample, label in inference_samples:
             model.predict(sample)
@@ -132,8 +124,5 @@ class UDTRunner(Runner):
         average_predict_time_ms = float(
             np.around(1000 * (end_time - start_time) / num_samples, decimals=3)
         )
-
-        gb_used = psutil.Process().memory_info().rss / (1024**3)
-        mlflow.log_metric("ram_used_gb", gb_used)
 
         return average_predict_time_ms
