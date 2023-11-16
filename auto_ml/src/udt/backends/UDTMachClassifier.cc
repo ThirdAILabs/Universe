@@ -121,11 +121,12 @@ UDTMachClassifier::UDTMachClassifier(
                                tabular_options);
 
   _classifier = utils::Mach::make(
-      input_dim, num_buckets, user_args, model_config,
-      /* use_sigmoid_bce = */ true, num_hashes, mach_sampling_threshold,
-      freeze_hash_tables, _data->modelInputIndicesColumn(),
-      _data->modelInputValuesColumn(), _data->modelLabelColumn(),
-      _data->modelBucketColumn());
+      /* model= */ utils::buildModel(
+          input_dim, num_buckets, user_args, model_config,
+          /* use_sigmoid_bce = */ true, /* mach= */ true),
+      num_hashes, mach_sampling_threshold, freeze_hash_tables,
+      _data->modelInputIndicesColumn(), _data->modelInputValuesColumn(),
+      _data->modelLabelColumn(), _data->modelBucketColumn());
 
   if (user_args.get<bool>("rlhf", "bool", false)) {
     size_t num_balancing_docs = user_args.get<uint32_t>(
