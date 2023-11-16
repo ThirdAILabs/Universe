@@ -743,6 +743,9 @@ class PDF(Extracted):
         self.emphasize_first_words = emphasize_first_words
         self.ignore_header_footer = ignore_header_footer
         self.ignore_nonstandard_orientation = ignore_nonstandard_orientation
+        # Add pdf chunk size and stride metadata so that the same PDF inserted
+        # with different hyperparameters are treated as different documents.
+        # Otherwise, this may break training.
         super().__init__(
             path=path,
             metadata={**metadata, "__pdf_version__": "v2"},
