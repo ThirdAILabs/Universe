@@ -415,17 +415,6 @@ class CSV(Document):
             self.df[col] = self.df[col].fillna("")
 
         self.path = Path(path)
-        # Add column names to hash metadata so that CSVs with different
-        # hyperparameters are treated as different documents. Otherwise, this
-        # may break training.
-        self._hash = hash_file(
-            path,
-            metadata="csv-"
-            + str(strong_columns)
-            + str(weak_columns)
-            + str(reference_columns)
-            + str(metadata),
-        )
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
         self.reference_columns = reference_columns
@@ -433,6 +422,19 @@ class CSV(Document):
         self.doc_metadata = metadata
         self.doc_metadata_keys = set(self.doc_metadata.keys())
         self.indexed_columns = index_columns
+        # Add column names to hash metadata so that CSVs with different
+        # hyperparameters are treated as different documents. Otherwise, this
+        # may break training.
+        self._hash = hash_file(
+            path,
+            metadata="csv-"
+            + str(self.id_column)
+            + str(sorted(self.strong_columns))
+            + str(sorted(self.weak_columns))
+            + str(sorted(self.reference_columns))
+            + str(sorted(self.indexed_columns))
+            + str(self.doc_metadata),
+        )
 
     @property
     def hash(self) -> str:
