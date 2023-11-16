@@ -109,6 +109,7 @@ class MachIndex {
   std::unordered_set<uint32_t> _nonempty_buckets;
 
   std::mt19937 _mt{341};
+  std::string _mt_state;
 
   MachIndex() {}
 

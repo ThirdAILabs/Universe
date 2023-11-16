@@ -7,6 +7,7 @@
 #include <cereal/types/vector.hpp>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
+#include <iterator>
 #include <optional>
 #include <stdexcept>
 #include <unordered_set>
@@ -48,7 +49,8 @@ std::optional<data::ColumnMap> RLHFSampler::balancingSamples(
 
   std::unordered_set<uint32_t> extra_round_docs;
   std::sample(_labels.begin(), _labels.end(),
-              std::back_inserter(extra_round_docs), num_extra_round_docs, _rng);
+              std::inserter(extra_round_docs, extra_round_docs.begin()),
+              num_extra_round_docs, _rng);
 
   for (const auto& [doc_id, doc_samples] : _samples_per_doc) {
     std::uniform_int_distribution<uint32_t> dist(0, doc_samples.size() - 1);
@@ -58,7 +60,6 @@ std::optional<data::ColumnMap> RLHFSampler::balancingSamples(
       indices.push_back(doc_samples[pos].input_indices);
       values.push_back(doc_samples[pos].input_values);
       buckets.push_back(doc_samples[pos].mach_buckets);
-      num_samples--;
     }
   }
 
@@ -129,7 +130,7 @@ template <class Archive>
 void RLHFSampler::serialize(Archive& archive) {
   archive(_input_indices_column, _input_values_column, _doc_id_column,
           _mach_buckets_column, _input_indices_column, _num_mach_buckets,
-          _samples_per_doc, _labels, _max_docs, _max_samples_per_doc, _rng);
+          _samples_per_doc, _labels, _max_docs, _max_samples_per_doc);
 }
 
 }  // namespace thirdai::automl::udt

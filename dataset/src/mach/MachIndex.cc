@@ -6,6 +6,7 @@
 #include <utils/Random.h>
 #include <optional>
 #include <random>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -218,12 +219,29 @@ void MachIndex::verifyHash(uint32_t hash) const {
   }
 }
 
+std::string mtToString(std::mt19937& mt) {
+  std::stringstream ss;
+  ss << mt;
+  return ss.str();
+}
+
+std::mt19937 stringToMt(const std::string& string) {
+  std::stringstream ss(string);
+  std::mt19937 mt;
+  ss >> mt;
+  return mt;
+}
+
 template void MachIndex::serialize(cereal::BinaryInputArchive&);
 template void MachIndex::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void MachIndex::serialize(Archive& archive) {
-  archive(_entity_to_hashes, _buckets, _num_hashes, _mt);
+  _mt_state = mtToString(_mt);
+
+  archive(_entity_to_hashes, _buckets, _num_hashes, _mt_state);
+
+  _mt = stringToMt(_mt_state);
 
   for (uint32_t bucket_id = 0; bucket_id < _buckets.size(); bucket_id++) {
     if (!_buckets[bucket_id].empty()) {
