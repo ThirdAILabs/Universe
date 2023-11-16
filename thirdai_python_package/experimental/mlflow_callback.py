@@ -2,6 +2,7 @@ import os
 import platform
 import socket
 from typing import Any, Dict
+import psutil
 
 from thirdai._thirdai import bolt
 
@@ -31,6 +32,12 @@ class MlflowCallback(bolt.train.callbacks.Callback):
 
         _log_machine_info()
 
+    def on_batch_end(self):
+        import mlflow
+
+        gb_used = psutil.Process().memory_info().rss / (1024**3)
+        mlflow.log_metric("ram_used_gb", gb_used)
+
     def on_epoch_end(self):
         import mlflow  # import inside class to not force another package dependency
 
@@ -39,10 +46,16 @@ class MlflowCallback(bolt.train.callbacks.Callback):
 
         mlflow.log_metric("learning_rate", self.train_state.learning_rate)
 
+        gb_used = psutil.Process().memory_info().rss / (1024**3)
+        mlflow.log_metric("ram_used_gb", gb_used)
+
     def log_additional_metric(self, key, value, step=0):
         import mlflow  # import inside class to not force another package dependency
 
         mlflow.log_metric(_clean(key), value, step=step)
+
+        gb_used = psutil.Process().memory_info().rss / (1024**3)
+        mlflow.log_metric("ram_used_gb", gb_used)
 
     def log_additional_param(self, key, value):
         import mlflow  # import inside class to not force another package dependency
