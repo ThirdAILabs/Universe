@@ -743,7 +743,11 @@ class PDF(Extracted):
         self.emphasize_first_words = emphasize_first_words
         self.ignore_header_footer = ignore_header_footer
         self.ignore_nonstandard_orientation = ignore_nonstandard_orientation
-        super().__init__(path=path, metadata=metadata, strong_column="emphasis")
+        super().__init__(
+            path=path,
+            metadata={**metadata, "__pdf_version__": "v2"},
+            strong_column="emphasis",
+        )
 
     def process_data(
         self,

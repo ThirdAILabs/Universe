@@ -7,10 +7,9 @@ import pytest
 from ndb_utils import (
     PDF_FILE,
     all_local_doc_getters,
-    create_simple_dataset,
     docs_with_meta,
     metadata_constraints,
-    train_simple_neural_db,
+    num_duplicate_docs,
 )
 from thirdai import bolt
 from thirdai import neural_db as ndb
@@ -53,12 +52,12 @@ ARBITRARY_QUERY = "This is an arbitrary search query"
 
 def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document]):
     db.insert(docs, train=False)
-    assert len(db.sources()) == 9
+    assert len(db.sources()) == len(docs) - num_duplicate_docs
 
     initial_scores = [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)]
 
     db.insert(docs, train=True)
-    assert len(db.sources()) == 9
+    assert len(db.sources()) == len(docs) - num_duplicate_docs
 
     assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
 

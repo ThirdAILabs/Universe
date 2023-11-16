@@ -197,6 +197,7 @@ all_local_doc_getters = [
     ),
     lambda: ndb.CSV(CSV_FILE),
     lambda: ndb.PDF(PDF_FILE),
+    lambda: ndb.PDF(PDF_FILE, version="v2"),
     lambda: ndb.DOCX(DOCX_FILE),
     lambda: ndb.URL("https://en.wikipedia.org/wiki/Rice_University"),
     lambda: ndb.URL(
@@ -209,6 +210,8 @@ all_local_doc_getters = [
     lambda: ndb.SentenceLevelPDF(PDF_FILE),
     lambda: ndb.SentenceLevelDOCX(DOCX_FILE),
 ]
+
+num_duplicate_docs = 2  # CSV and URL
 
 all_doc_getters = all_local_doc_getters + [
     eq_doc.connector_doc for eq_doc in all_connector_doc_getters
