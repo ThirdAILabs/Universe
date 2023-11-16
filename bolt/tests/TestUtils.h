@@ -111,6 +111,8 @@ class MockLoss final : public Loss {
 
   ComputationList labels() const final { return {}; }
 
+  ar::ConstArchivePtr toArchive() const final { return nullptr; }
+
  private:
   ComputationList _outputs_used;
 };
