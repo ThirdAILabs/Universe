@@ -19,6 +19,10 @@ class CategoricalCrossEntropy final : public ComparativeLoss {
   static std::shared_ptr<CategoricalCrossEntropy> make(ComputationPtr output,
                                                        ComputationPtr labels);
 
+  static auto cast(const LossPtr& loss) {
+    return std::dynamic_pointer_cast<CategoricalCrossEntropy>(loss);
+  }
+
  private:
   float singleGradient(float activation, float label,
                        uint32_t batch_size) const final;

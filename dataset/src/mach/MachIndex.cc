@@ -223,7 +223,7 @@ template void MachIndex::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void MachIndex::serialize(Archive& archive) {
-  archive(_entity_to_hashes, _buckets, _num_hashes, _mt);
+  archive(_entity_to_hashes, _buckets, _num_hashes);
 
   for (uint32_t bucket_id = 0; bucket_id < _buckets.size(); bucket_id++) {
     if (!_buckets[bucket_id].empty()) {

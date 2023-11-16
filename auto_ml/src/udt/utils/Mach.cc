@@ -1,9 +1,12 @@
 #include "Mach.h"
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
+#include <bolt/src/nn/loss/BinaryCrossEntropy.h>
+#include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
+#include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
-#include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <data/src/ColumnMap.h>
+#include <data/src/TensorConversion.h>
 #include <data/src/columns/Column.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/State.h>
@@ -26,16 +29,46 @@ bolt::ComputationPtr getEmbeddingComputation(const bolt::Model& model) {
   return computations.at(computations.size() - 2);
 }
 
-Mach::Mach(size_t input_dim, size_t num_buckets,
-           const config::ArgumentMap& args,
-           const std::optional<std::string>& model_config, bool use_sigmoid_bce,
-           size_t num_hashes, float mach_sampling_threshold,
-           bool freeze_hash_tables, std::string input_indices_column,
-           std::string input_values_column, std::string label_column,
-           std::string bucket_column)
+bolt::ModelPtr assertValidModel(bolt::ModelPtr&& model) {
+  if (model->inputs().size() != 1) {
+    throw std::invalid_argument(
+        "A MACH model must have 1 input. The given model has " +
+        std::to_string(model->inputs().size()) + " inputs.");
+  }
+  if (model->losses().size() != 1) {
+    throw std::invalid_argument(
+        "A MACH model must have 1 loss function. The given model has " +
+        std::to_string(model->losses().size()) + " loss functions.");
+  }
+  const auto& loss = model->losses()[0];
+  if (!bolt::BinaryCrossEntropy::cast(loss) &&
+      !bolt::CategoricalCrossEntropy::cast(loss)) {
+    throw std::invalid_argument(
+        "A MACH model must use either BinaryCrossEntropy or "
+        "CategoricalCrossEntropy loss.");
+  }
+  if (model->labels().size() != 2) {
+    throw std::invalid_argument(
+        "A MACH model must have 2 labels, one associated with the loss "
+        "function and the other is a MAX_INT-dimensional additional label. The "
+        "given model has " +
+        std::to_string(model->losses().size()) + " labels.");
+  }
+  return model;
+}
 
-    : _model(buildModel(input_dim, num_buckets, args, model_config,
-                        use_sigmoid_bce, /* mach= */ true)),
+data::ValueFillType inferValueFillType(const bolt::Model& model) {
+  if (bolt::BinaryCrossEntropy::cast(model.losses()[0])) {
+    return data::ValueFillType::Ones;
+  }
+  return data::ValueFillType::SumToOne;
+}
+
+Mach::Mach(bolt::ModelPtr&& model, size_t num_hashes,
+           float mach_sampling_threshold, bool freeze_hash_tables,
+           std::string input_indices_column, std::string input_values_column,
+           std::string label_column, std::string bucket_column)
+    : _model(assertValidModel(std::move(model))),
       _emb(getEmbeddingComputation(*_model)),
       _mach_sampling_threshold(mach_sampling_threshold),
       _freeze_hash_tables(freeze_hash_tables),
@@ -46,9 +79,7 @@ Mach::Mach(size_t input_dim, size_t num_buckets,
       _bolt_input_columns(
           {data::OutputColumns(input_indices_column, input_values_column)}),
       _bolt_label_columns(
-          {data::OutputColumns(bucket_column,
-                               use_sigmoid_bce ? data::ValueFillType::Ones
-                                               : data::ValueFillType::SumToOne),
+          {data::OutputColumns(bucket_column, inferValueFillType(*_model)),
            data::OutputColumns(label_column)}),
       _all_bolt_columns({std::move(input_indices_column),
                          std::move(input_values_column),
