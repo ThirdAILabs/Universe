@@ -415,7 +415,17 @@ class CSV(Document):
             self.df[col] = self.df[col].fillna("")
 
         self.path = Path(path)
-        self._hash = hash_file(path, metadata="csv-" + str(metadata))
+        # Add column names to hash metadata so that CSVs with different
+        # hyperparameters are treated as different documents. Otherwise, this
+        # may break training.
+        self._hash = hash_file(
+            path,
+            metadata="csv-"
+            + str(strong_columns)
+            + str(weak_columns)
+            + str(reference_columns)
+            + str(metadata),
+        )
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
         self.reference_columns = reference_columns
@@ -743,12 +753,17 @@ class PDF(Extracted):
         self.emphasize_first_words = emphasize_first_words
         self.ignore_header_footer = ignore_header_footer
         self.ignore_nonstandard_orientation = ignore_nonstandard_orientation
-        # Add pdf chunk size and stride metadata so that the same PDF inserted
-        # with different hyperparameters are treated as different documents.
-        # Otherwise, this may break training.
+        # Add pdf version, chunk size, and stride metadata so that the same
+        # PDF inserted with different hyperparameters are treated as different
+        # documents. Otherwise, this may break training.
         super().__init__(
             path=path,
-            metadata={**metadata, "__pdf_version__": "v2"},
+            metadata={
+                **metadata,
+                "__version__": "v2",
+                "__chunk_size__": chunk_size,
+                "__stride__": stride,
+            },
             strong_column="emphasis",
         )
 

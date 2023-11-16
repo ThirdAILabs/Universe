@@ -211,7 +211,8 @@ all_local_doc_getters = [
     lambda: ndb.SentenceLevelDOCX(DOCX_FILE),
 ]
 
-num_duplicate_docs = 2  # CSV and URL
+# The two URL docs are different constructor invocationsfor the same thing.
+num_duplicate_docs = 1
 
 all_doc_getters = all_local_doc_getters + [
     eq_doc.connector_doc for eq_doc in all_connector_doc_getters
