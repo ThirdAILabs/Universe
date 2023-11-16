@@ -14,14 +14,19 @@ namespace thirdai::dataset {
 class TextClassificationFeaturizer final : public Featurizer {
  public:
   size_t getNumDatasets() final {
+    uint32_t num_datasets = 4;
     if (_mach_label_block) {
-      return 5;
+      num_datasets += 1;
     }
-    return 4;
+    if(_prompt_column){
+      num_datasets += 1;
+    }
+    return num_datasets;
   }
 
   TextClassificationFeaturizer(const std::string& text_column,
                                const std::string& label_column,
+                               std::optional<std::string> prompt_column,
                                uint32_t lrc_len, uint32_t irc_len,
                                uint32_t src_len, uint32_t vocab_size,
                                uint32_t n_labels, char delimiter,
@@ -78,6 +83,7 @@ class TextClassificationFeaturizer final : public Featurizer {
   ThreadSafeVocabularyPtr _vocab;
   BlockPtr _label_block;
   std::optional<mach::MachBlockPtr> _mach_label_block;
+  std::optional<std::string> _prompt_column;
 };
 
 using TextClassificationFeaturizerPtr =

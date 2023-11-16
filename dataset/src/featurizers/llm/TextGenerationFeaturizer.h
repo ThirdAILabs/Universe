@@ -108,11 +108,12 @@ class TextGenerationFeaturizer final : public Featurizer {
 
   static TextGenerationFeaturizerPtr load_stream(std::istream& input_stream);
 
+  static BoltVector promptContext(const std::vector<uint32_t>& prompt_tokens);
+
  private:
   // Private Constructor for Cereal
   TextGenerationFeaturizer() {}
 
-  static BoltVector promptContext(const std::vector<uint32_t>& prompt_tokens);
 
   friend class cereal::access;
   template <class Archive>

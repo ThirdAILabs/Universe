@@ -1,14 +1,18 @@
 #include "TextClassificationFeaturizer.h"
+#include <dataset/src/Featurizer.h>
+#include <dataset/src/featurizers/llm/TextGenerationFeaturizer.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <algorithm>
 #include <exception>
+#include <utility>
 #include <string>
 
 namespace thirdai::dataset {
 
 TextClassificationFeaturizer::TextClassificationFeaturizer(
     const std::string& text_column, const std::string& label_column,
+    std::optional<std::string> prompt_column,
     uint32_t lrc_len, uint32_t irc_len, uint32_t src_len, uint32_t vocab_size,
     uint32_t n_labels, char delimiter, std::optional<char> label_delimiter,
     bool integer_labels, bool normalize_categories)
@@ -19,7 +23,8 @@ TextClassificationFeaturizer::TextClassificationFeaturizer(
       _context_featurizer(lrc_len, irc_len, src_len, vocab_size),
       _vocab(integer_labels ? nullptr : ThreadSafeVocabulary::make(n_labels)),
       _label_block(labelBlock(label_column, n_labels, _vocab, label_delimiter,
-                              normalize_categories)) {}
+                              normalize_categories)),
+      _prompt_column(prompt_column) { }
 
 std::vector<std::vector<BoltVector>>
 thirdai::dataset::TextClassificationFeaturizer::featurize(
@@ -38,6 +43,13 @@ thirdai::dataset::TextClassificationFeaturizer::featurize(
       CsvSampleRef sample(row, _delimiter);
       std::string text_column(sample.column(_text_column));
       std::vector<uint32_t> text_tokens = token_encoding::tokenIds(text_column);
+
+      if (_prompt_column) {
+        std::vector<uint32_t> prompt_tokens =
+            token_encoding::tokenIds(*_prompt_column);
+        feature_columns[column_id++][row_id] =
+            dataset::TextGenerationFeaturizer::promptContext(prompt_tokens);
+      }
       feature_columns[column_id++][row_id] =
           _context_featurizer.lrcContext(text_tokens);
       feature_columns[column_id++][row_id] =
