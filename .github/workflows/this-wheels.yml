@@ -14,7 +14,7 @@ concurrency:
 # for more details.
 on: 
   push: 
-    branches: [toolbox]
+    branches: [usbank-mach-mixture]
   workflow_dispatch:  
 
 
