@@ -96,14 +96,14 @@ class CriteoDLRMConfig(DLRMConfig):
         return CriteoDLRMConfig._load_click_through_dataset(
             filename=os.path.join(path_prefix, CriteoDLRMConfig.train_dataset_path),
             batch_size=CriteoDLRMConfig.batch_size,
-            max_categorical_features=CriteoDLRMConfig.max_num_categorical_features,
-            max_num_numerical_features=CriteoDLRMConfig.num_numerical_features,
+            max_categorical_features=CriteoDLRMConfig.cat_features,
+            max_num_numerical_features=CriteoDLRMConfig.int_features,
         )
 
     def load_test_data(path_prefix):
         return CriteoDLRMConfig._load_click_through_dataset(
             filename=os.path.join(path_prefix, CriteoDLRMConfig.test_dataset_path),
             batch_size=CriteoDLRMConfig.batch_size,
-            max_categorical_features=CriteoDLRMConfig.max_num_categorical_features,
-            max_num_numerical_features=CriteoDLRMConfig.num_numerical_features,
+            max_categorical_features=CriteoDLRMConfig.cat_features,
+            max_num_numerical_features=CriteoDLRMConfig.int_features,
         )
