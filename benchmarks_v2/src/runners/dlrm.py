@@ -6,6 +6,8 @@ from thirdai import bolt
 
 from ..configs.dlrm_configs import DLRMConfig
 from .runner import Runner
+import mlflow
+import psutil
 
 
 def compute_roc_auc(activations, test_labels_path, mlflow_callback=None, step=0):
@@ -76,6 +78,9 @@ class DLRMRunner(Runner):
                 scores.append(
                     np.copy(model.forward(x, use_sparsity=False)[0].activations)
                 )
+
+                gb_used = psutil.Process().memory_info().rss / (1024**3)
+                mlflow.log_metric("ram_used_gb", gb_used)
 
             compute_roc_auc(
                 activations=np.concatenate(scores),
