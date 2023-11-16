@@ -1,4 +1,4 @@
-import random
+from collections import defaultdict
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence, Tuple
 
@@ -26,7 +26,7 @@ class MachMixture(Model):
         embedding_dimension: int = 2048,
         extreme_output_dim: int = 10_000,  # for Mach Mixture, we use default dim of 10k
         model_config=None,
-        label_index: dict = {},
+        label_to_segment_map: defaultdict = None,
         seed_for_sharding: int = 0,
     ):
         self.id_col = id_col
@@ -40,7 +40,12 @@ class MachMixture(Model):
 
         # These parameters are specific to Mach Mixture
         self.number_models = number_models
-        self.label_index = label_index
+
+        if label_to_segment_map == None:
+            self.label_to_segment_map = defaultdict(list)
+        else:
+            self.label_to_segment_map = label_to_segment_map
+
         self.seed_for_sharding = seed_for_sharding
 
         self.models: List[Mach] = [
@@ -112,7 +117,7 @@ class MachMixture(Model):
         sharded_data_source = ShardedDataSource(
             document_data_source=intro_documents,
             number_shards=self.number_models,
-            label_index=self.label_index,
+            label_to_segment_map=self.label_to_segment_map,
             seed=self.seed_for_sharding,
         )
         introduce_data_sources = sharded_data_source.shard_data_source()
@@ -120,7 +125,7 @@ class MachMixture(Model):
         # Once the introduce datasource has been sharded, we can use the update label index to shard the training data source ( We do not want training samples to go to a Mach model that does not contain their labels)
         train_data_sources = sharded_data_source.shard_using_index(
             train_documents,
-            label_index=self.label_index,
+            label_to_segment_map=self.label_to_segment_map,
             number_shards=self.number_models,
         )
 
@@ -174,14 +179,13 @@ class MachMixture(Model):
         for index in range(len(results)):
             results[index].sort(key=lambda x: x[1], reverse=True)
             results[index] = results[index][:n_results]
-
         return results
 
     @requires_condition(
         check_func=lambda x: False,
         method_name="score",
         method_class="MachMixture",
-        condition_string="when multiple models are initialized",
+        condition_unmet_string="when multiple models are initialized",
     )
     def score(
         self, samples: InferSamples, entities: List[List[int]], n_results: int = None
@@ -192,7 +196,7 @@ class MachMixture(Model):
         check_func=lambda x: False,
         method_name="score",
         method_class="MachMixture",
-        condition_string="when multiple models are initialized",
+        condition_unmet_string="when multiple models are initialized",
     )
     def infer_buckets(
         self, samples: InferSamples, n_results: int, **kwargs
@@ -223,7 +227,7 @@ class MachMixture(Model):
     ) -> List[List[Tuple[str, int]]]:
         shards = [[] for _ in range(self.number_models)]
         for pair in source_target_pairs:
-            model_ids = self.label_index.get(pair[1])
+            model_ids = self.label_to_segment_map.get(pair[1])
             if model_ids is None:
                 raise Exception(f"The Label {pair[1]} is not a part of Label Index")
             for model_id in model_ids:
@@ -262,7 +266,7 @@ class MachMixture(Model):
         sharded_data_source = ShardedDataSource(
             document_data_source=balancing_data,
             number_shards=self.number_models,
-            label_index=self.label_index,
+            label_to_segment_map=self.label_to_segment_map,
             seed=self.seed_for_sharding,
         )
         balancing_data_shards = sharded_data_source.shard_data_source()

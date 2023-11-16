@@ -11,7 +11,7 @@ from thirdai.dataset.data_source import PyDataSource
 
 from . import loggers, teachers
 from .documents import CSV, Document, DocumentManager, Reference
-from .mixture import MachMixture
+from .mach_mixture_model import MachMixture
 from .models import CancelState, Mach
 from .savable_state import State
 
@@ -193,23 +193,22 @@ class NeuralDB:
         if "savable_state" not in kwargs:
             if number_models <= 0:
                 raise Exception(
-                    f"Invalid Value Passed for number_models : {number_models}. NeuralDB can only be initialized with a positive number of models."
+                    f"Invalid Value Passed for number_models : {number_models}."
+                    " NeuralDB can only be initialized with a positive number of"
+                    " models."
                 )
-            elif number_models > 1:
-                self._savable_state: State = State(
-                    model=MachMixture(
-                        number_models=number_models,
-                        id_col="id",
-                        query_col="query",
-                        **kwargs,
-                    ),
-                    logger=loggers.LoggerList([loggers.InMemoryLogger()]),
+            if number_models > 1:
+                model = MachMixture(
+                    number_models=number_models,
+                    id_col="id",
+                    query_col="query",
+                    **kwargs,
                 )
             else:
-                self._savable_state: State = State(
-                    model=Mach(id_col="id", query_col="query", **kwargs),
-                    logger=loggers.LoggerList([loggers.InMemoryLogger()]),
-                )
+                model = Mach(id_col="id", query_col="query", **kwargs)
+            self._savable_state = State(
+                model, logger=loggers.LoggerList([loggers.InMemoryLogger()])
+            )
         else:
             self._savable_state = kwargs["savable_state"]
 

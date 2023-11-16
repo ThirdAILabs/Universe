@@ -58,10 +58,13 @@ def move_between_directories(src, dest):
 
 # This decorator is used to raise a NotImplemented error if the check_func returns false. This is used for scenarios when a Funciton is not implemented for a particular class depending upon a condition
 def requires_condition(
-    check_func, method_name: str, method_class: str, condition_string: str = None
+    check_func, method_name: str, method_class: str, condition_unmet_string: str = None
 ):
     def decorator(func):
-        error_message = f"The property {method_name} is not implemented for the class {method_class}{condition_string if condition_string else ''}"
+        error_message = (
+            f"The property {method_name} is not implemented for the class"
+            f" {method_class}{condition_unmet_string if condition_unmet_string else ''}"
+        )
         if isinstance(func, property):  # If the decorator is applied to a property.
 
             def wrapped_fget(self):

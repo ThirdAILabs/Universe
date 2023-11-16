@@ -431,7 +431,7 @@ class CSV(Document):
         check_func=lambda self: not self.has_offset,
         method_name="matched_constraints",
         method_class="CSV(Document)",
-        condition_string=" when there is an offset in the CSV document",
+        condition_unmet_string=" when there is an offset in the CSV document",
     )
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
@@ -458,18 +458,30 @@ class CSV(Document):
         return df[self.id_column].to_list()
 
     def strong_text(self, element_id: int) -> str:
-        row = self.df.iloc[element_id]
-        return " ".join([str(row[col]).replace(",", "") for col in self.strong_columns])
+        row = self.df[self.df[self.id_column] == element_id]
+        return " ".join(
+            [str(row[col].values[0]).replace(",", "") for col in self.strong_columns]
+        )
 
     def weak_text(self, element_id: int) -> str:
-        row = self.df.iloc[element_id]
-        return " ".join([str(row[col]).replace(",", "") for col in self.weak_columns])
+        row = self.df[self.df[self.id_column] == element_id]
+        return " ".join(
+            [str(row[col].values[0]).replace(",", "") for col in self.weak_columns]
+        )
+
+    def row_iterator(self):
+        for i in list(self.df[self.id_column]):
+            yield DocumentRow(
+                element_id=i,
+                strong=self.strong_text(i),
+                weak=self.weak_text(i),
+            )
 
     @requires_condition(
         check_func=lambda self: not self.has_offset,
         method_name="reference",
         method_class="CSV(Document)",
-        condition_string=" when there is an offset in the CSV document",
+        condition_unmet_string=" when there is an offset in the CSV document",
     )
     def reference(self, element_id: int) -> Reference:
         if element_id >= len(self.df):
@@ -519,7 +531,7 @@ class CSV(Document):
         check_func=lambda self: not self.has_offset,
         method_name="save_meta",
         method_class="CSV(Document)",
-        condition_string=" when there is an offset in the CSV document",
+        condition_unmet_string=" when there is an offset in the CSV document",
     )
     def save_meta(self, directory: Path):
         # Let's copy the original CSV file to the provided directory
@@ -530,7 +542,7 @@ class CSV(Document):
         check_func=lambda self: not self.has_offset,
         method_name="load_meta",
         method_class="CSV(Document)",
-        condition_string=" when there is an offset in the CSV document",
+        condition_unmet_string=" when there is an offset in the CSV document",
     )
     def load_meta(self, directory: Path):
         # Since we've moved the CSV file to the provided directory, let's make

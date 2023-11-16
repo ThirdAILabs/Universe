@@ -1,8 +1,9 @@
 import copy
 import random
 import tempfile
+from collections import defaultdict
 from io import StringIO
-from typing import List, Tuple
+from typing import List
 
 import pandas as pd
 
@@ -14,7 +15,7 @@ class ShardedDataSource:
     Initialization Variables:
         * document_data_source -> The data source we are supposed to shard.
         * number_shards -> The number of shards to create for the data source.
-        * label_index -> A dictionary that tracks what label goes to what shard. This label index is supposed to be a dictionary reference from Mach Mixture class and this class will modify the label_index.
+        * label_to_segment_map -> A dictionary that tracks what label goes to what shard. This label index is supposed to be a dictionary reference from Mach Mixture class and this class will modify the label_to_segment_map.
         * seed -> Seed for sharding the dataset (since we randomly shard the data source)
 
     External APIs :
@@ -31,7 +32,7 @@ class ShardedDataSource:
             Args:
                 data_source : DocumentDataSource
                     Data source to shard
-                label_index : dict
+                label_to_segment_map : dictionary
                     Label index used to shard the data source
                 number_shards : int
                     number of shards to create for the data source.
@@ -46,13 +47,16 @@ class ShardedDataSource:
         self,
         document_data_source: DocumentDataSource,
         number_shards: int,
-        label_index: dict = {},
+        label_to_segment_map: defaultdict = None,
         seed: int = 0,
     ):
         self.data_source = document_data_source
         self.number_shards = number_shards
         self.seed = seed
-        self.label_index = label_index
+        if label_to_segment_map == None:
+            self.label_to_segment_map = defaultdict(list)
+        else:
+            self.label_to_segment_map = label_to_segment_map
 
     @staticmethod
     def _generate_temp_csvs(segments: List[pd.DataFrame]):
@@ -108,38 +112,6 @@ class ShardedDataSource:
         data_source.restart()
         return df
 
-    def shard_data_source(self):
-        df = ShardedDataSource._get_dataframe(self.data_source)
-
-        df = df.sample(frac=1, random_state=self.seed).reset_index(drop=True)
-
-        segment_size = len(df) // self.number_shards
-        segments = [
-            df.iloc[i * segment_size : (i + 1) * segment_size]
-            for i in range(self.number_shards)
-        ]
-
-        if len(df) % self.number_shards != 0:
-            segments[-1] = pd.concat(
-                [segments[-1], df.iloc[self.number_shards * segment_size :]]
-            )
-
-        for index, segment in enumerate(segments):
-            unique_labels = (
-                segment[self.data_source.id_column].unique().astype(int).tolist()
-            )
-            for label in unique_labels:
-                if label not in self.label_index:
-                    self.label_index[label] = []
-                self.label_index[label].append(index)
-
-        shard_names, shard_objects = ShardedDataSource._generate_temp_csvs(segments)
-
-        shards = ShardedDataSource._get_shards(
-            self.data_source, shard_names=shard_names, shard_objects=shard_objects
-        )
-        return shards
-
     @staticmethod
     def _get_shards(
         data_source: DocumentDataSource, shard_names=None, shard_objects=None
@@ -165,16 +137,46 @@ class ShardedDataSource:
             shard_data_sources.append(shard_data_source)
         return shard_data_sources
 
+    def shard_data_source(self):
+        df = ShardedDataSource._get_dataframe(self.data_source)
+
+        df = df.sample(frac=1, random_state=self.seed).reset_index(drop=True)
+
+        segment_size = len(df) // self.number_shards
+        remainder = len(df) - segment_size * self.number_shards
+        segments = [
+            df.iloc[
+                i * segment_size
+                + min(i, remainder) : (i + 1) * segment_size
+                + min(i + 1, remainder)
+            ]
+            for i in range(self.number_shards)
+        ]
+
+        for index, segment in enumerate(segments):
+            unique_labels = (
+                segment[self.data_source.id_column].unique().astype(int).tolist()
+            )
+            for label in unique_labels:
+                self.label_to_segment_map[label].append(index)
+
+        shard_names, shard_objects = ShardedDataSource._generate_temp_csvs(segments)
+
+        shards = ShardedDataSource._get_shards(
+            self.data_source, shard_names=shard_names, shard_objects=shard_objects
+        )
+        return shards
+
     @staticmethod
     def shard_using_index(
         data_source: DocumentDataSource,
-        label_index: dict,
+        label_to_segment_map: defaultdict,
         number_shards: int,
     ):
         """
         This function is used to shard another data source using the label to shard mapping generated for the data source that this object was initialized with.
         """
-        if len(label_index) == 0:
+        if len(label_to_segment_map) == 0:
             raise Exception(
                 "Cannot shard a data source without an uninitialized label index."
             )
@@ -187,8 +189,8 @@ class ShardedDataSource:
 
             insertion_index_segments = set()
             for label in labels:
-                if label in label_index:
-                    target_segments = set(label_index[label])
+                if label in label_to_segment_map:
+                    target_segments = set(label_to_segment_map[label])
                     for target in target_segments:
                         insertion_index_segments.add(target)
             for x in insertion_index_segments:
