@@ -161,7 +161,7 @@ neural_db_deps = [
     "url-normalize",
     "nltk",
     "unidecode",
-    "pydantic",
+    "pydantic<2.5",
     "sortedcontainers",
     "SQLAlchemy",
     "Office365-REST-Python-Client",
