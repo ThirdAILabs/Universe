@@ -95,11 +95,11 @@ class Sup:
             if id_delimiter:
                 self.labels = self.labels.apply(
                     lambda label: list(
-                        map(int, str(label).strip(id_delimiter).split(id_delimiter))
+                        str(label).strip(id_delimiter).split(id_delimiter)
                     )
                 )
             else:
-                self.labels = self.labels.apply(lambda label: [int(label)])
+                self.labels = self.labels.apply(lambda label: [str(label)])
 
         elif queries is not None and labels is not None:
             if len(queries) != len(labels):
@@ -149,33 +149,38 @@ class SupDataSource(PyDataSource):
         )
         return df.to_csv(header=None, index=None).strip("\n")
 
-    def _id_offset(self, sup: Sup):
-        if sup.uses_db_id:
-            return 0
+    def _source_for_sup(self, sup: Sup):
         source_ids = self.doc_manager.match_source_id_by_prefix(sup.source_id)
         if len(source_ids) == 0:
             raise ValueError(f"Cannot find source with id {sup.source_id}")
         if len(source_ids) > 1:
             raise ValueError(f"Multiple sources match the prefix {sup.source_id}")
-        _, start_id = self.doc_manager.source_by_id(source_ids[0])
-        return start_id
+        return self.doc_manager.source_by_id(source_ids[0])
+
+    def _labels(self, sup: Sup):
+        if sup.uses_db_id:
+            return [map(str, labels) for labels in sup.labels]
+
+        doc, start_id = self._source_for_sup(sup)
+        doc_id_map = doc.id_map()
+        if doc_id_map:
+            mapper = lambda label: str(doc_id_map[label] + start_id)
+        else:
+            mapper = lambda label: str(int(label) + start_id)
+
+        return [map(mapper, labels) for labels in sup.labels]
 
     def _get_line_iterator(self):
         # First yield the header
         yield self._csv_line(self.query_col, self.doc_manager.id_column)
         # Then yield rows
         for sup in self.data:
-            id_offset = self._id_offset(sup)
-            for query, labels in zip(sup.queries, sup.labels):
+            for query, labels in zip(sup.queries, self._labels(sup)):
                 if self.id_delimiter:
-                    label_str = self.id_delimiter.join(
-                        [str(id_offset + label) for label in labels]
-                    )
-                    yield self._csv_line(query, label_str)
+                    yield self._csv_line(query, self.id_delimiter.join(labels))
                 else:
                     for label in labels:
-                        label_str = str(id_offset + label)
-                        yield self._csv_line(query, label_str)
+                        yield self._csv_line(query, label)
 
     def resource_name(self) -> str:
         return "Supervised training samples"
@@ -571,7 +576,7 @@ class NeuralDB:
         self._savable_state.model.forget_documents()
 
     def search(
-        self, query: str, top_k: int, constraints=None, on_error: Callable = None
+        self, query: str, top_k: int, constraints=None, rerank=False
     ) -> List[Reference]:
         matching_entities = None
         if constraints:
@@ -591,6 +596,13 @@ class NeuralDB:
             ref = self._savable_state.documents.reference(rid)
             ref._score = score
             references.append(ref)
+
+        if rerank:
+            ranker = thirdai.dataset.KeywordOverlapRanker()
+            indices, scores = ranker.rank(query, [ref.text for ref in references])
+            references = [references[i] for i in indices]
+            for i in range(len(references)):
+                references[i]._score = scores[i]
 
         return references
 

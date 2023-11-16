@@ -437,14 +437,14 @@ def train_distributed(
     self.model = dist.BoltCheckPoint.get_model(result.checkpoint)
 
 
-def subcube_embeddings(seismic_model, subcubes):
+def subcube_embeddings(seismic_model, subcubes, sparse_inference=False):
     subcubes = convert_to_patches(
         torch.from_numpy(subcubes),
         expected_subcube_shape=seismic_model.subcube_shape,
         patch_shape=seismic_model.patch_shape,
         max_pool=seismic_model.max_pool,
     )
-    return seismic_model.embeddings_for_patches(subcubes)
+    return seismic_model.embeddings_for_patches(subcubes, sparse_inference)
 
 
 def forward_finetuning(seismic_model, subcubes):
@@ -466,7 +466,7 @@ def backpropagate_finetuning(seismic_model, grads):
     seismic_model.backpropagate_finetuning((-grads).numpy())
 
 
-def classifier_predict(seismic_classifier, subcubes):
+def classifier_predict(seismic_classifier, subcubes, sparse_inference=False):
     subcubes = convert_to_patches(
         torch.from_numpy(subcubes),
         expected_subcube_shape=seismic_classifier.subcube_shape,
@@ -474,10 +474,12 @@ def classifier_predict(seismic_classifier, subcubes):
         max_pool=seismic_classifier.max_pool,
     )
 
-    return seismic_classifier.predictions_for_patches(subcubes)
+    return seismic_classifier.predictions_for_patches(subcubes, sparse_inference)
 
 
-def score_subcubes(seismic_model, directory, target_subcube="tgt.npy"):
+def score_subcubes(
+    seismic_model, directory, target_subcube="tgt.npy", sparse_inference=False
+):
     files = [file for file in os.listdir(directory) if file.endswith(".npy")]
     if target_subcube not in files:
         raise ValueError(f"Expected unable to find {target_subcube} in {directory}.")
@@ -486,7 +488,9 @@ def score_subcubes(seismic_model, directory, target_subcube="tgt.npy"):
     candidates = [np.load(os.path.join(directory, file)) for file in files]
 
     # Feed in as a batch for best parallelism.
-    embs = seismic_model.embeddings(np.stack([target] + candidates))
+    embs = seismic_model.embeddings(
+        np.stack([target] + candidates), sparse_inference=sparse_inference
+    )
 
     cosine_sims = np.matmul(embs[1:], embs[0])  # The fist embedding is the target.
     magnitudes = np.linalg.norm(embs, axis=1, ord=2)

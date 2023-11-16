@@ -44,9 +44,22 @@ SeismicEmbedding::SeismicEmbedding(InputShapeData input_shape_data,
   }
 }
 
-std::shared_ptr<SeismicEmbedding> SeismicEmbedding::make(
+std::shared_ptr<SeismicEmbedding> SeismicEmbedding::makeCube(
     size_t subcube_shape, size_t patch_shape, size_t embedding_dim,
     const std::string& model_size, std::optional<size_t> max_pool) {
+  std::optional<Shape> max_pool_shape = std::nullopt;
+  if (max_pool) {
+    max_pool_shape = {*max_pool, *max_pool, *max_pool};
+  }
+
+  return make({subcube_shape, subcube_shape, subcube_shape},
+              {patch_shape, patch_shape, patch_shape}, embedding_dim,
+              model_size, max_pool_shape);
+}
+
+std::shared_ptr<SeismicEmbedding> SeismicEmbedding::make(
+    Shape subcube_shape, Shape patch_shape, size_t embedding_dim,
+    const std::string& model_size, std::optional<Shape> max_pool) {
   InputShapeData input_shape_data(subcube_shape, patch_shape, max_pool);
 
   auto [n_output_classes, output_sparsity] = nOutputClasses(model_size);
@@ -81,7 +94,7 @@ metrics::History SeismicEmbedding::trainOnPatches(
                                      batch_size, callbacks, log_interval, comm);
 }
 
-NumpyArray SeismicEmbedding::forward(const NumpyArray& subcubes) {
+py::object SeismicEmbedding::forward(const NumpyArray& subcubes) {
   switchToFinetuning();
 
   auto batch = convertToBatches(subcubes, subcubes.shape(0)).at(0);

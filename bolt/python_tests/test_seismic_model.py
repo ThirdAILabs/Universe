@@ -9,13 +9,13 @@ from thirdai import bolt
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("max_pool", [None, 2])
+@pytest.mark.parametrize("max_pool", [None, (2, 2, 2)])
 def test_seismic_embedding_model(subcube_dataset, max_pool):
     subcube_directory, subcube_shape, patch_shape = subcube_dataset
     emb_dim = 100
     model = bolt.seismic.SeismicEmbedding(
-        subcube_shape=subcube_shape[0],
-        patch_shape=patch_shape[0],
+        subcube_shape=subcube_shape,
+        patch_shape=patch_shape,
         embedding_dim=emb_dim,
         size="small",
         max_pool=max_pool,
@@ -45,7 +45,7 @@ def test_seismic_embedding_model(subcube_dataset, max_pool):
         np.random.rand(n_cubes_to_embed, *subcube_shape).astype(np.float32) / 10
     )
 
-    embs = model.embeddings(subcubes_to_embed)
+    embs = model.embeddings(subcubes_to_embed, sparse_inference=True)
 
     assert embs.shape == (n_cubes_to_embed, emb_dim)
 
@@ -131,8 +131,26 @@ def test_seismic_classifier(classification_dataset):
         classifier.embeddings(subcubes_to_embed),
     )
 
-    predictions = classifier.predict(subcubes_to_embed)
+    predictions = classifier.predict(subcubes_to_embed, sparse_inference=True)
     assert predictions.shape == (n_cubes_to_embed, n_classes)
+
+
+@pytest.mark.unit
+def test_seismic_classifier_sparse_inference():
+    emb_model = bolt.seismic.SeismicEmbedding(
+        subcube_shape=16,
+        patch_shape=8,
+        embedding_dim=10,
+        size="small",
+        max_pool=2,
+    )
+
+    classifier = bolt.seismic.SeismicClassifier(emb_model, n_classes=500)
+
+    output = classifier.predict(np.random.rand(1, 16, 16, 16), sparse_inference=True)
+
+    assert output[0].shape == (1, 100)
+    assert output[0].shape == (1, 100)
 
 
 @pytest.mark.unit
