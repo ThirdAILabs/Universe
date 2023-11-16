@@ -464,12 +464,22 @@ class CSV(Document):
         return self.orig_to_assigned_id
 
     def strong_text(self, element_id: int) -> str:
-        row = self.df.iloc[element_id]
-        return " ".join([str(row[col]).replace(",", "") for col in self.strong_columns])
+        row = self.df.loc[self.df[self.id_column] == element_id, self.strong_columns]
+        cleaned_row = row.replace(',', '', regex=True).astype(str)
+        return ' '.join(cleaned_row.values[0])
 
     def weak_text(self, element_id: int) -> str:
-        row = self.df.iloc[element_id]
-        return " ".join([str(row[col]).replace(",", "") for col in self.weak_columns])
+        row = self.df.loc[self.df[self.id_column] == element_id, self.weak_columns]
+        cleaned_row = row.replace(',', '', regex=True).astype(str)
+        return ' '.join(cleaned_row.values[0])
+
+    def row_iterator(self):
+        for id_val in list(self.df[self.id_column]):
+            yield DocumentRow(
+                element_id=id_val,
+                strong=self.strong_text(id_val),
+                weak=self.weak_text(id_val),
+            )
 
     def reference(self, element_id: int) -> Reference:
         if element_id >= len(self.df):
