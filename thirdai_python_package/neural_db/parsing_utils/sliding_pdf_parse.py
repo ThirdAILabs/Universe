@@ -164,7 +164,7 @@ def get_chunks_from_lines(lines, chunk_words, stride_words):
             stride_end += 1
         chunks.append(" ".join(line["text"] for line in lines[chunk_start:chunk_end]))
         chunk_boxes.append(
-            (line["page_num"], line["bbox"]) for line in lines[chunk_start:chunk_end]
+            [(line["page_num"], line["bbox"]) for line in lines[chunk_start:chunk_end]]
         )
         chunk_start = stride_end
     return chunks, chunk_boxes
@@ -228,6 +228,15 @@ def make_df(
             "display": chunks,
             "emphasis": [emphasis for _ in chunks],
             # chunk_boxes is a list of (page_num, bbox) pairs
-            "chunk_boxes": str(chunk_boxes),
+            "chunk_boxes": [str(chunk_box) for chunk_box in chunk_boxes],
         }
     )
+
+
+def highlighted_doc(source, columns):
+    if not "chunk_boxes" in columns:
+        return None
+    doc = fitz.open(source)
+    for page, box in eval(columns["chunk_boxes"]):
+        doc[page].add_highlight_annot(fitz.Rect(box))
+    return doc
