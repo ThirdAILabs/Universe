@@ -115,7 +115,7 @@ class ModelBazaar(Bazaar):
     def __init__(
         self,
         base_url: str,
-        cache_dir: Union[Path, str],
+        cache_dir: Union[Path, str] = "./bazaar_cache",
     ):
         super().__init__(cache_dir, base_url)
         self._username = None
