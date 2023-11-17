@@ -1,18 +1,19 @@
-from pathlib import Path
-from typing import Union, List
 import json
-from urllib.parse import urljoin
-import requests
 import time
-from uuid import UUID
 from functools import wraps
+from pathlib import Path
+from typing import List, Union
+from urllib.parse import urljoin
+from uuid import UUID
 
+import requests
 from bazaar import Bazaar, auth_header
+
 from utils import (
+    create_deployment_identifier,
+    create_model_identifier,
     http_get_with_error,
     http_post_with_error,
-    create_model_identifier,
-    create_deployment_identifier,
     print_progress_dots,
 )
 
