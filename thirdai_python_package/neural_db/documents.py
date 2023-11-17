@@ -354,7 +354,12 @@ class DocumentManager:
 
 
 class CSV(Document):
-    def valid_id_column(column):
+    def valid_id_column(df, column_name):
+        if column_name == None:
+            return False
+
+        column = df[column_name]
+        
         return (
             (len(column.unique()) == len(column))
             and (column.min() == 0)
@@ -380,7 +385,8 @@ class CSV(Document):
         self.orig_to_assigned_id = None
         self.id_column = id_column
         orig_id_column = id_column
-        if self.id_column and not CSV.valid_id_column(self.df[self.id_column]):
+
+        if not CSV.valid_id_column(self.df, self.id_column):
             self.id_column = "thirdai_index"
             self.df[self.id_column] = range(self.df.shape[0])
             if orig_id_column:
