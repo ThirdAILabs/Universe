@@ -509,7 +509,7 @@ class CSV(Document):
     def reference(self, element_id: int) -> Reference:
         if element_id >= len(self.df):
             _raise_unknown_doc_error(element_id)
-        row = self.df.iloc[element_id]
+        row = self.df.loc[self.df[self.id_column] == element_id]
         text = "\n\n".join([f"{col}: {row[col]}" for col in self.reference_columns])
         return Reference(
             document=self,
