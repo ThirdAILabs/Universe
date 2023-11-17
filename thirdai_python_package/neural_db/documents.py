@@ -415,12 +415,12 @@ class CSV(Document):
         elif weak_columns is None:
             weak_columns = []
 
-        self.df = self.df.sort_values(id_column)
+        self.df = self.df.sort_values(self.id_column)
 
         if not self.has_offset:
-            assert len(self.df[id_column].unique()) == len(self.df[id_column])
-            assert self.df[id_column].min() == 0
-            assert self.df[id_column].max() == len(self.df[id_column]) - 1
+            assert len(self.df[self.id_column].unique()) == len(self.df[self.id_column])
+            assert self.df[self.id_column].min() == 0
+            assert self.df[self.id_column].max() == len(self.df[self.id_column]) - 1
 
         for col in strong_columns + weak_columns:
             self.df[col] = self.df[col].fillna("")

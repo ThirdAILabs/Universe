@@ -154,6 +154,8 @@ class ShardedDataSource:
         ]
 
         for index, segment in enumerate(segments):
+            # TODO(Shubh) : This assumes that there is only one label in the column.
+            # This is consistent with the current design of Document Data source.
             unique_labels = (
                 segment[self.data_source.id_column].unique().astype(int).tolist()
             )
@@ -185,7 +187,8 @@ class ShardedDataSource:
 
         segments = [[] for _ in range(number_shards)]
         for _, row in df.iterrows():
-            labels = [int(x) for x in str(row[data_source.id_column]).split(":") if x]
+            # TODO(SHUBH) : Add delimiter support here.
+            labels = [int(row[data_source.id_column])]
 
             insertion_index_segments = set()
             for label in labels:
