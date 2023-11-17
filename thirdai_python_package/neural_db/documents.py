@@ -469,11 +469,15 @@ class CSV(Document):
 
     def strong_text(self, element_id: int) -> str:
         row = self.df.loc[self.df[self.id_column] == element_id, self.strong_columns]
+        if len(row) == 0:
+            _raise_unknown_doc_error(element_id)
         cleaned_row = row.replace(",", "", regex=True).astype(str)
         return " ".join(cleaned_row.values[0])
 
     def weak_text(self, element_id: int) -> str:
         row = self.df.loc[self.df[self.id_column] == element_id, self.weak_columns]
+        if len(row) == 0:
+            _raise_unknown_doc_error(element_id)
         cleaned_row = row.replace(",", "", regex=True).astype(str)
         return " ".join(cleaned_row.values[0])
 
@@ -486,16 +490,16 @@ class CSV(Document):
             )
 
     def reference(self, element_id: int) -> Reference:
-        if element_id >= len(self.df):
-            _raise_unknown_doc_error(element_id)
         row = self.df.loc[self.df[self.id_column] == element_id]
+        if len(row) == 0:
+            _raise_unknown_doc_error(element_id)
         text = "\n\n".join([f"{col}: {row[col]}" for col in self.reference_columns])
         return Reference(
             document=self,
             element_id=element_id,
             text=text,
             source=str(self.path.absolute()),
-            metadata={**row.to_dict(), **self.doc_metadata},
+            metadata={**row.iloc[0].to_dict(), **self.doc_metadata},
         )
 
     def context(self, element_id: int, radius) -> str:
