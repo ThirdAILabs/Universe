@@ -82,6 +82,20 @@ class UDTClassifier final : public UDTBackend {
 
   std::string className(uint32_t class_id) const final;
 
+  void updateTemporalTrackers(const MapInput& sample) final {
+    _featurizer->updateTemporalTrackers(sample);
+  }
+
+  void updateTemporalTrackersBatch(const MapInputBatch& samples) final {
+    _featurizer->updateTemporalTrackersBatch(samples);
+  }
+
+  void resetTemporalTrackers() final { _featurizer->resetTemporalTrackers(); }
+
+  const TextDatasetConfig& textDatasetConfig() const final {
+    return _featurizer->textDatasetConfig();
+  }
+
   ModelPtr model() const final { return _classifier->model(); }
 
   void setModel(const ModelPtr& model) final {
@@ -91,8 +105,6 @@ class UDTClassifier final : public UDTBackend {
 
     curr_model = model;
   }
-
-  FeaturizerPtr featurizer() const final { return _featurizer; }
 
   void verifyCanDistribute() const final {
     if (!integerTarget()) {

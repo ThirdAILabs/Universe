@@ -10,6 +10,7 @@
 #include <data/src/columns/Column.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/State.h>
+#include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/mach/MachIndex.h>
 #include <algorithm>
 #include <iostream>
