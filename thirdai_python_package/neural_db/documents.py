@@ -380,9 +380,7 @@ class CSV(Document):
         self.orig_to_assigned_id = None
         self.id_column = id_column
         orig_id_column = id_column
-        if self.id_column and CSV.valid_id_column(self.df[self.id_column]):
-            self.df = self.df.sort_values(self.id_column)
-        else:
+        if self.id_column and not CSV.valid_id_column(self.df[self.id_column]):
             self.id_column = "thirdai_index"
             self.df[self.id_column] = range(self.df.shape[0])
             if orig_id_column:
@@ -484,7 +482,7 @@ class CSV(Document):
     def reference(self, element_id: int) -> Reference:
         if element_id >= len(self.df):
             _raise_unknown_doc_error(element_id)
-        row = self.df.iloc[element_id]
+        row = self.df.loc[self.df[self.id_column] == element_id]
         text = "\n\n".join([f"{col}: {row[col]}" for col in self.reference_columns])
         return Reference(
             document=self,
