@@ -11,6 +11,7 @@ set(DATASET_TESTS
     TextBlockTests
     MachBlockTests
     MachDecodeTests
+    MachIndexSerializationTests
     QuantityHistoryTrackerTest
     ThreadSafeVocabularyTests
     UserItemHistoryBlockTests
