@@ -76,6 +76,15 @@ ar::ConstArchivePtr RegressionBinning::toArchive() const {
   return map;
 }
 
+RegressionBinning::RegressionBinning(const ar::Archive& archive)
+    : _input_column(archive.str("input_column")),
+      _output_column(archive.str("output_column")),
+      _min(archive.getAs<ar::F32>("min")),
+      _max(archive.getAs<ar::F32>("max")),
+      _binsize(archive.getAs<ar::F32>("binsize")),
+      _num_bins(archive.u64("num_bins")),
+      _correct_label_radius(archive.u64("correct_label_radius")) {}
+
 template void RegressionBinning::serialize(cereal::BinaryInputArchive&);
 template void RegressionBinning::serialize(cereal::BinaryOutputArchive&);
 

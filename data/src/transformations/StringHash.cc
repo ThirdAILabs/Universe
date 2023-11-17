@@ -93,4 +93,11 @@ ar::ConstArchivePtr StringHash::toArchive() const {
   return map;
 }
 
+StringHash::StringHash(const ar::Archive& archive)
+    : _input_column_name(archive.str("input_column")),
+      _output_column_name(archive.str("output_column")),
+      _output_range(archive.getOpt<ar::U64>("output_range")),
+      _delimiter(archive.getOpt<ar::Char>("delimiter")),
+      _seed(archive.u64("seed")) {}
+
 }  // namespace thirdai::data

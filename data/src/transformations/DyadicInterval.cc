@@ -217,11 +217,19 @@ ar::ConstArchivePtr DyadicInterval::toArchive() const {
   map->set("output_interval_prefix", ar::str(_output_interval_prefix));
   map->set("target_column", ar::str(_target_column));
 
-  map->set("n_intervals", ar::u64(_n_intervals));
   map->set("is_bidirection", ar::boolean(_is_bidirectional));
+  map->set("n_intervals", ar::u64(_n_intervals));
 
   return map;
 }
+
+DyadicInterval::DyadicInterval(const ar::Archive& archive)
+    : _prompt_column(archive.getOpt<ar::Str>("prompt_column")),
+      _input_column(archive.str("input_column")),
+      _output_interval_prefix(archive.str("output_interval_prefix")),
+      _target_column(archive.str("target_column")),
+      _is_bidirectional(archive.getAs<ar::Boolean>("is_bidirectional")),
+      _n_intervals(archive.u64("n_intervals")) {}
 
 template void DyadicInterval::serialize(cereal::BinaryInputArchive&);
 template void DyadicInterval::serialize(cereal::BinaryOutputArchive&);

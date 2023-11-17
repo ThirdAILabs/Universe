@@ -122,6 +122,11 @@ ar::ConstArchivePtr Date::toArchive() const {
   return map;
 }
 
+Date::Date(const ar::Archive& archive)
+    : _input_column_name(archive.str("input_column")),
+      _output_column_name(archive.str("output_column")),
+      _format(archive.str("format")) {}
+
 template void Date::serialize(cereal::BinaryInputArchive&);
 template void Date::serialize(cereal::BinaryOutputArchive&);
 

@@ -38,6 +38,12 @@ ar::ConstArchivePtr Pipeline::toArchive() const {
   return map;
 }
 
+Pipeline::Pipeline(const ar::Archive& archive) {
+  for (const auto& t : archive.get("transformations")->list()) {
+    _transformations.push_back(Transformation::fromArchive(*t));
+  }
+}
+
 void Pipeline::save(const std::string& filename) const {
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);

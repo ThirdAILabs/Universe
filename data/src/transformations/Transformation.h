@@ -60,6 +60,9 @@ class Transformation {
 
   virtual ar::ConstArchivePtr toArchive() const = 0;
 
+  static std::shared_ptr<Transformation> fromArchive(
+      const ar::Archive& archive);
+
  private:
   friend class cereal::access;
   template <class Archive>

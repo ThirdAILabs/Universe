@@ -21,6 +21,8 @@ class FeatureHash final : public Transformation {
               std::string output_indices_column,
               std::string output_values_columns, size_t hash_range);
 
+  explicit FeatureHash(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   void buildExplanationMap(const ColumnMap& input, State& state,

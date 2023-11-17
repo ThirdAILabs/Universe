@@ -43,4 +43,9 @@ ar::ConstArchivePtr CountTokens::toArchive() const {
   return map;
 }
 
+CountTokens::CountTokens(const ar::Archive& archive)
+    : _input_column(archive.str("input_column")),
+      _output_column(archive.str("output_column")),
+      _max_tokens(archive.getOpt<ar::U64>("max_tokens")) {}
+
 }  // namespace thirdai::data

@@ -24,6 +24,8 @@ class WordpieceTokenizer : public TextTokenizer {
   explicit WordpieceTokenizer(const std::string& vocab_fpath,
                               bool to_lower = true);
 
+  explicit WordpieceTokenizer(const ar::Archive& archive);
+
   static std::shared_ptr<TextTokenizer> make(const std::string& vocab_file,
                                              bool lowercase = true) {
     return std::make_shared<WordpieceTokenizer>(vocab_file, lowercase);

@@ -19,6 +19,8 @@ class CountTokens final : public Transformation {
         _output_column(std::move(output_column)),
         _max_tokens(max_tokens) {}
 
+  explicit CountTokens(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   ar::ConstArchivePtr toArchive() const final;

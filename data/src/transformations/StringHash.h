@@ -21,6 +21,8 @@ class StringHash final : public Transformation {
         _delimiter(delimiter),
         _seed(seed) {}
 
+  explicit StringHash(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   void buildExplanationMap(const ColumnMap& input, State& state,

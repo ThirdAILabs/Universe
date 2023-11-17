@@ -133,6 +133,7 @@ void FeatureHash::buildExplanationMap(const ColumnMap& input, State& state,
 ar::ConstArchivePtr FeatureHash::toArchive() const {
   auto map = ar::Map::make();
 
+  map->set("type", ar::str(type()));
   map->set("input_columns", ar::vecStr(_input_columns));
   map->set("output_indices_column", ar::str(_output_indices_column));
   map->set("output_values_column", ar::str(_output_values_column));
@@ -140,6 +141,12 @@ ar::ConstArchivePtr FeatureHash::toArchive() const {
 
   return map;
 }
+
+FeatureHash::FeatureHash(const ar::Archive& archive)
+    : _hash_range(archive.u64("hash_range")),
+      _input_columns(archive.getAs<ar::VecStr>("input_columns")),
+      _output_indices_column(archive.str("output_indices_column")),
+      _output_values_column(archive.str("output_values_column")) {}
 
 template void FeatureHash::serialize(cereal::BinaryInputArchive&);
 template void FeatureHash::serialize(cereal::BinaryOutputArchive&);

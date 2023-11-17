@@ -10,6 +10,8 @@ class CrossColumnPairgrams : public Transformation {
   CrossColumnPairgrams(std::vector<std::string> input_column_names,
                        std::string output_column_name, size_t hash_range);
 
+  explicit CrossColumnPairgrams(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   void buildExplanationMap(const ColumnMap& input, State& state,

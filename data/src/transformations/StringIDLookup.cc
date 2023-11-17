@@ -106,6 +106,13 @@ ar::ConstArchivePtr StringIDLookup::toArchive() const {
   return map;
 }
 
+StringIDLookup::StringIDLookup(const ar::Archive& archive)
+    : _input_column_name(archive.str("input_column")),
+      _output_column_name(archive.str("output_column")),
+      _vocab_key(archive.str("vocab_key")),
+      _max_vocab_size(archive.getOpt<ar::U64>("max_vocab_size")),
+      _delimiter(archive.getOpt<ar::Char>("delimiter")) {}
+
 template void StringIDLookup::serialize(cereal::BinaryInputArchive&);
 template void StringIDLookup::serialize(cereal::BinaryOutputArchive&);
 

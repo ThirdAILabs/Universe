@@ -193,4 +193,12 @@ ar::ConstArchivePtr WordpieceTokenizer::toArchive() const {
   return map;
 }
 
+WordpieceTokenizer::WordpieceTokenizer(const ar::Archive& archive)
+    : _id_to_token(archive.getAs<ar::VecWStr>("id_to_token")),
+      _to_lower(archive.getAs<ar::Boolean>("to_lower")) {
+  for (size_t i = 0; i < _id_to_token.size(); i++) {
+    _token_to_id[_id_to_token[i]] = i;
+  }
+}
+
 }  // namespace thirdai::dataset

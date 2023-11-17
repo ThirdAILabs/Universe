@@ -6,6 +6,7 @@
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <dataset/src/utils/TokenEncoding.h>
+#include <stdexcept>
 #include <string>
 
 namespace thirdai::dataset {
@@ -25,6 +26,8 @@ class TextEncoder {
   }
 
   virtual ar::ConstArchivePtr toArchive() const = 0;
+
+  static std::shared_ptr<TextEncoder> fromArchive(const ar::Archive& archive);
 
   virtual ~TextEncoder() = default;
 
@@ -116,6 +119,19 @@ class PairGramEncoder : public TextEncoder {
     archive(cereal::base_class<TextEncoder>(this));
   }
 };
+
+inline TextEncoderPtr TextEncoder::fromArchive(const ar::Archive& archive) {
+  std::string type = archive.str("type");
+
+  if (type == NGramEncoder::type()) {
+    return NGramEncoder::make(archive.u64("n"));
+  }
+  if (type == PairGramEncoder::type()) {
+    return PairGramEncoder::make();
+  }
+
+  throw std::invalid_argument("Invalid encoder type '" + type + "'.");
+}
 
 }  // namespace thirdai::dataset
 

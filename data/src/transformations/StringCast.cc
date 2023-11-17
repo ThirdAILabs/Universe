@@ -25,9 +25,6 @@ std::exception_ptr formatParseError(const std::string& row,
       "Invalid row '" + row + "' in column '" + column + "'."));
 }
 
-template <typename T>
-std::string typeName();
-
 template <>
 std::string typeName<uint32_t>() {
   return "u32";
@@ -101,7 +98,6 @@ ar::ConstArchivePtr CastToValue<T>::toArchive() const {
   auto map = ar::Map::make();
 
   map->set("type", ar::str(type()));
-  map->set("cast_to", ar::str(typeName<T>()));
   map->set("input_column", ar::str(_input_column_name));
   map->set("output_column", ar::str(_output_column_name));
   if (_dim) {
@@ -112,6 +108,16 @@ ar::ConstArchivePtr CastToValue<T>::toArchive() const {
   }
 
   return map;
+}
+
+template <typename T>
+CastToValue<T>::CastToValue(const ar::Archive& archive)
+    : _input_column_name(archive.str("input_column")),
+      _output_column_name(archive.str("output_column")),
+      _dim(archive.getOpt<ar::U64>("dim")) {
+  if constexpr (std::is_same_v<T, int64_t>) {
+    _format = archive.str("format");
+  }
 }
 
 template <>
@@ -257,7 +263,6 @@ ar::ConstArchivePtr CastToArray<T>::toArchive() const {
   auto map = ar::Map::make();
 
   map->set("type", ar::str(type()));
-  map->set("cast_to", ar::str(typeName<T>()));
   map->set("input_column", ar::str(_input_column_name));
   map->set("output_column", ar::str(_output_column_name));
   map->set("delimiter", ar::character(_delimiter));
@@ -267,6 +272,13 @@ ar::ConstArchivePtr CastToArray<T>::toArchive() const {
 
   return map;
 }
+
+template <typename T>
+CastToArray<T>::CastToArray(const ar::Archive& archive)
+    : _input_column_name(archive.str("input_column")),
+      _output_column_name(archive.str("output_column")),
+      _delimiter(archive.getAs<ar::Char>("delimiter")),
+      _dim(archive.getOpt<ar::U64>("dim")) {}
 
 template <>
 uint32_t CastToArray<uint32_t>::parse(const std::string& row) const {

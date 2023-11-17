@@ -21,12 +21,16 @@ class HashPositionTransform final : public Transformation {
         _output_column(std::move(output_column)),
         _dim(hash_range) {}
 
+  explicit HashPositionTransform(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
   ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "hashed_position"; }
 
  private:
   std::string _input_column;
@@ -59,6 +63,8 @@ class OffsetPositionTransform final : public Transformation {
       : _input_column(std::move(input_column)),
         _output_column(std::move(output_column)),
         _max_num_tokens(max_num_tokens) {}
+
+  explicit OffsetPositionTransform(const ar::Archive& archive);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 

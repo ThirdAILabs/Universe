@@ -28,6 +28,8 @@ class DeduplicateTokens final : public Transformation {
         _output_indices_column(std::move(output_indices_column)),
         _output_values_column(std::move(output_values_column)) {}
 
+  explicit DeduplicateTokens(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   ar::ConstArchivePtr toArchive() const final;

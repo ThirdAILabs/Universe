@@ -19,6 +19,8 @@ class RegressionBinning final : public Transformation {
                     float min, float max, size_t num_bins,
                     uint32_t correct_label_radius);
 
+  explicit RegressionBinning(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   ar::ConstArchivePtr toArchive() const final;

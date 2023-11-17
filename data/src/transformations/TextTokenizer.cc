@@ -143,6 +143,16 @@ ar::ConstArchivePtr TextTokenizer::toArchive() const {
   return map;
 }
 
+TextTokenizer::TextTokenizer(const ar::Archive& archive)
+    : _input_column(archive.str("input_column")),
+      _output_indices(archive.str("output_indices")),
+      _output_values(archive.getOpt<ar::Str>("output_values")),
+      _tokenizer(
+          dataset::TextTokenizer::fromArchive(*archive.get("tokenizer"))),
+      _encoder(dataset::TextEncoder::fromArchive(*archive.get("encoder"))),
+      _lowercase(archive.getAs<ar::Boolean>("lowercase")),
+      _dim(archive.u64("dim")) {}
+
 template void TextTokenizer::serialize(cereal::BinaryInputArchive&);
 template void TextTokenizer::serialize(cereal::BinaryOutputArchive&);
 

@@ -17,6 +17,8 @@ struct NumericalColumn {
         _salt(dataset::token_encoding::seededMurmurHash(name.data(),
                                                         name.size())) {}
 
+  explicit NumericalColumn(const ar::Archive& archive);
+
   inline uint32_t encode(const std::string& val) const;
 
   std::string name;
@@ -45,6 +47,8 @@ struct CategoricalColumn {
         _salt(dataset::token_encoding::seededMurmurHash(name.data(),
                                                         name.size())) {}
 
+  explicit CategoricalColumn(const ar::Archive& archive);
+
   inline uint32_t encode(const std::string& val) const;
 
   std::string name;
@@ -68,6 +72,8 @@ class Tabular final : public Transformation {
   Tabular(std::vector<NumericalColumn> numerical_columns,
           std::vector<CategoricalColumn> categorical_columns,
           std::string output_column, bool cross_column_pairgrams);
+
+  explicit Tabular(const ar::Archive& archive);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 

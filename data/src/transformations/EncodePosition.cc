@@ -62,12 +62,18 @@ void HashPositionTransform::buildExplanationMap(
 ar::ConstArchivePtr HashPositionTransform::toArchive() const {
   auto map = ar::Map::make();
 
+  map->set("type", ar::str(type()));
   map->set("input_column", ar::str(_input_column));
   map->set("output_column", ar::str(_output_column));
   map->set("dim", ar::u64(_dim));
 
   return map;
 }
+
+HashPositionTransform::HashPositionTransform(const ar::Archive& archive)
+    : _input_column(archive.str("input_column")),
+      _output_column(archive.str("output_column")),
+      _dim(archive.u64("dim")) {}
 
 template void HashPositionTransform::serialize(cereal::BinaryInputArchive&);
 template void HashPositionTransform::serialize(cereal::BinaryOutputArchive&);
@@ -119,12 +125,18 @@ void OffsetPositionTransform::buildExplanationMap(
 ar::ConstArchivePtr OffsetPositionTransform::toArchive() const {
   auto map = ar::Map::make();
 
+  map->set("type", ar::str(type()));
   map->set("input_column", ar::str(_input_column));
   map->set("output_column", ar::str(_output_column));
   map->set("max_tokens", ar::u64(_max_num_tokens));
 
   return map;
 }
+
+OffsetPositionTransform::OffsetPositionTransform(const ar::Archive& archive)
+    : _input_column(archive.str("input_column")),
+      _output_column(archive.str("output_column")),
+      _max_num_tokens(archive.u64("max_tokens")) {}
 
 template void OffsetPositionTransform::serialize(cereal::BinaryInputArchive&);
 template void OffsetPositionTransform::serialize(cereal::BinaryOutputArchive&);

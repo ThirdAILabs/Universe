@@ -372,6 +372,7 @@ void ColdStartTextAugmentation::mergeStrongWithWeak(
 ar::ConstArchivePtr ColdStartTextAugmentation::toArchive() const {
   auto map = ar::Map::make();
 
+  map->set("type", ar::str(type()));
   map->set("strong_columns", ar::vecStr(_strong_column_names));
   map->set("weak_columns", ar::vecStr(_weak_column_names));
   map->set("label_column", ar::str(_label_column_name));
@@ -398,6 +399,19 @@ ar::ConstArchivePtr ColdStartTextAugmentation::toArchive() const {
 
   return map;
 }
+
+ColdStartTextAugmentation::ColdStartTextAugmentation(const ar::Archive& archive)
+    : _strong_column_names(archive.getAs<ar::VecStr>("strong_columns")),
+      _weak_column_names(archive.getAs<ar::VecStr>("weak_columns")),
+      _label_column_name(archive.str("label_column")),
+      _output_column_name(archive.str("output_column")),
+      _weak_min_len(archive.getOpt<ar::U64>("weak_min_len")),
+      _weak_max_len(archive.getOpt<ar::U64>("weak_max_len")),
+      _weak_chunk_len(archive.getOpt<ar::U64>("weak_chunk_len")),
+      _weak_sample_num_words(archive.getOpt<ar::U64>("weak_sample_num_words")),
+      _weak_sample_reps(archive.u64("weak_sample_reps")),
+      _strong_max_len(archive.getOpt<ar::U64>("strong_max_len")),
+      _seed(archive.u64("seed")) {}
 
 std::vector<std::string> ColdStartTextAugmentation::augmentMapInput(
     const automl::MapInput& document) {

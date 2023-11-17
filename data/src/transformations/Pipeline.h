@@ -17,6 +17,8 @@ class Pipeline final : public Transformation {
   explicit Pipeline(std::vector<TransformationPtr> transformations = {})
       : _transformations(std::move(transformations)) {}
 
+  explicit Pipeline(const ar::Archive& archive);
+
   static auto make(std::vector<TransformationPtr> transformations = {}) {
     return std::make_shared<Pipeline>(std::move(transformations));
   }

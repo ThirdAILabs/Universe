@@ -112,6 +112,11 @@ ar::ConstArchivePtr CrossColumnPairgrams::toArchive() const {
   return map;
 }
 
+CrossColumnPairgrams::CrossColumnPairgrams(const ar::Archive& archive)
+    : _input_column_names(archive.getAs<ar::VecStr>("input_columns")),
+      _output_column_name(archive.str("output_column")),
+      _hash_range(archive.u64("hash_range")) {}
+
 template void CrossColumnPairgrams::serialize(cereal::BinaryInputArchive&);
 template void CrossColumnPairgrams::serialize(cereal::BinaryOutputArchive&);
 

@@ -136,6 +136,8 @@ class ColdStartTextAugmentation final : public Transformation {
       const ColdStartConfig& config = ColdStartConfig::longBothPhrases(),
       uint32_t seed = global_random::nextSeed());
 
+  explicit ColdStartTextAugmentation(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   ar::ConstArchivePtr toArchive() const final;
@@ -148,6 +150,8 @@ class ColdStartTextAugmentation final : public Transformation {
    */
   std::vector<std::string> augmentSingleRow(std::string& strong_text,
                                             std::string& weak_text) const;
+
+  static std::string type() { return "cold_start"; }
 
  private:
   typedef std::vector<std::string> Phrase;

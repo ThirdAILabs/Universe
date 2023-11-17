@@ -169,6 +169,14 @@ ar::ConstArchivePtr Recurrence::toArchive() const {
   return map;
 }
 
+Recurrence::Recurrence(const ar::Archive& archive)
+    : _source_input_column(archive.str("source_input_column")),
+      _target_input_column(archive.str("target_input_column")),
+      _source_output_column(archive.str("source_output_column")),
+      _target_output_column(archive.str("target_output_column")),
+      _target_vocab_size(archive.u64("target_vocab_size")),
+      _max_seq_len(archive.u64("max_seq_len")) {}
+
 template void Recurrence::serialize(cereal::BinaryInputArchive&);
 template void Recurrence::serialize(cereal::BinaryOutputArchive&);
 

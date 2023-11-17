@@ -85,4 +85,10 @@ ar::ConstArchivePtr DeduplicateTokens::toArchive() const {
   return map;
 }
 
+DeduplicateTokens::DeduplicateTokens(const ar::Archive& archive)
+    : _input_indices_column(archive.str("input_indices_column")),
+      _input_values_column(archive.getOpt<ar::Str>("input_values_column")),
+      _output_indices_column(archive.str("output_indices_column")),
+      _output_values_column(archive.str("output_values_column")) {}
+
 }  // namespace thirdai::data

@@ -134,6 +134,18 @@ ar::ConstArchivePtr CategoricalTemporal::toArchive() const {
   return map;
 }
 
+CategoricalTemporal::CategoricalTemporal(const ar::Archive& archive)
+    : _user_column(archive.str("user_column")),
+      _item_column(archive.str("item_column")),
+      _timestamp_column(archive.str("timestamp_column")),
+      _output_column(archive.str("output_column")),
+      _tracker_key(archive.str("tracker_key")),
+      _track_last_n(archive.u64("track_last_n")),
+      _should_update_history(
+          archive.getAs<ar::Boolean>("should_update_history")),
+      _include_current_row(archive.getAs<ar::Boolean>("include_current_row")),
+      _time_lag(archive.getAs<ar::I64>("time_lag")) {}
+
 template void CategoricalTemporal::serialize(cereal::BinaryInputArchive&);
 template void CategoricalTemporal::serialize(cereal::BinaryOutputArchive&);
 

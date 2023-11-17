@@ -14,6 +14,8 @@ class CategoricalTemporal final : public Transformation {
                       bool should_update_history, bool include_current_row,
                       int64_t time_lag);
 
+  explicit CategoricalTemporal(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   void buildExplanationMap(const ColumnMap& input, State& state,

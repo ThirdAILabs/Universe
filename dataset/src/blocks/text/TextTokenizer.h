@@ -20,6 +20,8 @@ class TextTokenizer {
 
   virtual ar::ConstArchivePtr toArchive() const = 0;
 
+  static std::shared_ptr<TextTokenizer> fromArchive(const ar::Archive& archive);
+
   virtual ~TextTokenizer() = default;
 
  private:
@@ -143,7 +145,6 @@ class CharKGramTokenizer : public TextTokenizer {
     map->set("k", ar::u64(_k));
     return map;
   }
-
 
   static std::string type() { return "char_k_gram"; }
 

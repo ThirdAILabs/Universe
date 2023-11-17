@@ -70,6 +70,11 @@ ar::ConstArchivePtr GraphBuilder::toArchive() const {
   return map;
 }
 
+GraphBuilder::GraphBuilder(const ar::Archive& archive)
+    : _node_id_column(archive.str("node_id_column")),
+      _neighbors_column(archive.str("neighbors_column")),
+      _feature_columns(archive.getAs<ar::VecStr>("feature_columns")) {}
+
 template void GraphBuilder::serialize(cereal::BinaryInputArchive&);
 template void GraphBuilder::serialize(cereal::BinaryOutputArchive&);
 
@@ -129,6 +134,10 @@ ar::ConstArchivePtr NeighborIds::toArchive() const {
 
   return map;
 }
+
+NeighborIds::NeighborIds(const ar::Archive& archive)
+    : _node_id_column(archive.str("node_id_column")),
+      _output_neighbors_column(archive.str("output_column")) {}
 
 template void NeighborIds::serialize(cereal::BinaryInputArchive&);
 template void NeighborIds::serialize(cereal::BinaryOutputArchive&);
@@ -205,6 +214,10 @@ ar::ConstArchivePtr NeighborFeatures::toArchive() const {
 
   return map;
 }
+
+NeighborFeatures::NeighborFeatures(const ar::Archive& archive)
+    : _node_id_column(archive.str("node_id_column")),
+      _output_features_column(archive.str("output_column")) {}
 
 template void NeighborFeatures::serialize(cereal::BinaryInputArchive&);
 template void NeighborFeatures::serialize(cereal::BinaryOutputArchive&);
