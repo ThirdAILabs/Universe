@@ -165,6 +165,7 @@ neural_db_deps = [
     "sortedcontainers",
     "SQLAlchemy",
     "Office365-REST-Python-Client",
+    "scikit-learn",
 ]
 
 # The information here can also be placed in setup.cfg - better separation of

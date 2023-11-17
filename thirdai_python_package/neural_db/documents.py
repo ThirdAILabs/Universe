@@ -425,7 +425,6 @@ class CSV(Document):
             self.df[col] = self.df[col].fillna("")
 
         self.path = Path(path)
-        self._hash = hash_file(path, metadata="csv-" + str(metadata))
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
         self.reference_columns = reference_columns
@@ -433,6 +432,19 @@ class CSV(Document):
         self.doc_metadata = metadata
         self.doc_metadata_keys = set(self.doc_metadata.keys())
         self.indexed_columns = index_columns
+        # Add column names to hash metadata so that CSVs with different
+        # hyperparameters are treated as different documents. Otherwise, this
+        # may break training.
+        self._hash = hash_file(
+            path,
+            metadata="csv-"
+            + str(self.id_column)
+            + str(sorted(self.strong_columns))
+            + str(sorted(self.weak_columns))
+            + str(sorted(self.reference_columns))
+            + str(sorted(self.indexed_columns))
+            + str(sorted(list(self.doc_metadata.items()))),
+        )
 
     @property
     def hash(self) -> str:
@@ -785,7 +797,20 @@ class PDF(Extracted):
         self.emphasize_first_words = emphasize_first_words
         self.ignore_header_footer = ignore_header_footer
         self.ignore_nonstandard_orientation = ignore_nonstandard_orientation
-        super().__init__(path=path, metadata=metadata, strong_column="emphasis")
+        # Add pdf version, chunk size, and stride metadata. The metadata will be
+        # incorporated in the document hash so that the same PDF inserted with
+        # different hyperparameters are treated as different documents.
+        # Otherwise, this may break training.
+        super().__init__(
+            path=path,
+            metadata={
+                **metadata,
+                "__version__": "v2",
+                "__chunk_size__": chunk_size,
+                "__stride__": stride,
+            },
+            strong_column="emphasis",
+        )
 
     def process_data(
         self,
@@ -801,6 +826,13 @@ class PDF(Extracted):
             self.ignore_header_footer,
             self.ignore_nonstandard_orientation,
         )
+
+    @staticmethod
+    def highlighted_doc(reference: Reference):
+        old_highlights = pdf_parse.highlighted_doc(reference.source, reference.metadata)
+        if old_highlights:
+            return old_highlights
+        return sliding_pdf_parse.highlighted_doc(reference.source, reference.metadata)
 
 
 class DOCX(Extracted):
