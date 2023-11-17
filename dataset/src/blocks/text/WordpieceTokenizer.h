@@ -51,6 +51,10 @@ class WordpieceTokenizer : public TextTokenizer {
     return decode({source_token});
   }
 
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "wordpiece"; }
+
  private:
   /**
    * This function handles a lot of the preprocessing that is needed before we

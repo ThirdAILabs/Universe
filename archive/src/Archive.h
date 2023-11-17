@@ -162,6 +162,7 @@ using Boolean = bool;
 using U64 = uint64_t;
 using I64 = int64_t;
 using F32 = float;
+using Char = char;
 using Str = std::string;
 using VecU32 = std::vector<uint32_t>;
 using VecI64 = std::vector<int64_t>;
@@ -177,6 +178,8 @@ ConstArchivePtr u64(uint64_t val);
 ConstArchivePtr i64(int64_t val);
 
 ConstArchivePtr f32(float val);
+
+ConstArchivePtr character(char val);
 
 ConstArchivePtr str(std::string val);
 

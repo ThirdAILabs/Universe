@@ -15,6 +15,10 @@ class StringIDLookup final : public Transformation {
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "string_id_lookup"; }
+
  private:
   std::string _input_column_name;
   std::string _output_column_name;

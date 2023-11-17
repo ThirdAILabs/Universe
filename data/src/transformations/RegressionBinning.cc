@@ -1,6 +1,8 @@
 #include "RegressionBinning.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <algorithm>
 #include <numeric>
@@ -57,6 +59,21 @@ uint32_t RegressionBinning::bin(float x) const {
   bin = std::min<uint32_t>(bin, _num_bins - 1);
 
   return bin;
+}
+
+ar::ConstArchivePtr RegressionBinning::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("input_column", ar::str(_input_column));
+  map->set("output_column", ar::str(_output_column));
+  map->set("min", ar::f32(_min));
+  map->set("max", ar::f32(_max));
+  map->set("binsize", ar::f32(_binsize));
+  map->set("num_bins", ar::u64(_num_bins));
+  map->set("correct_label_radius", ar::u64(_correct_label_radius));
+
+  return map;
 }
 
 template void RegressionBinning::serialize(cereal::BinaryInputArchive&);

@@ -11,6 +11,10 @@ class GraphBuilder final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "graph_builder"; }
+
  private:
   std::string _node_id_column;
   std::string _neighbors_column;
@@ -29,6 +33,10 @@ class NeighborIds final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "nbr_ids"; }
+
  private:
   std::string _node_id_column;
   std::string _output_neighbors_column;
@@ -46,6 +54,10 @@ class NeighborFeatures final : public Transformation {
                    std::string output_feature_column);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "nbr_features"; }
 
  private:
   std::string _node_id_column;

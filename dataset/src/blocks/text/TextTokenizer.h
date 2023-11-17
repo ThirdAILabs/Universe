@@ -3,6 +3,8 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <utils/StringManipulation.h>
 #include <string>
@@ -15,6 +17,8 @@ class TextTokenizer {
 
   virtual std::string getResponsibleWord(const std::string& input,
                                          uint32_t source_token) = 0;
+
+  virtual ar::ConstArchivePtr toArchive() const = 0;
 
   virtual ~TextTokenizer() = default;
 
@@ -52,6 +56,15 @@ class NaiveSplitTokenizer : public TextTokenizer {
     return map.at(source_token);
   }
 
+  ar::ConstArchivePtr toArchive() const final {
+    auto map = ar::Map::make();
+    map->set("type", ar::str(type()));
+    map->set("delimiter", ar::character(_delimiter));
+    return map;
+  }
+
+  static std::string type() { return "naive_split"; }
+
  private:
   char _delimiter;
 
@@ -84,6 +97,14 @@ class WordPunctTokenizer : public TextTokenizer {
     return map.at(source_token);
   }
 
+  ar::ConstArchivePtr toArchive() const final {
+    auto map = ar::Map::make();
+    map->set("type", ar::str(type()));
+    return map;
+  }
+
+  static std::string type() { return "word_punct"; }
+
  private:
   friend class cereal::access;
   template <class Archive>
@@ -115,6 +136,16 @@ class CharKGramTokenizer : public TextTokenizer {
     }
     return map.at(source_token);
   }
+
+  ar::ConstArchivePtr toArchive() const final {
+    auto map = ar::Map::make();
+    map->set("type", ar::str(type()));
+    map->set("k", ar::u64(_k));
+    return map;
+  }
+
+
+  static std::string type() { return "char_k_gram"; }
 
  private:
   uint32_t _k;

@@ -21,9 +21,13 @@ class RegressionBinning final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  ar::ConstArchivePtr toArchive() const final;
+
   float unbin(uint32_t category) const {
     return _min + category * _binsize + (_binsize / 2);
   }
+
+  static std::string type() { return "regression_binning"; }
 
  private:
   uint32_t bin(float x) const;

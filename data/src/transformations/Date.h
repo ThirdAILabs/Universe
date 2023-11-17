@@ -14,6 +14,10 @@ class Date final : public Transformation {
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanation) const final;
 
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "date"; }
+
  private:
   std::string _input_column_name;
   std::string _output_column_name;

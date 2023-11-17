@@ -1,6 +1,8 @@
 #include "MachLabel.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <exception>
 
@@ -46,6 +48,16 @@ ColumnMap MachLabel::apply(ColumnMap columns, State& state) const {
   columns.setColumn(_output_column_name, output_column);
 
   return columns;
+}
+
+ar::ConstArchivePtr MachLabel::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("input_column", ar::str(_input_column_name));
+  map->set("output_column", ar::str(_output_column_name));
+
+  return map;
 }
 
 template void MachLabel::serialize(cereal::BinaryInputArchive&);

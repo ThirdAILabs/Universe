@@ -1,4 +1,5 @@
 #include "WordpieceTokenizer.h"
+#include <archive/src/Archive.h>
 #include <utils/StringManipulation.h>
 #include <cassert>
 #include <iostream>
@@ -182,6 +183,14 @@ std::vector<std::wstring> WordpieceTokenizer::wordpieceTokenize(
   }
 
   return wordpieces;
+}
+
+ar::ConstArchivePtr WordpieceTokenizer::toArchive() const {
+  auto map = ar::Map::make();
+  map->set("type", ar::str(type()));
+  map->set("id_to_token", ar::vecWStr(_id_to_token));
+  map->set("to_lower", ar::boolean(_to_lower));
+  return map;
 }
 
 }  // namespace thirdai::dataset

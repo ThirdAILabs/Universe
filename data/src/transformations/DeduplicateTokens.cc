@@ -1,3 +1,5 @@
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
@@ -67,6 +69,20 @@ ColumnMap DeduplicateTokens::apply(ColumnMap columns, State& state) const {
       ArrayColumn<float>::make(std::move(deduped_values), std::nullopt));
 
   return columns;
+}
+
+ar::ConstArchivePtr DeduplicateTokens::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("input_indices_column", ar::str(_input_indices_column));
+  if (_input_values_column) {
+    map->set("input_values_column", ar::str(*_input_values_column));
+  }
+  map->set("output_indices_column", ar::str(_output_indices_column));
+  map->set("output_values_column", ar::str(_output_values_column));
+
+  return map;
 }
 
 }  // namespace thirdai::data

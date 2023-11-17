@@ -1,6 +1,8 @@
 #include "DyadicInterval.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
@@ -201,6 +203,24 @@ ColumnMap DyadicInterval::inferenceFeaturization(ColumnMap columns) const {
   }
 
   return columns;
+}
+
+ar::ConstArchivePtr DyadicInterval::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+
+  if (_prompt_column) {
+    map->set("prompt_column", ar::str(*_prompt_column));
+  }
+  map->set("input_column", ar::str(_input_column));
+  map->set("output_interval_prefix", ar::str(_output_interval_prefix));
+  map->set("target_column", ar::str(_target_column));
+
+  map->set("n_intervals", ar::u64(_n_intervals));
+  map->set("is_bidirection", ar::boolean(_is_bidirectional));
+
+  return map;
 }
 
 template void DyadicInterval::serialize(cereal::BinaryInputArchive&);

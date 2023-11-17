@@ -4,6 +4,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
+#include <archive/src/Archive.h>
 #include <archive/src/StringCipher.h>
 #include <unordered_map>
 
@@ -27,6 +28,11 @@ std::string Value<int64_t>::typeName() {
 template <>
 std::string Value<float>::typeName() {
   return "Value[float]";
+}
+
+template <>
+std::string Value<char>::typeName() {
+  return "Value[char]";
 }
 
 template <>

@@ -1,6 +1,8 @@
 #include "Recurrence.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
@@ -151,6 +153,20 @@ void Recurrence::assertCorrectTargetInputDim(
 uint32_t Recurrence::positionEncodedToken(uint32_t token,
                                           size_t position) const {
   return std::min(position, _max_seq_len - 1) * totalVocabSize() + token;
+}
+
+ar::ConstArchivePtr Recurrence::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("source_input_column", ar::str(_source_input_column));
+  map->set("target_input_column", ar::str(_target_input_column));
+  map->set("source_output_column", ar::str(_source_output_column));
+  map->set("target_output_column", ar::str(_target_output_column));
+  map->set("target_vocab_size", ar::u64(_target_vocab_size));
+  map->set("max_seq_len", ar::u64(_max_seq_len));
+
+  return map;
 }
 
 template void Recurrence::serialize(cereal::BinaryInputArchive&);

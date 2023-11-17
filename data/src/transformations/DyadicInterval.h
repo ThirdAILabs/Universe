@@ -14,7 +14,11 @@ class DyadicInterval final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  ar::ConstArchivePtr toArchive() const final;
+
   ColumnMap inferenceFeaturization(ColumnMap columns) const;
+
+  static std::string type() { return "dyadic_interval"; }
 
  private:
   static std::vector<size_t> computeOffsets(

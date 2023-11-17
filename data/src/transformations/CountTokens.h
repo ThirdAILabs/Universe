@@ -21,6 +21,10 @@ class CountTokens final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "count_tokens"; }
+
  private:
   std::string _input_column;
   std::string _output_column;

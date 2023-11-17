@@ -1,5 +1,6 @@
 #pragma once
 
+#include <archive/src/Archive.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/utils/TokenEncoding.h>
 
@@ -21,6 +22,8 @@ struct NumericalColumn {
   std::string name;
 
   NumericalColumn() {}
+
+  ar::ConstArchivePtr toArchive() const;
 
  private:
   float _min;
@@ -48,6 +51,8 @@ struct CategoricalColumn {
 
   CategoricalColumn() {}
 
+  ar::ConstArchivePtr toArchive() const;
+
  private:
   uint32_t _salt;
 
@@ -66,12 +71,16 @@ class Tabular final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  ar::ConstArchivePtr toArchive() const final;
+
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
   const auto& numericalColumns() const { return _numerical_columns; }
 
   const auto& categoricalColumns() const { return _categorical_columns; }
+
+  static std::string type() { return "tabular"; }
 
  private:
   std::vector<NumericalColumn> _numerical_columns;

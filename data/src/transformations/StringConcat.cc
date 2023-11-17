@@ -1,4 +1,6 @@
 #include "StringConcat.h"
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
 #include <string>
@@ -32,6 +34,16 @@ ColumnMap StringConcat::apply(ColumnMap columns, State& state) const {
   columns.setColumn(_output_column_name, output_column);
 
   return columns;
+}
+
+ar::ConstArchivePtr StringConcat::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("input_columns", ar::vecStr(_input_column_names));
+  map->set("output_column", ar::str(_output_column_name));
+  map->set("seperator", ar::str(_seperator));
+
+  return map;
 }
 
 }  // namespace thirdai::data

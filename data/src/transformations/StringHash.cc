@@ -1,5 +1,7 @@
 #include "StringHash.h"
 #include <hashing/src/MurmurHash.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
@@ -70,6 +72,25 @@ void StringHash::buildExplanationMap(const ColumnMap& input, State& state,
   explanations.store(_output_column_name, hash(str),
                      "item '" + str + "' from " +
                          explanations.explain(_input_column_name, str));
+}
+
+ar::ConstArchivePtr StringHash::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("input_column", ar::str(_input_column_name));
+  map->set("output_column", ar::str(_output_column_name));
+
+  if (_output_range) {
+    map->set("output_range", ar::u64(*_output_range));
+  }
+  if (_delimiter) {
+    map->set("delimiter", ar::character(*_delimiter));
+  }
+
+  map->set("seed", ar::u64(_seed));
+
+  return map;
 }
 
 }  // namespace thirdai::data

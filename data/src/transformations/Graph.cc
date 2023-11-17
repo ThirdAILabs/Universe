@@ -2,6 +2,8 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/vector.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <exception>
@@ -57,6 +59,17 @@ ColumnMap GraphBuilder::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
+ar::ConstArchivePtr GraphBuilder::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("node_id_column", ar::str(_node_id_column));
+  map->set("neighbors_column", ar::str(_neighbors_column));
+  map->set("feature_columns", ar::vecStr(_feature_columns));
+
+  return map;
+}
+
 template void GraphBuilder::serialize(cereal::BinaryInputArchive&);
 template void GraphBuilder::serialize(cereal::BinaryOutputArchive&);
 
@@ -105,6 +118,16 @@ ColumnMap NeighborIds::apply(ColumnMap columns, State& state) const {
   columns.setColumn(_output_neighbors_column, neighbors_col);
 
   return columns;
+}
+
+ar::ConstArchivePtr NeighborIds::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("node_id_column", ar::str(_node_id_column));
+  map->set("output_column", ar::str(_output_neighbors_column));
+
+  return map;
 }
 
 template void NeighborIds::serialize(cereal::BinaryInputArchive&);
@@ -171,6 +194,16 @@ ColumnMap NeighborFeatures::apply(ColumnMap columns, State& state) const {
   columns.setColumn(_output_features_column, features_col);
 
   return columns;
+}
+
+ar::ConstArchivePtr NeighborFeatures::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("node_id_column", ar::str(_node_id_column));
+  map->set("output_column", ar::str(_output_features_column));
+
+  return map;
 }
 
 template void NeighborFeatures::serialize(cereal::BinaryInputArchive&);

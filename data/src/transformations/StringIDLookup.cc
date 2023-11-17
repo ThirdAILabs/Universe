@@ -1,6 +1,8 @@
 #include "StringIDLookup.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <dataset/src/utils/CsvParser.h>
 #include <string>
@@ -84,6 +86,24 @@ void StringIDLookup::buildExplanationMap(const ColumnMap& input, State& state,
                        "item '" + str_input + "' from " +
                            explanations.explain(_input_column_name, str_input));
   }
+}
+
+ar::ConstArchivePtr StringIDLookup::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("input_column", ar::str(_input_column_name));
+  map->set("output_column", ar::str(_output_column_name));
+  map->set("vocab_key", ar::str(_vocab_key));
+
+  if (_max_vocab_size) {
+    map->set("max_vocab_size", ar::u64(*_max_vocab_size));
+  }
+  if (_delimiter) {
+    map->set("delimiter", ar::character(*_delimiter));
+  }
+
+  return map;
 }
 
 template void StringIDLookup::serialize(cereal::BinaryInputArchive&);

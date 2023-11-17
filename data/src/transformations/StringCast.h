@@ -23,6 +23,10 @@ class CastToValue final : public Transformation {
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "cast_to_value"; }
+
  private:
   T parse(const std::string& row) const;
 
@@ -52,6 +56,10 @@ class CastToArray final : public Transformation {
 
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "cast_to_array"; }
 
  private:
   T parse(const std::string& item) const;

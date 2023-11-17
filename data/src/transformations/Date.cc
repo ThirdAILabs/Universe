@@ -1,6 +1,8 @@
 #include "Date.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <exception>
@@ -107,6 +109,17 @@ void Date::buildExplanationMap(const ColumnMap& input, State& state,
   explanation.store(_output_column_name, date_attributes[3],
                     "week of the year = " + std::to_string(weekOfYear(time)) +
                         " from " + origin);
+}
+
+ar::ConstArchivePtr Date::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("input_column", ar::str(_input_column_name));
+  map->set("output_column", ar::str(_output_column_name));
+  map->set("format", ar::str(_format));
+
+  return map;
 }
 
 template void Date::serialize(cereal::BinaryInputArchive&);

@@ -3,6 +3,8 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <string>
 #include <tuple>
@@ -122,6 +124,23 @@ TextTokenizer::deduplicateIndices(std::vector<uint32_t>&& tokens) {
   values.push_back(count);
 
   return {std::move(indices), std::move(values)};
+}
+
+ar::ConstArchivePtr TextTokenizer::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("input_column", ar::str(_input_column));
+  map->set("output_indices", ar::str(_output_indices));
+  if (_output_values) {
+    map->set("output_values", ar::str(*_output_values));
+  }
+  map->set("tokenizer", _tokenizer->toArchive());
+  map->set("encoder", _encoder->toArchive());
+  map->set("lowercase", ar::boolean(_lowercase));
+  map->set("dim", ar::u64(_dim));
+
+  return map;
 }
 
 template void TextTokenizer::serialize(cereal::BinaryInputArchive&);

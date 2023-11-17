@@ -19,6 +19,10 @@ class CategoricalTemporal final : public Transformation {
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "categorical_temporal"; }
+
  private:
   ArrayColumnBasePtr<uint32_t> getItemColumn(const ColumnMap& columns) const {
     if (!_should_update_history && !_include_current_row) {

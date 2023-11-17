@@ -26,6 +26,8 @@ class HashPositionTransform final : public Transformation {
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
+  ar::ConstArchivePtr toArchive() const final;
+
  private:
   std::string _input_column;
   std::string _output_column;
@@ -62,6 +64,10 @@ class OffsetPositionTransform final : public Transformation {
 
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "encode_position"; }
 
  private:
   std::string _input_column;

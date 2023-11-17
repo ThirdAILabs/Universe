@@ -161,6 +161,8 @@ ConstArchivePtr i64(int64_t val) { return Value<int64_t>::make(val); }
 
 ConstArchivePtr f32(float val) { return Value<float>::make(val); }
 
+ConstArchivePtr character(char val) { return Value<char>::make(val); }
+
 ConstArchivePtr str(std::string val) {
   return Value<std::string>::make(std::move(val));
 }

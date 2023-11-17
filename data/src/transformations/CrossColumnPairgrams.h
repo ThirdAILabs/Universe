@@ -15,7 +15,11 @@ class CrossColumnPairgrams : public Transformation {
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
+  ar::ConstArchivePtr toArchive() const final;
+
   const auto& inputColumns() const { return _input_column_names; }
+
+  static std::string type() { return "cross_column_pairgrams"; }
 
  private:
   static uint32_t hashToken(uint32_t token, uint32_t column_seed);

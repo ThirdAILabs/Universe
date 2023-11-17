@@ -2,6 +2,8 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/Transformation.h>
 #include <limits>
@@ -110,6 +112,26 @@ void CategoricalTemporal::buildExplanationMap(
 
     explanations.store(_output_column, token, explanation);
   }
+}
+
+ar::ConstArchivePtr CategoricalTemporal::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+
+  map->set("user_column", ar::str(_user_column));
+  map->set("item_column", ar::str(_item_column));
+  map->set("timestamp_column", ar::str(_timestamp_column));
+  map->set("output_column", ar::str(_output_column));
+
+  map->set("tracker_key", ar::str(_tracker_key));
+
+  map->set("track_last_n", ar::u64(_track_last_n));
+  map->set("should_update_history", ar::boolean(_should_update_history));
+  map->set("include_current_row", ar::boolean(_include_current_row));
+  map->set("time_lag", ar::i64(_time_lag));
+
+  return map;
 }
 
 template void CategoricalTemporal::serialize(cereal::BinaryInputArchive&);

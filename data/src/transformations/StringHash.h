@@ -26,6 +26,10 @@ class StringHash final : public Transformation {
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "string_hash"; }
+
  private:
   // Private constructor for cereal.
   StringHash()

@@ -1,4 +1,6 @@
 #include "CountTokens.h"
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/ValueColumns.h>
 
 namespace thirdai::data {
@@ -26,6 +28,19 @@ thirdai::data::ColumnMap thirdai::data::CountTokens::apply(ColumnMap columns,
   columns.setColumn(/* name= */ _output_column,
                     /* column= */ new_column);
   return columns;
+}
+
+ar::ConstArchivePtr CountTokens::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("input_column", ar::str(_input_column));
+  map->set("output_column", ar::str(_output_column));
+  if (_max_tokens) {
+    map->set("max_tokens", ar::u64(*_max_tokens));
+  }
+
+  return map;
 }
 
 }  // namespace thirdai::data

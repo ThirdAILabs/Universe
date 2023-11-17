@@ -4,6 +4,9 @@
 #include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
+#include <archive/src/Archive.h>
+#include <archive/src/List.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <data/src/transformations/Transformation.h>
@@ -136,6 +139,49 @@ void Tabular::buildExplanationMap(const ColumnMap& input, State& state,
       explanations.store(_output_column, token, exp);
     }
   }
+}
+
+ar::ConstArchivePtr Tabular::toArchive() const {
+  auto map = ar::Map::make();
+
+  auto numerical_columns = ar::List::make();
+  for (const auto& num_col : _numerical_columns) {
+    numerical_columns->append(num_col.toArchive());
+  }
+  map->set("numerical_columns", numerical_columns);
+
+  auto categorical_columns = ar::List::make();
+  for (const auto& cat_col : _numerical_columns) {
+    categorical_columns->append(cat_col.toArchive());
+  }
+  map->set("categorical_columns", categorical_columns);
+
+  map->set("output_column", ar::str(_output_column));
+  map->set("cross_column_pairgrams", ar::boolean(_cross_column_pairgrams));
+
+  return map;
+}
+
+ar::ConstArchivePtr NumericalColumn::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("name", ar::str(name));
+  map->set("min", ar::f32(_min));
+  map->set("max", ar::f32(_max));
+  map->set("binsize", ar::f32(_binsize));
+  map->set("num_bins", ar::u64(_num_bins));
+  map->set("salt", ar::u64(_salt));
+
+  return map;
+}
+
+ar::ConstArchivePtr CategoricalColumn::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("name", ar::str(name));
+  map->set("salt", ar::u64(_salt));
+
+  return map;
 }
 
 template <class Archive>

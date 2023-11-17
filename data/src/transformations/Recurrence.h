@@ -48,12 +48,16 @@ class Recurrence final : public Transformation {
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  ar::ConstArchivePtr toArchive() const final;
+
   bool isEOS(uint32_t token) const;
 
   inline constexpr size_t totalVocabSize() const {
     // +1 for EOS.
     return _target_vocab_size + 1;
   }
+
+  static std::string type() { return "recurrence"; }
 
  private:
   size_t effectiveSize(const RowView<uint32_t>& row) const;

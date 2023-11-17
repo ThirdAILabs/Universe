@@ -1,5 +1,6 @@
 #pragma once
 
+#include <archive/src/Archive.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/rca/ExplanationMap.h>
 #include <data/src/transformations/State.h>
@@ -56,6 +57,8 @@ class Transformation {
 
     return explanations;
   }
+
+  virtual ar::ConstArchivePtr toArchive() const = 0;
 
  private:
   friend class cereal::access;
