@@ -79,11 +79,7 @@ def test_ndb(db, df):
         query = row["TITLE"]
         actual_id = int(row["id"])
 
-        search_results = db.search(
-            query=query,
-            top_k=10,
-            on_error=lambda error_msg: print(f"Error! {error_msg}"),
-        )
+        search_results = db.search(query=query, top_k=10)
         all_retrieved_ids = [int(result.id) for result in search_results]
 
         for k in [1, 3, 5, 10]:
