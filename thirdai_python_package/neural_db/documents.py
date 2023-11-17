@@ -359,7 +359,7 @@ class CSV(Document):
             return False
 
         column = df[column_name]
-        
+
         return (
             (len(column.unique()) == len(column))
             and (column.min() == 0)
@@ -469,13 +469,13 @@ class CSV(Document):
 
     def strong_text(self, element_id: int) -> str:
         row = self.df.loc[self.df[self.id_column] == element_id, self.strong_columns]
-        cleaned_row = row.replace(',', '', regex=True).astype(str)
-        return ' '.join(cleaned_row.values[0])
+        cleaned_row = row.replace(",", "", regex=True).astype(str)
+        return " ".join(cleaned_row.values[0])
 
     def weak_text(self, element_id: int) -> str:
         row = self.df.loc[self.df[self.id_column] == element_id, self.weak_columns]
-        cleaned_row = row.replace(',', '', regex=True).astype(str)
-        return ' '.join(cleaned_row.values[0])
+        cleaned_row = row.replace(",", "", regex=True).astype(str)
+        return " ".join(cleaned_row.values[0])
 
     def row_iterator(self):
         for id_val in list(self.df[self.id_column]):
