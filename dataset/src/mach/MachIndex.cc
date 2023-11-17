@@ -237,11 +237,11 @@ template void MachIndex::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void MachIndex::serialize(Archive& archive) {
-  _mt_state = mtToString(_mt);
+  std::string mt_state = mtToString(_mt);
 
-  archive(_entity_to_hashes, _buckets, _num_hashes, _mt_state);
+  archive(_entity_to_hashes, _buckets, _num_hashes, mt_state);
 
-  _mt = stringToMt(_mt_state);
+  _mt = stringToMt(mt_state);
 
   for (uint32_t bucket_id = 0; bucket_id < _buckets.size(); bucket_id++) {
     if (!_buckets[bucket_id].empty()) {
