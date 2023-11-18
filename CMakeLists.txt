@@ -406,6 +406,7 @@ set(THIRDAI_SOURCES
     dataset/src/ranking/KeywordOverlapRanker.cc
     dataset/src/utils/GraphInfo.cc
     telemetry/src/PrometheusClient.cc
+    data/src/transformations/Transformation.cc
     data/src/transformations/Binning.cc
     data/src/transformations/StringHash.cc
     data/src/transformations/TextTokenizer.cc
