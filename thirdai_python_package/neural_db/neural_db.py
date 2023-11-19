@@ -11,6 +11,7 @@ from thirdai.dataset.data_source import PyDataSource
 
 from . import loggers, teachers
 from .documents import CSV, Document, DocumentManager, Reference
+from .mach_mixture_model import MachMixture
 from .models import CancelState, Mach
 from .savable_state import State
 
@@ -88,7 +89,8 @@ class Sup:
             for i, label in enumerate(self.labels):
                 if label == None or label == "":
                     raise ValueError(
-                        f"Got a supervised sample with an empty label, query: '{self.queries[i]}'"
+                        "Got a supervised sample with an empty label, query:"
+                        f" '{self.queries[i]}'"
                     )
             if id_delimiter:
                 self.labels = self.labels.apply(
@@ -109,7 +111,8 @@ class Sup:
         # elif csv is None and
         else:
             raise ValueError(
-                "Sup must be initialized with csv, query_column and id_column, or queries and labels."
+                "Sup must be initialized with csv, query_column and id_column, or"
+                " queries and labels."
             )
         self.source_id = source_id
         self.uses_db_id = uses_db_id
@@ -184,7 +187,7 @@ class SupDataSource(PyDataSource):
 
 
 class NeuralDB:
-    def __init__(self, user_id: str = "user", **kwargs) -> None:
+    def __init__(self, user_id: str = "user", number_models: int = 1, **kwargs) -> None:
         """user_id is used for logging purposes only"""
         self._user_id: str = user_id
 
@@ -193,9 +196,23 @@ class NeuralDB:
         # We read savable_state from kwargs so that it doesn't appear in the
         # arguments list and confuse users.
         if "savable_state" not in kwargs:
-            self._savable_state: State = State(
-                model=Mach(id_col="id", query_col="query", **kwargs),
-                logger=loggers.LoggerList([loggers.InMemoryLogger()]),
+            if number_models <= 0:
+                raise Exception(
+                    f"Invalid Value Passed for number_models : {number_models}."
+                    " NeuralDB can only be initialized with a positive number of"
+                    " models."
+                )
+            if number_models > 1:
+                model = MachMixture(
+                    number_models=number_models,
+                    id_col="id",
+                    query_col="query",
+                    **kwargs,
+                )
+            else:
+                model = Mach(id_col="id", query_col="query", **kwargs)
+            self._savable_state = State(
+                model, logger=loggers.LoggerList([loggers.InMemoryLogger()])
             )
         else:
             self._savable_state = kwargs["savable_state"]
@@ -209,7 +226,7 @@ class NeuralDB:
         checkpoint_path = Path(checkpoint_path)
         savable_state = State.load(checkpoint_path, on_progress)
         if savable_state.model and savable_state.model.get_model():
-            savable_state.model.get_model().set_mach_sampling_threshold(0.01)
+            savable_state.model.set_mach_sampling_threshold(0.01)
         if not isinstance(savable_state.logger, loggers.LoggerList):
             # TODO(Geordie / Yash): Add DBLogger to LoggerList once ready.
             savable_state.logger = loggers.LoggerList([savable_state.logger])
@@ -241,7 +258,8 @@ class NeuralDB:
 
         if len(data_types) != 2:
             raise ValueError(
-                f"Incompatible UDT model. Expected two data types but found {len(data_types)}."
+                "Incompatible UDT model. Expected two data types but found"
+                f" {len(data_types)}."
             )
         query_col = None
         id_col = None
@@ -276,7 +294,10 @@ class NeuralDB:
                 or csv_weak_columns is None
                 or csv_reference_columns is None
             ):
-                error_msg = "If the `csv` arg is provided, then the following args must also be provided:\n"
+                error_msg = (
+                    "If the `csv` arg is provided, then the following args must also be"
+                    " provided:\n"
+                )
                 error_msg += " - `csv_id_column`\n"
                 error_msg += " - `csv_strong_columns`\n"
                 error_msg += " - `csv_weak_columns`\n"
@@ -333,7 +354,11 @@ class NeuralDB:
                 https://docs.ray.io/en/latest/ray-air/trainers.html#trainer-basics
             - Ensure that the communication backend specified is compatible with the hardware and network setup for MPI/Gloo backend.
         """
-
+        if isinstance(self._savable_state.model, MachMixture):
+            raise NotImplementedError(
+                "Distributed Training is not supported for NeuralDB initialized with a"
+                " mixture of experts."
+            )
         import warnings
         from distutils.version import LooseVersion
 
@@ -355,7 +380,8 @@ class NeuralDB:
             isinstance(doc, CSV) for doc in documents
         ):
             raise ValueError(
-                "The pretrain_distributed function currently only supports CSV documents."
+                "The pretrain_distributed function currently only supports CSV"
+                " documents."
             )
 
         def training_loop_per_worker(config):
@@ -664,6 +690,11 @@ class NeuralDB:
         and correct products - for both categories. You can use this method to
         train NeuralDB on these supervised datasets.
         """
+        if isinstance(self._savable_state.model, MachMixture):
+            raise NotImplementedError(
+                "Supervised Training is not supported for NeuralDB initialized with a"
+                " mixture of experts."
+            )
         doc_manager = self._savable_state.documents
         query_col = self._savable_state.model.get_query_col()
         self._savable_state.model.get_model().train_on_data_source(
@@ -694,6 +725,11 @@ class NeuralDB:
         and correct products - for both categories. You can use this method to
         train NeuralDB on these supervised datasets.
         """
+        if isinstance(self._savable_state.model, MachMixture):
+            raise NotImplementedError(
+                "Supervised Training is not supported for NeuralDB initialized with a"
+                " mixture of experts."
+            )
         doc_manager = self._savable_state.documents
         model_query_col = self._savable_state.model.get_query_col()
         self._savable_state.model.get_model().train_on_data_source(
