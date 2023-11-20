@@ -9,12 +9,12 @@ import requests
 from bazaar import Bazaar, auth_header
 
 from utils import (
+    check_deployment_decorator,
     create_deployment_identifier,
     create_model_identifier,
     http_get_with_error,
     http_post_with_error,
     print_progress_dots,
-    check_deployment_decorator,
 )
 
 

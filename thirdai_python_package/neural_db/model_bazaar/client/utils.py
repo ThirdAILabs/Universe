@@ -4,8 +4,8 @@ import os
 import shutil
 import sys
 import time
-from pathlib import Path
 from functools import wraps
+from pathlib import Path
 
 import requests
 from tqdm import tqdm
