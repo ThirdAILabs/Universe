@@ -7,10 +7,10 @@ from typing import Callable, List, Optional, Union
 from urllib.parse import urljoin
 
 import requests
-from thirdai.neural_db.neural_db import NeuralDB
-from thirdai.neural_db.models import CancelState
 from pydantic import BaseModel, ValidationError
 from requests.auth import HTTPBasicAuth
+from thirdai.neural_db.models import CancelState
+from thirdai.neural_db.neural_db import NeuralDB
 from tqdm import tqdm
 
 from utils import (
