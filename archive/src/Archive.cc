@@ -1,8 +1,6 @@
 #include "Archive.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/memory.hpp>
-#include <_types/_uint32_t.h>
-#include <_types/_uint64_t.h>
 #include <archive/src/List.h>
 #include <archive/src/Map.h>
 #include <archive/src/ParameterReference.h>
