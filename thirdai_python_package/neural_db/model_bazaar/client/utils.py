@@ -17,7 +17,7 @@ def print_progress_dots(duration: int):
         sys.stdout.flush()
         time.sleep(1)
     sys.stdout.write("\r")
-    sys.stdout.write(" " * 80)
+    sys.stdout.write(" " * 20)
     sys.stdout.write("\r")
 
 
