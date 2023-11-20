@@ -19,6 +19,42 @@ from utils import (
 
 
 class Model:
+    """
+    A class representing a model listed on NeuralDB Enterprise.
+
+    Attributes:
+        _user_id (int): The user identifier associated with the model.
+        _model_id (int): The unique identifier for the model.
+        _model_identifier (Optional[str]): An optional identifier for the model.
+
+    Methods:
+        __init__(self, user_id: int, model_id: int, model_identifier: Optional[str] = None) -> None:
+            Initializes a new instance of the Model class.
+
+            Parameters:
+                user_id (int): The user identifier.
+                model_id (int): The model identifier.
+                model_identifier (Optional[str]): An optional model identifier.
+
+        user_id(self) -> int:
+            Getter method for accessing the user identifier.
+
+            Returns:
+                int: The user identifier.
+
+        model_id(self) -> int:
+            Getter method for accessing the model identifier.
+
+            Returns:
+                int: The model identifier.
+
+        model_identifier(self) -> Optional[str]:
+            Getter method for accessing the model identifier.
+
+            Returns:
+                Optional[str]: The model identifier, or None if not set.
+    """
+
     def __init__(self, user_id, model_id, model_identifier=None) -> None:
         self._user_id = user_id
         self._model_id = model_id
@@ -38,6 +74,16 @@ class Model:
 
 
 def check_deployment_decorator(func):
+    """
+    A decorator function to check if deployment is complete before executing the decorated method.
+
+    Args:
+        func (callable): The function to be decorated.
+
+    Returns:
+        callable: The decorated function.
+    """
+
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         if self.base_url is None:
@@ -50,13 +96,56 @@ def check_deployment_decorator(func):
 
 
 class NeuralDBClient:
+    """
+    A client for interacting with the deployed NeuralDB model.
+
+    Attributes:
+        deployment_identifier (str): The identifier for the deployment.
+        base_url (Optional[str]): The base URL for the deployed NeuralDB model.
+
+    Methods:
+        __init__(self, deployment_identifier: str, base_url: Optional[str] = None) -> None:
+            Initializes a new instance of the NeuralDBClient.
+
+        search(self, query: str, top_k: int = 10) -> List[dict]:
+            Searches the ndb model for relevant search results.
+
+        insert(self, files: List[str]) -> None:
+            Inserts documents into the ndb model.
+
+        associate(self, query1: str, query2: str) -> None:
+            Associates two queries in the ndb model.
+
+        upvote(self, query_id: UUID, query_text: str, reference: dict) -> None:
+            Upvotes a response in the ndb model.
+
+        downvote(self, query_id: UUID, query_text: str, reference: dict) -> None:
+            Downvotes a response in the ndb model.
+    """
+
     def __init__(self, deployment_identifier, base_url=None):
+        """
+        Initializes a new instance of the NeuralDBClient.
+
+        Args:
+            deployment_identifier (str): The identifier for the deployment.
+            base_url (Optional[str]): The base URL for the deployed NeuralDB model.
+        """
         self.deployment_identifier = deployment_identifier
         self.base_url = base_url
 
     @check_deployment_decorator
     def search(self, query, top_k=10):
-        # Query the ndb model
+        """
+        Searches the ndb model for similar queries.
+
+        Args:
+            query (str): The query to search for.
+            top_k (int): The number of top results to retrieve (default is 10).
+
+        Returns:
+            List[dict]: A list of search results.
+        """
         response = http_get_with_error(
             urljoin(self.base_url, "predict"),
             params={"query_text": query, "top_k": top_k},
@@ -66,7 +155,12 @@ class NeuralDBClient:
 
     @check_deployment_decorator
     def insert(self, files: List[str]):
-        # Upload document to index into ndb model
+        """
+        Inserts documents into the ndb model.
+
+        Args:
+            files (List[str]): A list of file paths to be inserted into the ndb model.
+        """
         files = [("files", open(file_path, "rb")) for file_path in files]
         response = http_post_with_error(urljoin(self.base_url, "insert"), files=files)
 
@@ -74,7 +168,13 @@ class NeuralDBClient:
 
     @check_deployment_decorator
     def associate(self, query1: str, query2: str):
-        # Associate two queries
+        """
+        Associates two queries in the ndb model.
+
+        Args:
+            query1 (str): The first query.
+            query2 (str): The second query.
+        """
         response = http_post_with_error(
             urljoin(self.base_url, "associate"),
             json={"query1": query1, "query2": query2},
@@ -82,7 +182,14 @@ class NeuralDBClient:
 
     @check_deployment_decorator
     def upvote(self, query_id: UUID, query_text: str, reference: dict):
-        # Upvote a response
+        """
+        Upvotes a response in the ndb model.
+
+        Args:
+            query_id (UUID): The ID of the query.
+            query_text (str): The text of the query.
+            reference (dict): A dictionary containing the reference information.
+        """
         response = http_post_with_error(
             urljoin(self.base_url, "upvote"),
             json={
@@ -97,7 +204,14 @@ class NeuralDBClient:
 
     @check_deployment_decorator
     def downvote(self, query_id: UUID, query_text: str, reference: dict):
-        # Downvote a response
+        """
+        Downvotes a response in the ndb model.
+
+        Args:
+            query_id (UUID): The ID of the query.
+            query_text (str): The text of the query.
+            reference (dict): A dictionary containing the reference information.
+        """
         response = http_post_with_error(
             urljoin(self.base_url, "downvote"),
             json={
@@ -112,21 +226,91 @@ class NeuralDBClient:
 
 
 class ModelBazaar(Bazaar):
+    """
+    A class representing ModelBazaar, providing functionality for managing models and deployments.
+
+    Attributes:
+        _base_url (str): The base URL for the Model Bazaar.
+        _cache_dir (Union[Path, str]): The directory for caching downloads.
+
+    Methods:
+        __init__(self, base_url: str, cache_dir: Union[Path, str] = "./bazaar_cache") -> None:
+            Initializes a new instance of the ModelBazaar class.
+
+        sign_up(self, email: str, password: str, username: str) -> None:
+            Signs up a user and sets the username for the ModelBazaar instance.
+
+        log_in(self, email: str, password: str) -> None:
+            Logs in a user and sets user-related attributes for the ModelBazaar instance.
+
+        push_model(self, model_name: str, local_path: str, access_level: str = "public") -> None:
+            Pushes a model to the Model Bazaar.
+
+        pull_model(self, model_identifier: str) -> NeuralDBClient:
+            Pulls a model from the Model Bazaar and returns a NeuralDBClient instance.
+
+        list_models(self) -> List[dict]:
+            Lists available models in the Model Bazaar.
+
+        train(self, model_name: str, docs: List[str], is_async: bool = False, base_model_identifier: str = None) -> Model:
+            Initiates training for a model and returns a Model instance.
+
+        await_train(self, model: Model) -> None:
+            Waits for the training of a model to complete.
+
+        deploy(self, model_identifier: str, deployment_name: str, is_async: bool = False) -> NeuralDBClient:
+            Deploys a model and returns a NeuralDBClient instance.
+
+        await_deploy(self, ndb_client: NeuralDBClient) -> None:
+            Waits for the deployment of a model to complete.
+
+        undeploy(self, ndb_client: NeuralDBClient) -> None:
+            Undeploys a deployed model.
+
+        list_deployments(self) -> List[dict]:
+            Lists the deployments in the Model Bazaar.
+
+        connect(self, deployment_identifier: str) -> NeuralDBClient:
+            Connects to a deployed model and returns a NeuralDBClient instance.
+    """
+
     def __init__(
         self,
         base_url: str,
         cache_dir: Union[Path, str] = "./bazaar_cache",
     ):
+        """
+        Initializes a new instance of the ModelBazaar class.
+
+        Args:
+            base_url (str): The base URL for the Model Bazaar.
+            cache_dir (Union[Path, str]): The directory for caching downloads.
+        """
         super().__init__(cache_dir, base_url)
         self._username = None
         self._user_id = None
         self._access_token = None
 
     def sign_up(self, email, password, username):
+        """
+        Signs up a user and sets the username for the ModelBazaar instance.
+
+        Args:
+            email (str): The email of the user.
+            password (str): The password of the user.
+            username (str): The desired username.
+        """
         self.signup(email=email, password=password, username=username)
         self._username = username
 
     def log_in(self, email, password):
+        """
+        Logs in a user and sets user-related attributes for the ModelBazaar instance.
+
+        Args:
+            email (str): The email of the user.
+            password (str): The password of the user.
+        """
         self.login(email=email, password=password)
         self._user_id = self._login_instance.user_id
         self._access_token = self._login_instance.access_token
@@ -135,6 +319,14 @@ class ModelBazaar(Bazaar):
     def push_model(
         self, model_name: str, local_path: str, access_level: str = "public"
     ):
+        """
+        Pushes a model to the Model Bazaar.
+
+        Args:
+            model_name (str): The name of the model.
+            local_path (str): The local path of the model.
+            access_level (str): The access level for the model (default is "public").
+        """
         self.push(
             name=model_name,
             model_path=local_path,
@@ -143,9 +335,24 @@ class ModelBazaar(Bazaar):
         )
 
     def pull_model(self, model_identifier: str):
+        """
+        Pulls a model from the Model Bazaar and returns a NeuralDBClient instance.
+
+        Args:
+            model_identifier (str): The identifier of the model.
+
+        Returns:
+            NeuralDBClient: A NeuralDBClient instance.
+        """
         return self.get_neuraldb(model_identifier=model_identifier)
 
     def list_models(self):
+        """
+        Lists available models in the Model Bazaar.
+
+        Returns:
+            List[dict]: A list of dictionaries containing information about available models.
+        """
         return self.fetch()
 
     def train(
@@ -155,6 +362,18 @@ class ModelBazaar(Bazaar):
         is_async: bool = False,
         base_model_identifier: str = None,
     ):
+        """
+        Initiates training for a model and returns a Model instance.
+
+        Args:
+            model_name (str): The name of the model.
+            docs (List[str]): A list of document paths for training.
+            is_async (bool): Whether training should be asynchronous (default is False).
+            base_model_identifier (str): The identifier of the base model (optional).
+
+        Returns:
+            Model: A Model instance.
+        """
         url = urljoin(self._base_url, f"jobs/{self._user_id}/train")
         files = [("files", open(file_path, "rb")) for file_path in docs]
 
@@ -183,6 +402,12 @@ class ModelBazaar(Bazaar):
         return model
 
     def await_train(self, model: Model):
+        """
+        Waits for the training of a model to complete.
+
+        Args:
+            model (Model): The Model instance.
+        """
         url = urljoin(self._base_url, f"jobs/{self._user_id}/train-status")
         while True:
             response = http_get_with_error(
@@ -200,6 +425,17 @@ class ModelBazaar(Bazaar):
             print_progress_dots(duration=5)
 
     def deploy(self, model_identifier: str, deployment_name: str, is_async=False):
+        """
+        Deploys a model and returns a NeuralDBClient instance.
+
+        Args:
+            model_identifier (str): The identifier of the model.
+            deployment_name (str): The name for the deployment.
+            is_async (bool): Whether deployment should be asynchronous (default is False).
+
+        Returns:
+            NeuralDBClient: A NeuralDBClient instance.
+        """
         url = urljoin(self._base_url, f"jobs/{self._user_id}/deploy")
         params = {
             "user_id": self._user_id,
@@ -226,6 +462,12 @@ class ModelBazaar(Bazaar):
         return ndb_client
 
     def await_deploy(self, ndb_client: NeuralDBClient):
+        """
+        Waits for the deployment of a model to complete.
+
+        Args:
+            ndb_client (NeuralDBClient): The NeuralDBClient instance.
+        """
         url = urljoin(self._base_url, f"jobs/{self._user_id}/deploy-status")
 
         params = {"deployment_identifier": ndb_client.deployment_identifier}
@@ -244,6 +486,12 @@ class ModelBazaar(Bazaar):
             print_progress_dots(duration=5)
 
     def undeploy(self, ndb_client: NeuralDBClient):
+        """
+        Undeploys a deployed model.
+
+        Args:
+            ndb_client (NeuralDBClient): The NeuralDBClient instance.
+        """
         url = urljoin(self._base_url, f"jobs/{self._user_id}/undeploy")
         params = {
             "deployment_identifier": ndb_client.deployment_identifier,
@@ -255,6 +503,12 @@ class ModelBazaar(Bazaar):
         print("Deployment is shutting down.")
 
     def list_deployments(self):
+        """
+        Lists the deployments in the Model Bazaar.
+
+        Returns:
+            List[dict]: A list of dictionaries containing information about deployments.
+        """
         url = urljoin(self._base_url, f"jobs/{self._user_id}/list-deployments")
         response = http_get_with_error(
             url,
@@ -284,6 +538,15 @@ class ModelBazaar(Bazaar):
         return deployments
 
     def connect(self, deployment_identifier: str):
+        """
+        Connects to a deployed model and returns a NeuralDBClient instance.
+
+        Args:
+            deployment_identifier (str): The identifier of the deployment.
+
+        Returns:
+            NeuralDBClient: A NeuralDBClient instance.
+        """
         url = urljoin(self._base_url, f"jobs/{self._user_id}/deploy-status")
 
         response = http_get_with_error(
