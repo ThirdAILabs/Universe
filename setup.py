@@ -164,9 +164,9 @@ neural_db_deps = [
     "pydantic<2.5",
     "sortedcontainers",
     "SQLAlchemy",
-    "Office365-REST-Python-Client",
-    "simple-salesforce",
     "scikit-learn",
+    "Office365-REST-Python-Client==2.5.1",
+    "simple-salesforce==1.12.5",
 ]
 
 # The information here can also be placed in setup.cfg - better separation of

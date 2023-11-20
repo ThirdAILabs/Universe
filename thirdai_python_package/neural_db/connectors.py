@@ -167,9 +167,8 @@ class SalesforceConnector(Connector):
         self._fields = fields
 
     def execute(self, query: str):
-        return self._instance.query(
-            query
-        )  # Returns an OrderedDicts with keys ['totalSize', 'done', 'records']
+        # Returns an OrderedDicts with keys ['totalSize', 'done', 'records']
+        return self._instance.query(query)
 
     def chunk_iterator(self):
         query = f"SELECT {', '.join(self._fields)} FROM {self._object_name}"
