@@ -73,6 +73,11 @@ Value<std::unordered_map<uint64_t, std::vector<float>>>::typeName() {
 }
 
 template <>
+std::string Value<std::unordered_map<std::string, uint64_t>>::typeName() {
+  return "Value[std::unordered_map<std::string, uint64_t>]";
+}
+
+template <>
 template <class Ar>
 void Value<std::string>::save(Ar& archive) const {
   std::string cipher_value = cipher(_value);

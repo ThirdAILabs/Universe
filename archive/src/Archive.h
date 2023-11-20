@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <_types/_uint64_t.h>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -170,6 +171,7 @@ using VecStr = std::vector<std::string>;
 using VecWStr = std::vector<std::wstring>;
 using MapU64VecU64 = std::unordered_map<uint64_t, std::vector<uint64_t>>;
 using MapU64VecF32 = std::unordered_map<uint64_t, std::vector<float>>;
+using MapStrU64 = std::unordered_map<std::string, uint64_t>;
 
 ConstArchivePtr boolean(bool val);
 
@@ -195,4 +197,5 @@ ConstArchivePtr mapU64VecU64(MapU64VecU64 val);
 
 ConstArchivePtr mapU64VecF32(MapU64VecF32 val);
 
+ConstArchivePtr mapStrU64(std::unordered_map<std::string, uint64_t> val);
 }  // namespace thirdai::ar

@@ -59,6 +59,7 @@ class Value final : public Archive {
   EXPR(std::vector<std::string>)                            \
   EXPR(std::vector<std::wstring>)                           \
   EXPR(std::unordered_map<uint64_t, std::vector<uint64_t>>) \
-  EXPR(std::unordered_map<uint64_t, std::vector<float>>)
+  EXPR(std::unordered_map<uint64_t, std::vector<float>>)    \
+  EXPR(std::unordered_map<std::string, uint64_t>)
 
 }  // namespace thirdai::ar

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <archive/src/Archive.h>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -21,6 +22,8 @@ class GraphInfo {
  public:
   explicit GraphInfo(uint64_t feature_dim) : _feature_dim(feature_dim) {}
 
+  explicit GraphInfo(const ar::Archive& archive);
+
   void clear();
 
   const std::vector<float>& featureVector(uint64_t node_id) const;
@@ -31,6 +34,10 @@ class GraphInfo {
                   std::vector<uint64_t> neighbors);
 
   uint64_t featureDim() const { return _feature_dim; }
+
+  ar::ConstArchivePtr toArchive() const;
+
+  static std::shared_ptr<GraphInfo> fromArchive(const ar::Archive& archive);
 
  private:
   uint64_t _feature_dim;

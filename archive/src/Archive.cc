@@ -1,11 +1,15 @@
 #include "Archive.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/memory.hpp>
+#include <_types/_uint32_t.h>
+#include <_types/_uint64_t.h>
 #include <archive/src/List.h>
 #include <archive/src/Map.h>
 #include <archive/src/ParameterReference.h>
 #include <archive/src/Value.h>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
 
 namespace thirdai::ar {
 
@@ -189,6 +193,10 @@ ConstArchivePtr mapU64VecU64(MapU64VecU64 val) {
 
 ConstArchivePtr mapU64VecF32(MapU64VecF32 val) {
   return Value<MapU64VecF32>::make(std::move(val));
+}
+
+ConstArchivePtr mapU64Str(std::unordered_map<std::string, uint64_t> val) {
+  return Value<std::unordered_map<std::string, uint64_t>>::make(std::move(val));
 }
 
 }  // namespace thirdai::ar
