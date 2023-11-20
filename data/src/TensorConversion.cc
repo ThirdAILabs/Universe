@@ -1,4 +1,6 @@
 #include "TensorConversion.h"
+#include <archive/src/List.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <exception>
@@ -99,6 +101,50 @@ bolt::TensorList toTensors(const ColumnMap& columns,
   return toTensorBatches(columns, columns_to_convert,
                          /* batch_size= */ columns.numRows())
       .at(0);
+}
+
+ar::ConstArchivePtr outputColumnsToArchive(
+    const OutputColumnsList& output_columns) {
+  auto list = ar::List::make();
+  for (const auto& output_column : output_columns) {
+    auto map = ar::Map::make();
+    map->set("indices", ar::str(output_column.indices()));
+    if (output_column.values()) {
+      map->set("values", ar::str(*output_column.values()));
+    } else {
+      switch (output_column.valueFillType()) {
+        case ValueFillType::Ones:
+          map->set("value_fill_type", ar::str("ones"));
+          break;
+        case ValueFillType::SumToOne:
+          map->set("value_fill_type", ar::str("sum_to_one"));
+          break;
+      }
+    }
+
+    list->append(map);
+  }
+
+  return list;
+}
+
+OutputColumnsList outputColumnsFromArchive(const ar::Archive& archive) {
+  OutputColumnsList output_columns;
+  for (const auto& ar : archive.list()) {
+    if (ar->contains("values")) {
+      output_columns.emplace_back(ar->str("indices"), ar->str("values"));
+    } else {
+      std::string fill_type_name = ar->str("value_fill_type");
+      ValueFillType value_fill_type;
+      if (fill_type_name == "ones") {
+        value_fill_type = ValueFillType::Ones;
+      } else if (fill_type_name == "sum_to_one") {
+        value_fill_type = ValueFillType::SumToOne;
+      }
+      output_columns.emplace_back(ar->str("indices"), value_fill_type);
+    }
+  }
+  return output_columns;
 }
 
 }  // namespace thirdai::data
