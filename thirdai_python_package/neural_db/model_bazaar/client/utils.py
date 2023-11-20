@@ -46,7 +46,7 @@ def check_deployment_decorator(func):
     def wrapper(self, *args, **kwargs):
         if self.base_url is None:
             raise Exception(
-                "Deployment isn't complete yet. Use `list_deployment()` to check status."
+                "Deployment isn't complete yet. Use `list_deployments()` to check status."
             )
         return func(self, *args, **kwargs)
 
@@ -87,6 +87,11 @@ def get_directory_size(directory: Path):
 
 
 def check_response(response):
+    if not (200 <= response.status_code < 300):
+        raise requests.exceptions.HTTPError(
+            "Failed with status code:", response.status_code
+        )
+
     content = json.loads(response.content)
 
     status = content["status"]

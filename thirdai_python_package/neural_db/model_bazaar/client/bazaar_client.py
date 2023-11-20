@@ -454,8 +454,8 @@ class ModelBazaar(Bazaar):
             response_data = json.loads(response.content)["data"]
 
             if response_data["status"] == "complete":
-                print("\nDeployment completed")
                 ndb_client.base_url = response_data["endpoint"] + "/"
+                print("\nDeployment completed")
                 return
 
             print("Deployment in progress", end="", flush=True)
@@ -475,6 +475,8 @@ class ModelBazaar(Bazaar):
         response = http_post_with_error(
             url, params=params, headers=auth_header(self._access_token)
         )
+
+        print(response)
 
         print("Deployment is shutting down.")
 
@@ -502,7 +504,7 @@ class ModelBazaar(Bazaar):
                 author_username=deployment["model_username"],
             )
             deployment_info = {
-                "deployemnt_identifier": create_deployment_identifier(
+                "deployment_identifier": create_deployment_identifier(
                     model_identifier=model_identifier,
                     deployment_name=deployment["name"],
                     deployment_username=deployment["deployment_username"],
