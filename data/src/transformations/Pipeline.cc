@@ -1,9 +1,4 @@
 #include "Pipeline.h"
-#include <cereal/access.hpp>
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/polymorphic.hpp>
-#include <cereal/types/vector.hpp>
 #include <data/src/ColumnMap.h>
 
 namespace thirdai::data {
@@ -25,6 +20,12 @@ proto::data::Transformation* Pipeline::toProto() const {
   return transformation;
 }
 
+Pipeline::Pipeline(const proto::data::Transformation_Pipeline& pipeline) {
+  for (const auto& transformation : pipeline.transformations()) {
+    _transformations.push_back(Transformation::fromProto(transformation));
+  }
+}
+
 void Pipeline::buildExplanationMap(const ColumnMap& input, State& state,
                                    ExplanationMap& explanations) const {
   ColumnMap last_input = input;
@@ -35,6 +36,19 @@ void Pipeline::buildExplanationMap(const ColumnMap& input, State& state,
     transformation->buildExplanationMap(last_input, state, explanations);
     last_input = std::move(next_input);
   }
+}
+
+proto::data::Transformation* Pipeline::toProto() const {
+  auto* transformation = new proto::data::Transformation();
+
+  auto* pipeline = transformation->mutable_pipeline();
+
+  for (const auto& transformation : _transformations) {
+    pipeline->mutable_transformations()->AddAllocated(
+        transformation->toProto());
+  }
+
+  return transformation;
 }
 
 }  // namespace thirdai::data

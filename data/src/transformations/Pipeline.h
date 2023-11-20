@@ -18,6 +18,8 @@ class Pipeline final : public Transformation {
   explicit Pipeline(std::vector<TransformationPtr> transformations = {})
       : _transformations(std::move(transformations)) {}
 
+  explicit Pipeline(const proto::data::Transformation_Pipeline& pipeline);
+
   static auto make(std::vector<TransformationPtr> transformations = {}) {
     return std::make_shared<Pipeline>(std::move(transformations));
   }
