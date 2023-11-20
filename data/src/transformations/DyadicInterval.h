@@ -12,9 +12,15 @@ class DyadicInterval final : public Transformation {
                  std::string output_interval_prefix, std::string target_column,
                  size_t n_intervals, bool is_bidirectional = false);
 
+  explicit DyadicInterval(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  ar::ConstArchivePtr toArchive() const final;
+
   ColumnMap inferenceFeaturization(ColumnMap columns) const;
+
+  static std::string type() { return "dyadic_interval"; }
 
  private:
   static std::vector<size_t> computeOffsets(

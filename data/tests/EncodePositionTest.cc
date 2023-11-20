@@ -103,4 +103,50 @@ TEST(EncodePositionTest, OffsetPosition) {
   ASSERT_EQ(tokens_offset_vec[4], 15);  // 3 * 5 + 0.
 }
 
+void testEncodePositionSerialization(bool hashed_position) {
+  std::vector<std::vector<uint32_t>> sequences = {
+      {1, 3, 2, 0}, {3, 1}, {0, 2, 1}};
+
+  ColumnMap columns({{"sequence", ArrayColumn<uint32_t>::make(
+                                      std::move(sequences), /* dim= */ 4)}});
+
+  TransformationPtr transform;
+  if (hashed_position) {
+    transform = std::make_shared<HashPositionTransform>(
+        /* input_column= */ "sequence",
+        /* output_column= */ "encoded",
+        /* hash_range= */ 100000);
+  } else {
+    transform = std::make_shared<OffsetPositionTransform>(
+        /* input_column= */ "sequence",
+        /* output_column= */ "encoded",
+        /* max_tokens= */ 3);
+  }
+
+  auto original_output = transform->applyStateless(columns);
+  auto original_column = original_output.getArrayColumn<uint32_t>("encoded");
+
+  auto new_transform = Transformation::deserialize(transform->serialize());
+
+  auto new_output = new_transform->applyStateless(columns);
+  auto new_column = original_output.getArrayColumn<uint32_t>("encoded");
+
+  ASSERT_EQ(original_output.numRows(), new_output.numRows());
+
+  for (size_t i = 0; i < original_output.numRows(); i++) {
+    auto original_row = original_column->row(i);
+    auto new_row = new_column->row(i);
+    ASSERT_EQ(std::vector<uint32_t>(original_row.begin(), original_row.end()),
+              std::vector<uint32_t>(new_row.begin(), new_row.end()));
+  }
+}
+
+TEST(EncodePositionTest, HashedPositionSerialization) {
+  testEncodePositionSerialization(/* hashed_position= */ true);
+}
+
+TEST(EncodePositionTest, OffsetPositionSerialization) {
+  testEncodePositionSerialization(/* hashed_position= */ false);
+}
+
 }  // namespace thirdai::data::tests

@@ -6,6 +6,8 @@
 #include <archive/src/ParameterReference.h>
 #include <archive/src/Value.h>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
 
 namespace thirdai::ar {
 
@@ -161,6 +163,8 @@ ConstArchivePtr i64(int64_t val) { return Value<int64_t>::make(val); }
 
 ConstArchivePtr f32(float val) { return Value<float>::make(val); }
 
+ConstArchivePtr character(char val) { return Value<char>::make(val); }
+
 ConstArchivePtr str(std::string val) {
   return Value<std::string>::make(std::move(val));
 }
@@ -187,6 +191,10 @@ ConstArchivePtr mapU64VecU64(MapU64VecU64 val) {
 
 ConstArchivePtr mapU64VecF32(MapU64VecF32 val) {
   return Value<MapU64VecF32>::make(std::move(val));
+}
+
+ConstArchivePtr mapStrU64(std::unordered_map<std::string, uint64_t> val) {
+  return Value<std::unordered_map<std::string, uint64_t>>::make(std::move(val));
 }
 
 }  // namespace thirdai::ar

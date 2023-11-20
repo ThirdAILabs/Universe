@@ -15,7 +15,8 @@ static void assertRowsEqual(RowView<uint32_t> row,
   ASSERT_EQ(row_vec, expected);
 }
 
-static void assertCorrectCounts(std::vector<std::vector<uint32_t>> tokens_data,
+static void assertCorrectCounts(const Transformation& transform,
+                                std::vector<std::vector<uint32_t>> tokens_data,
                                 std::optional<uint32_t> max_tokens) {
   auto tokens_data_copy = tokens_data;
   auto tokens_column =
@@ -24,11 +25,7 @@ static void assertCorrectCounts(std::vector<std::vector<uint32_t>> tokens_data,
 
   ColumnMap columns({{"tokens", tokens_column}});
 
-  CountTokens counter(/* input_column= */ "tokens",
-                      /* output_column= */ "count",
-                      /* max_tokens= */ max_tokens);
-
-  columns = counter.applyStateless(columns);
+  columns = transform.applyStateless(columns);
 
   auto final_tokens_column = columns.getArrayColumn<uint32_t>("tokens");
   ASSERT_EQ(tokens_column, final_tokens_column);
@@ -50,25 +47,51 @@ static void assertCorrectCounts(std::vector<std::vector<uint32_t>> tokens_data,
 }
 
 TEST(CountTokensTest, CorrectCountsNoMaxTokens) {
-  assertCorrectCounts(/* tokens_data= */
-                      {{},
-                       {0},
-                       {0, 1},
-                       {0, 1, 2},
-                       {0, 1, 2, 3},
-                       {0, 1, 2, 3, 4}},
+  CountTokens counter(/* input_column= */ "tokens",
+                      /* output_column= */ "count",
                       /* max_tokens= */ std::nullopt);
+
+  assertCorrectCounts(
+      /* transform= */ counter, /* tokens_data= */
+      {{}, {0}, {0, 1}, {0, 1, 2}, {0, 1, 2, 3}, {0, 1, 2, 3, 4}},
+      /* max_tokens= */ std::nullopt);
 }
 
 TEST(CountTokensTest, CorrectCountsWithMaxTokens) {
-  assertCorrectCounts(/* tokens_data= */
-                      {{},
-                       {0},
-                       {0, 1},
-                       {0, 1, 2},
-                       {0, 1, 2, 3},
-                       {0, 1, 2, 3, 4}},
+  CountTokens counter(/* input_column= */ "tokens",
+                      /* output_column= */ "count",
                       /* max_tokens= */ 3);
+
+  assertCorrectCounts(
+      /* transform= */ counter, /* tokens_data= */
+      {{}, {0}, {0, 1}, {0, 1, 2}, {0, 1, 2, 3}, {0, 1, 2, 3, 4}},
+      /* max_tokens= */ 3);
+}
+
+TEST(CountTokensTest, CorrectCountsNoMaxTokensSerialization) {
+  CountTokens counter(/* input_column= */ "tokens",
+                      /* output_column= */ "count",
+                      /* max_tokens= */ std::nullopt);
+
+  auto new_counter = Transformation::deserialize(counter.serialize());
+
+  assertCorrectCounts(
+      /* transform= */ *new_counter, /* tokens_data= */
+      {{}, {0}, {0, 1}, {0, 1, 2}, {0, 1, 2, 3}, {0, 1, 2, 3, 4}},
+      /* max_tokens= */ std::nullopt);
+}
+
+TEST(CountTokensTest, CorrectCountsWithMaxTokensSerialization) {
+  CountTokens counter(/* input_column= */ "tokens",
+                      /* output_column= */ "count",
+                      /* max_tokens= */ 3);
+
+  auto new_counter = Transformation::deserialize(counter.serialize());
+
+  assertCorrectCounts(
+      /* transform= */ *new_counter, /* tokens_data= */
+      {{}, {0}, {0, 1}, {0, 1, 2}, {0, 1, 2, 3}, {0, 1, 2, 3, 4}},
+      /* max_tokens= */ 3);
 }
 
 }  // namespace thirdai::data::tests

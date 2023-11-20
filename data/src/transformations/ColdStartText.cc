@@ -1,4 +1,6 @@
 #include "ColdStartText.h"
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <utils/StringManipulation.h>
@@ -366,6 +368,55 @@ void ColdStartTextAugmentation::mergeStrongWithWeak(
                 weak_phrases[i].begin() + original_size, weak_phrases[i].end());
   }
 }
+
+ar::ConstArchivePtr ColdStartTextAugmentation::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("strong_columns", ar::vecStr(_strong_column_names));
+  map->set("weak_columns", ar::vecStr(_weak_column_names));
+  map->set("label_column", ar::str(_label_column_name));
+  map->set("output_column", ar::str(_output_column_name));
+
+  if (_weak_min_len) {
+    map->set("weak_min_len", ar::u64(*_weak_min_len));
+  }
+  if (_weak_max_len) {
+    map->set("weak_max_len", ar::u64(*_weak_max_len));
+  }
+  if (_weak_chunk_len) {
+    map->set("weak_chunk_len", ar::u64(*_weak_chunk_len));
+  }
+  if (_weak_sample_num_words) {
+    map->set("weak_sample_num_words", ar::u64(*_weak_sample_num_words));
+  }
+  map->set("weak_sample_reps", ar::u64(_weak_sample_reps));
+
+  if (_strong_max_len) {
+    map->set("strong_max_len", ar::u64(*_strong_max_len));
+  }
+  if (_strong_sample_num_words) {
+    map->set("strong_sample_num_words", ar::u64(*_strong_sample_num_words));
+  }
+  map->set("seed", ar::u64(_seed));
+
+  return map;
+}
+
+ColdStartTextAugmentation::ColdStartTextAugmentation(const ar::Archive& archive)
+    : _strong_column_names(archive.getAs<ar::VecStr>("strong_columns")),
+      _weak_column_names(archive.getAs<ar::VecStr>("weak_columns")),
+      _label_column_name(archive.str("label_column")),
+      _output_column_name(archive.str("output_column")),
+      _weak_min_len(archive.getOpt<ar::U64>("weak_min_len")),
+      _weak_max_len(archive.getOpt<ar::U64>("weak_max_len")),
+      _weak_chunk_len(archive.getOpt<ar::U64>("weak_chunk_len")),
+      _weak_sample_num_words(archive.getOpt<ar::U64>("weak_sample_num_words")),
+      _weak_sample_reps(archive.u64("weak_sample_reps")),
+      _strong_max_len(archive.getOpt<ar::U64>("strong_max_len")),
+      _strong_sample_num_words(
+          archive.getOpt<ar::U64>("strong_sample_num_words")),
+      _seed(archive.u64("seed")) {}
 
 std::vector<std::string> ColdStartTextAugmentation::augmentMapInput(
     const automl::MapInput& document) {

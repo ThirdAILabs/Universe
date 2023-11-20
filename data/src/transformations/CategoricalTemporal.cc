@@ -2,6 +2,8 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/Transformation.h>
 #include <limits>
@@ -111,6 +113,38 @@ void CategoricalTemporal::buildExplanationMap(
     explanations.store(_output_column, token, explanation);
   }
 }
+
+ar::ConstArchivePtr CategoricalTemporal::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+
+  map->set("user_column", ar::str(_user_column));
+  map->set("item_column", ar::str(_item_column));
+  map->set("timestamp_column", ar::str(_timestamp_column));
+  map->set("output_column", ar::str(_output_column));
+
+  map->set("tracker_key", ar::str(_tracker_key));
+
+  map->set("track_last_n", ar::u64(_track_last_n));
+  map->set("should_update_history", ar::boolean(_should_update_history));
+  map->set("include_current_row", ar::boolean(_include_current_row));
+  map->set("time_lag", ar::i64(_time_lag));
+
+  return map;
+}
+
+CategoricalTemporal::CategoricalTemporal(const ar::Archive& archive)
+    : _user_column(archive.str("user_column")),
+      _item_column(archive.str("item_column")),
+      _timestamp_column(archive.str("timestamp_column")),
+      _output_column(archive.str("output_column")),
+      _tracker_key(archive.str("tracker_key")),
+      _track_last_n(archive.u64("track_last_n")),
+      _should_update_history(
+          archive.getAs<ar::Boolean>("should_update_history")),
+      _include_current_row(archive.getAs<ar::Boolean>("include_current_row")),
+      _time_lag(archive.getAs<ar::I64>("time_lag")) {}
 
 template void CategoricalTemporal::serialize(cereal::BinaryInputArchive&);
 template void CategoricalTemporal::serialize(cereal::BinaryOutputArchive&);

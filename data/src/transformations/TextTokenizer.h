@@ -17,10 +17,16 @@ class TextTokenizer final : public Transformation {
       bool lowercase = false,
       size_t dim = dataset::token_encoding::DEFAULT_TEXT_ENCODING_DIM);
 
+  explicit TextTokenizer(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "text_tokenizer"; }
 
  private:
   static std::pair<std::vector<uint32_t>, std::vector<float>>

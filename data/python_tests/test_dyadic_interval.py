@@ -2,8 +2,9 @@ import pytest
 from thirdai import data
 
 
+@pytest.mark.parametrize("serialize", [True, False])
 @pytest.mark.unit
-def test_dyadic_interval_augmentation():
+def test_dyadic_interval_augmentation(serialize):
     columns = data.ColumnMap(
         {
             "text": data.columns.TokenArrayColumn(
@@ -19,6 +20,8 @@ def test_dyadic_interval_augmentation():
         target_column="target",
         n_intervals=3,
     )
+    if serialize:
+        transform = data.transformations.deserialize(transform.serialize())
 
     columns = transform(columns)
 

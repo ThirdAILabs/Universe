@@ -77,8 +77,11 @@ def test_categorical_temporal_ascending_item_ids(include_current_row):
             assert h == expected
 
 
-@pytest.mark.parametrize("include_current_row", [True, False])
-def test_without_updating_history(include_current_row):
+@pytest.mark.parametrize(
+    "include_current_row, serialize",
+    [(True, True), (True, False), (False, True), (False, False)],
+)
+def test_without_updating_history(include_current_row, serialize):
     users = ["user_1", "user_2", "user_2", "user_1"]
     items = [[0, 1], [10, 11], [12, 13], [2, 3]]
     timestamps = [0, 1, 2, 3]
@@ -90,6 +93,16 @@ def test_without_updating_history(include_current_row):
     nonupdating_transformation = categorical_temporal(
         include_current_row, should_update_history=False
     )
+
+    if serialize:
+        # State is not stored in the transformations, and apply is const, so we
+        # serialize before applying the transformation.
+        updating_transformation = data.transformations.deserialize(
+            updating_transformation.serialize()
+        )
+        nonupdating_transformation = data.transformations.deserialize(
+            nonupdating_transformation.serialize()
+        )
 
     state = data.transformations.State()
 

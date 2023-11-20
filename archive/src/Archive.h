@@ -164,6 +164,7 @@ using Boolean = bool;
 using U64 = uint64_t;
 using I64 = int64_t;
 using F32 = float;
+using Char = char;
 using Str = std::string;
 using VecU32 = std::vector<uint32_t>;
 using VecI64 = std::vector<int64_t>;
@@ -171,6 +172,7 @@ using VecStr = std::vector<std::string>;
 using VecWStr = std::vector<std::wstring>;
 using MapU64VecU64 = std::unordered_map<uint64_t, std::vector<uint64_t>>;
 using MapU64VecF32 = std::unordered_map<uint64_t, std::vector<float>>;
+using MapStrU64 = std::unordered_map<std::string, uint64_t>;
 
 ConstArchivePtr boolean(bool val);
 
@@ -179,6 +181,8 @@ ConstArchivePtr u64(uint64_t val);
 ConstArchivePtr i64(int64_t val);
 
 ConstArchivePtr f32(float val);
+
+ConstArchivePtr character(char val);
 
 ConstArchivePtr str(std::string val);
 
@@ -194,4 +198,5 @@ ConstArchivePtr mapU64VecU64(MapU64VecU64 val);
 
 ConstArchivePtr mapU64VecF32(MapU64VecF32 val);
 
+ConstArchivePtr mapStrU64(std::unordered_map<std::string, uint64_t> val);
 }  // namespace thirdai::ar

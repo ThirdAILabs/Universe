@@ -3,6 +3,8 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <string>
 #include <tuple>
@@ -123,6 +125,33 @@ TextTokenizer::deduplicateIndices(std::vector<uint32_t>&& tokens) {
 
   return {std::move(indices), std::move(values)};
 }
+
+ar::ConstArchivePtr TextTokenizer::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("input_column", ar::str(_input_column));
+  map->set("output_indices", ar::str(_output_indices));
+  if (_output_values) {
+    map->set("output_values", ar::str(*_output_values));
+  }
+  map->set("tokenizer", _tokenizer->toArchive());
+  map->set("encoder", _encoder->toArchive());
+  map->set("lowercase", ar::boolean(_lowercase));
+  map->set("dim", ar::u64(_dim));
+
+  return map;
+}
+
+TextTokenizer::TextTokenizer(const ar::Archive& archive)
+    : _input_column(archive.str("input_column")),
+      _output_indices(archive.str("output_indices")),
+      _output_values(archive.getOpt<ar::Str>("output_values")),
+      _tokenizer(
+          dataset::TextTokenizer::fromArchive(*archive.get("tokenizer"))),
+      _encoder(dataset::TextEncoder::fromArchive(*archive.get("encoder"))),
+      _lowercase(archive.getAs<ar::Boolean>("lowercase")),
+      _dim(archive.u64("dim")) {}
 
 template void TextTokenizer::serialize(cereal::BinaryInputArchive&);
 template void TextTokenizer::serialize(cereal::BinaryOutputArchive&);
