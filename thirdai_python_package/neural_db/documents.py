@@ -1573,7 +1573,7 @@ class SalesForce(DocumentConnector):
 
     This class encapsulates functionality for connecting to an object, executing Salesforce Object Query Language (SOQL) queries, and retrieving
 
-    NOTE: Allow the Bulk API access for the provided object. Also, it is being expected that the table will remain static in terms of both rows and columns. 
+    NOTE: Allow the Bulk API access for the provided object. Also, it is being expected that the table will remain static in terms of both rows and columns.
     """
 
     def __init__(
@@ -1794,15 +1794,21 @@ class SalesForce(DocumentConnector):
         if (self.strong_columns is not None) and (
             not set(self.strong_columns).issubset(fields_set)
         ):
-            raise AttributeError(f"Strong column(s) doesn't exists in the object. {column_name_error}")
+            raise AttributeError(
+                f"Strong column(s) doesn't exists in the object. {column_name_error}"
+            )
         if (self.weak_columns is not None) and (
             not set(self.weak_columns).issubset(fields_set)
         ):
-            raise AttributeError(f"Weak column(s) doesn't exists in the object. {column_name_error}")
+            raise AttributeError(
+                f"Weak column(s) doesn't exists in the object. {column_name_error}"
+            )
         if (self.reference_columns is not None) and (
             not set(self.reference_columns).issubset(fields_set)
         ):
-            raise AttributeError(f"Reference column(s) doesn't exists in the object. {column_name_error}")
+            raise AttributeError(
+                f"Reference column(s) doesn't exists in the object. {column_name_error}"
+            )
 
         # Checking for strong and weak column to have the correct column type
         supported_text_type = ("string", "textarea")
