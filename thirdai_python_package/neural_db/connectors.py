@@ -176,9 +176,10 @@ class SalesforceConnector(Connector):
             query, lazy_operation=True
         )
         for chunk in results:
+            # Number of records in each chunk can atmost 10K (can't be changed with salesforce bulk API).
             chunk_df = pd.DataFrame(
                 chunk
-            )  # Number of records in each chunk can atmost 10K (can't be changed with salesforce bulk API).
+            )  
             chunk_df.drop(columns=["attributes"], inplace=True)
             yield chunk_df
 

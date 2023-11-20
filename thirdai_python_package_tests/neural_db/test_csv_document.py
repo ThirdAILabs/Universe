@@ -20,13 +20,14 @@ def make_csv_doc(explicit_columns: bool, doc_id_column: bool = None):
     )
     if not explicit_columns:
         ndb_doc = ndb.CSV(path)
-    ndb_doc = ndb.CSV(
-        path,
-        id_column="doc_id" if doc_id_column else None,
-        strong_columns=["strong"],
-        weak_columns=["weak"],
-        reference_columns=["strong", "weak"],
-    )
+    else:
+        ndb_doc = ndb.CSV(
+            path,
+            id_column="doc_id" if doc_id_column else None,
+            strong_columns=["strong"],
+            weak_columns=["weak"],
+            reference_columns=["strong", "weak"],
+        )
 
     os.remove(path)
 

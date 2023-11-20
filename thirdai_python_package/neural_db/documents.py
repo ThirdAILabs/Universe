@@ -1007,10 +1007,10 @@ class DocumentConnector(Document):
                     element_id=id_in_document,
                     strong=self.strong_text_from_chunk(
                         id_in_chunk=idx, chunk=current_chunk
-                    ),  # Strong text from (idx)th row of the current_batch
+                    ),  # Strong text from (idx)th row of the current_chunk
                     weak=self.weak_text_from_chunk(
                         id_in_chunk=idx, chunk=current_chunk
-                    ),  # Weak text from (idx)th row of the current_batch
+                    ),  # Weak text from (idx)th row of the current_chunk
                 )
                 id_in_document += 1
 
@@ -1238,7 +1238,7 @@ class SQLDatabase(DocumentConnector):
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
         """
-        This method is used by DocumentManager while adding this document. Also it is being used in saving the model during pickling.
+        This method is called when the document is being added to a DocumentManager in order to build an index for constrained search.
         """
         return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
 
@@ -1432,7 +1432,7 @@ class SharePoint(DocumentConnector):
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
         """
-        Each constraint will get applied to each supported document on the sharepoint
+        Each constraint will get applied to each supported document on the sharepoint. This method is called when the document is being added to a DocumentManager in order to build an index for constrained search.
         """
         return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
 
@@ -1571,9 +1571,9 @@ class SalesForce(DocumentConnector):
     """
     Class for handling the Salesforce object connections and data retrieval for training the neural_db model
 
-    This class encapsulates functionality for connecting to an SQL database, executing SQL queries, and retrieving
+    This class encapsulates functionality for connecting to an object, executing Salesforce Object Query Language (SOQL) queries, and retrieving
 
-    NOTE: It is being expected that the table will remain static in terms of both rows and columns.
+    NOTE: Allow the Bulk API access for the provided object. Also, it is being expected that the table will remain static in terms of both rows and columns. 
     """
 
     def __init__(
@@ -1631,7 +1631,7 @@ class SalesForce(DocumentConnector):
         Args:
             instance: Salesforce instance
                     NOTE: Provide the same connection object.
-        NOTE: Same object would be used to establish connection
+        NOTE: Same object name would be used to establish connection
         """
         try:
             # The idea is to check for the connector object existence
@@ -1654,13 +1654,14 @@ class SalesForce(DocumentConnector):
         for current_chunk in self.chunk_iterator():
             for idx in range(len(current_chunk)):
                 yield DocumentRow(
+                    # Since we are not able to retrieve the rows in sorted order, we have to do this so that (id, strong_text, weak_text) gets mapped correctly.
                     element_id=int(current_chunk.iloc[idx][self.id_col]),
                     strong=self.strong_text_from_chunk(
                         id_in_chunk=idx, chunk=current_chunk
-                    ),  # Strong text from (idx)th row of the current_batch
+                    ),  # Strong text from (idx)th row of the current_chunk
                     weak=self.weak_text_from_chunk(
                         id_in_chunk=idx, chunk=current_chunk
-                    ),  # Weak text from (idx)th row of the current_batch
+                    ),  # Weak text from (idx)th row of the current_chunk
                 )
 
     def get_strong_columns(self):
@@ -1727,7 +1728,7 @@ class SalesForce(DocumentConnector):
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
         """
-        This method is used by DocumentManager while adding this document. Also it is being used in saving the model during pickling.
+        This method is called when the document is being added to a DocumentManager in order to build an index for constrained search.
         """
         return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
 
@@ -1747,6 +1748,13 @@ class SalesForce(DocumentConnector):
             raise AttributeError("id col not present in the object")
         id_field_meta = id_field_meta[0]
 
+        """
+        Reason behinds using AutoNumber as the id column type:
+
+            1. Salesforce doesn't have typical table constraints. Object in a salesforce (or table in conventional sense) uses an alpha-numeric string as a primary key.
+            2. Salesforce doesn't have a pure integer field. It have one in which we can set the decimal field of the double data-type to 0 but it is only for display purpose.
+            3. Only option left is one Auto-number field that can be used but it limits some options.
+        """
         if not id_field_meta["autoNumber"]:
             raise AttributeError("id col must be of type Auto-Number")
         else:
@@ -1782,18 +1790,19 @@ class SalesForce(DocumentConnector):
         fields_set = set([field["name"] for field in all_fields])
 
         # Checking for strong, weak and reference columns (if provided) to be present in column list of the table
+        column_name_error = "Remember if it is a custom column, salesforce requires it to be appended with __c."
         if (self.strong_columns is not None) and (
             not set(self.strong_columns).issubset(fields_set)
         ):
-            raise AttributeError("Strong column(s) doesn't exists in the object")
+            raise AttributeError(f"Strong column(s) doesn't exists in the object. {column_name_error}")
         if (self.weak_columns is not None) and (
             not set(self.weak_columns).issubset(fields_set)
         ):
-            raise AttributeError("Weak column(s) doesn't exists in the object")
+            raise AttributeError(f"Weak column(s) doesn't exists in the object. {column_name_error}")
         if (self.reference_columns is not None) and (
             not set(self.reference_columns).issubset(fields_set)
         ):
-            raise AttributeError("Reference column(s) doesn't exists in the object")
+            raise AttributeError(f"Reference column(s) doesn't exists in the object. {column_name_error}")
 
         # Checking for strong and weak column to have the correct column type
         supported_text_type = ("string", "textarea")

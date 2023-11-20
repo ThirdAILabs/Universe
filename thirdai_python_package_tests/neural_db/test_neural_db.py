@@ -659,7 +659,6 @@ def test_neural_db_delete_document():
         ),
     ]
 
-    # Removing ice_cream.csv and pizza.csv
     os.remove("ice_cream.csv")
     os.remove("pizza.csv")
 
