@@ -80,6 +80,8 @@ BinningTransformation::BinningTransformation(const ar::Archive& archive)
     : _input_column_name(archive.str("input_column")),
       _output_column_name(archive.str("output_column")),
       _inclusive_min_value(archive.getAs<ar::F32>("min")),
-      _exclusive_max_value(archive.getAs<ar::F32>("max")) {}
+      _exclusive_max_value(archive.getAs<ar::F32>("max")),
+      _binsize(archive.getAs<ar::F32>("binsize")),
+      _num_bins(archive.u64("num_bins")) {}
 
 }  // namespace thirdai::data

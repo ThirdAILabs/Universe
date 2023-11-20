@@ -1,5 +1,6 @@
 #include "Transformation.h"
 #include <_types/_uint32_t.h>
+#include <archive/src/Archive.h>
 #include <data/src/transformations/Binning.h>
 #include <data/src/transformations/CategoricalTemporal.h>
 #include <data/src/transformations/ColdStartText.h>
@@ -24,6 +25,7 @@
 #include <data/src/transformations/Transformation.h>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -68,6 +70,19 @@ TransformationPtr Transformation::fromArchive(const ar::Archive& archive) {
   HANDLE_TYPE(TextTokenizer)
 
   throw std::runtime_error("Invalid transformation type in fromProto.");
+}
+
+std::string Transformation::serialize() const {
+  std::stringstream buffer;
+  ar::serialize(toArchive(), buffer);
+  return buffer.str();
+}
+
+std::shared_ptr<Transformation> Transformation::deserialize(
+    const std::string& bytes) {
+  std::istringstream input(bytes);
+  auto archive = ar::deserialize(input);
+  return fromArchive(*archive);
 }
 
 }  // namespace thirdai::data

@@ -63,6 +63,10 @@ class Transformation {
   static std::shared_ptr<Transformation> fromArchive(
       const ar::Archive& archive);
 
+  std::string serialize() const;
+
+  static std::shared_ptr<Transformation> deserialize(const std::string& bytes);
+
  private:
   friend class cereal::access;
   template <class Archive>

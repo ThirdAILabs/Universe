@@ -217,7 +217,7 @@ ar::ConstArchivePtr DyadicInterval::toArchive() const {
   map->set("output_interval_prefix", ar::str(_output_interval_prefix));
   map->set("target_column", ar::str(_target_column));
 
-  map->set("is_bidirection", ar::boolean(_is_bidirectional));
+  map->set("is_bidirectional", ar::boolean(_is_bidirectional));
   map->set("n_intervals", ar::u64(_n_intervals));
 
   return map;

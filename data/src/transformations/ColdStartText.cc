@@ -395,6 +395,9 @@ ar::ConstArchivePtr ColdStartTextAugmentation::toArchive() const {
   if (_strong_max_len) {
     map->set("strong_max_len", ar::u64(*_strong_max_len));
   }
+  if (_strong_sample_num_words) {
+    map->set("strong_sample_num_words", ar::u64(*_strong_sample_num_words));
+  }
   map->set("seed", ar::u64(_seed));
 
   return map;
@@ -411,6 +414,8 @@ ColdStartTextAugmentation::ColdStartTextAugmentation(const ar::Archive& archive)
       _weak_sample_num_words(archive.getOpt<ar::U64>("weak_sample_num_words")),
       _weak_sample_reps(archive.u64("weak_sample_reps")),
       _strong_max_len(archive.getOpt<ar::U64>("strong_max_len")),
+      _strong_sample_num_words(
+          archive.getOpt<ar::U64>("strong_sample_num_words")),
       _seed(archive.u64("seed")) {}
 
 std::vector<std::string> ColdStartTextAugmentation::augmentMapInput(
