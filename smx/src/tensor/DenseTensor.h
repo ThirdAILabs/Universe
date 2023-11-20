@@ -9,8 +9,16 @@
 #include <smx/src/tensor/MemoryHandle.h>
 #include <smx/src/tensor/Tensor.h>
 #include <stdexcept>
+#include <string>
 
 namespace thirdai::smx {
+
+template <typename T, size_t NDim>
+using EigenTensor = Eigen::Map<Eigen::Tensor<T, NDim, Eigen::RowMajor>>;
+
+template <typename T>
+using EigenArray =
+    Eigen::Map<Eigen::Array<T, 1, Eigen::Dynamic, Eigen::RowMajor>>;
 
 class DenseTensor final : public Tensor {
  public:
@@ -26,19 +34,8 @@ class DenseTensor final : public Tensor {
 
   bool isSparse() const final { return false; }
 
-  bool isContiguous() const { return isContiguous(0, ndim()); }
-
-  bool isContiguous(size_t start_dim, size_t end_dim) const {
-    for (size_t i = start_dim; i < end_dim - 1; i++) {
-      if (_strides[i] != _shape[i + 1] * _strides[i + 1]) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   template <typename T, size_t NDim>
-  Eigen::Map<Eigen::Tensor<T, NDim, Eigen::RowMajor>> eigenTensor() {
+  EigenTensor<T, NDim> toEigen() {
     if (NDim != ndim()) {
       throw std::invalid_argument("Cannot construct Eigen reference with " +
                                   std::to_string(NDim) +
@@ -46,27 +43,58 @@ class DenseTensor final : public Tensor {
                                   std::to_string(ndim()) + " dimensions.");
     }
 
-    if (getDtype<T>() != _dtype) {
-      throw std::invalid_argument("Canot convert tensor of type " +
-                                  toString(_dtype) + " to type " +
-                                  toString(getDtype<T>()) + ".");
-    }
+    checkDtypeCompatability<T>();
 
     return {_ptr, _shape.vector()};
   }
 
+  template <typename T, size_t NDim>
+  EigenTensor<T, NDim> reshapeToEigen(const Shape& shape) {
+    if (NDim != shape.ndim()) {
+      throw std::invalid_argument(
+          "Requesting to reshape to eigen tensor with " + std::to_string(NDim) +
+          " dimensions, but provided shape with " +
+          std::to_string(shape.ndim()) + " dimensions.");
+    }
+
+    if (!_shape.canReshapeTo(shape)) {
+      throw std::invalid_argument("Cannot reshape tensor with shape " +
+                                  _shape.toString() + " to shape " +
+                                  shape.toString() + ".");
+    }
+
+    checkDtypeCompatability<T>();
+
+    return {_ptr, shape.vector()};
+  }
+
   template <typename T>
-  Eigen::Map<Eigen::Array<T, 1, Eigen::Dynamic, Eigen::RowMajor>> eigenArray() {
+  EigenArray<T> eigenArray() {
+    checkDtypeCompatability<T>();
+
+    return {_ptr, _shape.size()};
+  }
+
+  template <typename T>
+  T* data() {
+    return _ptr;
+  }
+
+  template <typename T>
+  const T* data() const {
+    return _ptr;
+  }
+
+ private:
+  template <typename T>
+  void checkDtypeCompatability() {
     if (getDtype<T>() != _dtype) {
       throw std::invalid_argument("Canot convert tensor of type " +
                                   toString(_dtype) + " to type " +
                                   toString(getDtype<T>()) + ".");
     }
-
-    return {_ptr, _shape.size()};
   }
 
- private:
   static Shape contiguousStrides(const Shape& shape) {
     std::vector<size_t> strides(shape.ndim());
     size_t stride = 1;
