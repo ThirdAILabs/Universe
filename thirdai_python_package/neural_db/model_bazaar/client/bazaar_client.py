@@ -1,6 +1,5 @@
 import json
 import time
-from functools import wraps
 from pathlib import Path
 from typing import List, Union
 from urllib.parse import urljoin
@@ -15,6 +14,7 @@ from utils import (
     http_get_with_error,
     http_post_with_error,
     print_progress_dots,
+    check_deployment_decorator,
 )
 
 
@@ -71,28 +71,6 @@ class Model:
     @property
     def model_identifier(self):
         return self._model_identifier
-
-
-def check_deployment_decorator(func):
-    """
-    A decorator function to check if deployment is complete before executing the decorated method.
-
-    Args:
-        func (callable): The function to be decorated.
-
-    Returns:
-        callable: The decorated function.
-    """
-
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        if self.base_url is None:
-            raise Exception(
-                "Deployment isn't complete yet. Use `list_deployment()` to check status."
-            )
-        return func(self, *args, **kwargs)
-
-    return wrapper
 
 
 class NeuralDBClient:

@@ -5,6 +5,7 @@ import shutil
 import sys
 import time
 from pathlib import Path
+from functools import wraps
 
 import requests
 from tqdm import tqdm
@@ -28,6 +29,28 @@ def create_deployment_identifier(
     model_identifier: str, deployment_name: str, deployment_username: str
 ):
     return model_identifier + ":" + deployment_username + "/" + deployment_name
+
+
+def check_deployment_decorator(func):
+    """
+    A decorator function to check if deployment is complete before executing the decorated method.
+
+    Args:
+        func (callable): The function to be decorated.
+
+    Returns:
+        callable: The decorated function.
+    """
+
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if self.base_url is None:
+            raise Exception(
+                "Deployment isn't complete yet. Use `list_deployment()` to check status."
+            )
+        return func(self, *args, **kwargs)
+
+    return wrapper
 
 
 def chunks(path: Path):
