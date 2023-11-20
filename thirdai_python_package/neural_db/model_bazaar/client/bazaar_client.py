@@ -7,7 +7,7 @@ from uuid import UUID
 
 import requests
 
-from utils import (
+from .utils import (
     check_deployment_decorator,
     create_deployment_identifier,
     create_model_identifier,
