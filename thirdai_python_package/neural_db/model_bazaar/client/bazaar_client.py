@@ -254,7 +254,7 @@ class ModelBazaar(Bazaar):
 
     def __init__(
         self,
-        base_url: str,
+        base_url: str = "https://staging-modelzoo.azurewebsites.net/api/",
         cache_dir: Union[Path, str] = "./bazaar_cache",
     ):
         """
@@ -264,7 +264,7 @@ class ModelBazaar(Bazaar):
             base_url (str): The base URL for the Model Bazaar.
             cache_dir (Union[Path, str]): The directory for caching downloads.
         """
-        super().__init__(cache_dir, base_url)
+        super().__init__(base_url, cache_dir)
         self._username = None
         self._user_id = None
         self._access_token = None

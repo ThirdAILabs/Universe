@@ -137,7 +137,7 @@ def login_required(func):
 class Bazaar:
     def __init__(
         self,
-        base_url="https://staging-modelzoo.azurewebsites.net/api/",
+        base_url,
         cache_dir: Union[Path, str] = Path("./bazaar_cache"),
     ):
         cache_dir = Path(cache_dir)
