@@ -78,6 +78,8 @@ class Archive {
   const T& getAs(const std::string& key) const;
 
   // These are helper methods for common types.
+  bool boolean(const std::string& key) const { return getAs<bool>(key); }
+
   uint64_t u64(const std::string& key) const { return getAs<uint64_t>(key); }
 
   const std::string& str(const std::string& key) const {

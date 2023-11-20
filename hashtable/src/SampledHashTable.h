@@ -1,6 +1,7 @@
 #pragma once
 
 #include "HashTable.h"
+#include <archive/src/Archive.h>
 #include <utils/Random.h>
 #include <iostream>
 #include <memory>
@@ -72,6 +73,8 @@ class SampledHashTable final : public HashTable<uint32_t> {
                    uint32_t seed = global_random::nextSeed(),
                    uint64_t max_rand = HashTable<uint32_t>::DEFAULT_MAX_RAND);
 
+  explicit SampledHashTable(const ar::Archive& archive);
+
   SampledHashTable(const SampledHashTable& other) = delete;
 
   SampledHashTable& operator=(const SampledHashTable& other) = delete;
@@ -132,6 +135,11 @@ class SampledHashTable final : public HashTable<uint32_t> {
     summary << "num_tables=" << _num_tables << ", range=" << _range
             << ", reservoir_size=" << _reservoir_size;
   }
+
+  ar::ConstArchivePtr toArchive() const;
+
+  static std::shared_ptr<SampledHashTable> fromArchive(
+      const ar::Archive& archive);
 
   void save(const std::string& filename) const;
 

@@ -1,6 +1,9 @@
 #include "PatchSum.h"
 #include <bolt/src/nn/autograd/Computation.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <algorithm>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
@@ -107,6 +110,36 @@ std::optional<uint32_t> PatchSum::nonzeros(const ComputationList& inputs,
 }
 
 void PatchSum::initOptimizer() {}
+
+ComputationPtr PatchSum::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("Expected PatchSum op to have one input.");
+  }
+  return apply(inputs.at(0));
+}
+
+ar::ConstArchivePtr PatchSum::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = ar::Map::make();
+
+  map->set("name", ar::str(name()));
+  map->set("type", ar::str(type()));
+
+  map->set("n_patches", ar::u64(_n_patches));
+  map->set("patch_dim", ar::u64(_patch_dim));
+
+  return map;
+}
+
+std::shared_ptr<PatchSum> PatchSum::fromArchive(const ar::Archive& archive) {
+  return std::shared_ptr<PatchSum>(new PatchSum(archive));
+}
+
+PatchSum::PatchSum(const ar::Archive& archive)
+    : Op(archive.str("name")),
+      _n_patches(archive.u64("n_patches")),
+      _patch_dim(archive.u64("patch_dim")) {}
 
 void PatchSum::disableSparseParameterUpdates() {}
 

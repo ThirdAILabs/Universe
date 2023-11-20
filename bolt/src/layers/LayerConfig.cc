@@ -92,7 +92,7 @@ EmbeddingLayerConfig::EmbeddingLayerConfig(
       _lookup_size(lookup_size),
       _log_embedding_block_size(log_embedding_block_size),
       _update_chunk_size(update_chunk_size),
-      _reduction(getReductionType(reduction)),
+      _reduction(reductionFromString(reduction)),
       _num_tokens_per_input(num_tokens_per_input) {
   if (_reduction == EmbeddingReductionType::CONCATENATION &&
       !_num_tokens_per_input) {
@@ -102,9 +102,8 @@ EmbeddingLayerConfig::EmbeddingLayerConfig(
   }
 }
 
-EmbeddingReductionType EmbeddingLayerConfig::getReductionType(
-    const std::string& reduction_name) {
-  std::string lower_name = text::lower(reduction_name);
+EmbeddingReductionType reductionFromString(const std::string& name) {
+  std::string lower_name = text::lower(name);
   if (lower_name == "sum") {
     return EmbeddingReductionType::SUM;
   }
@@ -114,10 +113,22 @@ EmbeddingReductionType EmbeddingLayerConfig::getReductionType(
   if (lower_name == "average" || lower_name == "avg") {
     return EmbeddingReductionType::AVERAGE;
   }
-  throw std::invalid_argument("Invalid embedding reduction time '" +
-                              reduction_name +
+  throw std::invalid_argument("Invalid embedding reduction time '" + name +
                               "', supported options are 'sum', "
                               "'average'/'avg', or 'concat'/'concatenation'");
+}
+
+std::string reductionToString(EmbeddingReductionType reduction) {
+  switch (reduction) {
+    case EmbeddingReductionType::SUM:
+      return "sum";
+    case EmbeddingReductionType::CONCATENATION:
+      return "concat";
+    case EmbeddingReductionType::AVERAGE:
+      return "avg";
+    default:
+      return "";
+  }
 }
 
 template <class Archive>

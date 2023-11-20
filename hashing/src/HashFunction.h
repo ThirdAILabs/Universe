@@ -3,6 +3,8 @@
 #include <cereal/types/polymorphic.hpp>
 #include "HashUtils.h"
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Archive.h>
+#include <stdexcept>
 
 namespace thirdai::hashing {
 
@@ -87,6 +89,10 @@ class HashFunction {
   inline uint32_t range() const { return _range; }
 
   virtual std::unique_ptr<HashFunction> copyWithNewSeeds() const = 0;
+
+  virtual ar::ConstArchivePtr toArchive() const {
+    throw std::runtime_error("Cannot convert hash function to Archive.");
+  }
 
   virtual std::string getName() const = 0;
 
