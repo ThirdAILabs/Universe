@@ -7,7 +7,8 @@ from typing import Callable, List, Optional, Union
 from urllib.parse import urljoin
 
 import requests
-from thirdai_python_package.neural_db.neural_db import NeuralDB as ndb
+from thirdai_python_package.neural_db.neural_db import NeuralDB
+from thirdai_python_package.neural_db.models import CancelState
 from pydantic import BaseModel, ValidationError
 from requests.auth import HTTPBasicAuth
 from tqdm import tqdm
@@ -272,19 +273,19 @@ class Bazaar:
         self,
         model_identifier: str,
         on_progress: Callable = lambda *args, **kwargs: None,
-        cancel_state: ndb.CancelState = ndb.CancelState(),
+        cancel_state: CancelState = CancelState(),
         disable_progress_bar: bool = False,
     ):
         model_dir = self.get_model_dir(
             model_identifier, on_progress, cancel_state, disable_progress_bar
         )
-        return ndb.NeuralDB.from_checkpoint(checkpoint_path=model_dir)
+        return NeuralDB.from_checkpoint(checkpoint_path=model_dir)
 
     def get_model_dir(
         self,
         model_identifier,
         on_progress: Callable = lambda *args, **kwargs: None,
-        cancel_state: ndb.CancelState = ndb.CancelState(),
+        cancel_state: CancelState = CancelState(),
         disable_progress_bar: bool = False,
     ):
         if self.is_logged_in():
@@ -379,7 +380,7 @@ class Bazaar:
         self,
         model_identifier: str,
         on_progress: Callable,
-        cancel_state: ndb.CancelState,
+        cancel_state: CancelState,
         disable_progress_bar: bool = False,
     ):
         if self.is_logged_in():
@@ -503,7 +504,7 @@ class Bazaar:
                         print(response.text)
                         break
 
-        db = ndb.NeuralDB.from_checkpoint(checkpoint_path=model_path)
+        db = NeuralDB.from_checkpoint(checkpoint_path=model_path)
         model = db._savable_state.model.model._get_model()
         num_params = model.num_params()
         thirdai_version = model.thirdai_version()
