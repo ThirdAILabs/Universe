@@ -195,7 +195,7 @@ ConstArchivePtr mapU64VecF32(MapU64VecF32 val) {
   return Value<MapU64VecF32>::make(std::move(val));
 }
 
-ConstArchivePtr mapU64Str(std::unordered_map<std::string, uint64_t> val) {
+ConstArchivePtr mapStrU64(std::unordered_map<std::string, uint64_t> val) {
   return Value<std::unordered_map<std::string, uint64_t>>::make(std::move(val));
 }
 

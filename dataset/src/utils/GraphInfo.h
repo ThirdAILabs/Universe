@@ -35,6 +35,10 @@ class GraphInfo {
 
   uint64_t featureDim() const { return _feature_dim; }
 
+  const auto& nodeFeatures() const { return _node_id_to_feature_vector; }
+
+  const auto& neighbors() const { return _node_id_to_neighbors; }
+
   ar::ConstArchivePtr toArchive() const;
 
   static std::shared_ptr<GraphInfo> fromArchive(const ar::Archive& archive);

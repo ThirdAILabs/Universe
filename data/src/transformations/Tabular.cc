@@ -153,7 +153,7 @@ ar::ConstArchivePtr Tabular::toArchive() const {
   map->set("numerical_columns", numerical_columns);
 
   auto categorical_columns = ar::List::make();
-  for (const auto& cat_col : _numerical_columns) {
+  for (const auto& cat_col : _categorical_columns) {
     categorical_columns->append(cat_col.toArchive());
   }
   map->set("categorical_columns", categorical_columns);

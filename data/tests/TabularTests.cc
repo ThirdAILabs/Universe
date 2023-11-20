@@ -157,4 +157,26 @@ TEST(TabularTests, HashDistribution) {
   }
 }
 
+TEST(TabularTests, Serialization) {
+  auto columns =
+      makeColumnMap({{"a", {"aa", "bb", "cc", "aa", "bb", "cc"}},
+                     {"b", {"0.5", "1.5", "2.5", "0.2", "1.7", "2.8"}},
+                     {"c", {"aa", "cc", "bb", "bb", "bb", "aa"}}});
+
+  Tabular transform({NumericalColumn("b", 0, 3, 3)},
+                    {CategoricalColumn("a"), CategoricalColumn("c")}, OUTPUT,
+                    /* cross_column_pairgrams= */ true);
+
+  // We down cast to transformation because otherwise it was trying to call
+  // the cereal "serialize" method. This can be removed once cereal is
+  // officially depreciated.
+  auto transform_copy = Transformation::deserialize(
+      dynamic_cast<Transformation*>(&transform)->serialize());
+
+  auto output1 = getTabularTokens(transform.applyStateless(columns));
+  auto output2 = getTabularTokens(transform_copy->applyStateless(columns));
+
+  ASSERT_EQ(output1, output2);
+}
+
 }  // namespace thirdai::data::tests

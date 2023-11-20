@@ -67,12 +67,12 @@ class ThreadSafeVocabulary {
     // resize here so we can access 0 to map.size() - 1 uids with [] syntax
     _uid_to_string.resize(_string_to_uid.size());
     for (auto& [string, uid] : _string_to_uid) {
-      if (uid >= _max_vocab_size) {
+      if (uid >= _string_to_uid.size()) {
         throw std::invalid_argument(
             "[ThreadSafeVocabulary] The provided string_to_uid_map contains a "
             "uid out of the valid range. Provided uid: " +
             std::to_string(uid) + " but expected a uid in the range 0 to " +
-            std::to_string(*_max_vocab_size) + " - 1");
+            std::to_string(_string_to_uid.size()) + " - 1");
       }
       _uid_to_string[uid] = string;
     }
