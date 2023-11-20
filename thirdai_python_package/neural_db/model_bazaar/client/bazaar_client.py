@@ -6,7 +6,7 @@ from urllib.parse import urljoin
 from uuid import UUID
 
 import requests
-from bazaar_base import Bazaar, auth_header
+from .bazaar_base import Bazaar, auth_header
 
 from utils import (
     check_deployment_decorator,
