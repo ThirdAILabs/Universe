@@ -16,11 +16,9 @@ from tqdm import tqdm
 from .utils import (
     create_model_identifier,
     get_directory_size,
-    get_file_size,
     hash_path,
     http_get_with_error,
     http_post_with_error,
-    upload_file,
     zip_folder,
 )
 
