@@ -13,7 +13,7 @@ from thirdai.neural_db.models import CancelState
 from thirdai.neural_db.neural_db import NeuralDB
 from tqdm import tqdm
 
-from utils import (
+from .utils import (
     create_model_identifier,
     get_directory_size,
     get_file_size,
