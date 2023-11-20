@@ -166,6 +166,7 @@ neural_db_deps = [
     "SQLAlchemy",
     "Office365-REST-Python-Client",
     "simple-salesforce",
+    "scikit-learn",
 ]
 
 # The information here can also be placed in setup.cfg - better separation of

@@ -27,7 +27,7 @@ from thirdai.dataset.data_source import PyDataSource
 from .connectors import SalesforceConnector, SharePointConnector, SQLConnector
 from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
 from .parsing_utils import doc_parse, pdf_parse, sliding_pdf_parse, url_parse
-from .utils import hash_file, hash_string
+from .utils import hash_file, hash_string, requires_condition
 
 
 class Reference:
@@ -372,8 +372,12 @@ class CSV(Document):
         save_extra_info=True,
         metadata={},
         index_columns=[],
+        has_offset=False,
     ) -> None:
         self.df = pd.read_csv(path)
+
+        # This variable is used to check whether the id's in the CSV are supposed to start with 0 or with some custom offset. We need the latter when we shard the datasource.
+        self.has_offset = has_offset
 
         if reference_columns is None:
             reference_columns = list(self.df.columns)
@@ -412,11 +416,17 @@ class CSV(Document):
         elif weak_columns is None:
             weak_columns = []
 
+        self.df = self.df.sort_values(self.id_column)
+
+        if not self.has_offset:
+            assert len(self.df[self.id_column].unique()) == len(self.df[self.id_column])
+            assert self.df[self.id_column].min() == 0
+            assert self.df[self.id_column].max() == len(self.df[self.id_column]) - 1
+
         for col in strong_columns + weak_columns:
             self.df[col] = self.df[col].fillna("")
 
         self.path = Path(path)
-        self._hash = hash_file(path, metadata="csv-" + str(metadata))
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
         self.reference_columns = reference_columns
@@ -424,6 +434,19 @@ class CSV(Document):
         self.doc_metadata = metadata
         self.doc_metadata_keys = set(self.doc_metadata.keys())
         self.indexed_columns = index_columns
+        # Add column names to hash metadata so that CSVs with different
+        # hyperparameters are treated as different documents. Otherwise, this
+        # may break training.
+        self._hash = hash_file(
+            path,
+            metadata="csv-"
+            + str(self.id_column)
+            + str(sorted(self.strong_columns))
+            + str(sorted(self.weak_columns))
+            + str(sorted(self.reference_columns))
+            + str(sorted(self.indexed_columns))
+            + str(sorted(list(self.doc_metadata.items()))),
+        )
 
     @property
     def hash(self) -> str:
@@ -437,6 +460,12 @@ class CSV(Document):
     def name(self) -> str:
         return self.path.name
 
+    @requires_condition(
+        check_func=lambda self: not self.has_offset,
+        method_name="matched_constraints",
+        method_class="CSV(Document)",
+        condition_unmet_string=" when there is an offset in the CSV document",
+    )
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
         metadata_constraints = {
@@ -465,13 +494,31 @@ class CSV(Document):
         return self.orig_to_assigned_id
 
     def strong_text(self, element_id: int) -> str:
-        row = self.df.iloc[element_id]
-        return " ".join([str(row[col]).replace(",", "") for col in self.strong_columns])
+        row = self.df[self.df[self.id_column] == element_id]
+        return " ".join(
+            [str(row[col].values[0]).replace(",", "") for col in self.strong_columns]
+        )
 
     def weak_text(self, element_id: int) -> str:
-        row = self.df.iloc[element_id]
-        return " ".join([str(row[col]).replace(",", "") for col in self.weak_columns])
+        row = self.df[self.df[self.id_column] == element_id]
+        return " ".join(
+            [str(row[col].values[0]).replace(",", "") for col in self.weak_columns]
+        )
 
+    def row_iterator(self):
+        for i in list(self.df[self.id_column]):
+            yield DocumentRow(
+                element_id=i,
+                strong=self.strong_text(i),
+                weak=self.weak_text(i),
+            )
+
+    @requires_condition(
+        check_func=lambda self: not self.has_offset,
+        method_name="reference",
+        method_class="CSV(Document)",
+        condition_unmet_string=" when there is an offset in the CSV document",
+    )
     def reference(self, element_id: int) -> Reference:
         if element_id >= len(self.df):
             _raise_unknown_doc_error(element_id)
@@ -516,11 +563,23 @@ class CSV(Document):
 
         self.__dict__.update(state)
 
+    @requires_condition(
+        check_func=lambda self: not self.has_offset,
+        method_name="save_meta",
+        method_class="CSV(Document)",
+        condition_unmet_string=" when there is an offset in the CSV document",
+    )
     def save_meta(self, directory: Path):
         # Let's copy the original CSV file to the provided directory
         if self.save_extra_info:
             shutil.copy(self.path, directory)
 
+    @requires_condition(
+        check_func=lambda self: not self.has_offset,
+        method_name="load_meta",
+        method_class="CSV(Document)",
+        condition_unmet_string=" when there is an offset in the CSV document",
+    )
     def load_meta(self, directory: Path):
         # Since we've moved the CSV file to the provided directory, let's make
         # sure that we point to this CSV file.
@@ -744,7 +803,20 @@ class PDF(Extracted):
         self.emphasize_first_words = emphasize_first_words
         self.ignore_header_footer = ignore_header_footer
         self.ignore_nonstandard_orientation = ignore_nonstandard_orientation
-        super().__init__(path=path, metadata=metadata, strong_column="emphasis")
+        # Add pdf version, chunk size, and stride metadata. The metadata will be
+        # incorporated in the document hash so that the same PDF inserted with
+        # different hyperparameters are treated as different documents.
+        # Otherwise, this may break training.
+        super().__init__(
+            path=path,
+            metadata={
+                **metadata,
+                "__version__": "v2",
+                "__chunk_size__": chunk_size,
+                "__stride__": stride,
+            },
+            strong_column="emphasis",
+        )
 
     def process_data(
         self,
@@ -760,6 +832,13 @@ class PDF(Extracted):
             self.ignore_header_footer,
             self.ignore_nonstandard_orientation,
         )
+
+    @staticmethod
+    def highlighted_doc(reference: Reference):
+        old_highlights = pdf_parse.highlighted_doc(reference.source, reference.metadata)
+        if old_highlights:
+            return old_highlights
+        return sliding_pdf_parse.highlighted_doc(reference.source, reference.metadata)
 
 
 class DOCX(Extracted):
@@ -875,9 +954,11 @@ class URL(Document):
             element_id=element_id,
             text=self.df["display"].iloc[element_id],
             source=self.url,
-            metadata={"title": self.df["title"].iloc[element_id], **self.doc_metadata}
-            if "title" in self.df.columns
-            else self.doc_metadata,
+            metadata=(
+                {"title": self.df["title"].iloc[element_id], **self.doc_metadata}
+                if "title" in self.df.columns
+                else self.doc_metadata
+            ),
         )
 
     def context(self, element_id, radius) -> str:
@@ -1058,7 +1139,8 @@ class SQLDatabase(DocumentConnector):
         try:
             # The idea is to check for the connector object existence
             print(
-                f"Connector object already exists with url: {self._connector.get_engine_url()}"
+                "Connector object already exists with url:"
+                f" {self._connector.get_engine_url()}"
             )
         except AttributeError as e:
             assert engine.url.database == self.database_name
@@ -1120,7 +1202,10 @@ class SQLDatabase(DocumentConnector):
 
         try:
             reference_texts = self._connector.execute(
-                query=f"SELECT {','.join(self.reference_columns)} FROM {self.table_name} WHERE {self.id_col} = {element_id}"
+                query=(
+                    f"SELECT {','.join(self.reference_columns)} FROM"
+                    f" {self.table_name} WHERE {self.id_col} = {element_id}"
+                )
             ).fetchone()
 
             text = "\n\n".join(
@@ -1133,7 +1218,10 @@ class SQLDatabase(DocumentConnector):
             )
 
         except Exception as e:
-            text = f"Unable to connect to database, Referenced row with {self.id_col}: {element_id} "
+            text = (
+                f"Unable to connect to database, Referenced row with {self.id_col}:"
+                f" {element_id} "
+            )
 
         return Reference(
             document=self,
