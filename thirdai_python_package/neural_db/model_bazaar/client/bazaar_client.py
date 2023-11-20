@@ -7,6 +7,7 @@ from uuid import UUID
 
 import requests
 
+from .bazaar_base import Bazaar, auth_header
 from .utils import (
     check_deployment_decorator,
     create_deployment_identifier,
@@ -15,8 +16,6 @@ from .utils import (
     http_post_with_error,
     print_progress_dots,
 )
-
-from .bazaar_base import Bazaar, auth_header
 
 
 class Model:
