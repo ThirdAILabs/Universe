@@ -46,7 +46,7 @@ def check_deployment_decorator(func):
     def wrapper(self, *args, **kwargs):
         if self.base_url is None:
             raise Exception(
-                "Deployment isn't complete yet. Use `list_deployments()` to check status."
+                "Deployment isn't complete yet. Use `await_deploy()` or `connect()` to get the endpoints."
             )
         return func(self, *args, **kwargs)
 

@@ -125,7 +125,7 @@ def login_required(func):
     def wrapper(self, *args, **kwargs):
         if not self.is_logged_in():
             raise PermissionError(
-                "You have to login to use this functionality. try '.login()' method."
+                "This method requires login, please use '.login()' first then try again."
             )
         return func(self, *args, **kwargs)
 
