@@ -5,7 +5,7 @@ import shutil
 import string
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Type, Union, final
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -1653,8 +1653,11 @@ class SalesForce(DocumentConnector):
     def row_iterator(self):
         for current_chunk in self.chunk_iterator():
             for idx in range(len(current_chunk)):
+                """
+                * Since we are not able to retrieve the rows in sorted order, we have to do this so that (id, strong_text, weak_text) gets mapped correctly.
+                * We cannot sort because the id_col needs to be of type 'autoNumber' which is a string. Neither we can do 'SELECT row FROM object_name ORDER BY LEN(id_col), id_col' because there is no LEN function in SOQL (by default). Owner of the object have to create a formula LEN() to use such query.
+                """
                 yield DocumentRow(
-                    # Since we are not able to retrieve the rows in sorted order, we have to do this so that (id, strong_text, weak_text) gets mapped correctly.
                     element_id=int(current_chunk.iloc[idx][self.id_col]),
                     strong=self.strong_text_from_chunk(
                         id_in_chunk=idx, chunk=current_chunk
@@ -1784,9 +1787,15 @@ class SalesForce(DocumentConnector):
                 f"id column needs to be unique from 0 to {self.size - 1}"
             )
 
-    def assert_valid_fields(self):
+    def assert_valid_fields(
+        self, supported_text_types: Tuple[str] = ("string", "textarea")
+    ):
         all_fields = self._connector.field_metadata()
+        self.assert_field_inclusion(all_fields)
+        self.assert_field_type(all_fields, supported_text_types)
+        self.default_fields(all_fields, supported_text_types)
 
+    def assert_field_inclusion(self, all_fields: List[OrderedDict]):
         fields_set = set([field["name"] for field in all_fields])
 
         # Checking for strong, weak and reference columns (if provided) to be present in column list of the table
@@ -1810,34 +1819,36 @@ class SalesForce(DocumentConnector):
                 f"Reference column(s) doesn't exists in the object. {column_name_error}"
             )
 
+    def assert_field_type(
+        self, all_fields: List[OrderedDict], supported_text_types: Tuple[str]
+    ):
         # Checking for strong and weak column to have the correct column type
-        supported_text_type = ("string", "textarea")
         for field in all_fields:
             if (
                 self.strong_columns is not None
                 and field["name"] in self.strong_columns
-                and field["type"] not in supported_text_type
+                and field["type"] not in supported_text_types
             ):
                 raise AttributeError(
-                    f"Strong column '{field['name']}' needs to be type from {supported_text_type}"
+                    f"Strong column '{field['name']}' needs to be type from {supported_text_types}"
                 )
             if (
                 self.weak_columns is not None
                 and field["name"] in self.weak_columns
-                and field["type"] not in supported_text_type
+                and field["type"] not in supported_text_types
             ):
                 raise AttributeError(
-                    f"Weak column '{field['name']}' needs to be type {supported_text_type}"
+                    f"Weak column '{field['name']}' needs to be type {supported_text_types}"
                 )
 
+    def default_fields(
+        self, all_fields: List[OrderedDict], supported_text_types: Tuple[str]
+    ):
         if self.strong_columns is None and self.weak_columns is None:
             self.strong_columns = []
             self.weak_columns = []
             for field in all_fields:
-                if (
-                    field["name"] != self.id_col
-                    and field["type"] in supported_text_type
-                ):
+                if field["type"] in supported_text_types:
                     self.weak_columns.append(field["name"])
         elif self.strong_columns is None:
             self.strong_columns = []
@@ -1847,7 +1858,7 @@ class SalesForce(DocumentConnector):
         if self.reference_columns is None:
             self.reference_columns = [self.id_col]
             for field in all_fields:
-                if field["type"] in supported_text_type:
+                if field["type"] in supported_text_types:
                     self.reference_columns.append(field["name"])
 
 
