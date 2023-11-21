@@ -91,6 +91,7 @@ def get_directory_size(directory: Path):
 
 def check_response(response):
     if not (200 <= response.status_code < 300):
+        print(response.content)
         raise requests.exceptions.HTTPError(
             "Failed with status code:", response.status_code
         )

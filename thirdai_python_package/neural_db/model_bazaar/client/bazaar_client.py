@@ -37,7 +37,7 @@ class Model:
                 str: The model identifier, or None if not set.
     """
 
-    def __init__(self, user_id, model_id, model_identifier) -> None:
+    def __init__(self, model_identifier) -> None:
         self._model_identifier = model_identifier
 
     @property
