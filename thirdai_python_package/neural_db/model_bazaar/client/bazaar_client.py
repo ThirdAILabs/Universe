@@ -421,6 +421,7 @@ class ModelBazaar(Bazaar):
         response = http_post_with_error(
             url, params=params, headers=auth_header(self._access_token)
         )
+        response_data = json.loads(response.content)["data"]
 
         ndb_client = NeuralDBClient(
             deployment_identifier=create_deployment_identifier(
@@ -428,7 +429,7 @@ class ModelBazaar(Bazaar):
                 deployment_name=deployment_name,
                 deployment_username=self._username,
             ),
-            base_url=None,
+            base_url=response_data["endpoint"] + "/",
         )
         if is_async:
             return ndb_client
