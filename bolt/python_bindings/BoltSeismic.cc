@@ -1,6 +1,7 @@
 #include "BoltSeismic.h"
 #include <bolt/python_bindings/PybindUtils.h>
-#include <bolt/src/seismic/SeismicEmbeddingModel.h>
+#include <bolt/src/seismic/SeismicClassifier.h>
+#include <bolt/src/seismic/SeismicEmbedding.h>
 #include <bolt/src/seismic/SeismicLabels.h>
 #include <pybind11/stl.h>
 
@@ -9,38 +10,55 @@ namespace thirdai::bolt::seismic::python {
 void createSeismicSubmodule(py::module_& module) {
   auto seismic = module.def_submodule("seismic");
 
-  py::class_<SubcubeMetadata>(seismic, "SubcubeMetadata")
-      .def(py::init<std::string, size_t, size_t, size_t>(), py::arg("volume"),
-           py::arg("x"), py::arg("y"), py::arg("z"));
+  py::class_<SeismicBase, std::shared_ptr<SeismicBase>>(seismic, "SeismicBase")
+      .def("embeddings_for_patches", &SeismicBase::embeddingsForPatches,
+           py::arg("subcubes"), py::arg("sparse_inference") = false)
+      .def_property_readonly("subcube_shape", &SeismicBase::subcubeShape)
+      .def_property_readonly("patch_shape", &SeismicBase::patchShape)
+      .def_property_readonly("max_pool", &SeismicBase::maxPool)
+      .def_property("model", &SeismicBase::getModel, &SeismicBase::setModel);
 
-  py::class_<SeismicEmbeddingModel, std::shared_ptr<SeismicEmbeddingModel>>(
-      seismic, "SeismicEmbeddingModel")
-      .def(py::init<size_t, size_t, size_t, const std::string&,
-                    std::optional<size_t>>(),
-           py::arg("subcube_shape"), py::arg("patch_shape"),
-           py::arg("embedding_dim"), py::arg("size") = "large",
-           py::arg("max_pool") = std::nullopt)
-      .def("train_on_patches", &SeismicEmbeddingModel::trainOnPatches,
+  py::class_<SeismicEmbedding, std::shared_ptr<SeismicEmbedding>, SeismicBase>(
+      seismic, "SeismicEmbedding")
+      .def(py::init(&SeismicEmbedding::makeCube), py::arg("subcube_shape"),
+           py::arg("patch_shape"), py::arg("embedding_dim"),
+           py::arg("size") = "large", py::arg("max_pool") = std::nullopt)
+      .def(py::init(&SeismicEmbedding::make), py::arg("subcube_shape"),
+           py::arg("patch_shape"), py::arg("embedding_dim"),
+           py::arg("size") = "large", py::arg("max_pool") = std::nullopt)
+      .def("train_on_patches", &SeismicEmbedding::trainOnPatches,
            py::arg("subcubes"), py::arg("subcube_metadata"),
            py::arg("learning_rate"), py::arg("batch_size"),
            py::arg("callbacks"), py::arg("log_interval"),
-           py::arg("comm") = std::nullopt)
-      .def("embeddings_for_patches",
-           &SeismicEmbeddingModel::embeddingsForPatches, py::arg("subcubes"))
-      .def_property_readonly("subcube_shape",
-                             &SeismicEmbeddingModel::subcubeShape)
-      .def_property_readonly("patch_shape", &SeismicEmbeddingModel::patchShape)
-      .def_property_readonly("max_pool", &SeismicEmbeddingModel::maxPool)
-      .def_property("model", &SeismicEmbeddingModel::getModel,
-                    &SeismicEmbeddingModel::setModel)
-      .def("save", &SeismicEmbeddingModel::save, py::arg("filename"))
-      .def_static("load", &SeismicEmbeddingModel::load, py::arg("filename"))
-      .def(bolt::python::getPickleFunction<SeismicEmbeddingModel>());
+           py::arg("comm") = nullptr)
+      .def("forward_finetuning", &SeismicEmbedding::forward,
+           py::arg("subcubes"))
+      .def("backpropagate_finetuning", &SeismicEmbedding::backpropagate,
+           py::arg("gradients"))
+      .def("update_parameters", &SeismicEmbedding::updateParameters,
+           py::arg("learning_rate"))
+      .def("save", &SeismicEmbedding::save, py::arg("filename"))
+      .def_static("load", &SeismicEmbedding::load, py::arg("filename"))
+      .def(bolt::python::getPickleFunction<SeismicEmbedding>());
+
+  py::class_<SeismicClassifier, std::shared_ptr<SeismicClassifier>,
+             SeismicBase>(seismic, "SeismicClassifier")
+      .def(py::init<const std::shared_ptr<SeismicBase>&, size_t, bool>(),
+           py::arg("emb_model"), py::arg("n_classes"),
+           py::arg("freeze_emb_model") = false)
+      .def("train_on_patches", &SeismicClassifier::trainOnPatches,
+           py::arg("subcubes"), py::arg("labels"), py::arg("learning_rate"),
+           py::arg("batch_size"), py::arg("callbacks"), py::arg("log_interval"),
+           py::arg("comm") = nullptr)
+      .def("predictions_for_patches", &SeismicClassifier::predictionsForPatches,
+           py::arg("subcubes"), py::arg("sparse_inference") = false)
+      .def("save", &SeismicClassifier::save, py::arg("filename"))
+      .def_static("load", &SeismicClassifier::load, py::arg("filename"))
+      .def(bolt::python::getPickleFunction<SeismicClassifier>());
 
   py::class_<seismic::Checkpoint, std::shared_ptr<seismic::Checkpoint>,
              callbacks::Callback>(seismic, "Checkpoint")
-      .def(py::init<std::shared_ptr<SeismicEmbeddingModel>, std::string,
-                    size_t>(),
+      .def(py::init<std::shared_ptr<SeismicBase>, std::string, size_t>(),
            py::arg("seismic_model"), py::arg("checkpoint_dir"),
            py::arg("interval"));
 

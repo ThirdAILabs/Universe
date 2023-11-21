@@ -113,14 +113,19 @@ def test_target_not_in_data_types():
         )
 
 
-def test_invalid_column_name_in_udt_predict():
+@pytest.mark.parametrize("mach", [True, False])
+def test_invalid_column_name_in_udt_predict(mach):
     model = bolt.UniversalDeepTransformer(
         data_types={
             "text_col": bolt.types.text(contextual_encoding="local"),
             "target": bolt.types.categorical(),
         },
         target="target",
-        n_target_classes=2,
+        n_target_classes=10,
+        integer_target=True,
+        options={
+            "extreme_classification": mach,
+        },
     )
 
     with pytest.raises(
@@ -130,6 +135,7 @@ def test_invalid_column_name_in_udt_predict():
         ),
     ):
         model.predict({"HAHAHA": "some text"})
+        model.predict_batch([{"HAHAHA": "some text"}])
 
 
 @pytest.mark.unit

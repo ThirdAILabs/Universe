@@ -24,6 +24,7 @@ def compute_roc_auc(activations, test_labels_path, mlflow_callback=None, step=0)
         raise ValueError(
             "Activations must have shape (n,1) or (n,2) to compute the AUC"
         )
+
     auc = roc_auc_score(y_true=test_labels, y_score=scores)
     print(f"AUC : {auc}")
 
@@ -37,31 +38,17 @@ class DLRMRunner(Runner):
     def run_benchmark(config: DLRMConfig, path_prefix, mlflow_logger):
         model = DLRMRunner.get_model(config)
 
-        train_set, train_labels, test_set, test_labels = config.load_datasets(
-            path_prefix
-        )
-
-        train_data = (
-            bolt.train.convert_datasets(
-                train_set, dims=[config.int_features, 4294967295], copy=False
-            ),
-            bolt.train.convert_dataset(train_labels, config.n_classes, copy=False),
-        )
-
-        test_data = (
-            bolt.train.convert_datasets(
-                test_set, dims=[config.int_features, 4294967295], copy=False
-            ),
-            bolt.train.convert_dataset(test_labels, config.n_classes, copy=False),
-        )
-
         trainer = bolt.train.Trainer(model)
 
         for epoch in range(config.num_epochs):
             metrics = trainer.train(
-                train_data=train_data,
+                train_data=config.load_train_data(path_prefix=path_prefix),
                 learning_rate=config.learning_rate,
                 epochs=1,
+            )
+
+            test_data = config.load_test_data(path_prefix=path_prefix)
+            metrics = trainer.validate(
                 validation_data=test_data,
                 validation_metrics=config.metrics,
             )

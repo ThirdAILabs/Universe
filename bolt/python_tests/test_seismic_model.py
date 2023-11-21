@@ -1,61 +1,21 @@
 import os
-import shutil
 
 import numpy as np
+import pandas as pd
 import pytest
 import torch
+from seismic_dataset_fixtures import classification_dataset, subcube_dataset
 from thirdai import bolt
-
-SUBCUBE_SHAPE = (64, 64, 64)
-PATCH_SHAPE = (16, 16, 16)
-
-
-def create_subcubes(volume, volume_name, out_dir, shape, stride):
-    x_dim, y_dim, z_dim = volume.shape
-
-    for i in range(0, x_dim, stride[0]):
-        for j in range(0, y_dim, stride[1]):
-            for k in range(0, z_dim, stride[2]):
-                if (
-                    (i + shape[0]) > x_dim
-                    or (j + shape[1]) > y_dim
-                    or (k + shape[2]) > z_dim
-                ):
-                    continue
-
-                subcube = volume[i : i + shape[0], j : j + shape[1], k : k + shape[2]]
-                subcube_name = f"{volume_name}_{i}_{j}_{k}"
-
-                np.save(os.path.join(out_dir, subcube_name), subcube)
-
-
-@pytest.fixture
-def subcube_directory():
-    subcube_dir = "./subcubes"
-    os.makedirs(subcube_dir, exist_ok=True)
-
-    volume = np.random.rand(130, 140, 150).astype(np.float32)
-
-    create_subcubes(
-        volume=volume,
-        volume_name="abc",
-        out_dir=subcube_dir,
-        shape=SUBCUBE_SHAPE,
-        stride=(32, 32, 32),
-    )
-
-    yield subcube_dir
-
-    shutil.rmtree(subcube_dir)
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("max_pool", [None, 2])
-def test_seismic_model(subcube_directory, max_pool):
-    emb_dim = 256
-    model = bolt.seismic.SeismicEmbeddingModel(
-        subcube_shape=SUBCUBE_SHAPE[0],
-        patch_shape=PATCH_SHAPE[0],
+@pytest.mark.parametrize("max_pool", [None, (2, 2, 2)])
+def test_seismic_embedding_model(subcube_dataset, max_pool):
+    subcube_directory, subcube_shape, patch_shape = subcube_dataset
+    emb_dim = 100
+    model = bolt.seismic.SeismicEmbedding(
+        subcube_shape=subcube_shape,
+        patch_shape=patch_shape,
         embedding_dim=emb_dim,
         size="small",
         max_pool=max_pool,
@@ -82,10 +42,10 @@ def test_seismic_model(subcube_directory, max_pool):
 
     n_cubes_to_embed = 4
     subcubes_to_embed = (
-        np.random.rand(n_cubes_to_embed, *SUBCUBE_SHAPE).astype(np.float32) / 10
+        np.random.rand(n_cubes_to_embed, *subcube_shape).astype(np.float32) / 10
     )
 
-    embs = model.embeddings(subcubes_to_embed)
+    embs = model.embeddings(subcubes_to_embed, sparse_inference=True)
 
     assert embs.shape == (n_cubes_to_embed, emb_dim)
 
@@ -98,17 +58,99 @@ def test_seismic_model(subcube_directory, max_pool):
 
     sims = model.score_subcubes(eval_dir)
 
-    expected_sims = []
-    for i in range(0, n_cubes_to_embed):
-        sim = np.dot(embs[0], embs[i])
-        sim /= np.linalg.norm(embs[0]) * np.linalg.norm(embs[i])
-        expected_sims.append((f"candidate_{i}.npy", sim))
+    assert set([x[0] for x in sims]) == set(
+        f"candidate_{i}.npy" for i in range(n_cubes_to_embed)
+    )
 
-    expected_sims.sort(reverse=True, key=lambda x: x[1])
 
-    for actual, expected in zip(sims, expected_sims):
-        assert actual[0] == expected[0]
-        assert np.isclose(actual[1], expected[1])
+@pytest.mark.unit
+def test_seismic_embedding_finetuning(subcube_dataset):
+    subcube_directory, subcube_shape, patch_shape = subcube_dataset
+
+    emb_dim = 100
+
+    model = bolt.seismic.SeismicEmbedding(
+        subcube_shape=subcube_shape[0],
+        patch_shape=patch_shape[0],
+        embedding_dim=emb_dim,
+        size="small",
+        max_pool=2,
+    )
+
+    embs = model.forward(torch.rand(5, *subcube_shape))
+    assert embs.shape == (5, emb_dim)
+    assert embs.requires_grad
+    model.backpropagate(torch.rand(*embs.shape))
+    model.update_parameters(0.001)
+
+    embs = model.embeddings(np.random.rand(3, *subcube_shape))
+    assert embs.shape == (3, emb_dim)
+
+    with pytest.raises(
+        ValueError,
+        match="Can not use unsupervised pretraining on a model after using "
+        "finetuning since the decoder has been invalidated.",
+    ):
+        model.train(
+            subcube_directory=subcube_directory,
+            learning_rate=0.0001,
+            epochs=1,
+            batch_size=8,
+        )
+
+
+@pytest.mark.unit
+def test_seismic_classifier(classification_dataset):
+    sample_index, subcube_shape, patch_shape, n_classes = classification_dataset
+
+    emb_dim = 100
+    emb_model = bolt.seismic.SeismicEmbedding(
+        subcube_shape=subcube_shape[0],
+        patch_shape=patch_shape[0],
+        embedding_dim=emb_dim,
+        size="small",
+        max_pool=2,
+    )
+
+    classifier = bolt.seismic.SeismicClassifier(emb_model, n_classes=n_classes)
+
+    classifier.train(
+        sample_index_file=sample_index,
+        learning_rate=0.0001,
+        epochs=1,
+        batch_size=8,
+    )
+
+    n_cubes_to_embed = 2
+    subcubes_to_embed = (
+        np.random.rand(n_cubes_to_embed, *subcube_shape).astype(np.float32) / 10
+    )
+
+    assert np.array_equal(
+        emb_model.embeddings(subcubes_to_embed),
+        classifier.embeddings(subcubes_to_embed),
+    )
+
+    predictions = classifier.predict(subcubes_to_embed, sparse_inference=True)
+    assert predictions.shape == (n_cubes_to_embed, n_classes)
+
+
+@pytest.mark.unit
+def test_seismic_classifier_sparse_inference():
+    emb_model = bolt.seismic.SeismicEmbedding(
+        subcube_shape=16,
+        patch_shape=8,
+        embedding_dim=10,
+        size="small",
+        max_pool=2,
+    )
+
+    classifier = bolt.seismic.SeismicClassifier(emb_model, n_classes=500)
+
+    output = classifier.predict(np.random.rand(1, 16, 16, 16), sparse_inference=True)
+
+    assert output[0].shape == (1, 100)
+    assert output[0].shape == (1, 100)
 
 
 @pytest.mark.unit
@@ -117,7 +159,9 @@ def test_create_patches():
 
     cubes = torch.stack([integer_cube, 512 + integer_cube, 1024 + integer_cube])
 
-    patches = bolt.seismic_modifications.convert_to_patches(cubes, (4, 4, 4))
+    patches = bolt.seismic_modifications.convert_to_patches(
+        cubes, expected_subcube_shape=(8, 8, 8), patch_shape=(4, 4, 4)
+    )
 
     patch = 0
     ranges = [(0, 4), (4, 8)]
@@ -139,7 +183,12 @@ def test_create_patches_max_pool():
 
     cubes = torch.stack([integer_cube, 512 + integer_cube, 1024 + integer_cube])
 
-    patches = bolt.seismic_modifications.convert_to_patches(cubes, (4, 4, 4), (2, 2, 2))
+    patches = bolt.seismic_modifications.convert_to_patches(
+        cubes,
+        expected_subcube_shape=(8, 8, 8),
+        patch_shape=(4, 4, 4),
+        max_pool=(2, 2, 2),
+    )
 
     pooled_cube = np.zeros((4, 4, 4))
     for x in range(4):

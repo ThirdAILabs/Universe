@@ -1,6 +1,10 @@
 import hashlib
 import math
 import random
+from functools import wraps
+
+DIRECTORY_CONNECTOR_SUPPORTED_EXT = ["pdf", "docx", "pptx", "txt", "eml"]
+SUPPORTED_EXT = ["csv"] + DIRECTORY_CONNECTOR_SUPPORTED_EXT
 
 
 def clean_text(text):
@@ -50,3 +54,34 @@ def move_between_directories(src, dest):
         src_path = os.path.join(src, f)
         dst_path = os.path.join(dest, f)
         shutil.move(src_path, dst_path)
+
+
+# This decorator is used to raise a NotImplemented error if the check_func returns false. This is used for scenarios when a Funciton is not implemented for a particular class depending upon a condition
+def requires_condition(
+    check_func, method_name: str, method_class: str, condition_unmet_string: str = None
+):
+    def decorator(func):
+        error_message = (
+            f"The property {method_name} is not implemented for the class"
+            f" {method_class}{condition_unmet_string if condition_unmet_string else ''}"
+        )
+        if isinstance(func, property):  # If the decorator is applied to a property.
+
+            def wrapped_fget(self):
+                if check_func(self):
+                    return func.fget(self)
+                else:
+                    raise NotImplementedError(error_message)
+
+            return property(wrapped_fget, func.fset, func.fdel, func.__doc__)
+
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):  # If the decorator is applied to a method.
+            if check_func(self):
+                return func(self, *args, **kwargs)
+            else:
+                raise NotImplementedError(error_message)
+
+        return wrapper
+
+    return decorator

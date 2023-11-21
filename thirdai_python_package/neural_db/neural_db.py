@@ -11,6 +11,7 @@ from thirdai.dataset.data_source import PyDataSource
 
 from . import loggers, teachers
 from .documents import CSV, Document, DocumentManager, Reference
+from .mach_mixture_model import MachMixture
 from .models import CancelState, Mach
 from .savable_state import State
 
@@ -88,16 +89,17 @@ class Sup:
             for i, label in enumerate(self.labels):
                 if label == None or label == "":
                     raise ValueError(
-                        f"Got a supervised sample with an empty label, query: '{self.queries[i]}'"
+                        "Got a supervised sample with an empty label, query:"
+                        f" '{self.queries[i]}'"
                     )
             if id_delimiter:
                 self.labels = self.labels.apply(
                     lambda label: list(
-                        map(int, str(label).strip(id_delimiter).split(id_delimiter))
+                        str(label).strip(id_delimiter).split(id_delimiter)
                     )
                 )
             else:
-                self.labels = self.labels.apply(lambda label: [int(label)])
+                self.labels = self.labels.apply(lambda label: [str(label)])
 
         elif queries is not None and labels is not None:
             if len(queries) != len(labels):
@@ -109,7 +111,8 @@ class Sup:
         # elif csv is None and
         else:
             raise ValueError(
-                "Sup must be initialized with csv, query_column and id_column, or queries and labels."
+                "Sup must be initialized with csv, query_column and id_column, or"
+                " queries and labels."
             )
         self.source_id = source_id
         self.uses_db_id = uses_db_id
@@ -146,40 +149,45 @@ class SupDataSource(PyDataSource):
         )
         return df.to_csv(header=None, index=None).strip("\n")
 
-    def _id_offset(self, sup: Sup):
-        if sup.uses_db_id:
-            return 0
+    def _source_for_sup(self, sup: Sup):
         source_ids = self.doc_manager.match_source_id_by_prefix(sup.source_id)
         if len(source_ids) == 0:
             raise ValueError(f"Cannot find source with id {sup.source_id}")
         if len(source_ids) > 1:
             raise ValueError(f"Multiple sources match the prefix {sup.source_id}")
-        _, start_id = self.doc_manager.source_by_id(source_ids[0])
-        return start_id
+        return self.doc_manager.source_by_id(source_ids[0])
+
+    def _labels(self, sup: Sup):
+        if sup.uses_db_id:
+            return [map(str, labels) for labels in sup.labels]
+
+        doc, start_id = self._source_for_sup(sup)
+        doc_id_map = doc.id_map()
+        if doc_id_map:
+            mapper = lambda label: str(doc_id_map[label] + start_id)
+        else:
+            mapper = lambda label: str(int(label) + start_id)
+
+        return [map(mapper, labels) for labels in sup.labels]
 
     def _get_line_iterator(self):
         # First yield the header
         yield self._csv_line(self.query_col, self.doc_manager.id_column)
         # Then yield rows
         for sup in self.data:
-            id_offset = self._id_offset(sup)
-            for query, labels in zip(sup.queries, sup.labels):
+            for query, labels in zip(sup.queries, self._labels(sup)):
                 if self.id_delimiter:
-                    label_str = self.id_delimiter.join(
-                        [str(id_offset + label) for label in labels]
-                    )
-                    yield self._csv_line(query, label_str)
+                    yield self._csv_line(query, self.id_delimiter.join(labels))
                 else:
                     for label in labels:
-                        label_str = str(id_offset + label)
-                        yield self._csv_line(query, label_str)
+                        yield self._csv_line(query, label)
 
     def resource_name(self) -> str:
         return "Supervised training samples"
 
 
 class NeuralDB:
-    def __init__(self, user_id: str = "user", **kwargs) -> None:
+    def __init__(self, user_id: str = "user", number_models: int = 1, **kwargs) -> None:
         """user_id is used for logging purposes only"""
         self._user_id: str = user_id
 
@@ -188,9 +196,23 @@ class NeuralDB:
         # We read savable_state from kwargs so that it doesn't appear in the
         # arguments list and confuse users.
         if "savable_state" not in kwargs:
-            self._savable_state: State = State(
-                model=Mach(id_col="id", query_col="query", **kwargs),
-                logger=loggers.LoggerList([loggers.InMemoryLogger()]),
+            if number_models <= 0:
+                raise Exception(
+                    f"Invalid Value Passed for number_models : {number_models}."
+                    " NeuralDB can only be initialized with a positive number of"
+                    " models."
+                )
+            if number_models > 1:
+                model = MachMixture(
+                    number_models=number_models,
+                    id_col="id",
+                    query_col="query",
+                    **kwargs,
+                )
+            else:
+                model = Mach(id_col="id", query_col="query", **kwargs)
+            self._savable_state = State(
+                model, logger=loggers.LoggerList([loggers.InMemoryLogger()])
             )
         else:
             self._savable_state = kwargs["savable_state"]
@@ -204,7 +226,7 @@ class NeuralDB:
         checkpoint_path = Path(checkpoint_path)
         savable_state = State.load(checkpoint_path, on_progress)
         if savable_state.model and savable_state.model.get_model():
-            savable_state.model.get_model().set_mach_sampling_threshold(0.01)
+            savable_state.model.set_mach_sampling_threshold(0.01)
         if not isinstance(savable_state.logger, loggers.LoggerList):
             # TODO(Geordie / Yash): Add DBLogger to LoggerList once ready.
             savable_state.logger = loggers.LoggerList([savable_state.logger])
@@ -254,7 +276,10 @@ class NeuralDB:
                 or csv_weak_columns is None
                 or csv_reference_columns is None
             ):
-                error_msg = "If the `csv` arg is provided, then the following args must also be provided:\n"
+                error_msg = (
+                    "If the `csv` arg is provided, then the following args must also be"
+                    " provided:\n"
+                )
                 error_msg += " - `csv_id_column`\n"
                 error_msg += " - `csv_strong_columns`\n"
                 error_msg += " - `csv_weak_columns`\n"
@@ -311,7 +336,11 @@ class NeuralDB:
                 https://docs.ray.io/en/latest/ray-air/trainers.html#trainer-basics
             - Ensure that the communication backend specified is compatible with the hardware and network setup for MPI/Gloo backend.
         """
-
+        if isinstance(self._savable_state.model, MachMixture):
+            raise NotImplementedError(
+                "Distributed Training is not supported for NeuralDB initialized with a"
+                " mixture of experts."
+            )
         import warnings
         from distutils.version import LooseVersion
 
@@ -333,7 +362,8 @@ class NeuralDB:
             isinstance(doc, CSV) for doc in documents
         ):
             raise ValueError(
-                "The pretrain_distributed function currently only supports CSV documents."
+                "The pretrain_distributed function currently only supports CSV"
+                " documents."
             )
 
         def training_loop_per_worker(config):
@@ -476,6 +506,7 @@ class NeuralDB:
         on_success: Callable = no_op,
         on_error: Callable = None,
         cancel_state: CancelState = None,
+        max_in_memory_batches: int = None,
     ) -> List[str]:
         """Inserts sources into the database.
         fast_approximation: much faster insertion with a slight drop in
@@ -504,6 +535,7 @@ class NeuralDB:
             should_train=train,
             on_progress=on_progress,
             cancel_state=cancel_state,
+            max_in_memory_batches=max_in_memory_batches,
         )
         self._savable_state.logger.log(
             session_id=self._user_id,
@@ -526,7 +558,7 @@ class NeuralDB:
         self._savable_state.model.forget_documents()
 
     def search(
-        self, query: str, top_k: int, constraints=None, on_error: Callable = None
+        self, query: str, top_k: int, constraints=None, rerank=False
     ) -> List[Reference]:
         matching_entities = None
         if constraints:
@@ -546,6 +578,13 @@ class NeuralDB:
             ref = self._savable_state.documents.reference(rid)
             ref._score = score
             references.append(ref)
+
+        if rerank:
+            ranker = thirdai.dataset.KeywordOverlapRanker()
+            indices, scores = ranker.rank(query, [ref.text for ref in references])
+            references = [references[i] for i in indices]
+            for i in range(len(references)):
+                references[i]._score = scores[i]
 
         return references
 
@@ -633,6 +672,11 @@ class NeuralDB:
         and correct products - for both categories. You can use this method to
         train NeuralDB on these supervised datasets.
         """
+        if isinstance(self._savable_state.model, MachMixture):
+            raise NotImplementedError(
+                "Supervised Training is not supported for NeuralDB initialized with a"
+                " mixture of experts."
+            )
         doc_manager = self._savable_state.documents
         query_col = self._savable_state.model.get_query_col()
         self._savable_state.model.get_model().train_on_data_source(
@@ -663,6 +707,11 @@ class NeuralDB:
         and correct products - for both categories. You can use this method to
         train NeuralDB on these supervised datasets.
         """
+        if isinstance(self._savable_state.model, MachMixture):
+            raise NotImplementedError(
+                "Supervised Training is not supported for NeuralDB initialized with a"
+                " mixture of experts."
+            )
         doc_manager = self._savable_state.documents
         model_query_col = self._savable_state.model.get_query_col()
         self._savable_state.model.get_model().train_on_data_source(

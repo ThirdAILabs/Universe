@@ -398,7 +398,7 @@ class MercedesBenzGreenerUDTBenchmark(UDTBenchmarkConfig):
     def get_data_types(path_prefix):
         filename = os.path.join(path_prefix, MercedesBenzGreenerUDTBenchmark.train_file)
         with open(filename) as f:
-            column_names = f.readline().strip().split(",")[1:]
+            column_names = f.readline().strip().split(",")
 
         data_types = {
             f"X{i}": bolt.types.categorical()
