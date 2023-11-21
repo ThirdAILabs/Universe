@@ -21,50 +21,24 @@ class Model:
     A class representing a model listed on NeuralDB Enterprise.
 
     Attributes:
-        _user_id (int): The user identifier associated with the model.
-        _model_id (int): The unique identifier for the model.
-        _model_identifier (Optional[str]): An optional identifier for the model.
+        _model_identifier (str): The unique identifier for the model.
 
     Methods:
-        __init__(self, user_id: int, model_id: int, model_identifier: Optional[str] = None) -> None:
+        __init__(self, model_identifier: str) -> None:
             Initializes a new instance of the Model class.
 
             Parameters:
-                user_id (int): The user identifier.
-                model_id (int): The model identifier.
-                model_identifier (Optional[str]): An optional model identifier.
+                model_identifier (str): An optional model identifier.
 
-        user_id(self) -> int:
-            Getter method for accessing the user identifier.
-
-            Returns:
-                int: The user identifier.
-
-        model_id(self) -> int:
+        model_identifier(self) -> str:
             Getter method for accessing the model identifier.
 
             Returns:
-                int: The model identifier.
-
-        model_identifier(self) -> Optional[str]:
-            Getter method for accessing the model identifier.
-
-            Returns:
-                Optional[str]: The model identifier, or None if not set.
+                str: The model identifier, or None if not set.
     """
 
-    def __init__(self, user_id, model_id, model_identifier=None) -> None:
-        self._user_id = user_id
-        self._model_id = model_id
+    def __init__(self, user_id, model_id, model_identifier) -> None:
         self._model_identifier = model_identifier
-
-    @property
-    def user_id(self):
-        return self._user_id
-
-    @property
-    def model_id(self):
-        return self._model_id
 
     @property
     def model_identifier(self):
@@ -364,8 +338,6 @@ class ModelBazaar(Bazaar):
         )
         response_data = json.loads(response.content)["data"]
         model = Model(
-            user_id=response_data["user_id"],
-            model_id=response_data["model_id"],
             model_identifier=create_model_identifier(
                 model_name=model_name, author_username=self._username
             ),
