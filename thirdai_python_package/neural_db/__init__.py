@@ -15,7 +15,7 @@ try:
         SQLDatabase,
         Unstructured,
     )
-    from .model_bazaar import Bazaar
+    from .model_bazaar import Bazaar, ModelBazaar
     from .neural_db import CancelState, NeuralDB, Strength, Sup
 except ImportError as error:
     raise ImportError(
