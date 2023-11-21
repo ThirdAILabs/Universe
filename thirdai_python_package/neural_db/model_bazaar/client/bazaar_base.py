@@ -27,13 +27,13 @@ class BazaarEntry(BaseModel):
     model_name: str
     author_username: str
     identifier: str
-    trained_on: str = None
+    trained_on: Optional[str] = None
     num_params: int
     size: int
     size_in_memory: int
     hash: str
     domain: str
-    description: str = None
+    description: Optional[str] = None
     is_indexed: bool = False
     publish_date: str
     author_email: str
