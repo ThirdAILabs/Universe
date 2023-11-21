@@ -77,10 +77,10 @@ class NeuralDBClient:
 
     Attributes:
         deployment_identifier (str): The identifier for the deployment.
-        base_url (Optional[str]): The base URL for the deployed NeuralDB model.
+        base_url (str): The base URL for the deployed NeuralDB model.
 
     Methods:
-        __init__(self, deployment_identifier: str, base_url: Optional[str] = None) -> None:
+        __init__(self, deployment_identifier: str, base_url: str) -> None:
             Initializes a new instance of the NeuralDBClient.
 
         search(self, query: str, top_k: int = 10) -> List[dict]:
@@ -99,13 +99,13 @@ class NeuralDBClient:
             Downvotes a response in the ndb model.
     """
 
-    def __init__(self, deployment_identifier, base_url=None):
+    def __init__(self, deployment_identifier, base_url):
         """
         Initializes a new instance of the NeuralDBClient.
 
         Args:
             deployment_identifier (str): The identifier for the deployment.
-            base_url (Optional[str]): The base URL for the deployed NeuralDB model.
+            base_url (str): The base URL for the deployed NeuralDB model.
         """
         self.deployment_identifier = deployment_identifier
         self.base_url = base_url
@@ -252,7 +252,7 @@ class ModelBazaar(Bazaar):
 
     def __init__(
         self,
-        base_url: str = "https://staging-modelzoo.azurewebsites.net/api/",
+        base_url: str,
         cache_dir: Union[Path, str] = "./bazaar_cache",
     ):
         """
@@ -455,7 +455,6 @@ class ModelBazaar(Bazaar):
             response_data = json.loads(response.content)["data"]
 
             if response_data["status"] == "complete":
-                ndb_client.base_url = response_data["endpoint"] + "/"
                 print("\nDeployment completed")
                 return
 

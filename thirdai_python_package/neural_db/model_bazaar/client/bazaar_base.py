@@ -136,7 +136,7 @@ class Bazaar:
     def __init__(
         self,
         base_url,
-        cache_dir: Union[Path, str] = Path("./bazaar_cache"),
+        cache_dir: Union[Path, str],
     ):
         cache_dir = Path(cache_dir)
         if not os.path.exists(cache_dir):
