@@ -8,6 +8,7 @@ try:
         URL,
         Document,
         Reference,
+        SalesForce,
         SentenceLevelDOCX,
         SentenceLevelPDF,
         SharePoint,

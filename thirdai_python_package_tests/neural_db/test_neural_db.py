@@ -659,6 +659,9 @@ def test_neural_db_delete_document():
         ),
     ]
 
+    os.remove("ice_cream.csv")
+    os.remove("pizza.csv")
+
     for _ in range(5):
         [ice_cream_source_id, _] = db.insert(docs, train=True)
 
