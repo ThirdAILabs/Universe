@@ -22,6 +22,7 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/ops/PatchEmbedding.h>
 #include <bolt/src/nn/ops/PatchSum.h>
+#include <bolt/src/nn/ops/QuantileMixing.h>
 #include <bolt/src/nn/ops/RobeZ.h>
 #include <bolt/src/nn/ops/WeightedSum.h>
 #include <bolt/src/nn/tensor/Tensor.h>
@@ -385,6 +386,11 @@ void defineOps(py::module_& nn) {
   py::class_<MaxPool1D, MaxPool1DPtr, Op>(nn, "MaxPool1D")
       .def(py::init(&MaxPool1D::make), py::arg("window_size"))
       .def("__call__", &MaxPool1D::apply);
+
+  py::class_<QuantileMixing, QuantileMixingPtr, Op>(nn, "QuantileMixing")
+      .def(py::init(&QuantileMixing::make), py::arg("window_size"),
+           py::arg("frac"))
+      .def("__call__", &QuantileMixing::apply);
 
   nn.def("Input", &Input::make, py::arg("dim"));
 }
