@@ -31,7 +31,7 @@ def test_neural_db_reference_scores(train_simple_neural_db):
 
 
 def db_from_bazaar():
-    bazaar = ndb.Bazaar(cache_dir=".")
+    bazaar = ndb.ModelBazaar(cache_dir=".")
     bazaar.fetch()
     return bazaar.get_model("General QnA")
 
