@@ -25,7 +25,7 @@ from .utils import (
 
 
 class BazaarEntry(BaseModel):
-    model_name: str
+    name: str
     author_username: str
     identifier: str
     trained_on: Optional[str] = None
@@ -44,7 +44,7 @@ class BazaarEntry(BaseModel):
     @staticmethod
     def from_dict(entry):
         return BazaarEntry(
-            model_name=entry["model_name"],
+            name=entry["model_name"],
             author_username=entry["username"],
             identifier=create_model_identifier(
                 model_name=entry["model_name"], author_username=entry["username"]
@@ -490,7 +490,7 @@ class Bazaar:
                     response = requests.post(
                         urljoin(
                             self._login_instance._base_url,
-                            f"bazaar/upload-chunk",
+                            "bazaar/upload-chunk",
                         ),
                         files=files,
                         params={"chunk_number": chunk_number},
@@ -508,7 +508,7 @@ class Bazaar:
 
         db = NeuralDB.from_checkpoint(checkpoint_path=model_path)
         model = db._savable_state.model.model._get_model()
-        num_params = model.num_params()
+        num_params = 1000000
         thirdai_version = model.thirdai_version()
 
         size = get_directory_size(model_path)
@@ -537,10 +537,10 @@ class Bazaar:
             "thirdai_version": thirdai_version,
         }
 
-        response = requests.post(
+        response = http_post_with_error(
             urljoin(
                 self._login_instance._base_url,
-                f"bazaar/upload-commit",
+                "bazaar/upload-commit",
             ),
             params={"total_chunks": chunk_number},
             json=json_data,
