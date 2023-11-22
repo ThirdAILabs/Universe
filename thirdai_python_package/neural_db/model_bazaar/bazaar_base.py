@@ -16,6 +16,7 @@ from tqdm import tqdm
 from .utils import (
     create_model_identifier,
     get_directory_size,
+    get_file_size,
     hash_path,
     http_get_with_error,
     http_post_with_error,
@@ -457,7 +458,10 @@ class Bazaar:
                 f"bazaar/{self._login_instance._user_id}/upload-token",
             ),
             headers=auth_header(self._login_instance._access_token),
-            params={"model_name": name},
+            params={
+                "model_name": name,
+                "size": int(get_file_size(zip_path, "MB")),
+            },
         )
         upload_token = json.loads(token_response.content)["data"]["token"]
 
