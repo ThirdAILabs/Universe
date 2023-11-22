@@ -4,6 +4,7 @@
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
+#include <bolt/src/nn/loss/ExternalLoss.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/PatchEmbedding.h>
@@ -36,15 +37,29 @@ std::pair<size_t, float> nOutputClasses(const std::string& model_size) {
 
 SeismicEmbedding::SeismicEmbedding(InputShapeData input_shape_data,
                                    ModelPtr model)
-    : SeismicBase(input_shape_data, std::move(model)) {
+    : SeismicBase(input_shape_data, std::move(model)),
+      _training_type(TrainingType::UnsupervisedPretraining) {
   if (getModel()->labelDims().size() != 1) {
     throw std::invalid_argument("Expected model to only have 1 output layer.");
   }
 }
 
-std::shared_ptr<SeismicEmbedding> SeismicEmbedding::make(
+std::shared_ptr<SeismicEmbedding> SeismicEmbedding::makeCube(
     size_t subcube_shape, size_t patch_shape, size_t embedding_dim,
     const std::string& model_size, std::optional<size_t> max_pool) {
+  std::optional<Shape> max_pool_shape = std::nullopt;
+  if (max_pool) {
+    max_pool_shape = {*max_pool, *max_pool, *max_pool};
+  }
+
+  return make({subcube_shape, subcube_shape, subcube_shape},
+              {patch_shape, patch_shape, patch_shape}, embedding_dim,
+              model_size, max_pool_shape);
+}
+
+std::shared_ptr<SeismicEmbedding> SeismicEmbedding::make(
+    Shape subcube_shape, Shape patch_shape, size_t embedding_dim,
+    const std::string& model_size, std::optional<Shape> max_pool) {
   InputShapeData input_shape_data(subcube_shape, patch_shape, max_pool);
 
   auto [n_output_classes, output_sparsity] = nOutputClasses(model_size);
@@ -61,6 +76,12 @@ metrics::History SeismicEmbedding::trainOnPatches(
     const std::vector<SubcubeMetadata>& subcube_metadata, float learning_rate,
     size_t batch_size, const std::vector<callbacks::CallbackPtr>& callbacks,
     std::optional<uint32_t> log_interval, const DistributedCommPtr& comm) {
+  if (_training_type != TrainingType::UnsupervisedPretraining) {
+    throw std::invalid_argument(
+        "Can not use unsupervised pretraining on a model after using "
+        "finetuning since the decoder has been invalidated.");
+  }
+
   if (static_cast<size_t>(subcubes.shape(0)) != subcube_metadata.size()) {
     throw std::invalid_argument(
         "Expected number of subcubes to match the number of subcube "
@@ -71,6 +92,68 @@ metrics::History SeismicEmbedding::trainOnPatches(
 
   return SeismicBase::trainOnPatches(subcubes, std::move(labels), learning_rate,
                                      batch_size, callbacks, log_interval, comm);
+}
+
+py::object SeismicEmbedding::forward(const NumpyArray& subcubes) {
+  switchToFinetuning();
+
+  auto batch = convertToBatches(subcubes, subcubes.shape(0)).at(0);
+
+  auto emb = _model->forward(batch, /* use_sparsity= */ true).at(0);
+
+  return python::tensorToNumpy(emb, /* single_row_to_vector= */ false);
+}
+
+void SeismicEmbedding::backpropagate(const NumpyArray& gradients) {
+  switchToFinetuning();
+
+  auto grad_tensor = python::fromNumpyDense(gradients, /* with_grad= */ false);
+
+  _model->backpropagate({grad_tensor});
+}
+
+void SeismicEmbedding::updateParameters(float learning_rate) {
+  _model->updateParameters(learning_rate);
+}
+
+void SeismicEmbedding::switchToFinetuning() {
+  if (_training_type == TrainingType::Finetuning) {
+    return;
+  }
+
+  auto patches = Input::make(_model->inputDims().at(0));
+
+  auto patch_emb_op =
+      std::dynamic_pointer_cast<PatchEmbedding>(_model->getOp("patch_emb"));
+  auto patch_emb = patch_emb_op->apply(patches);
+
+  auto patch_sum_op =
+      std::dynamic_pointer_cast<PatchSum>(_model->getOp("patch_sum"));
+  auto patch_sum = patch_sum_op->apply(patch_emb);
+
+  auto emb_op = std::dynamic_pointer_cast<FullyConnected>(_model->getOp("emb"));
+  auto emb = emb_op->apply(patch_sum);
+
+  auto loss = std::make_shared<ExternalLoss>(emb, Input::make(emb->dim()));
+
+  auto model = Model::make({patches}, {emb}, {loss});
+
+  _training_type = TrainingType::Finetuning;
+  setModel(model);
+}
+
+void SeismicEmbedding::setModel(ModelPtr model) {
+  _model = std::move(model);
+  auto computations = _model->computationOrderWithoutInputs();
+  size_t emb_pos = _training_type == TrainingType::Finetuning ? 1 : 2;
+  auto new_emb = computations.at(computations.size() - emb_pos);
+  if (_emb && _emb->dim() != new_emb->dim()) {
+    throw std::runtime_error("Cannot set a model with embedding dimension " +
+                             std::to_string(new_emb->dim()) +
+                             " in place of a model with embedding dimension " +
+                             std::to_string(_emb->dim()));
+  }
+  _emb = new_emb;
 }
 
 Dataset SeismicEmbedding::makeLabelBatches(
@@ -186,7 +269,8 @@ template void SeismicEmbedding::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void SeismicEmbedding::serialize(Archive& archive) {
-  archive(cereal::base_class<SeismicBase>(this), _label_cube_dim);
+  archive(cereal::base_class<SeismicBase>(this), _label_cube_dim,
+          _training_type);
 }
 
 }  // namespace thirdai::bolt::seismic

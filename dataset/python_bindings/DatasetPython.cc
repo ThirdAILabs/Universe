@@ -22,6 +22,8 @@
 #include <dataset/src/featurizers/llm/TextClassificationFeaturizer.h>
 #include <dataset/src/featurizers/llm/TextGenerationFeaturizer.h>
 #include <dataset/src/mach/MachIndex.h>
+#include <dataset/src/ranking/KeywordOverlapRanker.h>
+#include <dataset/src/ranking/QueryDocumentRanker.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
@@ -501,6 +503,17 @@ void createDatasetSubmodule(py::module_& module) {
       py::arg("dataset1"), py::arg("dataset2"),
       "Checks whether the given bolt datasets have the same values. "
       "For testing purposes only.");
+
+  py::class_<ranking::QueryDocumentRanker>(  // NOLINT
+      dataset_submodule, "QueryDocumentRanker");
+
+  py::class_<ranking::KeywordOverlapRanker, ranking::QueryDocumentRanker>(
+      dataset_submodule, "KeywordOverlapRanker")
+      .def(py::init<bool, bool, uint32_t, size_t>(),
+           py::arg("lowercase") = true, py::arg("replace_punct") = true,
+           py::arg("k_gram_length") = 4, py::arg("min_word_length") = 5)
+      .def("rank", &ranking::KeywordOverlapRanker::rank, py::arg("query"),
+           py::arg("documents"));
 }
 
 bool denseBoltDatasetMatchesDenseMatrix(

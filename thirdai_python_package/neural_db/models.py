@@ -6,6 +6,7 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt
 
 from .documents import DocumentDataSource
+from .sharded_documents import ShardedDataSource
 from .utils import clean_text, random_sample
 
 InferSamples = List
@@ -44,6 +45,7 @@ class Model:
         num_buckets_to_sample: Optional[int] = None,
         on_progress: Callable = lambda **kwargs: None,
         cancel_state: CancelState = None,
+        max_in_memory_batches: int = None,
     ) -> None:
         raise NotImplementedError()
 
@@ -201,6 +203,7 @@ def unsupervised_train_on_docs(
     on_progress: Callable,
     freeze_before_train: bool,
     cancel_state: CancelState,
+    max_in_memory_batches: int,
 ):
     if freeze_before_train:
         model._get_model().freeze_hash_tables()
@@ -228,6 +231,7 @@ def unsupervised_train_on_docs(
         epochs=max_epochs,
         metrics=[metric],
         callbacks=[early_stop_callback, progress_callback, cancel_training_callback],
+        max_in_memory_batches=max_in_memory_batches,
     )
 
 
@@ -283,6 +287,14 @@ class Mach(Model):
         self.balancing_samples = []
         self.model_config = model_config
 
+    def set_mach_sampling_threshold(self, threshold: float):
+        if self.model is None:
+            raise Exception(
+                "Cannot set Sampling Threshold for a model that has not been"
+                " initialized"
+            )
+        self.model.set_mach_sampling_threshold(threshold)
+
     def get_model(self) -> bolt.UniversalDeepTransformer:
         return self.model
 
@@ -316,15 +328,25 @@ class Mach(Model):
         num_buckets_to_sample: Optional[int] = None,
         on_progress: Callable = lambda **kwargs: None,
         cancel_state: CancelState = None,
+        max_in_memory_batches: int = None,
+        override_number_classes: int = None,
     ) -> None:
+        """
+        override_number_classes : The number of classes for the Mach model
+
+        Note: Given the datasources for introduction and training, we initialize a Mach model that has number_classes set to the size of introduce documents. But if we want to use this Mach model in our mixture of Models, this will not work because each Mach will be initialized with number of classes equal to the size of the datasource shard. Hence, we add override_number_classes parameters which if set, will initialize Mach Model with number of classes passed by the Mach Mixture.
+        """
         if intro_documents.id_column != self.id_col:
             raise ValueError(
-                f"Model configured to use id_col={self.id_col}, received document with id_col={intro_documents.id_column}"
+                f"Model configured to use id_col={self.id_col}, received document with"
+                f" id_col={intro_documents.id_column}"
             )
 
         if self.model is None:
             self.id_col = intro_documents.id_column
-            self.model = self.model_from_scratch(intro_documents)
+            self.model = self.model_from_scratch(
+                intro_documents, number_classes=override_number_classes
+            )
             learning_rate = 0.005
             freeze_before_train = False
             min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
@@ -335,7 +357,8 @@ class Mach(Model):
                 doc_id = intro_documents.id_column
                 if doc_id != self.id_col:
                     raise ValueError(
-                        f"Document has a different id column ({doc_id}) than the model configuration ({self.id_col})."
+                        f"Document has a different id column ({doc_id}) than the model"
+                        f" configuration ({self.id_col})."
                     )
 
                 num_buckets_to_sample = num_buckets_to_sample or int(
@@ -362,7 +385,7 @@ class Mach(Model):
         self.n_ids += intro_documents.size
         self.add_balancing_samples(intro_documents)
 
-        if should_train:
+        if should_train and train_documents.size > 0:
             unsupervised_train_on_docs(
                 model=self.model,
                 documents=train_documents,
@@ -374,6 +397,7 @@ class Mach(Model):
                 on_progress=on_progress,
                 freeze_before_train=freeze_before_train,
                 cancel_state=cancel_state,
+                max_in_memory_batches=max_in_memory_batches,
             )
 
     def add_balancing_samples(self, documents: DocumentDataSource):
@@ -387,8 +411,7 @@ class Mach(Model):
             self.get_model().forget(entity)
 
     def model_from_scratch(
-        self,
-        documents: DocumentDataSource,
+        self, documents: DocumentDataSource, number_classes: int = None
     ):
         return bolt.UniversalDeepTransformer(
             data_types={
@@ -396,7 +419,9 @@ class Mach(Model):
                 self.id_col: bolt.types.categorical(delimiter=self.id_delimiter),
             },
             target=self.id_col,
-            n_target_classes=documents.size,
+            n_target_classes=(
+                documents.size if number_classes is None else number_classes
+            ),
             integer_target=True,
             options={
                 "extreme_classification": True,

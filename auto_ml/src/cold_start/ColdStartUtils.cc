@@ -117,8 +117,8 @@ dataset::cold_start::ColdStartDataSourcePtr concatenatedDocumentDataSource(
       output_sample.append(column->value(row_id));
       output_sample.append(" ");
     }
-    text::replacePunctuationWithSpaces(output_sample);
-    text::replaceNewlinesWithSpaces(output_sample);
+    output_sample = text::replacePunctuation(std::move(output_sample));
+    output_sample = text::replaceNewlines(std::move(output_sample));
     samples.push_back(std::move(output_sample));
   }
 
