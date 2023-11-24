@@ -51,7 +51,7 @@ metrics::History SeismicBase::trainOnPatches(
       /* validation_metrics= */ {}, /* steps_per_validation= */ std::nullopt,
       /* use_sparsity_in_validation= */ false, /* callbacks= */ callbacks,
       /* autotune_rehash_rebuild= */ false, /* verbose= */ true,
-      /* logging_interval= */ log_interval, /* comm= */ comm);
+      /* logging_interval= */ log_interval, /* gradient_update_interval= */1, /* comm= */ comm);
 
   if (comm) {
     _model->enableSparseParameterUpdates();

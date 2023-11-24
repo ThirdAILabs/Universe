@@ -59,6 +59,7 @@ class Trainer {
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
       std::optional<uint32_t> logging_interval = std::nullopt,
+      uint32_t gradient_update_interval = 1,
       const DistributedCommPtr& comm = nullptr);
 
   metrics::History train_with_metric_names(
@@ -71,6 +72,7 @@ class Trainer {
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
       std::optional<uint32_t> logging_interval = std::nullopt,
+      uint32_t gradient_update_interval = 1,
       const DistributedCommPtr& comm = nullptr);
 
   metrics::History train_with_dataset_loader(
@@ -85,6 +87,7 @@ class Trainer {
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
       std::optional<uint32_t> logging_interval = std::nullopt,
+      uint32_t gradient_update_interval = 1,
       const DistributedCommPtr& comm = nullptr);
 
   /**

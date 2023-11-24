@@ -75,7 +75,7 @@ metrics::History DyadicModel::train(
       val_metrics, /* steps_per_validation= */ std::nullopt,
       /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
       /* autotune_rehash_rebuild= */ false, /* verbose= */ true,
-      /* logging_interval= */ std::nullopt, comm);
+      /* logging_interval= */ std::nullopt, /* gradient_update_interval= */1, comm);
 }
 
 data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,

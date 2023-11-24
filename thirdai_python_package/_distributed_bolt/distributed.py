@@ -32,7 +32,7 @@ class Communication(bolt.train.Communication):
         gradients = torch.from_numpy(np.array(model.get_gradients()))
 
         # Convert gradients to bfloat16 before all_reduce
-        gradients = gradients.to(torch.float16)
+        gradients = gradients.to(torch.bfloat16)
 
         dist.all_reduce(gradients)
 

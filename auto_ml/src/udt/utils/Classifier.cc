@@ -102,6 +102,7 @@ py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
       /* callbacks= */ callbacks, /* autotune_rehash_rebuild= */ true,
       /* verbose= */ options.verbose,
       /* logging_interval= */ options.logging_interval,
+      /* gradient_update_interval= */ 1,
       /*comm= */ comm);
 
   return py::cast(history);

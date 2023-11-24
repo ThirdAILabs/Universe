@@ -102,7 +102,8 @@ void defineTrainer(py::module_& train) {
            py::arg("autotune_rehash_rebuild") = false,
            py::arg("verbose") = true,
            py::arg("logging_interval") = std::nullopt,
-           py::arg("comm") = nullptr, bolt::python::OutputRedirect())
+           py::arg("gradient_update_interval") = 1, py::arg("comm") = nullptr,
+           bolt::python::OutputRedirect())
       .def("train", &Trainer::train_with_metric_names, py::arg("train_data"),
            py::arg("learning_rate"), py::arg("epochs") = 1,
            py::arg("train_metrics") = std::vector<std::string>(),
@@ -114,7 +115,8 @@ void defineTrainer(py::module_& train) {
            py::arg("autotune_rehash_rebuild") = false,
            py::arg("verbose") = true,
            py::arg("logging_interval") = std::nullopt,
-           py::arg("comm") = nullptr, bolt::python::OutputRedirect())
+           py::arg("gradient_update_interval") = 1, py::arg("comm") = nullptr,
+           bolt::python::OutputRedirect())
       .def("validate", &Trainer::validate, py::arg("validation_data"),
            py::arg("validation_metrics") = metrics::InputMetrics(),
            py::arg("use_sparsity") = false, py::arg("verbose") = true,
