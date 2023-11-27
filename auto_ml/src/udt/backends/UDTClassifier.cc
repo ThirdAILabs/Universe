@@ -10,6 +10,7 @@
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/trainer/Dataset.h>
+#include <archive/src/Archive.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
@@ -26,6 +27,7 @@
 #include <pybind11/stl.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -319,6 +321,22 @@ uint32_t UDTClassifier::labelToNeuronId(
 bool UDTClassifier::integerTarget() const {
   return !_featurizer->state()->containsVocab(LABEL_VOCAB);
 }
+
+ar::ConstArchivePtr UDTClassifier::toArchive(bool with_optimizer) const {
+  auto map = _classifier->toArchive(with_optimizer);
+  map->set("type", ar::str(type()));
+  map->set("featurizer", _featurizer->toArchive());
+  return map;
+}
+
+std::unique_ptr<UDTClassifier> UDTClassifier::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_unique<UDTClassifier>(archive);
+}
+
+UDTClassifier::UDTClassifier(const ar::Archive& archive)
+    : _classifier(utils::Classifier::fromArchive(archive)),
+      _featurizer(Featurizer::fromArchive(*archive.get("featurizer"))) {}
 
 template void UDTClassifier::serialize(cereal::BinaryInputArchive&,
                                        const uint32_t version);

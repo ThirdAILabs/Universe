@@ -27,6 +27,8 @@ class UDTQueryReformulation final : public UDTBackend {
                         const std::optional<std::string>& model_config,
                         const config::ArgumentMap& user_args);
 
+  explicit UDTQueryReformulation(const ar::Archive& archive);
+
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
                    const std::vector<std::string>& train_metrics,
@@ -48,6 +50,13 @@ class UDTQueryReformulation final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
+  static std::unique_ptr<UDTQueryReformulation> fromArchive(
+      const ar::Archive& archive);
+
+  static std::string type() { return "udt_query_reformulation"; }
 
  private:
   bool containsColumn(const dataset::DataSourcePtr& data,

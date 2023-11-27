@@ -8,6 +8,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/HashFunction.h>
 #include <hashing/src/MinHash.h>
+#include <archive/src/Map.h>
 #include <auto_ml/src/config/FlashConfig.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/Datasets.h>
@@ -461,6 +462,28 @@ uint32_t UDTQueryReformulation::recall(
   }
 
   return correct;
+}
+
+ar::ConstArchivePtr UDTQueryReformulation::toArchive(
+    bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = ar::Map::make();
+  map->set("type", ar::str(type()));
+
+  throw std::invalid_argument("Cannot save qr model yet");
+
+  return map;
+}
+
+std::unique_ptr<UDTQueryReformulation> UDTQueryReformulation::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_unique<UDTQueryReformulation>(archive);
+}
+
+UDTQueryReformulation::UDTQueryReformulation(const ar::Archive& archive) {
+  (void)archive;
+  throw std::invalid_argument("Cannot load qr model yet");
 }
 
 template void UDTQueryReformulation::serialize(cereal::BinaryInputArchive&);

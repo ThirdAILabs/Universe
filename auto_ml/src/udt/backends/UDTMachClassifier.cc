@@ -12,6 +12,7 @@
 #include <bolt/src/train/metrics/RecallAtK.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Archive.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
 #include <auto_ml/src/udt/Defaults.h>
@@ -1013,6 +1014,33 @@ bolt::TensorPtr UDTMachClassifier::placeholderDocIds(uint32_t batch_size) {
   return bolt::Tensor::sparse(batch_size, std::numeric_limits<uint32_t>::max(),
                               /* nonzeros= */ 1);
 }
+
+ar::ConstArchivePtr UDTMachClassifier::toArchive(bool with_optimizer) const {
+  auto map = _classifier->toArchive(with_optimizer);
+  map->set("type", ar::str(type()));
+  map->set("featurizer", _featurizer->toArchive());
+
+  map->set("default_top_k_to_return", ar::u64(_default_top_k_to_return));
+  map->set("num_buckets_to_eval", ar::u64(_num_buckets_to_eval));
+  map->set("mach_sampling_threshold", ar::f32(_mach_sampling_threshold));
+
+  // TODO(ARCHIVE) RLHF sampler, make sure this makes sense with new Mach design
+
+  return map;
+}
+
+std::unique_ptr<UDTMachClassifier> UDTMachClassifier::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_unique<UDTMachClassifier>(archive);
+}
+
+UDTMachClassifier::UDTMachClassifier(const ar::Archive& archive)
+    : _classifier(utils::Classifier::fromArchive(archive)),
+      _featurizer(MachFeaturizer::fromArchive(*archive.get("featurizer"))),
+      _default_top_k_to_return(archive.u64("default_top_k_to_return")),
+      _num_buckets_to_eval(archive.u64("num_buckets_to_eval")),
+      _mach_sampling_threshold(
+          archive.getAs<ar::F32>("mach_sampling_threshold")) {}
 
 template void UDTMachClassifier::serialize(cereal::BinaryInputArchive&,
                                            const uint32_t version);

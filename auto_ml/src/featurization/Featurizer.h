@@ -50,6 +50,8 @@ class Featurizer {
              data::OutputColumnsList bolt_label_columns,
              const TabularOptions& options);
 
+  explicit Featurizer(const ar::Archive& archive);
+
   data::LoaderPtr getDataLoader(const dataset::DataSourcePtr& data_source,
                                 size_t batch_size, bool shuffle, bool verbose,
                                 dataset::DatasetShuffleConfig shuffle_config =
@@ -97,6 +99,10 @@ class Featurizer {
 
   void resetTemporalTrackers();
 
+  virtual ar::ConstArchivePtr toArchive() const;
+
+  static std::shared_ptr<Featurizer> fromArchive(const ar::Archive& archive);
+
  protected:
   data::LoaderPtr getDataLoaderHelper(
       const dataset::DataSourcePtr& data_source, size_t batch_size,
@@ -107,6 +113,8 @@ class Featurizer {
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       bool fast_approximation = false);
+
+  std::shared_ptr<ar::Map> toArchiveMap() const;
 
   data::TransformationPtr _input_transform;
   data::TransformationPtr _const_input_transform;

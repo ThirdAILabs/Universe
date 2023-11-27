@@ -447,8 +447,6 @@ class UDT {
 
   void save(const std::string& filename) const;
 
-  void saveImpl(const std::string& filename) const;
-
   void checkpoint(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;
@@ -456,6 +454,8 @@ class UDT {
   static std::shared_ptr<UDT> load(const std::string& filename);
 
   static std::shared_ptr<UDT> load_stream(std::istream& input_stream);
+
+  static std::shared_ptr<UDT> oldLoad(const std::string& filename);
 
  private:
   UDT() {}

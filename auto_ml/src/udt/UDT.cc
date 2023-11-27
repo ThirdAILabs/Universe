@@ -2,6 +2,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/memory.hpp>
 #include <bolt/src/utils/Timer.h>
+#include <archive/src/Archive.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
@@ -265,39 +266,20 @@ std::vector<uint32_t> UDT::modelDims() const {
   return dims;
 }
 
-void UDT::saveImpl(const std::string& filename) const {
+void UDT::save(const std::string& filename) const {
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   save_stream(filestream);
 }
 
-void UDT::save(const std::string& filename) const {
-  /*
-   * setting `should_save_optimizer` to false prevents unnecessary checkpointing
-   * of the model. If we load the model from a checkpoint and intend to save it,
-   * by default `_should_save_optimizer` variable is set to true could result in
-   * redundant saving of the optimizer.
-   */
-  // Since UDTQueryReformulation doesn't defines model()
-  if (!dynamic_cast<UDTQueryReformulation*>(_backend.get())) {
-    _backend->model()->setSerializeOptimizer(
-        /* should_save_optimizer= */ false);
-  }
-  saveImpl(filename);
+void UDT::save_stream(std::ostream& output_stream) const {
+  ar::serialize(_backend->toArchive(/*with_optimizer=*/false), output_stream);
 }
 
 void UDT::checkpoint(const std::string& filename) const {
-  // Since UDTQueryReformulation doesn't defines model()
-  if (!dynamic_cast<UDTQueryReformulation*>(_backend.get())) {
-    _backend->model()->setSerializeOptimizer(
-        /* should_save_optimizer= */ true);
-  }
-  saveImpl(filename);
-}
-
-void UDT::save_stream(std::ostream& output_stream) const {
-  cereal::BinaryOutputArchive oarchive(output_stream);
-  oarchive(*this);
+  std::ofstream filestream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  ar::serialize(_backend->toArchive(/*with_optimizer=*/true), filestream);
 }
 
 std::shared_ptr<UDT> UDT::load(const std::string& filename) {
@@ -306,8 +288,39 @@ std::shared_ptr<UDT> UDT::load(const std::string& filename) {
   return load_stream(filestream);
 }
 
-std::shared_ptr<UDT> UDT::load_stream(std::istream& input_stream) {
-  cereal::BinaryInputArchive iarchive(input_stream);
+std::shared_ptr<UDT> UDT::load_stream(std::istream& input) {
+  auto archive = ar::deserialize(input);
+
+  std::string type = archive->str("type");
+
+  auto udt = std::shared_ptr<UDT>(new UDT());
+
+  if (type == UDTClassifier::type()) {
+    udt->_backend = UDTClassifier::fromArchive(*archive);
+  } else if (type == UDTGraphClassifier::type()) {
+    udt->_backend = UDTGraphClassifier::fromArchive(*archive);
+  } else if (type == UDTMachClassifier::type()) {
+    udt->_backend = UDTMachClassifier::fromArchive(*archive);
+  } else if (type == UDTQueryReformulation::type()) {
+    udt->_backend = UDTQueryReformulation::fromArchive(*archive);
+  } else if (type == UDTRecurrentClassifier::type()) {
+    udt->_backend = UDTRecurrentClassifier::fromArchive(*archive);
+  } else if (type == UDTRegression::type()) {
+    udt->_backend = UDTRegression::fromArchive(*archive);
+  } else if (type == UDTSVMClassifier::type()) {
+    udt->_backend = UDTSVMClassifier::fromArchive(*archive);
+  } else {
+    throw std::invalid_argument("Invalid backend type '" + type + "'.");
+  }
+
+  return udt;
+}
+
+std::shared_ptr<UDT> UDT::oldLoad(const std::string& filename) {
+  std::ifstream filestream =
+      dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+
+  cereal::BinaryInputArchive iarchive(filestream);
   std::shared_ptr<UDT> deserialize_into(new UDT());
   iarchive(*deserialize_into);
 

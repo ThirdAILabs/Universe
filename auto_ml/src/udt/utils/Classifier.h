@@ -21,6 +21,8 @@ class Classifier {
  public:
   Classifier(bolt::ModelPtr model, bool freeze_hash_tables);
 
+  explicit Classifier(const ar::Archive& archive);
+
   static std::shared_ptr<Classifier> make(const bolt::ModelPtr& model,
                                           bool freeze_hash_tables) {
     return std::make_shared<Classifier>(model, freeze_hash_tables);
@@ -81,6 +83,10 @@ class Classifier {
   auto& model() { return _model; }
 
   const auto& model() const { return _model; }
+
+  std::shared_ptr<ar::Map> toArchive(bool with_optimizer) const;
+
+  static std::shared_ptr<Classifier> fromArchive(const ar::Archive& archive);
 
  private:
   uint32_t predictedClass(const BoltVector& output);

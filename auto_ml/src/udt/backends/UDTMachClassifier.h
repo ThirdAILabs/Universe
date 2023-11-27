@@ -34,6 +34,8 @@ class UDTMachClassifier final : public UDTBackend {
       const std::optional<std::string>& model_config,
       config::ArgumentMap user_args);
 
+  explicit UDTMachClassifier(const ar::Archive& archive);
+
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
                    const std::vector<std::string>& train_metrics,
@@ -178,6 +180,13 @@ class UDTMachClassifier final : public UDTBackend {
   void setIndex(const dataset::mach::MachIndexPtr& index) final;
 
   void setMachSamplingThreshold(float threshold) final;
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
+  static std::unique_ptr<UDTMachClassifier> fromArchive(
+      const ar::Archive& archive);
+
+  static std::string type() { return "udt_mach"; }
 
  private:
   std::vector<std::vector<std::pair<uint32_t, double>>> predictImpl(
