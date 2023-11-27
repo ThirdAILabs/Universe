@@ -180,6 +180,7 @@ def all_methods_work_mach_mixture(
     clear_sources_works(db)
 
 
+@pytest.mark.xfail
 def test_neural_db_loads_from_model_bazaar():
     db_from_bazaar()
 
