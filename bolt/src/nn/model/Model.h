@@ -27,22 +27,24 @@ namespace thirdai::bolt {
 class Model : public std::enable_shared_from_this<Model> {
  private:
   /**
-   * The additional_labels allow for passing in a placeholder for labels that
+   * The expected_labels allow for passing in a placeholder for labels that
    * are not used in any loss function. This is useful because there could be a
    * case (particularly in Mach) where metrics need to have access to labels
    * that are not used in the loss function. Adding those labels here ensures
-   * that they are part of the model and can be accessed by the metrics. Note
-   * that the model does not require any relationship between the number of
-   * outputs, loss functions, and labels so it is ok to add additonal labels.
+   * that they are part of the model and can be accessed by the metrics. Any
+   * labels that are specified in this arg that are also specified in a loss
+   * function are deduplicated. Note that the model does not require any
+   * relationship between the number of outputs, loss functions, and labels so
+   * it is ok to add additonal labels.
    */
   Model(ComputationList inputs, ComputationList outputs,
-        std::vector<LossPtr> losses, ComputationList additional_labels = {});
+        std::vector<LossPtr> losses,
+        const ComputationList& expected_labels = {});
 
  public:
-  static std::shared_ptr<Model> make(ComputationList inputs,
-                                     ComputationList outputs,
-                                     std::vector<LossPtr> losses,
-                                     ComputationList additional_labels = {});
+  static std::shared_ptr<Model> make(
+      ComputationList inputs, ComputationList outputs,
+      std::vector<LossPtr> losses, const ComputationList& expected_labels = {});
 
   /**
    * Computes the forward pass through the model for the given batch.
