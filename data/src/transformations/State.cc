@@ -90,15 +90,21 @@ std::shared_ptr<State> State::fromArchive(const ar::Archive& archive) {
   return std::make_shared<State>(archive);
 }
 
-State::State(const ar::Archive& archive)
-    : _mach_index(MachIndex::fromArchive(*archive.get("mach_index"))),
-      _graph(automl::GraphInfo::fromArchive(*archive.get("graph"))) {
+State::State(const ar::Archive& archive) {
+  if (archive.contains("mach_index")) {
+    _mach_index = MachIndex::fromArchive(*archive.get("mach_index"));
+  }
+
   for (const auto& [k, v] : archive.get("vocabs")->map()) {
     _vocabs[k] = ThreadSafeVocabulary::fromArchive(*v);
   }
 
   for (const auto& [k, v] : archive.get("item_history_trackers")->map()) {
     _item_history_trackers[k] = itemHistoryTrackerFromArchive(*v);
+  }
+
+  if (archive.contains("graph")) {
+    _graph = automl::GraphInfo::fromArchive(*archive.get("graph"));
   }
 }
 
