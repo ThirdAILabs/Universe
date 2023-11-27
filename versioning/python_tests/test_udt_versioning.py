@@ -54,4 +54,4 @@ def test_load_old_udt_model(error_string):
     # Expected to raise error because the UDT model being loaded was saved
     # with version 0, which is older than any current udt version
     with pytest.raises(ValueError, match=error_string):
-        bolt.UniversalDeepTransformer.load(model_path)
+        bolt.UniversalDeepTransformer.old_load(model_path)

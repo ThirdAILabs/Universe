@@ -388,7 +388,7 @@ Classifier::Classifier(const ar::Archive& archive)
       _freeze_hash_tables(archive.boolean("freeze_hash_tables")),
       _binary_prediction_threshold(
           archive.getOpt<ar::F32>("binary_prediction_threshold")) {
-  _emb = _model->getComputation(archive.str("emb"));
+  _emb = _model->getComputation(archive.str("emb_name"));
 }
 
 template void Classifier::serialize(cereal::BinaryInputArchive&);
