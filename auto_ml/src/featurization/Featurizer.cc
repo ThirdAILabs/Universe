@@ -30,7 +30,7 @@ Featurizer::Featurizer(ColumnDataTypes data_types,
       inputTransformations(data_types, label_column, temporal_relationships,
                            options, /* should_update_history= */ true);
 
-  _input_transform_non_updating =
+  _const_input_transform =
       inputTransformations(data_types, label_column, temporal_relationships,
                            options, /* should_update_history= */ false)
           .first;
@@ -94,7 +94,7 @@ data::LoaderPtr Featurizer::getDataLoaderHelper(
 bolt::TensorList Featurizer::featurizeInput(const MapInput& sample) {
   auto columns = data::ColumnMap::fromMapInput(sample);
 
-  columns = _input_transform_non_updating->apply(std::move(columns), *_state);
+  columns = _const_input_transform->apply(std::move(columns), *_state);
 
   return data::toTensors(columns, _bolt_input_columns);
 }
@@ -102,7 +102,7 @@ bolt::TensorList Featurizer::featurizeInput(const MapInput& sample) {
 bolt::TensorList Featurizer::featurizeInputBatch(const MapInputBatch& samples) {
   auto columns = data::ColumnMap::fromMapInputBatch(samples);
 
-  columns = _input_transform_non_updating->apply(std::move(columns), *_state);
+  columns = _const_input_transform->apply(std::move(columns), *_state);
 
   return data::toTensors(columns, _bolt_input_columns);
 }
@@ -120,7 +120,7 @@ bolt::TensorList Featurizer::featurizeInputColdStart(
   auto columns = data::ColumnMap::fromMapInput(sample);
 
   columns = cold_start->apply(columns, *_state);
-  columns = _input_transform_non_updating->apply(columns, *_state);
+  columns = _const_input_transform->apply(columns, *_state);
 
   return data::toTensors(columns, _bolt_input_columns);
 }
@@ -211,7 +211,7 @@ template void Featurizer::serialize(cereal::BinaryOutputArchive&);
 
 template <typename Archive>
 void Featurizer::serialize(Archive& archive) {
-  archive(_input_transform, _input_transform_non_updating, _label_transform,
+  archive(_input_transform, _const_input_transform, _label_transform,
           _bolt_input_columns, _bolt_label_columns, _delimiter, _state,
           _text_dataset);
 }

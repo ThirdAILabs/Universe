@@ -75,7 +75,7 @@ class Featurizer {
       const MapInputBatch& samples);
 
   data::ExplanationMap explain(const data::ColumnMap& columns) {
-    return _input_transform_non_updating->explain(columns, *_state);
+    return _const_input_transform->explain(columns, *_state);
   }
 
   const auto& state() const { return _state; }
@@ -109,7 +109,7 @@ class Featurizer {
       bool fast_approximation = false);
 
   data::TransformationPtr _input_transform;
-  data::TransformationPtr _input_transform_non_updating;
+  data::TransformationPtr _const_input_transform;
   data::TransformationPtr _label_transform;
 
   data::OutputColumnsList _bolt_input_columns;

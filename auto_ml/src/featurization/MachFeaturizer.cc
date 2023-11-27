@@ -258,7 +258,7 @@ template void MachFeaturizer::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void MachFeaturizer::serialize(Archive& archive) {
-  archive(_input_transform, _input_transform_non_updating, _label_transform,
+  archive(_input_transform, _const_input_transform, _label_transform,
           _bolt_input_columns, _bolt_label_columns, _delimiter, _state,
           _text_dataset, _doc_id_transform, _prehashed_labels_transform);
 }
