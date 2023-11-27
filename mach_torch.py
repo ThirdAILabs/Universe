@@ -283,7 +283,7 @@ class Mach:
         for i in range(0, len(columns), batch_size):
             label_batches.append(columns[self.entity_col].data()[i : i + batch_size])
 
-        top_k = max(max(recall_at), max(precision_at))
+        top_k = max(recall_at + precision_at)
 
         metrics = [Recall(k) for k in recall_at] + [Precision(k) for k in precision_at]
 
@@ -369,4 +369,5 @@ def trec_covid():
 
 
 if __name__ == "__main__":
-    scifact()
+    # scifact()
+    trec_covid()
