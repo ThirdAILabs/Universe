@@ -35,7 +35,7 @@ std::vector<bolt::TensorList> toTensorBatches(
 
 #pragma omp parallel for default(none)                                 \
     shared(num_batches, batch_size, columns, indices, values, tensors, \
-           value_fill_type, error)
+           value_fill_type, error) if (num_batches > 1)
     for (size_t batch = 0; batch < num_batches; batch++) {
       size_t batch_start = batch * batch_size;
       size_t batch_end = std::min((batch + 1) * batch_size, columns.numRows());

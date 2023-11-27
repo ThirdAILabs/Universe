@@ -254,31 +254,13 @@ class NeuralDB:
         udt.enable_rlhf()
         udt.set_mach_sampling_threshold(0.01)
         fhr, emb_dim, out_dim = udt.model_dims()
-        data_types = udt.data_types()
 
-        if len(data_types) != 2:
-            raise ValueError(
-                "Incompatible UDT model. Expected two data types but found"
-                f" {len(data_types)}."
-            )
-        query_col = None
-        id_col = None
-        id_delimiter = None
-        for column, dtype in data_types.items():
-            if isinstance(dtype, bolt.types.text):
-                query_col = column
-            if isinstance(dtype, bolt.types.categorical):
-                id_col = column
-                id_delimiter = dtype.delimiter
-        if query_col is None:
-            raise ValueError(f"Incompatible UDT model. Cannot find a query column.")
-        if id_col is None:
-            raise ValueError(f"Incompatible UDT model. Cannot find an id column.")
+        text_dataset_config = udt.text_dataset_config()
 
         model = Mach(
-            id_col=id_col,
-            id_delimiter=id_delimiter,
-            query_col=query_col,
+            id_col=text_dataset_config.label_column,
+            id_delimiter=text_dataset_config.label_delimiter,
+            query_col=text_dataset_config.text_column,
             fhr=fhr,
             embedding_dimension=emb_dim,
             extreme_output_dim=out_dim,

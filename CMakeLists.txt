@@ -415,6 +415,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/TextTokenizer.cc
     data/src/transformations/ColdStartText.cc
     data/src/transformations/FeatureHash.cc
+    data/src/transformations/Tabular.cc
     data/src/transformations/Pipeline.cc
     data/src/transformations/MachLabel.cc
     data/src/transformations/StringConcat.cc
@@ -446,16 +447,15 @@ set(THIRDAI_SOURCES
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/featurization/DataTypes.cc
-    auto_ml/src/featurization/TabularBlockComposer.cc
-    auto_ml/src/featurization/TabularDatasetFactory.cc
-    auto_ml/src/featurization/RecurrentDatasetFactory.cc
-    auto_ml/src/featurization/GraphDatasetManager.cc
     auto_ml/src/featurization/TabularTransformations.cc
+    auto_ml/src/featurization/Featurizer.cc
+    auto_ml/src/featurization/MachFeaturizer.cc
+    auto_ml/src/featurization/GraphFeaturizer.cc
+    auto_ml/src/featurization/RecurrentFeaturizer.cc
     auto_ml/src/featurization/ReservedColumns.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
-    auto_ml/src/cold_start/ColdStartUtils.cc
     auto_ml/src/rlhf/RLHFSampler.cc
     utils/src/SymSpellBackend/symspell.cc
     utils/src/SymSpellCpp/SymSpell.cc

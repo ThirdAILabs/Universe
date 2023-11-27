@@ -3,6 +3,7 @@
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/metrics/Metric.h>
+#include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/udt/Defaults.h>
@@ -45,29 +46,7 @@ py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
       val_dataset, fromMetricNames(_model, val_metrics, /* prefix= */ "val_"),
       callbacks, options, comm);
 
-  /**
-   * For binary classification we tune the prediction threshold to optimize
-   * some metric. This can improve performance particularly on datasets with
-   * a class imbalance. We don't tune the threshold in the other method due to
-   * how the metrics are passed in.
-   */
-  if (_model->outputs().at(0)->dim() == 2) {
-    if (!val_metrics.empty()) {
-      val_dataset->restart();
-      _binary_prediction_threshold =
-          tuneBinaryClassificationPredictionThreshold(
-              /* dataset= */ val_dataset,
-              /* metric_name= */ val_metrics.at(0));
-
-    } else if (!train_metrics.empty()) {
-      dataset->restart();
-      _binary_prediction_threshold =
-          tuneBinaryClassificationPredictionThreshold(
-              /* dataset= */ dataset,
-              /* metric_name= */ train_metrics.at(0));
-    }
-  }
-
+  // Note: binary prediction tuning is deleted here.
   return history;
 }
 
@@ -107,6 +86,78 @@ py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
   return py::cast(history);
 }
 
+py::object Classifier::train(const data::LoaderPtr& dataset,
+                             float learning_rate, uint32_t epochs,
+                             const std::vector<std::string>& train_metrics,
+                             const data::LoaderPtr& val_dataset,
+                             const std::vector<std::string>& val_metrics,
+                             const std::vector<CallbackPtr>& callbacks,
+                             TrainOptions options,
+                             const bolt::DistributedCommPtr& comm) {
+  auto history = train(
+      dataset, learning_rate, epochs,
+      fromMetricNames(_model, train_metrics, /* prefix= */ "train_"),
+      val_dataset, fromMetricNames(_model, val_metrics, /* prefix= */ "val_"),
+      callbacks, options, comm);
+
+  /**
+   * For binary classification we tune the prediction threshold to optimize
+   * some metric. This can improve performance particularly on datasets with
+   * a class imbalance. We don't tune the threshold in the other method due to
+   * how the metrics are passed in.
+   */
+  if (_model->outputs().at(0)->dim() == 2) {
+    if (!val_metrics.empty()) {
+      val_dataset->restart();
+      _binary_prediction_threshold =
+          tuneBinaryClassificationPredictionThreshold(
+              /* dataset= */ val_dataset,
+              /* metric_name= */ val_metrics.at(0));
+
+    } else if (!train_metrics.empty()) {
+      dataset->restart();
+      _binary_prediction_threshold =
+          tuneBinaryClassificationPredictionThreshold(
+              /* dataset= */ dataset,
+              /* metric_name= */ train_metrics.at(0));
+    }
+  }
+
+  return history;
+}
+
+py::object Classifier::train(const data::LoaderPtr& data, float learning_rate,
+                             uint32_t epochs, const InputMetrics& train_metrics,
+                             const data::LoaderPtr& val_data,
+                             const InputMetrics& val_metrics,
+                             const std::vector<CallbackPtr>& callbacks,
+                             TrainOptions options,
+                             const bolt::DistributedCommPtr& comm) {
+  std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;
+  if (_freeze_hash_tables) {
+    freeze_hash_tables_epoch = 1;
+  }
+
+  bolt::Trainer trainer(_model, freeze_hash_tables_epoch,
+                        bolt::python::CtrlCCheck{});
+
+  auto history = trainer.train_with_data_loader(
+      /* train_data_loader= */ data,
+      /* learning_rate= */ learning_rate, /* epochs= */ epochs,
+      /* max_in_memory_batches= */ options.max_in_memory_batches,
+      /* train_metrics= */ train_metrics,
+      /* validation_data_loader= */ val_data,
+      /* validation_metrics= */ val_metrics,
+      /* steps_per_validation= */ options.steps_per_validation,
+      /* use_sparsity_in_validation= */ options.sparse_validation,
+      /* callbacks= */ callbacks, /* autotune_rehash_rebuild= */ true,
+      /* verbose= */ options.verbose,
+      /* logging_interval= */ options.logging_interval,
+      /*comm= */ comm);
+
+  return py::cast(history);
+}
+
 py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
                                 const std::vector<std::string>& metrics,
                                 bool sparse_inference, bool verbose) {
@@ -122,6 +173,25 @@ py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
 
   auto history = trainer.validate_with_dataset_loader(
       dataset, metrics, sparse_inference, verbose);
+
+  return py::cast(history);
+}
+
+py::object Classifier::evaluate(data::LoaderPtr& dataset,
+                                const std::vector<std::string>& metrics,
+                                bool sparse_inference, bool verbose) {
+  return evaluate(dataset,
+                  fromMetricNames(_model, metrics, /* prefix= */ "val_"),
+                  sparse_inference, verbose);
+}
+
+py::object Classifier::evaluate(const data::LoaderPtr& dataset,
+                                const InputMetrics& metrics,
+                                bool sparse_inference, bool verbose) {
+  bolt::Trainer trainer(_model, std::nullopt, bolt::python::CtrlCCheck{});
+
+  auto history = trainer.validate_with_data_loader(dataset, metrics,
+                                                   sparse_inference, verbose);
 
   return py::cast(history);
 }
@@ -189,13 +259,11 @@ py::object Classifier::predictedClasses(const bolt::TensorPtr& output,
 }
 
 std::vector<std::vector<float>> Classifier::getBinaryClassificationScores(
-    const dataset::BoltDatasetList& dataset) {
-  auto tensor_batches = bolt::convertDatasets(dataset, _model->inputDims());
-
+    const std::vector<bolt::TensorList>& dataset) {
   std::vector<std::vector<float>> scores;
-  scores.reserve(tensor_batches.size());
+  scores.reserve(dataset.size());
 
-  for (const auto& batch : tensor_batches) {
+  for (const auto& batch : dataset) {
     auto output = _model->forward(batch, /* use_sparsity= */ false).at(0);
 
     std::vector<float> batch_scores;
@@ -218,26 +286,25 @@ std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> splitDataLabels(
 }
 
 std::optional<float> Classifier::tuneBinaryClassificationPredictionThreshold(
-    const dataset::DatasetLoaderPtr& dataset, const std::string& metric_name) {
+    const data::LoaderPtr& dataset, const std::string& metric_name) {
   // The number of samples used is capped to ensure tuning is fast even for
   // larger datasets.
   uint32_t num_batches =
       defaults::MAX_SAMPLES_FOR_THRESHOLD_TUNING / defaults::BATCH_SIZE;
 
-  auto loaded_data_opt =
-      dataset->loadSome(/* batch_size = */ defaults::BATCH_SIZE, num_batches,
-                        /* verbose = */ false);
-  if (!loaded_data_opt.has_value()) {
+  auto loaded_data = dataset->next(num_batches);
+
+  if (!loaded_data.has_value()) {
     throw std::invalid_argument("No data found for training.");
   }
 
   // Did this instead of structured binding auto [data, labels] = ...
   // since Clang-Tidy would throw this error around pragma omp parallel:
   // "reference to local binding 'labels' declared in enclosing function"
-  auto split_data = splitDataLabels(std::move(*loaded_data_opt));
-  auto labels = std::move(split_data.second);
 
-  auto scores = getBinaryClassificationScores(split_data.first);
+  auto labels = std::move(loaded_data->second);
+
+  auto scores = getBinaryClassificationScores(loaded_data->first);
 
   double best_metric_value = bolt_v1::makeMetric(metric_name)->worst();
   std::optional<float> best_threshold = std::nullopt;
@@ -275,11 +342,11 @@ std::optional<float> Classifier::tuneBinaryClassificationPredictionThreshold(
         if (scores.at(batch_idx).at(vec_idx) >= threshold) {
           metric->record(
               /* output= */ BoltVector::makeDenseVector({0, 1.0}),
-              /* labels= */ labels->at(batch_idx)[vec_idx]);
+              /* labels= */ labels.at(batch_idx).at(0)->getVector(vec_idx));
         } else {
           metric->record(
               /* output= */ BoltVector::makeDenseVector({1.0, 0.0}),
-              /* labels= */ labels->at(batch_idx)[vec_idx]);
+              /* labels= */ labels.at(batch_idx).at(0)->getVector(vec_idx));
         }
       }
     }

@@ -5,7 +5,7 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
-#include <auto_ml/src/featurization/TabularDatasetFactory.h>
+#include <auto_ml/src/featurization/MachFeaturizer.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <auto_ml/src/rlhf/RLHFSampler.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -83,9 +83,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   void setModel(const ModelPtr& model) final;
 
-  ColumnDataTypes dataTypes() const final {
-    return _dataset_factory->dataTypes();
-  }
+  FeaturizerPtr featurizer() const final { return _featurizer; }
 
   py::object coldstart(const dataset::DataSourcePtr& data,
                        const std::vector<std::string>& strong_column_names,
@@ -128,7 +126,7 @@ class UDTMachClassifier final : public UDTBackend {
   void forget(const Label& label) final;
 
   void clearIndex() final {
-    _mach_label_block->index()->clear();
+    getIndex()->clear();
 
     updateSamplingStrategy();
 
@@ -138,18 +136,17 @@ class UDTMachClassifier final : public UDTBackend {
   }
 
   void associate(
-      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
       uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) final;
 
-  void upvote(
-      const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,
-      uint32_t n_upvote_samples, uint32_t n_balancing_samples,
-      float learning_rate, uint32_t epochs) final;
+  void upvote(const std::vector<std::pair<std::string, uint32_t>>& rlhf_samples,
+              uint32_t n_upvote_samples, uint32_t n_balancing_samples,
+              float learning_rate, uint32_t epochs) final;
 
   py::object associateTrain(
       const dataset::DataSourcePtr& balancing_data,
-      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
       uint32_t epochs, const std::vector<std::string>& metrics,
       TrainOptions options) final;
@@ -158,24 +155,24 @@ class UDTMachClassifier final : public UDTBackend {
       const dataset::DataSourcePtr& balancing_data,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
-      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
       uint32_t epochs, const std::vector<std::string>& metrics,
       TrainOptions options) final;
-
-  TabularDatasetFactoryPtr tabularDatasetFactory() const final {
-    return _dataset_factory;
-  }
 
   void setDecodeParams(uint32_t top_k_to_return,
                        uint32_t num_buckets_to_eval) final;
 
   void verifyCanDistribute() const final {
-    _dataset_factory->verifyCanDistribute();
+    if (_featurizer->hasTemporalTransformations()) {
+      throw std::invalid_argument(
+          "UDT with temporal relationships cannot be trained in a distributed "
+          "setting.");
+    }
   }
 
-  dataset::mach::MachIndexPtr getIndex() final {
-    return _mach_label_block->index();
+  dataset::mach::MachIndexPtr getIndex() const final {
+    return _featurizer->machIndex();
   }
 
   void setIndex(const dataset::mach::MachIndexPtr& index) final;
@@ -192,26 +189,25 @@ class UDTMachClassifier final : public UDTBackend {
       bool force_non_empty = true,
       std::optional<uint32_t> num_hashes = std::nullopt);
 
-  void teach(const std::vector<std::pair<MapInput, std::vector<uint32_t>>>&
-                 source_target_samples,
-             uint32_t n_buckets, uint32_t n_teaching_samples,
+  void introduceLabelHelper(const bolt::TensorList& samples,
+                            const Label& new_label,
+                            std::optional<uint32_t> num_buckets_to_sample_opt,
+                            uint32_t num_random_hashes);
+
+  void teach(const std::vector<RlhfSample>& rlhf_samples,
              uint32_t n_balancing_samples, float learning_rate,
              uint32_t epochs);
 
-  std::vector<std::pair<MapInput, std::vector<uint32_t>>> getAssociateSamples(
-      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples);
-
-  cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
-    return std::make_shared<cold_start::ColdStartMetaData>(
-        /* label_delimiter = */ _mach_label_block->delimiter(),
-        /* label_column_name = */ _mach_label_block->columnName());
-  }
-
-  std::string textColumnForDocumentIntroduction();
+  std::vector<RlhfSample> getAssociateSamples(
+      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
+      size_t n_buckets, size_t n_association_samples);
 
   void updateSamplingStrategy();
 
-  void addBalancingSamples(const dataset::DataSourcePtr& data);
+  void addBalancingSamples(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names = {},
+      const std::vector<std::string>& weak_column_names = {});
 
   void requireRLHFSampler();
 
@@ -268,9 +264,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   std::shared_ptr<utils::Classifier> _classifier;
 
-  dataset::mach::MachBlockPtr _mach_label_block;
-  TabularDatasetFactoryPtr _dataset_factory;
-  TabularDatasetFactoryPtr _pre_hashed_labels_dataset_factory;
+  MachFeaturizerPtr _featurizer;
 
   uint32_t _default_top_k_to_return;
   uint32_t _num_buckets_to_eval;

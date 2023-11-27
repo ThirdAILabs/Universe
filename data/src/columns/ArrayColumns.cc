@@ -3,6 +3,7 @@
 #include <data/src/columns/Column.h>
 #include <algorithm>
 #include <cstddef>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -24,22 +25,39 @@ ColumnPtr ArrayColumn<T>::concat(ColumnPtr&& other) {
         "Can only concatenate columns with the same dimension.");
   }
 
-  auto other_concrete = std::dynamic_pointer_cast<ArrayColumn<T>>(other);
-  if (!other_concrete) {
+  auto other_array_col = ArrayColumnBase<T>::cast(other);
+  if (!other_array_col) {
     throw std::invalid_argument(
-        "Can only concatenate value columns of the same type.");
+        "Can only concatenate array columns of the same type.");
   }
 
-  auto new_data =
-      concatVectors(std::move(_data), std::move(other_concrete->_data));
+  // If the other column is an ArrayColumn, we can make use of the common
+  // storage type to avoid copies.
+  if (auto other_concrete = std::dynamic_pointer_cast<ArrayColumn<T>>(other)) {
+    auto new_data =
+        concatVectors(std::move(_data), std::move(other_concrete->_data));
 
-  auto new_column =
-      ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(new_data), dim()));
+    auto dim = _dim;
+    _dim.reset();
+    other_concrete->_dim.reset();
 
+    return ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(new_data), dim));
+  }
+
+  // If the other column only inherits from ArrayColumnBase, we need to copy
+  // it's data.
+  std::vector<std::vector<T>> new_data = std::move(_data);
+  new_data.reserve(numRows() + other_array_col->numRows());
+
+  for (size_t i = 0; i < other->numRows(); i++) {
+    auto row = other_array_col->row(i);
+    new_data.emplace_back(row.begin(), row.end());
+  }
+
+  auto dim = _dim;
   _dim.reset();
-  other_concrete->_dim.reset();
 
-  return new_column;
+  return ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(new_data), dim));
 }
 
 template <typename T>

@@ -8,12 +8,21 @@
 namespace thirdai::automl {
 
 // TODO(Nicholas): Remove the data subnamespace from automl so it doesn't clash
-// with thirdai::data.
+// with data.
 
-std::pair<thirdai::data::TransformationPtr, thirdai::data::OutputColumnsList>
+std::pair<data::TransformationPtr, data::OutputColumnsList>
 inputTransformations(const ColumnDataTypes& data_types,
                      const std::string& label_column,
                      const TemporalRelationships& temporal_relationships,
                      const TabularOptions& options, bool should_update_history);
+
+// This represents the transformations and outputs for a set of columns in the
+// input.
+using MergedTransformSeries =
+    std::pair<std::vector<data::TransformationPtr>, std::vector<std::string>>;
+
+MergedTransformSeries nonTemporalTransformations(
+    ColumnDataTypes data_types, const std::string& label_column,
+    const TabularOptions& options);
 
 }  // namespace thirdai::automl
