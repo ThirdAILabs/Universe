@@ -259,9 +259,10 @@ Featurizer::Featurizer(const ar::Archive& archive)
       _delimiter(archive.getAs<ar::Char>("delimiter")),
       _state(data::State::fromArchive(*archive.get("state"))) {
   if (archive.contains("text_dataset")) {
+    auto text_dataset = archive.get("text_dataset");
     _text_dataset = TextDatasetConfig(
-        archive.str("text_column"), archive.str("label_column"),
-        archive.getOpt<ar::Char>("label_delimiter"));
+        text_dataset->str("text_column"), text_dataset->str("label_column"),
+        text_dataset->getOpt<ar::Char>("label_delimiter"));
   }
 }
 
