@@ -40,7 +40,7 @@ class TextDatasetConfig {
     archive(_text_column, _label_column, _label_delimiter);
   }
 };
-g
+
 class Featurizer {
  public:
   Featurizer(ColumnDataTypes data_types,
