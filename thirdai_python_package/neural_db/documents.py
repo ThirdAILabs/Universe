@@ -5,7 +5,7 @@ import shutil
 import string
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Type, Union, final
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -17,13 +17,14 @@ from office365.sharepoint.client_context import (
 )
 from pytrie import StringTrie
 from requests.models import Response
+from simple_salesforce import Salesforce
 from sqlalchemy import Integer, String, create_engine
 from sqlalchemy.engine.base import Connection as sqlConn
 from thirdai import bolt
 from thirdai.data import get_udt_col_types
 from thirdai.dataset.data_source import PyDataSource
 
-from .connectors import Connector, SharePointConnector, SQLConnector
+from .connectors import SalesforceConnector, SharePointConnector, SQLConnector
 from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
 from .parsing_utils import doc_parse, pdf_parse, sliding_pdf_parse, url_parse
 from .utils import hash_file, hash_string, requires_condition
@@ -1006,10 +1007,10 @@ class DocumentConnector(Document):
                     element_id=id_in_document,
                     strong=self.strong_text_from_chunk(
                         id_in_chunk=idx, chunk=current_chunk
-                    ),  # Strong text from (idx)th row of the current_batch
+                    ),  # Strong text from (idx)th row of the current_chunk
                     weak=self.weak_text_from_chunk(
                         id_in_chunk=idx, chunk=current_chunk
-                    ),  # Weak text from (idx)th row of the current_batch
+                    ),  # Weak text from (idx)th row of the current_chunk
                 )
                 id_in_document += 1
 
@@ -1116,7 +1117,7 @@ class SQLDatabase(DocumentConnector):
 
     @property
     def name(self):
-        return self.database_name + "_" + self.table_name
+        return self.database_name + "-" + self.table_name
 
     @property
     def hash(self):
@@ -1237,7 +1238,7 @@ class SQLDatabase(DocumentConnector):
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
         """
-        This method is used by DocumentManager while adding this document. Also it is being used in saving the model during pickling.
+        This method is called when the document is being added to a DocumentManager in order to build an index for constrained search.
         """
         return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
 
@@ -1273,6 +1274,8 @@ class SQLDatabase(DocumentConnector):
         all_cols = self._connector.cols_metadata()
 
         columns_set = set([col["name"] for col in all_cols])
+
+        # Checking for strong, weak and reference columns (if provided) to be present in column list of the table
         if (self.strong_columns is not None) and (
             not set(self.strong_columns).issubset(columns_set)
         ):
@@ -1292,6 +1295,7 @@ class SQLDatabase(DocumentConnector):
                 f"Reference column(s) doesn't exists in the table '{self.table_name}'"
             )
 
+        # Checking for strong and weak column to have the correct column type
         for col in all_cols:
             if (
                 self.strong_columns is not None
@@ -1320,6 +1324,9 @@ class SQLDatabase(DocumentConnector):
             self.strong_columns = []
         elif self.weak_columns is None:
             self.weak_columns = []
+
+        if self.reference_columns is None:
+            self.reference_columns = list(columns_set)
 
 
 class SharePoint(DocumentConnector):
@@ -1425,7 +1432,7 @@ class SharePoint(DocumentConnector):
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
         """
-        Each constraint will get applied to each supported document on the sharepoint
+        Each constraint will get applied to each supported document on the sharepoint. This method is called when the document is being added to a DocumentManager in order to build an index for constrained search.
         """
         return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
 
@@ -1558,6 +1565,301 @@ class SharePoint(DocumentConnector):
         if ctx:
             return ctx
         raise AttributeError("Incorrect or insufficient credentials")
+
+
+class SalesForce(DocumentConnector):
+    """
+    Class for handling the Salesforce object connections and data retrieval for training the neural_db model
+
+    This class encapsulates functionality for connecting to an object, executing Salesforce Object Query Language (SOQL) queries, and retrieving
+
+    NOTE: Allow the Bulk API access for the provided object. Also, it is being expected that the table will remain static in terms of both rows and columns.
+    """
+
+    def __init__(
+        self,
+        instance: Salesforce,
+        object_name: str,
+        id_col: str,
+        strong_columns: Optional[List[str]] = None,
+        weak_columns: Optional[List[str]] = None,
+        reference_columns: Optional[List[str]] = None,
+        save_extra_info: bool = True,
+        metadata: dict = {},
+    ) -> None:
+        self.object_name = object_name
+        self.id_col = id_col
+        self.strong_columns = strong_columns
+        self.weak_columns = weak_columns
+        self.reference_columns = reference_columns
+        self._save_extra_info = save_extra_info
+        self.doc_metadata = metadata
+        self._connector = SalesforceConnector(
+            instance=instance, object_name=object_name
+        )
+
+        self.total_rows = self._connector.total_rows()
+        if not self.total_rows > 0:
+            raise FileNotFoundError("Empty Object")
+        self._hash = hash_string(self._connector.sf_instance + self._connector.base_url)
+        self._source = self._connector.sf_instance + self.object_name
+
+        # Integrity_checks
+        self.assert_valid_id()
+        self.assert_valid_fields()
+
+        # setting the columns in the connector object
+        self._connector._fields = [self.id_col] + list(
+            set(self.strong_columns + self.weak_columns)
+        )
+
+    @property
+    def name(self) -> str:
+        return self.object_name
+
+    @property
+    def hash(self) -> str:
+        return self._hash
+
+    @property
+    def size(self) -> int:
+        return self.total_rows
+
+    def setup_connection(self, instance: Salesforce):
+        """
+        This is a helper function to re-establish the connection upon loading a saved ndb model containing this SalesForce document.
+        Args:
+            instance: Salesforce instance
+                    NOTE: Provide the same connection object.
+        NOTE: Same object name would be used to establish connection
+        """
+        try:
+            # The idea is to check for the connector object existence
+            print(
+                f"Connector object already exists with url: {self._connector.base_url}"
+            )
+        except AttributeError as e:
+            assert self.hash == hash_string(instance.sf_instance + instance.base_url)
+            self._connector = SalesforceConnector(
+                instance=instance,
+                object_name=self.object_name,
+                fields=[self.id_col]
+                + list(set(self.strong_columns + self.weak_columns)),
+            )
+
+    def _get_connector_object_name(self):
+        return "_connector"
+
+    def row_iterator(self):
+        for current_chunk in self.chunk_iterator():
+            for idx in range(len(current_chunk)):
+                """
+                * Since we are not able to retrieve the rows in sorted order, we have to do this so that (id, strong_text, weak_text) gets mapped correctly.
+                * We cannot sort because the id_col needs to be of type 'autoNumber' which is a string. Neither we can do 'SELECT row FROM object_name ORDER BY LEN(id_col), id_col' because there is no LEN function in SOQL (by default). Owner of the object have to create a formula LEN() to use such query.
+                """
+                yield DocumentRow(
+                    element_id=int(current_chunk.iloc[idx][self.id_col]),
+                    strong=self.strong_text_from_chunk(
+                        id_in_chunk=idx, chunk=current_chunk
+                    ),  # Strong text from (idx)th row of the current_chunk
+                    weak=self.weak_text_from_chunk(
+                        id_in_chunk=idx, chunk=current_chunk
+                    ),  # Weak text from (idx)th row of the current_chunk
+                )
+
+    def get_strong_columns(self):
+        return self.strong_columns
+
+    def get_weak_columns(self):
+        return self.weak_columns
+
+    @property
+    def meta_table(self) -> Optional[pd.DataFrame]:
+        return None
+
+    def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
+        try:
+            row = chunk.iloc[id_in_chunk]
+            return " ".join(
+                [str(row[col]).replace(",", "") for col in self.get_strong_columns()]
+            )
+        except Exception as e:
+            return ""
+
+    def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
+        try:
+            row = chunk.iloc[id_in_chunk]
+            return " ".join(
+                [str(row[col]).replace(",", "") for col in self.get_weak_columns()]
+            )
+        except Exception as e:
+            return ""
+
+    def chunk_iterator(self) -> pd.DataFrame:
+        return self._connector.chunk_iterator()
+
+    def all_entity_ids(self) -> List[int]:
+        return list(range(self.size))
+
+    def reference(self, element_id: int) -> Reference:
+        if element_id >= self.size:
+            _raise_unknown_doc_error(element_id)
+
+        try:
+            result = self._connector.execute(
+                query=f"SELECT {','.join(self.reference_columns)} FROM {self.object_name} WHERE {self.id_col} = '{element_id}'"
+            )["records"][0]
+            del result["attributes"]
+            text = "\n\n".join(
+                [f"{col_name}: {col_text}" for col_name, col_text in result.items()]
+            )
+
+        except Exception as e:
+            text = f"Unable to connect to the object instance, Referenced row with {self.id_col}: {element_id} "
+
+        return Reference(
+            document=self,
+            element_id=element_id,
+            text=text,
+            source=self._source,
+            metadata={
+                "object_name": self.object_name,
+                **self.doc_metadata,
+            },
+        )
+
+    @property
+    def matched_constraints(self) -> Dict[str, ConstraintValue]:
+        """
+        This method is called when the document is being added to a DocumentManager in order to build an index for constrained search.
+        """
+        return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
+
+    def assert_valid_id(self):
+        all_fields = self._connector.field_metadata()
+
+        all_field_name = [field["name"] for field in all_fields]
+
+        if self.id_col not in all_field_name:
+            raise AttributeError("Id Columns is not present in the object")
+
+        # Uniqueness or primary constraint
+        id_field_meta = list(
+            filter(lambda field: field["name"] == self.id_col, all_fields)
+        )
+        if len(id_field_meta) == 0:
+            raise AttributeError("id col not present in the object")
+        id_field_meta = id_field_meta[0]
+
+        """
+        Reason behinds using AutoNumber as the id column type:
+
+            1. Salesforce doesn't have typical table constraints. Object in a salesforce (or table in conventional sense) uses an alpha-numeric string as a primary key.
+            2. Salesforce doesn't have a pure integer field. It have one in which we can set the decimal field of the double data-type to 0 but it is only for display purpose.
+            3. Only option left is one Auto-number field that can be used but it limits some options.
+        """
+        if not id_field_meta["autoNumber"]:
+            raise AttributeError("id col must be of type Auto-Number")
+        else:
+            # id field is auto-incremented string. Have to check for the form of A-{0}
+
+            result = self._connector.execute(
+                query=f"SELECT {self.id_col} FROM {self.object_name} LIMIT 1"
+            )
+            value: str = result["records"][0][self.id_col]
+            if not value.isdigit():
+                raise AttributeError("id column needs to be of the form \{0\}")
+
+        expected_min_row_id = 0
+        min_id = self._connector.execute(
+            query=f"SELECT {self.id_col} FROM {self.object_name} WHERE {self.id_col} = '{expected_min_row_id}'"
+        )
+
+        # This one is not required probably because user can't put the auto-number field mannually.
+        # User just can provide the start of the auto-number so if the min_id is 0, then max_id should be size - 1
+        expected_max_row_id = self.size - 1
+        max_id = self._connector.execute(
+            query=f"SELECT {self.id_col} FROM {self.object_name} WHERE {self.id_col} = '{expected_max_row_id}'"
+        )
+
+        if not (min_id["totalSize"] == 1 and max_id["totalSize"] == 1):
+            raise AttributeError(
+                f"id column needs to be unique from 0 to {self.size - 1}"
+            )
+
+    def assert_valid_fields(
+        self, supported_text_types: Tuple[str] = ("string", "textarea")
+    ):
+        all_fields = self._connector.field_metadata()
+        self.assert_field_inclusion(all_fields)
+        self.assert_field_type(all_fields, supported_text_types)
+        self.default_fields(all_fields, supported_text_types)
+
+    def assert_field_inclusion(self, all_fields: List[OrderedDict]):
+        fields_set = set([field["name"] for field in all_fields])
+
+        # Checking for strong, weak and reference columns (if provided) to be present in column list of the table
+        column_name_error = "Remember if it is a custom column, salesforce requires it to be appended with __c."
+        if (self.strong_columns is not None) and (
+            not set(self.strong_columns).issubset(fields_set)
+        ):
+            raise AttributeError(
+                f"Strong column(s) doesn't exists in the object. {column_name_error}"
+            )
+        if (self.weak_columns is not None) and (
+            not set(self.weak_columns).issubset(fields_set)
+        ):
+            raise AttributeError(
+                f"Weak column(s) doesn't exists in the object. {column_name_error}"
+            )
+        if (self.reference_columns is not None) and (
+            not set(self.reference_columns).issubset(fields_set)
+        ):
+            raise AttributeError(
+                f"Reference column(s) doesn't exists in the object. {column_name_error}"
+            )
+
+    def assert_field_type(
+        self, all_fields: List[OrderedDict], supported_text_types: Tuple[str]
+    ):
+        # Checking for strong and weak column to have the correct column type
+        for field in all_fields:
+            if (
+                self.strong_columns is not None
+                and field["name"] in self.strong_columns
+                and field["type"] not in supported_text_types
+            ):
+                raise AttributeError(
+                    f"Strong column '{field['name']}' needs to be type from {supported_text_types}"
+                )
+            if (
+                self.weak_columns is not None
+                and field["name"] in self.weak_columns
+                and field["type"] not in supported_text_types
+            ):
+                raise AttributeError(
+                    f"Weak column '{field['name']}' needs to be type {supported_text_types}"
+                )
+
+    def default_fields(
+        self, all_fields: List[OrderedDict], supported_text_types: Tuple[str]
+    ):
+        if self.strong_columns is None and self.weak_columns is None:
+            self.strong_columns = []
+            self.weak_columns = []
+            for field in all_fields:
+                if field["type"] in supported_text_types:
+                    self.weak_columns.append(field["name"])
+        elif self.strong_columns is None:
+            self.strong_columns = []
+        elif self.weak_columns is None:
+            self.weak_columns = []
+
+        if self.reference_columns is None:
+            self.reference_columns = [self.id_col]
+            for field in all_fields:
+                if field["type"] in supported_text_types:
+                    self.reference_columns.append(field["name"])
 
 
 class SentenceLevelExtracted(Extracted):
