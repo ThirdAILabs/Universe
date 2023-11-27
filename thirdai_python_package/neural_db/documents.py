@@ -353,6 +353,16 @@ class DocumentManager:
                 self.constraint_matcher.index(item, item[0].matched_constraints)
 
 
+def safe_has_offset(this):
+    """Checks the value of the "has_offset" attribute of a class.
+    Defaults to False when the attribute does not exist.
+    This function is needed for backwards compatibility reasons.
+    """
+    if hasattr(this, "has_offset"):
+        return this.has_offset
+    return False
+
+
 class CSV(Document):
     def valid_id_column(column):
         return (
@@ -460,7 +470,7 @@ class CSV(Document):
         return self.path.name
 
     @requires_condition(
-        check_func=lambda self: not self.has_offset,
+        check_func=lambda self: not safe_has_offset(self),
         method_name="matched_constraints",
         method_class="CSV(Document)",
         condition_unmet_string=" when there is an offset in the CSV document",
@@ -513,7 +523,7 @@ class CSV(Document):
             )
 
     @requires_condition(
-        check_func=lambda self: not self.has_offset,
+        check_func=lambda self: not safe_has_offset(self),
         method_name="reference",
         method_class="CSV(Document)",
         condition_unmet_string=" when there is an offset in the CSV document",
@@ -563,7 +573,7 @@ class CSV(Document):
         self.__dict__.update(state)
 
     @requires_condition(
-        check_func=lambda self: not self.has_offset,
+        check_func=lambda self: not safe_has_offset(self),
         method_name="save_meta",
         method_class="CSV(Document)",
         condition_unmet_string=" when there is an offset in the CSV document",
@@ -574,7 +584,7 @@ class CSV(Document):
             shutil.copy(self.path, directory)
 
     @requires_condition(
-        check_func=lambda self: not self.has_offset,
+        check_func=lambda self: not safe_has_offset(self),
         method_name="load_meta",
         method_class="CSV(Document)",
         condition_unmet_string=" when there is an offset in the CSV document",
@@ -596,6 +606,8 @@ class CSV(Document):
             self.indexed_columns = []
         if not hasattr(self, "orig_to_assigned_id"):
             self.orig_to_assigned_id = None
+        if not hasattr(self, "has_offset"):
+            self.has_offset = False
 
 
 # Base class for PDF, DOCX and Unstructured classes because they share the same logic.
