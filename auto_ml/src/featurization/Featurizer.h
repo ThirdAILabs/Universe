@@ -37,7 +37,7 @@ class TextDatasetConfig {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_text_column, _label_column);
+    archive(_text_column, _label_column, _label_delimiterg);
   }
 };
 
