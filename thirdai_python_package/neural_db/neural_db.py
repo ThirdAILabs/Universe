@@ -606,8 +606,8 @@ class NeuralDB:
         if rerank:
             if threshold_top_k is None:
                 threshold_top_k = top_k
-            mean_score = sum(score for _, score in result_ids[:top_k]) / len(
-                result_ids[:top_k]
+            mean_score = sum(score for _, score in result_ids[:threshold_top_k]) / len(
+                result_ids[:threshold_top_k]
             )
             threshold = rerank_threshold * mean_score
             for first_rerank_pos, ref in enumerate(references):
