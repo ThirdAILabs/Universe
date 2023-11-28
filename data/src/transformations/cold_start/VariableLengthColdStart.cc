@@ -194,7 +194,7 @@ std::string VariableLengthColdStart::convertPhraseToText(
     }
 
     // decide to perturb the word by removing either the first or last character
-    if (dist(rng) < word_perturbation_probability) {
+    if (dist(rng) < word_perturbation_probability && word.length() > 4) {
       if (dist(rng) < 0.5) {
         word = word.substr(1);
       } else {
