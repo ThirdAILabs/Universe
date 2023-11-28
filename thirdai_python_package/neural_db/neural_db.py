@@ -12,7 +12,7 @@ from thirdai.dataset.data_source import PyDataSource
 from . import loggers, teachers
 from .documents import CSV, Document, DocumentManager, Reference
 from .mach_mixture_model import MachMixture
-from .models import CancelState, Mach
+from .models import CancelState, Mach, Standard
 from .savable_state import State
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
@@ -187,7 +187,9 @@ class SupDataSource(PyDataSource):
 
 
 class NeuralDB:
-    def __init__(self, user_id: str = "user", number_models: int = 1, **kwargs) -> None:
+    def __init__(
+        self, user_id: str = "user", number_models: int = 1, mach=True, **kwargs
+    ) -> None:
         """user_id is used for logging purposes only"""
         self._user_id: str = user_id
 
@@ -209,8 +211,10 @@ class NeuralDB:
                     query_col="query",
                     **kwargs,
                 )
-            else:
+            elif mach:
                 model = Mach(id_col="id", query_col="query", **kwargs)
+            else:
+                model = Standard(id_col="id", query_col="query", **kwargs)
             self._savable_state = State(
                 model, logger=loggers.LoggerList([loggers.InMemoryLogger()])
             )
