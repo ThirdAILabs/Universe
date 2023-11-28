@@ -20,7 +20,7 @@ TEST(VectorHashTableTest, ExactRetrievalTest) {
   uint32_t table_range = 100;
   uint32_t start_label = 0;
   uint32_t num_items = 100;
-  VectorHashTable<uint32_t, false> test_table(num_tables, table_range);
+  VectorHashTable test_table(num_tables, table_range);
 
   // Generate hashes
   uint32_t* hashes = new uint32_t[num_tables * num_items];
@@ -84,19 +84,19 @@ TEST(VectorHashTableTest, SortAndClearBucketsTest) {
   // Create a hash table with a single table
   uint32_t num_tables = 1;
   uint32_t table_range = 10;
-  VectorHashTable<uint8_t, false> test_table(num_tables, table_range);
+  VectorHashTable test_table(num_tables, table_range);
 
   // Add 5 items. Using a single table ensures they are inserted in the order
   // we intend even with a parallel insert.
   uint32_t hashes[] = {1, 1, 1, 2, 2};
-  uint8_t labels[] = {5, 4, 3, 2, 1};
+  uint32_t labels[] = {5, 4, 3, 2, 1};
   test_table.insert(5, labels, hashes);
 
   // Sort buckets
   test_table.sortBuckets();
 
   // Do query in bucket 1
-  std::vector<uint8_t> result(0);
+  std::vector<uint32_t> result(0);
   uint32_t test_hashes_1[] = {1};
   test_table.queryByVector(test_hashes_1, result);
   ASSERT_EQ(result.size(), 3);
@@ -136,8 +136,7 @@ TEST(VectorHashTableTest, SimpleReservoirTest) {
   uint32_t num_elements_to_add = 100;
   uint32_t element_hash = 42;
   uint32_t seed = 43;
-  VectorHashTable<uint32_t, true> test_table(num_tables, max_reservoir_size,
-                                             table_range, seed);
+  VectorHashTable test_table(num_tables, table_range, max_reservoir_size, seed);
 
   // Add 100 items all with the same hash. Using a single table ensures they are
   // inserted in the order we intend even with a parallel insert.

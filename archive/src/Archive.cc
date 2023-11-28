@@ -173,6 +173,10 @@ ConstArchivePtr vecU32(std::vector<uint32_t> val) {
   return Value<std::vector<uint32_t>>::make(std::move(val));
 }
 
+ConstArchivePtr vecU64(std::vector<uint64_t> val) {
+  return Value<std::vector<uint64_t>>::make(std::move(val));
+}
+
 ConstArchivePtr vecI64(std::vector<int64_t> val) {
   return Value<std::vector<int64_t>>::make(std::move(val));
 }
@@ -195,6 +199,14 @@ ConstArchivePtr mapU64VecF32(MapU64VecF32 val) {
 
 ConstArchivePtr mapStrU64(std::unordered_map<std::string, uint64_t> val) {
   return Value<std::unordered_map<std::string, uint64_t>>::make(std::move(val));
+}
+
+ConstArchivePtr mapStrI64(std::unordered_map<std::string, int64_t> val) {
+  return Value<std::unordered_map<std::string, int64_t>>::make(std::move(val));
+}
+
+ConstArchivePtr mapI64VecStr(MapI64VecStr val) {
+  return Value<MapI64VecStr>::make(std::move(val));
 }
 
 }  // namespace thirdai::ar

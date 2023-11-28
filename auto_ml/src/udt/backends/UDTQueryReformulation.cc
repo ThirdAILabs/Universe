@@ -8,6 +8,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/HashFunction.h>
 #include <hashing/src/MinHash.h>
+#include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <auto_ml/src/config/FlashConfig.h>
 #include <auto_ml/src/udt/Defaults.h>
@@ -400,8 +401,8 @@ std::vector<std::string> UDTQueryReformulation::idsToPhrase(
   return phrases;
 }
 
-std::unique_ptr<search::Flash<uint32_t>>
-UDTQueryReformulation::defaultFlashIndex(const std::string& dataset_size) {
+std::unique_ptr<search::Flash> UDTQueryReformulation::defaultFlashIndex(
+    const std::string& dataset_size) {
   std::shared_ptr<hashing::HashFunction> hash_fn;
   uint32_t reservoir_size;
 
@@ -426,7 +427,7 @@ UDTQueryReformulation::defaultFlashIndex(const std::string& dataset_size) {
         "'large'.");
   }
 
-  return std::make_unique<search::Flash<uint32_t>>(hash_fn, reservoir_size);
+  return std::make_unique<search::Flash>(hash_fn, reservoir_size);
 }
 
 dataset::BlockList UDTQueryReformulation::ngramBlockList(
@@ -471,7 +472,22 @@ ar::ConstArchivePtr UDTQueryReformulation::toArchive(
   auto map = ar::Map::make();
   map->set("type", ar::str(type()));
 
-  throw std::invalid_argument("Cannot save qr model yet");
+  map->set("flash_index", _flash_index->toArchive());
+  map->set("phrase_id_map", _phrase_id_map->toArchive());
+
+  if (_incorrect_column_name) {
+    map->set("incorrect_column_name", ar::str(*_incorrect_column_name));
+  }
+  map->set("correct_column_name", ar::str(_correct_column_name));
+  map->set("use_spell_checker", ar::boolean(_use_spell_checker));
+
+  if (_symspell_backend) {
+    map->set("symspell_backend", _symspell_backend->toArchive());
+  }
+
+  map->set("n_grams", ar::vecU32(_n_grams));
+
+  map->set("delimiter", ar::character(_delimiter));
 
   return map;
 }
@@ -481,9 +497,22 @@ std::unique_ptr<UDTQueryReformulation> UDTQueryReformulation::fromArchive(
   return std::make_unique<UDTQueryReformulation>(archive);
 }
 
-UDTQueryReformulation::UDTQueryReformulation(const ar::Archive& archive) {
-  (void)archive;
-  throw std::invalid_argument("Cannot load qr model yet");
+UDTQueryReformulation::UDTQueryReformulation(const ar::Archive& archive)
+    : _flash_index(search::Flash::fromArchive(*archive.get("flash_index"))),
+      _phrase_id_map(dataset::ThreadSafeVocabulary::fromArchive(
+          *archive.get("phrase_id_map"))),
+      _incorrect_column_name(archive.getOpt<ar::Str>("incorrect_column_name")),
+      _correct_column_name(archive.str("correct_column_name")),
+      _use_spell_checker(archive.boolean("use_spell_checker")),
+      _n_grams(archive.getAs<ar::VecU32>("n_grams")),
+      _delimiter(archive.getAs<ar::Char>("delimiter")) {
+  _inference_featurizer =
+      dataset::TabularFeaturizer::make({ngramBlockList("phrase", _n_grams)});
+
+  if (archive.contains("symspell_backend")) {
+    _symspell_backend =
+        std::make_shared<SymPreTrainer>(*archive.get("symspell_backend"));
+  }
 }
 
 template void UDTQueryReformulation::serialize(cereal::BinaryInputArchive&);
