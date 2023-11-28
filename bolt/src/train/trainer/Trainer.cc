@@ -114,8 +114,6 @@ metrics::History Trainer::train(
         train_metrics.recordBatch(inputs.at(0)->batchSize());
       }
 
-
-
       callbacks.onBatchEnd();
 
       if (bar) {
