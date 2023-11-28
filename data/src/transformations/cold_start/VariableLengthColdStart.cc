@@ -91,6 +91,7 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
     if (_config.prefilter_punctuation) {
       whole_doc = text::replacePunctuation(whole_doc, ' ');
     }
+    whole_doc = text::stripWhitespace(whole_doc);
     output_samples.push_back(whole_doc);
   }
 
@@ -102,6 +103,7 @@ PhraseCollection VariableLengthColdStart::getWeakPhrases(
   if (_config.prefilter_punctuation) {
     weak_text = text::replacePunctuation(weak_text, ' ');
   }
+  weak_text = text::stripWhitespace(weak_text);
 
   Phrase weak_phrase = text::tokenizeSentence(weak_text);
 

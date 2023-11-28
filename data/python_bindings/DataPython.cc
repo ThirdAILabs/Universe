@@ -417,7 +417,8 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                     std::string, std::string, VariableLengthConfig, uint32_t>(),
            py::arg("strong_columns"), py::arg("weak_columns"),
            py::arg("label_column"), py::arg("output_column"),
-           py::arg("config") = VariableLengthConfig(), py::arg("seed") = 42803)
+           py::arg("config") = VariableLengthConfig(),
+           py::arg("seed") = global_random::nextSeed())
       .def("augment_single_row", &VariableLengthColdStart::augmentSingleRow,
            py::arg("strong_text"), py::arg("weak_text"));
 
