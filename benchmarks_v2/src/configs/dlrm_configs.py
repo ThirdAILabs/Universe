@@ -31,7 +31,12 @@ class DLRMConfig(ABC):
 
     @staticmethod
     @abstractmethod
-    def load_datasets(path_prefix: str):
+    def load_train_data(path_prefix: str):
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def load_test_data(path_prefix: str):
         pass
 
 
@@ -60,6 +65,8 @@ class CriteoDLRMConfig(DLRMConfig):
     train_dataset_path = "criteo/train_shuf.txt"
     test_dataset_path = "criteo/test_shuf.txt"
 
+    batch_size = 512
+
     def _load_click_through_dataset(
         filename,
         batch_size,
@@ -67,40 +74,36 @@ class CriteoDLRMConfig(DLRMConfig):
         max_categorical_features,
         delimiter=" ",
     ):
-        bolt_dataset, bolt_token_dataset, labels = dataset.load_click_through_dataset(
+        datasets = dataset.load_click_through_dataset(
             filename=filename,
             batch_size=batch_size,
             max_num_numerical_features=max_num_numerical_features,
             max_categorical_features=max_categorical_features,
             delimiter=delimiter,
         )
-        return bolt_dataset, bolt_token_dataset, labels
+        return (
+            bolt.train.convert_datasets(
+                datasets[:2],
+                dims=[CriteoDLRMConfig.int_features, 4294967295],
+                copy=False,
+            ),
+            bolt.train.convert_dataset(
+                datasets[-1], CriteoDLRMConfig.n_classes, copy=False
+            ),
+        )
 
-    def load_datasets(path_prefix: str):
-        max_num_categorical_features = 26
-        num_numerical_features = 13
-        batch_size = 512
-        (
-            train_bolt_dataset,
-            train_bolt_token_dataset,
-            train_labels,
-        ) = CriteoDLRMConfig._load_click_through_dataset(
+    def load_train_data(path_prefix: str):
+        return CriteoDLRMConfig._load_click_through_dataset(
             filename=os.path.join(path_prefix, CriteoDLRMConfig.train_dataset_path),
-            batch_size=batch_size,
-            max_categorical_features=max_num_categorical_features,
-            max_num_numerical_features=num_numerical_features,
+            batch_size=CriteoDLRMConfig.batch_size,
+            max_categorical_features=CriteoDLRMConfig.cat_features,
+            max_num_numerical_features=CriteoDLRMConfig.int_features,
         )
-        (
-            test_bolt_dataset,
-            test_bolt_token_dataset,
-            test_labels,
-        ) = CriteoDLRMConfig._load_click_through_dataset(
-            filename=os.path.join(path_prefix, CriteoDLRMConfig.test_dataset_path),
-            batch_size=batch_size,
-            max_categorical_features=max_num_categorical_features,
-            max_num_numerical_features=num_numerical_features,
-        )
-        train_data = [train_bolt_dataset, train_bolt_token_dataset]
-        test_data = [test_bolt_dataset, test_bolt_token_dataset]
 
-        return train_data, train_labels, test_data, test_labels
+    def load_test_data(path_prefix):
+        return CriteoDLRMConfig._load_click_through_dataset(
+            filename=os.path.join(path_prefix, CriteoDLRMConfig.test_dataset_path),
+            batch_size=CriteoDLRMConfig.batch_size,
+            max_categorical_features=CriteoDLRMConfig.cat_features,
+            max_num_numerical_features=CriteoDLRMConfig.int_features,
+        )

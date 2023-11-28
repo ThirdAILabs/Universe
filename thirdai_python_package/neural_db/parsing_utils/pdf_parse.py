@@ -172,3 +172,18 @@ def create_train_df(elements):
     for column in ["para", "display"]:
         df[column] = df[column].apply(ensure_valid_encoding)
     return df
+
+
+def highlighted_doc(source, columns):
+    if not "highlight" in columns:
+        return None
+    highlight = eval(columns["highlight"])
+    doc = fitz.open(source)
+    for key, val in highlight.items():
+        page = doc[key]
+        blocks = page.get_text("blocks")
+        for i, b in enumerate(blocks):
+            if i in val:
+                rect = fitz.Rect(b[:4])
+                page.add_highlight_annot(rect)
+    return doc

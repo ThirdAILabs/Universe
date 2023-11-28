@@ -1,8 +1,17 @@
 import os
 
+import pandas as pd
 import pytest
 import requests
 from thirdai import neural_db as ndb
+
+from thirdai_python_package_tests.neural_db.base_connectors import base
+
+
+class Equivalent_doc:
+    def __init__(self, connector_doc, local_doc) -> None:
+        self.connector_doc = connector_doc
+        self.local_doc = local_doc
 
 
 @pytest.fixture
@@ -53,6 +62,19 @@ PPTX_FILE = os.path.join(BASE_DIR, "quantum_mechanics.pptx")
 TXT_FILE = os.path.join(BASE_DIR, "nature.txt")
 EML_FILE = os.path.join(BASE_DIR, "Message.eml")
 
+# connection instances for connector document
+# SQL connector attributes
+ENGINE = base.get_sql_engine()
+TABLE_NAME = base.get_sql_table()
+
+# SharePoint connector attributes
+CLIENT_CONTEXT = base.get_client_context()
+LIBRARY_PATH = base.get_library_path()
+
+# SalesForce Connector attributes
+SF_INSTANCE = base.get_salesforce_instance()
+OBJECT_NAME = base.get_salesforce_object_name()
+
 CSV_EXPLICIT_META = "csv-explicit"
 PDF_META = "pdf"
 DOCX_META = "docx"
@@ -68,9 +90,127 @@ def meta(file_meta):
     return {"meta": file_meta}
 
 
+def build_local_sharepoint_doc():
+    from thirdai.neural_db.utils import DIRECTORY_CONNECTOR_SUPPORTED_EXT
+
+    dir = os.path.join(BASE_DIR, "connector_docs", "SharePoint")
+    files = os.listdir(dir)
+    doc_files = []
+    for file_name in files:
+        file_path = os.path.join(dir, file_name)
+        if (
+            os.path.isfile(file_path)
+            and file_name.split(sep=".")[-1] in DIRECTORY_CONNECTOR_SUPPORTED_EXT
+        ):
+            doc_files.append(file_path)
+    doc_files = sorted(doc_files, key=lambda file_path: file_path.split(sep="/")[-1])
+
+    ndb_docs = []
+    for file_path in doc_files:
+        file_name = file_path.split(sep="/")[-1]
+        if file_name.endswith(".pdf"):
+            temp = ndb.PDF(path=file_path)
+        elif file_name.endswith(".docx"):
+            temp = ndb.DOCX(path=file_path)
+        else:
+            temp = ndb.Unstructured(path=file_path)
+
+        ndb_docs.append(temp)
+
+    class CombinedDocument(ndb.Document):
+        def __init__(self, ndb_docs) -> None:
+            cols = [self.strong_column, self.weak_column]
+
+            tmp_dfs = []
+            for current_ndb_doc in ndb_docs:
+                temp_df = pd.DataFrame(columns=cols, index=range(current_ndb_doc.size))
+                temp_df["id"] = range(current_ndb_doc.size)
+                temp_df[self.strong_column] = temp_df["id"].apply(
+                    lambda i: current_ndb_doc.strong_text(i)
+                )
+                temp_df[self.weak_column] = temp_df["id"].apply(
+                    lambda i: current_ndb_doc.weak_text(i)
+                )
+                temp_df.drop(columns=["id"], inplace=True)
+                tmp_dfs.append(temp_df)
+
+            self.df = pd.concat(tmp_dfs, ignore_index=True)
+
+        @property
+        def strong_column(self):
+            return "strong_text"
+
+        @property
+        def weak_column(self):
+            return "weak_text"
+
+        @property
+        def name(self):
+            return "CombinedLocalSharePointDocument"
+
+        @property
+        def size(self):
+            return len(self.df)
+
+        def strong_text(self, element_id: int) -> str:
+            return self.df.iloc[element_id][self.strong_column]
+
+        def weak_text(self, element_id: int) -> str:
+            return self.df.iloc[element_id][self.weak_column]
+
+    return CombinedDocument(ndb_docs=ndb_docs)
+
+
+# This is a list of getter functions that return connector_doc objects so each test can
+# use fresh doc object instances.
+
+all_connector_doc_getters = [
+    Equivalent_doc(
+        connector_doc=lambda: ndb.SQLDatabase(
+            engine=ENGINE,
+            table_name=TABLE_NAME,
+            id_col="id",
+            strong_columns=["content"],
+            weak_columns=["content"],
+            reference_columns=["content"],
+            chunk_size=3,
+        ),
+        local_doc=lambda: ndb.CSV(
+            path=os.path.join(BASE_DIR, "connector_docs", "SQL", "Amazon_polarity.csv"),
+            id_column="id",
+            strong_columns=["content"],
+            weak_columns=["content"],
+            reference_columns=["content"],
+        ),
+    ),
+    Equivalent_doc(
+        connector_doc=lambda: ndb.SharePoint(
+            ctx=CLIENT_CONTEXT, library_path=LIBRARY_PATH
+        ),
+        local_doc=build_local_sharepoint_doc,
+    ),
+    Equivalent_doc(
+        connector_doc=lambda: ndb.SalesForce(
+            instance=SF_INSTANCE,
+            object_name=OBJECT_NAME,
+            id_col="ID__c",
+            strong_columns=["Review__c"],
+            weak_columns=["Review__c"],
+            reference_columns=["Review__c"],
+        ),
+        local_doc=lambda: ndb.CSV(
+            path=os.path.join(BASE_DIR, "connector_docs", "Salesforce", "yelp.csv"),
+            id_column="ID__c",
+            strong_columns=["Review__c"],
+            weak_columns=["Review__c"],
+            reference_columns=["Review__c"],
+        ),
+    ),
+]
+
 # This is a list of getter functions that return doc objects so each test can
 # use fresh doc object instances.
-all_doc_getters = [
+all_local_doc_getters = [
     lambda: ndb.CSV(
         CSV_FILE,
         id_column="category",
@@ -80,6 +220,7 @@ all_doc_getters = [
     ),
     lambda: ndb.CSV(CSV_FILE),
     lambda: ndb.PDF(PDF_FILE),
+    lambda: ndb.PDF(PDF_FILE, version="v2"),
     lambda: ndb.DOCX(DOCX_FILE),
     lambda: ndb.URL("https://en.wikipedia.org/wiki/Rice_University"),
     lambda: ndb.URL(
@@ -91,6 +232,13 @@ all_doc_getters = [
     lambda: ndb.Unstructured(EML_FILE),
     lambda: ndb.SentenceLevelPDF(PDF_FILE),
     lambda: ndb.SentenceLevelDOCX(DOCX_FILE),
+]
+
+# The two URL docs are different constructor invocationsfor the same thing.
+num_duplicate_docs = 1
+
+all_doc_getters = all_local_doc_getters + [
+    eq_doc.connector_doc for eq_doc in all_connector_doc_getters
 ]
 
 

@@ -1,10 +1,12 @@
 #include "BoltNNPython.h"
 #include "PybindUtils.h"
+#include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/python_bindings/Porting.h>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/loss/BinaryCrossEntropy.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/EuclideanContrastive.h>
+#include <bolt/src/nn/loss/ExternalLoss.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Activation.h>
@@ -67,35 +69,6 @@ py::object toNumpy(const TensorPtr& tensor, const T* data) {
   return py::none();
 }
 
-TensorPtr fromNumpySparse(const NumpyArray<uint32_t>& indices,
-                          const NumpyArray<float>& values, uint32_t last_dim,
-                          bool with_grad) {
-  if (indices.ndim() != 2) {
-    throw std::invalid_argument("Expected indices to be 2D.");
-  }
-  if (values.ndim() != 2) {
-    throw std::invalid_argument("Expected values to be 2D.");
-  }
-
-  uint32_t batch_size = indices.shape(0);
-  uint32_t nonzeros = indices.shape(1);
-
-  return Tensor::fromArray(indices.data(), values.data(), batch_size, last_dim,
-                           nonzeros, /* with_grad= */ with_grad);
-}
-
-TensorPtr fromNumpyDense(const NumpyArray<float>& values, bool with_grad) {
-  if (values.ndim() != 2) {
-    throw std::invalid_argument("Expected values to be 2D.");
-  }
-
-  uint32_t batch_size = values.shape(0);
-  uint32_t dim = values.shape(1);
-
-  return Tensor::fromArray(nullptr, values.data(), batch_size, dim,
-                           /* nonzeros= */ dim, /* with_grad= */ with_grad);
-}
-
 void defineTensor(py::module_& nn);
 
 void defineOps(py::module_& nn);
@@ -121,6 +94,7 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("forward",
            py::overload_cast<const TensorList&, bool>(&Model::forward),
            py::arg("inputs"), py::arg("use_sparsity") = false)
+      .def("backpropagate", &Model::backpropagate, py::arg("labels"))
       .def("update_parameters", &Model::updateParameters,
            py::arg("learning_rate"))
       .def("ops", &Model::opExecutionOrder)
@@ -424,6 +398,10 @@ void defineLosses(py::module_& nn) {
       .def(py::init(&EuclideanContrastive::make), py::arg("output_1"),
            py::arg("output_2"), py::arg("labels"),
            py::arg("dissimilar_cutoff_distance"));
+
+  py::class_<ExternalLoss, ExternalLossPtr, Loss>(loss, "ExternalLoss")
+      .def(py::init<ComputationPtr, ComputationPtr>(), py::arg("output"),
+           py::arg("external_gradients"));
 }
 
 }  // namespace thirdai::bolt::python

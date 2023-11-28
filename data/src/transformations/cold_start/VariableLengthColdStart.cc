@@ -136,7 +136,7 @@ void VariableLengthColdStart::addCoveringPhrases(
     // if there are less that min_len words left after chosing this phrase,
     // include them in this phrase by extending the phrase_size
     if (start_pos + phrase_size + min_len > words.size()) {
-      phrase_size += words.size() - phrase_size - start_pos;
+      phrase_size = words.size() - start_pos;
     }
     Phrase phrase(words.begin() + start_pos,
                   words.begin() + start_pos + phrase_size);

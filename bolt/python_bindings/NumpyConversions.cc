@@ -82,4 +82,33 @@ py::object tensorToNumpyTopK(const TensorPtr& tensor, bool single_row_to_vector,
       py::make_tuple(std::move(active_neurons), std::move(activations)));
 }
 
+TensorPtr fromNumpySparse(const NumpyArray<uint32_t>& indices,
+                          const NumpyArray<float>& values, size_t last_dim,
+                          bool with_grad) {
+  if (indices.ndim() != 2) {
+    throw std::invalid_argument("Expected indices to be 2D.");
+  }
+  if (values.ndim() != 2) {
+    throw std::invalid_argument("Expected values to be 2D.");
+  }
+
+  size_t batch_size = indices.shape(0);
+  size_t nonzeros = indices.shape(1);
+
+  return Tensor::fromArray(indices.data(), values.data(), batch_size, last_dim,
+                           nonzeros, /* with_grad= */ with_grad);
+}
+
+TensorPtr fromNumpyDense(const NumpyArray<float>& values, bool with_grad) {
+  if (values.ndim() != 2) {
+    throw std::invalid_argument("Expected values to be 2D.");
+  }
+
+  size_t batch_size = values.shape(0);
+  size_t dim = values.shape(1);
+
+  return Tensor::fromArray(nullptr, values.data(), batch_size, dim,
+                           /* nonzeros= */ dim, /* with_grad= */ with_grad);
+}
+
 }  // namespace thirdai::bolt::python
