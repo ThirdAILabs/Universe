@@ -408,8 +408,11 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("num_slices") = 7, py::arg("add_whole_doc") = true,
            py::arg("prefilter_punctuation") = true,
            py::arg("strong_sample_num_words") = 3,
-           py::arg("word_removal_probability") = 0);
+           py::arg("word_removal_probability") = 0)
+#endif
+      ;
 
+#if THIRDAI_EXPOSE_ALL
   py::class_<VariableLengthColdStart, Transformation,
              std::shared_ptr<VariableLengthColdStart>>(
       transformations_submodule, "VariableLengthColdStart")
@@ -437,6 +440,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       .def("inference_featurization", &DyadicInterval::inferenceFeaturization,
            py::arg("columns"));
 #endif
+
 }
 
 }  // namespace thirdai::data::python
