@@ -582,6 +582,7 @@ class NeuralDB:
         constraints=None,
         rerank=False,
         rerank_threshold=1.5,
+        threshold_top_k=None,
     ) -> List[Reference]:
         matching_entities = None
         if constraints:
@@ -603,7 +604,11 @@ class NeuralDB:
             references.append(ref)
 
         if rerank:
-            mean_score = sum(score for rid, score in result_ids) / len(result_ids)
+            if threshold_top_k is None:
+                threshold_top_k = top_k
+            mean_score = sum(score for _, score in result_ids[:top_k]) / len(
+                result_ids[:top_k]
+            )
             threshold = rerank_threshold * mean_score
             for first_rerank_pos, ref in enumerate(references):
                 if ref.score < threshold:
