@@ -13,18 +13,15 @@ class TextCompat final : public Transformation {
  public:
   TextCompat(std::string input_column, std::string output_indices,
              std::string output_values, dataset::TextTokenizerPtr tokenizer,
-             dataset::TextEncoderPtr encoder, bool lowercase = false,
-             size_t dim = dataset::token_encoding::DEFAULT_TEXT_ENCODING_DIM);
+             dataset::TextEncoderPtr encoder, bool lowercase,
+             size_t encoding_dim, size_t feature_hash_dim);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
-  void buildExplanationMap(const ColumnMap& input, State& state,
-                           ExplanationMap& explanations) const final;
-
  private:
   inline uint32_t mimicHashedFeatureVector(uint32_t index) const {
-    index %= std::numeric_limits<uint32_t>::max();
-    return hashing::combineHashes(index, 1) % _dim;
+    index %= _encoding_dim;
+    return hashing::combineHashes(index, 1) % _feature_hash_dim;
   }
 
   std::string _input_column, _output_indices;
@@ -34,7 +31,8 @@ class TextCompat final : public Transformation {
   dataset::TextEncoderPtr _encoder;
 
   bool _lowercase;
-  size_t _dim;
+  size_t _encoding_dim;
+  size_t _feature_hash_dim;
 
   TextCompat() {}
 

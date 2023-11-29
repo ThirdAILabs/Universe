@@ -29,7 +29,9 @@ using IndicesAndValues = std::pair<std::vector<std::vector<uint32_t>>,
 
 IndicesAndValues applyTransformation(std::vector<std::string> text) {
   TextCompat transform("txt", "indices", "values", getTokenizer(), getEncoder(),
-                       /*lowercase=*/true, DIM);
+                       /*lowercase=*/true,
+                       /*encoding_dim=*/std::numeric_limits<uint32_t>::max(),
+                       /*feature_hash_dim=*/DIM);
 
   ColumnMap columns({{"txt", ValueColumn<std::string>::make(std::move(text))}});
 

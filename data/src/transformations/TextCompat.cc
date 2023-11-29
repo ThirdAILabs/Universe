@@ -15,14 +15,15 @@ TextCompat::TextCompat(std::string input_column, std::string output_indices,
                        std::string output_values,
                        dataset::TextTokenizerPtr tokenizer,
                        dataset::TextEncoderPtr encoder, bool lowercase,
-                       size_t dim)
+                       size_t encoding_dim, size_t feature_hash_dim)
     : _input_column(std::move(input_column)),
       _output_indices(std::move(output_indices)),
       _output_values(std::move(output_values)),
       _tokenizer(std::move(tokenizer)),
       _encoder(std::move(encoder)),
       _lowercase(lowercase),
-      _dim(dim) {}
+      _encoding_dim(encoding_dim),
+      _feature_hash_dim(feature_hash_dim) {}
 
 ColumnMap TextCompat::apply(ColumnMap columns, State& state) const {
   (void)state;
@@ -58,33 +59,13 @@ ColumnMap TextCompat::apply(ColumnMap columns, State& state) const {
   }
 
   auto indices_col =
-      ArrayColumn<uint32_t>::make(std::move(output_indices), _dim);
+      ArrayColumn<uint32_t>::make(std::move(output_indices), _feature_hash_dim);
   columns.setColumn(_output_indices, indices_col);
 
   auto values_col = ArrayColumn<float>::make(std::move(output_values));
   columns.setColumn(_output_values, values_col);
 
   return columns;
-}
-
-void TextCompat::buildExplanationMap(const ColumnMap& input, State& state,
-                                     ExplanationMap& explanations) const {
-  (void)state;
-
-  const std::string& text =
-      input.getValueColumn<std::string>(_input_column)->value(0);
-
-  std::vector<uint32_t> tokens = _tokenizer->tokenize(text);
-  std::vector<uint32_t> indices = _encoder->encode(tokens);
-
-  for (const auto& index : indices) {
-    uint32_t token = _encoder->undoEncoding(tokens, index, _dim);
-    auto word = _tokenizer->getResponsibleWord(text, token);
-
-    explanations.store(_output_indices, mimicHashedFeatureVector(index),
-                       "word '" + word + "' from " +
-                           explanations.explain(_input_column, text));
-  }
 }
 
 template void TextCompat::serialize(cereal::BinaryInputArchive&);
@@ -94,7 +75,7 @@ template <class Archive>
 void TextCompat::serialize(Archive& archive) {
   archive(cereal::base_class<Transformation>(this), _input_column,
           _output_indices, _output_values, _tokenizer, _encoder, _lowercase,
-          _dim);
+          _encoding_dim, _feature_hash_dim);
 }
 
 }  // namespace thirdai::data
