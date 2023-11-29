@@ -545,3 +545,162 @@ class Mach(Model):
             # Add model_config field if an older model is being loaded.
             state["model_config"] = None
         self.__dict__.update(state)
+
+
+class Standard(Model):
+    def __init__(
+        self,
+        id_col="DOC_ID",
+        id_delimiter=" ",
+        query_col="QUERY",
+        embedding_dimension=2048,
+        model_config=None,
+        max_num_classes=None,
+    ):
+        self.id_col = id_col
+        self.id_delimiter = id_delimiter
+        self.query_col = query_col
+        self.embedding_dimension = embedding_dimension
+        self.model_config = model_config
+        self.model = None
+        self.max_num_classes = max_num_classes
+        self.num_seen_classes = 0
+
+    def get_model(self) -> bolt.UniversalDeepTransformer:
+        return self.model
+
+    def index_documents(
+        self,
+        intro_documents: DocumentDataSource,
+        train_documents: DocumentDataSource,
+        should_train: bool,
+        fast_approximation: bool = True,
+        num_buckets_to_sample: Optional[int] = None,
+        on_progress: Callable = lambda **kwargs: None,
+        cancel_state: CancelState = None,
+        max_in_memory_batches: int = None,
+    ) -> None:
+        if self.model is None:
+            self.id_col = intro_documents.id_column
+            self.model = bolt.UniversalDeepTransformer(
+                data_types={
+                    self.query_col: bolt.types.text(tokenizer="char-4"),
+                    self.id_col: bolt.types.categorical(delimiter=self.id_delimiter),
+                },
+                target=self.id_col,
+                n_target_classes=(
+                    intro_documents.size
+                    if self.max_num_classes is None
+                    else self.max_num_classes
+                ),
+                integer_target=True,
+                options={"embedding_dimension": self.embedding_dimension, "rlhf": True},
+                model_config=self.model_config,
+            )
+
+        self.num_seen_classes += intro_documents.size
+        if should_train and train_documents.size > 0:
+            unsupervised_train_on_docs(
+                model=self.model,
+                documents=train_documents,
+                min_epochs=5,
+                max_epochs=15,
+                metric="precision@5",
+                learning_rate=0.001,
+                acc_to_stop=0.95,
+                on_progress=on_progress,
+                freeze_before_train=False,
+                cancel_state=cancel_state,
+                max_in_memory_batches=max_in_memory_batches,
+            )
+
+    def forget_documents(self) -> None:
+        raise NotImplementedError()
+
+    def delete_entities(self, entities) -> None:
+        raise NotImplementedError()
+
+    @property
+    def searchable(self) -> bool:
+        return self.model is not None
+
+    def get_query_col(self) -> str:
+        return self.query_col
+
+    def set_n_ids(self, n_ids: int):
+        self.num_seen_classes = n_ids
+
+    def get_id_col(self) -> str:
+        return self.id_col
+
+    def get_id_delimiter(self) -> str:
+        return self.id_delimiter
+
+    def infer_samples_to_infer_batch(self, samples: InferSamples):
+        query_col = self.get_query_col()
+        return [{query_col: clean_text(text)} for text in samples]
+
+    def infer_buckets(
+        self, samples: InferSamples, n_results: int, **kwargs
+    ) -> Predictions:
+        raise NotImplementedError()
+
+    def infer_labels(
+        self,
+        samples: InferSamples,
+        n_results: int,
+        **kwargs,
+    ) -> Predictions:
+        infer_batch = self.infer_samples_to_infer_batch(samples)
+        predictions = self.model.predict_batch(infer_batch)
+        return [
+            [
+                (i, score)
+                for score, i in sorted(
+                    [(score, i) for i, score in enumerate(scores)], reverse=True
+                )[:n_results]
+            ]
+            for scores in predictions
+        ]
+
+    def score(
+        self, samples: InferSamples, entities: List[List[int]], n_results: int = None
+    ) -> Predictions:
+        raise NotImplementedError()
+
+    def save_meta(self, directory: Path) -> None:
+        pass
+
+    def load_meta(self, directory: Path):
+        pass
+
+    def associate(
+        self,
+        pairs: List[Tuple[str, str]],
+        n_buckets: int,
+        n_association_samples: int = 16,
+        n_balancing_samples: int = 50,
+        learning_rate: float = 0.001,
+        epochs: int = 3,
+    ):
+        raise NotImplementedError()
+
+    def upvote(
+        self,
+        pairs: List[Tuple[str, int]],
+        n_upvote_samples: int = 16,
+        n_balancing_samples: int = 50,
+        learning_rate: float = 0.001,
+        epochs: int = 3,
+    ):
+        raise NotImplementedError()
+
+    def retrain(
+        self,
+        balancing_data: DocumentDataSource,
+        source_target_pairs: List[Tuple[str, str]],
+        n_buckets: int,
+        learning_rate: float,
+        epochs: int,
+    ):
+        raise NotImplementedError()
