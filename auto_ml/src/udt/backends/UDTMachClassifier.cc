@@ -442,7 +442,7 @@ py::object UDTMachClassifier::coldstart(
         data, strong_column_names, weak_column_names, _dataset_factory,
         metadata, variable_length);
 
-    return train(data_source, learning_rate, /* epochs= */ 1, train_metrics,
+    return train(data_source, learning_rate, epochs, train_metrics,
                  val_data, val_metrics, callbacks, options, comm);
   }
 
