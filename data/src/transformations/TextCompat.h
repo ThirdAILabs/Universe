@@ -9,6 +9,14 @@
 
 namespace thirdai::data {
 
+/**
+ * This transformation replicates the behavior of the TextBlock in the old data
+ * pipeline, if the block is the only block in the BlockList and the
+ * HashedSegmentedFeatureVector is used. The tokenizer and encoder must be the
+ * same as the TextBlock. Same for the value of the arg lowercase. The arg
+ * encoding_dim must match the dim arg of the text block, and the
+ * feature_hash_dim must match the hash_range argument of the BlockList.
+ */
 class TextCompat final : public Transformation {
  public:
   TextCompat(std::string input_column, std::string output_indices,
@@ -20,8 +28,7 @@ class TextCompat final : public Transformation {
 
  private:
   inline uint32_t mimicHashedFeatureVector(uint32_t index) const {
-    index %= _encoding_dim;
-    return hashing::combineHashes(index, 1) % _feature_hash_dim;
+    return hashing::combineHashes(index % _encoding_dim, 1) % _feature_hash_dim;
   }
 
   std::string _input_column, _output_indices;
