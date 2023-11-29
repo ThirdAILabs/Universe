@@ -564,6 +564,9 @@ class Standard(Model):
     def get_model(self) -> bolt.UniversalDeepTransformer:
         return self.model
 
+    def set_mach_sampling_threshold(self, threshold: float):
+        pass
+
     def index_documents(
         self,
         intro_documents: DocumentDataSource,
@@ -599,7 +602,7 @@ class Standard(Model):
                 model=self.model,
                 documents=train_documents,
                 min_epochs=5,
-                max_epochs=15,
+                max_epochs=10,
                 metric="precision@5",
                 learning_rate=0.001,
                 acc_to_stop=0.95,
