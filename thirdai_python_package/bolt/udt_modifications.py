@@ -182,7 +182,9 @@ def modify_udt():
         filename: str,
         strong_column_names: List[str],
         weak_column_names: List[str],
-        variable_length: bool = data.transformations.VariableLengthConfig(),
+        variable_length: Optional[
+            data.transformations.VariableLengthConfig
+        ] = data.transformations.VariableLengthConfig(),
         learning_rate: float = 0.001,
         epochs: int = 5,
         batch_size: int = None,
