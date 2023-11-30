@@ -6,7 +6,7 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDTBackend.h>
-#include <auto_ml/src/udt/backends/UDTMachClassifier.h>
+#include <auto_ml/src/udt/backends/UDTMach.h>
 #include <dataset/src/DataSource.h>
 #include <memory>
 #include <optional>
@@ -203,12 +203,8 @@ class UDT {
 
   std::vector<uint32_t> modelDims() const;
 
-  const TextDatasetConfig& textDatasetConfig() const {
-    if (auto featurizer = _backend->featurizer()) {
-      return featurizer->textDatasetConfig();
-    }
-    throw std::invalid_argument(
-        "This method is only supported on Text Models.");
+  TextDatasetConfig textDatasetConfig() const {
+    return _backend->textDatasetConfig();
   }
 
   /**

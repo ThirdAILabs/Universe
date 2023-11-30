@@ -50,6 +50,14 @@ class Featurizer {
              data::OutputColumnsList bolt_label_columns,
              const TabularOptions& options);
 
+  Featurizer(data::TransformationPtr input_transform,
+             data::TransformationPtr const_input_transform,
+             data::TransformationPtr label_transform,
+             data::OutputColumnsList bolt_input_columns,
+             data::OutputColumnsList bolt_label_columns, char delimiter,
+             data::StatePtr state,
+             std::optional<TextDatasetConfig> text_dataset);
+
   data::LoaderPtr getDataLoader(const dataset::DataSourcePtr& data_source,
                                 size_t batch_size, bool shuffle, bool verbose,
                                 dataset::DatasetShuffleConfig shuffle_config =

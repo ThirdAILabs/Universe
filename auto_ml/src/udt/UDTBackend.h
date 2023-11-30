@@ -168,8 +168,8 @@ class UDTBackend {
     throw notSupported("class_name");
   }
 
-  virtual ColumnDataTypes dataTypes() const {
-    throw notSupported("data_types");
+  virtual TextDatasetConfig textDatasetConfig() const {
+    throw notSupported("text_dataset_config");
   }
 
   virtual void indexNodes(const dataset::DataSourcePtr& source) {

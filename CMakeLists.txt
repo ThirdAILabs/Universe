@@ -449,10 +449,13 @@ set(THIRDAI_SOURCES
     auto_ml/src/featurization/GraphFeaturizer.cc
     auto_ml/src/featurization/RecurrentFeaturizer.cc
     auto_ml/src/featurization/ReservedColumns.cc
+    auto_ml/src/featurization/TabularBlockComposer.cc # Deprecate
+    auto_ml/src/featurization/TabularDatasetFactory.cc # Deprecate
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
-    auto_ml/src/rlhf/RLHFSampler.cc
+    auto_ml/src/rlhf/BalancingSamples.cc
+    auto_ml/src/rlhf/RLHFSampler.cc # Deprecate
     utils/src/SymSpellBackend/symspell.cc
     utils/src/SymSpellCpp/SymSpell.cc
     utils/Logging.cc
@@ -521,7 +524,8 @@ pybind11_add_module(
   auto_ml/src/udt/utils/Models.cc
   auto_ml/src/udt/utils/Classifier.cc
   auto_ml/src/udt/backends/UDTClassifier.cc
-  auto_ml/src/udt/backends/UDTMachClassifier.cc
+  auto_ml/src/udt/backends/UDTMach.cc
+  auto_ml/src/udt/backends/UDTMachClassifier.cc # Deprecate
   auto_ml/src/udt/backends/UDTRecurrentClassifier.cc
   auto_ml/src/udt/backends/UDTRegression.cc
   auto_ml/src/udt/backends/UDTQueryReformulation.cc

@@ -46,6 +46,22 @@ Featurizer::Featurizer(ColumnDataTypes data_types,
   }
 }
 
+Featurizer::Featurizer(data::TransformationPtr input_transform,
+                       data::TransformationPtr const_input_transform,
+                       data::TransformationPtr label_transform,
+                       data::OutputColumnsList bolt_input_columns,
+                       data::OutputColumnsList bolt_label_columns,
+                       char delimiter, data::StatePtr state,
+                       std::optional<TextDatasetConfig> text_dataset)
+    : _input_transform(std::move(input_transform)),
+      _const_input_transform(std::move(const_input_transform)),
+      _label_transform(std::move(label_transform)),
+      _bolt_input_columns(std::move(bolt_input_columns)),
+      _bolt_label_columns(std::move(bolt_label_columns)),
+      _delimiter(delimiter),
+      _state(std::move(state)),
+      _text_dataset(std::move(text_dataset)) {}
+
 data::LoaderPtr Featurizer::getDataLoader(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
     bool verbose, dataset::DatasetShuffleConfig shuffle_config) {

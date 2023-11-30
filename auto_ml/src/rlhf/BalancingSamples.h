@@ -10,20 +10,21 @@
 
 namespace thirdai::automl::udt {
 
-class RLHFSampler {
- public:
-  RLHFSampler() : RLHFSampler(0, 0) {}  // Required for serializing optional.
+using BalancingSample = std::pair<std::string, std::vector<uint32_t>>;
 
-  RLHFSampler(size_t max_docs, size_t max_samples_per_doc)
+class BalancingSamples {
+ public:
+  BalancingSamples()
+      : BalancingSamples(0, 0) {}  // Required for serializing optional.
+
+  BalancingSamples(size_t max_docs, size_t max_samples_per_doc)
       : _max_docs(max_docs),
         _max_samples_per_doc(max_samples_per_doc),
         _rng(RNG_SEED) {}
 
-  std::vector<std::pair<BoltVector, BoltVector>> balancingSamples(
-      size_t num_samples);
+  std::vector<BalancingSample> balancingSamples(size_t num_samples);
 
-  void addSample(uint32_t doc_id, const BoltVector& input,
-                 const BoltVector& label);
+  void addSample(uint32_t doc_id, const BalancingSample& sample);
 
   void clear() {
     _samples_per_doc = {};
@@ -38,8 +39,7 @@ class RLHFSampler {
  private:
   static constexpr uint32_t RNG_SEED = 7240924;
 
-  std::unordered_map<uint32_t, std::vector<std::pair<BoltVector, BoltVector>>>
-      _samples_per_doc;
+  std::unordered_map<uint32_t, std::vector<BalancingSample>> _samples_per_doc;
   std::unordered_set<uint32_t> _doc_ids;
 
   size_t _max_docs;

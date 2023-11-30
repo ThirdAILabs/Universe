@@ -1,5 +1,6 @@
-#include "RLHFSampler.h"
+#include "BalancingSamples.h"
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/string.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/unordered_set.hpp>
 #include <cereal/types/utility.hpp>
@@ -8,7 +9,7 @@
 
 namespace thirdai::automl::udt {
 
-std::vector<std::pair<BoltVector, BoltVector>> RLHFSampler::balancingSamples(
+std::vector<BalancingSample> BalancingSamples::balancingSamples(
     size_t num_samples) {
   if (num_samples == 0) {
     return {};
@@ -20,7 +21,7 @@ std::vector<std::pair<BoltVector, BoltVector>> RLHFSampler::balancingSamples(
         "documents.");
   }
 
-  std::vector<std::pair<BoltVector, BoltVector>> samples;
+  std::vector<BalancingSample> samples;
 
   uint32_t full_rounds = num_samples / _samples_per_doc.size();
   for (uint32_t round = 0; round < full_rounds; round++) {
@@ -43,28 +44,28 @@ std::vector<std::pair<BoltVector, BoltVector>> RLHFSampler::balancingSamples(
   return samples;
 }
 
-void RLHFSampler::addSample(uint32_t doc_id, const BoltVector& input,
-                            const BoltVector& label) {
+void BalancingSamples::addSample(uint32_t doc_id,
+                                 const BalancingSample& sample) {
   if (_samples_per_doc.size() >= _max_docs) {
     return;
   }
   if (_samples_per_doc[doc_id].size() < _max_samples_per_doc) {
-    _samples_per_doc[doc_id].push_back(std::make_pair(input, label));
+    _samples_per_doc[doc_id].emplace_back(sample);
     _doc_ids.insert(doc_id);
   } else {
     //  Newer samples have a higher probability of being kept, we can change
     //  this to reservoir sampling if this is an issue.
     std::uniform_int_distribution<> dist(0, _max_samples_per_doc - 1);
     size_t replace = dist(_rng);
-    _samples_per_doc[doc_id][replace] = std::make_pair(input, label);
+    _samples_per_doc[doc_id][replace] = sample;
   }
 }
 
-template void RLHFSampler::serialize(cereal::BinaryInputArchive& archive);
-template void RLHFSampler::serialize(cereal::BinaryOutputArchive& archive);
+template void BalancingSamples::serialize(cereal::BinaryInputArchive& archive);
+template void BalancingSamples::serialize(cereal::BinaryOutputArchive& archive);
 
 template <class Archive>
-void RLHFSampler::serialize(Archive& archive) {
+void BalancingSamples::serialize(Archive& archive) {
   archive(_samples_per_doc, _doc_ids, _max_docs, _max_samples_per_doc);
 }
 

@@ -13,6 +13,7 @@
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
+#include <data/src/transformations/Transformation.h>
 #include <dataset/src/mach/MachIndex.h>
 #include <limits>
 #include <optional>
@@ -22,25 +23,45 @@
 
 namespace thirdai::automl {
 
+static data::OutputColumnsList machLabelColumns() {
+  return {data::OutputColumns(MACH_LABELS), data::OutputColumns(MACH_DOC_IDS)};
+}
+
 MachFeaturizer::MachFeaturizer(
     ColumnDataTypes data_types,
     const TemporalRelationships& temporal_relationship,
     const std::string& label_column,
     const dataset::mach::MachIndexPtr& mach_index,
     const TabularOptions& options)
-    : Featurizer(
-          data_types, temporal_relationship, label_column,
-          makeLabelTransformations(label_column,
-                                   asCategorical(data_types.at(label_column))),
-          {data::OutputColumns(MACH_LABELS), data::OutputColumns(MACH_DOC_IDS)},
-          options) {
+    : Featurizer(data_types, temporal_relationship, label_column,
+                 makeLabelTransformations(
+                     label_column,
+                     asCategorical(data_types.at(label_column))->delimiter),
+                 machLabelColumns(), options) {
   _state = std::make_shared<data::State>(mach_index);
 
   _prehashed_labels_transform = std::make_shared<data::StringToTokenArray>(
       label_column, MACH_LABELS, ' ', mach_index->numBuckets());
 
   _doc_id_transform = makeDocIdTransformation(
-      label_column, asCategorical(data_types.at(label_column)));
+      label_column, asCategorical(data_types.at(label_column))->delimiter);
+}
+
+MachFeaturizer::MachFeaturizer(
+    const std::shared_ptr<data::TextCompat>& text_transform,
+    data::OutputColumnsList bolt_input_columns, const std::string& label_column,
+    dataset::mach::MachIndexPtr mach_index, char csv_delimiter,
+    std::optional<char> label_delimiter)
+    : Featurizer(text_transform, text_transform,
+                 makeLabelTransformations(label_column, label_delimiter),
+                 std::move(bolt_input_columns), machLabelColumns(),
+                 csv_delimiter, std::make_shared<data::State>(mach_index),
+                 TextDatasetConfig(text_transform->inputColumn(), label_column,
+                                   label_delimiter)) {
+  _prehashed_labels_transform = std::make_shared<data::StringToTokenArray>(
+      label_column, MACH_LABELS, ' ', mach_index->numBuckets());
+
+  _doc_id_transform = makeDocIdTransformation(label_column, label_delimiter);
 }
 
 std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>
@@ -222,11 +243,10 @@ data::ColumnMap MachFeaturizer::removeIntermediateColumns(
 }
 
 data::TransformationPtr MachFeaturizer::makeDocIdTransformation(
-    const std::string& label_column_name,
-    const CategoricalDataTypePtr& label_column_info) {
-  if (auto delim = label_column_info->delimiter) {
+    const std::string& label_column_name, std::optional<char> label_delimiter) {
+  if (label_delimiter) {
     return std::make_shared<data::StringToTokenArray>(
-        label_column_name, MACH_DOC_IDS, *delim,
+        label_column_name, MACH_DOC_IDS, *label_delimiter,
         std::numeric_limits<uint32_t>::max());
   }
   return std::make_shared<data::StringToToken>(
@@ -234,10 +254,9 @@ data::TransformationPtr MachFeaturizer::makeDocIdTransformation(
 }
 
 data::TransformationPtr MachFeaturizer::makeLabelTransformations(
-    const std::string& label_column_name,
-    const CategoricalDataTypePtr& label_column_info) {
+    const std::string& label_column_name, std::optional<char> label_delimiter) {
   auto doc_id_transform =
-      makeDocIdTransformation(label_column_name, label_column_info);
+      makeDocIdTransformation(label_column_name, label_delimiter);
 
   auto mach_label_transform =
       std::make_shared<data::MachLabel>(MACH_DOC_IDS, MACH_LABELS);

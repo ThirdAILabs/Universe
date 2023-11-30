@@ -1,4 +1,4 @@
-#include "UDTMachClassifier.h"
+#include "UDTMach.h"
 #include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/neuron_index/LshIndex.h>
@@ -13,16 +13,15 @@
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/featurization/ReservedColumns.h>
+#include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
+#include <data/src/TensorConversion.h>
 #include <data/src/transformations/ColdStartText.h>
 #include <dataset/src/DataSource.h>
-#include <dataset/src/blocks/BlockList.h>
-#include <dataset/src/blocks/Categorical.h>
-#include <dataset/src/dataset_loaders/DatasetLoader.h>
-#include <dataset/src/mach/MachBlock.h>
 #include <pybind11/cast.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
@@ -32,13 +31,8 @@
 #include <versioning/src/Versions.h>
 #include <algorithm>
 #include <exception>
-#include <iterator>
 #include <limits>
-#include <memory>
-#include <optional>
 #include <random>
-#include <regex>
-#include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -58,7 +52,7 @@ inline uint32_t expectInteger(const Label& label) {
   return std::get<uint32_t>(label);
 }
 
-UDTMachClassifier::UDTMachClassifier(
+UDTMach::UDTMach(
     const ColumnDataTypes& input_data_types,
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
     const std::string& target_name, const CategoricalDataTypePtr& target_config,
@@ -68,6 +62,8 @@ UDTMachClassifier::UDTMachClassifier(
     config::ArgumentMap user_args)
     : _default_top_k_to_return(defaults::MACH_TOP_K_TO_RETURN),
       _num_buckets_to_eval(defaults::MACH_NUM_BUCKETS_TO_EVAL) {
+  (void)target_config;
+
   uint32_t input_dim = tabular_options.feature_hash_range;
 
   if (user_args.get<bool>("neural_db", "boolean", /* default_val= */ false)) {
@@ -107,40 +103,13 @@ UDTMachClassifier::UDTMachClassifier(
       /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes,
       /* num_elements = */ n_target_classes);
 
-  _mach_label_block = dataset::mach::MachBlock::make(target_name, mach_index,
-                                                     target_config->delimiter);
+  auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
+      input_data_types, temporal_tracking_relationships,
+      tabular_options.lookahead);
 
-  bool force_parallel = user_args.get<bool>("force_parallel", "boolean", false);
-
-  // No limit on the number of classes.
-  auto doc_id_block = dataset::NumericalCategoricalBlock::make(
-      target_name, std::numeric_limits<uint32_t>::max(),
-      /* delimiter= */ target_config->delimiter);
-
-  _dataset_factory = TabularDatasetFactory::make(
-      /* input_data_types = */ input_data_types,
-      /* provided_temporal_relationships = */ temporal_tracking_relationships,
-      /* label_blocks = */
-      {dataset::BlockList({_mach_label_block}),
-       dataset::BlockList({doc_id_block})},
-      /* label_col_names = */ std::set<std::string>{target_name},
-      /* options = */ tabular_options, /* force_parallel = */ force_parallel);
-
-  auto hash_processing_block = dataset::NumericalCategoricalBlock::make(
-      /* col= */ target_name,
-      /* n_classes= */ num_buckets,
-      /* delimiter= */ ' ',
-      /* normalize_categories= */ false);
-
-  // We want to be able to train input samples on a specific set of hashes so
-  // we create a separate dataset factory that does all the same things as the
-  // regular dataset factory except with the label block switched out
-  _pre_hashed_labels_dataset_factory = TabularDatasetFactory::make(
-      /* input_data_types = */ input_data_types,
-      /* provided_temporal_relationships = */ temporal_tracking_relationships,
-      /* label_blocks = */ {dataset::BlockList({hash_processing_block})},
-      /* label_col_names = */ std::set<std::string>{target_name},
-      /* options = */ tabular_options, /* force_parallel = */ force_parallel);
+  _featurizer = std::make_shared<MachFeaturizer>(
+      input_data_types, temporal_relationships, target_name, mach_index,
+      tabular_options);
 
   _mach_sampling_threshold = user_args.get<float>(
       "mach_sampling_threshold", "float", defaults::MACH_SAMPLING_THRESHOLD);
@@ -155,41 +124,61 @@ UDTMachClassifier::UDTMachClassifier(
         user_args.get<uint32_t>("rlhf_balancing_samples_per_doc", "int",
                                 defaults::MAX_BALANCING_SAMPLES_PER_DOC);
 
-    _rlhf_sampler = std::make_optional<RLHFSampler>(
+    _rlhf_sampler = std::make_optional<BalancingSamples>(
         num_balancing_docs, num_balancing_samples_per_doc);
   }
 }
 
-py::object UDTMachClassifier::train(
-    const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::vector<std::string>& train_metrics,
-    const dataset::DataSourcePtr& val_data,
-    const std::vector<std::string>& val_metrics,
-    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::DistributedCommPtr& comm) {
-  dataset::DatasetLoaderPtr val_dataset_loader;
-  if (val_data) {
-    val_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
-        val_data, /* shuffle= */ false);
-  }
+UDTMach::UDTMach(const MachInfo& mach_info)
+    : _classifier(mach_info.classifier),
+      _default_top_k_to_return(mach_info.default_top_k_to_return),
+      _num_buckets_to_eval(mach_info.num_buckets_to_eval),
+      _mach_sampling_threshold(mach_info.mach_sampling_threshold) {
+  auto text_transform = std::make_shared<data::TextCompat>(
+      mach_info.text_column_name, FEATURIZED_INDICES, FEATURIZED_VALUES,
+      mach_info.text_block->tokenizer(), mach_info.text_block->encoder(),
+      mach_info.text_block->lowercase(), mach_info.text_block->featureDim(),
+      mach_info.feature_hash_range);
 
+  _featurizer = std::make_shared<MachFeaturizer>(
+      text_transform,
+      data::OutputColumnsList{
+          data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)},
+      mach_info.label_column_name, mach_info.mach_index,
+      mach_info.csv_delimiter, mach_info.label_delimiter);
+}
+
+py::object UDTMach::train(const dataset::DataSourcePtr& data,
+                          float learning_rate, uint32_t epochs,
+                          const std::vector<std::string>& train_metrics,
+                          const dataset::DataSourcePtr& val_data,
+                          const std::vector<std::string>& val_metrics,
+                          const std::vector<CallbackPtr>& callbacks,
+                          TrainOptions options,
+                          const bolt::DistributedCommPtr& comm) {
   addBalancingSamples(data);
 
-  auto train_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
-      data, /* shuffle= */ true, /* shuffle_config= */ options.shuffle_config);
+  auto train_data_loader =
+      _featurizer->getDataLoader(data, options.batchSize(), /* shuffle= */ true,
+                                 options.verbose, options.shuffle_config);
 
-  return _classifier->train(train_dataset_loader, learning_rate, epochs,
+  data::LoaderPtr val_data_loader;
+  if (val_data) {
+    val_data_loader = _featurizer->getDataLoader(
+        val_data, defaults::BATCH_SIZE, /* shuffle= */ false, options.verbose);
+  }
+
+  return _classifier->train(train_data_loader, learning_rate, epochs,
                             getMetrics(train_metrics, "train_"),
-                            val_dataset_loader, getMetrics(val_metrics, "val_"),
+                            val_data_loader, getMetrics(val_metrics, "val_"),
                             callbacks, options, comm);
 }
 
-py::object UDTMachClassifier::trainBatch(
-    const MapInputBatch& batch, float learning_rate,
-    const std::vector<std::string>& metrics) {
+py::object UDTMach::trainBatch(const MapInputBatch& batch, float learning_rate,
+                               const std::vector<std::string>& metrics) {
   auto& model = _classifier->model();
 
-  auto [inputs, labels] = _dataset_factory->featurizeTrainingBatch(batch);
+  auto [inputs, labels] = _featurizer->featurizeTrainingBatch(batch);
 
   model->trainOnBatch(inputs, labels);
   model->updateParameters(learning_rate);
@@ -200,14 +189,12 @@ py::object UDTMachClassifier::trainBatch(
   return py::none();
 }
 
-py::object UDTMachClassifier::trainWithHashes(
-    const MapInputBatch& batch, float learning_rate,
-    const std::vector<std::string>& metrics) {
+py::object UDTMach::trainWithHashes(const MapInputBatch& batch,
+                                    float learning_rate,
+                                    const std::vector<std::string>& metrics) {
   auto& model = _classifier->model();
 
-  auto [inputs, labels] =
-      _pre_hashed_labels_dataset_factory->featurizeTrainingBatch(batch);
-  labels.push_back(placeholderDocIds(batch.size()));
+  auto [inputs, labels] = _featurizer->featurizeHashesTrainingBatch(batch);
 
   model->trainOnBatch(inputs, labels);
   model->updateParameters(learning_rate);
@@ -218,23 +205,22 @@ py::object UDTMachClassifier::trainWithHashes(
   return py::none();
 }
 
-py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
-                                       const std::vector<std::string>& metrics,
-                                       bool sparse_inference, bool verbose,
-                                       std::optional<uint32_t> top_k) {
+py::object UDTMach::evaluate(const dataset::DataSourcePtr& data,
+                             const std::vector<std::string>& metrics,
+                             bool sparse_inference, bool verbose,
+                             std::optional<uint32_t> top_k) {
   (void)top_k;
 
-  auto eval_dataset_loader =
-      _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ false);
+  auto data_loader = _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
+                                                /* shuffle= */ false, verbose);
 
-  return _classifier->evaluate(eval_dataset_loader, getMetrics(metrics, "val_"),
+  return _classifier->evaluate(data_loader, getMetrics(metrics, "val_"),
                                sparse_inference, verbose);
 }
 
-py::object UDTMachClassifier::predict(const MapInput& sample,
-                                      bool sparse_inference,
-                                      bool return_predicted_class,
-                                      std::optional<uint32_t> top_k) {
+py::object UDTMach::predict(const MapInput& sample, bool sparse_inference,
+                            bool return_predicted_class,
+                            std::optional<uint32_t> top_k) {
   if (return_predicted_class) {
     throw std::invalid_argument(
         "UDT Extreme Classification does not support the "
@@ -244,16 +230,15 @@ py::object UDTMachClassifier::predict(const MapInput& sample,
   return py::cast(predictImpl({sample}, sparse_inference, top_k).at(0));
 }
 
-std::vector<std::vector<std::pair<uint32_t, double>>>
-UDTMachClassifier::predictImpl(const MapInputBatch& samples,
-                               bool sparse_inference,
-                               std::optional<uint32_t> top_k) {
-  auto outputs = _classifier->model()
-                     ->forward(_dataset_factory->featurizeInputBatch(samples),
-                               sparse_inference)
-                     .at(0);
+std::vector<std::vector<std::pair<uint32_t, double>>> UDTMach::predictImpl(
+    const MapInputBatch& samples, bool sparse_inference,
+    std::optional<uint32_t> top_k) {
+  auto outputs =
+      _classifier->model()
+          ->forward(_featurizer->featurizeInputBatch(samples), sparse_inference)
+          .at(0);
 
-  uint32_t num_classes = _mach_label_block->index()->numEntities();
+  uint32_t num_classes = getIndex()->numEntities();
 
   if (top_k && *top_k > num_classes) {
     throw std::invalid_argument(
@@ -273,7 +258,7 @@ UDTMachClassifier::predictImpl(const MapInputBatch& samples,
     shared(outputs, predicted_entities, k, batch_size) if (batch_size > 1)
   for (uint32_t i = 0; i < batch_size; i++) {
     const BoltVector& vector = outputs->getVector(i);
-    auto predictions = _mach_label_block->index()->decode(
+    auto predictions = getIndex()->decode(
         /* output = */ vector,
         /* top_k = */ k,
         /* num_buckets_to_eval = */ _num_buckets_to_eval);
@@ -283,10 +268,10 @@ UDTMachClassifier::predictImpl(const MapInputBatch& samples,
   return predicted_entities;
 }
 
-py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
-                                           bool sparse_inference,
-                                           bool return_predicted_class,
-                                           std::optional<uint32_t> top_k) {
+py::object UDTMach::predictBatch(const MapInputBatch& samples,
+                                 bool sparse_inference,
+                                 bool return_predicted_class,
+                                 std::optional<uint32_t> top_k) {
   if (return_predicted_class) {
     throw std::invalid_argument(
         "UDT Extreme Classification does not support the "
@@ -296,10 +281,9 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
   return py::cast(predictImpl(samples, sparse_inference, top_k));
 }
 
-py::object UDTMachClassifier::scoreBatch(
-    const MapInputBatch& samples,
-    const std::vector<std::vector<Label>>& classes,
-    std::optional<uint32_t> top_k) {
+py::object UDTMach::scoreBatch(const MapInputBatch& samples,
+                               const std::vector<std::vector<Label>>& classes,
+                               std::optional<uint32_t> top_k) {
   std::vector<std::unordered_set<uint32_t>> entities(classes.size());
   for (uint32_t row = 0; row < classes.size(); row++) {
     entities[row].reserve(classes[row].size());
@@ -312,14 +296,14 @@ py::object UDTMachClassifier::scoreBatch(
   // we score wouldn't otherwise be in the top results, thus their buckets have
   // lower similarity and don't get selected by LSH
   auto outputs = _classifier->model()
-                     ->forward(_dataset_factory->featurizeInputBatch(samples),
+                     ->forward(_featurizer->featurizeInputBatch(samples),
                                /* use_sparsity= */ false)
                      .at(0);
 
   size_t batch_size = samples.size();
   std::vector<std::vector<std::pair<uint32_t, double>>> scores(samples.size());
 
-  const auto& index = _mach_label_block->index();
+  const auto& index = getIndex();
 #pragma omp parallel for default(none) shared( \
     entities, outputs, scores, top_k, batch_size, index) if (batch_size > 1)
   for (uint32_t i = 0; i < batch_size; i++) {
@@ -330,30 +314,31 @@ py::object UDTMachClassifier::scoreBatch(
   return py::cast(scores);
 }
 
-py::object UDTMachClassifier::predictHashes(
-    const MapInput& sample, bool sparse_inference, bool force_non_empty,
-    std::optional<uint32_t> num_hashes) {
+py::object UDTMach::predictHashes(const MapInput& sample, bool sparse_inference,
+                                  bool force_non_empty,
+                                  std::optional<uint32_t> num_hashes) {
   return py::cast(
       predictHashesImpl({sample}, sparse_inference, force_non_empty, num_hashes)
           .at(0));
 }
 
-py::object UDTMachClassifier::predictHashesBatch(
-    const MapInputBatch& samples, bool sparse_inference, bool force_non_empty,
-    std::optional<uint32_t> num_hashes) {
+py::object UDTMach::predictHashesBatch(const MapInputBatch& samples,
+                                       bool sparse_inference,
+                                       bool force_non_empty,
+                                       std::optional<uint32_t> num_hashes) {
   return py::cast(predictHashesImpl(samples, sparse_inference, force_non_empty,
                                     num_hashes));
 }
 
-std::vector<std::vector<uint32_t>> UDTMachClassifier::predictHashesImpl(
+std::vector<std::vector<uint32_t>> UDTMach::predictHashesImpl(
     const MapInputBatch& samples, bool sparse_inference, bool force_non_empty,
     std::optional<uint32_t> num_hashes) {
-  auto outputs = _classifier->model()
-                     ->forward(_dataset_factory->featurizeInputBatch(samples),
-                               sparse_inference)
-                     .at(0);
+  auto outputs =
+      _classifier->model()
+          ->forward(_featurizer->featurizeInputBatch(samples), sparse_inference)
+          .at(0);
 
-  uint32_t k = num_hashes.value_or(_mach_label_block->index()->numHashes());
+  uint32_t k = num_hashes.value_or(getIndex()->numHashes());
 
   std::vector<std::vector<uint32_t>> all_hashes(outputs->batchSize());
 #pragma omp parallel for default(none) \
@@ -363,7 +348,7 @@ std::vector<std::vector<uint32_t>> UDTMachClassifier::predictHashesImpl(
 
     TopKActivationsQueue heap;
     if (force_non_empty) {
-      heap = _mach_label_block->index()->topKNonEmptyBuckets(output, k);
+      heap = getIndex()->topKNonEmptyBuckets(output, k);
     } else {
       heap = output.findKLargestActivations(k);
     }
@@ -383,9 +368,10 @@ std::vector<std::vector<uint32_t>> UDTMachClassifier::predictHashesImpl(
   return all_hashes;
 }
 
-py::object UDTMachClassifier::outputCorrectness(
-    const MapInputBatch& samples, const std::vector<uint32_t>& labels,
-    bool sparse_inference, std::optional<uint32_t> num_hashes) {
+py::object UDTMach::outputCorrectness(const MapInputBatch& samples,
+                                      const std::vector<uint32_t>& labels,
+                                      bool sparse_inference,
+                                      std::optional<uint32_t> num_hashes) {
   std::vector<std::vector<uint32_t>> top_buckets = predictHashesImpl(
       samples, sparse_inference, /* force_non_empty = */ true, num_hashes);
 
@@ -396,8 +382,7 @@ py::object UDTMachClassifier::outputCorrectness(
     shared(labels, top_buckets, matching_buckets, hashes_err)
   for (uint32_t i = 0; i < labels.size(); i++) {
     try {
-      std::vector<uint32_t> hashes =
-          _mach_label_block->index()->getHashes(labels[i]);
+      std::vector<uint32_t> hashes = getIndex()->getHashes(labels[i]);
       uint32_t count = 0;
       for (auto hash : hashes) {
         if (std::count(top_buckets[i].begin(), top_buckets[i].end(), hash) >
@@ -419,7 +404,7 @@ py::object UDTMachClassifier::outputCorrectness(
   return py::cast(matching_buckets);
 }
 
-void UDTMachClassifier::setModel(const ModelPtr& model) {
+void UDTMach::setModel(const ModelPtr& model) {
   bolt::ModelPtr& curr_model = _classifier->model();
 
   utils::verifyCanSetModel(curr_model, model);
@@ -427,51 +412,42 @@ void UDTMachClassifier::setModel(const ModelPtr& model) {
   curr_model = model;
 }
 
-MachInfo UDTMachClassifier::getMachInfo() const {
-  const auto& block_lists = _dataset_factory->featurizer()->blockLists();
-  if (block_lists.size() != 3 || block_lists.at(0).blocks().size() != 1) {
-    throw std::invalid_argument("Unexpected number of blocks in featurizer.");
+py::object UDTMach::coldstart(
+    const dataset::DataSourcePtr& data,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    const dataset::DataSourcePtr& val_data,
+    const std::vector<std::string>& val_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    const bolt::DistributedCommPtr& comm) {
+  addBalancingSamples(data, strong_column_names, weak_column_names);
+
+  auto train_data_loader = _featurizer->getColdStartDataLoader(
+      data, strong_column_names, weak_column_names,
+      /* fast_approximation= */ false, options.batchSize(),
+      /* shuffle= */ true, options.verbose, options.shuffle_config);
+
+  data::LoaderPtr val_data_loader;
+  if (val_data) {
+    val_data_loader =
+        _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
+                                   /* shuffle= */ false, options.verbose);
   }
-  if (!block_lists.at(0).hashRange()) {
-    throw std::invalid_argument(
-        "Invalid parameterization of featurization for conversion.");
-  }
 
-  auto text_block = std::dynamic_pointer_cast<dataset::TextBlock>(
-      block_lists.at(0).blocks().at(0));
-  if (!text_block) {
-    throw std::invalid_argument("Cannot convert non text based models.");
-  }
-
-  MachInfo mach_info;
-
-  mach_info.classifier = _classifier;
-
-  mach_info.text_block = text_block;
-  mach_info.feature_hash_range = block_lists.at(0).hashRange().value();
-
-  mach_info.mach_index = _mach_label_block->index();
-
-  mach_info.text_column_name = textColumnForDocumentIntroduction();
-  mach_info.label_column_name = _mach_label_block->columnName();
-  mach_info.label_delimiter = _mach_label_block->delimiter();
-
-  mach_info.csv_delimiter = _dataset_factory->delimiter();
-
-  mach_info.default_top_k_to_return = _default_top_k_to_return;
-  mach_info.num_buckets_to_eval = _num_buckets_to_eval;
-  mach_info.mach_sampling_threshold = _mach_sampling_threshold;
-
-  return mach_info;
+  return _classifier->train(train_data_loader, learning_rate, epochs,
+                            getMetrics(train_metrics, "train_"),
+                            val_data_loader, getMetrics(val_metrics, "val_"),
+                            callbacks, options, comm);
 }
 
-py::object UDTMachClassifier::embedding(const MapInputBatch& sample) {
-  return _classifier->embedding(_dataset_factory->featurizeInputBatch(sample));
+py::object UDTMach::embedding(const MapInputBatch& sample) {
+  return _classifier->embedding(_featurizer->featurizeInputBatch(sample));
 }
 
-py::object UDTMachClassifier::entityEmbedding(const Label& label) {
+py::object UDTMach::entityEmbedding(const Label& label) {
   std::vector<uint32_t> hashed_neurons =
-      _mach_label_block->index()->getHashes(expectInteger(label));
+      getIndex()->getHashes(expectInteger(label));
 
   auto outputs = _classifier->model()->outputs();
 
@@ -513,24 +489,8 @@ py::object UDTMachClassifier::entityEmbedding(const Label& label) {
   return std::move(np_weights);
 }
 
-std::string UDTMachClassifier::textColumnForDocumentIntroduction() const {
-  if (_dataset_factory->inputDataTypes().size() != 1 ||
-      !asText(_dataset_factory->inputDataTypes().begin()->second)) {
-    throw std::invalid_argument(
-        "Introducing documents can only be used when UDT is configured "
-        "with a "
-        "single text input column and target column. The current model "
-        "is "
-        "configured with " +
-        std::to_string(_dataset_factory->inputDataTypes().size()) +
-        " input columns.");
-  }
-
-  return _dataset_factory->inputDataTypes().begin()->first;
-}
-
-void UDTMachClassifier::updateSamplingStrategy() {
-  auto mach_index = _mach_label_block->index();
+void UDTMach::updateSamplingStrategy() {
+  auto mach_index = getIndex();
 
   auto output_layer = bolt::FullyConnected::cast(
       _classifier->model()->opExecutionOrder().back());
@@ -563,27 +523,67 @@ void UDTMachClassifier::updateSamplingStrategy() {
   }
 }
 
-void UDTMachClassifier::introduceDocument(
+void UDTMach::introduceDocuments(
+    const dataset::DataSourcePtr& data,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names,
+    std::optional<uint32_t> num_buckets_to_sample_opt,
+    uint32_t num_random_hashes, bool fast_approximation, bool verbose) {
+  (void)verbose;
+  // TODO(Nicholas): add progress bar here.
+
+  const auto& mach_index = getIndex();
+
+  auto data_and_doc_ids = _featurizer->featurizeForIntroduceDocuments(
+      data, strong_column_names, weak_column_names, fast_approximation,
+      defaults::BATCH_SIZE);
+
+  uint32_t num_buckets_to_sample =
+      num_buckets_to_sample_opt.value_or(mach_index->numHashes());
+
+  std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>> top_k_per_doc;
+
+  bolt::python::CtrlCCheck ctrl_c_check;
+
+  for (const auto& [input, doc_ids] : data_and_doc_ids) {
+    // Note: using sparse inference here could cause issues because the
+    // mach index sampler will only return nonempty buckets, which could
+    // cause new docs to only be mapped to buckets already containing
+    // entities.
+    auto scores = _classifier->model()->forward(input).at(0);
+
+    for (uint32_t i = 0; i < scores->batchSize(); i++) {
+      uint32_t label = doc_ids[i];
+      top_k_per_doc[label].push_back(
+          scores->getVector(i).findKLargestActivations(num_buckets_to_sample));
+    }
+
+    ctrl_c_check();
+  }
+
+  for (auto& [doc, top_ks] : top_k_per_doc) {
+    auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
+                                  num_random_hashes);
+    mach_index->insert(doc, hashes);
+
+    ctrl_c_check();
+  }
+
+  addBalancingSamples(data, strong_column_names, weak_column_names);
+
+  updateSamplingStrategy();
+}
+
+void UDTMach::introduceDocument(
     const MapInput& document,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes) {
-  std::string text_column_name = textColumnForDocumentIntroduction();
+  auto samples = _featurizer->featurizeInputColdStart(
+      document, strong_column_names, weak_column_names);
 
-  data::ColdStartTextAugmentation augmentation(
-      /* strong_column_names= */ strong_column_names,
-      /* weak_column_names= */ weak_column_names,
-      /* label_column_name= */ _mach_label_block->columnName(),
-      /* output_column_name= */
-      text_column_name);
-
-  MapInputBatch batch;
-  for (const auto& row : augmentation.augmentMapInput(document)) {
-    MapInput input = {{text_column_name, row}};
-    batch.push_back(input);
-  }
-
-  introduceLabel(batch, new_label, num_buckets_to_sample, num_random_hashes);
+  introduceLabelHelper(samples, new_label, num_buckets_to_sample,
+                       num_random_hashes);
 }
 
 struct BucketScore {
@@ -601,10 +601,10 @@ struct CompareBuckets {
   }
 };
 
-std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
+std::vector<uint32_t> UDTMach::topHashesForDoc(
     std::vector<TopKActivationsQueue>&& top_k_per_sample,
     uint32_t num_buckets_to_sample, uint32_t num_random_hashes) const {
-  const auto& mach_index = _mach_label_block->index();
+  const auto& mach_index = getIndex();
 
   uint32_t num_hashes = mach_index->numHashes();
 
@@ -679,7 +679,7 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
     new_hashes.push_back(hash);
   }
 
-  uint32_t num_buckets = _mach_label_block->index()->numBuckets();
+  uint32_t num_buckets = mach_index->numBuckets();
   std::uniform_int_distribution<uint32_t> int_dist(0, num_buckets - 1);
   std::mt19937 rand(global_random::nextSeed());
 
@@ -690,21 +690,27 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
   return new_hashes;
 }
 
-void UDTMachClassifier::introduceLabel(
-    const MapInputBatch& samples, const Label& new_label,
+void UDTMach::introduceLabel(const MapInputBatch& samples,
+                             const Label& new_label,
+                             std::optional<uint32_t> num_buckets_to_sample_opt,
+                             uint32_t num_random_hashes) {
+  introduceLabelHelper(_featurizer->featurizeInputBatch(samples), new_label,
+                       num_buckets_to_sample_opt, num_random_hashes);
+}
+
+void UDTMach::introduceLabelHelper(
+    const bolt::TensorList& samples, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample_opt,
     uint32_t num_random_hashes) {
   // Note: using sparse inference here could cause issues because the
   // mach index sampler will only return nonempty buckets, which could
   // cause new docs to only be mapped to buckets already containing
   // entities.
-  auto output = _classifier->model()
-                    ->forward(_dataset_factory->featurizeInputBatch(samples),
-                              /* use_sparsity = */ false)
-                    .at(0);
+  auto output =
+      _classifier->model()->forward(samples, /* use_sparsity = */ false).at(0);
 
-  uint32_t num_buckets_to_sample = num_buckets_to_sample_opt.value_or(
-      _mach_label_block->index()->numHashes());
+  uint32_t num_buckets_to_sample =
+      num_buckets_to_sample_opt.value_or(getIndex()->numHashes());
 
   std::vector<TopKActivationsQueue> top_ks;
   for (uint32_t i = 0; i < output->batchSize(); i++) {
@@ -715,15 +721,15 @@ void UDTMachClassifier::introduceLabel(
   auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
                                 num_random_hashes);
 
-  _mach_label_block->index()->insert(expectInteger(new_label), hashes);
+  getIndex()->insert(expectInteger(new_label), hashes);
 
   updateSamplingStrategy();
 }
 
-void UDTMachClassifier::forget(const Label& label) {
-  _mach_label_block->index()->erase(expectInteger(label));
+void UDTMach::forget(const Label& label) {
+  getIndex()->erase(expectInteger(label));
 
-  if (_mach_label_block->index()->numEntities() == 0) {
+  if (getIndex()->numEntities() == 0) {
     std::cout << "Warning. Every learned class has been forgotten. The model "
                  "will currently return nothing on calls to evaluate, "
                  "predict, or predictBatch."
@@ -733,42 +739,32 @@ void UDTMachClassifier::forget(const Label& label) {
   updateSamplingStrategy();
 }
 
-void UDTMachClassifier::addBalancingSamples(
-    const dataset::DataSourcePtr& data) {
+void UDTMach::addBalancingSamples(
+    const dataset::DataSourcePtr& data,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names) {
   if (_rlhf_sampler) {
     data->restart();
+
     // TODO(Geordie / Nick) Right now, we only load MAX_BALANCING_SAMPLES
     // samples to avoid the overhead of loading the entire dataset. It's
     // possible this won't load enough samples to cover all classes.
     // We may try to keep streaming data until all classes are covered or load
-    // the entire dataset and see if it makes a difference.
-    auto optional_samples =
-        _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ true)
-            ->loadSome(/* batch_size= */ defaults::MAX_BALANCING_SAMPLES,
-                       /* num_batches= */ 1, /* verbose= */ false);
+    // the entire dataset and see if it makes a difference. For now we just
+    // sample from 5x more rows than we need samples, to hopefully get a wider
+    // range of samples.
+    auto samples = _featurizer->getBalancingSamples(
+        data, strong_column_names, weak_column_names,
+        defaults::MAX_BALANCING_SAMPLES, defaults::MAX_BALANCING_SAMPLES * 5);
 
-    if (!optional_samples) {
-      throw std::invalid_argument("No data found for training.");
-    }
-
-    auto samples = *optional_samples;
-    for (uint32_t i = 0; i < samples.front()->len(); i++) {
-      const BoltVector& doc_id_vec = samples.at(2)->at(0)[i];
-      if (doc_id_vec.len < 1) {
-        continue;
-      }
-
-      uint32_t doc_id = doc_id_vec.active_neurons[0];
-
-      const BoltVector& input = samples.at(0)->at(0)[i];
-      const BoltVector& label = samples.at(1)->at(0)[i];
-      _rlhf_sampler->addSample(doc_id, input, label);
+    for (const auto& [doc_id, rlhf_sample] : samples) {
+      _rlhf_sampler->addSample(doc_id, rlhf_sample);
     }
     data->restart();
   }
 }
 
-void UDTMachClassifier::requireRLHFSampler() {
+void UDTMach::requireRLHFSampler() {
   if (!_rlhf_sampler) {
     throw std::runtime_error(
         "This model was not configured to support rlhf. Please pass "
@@ -777,20 +773,161 @@ void UDTMachClassifier::requireRLHFSampler() {
   }
 }
 
-void UDTMachClassifier::setDecodeParams(uint32_t top_k_to_return,
-                                        uint32_t num_buckets_to_eval) {
+void UDTMach::associate(
+    const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
+    uint32_t n_buckets, uint32_t n_association_samples,
+    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
+  auto teaching_samples =
+      getAssociateSamples(rlhf_samples, n_buckets, n_association_samples);
+
+  teach(teaching_samples, rlhf_samples.size() * n_balancing_samples,
+        learning_rate, epochs);
+}
+
+void UDTMach::upvote(
+    const std::vector<std::pair<std::string, uint32_t>>& rlhf_samples,
+    uint32_t n_upvote_samples, uint32_t n_balancing_samples,
+    float learning_rate, uint32_t epochs) {
+  std::vector<RlhfSample> teaching_samples;
+
+  const auto& mach_index = getIndex();
+
+  teaching_samples.reserve(rlhf_samples.size() * n_upvote_samples);
+  for (const auto& [source, target] : rlhf_samples) {
+    RlhfSample sample = {source, mach_index->getHashes(target)};
+
+    for (size_t i = 0; i < n_upvote_samples; i++) {
+      teaching_samples.push_back(sample);
+    }
+  }
+
+  teach(teaching_samples, rlhf_samples.size() * n_balancing_samples,
+        learning_rate, epochs);
+}
+
+void UDTMach::teach(const std::vector<RlhfSample>& rlhf_samples,
+                    uint32_t n_balancing_samples, float learning_rate,
+                    uint32_t epochs) {
+  requireRLHFSampler();
+
+  auto samples = _rlhf_sampler->balancingSamples(n_balancing_samples);
+
+  samples.insert(samples.end(), rlhf_samples.begin(), rlhf_samples.end());
+
+  auto columns = _featurizer->featurizeRlhfSamples(samples);
+  columns.shuffle();
+  auto [data, labels] =
+      _featurizer->columnsToTensors(columns, defaults::ASSOCIATE_BATCH_SIZE);
+
+  for (uint32_t e = 0; e < epochs; e++) {
+    for (size_t i = 0; i < data.size(); i++) {
+      _classifier->model()->trainOnBatch(data.at(i), labels.at(i));
+      _classifier->model()->updateParameters(learning_rate);
+    }
+  }
+}
+
+std::vector<RlhfSample> UDTMach::getAssociateSamples(
+    const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
+    size_t n_buckets, size_t n_association_samples) {
+  std::string text_column = _featurizer->textDatasetConfig().textColumn();
+  MapInputBatch batch;
+  for (const auto& [_, target] : rlhf_samples) {
+    batch.push_back({{text_column, target}});
+  }
+
+  auto all_predicted_hashes = predictHashesImpl(
+      batch, /* sparse_inference = */ false, /* force_non_empty = */ true);
+
+  std::mt19937 rng(global_random::nextSeed());
+
+  std::vector<RlhfSample> associate_samples;
+  associate_samples.reserve(rlhf_samples.size() * n_association_samples);
+
+  for (size_t i = 0; i < rlhf_samples.size(); i++) {
+    for (size_t j = 0; j < n_association_samples; j++) {
+      const auto& all_buckets = rlhf_samples[i].second;
+      std::vector<uint32_t> sampled_buckets;
+      std::sample(all_buckets.begin(), all_buckets.end(),
+                  std::back_inserter(sampled_buckets), n_buckets, rng);
+
+      associate_samples.emplace_back(rlhf_samples[i].first,
+                                     all_predicted_hashes[i]);
+    }
+  }
+
+  return associate_samples;
+}
+
+py::object UDTMach::associateTrain(
+    const dataset::DataSourcePtr& balancing_data,
+    const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
+    uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& metrics,
+    TrainOptions options) {
+  return associateColdStart(balancing_data, {}, {}, rlhf_samples, n_buckets,
+                            n_association_samples, learning_rate, epochs,
+                            metrics, options);
+}
+
+py::object UDTMach::associateColdStart(
+    const dataset::DataSourcePtr& balancing_data,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names,
+    const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
+    uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& metrics,
+    TrainOptions options) {
+  warnOnNonHashBasedMetrics(metrics);
+
+  // TODO(nicholas): make sure max_in_memory_batches is none
+
+  auto featurized_data = _featurizer->featurizeDataset(
+      balancing_data, strong_column_names, weak_column_names);
+
+  auto associate_samples =
+      getAssociateSamples(rlhf_samples, n_buckets, n_association_samples);
+
+  auto featurized_rlhf_data =
+      _featurizer->featurizeRlhfSamples(associate_samples);
+
+  auto columns = featurized_data.concat(featurized_rlhf_data);
+  columns.shuffle();
+
+  auto dataset = _featurizer->columnsToTensors(columns, options.batchSize());
+
+  bolt::Trainer trainer(_classifier->model());
+
+  auto output_metrics =
+      trainer.train(/* train_data= */ dataset,
+                    /* learning_rate= */ learning_rate, /* epochs= */ epochs,
+                    /* train_metrics= */ getMetrics(metrics, "train_"),
+                    /* validation_data= */ {},
+                    /* validation_metrics= */ {},
+                    /* steps_per_validation= */ {},
+                    /* use_sparsity_in_validation= */ false,
+                    /* callbacks= */ {},
+                    /* autotune_rehash_rebuild= */ true,
+                    /* verbose= */ options.verbose,
+                    /* logging_interval= */ options.logging_interval);
+
+  return py::cast(output_metrics);
+}
+
+void UDTMach::setDecodeParams(uint32_t top_k_to_return,
+                              uint32_t num_buckets_to_eval) {
   if (top_k_to_return == 0 || num_buckets_to_eval == 0) {
     throw std::invalid_argument("Params must not be 0.");
   }
 
-  uint32_t num_buckets = _mach_label_block->index()->numBuckets();
+  uint32_t num_buckets = getIndex()->numBuckets();
   if (num_buckets_to_eval > num_buckets) {
     throw std::invalid_argument(
         "Cannot eval with num_buckets_to_eval greater than " +
         std::to_string(num_buckets) + ".");
   }
 
-  uint32_t num_classes = _mach_label_block->index()->numEntities();
+  uint32_t num_classes = getIndex()->numEntities();
   if (top_k_to_return > num_classes) {
     throw std::invalid_argument(
         "Cannot return more results than the model is trained to "
@@ -803,20 +940,20 @@ void UDTMachClassifier::setDecodeParams(uint32_t top_k_to_return,
   _num_buckets_to_eval = num_buckets_to_eval;
 }
 
-void UDTMachClassifier::setIndex(const dataset::mach::MachIndexPtr& index) {
+void UDTMach::setIndex(const dataset::mach::MachIndexPtr& index) {
   // block allows indexes with different number of hashes but not output ranges
-  _mach_label_block->setIndex(index);
+  _featurizer->state()->setMachIndex(index);
 
   updateSamplingStrategy();
 }
 
-void UDTMachClassifier::setMachSamplingThreshold(float threshold) {
+void UDTMach::setMachSamplingThreshold(float threshold) {
   _mach_sampling_threshold = threshold;
   updateSamplingStrategy();
 }
 
-InputMetrics UDTMachClassifier::getMetrics(
-    const std::vector<std::string>& metric_names, const std::string& prefix) {
+InputMetrics UDTMach::getMetrics(const std::vector<std::string>& metric_names,
+                                 const std::string& prefix) {
   const auto& model = _classifier->model();
   if (model->outputs().size() != 1 || model->labels().size() != 2 ||
       model->losses().size() != 1) {
@@ -835,13 +972,11 @@ InputMetrics UDTMachClassifier::getMetrics(
     if (std::regex_match(name, std::regex("precision@[1-9]\\d*"))) {
       uint32_t k = std::strtoul(name.data() + 10, nullptr, 10);
       metrics[prefix + name] = std::make_shared<MachPrecision>(
-          _mach_label_block->index(), _num_buckets_to_eval, output,
-          true_class_labels, k);
+          getIndex(), _num_buckets_to_eval, output, true_class_labels, k);
     } else if (std::regex_match(name, std::regex("recall@[1-9]\\d*"))) {
       uint32_t k = std::strtoul(name.data() + 7, nullptr, 10);
       metrics[prefix + name] = std::make_shared<MachRecall>(
-          _mach_label_block->index(), _num_buckets_to_eval, output,
-          true_class_labels, k);
+          getIndex(), _num_buckets_to_eval, output, true_class_labels, k);
     } else if (std::regex_match(name, std::regex("hash_precision@[1-9]\\d*"))) {
       uint32_t k = std::strtoul(name.data() + 15, nullptr, 10);
       metrics[prefix + name] =
@@ -862,7 +997,7 @@ InputMetrics UDTMachClassifier::getMetrics(
   return metrics;
 }
 
-void UDTMachClassifier::warnOnNonHashBasedMetrics(
+void UDTMach::warnOnNonHashBasedMetrics(
     const std::vector<std::string>& metrics) {
   for (const auto& metric : metrics) {
     if (!std::regex_match(metric, std::regex("((hash_)|(loss)).*"))) {
@@ -874,18 +1009,18 @@ void UDTMachClassifier::warnOnNonHashBasedMetrics(
   }
 }
 
-bolt::TensorPtr UDTMachClassifier::placeholderDocIds(uint32_t batch_size) {
+bolt::TensorPtr UDTMach::placeholderDocIds(uint32_t batch_size) {
   return bolt::Tensor::sparse(batch_size, std::numeric_limits<uint32_t>::max(),
                               /* nonzeros= */ 1);
 }
 
-template void UDTMachClassifier::serialize(cereal::BinaryInputArchive&,
-                                           const uint32_t version);
-template void UDTMachClassifier::serialize(cereal::BinaryOutputArchive&,
-                                           const uint32_t version);
+template void UDTMach::serialize(cereal::BinaryInputArchive&,
+                                 const uint32_t version);
+template void UDTMach::serialize(cereal::BinaryOutputArchive&,
+                                 const uint32_t version);
 
 template <class Archive>
-void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
+void UDTMach::serialize(Archive& archive, const uint32_t version) {
   std::string thirdai_version = thirdai::version();
   archive(thirdai_version);
   std::string class_name = "UDT_MACH_CLASSIFIER";
@@ -894,14 +1029,13 @@ void UDTMachClassifier::serialize(Archive& archive, const uint32_t version) {
 
   // Increment thirdai::versions::UDT_MACH_CLASSIFIER_VERSION after
   // serialization changes
-  archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
-          _dataset_factory, _pre_hashed_labels_dataset_factory,
+  archive(cereal::base_class<UDTBackend>(this), _classifier, _featurizer,
           _default_top_k_to_return, _num_buckets_to_eval,
           _mach_sampling_threshold, _rlhf_sampler);
 }
 
 }  // namespace thirdai::automl::udt
 
-CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTMachClassifier)
-CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTMachClassifier,
+CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTMach)
+CEREAL_CLASS_VERSION(thirdai::automl::udt::UDTMach,
                      thirdai::versions::UDT_MACH_CLASSIFIER_VERSION)
