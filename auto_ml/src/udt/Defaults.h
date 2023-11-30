@@ -19,7 +19,7 @@ constexpr bool FREEZE_HASH_TABLES = true;
 constexpr bool USE_SIGMOID_BCE = false;
 
 // Whether the hidden layer has a bias
-constexpr bool HIDDEN_BIAS = true;
+constexpr bool HIDDEN_BIAS = false;
 
 // Whether the output layer has a bias
 constexpr bool OUTPUT_BIAS = true;
