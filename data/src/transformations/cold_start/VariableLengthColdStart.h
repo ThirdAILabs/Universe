@@ -17,7 +17,7 @@ struct VariableLengthConfig {
       uint32_t num_slices = 7, bool add_whole_doc = true,
       bool prefilter_punctuation = true, uint32_t strong_sample_num_words = 3,
       float stopword_removal_probability = 0,
-      float stopword_insertion_probability = 0,
+      float stopword_insertion_probability = 0.15,
       float word_removal_probability = 0,
       float word_perturbation_probability = 0);
 

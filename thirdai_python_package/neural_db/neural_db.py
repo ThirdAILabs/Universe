@@ -188,7 +188,7 @@ class SupDataSource(PyDataSource):
 
 class NeuralDB:
     def __init__(
-        self, user_id: str = "user", number_models: int = 1, mach=True, **kwargs
+        self, user_id: str = "user", number_models: int = 1, **kwargs
     ) -> None:
         """user_id is used for logging purposes only"""
         self._user_id: str = user_id
@@ -211,10 +211,8 @@ class NeuralDB:
                     query_col="query",
                     **kwargs,
                 )
-            elif mach:
-                model = Mach(id_col="id", query_col="query", **kwargs)
             else:
-                model = Standard(id_col="id", query_col="query", **kwargs)
+                model = Mach(id_col="id", query_col="query", **kwargs)
             self._savable_state = State(
                 model, logger=loggers.LoggerList([loggers.InMemoryLogger()])
             )
@@ -529,7 +527,6 @@ class NeuralDB:
         on_error: Callable = None,
         cancel_state: CancelState = None,
         max_in_memory_batches: int = None,
-        variable_length = None,
     ) -> List[str]:
         """Inserts sources into the database.
         fast_approximation: much faster insertion with a slight drop in
@@ -559,7 +556,6 @@ class NeuralDB:
             on_progress=on_progress,
             cancel_state=cancel_state,
             max_in_memory_batches=max_in_memory_batches,
-            variable_length=variable_length,
         )
         self._savable_state.logger.log(
             session_id=self._user_id,
