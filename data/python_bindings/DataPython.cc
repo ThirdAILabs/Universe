@@ -387,9 +387,8 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("strong_max_len") = std::nullopt,
            py::arg("strong_sample_num_words") = std::nullopt,
            py::arg("seed") = 42803)
-      //  .def("augment_single_row",
-      //  &ColdStartTextAugmentation::augmentSingleRow,
-      //       py::arg("strong_text"), py::arg("weak_text"), py::arg("doc_id"))
+     //  .def("augment_single_row", &ColdStartTextAugmentation::augmentSingleRow,
+     //       py::arg("strong_text"), py::arg("weak_text"), py::arg("doc_id"))
       .def("augment_map_input", &ColdStartTextAugmentation::augmentMapInput,
            py::arg("document"));
 
@@ -416,11 +415,11 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("stopword_insertion_probability") = 0,
            py::arg("word_removal_probability") = 0,
            py::arg("word_perturbation_probability") = 0,
-           py::arg("common_word_removal_probability"),
-           py::arg("common_word_insertion_probability"),
-           py::arg("common_words"),
-           py::arg("uncommon_doc_word_insertion_probability"),
-           py::arg("uncommon_words"))
+           py::arg("uncommon_word_removal_probability"),
+           py::arg("uncommon_word_insertion_probability"),
+           py::arg("uncommon_words"),
+           py::arg("common_doc_word_insertion_probability"),
+           py::arg("common_words"))
 #endif
       ;
 
@@ -434,8 +433,8 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("label_column"), py::arg("output_column"),
            py::arg("config") = VariableLengthConfig(),
            py::arg("seed") = global_random::nextSeed());
-  //  .def("augment_single_row", &VariableLengthColdStart::augmentSingleRow,
-  //       py::arg("strong_text"), py::arg("weak_text"));
+     //  .def("augment_single_row", &VariableLengthColdStart::augmentSingleRow,
+     //       py::arg("strong_text"), py::arg("weak_text"));
 
   py::class_<MachLabel, Transformation, std::shared_ptr<MachLabel>>(
       transformations_submodule, "MachLabel")

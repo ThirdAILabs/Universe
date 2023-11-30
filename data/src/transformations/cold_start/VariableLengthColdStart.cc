@@ -15,12 +15,12 @@ VariableLengthConfig::VariableLengthConfig(
     bool add_whole_doc, bool prefilter_punctuation,
     uint32_t strong_sample_num_words, float stopword_removal_probability,
     float stopword_insertion_probability, float word_removal_probability,
-    float word_perturbation_probability, float common_word_removal_probability,
-    float common_word_insertion_probability,
-    std::unordered_set<std::string> common_words,
-    float uncommon_doc_word_insertion_probability,
-    std::unordered_map<uint32_t, std::unordered_set<std::string>>
-        uncommon_words)
+    float word_perturbation_probability,
+    float uncommon_word_removal_probability,
+    float uncommon_word_insertion_probability,
+    std::unordered_set<std::string> uncommon_words,
+    float common_doc_word_insertion_probability,
+    std::unordered_map<uint32_t, std::unordered_set<std::string>> common_words)
     : covering_min_length(covering_min_length),
       covering_max_length(covering_max_length),
       max_covering_samples(max_covering_samples),
@@ -34,12 +34,12 @@ VariableLengthConfig::VariableLengthConfig(
       stopword_insertion_probability(stopword_insertion_probability),
       word_removal_probability(word_removal_probability),
       word_perturbation_probability(word_perturbation_probability),
-      common_word_removal_probability(common_word_removal_probability),
-      common_word_insertion_probability(common_word_insertion_probability),
-      common_words(std::move(common_words)),
-      uncommon_doc_word_insertion_probability(
-          uncommon_doc_word_insertion_probability),
-      uncommon_words(std::move(uncommon_words)) {
+      uncommon_word_removal_probability(uncommon_word_removal_probability),
+      uncommon_word_insertion_probability(uncommon_word_insertion_probability),
+      uncommon_words(std::move(uncommon_words)),
+      common_doc_word_insertion_probability(
+          common_doc_word_insertion_probability),
+      common_words(std::move(common_words)) {
   utils::validateGreaterThanZero(covering_min_length, "covering_min_length");
   utils::validateGreaterThanZero(covering_max_length, "covering_max_length");
   utils::validateGreaterThanZero(slice_min_length, "slice_min_length");
@@ -214,24 +214,24 @@ std::string VariableLengthColdStart::convertPhraseToText(
       }
     }
 
-    if (dist(rng) < _config.common_word_removal_probability &&
-        _config.common_words.count(word)) {
+    if (dist(rng) < _config.uncommon_word_removal_probability &&
+        _config.uncommon_words.count(word)) {
       continue;
     }
 
     // decide to randomly insert an uncommon word
-    if (dist(rng) < _config.common_word_insertion_probability) {
+    if (dist(rng) < _config.uncommon_word_insertion_probability) {
       std::string element;
-      std::sample(_config.common_words.begin(), _config.common_words.end(),
+      std::sample(_config.uncommon_words.begin(), _config.uncommon_words.end(),
                   &element, 1, rng);
       output_text.append(element);
       output_text.push_back(' ');
     }
 
-    if (dist(rng) < _config.uncommon_doc_word_insertion_probability) {
+    if (dist(rng) < _config.common_doc_word_insertion_probability) {
       std::string element;
-      std::sample(_config.uncommon_words.at(doc_id).begin(),
-                  _config.uncommon_words.at(doc_id).end(), &element, 1, rng);
+      std::sample(_config.common_words.at(doc_id).begin(),
+                  _config.common_words.at(doc_id).end(), &element, 1, rng);
       output_text.append(element);
       output_text.push_back(' ');
     }
