@@ -19,13 +19,7 @@ struct VariableLengthConfig {
       float stopword_removal_probability = 0,
       float stopword_insertion_probability = 0,
       float word_removal_probability = 0,
-      float word_perturbation_probability = 0,
-      float uncommon_word_removal_probability = 0,
-      float uncommon_word_insertion_probability = 0,
-      std::unordered_set<std::string> uncommon_words = {},
-      float common_doc_word_insertion_probability = 0,
-      std::unordered_map<uint32_t, std::unordered_set<std::string>>
-          common_words = {});
+      float word_perturbation_probability = 0);
 
   size_t covering_min_length;
   size_t covering_max_length;
@@ -40,12 +34,6 @@ struct VariableLengthConfig {
   float stopword_insertion_probability;
   float word_removal_probability;
   float word_perturbation_probability;
-
-  float uncommon_word_removal_probability;
-  float uncommon_word_insertion_probability;
-  std::unordered_set<std::string> uncommon_words;
-  float common_doc_word_insertion_probability;
-  std::unordered_map<uint32_t, std::unordered_set<std::string>> common_words;
 };
 
 class VariableLengthColdStart : public cold_start::TextAugmentationBase {
@@ -61,9 +49,8 @@ class VariableLengthColdStart : public cold_start::TextAugmentationBase {
    * Helper method to perform the augmentation of a single row in the input.
    * Returns the augmented phrases from that input row as strings.
    */
-  std::vector<std::string> augmentSingleRow(const std::string& strong_text,
-                                            const std::string& weak_text,
-                                            uint32_t doc_id) const final;
+  std::vector<std::string> augmentSingleRow(
+      const std::string& strong_text, const std::string& weak_text) const final;
 
  private:
   /**
@@ -82,12 +69,12 @@ class VariableLengthColdStart : public cold_start::TextAugmentationBase {
                                     std::optional<size_t> max_len_opt,
                                     uint32_t num_slices, uint32_t seed);
 
-  std::string convertPhraseToText(const std::vector<std::string>& phrase,
-                                  float stopword_removal_probability,
-                                  float stopword_insertion_probability,
-                                  float word_removal_probability,
-                                  float word_perturbation_probability,
-                                  uint32_t doc_id, uint32_t seed) const;
+  static std::string convertPhraseToText(const std::vector<std::string>& phrase,
+                                         float stopword_removal_probability,
+                                         float stopword_insertion_probability,
+                                         float word_removal_probability,
+                                         float word_perturbation_probability,
+                                         uint32_t seed);
 
   VariableLengthConfig _config;
 };
