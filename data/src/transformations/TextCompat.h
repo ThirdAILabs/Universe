@@ -28,6 +28,12 @@ class TextCompat final : public Transformation {
 
  private:
   inline uint32_t mimicHashedFeatureVector(uint32_t index) const {
+    /*
+     * In BlockInterface.h the method addVectorSegment calls
+     * addFeatureSegment before addSparseFeatureToSegment is called. This call
+     * to addFeatureSegment increments the count of _n_segments_added, thus we
+     * combine hashes with 1 instead of 0.
+     */
     return hashing::combineHashes(index % _encoding_dim, 1) % _feature_hash_dim;
   }
 
