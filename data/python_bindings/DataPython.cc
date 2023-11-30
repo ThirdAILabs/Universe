@@ -393,6 +393,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("document"));
 
 #endif
+
   py::class_<VariableLengthConfig,
              std::shared_ptr<VariableLengthConfig>>(  // NOLINT
       transformations_submodule, "VariableLengthConfig")
@@ -413,9 +414,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("word_removal_probability") = 0,
            py::arg("word_perturbation_probability") = 0)
 #else
-      .def(py::init<size_t, size_t, std::optional<uint32_t>, size_t,
-                    std::optional<size_t>, uint32_t, bool, bool, uint32_t,
-                    float, float, float, float>())
+      .def(py::init<>())
 #endif
       ;
 
