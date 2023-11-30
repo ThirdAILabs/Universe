@@ -21,6 +21,7 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/mach/MachBlock.h>
 #include <pybind11/cast.h>
@@ -429,7 +430,12 @@ void UDTMachClassifier::setModel(const ModelPtr& model) {
 
 MachInfo UDTMachClassifier::getMachInfo() const {
   const auto& block_lists = _dataset_factory->featurizer()->blockLists();
-  if (block_lists.size() != 3 || block_lists.at(0).blocks().size() != 1) {
+
+  // One text block + tabular hashed features is always added.
+  if (block_lists.size() != 3 || block_lists.at(0).blocks().size() != 2) {
+    std::cerr << "n block lists: " << block_lists.size() << std::endl;
+    std::cerr << "blocks in first list: " << block_lists.at(0).blocks().size()
+              << std::endl;
     throw std::invalid_argument("Unexpected number of blocks in featurizer.");
   }
   if (!block_lists.at(0).hashRange()) {
@@ -439,6 +445,11 @@ MachInfo UDTMachClassifier::getMachInfo() const {
 
   auto text_block = std::dynamic_pointer_cast<dataset::TextBlock>(
       block_lists.at(0).blocks().at(0));
+
+  if (!std::dynamic_pointer_cast<dataset::TabularHashFeatures>(
+          block_lists.at(0).blocks().at(1))) {
+    throw std::invalid_argument("Invalid combinations of blocks.");
+  }
   if (!text_block) {
     throw std::invalid_argument("Cannot convert non text based models.");
   }
