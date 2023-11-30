@@ -24,7 +24,7 @@ class MachMixture(Model):
         query_col: str = "QUERY",
         fhr: int = 50_000,
         embedding_dimension: int = 2048,
-        extreme_output_dim: int = 10_000,  # for Mach Mixture, we use default dim of 10k
+        extreme_output_dim: int = 20_000,  # for Mach Mixture, we use default dim of 10k
         model_config=None,
         label_to_segment_map: defaultdict = None,
         seed_for_sharding: int = 0,

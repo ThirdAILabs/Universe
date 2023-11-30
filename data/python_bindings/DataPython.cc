@@ -396,7 +396,6 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   py::class_<VariableLengthConfig,
              std::shared_ptr<VariableLengthConfig>>(  // NOLINT
       transformations_submodule, "VariableLengthConfig")
-#if THIRDAI_EXPOSE_ALL
       .def(py::init<size_t, size_t, std::optional<uint32_t>, size_t,
                     std::optional<size_t>, uint32_t, bool, bool, uint32_t,
                     float, float, float, float>(),
@@ -412,7 +411,6 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("stopword_insertion_probability") = 0,
            py::arg("word_removal_probability") = 0,
            py::arg("word_perturbation_probability") = 0)
-#endif
       ;
 
 #if THIRDAI_EXPOSE_ALL
