@@ -408,6 +408,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/Binning.cc
     data/src/transformations/StringHash.cc
     data/src/transformations/TextTokenizer.cc
+    data/src/transformations/TextCompat.cc
     data/src/transformations/ColdStartText.cc
     data/src/transformations/FeatureHash.cc
     data/src/transformations/Tabular.cc
