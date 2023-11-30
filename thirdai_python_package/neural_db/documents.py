@@ -28,6 +28,7 @@ from .connectors import SalesforceConnector, SharePointConnector, SQLConnector
 from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
 from .parsing_utils import doc_parse, pdf_parse, sliding_pdf_parse, url_parse
 from .utils import hash_file, hash_string, requires_condition
+import time
 
 
 class Reference:
@@ -194,6 +195,7 @@ class DocumentDataSource(PyDataSource):
         self.weak_column = weak_column
         self._size = 0
         self.restart()
+        self.csv_line_time = 0
 
     def add(self, document: Document, start_id: int):
         self.documents.append((document, start_id))
@@ -210,6 +212,7 @@ class DocumentDataSource(PyDataSource):
         return self._size
 
     def _csv_line(self, element_id: str, strong: str, weak: str):
+        start = time.time()
         df = pd.DataFrame(
             {
                 self.id_column: [element_id],
@@ -218,14 +221,19 @@ class DocumentDataSource(PyDataSource):
             }
         )
 
-        return df.to_csv(header=None, index=None).strip("\n")
+        csv_line = df.to_csv(header=None, index=None).strip("\n")
+        self.csv_line_time += time.time() - start
+        return csv_line
 
     def _get_line_iterator(self):
+        start_iter = time.time()
         # First yield the header
         yield self._csv_line(self.id_column, self.strong_column, self.weak_column)
         # Then yield rows
         for row in self.row_iterator():
             yield self._csv_line(element_id=row.id, strong=row.strong, weak=row.weak)
+        print("Iteration time (probably includes C++ time)", time.time() - start_iter)
+        print("Csv line time", self.csv_line_time)
 
     def resource_name(self) -> str:
         return "Documents:\n" + "\n".join([doc.name for doc, _ in self.documents])
