@@ -416,11 +416,11 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("stopword_insertion_probability") = 0,
            py::arg("word_removal_probability") = 0,
            py::arg("word_perturbation_probability") = 0,
-           py::arg("common_word_removal_probability"),
-           py::arg("common_word_insertion_probability"),
-           py::arg("common_words"),
-           py::arg("uncommon_doc_word_insertion_probability"),
-           py::arg("uncommon_words"))
+           py::arg("common_word_removal_probability") = 0,
+           py::arg("common_word_insertion_probability") = 0,
+           py::arg("common_words") = std::unordered_set<std::string>(),
+           py::arg("uncommon_doc_word_insertion_probability") = 0,
+           py::arg("uncommon_words") = std::unordered_map<uint32_t, std::unordered_set<std::string>>())
 #endif
       ;
 
