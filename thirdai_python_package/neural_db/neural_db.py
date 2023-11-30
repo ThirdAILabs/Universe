@@ -187,9 +187,7 @@ class SupDataSource(PyDataSource):
 
 
 class NeuralDB:
-    def __init__(
-        self, user_id: str = "user", number_models: int = 1, **kwargs
-    ) -> None:
+    def __init__(self, user_id: str = "user", number_models: int = 1, **kwargs) -> None:
         """user_id is used for logging purposes only"""
         self._user_id: str = user_id
 
