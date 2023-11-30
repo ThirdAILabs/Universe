@@ -15,7 +15,12 @@ VariableLengthConfig::VariableLengthConfig(
     bool add_whole_doc, bool prefilter_punctuation,
     uint32_t strong_sample_num_words, float stopword_removal_probability,
     float stopword_insertion_probability, float word_removal_probability,
-    float word_perturbation_probability)
+    float word_perturbation_probability,
+    float uncommon_word_removal_probability,
+    float uncommon_word_insertion_probability,
+    std::unordered_set<std::string> uncommon_words,
+    float common_doc_word_insertion_probability,
+    std::unordered_map<uint32_t, std::unordered_set<std::string>> common_words)
     : covering_min_length(covering_min_length),
       covering_max_length(covering_max_length),
       max_covering_samples(max_covering_samples),
@@ -28,7 +33,13 @@ VariableLengthConfig::VariableLengthConfig(
       stopword_removal_probability(stopword_removal_probability),
       stopword_insertion_probability(stopword_insertion_probability),
       word_removal_probability(word_removal_probability),
-      word_perturbation_probability(word_perturbation_probability) {
+      word_perturbation_probability(word_perturbation_probability),
+      uncommon_word_removal_probability(uncommon_word_removal_probability),
+      uncommon_word_insertion_probability(uncommon_word_insertion_probability),
+      uncommon_words(std::move(uncommon_words)),
+      common_doc_word_insertion_probability(
+          common_doc_word_insertion_probability),
+      common_words(std::move(common_words)) {
   utils::validateGreaterThanZero(covering_min_length, "covering_min_length");
   utils::validateGreaterThanZero(covering_max_length, "covering_max_length");
   utils::validateGreaterThanZero(slice_min_length, "slice_min_length");
@@ -68,7 +79,8 @@ VariableLengthColdStart::VariableLengthColdStart(
       _config(config) {}
 
 std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
-    const std::string& strong_text, const std::string& weak_text) const {
+    const std::string& strong_text, const std::string& weak_text,
+    uint32_t doc_id) const {
   Phrase strong_phrase = cold_start::getStrongPhrase(strong_text);
   PhraseCollection phrases = getWeakPhrases(weak_text);
   phrases = cold_start::mergeStrongWithWeak(
@@ -76,11 +88,11 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
 
   std::vector<std::string> output_samples;
   for (const auto& phrase : phrases) {
-    std::string output_text =
-        convertPhraseToText(phrase, _config.stopword_removal_probability,
-                            _config.stopword_insertion_probability,
-                            _config.word_removal_probability,
-                            _config.word_perturbation_probability, _seed);
+    std::string output_text = convertPhraseToText(
+        phrase, _config.stopword_removal_probability,
+        _config.stopword_insertion_probability,
+        _config.word_removal_probability, _config.word_perturbation_probability,
+        doc_id, _seed);
 
     if (!output_text.empty()) {
       output_samples.push_back(output_text);
@@ -177,7 +189,7 @@ void VariableLengthColdStart::addRandomSlicePhrases(
 std::string VariableLengthColdStart::convertPhraseToText(
     const std::vector<std::string>& phrase, float stopword_removal_probability,
     float stopword_insertion_probability, float word_removal_probability,
-    float word_perturbation_probability, uint32_t seed) {
+    float word_perturbation_probability, uint32_t doc_id, uint32_t seed) const {
   std::mt19937 rng(seed);
   std::uniform_real_distribution<float> dist(0.0, 1.0);
   std::string output_text;
@@ -200,6 +212,28 @@ std::string VariableLengthColdStart::convertPhraseToText(
       } else {
         word = word.substr(0, word.length() - 1);
       }
+    }
+
+    if (dist(rng) < _config.uncommon_word_removal_probability &&
+        _config.uncommon_words.count(word)) {
+      continue;
+    }
+
+    // decide to randomly insert an uncommon word
+    if (dist(rng) < _config.uncommon_word_insertion_probability) {
+      std::string element;
+      std::sample(_config.uncommon_words.begin(), _config.uncommon_words.end(),
+                  &element, 1, rng);
+      output_text.append(element);
+      output_text.push_back(' ');
+    }
+
+    if (dist(rng) < _config.common_doc_word_insertion_probability) {
+      std::string element;
+      std::sample(_config.common_words.at(doc_id).begin(),
+                  _config.common_words.at(doc_id).end(), &element, 1, rng);
+      output_text.append(element);
+      output_text.push_back(' ');
     }
 
     // add the word

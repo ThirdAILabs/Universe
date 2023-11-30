@@ -78,7 +78,9 @@ void ColdStartTextAugmentation::validateGreaterThanZero(
 }
 
 std::vector<std::string> ColdStartTextAugmentation::augmentSingleRow(
-    const std::string& strong_text, const std::string& weak_text) const {
+    const std::string& strong_text, const std::string& weak_text,
+    uint32_t doc_id) const {
+  (void)doc_id;
   // Now that we have both the weak and strong text, pass them into the
   // phrase generation pipeline to self-supervised (label, phrase) pairs.
   Phrase strong_phrase =
@@ -200,7 +202,7 @@ std::vector<std::string> ColdStartTextAugmentation::augmentMapInput(
     weak_text.append(". ");
   }
 
-  return augmentSingleRow(strong_text, weak_text);
+  return augmentSingleRow(strong_text, weak_text, 0);
 }
 
 }  // namespace thirdai::data
