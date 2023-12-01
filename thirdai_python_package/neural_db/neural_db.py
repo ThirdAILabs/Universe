@@ -576,19 +576,25 @@ class NeuralDB:
         self._savable_state.model.forget_documents()
 
     def search(
-        self, query: str, top_k: int, constraints=None, rerank=False
+        self,
+        query: str,
+        top_k: int,
+        constraints=None,
+        rerank=False,
+        top_k_rerank=100,
     ) -> List[Reference]:
         matching_entities = None
+        top_k_to_search = top_k_rerank if rerank else top_k
         if constraints:
             matching_entities = self._savable_state.documents.entity_ids_by_constraints(
                 constraints
             )
             result_ids = self._savable_state.model.score(
-                samples=[query], entities=[matching_entities], n_results=top_k
+                samples=[query], entities=[matching_entities], n_results=top_k_to_search
             )[0]
         else:
             result_ids = self._savable_state.model.infer_labels(
-                samples=[query], n_results=top_k
+                samples=[query], n_results=top_k_to_search
             )[0]
 
         references = []
@@ -600,7 +606,7 @@ class NeuralDB:
         if rerank:
             ranker = thirdai.dataset.KeywordOverlapRanker()
             indices, scores = ranker.rank(query, [ref.text for ref in references])
-            references = [references[i] for i in indices]
+            references = [references[i] for i in indices[:top_k]]
             for i in range(len(references)):
                 references[i]._score = scores[i]
 
