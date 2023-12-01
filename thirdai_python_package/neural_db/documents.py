@@ -1175,7 +1175,7 @@ class SQLDatabase(DocumentConnector):
         try:
             row = chunk.iloc[id_in_chunk]
             return " ".join(
-                [str(row[col]).replace(",", "") for col in self.get_strong_columns()]
+                [str(row[col]) for col in self.get_strong_columns()]
             )
         except Exception as e:
             return ""
@@ -1184,7 +1184,7 @@ class SQLDatabase(DocumentConnector):
         try:
             row = chunk.iloc[id_in_chunk]
             return " ".join(
-                [str(row[col]).replace(",", "") for col in self.get_weak_columns()]
+                [str(row[col]) for col in self.get_weak_columns()]
             )
         except Exception as e:
             return ""
@@ -1680,7 +1680,7 @@ class SalesForce(DocumentConnector):
         try:
             row = chunk.iloc[id_in_chunk]
             return " ".join(
-                [str(row[col]).replace(",", "") for col in self.get_strong_columns()]
+                [str(row[col]) for col in self.get_strong_columns()]
             )
         except Exception as e:
             return ""
@@ -1689,7 +1689,7 @@ class SalesForce(DocumentConnector):
         try:
             row = chunk.iloc[id_in_chunk]
             return " ".join(
-                [str(row[col]).replace(",", "") for col in self.get_weak_columns()]
+                [str(row[col]) for col in self.get_weak_columns()]
             )
         except Exception as e:
             return ""
