@@ -1,8 +1,8 @@
 import os
 import shutil
+from collections import defaultdict
 from io import StringIO
 from pathlib import Path
-from collections import defaultdict
 
 import pandas as pd
 import pytest
