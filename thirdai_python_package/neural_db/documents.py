@@ -384,7 +384,9 @@ class CSV(Document):
         self.orig_to_assigned_id = None
         self.id_column = id_column
         orig_id_column = id_column
-        if self.id_column and (has_offset or CSV.valid_id_column(self.df[self.id_column])):
+        if self.id_column and (
+            has_offset or CSV.valid_id_column(self.df[self.id_column])
+        ):
             self.df = self.df.sort_values(self.id_column)
         else:
             self.id_column = "thirdai_index"
@@ -422,7 +424,7 @@ class CSV(Document):
 
         for col in strong_columns + weak_columns:
             self.df[col] = self.df[col].fillna("")
-        
+
         # So we can do df.loc[]
         self.df = self.df.set_index(self.id_column)
 
@@ -492,7 +494,7 @@ class CSV(Document):
 
     def id_map(self) -> Optional[Dict[str, int]]:
         return self.orig_to_assigned_id
-    
+
     def strong_text_from_row(self, row) -> str:
         return " ".join(str(row[col]) for col in self.strong_columns)
 
@@ -599,7 +601,7 @@ class CSV(Document):
             self.indexed_columns = []
         if not hasattr(self, "orig_to_assigned_id"):
             self.orig_to_assigned_id = None
-        
+
         # So we can do df.loc[]
         self.df = self.df.set_index(self.id_column)
 

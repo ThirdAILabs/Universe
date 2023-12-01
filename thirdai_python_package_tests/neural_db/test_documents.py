@@ -217,7 +217,8 @@ def test_sharded_data_source(prepare_documents_test):
         document_data_source=data_source,
         number_shards=number_shards,
         label_to_segment_map=label_to_segment_map,
-        seed=0)
+        seed=0,
+    )
     sharded_data_sources = sharder.shard_data_source()
 
     assert len(sharded_data_sources) == number_shards
