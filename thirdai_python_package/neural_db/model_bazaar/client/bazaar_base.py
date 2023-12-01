@@ -77,7 +77,7 @@ class Login:
         self,
         email: str,
         password: str,
-        base_url: str = "https://staging-modelzoo.azurewebsites.net/api/",
+        base_url: str,
     ):
         self._base_url = base_url
         # We are using HTTPBasic Auth in backend. update this when we change the Authentication in Backend.
