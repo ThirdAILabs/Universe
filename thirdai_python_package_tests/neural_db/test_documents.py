@@ -42,7 +42,7 @@ def prepare_documents_test():
         def all_entity_ids(self):
             return list(range(self.size))
 
-        # Expected strings have commas (delimiter) and double quotes to test 
+        # Expected strings have commas (delimiter) and double quotes to test
         # that the data source converts it to proper CSV strings.
         def expected_strong_text_for_id(doc_id: str, element_id: int):
             return f'"Strong" text from {doc_id}, with id {element_id}, plus ""'

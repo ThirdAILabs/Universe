@@ -190,8 +190,10 @@ class DocumentDataSource(PyDataSource):
         PyDataSource.__init__(self)
         self.documents: List[DocAndOffset] = []
         for col in [id_column, strong_column, weak_column]:
-            if '"' in col or ',' in col:
-                raise RuntimeError("DocumentDataSource columns cannot contain '\"' or ','")
+            if '"' in col or "," in col:
+                raise RuntimeError(
+                    "DocumentDataSource columns cannot contain '\"' or ','"
+                )
         self.id_column = id_column
         self.strong_column = strong_column
         self.weak_column = weak_column
@@ -223,7 +225,7 @@ class DocumentDataSource(PyDataSource):
         # Then yield rows
         for row in self.row_iterator():
             yield self._csv_line(element_id=row.id, strong=row.strong, weak=row.weak)
-        
+
     def resource_name(self) -> str:
         return "Documents:\n" + "\n".join([doc.name for doc, _ in self.documents])
 
@@ -492,13 +494,15 @@ class CSV(Document):
 
     def strong_text(self, element_id: int) -> str:
         return " ".join(
-            str(self.df[col].iloc[element_id]).replace(",", "") 
-            for col in self.strong_columns)
+            str(self.df[col].iloc[element_id]).replace(",", "")
+            for col in self.strong_columns
+        )
 
     def weak_text(self, element_id: int) -> str:
         return " ".join(
-            str(self.df[col].iloc[element_id]).replace(",", "") 
-            for col in self.weak_columns)
+            str(self.df[col].iloc[element_id]).replace(",", "")
+            for col in self.weak_columns
+        )
 
     def row_iterator(self):
         for i in list(self.df[self.id_column]):
