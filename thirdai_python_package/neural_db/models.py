@@ -423,8 +423,7 @@ class Mach(Model):
         if self.tokenizer == "wordpiece":
                 from thirdai import dataset
                 from thirdai.demos import bert_base_uncased
-                self.tokenizer = dataset.WordpieceTokenizer(bert_base_uncased()),
-            
+                self.tokenizer = dataset.WordpieceTokenizer(bert_base_uncased())
         return bolt.UniversalDeepTransformer(
             data_types={
                 self.query_col: bolt.types.text(tokenizer=self.tokenizer),
