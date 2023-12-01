@@ -384,7 +384,7 @@ class CSV(Document):
         self.orig_to_assigned_id = None
         self.id_column = id_column
         orig_id_column = id_column
-        if self.id_column and CSV.valid_id_column(self.df[self.id_column]):
+        if self.id_column and (has_offset or CSV.valid_id_column(self.df[self.id_column])):
             self.df = self.df.sort_values(self.id_column)
         else:
             self.id_column = "thirdai_index"
@@ -418,12 +418,13 @@ class CSV(Document):
         self.df = self.df.sort_values(self.id_column)
 
         if not self.has_offset:
-            assert len(self.df[self.id_column].unique()) == len(self.df[self.id_column])
-            assert self.df[self.id_column].min() == 0
-            assert self.df[self.id_column].max() == len(self.df[self.id_column]) - 1
+            assert CSV.valid_id_column(self.df[self.id_column])
 
         for col in strong_columns + weak_columns:
             self.df[col] = self.df[col].fillna("")
+        
+        # So we can do df.loc[]
+        self.df = self.df.set_index(self.id_column)
 
         self.path = Path(path)
         self.strong_columns = strong_columns
@@ -491,21 +492,27 @@ class CSV(Document):
 
     def id_map(self) -> Optional[Dict[str, int]]:
         return self.orig_to_assigned_id
+    
+    def strong_text_from_row(self, row) -> str:
+        return " ".join(str(row[col]) for col in self.strong_columns)
 
     def strong_text(self, element_id: int) -> str:
-        return " ".join(
-            str(self.df[col].iloc[element_id]) for col in self.strong_columns
-        )
+        row = self.df.loc[element_id]
+        return self.strong_text_from_row(row)
+
+    def weak_text_from_row(self, row) -> str:
+        return " ".join(str(row[col]) for col in self.weak_columns)
 
     def weak_text(self, element_id: int) -> str:
-        return " ".join(str(self.df[col].iloc[element_id]) for col in self.weak_columns)
+        row = self.df.loc[element_id]
+        return self.weak_text_from_row(row)
 
     def row_iterator(self):
-        for i in list(self.df[self.id_column]):
+        for row_id, row in self.df.iterrows():
             yield DocumentRow(
-                element_id=i,
-                strong=self.strong_text(i),
-                weak=self.weak_text(i),
+                element_id=row_id,
+                strong=self.strong_text_from_row(row),
+                weak=self.weak_text_from_row(row),
             )
 
     @requires_condition(
@@ -517,7 +524,7 @@ class CSV(Document):
     def reference(self, element_id: int) -> Reference:
         if element_id >= len(self.df):
             _raise_unknown_doc_error(element_id)
-        row = self.df.iloc[element_id]
+        row = self.df.loc[element_id]
         text = "\n\n".join([f"{col}: {row[col]}" for col in self.reference_columns])
         return Reference(
             document=self,
@@ -528,7 +535,7 @@ class CSV(Document):
         )
 
     def context(self, element_id: int, radius) -> str:
-        rows = self.df.iloc[
+        rows = self.df.loc[
             max(0, element_id - radius) : min(len(self.df), element_id + radius + 1)
         ]
 
@@ -592,6 +599,9 @@ class CSV(Document):
             self.indexed_columns = []
         if not hasattr(self, "orig_to_assigned_id"):
             self.orig_to_assigned_id = None
+        
+        # So we can do df.loc[]
+        self.df = self.df.set_index(self.id_column)
 
 
 # Base class for PDF, DOCX and Unstructured classes because they share the same logic.
