@@ -1,5 +1,6 @@
 #pragma once
 
+#include <auto_ml/src/rlhf/RLHFSampler.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <dataset/src/blocks/text/Text.h>
 #include <dataset/src/mach/MachIndex.h>
@@ -24,7 +25,7 @@ struct MachInfo {
   uint32_t num_buckets_to_eval;
   float mach_sampling_threshold;
 
-  // TODO(Nicholas) balancing samples
+  std::optional<RLHFSampler> balancing_samples;
 };
 
 }  // namespace thirdai::automl::udt

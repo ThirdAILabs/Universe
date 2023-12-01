@@ -1,5 +1,6 @@
 #pragma once
 
+#include "RLHFSampler.h"
 #include <data/src/ColumnMap.h>
 #include <cstddef>
 #include <iterator>
@@ -37,6 +38,10 @@ class BalancingSamples {
         _max_samples_per_doc(max_samples_per_doc),
         _rng(RNG_SEED) {}
 
+  BalancingSamples(std::string indices_col, std::string values_col,
+                   std::string labels_col, std::string doc_ids_col,
+                   const RLHFSampler& sampler);
+
   data::ColumnMap balancingSamples(size_t num_samples);
 
   void addSamples(const data::ColumnMap& data);
@@ -56,12 +61,6 @@ class BalancingSamples {
 
   static constexpr uint32_t RNG_SEED = 7240924;
 
-  std::unordered_map<uint32_t, std::vector<BalancingSample>> _samples_per_doc;
-  std::unordered_set<uint32_t> _doc_ids;
-
-  std::optional<size_t> _indices_dim;
-  std::optional<size_t> _labels_dim;
-
   std::string _indices_col;
   std::string _values_col;
   std::string _labels_col;
@@ -69,6 +68,12 @@ class BalancingSamples {
 
   size_t _max_docs;
   size_t _max_samples_per_doc;
+
+  std::unordered_map<uint32_t, std::vector<BalancingSample>> _samples_per_doc;
+  std::unordered_set<uint32_t> _doc_ids;
+
+  std::optional<size_t> _indices_dim;
+  std::optional<size_t> _labels_dim;
 
   std::mt19937 _rng{RNG_SEED};
 

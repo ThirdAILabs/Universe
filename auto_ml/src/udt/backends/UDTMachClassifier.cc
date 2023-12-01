@@ -473,6 +473,10 @@ MachInfo UDTMachClassifier::getMachInfo() const {
   mach_info.num_buckets_to_eval = _num_buckets_to_eval;
   mach_info.mach_sampling_threshold = _mach_sampling_threshold;
 
+  if (_rlhf_sampler) {
+    mach_info.balancing_samples = _rlhf_sampler.value();
+  }
+
   return mach_info;
 }
 

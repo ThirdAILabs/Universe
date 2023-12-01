@@ -133,8 +133,8 @@ class UDTMach final : public UDTBackend {
 
     updateSamplingStrategy();
 
-    if (_rlhf_sampler) {
-      _rlhf_sampler->clear();
+    if (_balancing_samples) {
+      _balancing_samples->clear();
     }
   }
 
@@ -265,7 +265,7 @@ class UDTMach final : public UDTBackend {
   uint32_t _num_buckets_to_eval;
   float _mach_sampling_threshold;
 
-  std::optional<BalancingSamples> _rlhf_sampler;
+  std::optional<BalancingSamples> _balancing_samples;
 };
 
 }  // namespace thirdai::automl::udt

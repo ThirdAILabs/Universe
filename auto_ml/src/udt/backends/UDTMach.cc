@@ -15,6 +15,7 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
+#include <auto_ml/src/rlhf/RLHFSampler.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
@@ -32,6 +33,7 @@
 #include <algorithm>
 #include <exception>
 #include <limits>
+#include <optional>
 #include <random>
 #include <unordered_map>
 #include <unordered_set>
@@ -145,6 +147,12 @@ UDTMach::UDTMach(const MachInfo& mach_info)
           data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)},
       mach_info.label_column_name, mach_info.mach_index,
       mach_info.csv_delimiter, mach_info.label_delimiter);
+
+  if (mach_info.balancing_samples) {
+    _balancing_samples = std::make_optional<BalancingSamples>(
+        FEATURIZED_INDICES, FEATURIZED_VALUES, MACH_LABELS, MACH_DOC_IDS,
+        mach_info.balancing_samples.value());
+  }
 }
 
 py::object UDTMach::train(const dataset::DataSourcePtr& data,
@@ -742,7 +750,7 @@ void UDTMach::addBalancingSamples(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names) {
-  if (_rlhf_sampler) {
+  if (_balancing_samples) {
     data->restart();
 
     // TODO(Geordie / Nick) Right now, we only load MAX_BALANCING_SAMPLES
@@ -756,14 +764,14 @@ void UDTMach::addBalancingSamples(
         data, strong_column_names, weak_column_names,
         defaults::MAX_BALANCING_SAMPLES, defaults::MAX_BALANCING_SAMPLES * 5);
 
-    _rlhf_sampler->addSamples(samples);
+    _balancing_samples->addSamples(samples);
 
     data->restart();
   }
 }
 
 void UDTMach::requireRLHFSampler() {
-  if (!_rlhf_sampler) {
+  if (!_balancing_samples) {
     throw std::runtime_error(
         "This model was not configured to support rlhf. Please pass "
         "{'rlhf': "
@@ -773,11 +781,11 @@ void UDTMach::requireRLHFSampler() {
 
 void UDTMach::enableRlhf(uint32_t num_balancing_docs,
                          uint32_t num_balancing_samples_per_doc) {
-  if (_rlhf_sampler.has_value()) {
+  if (_balancing_samples.has_value()) {
     return;
   }
 
-  _rlhf_sampler = std::make_optional<BalancingSamples>(
+  _balancing_samples = std::make_optional<BalancingSamples>(
       FEATURIZED_INDICES, FEATURIZED_VALUES, MACH_LABELS, MACH_DOC_IDS,
       num_balancing_docs, num_balancing_samples_per_doc);
 }
@@ -819,7 +827,8 @@ void UDTMach::teach(const std::vector<RlhfSample>& rlhf_samples,
                     uint32_t epochs) {
   requireRLHFSampler();
 
-  auto balancing_samples = _rlhf_sampler->balancingSamples(n_balancing_samples);
+  auto balancing_samples =
+      _balancing_samples->balancingSamples(n_balancing_samples);
 
   auto columns = _featurizer->featurizeRlhfSamples(rlhf_samples);
   columns = columns.concat(balancing_samples);
@@ -1040,7 +1049,7 @@ void UDTMach::serialize(Archive& archive, const uint32_t version) {
   // serialization changes
   archive(cereal::base_class<UDTBackend>(this), _classifier, _featurizer,
           _default_top_k_to_return, _num_buckets_to_eval,
-          _mach_sampling_threshold, _rlhf_sampler);
+          _mach_sampling_threshold, _balancing_samples);
 }
 
 }  // namespace thirdai::automl::udt

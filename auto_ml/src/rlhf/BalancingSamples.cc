@@ -13,6 +13,39 @@
 
 namespace thirdai::automl::udt {
 
+template <typename T>
+std::vector<T> vec(const T* data, uint32_t len) {
+  return {data, data + len};
+}
+
+BalancingSamples::BalancingSamples(std::string indices_col,
+                                   std::string values_col,
+                                   std::string labels_col,
+                                   std::string doc_ids_col,
+                                   const RLHFSampler& sampler)
+    : _indices_col(std::move(indices_col)),
+      _values_col(std::move(values_col)),
+      _labels_col(std::move(labels_col)),
+      _doc_ids_col(std::move(doc_ids_col)),
+      _max_docs(sampler._max_docs),
+      _max_samples_per_doc(sampler._max_samples_per_doc),
+      _doc_ids(sampler._doc_ids) {
+  _samples_per_doc.reserve(sampler._samples_per_doc.size());
+
+  for (const auto& [doc_id, samples] : sampler._samples_per_doc) {
+    for (const auto& sample : samples) {
+      if (sample.first.isDense() || sample.second.isDense()) {
+        throw std::invalid_argument("Cannot convert balancing samples.");
+      }
+      _samples_per_doc[doc_id].push_back(BalancingSample{
+          vec(sample.first.active_neurons, sample.first.len),
+          vec(sample.first.activations, sample.first.len),
+          vec(sample.second.active_neurons, sample.second.len),
+      });
+    }
+  }
+}
+
 data::ColumnMap BalancingSamples::balancingSamples(size_t num_samples) {
   if (num_samples == 0) {
     return data::ColumnMap({});
