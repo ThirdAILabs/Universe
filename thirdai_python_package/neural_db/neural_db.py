@@ -188,7 +188,7 @@ class SupDataSource(PyDataSource):
 
 class NeuralDB:
     def __init__(
-        self, user_id: str = "user", number_models: int = 1, mach=True, **kwargs
+        self, user_id: str = "user", number_models: int = 1, mach=True, tokenizer="char-4", **kwargs
     ) -> None:
         """user_id is used for logging purposes only"""
         self._user_id: str = user_id
@@ -212,7 +212,7 @@ class NeuralDB:
                     **kwargs,
                 )
             elif mach:
-                model = Mach(id_col="id", query_col="query", **kwargs)
+                model = Mach(id_col="id", query_col="query", tokenizer=tokenizer, **kwargs)
             else:
                 model = Standard(id_col="id", query_col="query", **kwargs)
             self._savable_state = State(

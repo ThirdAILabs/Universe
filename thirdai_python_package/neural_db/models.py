@@ -278,6 +278,7 @@ class Mach(Model):
         embedding_dimension=2048,
         extreme_output_dim=50_000,
         model_config=None,
+        tokenizer="char-4",
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -289,6 +290,7 @@ class Mach(Model):
         self.model = None
         self.balancing_samples = []
         self.model_config = model_config
+        self.tokenizer = tokenizer
 
     def set_mach_sampling_threshold(self, threshold: float):
         if self.model is None:
@@ -418,9 +420,14 @@ class Mach(Model):
     def model_from_scratch(
         self, documents: DocumentDataSource, number_classes: int = None
     ):
+        if self.tokenizer == "wordpiece":
+                from thirdai import dataset
+                from thirdai.demos import bert_base_uncased
+                self.tokenizer = dataset.WordpieceTokenizer(bert_base_uncased()),
+            
         return bolt.UniversalDeepTransformer(
             data_types={
-                self.query_col: bolt.types.text(tokenizer="char-4"),
+                self.query_col: bolt.types.text(tokenizer=self.tokenizer),
                 self.id_col: bolt.types.categorical(delimiter=self.id_delimiter),
             },
             target=self.id_col,
