@@ -2,10 +2,13 @@ import os
 import shutil
 from io import StringIO
 from pathlib import Path
+from collections import defaultdict
 
 import pandas as pd
 import pytest
 from thirdai import bolt, demos, neural_db
+from thirdai.neural_db import documents
+from thirdai.neural_db.sharded_documents import ShardedDataSource
 
 # We don't have a test on just the Document interface since it is just an
 # interface.
@@ -14,7 +17,6 @@ from thirdai import bolt, demos, neural_db
 @pytest.fixture(scope="session")
 def prepare_documents_test():
     from thirdai.neural_db import Document, Reference
-    from thirdai.neural_db import documents as docs
 
     class MockDocument(Document):
         def __init__(self, identifier: str, size: int) -> None:
@@ -137,7 +139,6 @@ def prepare_documents_test():
             ] == MockDocument.expected_weak_text_for_id(second_id, i)
 
     return (
-        docs,
         MockDocument,
         id_column,
         strong_column,
@@ -157,7 +158,6 @@ def prepare_documents_test():
 @pytest.mark.unit
 def test_document_data_source(prepare_documents_test):
     (
-        docs,
         _,
         id_column,
         strong_column,
@@ -173,7 +173,7 @@ def test_document_data_source(prepare_documents_test):
         check_second_doc,
     ) = prepare_documents_test
 
-    data_source = docs.DocumentDataSource(id_column, strong_column, weak_column)
+    data_source = documents.DocumentDataSource(id_column, strong_column, weak_column)
 
     data_source.add(first_doc, start_id=0)
     data_source.add(second_doc, start_id=first_size)
@@ -187,9 +187,8 @@ def test_document_data_source(prepare_documents_test):
 
 
 @pytest.mark.unit
-def test_document_manager_splits_intro_and_train(prepare_documents_test):
+def test_sharded_data_source(prepare_documents_test):
     (
-        docs,
         _,
         id_column,
         strong_column,
@@ -205,7 +204,51 @@ def test_document_manager_splits_intro_and_train(prepare_documents_test):
         check_second_doc,
     ) = prepare_documents_test
 
-    doc_manager = docs.DocumentManager(id_column, strong_column, weak_column)
+    data_source = documents.DocumentDataSource(id_column, strong_column, weak_column)
+
+    data_source.add(first_doc, start_id=0)
+    data_source.add(second_doc, start_id=first_size)
+
+    assert data_source.size == first_size + second_size
+
+    label_to_segment_map = defaultdict(list)
+    number_shards = 3
+    sharder = ShardedDataSource(
+        document_data_source=data_source,
+        number_shards=number_shards,
+        label_to_segment_map=label_to_segment_map,
+        seed=0)
+    sharded_data_sources = sharder.shard_data_source()
+
+    assert len(sharded_data_sources) == number_shards
+    assert sum(shard.size for shard in sharded_data_sources) == first_size + second_size
+    assert all(shard.size > 0 for shard in sharded_data_sources)
+
+    df = pd.concat([data_source_to_df(shard) for shard in sharded_data_sources])
+    df = df.sort_values(id_column)
+    check_first_doc(df)
+    check_second_doc(df, position_offset=first_size, id_offset=first_size)
+
+
+@pytest.mark.unit
+def test_document_manager_splits_intro_and_train(prepare_documents_test):
+    (
+        _,
+        id_column,
+        strong_column,
+        weak_column,
+        _,
+        _,
+        first_size,
+        second_size,
+        first_doc,
+        second_doc,
+        data_source_to_df,
+        check_first_doc,
+        check_second_doc,
+    ) = prepare_documents_test
+
+    doc_manager = documents.DocumentManager(id_column, strong_column, weak_column)
     data_sources, _ = doc_manager.add([first_doc])
 
     assert data_sources.train.size == first_size
@@ -232,7 +275,6 @@ def test_document_manager_splits_intro_and_train(prepare_documents_test):
 @pytest.mark.unit
 def test_document_manager_save_load(prepare_documents_test):
     (
-        docs,
         _,
         id_column,
         strong_column,
@@ -248,7 +290,7 @@ def test_document_manager_save_load(prepare_documents_test):
         _,
     ) = prepare_documents_test
 
-    doc_manager = docs.DocumentManager(id_column, strong_column, weak_column)
+    doc_manager = documents.DocumentManager(id_column, strong_column, weak_column)
     doc_manager.add([first_doc, second_doc])
 
     save_path = Path(os.getcwd()) / "neural_db_docs_test"
@@ -272,7 +314,6 @@ def test_document_manager_save_load(prepare_documents_test):
 @pytest.mark.unit
 def test_document_manager_sources(prepare_documents_test):
     (
-        docs,
         _,
         id_column,
         strong_column,
@@ -288,7 +329,7 @@ def test_document_manager_sources(prepare_documents_test):
         _,
     ) = prepare_documents_test
 
-    doc_manager = docs.DocumentManager(id_column, strong_column, weak_column)
+    doc_manager = documents.DocumentManager(id_column, strong_column, weak_column)
     doc_manager.add([first_doc, second_doc])
     assert first_doc.hash in doc_manager.sources().keys()
     assert second_doc.hash in doc_manager.sources().keys()
@@ -299,7 +340,6 @@ def test_document_manager_sources(prepare_documents_test):
 @pytest.mark.unit
 def test_document_manager_reference(prepare_documents_test):
     (
-        docs,
         MockDocument,
         id_column,
         strong_column,
@@ -315,7 +355,7 @@ def test_document_manager_reference(prepare_documents_test):
         _,
     ) = prepare_documents_test
 
-    doc_manager = docs.DocumentManager(id_column, strong_column, weak_column)
+    doc_manager = documents.DocumentManager(id_column, strong_column, weak_column)
     doc_manager.add([first_doc, second_doc])
 
     reference_3 = doc_manager.reference(3)
@@ -336,7 +376,6 @@ def test_document_manager_reference(prepare_documents_test):
 @pytest.mark.unit
 def test_document_manager_context(prepare_documents_test):
     (
-        docs,
         MockDocument,
         id_column,
         strong_column,
@@ -352,7 +391,7 @@ def test_document_manager_context(prepare_documents_test):
         _,
     ) = prepare_documents_test
 
-    doc_manager = docs.DocumentManager(id_column, strong_column, weak_column)
+    doc_manager = documents.DocumentManager(id_column, strong_column, weak_column)
     doc_manager.add([first_doc, second_doc])
     assert doc_manager.context(
         3, 10
@@ -369,7 +408,6 @@ def test_document_manager_context(prepare_documents_test):
 @pytest.mark.unit
 def test_udt_cold_start_on_csv_document():
     from thirdai.neural_db import CSV
-    from thirdai.neural_db import documents as docs
 
     (
         catalog_file,
@@ -386,7 +424,7 @@ def test_udt_cold_start_on_csv_document():
         integer_target=True,
     )
 
-    data_source = docs.DocumentDataSource("PRODUCT_ID", "STRONG", "WEAK")
+    data_source = documents.DocumentDataSource("PRODUCT_ID", "STRONG", "WEAK")
     data_source.add(
         CSV(
             catalog_file,
