@@ -426,7 +426,9 @@ class CSV(Document):
         self.path = Path(path)
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
-        self.reference_columns = reference_columns
+        self.reference_columns = [
+            col for col in reference_columns if col != self.df.index.name
+        ]
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
         self.doc_metadata_keys = set(self.doc_metadata.keys())
@@ -600,6 +602,9 @@ class CSV(Document):
         # So we can do df.loc[]
         if self.df.index.name != self.id_column:
             self.df = self.df.set_index(self.id_column)
+            self.reference_columns = [
+                col for col in self.reference_columns if col != self.id_column
+            ]
 
 
 # Base class for PDF, DOCX and Unstructured classes because they share the same logic.
