@@ -494,13 +494,13 @@ class CSV(Document):
 
     def strong_text(self, element_id: int) -> str:
         return " ".join(
-            str(self.df[col].iloc[element_id]).replace(",", "")
+            str(self.df[col].iloc[element_id])
             for col in self.strong_columns
         )
 
     def weak_text(self, element_id: int) -> str:
         return " ".join(
-            str(self.df[col].iloc[element_id]).replace(",", "")
+            str(self.df[col].iloc[element_id])
             for col in self.weak_columns
         )
 
