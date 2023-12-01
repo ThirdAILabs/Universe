@@ -417,10 +417,6 @@ class CSV(Document):
         elif weak_columns is None:
             weak_columns = []
 
-        if not self.has_offset:
-            self.df = self.df.sort_values(self.id_column)
-            assert CSV.valid_id_column(self.df[self.id_column])
-
         for col in strong_columns + weak_columns:
             self.df[col] = self.df[col].fillna("")
 
