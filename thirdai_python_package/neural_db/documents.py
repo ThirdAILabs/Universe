@@ -417,9 +417,8 @@ class CSV(Document):
         elif weak_columns is None:
             weak_columns = []
 
-        self.df = self.df.sort_values(self.id_column)
-
         if not self.has_offset:
+            self.df = self.df.sort_values(self.id_column)
             assert CSV.valid_id_column(self.df[self.id_column])
 
         for col in strong_columns + weak_columns:
@@ -479,7 +478,7 @@ class CSV(Document):
         return {**metadata_constraints, **indexed_column_constraints}
 
     def all_entity_ids(self) -> List[int]:
-        return self.df[self.id_column].to_list()
+        return self.df.index.to_list()
 
     def filter_entity_ids(self, filters: Dict[str, Filter]):
         df = self.df
@@ -490,7 +489,7 @@ class CSV(Document):
             if column_name not in self.df.columns:
                 return []
             df = filterer.filter_df_column(df, column_name)
-        return df[self.id_column].to_list()
+        return df.index.to_list()
 
     def id_map(self) -> Optional[Dict[str, int]]:
         return self.orig_to_assigned_id
@@ -603,7 +602,8 @@ class CSV(Document):
             self.orig_to_assigned_id = None
 
         # So we can do df.loc[]
-        self.df = self.df.set_index(self.id_column)
+        if self.df.index.name != self.id_column:
+            self.df = self.df.set_index(self.id_column)
 
 
 # Base class for PDF, DOCX and Unstructured classes because they share the same logic.
