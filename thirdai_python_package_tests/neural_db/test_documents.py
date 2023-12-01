@@ -42,21 +42,21 @@ def prepare_documents_test():
         def all_entity_ids(self):
             return list(range(self.size))
 
-        # Expected strings have commas (delimiter) to test that the data source
-        # converts it to proper CSV strings.
+        # Expected strings have commas (delimiter) and double quotes to test 
+        # that the data source converts it to proper CSV strings.
         def expected_strong_text_for_id(doc_id: str, element_id: int):
-            return f'"Strong" text from {doc_id}, with id {element_id}, plus a comma'
+            return f'"Strong" text from {doc_id}, with id {element_id}, plus ""'
 
         def expected_weak_text_for_id(doc_id: str, element_id: int):
-            return f'"Weak" text from {doc_id}, with id {element_id}, plus a comma'
+            return f'"Weak" text from {doc_id}, with id {element_id}, plus ""'
 
         def expected_reference_text_for_id(doc_id: str, element_id: int):
-            return f'"Reference" text from {doc_id}, with id {element_id}, plus a comma'
+            return f'"Reference" text from {doc_id}, with id {element_id}, plus ""'
 
         def expected_context_for_id_and_radius(
             doc_id: str, element_id: int, radius: int
         ):
-            return f'"Context" from {doc_id}, with id {element_id} and radius {radius}, plus a comma'
+            return f'"Context" from {doc_id}, with id {element_id} and radius {radius}, plus ""'
 
         def check_id(self, element_id: int):
             if element_id >= self._size:
