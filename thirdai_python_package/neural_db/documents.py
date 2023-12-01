@@ -494,15 +494,11 @@ class CSV(Document):
 
     def strong_text(self, element_id: int) -> str:
         return " ".join(
-            str(self.df[col].iloc[element_id])
-            for col in self.strong_columns
+            str(self.df[col].iloc[element_id]) for col in self.strong_columns
         )
 
     def weak_text(self, element_id: int) -> str:
-        return " ".join(
-            str(self.df[col].iloc[element_id])
-            for col in self.weak_columns
-        )
+        return " ".join(str(self.df[col].iloc[element_id]) for col in self.weak_columns)
 
     def row_iterator(self):
         for i in list(self.df[self.id_column]):
@@ -1174,18 +1170,14 @@ class SQLDatabase(DocumentConnector):
     def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
         try:
             row = chunk.iloc[id_in_chunk]
-            return " ".join(
-                [str(row[col]) for col in self.get_strong_columns()]
-            )
+            return " ".join([str(row[col]) for col in self.get_strong_columns()])
         except Exception as e:
             return ""
 
     def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
         try:
             row = chunk.iloc[id_in_chunk]
-            return " ".join(
-                [str(row[col]) for col in self.get_weak_columns()]
-            )
+            return " ".join([str(row[col]) for col in self.get_weak_columns()])
         except Exception as e:
             return ""
 
@@ -1679,18 +1671,14 @@ class SalesForce(DocumentConnector):
     def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
         try:
             row = chunk.iloc[id_in_chunk]
-            return " ".join(
-                [str(row[col]) for col in self.get_strong_columns()]
-            )
+            return " ".join([str(row[col]) for col in self.get_strong_columns()])
         except Exception as e:
             return ""
 
     def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
         try:
             row = chunk.iloc[id_in_chunk]
-            return " ".join(
-                [str(row[col]) for col in self.get_weak_columns()]
-            )
+            return " ".join([str(row[col]) for col in self.get_weak_columns()])
         except Exception as e:
             return ""
 
