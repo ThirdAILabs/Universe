@@ -178,8 +178,7 @@ bolt::LabeledDataset MachFeaturizer::columnsToTensors(
   return std::make_pair(std::move(data), std::move(labels));
 }
 
-std::vector<std::pair<uint32_t, RlhfSample>>
-MachFeaturizer::getBalancingSamples(
+data::ColumnMap MachFeaturizer::getBalancingSamples(
     const dataset::DataSourcePtr& data_source,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
@@ -201,27 +200,17 @@ MachFeaturizer::getBalancingSamples(
                   ->apply(columns, *_state);
   }
 
+  columns = _const_input_transform->apply(columns, *_state);
   columns = _label_transform->apply(columns, *_state);
+  columns = removeIntermediateColumns(columns);
 
   columns.shuffle();
 
-  auto text_col =
-      columns.getValueColumn<std::string>(textDatasetConfig().textColumn());
-  auto mach_label_col = columns.getArrayColumn<uint32_t>(MACH_LABELS);
-  auto doc_id_col = columns.getArrayColumn<uint32_t>(MACH_DOC_IDS);
-
-  size_t n_to_return = std::min(n_balancing_samples, columns.numRows());
-  std::vector<std::pair<uint32_t, RlhfSample>> samples;
-  for (size_t i = 0; i < n_to_return; i++) {
-    auto labels = mach_label_col->row(i);
-
-    RlhfSample sample(text_col->value(i),
-                      std::vector<uint32_t>(labels.begin(), labels.end()));
-
-    samples.emplace_back(doc_id_col->row(i)[0], std::move(sample));
+  if (columns.numRows() <= n_balancing_samples) {
+    return columns;
   }
 
-  return samples;
+  return columns.split(n_balancing_samples).first;
 }
 
 data::ColumnMap MachFeaturizer::removeIntermediateColumns(

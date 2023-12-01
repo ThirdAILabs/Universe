@@ -46,7 +46,7 @@ class MachFeaturizer final : public Featurizer {
   bolt::LabeledDataset columnsToTensors(const data::ColumnMap& columns,
                                         size_t batch_size) const;
 
-  std::vector<std::pair<uint32_t, RlhfSample>> getBalancingSamples(
+  data::ColumnMap getBalancingSamples(
       const dataset::DataSourcePtr& data_source,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,

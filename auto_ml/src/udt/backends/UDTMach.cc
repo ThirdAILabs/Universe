@@ -124,8 +124,7 @@ UDTMach::UDTMach(
         user_args.get<uint32_t>("rlhf_balancing_samples_per_doc", "int",
                                 defaults::MAX_BALANCING_SAMPLES_PER_DOC);
 
-    _rlhf_sampler = std::make_optional<BalancingSamples>(
-        num_balancing_docs, num_balancing_samples_per_doc);
+    enableRlhf(num_balancing_docs, num_balancing_samples_per_doc);
   }
 }
 
@@ -757,9 +756,8 @@ void UDTMach::addBalancingSamples(
         data, strong_column_names, weak_column_names,
         defaults::MAX_BALANCING_SAMPLES, defaults::MAX_BALANCING_SAMPLES * 5);
 
-    for (const auto& [doc_id, rlhf_sample] : samples) {
-      _rlhf_sampler->addSample(doc_id, rlhf_sample);
-    }
+    _rlhf_sampler->addSamples(samples);
+
     data->restart();
   }
 }
@@ -771,6 +769,17 @@ void UDTMach::requireRLHFSampler() {
         "{'rlhf': "
         "True} in the model options or call enable_rlhf().");
   }
+}
+
+void UDTMach::enableRlhf(uint32_t num_balancing_docs,
+                         uint32_t num_balancing_samples_per_doc) {
+  if (_rlhf_sampler.has_value()) {
+    return;
+  }
+
+  _rlhf_sampler = std::make_optional<BalancingSamples>(
+      FEATURIZED_INDICES, FEATURIZED_VALUES, MACH_LABELS, MACH_DOC_IDS,
+      num_balancing_docs, num_balancing_samples_per_doc);
 }
 
 void UDTMach::associate(
@@ -810,12 +819,12 @@ void UDTMach::teach(const std::vector<RlhfSample>& rlhf_samples,
                     uint32_t epochs) {
   requireRLHFSampler();
 
-  auto samples = _rlhf_sampler->balancingSamples(n_balancing_samples);
+  auto balancing_samples = _rlhf_sampler->balancingSamples(n_balancing_samples);
 
-  samples.insert(samples.end(), rlhf_samples.begin(), rlhf_samples.end());
-
-  auto columns = _featurizer->featurizeRlhfSamples(samples);
+  auto columns = _featurizer->featurizeRlhfSamples(rlhf_samples);
+  columns = columns.concat(balancing_samples);
   columns.shuffle();
+
   auto [data, labels] =
       _featurizer->columnsToTensors(columns, defaults::ASSOCIATE_BATCH_SIZE);
 
