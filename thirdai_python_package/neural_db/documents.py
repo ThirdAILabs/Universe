@@ -189,6 +189,11 @@ class DocumentDataSource(PyDataSource):
     def __init__(self, id_column, strong_column, weak_column):
         PyDataSource.__init__(self)
         self.documents: List[DocAndOffset] = []
+        for col in [id_column, strong_column, weak_column]:
+            if '"' in col or "," in col:
+                raise RuntimeError(
+                    "DocumentDataSource columns cannot contain '\"' or ','"
+                )
         self.id_column = id_column
         self.strong_column = strong_column
         self.weak_column = weak_column
@@ -210,19 +215,13 @@ class DocumentDataSource(PyDataSource):
         return self._size
 
     def _csv_line(self, element_id: str, strong: str, weak: str):
-        df = pd.DataFrame(
-            {
-                self.id_column: [element_id],
-                self.strong_column: [strong],
-                self.weak_column: [weak],
-            }
-        )
-
-        return df.to_csv(header=None, index=None).strip("\n")
+        csv_strong = '"' + strong.replace('"', '""') + '"'
+        csv_weak = '"' + weak.replace('"', '""') + '"'
+        return f"{element_id},{csv_strong},{csv_weak}"
 
     def _get_line_iterator(self):
         # First yield the header
-        yield self._csv_line(self.id_column, self.strong_column, self.weak_column)
+        yield f"{self.id_column},{self.strong_column},{self.weak_column}"
         # Then yield rows
         for row in self.row_iterator():
             yield self._csv_line(element_id=row.id, strong=row.strong, weak=row.weak)
@@ -385,7 +384,9 @@ class CSV(Document):
         self.orig_to_assigned_id = None
         self.id_column = id_column
         orig_id_column = id_column
-        if self.id_column and CSV.valid_id_column(self.df[self.id_column]):
+        if self.id_column and (
+            has_offset or CSV.valid_id_column(self.df[self.id_column])
+        ):
             self.df = self.df.sort_values(self.id_column)
         else:
             self.id_column = "thirdai_index"
@@ -416,20 +417,18 @@ class CSV(Document):
         elif weak_columns is None:
             weak_columns = []
 
-        self.df = self.df.sort_values(self.id_column)
-
-        if not self.has_offset:
-            assert len(self.df[self.id_column].unique()) == len(self.df[self.id_column])
-            assert self.df[self.id_column].min() == 0
-            assert self.df[self.id_column].max() == len(self.df[self.id_column]) - 1
-
         for col in strong_columns + weak_columns:
             self.df[col] = self.df[col].fillna("")
+
+        # So we can do df.loc[]
+        self.df = self.df.set_index(self.id_column)
 
         self.path = Path(path)
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
-        self.reference_columns = reference_columns
+        self.reference_columns = [
+            col for col in reference_columns if col != self.df.index.name
+        ]
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
         self.doc_metadata_keys = set(self.doc_metadata.keys())
@@ -477,7 +476,7 @@ class CSV(Document):
         return {**metadata_constraints, **indexed_column_constraints}
 
     def all_entity_ids(self) -> List[int]:
-        return self.df[self.id_column].to_list()
+        return self.df.index.to_list()
 
     def filter_entity_ids(self, filters: Dict[str, Filter]):
         df = self.df
@@ -488,29 +487,31 @@ class CSV(Document):
             if column_name not in self.df.columns:
                 return []
             df = filterer.filter_df_column(df, column_name)
-        return df[self.id_column].to_list()
+        return df.index.to_list()
 
     def id_map(self) -> Optional[Dict[str, int]]:
         return self.orig_to_assigned_id
 
+    def strong_text_from_row(self, row) -> str:
+        return " ".join(str(row[col]) for col in self.strong_columns)
+
     def strong_text(self, element_id: int) -> str:
-        row = self.df[self.df[self.id_column] == element_id]
-        return " ".join(
-            [str(row[col].values[0]).replace(",", "") for col in self.strong_columns]
-        )
+        row = self.df.loc[element_id]
+        return self.strong_text_from_row(row)
+
+    def weak_text_from_row(self, row) -> str:
+        return " ".join(str(row[col]) for col in self.weak_columns)
 
     def weak_text(self, element_id: int) -> str:
-        row = self.df[self.df[self.id_column] == element_id]
-        return " ".join(
-            [str(row[col].values[0]).replace(",", "") for col in self.weak_columns]
-        )
+        row = self.df.loc[element_id]
+        return self.weak_text_from_row(row)
 
     def row_iterator(self):
-        for i in list(self.df[self.id_column]):
+        for row_id, row in self.df.iterrows():
             yield DocumentRow(
-                element_id=i,
-                strong=self.strong_text(i),
-                weak=self.weak_text(i),
+                element_id=row_id,
+                strong=self.strong_text_from_row(row),
+                weak=self.weak_text_from_row(row),
             )
 
     @requires_condition(
@@ -522,7 +523,7 @@ class CSV(Document):
     def reference(self, element_id: int) -> Reference:
         if element_id >= len(self.df):
             _raise_unknown_doc_error(element_id)
-        row = self.df.iloc[element_id]
+        row = self.df.loc[element_id]
         text = "\n\n".join([f"{col}: {row[col]}" for col in self.reference_columns])
         return Reference(
             document=self,
@@ -533,7 +534,7 @@ class CSV(Document):
         )
 
     def context(self, element_id: int, radius) -> str:
-        rows = self.df.iloc[
+        rows = self.df.loc[
             max(0, element_id - radius) : min(len(self.df), element_id + radius + 1)
         ]
 
@@ -597,6 +598,13 @@ class CSV(Document):
             self.indexed_columns = []
         if not hasattr(self, "orig_to_assigned_id"):
             self.orig_to_assigned_id = None
+
+        # So we can do df.loc[]
+        if self.df.index.name != self.id_column:
+            self.df = self.df.set_index(self.id_column)
+            self.reference_columns = [
+                col for col in self.reference_columns if col != self.id_column
+            ]
 
 
 # Base class for PDF, DOCX and Unstructured classes because they share the same logic.
@@ -1175,18 +1183,14 @@ class SQLDatabase(DocumentConnector):
     def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
         try:
             row = chunk.iloc[id_in_chunk]
-            return " ".join(
-                [str(row[col]).replace(",", "") for col in self.get_strong_columns()]
-            )
+            return " ".join([str(row[col]) for col in self.get_strong_columns()])
         except Exception as e:
             return ""
 
     def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
         try:
             row = chunk.iloc[id_in_chunk]
-            return " ".join(
-                [str(row[col]).replace(",", "") for col in self.get_weak_columns()]
-            )
+            return " ".join([str(row[col]) for col in self.get_weak_columns()])
         except Exception as e:
             return ""
 
@@ -1680,18 +1684,14 @@ class SalesForce(DocumentConnector):
     def strong_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
         try:
             row = chunk.iloc[id_in_chunk]
-            return " ".join(
-                [str(row[col]).replace(",", "") for col in self.get_strong_columns()]
-            )
+            return " ".join([str(row[col]) for col in self.get_strong_columns()])
         except Exception as e:
             return ""
 
     def weak_text_from_chunk(self, id_in_chunk: int, chunk: pd.DataFrame) -> str:
         try:
             row = chunk.iloc[id_in_chunk]
-            return " ".join(
-                [str(row[col]).replace(",", "") for col in self.get_weak_columns()]
-            )
+            return " ".join([str(row[col]) for col in self.get_weak_columns()])
         except Exception as e:
             return ""
 
