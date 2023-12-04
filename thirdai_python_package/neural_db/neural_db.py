@@ -581,20 +581,22 @@ class NeuralDB:
         top_k: int,
         constraints=None,
         rerank=False,
+        top_k_rerank=100,
         rerank_threshold=1.5,
         threshold_top_k=None,
     ) -> List[Reference]:
         matching_entities = None
+        top_k_to_search = top_k_rerank if rerank else top_k
         if constraints:
             matching_entities = self._savable_state.documents.entity_ids_by_constraints(
                 constraints
             )
             result_ids = self._savable_state.model.score(
-                samples=[query], entities=[matching_entities], n_results=top_k
+                samples=[query], entities=[matching_entities], n_results=top_k_to_search
             )[0]
         else:
             result_ids = self._savable_state.model.infer_labels(
-                samples=[query], n_results=top_k
+                samples=[query], n_results=top_k_to_search
             )[0]
 
         references = []
@@ -605,7 +607,7 @@ class NeuralDB:
 
         if rerank:
             if threshold_top_k is None:
-                threshold_top_k = top_k
+                threshold_top_k = top_k_to_search
             mean_score = sum(score for _, score in result_ids[:threshold_top_k]) / len(
                 result_ids[:threshold_top_k]
             )
@@ -620,8 +622,11 @@ class NeuralDB:
             references = references[:first_rerank_pos] + [
                 references[first_rerank_pos + i] for i in indices
             ]
+            # TODO: Reranked scores are not in the same scale as regular scores
+            # and are usually much larger.
             for i, score in enumerate(scores):
                 references[first_rerank_pos + i]._score = score
+            references = references[:top_k]
 
         return references
 
