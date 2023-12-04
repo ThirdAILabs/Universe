@@ -594,7 +594,8 @@ class NeuralDB:
     def _scale_reranked_scores(original: List[float], reranked: List[float]):
         # The scores returned by the reranker are not in the same scale as
         # the original score. To fix this, scale the reranked scores down
-        # such that the total score equals
+        # such that the sum of the scores of these references stay the same
+        # before and after reranking.
         pre_rerank_score_sum = sum(original)
         reranked_scores_sum = sum(reranked)
         # Prevent division by 0
