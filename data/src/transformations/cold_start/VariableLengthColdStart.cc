@@ -2,7 +2,6 @@
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/StringConcat.h>
 #include <utils/CommonChecks.h>
-#include <utils/Stopwords.h>
 #include <utils/StringManipulation.h>
 #include <random>
 
@@ -13,9 +12,7 @@ VariableLengthConfig::VariableLengthConfig(
     std::optional<uint32_t> max_covering_samples, size_t slice_min_length,
     std::optional<size_t> slice_max_length, uint32_t num_slices,
     bool add_whole_doc, bool prefilter_punctuation,
-    uint32_t strong_sample_num_words, float stopword_removal_probability,
-    float stopword_insertion_probability, float word_removal_probability,
-    float word_perturbation_probability)
+    uint32_t strong_sample_num_words, float word_removal_probability)
     : covering_min_length(covering_min_length),
       covering_max_length(covering_max_length),
       max_covering_samples(max_covering_samples),
@@ -25,10 +22,7 @@ VariableLengthConfig::VariableLengthConfig(
       add_whole_doc(add_whole_doc),
       prefilter_punctuation(prefilter_punctuation),
       strong_sample_num_words(strong_sample_num_words),
-      stopword_removal_probability(stopword_removal_probability),
-      stopword_insertion_probability(stopword_insertion_probability),
-      word_removal_probability(word_removal_probability),
-      word_perturbation_probability(word_perturbation_probability) {
+      word_removal_probability(word_removal_probability) {
   utils::validateGreaterThanZero(covering_min_length, "covering_min_length");
   utils::validateGreaterThanZero(covering_max_length, "covering_max_length");
   utils::validateGreaterThanZero(slice_min_length, "slice_min_length");
@@ -37,14 +31,10 @@ VariableLengthConfig::VariableLengthConfig(
     utils::validateGreaterThanZero(*slice_max_length, "slice_max_length");
   }
 
-  utils::validateBetweenZeroAndOne(stopword_removal_probability,
-                                   "stopword_removal_probability");
-  utils::validateBetweenZeroAndOne(stopword_insertion_probability,
-                                   "stopword_insertion_probability");
-  utils::validateBetweenZeroAndOne(word_removal_probability,
-                                   "word_removal_probability");
-  utils::validateBetweenZeroAndOne(word_perturbation_probability,
-                                   "word_perturbation_probability");
+  if (word_removal_probability < 0 or word_removal_probability > 1.0) {
+    throw std::invalid_argument(
+        "word_removal_probaility must be between 0 and 1.0.");
+  }
 
   if (covering_min_length > covering_max_length) {
     throw std::invalid_argument(
@@ -74,13 +64,19 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
   phrases = cold_start::mergeStrongWithWeak(
       phrases, strong_phrase, _config.strong_sample_num_words, _seed);
 
+  std::mt19937 rng(_seed);
+  std::uniform_real_distribution<float> dist(0.0, 1.0);
+
   std::vector<std::string> output_samples;
   for (const auto& phrase : phrases) {
-    std::string output_text =
-        convertPhraseToText(phrase, _config.stopword_removal_probability,
-                            _config.stopword_insertion_probability,
-                            _config.word_removal_probability,
-                            _config.word_perturbation_probability, _seed);
+    std::string output_text;
+    for (const auto& word : phrase) {
+      if (_config.word_removal_probability == 0 ||
+          dist(rng) > _config.word_removal_probability) {
+        output_text.append(word);
+        output_text.push_back(' ');
+      }
+    }
 
     if (!output_text.empty()) {
       output_samples.push_back(output_text);
@@ -172,51 +168,6 @@ void VariableLengthColdStart::addRandomSlicePhrases(
     Phrase phrase(words.begin() + start_pos, words.begin() + start_pos + len);
     phrases.push_back(phrase);
   }
-}
-
-std::string VariableLengthColdStart::convertPhraseToText(
-    const std::vector<std::string>& phrase, float stopword_removal_probability,
-    float stopword_insertion_probability, float word_removal_probability,
-    float word_perturbation_probability, uint32_t seed) {
-  std::mt19937 rng(seed);
-  std::uniform_real_distribution<float> dist(0.0, 1.0);
-  std::string output_text;
-  for (auto word : phrase) {
-    // decide to skip stopword
-    if (text::stop_words.count(word) &&
-        dist(rng) < stopword_removal_probability) {
-      continue;
-    }
-
-    // decide to skip the word
-    if (dist(rng) < word_removal_probability) {
-      continue;
-    }
-
-    // decide to perturb the word by removing either the first or last character
-    if (dist(rng) < word_perturbation_probability) {
-      if (dist(rng) < 0.5) {
-        word = word.substr(1);
-      } else {
-        word = word.substr(0, word.length() - 1);
-      }
-    }
-
-    // add the word
-    output_text.append(word);
-    output_text.push_back(' ');
-
-    // decide to randomly insert a stopword
-    if (dist(rng) < stopword_insertion_probability) {
-      std::string element;
-      std::sample(text::stop_words.begin(), text::stop_words.end(), &element, 1,
-                  rng);
-      output_text.append(element);
-      output_text.push_back(' ');
-    }
-  }
-
-  return output_text;
 }
 
 }  // namespace thirdai::data
