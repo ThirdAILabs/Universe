@@ -3,7 +3,9 @@ import shutil
 from pathlib import Path
 from typing import List
 
+import numpy as np
 import pytest
+import thirdai
 from ndb_utils import (
     PDF_FILE,
     all_local_doc_getters,
@@ -13,10 +15,8 @@ from ndb_utils import (
     num_duplicate_docs,
     train_simple_neural_db,
 )
-import thirdai
 from thirdai import dataset
 from thirdai import neural_db as ndb
-import numpy as np
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 

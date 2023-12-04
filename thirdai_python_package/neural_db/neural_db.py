@@ -3,8 +3,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import thirdai
 import unidecode
 from thirdai._thirdai import bolt
