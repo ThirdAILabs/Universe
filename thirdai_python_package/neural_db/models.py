@@ -3,7 +3,7 @@ import random
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence, Tuple
 
-from thirdai import bolt
+from thirdai import bolt, data
 
 from .documents import DocumentDataSource
 from .sharded_documents import ShardedDataSource
@@ -46,6 +46,8 @@ class Model:
         on_progress: Callable = lambda **kwargs: None,
         cancel_state: CancelState = None,
         max_in_memory_batches: int = None,
+        override_number_classes: int = None,
+        variable_length: Optional[data.transformations.VariableLengthConfig] = None,
     ) -> None:
         raise NotImplementedError()
 
@@ -204,6 +206,7 @@ def unsupervised_train_on_docs(
     freeze_before_train: bool,
     cancel_state: CancelState,
     max_in_memory_batches: int,
+    variable_length: Optional[data.transformations.VariableLengthConfig] = None,
 ):
     if freeze_before_train:
         model._get_model().freeze_hash_tables()
@@ -232,6 +235,7 @@ def unsupervised_train_on_docs(
         metrics=[metric],
         callbacks=[early_stop_callback, progress_callback, cancel_training_callback],
         max_in_memory_batches=max_in_memory_batches,
+        variable_length=variable_length,
     )
 
 
@@ -330,6 +334,7 @@ class Mach(Model):
         cancel_state: CancelState = None,
         max_in_memory_batches: int = None,
         override_number_classes: int = None,
+        variable_length: Optional[data.transformations.VariableLengthConfig] = None,
     ) -> None:
         """
         override_number_classes : The number of classes for the Mach model
@@ -398,6 +403,7 @@ class Mach(Model):
                 freeze_before_train=freeze_before_train,
                 cancel_state=cancel_state,
                 max_in_memory_batches=max_in_memory_batches,
+                variable_length=variable_length,
             )
 
     def add_balancing_samples(self, documents: DocumentDataSource):
