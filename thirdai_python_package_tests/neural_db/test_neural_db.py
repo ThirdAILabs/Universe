@@ -750,10 +750,10 @@ def test_neural_db_rerank_search():
         assert results[i - 1].score >= results[i].score
 
 
-def equal(results1, results2, check_equal_scores=True):
-    if len(results1) != len(results2):
+def references_are_equal(references_1, references_2, check_equal_scores=True):
+    if len(references_1) != len(references_2):
         return False
-    for ref1, ref2 in zip(results1, results2):
+    for ref1, ref2 in zip(references_1, references_2):
         if ref1.id != ref2.id:
             return False
         if check_equal_scores and ref1.score != ref2.score:
@@ -769,25 +769,25 @@ def test_neural_db_reranking():
     query = "What is Lorem and who is Ipsum?"
 
     # Reranking with rerank_threshold = 0 is the same as not reranking
-    assert equal(
+    assert references_are_equal(
         db.search(query, top_k=100),
         db.search(query, top_k=100, rerank=True, rerank_threshold=0),
     )
 
     # Reranking with rerank_threshold = None or inf equals reranking everything
-    assert equal(
+    assert references_are_equal(
         db.search(query, top_k=100, rerank=True, rerank_threshold=None),
         db.search(query, top_k=100, rerank=True, rerank_threshold=float("inf")),
     )
 
     # Results are different with and without reranking
-    assert not equal(
+    assert not references_are_equal(
         db.search(query, top_k=100),
         db.search(query, top_k=100, rerank=True, rerank_threshold=None),
     )
 
     # Assert that threshold top_k defaults to top_k
-    assert equal(
+    assert references_are_equal(
         db.search(query, top_k=10, rerank=True, rerank_threshold=1.5),
         db.search(
             query, top_k=10, rerank=True, rerank_threshold=1.5, threshold_top_k=10
@@ -833,8 +833,12 @@ def test_neural_db_reranking_threshold():
         top_k_rerank=100,
         rerank_threshold=rerank_threshold,
     )
-    assert equal(base_results[:rerank_start], reranked_results[:rerank_start])
-    assert not equal(base_results[rerank_start:], reranked_results[rerank_start:])
+    assert references_are_equal(
+        base_results[:rerank_start], reranked_results[:rerank_start]
+    )
+    assert not references_are_equal(
+        base_results[rerank_start:], reranked_results[rerank_start:]
+    )
 
     # Reranked order is consistent with reranker
     top_100_results = db.search(query, top_k=100)
@@ -843,7 +847,7 @@ def test_neural_db_reranking_threshold():
         query, [ref.text for ref in top_100_results[rerank_start:]]
     )
     ranker_results = [top_100_results[rerank_start + i] for i in reranked_indices]
-    assert equal(
+    assert references_are_equal(
         reranked_results[rerank_start:],
         ranker_results[: 10 - rerank_start],
         check_equal_scores=False,
