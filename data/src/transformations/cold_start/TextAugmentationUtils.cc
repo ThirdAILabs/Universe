@@ -78,7 +78,6 @@ ColumnMap TextAugmentationBase::apply(ColumnMap columns, State& state) const {
   new_columns.emplace(_label_column_name, augmented_label_column);
   new_columns.emplace(_output_column_name, augmented_data_column);
   ColumnMap augmented_column_map(new_columns);
-  augmented_column_map.shuffle();
   return augmented_column_map;
 }
 
