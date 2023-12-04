@@ -97,7 +97,7 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
     learning_rate = 0.01
     num_epochs = 1
 
-    max_in_memory_batches=5000
+    max_in_memory_batches = 5000
 
     @staticmethod
     def get_data_types(path_prefix):
