@@ -525,7 +525,9 @@ class NeuralDB:
         on_error: Callable = None,
         cancel_state: CancelState = None,
         max_in_memory_batches: int = None,
-        variable_length: Optional[data.transformations.VariableLengthConfig] = None,
+        variable_length: Optional[
+            data.transformations.VariableLengthConfig
+        ] = data.transformations.VariableLengthConfig(),
     ) -> List[str]:
         """Inserts sources into the database.
         fast_approximation: much faster insertion with a slight drop in

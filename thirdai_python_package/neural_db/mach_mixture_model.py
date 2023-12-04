@@ -109,7 +109,9 @@ class MachMixture(Model):
         on_progress: Callable = lambda **kwargs: None,
         cancel_state: CancelState = None,
         max_in_memory_batches: int = None,
-        variable_length: Optional[data.transformations.VariableLengthConfig] = None,
+        variable_length: Optional[
+            data.transformations.VariableLengthConfig
+        ] = data.transformations.VariableLengthConfig(),
     ) -> None:
         # We need the original number of classes from the original data source so that we can initialize the Mach models this mixture will have
         number_classes = intro_documents.size
