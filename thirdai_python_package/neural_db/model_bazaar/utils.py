@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 import requests
-from requests.exceptions import HTTPError, RequestException
+from requests.exceptions import HTTPError
 
 
 def chunks(path: Path):
