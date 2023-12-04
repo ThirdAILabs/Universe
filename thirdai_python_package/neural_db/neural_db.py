@@ -576,6 +576,33 @@ class NeuralDB:
         self._savable_state.documents.clear()
         self._savable_state.model.forget_documents()
 
+    def _split_references_for_reranking(
+        references,
+        rerank_threshold,
+        average_top_k_scores,
+    ):
+        if rerank_threshold is None:
+            rerank_start = 0
+        else:
+            scores = np.array([ref.score for ref in references])
+            mean_score = np.mean(scores[:average_top_k_scores])
+            rerank_start = np.searchsorted(
+                -scores, -rerank_threshold * mean_score, side="right"
+            )
+        return references[:rerank_start], references[rerank_start:]
+
+    def _scale_reranked_scores(original: List[float], reranked: List[float]):
+        # The scores returned by the reranker are not in the same scale as
+        # the original score. To fix this, scale the reranked scores down
+        # such that the total score equals
+        pre_rerank_score_sum = sum(original)
+        reranked_scores_sum = sum(reranked)
+        # Prevent division by 0
+        if reranked_scores_sum == 0:
+            reranked_scores_sum = 1
+        score_multiplier = pre_rerank_score_sum / reranked_scores_sum
+        return [score * score_multiplier for score in reranked]
+
     def search(
         self,
         query: str,
@@ -607,41 +634,24 @@ class NeuralDB:
             references.append(ref)
 
         if rerank:
-            if rerank_threshold is None:
-                rerank_start = 0
-            else:
-                # threshold_top_k is the number of top elements whose scores
-                # will be averaged to get the reranking threshold.
-                if threshold_top_k is None:
-                    threshold_top_k = top_k
-                scores = np.array([ref.score for ref in references[:threshold_top_k]])
-                mean_score = np.mean(scores)
-                rerank_start = np.searchsorted(
-                    -scores, -rerank_threshold * mean_score, side="right"
-                )
-
-            keep = references[:rerank_start]
-            to_rerank = references[rerank_start:]
+            keep, to_rerank = NeuralDB._split_references_for_reranking(
+                references,
+                rerank_threshold,
+                average_top_k_scores=threshold_top_k if threshold_top_k else top_k,
+            )
 
             ranker = thirdai.dataset.KeywordOverlapRanker()
             reranked_indices, reranked_scores = ranker.rank(
                 query, [ref.text for ref in to_rerank]
             )
+            reranked_scores = NeuralDB._scale_reranked_scores(
+                original=[ref.score for ref in to_rerank],
+                reranked=reranked_scores,
+            )
 
-            # The scores returned by the reranker are not in the same scale as
-            # the original score. To fix this, scale the reranked scores down
-            # such that the total score equals
-            pre_rerank_score_sum = sum(ref.score for ref in to_rerank)
-            reranked_scores_sum = sum(reranked_scores)
-            # Prevent division by 0
-            if reranked_scores_sum == 0:
-                reranked_scores_sum = 1
-            score_multiplier = pre_rerank_score_sum / reranked_scores_sum
-            reranked_scores = [score * score_multiplier for score in reranked_scores]
             reranked = [to_rerank[i] for i in reranked_indices]
             for i, ref in enumerate(reranked):
                 ref._score = reranked_scores[i]
-
             references = (keep + reranked)[:top_k]
 
         return references
