@@ -2,7 +2,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence, Tuple
 
-from thirdai import bolt
+from thirdai import bolt, data
 
 from .documents import DocumentDataSource
 from .models import CancelState, Mach, Model
@@ -109,6 +109,9 @@ class MachMixture(Model):
         on_progress: Callable = lambda **kwargs: None,
         cancel_state: CancelState = None,
         max_in_memory_batches: int = None,
+        variable_length: Optional[
+            data.transformations.VariableLengthConfig
+        ] = data.transformations.VariableLengthConfig(),
     ) -> None:
         # We need the original number of classes from the original data source so that we can initialize the Mach models this mixture will have
         number_classes = intro_documents.size
@@ -144,6 +147,7 @@ class MachMixture(Model):
                 cancel_state=cancel_state,
                 max_in_memory_batches=max_in_memory_batches,
                 override_number_classes=number_classes,
+                variable_length=variable_length,
             )
 
     def delete_entities(self, entities) -> None:
