@@ -169,6 +169,14 @@ class Model : public std::enable_shared_from_this<Model> {
   uint32_t trainSteps() const;
 
   /**
+   * Returns how many epochs the model has taken. Resets to 0 on load. Used for
+   * logging in trainer.
+   */
+  uint32_t epochs() const;
+
+  void incrementEpochs();
+
+  /**
    * Overrides the number of train steps in the model. This is used when porting
    * parameters to new models to ensure that the training and parameter updates
    * are consistent since this is used in Adam to do bias correction.
@@ -331,6 +339,7 @@ class Model : public std::enable_shared_from_this<Model> {
 
   bool _optimizer_initialized = false;
 
+  uint32_t _epochs = 0;
   uint32_t _train_steps;
 
   std::string _model_uuid;
