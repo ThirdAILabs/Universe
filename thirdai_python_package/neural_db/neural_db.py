@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 import pandas as pd
+import numpy as np
 import thirdai
 import unidecode
 from thirdai._thirdai import bolt
@@ -606,27 +607,42 @@ class NeuralDB:
             references.append(ref)
 
         if rerank:
-            if threshold_top_k is None:
-                threshold_top_k = top_k_to_search
-            mean_score = sum(score for _, score in result_ids[:threshold_top_k]) / len(
-                result_ids[:threshold_top_k]
-            )
-            threshold = rerank_threshold * mean_score
-            for first_rerank_pos, ref in enumerate(references):
-                if ref.score < threshold:
-                    break
+            if rerank_threshold is None:
+                rerank_start = 0
+            else:
+                # threshold_top_k is the number of top elements whose scores
+                # will be averaged to get the reranking threshold.
+                if threshold_top_k is None:
+                    threshold_top_k = top_k
+                scores = np.array([ref.score for ref in references[:threshold_top_k]])
+                mean_score = np.mean(scores)
+                rerank_start = np.searchsorted(
+                    -scores, -rerank_threshold * mean_score, side="right"
+                )
+
+            keep = references[:rerank_start]
+            to_rerank = references[rerank_start:]
+
             ranker = thirdai.dataset.KeywordOverlapRanker()
-            indices, scores = ranker.rank(
-                query, [ref.text for ref in references[first_rerank_pos:]]
+            reranked_indices, reranked_scores = ranker.rank(
+                query, [ref.text for ref in to_rerank]
             )
-            references = references[:first_rerank_pos] + [
-                references[first_rerank_pos + i] for i in indices
-            ]
-            # TODO: Reranked scores are not in the same scale as regular scores
-            # and are usually much larger.
-            for i, score in enumerate(scores):
-                references[first_rerank_pos + i]._score = score
-            references = references[:top_k]
+
+            # The scores returned by the reranker are not in the same scale as
+            # the original score. To fix this, scale the reranked scores down
+            # such that the total score equals
+            pre_rerank_score_sum = sum(ref.score for ref in to_rerank)
+            reranked_scores_sum = sum(reranked_scores)
+            # Prevent division by 0
+            if reranked_scores_sum == 0:
+                reranked_scores_sum = 1
+            score_multiplier = pre_rerank_score_sum / reranked_scores_sum
+            reranked_scores = [score * score_multiplier for score in reranked_scores]
+            reranked = [to_rerank[i] for i in reranked_indices]
+            for i, ref in enumerate(reranked):
+                ref._score = reranked_scores[i]
+
+            references = (keep + reranked)[:top_k]
 
         return references
 
