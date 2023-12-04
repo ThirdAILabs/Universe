@@ -22,6 +22,9 @@ struct ColumnIdentifier {
   ColumnIdentifier(const std::string& column_name)
       : _column_number(std::nullopt), _column_name(column_name) {}
 
+  ColumnIdentifier(const std::string& column_name, uint32_t column_number)
+      : _column_number(column_number), _column_name(column_name) {}
+
   bool consistentWith(const ColumnIdentifier& other) const;
 
   bool hasName() const;

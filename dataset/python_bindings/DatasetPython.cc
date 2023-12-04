@@ -13,6 +13,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
+#include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/blocks/text/Text.h>
 #include <dataset/src/blocks/text/WordpieceTokenizer.h>
@@ -295,6 +296,11 @@ void createDatasetSubmodule(py::module_& module) {
       .def("featurize",
            static_cast<std::vector<std::vector<BoltVector>> (
                DyadicFeaturizer::*)(const std::vector<std::string>&)>(
+               &DyadicFeaturizer::featurize),
+           py::arg("rows"))
+      .def("featurize",
+           static_cast<std::vector<std::vector<BoltVector>> (
+               DyadicFeaturizer::*)(const MapInputBatch&)>(
                &DyadicFeaturizer::featurize),
            py::arg("rows"));
 

@@ -320,12 +320,13 @@ UDTMachClassifier::predictImpl(const MapInputBatch& samples,
     auto inference_featurizer =
         _dyadic_featurizer.value()->makeInferenceFeaturizer();
     auto vector_output = inference_featurizer.featurize(samples);
+    std ::cout << "Featurized sample" << std::endl;
     std::vector<BoltBatch> result;
     for (auto& batch_id : vector_output) {
       result.emplace_back(std::move(batch_id));
     }
-    auto tensor_lists = bolt::convertBatch(
-        std::move(result), inference_featurizer.getDimensions());
+    auto tensor_lists = bolt::convertBatch(std::move(result),
+                                           _classifier->model()->inputDims());
     outputs =
         _classifier->model()->forward(tensor_lists, sparse_inference).at(0);
   }

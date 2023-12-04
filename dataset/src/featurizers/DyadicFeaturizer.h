@@ -122,8 +122,10 @@ class DyadicFeaturizer final : public Featurizer {
   }
 
   DyadicFeaturizer makeInferenceFeaturizer() {
-    return DyadicFeaturizer(false, _n_intervals, _context_length, _text_column,
-                            _delimiter);
+    auto featurizer = DyadicFeaturizer(false, _n_intervals, _context_length,
+                                       _text_column, _delimiter);
+    featurizer._column_number_map = this->_column_number_map;
+    return featurizer;
   }
 
   std::vector<uint32_t> getDimensions() final {
