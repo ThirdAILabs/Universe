@@ -49,11 +49,8 @@ def http_get_with_error(*args, **kwargs):
         response.raise_for_status()  # Raises HTTPError for bad status codes, e.g. 4XX or 5XX codes
         return response
     except HTTPError as http_err:
-        server_message = (
-            f" Server message: {http_err.response.text}"
-            if http_err.response.text
-            else ""
-        )
-        raise HTTPError(
-            f"HTTP error occurred: {http_err.response.status_code} - {http_err.response.reason}.{server_message}"
-        )
+        server_message = http_err.response.text
+        error_message = f"HTTP error occurred: {http_err.response.status_code} - {http_err.response.reason}"
+        if server_message:
+            error_message += f" Server message: {server_message}"
+        raise HTTPError(error_message)
