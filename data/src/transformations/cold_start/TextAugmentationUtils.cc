@@ -74,6 +74,9 @@ ColumnMap TextAugmentationBase::apply(ColumnMap columns, State& state) const {
   auto augmented_data_column =
       ValueColumn<std::string>::make(std::move(augmented_data));
 
+  // TODO (any) Should we use the column map permutation method to augment all
+  // the rows that are not the data? that way we could apply the cold start
+  // augmentation when we have more than just text and a label?
   std::unordered_map<std::string, ColumnPtr> new_columns;
   new_columns.emplace(_label_column_name, augmented_label_column);
   new_columns.emplace(_output_column_name, augmented_data_column);
