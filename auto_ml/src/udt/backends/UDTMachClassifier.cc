@@ -310,7 +310,7 @@ py::object UDTMachClassifier::scoreBatch(
   // lower similarity and don't get selected by LSH
   auto outputs = _classifier->model()
                      ->forward(_dataset_factory->featurizeInputBatch(samples),
-                               /* sparse_inference= */ false)
+                               /* use_sparsity= */ false)
                      .at(0);
 
   size_t batch_size = samples.size();
@@ -455,7 +455,7 @@ py::object UDTMachClassifier::coldstart(
     history = train(data_source, learning_rate, /* epochs= */ 1, train_metrics,
                     val_data, val_metrics, callbacks, options, comm);
     data->restart();
-    data_source->restart();
+    val_data->restart();
   }
 
   return history;
