@@ -799,7 +799,7 @@ def test_neural_db_reranking():
     base_score_sum = sum(ref.score for ref in base_results)
     reranked_results = db.search(query, top_k=100, rerank=True, rerank_threshold=None)
     reranked_score_sum = sum(ref.score for ref in reranked_results)
-    assert base_score_sum == reranked_score_sum
+    assert abs(base_score_sum - reranked_score_sum) < 0.00001
 
     # Scores are in descending order with and without ranking
     def descending_order(seq):
