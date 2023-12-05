@@ -107,16 +107,23 @@ class MachModel(nn.Module):
     def __init__(self, input_dim, emb_dim, output_dim):
         super().__init__()
 
-        self.emb = nn.EmbeddingBag(num_embeddings=input_dim, embedding_dim=emb_dim)
-        self.emb_bias = nn.Parameter(torch.empty(emb_dim))
-        nn.init.normal_(self.emb_bias, mean=0, std=0.01)
+        # self.emb = nn.EmbeddingBag(num_embeddings=input_dim, embedding_dim=emb_dim)
+        # self.emb_bias = nn.Parameter(torch.empty(emb_dim))
+        # nn.init.normal_(self.emb_bias, mean=0, std=0.01)
+        self.emb = nn.Embedding(
+            num_embeddings=input_dim, embedding_dim=emb_dim, padding_idx=0
+        )
 
         self.dropout = nn.Dropout(p=0.1)
 
         self.output = nn.Linear(in_features=emb_dim, out_features=output_dim)
 
-    def forward(self, tokens, offsets):
-        out = self.emb(input=tokens, offsets=offsets) + self.emb_bias
+    def forward(self, tokens):
+        out = self.emb(input=tokens)
+        out = self.dropout(out)
+        qs = torch.quantile(out, 0.9, dim=1, keepdims=True)
+        out = torch.where(out >= qs, out, 0)
+        out = torch.mean(out, dim=1)
         out = self.output(out)
         return out
 
@@ -216,7 +223,11 @@ class Mach:
         columns = pipeline(columns, state=state)
         columns.shuffle()
 
-        inputs = to_tokens_and_offsets(
+        # inputs = to_tokens_and_offsets(
+        #     columns[self.token_col].data(),
+        #     batch_size=batch_size,
+        # )
+        inputs = to_padded_batch(
             columns[self.token_col].data(),
             batch_size=batch_size,
         )
@@ -238,10 +249,10 @@ class Mach:
         batches = self._load_data(filename, pipeline, batch_size)
 
         start = time.perf_counter()
-        for (tokens, offsets), labels in batches:
+        for tokens, labels in batches:
             self.optimizer.zero_grad()
 
-            out = self.model(tokens, offsets)
+            out = self.model(tokens)
             loss = nn.functional.cross_entropy(out, labels.to_dense())
             loss.backward()
 
@@ -266,7 +277,8 @@ class Mach:
         columns = self._entity_parse_transform()(columns)
 
         batch_size = 10_000
-        inputs = to_tokens_and_offsets(columns[self.token_col].data(), batch_size)
+        inputs = to_padded_batch(columns[self.token_col].data(), batch_size)
+        # inputs = to_tokens_and_offsets(columns[self.token_col].data(), batch_size)
         label_batches = []
         for i in range(0, len(columns), batch_size):
             label_batches.append(columns[self.entity_col].data()[i : i + batch_size])
@@ -275,8 +287,8 @@ class Mach:
 
         metrics = [Recall(k) for k in recall_at] + [Precision(k) for k in precision_at]
 
-        for (tokens, offsets), labels in zip(inputs, label_batches):
-            out = nn.functional.softmax(self.model(tokens, offsets), dim=1)
+        for tokens, labels in zip(inputs, label_batches):
+            out = nn.functional.softmax(self.model(tokens), dim=1)
 
             predictions = self.index.decode_batch(
                 out.detach().numpy(),
@@ -357,5 +369,5 @@ def trec_covid():
 
 
 if __name__ == "__main__":
-    scifact()
-    # trec_covid()
+    # scifact()
+    trec_covid()
