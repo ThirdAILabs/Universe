@@ -11,14 +11,6 @@ from nbconvert.preprocessors import CellExecutionError, ExecutePreprocessor
 
 DEMO_URL = "https://github.com/ThirdAILabs/Demos.git"
 
-IGNORED_NBS = [
-    "DeployThirdaiwithDatabricks.ipynb",
-]
-
-
-def skip_nb(path):
-    return any([nb in path for nb in IGNORED_NBS])
-
 
 def get_notebook_path(temp_dir, relative_notebook_path):
     # Collect all of the jupyter notebooks in the Demos repo

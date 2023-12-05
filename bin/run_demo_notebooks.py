@@ -36,7 +36,7 @@ def main():
     relative_notebook_paths = get_relative_notebook_paths(temp_dir)
     for notebook_path in relative_notebook_paths:
         os.system(
-            f'docker run -e "OPENAI_API_KEY=$OPENAI_API_KEY" -e "THIRDAI_KEY=$THIRDAI_KEY" thirdai/run_demos_build bash -c "python3 run_demo_notebooks.py" {notebook_path}'
+            f'docker run -e "OPENAI_API_KEY=$OPENAI_API_KEY" -e "THIRDAI_KEY=$THIRDAI_KEY" thirdai/run_demos_build bash -c "python3 run_single_demo_notebook.py" {notebook_path}'
         )
 
 
