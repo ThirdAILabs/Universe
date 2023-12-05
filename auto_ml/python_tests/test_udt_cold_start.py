@@ -2,7 +2,7 @@ import os
 
 import pytest
 from download_dataset_fixtures import download_amazon_kaggle_product_catalog_sampled
-from thirdai import bolt
+from thirdai import bolt, data
 
 pytestmark = [pytest.mark.unit]
 
@@ -62,6 +62,7 @@ def run_coldstart(
     bad_csv_line=False,
     epochs=5,
     integer_target=True,
+    variable_length=data.transformations.VariableLengthConfig(),
 ):
     filename = setup_testing_file(missing_values, bad_csv_line, integer_target)
 
@@ -82,6 +83,7 @@ def run_coldstart(
         learning_rate=0.01,
         epochs=epochs,
         validation=validation,
+        variable_length=variable_length,
     )
 
     os.remove(filename)
@@ -136,3 +138,11 @@ def test_coldstart_bad_csv_line():
 @pytest.mark.parametrize("integer_target", [True, False])
 def test_coldstart_target_type(integer_target):
     run_coldstart(integer_target=integer_target)
+
+
+@pytest.mark.parametrize(
+    "variable_length",
+    [None, data.transformations.VariableLengthConfig()],
+)
+def test_coldstart_variable_length(variable_length):
+    run_coldstart(variable_length=variable_length)
