@@ -1,8 +1,10 @@
 #include "UDTMachClassifier.h"
 #include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
+#include <bolt/src/inference/EmbeddingInference.h>
 #include <bolt/src/neuron_index/LshIndex.h>
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
+#include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/metrics/LossMetric.h>
@@ -596,6 +598,18 @@ void UDTMachClassifier::introduceDocuments(
 
   std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>> top_k_per_doc;
 
+  auto emb = std::dynamic_pointer_cast<bolt::Embedding>(
+      model()->computationOrder().at(1)->op());
+  if (!emb) {
+    throw std::invalid_argument("Unable to locate model emb.");
+  }
+  auto fc = std::dynamic_pointer_cast<bolt::FullyConnected>(
+      model()->computationOrder().at(2)->op());
+  if (!fc) {
+    throw std::invalid_argument("Unable to locate model output.");
+  }
+  bolt::EmbeddingInference opt_inf(emb, fc);
+
   bolt::python::CtrlCCheck ctrl_c_check;
 
   for (const auto& batch : doc_samples_tensors) {
@@ -603,7 +617,7 @@ void UDTMachClassifier::introduceDocuments(
     // mach index sampler will only return nonempty buckets, which could
     // cause new docs to only be mapped to buckets already containing
     // entities.
-    auto scores = _classifier->model()->forward(batch).at(0);
+    auto scores = opt_inf.forward(batch.at(0));
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
       uint32_t label = std::stoi(labels->value(row_idx++));
