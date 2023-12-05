@@ -27,12 +27,12 @@ std::vector<Variable*> Variable::topologicalSort() {
     if (visited.count(curr)) {
       return;
     }
-    visited.insert(curr);
 
     for (auto& input : curr->_inputs) {
       traverse(input.get());
     }
 
+    visited.insert(curr);
     sorted.push_back(curr);
   };
 
