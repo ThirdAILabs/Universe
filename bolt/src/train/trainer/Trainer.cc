@@ -20,7 +20,6 @@ Trainer::Trainer(ModelPtr model,
                  std::optional<uint32_t> freeze_hash_tables_epoch,
                  InterruptCheck interrupt_check)
     : _model(std::move(model)),
-      _epoch(0),
       _freeze_hash_tables_epoch(freeze_hash_tables_epoch),
       _interrupt_check(std::move(interrupt_check)) {
   _history = std::make_shared<metrics::History>();
@@ -57,9 +56,10 @@ metrics::History Trainer::train(
 
   uint32_t steps_since_validation = 0;
 
-  uint32_t num_epochs = _epoch + epochs;
-  for (; _epoch < num_epochs; _epoch++) {
-    if (_freeze_hash_tables_epoch && _epoch == *_freeze_hash_tables_epoch) {
+  uint32_t num_epochs = _model->epochs() + epochs;
+  for (; _model->epochs() < num_epochs; _model->incrementEpochs()) {
+    if (_freeze_hash_tables_epoch &&
+        _model->epochs() == *_freeze_hash_tables_epoch) {
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
     }
 
@@ -328,7 +328,7 @@ std::string Trainer::formatTrainLogLine(const std::string& metric_summary,
   std::string logline = fmt::format(
       "train | epoch {} | train_steps {} | {} | train_batches {} | time "
       "{:.3f}s",
-      _epoch, _model->trainSteps(), metric_summary, batches, time);
+      _model->epochs(), _model->trainSteps(), metric_summary, batches, time);
 
   return logline;
 }
@@ -337,7 +337,7 @@ std::string Trainer::formatFuncCallLogLine(const std::string& func_call,
                                            uint32_t batches, int64_t time) {
   std::string logline = fmt::format(
       "func {} | epoch {} | train_steps {} | train_batches {} | time {} ms",
-      func_call, _epoch, _model->trainSteps(), batches, time);
+      func_call, _model->epochs(), _model->trainSteps(), batches, time);
 
   return logline;
 }
@@ -345,7 +345,7 @@ std::string Trainer::formatFuncCallLogLine(const std::string& func_call,
 std::string Trainer::formatIntermediateLogLine(
     const std::string& metric_summary) {
   std::string logline =
-      fmt::format("train | epoch {} | train_steps {} | {}", _epoch,
+      fmt::format("train | epoch {} | train_steps {} | {}", _model->epochs(),
                   _model->trainSteps(), metric_summary);
 
   return logline;
@@ -356,7 +356,7 @@ std::string Trainer::formatValidateLogLine(const std::string& metric_summary,
   std::string logline = fmt::format(
       "validate | epoch {} | train_steps {} | {} | val_batches {} | time "
       "{:.3f}s",
-      _epoch, _model->trainSteps(), metric_summary, batches, time);
+      _model->epochs(), _model->trainSteps(), metric_summary, batches, time);
 
   return logline;
 }

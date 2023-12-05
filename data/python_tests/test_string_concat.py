@@ -12,7 +12,7 @@ def test_string_concat():
     columns = data.ColumnMap(columns)
 
     transformation = data.transformations.StringConcat(
-        input_columns, "output", seperator="#"
+        input_columns, "output", separator="#"
     )
 
     columns = transformation(columns)
