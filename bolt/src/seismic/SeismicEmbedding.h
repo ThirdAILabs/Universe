@@ -12,11 +12,15 @@ namespace thirdai::bolt::seismic {
 
 class SeismicEmbedding final : public SeismicBase {
  public:
-  static std::shared_ptr<SeismicEmbedding> make(size_t subcube_shape,
-                                                size_t patch_shape,
+  static std::shared_ptr<SeismicEmbedding> makeCube(
+      size_t subcube_shape, size_t patch_shape, size_t embedding_dim,
+      const std::string& model_size, std::optional<size_t> max_pool);
+
+  static std::shared_ptr<SeismicEmbedding> make(Shape subcube_shape,
+                                                Shape patch_shape,
                                                 size_t embedding_dim,
                                                 const std::string& model_size,
-                                                std::optional<size_t> max_pool);
+                                                std::optional<Shape> max_pool);
 
   SeismicEmbedding(InputShapeData input_shape_data, ModelPtr model);
 
@@ -25,6 +29,14 @@ class SeismicEmbedding final : public SeismicBase {
       const std::vector<SubcubeMetadata>& subcube_metadata, float learning_rate,
       size_t batch_size, const std::vector<callbacks::CallbackPtr>& callbacks,
       std::optional<uint32_t> log_interval, const DistributedCommPtr& comm);
+
+  py::object forward(const NumpyArray& subcubes);
+
+  void backpropagate(const NumpyArray& gradients);
+
+  void updateParameters(float learning_rate);
+
+  void setModel(ModelPtr model) final;
 
   void save(const std::string& filename) const final;
 
@@ -37,6 +49,8 @@ class SeismicEmbedding final : public SeismicBase {
  private:
   Dataset makeLabelBatches(const std::vector<SubcubeMetadata>& subcube_metadata,
                            size_t batch_size) const;
+
+  void switchToFinetuning();
 
   static ModelPtr buildModel(size_t n_patches, size_t patch_dim,
                              size_t embedding_dim, size_t n_output_classes,
@@ -51,6 +65,10 @@ class SeismicEmbedding final : public SeismicBase {
   // TODO(Nicholas): support for list of label cube dims for different
   // granularities.
   size_t _label_cube_dim = 32;
+
+  enum class TrainingType { UnsupervisedPretraining, Finetuning };
+
+  TrainingType _training_type;
 
   SeismicEmbedding() {}
 

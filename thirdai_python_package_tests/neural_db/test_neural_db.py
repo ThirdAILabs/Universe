@@ -3,16 +3,19 @@ import shutil
 from pathlib import Path
 from typing import List
 
+import numpy as np
 import pytest
+import thirdai
 from ndb_utils import (
     PDF_FILE,
-    all_doc_getters,
+    all_local_doc_getters,
     create_simple_dataset,
     docs_with_meta,
     metadata_constraints,
+    num_duplicate_docs,
     train_simple_neural_db,
 )
-from thirdai import bolt
+from thirdai import dataset
 from thirdai import neural_db as ndb
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
@@ -53,12 +56,12 @@ ARBITRARY_QUERY = "This is an arbitrary search query"
 
 def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document]):
     db.insert(docs, train=False)
-    assert len(db.sources()) == 9
+    assert len(db.sources()) == len(docs) - num_duplicate_docs
 
     initial_scores = [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)]
 
     db.insert(docs, train=True)
-    assert len(db.sources()) == 9
+    assert len(db.sources()) == len(docs) - num_duplicate_docs
 
     assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
 
@@ -68,6 +71,8 @@ def search_works(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
     correct_result = 0
     correct_source = 0
     for doc in docs:
+        if isinstance(doc, ndb.SharePoint):
+            continue
         source = doc.reference(0).source
         for elem_id in range(doc.size):
             query = doc.reference(elem_id).text
@@ -88,10 +93,16 @@ def search_works(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
         assert correct_result / sum([doc.size for doc in docs]) > 0.8
 
 
-def upvote_works(db: ndb.NeuralDB):
+def upvote_works(db: ndb.NeuralDB, number_models: int = 1):
     # We have more than 10 indexed entities.
     target_id = get_upvote_target_id(db, ARBITRARY_QUERY, top_k=10)
-    db.text_to_result(ARBITRARY_QUERY, target_id)
+
+    # TODO(Shubh) : For mach mixture, it is not necessary that upvoting alone will
+    # boost the label enough to be predicted at once. Look at a better solution than
+    # upvoting multiple times.
+    times_to_upvote = 3 if number_models > 1 else 1
+    for i in range(times_to_upvote):
+        db.text_to_result(ARBITRARY_QUERY, target_id)
     assert target_id in [r.id for r in db.search(ARBITRARY_QUERY, top_k=10)]
 
 
@@ -158,19 +169,38 @@ def all_methods_work(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: boo
     clear_sources_works(db)
 
 
+def all_methods_work_mach_mixture(
+    db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool
+):
+    # Removing upvoting and associate as of now because of some random bug
+    insert_works(db, docs)
+    search_works(db, docs, assert_acc)
+    upvote_works(db, number_models=db._savable_state.model.number_models)
+    associate_works(db)
+    save_load_works(db)
+    clear_sources_works(db)
+
+
 def test_neural_db_loads_from_model_bazaar():
     db_from_bazaar()
 
 
 def test_neural_db_all_methods_work_on_new_model():
     db = ndb.NeuralDB("user")
-    all_docs = [get_doc() for get_doc in all_doc_getters]
+    all_docs = [get_doc() for get_doc in all_local_doc_getters]
     all_methods_work(db, all_docs, assert_acc=False)
+
+
+def test_neuralb_db_all_methods_work_on_new_mach_mixture():
+    number_models = 2
+    db = ndb.NeuralDB("user", number_models=number_models)
+    all_docs = [get_doc() for get_doc in all_local_doc_getters]
+    all_methods_work_mach_mixture(db, all_docs, assert_acc=False)
 
 
 def test_neural_db_all_methods_work_on_loaded_bazaar_model():
     db = db_from_bazaar()
-    all_docs = [get_doc() for get_doc in all_doc_getters]
+    all_docs = [get_doc() for get_doc in all_local_doc_getters]
     all_methods_work(db, all_docs, assert_acc=True)
 
 
@@ -631,6 +661,9 @@ def test_neural_db_delete_document():
         ),
     ]
 
+    os.remove("ice_cream.csv")
+    os.remove("pizza.csv")
+
     for _ in range(5):
         [ice_cream_source_id, _] = db.insert(docs, train=True)
 
@@ -675,3 +708,147 @@ def test_neural_db_delete_document():
     # Make sure constrained search index is also updated
     result = db.search("ice cream", top_k=1, constraints={"about": "ice cream"})[0]
     assert result.text == "text: ice cream"
+
+
+def test_neural_db_rerank_search():
+    def char4(sentence):
+        return [sentence[i : i + 4] for i in range(len(sentence) - 3)]
+
+    def custom_tokenize(sentence):
+        tokens = []
+        sentence = sentence.lower()
+        import re
+
+        sentence = re.sub(r"[<>=`\-,.{}:|;/@#?!&~$\[\]()\"']+\ *", " ", sentence)
+        for word in sentence.split(" "):
+            if len(word) > 4:
+                tokens.extend(char4(word))
+        return set(tokens)
+
+    def score(query_tokens, docs_tokens):
+        return len(query_tokens.intersection(docs_tokens))
+
+    db = ndb.NeuralDB("user")
+    all_docs = [get_doc() for get_doc in all_local_doc_getters]
+    db.insert(all_docs, train=False)
+
+    query = (
+        "The standard chunk of Lorem Ipsum used since the 1500s is reproduced below for"
+        " those interested. Sections 1.10.32 and 1.10.33 from de Finibus Bonorum et"
+        " Malorum by Cicero are also reproduced in their exact original form,"
+        " accompanied by English versions from the 1914 translation by H. Rackham."
+    )
+    results = db.search(query, top_k=10, rerank=True)
+
+    query_tokens = custom_tokenize(query)
+    docs_tokens = [custom_tokenize(r.text) for r in results]
+
+    for i in range(1, len(docs_tokens)):
+        prev_score = score(query_tokens, docs_tokens[i - 1])
+        cur_score = score(query_tokens, docs_tokens[i])
+        assert prev_score >= cur_score
+        assert results[i - 1].score >= results[i].score
+
+
+def references_are_equal(references_1, references_2, check_equal_scores=True):
+    if len(references_1) != len(references_2):
+        return False
+    for ref1, ref2 in zip(references_1, references_2):
+        if ref1.id != ref2.id:
+            return False
+        if check_equal_scores and ref1.score != ref2.score:
+            return False
+    return True
+
+
+def test_neural_db_reranking():
+    db = ndb.NeuralDB("user")
+    all_docs = [get_doc() for get_doc in all_local_doc_getters]
+    db.insert(all_docs, train=False)
+
+    query = "What is Lorem and who is Ipsum?"
+
+    # Reranking with rerank_threshold = 0 is the same as not reranking
+    assert references_are_equal(
+        db.search(query, top_k=100),
+        db.search(query, top_k=100, rerank=True, rerank_threshold=0),
+    )
+
+    # Reranking with rerank_threshold = None or inf equals reranking everything
+    assert references_are_equal(
+        db.search(query, top_k=100, rerank=True, rerank_threshold=None),
+        db.search(query, top_k=100, rerank=True, rerank_threshold=float("inf")),
+    )
+
+    # Results are different with and without reranking
+    assert not references_are_equal(
+        db.search(query, top_k=100),
+        db.search(query, top_k=100, rerank=True, rerank_threshold=None),
+    )
+
+    # Assert that threshold top_k defaults to top_k
+    assert references_are_equal(
+        db.search(query, top_k=10, rerank=True, rerank_threshold=1.5),
+        db.search(
+            query, top_k=10, rerank=True, rerank_threshold=1.5, threshold_top_k=10
+        ),
+    )
+
+    # Sum of scores remains the same with and without reranking
+    base_results = db.search(query, top_k=100)
+    base_score_sum = sum(ref.score for ref in base_results)
+    reranked_results = db.search(query, top_k=100, rerank=True, rerank_threshold=None)
+    reranked_score_sum = sum(ref.score for ref in reranked_results)
+    assert abs(base_score_sum - reranked_score_sum) < 0.00001
+
+    # Scores are in descending order with and without ranking
+    def descending_order(seq):
+        return all(seq[i] >= seq[i + 1] for i in range(len(seq) - 1))
+
+    assert descending_order([ref.score for ref in base_results])
+    assert descending_order([ref.score for ref in reranked_results])
+
+
+def test_neural_db_reranking_threshold():
+    db = ndb.NeuralDB("user")
+    all_docs = [get_doc() for get_doc in all_local_doc_getters]
+    db.insert(all_docs, train=False)
+
+    query = "What is Lorem and who is Ipsum?"
+
+    # Items with scores above the threshold are not reranked
+    base_results = db.search(query, top_k=10)
+    scores = np.array([ref.score for ref in base_results])
+    mean_score = np.mean(scores)
+    rerank_threshold = 1.0
+    threshold = rerank_threshold * mean_score
+    for rerank_start, score in enumerate(scores):
+        if score < threshold:
+            break
+    assert rerank_start > 0 and rerank_start < len(scores)
+    reranked_results = db.search(
+        query,
+        top_k=10,
+        rerank=True,
+        top_k_rerank=100,
+        rerank_threshold=rerank_threshold,
+    )
+    assert references_are_equal(
+        base_results[:rerank_start], reranked_results[:rerank_start]
+    )
+    assert not references_are_equal(
+        base_results[rerank_start:], reranked_results[rerank_start:]
+    )
+
+    # Reranked order is consistent with reranker
+    top_100_results = db.search(query, top_k=100)
+    ranker = thirdai.dataset.KeywordOverlapRanker()
+    reranked_indices, _ = ranker.rank(
+        query, [ref.text for ref in top_100_results[rerank_start:]]
+    )
+    ranker_results = [top_100_results[rerank_start + i] for i in reranked_indices]
+    assert references_are_equal(
+        reranked_results[rerank_start:],
+        ranker_results[: 10 - rerank_start],
+        check_equal_scores=False,
+    )

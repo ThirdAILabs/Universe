@@ -1,4 +1,5 @@
 #include "StringManipulation.h"
+#include "CommonChecks.h"
 #include <algorithm>
 #include <cctype>
 #include <iostream>
@@ -71,6 +72,8 @@ std::vector<std::string> tokenizeSentence(const std::string_view& sentence) {
 }
 
 std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
+  utils::validateGreaterThanZero(k, "k for Char-k grams");
+
   std::string text_str(text);
   if (text_str.empty()) {
     return {};
@@ -84,6 +87,21 @@ std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
   }
 
   return char_k_grams;
+}
+
+std::vector<std::string> wordLevelCharKGrams(
+    const std::vector<std::string>& words, uint32_t k, size_t min_word_length) {
+  utils::validateGreaterThanZero(min_word_length, "min_word_length");
+
+  std::vector<std::string> all_char_k_grams;
+  for (const auto& word : words) {
+    if (word.size() >= min_word_length) {
+      auto word_k_grams = charKGrams(word, k);
+      all_char_k_grams.insert(all_char_k_grams.end(), word_k_grams.begin(),
+                              word_k_grams.end());
+    }
+  }
+  return all_char_k_grams;
 }
 
 std::string join(const std::vector<std::string>& strings,
@@ -106,6 +124,32 @@ bool startsWith(const std::string& to_search_in, const std::string& prefix) {
   }
 
   return std::string_view(to_search_in.data(), prefix.size()) == prefix;
+}
+
+std::string stripWhitespace(const std::string& s,
+                            const std::string& strip_characters) {
+  auto first_valid = s.find_first_not_of(strip_characters);
+  auto last_valid = s.find_last_not_of(strip_characters);
+  if (first_valid == std::string::npos || last_valid == std::string::npos) {
+    // Whole string is whitespace.
+    return "";
+  }
+  return s.substr(first_valid, last_valid + 1 - first_valid);
+}
+
+std::string replacePunctuation(std::string string, char replace_char) {
+  std::replace_if(
+      string.begin(), string.end(),
+      [](const char c) -> bool { return std::ispunct(c); }, replace_char);
+  return string;
+}
+
+std::string replaceNewlines(std::string string, char replace_char) {
+  std::replace_if(
+      string.begin(), string.end(),
+      [](const char c) -> bool { return c == '\n' || c == '\r'; },
+      replace_char);
+  return string;
 }
 
 /* HELPER METHODS FOR UNICODE STRINGS */
@@ -355,18 +399,6 @@ std::vector<std::wstring> tokenizeByPunctuations(const std::wstring& text) {
   }
 
   return output;
-}
-
-void replacePunctuationWithSpaces(std::string& string) {
-  std::replace_if(
-      string.begin(), string.end(),
-      [](const char c) -> bool { return std::ispunct(c); }, ' ');
-}
-
-void replaceNewlinesWithSpaces(std::string& string) {
-  std::replace_if(
-      string.begin(), string.end(),
-      [](const char c) -> bool { return c == '\n' || c == '\r'; }, ' ');
 }
 
 }  // namespace thirdai::text

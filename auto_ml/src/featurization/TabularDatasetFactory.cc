@@ -73,6 +73,8 @@ dataset::DatasetLoaderPtr TabularDatasetFactory::getUnLabeledDatasetLoader(
 
 bolt::TensorList TabularDatasetFactory::featurizeInputBatch(
     const MapInputBatch& inputs) {
+  verifyValidColNames(inputs);
+
   dataset::MapBatchRef inputs_ref(inputs);
 
   std::vector<BoltBatch> result;
@@ -86,6 +88,8 @@ bolt::TensorList TabularDatasetFactory::featurizeInputBatch(
 
 std::pair<bolt::TensorList, bolt::TensorList>
 TabularDatasetFactory::featurizeTrainingBatch(const MapInputBatch& batch) {
+  verifyValidColNames(batch);
+
   dataset::MapBatchRef inputs_ref(batch);
 
   auto featurized = _labeled_featurizer->featurize(inputs_ref);

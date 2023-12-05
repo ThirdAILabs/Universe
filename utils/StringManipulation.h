@@ -25,6 +25,10 @@ std::vector<std::string> tokenizeSentence(const std::string_view& sentence);
 
 std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k);
 
+std::vector<std::string> wordLevelCharKGrams(
+    const std::vector<std::string>& words, uint32_t k,
+    size_t min_word_length = 4);
+
 /**
  * Joins a vector of strings into a single delimited string.
  */
@@ -36,11 +40,20 @@ std::string join(const std::vector<std::string>& strings,
  */
 inline std::string lower(const std::string_view& str) {
   std::string lower_name;
-  for (char c : str) {
+  for (const char c : str) {
     lower_name.push_back(std::tolower(c));
   }
   return lower_name;
 }
+
+const std::string DEFAULT_STRING_STRIP_CHARACTERS = " \t\n\r\v\f";
+
+/**
+ *Strips leading and tailing whitespace.
+ */
+std::string stripWhitespace(
+    const std::string& s,
+    const std::string& strip_characters = DEFAULT_STRING_STRIP_CHARACTERS);
 
 /**
  * Extracts an integer value from an integer string.
@@ -51,6 +64,16 @@ inline uint32_t toInteger(const char* start) {
 }
 
 bool startsWith(const std::string& to_search_in, const std::string& prefix);
+
+/**
+ * Replaces punctuation characters in string with a given character.
+ */
+std::string replacePunctuation(std::string string, char replace_char = ' ');
+
+/**
+ * Replaces \n and \r characters in string with a given character.
+ */
+std::string replaceNewlines(std::string string, char replace_char = ' ');
 
 /* HELPER METHODS FOR UNICODE STRINGS */
 
@@ -94,15 +117,5 @@ bool isChineseChar(const wchar_t& c);
 
 std::vector<std::wstring> tokenizeByPunctuations(const std::wstring& text);
 std::vector<std::wstring> splitOnWhitespace(const std::wstring& text);
-
-/**
- * Replaces punctuation characters in string with whitespace.
- */
-void replacePunctuationWithSpaces(std::string& string);
-
-/**
- * Replaces \n and \r characters in string with whitespace.
- */
-void replaceNewlinesWithSpaces(std::string& string);
 
 }  // namespace thirdai::text
