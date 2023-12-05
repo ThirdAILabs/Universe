@@ -18,6 +18,10 @@ template <typename T, size_t NDim>
 using EigenTensor = Eigen::TensorMap<Eigen::Tensor<T, NDim, Eigen::RowMajor>>;
 
 template <typename T>
+using EigenMatrix = Eigen::Map<
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>;
+
+template <typename T>
 using EigenArray =
     Eigen::Map<Eigen::Array<T, 1, Eigen::Dynamic, Eigen::RowMajor>>;
 
@@ -94,17 +98,43 @@ class DenseTensor final : public Tensor {
   }
 
   template <typename T>
+  EigenMatrix<T> eigenMatrix() {
+    checkDtypeCompatability<T>();
+
+    if (ndim() == 2) {
+      return {data<T>(), static_cast<int64_t>(shapeAt(0)),
+              static_cast<int64_t>(shapeAt(1))};
+    }
+
+    return {data<T>(), static_cast<int64_t>(shape().size() / shapeAt(1)),
+            static_cast<int64_t>(shapeAt(1))};
+  }
+
+  template <typename T>
+  EigenMatrix<const T> eigenMatrix() const {
+    checkDtypeCompatability<T>();
+
+    if (ndim() == 2) {
+      return {data<T>(), static_cast<int64_t>(shapeAt(0)),
+              static_cast<int64_t>(shapeAt(1))};
+    }
+
+    return {data<T>(), static_cast<int64_t>(shape().size() / shapeAt(1)),
+            static_cast<int64_t>(shapeAt(1))};
+  }
+
+  template <typename T>
   EigenArray<T> eigenArray() {
     checkDtypeCompatability<T>();
 
-    return {_ptr, _shape.size()};
+    return {data<T>(), static_cast<int64_t>(_shape.size())};
   }
 
   template <typename T>
   EigenArray<const T> eigenArray() const {
     checkDtypeCompatability<T>();
 
-    return {_ptr, _shape.size()};
+    return {data<T>(), static_cast<int64_t>(_shape.size())};
   }
 
   template <typename T>

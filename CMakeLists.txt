@@ -322,6 +322,7 @@ set(THIRDAI_SOURCES
     smx/src/autograd/Variable.cc
     smx/src/tensor/functions/Reshape.cc
     smx/src/tensor/functions/Transpose.cc
+    smx/src/autograd/functions/Activations.cc
     bolt_vector/src/BoltVector.cc
     bolt/src/nn/autograd/Computation.cc
     bolt/src/nn/autograd/ComputationGraph.cc
