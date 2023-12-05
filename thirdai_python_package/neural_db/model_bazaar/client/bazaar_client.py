@@ -240,6 +240,7 @@ class ModelBazaar(Bazaar):
         self._username = None
         self._user_id = None
         self._access_token = None
+        self._doc_types = ["local", "nfs", "s3"]
 
     def sign_up(self, email, password, username):
         """
@@ -309,6 +310,7 @@ class ModelBazaar(Bazaar):
         self,
         model_name: str,
         docs: List[str],
+        doc_type: str = "local",
         is_async: bool = False,
         base_model_identifier: str = None,
     ):
@@ -318,19 +320,31 @@ class ModelBazaar(Bazaar):
         Args:
             model_name (str): The name of the model.
             docs (List[str]): A list of document paths for training.
+            doc_type (str): Specifies document location type : "local"(default), "nfs" or "s3".
             is_async (bool): Whether training should be asynchronous (default is False).
             base_model_identifier (str): The identifier of the base model (optional).
 
         Returns:
             Model: A Model instance.
         """
+        if doc_type not in self._doc_types:
+            raise ValueError(
+                f"Invalid doc_type value. Supported doc_type are {self._doc_types}"
+            )
+
         url = urljoin(self._base_url, f"jobs/{self._user_id}/train")
-        files = [("files", open(file_path, "rb")) for file_path in docs]
+        files = [
+            ("files", open(file_path, "rb"))
+            if doc_type == "local"
+            else ("files", (file_path, "don't care"))
+            for file_path in docs
+        ]
 
         response = http_post_with_error(
             url,
             params={
                 "model_name": model_name,
+                "doc_type": doc_type,
                 "base_model_identifier": base_model_identifier,
             },
             files=files,
