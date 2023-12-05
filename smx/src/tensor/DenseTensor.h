@@ -8,13 +8,14 @@
 #include <smx/src/tensor/Dtype.h>
 #include <smx/src/tensor/MemoryHandle.h>
 #include <smx/src/tensor/Tensor.h>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
 namespace thirdai::smx {
 
 template <typename T, size_t NDim>
-using EigenTensor = Eigen::Map<Eigen::Tensor<T, NDim, Eigen::RowMajor>>;
+using EigenTensor = Eigen::TensorMap<Eigen::Tensor<T, NDim, Eigen::RowMajor>>;
 
 template <typename T>
 using EigenArray =
@@ -28,6 +29,26 @@ class DenseTensor final : public Tensor {
         _data(
             DefaultMemoryHandle::allocate(shape.size() * sizeofDtype(dtype))) {
     _ptr = _data->ptr();
+  }
+
+  DenseTensor(const Shape& shape, Dtype dtype, MemoryHandlePtr data)
+      : Tensor(shape, dtype),
+        _strides(contiguousStrides(shape)),
+        _data(std::move(data)) {
+    _ptr = _data->ptr();
+
+    if (_data->nbytes() != (shape.size() * sizeofDtype(dtype))) {
+      throw std::invalid_argument(
+          "Size of data does not match size of shape and dtype.");
+    }
+  }
+
+  static auto make(const Shape& shape, Dtype dtype) {
+    return std::make_shared<DenseTensor>(shape, dtype);
+  }
+
+  static auto make(const Shape& shape, Dtype dtype, MemoryHandlePtr data) {
+    return std::make_shared<DenseTensor>(shape, dtype, data);
   }
 
   const Shape& strides() const { return _strides; }
@@ -45,27 +66,31 @@ class DenseTensor final : public Tensor {
 
     checkDtypeCompatability<T>();
 
-    return {_ptr, _shape.vector()};
+    std::array<size_t, NDim> dims;
+    for (size_t i = 0; i < NDim; i++) {
+      dims[i] = shapeAt(i);
+    }
+
+    return {data<T>(), dims};
   }
 
   template <typename T, size_t NDim>
-  EigenTensor<T, NDim> reshapeToEigen(const Shape& shape) {
-    if (NDim != shape.ndim()) {
-      throw std::invalid_argument(
-          "Requesting to reshape to eigen tensor with " + std::to_string(NDim) +
-          " dimensions, but provided shape with " +
-          std::to_string(shape.ndim()) + " dimensions.");
-    }
-
-    if (!_shape.canReshapeTo(shape)) {
-      throw std::invalid_argument("Cannot reshape tensor with shape " +
-                                  _shape.toString() + " to shape " +
-                                  shape.toString() + ".");
+  EigenTensor<const T, NDim> toEigen() const {
+    if (NDim != ndim()) {
+      throw std::invalid_argument("Cannot construct Eigen reference with " +
+                                  std::to_string(NDim) +
+                                  " dimensions to tensor with " +
+                                  std::to_string(ndim()) + " dimensions.");
     }
 
     checkDtypeCompatability<T>();
 
-    return {_ptr, shape.vector()};
+    std::array<size_t, NDim> dims;
+    for (size_t i = 0; i < NDim; i++) {
+      dims[i] = shapeAt(i);
+    }
+
+    return {data<T>(), dims};
   }
 
   template <typename T>
@@ -76,18 +101,27 @@ class DenseTensor final : public Tensor {
   }
 
   template <typename T>
-  T* data() {
-    return _ptr;
+  EigenArray<const T> eigenArray() const {
+    checkDtypeCompatability<T>();
+
+    return {_ptr, _shape.size()};
   }
 
   template <typename T>
   const T* data() const {
-    return _ptr;
+    return static_cast<const T*>(_ptr);
   }
+
+  template <typename T>
+  T* data() {
+    return static_cast<T*>(_ptr);
+  }
+
+  const MemoryHandlePtr& handle() const { return _data; }
 
  private:
   template <typename T>
-  void checkDtypeCompatability() {
+  void checkDtypeCompatability() const {
     if (getDtype<T>() != _dtype) {
       throw std::invalid_argument("Canot convert tensor of type " +
                                   toString(_dtype) + " to type " +
@@ -110,5 +144,14 @@ class DenseTensor final : public Tensor {
   void* _ptr;
   MemoryHandlePtr _data;
 };
+
+using DenseTensorPtr = std::shared_ptr<DenseTensor>;
+
+inline DenseTensorPtr asDense(const TensorPtr& tensor) {
+  if (auto ptr = std::dynamic_pointer_cast<DenseTensor>(tensor)) {
+    return ptr;
+  }
+  throw std::invalid_argument("Cannot convert tensor to dense tensor.");
+}
 
 }  // namespace thirdai::smx

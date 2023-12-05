@@ -3,6 +3,7 @@
 #include <smx/src/tensor/Tensor.h>
 #include <functional>
 #include <queue>
+#include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -40,62 +41,24 @@ class Variable {
     backpropagate(ones);
   }
 
-  void backpropagate(const TensorPtr& grad) {
-    addGradient(grad);
-
-    auto out_degrees = outDegrees();
-    // Check this has degree 0.
-
-    std::unordered_set<Variable*> visited;
-    std::queue<Variable*> queue;
-    queue.push(this);
-
-    while (!queue.empty()) {
-      Variable* head = queue.front();
-
-      if (head->_grad_func) {
-        head->_grad_func(head->_grad, head->_inputs);
-      }
-
-      for (const auto& input : head->_inputs) {
-        out_degrees.at(input.get())--;
-        if (out_degrees.at(input.get()) == 0) {
-          queue.push(input.get());
-        }
-      }
-    }
-  }
+  void backpropagate(const TensorPtr& grad);
 
   void addGradient(const TensorPtr& grad) {
+    if (grad->shape() != _tensor->shape()) {
+      throw std::invalid_argument(
+          "Cannot assign gradient with shape " + grad->shape().toString() +
+          " to variable with shape " + _tensor->shape().toString() + ".");
+    }
+
     if (!_grad) {
       _grad = grad;
     }
 
-    // add(_grad, grad)
+    // _grad = add(_grad, grad)
   }
 
  private:
-  std::unordered_map<Variable*, size_t> outDegrees() {
-    std::unordered_map<Variable*, size_t> out_degrees;
-
-    std::unordered_set<Variable*> visited;
-    std::queue<Variable*> queue;
-    queue.push(this);
-
-    while (!queue.empty()) {
-      Variable* head = queue.front();
-      if (!visited.count(head)) {
-        visited.insert(head);
-
-        for (const auto& input : head->_inputs) {
-          out_degrees[input.get()]++;
-          queue.push(input.get());
-        }
-      }
-    }
-
-    return out_degrees;
-  }
+  std::vector<Variable*> topologicalSort();
 
   TensorPtr _tensor;
 

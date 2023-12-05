@@ -318,6 +318,9 @@ if(${LICENSE_BUILD_FLAG_FOUND})
 endif()
 
 set(THIRDAI_SOURCES
+    smx/src/autograd/Variable.cc
+    smx/src/tensor/functions/Reshape.cc
+    smx/src/tensor/functions/Transpose.cc
     bolt_vector/src/BoltVector.cc
     bolt/src/nn/autograd/Computation.cc
     bolt/src/nn/autograd/ComputationGraph.cc
@@ -498,6 +501,7 @@ target_link_libraries(thirdai PUBLIC nlohmann_json::nlohmann_json)
 pybind11_add_module(
   _thirdai
   python_bindings/thirdai.cc
+  smx/python_bindings/SmxPython.cc
   bolt/python_bindings/PybindUtils.cc
   bolt/python_bindings/BoltNNPython.cc
   bolt/python_bindings/BoltTrainPython.cc

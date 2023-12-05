@@ -56,7 +56,7 @@ class Shape {
                                 " for permutation of shape with " +
                                 std::to_string(ndim()) + " dimensions.");
       }
-      perm_shape.push_back(p);
+      perm_shape.push_back(_shape[p]);
       dims_used[p] = true;
     }
 
@@ -81,6 +81,12 @@ class Shape {
     str << ")";
     return str.str();
   }
+
+  friend bool operator==(const Shape& a, const Shape& b) {
+    return b._shape == a._shape;
+  }
+
+  friend bool operator!=(const Shape& a, const Shape& b) { return !(a == b); }
 
  private:
   std::vector<size_t> _shape;

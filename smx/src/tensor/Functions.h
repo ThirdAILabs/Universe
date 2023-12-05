@@ -4,6 +4,8 @@
 
 namespace thirdai::smx {
 
-TensorPtr transpose(const TensorPtr& tensor, std::vector<size_t> perm);
+TensorPtr transpose(const TensorPtr& tensor, const std::vector<size_t>& perm);
+
+TensorPtr reshape(const TensorPtr& tensor, const Shape& new_shape);
 
 }  // namespace thirdai::smx

@@ -9,10 +9,10 @@ namespace thirdai::smx {
 template <typename T, size_t NDim>
 void eigenTranspose(const DenseTensor& in, DenseTensor& out,
                     const std::vector<size_t>& perm) {
-  EigenTensor<T, NDim> in_eigen = in.toEigen<T, NDim>();
+  auto in_eigen = in.toEigen<T, NDim>();
   auto out_eigen = out.toEigen<T, NDim>();
 
-  std::array<size_t, NDim> perm_arr;
+  std::array<int, NDim> perm_arr;
   for (size_t i = 0; i < NDim; i++) {
     perm_arr[i] = perm[i];
   }
@@ -43,34 +43,58 @@ void generalTranspose(const DenseTensor& in, DenseTensor& out,
 }
 
 template <typename T>
-DenseTensor transpose(const DenseTensor& in, const std::vector<size_t>& perm) {
-  DenseTensor out(in.shape().permute(perm), in.dtype());
+DenseTensorPtr transpose(const DenseTensor& in,
+                         const std::vector<size_t>& perm) {
+  auto out = DenseTensor::make(in.shape().permute(perm), in.dtype());
+
+  // TODO(Nicholas): merge dims that are contiguous in perm and permute a view
+  // with fewer dims.
 
   switch (in.ndim()) {
     case 1:
-      throw std::invalid_argument("Cannot permute tensor with 1 dimension.");
+      throw std::invalid_argument(
+          "Cannot transpose a tensor with 1 dimension.");
     case 2:
-      eigenTranspose<T, 2>(in, out, perm);
+      eigenTranspose<T, 2>(in, *out, perm);
       return out;
     case 3:
-      eigenTranspose<T, 3>(in, out, perm);
+      eigenTranspose<T, 3>(in, *out, perm);
       return out;
     case 4:
-      eigenTranspose<T, 4>(in, out, perm);
+      eigenTranspose<T, 4>(in, *out, perm);
       return out;
     case 5:
-      eigenTranspose<T, 5>(in, out, perm);
+      eigenTranspose<T, 5>(in, *out, perm);
       return out;
     case 6:
-      eigenTranspose<T, 6>(in, out, perm);
+      eigenTranspose<T, 6>(in, *out, perm);
       return out;
     case 7:
-      eigenTranspose<T, 7>(in, out, perm);
+      eigenTranspose<T, 7>(in, *out, perm);
       return out;
 
     default:
-      generalTranspose<T>(in, out, perm);
+      generalTranspose<T>(in, *out, perm);
       return out;
+  }
+}
+
+TensorPtr transpose(const TensorPtr& tensor, const std::vector<size_t>& perm) {
+  if (tensor->isSparse()) {
+    throw std::invalid_argument(
+        "Transpose is not yet supported on sparse tensors.");
+  }
+
+  auto dense = asDense(tensor);
+
+  switch (dense->dtype()) {
+    case Dtype::f32:
+      return transpose<float>(*dense, perm);
+    case Dtype::u32:
+      return transpose<uint32_t>(*dense, perm);
+    default:
+      throw std::invalid_argument("Dtype " + toString(dense->dtype()) +
+                                  " is not yet supported for transpose.");
   }
 }
 

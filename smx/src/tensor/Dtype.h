@@ -30,7 +30,7 @@ inline std::string toString(Dtype dtype) {
 }
 
 template <typename T>
-Dtype getDtype();
+inline Dtype getDtype();
 
 template <>
 inline Dtype getDtype<uint32_t>() {

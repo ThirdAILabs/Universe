@@ -10,6 +10,7 @@
 #include <dataset/python_bindings/DatasetPython.h>
 #include <licensing/python_bindings/LicensingPython.h>
 #include <search/python_bindings/DocSearchPython.h>
+#include <smx/python_bindings/SmxPython.h>
 #include <telemetry/python_bindings/TelemetryPython.h>
 #include <utils/Logging.h>
 #include <utils/Random.h>
@@ -151,4 +152,6 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
   // Deployment submodule
   thirdai::automl::python::createDeploymentSubmodule(m);
+
+  thirdai::smx::python::createSmxSubmodule(m);
 }
