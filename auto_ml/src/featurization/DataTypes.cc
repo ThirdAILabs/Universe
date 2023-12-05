@@ -19,10 +19,6 @@ dataset::TextTokenizerPtr getTextTokenizerFromString(
     return dataset::WordPunctTokenizer::make();
   }
 
-  if (string == "word-level-char-4") {
-    return dataset::
-  }
-
   throw std::invalid_argument(
       "Created text column with invalid tokenizer '" + string +
       "', please choose one of 'words', 'words-punct', or 'char-k' "

@@ -6,6 +6,7 @@
 #include <dataset/src/utils/TokenEncoding.h>
 #include <utils/StringManipulation.h>
 #include <string>
+#include <utility>
 
 namespace thirdai::dataset {
 
@@ -98,43 +99,6 @@ class CharKGramTokenizer : public TextTokenizer {
 
   static auto make(uint32_t k) {
     return std::make_shared<CharKGramTokenizer>(k);
-  }
-
-  std::vector<uint32_t> tokenize(const std::string& input) final {
-    return token_encoding::hashTokens(text::charKGrams(input, _k));
-  }
-
-  std::string getResponsibleWord(const std::string& input,
-                                 uint32_t source_token) final {
-    auto map =
-        token_encoding::buildUnigramHashToWordMap(text::charKGrams(input, _k));
-
-    if (!map.count(source_token)) {
-      // should never get here since RCA should have only returned a valid token
-      throw std::invalid_argument("Error in RCA.");
-    }
-    return map.at(source_token);
-  }
-
- private:
-  uint32_t _k;
-
-  CharKGramTokenizer() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<TextTokenizer>(this), _k);
-  }
-};
-
-
-class WordLevelCharKTokenizer : public TextTokenizer {
- public:
-  explicit WordLevelCharKTokenizer(uint32_t k) : _k(k) {}
-
-  static auto make(uint32_t k) {
-    return std::make_shared<WordLevelCharKTokenizer>(k);
   }
 
   std::vector<uint32_t> tokenize(const std::string& input) final {
