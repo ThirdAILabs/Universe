@@ -2,10 +2,7 @@
 
 #include <smx/src/tensor/Tensor.h>
 #include <functional>
-#include <queue>
 #include <stdexcept>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 namespace thirdai::smx {
