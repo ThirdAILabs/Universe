@@ -312,6 +312,7 @@ add_subdirectory(hashtable)
 add_subdirectory(archive)
 add_subdirectory(compression)
 add_subdirectory(utils)
+add_subdirectory(smx)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)

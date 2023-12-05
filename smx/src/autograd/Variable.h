@@ -32,6 +32,15 @@ class Variable {
   Variable(TensorPtr tensor, bool requires_grad)
       : _tensor(std::move(tensor)), _requires_grad(requires_grad) {}
 
+  static auto make(TensorPtr tensor, GradFunc grad_func,
+                   std::vector<VariablePtr> inputs) {
+    return std::make_shared<Variable>(tensor, grad_func, inputs);
+  }
+
+  static auto make(TensorPtr tensor, bool requires_grad) {
+    return std::make_shared<Variable>(tensor, requires_grad);
+  }
+
   const TensorPtr& tensor() const { return _tensor; }
 
   bool requiresGrad() const { return _requires_grad; }
