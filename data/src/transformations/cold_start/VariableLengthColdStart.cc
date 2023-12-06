@@ -20,7 +20,8 @@ VariableLengthConfig::VariableLengthConfig(
     std::unordered_set<std::string> common_words,
     float uncommon_doc_word_insertion_probability,
     std::unordered_map<uint32_t, std::unordered_set<std::string>>
-        uncommon_words)
+        uncommon_words,
+    std::unordered_map<std::string, float> word_hist)
     : covering_min_length(covering_min_length),
       covering_max_length(covering_max_length),
       max_covering_samples(max_covering_samples),
@@ -39,7 +40,8 @@ VariableLengthConfig::VariableLengthConfig(
       common_words(std::move(common_words)),
       uncommon_doc_word_insertion_probability(
           uncommon_doc_word_insertion_probability),
-      uncommon_words(std::move(uncommon_words)) {
+      uncommon_words(std::move(uncommon_words)),
+      word_hist(std::move(word_hist)) {
   utils::validateGreaterThanZero(covering_min_length, "covering_min_length");
   utils::validateGreaterThanZero(covering_max_length, "covering_max_length");
   utils::validateGreaterThanZero(slice_min_length, "slice_min_length");
@@ -86,13 +88,14 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
   phrases = cold_start::mergeStrongWithWeak(
       phrases, strong_phrase, _config.strong_sample_num_words, _seed);
 
+  std::mt19937 rng(_seed);
   std::vector<std::string> output_samples;
   for (const auto& phrase : phrases) {
-    std::string output_text = convertPhraseToText(
-        phrase, _config.stopword_removal_probability,
-        _config.stopword_insertion_probability,
-        _config.word_removal_probability, _config.word_perturbation_probability,
-        doc_id, _seed);
+    std::string output_text =
+        convertPhraseToText(phrase, _config.stopword_removal_probability,
+                            _config.stopword_insertion_probability,
+                            _config.word_removal_probability,
+                            _config.word_perturbation_probability, doc_id, rng);
 
     if (!output_text.empty()) {
       output_samples.push_back(output_text);
@@ -189,8 +192,9 @@ void VariableLengthColdStart::addRandomSlicePhrases(
 std::string VariableLengthColdStart::convertPhraseToText(
     const std::vector<std::string>& phrase, float stopword_removal_probability,
     float stopword_insertion_probability, float word_removal_probability,
-    float word_perturbation_probability, uint32_t doc_id, uint32_t seed) const {
-  std::mt19937 rng(seed);
+    float word_perturbation_probability, uint32_t doc_id,
+    std::mt19937 rng) const {
+  (void)doc_id;
   std::uniform_real_distribution<float> dist(0.0, 1.0);
   std::string output_text;
   for (auto word : phrase) {
@@ -214,24 +218,27 @@ std::string VariableLengthColdStart::convertPhraseToText(
       }
     }
 
+    // if the word is generally common, remove it with higher probability
     if (dist(rng) < _config.common_word_removal_probability &&
-        _config.common_words.count(word)) {
+        _config.word_hist.count(word) &&
+        dist(rng) < _config.word_hist.at(word)) {
       continue;
     }
 
-    // decide to randomly insert an uncommon word
+    // if the word is generally not common, insert it again with probability
+    // proportional to its score
+    if (dist(rng) < _config.uncommon_doc_word_insertion_probability &&
+        _config.word_hist.count(word) &&
+        dist(rng) > _config.word_hist.at(word)) {
+      output_text.append(word);
+      output_text.push_back(' ');
+    }
+
+    // insert random common word
     if (dist(rng) < _config.common_word_insertion_probability) {
       std::string element;
       std::sample(_config.common_words.begin(), _config.common_words.end(),
                   &element, 1, rng);
-      output_text.append(element);
-      output_text.push_back(' ');
-    }
-
-    if (dist(rng) < _config.uncommon_doc_word_insertion_probability) {
-      std::string element;
-      std::sample(_config.uncommon_words.at(doc_id).begin(),
-                  _config.uncommon_words.at(doc_id).end(), &element, 1, rng);
       output_text.append(element);
       output_text.push_back(' ');
     }

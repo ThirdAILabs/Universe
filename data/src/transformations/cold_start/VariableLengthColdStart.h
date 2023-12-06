@@ -2,6 +2,7 @@
 
 #include "TextAugmentationUtils.h"
 #include <data/src/transformations/Transformation.h>
+#include <random>
 
 namespace thirdai::data {
 
@@ -25,7 +26,8 @@ struct VariableLengthConfig {
       std::unordered_set<std::string> common_words = {},
       float uncommon_doc_word_insertion_probability = 0,
       std::unordered_map<uint32_t, std::unordered_set<std::string>>
-          uncommon_words = {});
+          uncommon_words = {},
+      std::unordered_map<std::string, float> word_hist = {});
 
   size_t covering_min_length;
   size_t covering_max_length;
@@ -46,6 +48,7 @@ struct VariableLengthConfig {
   std::unordered_set<std::string> common_words;
   float uncommon_doc_word_insertion_probability;
   std::unordered_map<uint32_t, std::unordered_set<std::string>> uncommon_words;
+  std::unordered_map<std::string, float> word_hist;
 };
 
 class VariableLengthColdStart : public cold_start::TextAugmentationBase {
@@ -87,7 +90,7 @@ class VariableLengthColdStart : public cold_start::TextAugmentationBase {
                                   float stopword_insertion_probability,
                                   float word_removal_probability,
                                   float word_perturbation_probability,
-                                  uint32_t doc_id, uint32_t seed) const;
+                                  uint32_t doc_id, std::mt19937 rng) const;
 
   VariableLengthConfig _config;
 };
