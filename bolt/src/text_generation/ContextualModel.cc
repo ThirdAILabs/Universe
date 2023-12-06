@@ -33,8 +33,7 @@ metrics::History ContextualModel::train(
       val_metrics, /* steps_per_validation= */ std::nullopt,
       /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
       /* autotune_rehash_rebuild= */ false, /* verbose= */ true,
-      /* logging_interval= */ std::nullopt, /* gradient_update_interval= */ 1,
-      comm);
+      /* logging_interval= */ std::nullopt, comm);
 }
 
 LabeledDataset ContextualModel::loadDataset(const dataset::DataSourcePtr& data,

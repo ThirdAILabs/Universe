@@ -18,10 +18,12 @@ constexpr uint32_t DEFAULT_BATCH_SIZE = 2048;
 
 Trainer::Trainer(ModelPtr model,
                  std::optional<uint32_t> freeze_hash_tables_epoch,
+                 uint32_t gradient_update_interval,
                  InterruptCheck interrupt_check)
     : _model(std::move(model)),
       _epoch(0),
       _freeze_hash_tables_epoch(freeze_hash_tables_epoch),
+      _gradient_update_interval(gradient_update_interval),
       _interrupt_check(std::move(interrupt_check)) {
   _history = std::make_shared<metrics::History>();
 }
@@ -35,8 +37,7 @@ metrics::History Trainer::train(
     bool use_sparsity_in_validation,
     const std::vector<callbacks::CallbackPtr>& callbacks_in,
     bool autotune_rehash_rebuild, bool verbose,
-    std::optional<uint32_t> logging_interval, uint32_t gradient_update_interval,
-    const DistributedCommPtr& comm) {
+    std::optional<uint32_t> logging_interval, const DistributedCommPtr& comm) {
   verifyNumBatchesMatch(train_data);
   if (validation_data) {
     verifyNumBatchesMatch(*validation_data);
@@ -70,11 +71,11 @@ metrics::History Trainer::train(
     if (comm) {
       num_batches = comm->minNumBatches(num_batches);
     }
-    if (gradient_update_interval > num_batches) {
+    if (_gradient_update_interval > num_batches) {
       std::string errorMessage = fmt::format(
           "Error: gradient_update_interval ({}) exceeds num_batches ({}). "
           "Model parameters will not be updated under this condition.",
-          gradient_update_interval, num_batches);
+          _gradient_update_interval, num_batches);
 
       throw std::runtime_error(errorMessage);
     }
@@ -84,7 +85,7 @@ metrics::History Trainer::train(
 
     for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
       bool is_update_interval_reached =
-          ((batch_idx + 1) % gradient_update_interval == 0);
+          ((batch_idx + 1) % _gradient_update_interval == 0);
 
       callbacks.onBatchBegin();
 
@@ -197,8 +198,7 @@ metrics::History Trainer::train_with_metric_names(
     bool use_sparsity_in_validation,
     const std::vector<callbacks::CallbackPtr>& callbacks,
     bool autotune_rehash_rebuild, bool verbose,
-    std::optional<uint32_t> logging_interval, uint32_t gradient_update_interval,
-    const DistributedCommPtr& comm) {
+    std::optional<uint32_t> logging_interval, const DistributedCommPtr& comm) {
   return train(
       /* train_data= */ train_data,
       /* learning_rate= */ learning_rate, /* epochs= */ epochs,
@@ -210,8 +210,7 @@ metrics::History Trainer::train_with_metric_names(
       /* use_sparsity_in_validation= */ use_sparsity_in_validation,
       /* callbacks= */ callbacks,
       /* autotune_rehash_rebuild= */ autotune_rehash_rebuild,
-      /* verbose= */ verbose, /* logging_interval= */ logging_interval,
-      /* gradient_update_interval= */ gradient_update_interval, comm);
+      /* verbose= */ verbose, /* logging_interval= */ logging_interval, comm);
 }
 
 metrics::History Trainer::train_with_dataset_loader(
@@ -225,8 +224,7 @@ metrics::History Trainer::train_with_dataset_loader(
     bool use_sparsity_in_validation,
     const std::vector<callbacks::CallbackPtr>& callbacks,
     bool autotune_rehash_rebuild, bool verbose,
-    std::optional<uint32_t> logging_interval, uint32_t gradient_update_interval,
-    const DistributedCommPtr& comm) {
+    std::optional<uint32_t> logging_interval, const DistributedCommPtr& comm) {
   if (!max_in_memory_batches) {
     auto train_data = loadAllWrapper(train_data_loader, batch_size, verbose);
 
@@ -239,7 +237,7 @@ metrics::History Trainer::train_with_dataset_loader(
     return train(train_data, learning_rate, epochs, train_metrics,
                  validation_data, validation_metrics, steps_per_validation,
                  use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
-                 verbose, logging_interval, gradient_update_interval, comm);
+                 verbose, logging_interval, comm);
   }
 
   // We have duplicate code here for loading validation data because for
@@ -260,7 +258,7 @@ metrics::History Trainer::train_with_dataset_loader(
       train(train_chunk.value(), learning_rate, /* epochs= */ 1, train_metrics,
             validation_data, validation_metrics, steps_per_validation,
             use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
-            verbose, logging_interval, gradient_update_interval, comm);
+            verbose, logging_interval, comm);
     }
     train_data_loader->restart();
   }

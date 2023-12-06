@@ -28,6 +28,7 @@ class Trainer {
   explicit Trainer(
       ModelPtr model,
       std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt,
+      uint32_t gradient_update_interval = 1,
       InterruptCheck interrupt_check = std::nullopt);
 
   /**
@@ -59,7 +60,6 @@ class Trainer {
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
       std::optional<uint32_t> logging_interval = std::nullopt,
-      uint32_t gradient_update_interval = 1,
       const DistributedCommPtr& comm = nullptr);
 
   metrics::History train_with_metric_names(
@@ -72,7 +72,6 @@ class Trainer {
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
       std::optional<uint32_t> logging_interval = std::nullopt,
-      uint32_t gradient_update_interval = 1,
       const DistributedCommPtr& comm = nullptr);
 
   metrics::History train_with_dataset_loader(
@@ -87,7 +86,6 @@ class Trainer {
       const std::vector<callbacks::CallbackPtr>& callbacks = {},
       bool autotune_rehash_rebuild = false, bool verbose = true,
       std::optional<uint32_t> logging_interval = std::nullopt,
-      uint32_t gradient_update_interval = 1,
       const DistributedCommPtr& comm = nullptr);
 
   /**
@@ -168,6 +166,7 @@ class Trainer {
 
   uint32_t _epoch;
   std::optional<uint32_t> _freeze_hash_tables_epoch;
+  uint32_t _gradient_update_interval;
 
   InterruptCheck _interrupt_check;
 };

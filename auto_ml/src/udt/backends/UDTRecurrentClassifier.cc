@@ -76,6 +76,7 @@ py::object UDTRecurrentClassifier::train(
   }
 
   bolt::Trainer trainer(_model, freeze_hash_tables_epoch,
+                        /* gradient_update_interval */ 1,
                         bolt::python::CtrlCCheck{});
 
   auto train_dataset = _dataset_factory->getDatasetLoader(
@@ -96,7 +97,6 @@ py::object UDTRecurrentClassifier::train(
       /* callbacks= */ callbacks,
       /* autotune_rehash_rebuild= */ true, /* verbose= */ options.verbose,
       /* logging_interval= */ options.logging_interval,
-      /* gradient_update_interval= */ 1,
       /*comm= */ comm);
 
   return py::cast(history);
@@ -109,7 +109,8 @@ py::object UDTRecurrentClassifier::evaluate(
 
   throwIfSparseInference(sparse_inference);
 
-  bolt::Trainer trainer(_model, std::nullopt, bolt::python::CtrlCCheck{});
+  bolt::Trainer trainer(_model, std::nullopt, /* gradient_update_interval */ 1,
+                        bolt::python::CtrlCCheck{});
 
   auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 

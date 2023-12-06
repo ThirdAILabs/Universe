@@ -39,7 +39,8 @@ metrics::History SeismicBase::trainOnPatches(
 
   LabeledDataset dataset = std::make_pair(std::move(data), std::move(labels));
 
-  Trainer trainer(_model, std::nullopt, python::CtrlCCheck());
+  Trainer trainer(_model, std::nullopt, /* gradient_update_interval */ 1,
+                  python::CtrlCCheck());
 
   if (comm) {
     _model->disableSparseParameterUpdates();
@@ -51,7 +52,7 @@ metrics::History SeismicBase::trainOnPatches(
       /* validation_metrics= */ {}, /* steps_per_validation= */ std::nullopt,
       /* use_sparsity_in_validation= */ false, /* callbacks= */ callbacks,
       /* autotune_rehash_rebuild= */ false, /* verbose= */ true,
-      /* logging_interval= */ log_interval, /* gradient_update_interval= */ 1,
+      /* logging_interval= */ log_interval,
       /* comm= */ comm);
 
   if (comm) {
