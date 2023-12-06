@@ -2,6 +2,7 @@
 #include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/inference/EmbeddingInference.h>
+#include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/neuron_index/LshIndex.h>
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
 #include <bolt/src/nn/model/Model.h>
@@ -578,6 +579,12 @@ std::optional<bolt::EmbeddingInference> inferenceModel(
 
   // Model must be Input -> Embedding -> FullyConnected
   if (!input || !emb || !fc) {
+    return std::nullopt;
+  }
+  // Currently this is only implmented for sigmoid activations for mach, but
+  // could be extended in the future.
+  if (fc->kernel()->getActivationFunction() !=
+      bolt::ActivationFunction::Sigmoid) {
     return std::nullopt;
   }
 
