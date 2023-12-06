@@ -7,15 +7,15 @@
 namespace thirdai::bolt {
 
 TEST(EmbeddingInferenceTests, OutputsMatch) {
-  size_t input_dim = 100, emb_dim = 50, output_dim = 80;
+  size_t input_dim = 100, emb_dim = 50, fc_dim = 80;
 
   auto input = Input::make(input_dim);
   auto emb = Embedding::make(emb_dim, input_dim, "relu");
   auto hidden = emb->apply(input);
-  auto fc = FullyConnected::make(output_dim, emb_dim, 0.1, "sigmoid");
+  auto fc = FullyConnected::make(fc_dim, emb_dim, 0.1, "sigmoid");
   auto output = fc->apply(hidden);
 
-  auto loss = BinaryCrossEntropy::make(output, Input::make(output_dim));
+  auto loss = BinaryCrossEntropy::make(output, Input::make(fc_dim));
 
   auto model = Model::make({input}, {output}, {loss});
 
@@ -40,10 +40,10 @@ TEST(EmbeddingInferenceTests, OutputsMatch) {
     ASSERT_TRUE(model_output->getVector(i).isDense());
     ASSERT_TRUE(inf_output->getVector(i).isDense());
 
-    ASSERT_EQ(model_output->getVector(i).len, output_dim);
-    ASSERT_EQ(inf_output->getVector(i).len, output_dim);
+    ASSERT_EQ(model_output->getVector(i).len, fc_dim);
+    ASSERT_EQ(inf_output->getVector(i).len, fc_dim);
 
-    for (size_t j = 0; j < output_dim; j++) {
+    for (size_t j = 0; j < fc_dim; j++) {
       ASSERT_FLOAT_EQ(model_output->getVector(i).activations[j],
                       inf_output->getVector(i).activations[j]);
     }
