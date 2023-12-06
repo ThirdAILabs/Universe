@@ -2,6 +2,7 @@
 
 #include "TextAugmentationUtils.h"
 #include <data/src/transformations/Transformation.h>
+#include <random>
 
 namespace thirdai::data {
 
@@ -74,7 +75,7 @@ class VariableLengthColdStart : public cold_start::TextAugmentationBase {
                                          float stopword_insertion_probability,
                                          float word_removal_probability,
                                          float word_perturbation_probability,
-                                         uint32_t seed);
+                                         std::mt19937 rng);
 
   VariableLengthConfig _config;
 };

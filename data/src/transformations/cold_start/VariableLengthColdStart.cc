@@ -4,7 +4,6 @@
 #include <utils/CommonChecks.h>
 #include <utils/Stopwords.h>
 #include <utils/StringManipulation.h>
-#include <random>
 
 namespace thirdai::data {
 
@@ -74,13 +73,15 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
   phrases = cold_start::mergeStrongWithWeak(
       phrases, strong_phrase, _config.strong_sample_num_words, _seed);
 
+  std::mt19937 rng(_seed);
+
   std::vector<std::string> output_samples;
   for (const auto& phrase : phrases) {
     std::string output_text =
         convertPhraseToText(phrase, _config.stopword_removal_probability,
                             _config.stopword_insertion_probability,
                             _config.word_removal_probability,
-                            _config.word_perturbation_probability, _seed);
+                            _config.word_perturbation_probability, rng);
 
     if (!output_text.empty()) {
       output_samples.push_back(output_text);
@@ -177,37 +178,41 @@ void VariableLengthColdStart::addRandomSlicePhrases(
 std::string VariableLengthColdStart::convertPhraseToText(
     const std::vector<std::string>& phrase, float stopword_removal_probability,
     float stopword_insertion_probability, float word_removal_probability,
-    float word_perturbation_probability, uint32_t seed) {
-  std::mt19937 rng(seed);
+    float word_perturbation_probability, std::mt19937 rng) {
   std::uniform_real_distribution<float> dist(0.0, 1.0);
+  float random_number = dist(rng);
+
   std::string output_text;
   for (auto word : phrase) {
     // decide to skip stopword
-    if (text::stop_words.count(word) &&
-        dist(rng) < stopword_removal_probability) {
+    if (random_number < stopword_removal_probability &&
+        text::stop_words.count(word)) {
       continue;
     }
+    random_number /= (1.0 - stopword_removal_probability);
 
     // decide to skip the word
-    if (dist(rng) < word_removal_probability) {
+    if (random_number < word_removal_probability) {
       continue;
     }
+    random_number /= (1.0 - word_removal_probability);
 
     // decide to perturb the word by removing either the first or last character
-    if (dist(rng) < word_perturbation_probability) {
-      if (dist(rng) < 0.5) {
+    if (random_number < word_perturbation_probability) {
+      if (random_number < word_perturbation_probability / 2) {
         word = word.substr(1);
       } else {
         word = word.substr(0, word.length() - 1);
       }
     }
+    random_number /= (1.0 - word_perturbation_probability);
 
     // add the word
     output_text.append(word);
     output_text.push_back(' ');
 
     // decide to randomly insert a stopword
-    if (dist(rng) < stopword_insertion_probability) {
+    if (random_number < stopword_insertion_probability) {
       std::string element;
       std::sample(text::stop_words.begin(), text::stop_words.end(), &element, 1,
                   rng);
