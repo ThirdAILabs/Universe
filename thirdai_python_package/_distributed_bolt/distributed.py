@@ -31,7 +31,6 @@ class Communication(bolt.train.Communication):
         num_workers = train.get_context().get_world_size()
         gradients = torch.from_numpy(np.array(model.get_gradients()))
 
-
         dist.all_reduce(gradients)
 
         gradients = gradients.numpy() / num_workers
