@@ -4,8 +4,10 @@
 #include <bolt/src/inference/EmbeddingInference.h>
 #include <bolt/src/neuron_index/LshIndex.h>
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
+#include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/metrics/LossMetric.h>
 #include <bolt/src/train/metrics/MachPrecision.h>
@@ -563,6 +565,25 @@ void UDTMachClassifier::updateSamplingStrategy() {
   }
 }
 
+std::optional<bolt::EmbeddingInference> inferenceModel(
+    const bolt::ModelPtr& model) {
+  auto computations = model->computationOrder();
+  if (computations.size() != 3) {
+    return std::nullopt;
+  }
+
+  auto input = std::dynamic_pointer_cast<bolt::Input>(computations.at(0)->op());
+  auto emb = bolt::Embedding::cast(computations.at(1)->op());
+  auto fc = bolt::FullyConnected::cast(computations.at(2)->op());
+
+  // Model must be Input -> Embedding -> FullyConnected
+  if (!input || !emb || !fc) {
+    return std::nullopt;
+  }
+
+  return std::make_optional<bolt::EmbeddingInference>(emb, fc);
+}
+
 void UDTMachClassifier::introduceDocuments(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
@@ -598,17 +619,7 @@ void UDTMachClassifier::introduceDocuments(
 
   std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>> top_k_per_doc;
 
-  auto emb = std::dynamic_pointer_cast<bolt::Embedding>(
-      model()->computationOrder().at(1)->op());
-  if (!emb) {
-    throw std::invalid_argument("Unable to locate model emb.");
-  }
-  auto fc = std::dynamic_pointer_cast<bolt::FullyConnected>(
-      model()->computationOrder().at(2)->op());
-  if (!fc) {
-    throw std::invalid_argument("Unable to locate model output.");
-  }
-  bolt::EmbeddingInference opt_inf(emb, fc);
+  auto inference_model = inferenceModel(_classifier->model());
 
   bolt::python::CtrlCCheck ctrl_c_check;
 
@@ -617,7 +628,12 @@ void UDTMachClassifier::introduceDocuments(
     // mach index sampler will only return nonempty buckets, which could
     // cause new docs to only be mapped to buckets already containing
     // entities.
-    auto scores = opt_inf.forward(batch.at(0));
+    bolt::TensorPtr scores;
+    if (inference_model) {
+      scores = inference_model->forward(batch.at(0));
+    } else {
+      scores = _classifier->model()->forward(batch).at(0);
+    }
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
       uint32_t label = std::stoi(labels->value(row_idx++));
