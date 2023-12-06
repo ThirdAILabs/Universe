@@ -14,6 +14,7 @@
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <bolt/src/utils/Timer.h>
+#include <hashing/src/MurmurHash.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <optional>
 #include <stdexcept>
@@ -174,18 +175,23 @@ Dataset SeismicEmbedding::makeLabelBatches(
     std::vector<size_t> lens;
 
     for (size_t i = start; i < end; i++) {
-      auto labels =
-          seismicLabelsFromMetadata(subcube_metadata[i], subcubeShape(),
-                                    _label_cube_dim, n_output_classes);
+      // auto labels =
+      //     seismicLabelsFromMetadata(subcube_metadata[i], subcubeShape(),
+      //                               _label_cube_dim, n_output_classes);
 
-      indices.insert(indices.end(), labels.begin(), labels.end());
+      // indices.insert(indices.end(), labels.begin(), labels.end());
 
-      float label_val = 1.0 / labels.size();
-      for (size_t j = 0; j < labels.size(); j++) {
-        values.push_back(label_val);
-      }
+      // float label_val = 1.0 / labels.size();
+      // for (size_t j = 0; j < labels.size(); j++) {
+      //   values.push_back(label_val);
+      // }
+      const std::string& vol_name = std::get<0>(subcube_metadata[i]);
+      uint32_t label =
+          hashing::MurmurHash(vol_name.data(), vol_name.size(), 24024);
 
-      lens.push_back(labels.size());
+      indices.push_back(label);
+      values.push_back(1.0);
+      lens.push_back(1);
     }
 
     auto tensor = Tensor::sparse(std::move(indices), std::move(values),
