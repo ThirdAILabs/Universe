@@ -180,10 +180,10 @@ std::string VariableLengthColdStart::convertPhraseToText(
     float stopword_insertion_probability, float word_removal_probability,
     float word_perturbation_probability, std::mt19937 rng) {
   std::uniform_real_distribution<float> dist(0.0, 1.0);
-  float random_number = dist(rng);
 
   std::string output_text;
   for (auto word : phrase) {
+    float random_number = dist(rng);
     // decide to skip stopword
     if (random_number < stopword_removal_probability &&
         text::stop_words.count(word)) {
