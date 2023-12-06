@@ -67,6 +67,8 @@ class TrecCovidMachUDTBenchmark(UDTBenchmarkConfig):
     @staticmethod
     def get_data_types(path_prefix):
         return {
-            "QUERY": bolt.types.text(tokenizer="words-punct", contextual_encoding="local"),
+            "QUERY": bolt.types.text(
+                tokenizer="words-punct", contextual_encoding="local"
+            ),
             "DOC_ID": bolt.types.categorical(delimiter=":"),
         }
