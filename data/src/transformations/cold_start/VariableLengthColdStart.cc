@@ -183,36 +183,32 @@ std::string VariableLengthColdStart::convertPhraseToText(
 
   std::string output_text;
   for (auto word : phrase) {
-    float random_number = dist(rng);
     // decide to skip stopword
-    if (random_number < stopword_removal_probability &&
+    if (dist(rng) < stopword_removal_probability &&
         text::stop_words.count(word)) {
       continue;
     }
-    random_number /= (1.0 - stopword_removal_probability);
 
     // decide to skip the word
-    if (random_number < word_removal_probability) {
+    if (dist(rng) < word_removal_probability) {
       continue;
     }
-    random_number /= (1.0 - word_removal_probability);
 
     // decide to perturb the word by removing either the first or last character
-    if (random_number < word_perturbation_probability) {
-      if (random_number < word_perturbation_probability / 2) {
+    if (float rn = dist(rng) < word_perturbation_probability) {
+      if (rn < word_perturbation_probability / 2) {
         word = word.substr(1);
       } else {
         word = word.substr(0, word.length() - 1);
       }
     }
-    random_number /= (1.0 - word_perturbation_probability);
 
     // add the word
     output_text.append(word);
     output_text.push_back(' ');
 
     // decide to randomly insert a stopword
-    if (random_number < stopword_insertion_probability) {
+    if (dist(rng) < stopword_insertion_probability) {
       std::string element;
       std::sample(text::stop_words.begin(), text::stop_words.end(), &element, 1,
                   rng);
