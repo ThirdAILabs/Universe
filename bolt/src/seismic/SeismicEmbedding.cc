@@ -187,7 +187,8 @@ Dataset SeismicEmbedding::makeLabelBatches(
       // }
       const std::string& vol_name = std::get<0>(subcube_metadata[i]);
       uint32_t label =
-          hashing::MurmurHash(vol_name.data(), vol_name.size(), 24024);
+          hashing::MurmurHash(vol_name.data(), vol_name.size(), 24024) %
+          n_output_classes;
 
       indices.push_back(label);
       values.push_back(1.0);
