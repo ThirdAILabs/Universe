@@ -21,7 +21,8 @@ VariableLengthConfig::VariableLengthConfig(
     float uncommon_doc_word_insertion_probability,
     std::unordered_map<uint32_t, std::unordered_set<std::string>>
         uncommon_words,
-    std::unordered_map<std::string, float> word_hist)
+    std::unordered_map<std::string, float> word_hist, size_t replace_with_space,
+    size_t delete_chars, size_t replace_with_adjacent, size_t duplicate_chars)
     : covering_min_length(covering_min_length),
       covering_max_length(covering_max_length),
       max_covering_samples(max_covering_samples),
@@ -41,7 +42,11 @@ VariableLengthConfig::VariableLengthConfig(
       uncommon_doc_word_insertion_probability(
           uncommon_doc_word_insertion_probability),
       uncommon_words(std::move(uncommon_words)),
-      word_hist(std::move(word_hist)) {
+      word_hist(std::move(word_hist)),
+      replace_with_space(replace_with_space),
+      delete_chars(delete_chars),
+      replace_with_adjacent(replace_with_adjacent),
+      duplicate_chars(duplicate_chars) {
   utils::validateGreaterThanZero(covering_min_length, "covering_min_length");
   utils::validateGreaterThanZero(covering_max_length, "covering_max_length");
   utils::validateGreaterThanZero(slice_min_length, "slice_min_length");
@@ -98,7 +103,9 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
                             _config.word_perturbation_probability, doc_id, rng);
 
     if (!output_text.empty()) {
-      output_samples.push_back(output_text);
+      output_samples.push_back(text::randomStringPerturbation(
+          output_text, _config.replace_with_space, _config.delete_chars,
+          _config.replace_with_adjacent, _config.duplicate_chars));
     }
   }
 

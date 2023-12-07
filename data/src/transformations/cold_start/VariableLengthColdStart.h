@@ -27,7 +27,9 @@ struct VariableLengthConfig {
       float uncommon_doc_word_insertion_probability = 0,
       std::unordered_map<uint32_t, std::unordered_set<std::string>>
           uncommon_words = {},
-      std::unordered_map<std::string, float> word_hist = {});
+      std::unordered_map<std::string, float> word_hist = {},
+      size_t replace_with_space = 0, size_t delete_chars = 0,
+      size_t replace_with_adjacent = 0, size_t duplicate_chars = 0);
 
   size_t covering_min_length;
   size_t covering_max_length;
@@ -49,6 +51,11 @@ struct VariableLengthConfig {
   float uncommon_doc_word_insertion_probability;
   std::unordered_map<uint32_t, std::unordered_set<std::string>> uncommon_words;
   std::unordered_map<std::string, float> word_hist;
+
+  size_t replace_with_space;
+  size_t delete_chars;
+  size_t replace_with_adjacent;
+  size_t duplicate_chars;
 };
 
 class VariableLengthColdStart : public cold_start::TextAugmentationBase {

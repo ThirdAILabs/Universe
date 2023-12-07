@@ -404,7 +404,8 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                float, float, float, float, float,
                std::unordered_set<std::string>, float,
                std::unordered_map<uint32_t, std::unordered_set<std::string>>,
-               std::unordered_map<std::string, float>>(),
+               std::unordered_map<std::string, float>, size_t, size_t, size_t,
+               size_t>(),
            py::arg("covering_min_length") = 5,
            py::arg("covering_max_length") = 40,
            py::arg("max_covering_samples") = std::nullopt,
@@ -423,7 +424,9 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("uncommon_doc_word_insertion_probability") = 0,
            py::arg("uncommon_words") =
                std::unordered_map<uint32_t, std::unordered_set<std::string>>(),
-           py::arg("word_hist") = std::unordered_map<std::string, float>())
+           py::arg("word_hist") = std::unordered_map<std::string, float>(),
+           py::arg("replace_with_space") = 0, py::arg("delete_chars") = 0,
+           py::arg("replace_with_adjacent") = 0, py::arg("duplicate_chars") = 0)
 #endif
       ;
 
