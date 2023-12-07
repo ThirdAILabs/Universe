@@ -46,6 +46,8 @@ ColumnMap TextCompat::apply(ColumnMap columns, State& state) const {
     std::vector<uint32_t> tokens =
         _encoder->encode(_tokenizer->tokenize(string));
 
+    dataset::token_encoding::mod(tokens, _encoding_dim);
+
     std::vector<uint32_t> indices;
     std::vector<float> values;
     for (const auto& [index, value] :
