@@ -19,11 +19,11 @@ using IndicesAndValues = std::pair<std::vector<std::vector<uint32_t>>,
 
 IndicesAndValues applyTransformation(const dataset::TextTokenizerPtr& tokenizer,
                                      const dataset::TextEncoderPtr& encoder,
-                                     size_t encoding_dim, size_t dim,
+                                     size_t encoding_dim, size_t hash_range,
                                      bool lowercase,
                                      std::vector<std::string> text) {
   TextCompat transform("txt", "indices", "values", tokenizer, encoder,
-                       lowercase, encoding_dim, dim);
+                       lowercase, encoding_dim, hash_range);
 
   ColumnMap columns({{"txt", ValueColumn<std::string>::make(std::move(text))}});
 
@@ -40,15 +40,18 @@ IndicesAndValues applyTransformation(const dataset::TextTokenizerPtr& tokenizer,
 
 IndicesAndValues applyBlock(const dataset::TextTokenizerPtr& tokenizer,
                             const dataset::TextEncoderPtr& encoder,
-                            size_t encoding_dim, size_t dim, bool lowercase,
+                            size_t encoding_dim, size_t hash_range,
+                            bool lowercase,
                             const std::vector<std::string>& text) {
   auto block =
       dataset::TextBlock::make(dataset::ColumnIdentifier("text"), tokenizer,
                                encoder, lowercase, encoding_dim);
 
+  // For the featurize we are choosing a delimiter that we ensure is not in the
+  // samples to featurize, that way we ensure that there is only one column.
   dataset::TabularFeaturizer featurizer(
-      {dataset::BlockList({block}, /*hash_range=*/dim)}, /*has_header=*/false,
-      /*delimiter=*/'%');
+      {dataset::BlockList({block}, /*hash_range=*/hash_range)},
+      /*has_header=*/false, /*delimiter=*/'%');
 
   featurizer.processHeader("text");
   auto rows = featurizer.featurize(text);
@@ -114,7 +117,7 @@ std::vector<size_t> getEncodingDims() {
   return {100000, 1000000, std::numeric_limits<uint32_t>::max()};
 }
 
-std::vector<size_t> getOutputDims() { return {1000, 7000, 100000}; }
+std::vector<size_t> getHashRanges() { return {1000, 7000, 100000}; }
 
 TEST(TextCompatTest, OutputsMatch) {
   std::vector<std::string> text = randomText();
@@ -122,19 +125,19 @@ TEST(TextCompatTest, OutputsMatch) {
   auto tokenizers = getTokenizers();
   auto encoders = getEncoders();
   auto encoding_dims = getEncodingDims();
-  auto output_dims = getOutputDims();
+  auto hash_ranges = getHashRanges();
   std::vector<bool> lowercases = {true, false};
 
   for (const auto& tokenizer : tokenizers) {
     for (const auto& encoder : encoders) {
       for (auto encoding_dim : encoding_dims) {
-        for (auto output_dim : output_dims) {
+        for (auto hash_range : hash_ranges) {
           for (auto lowercase : lowercases) {
             auto [transform_indices, transform_values] = applyTransformation(
-                tokenizer, encoder, encoding_dim, output_dim, lowercase, text);
+                tokenizer, encoder, encoding_dim, hash_range, lowercase, text);
 
             auto [block_indices, block_values] = applyBlock(
-                tokenizer, encoder, encoding_dim, output_dim, lowercase, text);
+                tokenizer, encoder, encoding_dim, hash_range, lowercase, text);
 
             ASSERT_EQ(transform_indices, block_indices);
             ASSERT_EQ(transform_values, block_values);

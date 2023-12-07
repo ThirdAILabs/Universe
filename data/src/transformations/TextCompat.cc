@@ -15,7 +15,7 @@ TextCompat::TextCompat(std::string input_column, std::string output_indices,
                        std::string output_values,
                        dataset::TextTokenizerPtr tokenizer,
                        dataset::TextEncoderPtr encoder, bool lowercase,
-                       size_t encoding_dim, size_t feature_hash_dim)
+                       size_t encoding_dim, size_t hash_range)
     : _input_column(std::move(input_column)),
       _output_indices(std::move(output_indices)),
       _output_values(std::move(output_values)),
@@ -23,7 +23,7 @@ TextCompat::TextCompat(std::string input_column, std::string output_indices,
       _encoder(std::move(encoder)),
       _lowercase(lowercase),
       _encoding_dim(encoding_dim),
-      _feature_hash_dim(feature_hash_dim) {}
+      _hash_range(hash_range) {}
 
 ColumnMap TextCompat::apply(ColumnMap columns, State& state) const {
   (void)state;
@@ -61,7 +61,7 @@ ColumnMap TextCompat::apply(ColumnMap columns, State& state) const {
   }
 
   auto indices_col =
-      ArrayColumn<uint32_t>::make(std::move(output_indices), _feature_hash_dim);
+      ArrayColumn<uint32_t>::make(std::move(output_indices), _hash_range);
   columns.setColumn(_output_indices, indices_col);
 
   auto values_col = ArrayColumn<float>::make(std::move(output_values));
@@ -77,7 +77,7 @@ template <class Archive>
 void TextCompat::serialize(Archive& archive) {
   archive(cereal::base_class<Transformation>(this), _input_column,
           _output_indices, _output_values, _tokenizer, _encoder, _lowercase,
-          _encoding_dim, _feature_hash_dim);
+          _encoding_dim, _hash_range);
 }
 
 }  // namespace thirdai::data
