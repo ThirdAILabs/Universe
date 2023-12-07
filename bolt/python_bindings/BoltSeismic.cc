@@ -22,7 +22,7 @@ void createSeismicSubmodule(py::module_& module) {
       seismic, "SeismicEmbedding")
       .def(py::init(&SeismicEmbedding::makeCube), py::arg("subcube_shape"),
            py::arg("patch_shape"), py::arg("embedding_dim"),
-           py::arg("size") = "large", py::arg("max_pool") = std::nullopt)
+           py::arg("size") = "medium", py::arg("max_pool") = std::nullopt)
       .def(py::init(&SeismicEmbedding::make), py::arg("subcube_shape"),
            py::arg("patch_shape"), py::arg("embedding_dim"),
            py::arg("size") = "large", py::arg("max_pool") = std::nullopt)

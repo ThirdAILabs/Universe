@@ -27,7 +27,7 @@ std::pair<size_t, float> nOutputClasses(const std::string& model_size) {
     return {100, 1.0};
   }
   if (model_size == "medium") {
-    return {1000, 0.1};
+    return {1000, 0.2};
   }
   if (model_size == "large") {
     return {3000, 0.1};
