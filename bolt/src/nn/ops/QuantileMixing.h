@@ -67,7 +67,7 @@ class QuantileMixing final
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Op>(this), _output_dim, _window_size);
+    archive(cereal::base_class<Op>(this), _frac, _output_dim, _window_size);
   }
 };
 

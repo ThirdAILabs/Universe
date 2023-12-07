@@ -73,7 +73,8 @@ py::object UDTRegression::train(const dataset::DataSourcePtr& data,
   auto train_dataset = _dataset_factory->getLabeledDatasetLoader(
       data, /* shuffle= */ true, /* shuffle_config= */ options.shuffle_config);
 
-  bolt::Trainer trainer(_model, std::nullopt, bolt::python::CtrlCCheck{});
+  bolt::Trainer trainer(_model, std::nullopt, /* gradient_update_interval */ 1,
+                        bolt::python::CtrlCCheck{});
 
   auto history = trainer.train_with_dataset_loader(
       /* train_data_loader= */ train_dataset,
@@ -101,7 +102,8 @@ py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
                                    std::optional<uint32_t> top_k) {
   (void)top_k;
 
-  bolt::Trainer trainer(_model, std::nullopt, bolt::python::CtrlCCheck{});
+  bolt::Trainer trainer(_model, std::nullopt, /* gradient_update_interval */ 1,
+                        bolt::python::CtrlCCheck{});
 
   auto dataset =
       _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ false);
