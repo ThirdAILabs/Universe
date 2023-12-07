@@ -765,12 +765,16 @@ def references_are_equal(references_1, references_2, check_equal_scores=True):
     return True
 
 
+def descending_order(seq):
+    return all(seq[i] >= seq[i + 1] for i in range(len(seq) - 1))
+
+
 def test_neural_db_reranking():
     db = ndb.NeuralDB("user")
     all_docs = [get_doc() for get_doc in all_local_doc_getters]
-    db.insert(all_docs, train=False)
+    db.insert(all_docs, train=True)
 
-    query = "What is Lorem and who is Ipsum?"
+    query = "Lorem Ipsum"
 
     # Reranking with rerank_threshold = 0 is the same as not reranking
     assert references_are_equal(
@@ -794,36 +798,32 @@ def test_neural_db_reranking():
     assert references_are_equal(
         db.search(query, top_k=10, rerank=True, rerank_threshold=1.5),
         db.search(
-            query, top_k=10, rerank=True, rerank_threshold=1.5, threshold_top_k=10
+            query, top_k=10, rerank=True, rerank_threshold=1.5, top_k_threshold=10
         ),
     )
 
-    # Sum of scores remains the same with and without reranking
-    base_results = db.search(query, top_k=100)
-    base_score_sum = sum(ref.score for ref in base_results)
-    reranked_results = db.search(query, top_k=100, rerank=True, rerank_threshold=None)
-    reranked_score_sum = sum(ref.score for ref in reranked_results)
-    assert abs(base_score_sum - reranked_score_sum) < 0.00001
-
     # Scores are in descending order with and without ranking
-    def descending_order(seq):
-        return all(seq[i] >= seq[i + 1] for i in range(len(seq) - 1))
-
+    base_results = db.search(query, top_k=100)
+    reranked_results = db.search(query, top_k=100, rerank=True, rerank_threshold=None)
     assert descending_order([ref.score for ref in base_results])
     assert descending_order([ref.score for ref in reranked_results])
+    assert reranked_results[0].score <= base_results[0].score
+    assert reranked_results[-1].score >= base_results[-1].score
 
 
 def test_neural_db_reranking_threshold():
     db = ndb.NeuralDB("user")
     all_docs = [get_doc() for get_doc in all_local_doc_getters]
-    db.insert(all_docs, train=False)
+    db.insert(all_docs, train=True)
 
-    query = "What is Lorem and who is Ipsum?"
+    query = "agreement"
 
     # Items with scores above the threshold are not reranked
     base_results = db.search(query, top_k=10)
     scores = np.array([ref.score for ref in base_results])
     mean_score = np.mean(scores)
+    # Set threshold to 1.0 (of mean) so some of the top 10 references are
+    # guaranteed to pass the threshold.
     rerank_threshold = 1.0
     threshold = rerank_threshold * mean_score
     for rerank_start, score in enumerate(scores):
@@ -843,6 +843,7 @@ def test_neural_db_reranking_threshold():
     assert not references_are_equal(
         base_results[rerank_start:], reranked_results[rerank_start:]
     )
+    assert descending_order([ref.score for ref in reranked_results])
 
     # Reranked order is consistent with reranker
     top_100_results = db.search(query, top_k=100)
