@@ -36,7 +36,7 @@ class TextCompat final : public Transformation {
      * to addFeatureSegment increments the count of _n_segments_added, thus we
      * combine hashes with 1 instead of 0.
      */
-    return hashing::combineHashes(index % _encoding_dim, 1) % _feature_hash_dim;
+    return hashing::combineHashes(index, 1) % _feature_hash_dim;
   }
 
   std::string _input_column, _output_indices;
