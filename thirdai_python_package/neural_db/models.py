@@ -47,6 +47,7 @@ class Model:
         cancel_state: CancelState = None,
         max_in_memory_batches: int = None,
         variable_length = None,
+        epochs = 10,
     ) -> None:
         raise NotImplementedError()
 
@@ -336,6 +337,7 @@ class Mach(Model):
         max_in_memory_batches: int = None,
         override_number_classes: int = None,
         variable_length = None,
+        epochs = 10,
     ) -> None:
         """
         override_number_classes : The number of classes for the Mach model
@@ -395,8 +397,8 @@ class Mach(Model):
             unsupervised_train_on_docs(
                 model=self.model,
                 documents=train_documents,
-                min_epochs=min_epochs,
-                max_epochs=max_epochs,
+                min_epochs=epochs,
+                max_epochs=epochs,
                 metric="hash_precision@5",
                 learning_rate=learning_rate,
                 acc_to_stop=0.95,
