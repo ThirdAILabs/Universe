@@ -409,7 +409,9 @@ set(THIRDAI_SOURCES
     data/src/transformations/StringHash.cc
     data/src/transformations/TextTokenizer.cc
     data/src/transformations/TextCompat.cc
-    data/src/transformations/ColdStartText.cc
+    data/src/transformations/cold_start/TextAugmentationUtils.cc
+    data/src/transformations/cold_start/ColdStartText.cc
+    data/src/transformations/cold_start/VariableLengthColdStart.cc
     data/src/transformations/FeatureHash.cc
     data/src/transformations/Pipeline.cc
     data/src/transformations/MachLabel.cc
