@@ -125,10 +125,6 @@ class Trainer {
 
   ModelPtr getModel() { return _model; }
 
-  // Synchronizes the outer epoch count maintained by the distributed framework
-  // with the epoch count maintained within Bolt.
-  void incrementEpochCount() { _epoch++; }
-
  private:
   static void verifyNumBatchesMatch(const LabeledDataset& data);
 
@@ -182,7 +178,6 @@ class Trainer {
 
   std::shared_ptr<metrics::History> _history;
 
-  uint32_t _epoch;
   std::optional<uint32_t> _freeze_hash_tables_epoch;
 
   InterruptCheck _interrupt_check;

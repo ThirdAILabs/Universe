@@ -98,6 +98,8 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
     num_epochs = 1
     max_in_memory_batches = 5000
 
+    max_in_memory_batches = 5000
+
     @staticmethod
     def get_data_types(path_prefix):
         data_types = {}

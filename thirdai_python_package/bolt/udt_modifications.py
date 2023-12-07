@@ -3,6 +3,7 @@ from typing import Dict, List, Optional, Tuple
 import pandas as pd
 import thirdai
 import thirdai._thirdai.bolt as bolt
+import thirdai._thirdai.data as data
 import thirdai._thirdai.dataset as dataset
 
 from .udt_docs import *
@@ -181,6 +182,9 @@ def modify_udt():
         filename: str,
         strong_column_names: List[str],
         weak_column_names: List[str],
+        variable_length: Optional[
+            data.transformations.VariableLengthConfig
+        ] = data.transformations.VariableLengthConfig(),
         learning_rate: float = 0.001,
         epochs: int = 5,
         batch_size: int = None,
@@ -209,6 +213,7 @@ def modify_udt():
             data=data_source,
             strong_column_names=strong_column_names,
             weak_column_names=weak_column_names,
+            variable_length=variable_length,
             learning_rate=learning_rate,
             epochs=epochs,
             train_metrics=metrics,
@@ -224,6 +229,9 @@ def modify_udt():
         data_source: dataset.DataSource,
         strong_column_names: List[str],
         weak_column_names: List[str],
+        variable_length: Optional[
+            data.transformations.VariableLengthConfig
+        ] = data.transformations.VariableLengthConfig(),
         learning_rate: float = 0.001,
         epochs: int = 5,
         batch_size: int = None,
@@ -247,6 +255,7 @@ def modify_udt():
             data=data_source,
             strong_column_names=strong_column_names,
             weak_column_names=weak_column_names,
+            variable_length=variable_length,
             learning_rate=learning_rate,
             epochs=epochs,
             train_metrics=metrics,

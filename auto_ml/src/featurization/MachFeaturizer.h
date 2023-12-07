@@ -43,6 +43,7 @@ class MachFeaturizer final : public Featurizer {
       const dataset::DataSourcePtr& data_source,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
+      const std::optional<data::VariableLengthConfig>& variable_length,
       size_t n_balancing_samples, size_t rows_to_read);
 
   const auto& machIndex() const { return _state->machIndex(); }

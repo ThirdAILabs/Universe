@@ -7,6 +7,7 @@
 #include <data/src/TensorConversion.h>
 #include <data/src/rca/ExplanationMap.h>
 #include <data/src/transformations/State.h>
+#include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <stdexcept>
@@ -59,6 +60,7 @@ class Featurizer {
       const dataset::DataSourcePtr& data_source,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
+      std::optional<data::VariableLengthConfig> variable_length,
       bool fast_approximation, size_t batch_size, bool shuffle, bool verbose,
       dataset::DatasetShuffleConfig shuffle_config =
           dataset::DatasetShuffleConfig());
@@ -106,6 +108,7 @@ class Featurizer {
   data::TransformationPtr coldStartTransform(
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
+      const std::optional<data::VariableLengthConfig>& variable_length,
       bool fast_approximation = false);
 
   data::TransformationPtr _input_transform;

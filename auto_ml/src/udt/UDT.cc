@@ -6,7 +6,7 @@
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
 #include <auto_ml/src/udt/backends/UDTGraphClassifier.h>
-#include <auto_ml/src/udt/backends/UDTMachClassifier.h>
+#include <auto_ml/src/udt/backends/UDTMach.h>
 #include <auto_ml/src/udt/backends/UDTQueryReformulation.h>
 #include <auto_ml/src/udt/backends/UDTRecurrentClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
@@ -77,7 +77,7 @@ UDT::UDT(
                             defaults::USE_MACH) ||
         user_args.get<bool>("neural_db", "boolean", defaults::USE_MACH);
     if (use_mach) {
-      _backend = std::make_unique<UDTMachClassifier>(
+      _backend = std::make_unique<UDTMach>(
           data_types, temporal_tracking_relationships, target_col,
           as_categorical, n_target_classes.value(), integer_target,
           tabular_options, model_config, user_args);
@@ -239,21 +239,23 @@ std::vector<std::pair<std::string, float>> UDT::explain(
   return result;
 }
 
-py::object UDT::coldstart(const dataset::DataSourcePtr& data,
-                          const std::vector<std::string>& strong_column_names,
-                          const std::vector<std::string>& weak_column_names,
-                          float learning_rate, uint32_t epochs,
-                          const std::vector<std::string>& train_metrics,
-                          const dataset::DataSourcePtr& val_data,
-                          const std::vector<std::string>& val_metrics,
-                          const std::vector<CallbackPtr>& callbacks,
-                          TrainOptions options,
-                          const bolt::DistributedCommPtr& comm) {
+py::object UDT::coldstart(
+    const dataset::DataSourcePtr& data,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names,
+    std::optional<data::VariableLengthConfig> variable_length,
+    float learning_rate, uint32_t epochs,
+    const std::vector<std::string>& train_metrics,
+    const dataset::DataSourcePtr& val_data,
+    const std::vector<std::string>& val_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    const bolt::DistributedCommPtr& comm) {
   licensing::entitlements().verifyDataSource(data);
 
   return _backend->coldstart(data, strong_column_names, weak_column_names,
-                             learning_rate, epochs, train_metrics, val_data,
-                             val_metrics, callbacks, options, comm);
+                             variable_length, learning_rate, epochs,
+                             train_metrics, val_data, val_metrics, callbacks,
+                             options, comm);
 }
 
 std::vector<uint32_t> UDT::modelDims() const {

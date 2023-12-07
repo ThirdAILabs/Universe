@@ -10,6 +10,7 @@
 #include <auto_ml/src/rlhf/RLHFSampler.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
+#include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -23,9 +24,9 @@ namespace thirdai::automl::udt {
 
 using bolt::metrics::InputMetrics;
 
-class UDTMachClassifier final : public UDTBackend {
+class UDTMach final : public UDTBackend {
  public:
-  UDTMachClassifier(
+  UDTMach(
       const ColumnDataTypes& input_data_types,
       const UserProvidedTemporalRelationships& temporal_tracking_relationships,
       const std::string& target_name, const CategoricalDataTypePtr& target,
@@ -85,16 +86,17 @@ class UDTMachClassifier final : public UDTBackend {
 
   FeaturizerPtr featurizer() const final { return _featurizer; }
 
-  py::object coldstart(const dataset::DataSourcePtr& data,
-                       const std::vector<std::string>& strong_column_names,
-                       const std::vector<std::string>& weak_column_names,
-                       float learning_rate, uint32_t epochs,
-                       const std::vector<std::string>& train_metrics,
-                       const dataset::DataSourcePtr& val_data,
-                       const std::vector<std::string>& val_metrics,
-                       const std::vector<CallbackPtr>& callbacks,
-                       TrainOptions options,
-                       const bolt::DistributedCommPtr& comm) final;
+  py::object coldstart(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names,
+      std::optional<data::VariableLengthConfig> variable_length,
+      float learning_rate, uint32_t epochs,
+      const std::vector<std::string>& train_metrics,
+      const dataset::DataSourcePtr& val_data,
+      const std::vector<std::string>& val_metrics,
+      const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+      const bolt::DistributedCommPtr& comm) final;
 
   py::object embedding(const MapInputBatch& sample) final;
 
@@ -207,7 +209,9 @@ class UDTMachClassifier final : public UDTBackend {
   void addBalancingSamples(
       const dataset::DataSourcePtr& data,
       const std::vector<std::string>& strong_column_names = {},
-      const std::vector<std::string>& weak_column_names = {});
+      const std::vector<std::string>& weak_column_names = {},
+      const std::optional<data::VariableLengthConfig>& variable_length =
+          std::nullopt);
 
   void requireRLHFSampler();
 
@@ -255,7 +259,7 @@ class UDTMachClassifier final : public UDTBackend {
     return defaults::MACH_DEFAULT_NUM_REPETITIONS;
   }
 
-  UDTMachClassifier() {}
+  UDTMach() {}
 
   friend cereal::access;
 
