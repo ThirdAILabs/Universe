@@ -108,6 +108,10 @@ class UDTMach final : public UDTBackend {
    */
   py::object entityEmbedding(const Label& label) final;
 
+  TextDatasetConfig textDatasetConfig() const final {
+    return _featurizer->textDatasetConfig();
+  }
+
   void introduceDocuments(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,

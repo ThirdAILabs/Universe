@@ -248,6 +248,7 @@ void defineAutomlInModule(py::module_& module) {
            [](udt::UDT& udt, NumpyArray<float>& new_parameters) {
              thirdai::bolt::python::setParameters(udt.model(), new_parameters);
            })
+      .def("is_v1", &udt::UDT::isV1)
       .def(bolt::python::getPickleFunction<udt::UDT>());
   ;
 }

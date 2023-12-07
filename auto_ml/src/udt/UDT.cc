@@ -79,10 +79,17 @@ UDT::UDT(
                             defaults::USE_MACH) ||
         user_args.get<bool>("neural_db", "boolean", defaults::USE_MACH);
     if (use_mach) {
-      _backend = std::make_unique<UDTMach>(
-          data_types, temporal_tracking_relationships, target_col,
-          as_categorical, n_target_classes.value(), integer_target,
-          tabular_options, model_config, user_args);
+      if (user_args.get<bool>("v1", "boolean", false)) {
+        _backend = std::make_unique<UDTMachClassifier>(
+            data_types, temporal_tracking_relationships, target_col,
+            as_categorical, n_target_classes.value(), integer_target,
+            tabular_options, model_config, user_args);
+      } else {
+        _backend = std::make_unique<UDTMach>(
+            data_types, temporal_tracking_relationships, target_col,
+            as_categorical, n_target_classes.value(), integer_target,
+            tabular_options, model_config, user_args);
+      }
     } else {
       _backend = std::make_unique<UDTClassifier>(
           data_types, temporal_tracking_relationships, target_col,
@@ -387,6 +394,10 @@ void UDT::throwUnsupportedUDTConfigurationError(
 
   error_msg << ".";
   throw std::invalid_argument(error_msg.str());
+}
+
+bool UDT::isV1() const {
+  return dynamic_cast<UDTMachClassifier*>(_backend.get());
 }
 
 }  // namespace thirdai::automl::udt

@@ -12,6 +12,7 @@
 #include <bolt/src/train/metrics/RecallAtK.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -52,7 +53,7 @@ using bolt::metrics::MachRecall;
 using bolt::metrics::PrecisionAtK;
 using bolt::metrics::RecallAtK;
 
-inline uint32_t expectInteger(const Label& label) {
+uint32_t expectInteger(const Label& label) {
   if (!std::holds_alternative<uint32_t>(label)) {
     throw std::invalid_argument("Must use integer label.");
   }
@@ -94,9 +95,6 @@ UDTMachClassifier::UDTMachClassifier(
           /* use_sigmoid_bce = */ true, /* mach= */ true),
       user_args.get<bool>("freeze_hash_tables", "boolean",
                           defaults::FREEZE_HASH_TABLES));
-
-  // TODO(david) should we freeze hash tables for mach? how does this work
-  // with coldstart?
 
   if (!integer_target) {
     throw std::invalid_argument(
@@ -480,6 +478,24 @@ MachInfo UDTMachClassifier::getMachInfo() const {
   return mach_info;
 }
 
+py::object UDTMachClassifier::coldstart(
+    const dataset::DataSourcePtr& data,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    const dataset::DataSourcePtr& val_data,
+    const std::vector<std::string>& val_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    const bolt::DistributedCommPtr& comm) {
+  auto metadata = getColdStartMetaData();
+
+  auto data_source = cold_start::preprocessColdStartTrainSource(
+      data, strong_column_names, weak_column_names, _dataset_factory, metadata);
+
+  return train(data_source, learning_rate, epochs, train_metrics, val_data,
+               val_metrics, callbacks, options, comm);
+}
+
 py::object UDTMachClassifier::embedding(const MapInputBatch& sample) {
   return _classifier->embedding(_dataset_factory->featurizeInputBatch(sample));
 }
@@ -576,6 +592,72 @@ void UDTMachClassifier::updateSamplingStrategy() {
       }
     }
   }
+}
+
+void UDTMachClassifier::introduceDocuments(
+    const dataset::DataSourcePtr& data,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names,
+    std::optional<uint32_t> num_buckets_to_sample_opt,
+    uint32_t num_random_hashes, bool fast_approximation, bool verbose) {
+  auto metadata = getColdStartMetaData();
+
+  dataset::cold_start::ColdStartDataSourcePtr cold_start_data;
+  if (fast_approximation) {
+    cold_start_data = cold_start::concatenatedDocumentDataSource(
+        data, strong_column_names, weak_column_names, _dataset_factory,
+        metadata);
+  } else {
+    cold_start_data = cold_start::preprocessColdStartTrainSource(
+        data, strong_column_names, weak_column_names, _dataset_factory,
+        metadata);
+  }
+
+  auto dataset_loader =
+      _dataset_factory->getUnLabeledDatasetLoader(cold_start_data);
+
+  auto doc_samples = dataset_loader->loadAll(defaults::BATCH_SIZE, verbose);
+
+  auto doc_samples_tensors =
+      bolt::convertDatasets(doc_samples, _classifier->model()->inputDims());
+
+  const auto& labels = cold_start_data->labelColumn();
+  uint32_t row_idx = 0;
+
+  uint32_t num_buckets_to_sample = num_buckets_to_sample_opt.value_or(
+      _mach_label_block->index()->numHashes());
+
+  std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>> top_k_per_doc;
+
+  bolt::python::CtrlCCheck ctrl_c_check;
+
+  for (const auto& batch : doc_samples_tensors) {
+    // Note: using sparse inference here could cause issues because the
+    // mach index sampler will only return nonempty buckets, which could
+    // cause new docs to only be mapped to buckets already containing
+    // entities.
+    auto scores = _classifier->model()->forward(batch).at(0);
+
+    for (uint32_t i = 0; i < scores->batchSize(); i++) {
+      uint32_t label = std::stoi(labels->value(row_idx++));
+      top_k_per_doc[label].push_back(
+          scores->getVector(i).findKLargestActivations(num_buckets_to_sample));
+    }
+
+    ctrl_c_check();
+  }
+
+  for (auto& [doc, top_ks] : top_k_per_doc) {
+    auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
+                                  num_random_hashes);
+    _mach_label_block->index()->insert(doc, hashes);
+
+    ctrl_c_check();
+  }
+
+  addBalancingSamples(cold_start_data);
+
+  updateSamplingStrategy();
 }
 
 void UDTMachClassifier::introduceDocument(
@@ -790,6 +872,188 @@ void UDTMachClassifier::requireRLHFSampler() {
         "{'rlhf': "
         "True} in the model options or call enable_rlhf().");
   }
+}
+
+BoltVector makeLabelFromHashes(const std::vector<uint32_t>& hashes,
+                               uint32_t n_buckets, std::mt19937& rng) {
+  std::vector<uint32_t> indices;
+  std::sample(hashes.begin(), hashes.end(), std::back_inserter(indices),
+              n_buckets, rng);
+
+  return BoltVector::makeSparseVector(indices,
+                                      std::vector<float>(indices.size(), 1.0));
+}
+
+std::vector<std::pair<MapInput, MapInput>> convertSamples(
+    const std::string& text_col,
+    const std::vector<std::pair<std::string, std::string>>& samples) {
+  std::vector<std::pair<MapInput, MapInput>> converted_samples;
+  converted_samples.reserve(samples.size());
+  for (const auto& [x, y] : samples) {
+    converted_samples.push_back({{{text_col, x}}, {{text_col, y}}});
+  }
+  return converted_samples;
+}
+
+void UDTMachClassifier::associate(
+    const std::vector<std::pair<std::string, std::string>>&
+        source_target_samples,
+    uint32_t n_buckets, uint32_t n_association_samples,
+    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
+  auto teaching_samples = getAssociateSamples(convertSamples(
+      textColumnForDocumentIntroduction(), source_target_samples));
+
+  teach(teaching_samples, n_buckets, n_association_samples, n_balancing_samples,
+        learning_rate, epochs);
+}
+
+void UDTMachClassifier::upvote(
+    const std::vector<std::pair<std::string, uint32_t>>& source_target_samples,
+    uint32_t n_upvote_samples, uint32_t n_balancing_samples,
+    float learning_rate, uint32_t epochs) {
+  std::vector<std::pair<MapInput, std::vector<uint32_t>>> teaching_samples;
+  teaching_samples.reserve(source_target_samples.size());
+  std::string text_col = textColumnForDocumentIntroduction();
+  for (const auto& [source, target] : source_target_samples) {
+    teaching_samples.emplace_back(
+        MapInput{{text_col, source}},
+        _mach_label_block->index()->getHashes(target));
+  }
+  uint32_t n_buckets = _mach_label_block->index()->numHashes();
+  teach(teaching_samples, n_buckets, n_upvote_samples, n_balancing_samples,
+        learning_rate, epochs);
+}
+
+void UDTMachClassifier::teach(
+    const std::vector<std::pair<MapInput, std::vector<uint32_t>>>&
+        source_target_samples,
+    uint32_t n_buckets, uint32_t n_teaching_samples,
+    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
+  requireRLHFSampler();
+
+  auto samples = _rlhf_sampler->balancingSamples(n_balancing_samples *
+                                                 source_target_samples.size());
+
+  std::mt19937 rng(global_random::nextSeed());
+
+  for (const auto& [source, target_hashes] : source_target_samples) {
+    BoltVector source_vec =
+        _dataset_factory->featurizeInput(source).at(0)->getVector(0);
+    for (uint32_t i = 0; i < n_teaching_samples; i++) {
+      samples.emplace_back(source_vec,
+                           makeLabelFromHashes(target_hashes, n_buckets, rng));
+    }
+  }
+
+  std::shuffle(samples.begin(), samples.end(), rng);
+
+  std::vector<std::pair<bolt::TensorList, bolt::TensorList>> batches;
+
+  uint32_t input_dim = _classifier->model()->inputDims().at(0);
+  uint32_t label_dim = _classifier->model()->labelDims().at(0);
+  uint32_t batch_size = defaults::ASSOCIATE_BATCH_SIZE;
+
+  for (size_t i = 0; i < samples.size(); i += batch_size) {
+    std::vector<BoltVector> inputs;
+    std::vector<BoltVector> labels;
+
+    size_t batch_end = std::min(i + batch_size, samples.size());
+    for (size_t j = i; j < batch_end; j++) {
+      inputs.emplace_back(std::move(samples[j].first));
+      labels.emplace_back(std::move(samples[j].second));
+    }
+
+    auto input_tensor =
+        bolt::Tensor::convert(BoltBatch(std::move(inputs)), input_dim);
+
+    auto label_tensor =
+        bolt::Tensor::convert(BoltBatch(std::move(labels)), label_dim);
+
+    batches.push_back(
+        {{input_tensor},
+         {label_tensor, placeholderDocIds(label_tensor->batchSize())}});
+  }
+
+  for (uint32_t i = 0; i < epochs; i++) {
+    for (const auto& [x, y] : batches) {
+      _classifier->model()->trainOnBatch(x, y);
+      _classifier->model()->updateParameters(learning_rate);
+    }
+  }
+}
+
+std::vector<std::pair<MapInput, std::vector<uint32_t>>>
+UDTMachClassifier::getAssociateSamples(
+    const std::vector<std::pair<MapInput, MapInput>>& source_target_samples) {
+  MapInputBatch batch;
+  for (const auto& [_, target] : source_target_samples) {
+    batch.emplace_back(target);
+  }
+
+  auto all_predicted_hashes = predictHashesImpl(
+      batch, /* sparse_inference = */ false, /* force_non_empty = */ true);
+
+  std::vector<std::pair<MapInput, std::vector<uint32_t>>> associate_samples;
+  associate_samples.reserve(source_target_samples.size());
+  for (uint32_t i = 0; i < source_target_samples.size(); i++) {
+    associate_samples.emplace_back(source_target_samples[i].first,
+                                   all_predicted_hashes[i]);
+  }
+
+  return associate_samples;
+}
+
+py::object UDTMachClassifier::associateTrain(
+    const dataset::DataSourcePtr& balancing_data,
+    const std::vector<std::pair<std::string, std::string>>&
+        source_target_samples,
+    uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& metrics,
+    TrainOptions options) {
+  warnOnNonHashBasedMetrics(metrics);
+
+  auto dataset = _dataset_factory->getLabeledDatasetLoader(balancing_data,
+                                                           /* shuffle= */ true);
+
+  auto associate_samples = getAssociateSamples(convertSamples(
+      textColumnForDocumentIntroduction(), source_target_samples));
+
+  std::mt19937 rng(global_random::nextSeed());
+
+  for (auto& [input, hashes] : associate_samples) {
+    BoltVector input_vec =
+        _dataset_factory->featurizeInput(input).at(0)->getVector(0);
+    BoltVector doc_id = BoltVector::singleElementSparseVector(0);
+    for (uint32_t i = 0; i < n_association_samples; i++) {
+      dataset->manuallyAddToBuffer(
+          {input_vec, makeLabelFromHashes(hashes, n_buckets, rng), doc_id});
+    }
+  }
+
+  return _classifier->train(dataset, learning_rate, epochs,
+                            getMetrics(metrics, "train_"),
+                            /* val_dataset */ nullptr, /* val_metrics= */ {},
+                            /* callbacks= */ {}, options, /*comm= */ nullptr);
+}
+
+py::object UDTMachClassifier::associateColdStart(
+    const dataset::DataSourcePtr& balancing_data,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names,
+    const std::vector<std::pair<std::string, std::string>>&
+        source_target_samples,
+    uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& metrics,
+    TrainOptions options) {
+  auto metadata = getColdStartMetaData();
+
+  auto cold_start_balancing_data = cold_start::preprocessColdStartTrainSource(
+      balancing_data, strong_column_names, weak_column_names, _dataset_factory,
+      metadata);
+
+  return associateTrain(cold_start_balancing_data, source_target_samples,
+                        n_buckets, n_association_samples, learning_rate, epochs,
+                        metrics, options);
 }
 
 void UDTMachClassifier::setDecodeParams(uint32_t top_k_to_return,

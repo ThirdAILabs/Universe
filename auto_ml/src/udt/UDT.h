@@ -453,6 +453,8 @@ class UDT {
 
   static std::shared_ptr<UDT> load_stream(std::istream& input_stream);
 
+  bool isV1() const;
+
  private:
   UDT() {}
 

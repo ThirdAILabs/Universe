@@ -3,8 +3,10 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
+#include <auto_ml/src/featurization/Featurizer.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <auto_ml/src/rlhf/RLHFSampler.h>
@@ -86,6 +88,17 @@ class UDTMachClassifier final : public UDTBackend {
 
   MachInfo getMachInfo() const;
 
+  py::object coldstart(const dataset::DataSourcePtr& data,
+                       const std::vector<std::string>& strong_column_names,
+                       const std::vector<std::string>& weak_column_names,
+                       float learning_rate, uint32_t epochs,
+                       const std::vector<std::string>& train_metrics,
+                       const dataset::DataSourcePtr& val_data,
+                       const std::vector<std::string>& val_metrics,
+                       const std::vector<CallbackPtr>& callbacks,
+                       TrainOptions options,
+                       const bolt::DistributedCommPtr& comm) final;
+
   py::object embedding(const MapInputBatch& sample) final;
 
   /**
@@ -94,6 +107,19 @@ class UDTMachClassifier final : public UDTBackend {
    * vs reul make a difference.
    */
   py::object entityEmbedding(const Label& label) final;
+
+  TextDatasetConfig textDatasetConfig() const final {
+    return TextDatasetConfig(textColumnForDocumentIntroduction(),
+                             _mach_label_block->columnName(),
+                             _mach_label_block->delimiter());
+  }
+
+  void introduceDocuments(const dataset::DataSourcePtr& data,
+                          const std::vector<std::string>& strong_column_names,
+                          const std::vector<std::string>& weak_column_names,
+                          std::optional<uint32_t> num_buckets_to_sample,
+                          uint32_t num_random_hashes, bool fast_approximation,
+                          bool verbose) final;
 
   void introduceDocument(const MapInput& document,
                          const std::vector<std::string>& strong_column_names,
@@ -117,6 +143,35 @@ class UDTMachClassifier final : public UDTBackend {
       _rlhf_sampler->clear();
     }
   }
+
+  void associate(const std::vector<std::pair<std::string, std::string>>&
+                     source_target_samples,
+                 uint32_t n_buckets, uint32_t n_association_samples,
+                 uint32_t n_balancing_samples, float learning_rate,
+                 uint32_t epochs) final;
+
+  void upvote(const std::vector<std::pair<std::string, uint32_t>>&
+                  source_target_samples,
+              uint32_t n_upvote_samples, uint32_t n_balancing_samples,
+              float learning_rate, uint32_t epochs) final;
+
+  py::object associateTrain(
+      const dataset::DataSourcePtr& balancing_data,
+      const std::vector<std::pair<std::string, std::string>>&
+          source_target_samples,
+      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& metrics,
+      TrainOptions options) final;
+
+  py::object associateColdStart(
+      const dataset::DataSourcePtr& balancing_data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names,
+      const std::vector<std::pair<std::string, std::string>>&
+          source_target_samples,
+      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& metrics,
+      TrainOptions options) final;
 
   void setDecodeParams(uint32_t top_k_to_return,
                        uint32_t num_buckets_to_eval) final;
@@ -148,6 +203,15 @@ class UDTMachClassifier final : public UDTBackend {
              uint32_t n_buckets, uint32_t n_teaching_samples,
              uint32_t n_balancing_samples, float learning_rate,
              uint32_t epochs);
+
+  std::vector<std::pair<MapInput, std::vector<uint32_t>>> getAssociateSamples(
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples);
+
+  cold_start::ColdStartMetaDataPtr getColdStartMetaData() const {
+    return std::make_shared<cold_start::ColdStartMetaData>(
+        /* label_delimiter = */ _mach_label_block->delimiter(),
+        /* label_column_name = */ _mach_label_block->columnName());
+  }
 
   std::string textColumnForDocumentIntroduction() const;
 
