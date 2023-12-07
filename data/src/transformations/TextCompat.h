@@ -28,7 +28,7 @@ class TextCompat final : public Transformation {
 
  private:
   inline uint32_t mimicHashedFeatureVector(uint32_t index) const {
-    /*
+    /**
      * In BlockInterface.h the method addVectorSegment calls
      * addFeatureSegment before addSparseFeatureToSegment is called. This call
      * to addFeatureSegment increments the count of _n_segments_added, thus we
