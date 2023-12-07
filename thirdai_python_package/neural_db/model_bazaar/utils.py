@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 import requests
+from requests.exceptions import HTTPError
 
 
 def chunks(path: Path):
@@ -42,7 +43,14 @@ def http_get_with_error(*args, **kwargs):
     """Makes an HTTP GET request and raises an error if status code is not
     200.
     """
-    response = requests.get(*args, **kwargs)
-    if response.status_code != 200:
-        raise FileNotFoundError(f"{response.status_code} error: {response.reason}")
-    return response
+
+    try:
+        response = requests.get(*args, **kwargs)
+        response.raise_for_status()  # Raises HTTPError for bad status codes, e.g. 4XX or 5XX codes
+        return response
+    except HTTPError as http_err:
+        server_message = http_err.response.text
+        error_message = f"HTTP error occurred: {http_err.response.status_code} - {http_err.response.reason}"
+        if server_message:
+            error_message += f" Server message: {server_message}"
+        raise HTTPError(error_message)

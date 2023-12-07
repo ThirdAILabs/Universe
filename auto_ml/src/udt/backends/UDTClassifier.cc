@@ -212,14 +212,16 @@ std::vector<std::pair<std::string, float>> UDTClassifier::explain(
 py::object UDTClassifier::coldstart(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names, float learning_rate,
-    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    const std::vector<std::string>& weak_column_names,
+    std::optional<data::VariableLengthConfig> variable_length,
+    float learning_rate, uint32_t epochs,
+    const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
   auto train_data_loader = _featurizer->getColdStartDataLoader(
-      data, strong_column_names, weak_column_names,
+      data, strong_column_names, weak_column_names, variable_length,
       /* fast_approximation= */ false, options.batchSize(),
       /* shuffle= */ true, options.verbose, options.shuffle_config);
 

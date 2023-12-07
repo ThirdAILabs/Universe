@@ -22,7 +22,7 @@ class TextCompat final : public Transformation {
   TextCompat(std::string input_column, std::string output_indices,
              std::string output_values, dataset::TextTokenizerPtr tokenizer,
              dataset::TextEncoderPtr encoder, bool lowercase,
-             size_t encoding_dim, size_t feature_hash_dim);
+             size_t encoding_dim, size_t hash_range);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
@@ -30,13 +30,13 @@ class TextCompat final : public Transformation {
 
  private:
   inline uint32_t mimicHashedFeatureVector(uint32_t index) const {
-    /*
+    /**
      * In BlockInterface.h the method addVectorSegment calls
      * addFeatureSegment before addSparseFeatureToSegment is called. This call
      * to addFeatureSegment increments the count of _n_segments_added, thus we
      * combine hashes with 1 instead of 0.
      */
-    return hashing::combineHashes(index, 1) % _feature_hash_dim;
+    return hashing::combineHashes(index, 1) % _hash_range;
   }
 
   std::string _input_column, _output_indices;
@@ -47,7 +47,7 @@ class TextCompat final : public Transformation {
 
   bool _lowercase;
   size_t _encoding_dim;
-  size_t _feature_hash_dim;
+  size_t _hash_range;
 
   TextCompat() {}
 

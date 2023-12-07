@@ -21,7 +21,7 @@
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <data/src/TensorConversion.h>
-#include <data/src/transformations/ColdStartText.h>
+#include <data/src/transformations/cold_start/ColdStartText.h>
 #include <dataset/src/DataSource.h>
 #include <pybind11/cast.h>
 #include <pybind11/pytypes.h>
@@ -422,18 +422,22 @@ void UDTMach::setModel(const ModelPtr& model) {
 py::object UDTMach::coldstart(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names, float learning_rate,
-    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    const std::vector<std::string>& weak_column_names,
+    std::optional<data::VariableLengthConfig> variable_length,
+    float learning_rate, uint32_t epochs,
+    const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
-  addBalancingSamples(data, strong_column_names, weak_column_names);
+  addBalancingSamples(data, strong_column_names, weak_column_names,
+                      variable_length);
 
   auto train_data_loader = _featurizer->getColdStartDataLoader(
       data, strong_column_names, weak_column_names,
-      /* fast_approximation= */ false, options.batchSize(),
-      /* shuffle= */ true, options.verbose, options.shuffle_config);
+      /* variable_length= */ variable_length, /* fast_approximation= */ false,
+      options.batchSize(), /* shuffle= */ true, options.verbose,
+      options.shuffle_config);
 
   data::LoaderPtr val_data_loader;
   if (val_data) {
@@ -576,7 +580,8 @@ void UDTMach::introduceDocuments(
     ctrl_c_check();
   }
 
-  addBalancingSamples(data, strong_column_names, weak_column_names);
+  addBalancingSamples(data, strong_column_names, weak_column_names,
+                      /*variable_length=*/std::nullopt);
 
   updateSamplingStrategy();
 }
@@ -749,7 +754,8 @@ void UDTMach::forget(const Label& label) {
 void UDTMach::addBalancingSamples(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names) {
+    const std::vector<std::string>& weak_column_names,
+    std::optional<data::VariableLengthConfig> variable_length) {
   if (_balancing_samples) {
     data->restart();
 
@@ -761,8 +767,9 @@ void UDTMach::addBalancingSamples(
     // sample from 5x more rows than we need samples, to hopefully get a wider
     // range of samples.
     auto samples = _featurizer->getBalancingSamples(
-        data, strong_column_names, weak_column_names,
-        defaults::MAX_BALANCING_SAMPLES, defaults::MAX_BALANCING_SAMPLES * 5);
+        data, strong_column_names, weak_column_names, variable_length,
+        /*n_balancing_samples=*/defaults::MAX_BALANCING_SAMPLES,
+        /*rows_to_read=*/defaults::MAX_BALANCING_SAMPLES * 5);
 
     _balancing_samples->addSamples(samples);
 

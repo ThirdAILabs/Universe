@@ -88,16 +88,17 @@ class UDTMach final : public UDTBackend {
 
   FeaturizerPtr featurizer() const final { return _featurizer; }
 
-  py::object coldstart(const dataset::DataSourcePtr& data,
-                       const std::vector<std::string>& strong_column_names,
-                       const std::vector<std::string>& weak_column_names,
-                       float learning_rate, uint32_t epochs,
-                       const std::vector<std::string>& train_metrics,
-                       const dataset::DataSourcePtr& val_data,
-                       const std::vector<std::string>& val_metrics,
-                       const std::vector<CallbackPtr>& callbacks,
-                       TrainOptions options,
-                       const bolt::DistributedCommPtr& comm) final;
+  py::object coldstart(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names,
+      std::optional<data::VariableLengthConfig> variable_length,
+      float learning_rate, uint32_t epochs,
+      const std::vector<std::string>& train_metrics,
+      const dataset::DataSourcePtr& val_data,
+      const std::vector<std::string>& val_metrics,
+      const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+      const bolt::DistributedCommPtr& comm) final;
 
   py::object embedding(const MapInputBatch& sample) final;
 
@@ -214,7 +215,8 @@ class UDTMach final : public UDTBackend {
   void addBalancingSamples(
       const dataset::DataSourcePtr& data,
       const std::vector<std::string>& strong_column_names = {},
-      const std::vector<std::string>& weak_column_names = {});
+      const std::vector<std::string>& weak_column_names = {},
+      std::optional<data::VariableLengthConfig> variable_length = std::nullopt);
 
   void requireRLHFSampler();
 
