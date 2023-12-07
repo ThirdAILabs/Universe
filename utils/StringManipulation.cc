@@ -1,12 +1,15 @@
 #include "StringManipulation.h"
 #include "CommonChecks.h"
+#include <utils/Random.h>
 #include <algorithm>
 #include <cctype>
 #include <iostream>
 #include <optional>
+#include <random>
 #include <regex>
 #include <sstream>
 #include <stdexcept>
+#include <unordered_map>
 #include <utf8proc.h>
 #include <vector>
 
@@ -102,6 +105,95 @@ std::vector<std::string> wordLevelCharKGrams(
     }
   }
   return all_char_k_grams;
+}
+
+std::unordered_map<char, std::vector<char>> neighboring_chars = {
+    {'a', {'q', 'w', 's', 'z'}},
+    {'b', {'v', 'g', 'h', 'n'}},
+    {'c', {'x', 'd', 'f', 'v'}},
+    {'d', {'e', 'r', 'f', 'c', 'x', 's'}},
+    {'e', {'w', 's', 'd', 'r'}},
+    {'f', {'r', 't', 'g', 'v', 'c', 'd'}},
+    {'g', {'t', 'y', 'h', 'b', 'v', 'f'}},
+    {'h', {'y', 'u', 'j', 'n', 'b', 'g'}},
+    {'i', {'u', 'j', 'k', 'o'}},
+    {'j', {'u', 'i', 'k', 'm', 'n', 'h'}},
+    {'k', {'i', 'o', 'l', 'm', 'j'}},
+    {'l', {'o', 'p', 'k'}},
+    {'m', {'n', 'j', 'k'}},
+    {'n', {'b', 'h', 'j', 'm'}},
+    {'o', {'i', 'k', 'l', 'p'}},
+    {'p', {'o', 'l'}},
+    {'q', {'w', 'a'}},
+    {'r', {'e', 'd', 'f', 't'}},
+    {'s', {'w', 'e', 'd', 'x', 'z', 'a'}},
+    {'t', {'r', 'f', 'g', 'y'}},
+    {'u', {'y', 'h', 'j', 'i'}},
+    {'v', {'c', 'f', 'g', 'b'}},
+    {'w', {'q', 'a', 's', 'e'}},
+    {'x', {'z', 's', 'd', 'c'}},
+    {'y', {'t', 'g', 'h', 'u'}},
+    {'z', {'a', 's', 'x'}}};
+
+std::string randomStringPerturbation(std::string input,
+                                     size_t replace_with_space,
+                                     size_t delete_chars,
+                                     size_t replace_with_adjacent,
+                                     size_t duplicate_chars) {
+  size_t input_size = input.size();
+  replace_with_space = std::min(replace_with_space, input_size);
+  delete_chars = std::min(delete_chars, input_size);
+  replace_with_adjacent = std::min(replace_with_adjacent, input_size);
+  duplicate_chars = std::min(duplicate_chars, input_size);
+
+  std::mt19937 rng(global_random::nextSeed());
+  std::uniform_int_distribution<size_t> dis(0, input_size - 1);
+
+  std::vector<char> replacements(input_size, '\0');
+  std::vector<bool> to_delete(input_size, false);
+  std::vector<bool> to_duplicate(input_size, false);
+
+  for (size_t i = 0; i < replace_with_space && i < input_size; i++) {
+    replacements[dis(rng)] = ' ';
+  }
+
+  for (size_t i = 0; i < delete_chars && i < input_size; i++) {
+    to_delete[dis(rng)] = true;
+  }
+
+  for (size_t i = 0; i < duplicate_chars && i < input_size; i++) {
+    to_duplicate[dis(rng)] = true;
+  }
+
+  for (size_t i = 0; i < replace_with_adjacent && i < input_size; i++) {
+    size_t index = dis(rng);
+    char ch = input[index];
+    if (neighboring_chars.count(ch)) {
+      char neighbor;
+      std::sample(neighboring_chars.at(ch).begin(),
+                  neighboring_chars.at(ch).end(), &neighbor, 1, rng);
+      replacements[index] = neighbor;
+    }
+  }
+
+  std::string result;
+  for (size_t i = 0; i < input_size; ++i) {
+    if (to_delete[i]) {
+      continue;
+    }
+
+    if (replacements[i]) {
+      result += replacements[i];
+    } else {
+      result += input[i];
+    }
+
+    if (to_duplicate[i]) {
+      result += input[i];
+    }
+  }
+
+  return result;
 }
 
 std::string join(const std::vector<std::string>& strings,

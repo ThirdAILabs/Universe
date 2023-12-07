@@ -29,6 +29,12 @@ std::vector<std::string> wordLevelCharKGrams(
     const std::vector<std::string>& words, uint32_t k,
     size_t min_word_length = 4);
 
+std::string randomStringPerturbation(std::string input,
+                                     size_t replace_with_space,
+                                     size_t delete_chars,
+                                     size_t replace_with_adjacent,
+                                     size_t duplicate_chars);
+
 /**
  * Joins a vector of strings into a single delimited string.
  */
