@@ -9,6 +9,12 @@
 
 namespace thirdai::bolt {
 
+/**
+ * This op applies a quantile based thresholding to each window in the input.
+ * For each window the op zeros out everything except the frac largest elements.
+ * This yields an output vector of equivalent dimension, just with the elements
+ * zeroed out.
+ */
 class QuantileMixing final
     : public Op,
       public std::enable_shared_from_this<QuantileMixing> {

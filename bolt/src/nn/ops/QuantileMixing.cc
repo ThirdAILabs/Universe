@@ -133,7 +133,11 @@ void QuantileMixing::setSerializeOptimizer(bool should_serialize_optimizer) {
 }
 
 ComputationPtr QuantileMixing::apply(ComputationPtr input) {
-  if (_output_dim == 0) {
+  if (input->dim() == 0) {
+    throw std::invalid_argument(
+        "Cannot apply quantile mixing to input with dim=0.");
+  }
+  if (_output_dim == 0) {  // 0 means unset since output dim cannot be 0.
     _output_dim = input->dim();
   }
   if (_output_dim % _window_size != 0) {

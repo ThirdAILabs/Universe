@@ -10,6 +10,11 @@
 
 namespace thirdai::bolt {
 
+/**
+ * Right now this op uses a stride equal to the window size. This could be
+ * generalized in the future, but for now it is implemented like this for
+ * simplicity.
+ */
 class MaxPool1D final : public Op,
                         public std::enable_shared_from_this<MaxPool1D> {
  private:
