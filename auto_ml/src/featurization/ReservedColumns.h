@@ -34,7 +34,7 @@ const std::string FEATURIZED_VALUES = "__featurized_input_values__";
 
 const std::string FEATURIZED_LABELS = "__labels__";
 
-const std::string MACH_LABELS = "__mach__labels__";
+const std::string MACH_LABELS = "__mach_labels__";
 
 const std::string MACH_DOC_IDS = "__mach_doc_ids__";
 

@@ -169,7 +169,6 @@ def all_methods_work(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: boo
     clear_sources_works(db)
 
 
-@pytest.mark.xfail
 def all_methods_work_mach_mixture(
     db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool
 ):
@@ -182,7 +181,6 @@ def all_methods_work_mach_mixture(
     clear_sources_works(db)
 
 
-@pytest.mark.xfail
 def test_neural_db_loads_from_model_bazaar():
     db_from_bazaar()
 
@@ -193,7 +191,6 @@ def test_neural_db_all_methods_work_on_new_model():
     all_methods_work(db, all_docs, assert_acc=False)
 
 
-@pytest.mark.xfail
 def test_neuralb_db_all_methods_work_on_new_mach_mixture():
     number_models = 2
     db = ndb.NeuralDB("user", number_models=number_models)
@@ -201,7 +198,6 @@ def test_neuralb_db_all_methods_work_on_new_mach_mixture():
     all_methods_work_mach_mixture(db, all_docs, assert_acc=False)
 
 
-@pytest.mark.xfail
 def test_neural_db_all_methods_work_on_loaded_bazaar_model():
     db = db_from_bazaar()
     all_docs = [get_doc() for get_doc in all_local_doc_getters]
