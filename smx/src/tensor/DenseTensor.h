@@ -119,6 +119,10 @@ class DenseTensor final : public Tensor {
               static_cast<int64_t>(shapeAt(1))};
     }
 
+    if (ndim() == 1) {
+      throw std::invalid_argument("Cannot view 1D tensor as Matrix.");
+    }
+
     return {data<T>(), static_cast<int64_t>(shape().size() / shapeAt(1)),
             static_cast<int64_t>(shapeAt(1))};
   }
@@ -181,7 +185,7 @@ inline DenseTensorPtr asDense(const TensorPtr& tensor) {
   if (auto ptr = std::dynamic_pointer_cast<DenseTensor>(tensor)) {
     return ptr;
   }
-  throw std::invalid_argument("Cannot convert tensor to dense tensor.");
+  throw std::invalid_argument("Cannot convert sparse tensor to dense tensor.");
 }
 
 }  // namespace thirdai::smx
