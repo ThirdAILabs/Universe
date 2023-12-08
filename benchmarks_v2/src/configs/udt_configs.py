@@ -97,6 +97,8 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
     learning_rate = 0.01
     num_epochs = 1
 
+    max_in_memory_batches = 5000
+
     @staticmethod
     def get_data_types(path_prefix):
         data_types = {}
@@ -397,7 +399,7 @@ class MercedesBenzGreenerUDTBenchmark(UDTBenchmarkConfig):
     def get_data_types(path_prefix):
         filename = os.path.join(path_prefix, MercedesBenzGreenerUDTBenchmark.train_file)
         with open(filename) as f:
-            column_names = f.readline().strip().split(",")[1:]
+            column_names = f.readline().strip().split(",")
 
         data_types = {
             f"X{i}": bolt.types.categorical()

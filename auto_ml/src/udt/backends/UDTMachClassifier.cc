@@ -17,7 +17,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
-#include <data/src/transformations/ColdStartText.h>
+#include <data/src/transformations/cold_start/ColdStartText.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -93,9 +93,6 @@ UDTMachClassifier::UDTMachClassifier(
           /* use_sigmoid_bce = */ true, /* mach= */ true),
       user_args.get<bool>("freeze_hash_tables", "boolean",
                           defaults::FREEZE_HASH_TABLES));
-
-  // TODO(david) should we freeze hash tables for mach? how does this work
-  // with coldstart?
 
   if (!integer_target) {
     throw std::invalid_argument(
@@ -313,7 +310,7 @@ py::object UDTMachClassifier::scoreBatch(
   // lower similarity and don't get selected by LSH
   auto outputs = _classifier->model()
                      ->forward(_dataset_factory->featurizeInputBatch(samples),
-                               /* sparse_inference= */ false)
+                               /* use_sparsity= */ false)
                      .at(0);
 
   size_t batch_size = samples.size();
@@ -430,19 +427,40 @@ void UDTMachClassifier::setModel(const ModelPtr& model) {
 py::object UDTMachClassifier::coldstart(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names, float learning_rate,
-    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    const std::vector<std::string>& weak_column_names,
+    std::optional<data::VariableLengthConfig> variable_length,
+    float learning_rate, uint32_t epochs,
+    const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
   auto metadata = getColdStartMetaData();
 
-  auto data_source = cold_start::preprocessColdStartTrainSource(
-      data, strong_column_names, weak_column_names, _dataset_factory, metadata);
+  if (!variable_length.has_value()) {
+    auto data_source = cold_start::preprocessColdStartTrainSource(
+        data, strong_column_names, weak_column_names, _dataset_factory,
+        metadata, variable_length);
 
-  return train(data_source, learning_rate, epochs, train_metrics, val_data,
-               val_metrics, callbacks, options, comm);
+    return train(data_source, learning_rate, epochs, train_metrics, val_data,
+                 val_metrics, callbacks, options, comm);
+  }
+
+  py::object history;
+  for (uint32_t i = 0; i < epochs; i++) {
+    auto data_source = cold_start::preprocessColdStartTrainSource(
+        data, strong_column_names, weak_column_names, _dataset_factory,
+        metadata, variable_length);
+
+    history = train(data_source, learning_rate, /* epochs= */ 1, train_metrics,
+                    val_data, val_metrics, callbacks, options, comm);
+    data->restart();
+    if (val_data) {
+      val_data->restart();
+    }
+  }
+
+  return history;
 }
 
 py::object UDTMachClassifier::embedding(const MapInputBatch& sample) {
@@ -559,7 +577,7 @@ void UDTMachClassifier::introduceDocuments(
   } else {
     cold_start_data = cold_start::preprocessColdStartTrainSource(
         data, strong_column_names, weak_column_names, _dataset_factory,
-        metadata);
+        metadata, /* variable_length= */ std::nullopt);
   }
 
   auto dataset_loader =
@@ -980,7 +998,7 @@ py::object UDTMachClassifier::associateColdStart(
 
   auto cold_start_balancing_data = cold_start::preprocessColdStartTrainSource(
       balancing_data, strong_column_names, weak_column_names, _dataset_factory,
-      metadata);
+      metadata, /* variable_length= */ std::nullopt);
 
   return associateTrain(cold_start_balancing_data, source_target_samples,
                         n_buckets, n_association_samples, learning_rate, epochs,

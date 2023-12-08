@@ -383,31 +383,3 @@ def test_real_input():
     # acceptable.
     assert 6 <= num_data <= 300
     assert num_valid_data / num_data > 0.95
-
-
-def test_cold_start_serialization():
-    # Because the output may not be deterministic, it is simplier to compare the
-    # output of the serialized transformation against the original, vs just comparing
-    # the output of the serialized transformation against the expected output.
-    strong_list, weak_list, label_list = get_real_dataset()
-    columns = create_test_column_map(
-        {"strong": strong_list, "weak": weak_list}, label_list
-    )
-
-    augmentation = data.transformations.ColdStartText(
-        strong_columns=["strong"],
-        weak_columns=["weak"],
-        label_column="labels",
-        output_column="data",
-        strong_sample_num_words=2,
-        weak_min_len=5,
-        weak_max_len=10,
-        weak_chunk_len=5,
-    )
-
-    augmentation_copy = data.transformations.deserialize(augmentation.serialize())
-
-    output1 = augmentation(columns)
-    output2 = augmentation_copy(columns)
-
-    assert set(output1["data"].data()) == set(output2["data"].data())

@@ -5,6 +5,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
+#include "TextAugmentationUtils.h"
 #include <auto_ml/src/Aliases.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/transformations/Transformation.h>
@@ -14,6 +15,9 @@
 #include <vector>
 
 namespace thirdai::data {
+
+using cold_start::Phrase;
+using cold_start::PhraseCollection;
 
 struct ColdStartConfig {
   explicit ColdStartConfig(
@@ -68,7 +72,8 @@ struct ColdStartConfig {
  * and weak phrases are also optionally sub-sampled to create more data
  * and then written to a new ColumnMap with the corresponding labels.
  */
-class ColdStartTextAugmentation final : public Transformation {
+class ColdStartTextAugmentation final
+    : public cold_start::TextAugmentationBase {
  public:
   /*
   Constructs a data augmentation process for strong and weak text columns.
@@ -136,31 +141,18 @@ class ColdStartTextAugmentation final : public Transformation {
       const ColdStartConfig& config = ColdStartConfig::longBothPhrases(),
       uint32_t seed = global_random::nextSeed());
 
-  explicit ColdStartTextAugmentation(const ar::Archive& archive);
-
-  ColumnMap apply(ColumnMap columns, State& state) const final;
-
-  ar::ConstArchivePtr toArchive() const final;
-
   std::vector<std::string> augmentMapInput(const automl::MapInput& document);
 
   /**
    * Helper method to perform the augmentation of a single row in the input.
    * Returns the augmented phrases from that input row as strings.
    */
-  std::vector<std::string> augmentSingleRow(std::string& strong_text,
-                                            std::string& weak_text) const;
+  std::vector<std::string> augmentSingleRow(
+      const std::string& strong_text, const std::string& weak_text) const final;
 
   static std::string type() { return "cold_start"; }
 
  private:
-  typedef std::vector<std::string> Phrase;
-  typedef std::vector<Phrase> PhraseCollection;
-
-  std::vector<std::string> _strong_column_names;
-  std::vector<std::string> _weak_column_names;
-  std::string _label_column_name;
-  std::string _output_column_name;
   std::optional<uint32_t> _weak_min_len;
   std::optional<uint32_t> _weak_max_len;
   std::optional<uint32_t> _weak_chunk_len;
@@ -168,60 +160,12 @@ class ColdStartTextAugmentation final : public Transformation {
   uint32_t _weak_sample_reps;
   std::optional<uint32_t> _strong_max_len;
   std::optional<uint32_t> _strong_sample_num_words;
-  uint32_t _seed;
-
-  /**
-   * Creates a phrase by splitting an input string s into whitespace-separated
-   * words. Leading and tailing whitespaces are stripped off and ignored.
-   */
-  static Phrase splitByWhitespace(std::string& s);
-
-  /**
-   *Strips leading and tailing whitespace.
-   */
-  static void stripWhitespace(std::string& s);
-
-  /**
-   * For each column name, gets the string at the specified row in the column.
-   * Appends the delimiter to the string. Returns a concatenation of all
-   * strings.
-   */
-  static std::string concatenateStringColumnEntries(
-      const ColumnMap& columns, uint64_t row_num,
-      const std::vector<std::string>& column_names,
-      const std::string& delimiter);
-
-  /**
-   * Returns a single phrase that takes in the concatenated string of strong
-   * columns and returns a strong phrase (this will just be a cleaned version of
-   * the input string, possibly length restricted).
-   */
-  Phrase getStrongPhrase(std::string& s) const;
 
   /**
    * Returns a set of natural and chunked phrases from s, according to the weak
    * phrase options selected by the user.
    */
-  PhraseCollection getWeakPhrases(std::string& s) const;
-
-  /**
-   * Randomly deletes elements from each phrase, resulting in new phrases.
-   * Repeats the process num_reps times for each phrase, resulting in (roughly)
-   * num_reps * phrases.size() new phrases. Note that if a phrase is not long
-   * enough to choose num_to_sample words, then it is kept but only represented
-   * once in the output (not num_reps times).
-   */
-  PhraseCollection sampleFromPhrases(PhraseCollection& phrases,
-                                     uint32_t num_to_sample,
-                                     uint32_t num_reps) const;
-
-  /**
-   * Concatenates each element from the weak phrases with the strong phrase.
-   * If _strong_sample_num_words was provided in the constructor, this also
-   * independently samples from the strong phrase for every weak phrase.
-   */
-  void mergeStrongWithWeak(PhraseCollection& weak_phrases,
-                           Phrase& strong_phrase) const;
+  PhraseCollection getWeakPhrases(std::string s) const;
 
   /**
    * Throws an error message if the parameter has a value <= 0. The error
@@ -229,33 +173,6 @@ class ColdStartTextAugmentation final : public Transformation {
    */
   static void validateGreaterThanZero(std::optional<uint32_t> parameter,
                                       const std::string& parameter_name);
-
-  // Private constructor for cereal.
-  ColdStartTextAugmentation()
-      : _strong_column_names(),
-        _weak_column_names(),
-        _label_column_name(),
-        _output_column_name(),
-        _weak_min_len(std::nullopt),
-        _weak_max_len(std::nullopt),
-        _weak_chunk_len(std::nullopt),
-        _weak_sample_num_words(std::nullopt),
-        _weak_sample_reps(1),
-        _strong_max_len(std::nullopt),
-        _strong_sample_num_words(std::nullopt),
-        _seed(0) {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<Transformation>(this), _strong_column_names,
-            _weak_column_names, _label_column_name, _output_column_name,
-            _weak_min_len, _weak_max_len, _weak_chunk_len,
-            _weak_sample_num_words, _weak_sample_reps, _strong_max_len,
-            _strong_sample_num_words, _seed);
-  }
 };
 
 }  // namespace thirdai::data
-
-CEREAL_REGISTER_TYPE(thirdai::data::ColdStartTextAugmentation)
