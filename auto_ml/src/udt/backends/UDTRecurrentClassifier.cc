@@ -73,6 +73,7 @@ py::object UDTRecurrentClassifier::train(
   }
 
   bolt::Trainer trainer(_model, freeze_hash_tables_epoch,
+                        /* gradient_update_interval */ 1,
                         bolt::python::CtrlCCheck{});
 
   auto train_dataset = _featurizer->getDataLoader(
@@ -105,7 +106,8 @@ py::object UDTRecurrentClassifier::evaluate(
 
   throwIfSparseInference(sparse_inference);
 
-  bolt::Trainer trainer(_model, std::nullopt, bolt::python::CtrlCCheck{});
+  bolt::Trainer trainer(_model, std::nullopt, /* gradient_update_interval */ 1,
+                        bolt::python::CtrlCCheck{});
 
   auto dataset = _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
                                             /* shuffle= */ false, verbose);

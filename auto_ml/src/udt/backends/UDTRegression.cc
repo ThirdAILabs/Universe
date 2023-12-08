@@ -81,7 +81,8 @@ py::object UDTRegression::train(const dataset::DataSourcePtr& data,
         val_data, defaults::BATCH_SIZE, /* shuffle= */ false, options.verbose);
   }
 
-  bolt::Trainer trainer(_model, std::nullopt, bolt::python::CtrlCCheck{});
+  bolt::Trainer trainer(_model, std::nullopt, /* gradient_update_interval */ 1,
+                        bolt::python::CtrlCCheck{});
 
   auto history = trainer.train_with_data_loader(
       /* train_data_loader= */ train_data_loader,
@@ -108,7 +109,8 @@ py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
                                    std::optional<uint32_t> top_k) {
   (void)top_k;
 
-  bolt::Trainer trainer(_model, std::nullopt, bolt::python::CtrlCCheck{});
+  bolt::Trainer trainer(_model, std::nullopt, /* gradient_update_interval */ 1,
+                        bolt::python::CtrlCCheck{});
 
   auto data_loader = _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
                                                 /* shuffle= */ false, verbose);
