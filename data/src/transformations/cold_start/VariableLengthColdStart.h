@@ -1,6 +1,7 @@
 #pragma once
 
 #include "TextAugmentationUtils.h"
+#include <archive/src/Archive.h>
 #include <data/src/transformations/Transformation.h>
 #include <random>
 
@@ -37,7 +38,7 @@ struct VariableLengthConfig {
   float word_perturbation_probability;
 };
 
-class VariableLengthColdStart : public cold_start::TextAugmentationBase {
+class VariableLengthColdStart final : public cold_start::TextAugmentationBase {
  public:
   VariableLengthColdStart(
       std::vector<std::string> strong_column_names,

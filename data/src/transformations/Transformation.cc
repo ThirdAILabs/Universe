@@ -2,7 +2,6 @@
 #include <archive/src/Archive.h>
 #include <data/src/transformations/Binning.h>
 #include <data/src/transformations/CategoricalTemporal.h>
-#include <data/src/transformations/ColdStartText.h>
 #include <data/src/transformations/CountTokens.h>
 #include <data/src/transformations/CrossColumnPairgrams.h>
 #include <data/src/transformations/Date.h>
@@ -41,7 +40,6 @@ TransformationPtr Transformation::fromArchive(const ar::Archive& archive) {
 
   HANDLE_TYPE(BinningTransformation)
   HANDLE_TYPE(CategoricalTemporal)
-  HANDLE_TYPE(ColdStartTextAugmentation)
   HANDLE_TYPE(CountTokens)
   HANDLE_TYPE(CrossColumnPairgrams)
   HANDLE_TYPE(Date)

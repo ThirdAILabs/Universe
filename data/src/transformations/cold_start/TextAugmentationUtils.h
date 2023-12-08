@@ -1,7 +1,9 @@
 #pragma once
 
+#include <archive/src/Archive.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/transformations/Transformation.h>
+#include <stdexcept>
 
 namespace thirdai::data::cold_start {
 
@@ -19,6 +21,14 @@ class TextAugmentationBase : public Transformation {
 
   virtual std::vector<std::string> augmentSingleRow(
       const std::string& strong_text, const std::string& weak_text) const = 0;
+
+  ar::ConstArchivePtr toArchive() const final {
+    // We never actually serialize cold start transformations because we create
+    // them for every call to cold start depending on the strong/weak columns
+    // passed in.
+    throw std::invalid_argument(
+        "Cannot convert cold start transformation to archive.");
+  }
 
  protected:
   std::vector<std::string> _strong_column_names;

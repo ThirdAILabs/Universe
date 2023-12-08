@@ -141,10 +141,6 @@ class ColdStartTextAugmentation final
       const ColdStartConfig& config = ColdStartConfig::longBothPhrases(),
       uint32_t seed = global_random::nextSeed());
 
-  explicit ColdStartTextAugmentation(const ar::Archive& archive);
-
-  ar::ConstArchivePtr toArchive() const final;
-
   std::vector<std::string> augmentMapInput(const automl::MapInput& document);
 
   /**
