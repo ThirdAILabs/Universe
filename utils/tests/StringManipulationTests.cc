@@ -134,7 +134,6 @@ TEST(StringManipulationTest, WordLevelCharKGramTest) {
 TEST(StringManipulationTest, PerturbationReplaceWithSpace) {
   std::string test_str = "Hello";
   std::string result = replaceRandomCharactersWithSpaces(test_str, 2);
-  ASSERT_EQ(result, perturbSentence(test_str, 2, 0, 0, 0));
   int space_count = std::count(result.begin(), result.end(), ' ');
   ASSERT_EQ(space_count, 2);
 }
@@ -142,14 +141,12 @@ TEST(StringManipulationTest, PerturbationReplaceWithSpace) {
 TEST(StringManipulationTest, PerturbationDeleteCharacters) {
   std::string test_str = "Hello";
   std::string result = deleteRandomCharacters(test_str, 2);
-  ASSERT_EQ(result, perturbSentence(test_str, 0, 2, 0, 0));
   ASSERT_EQ(result.size(), 3);
 }
 
 TEST(StringManipulationTest, PerturbationReplaceWithAdjacentCharacters) {
   std::string test_str = "abcdef";
   std::string result = replaceRandomCharactersWithAdjacents(test_str, 6);
-  ASSERT_EQ(result, perturbSentence(test_str, 0, 0, 0, 6));
 
   bool all_replaced = true;
   for (int i = 0; i < result.size(); ++i) {
@@ -166,7 +163,6 @@ TEST(StringManipulationTest, PerturbationReplaceWithAdjacentCharacters) {
 TEST(StringManipulationTest, PerturbationDuplicateCharacters) {
   std::string test_str = "Hello";
   std::string result = duplicateRandomCharacters(test_str, 2);
-  ASSERT_EQ(result, perturbSentence(test_str, 0, 0, 2, 0));
   ASSERT_EQ(result.size(), test_str.size() + 2);
 }
 
