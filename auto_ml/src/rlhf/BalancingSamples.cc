@@ -129,14 +129,14 @@ void BalancingSamples::addSample(uint32_t doc_id, BalancingSample sample) {
     return;
   }
   if (_samples_per_doc[doc_id].size() < _max_samples_per_doc) {
-    _samples_per_doc[doc_id].emplace_back(sample);
+    _samples_per_doc[doc_id].emplace_back(std::move(sample));
     _doc_ids.insert(doc_id);
   } else {
     //  Newer samples have a higher probability of being kept, we can change
     //  this to reservoir sampling if this is an issue.
     std::uniform_int_distribution<> dist(0, _max_samples_per_doc - 1);
     size_t replace = dist(_rng);
-    _samples_per_doc[doc_id][replace] = sample;
+    _samples_per_doc[doc_id][replace] = std::move(sample);
   }
 }
 
