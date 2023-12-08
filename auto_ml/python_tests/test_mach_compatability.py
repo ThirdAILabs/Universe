@@ -1,7 +1,6 @@
 import pytest
-from thirdai import bolt
 from download_dataset_fixtures import download_clinc_dataset
-
+from thirdai import bolt
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
