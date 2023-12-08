@@ -20,7 +20,9 @@ struct VariableLengthConfig {
       float stopword_removal_probability = 0,
       float stopword_insertion_probability = 0,
       float word_removal_probability = 0,
-      float word_perturbation_probability = 0);
+      float word_perturbation_probability = 0,
+      size_t chars_replace_with_space = 0, size_t chars_deleted = 0,
+      size_t chars_duplicated = 0, size_t chars_replace_with_adjacents = 0);
 
   size_t covering_min_length;
   size_t covering_max_length;
@@ -35,6 +37,10 @@ struct VariableLengthConfig {
   float stopword_insertion_probability;
   float word_removal_probability;
   float word_perturbation_probability;
+  size_t chars_replace_with_space;
+  size_t chars_deleted;
+  size_t chars_duplicated;
+  size_t chars_replace_with_adjacents;
 };
 
 class VariableLengthColdStart : public cold_start::TextAugmentationBase {

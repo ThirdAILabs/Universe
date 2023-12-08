@@ -212,6 +212,33 @@ std::string replaceRandomCharactersWithAdjacents(const std::string& input,
   return result;
 }
 
+std::string perturbSentence(const std::string& input,
+                            size_t chars_replace_with_space,
+                            size_t chars_deleted, size_t chars_duplicated,
+                            size_t chars_replace_with_adjacents) {
+  std::string result = input;
+
+  if (chars_replace_with_space) {
+    result =
+        replaceRandomCharactersWithSpaces(result, chars_replace_with_space);
+  }
+
+  if (chars_deleted) {
+    result = deleteRandomCharacters(result, chars_deleted);
+  }
+
+  if (chars_duplicated) {
+    result = duplicateRandomCharacters(result, chars_duplicated);
+  }
+
+  if (chars_replace_with_adjacents) {
+    result = replaceRandomCharactersWithAdjacents(result,
+                                                  chars_replace_with_adjacents);
+  }
+
+  return result;
+}
+
 std::string join(const std::vector<std::string>& strings,
                  const std::string& delimiter) {
   if (strings.empty()) {

@@ -40,6 +40,12 @@ std::string replaceRandomCharactersWithSpaces(const std::string& input,
 
 std::string replaceRandomCharactersWithAdjacents(const std::string& input,
                                                  size_t num_to_replace);
+
+std::string perturbSentence(const std::string& input,
+                            size_t chars_replace_with_space,
+                            size_t chars_deleted, size_t chars_duplicated,
+                            size_t chars_replace_with_adjacents);
+
 /**
  * Joins a vector of strings into a single delimited string.
  */

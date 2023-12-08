@@ -14,7 +14,9 @@ VariableLengthConfig::VariableLengthConfig(
     bool add_whole_doc, bool prefilter_punctuation,
     uint32_t strong_sample_num_words, float stopword_removal_probability,
     float stopword_insertion_probability, float word_removal_probability,
-    float word_perturbation_probability)
+    float word_perturbation_probability, size_t chars_replace_with_space,
+    size_t chars_deleted, size_t chars_duplicated,
+    size_t chars_replace_with_adjacents)
     : covering_min_length(covering_min_length),
       covering_max_length(covering_max_length),
       max_covering_samples(max_covering_samples),
@@ -27,7 +29,11 @@ VariableLengthConfig::VariableLengthConfig(
       stopword_removal_probability(stopword_removal_probability),
       stopword_insertion_probability(stopword_insertion_probability),
       word_removal_probability(word_removal_probability),
-      word_perturbation_probability(word_perturbation_probability) {
+      word_perturbation_probability(word_perturbation_probability),
+      chars_replace_with_space(chars_replace_with_space),
+      chars_deleted(chars_deleted),
+      chars_duplicated(chars_duplicated),
+      chars_replace_with_adjacents(chars_replace_with_adjacents) {
   utils::validateGreaterThanZero(covering_min_length, "covering_min_length");
   utils::validateGreaterThanZero(covering_max_length, "covering_max_length");
   utils::validateGreaterThanZero(slice_min_length, "slice_min_length");
@@ -82,6 +88,10 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
                             _config.stopword_insertion_probability,
                             _config.word_removal_probability,
                             _config.word_perturbation_probability, rng);
+
+    output_text = text::perturbSentence(
+        output_text, _config.chars_replace_with_space, _config.chars_deleted,
+        _config.chars_duplicated, _config.chars_replace_with_adjacents);
 
     if (!output_text.empty()) {
       output_samples.push_back(output_text);
