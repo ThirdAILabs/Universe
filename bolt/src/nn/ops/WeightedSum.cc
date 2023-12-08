@@ -2,8 +2,12 @@
 #include <wrappers/src/EigenDenseWrapper.h>
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/autograd/Computation.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <Eigen/src/Core/Array.h>
 #include <Eigen/src/Core/util/Constants.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
+#include <archive/src/ParameterReference.h>
 #include <utils/Random.h>
 #include <algorithm>
 #include <cassert>
@@ -114,6 +118,46 @@ std::vector<std::vector<float>*> WeightedSum::gradients() {
 
 std::vector<std::vector<float>*> WeightedSum::parameters() {
   return {&_weights};
+}
+
+ComputationPtr WeightedSum::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("QuantileMixing op expects a single input.");
+  }
+  return apply(inputs.at(0));
+}
+
+ar::ConstArchivePtr WeightedSum::toArchive(bool with_optimizer) const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("name", ar::str(name()));
+  map->set("n_chunks", ar::u64(_n_chunks));
+  map->set("chunk_size", ar::u64(_chunk_size));
+  map->set("weights",
+           ar::ParameterReference::make(_weights, shared_from_this()));
+
+  if (with_optimizer && _optimizer) {
+    map->set("optimizer", optimizerToArchive(*_optimizer, shared_from_this(),
+                                             _n_chunks, _chunk_size));
+  }
+
+  return map;
+}
+
+std::shared_ptr<WeightedSum> WeightedSum::fromArchive(
+    const ar::Archive& archive) {
+  return std::shared_ptr<WeightedSum>(new WeightedSum(archive));
+}
+
+WeightedSum::WeightedSum(const ar::Archive& archive)
+    : Op(archive.str("name")),
+      _n_chunks(archive.u64("n_chunks")),
+      _chunk_size(archive.u64("chunk_size")),
+      _weights(archive.get("weights")->param().moveLoadedParameter()) {
+  if (archive.contains("optimizer")) {
+    _optimizer = optimizerFromArchive(*archive.get("optimizer"));
+  }
 }
 
 void WeightedSum::summary(std::ostream& summary, const ComputationList& inputs,
