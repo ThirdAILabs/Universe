@@ -190,10 +190,10 @@ class UDTMachClassifier final : public UDTBackend {
 
   void setMachSamplingThreshold(float threshold) final;
 
-  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
-
-  static std::unique_ptr<UDTMachClassifier> fromArchive(
-      const ar::Archive& archive);
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final {
+    (void)with_optimizer;
+    throw std::invalid_argument("To archive is not supported for v1 mach.");
+  }
 
  private:
   std::vector<std::vector<std::pair<uint32_t, double>>> predictImpl(

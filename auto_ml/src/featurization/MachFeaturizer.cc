@@ -14,10 +14,7 @@
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/Transformation.h>
-<<<<<<< HEAD
-=======
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
->>>>>>> 219af27c7d62f226ce3983dbe3a8388e3cedf727
 #include <dataset/src/mach/MachIndex.h>
 #include <limits>
 #include <optional>

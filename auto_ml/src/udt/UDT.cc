@@ -310,8 +310,8 @@ std::shared_ptr<UDT> UDT::load_stream(std::istream& input) {
     udt->_backend = UDTClassifier::fromArchive(*archive);
   } else if (type == UDTGraphClassifier::type()) {
     udt->_backend = UDTGraphClassifier::fromArchive(*archive);
-  } else if (type == UDTMachClassifier::type()) {
-    udt->_backend = UDTMachClassifier::fromArchive(*archive);
+  } else if (type == UDTMach::type()) {
+    udt->_backend = UDTMach::fromArchive(*archive);
   } else if (type == UDTQueryReformulation::type()) {
     udt->_backend = UDTQueryReformulation::fromArchive(*archive);
   } else if (type == UDTRecurrentClassifier::type()) {
