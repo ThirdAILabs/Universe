@@ -67,6 +67,7 @@ py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
   }
 
   bolt::Trainer trainer(_model, freeze_hash_tables_epoch,
+                        /* gradient_update_interval=*/1,
                         bolt::python::CtrlCCheck{});
 
   auto history = trainer.train_with_dataset_loader(
@@ -140,6 +141,7 @@ py::object Classifier::train(const data::LoaderPtr& data, float learning_rate,
   }
 
   bolt::Trainer trainer(_model, freeze_hash_tables_epoch,
+                        /* gradient_update_interval */ 1,
                         bolt::python::CtrlCCheck{});
 
   auto history = trainer.train_with_data_loader(
@@ -170,7 +172,8 @@ py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
 py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
                                 const InputMetrics& metrics,
                                 bool sparse_inference, bool verbose) {
-  bolt::Trainer trainer(_model, std::nullopt, bolt::python::CtrlCCheck{});
+  bolt::Trainer trainer(_model, std::nullopt, /* gradient_update_interval */ 1,
+                        bolt::python::CtrlCCheck{});
 
   auto history = trainer.validate_with_dataset_loader(
       dataset, metrics, sparse_inference, verbose);
@@ -189,7 +192,8 @@ py::object Classifier::evaluate(data::LoaderPtr& dataset,
 py::object Classifier::evaluate(const data::LoaderPtr& dataset,
                                 const InputMetrics& metrics,
                                 bool sparse_inference, bool verbose) {
-  bolt::Trainer trainer(_model, std::nullopt, bolt::python::CtrlCCheck{});
+  bolt::Trainer trainer(_model, std::nullopt, /* gradient_update_interval=*/1,
+                        bolt::python::CtrlCCheck{});
 
   auto history = trainer.validate_with_data_loader(dataset, metrics,
                                                    sparse_inference, verbose);

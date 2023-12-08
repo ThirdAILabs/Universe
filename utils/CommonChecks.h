@@ -13,4 +13,12 @@ inline void validateGreaterThanZero(size_t parameter,
   }
 }
 
+inline void validateBetweenZeroAndOne(float parameter,
+                                      const std::string& parameter_name) {
+  if (parameter < 0 or parameter > 1) {
+    throw std::invalid_argument("Invalid parameter: " + parameter_name +
+                                " must be between 0 and 1.0.");
+  }
+}
+
 }  // namespace thirdai::utils

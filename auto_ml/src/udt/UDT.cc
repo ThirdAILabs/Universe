@@ -7,6 +7,7 @@
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
 #include <auto_ml/src/udt/backends/UDTGraphClassifier.h>
+#include <auto_ml/src/udt/backends/UDTMach.h>
 #include <auto_ml/src/udt/backends/UDTMachClassifier.h>
 #include <auto_ml/src/udt/backends/UDTQueryReformulation.h>
 #include <auto_ml/src/udt/backends/UDTRecurrentClassifier.h>
@@ -21,6 +22,7 @@
 #include <memory>
 #include <sstream>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 
 namespace thirdai::automl::udt {
@@ -78,10 +80,17 @@ UDT::UDT(
                             defaults::USE_MACH) ||
         user_args.get<bool>("neural_db", "boolean", defaults::USE_MACH);
     if (use_mach) {
-      _backend = std::make_unique<UDTMachClassifier>(
-          data_types, temporal_tracking_relationships, target_col,
-          as_categorical, n_target_classes.value(), integer_target,
-          tabular_options, model_config, user_args);
+      if (user_args.get<bool>("v1", "boolean", false)) {
+        _backend = std::make_unique<UDTMachClassifier>(
+            data_types, temporal_tracking_relationships, target_col,
+            as_categorical, n_target_classes.value(), integer_target,
+            tabular_options, model_config, user_args);
+      } else {
+        _backend = std::make_unique<UDTMach>(
+            data_types, temporal_tracking_relationships, target_col,
+            as_categorical, n_target_classes.value(), integer_target,
+            tabular_options, model_config, user_args);
+      }
     } else {
       _backend = std::make_unique<UDTClassifier>(
           data_types, temporal_tracking_relationships, target_col,
@@ -240,21 +249,23 @@ std::vector<std::pair<std::string, float>> UDT::explain(
   return result;
 }
 
-py::object UDT::coldstart(const dataset::DataSourcePtr& data,
-                          const std::vector<std::string>& strong_column_names,
-                          const std::vector<std::string>& weak_column_names,
-                          float learning_rate, uint32_t epochs,
-                          const std::vector<std::string>& train_metrics,
-                          const dataset::DataSourcePtr& val_data,
-                          const std::vector<std::string>& val_metrics,
-                          const std::vector<CallbackPtr>& callbacks,
-                          TrainOptions options,
-                          const bolt::DistributedCommPtr& comm) {
+py::object UDT::coldstart(
+    const dataset::DataSourcePtr& data,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names,
+    std::optional<data::VariableLengthConfig> variable_length,
+    float learning_rate, uint32_t epochs,
+    const std::vector<std::string>& train_metrics,
+    const dataset::DataSourcePtr& val_data,
+    const std::vector<std::string>& val_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    const bolt::DistributedCommPtr& comm) {
   licensing::entitlements().verifyDataSource(data);
 
   return _backend->coldstart(data, strong_column_names, weak_column_names,
-                             learning_rate, epochs, train_metrics, val_data,
-                             val_metrics, callbacks, options, comm);
+                             variable_length, learning_rate, epochs,
+                             train_metrics, val_data, val_metrics, callbacks,
+                             options, comm);
 }
 
 std::vector<uint32_t> UDT::modelDims() const {
@@ -367,6 +378,12 @@ void UDT::serialize(Archive& archive, const uint32_t version) {
 
   // Increment thirdai::versions::UDT_BASE_VERSION after serialization changes
   archive(_backend);
+
+  if constexpr (std::is_same_v<Archive, cereal::BinaryInputArchive>) {
+    if (auto* old_mach = dynamic_cast<UDTMachClassifier*>(_backend.get())) {
+      _backend = std::make_unique<UDTMach>(old_mach->getMachInfo());
+    }
+  }
 }
 
 void UDT::throwUnsupportedUDTConfigurationError(
@@ -392,6 +409,10 @@ void UDT::throwUnsupportedUDTConfigurationError(
 
   error_msg << ".";
   throw std::invalid_argument(error_msg.str());
+}
+
+bool UDT::isV1() const {
+  return dynamic_cast<UDTMachClassifier*>(_backend.get());
 }
 
 }  // namespace thirdai::automl::udt

@@ -5,6 +5,7 @@
 #include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/featurization/Featurizer.h>
 #include <data/src/TensorConversion.h>
+#include <data/src/transformations/TextCompat.h>
 #include <dataset/src/mach/MachIndex.h>
 
 namespace thirdai::automl {
@@ -18,6 +19,12 @@ class MachFeaturizer final : public Featurizer {
                  const std::string& label_column,
                  const dataset::mach::MachIndexPtr& mach_index,
                  const TabularOptions& options);
+
+  MachFeaturizer(const std::shared_ptr<data::TextCompat>& text_transform,
+                 data::OutputColumnsList bolt_input_columns,
+                 const std::string& label_column,
+                 const dataset::mach::MachIndexPtr& mach_index,
+                 char csv_delimiter, std::optional<char> label_delimiter);
 
   explicit MachFeaturizer(const ar::Archive& archive);
 
@@ -41,10 +48,11 @@ class MachFeaturizer final : public Featurizer {
   bolt::LabeledDataset columnsToTensors(const data::ColumnMap& columns,
                                         size_t batch_size) const;
 
-  std::vector<std::pair<uint32_t, RlhfSample>> getBalancingSamples(
+  data::ColumnMap getBalancingSamples(
       const dataset::DataSourcePtr& data_source,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
+      std::optional<data::VariableLengthConfig> variable_length,
       size_t n_balancing_samples, size_t rows_to_read);
 
   const auto& machIndex() const { return _state->machIndex(); }
@@ -59,11 +67,11 @@ class MachFeaturizer final : public Featurizer {
 
   static data::TransformationPtr makeDocIdTransformation(
       const std::string& label_column_name,
-      const CategoricalDataTypePtr& label_column_info);
+      std::optional<char> label_delimiter);
 
   static data::TransformationPtr makeLabelTransformations(
       const std::string& label_column_name,
-      const CategoricalDataTypePtr& label_column_info);
+      std::optional<char> label_delimiter);
 
   // The Mach model takes in two labels, one for the buckets, and one containing
   // the doc ids which is used by the mach metrics. For some inputs, for

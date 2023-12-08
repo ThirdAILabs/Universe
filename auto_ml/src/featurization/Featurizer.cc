@@ -8,11 +8,12 @@
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
 #include <data/src/transformations/CategoricalTemporal.h>
-#include <data/src/transformations/ColdStartText.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/Transformation.h>
+#include <data/src/transformations/cold_start/ColdStartText.h>
+#include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <memory>
 #include <stdexcept>
 
@@ -48,6 +49,22 @@ Featurizer::Featurizer(ColumnDataTypes data_types,
   }
 }
 
+Featurizer::Featurizer(data::TransformationPtr input_transform,
+                       data::TransformationPtr const_input_transform,
+                       data::TransformationPtr label_transform,
+                       data::OutputColumnsList bolt_input_columns,
+                       data::OutputColumnsList bolt_label_columns,
+                       char delimiter, data::StatePtr state,
+                       std::optional<TextDatasetConfig> text_dataset)
+    : _input_transform(std::move(input_transform)),
+      _const_input_transform(std::move(const_input_transform)),
+      _label_transform(std::move(label_transform)),
+      _bolt_input_columns(std::move(bolt_input_columns)),
+      _bolt_label_columns(std::move(bolt_label_columns)),
+      _delimiter(delimiter),
+      _state(std::move(state)),
+      _text_dataset(std::move(text_dataset)) {}
+
 data::LoaderPtr Featurizer::getDataLoader(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
     bool verbose, dataset::DatasetShuffleConfig shuffle_config) {
@@ -58,11 +75,12 @@ data::LoaderPtr Featurizer::getDataLoader(
 data::LoaderPtr Featurizer::getColdStartDataLoader(
     const dataset::DataSourcePtr& data_source,
     const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names, bool fast_approximation,
-    size_t batch_size, bool shuffle, bool verbose,
+    const std::vector<std::string>& weak_column_names,
+    std::optional<data::VariableLengthConfig> variable_length,
+    bool fast_approximation, size_t batch_size, bool shuffle, bool verbose,
     dataset::DatasetShuffleConfig shuffle_config) {
   auto cold_start = coldStartTransform(strong_column_names, weak_column_names,
-                                       fast_approximation);
+                                       variable_length, fast_approximation);
 
   return getDataLoaderHelper(data_source, batch_size, shuffle, verbose,
                              shuffle_config, cold_start);
@@ -112,7 +130,8 @@ bolt::TensorList Featurizer::featurizeInputBatch(const MapInputBatch& samples) {
 bolt::TensorList Featurizer::featurizeInputColdStart(
     MapInput sample, const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names) {
-  auto cold_start = coldStartTransform(strong_column_names, weak_column_names);
+  auto cold_start = coldStartTransform(strong_column_names, weak_column_names,
+                                       /*variable_length=*/std::nullopt);
   // Currently the cold start transformation expects a label column that it
   // repeats when it maps a single set of phrases to multiple samples. In the
   // future it should be extended to not require this, and just duplicate any
@@ -144,6 +163,7 @@ Featurizer::featurizeTrainingBatch(const MapInputBatch& samples) {
 data::TransformationPtr Featurizer::coldStartTransform(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
+    std::optional<data::VariableLengthConfig> variable_length,
     bool fast_approximation) {
   if (!_text_dataset) {
     throw std::invalid_argument("Cold start is not supported for this model.");
@@ -155,6 +175,15 @@ data::TransformationPtr Featurizer::coldStartTransform(
                        strong_column_names.end());
     return std::make_shared<data::StringConcat>(all_columns,
                                                 _text_dataset->textColumn());
+  }
+
+  if (variable_length) {
+    return std::make_shared<data::VariableLengthColdStart>(
+        /* strong_column_names= */ strong_column_names,
+        /* weak_column_names= */ weak_column_names,
+        /* label_column_name= */ _text_dataset->labelColumn(),
+        /* output_column_name= */ _text_dataset->textColumn(),
+        /* config= */ *variable_length);
   }
 
   return std::make_shared<data::ColdStartTextAugmentation>(

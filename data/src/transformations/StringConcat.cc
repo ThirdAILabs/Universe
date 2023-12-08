@@ -23,7 +23,7 @@ ColumnMap StringConcat::apply(ColumnMap columns, State& state) const {
     std::string concat;
     for (size_t col_idx = 0; col_idx < input_columns.size(); col_idx++) {
       if (col_idx > 0) {
-        concat.append(_seperator);
+        concat.append(_separator);
       }
       concat.append(input_columns[col_idx]->value(i));
     }

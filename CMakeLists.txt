@@ -337,6 +337,9 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/CosineSimilarity.cc
     bolt/src/nn/ops/PatchEmbedding.cc
     bolt/src/nn/ops/PatchSum.cc
+    bolt/src/nn/ops/WeightedSum.cc
+    bolt/src/nn/ops/MaxPool1D.cc
+    bolt/src/nn/ops/QuantileMixing.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/Loss.cc
     bolt/src/nn/loss/ComparativeLoss.cc
@@ -413,7 +416,10 @@ set(THIRDAI_SOURCES
     data/src/transformations/Binning.cc
     data/src/transformations/StringHash.cc
     data/src/transformations/TextTokenizer.cc
-    data/src/transformations/ColdStartText.cc
+    data/src/transformations/TextCompat.cc
+    data/src/transformations/cold_start/TextAugmentationUtils.cc
+    data/src/transformations/cold_start/ColdStartText.cc
+    data/src/transformations/cold_start/VariableLengthColdStart.cc
     data/src/transformations/FeatureHash.cc
     data/src/transformations/Tabular.cc
     data/src/transformations/Pipeline.cc
@@ -453,10 +459,14 @@ set(THIRDAI_SOURCES
     auto_ml/src/featurization/GraphFeaturizer.cc
     auto_ml/src/featurization/RecurrentFeaturizer.cc
     auto_ml/src/featurization/ReservedColumns.cc
+    auto_ml/src/featurization/TabularBlockComposer.cc # Deprecate
+    auto_ml/src/featurization/TabularDatasetFactory.cc # Deprecate
+    auto_ml/src/cold_start/ColdStartUtils.cc # Deprecate
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
-    auto_ml/src/rlhf/RLHFSampler.cc
+    auto_ml/src/rlhf/BalancingSamples.cc
+    auto_ml/src/rlhf/RLHFSampler.cc # Deprecate
     utils/src/SymSpellBackend/symspell.cc
     utils/src/SymSpellCpp/SymSpell.cc
     utils/Logging.cc
@@ -525,7 +535,8 @@ pybind11_add_module(
   auto_ml/src/udt/utils/Models.cc
   auto_ml/src/udt/utils/Classifier.cc
   auto_ml/src/udt/backends/UDTClassifier.cc
-  auto_ml/src/udt/backends/UDTMachClassifier.cc
+  auto_ml/src/udt/backends/UDTMach.cc
+  auto_ml/src/udt/backends/UDTMachClassifier.cc # Deprecate
   auto_ml/src/udt/backends/UDTRecurrentClassifier.cc
   auto_ml/src/udt/backends/UDTRegression.cc
   auto_ml/src/udt/backends/UDTQueryReformulation.cc

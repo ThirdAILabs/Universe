@@ -1,6 +1,5 @@
 #include "RLHFSampler.h"
 #include <cereal/archives/binary.hpp>
-#include <cereal/types/string.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/unordered_set.hpp>
 #include <cereal/types/utility.hpp>
@@ -9,7 +8,8 @@
 
 namespace thirdai::automl::udt {
 
-std::vector<RlhfSample> RLHFSampler::balancingSamples(size_t num_samples) {
+std::vector<std::pair<BoltVector, BoltVector>> RLHFSampler::balancingSamples(
+    size_t num_samples) {
   if (num_samples == 0) {
     return {};
   }
@@ -20,7 +20,7 @@ std::vector<RlhfSample> RLHFSampler::balancingSamples(size_t num_samples) {
         "documents.");
   }
 
-  std::vector<RlhfSample> samples;
+  std::vector<std::pair<BoltVector, BoltVector>> samples;
 
   uint32_t full_rounds = num_samples / _samples_per_doc.size();
   for (uint32_t round = 0; round < full_rounds; round++) {
@@ -43,19 +43,20 @@ std::vector<RlhfSample> RLHFSampler::balancingSamples(size_t num_samples) {
   return samples;
 }
 
-void RLHFSampler::addSample(uint32_t doc_id, const RlhfSample& sample) {
+void RLHFSampler::addSample(uint32_t doc_id, const BoltVector& input,
+                            const BoltVector& label) {
   if (_samples_per_doc.size() >= _max_docs) {
     return;
   }
   if (_samples_per_doc[doc_id].size() < _max_samples_per_doc) {
-    _samples_per_doc[doc_id].emplace_back(sample);
+    _samples_per_doc[doc_id].push_back(std::make_pair(input, label));
     _doc_ids.insert(doc_id);
   } else {
     //  Newer samples have a higher probability of being kept, we can change
     //  this to reservoir sampling if this is an issue.
     std::uniform_int_distribution<> dist(0, _max_samples_per_doc - 1);
     size_t replace = dist(_rng);
-    _samples_per_doc[doc_id][replace] = sample;
+    _samples_per_doc[doc_id][replace] = std::make_pair(input, label);
   }
 }
 

@@ -7,6 +7,7 @@
 #include <data/src/TensorConversion.h>
 #include <data/src/rca/ExplanationMap.h>
 #include <data/src/transformations/State.h>
+#include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <stdexcept>
@@ -50,6 +51,14 @@ class Featurizer {
              data::OutputColumnsList bolt_label_columns,
              const TabularOptions& options);
 
+  Featurizer(data::TransformationPtr input_transform,
+             data::TransformationPtr const_input_transform,
+             data::TransformationPtr label_transform,
+             data::OutputColumnsList bolt_input_columns,
+             data::OutputColumnsList bolt_label_columns, char delimiter,
+             data::StatePtr state,
+             std::optional<TextDatasetConfig> text_dataset);
+
   explicit Featurizer(const ar::Archive& archive);
 
   data::LoaderPtr getDataLoader(const dataset::DataSourcePtr& data_source,
@@ -61,6 +70,7 @@ class Featurizer {
       const dataset::DataSourcePtr& data_source,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
+      std::optional<data::VariableLengthConfig> variable_length,
       bool fast_approximation, size_t batch_size, bool shuffle, bool verbose,
       dataset::DatasetShuffleConfig shuffle_config =
           dataset::DatasetShuffleConfig());
@@ -112,6 +122,7 @@ class Featurizer {
   data::TransformationPtr coldStartTransform(
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
+      std::optional<data::VariableLengthConfig> variable_length,
       bool fast_approximation = false);
 
   std::shared_ptr<ar::Map> toArchiveMap() const;

@@ -18,10 +18,11 @@ constexpr uint32_t DEFAULT_BATCH_SIZE = 2048;
 
 Trainer::Trainer(ModelPtr model,
                  std::optional<uint32_t> freeze_hash_tables_epoch,
+                 uint32_t gradient_update_interval,
                  InterruptCheck interrupt_check)
     : _model(std::move(model)),
-      _epoch(0),
       _freeze_hash_tables_epoch(freeze_hash_tables_epoch),
+      _gradient_update_interval(gradient_update_interval),
       _interrupt_check(std::move(interrupt_check)) {
   _history = std::make_shared<metrics::History>();
 }
@@ -57,9 +58,10 @@ metrics::History Trainer::train(
 
   uint32_t steps_since_validation = 0;
 
-  uint32_t num_epochs = _epoch + epochs;
-  for (; _epoch < num_epochs; _epoch++) {
-    if (_freeze_hash_tables_epoch && _epoch == *_freeze_hash_tables_epoch) {
+  uint32_t num_epochs = _model->epochs() + epochs;
+  for (; _model->epochs() < num_epochs; _model->incrementEpochs()) {
+    if (_freeze_hash_tables_epoch &&
+        _model->epochs() == *_freeze_hash_tables_epoch) {
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
     }
 
@@ -69,11 +71,22 @@ metrics::History Trainer::train(
     if (comm) {
       num_batches = comm->minNumBatches(num_batches);
     }
+    if (_gradient_update_interval > num_batches) {
+      std::string errorMessage = fmt::format(
+          "Error: gradient_update_interval ({}) exceeds num_batches ({}). "
+          "Model parameters will not be updated under this condition.",
+          _gradient_update_interval, num_batches);
+
+      throw std::runtime_error(errorMessage);
+    }
     auto bar = ProgressBar::makeOptional(verbose, "train", num_batches);
 
     utils::Timer epoch_timer;
 
     for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
+      bool is_update_interval_reached =
+          ((batch_idx + 1) % _gradient_update_interval == 0);
+
       callbacks.onBatchBegin();
 
       const TensorList& inputs = train_data.first.at(batch_idx);
@@ -87,20 +100,20 @@ metrics::History Trainer::train(
           "train_on_batch", batch_idx, train_on_batch_timer.milliseconds());
       logging::info(train_on_batch_log);
 
-      if (comm) {
+      if (comm && is_update_interval_reached) {
         comm->communicate(_model);
       }
 
-      utils::Timer update_param_timer;
-      _model->updateParameters(train_state->learningRate());
+      if (is_update_interval_reached) {
+        utils::Timer update_param_timer;
+        _model->updateParameters(train_state->learningRate());
+        update_param_timer.stop();
 
-      update_param_timer.stop();
-
-      std::string update_parameter_log = formatFuncCallLogLine(
-          "update_parameter", batch_idx, update_param_timer.milliseconds());
-      logging::info(update_parameter_log);
-
-      train_metrics.recordBatch(inputs.at(0)->batchSize());
+        std::string update_parameter_log = formatFuncCallLogLine(
+            "update_parameter", batch_idx, update_param_timer.milliseconds());
+        logging::info(update_parameter_log);
+        train_metrics.recordBatch(inputs.at(0)->batchSize());
+      }
 
       callbacks.onBatchEnd();
 
@@ -383,7 +396,7 @@ std::string Trainer::formatTrainLogLine(const std::string& metric_summary,
   std::string logline = fmt::format(
       "train | epoch {} | train_steps {} | {} | train_batches {} | time "
       "{:.3f}s",
-      _epoch, _model->trainSteps(), metric_summary, batches, time);
+      _model->epochs(), _model->trainSteps(), metric_summary, batches, time);
 
   return logline;
 }
@@ -392,7 +405,7 @@ std::string Trainer::formatFuncCallLogLine(const std::string& func_call,
                                            uint32_t batches, int64_t time) {
   std::string logline = fmt::format(
       "func {} | epoch {} | train_steps {} | train_batches {} | time {} ms",
-      func_call, _epoch, _model->trainSteps(), batches, time);
+      func_call, _model->epochs(), _model->trainSteps(), batches, time);
 
   return logline;
 }
@@ -400,7 +413,7 @@ std::string Trainer::formatFuncCallLogLine(const std::string& func_call,
 std::string Trainer::formatIntermediateLogLine(
     const std::string& metric_summary) {
   std::string logline =
-      fmt::format("train | epoch {} | train_steps {} | {}", _epoch,
+      fmt::format("train | epoch {} | train_steps {} | {}", _model->epochs(),
                   _model->trainSteps(), metric_summary);
 
   return logline;
@@ -411,7 +424,7 @@ std::string Trainer::formatValidateLogLine(const std::string& metric_summary,
   std::string logline = fmt::format(
       "validate | epoch {} | train_steps {} | {} | val_batches {} | time "
       "{:.3f}s",
-      _epoch, _model->trainSteps(), metric_summary, batches, time);
+      _model->epochs(), _model->trainSteps(), metric_summary, batches, time);
 
   return logline;
 }

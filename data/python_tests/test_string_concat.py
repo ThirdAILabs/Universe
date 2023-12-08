@@ -13,7 +13,7 @@ def test_string_concat(serialize):
     columns = data.ColumnMap(columns)
 
     transformation = data.transformations.StringConcat(
-        input_columns, "output", seperator="#"
+        input_columns, "output", separator="#"
     )
     if serialize:
         transformation = data.transformations.deserialize(transformation.serialize())

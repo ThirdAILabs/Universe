@@ -15,7 +15,11 @@ set(DATA_TESTS
     DeduplicateTokensTest
     ColumnMapIteratorTests
     TabularTests
+<<<<<<< HEAD
     StateSerializationTest)
+=======
+    TextCompatTest)
+>>>>>>> 219af27c7d62f226ce3983dbe3a8388e3cedf727
 
 foreach(DATA_TEST IN LISTS DATA_TESTS)
   add_executable(${DATA_TEST} ${DATA_TEST}.cc)

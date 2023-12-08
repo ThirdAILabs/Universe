@@ -7,6 +7,7 @@
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/Featurizer.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
@@ -134,8 +135,10 @@ class UDTBackend {
   virtual py::object coldstart(
       const dataset::DataSourcePtr& data,
       const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& train_metrics,
+      const std::vector<std::string>& weak_column_names,
+      std::optional<data::VariableLengthConfig> variable_length,
+      float learning_rate, uint32_t epochs,
+      const std::vector<std::string>& train_metrics,
       const dataset::DataSourcePtr& val_data,
       const std::vector<std::string>& val_metrics,
       const std::vector<CallbackPtr>& callbacks, TrainOptions options,
@@ -151,6 +154,7 @@ class UDTBackend {
     (void)callbacks;
     (void)options;
     (void)comm;
+    (void)variable_length;
     throw notSupported("cold_start");
   }
 
@@ -170,8 +174,8 @@ class UDTBackend {
     throw notSupported("class_name");
   }
 
-  virtual ColumnDataTypes dataTypes() const {
-    throw notSupported("data_types");
+  virtual TextDatasetConfig textDatasetConfig() const {
+    throw notSupported("text_dataset_config");
   }
 
   virtual void indexNodes(const dataset::DataSourcePtr& source) {

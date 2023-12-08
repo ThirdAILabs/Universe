@@ -6,7 +6,7 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDTBackend.h>
-#include <auto_ml/src/udt/backends/UDTMachClassifier.h>
+#include <auto_ml/src/udt/backends/UDTMach.h>
 #include <dataset/src/DataSource.h>
 #include <memory>
 #include <optional>
@@ -119,16 +119,17 @@ class UDT {
    * Performs cold start pretraining. Optional method that is not supported by
    * default for backends.
    */
-  py::object coldstart(const dataset::DataSourcePtr& data,
-                       const std::vector<std::string>& strong_column_names,
-                       const std::vector<std::string>& weak_column_names,
-                       float learning_rate, uint32_t epochs,
-                       const std::vector<std::string>& train_metrics,
-                       const dataset::DataSourcePtr& val_data,
-                       const std::vector<std::string>& val_metrics,
-                       const std::vector<CallbackPtr>& callbacks,
-                       TrainOptions options,
-                       const bolt::DistributedCommPtr& comm);
+  py::object coldstart(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names,
+      std::optional<data::VariableLengthConfig> variable_length,
+      float learning_rate, uint32_t epochs,
+      const std::vector<std::string>& train_metrics,
+      const dataset::DataSourcePtr& val_data,
+      const std::vector<std::string>& val_metrics,
+      const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+      const bolt::DistributedCommPtr& comm);
 
   /**
    * Returns some embedding representation for the given sample. Optional method
@@ -203,12 +204,8 @@ class UDT {
 
   std::vector<uint32_t> modelDims() const;
 
-  const TextDatasetConfig& textDatasetConfig() const {
-    if (auto featurizer = _backend->featurizer()) {
-      return featurizer->textDatasetConfig();
-    }
-    throw std::invalid_argument(
-        "This method is only supported on Text Models.");
+  TextDatasetConfig textDatasetConfig() const {
+    return _backend->textDatasetConfig();
   }
 
   /**
@@ -456,6 +453,8 @@ class UDT {
   static std::shared_ptr<UDT> load_stream(std::istream& input_stream);
 
   static std::shared_ptr<UDT> oldLoad(const std::string& filename);
+
+  bool isV1() const;
 
  private:
   UDT() {}

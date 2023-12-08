@@ -96,6 +96,7 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
 
     learning_rate = 0.01
     num_epochs = 1
+
     max_in_memory_batches = 5000
 
     @staticmethod
