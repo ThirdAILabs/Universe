@@ -60,8 +60,10 @@ void createBoltTrainSubmodule(py::module_& module) {
 }
 
 Trainer makeTrainer(ModelPtr model,
-                    std::optional<uint32_t> freeze_hash_tables_epoch) {
-  return Trainer(std::move(model), freeze_hash_tables_epoch, CtrlCCheck{});
+                    std::optional<uint32_t> freeze_hash_tables_epoch,
+                    uint32_t gradient_update_interval) {
+  return Trainer(std::move(model), freeze_hash_tables_epoch,
+                 gradient_update_interval, CtrlCCheck{});
 }
 
 void defineTrainer(py::module_& train) {
@@ -82,7 +84,8 @@ void defineTrainer(py::module_& train) {
    */
   py::class_<Trainer>(train, "Trainer")
       .def(py::init(&makeTrainer), py::arg("model"),
-           py::arg("freeze_hash_tables_epoch") = std::nullopt)
+           py::arg("freeze_hash_tables_epoch") = std::nullopt,
+           py::arg("gradient_update_interval") = 1)
 #if THIRDAI_EXPOSE_ALL
       /**
        * ==============================================================
