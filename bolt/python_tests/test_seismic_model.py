@@ -9,13 +9,13 @@ from thirdai import bolt
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("max_pool", [None, 2])
+@pytest.mark.parametrize("max_pool", [None, (2, 2, 2)])
 def test_seismic_embedding_model(subcube_dataset, max_pool):
     subcube_directory, subcube_shape, patch_shape = subcube_dataset
     emb_dim = 100
     model = bolt.seismic.SeismicEmbedding(
-        subcube_shape=subcube_shape[0],
-        patch_shape=patch_shape[0],
+        subcube_shape=subcube_shape,
+        patch_shape=patch_shape,
         embedding_dim=emb_dim,
         size="small",
         max_pool=max_pool,

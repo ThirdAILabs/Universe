@@ -6,7 +6,6 @@
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Binning.h>
 #include <data/src/transformations/CategoricalTemporal.h>
-#include <data/src/transformations/ColdStartText.h>
 #include <data/src/transformations/CrossColumnPairgrams.h>
 #include <data/src/transformations/Date.h>
 #include <data/src/transformations/DyadicInterval.h>
@@ -19,6 +18,8 @@
 #include <data/src/transformations/StringIDLookup.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
+#include <data/src/transformations/cold_start/ColdStartText.h>
+#include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <pybind11/attr.h>
@@ -351,7 +352,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       transformations_submodule, "StringConcat")
       .def(py::init<std::vector<std::string>, std::string, std::string>(),
            py::arg("input_columns"), py::arg("output_column"),
-           py::arg("seperator") = "");
+           py::arg("separator") = "");
 
   py::class_<ColdStartTextAugmentation, Transformation,
              std::shared_ptr<ColdStartTextAugmentation>>(
@@ -390,6 +391,45 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("strong_text"), py::arg("weak_text"))
       .def("augment_map_input", &ColdStartTextAugmentation::augmentMapInput,
            py::arg("document"));
+
+#endif
+
+  py::class_<VariableLengthConfig,
+             std::shared_ptr<VariableLengthConfig>>(  // NOLINT
+      transformations_submodule, "VariableLengthConfig")
+#if THIRDAI_EXPOSE_ALL
+      .def(py::init<size_t, size_t, std::optional<uint32_t>, size_t,
+                    std::optional<size_t>, uint32_t, bool, bool, uint32_t,
+                    float, float, float, float>(),
+           py::arg("covering_min_length") = 5,
+           py::arg("covering_max_length") = 40,
+           py::arg("max_covering_samples") = std::nullopt,
+           py::arg("slice_min_length") = 5,
+           py::arg("slice_max_length") = std::nullopt,
+           py::arg("num_slices") = 7, py::arg("add_whole_doc") = true,
+           py::arg("prefilter_punctuation") = true,
+           py::arg("strong_sample_num_words") = 3,
+           py::arg("stopword_removal_probability") = 0,
+           py::arg("stopword_insertion_probability") = 0,
+           py::arg("word_removal_probability") = 0,
+           py::arg("word_perturbation_probability") = 0)
+#else
+      .def(py::init<>())
+#endif
+      ;
+
+#if THIRDAI_EXPOSE_ALL
+  py::class_<VariableLengthColdStart, Transformation,
+             std::shared_ptr<VariableLengthColdStart>>(
+      transformations_submodule, "VariableLengthColdStart")
+      .def(py::init<std::vector<std::string>, std::vector<std::string>,
+                    std::string, std::string, VariableLengthConfig, uint32_t>(),
+           py::arg("strong_columns"), py::arg("weak_columns"),
+           py::arg("label_column"), py::arg("output_column"),
+           py::arg("config") = VariableLengthConfig(),
+           py::arg("seed") = global_random::nextSeed())
+      .def("augment_single_row", &VariableLengthColdStart::augmentSingleRow,
+           py::arg("strong_text"), py::arg("weak_text"));
 
   py::class_<MachLabel, Transformation, std::shared_ptr<MachLabel>>(
       transformations_submodule, "MachLabel")

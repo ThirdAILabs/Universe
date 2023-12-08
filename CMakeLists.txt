@@ -337,6 +337,9 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/CosineSimilarity.cc
     bolt/src/nn/ops/PatchEmbedding.cc
     bolt/src/nn/ops/PatchSum.cc
+    bolt/src/nn/ops/WeightedSum.cc
+    bolt/src/nn/ops/MaxPool1D.cc
+    bolt/src/nn/ops/QuantileMixing.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/Loss.cc
     bolt/src/nn/loss/ComparativeLoss.cc
@@ -410,7 +413,10 @@ set(THIRDAI_SOURCES
     data/src/transformations/Binning.cc
     data/src/transformations/StringHash.cc
     data/src/transformations/TextTokenizer.cc
-    data/src/transformations/ColdStartText.cc
+    data/src/transformations/TextCompat.cc
+    data/src/transformations/cold_start/TextAugmentationUtils.cc
+    data/src/transformations/cold_start/ColdStartText.cc
+    data/src/transformations/cold_start/VariableLengthColdStart.cc
     data/src/transformations/FeatureHash.cc
     data/src/transformations/Pipeline.cc
     data/src/transformations/MachLabel.cc

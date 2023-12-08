@@ -37,6 +37,7 @@ Model::Model(ComputationList inputs, ComputationList outputs,
     : _inputs(std::move(inputs)),
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
+      _epochs(0),
       _train_steps(0),
       _model_uuid(
           utils::uuid::getRandomHexString(/* num_bytes_randomness= */ 16)),
@@ -275,6 +276,10 @@ size_t Model::numParams() const {
 }
 
 uint32_t Model::trainSteps() const { return _train_steps; }
+
+uint32_t Model::epochs() const { return _epochs; }
+
+void Model::incrementEpochs() { _epochs++; }
 
 void Model::overrideTrainSteps(uint32_t train_steps) {
   _train_steps = train_steps;

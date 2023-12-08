@@ -63,11 +63,17 @@ TXT_FILE = os.path.join(BASE_DIR, "nature.txt")
 EML_FILE = os.path.join(BASE_DIR, "Message.eml")
 
 # connection instances for connector document
+# SQL connector attributes
 ENGINE = base.get_sql_engine()
 TABLE_NAME = base.get_sql_table()
 
+# SharePoint connector attributes
 CLIENT_CONTEXT = base.get_client_context()
 LIBRARY_PATH = base.get_library_path()
+
+# SalesForce Connector attributes
+SF_INSTANCE = base.get_salesforce_instance()
+OBJECT_NAME = base.get_salesforce_object_name()
 
 CSV_EXPLICIT_META = "csv-explicit"
 PDF_META = "pdf"
@@ -183,6 +189,23 @@ all_connector_doc_getters = [
         ),
         local_doc=build_local_sharepoint_doc,
     ),
+    Equivalent_doc(
+        connector_doc=lambda: ndb.SalesForce(
+            instance=SF_INSTANCE,
+            object_name=OBJECT_NAME,
+            id_col="ID__c",
+            strong_columns=["Review__c"],
+            weak_columns=["Review__c"],
+            reference_columns=["Review__c"],
+        ),
+        local_doc=lambda: ndb.CSV(
+            path=os.path.join(BASE_DIR, "connector_docs", "Salesforce", "yelp.csv"),
+            id_column="ID__c",
+            strong_columns=["Review__c"],
+            weak_columns=["Review__c"],
+            reference_columns=["Review__c"],
+        ),
+    ),
 ]
 
 # This is a list of getter functions that return doc objects so each test can
@@ -197,6 +220,7 @@ all_local_doc_getters = [
     ),
     lambda: ndb.CSV(CSV_FILE),
     lambda: ndb.PDF(PDF_FILE),
+    lambda: ndb.PDF(PDF_FILE, version="v2"),
     lambda: ndb.DOCX(DOCX_FILE),
     lambda: ndb.URL("https://en.wikipedia.org/wiki/Rice_University"),
     lambda: ndb.URL(
@@ -209,6 +233,9 @@ all_local_doc_getters = [
     lambda: ndb.SentenceLevelPDF(PDF_FILE),
     lambda: ndb.SentenceLevelDOCX(DOCX_FILE),
 ]
+
+# The two URL docs are different constructor invocationsfor the same thing.
+num_duplicate_docs = 1
 
 all_doc_getters = all_local_doc_getters + [
     eq_doc.connector_doc for eq_doc in all_connector_doc_getters

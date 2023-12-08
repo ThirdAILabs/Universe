@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 import pytest
 from thirdai import neural_db as ndb
@@ -5,7 +7,11 @@ from thirdai import neural_db as ndb
 pytestmark = [pytest.mark.unit]
 
 
-def make_csv_doc(explicit_columns: bool, doc_id_column: bool = None):
+@pytest.fixture(scope="module")
+def make_csv_doc(request):
+    explicit_columns = request.param.get("explicit_columns", None)
+    doc_id_column = request.param.get("doc_id_column", None)
+
     doc_ids = list(range(100))
     strongs = [f"This is strong text {doc_id}" for doc_id in doc_ids]
     weaks = [f"This is weak text {doc_id}" for doc_id in doc_ids]
@@ -16,17 +22,19 @@ def make_csv_doc(explicit_columns: bool, doc_id_column: bool = None):
     pd.DataFrame({"doc_id": doc_ids, "strong": strongs, "weak": weaks}).to_csv(
         path, index=False
     )
-
     if not explicit_columns:
-        return ndb.CSV(path)
+        ndb_doc = ndb.CSV(path)
+    else:
+        ndb_doc = ndb.CSV(
+            path,
+            id_column="doc_id" if doc_id_column else None,
+            strong_columns=["strong"],
+            weak_columns=["weak"],
+            reference_columns=["strong", "weak"],
+        )
 
-    return ndb.CSV(
-        path,
-        id_column="doc_id" if doc_id_column else None,
-        strong_columns=["strong"],
-        weak_columns=["weak"],
-        reference_columns=["strong", "weak"],
-    )
+    yield ndb_doc
+    os.remove(path)
 
 
 def strong_columns_empty(doc: ndb.Document):
@@ -92,22 +100,31 @@ def ids_consistent_with_doc_id_column(doc: ndb.Document):
     return True
 
 
-def test_csv_with_inferred_columns():
-    doc = make_csv_doc(explicit_columns=False, doc_id_column=False)
+@pytest.mark.parametrize(
+    "make_csv_doc", [{"explicit_columns": False, "doc_id_column": False}], indirect=True
+)
+def test_csv_with_inferred_columns(make_csv_doc):
+    doc = make_csv_doc
     assert strong_columns_empty(doc)
     assert valid_inferred_weak_columns(doc)
     assert ids_are_row_numbers(doc)
 
 
-def test_csv_with_explicit_columns_with_doc_id_column():
-    doc = make_csv_doc(explicit_columns=True, doc_id_column=True)
+@pytest.mark.parametrize(
+    "make_csv_doc", [{"explicit_columns": True, "doc_id_column": True}], indirect=True
+)
+def test_csv_with_explicit_columns_with_doc_id_column(make_csv_doc):
+    doc = make_csv_doc
     assert valid_explicit_strong_columns(doc)
     assert valid_explicit_weak_columns(doc)
     assert ids_consistent_with_doc_id_column(doc)
 
 
-def test_csv_with_explicit_columns_without_doc_id_column():
-    doc = make_csv_doc(explicit_columns=True, doc_id_column=False)
+@pytest.mark.parametrize(
+    "make_csv_doc", [{"explicit_columns": True, "doc_id_column": False}], indirect=True
+)
+def test_csv_with_explicit_columns_without_doc_id_column(make_csv_doc):
+    doc = make_csv_doc
     assert valid_explicit_strong_columns(doc)
     assert valid_explicit_weak_columns(doc)
     assert ids_are_row_numbers(doc)

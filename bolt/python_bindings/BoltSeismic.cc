@@ -20,6 +20,9 @@ void createSeismicSubmodule(py::module_& module) {
 
   py::class_<SeismicEmbedding, std::shared_ptr<SeismicEmbedding>, SeismicBase>(
       seismic, "SeismicEmbedding")
+      .def(py::init(&SeismicEmbedding::makeCube), py::arg("subcube_shape"),
+           py::arg("patch_shape"), py::arg("embedding_dim"),
+           py::arg("size") = "large", py::arg("max_pool") = std::nullopt)
       .def(py::init(&SeismicEmbedding::make), py::arg("subcube_shape"),
            py::arg("patch_shape"), py::arg("embedding_dim"),
            py::arg("size") = "large", py::arg("max_pool") = std::nullopt)
