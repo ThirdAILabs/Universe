@@ -29,12 +29,17 @@ std::vector<std::string> wordLevelCharKGrams(
     const std::vector<std::string>& words, uint32_t k,
     size_t min_word_length = 4);
 
-std::string randomStringPerturbation(std::string input,
-                                     size_t replace_with_space,
-                                     size_t delete_chars,
-                                     size_t replace_with_adjacent,
-                                     size_t duplicate_chars);
+std::string deleteRandomCharacters(const std::string& input,
+                                   size_t num_to_delete);
 
+std::string duplicateRandomCharacters(const std::string& input,
+                                      size_t num_to_duplicate);
+
+std::string replaceRandomCharactersWithSpaces(const std::string& input,
+                                              size_t num_to_replace);
+
+std::string replaceRandomCharactersWithAdjacents(const std::string& input,
+                                                 size_t num_to_replace);
 /**
  * Joins a vector of strings into a single delimited string.
  */
@@ -42,7 +47,8 @@ std::string join(const std::vector<std::string>& strings,
                  const std::string& delimiter);
 
 /**
- * Creates a copy of the original stringview where all characters are lowercase.
+ * Creates a copy of the original stringview where all characters are
+ * lowercase.
  */
 inline std::string lower(const std::string_view& str) {
   std::string lower_name;
@@ -87,8 +93,8 @@ std::wstring toUnicode(const std::string& text);
 std::string fromUnicode(const std::wstring& wText);
 
 /**
- * Converts the given input string into a consistent normalized form in case of
- * unicode text. Read more about normalization here:
+ * Converts the given input string into a consistent normalized form in case
+ * of unicode text. Read more about normalization here:
  * https://unicode.org/faq/normalization.html
  */
 std::string normalize(const std::string& s);

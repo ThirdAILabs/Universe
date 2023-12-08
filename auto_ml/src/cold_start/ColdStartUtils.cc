@@ -7,7 +7,7 @@
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/cold_start/ColdStartText.h>
 #include <dataset/src/DataSource.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 
 namespace thirdai::automl::cold_start {
 

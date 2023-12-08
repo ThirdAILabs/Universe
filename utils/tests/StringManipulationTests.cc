@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/NeighboringCharacters.h>
+#include <utils/text/StringManipulation.h>
 
 namespace thirdai::text {
 
@@ -130,44 +131,39 @@ TEST(StringManipulationTest, WordLevelCharKGramTest) {
   assertEqualTokens(char_words, {"word", "ords"});
 }
 
-TEST(StringManipulationTest, PerturbationNoChange) {
-  std::string test_str = "Hello, World!";
-  ASSERT_EQ(randomStringPerturbation(test_str, 0, 0, 0, 0), "Hello, World!");
-}
-
 TEST(StringManipulationTest, PerturbationReplaceWithSpace) {
   std::string test_str = "Hello";
-  std::string result = randomStringPerturbation(test_str, 2, 0, 0, 0);
+  std::string result = replaceRandomCharactersWithSpaces(test_str, 2);
   int space_count = std::count(result.begin(), result.end(), ' ');
   ASSERT_EQ(space_count, 2);
 }
 
 TEST(StringManipulationTest, PerturbationDeleteCharacters) {
   std::string test_str = "Hello";
-  std::string result = randomStringPerturbation(test_str, 0, 2, 0, 0);
+  std::string result = deleteRandomCharacters(test_str, 2);
   ASSERT_EQ(result.size(), 3);
 }
 
-// TEST(StringManipulationTest, PerturbationReplaceWithAdjacentCharacters) {
-//   std::string test_str = "abcdef";
-//   std::string result = randomStringPerturbation(test_str, 0, 0, 6, 0);
-//   // Each character should be replaced with an adjacent character
-//   // This assumes the adjacent character mapping is known and correct
-//   bool all_replaced = true;
-//   for (int i = 0; i < result.size(); ++i) {
-//     if (std::find(text::neighboring_chars[test_str[i]].begin(),
-//                   adjacent_map[test_str[i]].end(),
-//                   result[i]) == adjacent_map[test_str[i]].end()) {
-//       all_replaced = false;
-//       break;
-//     }
-//   }
-//   ASSERT_TRUE(all_replaced);
-// }
+TEST(StringManipulationTest, PerturbationReplaceWithAdjacentCharacters) {
+  std::string test_str = "abcdef";
+  std::string result = replaceRandomCharactersWithAdjacents(test_str, 6);
+  std::cout << result << std::endl;
+
+  bool all_replaced = true;
+  for (int i = 0; i < result.size(); ++i) {
+    if (std::find(neighboring_chars.at(test_str[i]).begin(),
+                  neighboring_chars.at(test_str[i]).end(),
+                  result[i]) == neighboring_chars.at(test_str[i]).end()) {
+      all_replaced = false;
+      break;
+    }
+  }
+  ASSERT_TRUE(all_replaced);
+}
 
 TEST(StringManipulationTest, PerturbationDuplicateCharacters) {
   std::string test_str = "Hello";
-  std::string result = randomStringPerturbation(test_str, 0, 0, 0, 2);
+  std::string result = duplicateRandomCharacters(test_str, 2);
   ASSERT_EQ(result.size(), test_str.size() + 2);
 }
 

@@ -2,7 +2,7 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/StringConcat.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <iterator>
 #include <numeric>

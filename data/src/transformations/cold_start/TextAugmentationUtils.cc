@@ -1,7 +1,7 @@
 #include "TextAugmentationUtils.h"
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/StringConcat.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <random>
 
 namespace thirdai::data::cold_start {

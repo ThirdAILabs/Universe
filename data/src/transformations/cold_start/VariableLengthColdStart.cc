@@ -2,8 +2,8 @@
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/StringConcat.h>
 #include <utils/CommonChecks.h>
-#include <utils/Stopwords.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/Stopwords.h>
+#include <utils/text/StringManipulation.h>
 
 namespace thirdai::data {
 
