@@ -47,8 +47,7 @@ std::string join(const std::vector<std::string>& strings,
                  const std::string& delimiter);
 
 /**
- * Creates a copy of the original stringview where all characters are
- * lowercase.
+ * Creates a copy of the original stringview where all characters are lowercase.
  */
 inline std::string lower(const std::string_view& str) {
   std::string lower_name;
@@ -93,8 +92,8 @@ std::wstring toUnicode(const std::string& text);
 std::string fromUnicode(const std::wstring& wText);
 
 /**
- * Converts the given input string into a consistent normalized form in case
- * of unicode text. Read more about normalization here:
+ * Converts the given input string into a consistent normalized form in case of
+ * unicode text. Read more about normalization here:
  * https://unicode.org/faq/normalization.html
  */
 std::string normalize(const std::string& s);
