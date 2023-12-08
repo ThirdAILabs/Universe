@@ -4,15 +4,9 @@
 
 namespace thirdai::smx {
 
-inline void checkF32(const TensorPtr& tensor) {
-  if (tensor->dtype() != Dtype::f32) {
-    throw std::invalid_argument(
-        "Activations are only supported for f32 tensors.");
-  }
-}
-
 DenseTensorPtr relu(const DenseTensorPtr& in) {
-  checkF32(in);
+  CHECK(in->dtype() == Dtype::f32,
+        "Activations are only supported for f32 tensors.")
 
   auto out = DenseTensor::make(in->shape(), Dtype::f32);
   out->eigenArray<float>() = in->eigenArray<float>().max(0.0);
@@ -22,8 +16,10 @@ DenseTensorPtr relu(const DenseTensorPtr& in) {
 
 DenseTensorPtr reluGrad(const DenseTensorPtr& out,
                         const DenseTensorPtr& out_grad) {
-  checkF32(out);
-  checkF32(out_grad);
+  CHECK(out->dtype() == Dtype::f32,
+        "Activations are only supported for f32 tensors.")
+  CHECK(out_grad->dtype() == Dtype::f32,
+        "Activations are only supported for f32.")
 
   auto in_grad = DenseTensor::make(out->shape(), Dtype::f32);
 
@@ -43,7 +39,8 @@ DenseTensorPtr reluGrad(const DenseTensorPtr& out,
 }
 
 DenseTensorPtr tanh(const DenseTensorPtr& in) {
-  checkF32(in);
+  CHECK(in->dtype() == Dtype::f32,
+        "Activations are only supported for f32 tensors.")
 
   auto out = DenseTensor::make(in->shape(), Dtype::f32);
   out->eigenArray<float>() = in->eigenArray<float>().tanh();
@@ -53,8 +50,10 @@ DenseTensorPtr tanh(const DenseTensorPtr& in) {
 
 DenseTensorPtr tanhGrad(const DenseTensorPtr& out,
                         const DenseTensorPtr& out_grad) {
-  checkF32(out);
-  checkF32(out_grad);
+  CHECK(out->dtype() == Dtype::f32,
+        "Activations are only supported for f32 tensors.")
+  CHECK(out_grad->dtype() == Dtype::f32,
+        "Activations are only supported for f32.")
 
   auto in_grad = DenseTensor::make(out->shape(), Dtype::f32);
 
@@ -65,7 +64,8 @@ DenseTensorPtr tanhGrad(const DenseTensorPtr& out,
 }
 
 DenseTensorPtr sigmoid(const DenseTensorPtr& in) {
-  checkF32(in);
+  CHECK(in->dtype() == Dtype::f32,
+        "Activations are only supported for f32 tensors.")
 
   auto out = DenseTensor::make(in->shape(), Dtype::f32);
   out->eigenArray<float>() = (1 + (-in->eigenArray<float>()).exp()).inverse();
@@ -75,8 +75,10 @@ DenseTensorPtr sigmoid(const DenseTensorPtr& in) {
 
 DenseTensorPtr sigmoidGrad(const DenseTensorPtr& out,
                            const DenseTensorPtr& out_grad) {
-  checkF32(out);
-  checkF32(out_grad);
+  CHECK(out->dtype() == Dtype::f32,
+        "Activations are only supported for f32 tensors.")
+  CHECK(out_grad->dtype() == Dtype::f32,
+        "Activations are only supported for f32.")
 
   auto in_grad = DenseTensor::make(out->shape(), Dtype::f32);
 
@@ -88,7 +90,8 @@ DenseTensorPtr sigmoidGrad(const DenseTensorPtr& out,
 }
 
 DenseTensorPtr softmax(const DenseTensorPtr& in) {
-  checkF32(in);
+  CHECK(in->dtype() == Dtype::f32,
+        "Activations are only supported for f32 tensors.")
 
   auto out = DenseTensor::make(in->shape(), Dtype::f32);
 
@@ -105,8 +108,10 @@ DenseTensorPtr softmax(const DenseTensorPtr& in) {
 
 DenseTensorPtr softmaxGrad(const DenseTensorPtr& out,
                            const DenseTensorPtr& out_grad) {
-  checkF32(out);
-  checkF32(out_grad);
+  CHECK(out->dtype() == Dtype::f32,
+        "Activations are only supported for f32 tensors.")
+  CHECK(out_grad->dtype() == Dtype::f32,
+        "Activations are only supported for f32.")
 
   auto in_grad = DenseTensor::make(out->shape(), Dtype::f32);
 

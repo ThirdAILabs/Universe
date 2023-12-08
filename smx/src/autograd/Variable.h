@@ -1,5 +1,6 @@
 #pragma once
 
+#include <smx/src/tensor/Functions.h>
 #include <smx/src/tensor/Tensor.h>
 #include <functional>
 #include <stdexcept>
@@ -61,7 +62,7 @@ class Variable {
       _grad = grad;
     }
 
-    // _grad = add(_grad, grad)
+    _grad = add(_grad, grad);
   }
 
  private:

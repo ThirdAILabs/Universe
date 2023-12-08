@@ -35,4 +35,19 @@ DenseTensorPtr softmax(const DenseTensorPtr& in);
 DenseTensorPtr softmaxGrad(const DenseTensorPtr& out,
                            const DenseTensorPtr& out_grad);
 
+/**
+ * Linear algebra functions
+ */
+
+TensorPtr add(const TensorPtr& a, const TensorPtr& b);
+
+TensorPtr linear(const TensorPtr& x, const DenseTensorPtr& w,
+                 const DenseTensorPtr& b);
+
+std::tuple<TensorPtr, TensorPtr, TensorPtr> linearGrad(const TensorPtr& x,
+                                                       const DenseTensorPtr& w,
+                                                       const DenseTensorPtr& b,
+                                                       const TensorPtr& y_grad,
+                                                       bool compute_x_grad);
+
 }  // namespace thirdai::smx

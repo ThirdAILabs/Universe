@@ -22,6 +22,10 @@ using EigenMatrix = Eigen::Map<
     Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>;
 
 template <typename T>
+using EigenVector =
+    Eigen::Map<Eigen::Matrix<T, 1, Eigen::Dynamic, Eigen::RowMajor>>;
+
+template <typename T>
 using EigenArray =
     Eigen::Map<Eigen::Array<T, 1, Eigen::Dynamic, Eigen::RowMajor>>;
 
@@ -106,8 +110,9 @@ class DenseTensor final : public Tensor {
               static_cast<int64_t>(shapeAt(1))};
     }
 
-    return {data<T>(), static_cast<int64_t>(shape().size() / shapeAt(1)),
-            static_cast<int64_t>(shapeAt(1))};
+    size_t last_dim = shapeAt(ndim() - 1);
+    return {data<T>(), static_cast<int64_t>(shape().size() / last_dim),
+            static_cast<int64_t>(last_dim)};
   }
 
   template <typename T>
@@ -119,12 +124,25 @@ class DenseTensor final : public Tensor {
               static_cast<int64_t>(shapeAt(1))};
     }
 
-    if (ndim() == 1) {
-      throw std::invalid_argument("Cannot view 1D tensor as Matrix.");
-    }
+    size_t last_dim = shapeAt(ndim() - 1);
+    return {data<T>(), static_cast<int64_t>(shape().size() / last_dim),
+            static_cast<int64_t>(last_dim)};
+  }
 
-    return {data<T>(), static_cast<int64_t>(shape().size() / shapeAt(1)),
-            static_cast<int64_t>(shapeAt(1))};
+  template <typename T>
+  EigenVector<T> eigenVector() {
+    if (ndim() != 1) {
+      throw std::invalid_argument("Can only convert 1D tensor to vector.");
+    }
+    return {data<T>(), static_cast<int64_t>(shapeAt(0))};
+  }
+
+  template <typename T>
+  EigenVector<const T> eigenVector() const {
+    if (ndim() != 1) {
+      throw std::invalid_argument("Can only convert 1D tensor to vector.");
+    }
+    return {data<T>(), static_cast<int64_t>(shapeAt(0))};
   }
 
   template <typename T>
