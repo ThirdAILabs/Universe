@@ -145,7 +145,8 @@ template void BalancingSamples::serialize(cereal::BinaryOutputArchive& archive);
 
 template <class Archive>
 void BalancingSamples::serialize(Archive& archive) {
-  archive(_samples_per_doc, _doc_ids, _max_docs, _max_samples_per_doc);
+  archive(_indices_col, _values_col, _labels_col, _doc_ids_col, _max_docs,
+          _max_samples_per_doc, _samples_per_doc, _doc_ids);
 }
 
 }  // namespace thirdai::automl::udt
