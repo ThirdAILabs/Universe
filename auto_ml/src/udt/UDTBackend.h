@@ -210,6 +210,19 @@ class UDTBackend {
     throw notSupported("introduce_documents");
   }
 
+  virtual void introduceDocumentsAsVectors(
+      const std::vector<bolt::TensorPtr>& input_tensors,
+      const std::vector<uint32_t>& labels,
+      std::optional<uint32_t> num_buckets_to_sample_opt,
+      uint32_t num_random_hashes, bool verbose) {
+    (void)input_tensors;
+    (void)labels;
+    (void)num_buckets_to_sample_opt;
+    (void)num_random_hashes;
+    (void)verbose;
+    throw notSupported("introduce_documents");
+  }
+
   virtual void introduceDocument(
       const MapInput& document,
       const std::vector<std::string>& strong_column_names,

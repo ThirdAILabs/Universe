@@ -116,6 +116,12 @@ class UDTMachClassifier final : public UDTBackend {
                           uint32_t num_random_hashes, bool fast_approximation,
                           bool verbose) final;
 
+  void introduceDocumentsAsVectors(
+      const std::vector<bolt::TensorPtr>& input_tensors,
+      const std::vector<uint32_t>& labels,
+      std::optional<uint32_t> num_buckets_to_sample_opt,
+      uint32_t num_random_hashes, bool verbose) final;
+
   void introduceDocument(const MapInput& document,
                          const std::vector<std::string>& strong_column_names,
                          const std::vector<std::string>& weak_column_names,

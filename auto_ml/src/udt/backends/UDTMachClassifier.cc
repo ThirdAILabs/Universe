@@ -1,8 +1,10 @@
 #include "UDTMachClassifier.h"
+#include <wrappers/src/EigenDenseWrapper.h>
 #include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/neuron_index/LshIndex.h>
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
+#include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/metrics/LossMetric.h>
@@ -12,6 +14,8 @@
 #include <bolt/src/train/metrics/RecallAtK.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <Eigen/src/Core/Map.h>
+#include <Eigen/src/Core/util/Constants.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -625,6 +629,63 @@ void UDTMachClassifier::introduceDocuments(
   addBalancingSamples(cold_start_data);
 
   updateSamplingStrategy();
+}
+
+void UDTMachClassifier::introduceDocumentsAsVectors(
+    const std::vector<bolt::TensorPtr>& input_tensors,
+    const std::vector<uint32_t>& labels,
+    std::optional<uint32_t> num_buckets_to_sample_opt,
+    uint32_t num_random_hashes, bool verbose) {
+  std::cout << __LINE__ << std::endl;
+  (void)verbose;
+  auto computations = _classifier->model()->computationOrder();
+  auto emb = bolt::Embedding::cast(computations.at(1)->op());
+  auto fc = bolt::FullyConnected::cast(computations.at(2)->op());
+  using Matrix =
+      Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+  Eigen::Map<Matrix> weights(const_cast<float*>(fc->weightsPtr()), fc->dim(),
+                             fc->inputDim());
+  Eigen::Map<Eigen::Matrix<float, 1, Eigen::Dynamic, Eigen::RowMajor>> biases(
+      const_cast<float*>(fc->biasesPtr()), 1, fc->dim());
+
+  uint32_t num_buckets_to_sample = num_buckets_to_sample_opt.value_or(
+      _mach_label_block->index()->numHashes());
+
+  uint32_t label_idx = 0;
+  std::unordered_map<uint32_t, TopKActivationsQueue> top_k_per_doc;
+  for (uint32_t batch_idx = 0; batch_idx < input_tensors.size(); batch_idx++) {
+    bolt::TensorPtr batch = input_tensors[batch_idx];
+
+    Matrix embs(batch->batchSize(), emb->dim());
+    // #pragma omp parallel for default(none) shared(batch, embs, emb)
+    for (size_t i = 0; i < batch->batchSize(); i++) {
+      Eigen::Map<Eigen::RowVectorXf> rowVec(batch->getVector(i).activations,
+                                            emb->dim());
+      embs.row(i) = rowVec;
+    }
+    auto output = bolt::Tensor::dense(batch->batchSize(), fc->dim());
+
+    Eigen::Map<Matrix> out(const_cast<float*>(output->activationsPtr()),
+                           batch->batchSize(), fc->dim());
+
+    out.noalias() = (embs * weights.transpose());
+    out.rowwise() += biases;
+
+    out.array() = (1 + (-out.array()).exp()).inverse();
+    for (uint32_t i = 0; i < batch->batchSize(); i++) {
+      uint32_t label = labels[label_idx];
+      label_idx++;
+      top_k_per_doc[label] =
+          output->getVector(i).findKLargestActivations(num_buckets_to_sample);
+    }
+  }
+
+  for (auto& [doc, top_ks] : top_k_per_doc) {
+    auto hashes =
+        topHashesForDoc({top_ks}, num_buckets_to_sample, num_random_hashes);
+    std::cout << "Inserting " << doc << std::endl;
+    _mach_label_block->index()->insert(doc, hashes);
+  }
 }
 
 void UDTMachClassifier::introduceDocument(
