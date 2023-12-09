@@ -683,7 +683,6 @@ void UDTMachClassifier::introduceDocumentsAsVectors(
   for (auto& [doc, top_ks] : top_k_per_doc) {
     auto hashes =
         topHashesForDoc({top_ks}, num_buckets_to_sample, num_random_hashes);
-    std::cout << "Inserting " << doc << std::endl;
     _mach_label_block->index()->insert(doc, hashes);
   }
 }
