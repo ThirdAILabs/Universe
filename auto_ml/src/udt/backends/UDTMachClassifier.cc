@@ -657,7 +657,8 @@ void UDTMachClassifier::introduceDocumentsAsVectors(
     bolt::TensorPtr batch = input_tensors[batch_idx];
 
     Matrix embs(batch->batchSize(), emb->dim());
-    // #pragma omp parallel for default(none) shared(batch, embs, emb)
+
+#pragma omp parallel for default(none) shared(batch, emb, embs)
     for (size_t i = 0; i < batch->batchSize(); i++) {
       Eigen::Map<Eigen::RowVectorXf> rowVec(batch->getVector(i).activations,
                                             emb->dim());
