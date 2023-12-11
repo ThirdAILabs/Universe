@@ -14,7 +14,7 @@ concurrency:
 # for more details.
 on: 
   push: 
-    branches: [main]
+    branches: [main, minor_changes_to_ShardedDataSource]
     tags: [ 'v*.*.*' ]
   workflow_dispatch:  
 
