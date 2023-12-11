@@ -100,7 +100,7 @@ def upvote_works(db: ndb.NeuralDB, number_models: int = 1):
     # TODO(Shubh) : For mach mixture, it is not necessary that upvoting alone will
     # boost the label enough to be predicted at once. Look at a better solution than
     # upvoting multiple times.
-    times_to_upvote = 3 if number_models > 1 else 1
+    times_to_upvote = 3 if number_models > 1 else 5
     for i in range(times_to_upvote):
         db.text_to_result(ARBITRARY_QUERY, target_id)
     assert target_id in [r.id for r in db.search(ARBITRARY_QUERY, top_k=10)]
