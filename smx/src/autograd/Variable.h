@@ -42,28 +42,18 @@ class Variable {
 
   const TensorPtr& tensor() const { return _tensor; }
 
+  const TensorPtr& grad() const { return _grad; }
+
   bool requiresGrad() const { return _requires_grad; }
 
-  void backpropagate() {
+  void backward() {
     TensorPtr ones;  // Ones like output.
-    backpropagate(ones);
+    backward(ones);
   }
 
-  void backpropagate(const TensorPtr& grad);
+  void backward(const TensorPtr& grad);
 
-  void addGradient(const TensorPtr& grad) {
-    if (grad->shape() != _tensor->shape()) {
-      throw std::invalid_argument(
-          "Cannot assign gradient with shape " + grad->shape().toString() +
-          " to variable with shape " + _tensor->shape().toString() + ".");
-    }
-
-    if (!_grad) {
-      _grad = grad;
-    }
-
-    _grad = add(_grad, grad);
-  }
+  void addGradient(const TensorPtr& grad);
 
  private:
   std::vector<Variable*> topologicalSort();

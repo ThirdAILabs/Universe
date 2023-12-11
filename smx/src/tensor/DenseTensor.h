@@ -171,6 +171,17 @@ class DenseTensor final : public Tensor {
 
   const MemoryHandlePtr& handle() const { return _data; }
 
+  template <typename T>
+  T scalar() const {
+    checkDtypeCompatability<T>();
+    if (ndim() != 1 && shapeAt(0) != 1) {
+      throw std::invalid_argument(
+          "Only tensors with shape (1,) can be converted to scalars.");
+    }
+
+    return data<T>()[0];
+  }
+
  private:
   template <typename T>
   void checkDtypeCompatability() const {

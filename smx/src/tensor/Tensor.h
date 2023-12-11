@@ -30,13 +30,12 @@ class Tensor {
 
 using TensorPtr = std::shared_ptr<Tensor>;
 
-#define _STR(x) #x  // NOLINT
-
 // NOLINTNEXTLINE
-#define CHECK(stmt, msg)                                                 \
-  if (!(stmt)) {                                                         \
-    throw std::runtime_error(std::string(__FILE__) + ":" +               \
-                             std::string(_STR(__LINE__)) + " " + (msg)); \
+#define CHECK(stmt, msg)                                                   \
+  if (!(stmt)) {                                                           \
+    throw std::runtime_error(std::string(__FILE__) + ":" +                 \
+                             std::string(std::to_string(__LINE__)) + " " + \
+                             (msg));                                       \
   }
 
 }  // namespace thirdai::smx

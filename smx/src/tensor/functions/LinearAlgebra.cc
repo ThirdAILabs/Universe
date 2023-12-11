@@ -22,13 +22,14 @@ TensorPtr add(const TensorPtr& a, const TensorPtr& b) {
   return out;
 }
 
+// TODO(Nicholas): Implement these kernels using dnnl_sgemm
 TensorPtr linear(const TensorPtr& x, const DenseTensorPtr& w,
                  const DenseTensorPtr& b) {
   CHECK(x->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
   CHECK(w->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
   CHECK(b->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
   CHECK(w->ndim() == 2, "Weight matrix must be 2D.");
-  CHECK(w->ndim() == 1, "Bias must be 1D.");
+  CHECK(b->ndim() == 1, "Bias must be 1D.");
 
   if (x->isSparse()) {
     throw std::invalid_argument(
@@ -68,8 +69,6 @@ std::tuple<TensorPtr, TensorPtr, TensorPtr> linearGrad(const TensorPtr& x,
   auto W = w->eigenMatrix<float>();
   auto Y_grad = asDense(y_grad)->eigenMatrix<float>();
 
-  auto x_grad =
-      compute_x_grad ? DenseTensor::make(x->shape(), Dtype::f32) : nullptr;
   auto w_grad = DenseTensor::make(w->shape(), Dtype::f32);
   auto b_grad = DenseTensor::make(b->shape(), Dtype::f32);
 
@@ -77,14 +76,17 @@ std::tuple<TensorPtr, TensorPtr, TensorPtr> linearGrad(const TensorPtr& x,
   auto B_grad = b_grad->eigenMatrix<float>();
 
   W_grad = Y_grad.transpose() * X;
-  B_grad = Y_grad.rowwise().sum();  // TODO(Nicholas): rowwise or colwise?
+  B_grad = Y_grad.colwise().sum();
 
   if (compute_x_grad) {
+    auto x_grad = DenseTensor::make(x->shape(), Dtype::f32);
     auto X_grad = x_grad->eigenMatrix<float>();
     X_grad = Y_grad * W;
+
+    return {x_grad, w_grad, b_grad};
   }
 
-  return {x_grad, w_grad, b_grad};
+  return {nullptr, w_grad, b_grad};
 }
 
 }  // namespace thirdai::smx

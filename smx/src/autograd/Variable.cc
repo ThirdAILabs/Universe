@@ -3,7 +3,7 @@
 
 namespace thirdai::smx {
 
-void Variable::backpropagate(const TensorPtr& grad) {
+void Variable::backward(const TensorPtr& grad) {
   addGradient(grad);
 
   auto topo_order = topologicalSort();
@@ -39,6 +39,21 @@ std::vector<Variable*> Variable::topologicalSort() {
   traverse(this);
 
   return sorted;
+}
+
+void Variable::addGradient(const TensorPtr& grad) {
+  if (grad->shape() != _tensor->shape()) {
+    throw std::invalid_argument(
+        "Cannot assign gradient with shape " + grad->shape().toString() +
+        " to variable with shape " + _tensor->shape().toString() + ".");
+  }
+
+  if (!_grad) {
+    _grad = grad;
+    return;
+  }
+
+  _grad = add(_grad, grad);
 }
 
 }  // namespace thirdai::smx

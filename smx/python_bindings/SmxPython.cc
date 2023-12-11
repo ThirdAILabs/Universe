@@ -1,9 +1,12 @@
 #include "SmxPython.h"
 #include <pybind11/attr.h>
+#include <pybind11/detail/common.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <smx/src/autograd/Variable.h>
+#include <smx/src/autograd/functions/Activations.h>
+#include <smx/src/autograd/functions/LinearAlgebra.h>
 #include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Dtype.h>
 #include <smx/src/tensor/Functions.h>
@@ -87,7 +90,17 @@ void defineTensor(py::module_& smx) {
 
   py::class_<DenseTensor, DenseTensorPtr, Tensor>(smx, "DenseTensor")
       .def_property_readonly("strides", &DenseTensor::strides)
-      .def("numpy", &denseTensorToNumpy);
+      .def("numpy", &denseTensorToNumpy)
+      .def("scalar", [](const DenseTensorPtr& tensor) {
+        switch (tensor->dtype()) {
+          case Dtype::f32:
+            return py::cast(tensor->scalar<float>());
+          case Dtype::u32:
+            return py::cast(tensor->scalar<uint32_t>());
+          default:
+            throw std::invalid_argument("Unsupported dtype for scalar.");
+        }
+      });
 
   smx.def("transpose", &transpose, py::arg("tensor"), py::arg("perm"));
   smx.def("reshape", &reshape, py::arg("tensor"), py::arg("new_shape"));
@@ -96,10 +109,37 @@ void defineTensor(py::module_& smx) {
   smx.def("from_numpy", &denseTensorFromNumpy<uint32_t>, py::arg("array"));
 }
 
+void defineAutograd(py::module_& smx) {
+  py::class_<Variable, VariablePtr>(smx, "Variable")
+      .def(py::init(py::overload_cast<TensorPtr, bool>(&Variable::make)),
+           py::arg("tensor"), py::arg("requires_grad") = false)
+      .def("backward", py::overload_cast<>(&Variable::backward))
+      .def("backward", py::overload_cast<const TensorPtr&>(&Variable::backward))
+      .def_property_readonly("tensor", &Variable::tensor)
+      .def_property_readonly("grad", &Variable::grad);
+
+  smx.def("linear",
+          py::overload_cast<const VariablePtr&, const VariablePtr&,
+                            const VariablePtr&>(&linear),
+          py::arg("x"), py::arg("w"), py::arg("b"));
+
+  smx.def("relu", py::overload_cast<const VariablePtr&>(&relu), py::arg("x"));
+
+  smx.def("tanh", py::overload_cast<const VariablePtr&>(&tanh), py::arg("x"));
+
+  smx.def("sigmoid", py::overload_cast<const VariablePtr&>(&sigmoid),
+          py::arg("x"));
+
+  smx.def("softmax", py::overload_cast<const VariablePtr&>(&softmax),
+          py::arg("x"));
+}
+
 void createSmxSubmodule(py::module_& mod) {
   auto smx = mod.def_submodule("smx");
 
   defineTensor(smx);
+
+  defineAutograd(smx);
 }
 
 }  // namespace thirdai::smx::python
