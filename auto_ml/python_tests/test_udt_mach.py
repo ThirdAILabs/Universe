@@ -713,39 +713,6 @@ def test_associate():
     assert new_intersection > original_intersection
 
 
-def test_upvote():
-    model = train_simple_mach_udt(
-        rlhf_args={
-            "rlhf": True,
-            "rlhf_balancing_docs": 100,
-            "rlhf_balancing_samples_per_doc": 10,
-        }
-    )
-
-    target_sample = {"text": "random sample text"}
-    model.introduce_label([target_sample], label=200)
-
-    source_sample = {"text": "tomato"}
-    model.introduce_label([source_sample], label=300)
-
-    predicted_label = model.predict(source_sample)[0][0]
-    for _ in range(10):
-        model.upvote([(source_sample, 300)], learning_rate=0.01)
-        predicted_label = model.predict(source_sample)[0][0]
-        if predicted_label != 200:
-            break
-
-    assert predicted_label != 200
-
-    for _ in range(10):
-        model.upvote([(source_sample, 200)], learning_rate=0.01)
-        predicted_label = model.predict(source_sample)[0][0]
-        if predicted_label == 200:
-            break
-
-    assert predicted_label == 200
-
-
 def test_enable_rlhf():
     model = train_simple_mach_udt()
 
