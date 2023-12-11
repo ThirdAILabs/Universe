@@ -219,7 +219,7 @@ def test_sharded_data_source(prepare_documents_test):
         label_to_segment_map=label_to_segment_map,
         seed=0,
     )
-    sharded_data_sources, _ = sharder.shard_data_source()
+    sharded_data_sources = sharder.shard_data_source()
 
     assert len(sharded_data_sources) == number_shards
     assert sum(shard.size for shard in sharded_data_sources) == first_size + second_size

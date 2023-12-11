@@ -139,7 +139,6 @@ class ShardedDataSource:
 
     def shard_data_source(self):
         df = ShardedDataSource._get_dataframe(self.data_source)
-        segment_to_label_map = defaultdict(list)
 
         df = df.sample(frac=1, random_state=self.seed).reset_index(drop=True)
 
@@ -162,30 +161,34 @@ class ShardedDataSource:
             )
             for label in unique_labels:
                 self.label_to_segment_map[label].append(index)
-                segment_to_label_map[index].append(label)
 
         shard_names, shard_objects = ShardedDataSource._generate_temp_csvs(segments)
 
         shards = ShardedDataSource._get_shards(
             self.data_source, shard_names=shard_names, shard_objects=shard_objects
         )
-        return shards, segment_to_label_map
+        return shards
 
     @staticmethod
     def shard_using_index(
         data_source: DocumentDataSource,
-        segment_to_label_map: defaultdict,
+        label_to_segment_map: defaultdict,
         number_shards: int,
     ):
         """
         This function is used to shard another data source using the label to shard mapping generated for the data source that this object was initialized with.
         """
-        if len(segment_to_label_map) == 0:
+        if len(label_to_segment_map) == 0:
             raise Exception(
                 "Cannot shard a data source without an uninitialized label index."
             )
 
         df = ShardedDataSource._get_dataframe(data_source)
+
+        segment_to_label_map = defaultdict(list)
+        for label, segments in label_to_segment_map.items():
+            for segment in segments:
+                segment_to_label_map[segment].append(label)
 
         segments = [
             df[df[data_source.id_column].isin(segment_to_label_map[i])]

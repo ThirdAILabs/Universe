@@ -123,15 +123,12 @@ class MachMixture(Model):
             label_to_segment_map=self.label_to_segment_map,
             seed=self.seed_for_sharding,
         )
-        (
-            introduce_data_sources,
-            segment_to_label_map,
-        ) = sharded_data_source.shard_data_source()
+        introduce_data_sources = sharded_data_source.shard_data_source()
 
         # Once the introduce datasource has been sharded, we can use the update label index to shard the training data source ( We do not want training samples to go to a Mach model that does not contain their labels)
         train_data_sources = sharded_data_source.shard_using_index(
             train_documents,
-            segment_to_label_map=segment_to_label_map,
+            label_to_segment_map=self.label_to_segment_map,
             number_shards=self.number_models,
         )
 
@@ -276,7 +273,7 @@ class MachMixture(Model):
             label_to_segment_map=self.label_to_segment_map,
             seed=self.seed_for_sharding,
         )
-        balancing_data_shards, _ = sharded_data_source.shard_data_source()
+        balancing_data_shards = sharded_data_source.shard_data_source()
         for model, shard in zip(self.models, balancing_data_shards):
             model.retrain(
                 balancing_data=shard,
