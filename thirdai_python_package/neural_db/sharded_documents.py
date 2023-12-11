@@ -139,6 +139,7 @@ class ShardedDataSource:
 
     def shard_data_source(self):
         df = ShardedDataSource._get_dataframe(self.data_source)
+        segment_to_label_map = defaultdict(list)
 
         df = df.sample(frac=1, random_state=self.seed).reset_index(drop=True)
 
@@ -161,45 +162,35 @@ class ShardedDataSource:
             )
             for label in unique_labels:
                 self.label_to_segment_map[label].append(index)
+                segment_to_label_map[index].append(label)
 
         shard_names, shard_objects = ShardedDataSource._generate_temp_csvs(segments)
 
         shards = ShardedDataSource._get_shards(
             self.data_source, shard_names=shard_names, shard_objects=shard_objects
         )
-        return shards
+        return shards, segment_to_label_map
 
     @staticmethod
     def shard_using_index(
         data_source: DocumentDataSource,
-        label_to_segment_map: defaultdict,
+        segment_to_label_map: defaultdict,
         number_shards: int,
     ):
         """
         This function is used to shard another data source using the label to shard mapping generated for the data source that this object was initialized with.
         """
-        if len(label_to_segment_map) == 0:
+        if len(segment_to_label_map) == 0:
             raise Exception(
                 "Cannot shard a data source without an uninitialized label index."
             )
 
         df = ShardedDataSource._get_dataframe(data_source)
 
-        segments = [[] for _ in range(number_shards)]
-        for _, row in df.iterrows():
-            # TODO(SHUBH) : Add delimiter support here.
-            labels = [int(row[data_source.id_column])]
-
-            insertion_index_segments = set()
-            for label in labels:
-                if label in label_to_segment_map:
-                    target_segments = set(label_to_segment_map[label])
-                    for target in target_segments:
-                        insertion_index_segments.add(target)
-            for x in insertion_index_segments:
-                segments[x].append(row)
-
-        segments = [pd.DataFrame(segment) for segment in segments]
+        segments = [
+            df[df[data_source.id_column].isin(segment_to_label_map[i])]
+            for i in range(number_shards)
+        ]
 
         shard_names, shard_objects = ShardedDataSource._generate_temp_csvs(segments)
 
