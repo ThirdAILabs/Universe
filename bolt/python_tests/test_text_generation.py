@@ -2,14 +2,29 @@ import json
 import os
 
 import pytest
-from thirdai import bolt, dataset
+from thirdai import bolt, dataset, data
 
 VOCAB_SIZE = 20
 
 
 def create_dyadic_backend():
     N_INTERVALS = 5
-    inputs = [bolt.nn.Input(dim=VOCAB_SIZE) for _ in range(N_INTERVALS)]
+    dyadic_transform = data.transformations.DyadicInterval(
+        input_column="target",
+        output_interval_prefix="interval_",
+        target_column="next_word",
+        n_intervals=N_INTERVALS,
+        is_bidirectional=True,
+    )
+
+    bolt_inputs = [
+        data.OutputColumns(f"interval_from_end_{1 << i}") for i in range(N_INTERVALS)
+    ] + [
+        data.OutputColumns(f"interval_from_start_{1 << i}")
+        for i in range(N_INTERVALS - 1)
+    ]
+
+    inputs = [bolt.nn.Input(dim=VOCAB_SIZE) for _ in range(2 * N_INTERVALS - 1)]
 
     embeddings = [
         bolt.nn.Embedding(dim=10, input_dim=VOCAB_SIZE, activation="relu")(inp)
@@ -39,7 +54,12 @@ def create_dyadic_backend():
 
     model = bolt.nn.Model(inputs=inputs, outputs=[output], losses=[loss])
 
-    return bolt.DyadicModel(model)
+    return bolt.DyadicModel(
+        model=model,
+        dyadic_transform=dyadic_transform,
+        bolt_inputs=bolt_inputs,
+        is_prompt_needed=False,
+    )
 
 
 def create_contextual_backend(with_prompt=False):
@@ -144,9 +164,10 @@ def test_generation(backend):
 
 
 @pytest.mark.unit
-def test_text_generation_with_prompt():
+@pytest.mark.parametrize("backend", [create_dyadic_backend, create_contextual_backend])
+def test_text_generation_with_prompt(backend):
     model = bolt.GenerativeModel(
-        create_contextual_backend(True), allowed_repeats=set(), punctuation_tokens=set()
+        backend(), allowed_repeats=set(), punctuation_tokens=set()
     )
 
     gen_1 = model.generate(

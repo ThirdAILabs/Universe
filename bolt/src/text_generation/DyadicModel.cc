@@ -31,7 +31,6 @@ DyadicModel::DyadicModel(bolt::ModelPtr model,
 
 bolt::TensorPtr DyadicModel::nextTokenProbs(
     std::vector<uint32_t>& prompts, std::vector<std::vector<uint32_t>> tokens) {
-  // TODO(pratik):Handle for multiple columns
   data::ColumnMap data =
       _is_prompt_needed
           ? data::ColumnMap({{"target", data::ArrayColumn<uint32_t>::make(
