@@ -2,7 +2,7 @@ import json
 import os
 
 import pytest
-from thirdai import bolt, dataset, data
+from thirdai import bolt, data, dataset
 
 VOCAB_SIZE = 20
 
