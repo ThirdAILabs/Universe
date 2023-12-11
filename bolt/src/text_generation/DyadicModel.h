@@ -17,7 +17,10 @@ namespace thirdai::bolt {
 
 class DyadicModel final : public GenerativeBackend {
  public:
-  explicit DyadicModel(bolt::ModelPtr model, bool is_bidirectional = false);
+  explicit DyadicModel(bolt::ModelPtr model,
+                       data::DyadicInterval dyadic_transform,
+                       data::OutputColumnsList bolt_inputs,
+                       bool is_prompt_needed = false);
 
   bolt::TensorPtr nextTokenProbs(
       std::vector<uint32_t>& prompt,
@@ -41,6 +44,7 @@ class DyadicModel final : public GenerativeBackend {
   std::shared_ptr<data::DyadicInterval> _dyadic_transform;
   data::OutputColumnsList _bolt_inputs;
   size_t _vocab_size;
+  bool _is_prompt_needed;
 
   DyadicModel() {}
 
@@ -48,7 +52,7 @@ class DyadicModel final : public GenerativeBackend {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<GenerativeBackend>(this), _model,
-            _dyadic_transform, _bolt_inputs, _vocab_size);
+            _dyadic_transform, _bolt_inputs, _vocab_size, _is_prompt_needed);
   }
 };
 

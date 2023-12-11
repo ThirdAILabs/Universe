@@ -10,44 +10,37 @@
 #include <data/src/transformations/StringCast.h>
 #include <optional>
 #include <stdexcept>
-#include <string>
 
 namespace thirdai::bolt {
 
-DyadicModel::DyadicModel(bolt::ModelPtr model, bool is_bidirectional)
-    : _model(std::move(model)) {
-  size_t model_inputs = _model->inputs().size();
-
-  assert(!is_bidirectional || (model_inputs % 2 == 0));
-
-  size_t n_intervals = is_bidirectional ? model_inputs / 2 : model_inputs;
-
-  _dyadic_transform = std::make_shared<data::DyadicInterval>(
-      "target", std::nullopt, "interval_", "next_word", std::nullopt, n_intervals);
-
+DyadicModel::DyadicModel(bolt::ModelPtr model,
+                         data::DyadicInterval dyadic_transform,
+                         data::OutputColumnsList bolt_inputs,
+                         bool is_prompt_needed)
+    : _model(std::move(model)),
+      _dyadic_transform(
+          std::make_shared<data::DyadicInterval>(dyadic_transform)),
+      _bolt_inputs(bolt_inputs),
+      _is_prompt_needed(is_prompt_needed) {
   if (_model->outputs().size() != 1) {
     throw std::invalid_argument("Expected model to have a single output.");
   }
 
   _vocab_size = _model->outputs().at(0)->dim();
-
-  for (size_t i = 0; i < n_intervals; i++) {
-    _bolt_inputs.push_back(
-        data::OutputColumns("interval_from_end_" + std::to_string(1 << i)));
-  }
-  if (is_bidirectional) {
-    for (size_t i = 0; i < n_intervals; i++) {
-      _bolt_inputs.push_back(
-          data::OutputColumns("interval_from_start_" + std::to_string(1 << i)));
-    }
-  }
 }
 
 bolt::TensorPtr DyadicModel::nextTokenProbs(
-    std::vector<uint32_t>& prompt, std::vector<std::vector<uint32_t>> tokens) {
-  (void)prompt;
-  data::ColumnMap data({{"target", data::ArrayColumn<uint32_t>::make(
-                                       std::move(tokens), _vocab_size)}});
+    std::vector<uint32_t>& prompts, std::vector<std::vector<uint32_t>> tokens) {
+  // TODO(pratik):Handle for multiple columns
+  data::ColumnMap data =
+      _is_prompt_needed
+          ? data::ColumnMap({{"target", data::ArrayColumn<uint32_t>::make(
+                                            std::move(tokens), _vocab_size)},
+                             {"prompt", data::ArrayColumn<uint32_t>::make(
+                                            {prompts}, _vocab_size)}})
+
+          : data::ColumnMap({{"target", data::ArrayColumn<uint32_t>::make(
+                                            std::move(tokens), _vocab_size)}});
 
   auto intervals = _dyadic_transform->inferenceFeaturization(data);
 
@@ -81,11 +74,17 @@ metrics::History DyadicModel::train(
 data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
                                         size_t batch_size, bool shuffle) {
   auto data_iter = data::JsonIterator::make(data, {"target"});
-
   auto transform =
-      data::Pipeline::make({std::make_shared<data::StringToTokenArray>(
-                                "target", "target", ' ', _vocab_size),
-                            _dyadic_transform});
+      _is_prompt_needed
+          ? data::Pipeline::make({std::make_shared<data::StringToTokenArray>(
+                                      "target", "target", ' ', _vocab_size),
+                                  _dyadic_transform,
+                                  std::make_shared<data::StringToTokenArray>(
+                                      "prompt", "prompt", ' ', _vocab_size)})
+
+          : data::Pipeline::make({std::make_shared<data::StringToTokenArray>(
+                                      "target", "target", ' ', _vocab_size),
+                                  _dyadic_transform});
 
   return data::Loader(data_iter, transform, nullptr, _bolt_inputs,
                       {data::OutputColumns("next_word")},
