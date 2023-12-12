@@ -96,12 +96,11 @@ DenseTensorPtr softmax(const DenseTensorPtr& in) {
   auto out = DenseTensor::make(in->shape(), Dtype::f32);
 
   auto x = in->eigenMatrix<float>().array();
-  auto y = in->eigenMatrix<float>().array();
+  auto y = out->eigenMatrix<float>().array();
 
-  // TODO(Nicholas): check rowwise vs colwise here
   auto maxes = x.rowwise().maxCoeff();
-  y = (x - maxes).exp().eval();
-  y /= y.rowwise().sum();
+  y = (x.colwise() - maxes).exp();
+  y.colwise() /= y.rowwise().sum();
 
   return out;
 }
@@ -121,7 +120,7 @@ DenseTensorPtr softmaxGrad(const DenseTensorPtr& out,
   auto gy = (y * y_grad).eval();
 
   in_grad->eigenMatrix<float>().array() =
-      (gy - y * gy.rowwise().sum()) * y_grad;
+      (gy - y.colwise() * gy.rowwise().sum()) * y_grad;
 
   return in_grad;
 }
