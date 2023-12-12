@@ -600,7 +600,7 @@ class NeuralDB:
             )
         
         all_references = []
-        for result_ids in all_result_ids:
+        for i, result_ids in enumerate(all_result_ids):
             references = []
             for rid, score in result_ids:
                 ref = self._savable_state.documents.reference(rid)
@@ -609,7 +609,7 @@ class NeuralDB:
 
             if rerank:
                 ranker = thirdai.dataset.KeywordOverlapRanker()
-                indices, scores = ranker.rank(query, [ref.text for ref in references])
+                indices, scores = ranker.rank(queries[i], [ref.text for ref in references])
                 references = [references[i] for i in indices]
                 for i in range(len(references)):
                     references[i]._score = scores[i]
