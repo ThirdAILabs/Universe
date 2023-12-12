@@ -18,7 +18,7 @@ namespace thirdai::bolt {
 class DyadicModel final : public GenerativeBackend {
  public:
   explicit DyadicModel(bolt::ModelPtr model,
-                       data::DyadicInterval dyadic_transform,
+                       data::DyadicInterval& dyadic_transform,
                        data::OutputColumnsList bolt_inputs,
                        bool is_prompt_needed = false);
 

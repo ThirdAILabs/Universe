@@ -10,17 +10,18 @@
 #include <data/src/transformations/StringCast.h>
 #include <optional>
 #include <stdexcept>
+#include <utility>
 
 namespace thirdai::bolt {
 
 DyadicModel::DyadicModel(bolt::ModelPtr model,
-                         data::DyadicInterval dyadic_transform,
+                         data::DyadicInterval& dyadic_transform,
                          data::OutputColumnsList bolt_inputs,
                          bool is_prompt_needed)
     : _model(std::move(model)),
       _dyadic_transform(
           std::make_shared<data::DyadicInterval>(dyadic_transform)),
-      _bolt_inputs(bolt_inputs),
+      _bolt_inputs(std::move(bolt_inputs)),
       _is_prompt_needed(is_prompt_needed) {
   if (_model->outputs().size() != 1) {
     throw std::invalid_argument("Expected model to have a single output.");
