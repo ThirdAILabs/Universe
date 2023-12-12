@@ -1,4 +1,4 @@
-import copy
+import os
 import random
 import tempfile
 from collections import defaultdict
@@ -52,33 +52,46 @@ class ShardedDataSource:
     ):
         self.data_source = document_data_source
         self.number_shards = number_shards
-        self.seed = seed
         if label_to_segment_map == None:
             self.label_to_segment_map = defaultdict(list)
         else:
             self.label_to_segment_map = label_to_segment_map
+        self.seed = seed
 
     @staticmethod
-    def _generate_temp_csvs(segments: List[pd.DataFrame]):
+    def _generate_temp_csvs(
+        segments: List[pd.DataFrame], segment_save_dir: str, segment_name_prefix: str
+    ):
         """
-        Stores a list of dataframes in temporary files so that they can be read as CSV files later.
+        Stores a list of dataframes in files. If `segment_save_dir` is given,
+        files are stored in that directory, otherwise temporary files are used.
         """
-        segment_prefix = f"{random.randint(100000, 999999)}"
+        segment_prefix = segment_name_prefix or f"{random.randint(100000, 999999)}"
         segment_filenames = []
-        # We need to store the segment objects so that we can delete the files once we are done with sharding and creating a new dataframe
-        segment_objects = []
-        for index, segment in enumerate(segments):
-            temp_file = tempfile.NamedTemporaryFile(
-                mode="w",
-                delete=True,
-                suffix=".csv",
-                prefix=f"{segment_prefix}_{index}_",
-            )
+        segment_objects = []  # Track open file objects to ensure proper cleanup
 
-            segment_name = temp_file.name
-            segment.to_csv(segment_name, index=False)
-            segment_filenames.append(segment_name)
-            segment_objects.append(temp_file)
+        for index, segment in enumerate(segments):
+            if segment_save_dir:
+                # Create file in the specified directory
+                segment_name = os.path.join(
+                    segment_save_dir, f"{segment_prefix}_{index}.csv"
+                )
+                segment.to_csv(segment_name, index=False)
+                segment_filenames.append(segment_name)
+                segment_objects.append(None)  # No temp file object to track
+            else:
+                # Create a temporary file
+                temp_file = tempfile.NamedTemporaryFile(
+                    mode="w",
+                    delete=True,
+                    suffix=".csv",
+                    prefix=f"{segment_prefix}_{index}_",
+                )
+                segment_name = temp_file.name
+                segment.to_csv(segment_name, index=False)
+                segment_filenames.append(segment_name)
+                segment_objects.append(temp_file)
+
         return segment_filenames, segment_objects
 
     @staticmethod
@@ -99,7 +112,9 @@ class ShardedDataSource:
             weak_columns=[weak_column],
             has_offset=True,
         )
-        shard_object.close()
+        if shard_object:
+            shard_object.close()
+
         return csv_object
 
     @staticmethod
@@ -114,7 +129,7 @@ class ShardedDataSource:
 
     @staticmethod
     def _get_shards(
-        data_source: DocumentDataSource, shard_names=None, shard_objects=None
+        data_source: DocumentDataSource, shard_names: str = None, shard_objects=None
     ) -> List[DocumentDataSource]:
         shard_data_sources = []
         for name, temp_object in zip(shard_names, shard_objects):
@@ -137,7 +152,9 @@ class ShardedDataSource:
             shard_data_sources.append(shard_data_source)
         return shard_data_sources
 
-    def shard_data_source(self):
+    def shard_data_source(
+        self, segment_save_dir: str = None, segment_name_prefix: str = None
+    ):
         df = ShardedDataSource._get_dataframe(self.data_source)
 
         df = df.sample(frac=1, random_state=self.seed).reset_index(drop=True)
@@ -162,7 +179,11 @@ class ShardedDataSource:
             for label in unique_labels:
                 self.label_to_segment_map[label].append(index)
 
-        shard_names, shard_objects = ShardedDataSource._generate_temp_csvs(segments)
+        shard_names, shard_objects = ShardedDataSource._generate_temp_csvs(
+            segments,
+            segment_save_dir=segment_save_dir,
+            segment_name_prefix=segment_name_prefix,
+        )
 
         shards = ShardedDataSource._get_shards(
             self.data_source, shard_names=shard_names, shard_objects=shard_objects
@@ -174,6 +195,8 @@ class ShardedDataSource:
         data_source: DocumentDataSource,
         label_to_segment_map: defaultdict,
         number_shards: int,
+        segment_save_dir: str = None,
+        segment_name_prefix: str = None,
     ):
         """
         This function is used to shard another data source using the label to shard mapping generated for the data source that this object was initialized with.
@@ -201,7 +224,11 @@ class ShardedDataSource:
 
         segments = [pd.DataFrame(segment) for segment in segments]
 
-        shard_names, shard_objects = ShardedDataSource._generate_temp_csvs(segments)
+        shard_names, shard_objects = ShardedDataSource._generate_temp_csvs(
+            segments,
+            segment_save_dir=segment_save_dir,
+            segment_name_prefix=segment_name_prefix,
+        )
 
         return ShardedDataSource._get_shards(
             data_source=data_source,

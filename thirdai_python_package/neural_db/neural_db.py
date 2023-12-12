@@ -15,6 +15,7 @@ from .documents import CSV, Document, DocumentManager, Reference
 from .mach_mixture_model import MachMixture
 from .models import CancelState, Mach
 from .savable_state import State
+from .training_state.training_progress_tracker import TrainingProgressTracker
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
 
@@ -191,6 +192,7 @@ class NeuralDB:
     def __init__(self, user_id: str = "user", number_models: int = 1, **kwargs) -> None:
         """user_id is used for logging purposes only"""
         self._user_id: str = user_id
+        print("The 2")
 
         # The savable_state kwarg is only used in static constructor methods
         # and should not be used by an external user.
@@ -529,6 +531,7 @@ class NeuralDB:
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
+        checkpoint_dir: str = None,
     ) -> List[str]:
         """Inserts sources into the database.
         fast_approximation: much faster insertion with a slight drop in
@@ -559,6 +562,7 @@ class NeuralDB:
             cancel_state=cancel_state,
             max_in_memory_batches=max_in_memory_batches,
             variable_length=variable_length,
+            checkpoint_dir=checkpoint_dir,
         )
         self._savable_state.logger.log(
             session_id=self._user_id,

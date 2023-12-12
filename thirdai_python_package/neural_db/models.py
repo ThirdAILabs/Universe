@@ -7,6 +7,8 @@ from thirdai import bolt, data
 
 from .documents import DocumentDataSource
 from .sharded_documents import ShardedDataSource
+from .training_state.training_callback import TrainingProgressCallback
+from .training_state.training_progress_tracker import TrainingProgressTracker
 from .utils import clean_text, random_sample
 
 InferSamples = List
@@ -211,6 +213,7 @@ def unsupervised_train_on_docs(
     variable_length: Optional[
         data.transformations.VariableLengthConfig
     ] = data.transformations.VariableLengthConfig(),
+    training_progress_manager: TrainingProgressCallback = None,
 ):
     if freeze_before_train:
         model._get_model().freeze_hash_tables()
@@ -230,6 +233,11 @@ def unsupervised_train_on_docs(
 
     cancel_training_callback = CancelTraining(cancel_state=cancel_state)
 
+    callbacks = [early_stop_callback, progress_callback, cancel_training_callback]
+
+    if training_progress_manager:
+        callbacks.append(training_progress_manager)
+
     model.cold_start_on_data_source(
         data_source=documents,
         strong_column_names=[documents.strong_column],
@@ -237,7 +245,7 @@ def unsupervised_train_on_docs(
         learning_rate=learning_rate,
         epochs=max_epochs,
         metrics=[metric],
-        callbacks=[early_stop_callback, progress_callback, cancel_training_callback],
+        callbacks=callbacks,
         max_in_memory_batches=max_in_memory_batches,
         variable_length=variable_length,
     )
@@ -327,41 +335,56 @@ class Mach(Model):
     def get_id_delimiter(self) -> str:
         return self.id_delimiter
 
-    def index_documents(
+    def train_documents(
+        self,
+        train_documents: DocumentDataSource,
+        min_epochs: int,
+        max_epochs: int,
+        metric: str,
+        learning_rate: float,
+        acc_to_stop: float,
+        on_progress: Callable,
+        freeze_before_train: bool,
+        cancel_state: CancelState,
+        max_in_memory_batches: int,
+        training_progress_manager: TrainingProgressCallback = None,
+    ):
+        training_progress_manager.tracker.learning_rate = learning_rate
+        training_progress_manager.tracker.min_epochs = min_epochs
+        training_progress_manager.tracker.max_epochs = max_epochs
+
+        unsupervised_train_on_docs(
+            model=self.model,
+            documents=train_documents,
+            min_epochs=min_epochs,
+            max_epochs=max_epochs,
+            metric=metric,
+            learning_rate=learning_rate,
+            acc_to_stop=acc_to_stop,
+            on_progress=on_progress,
+            freeze_before_train=freeze_before_train,
+            cancel_state=cancel_state,
+            max_in_memory_batches=max_in_memory_batches,
+            training_progress_manager=training_progress_manager,
+        )
+
+        training_progress_manager.tracker.is_training_completed = True
+        training_progress_manager.checkpoint_tracker()
+
+    def introduce_documents(
         self,
         intro_documents: DocumentDataSource,
-        train_documents: DocumentDataSource,
-        should_train: bool,
-        fast_approximation: bool = True,
-        num_buckets_to_sample: Optional[int] = None,
-        on_progress: Callable = lambda **kwargs: None,
-        cancel_state: CancelState = None,
-        max_in_memory_batches: int = None,
-        override_number_classes: int = None,
-        variable_length: Optional[
-            data.transformations.VariableLengthConfig
-        ] = data.transformations.VariableLengthConfig(),
-    ) -> None:
-        """
-        override_number_classes : The number of classes for the Mach model
-
-        Note: Given the datasources for introduction and training, we initialize a Mach model that has number_classes set to the size of introduce documents. But if we want to use this Mach model in our mixture of Models, this will not work because each Mach will be initialized with number of classes equal to the size of the datasource shard. Hence, we add override_number_classes parameters which if set, will initialize Mach Model with number of classes passed by the Mach Mixture.
-        """
+        fast_approximation: bool,
+        num_buckets_to_sample: Optional[int],
+    ):
         if intro_documents.id_column != self.id_col:
             raise ValueError(
                 f"Model configured to use id_col={self.id_col}, received document with"
                 f" id_col={intro_documents.id_column}"
             )
-
         if self.model is None:
-            self.id_col = intro_documents.id_column
-            self.model = self.model_from_scratch(
-                intro_documents, number_classes=override_number_classes
-            )
-            learning_rate = 0.005
-            freeze_before_train = False
-            min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
-                train_documents.size
+            raise Exception(
+                "Cannot perform introduce documents on an uninitialized model."
             )
         else:
             if intro_documents.size > 0:
@@ -383,23 +406,86 @@ class Mach(Model):
                     fast_approximation=fast_approximation,
                     num_buckets_to_sample=num_buckets_to_sample,
                 )
+        self.n_ids += intro_documents.size
+        self.add_balancing_samples(intro_documents)
+
+    def index_documents(
+        self,
+        intro_documents: DocumentDataSource,
+        train_documents: DocumentDataSource,
+        should_train: bool,
+        fast_approximation: bool = True,
+        num_buckets_to_sample: Optional[int] = None,
+        on_progress: Callable = lambda **kwargs: None,
+        cancel_state: CancelState = None,
+        max_in_memory_batches: int = None,
+        override_number_classes: int = None,
+        variable_length: Optional[
+            data.transformations.VariableLengthConfig
+        ] = data.transformations.VariableLengthConfig(),
+        checkpoint_dir=None,
+        model_id=0,
+    ) -> None:
+        """
+        override_number_classes : The number of classes for the Mach model
+
+        Note: Given the datasources for introduction and training, we initialize a Mach model that has number_classes set to the size of introduce documents. But if we want to use this Mach model in our mixture of Models, this will not work because each Mach will be initialized with number of classes equal to the size of the datasource shard. Hence, we add override_number_classes parameters which if set, will initialize Mach Model with number of classes passed by the Mach Mixture.
+        """
+        if checkpoint_dir:
+            training_progress_tracker = TrainingProgressTracker(
+                checkpoint_dir=checkpoint_dir, model_id=model_id
+            )
+            training_progress_manager = TrainingProgressCallback(
+                tracker=training_progress_tracker, neuraldb_mach_model=self
+            )
+            training_progress_manager.tracker.override_number_classes = (
+                override_number_classes
+            )
+            training_progress_manager.tracker.fast_approximation = fast_approximation
+            training_progress_manager.tracker.num_buckets_to_sample = (
+                num_buckets_to_sample
+            )
+            training_progress_manager.checkpoint_tracker()
+        else:
+            training_progress_manager = None
+
+        if self.model is None:
+            self.id_col = intro_documents.id_column
+            self.model = self.model_from_scratch(
+                intro_documents, number_classes=override_number_classes
+            )
+            learning_rate = 0.005
+            freeze_before_train = False
+            min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
+                train_documents.size
+            )
+        else:
             learning_rate = 0.001
             # Freezing at the beginning prevents the model from forgetting
             # things it learned from pretraining.
             freeze_before_train = True
             # Less epochs here since it converges faster when trained on a base
             # model.
+            self.introduce_documents(
+                intro_documents=intro_documents,
+                fast_approximation=fast_approximation,
+                num_buckets_to_sample=num_buckets_to_sample,
+            )
             min_epochs, max_epochs = autotune_from_base_min_max_epochs(
                 train_documents.size
             )
 
+        # Once we have introduced the documents, we should checkpoint
+        if training_progress_manager:
+            training_progress_manager.tracker.is_insert_completed = True
+            training_progress_manager.checkpoint_tracker()
+
         self.n_ids += intro_documents.size
         self.add_balancing_samples(intro_documents)
 
-        if should_train and train_documents.size > 0:
-            unsupervised_train_on_docs(
-                model=self.model,
-                documents=train_documents,
+        if should_train:
+            self.train_documents(
+                train_documents=train_documents,
                 min_epochs=min_epochs,
                 max_epochs=max_epochs,
                 metric="hash_precision@5",
@@ -409,7 +495,7 @@ class Mach(Model):
                 freeze_before_train=freeze_before_train,
                 cancel_state=cancel_state,
                 max_in_memory_batches=max_in_memory_batches,
-                variable_length=variable_length,
+                training_progress_manager=training_progress_manager,
             )
 
     def add_balancing_samples(self, documents: DocumentDataSource):
