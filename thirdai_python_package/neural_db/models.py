@@ -400,8 +400,8 @@ class Mach(Model):
             unsupervised_train_on_docs(
                 model=self.model,
                 documents=train_documents,
-                min_epochs=min_epochs,
-                max_epochs=max_epochs,
+                min_epochs=0,
+                max_epochs=1,
                 metric="hash_precision@5",
                 learning_rate=learning_rate,
                 acc_to_stop=0.95,
