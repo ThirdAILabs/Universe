@@ -10,7 +10,6 @@ class DyadicInterval final : public Transformation {
   DyadicInterval(std::string input_column,
                  std::optional<std::string> prompt_column,
                  std::string output_interval_prefix, std::string target_column,
-                 std::optional<std::string> context_length_column,
                  size_t n_intervals, bool is_bidirectional = false);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
@@ -25,7 +24,6 @@ class DyadicInterval final : public Transformation {
   std::string _input_column;
   std::string _output_interval_prefix;
   std::string _target_column;
-  std::optional<std::string> _context_length_column;
 
   bool _is_bidirectional;
 

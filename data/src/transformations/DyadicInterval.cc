@@ -14,14 +14,18 @@ namespace thirdai::data {
 DyadicInterval::DyadicInterval(std::string input_column,
                                std::optional<std::string> prompt_column,
                                std::string output_interval_prefix,
+<<<<<<< HEAD
                                std::string target_column,
                                std::optional<std::string> context_length_column,
                                size_t n_intervals, bool is_bidirectional)
+=======
+                               std::string target_column, size_t n_intervals,
+                               bool is_bidirectional)
+>>>>>>> parent of 2833ac178... changes
     : _prompt_column(std::move(prompt_column)),
       _input_column(std::move(input_column)),
       _output_interval_prefix(std::move(output_interval_prefix)),
       _target_column(std::move(target_column)),
-      _context_length_column(std::move(context_length_column)),
       _is_bidirectional(is_bidirectional),
       _n_intervals(n_intervals) {}
 
@@ -51,12 +55,15 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
     }
   }
   std::vector<uint32_t> targets(sample_offsets.back());
+<<<<<<< HEAD
 
   std::vector<uint32_t> current_context_lengths;
   if (_context_length_column) {
     current_context_lengths.resize(sample_offsets.back());
   }
 
+=======
+>>>>>>> parent of 2833ac178... changes
   std::vector<std::vector<uint32_t>> prompt_inputs;
   if (_prompt_column) {
     prompt_inputs.resize(sample_offsets.back());
@@ -65,10 +72,16 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr error;
 
-#pragma omp parallel for default(none) shared(                              \
-    texts, sample_offsets, interval_from_end, interval_from_start, prompts, \
-    prompt_inputs, current_context_lengths, targets, chunk_size, error)
-  for (size_t i = 0; i < texts->numRows(); i++) {
+<<<<<<< HEAD
+#pragma omp parallel for default(none)                                    \
+    shared(texts, sample_offsets, interval_from_end, interval_from_start, \
+               prompts, prompt_inputs, current_context_lengths, targets,  \
+               chunk_size, error)
+  =======
+#pragma omp parallel for default(none)                                    \
+    shared(texts, sample_offsets, interval_from_end, interval_from_start, \
+               prompts, prompt_inputs, targets, chunk_size, error)
+      >>>>>>> parent of 2833ac178... changes for (size_t i = 0; i < texts->numRows(); i++) {
     try {
       auto tokens = texts->row(i);
 
@@ -90,9 +103,12 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
           }
 
           targets[sample_offset] = tokens[target];
+<<<<<<< HEAD
           if (_context_length_column) {
             current_context_lengths[sample_offset] = target - start;
           }
+=======
+>>>>>>> parent of 2833ac178... changes
           if (_prompt_column) {
             auto prompt = prompts->row(i);
             prompt_inputs[sample_offset] = {prompt.begin(), prompt.end()};
@@ -133,10 +149,6 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
 
   output_columns[_target_column] =
       ValueColumn<uint32_t>::make(std::move(targets), texts->dim());
-  if (_context_length_column) {
-    output_columns[*_context_length_column] = ValueColumn<uint32_t>::make(
-        std::move(current_context_lengths), chunk_size);
-  }
 
   if (_prompt_column) {
     output_columns[*_prompt_column] =
@@ -180,7 +192,7 @@ ColumnMap DyadicInterval::inferenceFeaturization(ColumnMap columns) const {
 
 #pragma omp parallel for default(none)   \
     shared(tokens, intervals_from_start, \
-           intervals_from_end) if (tokens->numRows() > 1)
+               intervals_from_end) if (tokens->numRows() > 1)
   for (size_t i = 0; i < tokens->numRows(); i++) {
     auto row_tokens = tokens->row(i);
 
@@ -225,7 +237,7 @@ template <class Archive>
 void DyadicInterval::serialize(Archive& archive) {
   archive(cereal::base_class<Transformation>(this), _input_column,
           _output_interval_prefix, _target_column, _n_intervals,
-          _is_bidirectional, _prompt_column, _context_length_column);
+          _is_bidirectional, _prompt_column);
 }
 
 }  // namespace thirdai::data
