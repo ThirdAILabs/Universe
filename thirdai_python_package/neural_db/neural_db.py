@@ -615,7 +615,7 @@ class NeuralDB:
                     references[i]._score = scores[i]
             all_references.append(references)
 
-        return references
+        return all_references
 
     def reference(self, element_id: int):
         return self._savable_state.documents.reference(element_id)
