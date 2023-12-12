@@ -33,6 +33,9 @@ class SQLConnector(Connector):
         self.chunk_size = chunk_size
         self._connection = self._engine.connect()
 
+    def __del__(self):
+        self._connection.close()
+
     def execute(self, query: str, param={}):
         result = self._connection.execute(statement=text(query), parameters=param)
         return result
