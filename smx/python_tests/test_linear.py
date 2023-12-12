@@ -21,7 +21,7 @@ def run_linear_test(x_np, N):
     y = smx.linear(x, w, b)
 
     assert np.allclose(y.tensor.numpy(), y_np)
-    assert y.tensor.ndim == len(y_np.shape)
+    assert y.tensor.ndim == len(x_np.shape)
 
     y_grad_np = np.random.rand(*y_np.shape).astype(np.float32)
     y_grad = smx.from_numpy(y_grad_np)
