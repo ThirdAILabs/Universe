@@ -7,11 +7,15 @@
 #include <smx/src/autograd/Variable.h>
 #include <smx/src/autograd/functions/Activations.h>
 #include <smx/src/autograd/functions/LinearAlgebra.h>
+#include <smx/src/modules/Linear.h>
+#include <smx/src/modules/Module.h>
 #include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Dtype.h>
 #include <smx/src/tensor/Functions.h>
+#include <smx/src/tensor/Init.h>
 #include <smx/src/tensor/Shape.h>
 #include <smx/src/tensor/Tensor.h>
+#include <utils/Random.h>
 #include <stdexcept>
 
 namespace thirdai::smx::python {
@@ -105,6 +109,12 @@ void defineTensor(py::module_& smx) {
   smx.def("transpose", &transpose, py::arg("tensor"), py::arg("perm"));
   smx.def("reshape", &reshape, py::arg("tensor"), py::arg("new_shape"));
 
+  smx.def("zeros", &zeros, py::arg("shape"));
+  smx.def("ones", &ones, py::arg("shape"));
+  smx.def("fill", &fill, py::arg("shape"), py::arg("value"));
+  smx.def("normal", &normal, py::arg("shape"), py::arg("mean"),
+          py::arg("stddev"), py::arg("seed") = global_random::nextSeed());
+
   smx.def("from_numpy", &denseTensorFromNumpy<float>, py::arg("array"));
   smx.def("from_numpy", &denseTensorFromNumpy<uint32_t>, py::arg("array"));
 }
@@ -132,6 +142,24 @@ void defineAutograd(py::module_& smx) {
 
   smx.def("softmax", py::overload_cast<const VariablePtr&>(&softmax),
           py::arg("x"));
+}
+
+void defineModules(py::module_& smx) {
+  py::class_<Module>(smx, "Module")
+      .def("parameters", &Module::parameters)
+      .def("__call__", &Module::forward);
+
+  py::class_<UnaryModule, Module>(smx, "UnaryModule")
+      .def("__call__",
+           py::overload_cast<const VariablePtr&>(&UnaryModule::forward));
+
+  py::class_<Sequential, UnaryModule>(smx, "Sequential")
+      .def(py::init<std::vector<std::shared_ptr<UnaryModule>>>(),
+           py::arg("modules"))
+      .def("append", &Sequential::append, py::arg("module"));
+
+  py::class_<Linear, UnaryModule>(smx, "Linear")
+      .def(py::init<size_t, size_t>(), py::arg("dim"), py::arg("input_dim"));
 }
 
 void createSmxSubmodule(py::module_& mod) {

@@ -319,11 +319,12 @@ if(${LICENSE_BUILD_FLAG_FOUND})
 endif()
 
 set(THIRDAI_SOURCES
-    smx/src/autograd/Variable.cc
     smx/src/tensor/functions/Reshape.cc
     smx/src/tensor/functions/Transpose.cc
     smx/src/tensor/functions/Activations.cc
     smx/src/tensor/functions/LinearAlgebra.cc
+    smx/src/tensor/Init.cc
+    smx/src/autograd/Variable.cc
     smx/src/autograd/functions/Activations.cc
     smx/src/autograd/functions/LinearAlgebra.cc
     bolt_vector/src/BoltVector.cc
