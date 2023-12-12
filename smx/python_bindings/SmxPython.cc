@@ -168,6 +168,8 @@ void createSmxSubmodule(py::module_& mod) {
   defineTensor(smx);
 
   defineAutograd(smx);
+
+  defineModules(smx);
 }
 
 }  // namespace thirdai::smx::python
