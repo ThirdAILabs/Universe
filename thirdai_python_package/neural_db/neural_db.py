@@ -584,7 +584,7 @@ class NeuralDB:
         self._savable_state.model.forget_documents()
 
     def search(
-        self, query: str, top_k: int, constraints=None, rerank=False
+        self, queries: str, top_k: int, constraints=None, rerank=False
     ) -> List[Reference]:
         matching_entities = None
         if constraints:
@@ -595,22 +595,25 @@ class NeuralDB:
                 samples=[query], entities=[matching_entities], n_results=top_k
             )[0]
         else:
-            result_ids = self._savable_state.model.infer_labels(
-                samples=[query], n_results=top_k
-            )[0]
+            all_result_ids = self._savable_state.model.infer_labels(
+                samples=queries, n_results=top_k
+            )
+        
+        all_references = []
+        for result_ids in all_result_ids:
+            references = []
+            for rid, score in result_ids:
+                ref = self._savable_state.documents.reference(rid)
+                ref._score = score
+                references.append(ref)
 
-        references = []
-        for rid, score in result_ids:
-            ref = self._savable_state.documents.reference(rid)
-            ref._score = score
-            references.append(ref)
-
-        if rerank:
-            ranker = thirdai.dataset.KeywordOverlapRanker()
-            indices, scores = ranker.rank(query, [ref.text for ref in references])
-            references = [references[i] for i in indices]
-            for i in range(len(references)):
-                references[i]._score = scores[i]
+            if rerank:
+                ranker = thirdai.dataset.KeywordOverlapRanker()
+                indices, scores = ranker.rank(query, [ref.text for ref in references])
+                references = [references[i] for i in indices]
+                for i in range(len(references)):
+                    references[i]._score = scores[i]
+            all_references.append(references)
 
         return references
 
