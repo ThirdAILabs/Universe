@@ -1,7 +1,9 @@
+import os
 import random
 import time
 from typing import List
 
+import pandas as pd
 import pytest
 from thirdai import neural_db as ndb
 from thirdai.neural_db.constraint_matcher import (
@@ -10,8 +12,6 @@ from thirdai.neural_db.constraint_matcher import (
     to_filters,
 )
 from tqdm import tqdm
-import pandas as pd
-import os
 
 random.seed(1)
 
