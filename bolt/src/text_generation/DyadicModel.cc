@@ -31,19 +31,24 @@ DyadicModel::DyadicModel(bolt::ModelPtr model,
 
 bolt::TensorPtr DyadicModel::nextTokenProbs(
     std::vector<uint32_t>& prompts, std::vector<std::vector<uint32_t>> tokens) {
+  std::vector<std::vector<uint32_t>> prompt_columns;
+  if (_is_prompt_needed) {
+    prompt_columns.assign(tokens.size(), prompts);
+  }
   data::ColumnMap data =
       _is_prompt_needed
-          ? data::ColumnMap({{"target", data::ArrayColumn<uint32_t>::make(
-                                            std::move(tokens), _vocab_size)},
-                             {"prompt", data::ArrayColumn<uint32_t>::make(
-                                            {prompts}, _vocab_size)}})
+          ? data::ColumnMap(
+                {{"target", data::ArrayColumn<uint32_t>::make(std::move(tokens),
+                                                              _vocab_size)},
+                 {"prompt", data::ArrayColumn<uint32_t>::make(
+                                std::move(prompt_columns), _vocab_size)}})
 
           : data::ColumnMap({{"target", data::ArrayColumn<uint32_t>::make(
                                             std::move(tokens), _vocab_size)}});
 
-  auto intervals = _dyadic_transform->inferenceFeaturization(data);
+  auto columns = _dyadic_transform->inferenceFeaturization(data);
 
-  auto tensors = data::toTensors(intervals, _bolt_inputs);
+  auto tensors = data::toTensors(columns, _bolt_inputs);
 
   return _model->forward(tensors).at(0);
 }
