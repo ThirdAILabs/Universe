@@ -15,7 +15,7 @@
 namespace thirdai::bolt {
 
 DyadicModel::DyadicModel(bolt::ModelPtr model,
-                         data::DyadicInterval& dyadic_transform,
+                         const data::DyadicInterval& dyadic_transform,
                          data::OutputColumnsList bolt_inputs,
                          bool is_prompt_needed)
     : _model(std::move(model)),
