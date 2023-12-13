@@ -7,6 +7,7 @@
 #include <smx/src/autograd/Variable.h>
 #include <smx/src/autograd/functions/Activations.h>
 #include <smx/src/autograd/functions/LinearAlgebra.h>
+#include <smx/src/autograd/functions/Loss.h>
 #include <smx/src/modules/Linear.h>
 #include <smx/src/modules/Module.h>
 #include <smx/src/tensor/DenseTensor.h>
@@ -142,6 +143,8 @@ void defineAutograd(py::module_& smx) {
 
   smx.def("softmax", py::overload_cast<const VariablePtr&>(&softmax),
           py::arg("x"));
+
+  smx.def("cross_entropy", &crossEntropy, py::arg("logits"), py::arg("labels"));
 }
 
 void defineModules(py::module_& smx) {

@@ -15,4 +15,6 @@ DenseTensorPtr fill(const std::vector<size_t>& shape, float value);
 DenseTensorPtr normal(const std::vector<size_t>& shape, float mean,
                       float stddev, uint32_t seed = global_random::nextSeed());
 
+DenseTensorPtr scalar(float value);
+
 }  // namespace thirdai::smx

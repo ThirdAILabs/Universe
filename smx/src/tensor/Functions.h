@@ -36,7 +36,7 @@ DenseTensorPtr softmaxGrad(const DenseTensorPtr& out,
                            const DenseTensorPtr& out_grad);
 
 /**
- * Linear algebra functions
+ * Linear algebra functions.
  */
 
 TensorPtr add(const TensorPtr& a, const TensorPtr& b);
@@ -49,5 +49,15 @@ std::tuple<TensorPtr, TensorPtr, TensorPtr> linearGrad(const TensorPtr& x,
                                                        const DenseTensorPtr& b,
                                                        const TensorPtr& y_grad,
                                                        bool compute_x_grad);
+
+/**
+ * Loss functions.
+ */
+
+std::pair<DenseTensorPtr, DenseTensorPtr> sparseCrossEntropy(
+    const DenseTensorPtr& logits, const DenseTensorPtr& labels);
+
+DenseTensorPtr sparseCrossEntropyGrad(const DenseTensorPtr& y,
+                                      const DenseTensorPtr& labels);
 
 }  // namespace thirdai::smx

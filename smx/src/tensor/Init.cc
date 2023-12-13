@@ -34,4 +34,11 @@ DenseTensorPtr normal(const std::vector<size_t>& shape, float mean,
   return tensor;
 }
 
+DenseTensorPtr scalar(float value) {
+  auto tensor = DenseTensor::make(Shape(1UL), Dtype::f32);
+  tensor->data<float>()[0] = value;
+
+  return tensor;
+}
+
 }  // namespace thirdai::smx

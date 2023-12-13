@@ -36,6 +36,8 @@ class Shape {
     return _shape[dim];
   }
 
+  size_t last() const { return _shape.back(); }
+
   const auto& vector() const { return _shape; }
 
   bool canReshapeTo(const Shape& other) const { return size() == other.size(); }
