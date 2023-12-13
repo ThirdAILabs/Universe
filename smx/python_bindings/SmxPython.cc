@@ -10,6 +10,8 @@
 #include <smx/src/autograd/functions/Loss.h>
 #include <smx/src/modules/Linear.h>
 #include <smx/src/modules/Module.h>
+#include <smx/src/optimizers/Adam.h>
+#include <smx/src/optimizers/Optimizer.h>
 #include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Dtype.h>
 #include <smx/src/tensor/Functions.h>
@@ -110,9 +112,10 @@ void defineTensor(py::module_& smx) {
   smx.def("transpose", &transpose, py::arg("tensor"), py::arg("perm"));
   smx.def("reshape", &reshape, py::arg("tensor"), py::arg("new_shape"));
 
-  smx.def("zeros", &zeros, py::arg("shape"));
-  smx.def("ones", &ones, py::arg("shape"));
-  smx.def("fill", &fill, py::arg("shape"), py::arg("value"));
+  smx.def("zeros", py::overload_cast<const Shape&>(&zeros), py::arg("shape"));
+  smx.def("ones", py::overload_cast<const Shape&>(&ones), py::arg("shape"));
+  smx.def("fill", py::overload_cast<const Shape&, float>(&fill),
+          py::arg("shape"), py::arg("value"));
   smx.def("normal", &normal, py::arg("shape"), py::arg("mean"),
           py::arg("stddev"), py::arg("seed") = global_random::nextSeed());
 
@@ -165,6 +168,20 @@ void defineModules(py::module_& smx) {
       .def(py::init<size_t, size_t>(), py::arg("dim"), py::arg("input_dim"));
 }
 
+void defineOptimizers(py::module_& smx) {
+  auto optimizers = smx.def_submodule("optimizers");
+
+  py::class_<Optimizer>(optimizers, "Optimizer")
+      .def("apply", py::overload_cast<>(&Optimizer::apply))
+      .def("zero_grad", &Optimizer::zeroGrad);
+
+  py::class_<Adam, Optimizer>(optimizers, "Adam")
+      .def(py::init<const std::vector<VariablePtr>&, float, float, float,
+                    float>(),
+           py::arg("parameters"), py::arg("lr"), py::arg("beta_1") = 0.9,
+           py::arg("beta_2") = 0.999, py::arg("eps") = 1e-8);
+}
+
 void createSmxSubmodule(py::module_& mod) {
   auto smx = mod.def_submodule("smx");
 
@@ -173,6 +190,8 @@ void createSmxSubmodule(py::module_& mod) {
   defineAutograd(smx);
 
   defineModules(smx);
+
+  defineOptimizers(smx);
 }
 
 }  // namespace thirdai::smx::python

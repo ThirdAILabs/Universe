@@ -4,16 +4,12 @@
 
 namespace thirdai::smx {
 
-DenseTensorPtr zeros(const std::vector<size_t>& shape) {
-  return fill(shape, 0.F);
-}
+DenseTensorPtr zeros(const Shape& shape) { return fill(shape, 0.F); }
 
-DenseTensorPtr ones(const std::vector<size_t>& shape) {
-  return fill(shape, 1.F);
-}
+DenseTensorPtr ones(const Shape& shape) { return fill(shape, 1.F); }
 
-DenseTensorPtr fill(const std::vector<size_t>& shape, float value) {
-  auto tensor = DenseTensor::make(Shape(shape), Dtype::f32);
+DenseTensorPtr fill(const Shape& shape, float value) {
+  auto tensor = DenseTensor::make(shape, Dtype::f32);
   std::fill_n(tensor->data<float>(), tensor->shape().size(), value);
   return tensor;
 }

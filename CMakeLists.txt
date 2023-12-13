@@ -329,6 +329,7 @@ set(THIRDAI_SOURCES
     smx/src/autograd/functions/Activations.cc
     smx/src/autograd/functions/LinearAlgebra.cc
     smx/src/autograd/functions/Loss.cc
+    smx/src/optimizers/Adam.cc
     bolt_vector/src/BoltVector.cc
     bolt/src/nn/autograd/Computation.cc
     bolt/src/nn/autograd/ComputationGraph.cc

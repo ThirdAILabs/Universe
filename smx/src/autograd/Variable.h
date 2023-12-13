@@ -47,11 +47,17 @@ class Variable {
 
   bool requiresGrad() const { return _requires_grad; }
 
-  void backward() { backward(ones(_tensor->shape().vector())); }
+  void backward() { backward(ones(_tensor->shape())); }
 
   void backward(const TensorPtr& grad);
 
   void addGradient(const TensorPtr& grad);
+
+  void zeroGrad() {
+    _grad_func = {};
+    _grad = {};
+    _inputs = {};
+  }
 
  private:
   std::vector<Variable*> topologicalSort();

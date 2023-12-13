@@ -6,11 +6,23 @@
 
 namespace thirdai::smx {
 
-DenseTensorPtr zeros(const std::vector<size_t>& shape);
+DenseTensorPtr zeros(const Shape& shape);
 
-DenseTensorPtr ones(const std::vector<size_t>& shape);
+inline DenseTensorPtr zeros(const std::vector<size_t>& shape) {
+  return zeros(Shape(shape));
+}
 
-DenseTensorPtr fill(const std::vector<size_t>& shape, float value);
+DenseTensorPtr ones(const Shape& shape);
+
+inline DenseTensorPtr ones(const std::vector<size_t>& shape) {
+  return ones(Shape(shape));
+}
+
+DenseTensorPtr fill(const Shape& shape, float value);
+
+inline DenseTensorPtr fill(const std::vector<size_t>& shape, float value) {
+  return fill(Shape(shape), value);
+}
 
 DenseTensorPtr normal(const std::vector<size_t>& shape, float mean,
                       float stddev, uint32_t seed = global_random::nextSeed());
