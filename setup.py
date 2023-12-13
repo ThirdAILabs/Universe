@@ -206,6 +206,7 @@ setup(
             "pytest",
             "pytest-mock",
             "boto3",
+            "aiobotocore<=2.8.0"
             "moto[server]",
             "mlflow",
             "protobuf",
