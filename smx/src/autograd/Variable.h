@@ -1,6 +1,7 @@
 #pragma once
 
 #include <smx/src/tensor/Functions.h>
+#include <smx/src/tensor/Init.h>
 #include <smx/src/tensor/Tensor.h>
 #include <functional>
 #include <stdexcept>
@@ -46,10 +47,7 @@ class Variable {
 
   bool requiresGrad() const { return _requires_grad; }
 
-  void backward() {
-    TensorPtr ones;  // Ones like output.
-    backward(ones);
-  }
+  void backward() { backward(ones(_tensor->shape().vector())); }
 
   void backward(const TensorPtr& grad);
 
