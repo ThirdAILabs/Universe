@@ -367,7 +367,7 @@ class ModelBazaar(Bazaar):
                 print("\nTraining completed")
                 return
 
-            print("Training in progress", end="", flush=True)
+            print("Training: In progress", end="", flush=True)
             print_progress_dots(duration=5)
 
     def deploy(self, model_identifier: str, deployment_name: str, is_async=False):
@@ -428,7 +428,7 @@ class ModelBazaar(Bazaar):
                 print("\nDeployment completed")
                 return
 
-            print("Deployment in progress", end="", flush=True)
+            print("Deployment: In progress", end="", flush=True)
             print_progress_dots(duration=5)
 
     def undeploy(self, ndb_client: NeuralDBClient):
