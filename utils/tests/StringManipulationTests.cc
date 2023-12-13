@@ -146,13 +146,14 @@ TEST(StringManipulationTest, PerturbationDeleteCharacters) {
 
 TEST(StringManipulationTest, PerturbationReplaceWithAdjacentCharacters) {
   std::string test_str = "abcdef";
-  std::string result = replaceRandomCharactersWithAdjacents(test_str, 6);
+  std::string result =
+      replaceRandomCharactersWithKeyboardAdjacents(test_str, 6);
 
   bool all_replaced = true;
   for (int i = 0; i < result.size(); ++i) {
-    if (std::find(neighboring_chars.at(test_str[i]).begin(),
-                  neighboring_chars.at(test_str[i]).end(),
-                  result[i]) == neighboring_chars.at(test_str[i]).end()) {
+    const auto& neighbors = keyboard_char_neighbors.at(test_str[i]);
+    if (std::find(neighbors.begin(), neighbors.end(), result[i]) ==
+        neighbors.end()) {
       all_replaced = false;
       break;
     }
@@ -161,9 +162,24 @@ TEST(StringManipulationTest, PerturbationReplaceWithAdjacentCharacters) {
 }
 
 TEST(StringManipulationTest, PerturbationDuplicateCharacters) {
-  std::string test_str = "Hello";
+  std::string test_str = "ABCD";
   std::string result = duplicateRandomCharacters(test_str, 2);
   ASSERT_EQ(result.size(), test_str.size() + 2);
+
+  uint32_t num_duplicated_chars = 0;
+  for (auto c_test_str : test_str) {
+    size_t occurances = 0;
+    for (auto c_result : result) {
+      if (c_result == c_test_str) {
+        occurances++;
+      }
+    }
+    if (occurances == 2) {
+      num_duplicated_chars++;
+    }
+  }
+
+  ASSERT_EQ(num_duplicated_chars, 2);
 }
 
 }  // namespace thirdai::text

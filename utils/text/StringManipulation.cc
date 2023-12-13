@@ -8,10 +8,10 @@
 #include <optional>
 #include <random>
 #include <regex>
-#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
+#include <unordered_set>
 #include <utf8proc.h>
 #include <vector>
 
@@ -109,12 +109,12 @@ std::vector<std::string> wordLevelCharKGrams(
   return all_char_k_grams;
 }
 
-std::set<size_t> nUniqueRandomInt(
+std::unordered_set<size_t> nUniqueRandomInt(
     size_t n, size_t range,
     std::mt19937 rng = std::mt19937(global_random::nextSeed())) {
   std::uniform_int_distribution<size_t> dist(0, range - 1);
 
-  std::set<size_t> indices;
+  std::unordered_set<size_t> indices;
   while (indices.size() != n) {
     size_t index = dist(rng);
     if (!indices.count(index)) {
@@ -133,6 +133,7 @@ std::string deleteRandomCharacters(const std::string& input,
       nUniqueRandomInt(/* n= */ num_to_delete, /* range= */ input.size());
 
   std::string result;
+  result.reserve(input.size() - num_to_delete);
   for (size_t i = 0; i < input.size(); ++i) {
     if (!indices.count(i)) {
       result += input[i];
@@ -150,6 +151,7 @@ std::string duplicateRandomCharacters(const std::string& input,
       nUniqueRandomInt(/* n= */ num_to_duplicate, /* range= */ input.size());
 
   std::string result;
+  result.reserve(input.size() + num_to_duplicate);
   for (size_t i = 0; i < input.size(); ++i) {
     if (indices.count(i)) {
       result += input[i];
@@ -168,6 +170,7 @@ std::string replaceRandomCharactersWithSpaces(const std::string& input,
       nUniqueRandomInt(/* n= */ num_to_replace, /* range= */ input.size());
 
   std::string result;
+  result.reserve(input.size());
   for (size_t i = 0; i < input.size(); ++i) {
     if (indices.count(i)) {
       result += ' ';
@@ -179,8 +182,8 @@ std::string replaceRandomCharactersWithSpaces(const std::string& input,
   return result;
 }
 
-std::string replaceRandomCharactersWithAdjacents(const std::string& input,
-                                                 size_t num_to_replace) {
+std::string replaceRandomCharactersWithKeyboardAdjacents(
+    const std::string& input, size_t num_to_replace) {
   num_to_replace = std::min(num_to_replace, input.size());
 
   std::mt19937 rng(global_random::nextSeed());
@@ -188,22 +191,24 @@ std::string replaceRandomCharactersWithAdjacents(const std::string& input,
                                   /* range= */ input.size(), /* rng=*/rng);
 
   std::string result;
+  result.reserve(input.size());
   for (size_t i = 0; i < input.size(); ++i) {
-    if (indices.count(i)) {
-      char ch = input[i];
-      bool uppercase = std::isupper(ch);
-      ch = std::tolower(ch);
-      if (neighboring_chars.count(ch)) {
-        char neighbor;
-        std::sample(neighboring_chars.at(ch).begin(),
-                    neighboring_chars.at(ch).end(), &neighbor, 1, rng);
-        if (uppercase) {
-          neighbor = std::toupper(neighbor);
-        }
-        result += neighbor;
-      } else {
-        result += input[i];
+    if (!indices.count(i)) {
+      result += input[i];
+      continue;
+    }
+
+    char ch = input[i];
+    bool uppercase = std::isupper(ch);
+    ch = std::tolower(ch);
+    if (keyboard_char_neighbors.count(ch)) {
+      char neighbor;
+      std::sample(keyboard_char_neighbors.at(ch).begin(),
+                  keyboard_char_neighbors.at(ch).end(), &neighbor, 1, rng);
+      if (uppercase) {
+        neighbor = std::toupper(neighbor);
       }
+      result += neighbor;
     } else {
       result += input[i];
     }
@@ -212,10 +217,10 @@ std::string replaceRandomCharactersWithAdjacents(const std::string& input,
   return result;
 }
 
-std::string perturbSentence(const std::string& input,
-                            size_t chars_replace_with_space,
-                            size_t chars_deleted, size_t chars_duplicated,
-                            size_t chars_replace_with_adjacents) {
+std::string perturbCharacters(const std::string& input,
+                              size_t chars_replace_with_space,
+                              size_t chars_deleted, size_t chars_duplicated,
+                              size_t chars_replace_with_adjacents) {
   std::string result = input;
 
   if (chars_replace_with_space) {
@@ -232,8 +237,8 @@ std::string perturbSentence(const std::string& input,
   }
 
   if (chars_replace_with_adjacents) {
-    result = replaceRandomCharactersWithAdjacents(result,
-                                                  chars_replace_with_adjacents);
+    result = replaceRandomCharactersWithKeyboardAdjacents(
+        result, chars_replace_with_adjacents);
   }
 
   return result;

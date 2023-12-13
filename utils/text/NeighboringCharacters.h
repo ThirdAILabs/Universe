@@ -5,7 +5,7 @@
 
 namespace thirdai::text {
 
-const std::unordered_map<char, std::vector<char>> neighboring_chars = {
+const std::unordered_map<char, std::vector<char>> keyboard_char_neighbors = {
     {'a', {'q', 'w', 's', 'z'}},
     {'b', {'v', 'g', 'h', 'n'}},
     {'c', {'x', 'd', 'f', 'v'}},

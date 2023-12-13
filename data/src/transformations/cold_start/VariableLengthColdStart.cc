@@ -89,7 +89,7 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
                             _config.word_removal_probability,
                             _config.word_perturbation_probability, rng);
 
-    output_text = text::perturbSentence(
+    output_text = text::perturbCharacters(
         output_text, _config.chars_replace_with_space, _config.chars_deleted,
         _config.chars_duplicated, _config.chars_replace_with_adjacents);
 
