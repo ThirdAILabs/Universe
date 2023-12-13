@@ -161,7 +161,7 @@ Phrase getStrongPhrase(const std::string& strong_text_in,
   std::string strong_text = text::replacePunctuation(strong_text_in, ' ');
   strong_text = text::stripWhitespace(strong_text);
 
-  // Note: this is slightly different than the original cold start
+  // Note: This is slightly different than the original cold start
   // implementation. This tokenization/split function splits on any character
   // that isn't alpha-numeric. The old version just split on whitespace. This
   // can cause slightly different results with certain special characters.
