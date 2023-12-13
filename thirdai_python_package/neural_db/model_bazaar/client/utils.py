@@ -8,8 +8,8 @@ from functools import wraps
 from pathlib import Path
 
 import requests
-from tqdm import tqdm
 from IPython.display import clear_output
+from tqdm import tqdm
 
 
 def print_progress_dots(duration: int):
