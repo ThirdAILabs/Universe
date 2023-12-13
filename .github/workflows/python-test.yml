@@ -35,9 +35,6 @@ jobs:
           python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0"
           bin/build.py --extras test
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-      
       # Install go (necessary for running go unit tests)
       - name: Set up Go
         uses: actions/setup-go@v3
