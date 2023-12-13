@@ -2,6 +2,7 @@
 
 #include "TextAugmentationUtils.h"
 #include <data/src/transformations/Transformation.h>
+#include <random>
 
 namespace thirdai::data {
 
@@ -16,7 +17,10 @@ struct VariableLengthConfig {
       std::optional<size_t> slice_max_length = std::nullopt,
       uint32_t num_slices = 7, bool add_whole_doc = true,
       bool prefilter_punctuation = true, uint32_t strong_sample_num_words = 3,
-      float word_removal_probability = 0);
+      float stopword_removal_probability = 0,
+      float stopword_insertion_probability = 0,
+      float word_removal_probability = 0,
+      float word_perturbation_probability = 0);
 
   size_t covering_min_length;
   size_t covering_max_length;
@@ -27,7 +31,10 @@ struct VariableLengthConfig {
   bool add_whole_doc;
   bool prefilter_punctuation;
   uint32_t strong_sample_num_words;
+  float stopword_removal_probability;
+  float stopword_insertion_probability;
   float word_removal_probability;
+  float word_perturbation_probability;
 };
 
 class VariableLengthColdStart : public cold_start::TextAugmentationBase {
@@ -62,6 +69,13 @@ class VariableLengthColdStart : public cold_start::TextAugmentationBase {
                                     PhraseCollection& phrases, size_t min_len,
                                     std::optional<size_t> max_len_opt,
                                     uint32_t num_slices, uint32_t seed);
+
+  static std::string convertPhraseToText(const std::vector<std::string>& phrase,
+                                         float stopword_removal_probability,
+                                         float stopword_insertion_probability,
+                                         float word_removal_probability,
+                                         float word_perturbation_probability,
+                                         std::mt19937 rng);
 
   VariableLengthConfig _config;
 };
