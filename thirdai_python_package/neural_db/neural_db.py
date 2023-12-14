@@ -570,13 +570,6 @@ class NeuralDB:
         return ids
 
     def delete(self, source_ids: List[str]):
-        all_sources_exist = all(
-            source_id in self._savable_state.documents.registry
-            for source_id in source_ids
-        )
-        if not all_sources_exist:
-            raise ValueError("At least one source not found in neuraldb.")
-
         deleted_entities = self._savable_state.documents.delete(source_ids)
         self._savable_state.model.delete_entities(deleted_entities)
         self._savable_state.logger.log(

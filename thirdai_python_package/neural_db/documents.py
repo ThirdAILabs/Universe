@@ -278,7 +278,7 @@ class DocumentManager:
         # TODO(Geordie): Error handling
         all_sources_exist = all(source_id in self.registry for source_id in source_ids)
         if not all_sources_exist:
-            raise ValueError("At least one source not found in document manager.")
+            raise KeyError("At least one source not found in document manager.")
 
         deleted_entities = []
         for source_id in source_ids:
