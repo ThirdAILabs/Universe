@@ -4,6 +4,7 @@ import tempfile
 from collections import defaultdict
 from io import StringIO
 from typing import List
+import random
 
 import pandas as pd
 
@@ -35,39 +36,7 @@ class DataLoadMultiplexer:
             segment_objects.append(temp_file)
         return segment_filenames, segment_objects
 
-    def create_segments_for_introduce_documents(
-        self, data_source, label_to_segment_map
-    ):
-        segment_filenames, segment_objects = self._generate_temp_csvs()
-
-        current_index = 0
-        for data in data_source._get_line_iterator():
-            # header
-            if current_index == 0:
-                for segments in segment_objects:
-                    segments.write(data)
-            else:
-                current_segment = current_index % self.num_segments
-                current_label = int(data.split(",", 1)[0])
-                # should it be random, add power of k here
-                segment_objects[current_segment].write("\n" + data)
-
-                # assumes first element is id_column
-                label_to_segment_map[current_label].append(current_segment)
-            current_index += 1
-            if current_index % self.flush_frequency == 0:
-                for segment in segment_objects:
-                    segment.flush()
-        for segment in segment_objects:
-            segment.flush()
-        data_source.restart()
-        return (
-            segment_filenames,
-            segment_objects,
-            label_to_segment_map,
-        )
-
-    def create_segments_for_train_documents(self, data_source, label_to_segment_map):
+    def create_segments_with_segment_map(self, data_source, label_to_segment_map):
         segment_filenames, segment_objects = self._generate_temp_csvs()
 
         current_index = 0
@@ -79,7 +48,6 @@ class DataLoadMultiplexer:
             else:
                 current_label = int(data.split(",", 1)[0])
                 current_segment = label_to_segment_map[current_label][-1]
-                # should it be random, add power of k here
                 segment_objects[current_segment].write("\n" + data)
 
             current_index += 1
@@ -100,11 +68,17 @@ class DataLoadMultiplexer:
         self, data_source, label_to_segment_map, shard_using_index=False
     ):
         if shard_using_index:
-            return self.create_segments_for_train_documents(
+            return self.create_segments_with_segment_map(
                 data_source, label_to_segment_map
             )
         else:
-            return self.create_segments_for_introduce_documents(
+            indices = [i for i, _ in enumerate(data_source._get_line_iterator())]
+            random.shuffle(indices)
+            for index, randomised_index in enumerate(indices):
+                label_to_segment_map[index].append(randomised_index % self.num_segments)
+
+            data_source.restart()
+            return self.create_segments_with_segment_map(
                 data_source, label_to_segment_map
             )
 
