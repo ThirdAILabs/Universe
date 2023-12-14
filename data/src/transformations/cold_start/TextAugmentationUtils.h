@@ -12,7 +12,6 @@ class TextAugmentationBase : public Transformation {
  public:
   TextAugmentationBase(std::vector<std::string> strong_column_names,
                        std::vector<std::string> weak_column_names,
-                       std::string label_column_name,
                        std::string output_column_name, uint32_t seed);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
@@ -23,7 +22,6 @@ class TextAugmentationBase : public Transformation {
  protected:
   std::vector<std::string> _strong_column_names;
   std::vector<std::string> _weak_column_names;
-  std::string _label_column_name;
   std::string _output_column_name;
   uint32_t _seed;
 };

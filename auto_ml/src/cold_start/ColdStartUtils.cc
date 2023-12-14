@@ -57,19 +57,17 @@ data::TransformationPtr makeAugmentation(
     std::optional<data::VariableLengthConfig> variable_length,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
-    const std::string& text_column_name, ColdStartMetaDataPtr& metadata) {
+    const std::string& text_column_name) {
   if (variable_length.has_value()) {
     return std::make_shared<data::VariableLengthColdStart>(
         /* strong_column_names= */ strong_column_names,
         /* weak_column_names= */ weak_column_names,
-        /* label_column_name= */ metadata->getLabelColumn(),
         /* output_column_name= */ text_column_name,
         /* config= */ *variable_length);
   }
   return std::make_shared<data::ColdStartTextAugmentation>(
       /* strong_column_names= */ strong_column_names,
       /* weak_column_names= */ weak_column_names,
-      /* label_column_name= */ metadata->getLabelColumn(),
       /* output_column_name= */ text_column_name);
 }
 
@@ -91,7 +89,7 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
 
   data::TransformationPtr augmentation =
       makeAugmentation(variable_length, strong_column_names, weak_column_names,
-                       text_column_name, metadata);
+                       text_column_name);
 
   auto augmented_data = augmentation->applyStateless(dataset);
 
