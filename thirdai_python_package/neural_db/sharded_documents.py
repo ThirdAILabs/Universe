@@ -46,22 +46,22 @@ class DataLoadMultiplexer:
         for data in data_source._get_line_iterator():
             # header
             if current_index == 0:
-                print(data)
                 for segments in segment_objects:
-                    segments.write(data + "\n")
+                    segments.write(data)
             else:
                 current_segment = current_index % self.num_segments
                 current_label = int(data.split(",", 1)[0])
                 # should it be random, add power of k here
-                segment_objects[current_segment].write(data + "\n")
+                segment_objects[current_segment].write("\n" + data)
 
                 # assumes first element is id_column
-                label_to_segment_map[current_label] = current_segment
+                label_to_segment_map[current_label].append(current_segment)
             current_index += 1
             if current_index % self.flush_frequency == 0:
                 for segment in segment_objects:
                     segment.flush()
-        print(f"Introduce Documents: {current_index}")
+        for segment in segment_objects:
+            segment.flush()
         data_source.restart()
         return (
             segment_filenames,
@@ -72,27 +72,25 @@ class DataLoadMultiplexer:
     def create_segments_for_train_documents(self, data_source, label_to_segment_map):
         segment_filenames, segment_objects = self._generate_temp_csvs()
 
-        total_data = "\n".join(data_source._get_line_iterator())
-        data_source.restart()
-        print(total_data[:200])
         current_index = 0
         for data in data_source._get_line_iterator():
             # header
             if current_index == 0:
                 for segments in segment_objects:
-                    segments.write(data + "\n")
+                    segments.write(data)
             else:
                 current_label = int(data.split(",", 1)[0])
-                current_segment = label_to_segment_map[current_label]
+                current_segment = label_to_segment_map[current_label][-1]
                 # should it be random, add power of k here
-                segment_objects[current_segment].write(data + "\n")
+                segment_objects[current_segment].write("\n" + data)
 
             current_index += 1
             if current_index % self.flush_frequency == 0:
                 for segment in segment_objects:
                     segment.flush()
+        for segment in segment_objects:
+            segment.flush()
 
-        print(f"Train Documents: {current_index}")
         data_source.restart()
         return (
             segment_filenames,
@@ -170,7 +168,6 @@ class ShardedDataSource:
         shard_name: str,
         shard_object: tempfile.NamedTemporaryFile,
     ):
-        print(f"Weak Column(_get_csv_document): {weak_column}")
         """
         This function takes as input the name of the tempfile and the tempfile object. We load the tempfile into a CSV Document and then closes the tempfile (which effectively means deleting it)
         """
@@ -188,7 +185,6 @@ class ShardedDataSource:
     def _get_shards(
         data_source: DocumentDataSource, shard_names=None, shard_objects=None
     ) -> List[DocumentDataSource]:
-        print(f"Weak Column(_get_shards): {data_source.weak_column}")
         shard_data_sources = []
         for name, temp_object in zip(shard_names, shard_objects):
             shard_data_source = DocumentDataSource(
@@ -218,7 +214,6 @@ class ShardedDataSource:
         ) = self.data_load_multiplexer.create_segments_with_data_source(
             self.data_source, self.label_to_segment_map, shard_using_index=False
         )
-        print(f"Weak Column: {self.data_source.weak_column}")
 
         shards = ShardedDataSource._get_shards(
             self.data_source, shard_names=shard_names, shard_objects=shard_objects
