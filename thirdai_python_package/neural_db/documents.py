@@ -4,9 +4,9 @@ import pickle
 import shutil
 import string
 from collections import OrderedDict
+from io import StringIO
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
-from io import StringIO
 
 import numpy as np
 import pandas as pd

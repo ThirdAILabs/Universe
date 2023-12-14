@@ -2,13 +2,14 @@ import json
 import os
 import pickle
 from pathlib import Path
+
 import pandas as pd
 from thirdai import bolt
 
-from .training_progress_tracker import NeuralDbProgressTracker
-from .checkpoint_config import CheckpointConfig
-from ..utils import pickle_to, unpickle_from
 from ..documents import DocumentDataSource
+from ..utils import pickle_to, unpickle_from
+from .checkpoint_config import CheckpointConfig
+from .training_progress_tracker import NeuralDbProgressTracker
 
 
 class TrainingProgressManager(bolt.train.callbacks.Callback):

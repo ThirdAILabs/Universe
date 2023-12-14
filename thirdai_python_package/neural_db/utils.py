@@ -1,8 +1,8 @@
 import hashlib
 import math
+import pickle
 import random
 from functools import wraps
-import pickle
 from pathlib import Path
 
 DIRECTORY_CONNECTOR_SUPPORTED_EXT = ["pdf", "docx", "pptx", "txt", "eml"]

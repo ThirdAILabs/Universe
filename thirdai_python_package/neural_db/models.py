@@ -6,10 +6,9 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt, data
 
 from .documents import DocumentDataSource
+from .training_state.factory import Factory
 from .training_state.training_callback import TrainingProgressManager
 from .training_state.training_progress_tracker import NeuralDbProgressTracker
-from .training_state.factory import Factory
-
 from .utils import clean_text, pickle_to, unpickle_from
 
 InferSamples = List

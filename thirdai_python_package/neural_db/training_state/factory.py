@@ -1,13 +1,13 @@
-from pathlib import Path
 import json
+from pathlib import Path
+
 from .checkpoint_config import CheckpointConfig
+from .training_callback import TrainingProgressManager
 from .training_progress_tracker import (
-    NeuralDbProgressTracker,
     IntroConfig,
+    NeuralDbProgressTracker,
     TrainingConfig,
 )
-
-from .training_callback import TrainingProgressManager
 
 
 class Factory:
