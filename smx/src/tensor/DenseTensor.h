@@ -212,7 +212,7 @@ class DenseTensor final : public Tensor {
 
 using DenseTensorPtr = std::shared_ptr<DenseTensor>;
 
-inline DenseTensorPtr asDense(const TensorPtr& tensor) {
+inline DenseTensorPtr dense(const TensorPtr& tensor) {
   if (auto ptr = std::dynamic_pointer_cast<DenseTensor>(tensor)) {
     return ptr;
   }

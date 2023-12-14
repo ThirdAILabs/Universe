@@ -16,7 +16,7 @@ VariablePtr crossEntropy(const VariablePtr& logits, const TensorPtr& labels) {
           "Cross entropy on sparse tensor is not yet implemented.");
     }
 
-    auto tmp = sparseCrossEntropy(asDense(logits->tensor()), asDense(labels));
+    auto tmp = sparseCrossEntropy(dense(logits->tensor()), dense(labels));
     auto loss = std::move(tmp.first);  // Lambda captures don't like auto[...]
     auto activations = std::move(tmp.second);
 
@@ -25,7 +25,7 @@ VariablePtr crossEntropy(const VariablePtr& logits, const TensorPtr& labels) {
                              const std::vector<VariablePtr>& inputs) {
       (void)grad;  // TODO(Nicholas) support weighted loss here
 
-      auto logit_grad = sparseCrossEntropyGrad(activations, asDense(labels));
+      auto logit_grad = sparseCrossEntropyGrad(activations, dense(labels));
 
       inputs.at(0)->addGradient(logit_grad);
     };

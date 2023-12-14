@@ -87,15 +87,15 @@ TensorPtr transpose(const TensorPtr& tensor, const std::vector<size_t>& perm) {
         "Transpose is not yet supported on sparse tensors.");
   }
 
-  auto dense = asDense(tensor);
+  auto dense_tensor = dense(tensor);
 
-  switch (dense->dtype()) {
+  switch (dense_tensor->dtype()) {
     case Dtype::f32:
-      return transpose<float>(*dense, perm);
+      return transpose<float>(*dense_tensor, perm);
     case Dtype::u32:
-      return transpose<uint32_t>(*dense, perm);
+      return transpose<uint32_t>(*dense_tensor, perm);
     default:
-      throw std::invalid_argument("Dtype " + toString(dense->dtype()) +
+      throw std::invalid_argument("Dtype " + toString(dense_tensor->dtype()) +
                                   " is not yet supported for transpose.");
   }
 }

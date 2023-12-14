@@ -16,9 +16,10 @@ TensorPtr reshape(const TensorPtr& tensor, const Shape& new_shape) {
         "Reshaping sparse tensors is not yet supported.");
   }
 
-  auto dense = asDense(tensor);
+  auto dense_tensor = dense(tensor);
 
-  return DenseTensor::make(new_shape, dense->dtype(), dense->handle());
+  return DenseTensor::make(new_shape, dense_tensor->dtype(),
+                           dense_tensor->handle());
 }
 
 }  // namespace thirdai::smx

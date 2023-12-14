@@ -25,10 +25,10 @@ void Adam::apply(VariablePtr& parameter) {
 
   auto [momentum, velocity] = _adam_parameters.at(parameter.get());
 
-  auto param = asDense(parameter->tensor())->eigenArray<float>();
-  auto grad = asDense(parameter->grad())->eigenArray<float>();
-  auto mom = asDense(momentum)->eigenArray<float>();
-  auto vel = asDense(velocity)->eigenArray<float>();
+  auto param = dense(parameter->tensor())->eigenArray<float>();
+  auto grad = dense(parameter->grad())->eigenArray<float>();
+  auto mom = dense(momentum)->eigenArray<float>();
+  auto vel = dense(velocity)->eigenArray<float>();
 
   mom = _beta_1 * mom + (1 - _beta_1) * grad;
   vel = _beta_2 * vel + (1 - _beta_2) * grad.square();

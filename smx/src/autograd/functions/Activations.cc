@@ -12,7 +12,7 @@ VariablePtr relu(const VariablePtr& in) {
     throw std::runtime_error("Not implemented relu(sparse).");
   }
 
-  auto out = relu(asDense(tensor));
+  auto out = relu(dense(tensor));
 
   GradFunc grad_func = [out](const TensorPtr& out_grad,
                              const std::vector<VariablePtr>& inputs) {
@@ -20,7 +20,7 @@ VariablePtr relu(const VariablePtr& in) {
       return;
     }
 
-    auto in_grad = reluGrad(out, asDense(out_grad));
+    auto in_grad = reluGrad(out, dense(out_grad));
 
     inputs.at(0)->addGradient(in_grad);
   };
@@ -35,7 +35,7 @@ VariablePtr tanh(const VariablePtr& in) {
     throw std::runtime_error("Not implemented relu(sparse).");
   }
 
-  auto out = tanh(asDense(tensor));
+  auto out = tanh(dense(tensor));
 
   GradFunc grad_func = [out](const TensorPtr& out_grad,
                              const std::vector<VariablePtr>& inputs) {
@@ -43,7 +43,7 @@ VariablePtr tanh(const VariablePtr& in) {
       return;
     }
 
-    auto in_grad = tanhGrad(out, asDense(out_grad));
+    auto in_grad = tanhGrad(out, dense(out_grad));
 
     inputs.at(0)->addGradient(in_grad);
   };
@@ -58,7 +58,7 @@ VariablePtr sigmoid(const VariablePtr& in) {
     throw std::runtime_error("Not implemented relu(sparse).");
   }
 
-  auto out = sigmoid(asDense(tensor));
+  auto out = sigmoid(dense(tensor));
 
   GradFunc grad_func = [out](const TensorPtr& out_grad,
                              const std::vector<VariablePtr>& inputs) {
@@ -66,7 +66,7 @@ VariablePtr sigmoid(const VariablePtr& in) {
       return;
     }
 
-    auto in_grad = sigmoidGrad(out, asDense(out_grad));
+    auto in_grad = sigmoidGrad(out, dense(out_grad));
 
     inputs.at(0)->addGradient(in_grad);
   };
@@ -81,7 +81,7 @@ VariablePtr softmax(const VariablePtr& in) {
     throw std::runtime_error("Not implemented relu(sparse).");
   }
 
-  auto out = softmax(asDense(tensor));
+  auto out = softmax(dense(tensor));
 
   GradFunc grad_func = [out](const TensorPtr& out_grad,
                              const std::vector<VariablePtr>& inputs) {
@@ -89,7 +89,7 @@ VariablePtr softmax(const VariablePtr& in) {
       return;
     }
 
-    auto in_grad = softmaxGrad(out, asDense(out_grad));
+    auto in_grad = softmaxGrad(out, dense(out_grad));
 
     inputs.at(0)->addGradient(in_grad);
   };

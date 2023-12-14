@@ -17,31 +17,25 @@ TensorPtr add(const TensorPtr& a, const TensorPtr& b) {
   auto out = DenseTensor::make(a->shape(), Dtype::f32);
 
   out->eigenArray<float>() =
-      asDense(a)->eigenArray<float>() + asDense(b)->eigenArray<float>();
+      dense(a)->eigenArray<float>() + dense(b)->eigenArray<float>();
 
   return out;
 }
 
 // TODO(Nicholas): Implement these kernels using dnnl_sgemm
-TensorPtr linear(const TensorPtr& x, const DenseTensorPtr& w,
+TensorPtr linear(const DenseTensorPtr& x, const DenseTensorPtr& w,
                  const DenseTensorPtr& b) {
   CHECK(x->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
   CHECK(w->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
   CHECK(b->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
   CHECK(w->ndim() == 2, "Weight matrix must be 2D.");
   CHECK(b->ndim() == 1, "Bias must be 1D.");
+  CHECK(x->shape().last() == w->shape().last(), "Cols of x and w must match.");
+  CHECK(w->shapeAt(0) == b->shapeAt(0), "Rows of w and b must match.");
 
-  if (x->isSparse()) {
-    throw std::invalid_argument(
-        "Embedding layer is recommended in place of linear with sparse input.");
-  }
-
-  auto X = asDense(x)->eigenMatrix<float>();
+  auto X = x->eigenMatrix<float>();
   auto W = w->eigenMatrix<float>();
   auto B = b->eigenVector<float>();
-
-  CHECK(X.cols() == W.cols(), "Last dims of x and w should have same size.");
-  CHECK(W.rows() == B.cols(), "Weight matrix and bias should match.");
 
   auto out_shape = x->shape().vector();
   out_shape.back() = W.rows();
@@ -55,19 +49,14 @@ TensorPtr linear(const TensorPtr& x, const DenseTensorPtr& w,
   return out;
 }
 
-std::tuple<TensorPtr, TensorPtr, TensorPtr> linearGrad(const TensorPtr& x,
+std::tuple<TensorPtr, TensorPtr, TensorPtr> linearGrad(const DenseTensorPtr& x,
                                                        const DenseTensorPtr& w,
                                                        const DenseTensorPtr& b,
                                                        const TensorPtr& y_grad,
                                                        bool compute_x_grad) {
-  if (x->isSparse()) {
-    throw std::invalid_argument(
-        "Embedding layer is recommended in place of linear with sparse input.");
-  }
-
-  auto X = asDense(x)->eigenMatrix<float>();
+  auto X = x->eigenMatrix<float>();
   auto W = w->eigenMatrix<float>();
-  auto Y_grad = asDense(y_grad)->eigenMatrix<float>();
+  auto Y_grad = dense(y_grad)->eigenMatrix<float>();
 
   auto w_grad = DenseTensor::make(w->shape(), Dtype::f32);
   auto b_grad = DenseTensor::make(b->shape(), Dtype::f32);
