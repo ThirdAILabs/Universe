@@ -69,14 +69,22 @@ ColumnMap TextAugmentationBase::apply(ColumnMap columns, State& state) const {
     std::rethrow_exception(exception);
   }
 
-  for (const auto& col : _strong_column_names) {
-    columns.dropColumn(col);
-  }
-  for (const auto& col : _weak_column_names) {
-    columns.dropColumn(col);
-  }
   columns.dropColumn("strong_text");
   columns.dropColumn("weak_text");
+  for (const auto& col : _strong_column_names) {
+    // To handle when a column is in both the strong and weak columns, or if an
+    // input column is called "strong_text" or "weak_text".
+    if (columns.containsColumn(col)) {
+      columns.dropColumn(col);
+    }
+  }
+  for (const auto& col : _weak_column_names) {
+    // To handle when a column is in both the strong and weak columns, or if an
+    // input column is called "strong_text" or "weak_text".
+    if (columns.containsColumn(col)) {
+      columns.dropColumn(col);
+    }
+  }
 
   ColumnMap new_columns = columns.permute(perm);
   new_columns.setColumn(_output_column_name, ValueColumn<std::string>::make(
