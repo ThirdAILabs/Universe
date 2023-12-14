@@ -60,6 +60,10 @@ class CsrTensor final : public Tensor {
 
   const DenseTensorPtr& colValues() const { return _col_values; }
 
+  size_t nRows() const { return shapeAt(0); }
+
+  size_t nDenseCols() const { return shapeAt(1); }
+
   bool isSparse() const final { return true; }
 
  private:

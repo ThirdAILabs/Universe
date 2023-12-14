@@ -1,5 +1,6 @@
 #pragma once
 
+#include <smx/src/tensor/CsrTensor.h>
 #include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Tensor.h>
 
@@ -52,7 +53,11 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
  * NN functions.
  */
 
-// Dense
+DenseTensorPtr embedding(const CsrTensorPtr& indices,
+                         const DenseTensorPtr& embeddings, bool reduce_mean);
+
+DenseTensorPtr embeddingGrad(const CsrTensorPtr& indices,
+                             const DenseTensorPtr& out_grad, bool reduce_mean);
 
 /**
  * Loss functions.
