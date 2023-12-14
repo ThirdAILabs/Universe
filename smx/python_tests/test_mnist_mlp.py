@@ -21,15 +21,10 @@ def load_datasets(download_dir):
     return train_loader, test_loader
 
 
-def apply_model(x, hidden, output):
+def flatten(x):
     x = smx.from_numpy(x)
     x = smx.reshape(x, smx.Shape(x.shape[0], 784))
-    x = smx.Variable(x)
-
-    out = hidden(x)
-    out = smx.relu(out)
-    out = output(out)
-    return out
+    return smx.Variable(x)
 
 
 def test_smx_mlp_mnist():
@@ -38,14 +33,15 @@ def test_smx_mlp_mnist():
     )
     train_loader, test_loader = load_datasets(download_dir=download_dir)
 
-    hidden = smx.Linear(256, 784)
-    output = smx.Linear(10, 256)
+    model = smx.Sequential(
+        [smx.Linear(256, 784), smx.Activation("relu"), smx.Linear(10, 256)]
+    )
 
-    optimizer = smx.optimizers.Adam(hidden.parameters() + output.parameters(), lr=0.001)
+    optimizer = smx.optimizers.Adam(model.parameters(), lr=0.001)
 
     for epoch in range(5):
         for x, y in train_loader:
-            out = apply_model(x.numpy(), hidden, output)
+            out = model(flatten(x))
 
             loss = smx.cross_entropy(out, smx.from_numpy(y.numpy().astype(np.uint32)))
             loss.backward()
@@ -54,7 +50,7 @@ def test_smx_mlp_mnist():
 
         correct, total = 0, 0
         for x, y in test_loader:
-            out = apply_model(x.numpy(), hidden, output).tensor.numpy()
+            out = model(flatten(x)).tensor.numpy()
 
             correct += np.sum(np.argmax(out, axis=1) == y.numpy())
             total += len(x)

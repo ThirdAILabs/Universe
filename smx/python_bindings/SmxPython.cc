@@ -8,6 +8,7 @@
 #include <smx/src/autograd/functions/Activations.h>
 #include <smx/src/autograd/functions/LinearAlgebra.h>
 #include <smx/src/autograd/functions/Loss.h>
+#include <smx/src/modules/Activation.h>
 #include <smx/src/modules/Linear.h>
 #include <smx/src/modules/Module.h>
 #include <smx/src/optimizers/Adam.h>
@@ -151,21 +152,27 @@ void defineAutograd(py::module_& smx) {
 }
 
 void defineModules(py::module_& smx) {
-  py::class_<Module>(smx, "Module")
+  py::class_<Module, std::shared_ptr<Module>>(smx, "Module")
       .def("parameters", &Module::parameters)
       .def("__call__", &Module::forward);
 
-  py::class_<UnaryModule, Module>(smx, "UnaryModule")
+  py::class_<UnaryModule, std::shared_ptr<UnaryModule>, Module>(smx,
+                                                                "UnaryModule")
       .def("__call__",
            py::overload_cast<const VariablePtr&>(&UnaryModule::forward));
 
-  py::class_<Sequential, UnaryModule>(smx, "Sequential")
+  py::class_<Sequential, std::shared_ptr<Sequential>, UnaryModule>(smx,
+                                                                   "Sequential")
       .def(py::init<std::vector<std::shared_ptr<UnaryModule>>>(),
            py::arg("modules"))
       .def("append", &Sequential::append, py::arg("module"));
 
-  py::class_<Linear, UnaryModule>(smx, "Linear")
+  py::class_<Linear, std::shared_ptr<Linear>, UnaryModule>(smx, "Linear")
       .def(py::init<size_t, size_t>(), py::arg("dim"), py::arg("input_dim"));
+
+  py::class_<Activation, std::shared_ptr<Activation>, UnaryModule>(smx,
+                                                                   "Activation")
+      .def(py::init<const std::string&>(), py::arg("type"));
 }
 
 void defineOptimizers(py::module_& smx) {
