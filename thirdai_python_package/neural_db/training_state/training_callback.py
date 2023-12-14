@@ -30,10 +30,11 @@ class TrainingProgressManager(bolt.train.callbacks.Callback):
         self._intro_source = intro_source
         self._train_source = train_source
 
-        os.makedirs(
-            os.path.join(self.checkpoint_config.checkpoint_dir),
-            exist_ok=True,
-        )
+        if self.checkpoint_config:
+            os.makedirs(
+                os.path.join(self.checkpoint_config.checkpoint_dir),
+                exist_ok=True,
+            )
 
     def on_epoch_end(self):
         self.tracker.current_epoch_number += 1

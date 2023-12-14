@@ -446,6 +446,7 @@ class Mach(Model):
             should_train=should_train,
             fast_approximation=fast_approximation,
             num_buckets_to_sample=num_buckets_to_sample,
+            max_in_memory_batches=max_in_memory_batches,
             override_number_classes=override_number_classes,
             checkpoint_dir=checkpoint_dir,
             model_id=model_id,

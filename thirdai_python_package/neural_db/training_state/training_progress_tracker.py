@@ -179,6 +179,7 @@ class NeuralDbProgressTracker:
             min_epochs=None,
             max_epochs=None,
             freeze_before_train=None,
+            max_in_memory_batches=None,
             current_epoch_number=0,
             is_training_completed=False,
         )

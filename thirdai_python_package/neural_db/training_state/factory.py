@@ -14,7 +14,9 @@ class Factory:
     def make_checkpoint_config(
         parent_checkpoint_dir: Path, model_id: int
     ) -> CheckpointConfig:
-        return CheckpointConfig(checkpoint_dir=parent_checkpoint_dir / str(model_id))
+        return CheckpointConfig(
+            parent_checkpoint_dir=parent_checkpoint_dir, model_id=model_id
+        )
 
     def load_tracker_from_dir(
         parent_checkpoint_dir: Path, model_id: int
@@ -22,7 +24,7 @@ class Factory:
         # We first load the checkpoint config that tells us the locations
         # of where the tracking data is stored
         checkpoint_config = CheckpointConfig(
-            checkpoint_dir=parent_checkpoint_dir / str(model_id)
+            parent_checkpoint_dir=parent_checkpoint_dir, model_id=model_id
         )
         checkpoint_config.assert_checkpoint_source_exists()
 
@@ -46,6 +48,7 @@ class Factory:
         should_train,
         fast_approximation,
         num_buckets_to_sample,
+        max_in_memory_batches,
         override_number_classes,
         checkpoint_dir,
         model_id,
@@ -73,12 +76,14 @@ class Factory:
             return training_progress_manager
         else:
             tracker = Factory.load_tracker_without_dir()
-            if checkpoint_dir and model_id:
+            if checkpoint_dir and model_id is not None:
                 checkpoint_config = Factory.make_checkpoint_config(
                     parent_checkpoint_dir=checkpoint_dir, model_id=model_id
                 )
+                print("We are using the checkpoint config")
             else:
                 checkpoint_config = None
+                print("We are using none config")
 
             training_progress_manager = TrainingProgressManager(
                 tracker=tracker,
@@ -95,5 +100,6 @@ class Factory:
             )
             if not should_train:
                 training_progress_manager.tracker.is_training_completed = True
+            tracker.max_in_memory_batches = max_in_memory_batches
 
-        return training_progress_manager
+            return training_progress_manager
