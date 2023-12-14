@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 from thirdai import smx
 
-
 pytestmark = [pytest.mark.unit]
 
 

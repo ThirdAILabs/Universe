@@ -1,8 +1,8 @@
-from thirdai import smx
-import numpy as np
-import pytest
 import re
 
+import numpy as np
+import pytest
+from thirdai import smx
 
 pytestmark = [pytest.mark.unit]
 
@@ -73,7 +73,7 @@ def test_transpose(ndim):
     perm = list(range(ndim))
     while perm == list(range(ndim)):
         np.random.shuffle(perm)
-    assert not np.array_equal(perm, np.arange(ndim))
+    assert not np.array_equal(perm, list(range(ndim)))
 
     x = np.random.rand(*shape).astype(np.float32)
 

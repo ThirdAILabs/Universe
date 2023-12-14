@@ -1,8 +1,9 @@
-import torchvision
-import torch
-from thirdai import smx
 import os
+
 import numpy as np
+import torch
+import torchvision
+from thirdai import smx
 
 
 def load_datasets(download_dir):

@@ -1,6 +1,6 @@
+import numpy as np
 import pytest
 from thirdai import smx
-import numpy as np
 
 pytestmark = [pytest.mark.unit]
 
