@@ -637,9 +637,7 @@ void UDTMachClassifier::introduceDocument(
   data::ColdStartTextAugmentation augmentation(
       /* strong_column_names= */ strong_column_names,
       /* weak_column_names= */ weak_column_names,
-      /* label_column_name= */ _mach_label_block->columnName(),
-      /* output_column_name= */
-      text_column_name);
+      /* output_column_name= */ text_column_name);
 
   MapInputBatch batch;
   for (const auto& row : augmentation.augmentMapInput(document)) {
