@@ -41,14 +41,18 @@ DenseTensorPtr softmaxGrad(const DenseTensorPtr& out,
 
 TensorPtr add(const TensorPtr& a, const TensorPtr& b);
 
-TensorPtr linear(const DenseTensorPtr& x, const DenseTensorPtr& w,
-                 const DenseTensorPtr& b);
+DenseTensorPtr linear(const DenseTensorPtr& x, const DenseTensorPtr& w,
+                      const DenseTensorPtr& b);
 
-std::tuple<TensorPtr, TensorPtr, TensorPtr> linearGrad(const DenseTensorPtr& x,
-                                                       const DenseTensorPtr& w,
-                                                       const DenseTensorPtr& b,
-                                                       const TensorPtr& y_grad,
-                                                       bool compute_x_grad);
+std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
+    const DenseTensorPtr& x, const DenseTensorPtr& w, const DenseTensorPtr& b,
+    const TensorPtr& y_grad, bool compute_x_grad);
+
+/**
+ * NN functions.
+ */
+
+// Dense
 
 /**
  * Loss functions.

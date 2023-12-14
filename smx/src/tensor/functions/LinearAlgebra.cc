@@ -23,8 +23,8 @@ TensorPtr add(const TensorPtr& a, const TensorPtr& b) {
 }
 
 // TODO(Nicholas): Implement these kernels using dnnl_sgemm
-TensorPtr linear(const DenseTensorPtr& x, const DenseTensorPtr& w,
-                 const DenseTensorPtr& b) {
+DenseTensorPtr linear(const DenseTensorPtr& x, const DenseTensorPtr& w,
+                      const DenseTensorPtr& b) {
   CHECK(x->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
   CHECK(w->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
   CHECK(b->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
@@ -49,11 +49,9 @@ TensorPtr linear(const DenseTensorPtr& x, const DenseTensorPtr& w,
   return out;
 }
 
-std::tuple<TensorPtr, TensorPtr, TensorPtr> linearGrad(const DenseTensorPtr& x,
-                                                       const DenseTensorPtr& w,
-                                                       const DenseTensorPtr& b,
-                                                       const TensorPtr& y_grad,
-                                                       bool compute_x_grad) {
+std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
+    const DenseTensorPtr& x, const DenseTensorPtr& w, const DenseTensorPtr& b,
+    const TensorPtr& y_grad, bool compute_x_grad) {
   auto X = x->eigenMatrix<float>();
   auto W = w->eigenMatrix<float>();
   auto Y_grad = dense(y_grad)->eigenMatrix<float>();
