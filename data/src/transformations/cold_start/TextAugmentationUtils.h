@@ -18,7 +18,8 @@ class TextAugmentationBase : public Transformation {
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   virtual std::vector<std::string> augmentSingleRow(
-      const std::string& strong_text, const std::string& weak_text) const = 0;
+      const std::string& strong_text, const std::string& weak_text,
+      uint32_t augment_seed) const = 0;
 
  protected:
   std::vector<std::string> _strong_column_names;

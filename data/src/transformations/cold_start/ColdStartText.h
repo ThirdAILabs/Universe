@@ -147,8 +147,9 @@ class ColdStartTextAugmentation final
    * Helper method to perform the augmentation of a single row in the input.
    * Returns the augmented phrases from that input row as strings.
    */
-  std::vector<std::string> augmentSingleRow(
-      const std::string& strong_text, const std::string& weak_text) const final;
+  std::vector<std::string> augmentSingleRow(const std::string& strong_text,
+                                            const std::string& weak_text,
+                                            uint32_t augment_seed) const final;
 
  private:
   std::optional<uint32_t> _weak_min_len;

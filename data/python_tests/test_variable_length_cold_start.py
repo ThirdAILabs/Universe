@@ -15,6 +15,14 @@ def default_augmentation(
     prefilter_punctuation=True,
     strong_sample_num_words=3,
     word_removal_probability=0,
+    stopword_removal_probability=0,
+    stopword_insertion_probability=0,
+    word_perturbation_probability=0,
+    chars_replace_with_space=0,
+    chars_deleted=0,
+    chars_duplicated=0,
+    chars_replace_with_adjacents=0,
+    seed=81,
 ):
     return data.transformations.VariableLengthColdStart(
         strong_columns=["STRONG"],
@@ -31,9 +39,16 @@ def default_augmentation(
             add_whole_doc=add_whole_doc,
             prefilter_punctuation=prefilter_punctuation,
             strong_sample_num_words=strong_sample_num_words,
+            stopword_removal_probability=stopword_removal_probability,
+            stopword_insertion_probability=stopword_insertion_probability,
             word_removal_probability=word_removal_probability,
+            word_perturbation_probability=word_perturbation_probability,
+            chars_replace_with_space=chars_replace_with_space,
+            chars_deleted=chars_deleted,
+            chars_duplicated=chars_duplicated,
+            chars_replace_with_adjacents=chars_replace_with_adjacents,
         ),
-        seed=81,
+        seed=seed,
     )
 
 
@@ -187,3 +202,63 @@ def test_vlcs_min_not_greater_than_max():
             slice_min_length=4,
             slice_max_length=3,
         )
+
+
+def default_start_columns():
+    return data.ColumnMap(
+        {
+            "STRONG": data.columns.StringColumn(
+                [
+                    "This is a first strong text row haha",
+                    "second strong texttttttt woah",
+                ]
+            ),
+            "WEAK": data.columns.StringColumn(
+                [
+                    "A paragraph with some shenanigans",
+                    "Lots and lots of words for greater chance variability",
+                ]
+            ),
+            "LABELS": data.columns.StringColumn(["0", "1"]),
+        }
+    )
+
+
+def many_perturbations_augmentation(seed=81):
+    return default_augmentation(
+        word_removal_probability=0.5,
+        stopword_removal_probability=0.5,
+        stopword_insertion_probability=0.5,
+        word_perturbation_probability=0.5,
+        chars_replace_with_space=1,
+        chars_deleted=1,
+        chars_duplicated=1,
+        chars_replace_with_adjacents=1,
+        seed=seed,
+    )
+
+
+def test_vlcs_consistent_augmentations_with_seeds():
+    augmentation1 = many_perturbations_augmentation()
+    augmentation2 = many_perturbations_augmentation()
+
+    columns = default_start_columns()
+    columns1 = augmentation1(columns)
+
+    columns = default_start_columns()
+    columns2 = augmentation2(columns)
+
+    assert columns1["OUTPUT"].data() == columns2["OUTPUT"].data()
+
+
+def test_vlcs_different_augmentations_with_different_seeds():
+    augmentation1 = many_perturbations_augmentation(seed=800)
+    augmentation2 = many_perturbations_augmentation(seed=801)
+
+    columns = default_start_columns()
+    columns1 = augmentation1(columns)
+
+    columns = default_start_columns()
+    columns2 = augmentation2(columns)
+
+    assert columns1["OUTPUT"].data() != columns2["OUTPUT"].data()

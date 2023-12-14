@@ -56,8 +56,9 @@ class VariableLengthColdStart : public cold_start::TextAugmentationBase {
    * Helper method to perform the augmentation of a single row in the input.
    * Returns the augmented phrases from that input row as strings.
    */
-  std::vector<std::string> augmentSingleRow(
-      const std::string& strong_text, const std::string& weak_text) const final;
+  std::vector<std::string> augmentSingleRow(const std::string& strong_text,
+                                            const std::string& weak_text,
+                                            uint32_t augment_seed) const final;
 
  private:
   /**

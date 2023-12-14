@@ -37,9 +37,21 @@ ColumnMap TextAugmentationBase::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr exception = nullptr;
 
+  // We want each row to have a different seed so each perturbation/augmentation
+  // is different. We also want these to be dependent on the _seed given. We
+  // also want two separate initializations of this augmentation to have
+  // different perturbations (so we can't just pass in the row_id to
+  // augmentSingleRow and use that as a seed). Lastly we can't share an
+  // std::mt19937 in a pragma, leaving us with pregenerating the seeds.
+  std::mt19937 rng(_seed);
+  std::vector<uint32_t> augment_seeds(label_column->numRows());
+  for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
+    augment_seeds[row_id] = rng();
+  }
+
 #pragma omp parallel for default(none)                               \
     shared(label_column, strong_column, weak_column, augmented_data, \
-           augmented_labels, exception)
+           augmented_labels, exception, augment_seeds)
   for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
     try {
       std::string labels = label_column->value(row_id);
@@ -47,7 +59,7 @@ ColumnMap TextAugmentationBase::apply(ColumnMap columns, State& state) const {
       std::string weak_text = weak_column->value(row_id);
 
       std::vector<std::string> augmented_samples =
-          augmentSingleRow(strong_text, weak_text);
+          augmentSingleRow(strong_text, weak_text, augment_seeds[row_id]);
 
 #pragma omp critical
       {

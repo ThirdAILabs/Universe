@@ -1,6 +1,7 @@
 #include "VariableLengthColdStart.h"
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/StringConcat.h>
+#include <dataset/src/utils/TokenEncoding.h>
 #include <utils/CommonChecks.h>
 #include <utils/text/Stopwords.h>
 #include <utils/text/StringManipulation.h>
@@ -73,13 +74,16 @@ VariableLengthColdStart::VariableLengthColdStart(
       _config(config) {}
 
 std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
-    const std::string& strong_text, const std::string& weak_text) const {
+    const std::string& strong_text, const std::string& weak_text,
+    uint32_t augment_seed) const {
   Phrase strong_phrase = cold_start::getStrongPhrase(strong_text);
   PhraseCollection phrases = getWeakPhrases(weak_text);
   phrases = cold_start::mergeStrongWithWeak(
-      phrases, strong_phrase, _config.strong_sample_num_words, _seed);
+      phrases, strong_phrase, _config.strong_sample_num_words, augment_seed);
 
-  std::mt19937 rng(_seed);
+  // we don't use _seed here because we want each row to be perturbed with a
+  // different seed
+  std::mt19937 rng(augment_seed);
 
   std::vector<std::string> output_samples;
   for (const auto& phrase : phrases) {
@@ -91,7 +95,7 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
 
     output_text = text::perturbCharacters(
         output_text, _config.chars_replace_with_space, _config.chars_deleted,
-        _config.chars_duplicated, _config.chars_replace_with_adjacents);
+        _config.chars_duplicated, _config.chars_replace_with_adjacents, rng);
 
     if (!output_text.empty()) {
       output_samples.push_back(output_text);

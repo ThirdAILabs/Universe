@@ -126,11 +126,11 @@ std::unordered_set<size_t> nUniqueRandomInt(
 }
 
 std::string deleteRandomCharacters(const std::string& input,
-                                   size_t num_to_delete) {
+                                   size_t num_to_delete, std::mt19937 rng) {
   num_to_delete = std::min(num_to_delete, input.size());
 
   auto indices =
-      nUniqueRandomInt(/* n= */ num_to_delete, /* range= */ input.size());
+      nUniqueRandomInt(/* n= */ num_to_delete, /* range= */ input.size(), rng);
 
   std::string result;
   result.reserve(input.size() - num_to_delete);
@@ -144,11 +144,12 @@ std::string deleteRandomCharacters(const std::string& input,
 }
 
 std::string duplicateRandomCharacters(const std::string& input,
-                                      size_t num_to_duplicate) {
+                                      size_t num_to_duplicate,
+                                      std::mt19937 rng) {
   num_to_duplicate = std::min(num_to_duplicate, input.size());
 
-  auto indices =
-      nUniqueRandomInt(/* n= */ num_to_duplicate, /* range= */ input.size());
+  auto indices = nUniqueRandomInt(/* n= */ num_to_duplicate,
+                                  /* range= */ input.size(), rng);
 
   std::string result;
   result.reserve(input.size() + num_to_duplicate);
@@ -163,11 +164,12 @@ std::string duplicateRandomCharacters(const std::string& input,
 }
 
 std::string replaceRandomCharactersWithSpaces(const std::string& input,
-                                              size_t num_to_replace) {
+                                              size_t num_to_replace,
+                                              std::mt19937 rng) {
   num_to_replace = std::min(num_to_replace, input.size());
 
   auto indices =
-      nUniqueRandomInt(/* n= */ num_to_replace, /* range= */ input.size());
+      nUniqueRandomInt(/* n= */ num_to_replace, /* range= */ input.size(), rng);
 
   std::string result;
   result.reserve(input.size());
@@ -183,10 +185,9 @@ std::string replaceRandomCharactersWithSpaces(const std::string& input,
 }
 
 std::string replaceRandomCharactersWithKeyboardAdjacents(
-    const std::string& input, size_t num_to_replace) {
+    const std::string& input, size_t num_to_replace, std::mt19937 rng) {
   num_to_replace = std::min(num_to_replace, input.size());
 
-  std::mt19937 rng(global_random::nextSeed());
   auto indices = nUniqueRandomInt(/* n= */ num_to_replace,
                                   /* range= */ input.size(), /* rng=*/rng);
 
@@ -220,25 +221,26 @@ std::string replaceRandomCharactersWithKeyboardAdjacents(
 std::string perturbCharacters(const std::string& input,
                               size_t chars_replace_with_space,
                               size_t chars_deleted, size_t chars_duplicated,
-                              size_t chars_replace_with_adjacents) {
+                              size_t chars_replace_with_adjacents,
+                              std::mt19937 rng) {
   std::string result = input;
 
   if (chars_replace_with_space) {
-    result =
-        replaceRandomCharactersWithSpaces(result, chars_replace_with_space);
+    result = replaceRandomCharactersWithSpaces(result, chars_replace_with_space,
+                                               rng);
   }
 
   if (chars_deleted) {
-    result = deleteRandomCharacters(result, chars_deleted);
+    result = deleteRandomCharacters(result, chars_deleted, rng);
   }
 
   if (chars_duplicated) {
-    result = duplicateRandomCharacters(result, chars_duplicated);
+    result = duplicateRandomCharacters(result, chars_duplicated, rng);
   }
 
   if (chars_replace_with_adjacents) {
     result = replaceRandomCharactersWithKeyboardAdjacents(
-        result, chars_replace_with_adjacents);
+        result, chars_replace_with_adjacents, rng);
   }
 
   return result;
