@@ -1,24 +1,12 @@
 import datetime
 import os
-import pickle
-import shutil
 from pathlib import Path
 from typing import Callable
 
 from .documents import DocumentManager
 from .loggers import Logger
 from .models import Model
-
-
-def pickle_to(obj: object, filepath: Path):
-    with open(filepath, "wb") as pkl:
-        pickle.dump(obj, pkl)
-
-
-def unpickle_from(filepath: Path):
-    with open(filepath, "rb") as pkl:
-        obj = pickle.load(pkl)
-    return obj
+from .utils import pickle_to, unpickle_from
 
 
 def default_checkpoint_name():

@@ -6,10 +6,11 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt, data
 
 from .documents import DocumentDataSource
-from .sharded_documents import ShardedDataSource
-from .training_state.training_callback import TrainingProgressCallback
-from .training_state.training_progress_tracker import TrainingProgressTracker
-from .utils import clean_text, random_sample
+from .training_state.training_callback import TrainingProgressManager
+from .training_state.training_progress_tracker import NeuralDbProgressTracker
+from .training_state.factory import Factory
+
+from .utils import clean_text, pickle_to, unpickle_from
 
 InferSamples = List
 Predictions = Sequence
@@ -213,7 +214,7 @@ def unsupervised_train_on_docs(
     variable_length: Optional[
         data.transformations.VariableLengthConfig
     ] = data.transformations.VariableLengthConfig(),
-    training_progress_manager: TrainingProgressCallback = None,
+    training_progress_manager: TrainingProgressManager = None,
 ):
     if freeze_before_train:
         model._get_model().freeze_hash_tables()
@@ -347,11 +348,15 @@ class Mach(Model):
         freeze_before_train: bool,
         cancel_state: CancelState,
         max_in_memory_batches: int,
-        training_progress_manager: TrainingProgressCallback = None,
+        variable_length: Optional[
+            data.transformations.VariableLengthConfig
+        ] = data.transformations.VariableLengthConfig(),
+        training_progress_manager: TrainingProgressManager = None,
     ):
-        training_progress_manager.tracker.learning_rate = learning_rate
-        training_progress_manager.tracker.min_epochs = min_epochs
-        training_progress_manager.tracker.max_epochs = max_epochs
+        if training_progress_manager:
+            training_progress_manager.tracker.learning_rate = learning_rate
+            training_progress_manager.tracker.min_epochs = min_epochs
+            training_progress_manager.tracker.max_epochs = max_epochs
 
         unsupervised_train_on_docs(
             model=self.model,
@@ -365,11 +370,13 @@ class Mach(Model):
             freeze_before_train=freeze_before_train,
             cancel_state=cancel_state,
             max_in_memory_batches=max_in_memory_batches,
+            variable_length=variable_length,
             training_progress_manager=training_progress_manager,
         )
 
-        training_progress_manager.tracker.is_training_completed = True
-        training_progress_manager.checkpoint_tracker()
+        if training_progress_manager:
+            training_progress_manager.tracker.is_training_completed = True
+            training_progress_manager.checkpoint_tracker()
 
     def introduce_documents(
         self,
@@ -423,31 +430,27 @@ class Mach(Model):
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
-        checkpoint_dir=None,
+        checkpoint_dir: Path = None,
         model_id=0,
+        resume_from_checkpoint=False,
     ) -> None:
         """
         override_number_classes : The number of classes for the Mach model
 
         Note: Given the datasources for introduction and training, we initialize a Mach model that has number_classes set to the size of introduce documents. But if we want to use this Mach model in our mixture of Models, this will not work because each Mach will be initialized with number of classes equal to the size of the datasource shard. Hence, we add override_number_classes parameters which if set, will initialize Mach Model with number of classes passed by the Mach Mixture.
         """
-        if checkpoint_dir:
-            training_progress_tracker = TrainingProgressTracker(
-                checkpoint_dir=checkpoint_dir, model_id=model_id
-            )
-            training_progress_manager = TrainingProgressCallback(
-                tracker=training_progress_tracker, neuraldb_mach_model=self
-            )
-            training_progress_manager.tracker.override_number_classes = (
-                override_number_classes
-            )
-            training_progress_manager.tracker.fast_approximation = fast_approximation
-            training_progress_manager.tracker.num_buckets_to_sample = (
-                num_buckets_to_sample
-            )
-            training_progress_manager.checkpoint_tracker()
-        else:
-            training_progress_manager = None
+        training_progress_manager = Factory.make_training_progress_manager(
+            model=self,
+            intro_documents=intro_documents,
+            train_documents=train_documents,
+            should_train=should_train,
+            fast_approximation=fast_approximation,
+            num_buckets_to_sample=num_buckets_to_sample,
+            override_number_classes=override_number_classes,
+            checkpoint_dir=checkpoint_dir,
+            model_id=model_id,
+            resume_from_checkpoint=resume_from_checkpoint,
+        )
 
         if self.model is None:
             self.id_col = intro_documents.id_column
@@ -466,36 +469,80 @@ class Mach(Model):
             freeze_before_train = True
             # Less epochs here since it converges faster when trained on a base
             # model.
-            self.introduce_documents(
-                intro_documents=intro_documents,
-                fast_approximation=fast_approximation,
-                num_buckets_to_sample=num_buckets_to_sample,
-            )
+            if not training_progress_manager.is_insert_completed:
+                intro_documents = training_progress_manager.intro_source
+                self.introduce_documents(
+                    intro_documents=intro_documents,
+                    fast_approximation=training_progress_manager.tracker.fast_approximation,
+                    num_buckets_to_sample=training_progress_manager.tracker.num_buckets_to_sample,
+                )
             min_epochs, max_epochs = autotune_from_base_min_max_epochs(
                 train_documents.size
             )
 
         # Once we have introduced the documents, we should checkpoint
-        if training_progress_manager:
-            training_progress_manager.tracker.is_insert_completed = True
-            training_progress_manager.checkpoint_tracker()
+        training_progress_manager.is_insert_completed = True
+        if not training_progress_manager.is_resumed:
+            training_progress_manager.set_training_arguments(
+                learning_rate=learning_rate,
+                min_epochs=min_epochs,
+                max_epochs=max_epochs,
+                freeze_before_train=freeze_before_train,
+            )
+        training_progress_manager.full_checkpoint()
 
-        self.n_ids += intro_documents.size
-        self.add_balancing_samples(intro_documents)
-
-        if should_train:
+        if not training_progress_manager.is_insert_completed:
+            train_documents = training_progress_manager.train_source
+            min_epochs = (
+                training_progress_manager.tracker.min_epochs
+                - training_progress_manager.tracker.current_epoch_number
+            )
+            max_epochs = (
+                training_progress_manager.tracker.max_epochs
+                - training_progress_manager.tracker.current_epoch_number
+            )
             self.train_documents(
                 train_documents=train_documents,
                 min_epochs=min_epochs,
                 max_epochs=max_epochs,
                 metric="hash_precision@5",
-                learning_rate=learning_rate,
+                learning_rate=training_progress_manager.tracker.learning_rate,
                 acc_to_stop=0.95,
                 on_progress=on_progress,
-                freeze_before_train=freeze_before_train,
+                freeze_before_train=training_progress_manager.tracker.freeze_before_train,
                 cancel_state=cancel_state,
-                max_in_memory_batches=max_in_memory_batches,
+                max_in_memory_batches=training_progress_manager.tracker.max_in_memory_batches,
+                variable_length=variable_length,
                 training_progress_manager=training_progress_manager,
+            )
+
+    def resume_from_checkpoint(self, checkpoint_dir: Path, model_id: int):
+        training_progress_tracker = NeuralDbProgressTracker(
+            parent_checkpoint_dir=checkpoint_dir, model_id=model_id, from_scratch=False
+        )
+        self: Mach = unpickle_from(
+            training_progress_tracker.neuraldb_model_checkpoint_location
+        )
+        training_progress_manager = TrainingProgressManager(
+            tracker=training_progress_tracker,
+            neuraldb_mach_model=self,
+        )
+
+        if not training_progress_manager.tracker.is_insert_completed:
+            intro_source = training_progress_manager.load_intro_source()
+            self.introduce_documents(
+                intro_documents=intro_source,
+                fast_approximation=training_progress_manager.tracker.fast_approximation,
+                num_buckets_to_sample=training_progress_manager.tracker.num_buckets_to_sample,
+            )
+
+        if not training_progress_manager.tracker.is_training_completed:
+            train_source = training_progress_manager.load_train_source()
+            self.train_documents(
+                train_documents=train_source,
+                min_epochs=training_progress_manager.tracker.min_epochs,
+                max_epochs=training_progress_manager.tracker.max_epochs,
+                metric="hash_precision@5",
             )
 
     def add_balancing_samples(self, documents: DocumentDataSource):

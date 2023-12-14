@@ -15,7 +15,7 @@ from .documents import CSV, Document, DocumentManager, Reference
 from .mach_mixture_model import MachMixture
 from .models import CancelState, Mach
 from .savable_state import State
-from .training_state.training_progress_tracker import TrainingProgressTracker
+from .training_state.training_progress_tracker import NeuralDbProgressTracker
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
 
@@ -371,13 +371,11 @@ class NeuralDB:
 
         ray_version = ray.__version__
         if LooseVersion(ray_version) >= LooseVersion("2.7"):
-            warnings.warn(
-                """
+            warnings.warn("""
                 Using ray version 2.7 or higher requires specifying a remote or NFS storage path. 
                 Support for local checkpoints has been discontinued in these versions. 
                 Refer to https://github.com/ray-project/ray/issues/37177 for details.
-                """.strip()
-            )
+                """.strip())
 
         if not isinstance(documents, list) or not all(
             isinstance(doc, CSV) for doc in documents
@@ -562,7 +560,7 @@ class NeuralDB:
             cancel_state=cancel_state,
             max_in_memory_batches=max_in_memory_batches,
             variable_length=variable_length,
-            checkpoint_dir=checkpoint_dir,
+            checkpoint_dir=Path(checkpoint_dir) if checkpoint_dir else None,
         )
         self._savable_state.logger.log(
             session_id=self._user_id,

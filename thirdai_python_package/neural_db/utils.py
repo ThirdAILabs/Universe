@@ -2,9 +2,27 @@ import hashlib
 import math
 import random
 from functools import wraps
+import pickle
+from pathlib import Path
 
 DIRECTORY_CONNECTOR_SUPPORTED_EXT = ["pdf", "docx", "pptx", "txt", "eml"]
 SUPPORTED_EXT = ["csv"] + DIRECTORY_CONNECTOR_SUPPORTED_EXT
+
+
+def pickle_to(obj: object, filepath: Path):
+    with open(filepath, "wb") as pkl:
+        pickle.dump(obj, pkl)
+
+
+def unpickle_from(filepath: Path):
+    with open(filepath, "rb") as pkl:
+        obj = pickle.load(pkl)
+    return obj
+
+
+def assert_file_exists(path: Path):
+    if not path.exists():
+        raise FileNotFoundError(f"File not found: {str(path)}")
 
 
 def clean_text(text):

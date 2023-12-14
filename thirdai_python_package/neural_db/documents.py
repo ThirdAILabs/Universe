@@ -6,6 +6,7 @@ import string
 from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
+from io import StringIO
 
 import numpy as np
 import pandas as pd
@@ -228,6 +229,39 @@ class DocumentDataSource(PyDataSource):
 
     def resource_name(self) -> str:
         return "Documents:\n" + "\n".join([doc.name for doc, _ in self.documents])
+
+    def dataframe(self):
+        """
+        Iterates through the document data source and generates a dataframe
+        """
+        string_io = StringIO("\n".join(self._get_line_iterator()))
+        df = pd.read_csv(string_io)
+        self.restart()
+        return df
+
+    def initialization_args(self):
+        return {
+            "id_column": self.id_column,
+            "strong_column": self.strong_column,
+            "weak_column": self.weak_column,
+        }
+
+    @staticmethod
+    def load_from_dataframe(
+        csv_path: Path, id_column: str, strong_column: str, weak_column: str
+    ):
+        csv_document = CSV(
+            path=csv_path,
+            id_column=id_column,
+            strong_columns=[strong_column],
+            weak_columns=[weak_column],
+            has_offset=True,
+        )
+        data_source = DocumentDataSource(
+            id_column=id_column, strong_column=strong_column, weak_column=weak_column
+        )
+        data_source.add(csv_document, start_id=0)
+        return data_source
 
 
 class IntroAndTrainDocuments:
@@ -1719,7 +1753,10 @@ class SalesForce(DocumentConnector):
 
         try:
             result = self._connector.execute(
-                query=f"SELECT {','.join(self.reference_columns)} FROM {self.object_name} WHERE {self.id_col} = '{element_id}'"
+                query=(
+                    f"SELECT {','.join(self.reference_columns)} FROM"
+                    f" {self.object_name} WHERE {self.id_col} = '{element_id}'"
+                )
             )["records"][0]
             del result["attributes"]
             text = "\n\n".join(
@@ -1727,7 +1764,10 @@ class SalesForce(DocumentConnector):
             )
 
         except Exception as e:
-            text = f"Unable to connect to the object instance, Referenced row with {self.id_col}: {element_id} "
+            text = (
+                "Unable to connect to the object instance, Referenced row with"
+                f" {self.id_col}: {element_id} "
+            )
 
         return Reference(
             document=self,
@@ -1784,14 +1824,20 @@ class SalesForce(DocumentConnector):
 
         expected_min_row_id = 0
         min_id = self._connector.execute(
-            query=f"SELECT {self.id_col} FROM {self.object_name} WHERE {self.id_col} = '{expected_min_row_id}'"
+            query=(
+                f"SELECT {self.id_col} FROM {self.object_name} WHERE {self.id_col} ="
+                f" '{expected_min_row_id}'"
+            )
         )
 
         # This one is not required probably because user can't put the auto-number field mannually.
         # User just can provide the start of the auto-number so if the min_id is 0, then max_id should be size - 1
         expected_max_row_id = self.size - 1
         max_id = self._connector.execute(
-            query=f"SELECT {self.id_col} FROM {self.object_name} WHERE {self.id_col} = '{expected_max_row_id}'"
+            query=(
+                f"SELECT {self.id_col} FROM {self.object_name} WHERE {self.id_col} ="
+                f" '{expected_max_row_id}'"
+            )
         )
 
         if not (min_id["totalSize"] == 1 and max_id["totalSize"] == 1):
@@ -1811,7 +1857,10 @@ class SalesForce(DocumentConnector):
         fields_set = set([field["name"] for field in all_fields])
 
         # Checking for strong, weak and reference columns (if provided) to be present in column list of the table
-        column_name_error = "Remember if it is a custom column, salesforce requires it to be appended with __c."
+        column_name_error = (
+            "Remember if it is a custom column, salesforce requires it to be appended"
+            " with __c."
+        )
         if (self.strong_columns is not None) and (
             not set(self.strong_columns).issubset(fields_set)
         ):
@@ -1842,7 +1891,8 @@ class SalesForce(DocumentConnector):
                 and field["type"] not in supported_text_types
             ):
                 raise AttributeError(
-                    f"Strong column '{field['name']}' needs to be type from {supported_text_types}"
+                    f"Strong column '{field['name']}' needs to be type from"
+                    f" {supported_text_types}"
                 )
             if (
                 self.weak_columns is not None
@@ -1850,7 +1900,8 @@ class SalesForce(DocumentConnector):
                 and field["type"] not in supported_text_types
             ):
                 raise AttributeError(
-                    f"Weak column '{field['name']}' needs to be type {supported_text_types}"
+                    f"Weak column '{field['name']}' needs to be type"
+                    f" {supported_text_types}"
                 )
 
     def default_fields(

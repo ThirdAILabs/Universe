@@ -112,6 +112,7 @@ class MachMixture(Model):
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
+        checkpoint_dir: Path = None,
     ) -> None:
         # We need the original number of classes from the original data source so that we can initialize the Mach models this mixture will have
         number_classes = intro_documents.size
@@ -134,8 +135,8 @@ class MachMixture(Model):
 
         self.n_ids += intro_documents.size
 
-        for intro_shard, train_shard, model in zip(
-            introduce_data_sources, train_data_sources, self.models
+        for model_id, (intro_shard, train_shard, model) in enumerate(
+            zip(introduce_data_sources, train_data_sources, self.models)
         ):
             model.index_documents(
                 intro_documents=intro_shard,
@@ -148,6 +149,8 @@ class MachMixture(Model):
                 max_in_memory_batches=max_in_memory_batches,
                 override_number_classes=number_classes,
                 variable_length=variable_length,
+                checkpoint_dir=checkpoint_dir,
+                model_id=model_id if checkpoint_dir else None,
             )
 
     def delete_entities(self, entities) -> None:
