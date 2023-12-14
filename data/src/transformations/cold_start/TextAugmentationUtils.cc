@@ -21,12 +21,17 @@ ColumnMap TextAugmentationBase::apply(ColumnMap columns, State& state) const {
 
   auto label_column = columns.getValueColumn<std::string>(_label_column_name);
 
+  // Note: The original cold start implementation used a simple concatenation
+  // function that appended an extra delimiter at the end. The StringConcat
+  // transformation does not do this. This should not have any major affect on
+  // cold start, leaving this note just in case anyone is investigating any
+  // differences.
   auto strong_concat_transform = StringConcat(
       _strong_column_names, /* output_column_name= */ "strong_text",
-      /* separator= */ ". ");
+      /* separator= */ " ");
   auto weak_concat_transform =
       StringConcat(_weak_column_names, /* output_column_name= */ "weak_text",
-                   /* separator= */ " ");
+                   /* separator= */ ". ");
   columns = strong_concat_transform.apply(columns, state);
   columns = weak_concat_transform.apply(columns, state);
   auto strong_column = columns.getValueColumn<std::string>("strong_text");
@@ -155,6 +160,11 @@ Phrase getStrongPhrase(const std::string& strong_text_in,
                        std::optional<uint32_t> max_len) {
   std::string strong_text = text::replacePunctuation(strong_text_in, ' ');
   strong_text = text::stripWhitespace(strong_text);
+
+  // Note: This is slightly different than the original cold start
+  // implementation. This tokenization/split function splits on any character
+  // that isn't alpha-numeric. The old version just split on whitespace. This
+  // can cause slightly different results with certain special characters.
   Phrase strong_phrase = text::tokenizeSentence(strong_text);
   if (max_len) {
     if (strong_phrase.size() > max_len.value()) {

@@ -808,8 +808,9 @@ void UDTMachClassifier::addBalancingSamples(
     // the entire dataset and see if it makes a difference.
     auto optional_samples =
         _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ true)
-            ->loadSome(/* batch_size= */ defaults::MAX_BALANCING_SAMPLES,
-                       /* num_batches= */ 1, /* verbose= */ false);
+            ->loadSome(
+                /* batch_size= */ defaults::MAX_BALANCING_SAMPLES_TO_LOAD,
+                /* num_batches= */ 1, /* verbose= */ false);
 
     if (!optional_samples) {
       throw std::invalid_argument("No data found for training.");
