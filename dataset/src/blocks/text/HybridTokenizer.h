@@ -2,58 +2,83 @@
 
 #include "TextTokenizer.h"
 #include "WordpieceTokenizer.h"
+#include <utils/CommonChecks.h>
 
 namespace thirdai::dataset {
+
 class HybridWordpieceCharKTokenizer : public TextTokenizer {
  public:
-  explicit HybridWordpieceCharKTokenizer(
-      WordpieceTokenizerPtr wordpiece_tokenizer, uint32_t k)
-      : _wordpiece_tokenizer(std::move(wordpiece_tokenizer)), _k(k) {}
+  explicit HybridWordpieceCharKTokenizer(const std::string& vocab_fpath,
+                                         uint32_t k = 4,
+                                         uint32_t wordpiece_range = 30000,
+                                         uint32_t char_k_range = 70000,
+                                         bool lowercase_wordpiece = true,
+                                         bool lowercase_char_k = true)
+      : _wordpiece_tokenizer(
+            WordpieceTokenizer::make(vocab_fpath, lowercase_wordpiece)),
+        _k(k),
+        _wordpiece_range(wordpiece_range),
+        _char_k_range(char_k_range),
+        _lowercase_char_k(lowercase_char_k) {
+    utils::validateGreaterThanZero(k, "k");
+  }
 
-  static auto make(const WordpieceTokenizerPtr& wordpiece_tokenizer,
-                   uint32_t k) {
-    return std::make_shared<HybridWordpieceCharKTokenizer>(wordpiece_tokenizer,
-                                                           k);
+  static auto make(const std::string& vocab_fpath, uint32_t k,
+                   uint32_t wordpiece_range = 30000,
+                   uint32_t char_k_range = 70000,
+                   bool lowercase_wordpiece = true,
+                   bool lowercase_char_k = true) {
+    return std::make_shared<HybridWordpieceCharKTokenizer>(
+        vocab_fpath, k, wordpiece_range, char_k_range, lowercase_wordpiece,
+        lowercase_char_k);
   }
 
   std::vector<uint32_t> tokenize(const std::string& input) final {
-    auto tokens = token_encoding::hashTokens(
-        text::wordLevelCharKGrams(text::tokenizeSentence(input), _k, 3));
-    token_encoding::mod(tokens, 70000);
-
     auto wordpiece_tokens = _wordpiece_tokenizer->tokenize(input);
-    token_encoding::mod(wordpiece_tokens, 30000);
+    token_encoding::mod(wordpiece_tokens, _wordpiece_range);
+
     for (uint32_t& wordpiece_token : wordpiece_tokens) {
-      wordpiece_token += 70000;
+      wordpiece_token += _char_k_range;
     }
+
+    std::string possibly_lowercased_input = input;
+    if (_lowercase_char_k) {
+      possibly_lowercased_input = text::lower(possibly_lowercased_input);
+    }
+
+    auto tokens = token_encoding::hashTokens(text::wordLevelCharKGrams(
+        text::tokenizeSentence(possibly_lowercased_input), /* k= */ _k,
+        /* min_word_length= */ 1));
+
+    token_encoding::mod(tokens, _char_k_range);
 
     tokens.insert(tokens.end(), wordpiece_tokens.begin(),
                   wordpiece_tokens.end());
+
     return tokens;
   }
 
   std::string getResponsibleWord(const std::string& input,
                                  uint32_t source_token) final {
-    auto map =
-        token_encoding::buildUnigramHashToWordMap(text::charKGrams(input, _k));
-
-    if (!map.count(source_token)) {
-      // should never get here since RCA should have only returned a valid token
-      throw std::invalid_argument("Error in RCA.");
-    }
-    return map.at(source_token);
+    (void)input;
+    (void)source_token;
+    throw std::invalid_argument("RCA not implemented for hybrid tokenizer.");
   }
 
  private:
-  WordpieceTokenizerPtr _wordpiece_tokenizer;
+  TextTokenizerPtr _wordpiece_tokenizer;
   uint32_t _k;
+  uint32_t _wordpiece_range;
+  uint32_t _char_k_range;
+  bool _lowercase_char_k;
 
   HybridWordpieceCharKTokenizer() {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<TextTokenizer>(this), _wordpiece_tokenizer, _k);
+    archive(cereal::base_class<TextTokenizer>(this), _wordpiece_tokenizer, _k,
+            _wordpiece_range, _char_k_range, _lowercase_char_k);
   }
 };
 

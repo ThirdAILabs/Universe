@@ -127,6 +127,25 @@ def test_tokenizer_from_vocabulary(download_bert_base_uncased):
     eval_accuracy_and_cleanup(model)
 
 
+def test_hybrid_tokenizer_udt(download_bert_base_uncased):
+    create_data_file("threading", "foresting", TRAIN_FILENAME)
+    create_data_file("thread ##ing", "forest ##ing", TEST_FILENAME)
+
+    BERT_VOCAB_PATH = download_bert_base_uncased
+    tokenizer = dataset.HybridTokenizer(BERT_VOCAB_PATH)
+
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "text": bolt.types.text(tokenizer=tokenizer),
+            "category": bolt.types.categorical(),
+        },
+        target="category",
+        n_target_classes=2,
+    )
+
+    eval_accuracy_and_cleanup(model)
+
+
 def test_invalid_text_tokenizers():
     invalid_tokenizer = "INVALID"
     with pytest.raises(
