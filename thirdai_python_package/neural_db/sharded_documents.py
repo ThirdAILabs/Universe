@@ -4,7 +4,6 @@ import tempfile
 from collections import defaultdict
 from io import StringIO
 from typing import List
-import random
 
 import pandas as pd
 
@@ -47,6 +46,9 @@ class DataLoadMultiplexer:
                     segments.write(data)
             else:
                 current_label = int(data.split(",", 1)[0])
+                # TODO(pratik/shubh): Having list as map values is for experiments,
+                # we would be just having one elment in list for each index. We should
+                # remove this going forward.
                 current_segment = label_to_segment_map[current_label][-1]
                 segment_objects[current_segment].write("\n" + data)
 
@@ -54,6 +56,7 @@ class DataLoadMultiplexer:
             if current_index % self.flush_frequency == 0:
                 for segment in segment_objects:
                     segment.flush()
+
         for segment in segment_objects:
             segment.flush()
 
