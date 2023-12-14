@@ -39,8 +39,6 @@ class DataLoadMultiplexer:
         self, data_source, label_to_segment_map
     ):
         segment_filenames, segment_objects = self._generate_temp_csvs()
-        total_data = "\n".join(data_source._get_line_iterator())
-        data_source.restart()
 
         current_index = 0
         for data in data_source._get_line_iterator():
