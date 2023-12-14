@@ -1,9 +1,14 @@
 #include "UDTMachClassifier.h"
 #include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
+#include <bolt/src/inference/EmbFcInference.h>
+#include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/neuron_index/LshIndex.h>
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
+#include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/metrics/LossMetric.h>
 #include <bolt/src/train/metrics/MachPrecision.h>
@@ -561,6 +566,31 @@ void UDTMachClassifier::updateSamplingStrategy() {
   }
 }
 
+std::optional<bolt::EmbFcInference> inferenceModel(
+    const bolt::ModelPtr& model) {
+  auto computations = model->computationOrder();
+  if (computations.size() != 3) {
+    return std::nullopt;
+  }
+
+  auto input = std::dynamic_pointer_cast<bolt::Input>(computations.at(0)->op());
+  auto emb = bolt::Embedding::cast(computations.at(1)->op());
+  auto fc = bolt::FullyConnected::cast(computations.at(2)->op());
+
+  // Model must be Input -> Embedding -> FullyConnected
+  if (!input || !emb || !fc) {
+    return std::nullopt;
+  }
+  // Currently this is only implmented for sigmoid activations for mach, but
+  // could be extended in the future.
+  if (fc->kernel()->getActivationFunction() !=
+      bolt::ActivationFunction::Sigmoid) {
+    return std::nullopt;
+  }
+
+  return std::make_optional<bolt::EmbFcInference>(emb, fc);
+}
+
 void UDTMachClassifier::introduceDocuments(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
@@ -596,6 +626,8 @@ void UDTMachClassifier::introduceDocuments(
 
   std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>> top_k_per_doc;
 
+  auto inference_model = inferenceModel(_classifier->model());
+
   bolt::python::CtrlCCheck ctrl_c_check;
 
   for (const auto& batch : doc_samples_tensors) {
@@ -603,7 +635,12 @@ void UDTMachClassifier::introduceDocuments(
     // mach index sampler will only return nonempty buckets, which could
     // cause new docs to only be mapped to buckets already containing
     // entities.
-    auto scores = _classifier->model()->forward(batch).at(0);
+    bolt::TensorPtr scores;
+    if (inference_model) {
+      scores = inference_model->forward(batch.at(0));
+    } else {
+      scores = _classifier->model()->forward(batch).at(0);
+    }
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
       uint32_t label = std::stoi(labels->value(row_idx++));
@@ -806,8 +843,9 @@ void UDTMachClassifier::addBalancingSamples(
     // the entire dataset and see if it makes a difference.
     auto optional_samples =
         _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ true)
-            ->loadSome(/* batch_size= */ defaults::MAX_BALANCING_SAMPLES,
-                       /* num_batches= */ 1, /* verbose= */ false);
+            ->loadSome(
+                /* batch_size= */ defaults::MAX_BALANCING_SAMPLES_TO_LOAD,
+                /* num_batches= */ 1, /* verbose= */ false);
 
     if (!optional_samples) {
       throw std::invalid_argument("No data found for training.");

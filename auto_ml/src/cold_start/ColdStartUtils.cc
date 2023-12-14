@@ -93,6 +93,8 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
 
   auto augmented_data = augmentation->applyStateless(dataset);
 
+  augmented_data.shuffle();
+
   auto data_source = thirdai::dataset::cold_start::ColdStartDataSource::make(
       /* column_map= */ augmented_data,
       /* text_column_name= */ text_column_name,
