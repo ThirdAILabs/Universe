@@ -274,13 +274,22 @@ class DocumentManager:
             doc.hash for doc in documents
         ]
 
-    def delete(self, source_id):
+    def delete(self, source_ids):
         # TODO(Geordie): Error handling
-        doc, offset = self.registry[source_id]
-        deleted_entities = [offset + entity_id for entity_id in doc.all_entity_ids()]
-        del self.registry[source_id]
-        del self.source_id_prefix_trie[source_id]
-        self.constraint_matcher.delete((doc, offset), doc.matched_constraints)
+        all_sources_exist = all(source_id in self.registry for source_id in source_ids)
+        if not all_sources_exist:
+            raise ValueError("At least one source not found in document manager.")
+
+        deleted_entities = []
+        for source_id in source_ids:
+            doc, offset = self.registry[source_id]
+            deleted_entities += [
+                offset + entity_id for entity_id in doc.all_entity_ids()
+            ]
+            del self.registry[source_id]
+            del self.source_id_prefix_trie[source_id]
+            self.constraint_matcher.delete((doc, offset), doc.matched_constraints)
+
         return deleted_entities
 
     def entity_ids_by_constraints(self, constraints: Dict[str, Any]):

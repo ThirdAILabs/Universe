@@ -677,7 +677,7 @@ def test_neural_db_delete_document():
     result = db.search("ice cream", top_k=1, constraints={"about": "ice cream"})[0]
     assert result.text == "text: ice cream"
 
-    db.delete(ice_cream_source_id)
+    db.delete([ice_cream_source_id])
 
     results = db.search("ice cream", top_k=1)
     # pizza may not come up, so check if we got any result at all.
