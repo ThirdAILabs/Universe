@@ -10,9 +10,16 @@
 
 namespace thirdai::bolt {
 
-class EmbeddingInference {
+/**
+ * The class is for optimized dense inference for models that have an embedding
+ * layer followed by a fully connected layer. It uses a matrix matrix
+ * multiplication funciton that is faster than regular bolt for dense inference.
+ * It cannot be integrated directly into bolt because the parallelism structure
+ * forces bolt to use gemv instead of gemm.
+ */
+class EmbFcInference {
  public:
-  EmbeddingInference(EmbeddingPtr emb, const FullyConnectedPtr& fc);
+  EmbFcInference(EmbeddingPtr emb, const FullyConnectedPtr& fc);
 
   TensorPtr forward(const TensorPtr& input);
 

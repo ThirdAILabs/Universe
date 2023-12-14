@@ -1,10 +1,9 @@
-#include "EmbeddingInference.h"
+#include "EmbFcInference.h"
 #include <stdexcept>
 
 namespace thirdai::bolt {
 
-EmbeddingInference::EmbeddingInference(EmbeddingPtr emb,
-                                       const FullyConnectedPtr& fc)
+EmbFcInference::EmbFcInference(EmbeddingPtr emb, const FullyConnectedPtr& fc)
     : _emb(std::move(emb)),
       _fc(fc),
       _weights(const_cast<float*>(fc->weightsPtr()), fc->dim(), fc->inputDim()),
@@ -18,7 +17,7 @@ EmbeddingInference::EmbeddingInference(EmbeddingPtr emb,
   }
 }
 
-TensorPtr EmbeddingInference::forward(const TensorPtr& input) {
+TensorPtr EmbFcInference::forward(const TensorPtr& input) {
   Matrix embs(input->batchSize(), _emb->dim());
 
 #pragma omp parallel for default(none) shared(input, embs)

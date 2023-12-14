@@ -1,7 +1,7 @@
 #include "UDTMachClassifier.h"
 #include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
-#include <bolt/src/inference/EmbeddingInference.h>
+#include <bolt/src/inference/EmbFcInference.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/neuron_index/LshIndex.h>
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
@@ -566,7 +566,7 @@ void UDTMachClassifier::updateSamplingStrategy() {
   }
 }
 
-std::optional<bolt::EmbeddingInference> inferenceModel(
+std::optional<bolt::EmbFcInference> inferenceModel(
     const bolt::ModelPtr& model) {
   auto computations = model->computationOrder();
   if (computations.size() != 3) {
@@ -588,7 +588,7 @@ std::optional<bolt::EmbeddingInference> inferenceModel(
     return std::nullopt;
   }
 
-  return std::make_optional<bolt::EmbeddingInference>(emb, fc);
+  return std::make_optional<bolt::EmbFcInference>(emb, fc);
 }
 
 void UDTMachClassifier::introduceDocuments(

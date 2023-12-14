@@ -1,4 +1,4 @@
-#include <bolt/src/inference/EmbeddingInference.h>
+#include <bolt/src/inference/EmbFcInference.h>
 #include <bolt/src/nn/loss/BinaryCrossEntropy.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Input.h>
@@ -6,7 +6,7 @@
 
 namespace thirdai::bolt {
 
-TEST(EmbeddingInferenceTests, OutputsMatch) {
+TEST(EmbFcInferenceTests, OutputsMatch) {
   size_t input_dim = 100, emb_dim = 50, fc_dim = 80;
 
   auto input = Input::make(input_dim);
@@ -28,7 +28,7 @@ TEST(EmbeddingInferenceTests, OutputsMatch) {
       Tensor::sparse(std::move(input_indices), std::move(input_values),
                      std::move(lens), input_dim);
 
-  EmbeddingInference inf(emb, fc);
+  EmbFcInference inf(emb, fc);
 
   auto model_output = model->forward({tensor}).at(0);
   auto inf_output = inf.forward(tensor);
