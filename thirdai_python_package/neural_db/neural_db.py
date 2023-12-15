@@ -595,18 +595,23 @@ class NeuralDB:
             )
         return references[:rerank_start], references[rerank_start:]
 
-    def _scale_reranked_scores(original: List[float], reranked: List[float]):
-        # The scores returned by the reranker are not in the same scale as
-        # the original score. To fix this, scale the reranked scores down
-        # such that the sum of the scores of these references stay the same
-        # before and after reranking.
-        pre_rerank_score_sum = sum(original)
-        reranked_scores_sum = sum(reranked)
-        # Prevent division by 0
-        if reranked_scores_sum == 0:
-            reranked_scores_sum = 1
-        score_multiplier = pre_rerank_score_sum / reranked_scores_sum
-        return [score * score_multiplier for score in reranked]
+    def _scale_reranked_scores(
+        original: List[float], reranked: List[float], leq: float
+    ):
+        """The scores returned by the reranker are not in the same scale as
+        the original score. To fix this, transform the reranked scores such that
+        they are in the same range as the original scores.
+        """
+        if len(original) == 0:
+            return []
+        reranked_delta = reranked[0] - reranked[-1]
+        if reranked_delta == 0:
+            return [original[0] for _ in reranked]
+        original_delta = original[0] - original[-1]
+        delta_scaler = original_delta / reranked_delta
+        return [
+            original[-1] + (score - reranked[-1]) * delta_scaler for score in reranked
+        ]
 
     def search(
         self,
@@ -616,7 +621,7 @@ class NeuralDB:
         rerank=False,
         top_k_rerank=100,
         rerank_threshold=1.5,
-        threshold_top_k=None,
+        top_k_threshold=None,
     ) -> List[Reference]:
         matching_entities = None
         top_k_to_search = top_k_rerank if rerank else top_k
@@ -642,7 +647,7 @@ class NeuralDB:
             keep, to_rerank = NeuralDB._split_references_for_reranking(
                 references,
                 rerank_threshold,
-                average_top_k_scores=threshold_top_k if threshold_top_k else top_k,
+                average_top_k_scores=top_k_threshold if top_k_threshold else top_k,
             )
 
             ranker = thirdai.dataset.KeywordOverlapRanker()
@@ -652,6 +657,7 @@ class NeuralDB:
             reranked_scores = NeuralDB._scale_reranked_scores(
                 original=[ref.score for ref in to_rerank],
                 reranked=reranked_scores,
+                leq=keep[-1].score if len(keep) > 0 else 1.0,
             )
 
             reranked = [to_rerank[i] for i in reranked_indices]

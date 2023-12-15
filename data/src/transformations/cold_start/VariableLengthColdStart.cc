@@ -65,12 +65,11 @@ VariableLengthConfig::VariableLengthConfig(
 
 VariableLengthColdStart::VariableLengthColdStart(
     std::vector<std::string> strong_column_names,
-    std::vector<std::string> weak_column_names, std::string label_column_name,
-    std::string output_column_name, const VariableLengthConfig& config,
-    uint32_t seed)
-    : TextAugmentationBase(
-          std::move(strong_column_names), std::move(weak_column_names),
-          std::move(label_column_name), std::move(output_column_name), seed),
+    std::vector<std::string> weak_column_names, std::string output_column_name,
+    const VariableLengthConfig& config, uint32_t seed)
+    : TextAugmentationBase(std::move(strong_column_names),
+                           std::move(weak_column_names),
+                           std::move(output_column_name), seed),
       _config(config) {}
 
 std::vector<std::string> VariableLengthColdStart::augmentSingleRow(

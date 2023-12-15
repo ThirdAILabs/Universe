@@ -27,7 +27,6 @@ def default_augmentation(
     return data.transformations.VariableLengthColdStart(
         strong_columns=["STRONG"],
         weak_columns=["WEAK"],
-        label_column="LABELS",
         output_column="OUTPUT",
         config=data.transformations.VariableLengthConfig(
             covering_min_length=covering_min_length,

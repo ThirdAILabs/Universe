@@ -430,7 +430,7 @@ class Bazaar:
         trained_on: str = "Own Documents",
         is_indexed: bool = False,
         access_level: str = "public",
-        description: str = None,
+        description: str = "",
     ):
         model_path = Path(model_path)
         zip_path = zip_folder(model_path)

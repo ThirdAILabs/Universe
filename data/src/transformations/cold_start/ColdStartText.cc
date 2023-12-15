@@ -15,12 +15,11 @@ namespace thirdai::data {
 
 ColdStartTextAugmentation::ColdStartTextAugmentation(
     std::vector<std::string> strong_column_names,
-    std::vector<std::string> weak_column_names, std::string label_column_name,
-    std::string output_column_name, const ColdStartConfig& config,
-    uint32_t seed)
-    : TextAugmentationBase(
-          std::move(strong_column_names), std::move(weak_column_names),
-          std::move(label_column_name), std::move(output_column_name), seed),
+    std::vector<std::string> weak_column_names, std::string output_column_name,
+    const ColdStartConfig& config, uint32_t seed)
+    : TextAugmentationBase(std::move(strong_column_names),
+                           std::move(weak_column_names),
+                           std::move(output_column_name), seed),
       _weak_min_len(config.weak_min_len),
       _weak_max_len(config.weak_max_len),
       _weak_chunk_len(config.weak_chunk_len),
@@ -113,7 +112,13 @@ Phrase ColdStartTextAugmentation::getStrongPhrase(
     const std::string& strong_text_in, std::optional<uint32_t> max_len) {
   std::string strong_text = text::replacePunctuation(strong_text_in, ' ');
   strong_text = text::stripWhitespace(strong_text);
+
+  // Note: This is slightly different than the original cold start
+  // implementation. This tokenization/split function splits on any character
+  // that isn't alpha-numeric. The old version just split on whitespace. This
+  // can cause slightly different results with certain special characters.
   Phrase strong_phrase = text::tokenizeSentence(strong_text);
+
   if (max_len) {
     if (strong_phrase.size() > max_len.value()) {
       strong_phrase.resize(max_len.value());

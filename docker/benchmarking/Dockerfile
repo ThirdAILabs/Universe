@@ -35,6 +35,8 @@ RUN apt update && DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends 
     # Install sudo
     && apt-get update && apt-get -y install sudo
 
+RUN python3 -m pip install --upgrade pip 
+
 # This means the Dockerfile needs to be built from the root directory
 # This will also copy everything, including files not tracked by git (build
 # files, venv, etc). 

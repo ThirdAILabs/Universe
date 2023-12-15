@@ -359,7 +359,6 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       transformations_submodule, "ColdStartText")
       .def(py::init([](std::vector<std::string> strong_column_names,
                        std::vector<std::string> weak_column_names,
-                       std::string label_column_name,
                        std::string output_column_name,
                        std::optional<uint32_t> weak_min_len,
                        std::optional<uint32_t> weak_max_len,
@@ -371,15 +370,14 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                        uint32_t seed) {
              return std::make_shared<ColdStartTextAugmentation>(
                  std::move(strong_column_names), std::move(weak_column_names),
-                 std::move(label_column_name), std::move(output_column_name),
+                 std::move(output_column_name),
                  ColdStartConfig(weak_min_len, weak_max_len, weak_chunk_len,
                                  weak_sample_num_words, weak_sample_reps,
                                  strong_max_len, strong_sample_num_words),
                  seed);
            }),
            py::arg("strong_columns"), py::arg("weak_columns"),
-           py::arg("label_column"), py::arg("output_column"),
-           py::arg("weak_min_len") = std::nullopt,
+           py::arg("output_column"), py::arg("weak_min_len") = std::nullopt,
            py::arg("weak_max_len") = std::nullopt,
            py::arg("weak_chunk_len") = std::nullopt,
            py::arg("weak_sample_num_words") = std::nullopt,
@@ -430,10 +428,9 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
              std::shared_ptr<VariableLengthColdStart>>(
       transformations_submodule, "VariableLengthColdStart")
       .def(py::init<std::vector<std::string>, std::vector<std::string>,
-                    std::string, std::string, VariableLengthConfig, uint32_t>(),
+                    std::string, VariableLengthConfig, uint32_t>(),
            py::arg("strong_columns"), py::arg("weak_columns"),
-           py::arg("label_column"), py::arg("output_column"),
-           py::arg("config") = VariableLengthConfig(),
+           py::arg("output_column"), py::arg("config") = VariableLengthConfig(),
            py::arg("seed") = global_random::nextSeed())
       .def("augment_single_row", &VariableLengthColdStart::augmentSingleRow,
            py::arg("strong_text"), py::arg("weak_text"),
