@@ -10,7 +10,7 @@ from ndb_utils import create_simple_dataset
 from thirdai import bolt, demos, neural_db
 from thirdai.neural_db import documents
 from thirdai.neural_db.documents import DocumentDataSource
-from thirdai.neural_db.sharded_documents import ShardedDataSource, DataLoadMultiplexer
+from thirdai.neural_db.sharded_documents import DataLoadMultiplexer, ShardedDataSource
 
 # We don't have a test on just the Document interface since it is just an
 # interface.
