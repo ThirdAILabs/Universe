@@ -656,7 +656,6 @@ class NeuralDB:
                 samples=[query],
                 entities=[matching_entities],
                 n_results=top_k_to_search,
-                aggregate_rank=aggregate_rank,
             )[0]
         else:
             result_ids = self._savable_state.model.infer_labels(
