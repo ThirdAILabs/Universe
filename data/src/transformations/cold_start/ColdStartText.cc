@@ -227,7 +227,7 @@ std::vector<std::string> ColdStartTextAugmentation::augmentMapInput(
   }
 
   // we pass the _seed here as the row id salt because we don't know the row_id
-  return augmentSingleRow(strong_text, weak_text, /* row_id_salt= */ s_seed);
+  return augmentSingleRow(strong_text, weak_text, /* row_id_salt= */ _seed);
 }
 
 }  // namespace thirdai::data
