@@ -73,7 +73,7 @@ class DataLoadMultiplexer:
                 data_source, label_to_segment_map
             )
         else:
-            indices = [i for i, _ in enumerate(data_source._get_line_iterator())]
+            indices = list(range(data_source.size))
             random.shuffle(indices)
             for index, randomised_index in enumerate(indices):
                 label_to_segment_map[index].append(randomised_index % self.num_segments)
