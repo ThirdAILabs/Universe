@@ -76,6 +76,12 @@ class DataLoadMultiplexer:
                 # TODO(pratik/shubh): Having list as map values is for experiments,
                 # we would be just having one elment in list for each index. We should
                 # remove this going forward.
+                if current_label not in label_to_segment_map:
+                    raise ValueError(
+                        "Label '{}' is not in 'label_to_segment_map'. Ensure it is included if sharding by index.".format(
+                            current_label
+                        )
+                    )
                 current_segment = label_to_segment_map[current_label][-1]
                 segment_objects[current_segment].write("\n" + data)
 
