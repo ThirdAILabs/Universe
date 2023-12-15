@@ -1,58 +1,62 @@
 import json
 import os
-import pickle
 from pathlib import Path
-
-import pandas as pd
 from thirdai import bolt
+from typing import Union
 
 from ..documents import DocumentDataSource
 from ..utils import pickle_to, unpickle_from
-from .checkpoint_config import CheckpointConfig
+from .checkpoint_config import DirConfig
 from .training_progress_tracker import NeuralDbProgressTracker
 
 
-class TrainingProgressManager(bolt.train.callbacks.Callback):
+class TrainingProgressManager(bolt.train.callbacks.Callback):  # type: ignore
     def __init__(
         self,
         tracker: NeuralDbProgressTracker,
-        checkpoint_config: CheckpointConfig = None,
+        dir_config: Union[DirConfig, None] = None,
         neuraldb_mach_model=None,
         intro_source=None,
         train_source=None,
-        is_resumed=False,
+        checkpoint_interval: int = 1,
     ):
         super().__init__()
         self.tracker = tracker
-        self.checkpoint_config = checkpoint_config
-        self._is_resumed = is_resumed
+        self.dir_config = dir_config
 
         self._neuraldb_mach_model = neuraldb_mach_model
         self._intro_source = intro_source
         self._train_source = train_source
+        self.checkpoint_interval = checkpoint_interval
 
-        if self.checkpoint_config:
+        if self.dir_config:
             os.makedirs(
-                os.path.join(self.checkpoint_config.checkpoint_dir),
+                os.path.join(self.dir_config.checkpoint_dir),
                 exist_ok=True,
             )
 
     def on_epoch_end(self):
         self.tracker.current_epoch_number += 1
+        if self.tracker.current_epoch_number % self.checkpoint_interval == 0:
+            self.checkpoint_tracker()
+            self.checkpoint_model()
+
+    def on_train_end(self):
         self.checkpoint_tracker()
         self.checkpoint_model()
 
     @property
     def neuraldb_mach_model(self):
+        if self._neuraldb_mach_model is None:
+            self._neuraldb_mach_model = self.load_model()
+
+        if self._neuraldb_mach_model is None:
+            raise Exception("Invalid NeuralDB Model in Training Progress Manager.")
         return self._neuraldb_mach_model
 
     @neuraldb_mach_model.setter
     def neuraldb_mach_model(self, model):
         self._neuraldb_mach_model = model
-
-    @property
-    def is_resumed(self):
-        return self._is_resumed
 
     @property
     def intro_source(self):
@@ -63,44 +67,45 @@ class TrainingProgressManager(bolt.train.callbacks.Callback):
         return self.load_train_source()
 
     def checkpoint_model(self):
-        if self._neuraldb_mach_model and self.checkpoint_config:
+        # We do not use the property attribute for accessing the underlying neuraldb_mach_model because calling it also loads it.
+        if self._neuraldb_mach_model and self.dir_config:
+            print("Checkpoint Model")
             pickle_to(
                 obj=self._neuraldb_mach_model,
-                filepath=self.checkpoint_config.neuraldb_model_checkpoint_location,
+                filepath=self.dir_config.neuraldb_model_checkpoint_location,
             )
 
     def checkpoint_sources(self):
-        if self.checkpoint_config:
+        if self.dir_config:
             if self._intro_source:
+                print("Checkpoint Intro Source")
                 dataframe = self._intro_source.dataframe()
                 dataframe.to_csv(
-                    self.checkpoint_config.intro_source_checkpoint_location,
+                    self.dir_config.intro_source_checkpoint_location,
                     index=False,
                 )
-                with open(
-                    self.checkpoint_config.intro_source_arguments_location, "w"
-                ) as f:
+                with open(self.dir_config.intro_source_arguments_location, "w") as f:
                     json.dump(self._intro_source.initialization_args(), f, indent=4)
 
             if self._train_source:
+                print("Checkpoint Train source")
                 dataframe = self._train_source.dataframe()
                 dataframe.to_csv(
-                    self.checkpoint_config.train_source_checkpoint_location, index=False
+                    self.dir_config.train_source_checkpoint_location, index=False
                 )
-                with open(
-                    self.checkpoint_config.train_source_arguments_location, "w"
-                ) as f:
+                with open(self.dir_config.train_source_arguments_location, "w") as f:
                     json.dump(self._train_source.initialization_args(), f, indent=4)
 
     def checkpoint_tracker(self):
-        if self.checkpoint_config:
-            with open(self.checkpoint_config.intro_args_checkpoint_location, "w") as f:
+        if self.dir_config:
+            print("Checkpointing Tracker")
+            with open(self.dir_config.intro_args_checkpoint_location, "w") as f:
                 json.dump(self.tracker.introduce_arguments(), f, indent=4)
 
-            with open(self.checkpoint_config.train_args_checkpoint_location, "w") as f:
+            with open(self.dir_config.train_args_checkpoint_location, "w") as f:
                 json.dump(self.tracker.training_arguments(), f, indent=4)
 
-            with open(self.checkpoint_config.train_state_checkpoint_location, "w") as f:
+            with open(self.dir_config.train_state_checkpoint_location, "w") as f:
                 json.dump(self.tracker.training_state(), f, indent=4)
 
     def full_checkpoint(self):
@@ -108,21 +113,28 @@ class TrainingProgressManager(bolt.train.callbacks.Callback):
         self.checkpoint_sources()
         self.checkpoint_tracker()
 
+    def make_insert_checkpoint(self):
+        if self.is_insert_completed:
+            return
+
+        self.is_insert_completed = True
+        self.full_checkpoint()
+
     def load_model(self):
-        if self.checkpoint_config and not self.neuraldb_mach_model:
+        if self.dir_config and not self._neuraldb_mach_model:
             try:
                 neural_db_mach_model = unpickle_from(
-                    filepath=self.checkpoint_config.neuraldb_model_checkpoint_location
+                    filepath=self.dir_config.neuraldb_model_checkpoint_location
                 )
-                self.neuraldb_mach_model = neural_db_mach_model
+                self._neuraldb_mach_model = neural_db_mach_model
+                print("loaded a valid model")
             except:
-                print(
-                    "No Model found in the checkpoint directory"
-                    f" {self.checkpoint_config.checkpoint_dir}"
+                raise Exception(
+                    "Could not model. Ensure that the model checkpoint is valid"
                 )
-                self.neuraldb_mach_model = None
-        return self.neuraldb_mach_model
+        return self._neuraldb_mach_model
 
+    @staticmethod
     def load_source(
         arguments_location: Path, checkpoint_location: Path
     ) -> DocumentDataSource:
@@ -137,19 +149,19 @@ class TrainingProgressManager(bolt.train.callbacks.Callback):
         return source
 
     def load_intro_source(self):
-        if not self._intro_source:
+        if not self._intro_source and self.dir_config:
             intro_source = TrainingProgressManager.load_source(
-                arguments_location=self.tracker.intro_source_arguments_location,
-                checkpoint_location=self.tracker.intro_source_checkpoint_location,
+                arguments_location=self.dir_config.intro_source_arguments_location,
+                checkpoint_location=self.dir_config.intro_source_checkpoint_location,
             )
             self._intro_source = intro_source
         return self._intro_source
 
     def load_train_source(self):
-        if not self._train_source:
+        if not self._train_source and self.dir_config:
             train_source = TrainingProgressManager.load_source(
-                arguments_location=self.tracker.train_source_arguments_location,
-                checkpoint_location=self.tracker.train_source_checkpoint_location,
+                arguments_location=self.dir_config.train_source_arguments_location,
+                checkpoint_location=self.dir_config.train_source_checkpoint_location,
             )
             self._train_source = train_source
         return self._train_source
@@ -171,10 +183,14 @@ class TrainingProgressManager(bolt.train.callbacks.Callback):
         max_epochs: int,
         freeze_before_train: bool,
     ):
-        self.tracker.learning_rate = learning_rate
-        self.tracker.min_epochs = min_epochs
-        self.tracker.max_epochs = max_epochs
-        self.tracker.freeze_before_train = freeze_before_train
+        if self.tracker.learning_rate is None:
+            self.tracker.learning_rate = learning_rate
+        if self.tracker.min_epochs is None:
+            self.tracker.min_epochs = min_epochs
+        if self.tracker.max_epochs is None:
+            self.tracker.max_epochs = max_epochs
+        if self.tracker.freeze_before_train is None:
+            self.tracker.freeze_before_train = freeze_before_train
 
     @property
     def is_insert_completed(self):
@@ -185,9 +201,27 @@ class TrainingProgressManager(bolt.train.callbacks.Callback):
         self.tracker.is_insert_completed = value
 
     @property
-    def is_train_completed(self):
-        return self.tracker.is_train_completed
+    def is_training_completed(self):
+        return self.tracker.is_training_completed
 
-    @is_train_completed.setter
-    def is_train_completed(self, value):
-        self.tracker.is_train_completed = value
+    @is_training_completed.setter
+    def is_training_completed(self, value):
+        self.tracker.is_training_completed = value
+
+    @property
+    def min_epochs(self):
+        return self.tracker.min_epochs - self.tracker.current_epoch_number
+
+    @property
+    def max_epochs(self):
+        return self.tracker.max_epochs - self.tracker.current_epoch_number
+
+    def get_training_arguments(self):
+        return {
+            "min_epochs": self.min_epochs,
+            "max_epochs": self.max_epochs,
+            "learning_rate": self.tracker.learning_rate,
+            "freeze_before_train": self.tracker.freeze_before_train,
+            "max_in_memory_batches": self.tracker.max_in_memory_batches,
+            "training_progress_manager": self,
+        }

@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from ..utils import assert_file_exists
+from dataclasses import dataclass
 
 
 class DataSourceCheckpointConfig:
@@ -20,10 +21,10 @@ class DataSourceCheckpointConfig:
         assert_file_exists(self.source_arguments_location)
 
 
-class CheckpointConfig:
-    def __init__(self, parent_checkpoint_dir: Path, model_id: int):
+class DirConfig:
+    def __init__(self, checkpoint_dir: Path):
         # Checkpoint dir here refers to model specific directory
-        self.checkpoint_dir = parent_checkpoint_dir / str(model_id)
+        self.checkpoint_dir = checkpoint_dir
 
         self.neuraldb_model_checkpoint_location = self.checkpoint_dir / "model.udt"
         self.intro_datasource_config = DataSourceCheckpointConfig(
@@ -79,3 +80,22 @@ class CheckpointConfig:
         self.intro_datasource_config.assert_data_source_exists()
         self.train_datasource_config.assert_data_source_exists()
         assert_file_exists(self.neuraldb_model_checkpoint_location)
+
+
+@dataclass
+class CheckpointConfig:
+    checkpoint_dir: Path
+    resume_from_checkpoint: bool = False
+    checkpoint_interval: int = 1
+
+    def __post_init__(self):
+        if isinstance(self.checkpoint_dir, str):
+            self.checkpoint_dir = Path(self.checkpoint_dir)
+            return
+        if isinstance(self.checkpoint_dir, Path):
+            return
+        else:
+            raise TypeError(
+                "The 'checkpoint_dir' should be either a 'str' or 'pathlib.Path', but"
+                f" received: {type(self.checkpoint_dir)}"
+            )

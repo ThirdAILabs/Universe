@@ -273,7 +273,7 @@ class NeuralDbProgressTracker:
         return self._train_config.current_epoch_number
 
     @current_epoch_number.setter
-    def current_epoch_number(self, current_epoch_number: bool):
+    def current_epoch_number(self, current_epoch_number: int):
         if isinstance(current_epoch_number, int):
             self._train_config.current_epoch_number = current_epoch_number
         else:

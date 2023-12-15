@@ -8,8 +8,8 @@ from thirdai import bolt, data
 from .documents import DocumentDataSource
 from .training_state.factory import Factory
 from .training_state.training_callback import TrainingProgressManager
-from .training_state.training_progress_tracker import NeuralDbProgressTracker
-from .utils import clean_text, pickle_to, unpickle_from
+from .training_state.checkpoint_config import CheckpointConfig
+from .utils import clean_text
 
 InferSamples = List
 Predictions = Sequence
@@ -52,6 +52,7 @@ class Model:
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
+        checkpoint_config: CheckpointConfig = None,
     ) -> None:
         raise NotImplementedError()
 
@@ -429,14 +430,17 @@ class Mach(Model):
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
-        checkpoint_dir: Path = None,
-        model_id=0,
-        resume_from_checkpoint=False,
+        checkpoint_config: CheckpointConfig = None,
     ) -> None:
         """
         override_number_classes : The number of classes for the Mach model
 
         Note: Given the datasources for introduction and training, we initialize a Mach model that has number_classes set to the size of introduce documents. But if we want to use this Mach model in our mixture of Models, this will not work because each Mach will be initialized with number of classes equal to the size of the datasource shard. Hence, we add override_number_classes parameters which if set, will initialize Mach Model with number of classes passed by the Mach Mixture.
+
+        training_progress_manager backs up as both a callback object that can be used to maintain the checkpoint while training
+        and the source of truth for the current mach object. If we do not resume from a checkpoint, then the manager holds the current Mach object and calling load_model just returns it. Otherwise, the manager sets it's model attribute as None which means that calling load_model will first load the model from the checkpoint and then return the checkpointed model after unpickling it.
+
+        This is designed the way it is to make sure that
         """
         training_progress_manager = Factory.make_training_progress_manager(
             model=self,
@@ -447,12 +451,15 @@ class Mach(Model):
             num_buckets_to_sample=num_buckets_to_sample,
             max_in_memory_batches=max_in_memory_batches,
             override_number_classes=override_number_classes,
-            checkpoint_dir=checkpoint_dir,
-            model_id=model_id,
-            resume_from_checkpoint=resume_from_checkpoint,
+            checkpoint_config=checkpoint_config,
         )
+        # We will checkpoint the document sources, model, and the training progress manager state here. Note that in case of resume checkpoint, the model is not saved. The training manager takes care of what variables it need to save at what point.
+        training_progress_manager.full_checkpoint()
+        model: Mach = training_progress_manager.neuraldb_mach_model
+        self = model
 
         if self.model is None:
+            print("Model is None initializing")
             self.id_col = intro_documents.id_column
             self.model = self.model_from_scratch(
                 intro_documents, number_classes=override_number_classes
@@ -463,6 +470,7 @@ class Mach(Model):
                 train_documents.size
             )
         else:
+            print("Inside insert loop")
             learning_rate = 0.001
             # Freezing at the beginning prevents the model from forgetting
             # things it learned from pretraining.
@@ -470,80 +478,43 @@ class Mach(Model):
             # Less epochs here since it converges faster when trained on a base
             # model.
             if not training_progress_manager.is_insert_completed:
+                print("Insert is not completed")
                 intro_documents = training_progress_manager.intro_source
                 self.introduce_documents(
                     intro_documents=intro_documents,
                     fast_approximation=training_progress_manager.tracker.fast_approximation,
                     num_buckets_to_sample=training_progress_manager.tracker.num_buckets_to_sample,
                 )
+            else:
+                print("Insert was already completed")
             min_epochs, max_epochs = autotune_from_base_min_max_epochs(
                 train_documents.size
             )
 
-        # Once we have introduced the documents, we should checkpoint
-        training_progress_manager.is_insert_completed = True
-        if not training_progress_manager.is_resumed:
-            training_progress_manager.set_training_arguments(
-                learning_rate=learning_rate,
-                min_epochs=min_epochs,
-                max_epochs=max_epochs,
-                freeze_before_train=freeze_before_train,
-            )
-        training_progress_manager.full_checkpoint()
+        # Once we have introduced the documents, we should checkpoint. set_training_arguments only sets the variable which are unset. If we are resuming from a checkpoint, then we need to only set the variables which are None. For ex, if insert failed, then while resuming from a checkpoint, we would need to set all of them.
+        training_progress_manager.set_training_arguments(
+            learning_rate=learning_rate,
+            min_epochs=min_epochs,
+            max_epochs=max_epochs,
+            freeze_before_train=freeze_before_train,
+        )
+        # This function call checks whether insert has already been completed (could be the case when resumes from a checkpoint). Does not checkpoint if insert was completed when we resumed from a checkpoint. Checkpoints in all other cases.
+        training_progress_manager.make_insert_checkpoint()
 
-        if not training_progress_manager.is_insert_completed:
+        if not training_progress_manager.is_training_completed:
             train_documents = training_progress_manager.train_source
-            min_epochs = (
-                training_progress_manager.tracker.min_epochs
-                - training_progress_manager.tracker.current_epoch_number
-            )
-            max_epochs = (
-                training_progress_manager.tracker.max_epochs
-                - training_progress_manager.tracker.current_epoch_number
-            )
+            train_arguments = training_progress_manager.get_training_arguments()
             self.train_documents(
                 train_documents=train_documents,
-                min_epochs=min_epochs,
-                max_epochs=max_epochs,
                 metric="hash_precision@5",
-                learning_rate=training_progress_manager.tracker.learning_rate,
                 acc_to_stop=0.95,
                 on_progress=on_progress,
-                freeze_before_train=training_progress_manager.tracker.freeze_before_train,
                 cancel_state=cancel_state,
-                max_in_memory_batches=training_progress_manager.tracker.max_in_memory_batches,
                 variable_length=variable_length,
-                training_progress_manager=training_progress_manager,
+                **train_arguments,
             )
-
-    def resume_from_checkpoint(self, checkpoint_dir: Path, model_id: int):
-        training_progress_tracker = NeuralDbProgressTracker(
-            parent_checkpoint_dir=checkpoint_dir, model_id=model_id, from_scratch=False
-        )
-        self: Mach = unpickle_from(
-            training_progress_tracker.neuraldb_model_checkpoint_location
-        )
-        training_progress_manager = TrainingProgressManager(
-            tracker=training_progress_tracker,
-            neuraldb_mach_model=self,
-        )
-
-        if not training_progress_manager.tracker.is_insert_completed:
-            intro_source = training_progress_manager.load_intro_source()
-            self.introduce_documents(
-                intro_documents=intro_source,
-                fast_approximation=training_progress_manager.tracker.fast_approximation,
-                num_buckets_to_sample=training_progress_manager.tracker.num_buckets_to_sample,
-            )
-
-        if not training_progress_manager.tracker.is_training_completed:
-            train_source = training_progress_manager.load_train_source()
-            self.train_documents(
-                train_documents=train_source,
-                min_epochs=training_progress_manager.tracker.min_epochs,
-                max_epochs=training_progress_manager.tracker.max_epochs,
-                metric="hash_precision@5",
-            )
+        else:
+            print("Training was already completed")
 
     def add_balancing_samples(self, documents: DocumentDataSource):
         samples = make_balancing_samples(documents)

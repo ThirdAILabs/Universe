@@ -8,6 +8,8 @@ from .documents import DocumentDataSource
 from .models import CancelState, Mach, Model
 from .sharded_documents import ShardedDataSource
 from .utils import requires_condition
+from .training_state.checkpoint_config import CheckpointConfig
+from .training_state.factory import Factory
 
 InferSamples = List
 Predictions = Sequence
@@ -112,7 +114,7 @@ class MachMixture(Model):
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
-        checkpoint_dir: Path = None,
+        checkpoint_config: CheckpointConfig = None,
     ) -> None:
         # We need the original number of classes from the original data source so that we can initialize the Mach models this mixture will have
         number_classes = intro_documents.size
@@ -135,8 +137,21 @@ class MachMixture(Model):
 
         self.n_ids += intro_documents.size
 
-        for model_id, (intro_shard, train_shard, model) in enumerate(
-            zip(introduce_data_sources, train_data_sources, self.models)
+        modelwise_checkpoint_configs = (
+            Factory.make_modelwise_checkpoint_configs_from_config(
+                config=checkpoint_config, number_models=self.number_models
+            )
+        )
+        for model_id, (
+            intro_shard,
+            train_shard,
+            model,
+        ) in enumerate(
+            zip(
+                introduce_data_sources,
+                train_data_sources,
+                self.models,
+            )
         ):
             model.index_documents(
                 intro_documents=intro_shard,
@@ -149,8 +164,7 @@ class MachMixture(Model):
                 max_in_memory_batches=max_in_memory_batches,
                 override_number_classes=number_classes,
                 variable_length=variable_length,
-                checkpoint_dir=checkpoint_dir,
-                model_id=model_id if checkpoint_dir else None,
+                checkpoint_config=modelwise_checkpoint_configs[model_id],
             )
 
     def delete_entities(self, entities) -> None:
