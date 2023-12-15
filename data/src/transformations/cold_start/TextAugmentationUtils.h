@@ -2,6 +2,7 @@
 
 #include <data/src/ColumnMap.h>
 #include <data/src/transformations/Transformation.h>
+#include <random>
 
 namespace thirdai::data::cold_start {
 
@@ -19,7 +20,7 @@ class TextAugmentationBase : public Transformation {
 
   virtual std::vector<std::string> augmentSingleRow(
       const std::string& strong_text, const std::string& weak_text,
-      uint32_t augment_seed) const = 0;
+      uint32_t row_id) const = 0;
 
  protected:
   std::vector<std::string> _strong_column_names;
@@ -36,7 +37,7 @@ class TextAugmentationBase : public Transformation {
  */
 PhraseCollection mergeStrongWithWeak(
     const PhraseCollection& weak_phrases, const Phrase& strong_phrase,
-    std::optional<uint32_t> strong_sample_num_words, uint32_t seed);
+    std::optional<uint32_t> strong_sample_num_words, std::mt19937& rng);
 
 /**
  * Randomly deletes elements from each phrase, resulting in new phrases.
@@ -48,14 +49,7 @@ PhraseCollection mergeStrongWithWeak(
  */
 PhraseCollection sampleFromPhrases(const PhraseCollection& phrases,
                                    uint32_t words_per_sampled_phrase,
-                                   uint32_t n_sampled_phrases, uint32_t seed);
-
-/**
- * Returns a single phrase that takes in the concatenated string of strong
- * columns and returns a strong phrase (this will just be a cleaned version of
- * the input string, possibly length restricted).
- */
-Phrase getStrongPhrase(const std::string& strong_text_in,
-                       std::optional<uint32_t> max_len = std::nullopt);
+                                   uint32_t n_sampled_phrases,
+                                   std::mt19937& rng);
 
 }  // namespace thirdai::data::cold_start

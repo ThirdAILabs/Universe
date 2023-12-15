@@ -37,21 +37,9 @@ ColumnMap TextAugmentationBase::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr exception = nullptr;
 
-  // We want each row to have a different seed so each perturbation/augmentation
-  // is different. We also want these to be dependent on the _seed given. We
-  // also want two separate initializations of this augmentation to have
-  // different perturbations (so we can't just pass in the row_id to
-  // augmentSingleRow and use that as a seed). Lastly we can't share an
-  // std::mt19937 in a pragma, leaving us with pregenerating the seeds.
-  std::mt19937 rng(_seed);
-  std::vector<uint32_t> augment_seeds(label_column->numRows());
-  for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
-    augment_seeds[row_id] = rng();
-  }
-
 #pragma omp parallel for default(none)                               \
     shared(label_column, strong_column, weak_column, augmented_data, \
-           augmented_labels, exception, augment_seeds)
+           augmented_labels, exception)
   for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
     try {
       std::string labels = label_column->value(row_id);
@@ -59,7 +47,7 @@ ColumnMap TextAugmentationBase::apply(ColumnMap columns, State& state) const {
       std::string weak_text = weak_column->value(row_id);
 
       std::vector<std::string> augmented_samples =
-          augmentSingleRow(strong_text, weak_text, augment_seeds[row_id]);
+          augmentSingleRow(strong_text, weak_text, row_id);
 
 #pragma omp critical
       {
@@ -98,7 +86,7 @@ ColumnMap TextAugmentationBase::apply(ColumnMap columns, State& state) const {
 
 PhraseCollection mergeStrongWithWeak(
     const PhraseCollection& weak_phrases, const Phrase& strong_phrase,
-    std::optional<uint32_t> strong_sample_num_words, uint32_t seed) {
+    std::optional<uint32_t> strong_sample_num_words, std::mt19937& rng) {
   if (weak_phrases.empty()) {
     return {strong_phrase};
   }
@@ -110,7 +98,7 @@ PhraseCollection mergeStrongWithWeak(
     downsampled_strong_phrases = sampleFromPhrases(
         /* phrases= */ {strong_phrase},
         /* words_per_sampled_phrase= */ strong_sample_num_words.value(),
-        /* n_sampled_phrases= */ weak_phrases.size(), seed);
+        /* n_sampled_phrases= */ weak_phrases.size(), rng);
   }
 
   PhraseCollection output_phrases(weak_phrases.size());
@@ -131,7 +119,8 @@ PhraseCollection mergeStrongWithWeak(
 
 PhraseCollection sampleFromPhrases(const PhraseCollection& phrases,
                                    uint32_t words_per_sampled_phrase,
-                                   uint32_t n_sampled_phrases, uint32_t seed) {
+                                   uint32_t n_sampled_phrases,
+                                   std::mt19937& rng) {
   // Only iterate over the original phrases, as we append new ones to the end.
   if (n_sampled_phrases == 0) {
     throw std::invalid_argument(
@@ -139,7 +128,6 @@ PhraseCollection sampleFromPhrases(const PhraseCollection& phrases,
         "must be greater than 0.");
   }
   PhraseCollection output_phrases;
-  std::mt19937 rng(seed);
   for (const auto& phrase : phrases) {
     if (phrase.size() > words_per_sampled_phrase) {
       // Then we can downsample some sub-phrases.
@@ -161,19 +149,6 @@ PhraseCollection sampleFromPhrases(const PhraseCollection& phrases,
     }
   }
   return output_phrases;
-}
-
-Phrase getStrongPhrase(const std::string& strong_text_in,
-                       std::optional<uint32_t> max_len) {
-  std::string strong_text = text::replacePunctuation(strong_text_in, ' ');
-  strong_text = text::stripWhitespace(strong_text);
-  Phrase strong_phrase = text::tokenizeSentence(strong_text);
-  if (max_len) {
-    if (strong_phrase.size() > max_len.value()) {
-      strong_phrase.resize(max_len.value());
-    }
-  }
-  return strong_phrase;
 }
 
 }  // namespace thirdai::data::cold_start

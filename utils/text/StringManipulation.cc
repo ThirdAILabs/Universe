@@ -109,9 +109,8 @@ std::vector<std::string> wordLevelCharKGrams(
   return all_char_k_grams;
 }
 
-std::unordered_set<size_t> nUniqueRandomInt(
-    size_t n, size_t range,
-    std::mt19937 rng = std::mt19937(global_random::nextSeed())) {
+std::unordered_set<size_t> nUniqueRandomInt(size_t n, size_t range,
+                                            std::mt19937& rng) {
   std::uniform_int_distribution<size_t> dist(0, range - 1);
 
   std::unordered_set<size_t> indices;
@@ -126,7 +125,7 @@ std::unordered_set<size_t> nUniqueRandomInt(
 }
 
 std::string deleteRandomCharacters(const std::string& input,
-                                   size_t num_to_delete, std::mt19937 rng) {
+                                   size_t num_to_delete, std::mt19937& rng) {
   num_to_delete = std::min(num_to_delete, input.size());
 
   auto indices =
@@ -145,7 +144,7 @@ std::string deleteRandomCharacters(const std::string& input,
 
 std::string duplicateRandomCharacters(const std::string& input,
                                       size_t num_to_duplicate,
-                                      std::mt19937 rng) {
+                                      std::mt19937& rng) {
   num_to_duplicate = std::min(num_to_duplicate, input.size());
 
   auto indices = nUniqueRandomInt(/* n= */ num_to_duplicate,
@@ -165,7 +164,7 @@ std::string duplicateRandomCharacters(const std::string& input,
 
 std::string replaceRandomCharactersWithSpaces(const std::string& input,
                                               size_t num_to_replace,
-                                              std::mt19937 rng) {
+                                              std::mt19937& rng) {
   num_to_replace = std::min(num_to_replace, input.size());
 
   auto indices =
@@ -185,7 +184,7 @@ std::string replaceRandomCharactersWithSpaces(const std::string& input,
 }
 
 std::string replaceRandomCharactersWithKeyboardAdjacents(
-    const std::string& input, size_t num_to_replace, std::mt19937 rng) {
+    const std::string& input, size_t num_to_replace, std::mt19937& rng) {
   num_to_replace = std::min(num_to_replace, input.size());
 
   auto indices = nUniqueRandomInt(/* n= */ num_to_replace,
@@ -222,7 +221,7 @@ std::string perturbCharacters(const std::string& input,
                               size_t chars_replace_with_space,
                               size_t chars_deleted, size_t chars_duplicated,
                               size_t chars_replace_with_adjacents,
-                              std::mt19937 rng) {
+                              std::mt19937& rng) {
   std::string result = input;
 
   if (chars_replace_with_space) {

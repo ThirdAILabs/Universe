@@ -226,14 +226,14 @@ def default_start_columns():
 
 def many_perturbations_augmentation(seed=81):
     return default_augmentation(
-        word_removal_probability=0.5,
-        stopword_removal_probability=0.5,
-        stopword_insertion_probability=0.5,
+        word_removal_probability=0,
+        stopword_removal_probability=0,
+        stopword_insertion_probability=0,
         word_perturbation_probability=0.5,
-        chars_replace_with_space=1,
-        chars_deleted=1,
-        chars_duplicated=1,
-        chars_replace_with_adjacents=1,
+        chars_replace_with_space=0,
+        chars_deleted=0,
+        chars_duplicated=0,
+        chars_replace_with_adjacents=0,
         seed=seed,
     )
 
@@ -262,3 +262,32 @@ def test_vlcs_different_augmentations_with_different_seeds():
     columns2 = augmentation2(columns)
 
     assert columns1["OUTPUT"].data() != columns2["OUTPUT"].data()
+
+
+def test_vlcs_two_rows_with_same_augmentations_are_different():
+    augmentation = many_perturbations_augmentation()
+
+    columns = data.ColumnMap(
+        {
+            "STRONG": data.columns.StringColumn(
+                [
+                    "Some strong text",
+                    "Some strong text",
+                ]
+            ),
+            "WEAK": data.columns.StringColumn(
+                [
+                    "A paragraph with some shenanigans",
+                    "A paragraph with some shenanigans",
+                ]
+            ),
+            "LABELS": data.columns.StringColumn(["0", "1"]),
+        }
+    )
+    columns = augmentation(columns)
+
+    outputs = columns["OUTPUT"].data()
+    print(outputs)
+    deduplicated_outputs = set(outputs)
+    
+    assert len(outputs) == len(deduplicated_outputs)

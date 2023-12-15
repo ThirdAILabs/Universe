@@ -58,31 +58,34 @@ class VariableLengthColdStart : public cold_start::TextAugmentationBase {
    */
   std::vector<std::string> augmentSingleRow(const std::string& strong_text,
                                             const std::string& weak_text,
-                                            uint32_t augment_seed) const final;
+                                            uint32_t row_id) const final;
 
  private:
+  Phrase convertTextToPhrase(std::string string) const;
+
   /**
    * Returns a set of covering samples and random slices according to the
    * parameters specified at construction time.
    */
-  PhraseCollection getWeakPhrases(std::string weak_text) const;
+  PhraseCollection getWeakPhrases(std::string weak_text,
+                                  std::mt19937& rng) const;
 
   static void addCoveringPhrases(const Phrase& words, PhraseCollection& phrases,
                                  size_t min_len, size_t max_len,
                                  std::optional<size_t> max_covering_samples,
-                                 uint32_t seed);
+                                 std::mt19937& rng);
 
   static void addRandomSlicePhrases(const Phrase& words,
                                     PhraseCollection& phrases, size_t min_len,
                                     std::optional<size_t> max_len_opt,
-                                    uint32_t num_slices, uint32_t seed);
+                                    uint32_t num_slices, std::mt19937& rng);
 
   static std::string convertPhraseToText(const std::vector<std::string>& phrase,
                                          float stopword_removal_probability,
                                          float stopword_insertion_probability,
                                          float word_removal_probability,
                                          float word_perturbation_probability,
-                                         std::mt19937 rng);
+                                         std::mt19937& rng);
 
   VariableLengthConfig _config;
 };

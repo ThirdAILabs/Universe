@@ -149,7 +149,7 @@ class ColdStartTextAugmentation final
    */
   std::vector<std::string> augmentSingleRow(const std::string& strong_text,
                                             const std::string& weak_text,
-                                            uint32_t augment_seed) const final;
+                                            uint32_t row_id) const final;
 
  private:
   std::optional<uint32_t> _weak_min_len;
@@ -161,10 +161,18 @@ class ColdStartTextAugmentation final
   std::optional<uint32_t> _strong_sample_num_words;
 
   /**
+   * Returns a single phrase that takes in the concatenated string of strong
+   * columns and returns a strong phrase (this will just be a cleaned version of
+   * the input string, possibly length restricted).
+   */
+  static Phrase getStrongPhrase(const std::string& strong_text_in,
+                                std::optional<uint32_t> max_len);
+
+  /**
    * Returns a set of natural and chunked phrases from s, according to the weak
    * phrase options selected by the user.
    */
-  PhraseCollection getWeakPhrases(std::string s) const;
+  PhraseCollection getWeakPhrases(std::string s, std::mt19937& rng) const;
 
   /**
    * Throws an error message if the parameter has a value <= 0. The error
