@@ -289,5 +289,5 @@ def test_vlcs_two_rows_with_same_augmentations_are_different():
     outputs = columns["OUTPUT"].data()
     print(outputs)
     deduplicated_outputs = set(outputs)
-    
+
     assert len(outputs) == len(deduplicated_outputs)
