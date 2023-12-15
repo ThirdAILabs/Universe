@@ -29,7 +29,7 @@ class DataLoadMultiplexer:
             Segments the data based on a label-to-segment mapping, writing each segment to
             a temporary CSV file.
 
-        create_segments_with_data_source(data_source, label_to_segment_map, shard_using_index):
+        create_segments_with_data_source(data_source, label_to_segment_map, is_index_empty):
             Creates data segments based on the provided data source and label mapping,
             optionally sharding the data using an index.
 
@@ -101,9 +101,9 @@ class DataLoadMultiplexer:
         )
 
     def create_segments_with_data_source(
-        self, data_source, label_to_segment_map, shard_using_index
+        self, data_source, label_to_segment_map, is_index_empty
     ):
-        if not shard_using_index:
+        if is_index_empty:
             indices = list(range(data_source.size))
             random.shuffle(indices)
             for index, randomised_index in enumerate(indices):
@@ -130,7 +130,7 @@ class ShardedDataSource:
             Note:
                 Updates the label index with label_id -> shard index map
 
-        shard_using_index:
+        is_index_empty:
             Args:
                 data_source : DocumentDataSource
                     Data source to shard
@@ -213,7 +213,7 @@ class ShardedDataSource:
             shard_objects,
             self.label_to_segment_map,
         ) = self.data_load_multiplexer.create_segments_with_data_source(
-            self.data_source, self.label_to_segment_map, shard_using_index=False
+            self.data_source, self.label_to_segment_map, is_index_empty=True
         )
 
         shards = ShardedDataSource._get_shards(
@@ -222,7 +222,7 @@ class ShardedDataSource:
         return shards
 
     @staticmethod
-    def shard_using_index(
+    def is_index_empty(
         data_source: DocumentDataSource,
         label_to_segment_map: defaultdict,
         number_shards: int,
@@ -239,7 +239,7 @@ class ShardedDataSource:
         (shard_names, shard_objects, _) = DataLoadMultiplexer(
             num_segments=number_shards, flush_frequency=flush_frequency
         ).create_segments_with_data_source(
-            data_source, label_to_segment_map, shard_using_index=True
+            data_source, label_to_segment_map, is_index_empty=False
         )
 
         return ShardedDataSource._get_shards(
