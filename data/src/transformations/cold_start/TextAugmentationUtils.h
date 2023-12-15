@@ -19,7 +19,7 @@ class TextAugmentationBase : public Transformation {
 
   virtual std::vector<std::string> augmentSingleRow(
       const std::string& strong_text, const std::string& weak_text,
-      uint32_t row_id) const = 0;
+      uint32_t row_id_salt) const = 0;
 
  protected:
   std::vector<std::string> _strong_column_names;

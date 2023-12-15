@@ -48,7 +48,7 @@ ColumnMap TextAugmentationBase::apply(ColumnMap columns, State& state) const {
       std::string weak_text = weak_column->value(row_id);
 
       std::vector<std::string> augmented_samples =
-          augmentSingleRow(strong_text, weak_text, row_id);
+          augmentSingleRow(strong_text, weak_text, /* row_id_salt= */ row_id);
 
 #pragma omp critical
       {

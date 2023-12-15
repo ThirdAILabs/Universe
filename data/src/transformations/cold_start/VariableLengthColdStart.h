@@ -58,7 +58,7 @@ class VariableLengthColdStart : public cold_start::TextAugmentationBase {
    */
   std::vector<std::string> augmentSingleRow(const std::string& strong_text,
                                             const std::string& weak_text,
-                                            uint32_t row_id) const final;
+                                            uint32_t row_id_salt) const final;
 
  private:
   Phrase convertTextToPhrase(std::string string) const;

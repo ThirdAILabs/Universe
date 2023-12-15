@@ -149,7 +149,7 @@ class ColdStartTextAugmentation final
    */
   std::vector<std::string> augmentSingleRow(const std::string& strong_text,
                                             const std::string& weak_text,
-                                            uint32_t row_id) const final;
+                                            uint32_t row_id_salt) const final;
 
  private:
   std::optional<uint32_t> _weak_min_len;
