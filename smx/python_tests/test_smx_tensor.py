@@ -80,3 +80,49 @@ def test_transpose(ndim):
     tensor = smx.transpose(smx.from_numpy(x), perm)
 
     assert np.array_equal(np.transpose(x, perm), tensor.numpy())
+
+
+def test_csr_tensor():
+    offsets = [0, 3, 7, 9, 13]
+    indices = [5, 3, 4, 7, 11, 19, 15, 6, 1, 16, 18, 0, 8]
+    values = [1, 2, 3, 1, 2, 3, 4, 1, 2, 1, 2, 3, 4]
+
+    tensor = smx.CsrTensor(offsets, indices, values, smx.Shape(4, 20))
+
+    assert np.array_equal(np.array(offsets), tensor.row_offsets.numpy())
+    assert np.array_equal(np.array(indices), tensor.col_indices.numpy())
+    assert np.array_equal(np.array(values), tensor.col_values.numpy())
+
+
+def test_csr_invalid_offsets():
+    bad_offsets = [
+        [0, 3, 7, 9, 12],
+        [1, 3, 7, 9, 13],
+        [0, 3, 7, 9, 14],
+        [0, 3, 7, 6, 14],
+    ]
+    indices = [5, 3, 4, 7, 11, 19, 15, 6, 1, 16, 18, 0, 8]
+    values = [1, 2, 3, 1, 2, 3, 4, 1, 2, 1, 2, 3, 4]
+
+    for offsets in bad_offsets:
+        with pytest.raises(RuntimeError):
+            smx.CsrTensor(offsets, indices, values, smx.Shape(4, 20))
+
+    with pytest.raises(RuntimeError):
+        smx.CsrTensor([0, 3, 7, 9, 13], indices, values, smx.Shape(3, 20))
+
+
+def test_csr_invalid_indices():
+    offsets = [0, 3, 7, 9, 13]
+    indices = [5, 3, 4, 7, 11, 19, 15, 6, 1, 16, 18, 0, 8]
+    bad_indices = [5, 3, 4, 7, 11, 19, 15, 60, 1, 16, 18, 0, 8]
+    values = [1, 2, 3, 1, 2, 3, 4, 1, 2, 1, 2, 3, 4]
+
+    with pytest.raises(RuntimeError):
+        smx.CsrTensor(offsets, indices, [], smx.Shape(4, 20))
+
+    with pytest.raises(RuntimeError):
+        smx.CsrTensor(offsets, [], values, smx.Shape(4, 20))
+
+    with pytest.raises(RuntimeError):
+        smx.CsrTensor(offsets, bad_indices, values, smx.Shape(4, 20))

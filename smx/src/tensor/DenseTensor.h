@@ -31,25 +31,9 @@ using EigenArray =
 
 class DenseTensor final : public Tensor {
  public:
-  DenseTensor(const Shape& shape, Dtype dtype)
-      : Tensor(shape, dtype),
-        _strides(contiguousStrides(shape)),
-        _data(
-            DefaultMemoryHandle::allocate(shape.size() * sizeofDtype(dtype))) {
-    _ptr = _data->ptr();
-  }
+  DenseTensor(const Shape& shape, Dtype dtype);
 
-  DenseTensor(const Shape& shape, Dtype dtype, MemoryHandlePtr data)
-      : Tensor(shape, dtype),
-        _strides(contiguousStrides(shape)),
-        _data(std::move(data)) {
-    _ptr = _data->ptr();
-
-    if (_data->nbytes() != (shape.size() * sizeofDtype(dtype))) {
-      throw std::invalid_argument(
-          "Size of data does not match size of shape and dtype.");
-    }
-  }
+  DenseTensor(const Shape& shape, Dtype dtype, MemoryHandlePtr data);
 
   static auto make(const Shape& shape, Dtype dtype) {
     return std::make_shared<DenseTensor>(shape, dtype);
@@ -58,6 +42,12 @@ class DenseTensor final : public Tensor {
   static auto make(const Shape& shape, Dtype dtype, MemoryHandlePtr data) {
     return std::make_shared<DenseTensor>(shape, dtype, data);
   }
+
+  static std::shared_ptr<DenseTensor> make(const std::vector<float>& data,
+                                           const Shape& shape);
+
+  static std::shared_ptr<DenseTensor> make(const std::vector<uint32_t>& data,
+                                           const Shape& shape);
 
   const Shape& strides() const { return _strides; }
 

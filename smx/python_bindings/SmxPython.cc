@@ -114,9 +114,17 @@ void defineTensor(py::module_& smx) {
       });
 
   py::class_<CsrTensor, CsrTensorPtr, Tensor>(smx, "CsrTensor")
-      .def(py::init(&CsrTensor::make), py::arg("row_offsets"),
-           py::arg("col_indices"), py::arg("col_values"),
-           py::arg("dense_shape"))
+      .def(py::init(py::overload_cast<DenseTensorPtr, DenseTensorPtr,
+                                      const DenseTensorPtr&, const Shape&>(
+               &CsrTensor::make)),
+           py::arg("row_offsets"), py::arg("col_indices"),
+           py::arg("col_values"), py::arg("dense_shape"))
+      .def(py::init(py::overload_cast<const std::vector<uint32_t>&,
+                                      const std::vector<uint32_t>&,
+                                      const std::vector<float>&, const Shape&>(
+               &CsrTensor::make)),
+           py::arg("row_offsets"), py::arg("col_indices"),
+           py::arg("col_values"), py::arg("dense_shape"))
       .def_property_readonly("row_offsets", &CsrTensor::rowOffsets)
       .def_property_readonly("col_indices", &CsrTensor::colIndices)
       .def_property_readonly("col_values", &CsrTensor::colValues);
