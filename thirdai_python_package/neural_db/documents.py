@@ -517,9 +517,9 @@ class CSV(Document):
         return self.weak_text_from_row(row)
 
     def row_iterator(self):
-        for row_id, row in enumerate(self.df.itertuples()):
+        for row in self.df.itertuples():
             yield DocumentRow(
-                element_id=row_id,
+                element_id=row.Index,
                 strong=self.strong_text_from_row(row),
                 weak=self.weak_text_from_row(row),
             )

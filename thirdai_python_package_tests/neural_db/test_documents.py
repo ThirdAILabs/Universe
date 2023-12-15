@@ -227,6 +227,7 @@ def test_sharded_data_source(prepare_documents_test):
 
     df = pd.concat([data_source_to_df(shard) for shard in sharded_data_sources])
     df = df.sort_values(id_column)
+
     check_first_doc(df)
     check_second_doc(df, position_offset=first_size, id_offset=first_size)
 
