@@ -222,7 +222,7 @@ class ShardedDataSource:
         return shards
 
     @staticmethod
-    def is_index_empty(
+    def shard_using_index(
         data_source: DocumentDataSource,
         label_to_segment_map: defaultdict,
         number_shards: int,
