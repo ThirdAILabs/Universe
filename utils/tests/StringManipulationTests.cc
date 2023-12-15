@@ -172,13 +172,13 @@ TEST(StringManipulationTest, PerturbationDuplicateCharacters) {
 
   uint32_t num_duplicated_chars = 0;
   for (auto c_test_str : test_str) {
-    size_t occurances = 0;
+    size_t occurences = 0;
     for (auto c_result : result) {
       if (c_result == c_test_str) {
-        occurances++;
+        occurences++;
       }
     }
-    if (occurances == 2) {
+    if (occurences == 2) {
       num_duplicated_chars++;
     }
   }

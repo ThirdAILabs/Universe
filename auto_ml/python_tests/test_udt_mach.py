@@ -21,7 +21,7 @@ def make_simple_test_file(invalid_data=False):
         f.write("text,label\n")
         f.write("haha one time,0\n")
         f.write("haha two times,1\n")
-        f.write("haha thrice occurances,2\n")
+        f.write("haha thrice occurences,2\n")
         if invalid_data:
             f.write("haha,3\n")
 
@@ -519,7 +519,7 @@ def test_mach_manual_index_creation():
     samples = {
         0: "haha one time",
         1: "haha two times",
-        2: "haha thrice occurances",
+        2: "haha thrice occurences",
     }
 
     entity_to_hashes = {
