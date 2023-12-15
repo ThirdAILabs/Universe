@@ -9,6 +9,35 @@ from .documents import CSV, DocumentDataSource
 
 
 class DataLoadMultiplexer:
+    """
+    A data loader that efficiently handles large datasets by segmenting them into smaller,
+    manageable temporary CSV files. This approach is particularly useful for processing
+    large datasets that do not fit entirely into memory.
+
+    The class optimizes memory usage by reading and writing data line by line,
+    rather than loading entire datasets into DataFrames. This method reduces the
+    memory footprint, especially when dealing with large datasets, and avoids
+    the overhead of storing extra DataFrame objects in memory.
+
+    Attributes:
+        num_segments (int): Number of segments to divide the data into.
+        flush_frequency (int): Frequency at which to flush data to the temporary files,
+                               reducing memory usage during processing.
+
+    Methods:
+        create_segments_with_segment_map(data_source, label_to_segment_map):
+            Segments the data based on a label-to-segment mapping, writing each segment to
+            a temporary CSV file.
+
+        create_segments_with_data_source(data_source, label_to_segment_map, shard_using_index):
+            Creates data segments based on the provided data source and label mapping,
+            optionally sharding the data using an index.
+
+    The class utilizes temporary files to store individual data segments, which are then
+    processed independently. This design allows for efficient data handling and scalability,
+    making it suitable for large-scale data processing tasks where memory optimization is crucial.
+    """
+
     def __init__(self, num_segments, flush_frequency=1_000_000):
         self.num_segments = num_segments
         self.flush_frequency = flush_frequency
@@ -66,22 +95,15 @@ class DataLoadMultiplexer:
         )
 
     def create_segments_with_data_source(
-        self, data_source, label_to_segment_map, shard_using_index=False
+        self, data_source, label_to_segment_map, shard_using_index
     ):
-        if shard_using_index:
-            return self.create_segments_with_segment_map(
-                data_source, label_to_segment_map
-            )
-        else:
+        if not shard_using_index:
             indices = list(range(data_source.size))
             random.shuffle(indices)
             for index, randomised_index in enumerate(indices):
                 label_to_segment_map[index].append(randomised_index % self.num_segments)
 
-            data_source.restart()
-            return self.create_segments_with_segment_map(
-                data_source, label_to_segment_map
-            )
+        return self.create_segments_with_segment_map(data_source, label_to_segment_map)
 
 
 class ShardedDataSource:

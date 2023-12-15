@@ -8,7 +8,9 @@ import pandas as pd
 import pytest
 from thirdai import bolt, demos, neural_db
 from thirdai.neural_db import documents
+from thirdai.neural_db.documents import DocumentDataSource
 from thirdai.neural_db.sharded_documents import ShardedDataSource
+from ndb_utils import create_simple_dataset
 
 # We don't have a test on just the Document interface since it is just an
 # interface.
@@ -474,3 +476,18 @@ def test_csv_doc_autotuning():
     assert "lorem" in doc.reference(0).text
 
     os.remove(filename)
+
+
+@pytest.mark.unit
+def test_index_position_in_document_datasource(create_simple_dataset):
+    filename = create_simple_dataset
+
+    doc = neural_db.CSV(
+        filename, id_column="label", strong_columns=["text"], weak_columns=["text"]
+    )
+    document_data_source = DocumentDataSource(
+        id_column="label", strong_column="strong", weak_column="weak"
+    )
+    document_data_source.add(doc, start_id=0)
+    header = next(document_data_source._get_line_iterator())
+    assert header.split(",", 1)[0] == "label"
