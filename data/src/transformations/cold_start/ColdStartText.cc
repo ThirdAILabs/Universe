@@ -80,9 +80,9 @@ std::vector<std::string> ColdStartTextAugmentation::augmentSingleRow(
     const std::string& strong_text, const std::string& weak_text,
     uint32_t row_id_salt) const {
   // We salt with row_id to keep determinism in the augmentation while having
-  // each row perturbed with a different seed. we pass around one rng object so
+  // each row perturbed with a different seed.
   // We pass around this rng to every function that has randomness (by
-  // reference) so for proper variability of random numbers across output
+  // reference) for proper variability of random numbers across output
   // samples, consistency of random numbers across training runs, and for
   // performance reasons to not have to create the object over and over.
   std::mt19937 rng(_seed + row_id_salt);

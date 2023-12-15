@@ -387,7 +387,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("seed") = 42803)
       .def("augment_single_row", &ColdStartTextAugmentation::augmentSingleRow,
            py::arg("strong_text"), py::arg("weak_text"),
-           py::arg("row_id") = global_random::nextSeed())
+           py::arg("row_id_salt") = global_random::nextSeed())
       .def("augment_map_input", &ColdStartTextAugmentation::augmentMapInput,
            py::arg("document"));
 
@@ -434,7 +434,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("seed") = global_random::nextSeed())
       .def("augment_single_row", &VariableLengthColdStart::augmentSingleRow,
            py::arg("strong_text"), py::arg("weak_text"),
-           py::arg("row_id") = global_random::nextSeed());
+           py::arg("row_id_salt") = global_random::nextSeed());
 
   py::class_<MachLabel, Transformation, std::shared_ptr<MachLabel>>(
       transformations_submodule, "MachLabel")
