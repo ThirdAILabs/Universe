@@ -1,9 +1,12 @@
+import copy
 import math
 import random
+from io import StringIO
 from pathlib import Path
-from typing import Callable, List, Optional, Sequence, Tuple
+from typing import Callable, List, Optional, Sequence, Tuple, Union
 
-from thirdai import bolt, data
+import pandas as pd
+from thirdai import bolt, data, dataset
 
 from .documents import DocumentDataSource
 from .sharded_documents import ShardedDataSource
@@ -41,6 +44,9 @@ class Model:
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
         should_train: bool,
+        reset_index: bool = False,
+        epochs: Union[List[int], int] = None,
+        learning_rates: Union[List[float], float] = None,
         fast_approximation: bool = True,
         num_buckets_to_sample: Optional[int] = None,
         on_progress: Callable = lambda **kwargs: None,
@@ -88,6 +94,7 @@ class Model:
         self,
         samples: InferSamples,
         n_results: int,
+        aggregate_rank: bool,
         **kwargs,
     ) -> Predictions:
         raise NotImplementedError()
@@ -282,6 +289,7 @@ class Mach(Model):
         fhr=50_000,
         embedding_dimension=2048,
         extreme_output_dim=50_000,
+        extreme_num_hashes=8,
         model_config=None,
     ):
         self.id_col = id_col
@@ -290,6 +298,7 @@ class Mach(Model):
         self.fhr = fhr
         self.embedding_dimension = embedding_dimension
         self.extreme_output_dim = extreme_output_dim
+        self.extreme_num_hashes = extreme_num_hashes
         self.n_ids = 0
         self.model = None
         self.balancing_samples = []
@@ -332,6 +341,9 @@ class Mach(Model):
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
         should_train: bool,
+        reset_index: bool = False,
+        epochs: Union[List[int], int] = None,
+        learning_rates: Union[List[float], float] = None,
         fast_approximation: bool = True,
         num_buckets_to_sample: Optional[int] = None,
         on_progress: Callable = lambda **kwargs: None,
@@ -363,6 +375,28 @@ class Mach(Model):
             min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
                 train_documents.size
             )
+
+            if reset_index:
+                # retreiiving the shareded documentsource
+                string_io = StringIO("\n".join(intro_documents._get_line_iterator()))
+                df = pd.read_csv(string_io)
+                intro_documents.restart()
+
+                valid_ids = df[intro_documents.id_column].tolist()
+
+                # Retreiving the model indexes
+                index = self.model.get_index()
+                new_index = {}
+                for id in valid_ids:
+                    new_index[id] = copy.deepcopy(index.get_entity_hashes(id))
+
+                # Setting the new index
+                model_index_new = dataset.MachIndex(
+                    entity_to_hashes=new_index,
+                    output_range=index.output_range(),
+                    num_hashes=index.num_hashes(),
+                )
+                self.model.set_index(model_index_new)
         else:
             if intro_documents.size > 0:
                 doc_id = intro_documents.id_column
@@ -397,20 +431,41 @@ class Mach(Model):
         self.add_balancing_samples(intro_documents)
 
         if should_train and train_documents.size > 0:
-            unsupervised_train_on_docs(
-                model=self.model,
-                documents=train_documents,
-                min_epochs=min_epochs,
-                max_epochs=max_epochs,
-                metric="hash_precision@5",
-                learning_rate=learning_rate,
-                acc_to_stop=0.95,
-                on_progress=on_progress,
-                freeze_before_train=freeze_before_train,
-                cancel_state=cancel_state,
-                max_in_memory_batches=max_in_memory_batches,
-                variable_length=variable_length,
-            )
+            if epochs is None:
+                unsupervised_train_on_docs(
+                    model=self.model,
+                    documents=train_documents,
+                    min_epochs=min_epochs,
+                    max_epochs=max_epochs,
+                    metric="hash_precision@5",
+                    learning_rate=learning_rate,
+                    acc_to_stop=0.95,
+                    on_progress=on_progress,
+                    freeze_before_train=freeze_before_train,
+                    cancel_state=cancel_state,
+                    max_in_memory_batches=max_in_memory_batches,
+                    variable_length=variable_length,
+                )
+            else:
+                if isinstance(epochs, int):
+                    epochs = [epochs]
+                    learning_rates = [learning_rates]
+
+                for epoch, learning_rate in zip(epochs, learning_rates):
+                    unsupervised_train_on_docs(
+                        model=self.model,
+                        documents=train_documents,
+                        min_epochs=epoch,
+                        max_epochs=epoch,
+                        metric="hash_precision@5",
+                        learning_rate=learning_rate,
+                        acc_to_stop=1.0,
+                        on_progress=on_progress,
+                        freeze_before_train=freeze_before_train,
+                        cancel_state=cancel_state,
+                        max_in_memory_batches=max_in_memory_batches,
+                        variable_length=variable_length,
+                    )
 
     def add_balancing_samples(self, documents: DocumentDataSource):
         samples = make_balancing_samples(documents)
@@ -440,6 +495,7 @@ class Mach(Model):
                 "extreme_output_dim": self.extreme_output_dim,
                 "fhr": self.fhr,
                 "embedding_dimension": self.embedding_dimension,
+                "extreme_num_hashes": self.extreme_num_hashes,
                 "rlhf": True,
             },
             model_config=self.model_config,
@@ -459,6 +515,7 @@ class Mach(Model):
         self,
         samples: InferSamples,
         n_results: int,
+        aggregate_rank: bool,
         **kwargs,
     ) -> Predictions:
         infer_batch = self.infer_samples_to_infer_batch(samples)

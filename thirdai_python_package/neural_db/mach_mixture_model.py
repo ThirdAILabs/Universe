@@ -1,6 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Callable, List, Optional, Sequence, Tuple
+from typing import Callable, List, Optional, Sequence, Tuple, Union
 
 from thirdai import bolt, data
 
@@ -25,6 +25,7 @@ class MachMixture(Model):
         fhr: int = 50_000,
         embedding_dimension: int = 2048,
         extreme_output_dim: int = 10_000,  # for Mach Mixture, we use default dim of 10k
+        extreme_num_hashes: int = 4,
         model_config=None,
         label_to_segment_map: defaultdict = None,
         seed_for_sharding: int = 0,
@@ -35,6 +36,7 @@ class MachMixture(Model):
         self.fhr = fhr
         self.embedding_dimension = embedding_dimension
         self.extreme_output_dim = extreme_output_dim
+        self.extreme_num_hashes = extreme_num_hashes
         self.n_ids = 0
         self.model_config = model_config
 
@@ -56,6 +58,7 @@ class MachMixture(Model):
                 fhr=self.fhr,
                 embedding_dimension=self.embedding_dimension,
                 extreme_output_dim=self.extreme_output_dim,
+                extreme_num_hashes=self.extreme_num_hashes,
                 model_config=self.model_config,
             )
             for _ in range(self.number_models)
@@ -104,6 +107,9 @@ class MachMixture(Model):
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
         should_train: bool,
+        reset_index: bool = False,
+        epochs: Union[List[int], int] = None,
+        learning_rates: Union[List[float], float] = None,
         fast_approximation: bool = True,
         num_buckets_to_sample: Optional[int] = None,
         on_progress: Callable = lambda **kwargs: None,
@@ -141,6 +147,9 @@ class MachMixture(Model):
                 intro_documents=intro_shard,
                 train_documents=train_shard,
                 should_train=should_train,
+                reset_index=reset_index,
+                epochs=epochs,
+                learning_rates=learning_rates,
                 fast_approximation=fast_approximation,
                 num_buckets_to_sample=num_buckets_to_sample,
                 on_progress=on_progress,
@@ -164,7 +173,7 @@ class MachMixture(Model):
         return self.n_ids != 0
 
     def infer_labels(
-        self, samples: InferSamples, n_results: int, **kwargs
+        self, samples: InferSamples, n_results: int, aggregate_rank: bool, **kwargs
     ) -> Predictions:
         results = [[] for _ in range(len(samples))]
         for model in self.models:
@@ -173,13 +182,32 @@ class MachMixture(Model):
             """
             try:
                 single_model_outputs = model.infer_labels(
-                    samples=samples, n_results=n_results, **kwargs
+                    samples=samples,
+                    n_results=n_results,
+                    aggregate_rank=aggregate_rank,
+                    **kwargs,
                 )
             except Exception as e:
                 single_model_outputs = [[] for _ in range(len(samples))]
             finally:
                 for index in range(len(samples)):
                     results[index].extend(single_model_outputs[index])
+
+        if aggregate_rank:
+            aggregated_results = [[] for _ in range(len(samples))]
+            for index, current_sample_result in enumerate(results):
+                label_activation_map = {}
+
+                # Collect and sum up activations for each label
+                for model_output in current_sample_result:
+                    label = model_output[0]
+                    activation = model_output[1]
+                    label_activation_map[label] = (
+                        label_activation_map.get(label, 0.0) + activation
+                    )
+
+                aggregated_results[index] = list(label_activation_map.items())
+            results = aggregated_results
         for index in range(len(results)):
             results[index].sort(key=lambda x: x[1], reverse=True)
             results[index] = results[index][:n_results]

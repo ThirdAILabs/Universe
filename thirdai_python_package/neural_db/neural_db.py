@@ -1,7 +1,7 @@
 import copy
 from enum import Enum
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -519,6 +519,9 @@ class NeuralDB:
         self,
         sources: List[Document],
         train: bool = True,
+        reset_index: bool = False,
+        epochs: Union[List[int], int] = None,
+        learning_rates: Union[List[float], float] = None,
         fast_approximation: bool = True,
         num_buckets_to_sample: Optional[int] = None,
         on_progress: Callable = no_op,
@@ -539,6 +542,22 @@ class NeuralDB:
         cancel_state: an object that can be used to stop an ongoing insertion.
         Primarily used for PocketLLM.
         """
+        if epochs is not None or learning_rates is not None:
+            if epochs is None or learning_rates is None:
+                raise AttributeError(
+                    "Both epochs and learning_rates should be given, if provided"
+                )
+            else:
+                if type(epochs) is not type(learning_rates):
+                    raise AttributeError(
+                        "Epochs and learning_rates should be of same type"
+                    )
+
+                if isinstance(epochs, list) and len(epochs) == len(learning_rates):
+                    raise AttributeError(
+                        "Both epochs and learning_rates should be of same dimensions"
+                    )
+
         documents_copy = copy.deepcopy(self._savable_state.documents)
         try:
             intro_and_train, ids = self._savable_state.documents.add(sources)
@@ -555,6 +574,9 @@ class NeuralDB:
             num_buckets_to_sample=num_buckets_to_sample,
             fast_approximation=fast_approximation,
             should_train=train,
+            reset_index=reset_index,
+            epochs=epochs,
+            learning_rates=learning_rates,
             on_progress=on_progress,
             cancel_state=cancel_state,
             max_in_memory_batches=max_in_memory_batches,
@@ -618,6 +640,7 @@ class NeuralDB:
         query: str,
         top_k: int,
         constraints=None,
+        aggregate_rank: bool = False,
         rerank=False,
         top_k_rerank=100,
         rerank_threshold=1.5,
@@ -630,11 +653,16 @@ class NeuralDB:
                 constraints
             )
             result_ids = self._savable_state.model.score(
-                samples=[query], entities=[matching_entities], n_results=top_k_to_search
+                samples=[query],
+                entities=[matching_entities],
+                n_results=top_k_to_search,
+                aggregate_rank=aggregate_rank,
             )[0]
         else:
             result_ids = self._savable_state.model.infer_labels(
-                samples=[query], n_results=top_k_to_search
+                samples=[query],
+                n_results=top_k_to_search,
+                aggregate_rank=aggregate_rank,
             )[0]
 
         references = []
