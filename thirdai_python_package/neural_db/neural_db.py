@@ -553,7 +553,7 @@ class NeuralDB:
                         "Epochs and learning_rates should be of same type"
                     )
 
-                if isinstance(epochs, list) and len(epochs) == len(learning_rates):
+                if isinstance(epochs, list) and len(epochs) != len(learning_rates):
                     raise AttributeError(
                         "Both epochs and learning_rates should be of same dimensions"
                     )
