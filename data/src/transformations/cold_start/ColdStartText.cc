@@ -15,12 +15,11 @@ namespace thirdai::data {
 
 ColdStartTextAugmentation::ColdStartTextAugmentation(
     std::vector<std::string> strong_column_names,
-    std::vector<std::string> weak_column_names, std::string label_column_name,
-    std::string output_column_name, const ColdStartConfig& config,
-    uint32_t seed)
-    : TextAugmentationBase(
-          std::move(strong_column_names), std::move(weak_column_names),
-          std::move(label_column_name), std::move(output_column_name), seed),
+    std::vector<std::string> weak_column_names, std::string output_column_name,
+    const ColdStartConfig& config, uint32_t seed)
+    : TextAugmentationBase(std::move(strong_column_names),
+                           std::move(weak_column_names),
+                           std::move(output_column_name), seed),
       _weak_min_len(config.weak_min_len),
       _weak_max_len(config.weak_max_len),
       _weak_chunk_len(config.weak_chunk_len),

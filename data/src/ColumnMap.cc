@@ -113,6 +113,15 @@ void ColumnMap::setColumn(const std::string& name, ColumnPtr column) {
   _columns[name] = std::move(column);
 }
 
+void ColumnMap::dropColumn(const std::string& name) {
+  if (!containsColumn(name)) {
+    throw std::runtime_error("Cannot drop column '" + name +
+                             "' from column map with columns " +
+                             formatColumnNames() + ".");
+  }
+  _columns.erase(name);
+}
+
 std::vector<std::string> ColumnMap::columns() const {
   std::vector<std::string> columns;
   for (auto const& map_entry : _columns) {
