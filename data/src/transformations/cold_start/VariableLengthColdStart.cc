@@ -212,7 +212,8 @@ std::string VariableLengthColdStart::convertPhraseToText(
   std::uniform_real_distribution<float> dist(0.0, 1.0);
 
   std::string output_text;
-  for (auto word : phrase) {
+  for (size_t i = 0; i < phrase.size(); i++) {
+    std::string word = phrase[i];
     // decide to skip stopword
     if (stopword_removal_probability &&
         dist(rng) < stopword_removal_probability &&
@@ -246,7 +247,9 @@ std::string VariableLengthColdStart::convertPhraseToText(
       std::sample(text::stop_words.begin(), text::stop_words.end(), &element, 1,
                   rng);
       output_text.append(element);
-      output_text.push_back(' ');
+      if (i != phrase.size() - 1) {
+        output_text.push_back(' ');
+      }
     }
   }
 

@@ -70,7 +70,7 @@ def test_vlcs_add_whole_doc(add_whole_doc):
     samples = augmentation.augment_single_row(
         "something is strong text", "This is weak text"
     )
-    actually_added = "something is strong text This is weak text " in samples
+    actually_added = "something is strong text This is weak text" in samples
 
     assert actually_added == add_whole_doc
 
@@ -229,10 +229,10 @@ def many_perturbations_augmentation(seed=81):
         stopword_removal_probability=0,
         stopword_insertion_probability=0,
         word_perturbation_probability=0.5,
-        chars_replace_with_space=0,
-        chars_deleted=0,
-        chars_duplicated=0,
-        chars_replace_with_adjacents=0,
+        chars_replace_with_space=1,
+        chars_deleted=1,
+        chars_duplicated=1,
+        chars_replace_with_adjacents=1,
         seed=seed,
     )
 

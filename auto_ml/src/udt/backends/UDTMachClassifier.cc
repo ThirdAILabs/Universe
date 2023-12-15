@@ -733,7 +733,7 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
     }
   }
 
-  // We sort the hashes first by number of occurences and tiebreak with
+  // We sort the hashes first by number of occurrences and tiebreak with
   // the higher aggregated score if necessary. We don't only use the
   // activations since those typically aren't as useful as the
   // frequencies.
