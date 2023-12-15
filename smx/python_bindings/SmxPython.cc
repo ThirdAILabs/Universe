@@ -8,11 +8,14 @@
 #include <smx/src/autograd/functions/Activations.h>
 #include <smx/src/autograd/functions/LinearAlgebra.h>
 #include <smx/src/autograd/functions/Loss.h>
+#include <smx/src/autograd/functions/NN.h>
 #include <smx/src/modules/Activation.h>
+#include <smx/src/modules/Embedding.h>
 #include <smx/src/modules/Linear.h>
 #include <smx/src/modules/Module.h>
 #include <smx/src/optimizers/Adam.h>
 #include <smx/src/optimizers/Optimizer.h>
+#include <smx/src/tensor/CsrTensor.h>
 #include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Dtype.h>
 #include <smx/src/tensor/Functions.h>
@@ -110,6 +113,14 @@ void defineTensor(py::module_& smx) {
         }
       });
 
+  py::class_<CsrTensor, CsrTensorPtr, Tensor>(smx, "CsrTensor")
+      .def(py::init(&CsrTensor::make), py::arg("row_offsets"),
+           py::arg("col_indices"), py::arg("col_values"),
+           py::arg("dense_shape"))
+      .def_property_readonly("row_offsets", &CsrTensor::rowOffsets)
+      .def_property_readonly("col_indices", &CsrTensor::colIndices)
+      .def_property_readonly("col_values", &CsrTensor::colValues);
+
   smx.def("transpose", &transpose, py::arg("tensor"), py::arg("perm"));
   smx.def("reshape", &reshape, py::arg("tensor"), py::arg("new_shape"));
 
@@ -137,6 +148,11 @@ void defineAutograd(py::module_& smx) {
           py::overload_cast<const VariablePtr&, const VariablePtr&,
                             const VariablePtr&>(&linear),
           py::arg("x"), py::arg("w"), py::arg("b"));
+
+  smx.def("embedding",
+          py::overload_cast<const VariablePtr&, const VariablePtr&, bool>(
+              &embedding),
+          py::arg("indices"), py::arg("embs"), py::arg("reduce_mean") = true);
 
   smx.def("relu", py::overload_cast<const VariablePtr&>(&relu), py::arg("x"));
 
@@ -169,6 +185,10 @@ void defineModules(py::module_& smx) {
 
   py::class_<Linear, std::shared_ptr<Linear>, UnaryModule>(smx, "Linear")
       .def(py::init<size_t, size_t>(), py::arg("dim"), py::arg("input_dim"));
+
+  py::class_<Embedding, std::shared_ptr<Embedding>, UnaryModule>(smx,
+                                                                 "Embedding")
+      .def(py::init<size_t, size_t>(), py::arg("n_embs"), py::arg("emb_dim"));
 
   py::class_<Activation, std::shared_ptr<Activation>, UnaryModule>(smx,
                                                                    "Activation")

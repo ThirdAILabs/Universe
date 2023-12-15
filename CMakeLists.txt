@@ -323,11 +323,13 @@ set(THIRDAI_SOURCES
     smx/src/tensor/functions/Transpose.cc
     smx/src/tensor/functions/Activations.cc
     smx/src/tensor/functions/LinearAlgebra.cc
+    smx/src/tensor/functions/NN.cc
     smx/src/tensor/functions/Loss.cc
     smx/src/tensor/Init.cc
     smx/src/autograd/Variable.cc
     smx/src/autograd/functions/Activations.cc
     smx/src/autograd/functions/LinearAlgebra.cc
+    smx/src/autograd/functions/NN.cc
     smx/src/autograd/functions/Loss.cc
     smx/src/optimizers/Adam.cc
     bolt_vector/src/BoltVector.cc

@@ -35,7 +35,7 @@ class CsrTensor final : public Tensor {
     size_t indices_dim = _shape.last();
     const uint32_t* indices_data = _col_indices->data<uint32_t>();
     for (size_t i = 0; i < indices_len; i++) {
-      CHECK(indices_data[i] >= indices_dim,
+      CHECK(indices_data[i] < indices_dim,
             "Invalid index " + std::to_string(indices_data[i]) +
                 " for CsrTensor with dim " + std::to_string(indices_dim) + ".");
     }
@@ -52,6 +52,13 @@ class CsrTensor final : public Tensor {
     CHECK(
         last_offset == indices_len,
         "Last offset in CsrTensor should match the end of the indices/values.");
+  }
+
+  static auto make(DenseTensorPtr row_offsets, DenseTensorPtr col_indices,
+                   const DenseTensorPtr& col_values, const Shape& dense_shape) {
+    return std::make_shared<CsrTensor>(std::move(row_offsets),
+                                       std::move(col_indices), col_values,
+                                       dense_shape);
   }
 
   const DenseTensorPtr& rowOffsets() const { return _row_offsets; }

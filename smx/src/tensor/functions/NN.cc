@@ -1,6 +1,7 @@
 #include <smx/src/tensor/CsrTensor.h>
 #include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Functions.h>
+#include <smx/src/tensor/Init.h>
 
 namespace thirdai::smx {
 
@@ -78,8 +79,7 @@ DenseTensorPtr embeddingGrad(const CsrTensorPtr& indices,
   size_t batch_size = indices->nRows();
   size_t emb_dim = out_grad->shapeAt(1);
 
-  auto emb_grad =
-      DenseTensor::make(Shape(indices->shapeAt(1), emb_dim), Dtype::f32);
+  auto emb_grad = zeros(Shape(indices->shapeAt(1), emb_dim));
   float* emb_grad_ptr = emb_grad->data<float>();
 
 #pragma omp parallel for default(none)                                     \
