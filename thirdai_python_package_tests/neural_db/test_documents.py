@@ -10,7 +10,7 @@ from ndb_utils import create_simple_dataset
 from thirdai import bolt, demos, neural_db
 from thirdai.neural_db import documents
 from thirdai.neural_db.documents import DocumentDataSource
-from thirdai.neural_db.sharded_documents import ShardedDataSource
+from thirdai.neural_db.sharded_documents import ShardedDataSource, DataLoadMultiplexer
 
 # We don't have a test on just the Document interface since it is just an
 # interface.
@@ -479,7 +479,7 @@ def test_csv_doc_autotuning():
 
 
 @pytest.mark.unit
-def test_index_position_in_document_datasource(create_simple_dataset):
+def test_data_load_multiplexer(create_simple_dataset):
     filename = create_simple_dataset
 
     doc = neural_db.CSV(
@@ -489,5 +489,19 @@ def test_index_position_in_document_datasource(create_simple_dataset):
         id_column="label", strong_column="strong", weak_column="weak"
     )
     document_data_source.add(doc, start_id=0)
-    header = next(document_data_source._get_line_iterator())
-    assert header.split(",", 1)[0] == "label"
+    data_multiplexer = DataLoadMultiplexer(num_segments=1)
+    (
+        segment_filenames,
+        segment_objects,
+        _,
+    ) = data_multiplexer.create_segments_with_data_source(
+        document_data_source, defaultdict(list), is_index_empty=True
+    )
+    for i, filename in enumerate(segment_filenames):
+        with open(filename, "r") as file:
+            for line in file:
+                if line.startswith("label"):  # Skip header line
+                    continue
+                label = line.split(",", 1)[0]
+                assert label.isdigit(), f"Label '{label}' is not a valid integer."
+        segment_objects[i].close()

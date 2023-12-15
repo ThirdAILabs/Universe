@@ -25,10 +25,6 @@ class DataLoadMultiplexer:
                                reducing memory usage during processing.
 
     Methods:
-        create_segments_with_segment_map(data_source, label_to_segment_map):
-            Segments the data based on a label-to-segment mapping, writing each segment to
-            a temporary CSV file.
-
         create_segments_with_data_source(data_source, label_to_segment_map, is_index_empty):
             Creates data segments based on the provided data source and label mapping,
             optionally sharding the data using an index.
@@ -62,7 +58,7 @@ class DataLoadMultiplexer:
             segment_objects.append(temp_file)
         return segment_filenames, segment_objects
 
-    def create_segments_with_segment_map(self, data_source, label_to_segment_map):
+    def _create_segments_with_segment_map(self, data_source, label_to_segment_map):
         segment_filenames, segment_objects = self._generate_temp_csvs()
 
         current_index = 0
@@ -109,7 +105,7 @@ class DataLoadMultiplexer:
             for index, randomised_index in enumerate(indices):
                 label_to_segment_map[index].append(randomised_index % self.num_segments)
 
-        return self.create_segments_with_segment_map(data_source, label_to_segment_map)
+        return self._create_segments_with_segment_map(data_source, label_to_segment_map)
 
 
 class ShardedDataSource:
