@@ -1,5 +1,6 @@
 #include "Loader.h"
 #include <bolt/src/utils/Timer.h>
+#include <data/src/SmxTensorConversion.h>
 #include <data/src/TensorConversion.h>
 #include <limits>
 #include <optional>
@@ -94,8 +95,40 @@ std::optional<bolt::LabeledDataset> Loader::next(size_t max_batches) {
   return std::make_pair(std::move(inputs), std::move(labels));
 }
 
+std::optional<std::pair<SmxDataset, SmxDataset>> Loader::nextSmx(
+    size_t max_batches) {
+  logLoadStart();
+  bolt::utils::Timer timer;
+
+  auto dataset = nextColumnMap(max_batches);
+
+  if (!dataset) {
+    timer.stop();
+    logLoadEnd(/* vectors= */ 0, /* batches= */ 0, /* time= */ timer.seconds());
+    return std::nullopt;
+  }
+
+  auto inputs = toSmxTensorBatches(*dataset, _model_input_columns, _batch_size);
+  auto labels = toSmxTensorBatches(*dataset, _model_label_columns, _batch_size);
+
+  timer.stop();
+  logLoadEnd(dataset->numRows(), inputs.size(), timer.seconds());
+
+  return std::make_pair(std::move(inputs), std::move(labels));
+}
+
 bolt::LabeledDataset Loader::all() {
   auto result = next(NO_LIMIT);
+  if (!result) {
+    throw std::invalid_argument("Could not load data from '" +
+                                _data_iterator->resourceName() + "'.");
+  }
+
+  return std::move(result.value());
+}
+
+std::pair<SmxDataset, SmxDataset> Loader::allSmx() {
+  auto result = nextSmx(NO_LIMIT);
   if (!result) {
     throw std::invalid_argument("Could not load data from '" +
                                 _data_iterator->resourceName() + "'.");

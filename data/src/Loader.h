@@ -3,8 +3,10 @@
 #include <bolt/src/train/trainer/Dataset.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/ColumnMapIterator.h>
+#include <data/src/SmxTensorConversion.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/transformations/Transformation.h>
+#include <smx/src/tensor/Tensor.h>
 #include <utils/Random.h>
 #include <limits>
 #include <optional>
@@ -55,11 +57,15 @@ class Loader {
    */
   std::optional<bolt::LabeledDataset> next(size_t max_batches = NO_LIMIT);
 
+  std::optional<std::pair<SmxDataset, SmxDataset>> nextSmx(
+      size_t max_batches = NO_LIMIT);
   /**
    * Returns all of the data in the dataset, featurized and converted to batches
    * of bolt::Tensors.
    */
   bolt::LabeledDataset all();
+
+  std::pair<SmxDataset, SmxDataset> allSmx();
 
   void restart();
 

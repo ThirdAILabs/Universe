@@ -446,6 +446,7 @@ set(THIRDAI_SOURCES
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
     data/src/TensorConversion.cc
+    data/src/SmxTensorConversion.cc
     data/src/Loader.cc
     data/src/ColumnMapIterator.cc
     data/src/rca/ExplanationMap.cc
