@@ -283,6 +283,8 @@ class ModelBazaar(Bazaar):
             model_path=local_path,
             trained_on="Own Documents",
             access_level=access_level,
+            is_indexed=True,
+            description="",
         )
 
     def pull_model(self, model_identifier: str):

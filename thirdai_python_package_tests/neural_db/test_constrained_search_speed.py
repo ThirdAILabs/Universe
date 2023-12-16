@@ -1,7 +1,9 @@
+import os
 import random
 import time
 from typing import List
 
+import pandas as pd
 import pytest
 from thirdai import neural_db as ndb
 from thirdai.neural_db.constraint_matcher import (
@@ -14,7 +16,12 @@ from tqdm import tqdm
 random.seed(1)
 
 
-def strings_of_length(length, num_strings):
+def random_string_of_length(length):
+    alphabet = "abcdefghijklmnopqrstuvwxyz "
+    return "".join([random.choice(alphabet) for _ in range(length)])
+
+
+def unique_strings_of_length(length, num_strings):
     """Generates `num_strings` unique alphabetical strings of a certain
     `length`.
     """
@@ -143,6 +150,28 @@ def print_if_verbose(verbose, *args, **kwargs):
         print(*args, **kwargs)
 
 
+def neuraldb_search_time():
+    num_docs = 100
+    file = "search_time_mock.csv"
+    mock_dataset = pd.DataFrame(
+        {
+            "text": [f"this is sample number {i}" for i in range(num_docs)],
+        }
+    )
+    mock_dataset.to_csv(file)
+    db = ndb.NeuralDB()
+    db.insert([ndb.CSV(file)], train=False)
+
+    trials = 100
+
+    start = time.time()
+    for _ in range(trials):
+        db.search(random_string_of_length(100), top_k=10)
+    avg_time = (time.time() - start) / trials
+    os.remove(file)
+    return avg_time
+
+
 def benchmark(
     num_metadata_fields: int,
     num_options_per_field: int,
@@ -161,9 +190,11 @@ def benchmark(
         )
 
     print_if_verbose(verbose, "Making metadata fields...")
-    metadata_fields = strings_of_length(metadata_field_len, num_metadata_fields)
+    metadata_fields = unique_strings_of_length(metadata_field_len, num_metadata_fields)
     print_if_verbose(verbose, "Making metadata options...")
-    metadata_options = strings_of_length(metadata_option_len, num_options_per_field)
+    metadata_options = unique_strings_of_length(
+        metadata_option_len, num_options_per_field
+    )
     print_if_verbose(verbose, "Generating item metadata...")
     item_metadata = generate_item_metadata(metadata_fields, metadata_options, num_docs)
 
@@ -225,7 +256,10 @@ def test_constrained_search_speed():
         verbose=True,
     )
 
-    # Average constraint matching time is around 0.06 seconds on mac.
-    assert times["avg_constraint_matching_time"] < 0.5
-    # Total constraint indexing time is around 3 seconds on mac.
-    assert times["total_constraint_indexing_time"] < 10
+    avg_search_time = neuraldb_search_time()
+
+    # Compare time with search time to account for different hardware speeds.
+    # Average constraint matching time is around 6x search time on mac
+    assert times["avg_constraint_matching_time"] < 20 * avg_search_time
+    # Total constraint indexing time is around 300x search time on mac.
+    assert times["total_constraint_indexing_time"] < 1000 * avg_search_time

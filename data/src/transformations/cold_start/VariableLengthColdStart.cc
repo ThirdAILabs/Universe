@@ -1,9 +1,10 @@
 #include "VariableLengthColdStart.h"
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/StringConcat.h>
+#include <dataset/src/utils/TokenEncoding.h>
 #include <utils/CommonChecks.h>
-#include <utils/Stopwords.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/Stopwords.h>
+#include <utils/text/StringManipulation.h>
 
 namespace thirdai::data {
 
@@ -14,7 +15,9 @@ VariableLengthConfig::VariableLengthConfig(
     bool add_whole_doc, bool prefilter_punctuation,
     uint32_t strong_sample_num_words, float stopword_removal_probability,
     float stopword_insertion_probability, float word_removal_probability,
-    float word_perturbation_probability)
+    float word_perturbation_probability, size_t chars_replace_with_space,
+    size_t chars_deleted, size_t chars_duplicated,
+    size_t chars_replace_with_adjacents)
     : covering_min_length(covering_min_length),
       covering_max_length(covering_max_length),
       max_covering_samples(max_covering_samples),
@@ -27,7 +30,11 @@ VariableLengthConfig::VariableLengthConfig(
       stopword_removal_probability(stopword_removal_probability),
       stopword_insertion_probability(stopword_insertion_probability),
       word_removal_probability(word_removal_probability),
-      word_perturbation_probability(word_perturbation_probability) {
+      word_perturbation_probability(word_perturbation_probability),
+      chars_replace_with_space(chars_replace_with_space),
+      chars_deleted(chars_deleted),
+      chars_duplicated(chars_duplicated),
+      chars_replace_with_adjacents(chars_replace_with_adjacents) {
   utils::validateGreaterThanZero(covering_min_length, "covering_min_length");
   utils::validateGreaterThanZero(covering_max_length, "covering_max_length");
   utils::validateGreaterThanZero(slice_min_length, "slice_min_length");
@@ -58,22 +65,28 @@ VariableLengthConfig::VariableLengthConfig(
 
 VariableLengthColdStart::VariableLengthColdStart(
     std::vector<std::string> strong_column_names,
-    std::vector<std::string> weak_column_names, std::string label_column_name,
-    std::string output_column_name, const VariableLengthConfig& config,
-    uint32_t seed)
-    : TextAugmentationBase(
-          std::move(strong_column_names), std::move(weak_column_names),
-          std::move(label_column_name), std::move(output_column_name), seed),
+    std::vector<std::string> weak_column_names, std::string output_column_name,
+    const VariableLengthConfig& config, uint32_t seed)
+    : TextAugmentationBase(std::move(strong_column_names),
+                           std::move(weak_column_names),
+                           std::move(output_column_name), seed),
       _config(config) {}
 
 std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
-    const std::string& strong_text, const std::string& weak_text) const {
-  Phrase strong_phrase = cold_start::getStrongPhrase(strong_text);
-  PhraseCollection phrases = getWeakPhrases(weak_text);
-  phrases = cold_start::mergeStrongWithWeak(
-      phrases, strong_phrase, _config.strong_sample_num_words, _seed);
+    const std::string& strong_text, const std::string& weak_text,
+    uint32_t row_id_salt) const {
+  // We salt with row_id to keep determinism in the augmentation while having
+  // each row perturbed with a different seed.
+  // We pass around this rng object to every function that has randomness (by
+  // reference) for proper variability of random numbers across output
+  // samples, consistency of random numbers across training runs, and for
+  // performance reasons to not have to create the object over and over.
+  std::mt19937 rng(_seed + row_id_salt);
 
-  std::mt19937 rng(_seed);
+  Phrase strong_phrase = convertTextToPhrase(strong_text);
+  PhraseCollection phrases = getWeakPhrases(weak_text, rng);
+  phrases = cold_start::mergeStrongWithWeak(
+      phrases, strong_phrase, _config.strong_sample_num_words, rng);
 
   std::vector<std::string> output_samples;
   for (const auto& phrase : phrases) {
@@ -82,6 +95,10 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
                             _config.stopword_insertion_probability,
                             _config.word_removal_probability,
                             _config.word_perturbation_probability, rng);
+
+    output_text = text::perturbCharacters(
+        output_text, _config.chars_replace_with_space, _config.chars_deleted,
+        _config.chars_duplicated, _config.chars_replace_with_adjacents, rng);
 
     if (!output_text.empty()) {
       output_samples.push_back(output_text);
@@ -92,25 +109,39 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
   // there is only strong text, or the sample is empty, in which case we don't
   // want to add the whole doc since we're in a degenerate case.
   if (_config.add_whole_doc && output_samples.size() > 1) {
-    std::string whole_doc = strong_text + " " + weak_text;
-    if (_config.prefilter_punctuation) {
-      whole_doc = text::replacePunctuation(whole_doc, ' ');
-    }
-    whole_doc = text::replaceNewlines(whole_doc, ' ');
+    Phrase whole_doc_as_phrase =
+        convertTextToPhrase(strong_text + " " + weak_text);
+
+    std::string whole_doc = convertPhraseToText(
+        whole_doc_as_phrase, _config.stopword_removal_probability,
+        _config.stopword_insertion_probability,
+        _config.word_removal_probability, _config.word_perturbation_probability,
+        rng);
+
+    whole_doc = text::perturbCharacters(
+        whole_doc, _config.chars_replace_with_space, _config.chars_deleted,
+        _config.chars_duplicated, _config.chars_replace_with_adjacents, rng);
+
     output_samples.push_back(whole_doc);
   }
 
   return output_samples;
 }
 
-PhraseCollection VariableLengthColdStart::getWeakPhrases(
-    std::string weak_text) const {
+Phrase VariableLengthColdStart::convertTextToPhrase(std::string string) const {
   if (_config.prefilter_punctuation) {
-    weak_text = text::replacePunctuation(weak_text, ' ');
+    string = text::replacePunctuation(string, ' ');
   }
-  weak_text = text::stripWhitespace(weak_text);
+  string = text::stripWhitespace(string);
 
-  Phrase weak_phrase = text::tokenizeSentence(weak_text);
+  Phrase phrase = text::tokenizeSentence(string);
+
+  return phrase;
+}
+
+PhraseCollection VariableLengthColdStart::getWeakPhrases(
+    std::string weak_text, std::mt19937& rng) const {
+  Phrase weak_phrase = convertTextToPhrase(std::move(weak_text));
 
   if (weak_phrase.empty()) {
     return {};
@@ -120,18 +151,18 @@ PhraseCollection VariableLengthColdStart::getWeakPhrases(
 
   addCoveringPhrases(weak_phrase, phrases, _config.covering_min_length,
                      _config.covering_max_length, _config.max_covering_samples,
-                     _seed);
+                     rng);
 
   addRandomSlicePhrases(weak_phrase, phrases, _config.slice_min_length,
-                        _config.slice_max_length, _config.num_slices, _seed);
+                        _config.slice_max_length, _config.num_slices, rng);
 
   return phrases;
 }
 
 void VariableLengthColdStart::addCoveringPhrases(
     const Phrase& words, PhraseCollection& phrases, size_t min_len,
-    size_t max_len, std::optional<size_t> max_covering_samples, uint32_t seed) {
-  std::mt19937 rng(seed);
+    size_t max_len, std::optional<size_t> max_covering_samples,
+    std::mt19937& rng) {
   min_len = std::min(min_len, words.size());
   std::uniform_int_distribution<size_t> dist(min_len, max_len);
 
@@ -151,15 +182,14 @@ void VariableLengthColdStart::addCoveringPhrases(
 
   if (max_covering_samples.has_value() &&
       *max_covering_samples < phrases.size()) {
-    std::shuffle(phrases.begin(), phrases.end(), std::mt19937{seed});
+    std::shuffle(phrases.begin(), phrases.end(), rng);
     phrases.resize(*max_covering_samples);
   }
 }
 
 void VariableLengthColdStart::addRandomSlicePhrases(
     const Phrase& words, PhraseCollection& phrases, size_t min_len,
-    std::optional<size_t> max_len_opt, uint32_t num_slices, uint32_t seed) {
-  std::mt19937 rng(seed);
+    std::optional<size_t> max_len_opt, uint32_t num_slices, std::mt19937& rng) {
   min_len = std::min(min_len, words.size());
   size_t max_len = max_len_opt.has_value()
                        ? std::min(words.size(), *max_len_opt)
@@ -178,11 +208,12 @@ void VariableLengthColdStart::addRandomSlicePhrases(
 std::string VariableLengthColdStart::convertPhraseToText(
     const std::vector<std::string>& phrase, float stopword_removal_probability,
     float stopword_insertion_probability, float word_removal_probability,
-    float word_perturbation_probability, std::mt19937 rng) {
+    float word_perturbation_probability, std::mt19937& rng) {
   std::uniform_real_distribution<float> dist(0.0, 1.0);
 
   std::string output_text;
-  for (auto word : phrase) {
+  for (size_t i = 0; i < phrase.size(); i++) {
+    std::string word = phrase[i];
     // decide to skip stopword
     if (stopword_removal_probability &&
         dist(rng) < stopword_removal_probability &&
@@ -216,7 +247,9 @@ std::string VariableLengthColdStart::convertPhraseToText(
       std::sample(text::stop_words.begin(), text::stop_words.end(), &element, 1,
                   rng);
       output_text.append(element);
-      output_text.push_back(' ');
+      if (i != phrase.size() - 1) {
+        output_text.push_back(' ');
+      }
     }
   }
 

@@ -6,7 +6,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/ColumnIdentifier.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <iterator>
 #include <memory>
