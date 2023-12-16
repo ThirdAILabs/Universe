@@ -73,7 +73,7 @@ def test_text_tokenizer_hybrid_wordpiece(download_bert_base_uncased):
     huggingface_tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
     BERT_VOCAB_PATH = download_bert_base_uncased
-    tokenizer = dataset.WordpieceTokenizer(BERT_VOCAB_PATH)
+    tokenizer = dataset.HybridTokenizer(BERT_VOCAB_PATH, k = 4)
 
     featurizer = data.transformations.Text(
         input_column="input",
@@ -92,8 +92,19 @@ def test_text_tokenizer_hybrid_wordpiece(download_bert_base_uncased):
     for text, tokens in zip(TEXT_SAMPLES, tokens):
         hf_tokens = huggingface_tokenizer.encode(text, add_special_tokens=False)
         num_wordpiece_tokens = len(hf_tokens)
-        assert np.array_equal(np.array(hf_tokens), tokens[-num_wordpiece_tokens:])
+        # the wordpiece tokens are the last ones
+        assert np.array_equal(np.array(hf_tokens), tokens[:num_wordpiece_tokens])
 
+        words = text.split(" ")
+        print(words)
+        expected_num_char_k_grams = 0
+        for word in words:
+            if word.strip():
+                print(word)
+                expected_num_char_k_grams += max(1, len(word) - 3)
+        
+        assert num_wordpiece_tokens + expected_num_char_k_grams == len(tokens)
+        
 
 def test_token_deduplication():
     columns = data.ColumnMap(

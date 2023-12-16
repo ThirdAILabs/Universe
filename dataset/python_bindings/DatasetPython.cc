@@ -172,8 +172,9 @@ void createDatasetSubmodule(py::module_& module) {
              HybridWordpieceCharKTokenizerPtr>(dataset_submodule,
                                                "HybridTokenizer")
       .def(py::init<std::string, uint32_t, uint32_t, uint32_t, bool, bool>(),
-           py::arg("vocab_file_path"), py::arg("k"), py::arg("char_k_range"),
-           py::arg("wordpiece_range"), py::arg("lowercase_wordpiece") = true,
+           py::arg("vocab_file_path"), py::arg("k"),
+           py::arg("char_k_range") = 70000, py::arg("wordpiece_range") = 30000,
+           py::arg("lowercase_wordpiece") = true,
            py::arg("lowercase_char_k") = true)
       .def("tokenize", &HybridWordpieceCharKTokenizer::tokenize,
            py::arg("sentence"));

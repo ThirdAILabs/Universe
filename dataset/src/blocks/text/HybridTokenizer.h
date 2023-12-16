@@ -34,26 +34,26 @@ class HybridWordpieceCharKTokenizer : public TextTokenizer {
   }
 
   std::vector<uint32_t> tokenize(const std::string& input) final {
-    auto wordpiece_tokens = _wordpiece_tokenizer->tokenize(input);
-    token_encoding::mod(wordpiece_tokens, _wordpiece_range);
-
-    for (uint32_t& wordpiece_token : wordpiece_tokens) {
-      wordpiece_token += _char_k_range;
-    }
+    auto tokens = _wordpiece_tokenizer->tokenize(input);
+    token_encoding::mod(tokens, _wordpiece_range);
 
     std::string possibly_lowercased_input = input;
     if (_lowercase_char_k) {
       possibly_lowercased_input = text::lower(possibly_lowercased_input);
     }
 
-    auto tokens = token_encoding::hashTokens(text::wordLevelCharKGrams(
+    auto char_k_tokens = token_encoding::hashTokens(text::wordLevelCharKGrams(
         text::tokenizeSentence(possibly_lowercased_input), /* k= */ _k,
         /* min_word_length= */ 1));
 
-    token_encoding::mod(tokens, _char_k_range);
+    token_encoding::mod(char_k_tokens, _char_k_range);
 
-    tokens.insert(tokens.end(), wordpiece_tokens.begin(),
-                  wordpiece_tokens.end());
+    for (uint32_t& char_k_token : char_k_tokens) {
+      char_k_token += _wordpiece_range;
+    }
+
+    tokens.insert(tokens.end(), char_k_tokens.begin(),
+                  char_k_tokens.end());
 
     return tokens;
   }
