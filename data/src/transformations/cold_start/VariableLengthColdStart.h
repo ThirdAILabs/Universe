@@ -1,7 +1,10 @@
 #pragma once
 
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/optional.hpp>
 #include "TextAugmentationUtils.h"
 #include <data/src/transformations/Transformation.h>
+#include <memory>
 #include <random>
 
 namespace thirdai::data {
@@ -35,6 +38,54 @@ struct VariableLengthConfig {
   float stopword_insertion_probability;
   float word_removal_probability;
   float word_perturbation_probability;
+
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(covering_min_length, covering_max_length, max_covering_samples,
+            slice_min_length, slice_max_length, num_slices, add_whole_doc,
+            prefilter_punctuation, strong_sample_num_words,
+            stopword_removal_probability, stopword_insertion_probability,
+            word_removal_probability, word_perturbation_probability);
+  }
+
+  void save_stream(std::ostream& output_stream) const {
+    cereal::BinaryOutputArchive oarchive(output_stream);
+    oarchive(*this);
+  }
+
+  static std::shared_ptr<VariableLengthConfig> load_stream(
+      std::istream& input_stream) {
+    cereal::BinaryInputArchive iarchive(input_stream);
+    auto config = std::make_shared<VariableLengthConfig>();
+    iarchive(*config);
+    return config;
+  }
+
+  std::string to_string() const {
+    std::stringstream ss;
+    ss << "VariableLengthConfig(covering_min_length = " << covering_min_length;
+    ss << ", covering_max_length = " << covering_max_length;
+    ss << ", max_covering_samples = "
+       << (max_covering_samples.has_value()
+               ? std::to_string(max_covering_samples.value())
+               : "NA");
+    ss << ", slice_min_length = " << slice_min_length;
+    ss << ", slice_max_length = "
+       << (slice_max_length.has_value()
+               ? std::to_string(slice_max_length.value())
+               : "NA");
+    ss << ", num_slices = " << num_slices
+       << ", add_whole_doc = " << add_whole_doc;
+    ss << ", prefilter_punctuations = " << prefilter_punctuation;
+    ss << ", strong_sample_num_words = " << strong_sample_num_words;
+    ss << ", stopword_removal_probability = " << stopword_removal_probability;
+    ss << ", stopword_insertion_probability = "
+       << stopword_insertion_probability;
+    ss << ", word_removal_probability = " << word_removal_probability;
+    ss << ", word_perturbation_probability" << word_perturbation_probability;
+    ss << ")";
+    return ss.str();
+  }
 };
 
 class VariableLengthColdStart : public cold_start::TextAugmentationBase {

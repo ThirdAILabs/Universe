@@ -1,4 +1,5 @@
 #include "DataPython.h"
+#include <bolt/python_bindings/PybindUtils.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/Loader.h>
 #include <data/src/TensorConversion.h>
@@ -413,10 +414,11 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("stopword_insertion_probability") = 0,
            py::arg("word_removal_probability") = 0,
            py::arg("word_perturbation_probability") = 0)
+      .def("__str__", &VariableLengthConfig::to_string)
 #else
       .def(py::init<>())
 #endif
-      ;
+      .def(thirdai::bolt::python::getPickleFunction<VariableLengthConfig>());
 
 #if THIRDAI_EXPOSE_ALL
   py::class_<VariableLengthColdStart, Transformation,
