@@ -498,10 +498,13 @@ def test_data_load_multiplexer(create_simple_dataset):
         document_data_source, defaultdict(list), is_index_empty=True
     )
     for i, filename in enumerate(segment_filenames):
-        with open(filename, "r") as file:
-            for line in file:
-                if line.startswith("label"):  # Skip header line
-                    continue
-                label = line.split(",", 1)[0]
-                assert label.isdigit(), f"Label '{label}' is not a valid integer."
+        try:
+            df = pd.read_csv(filename)
+            if "label" not in df.columns:
+                assert False, f"column label not found!"
+            if not df["label"].apply(lambda x: str(x).isdigit()).all():
+                assert False, f"Some values in column 'label' are not integers"
+
+        except Exception as e:
+            assert False, f"Error reading file: {e}"
         segment_objects[i].close()
