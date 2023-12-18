@@ -503,23 +503,23 @@ class CSV(Document):
         return self.orig_to_assigned_id
 
     def strong_text_from_row(self, row) -> str:
-        return " ".join(str(row[col]) for col in self.strong_columns)
+        return " ".join(getattr(row, col) for col in self.strong_columns)
 
     def strong_text(self, element_id: int) -> str:
         row = self.df.loc[element_id]
         return self.strong_text_from_row(row)
 
     def weak_text_from_row(self, row) -> str:
-        return " ".join(str(row[col]) for col in self.weak_columns)
+        return " ".join(getattr(row, col) for col in self.weak_columns)
 
     def weak_text(self, element_id: int) -> str:
         row = self.df.loc[element_id]
         return self.weak_text_from_row(row)
 
     def row_iterator(self):
-        for row_id, row in self.df.iterrows():
+        for row in self.df.itertuples():
             yield DocumentRow(
-                element_id=row_id,
+                element_id=row.Index,
                 strong=self.strong_text_from_row(row),
                 weak=self.weak_text_from_row(row),
             )
