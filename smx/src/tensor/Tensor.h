@@ -17,6 +17,8 @@ class Tensor {
 
   size_t ndim() const { return _shape.ndim(); }
 
+  size_t size() const { return _shape.size(); }
+
   Dtype dtype() const { return _dtype; }
 
   virtual bool isSparse() const = 0;

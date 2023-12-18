@@ -24,7 +24,7 @@ std::pair<DenseTensorPtr, DenseTensorPtr> sparseCrossEntropy(
   auto y = softmax(logits);
 
   size_t dim = y->shape().last();
-  size_t n_rows = y->shape().size() / dim;
+  size_t n_rows = y->size() / dim;
 
   const float* y_ptr = y->data<float>();
   const uint32_t* label_ptr = labels->data<uint32_t>();
@@ -49,7 +49,7 @@ DenseTensorPtr sparseCrossEntropyGrad(const DenseTensorPtr& y,
   auto logits_grad = DenseTensor::make(y->shape(), y->dtype());
 
   size_t dim = y->shape().last();
-  size_t n_rows = y->shape().size() / dim;
+  size_t n_rows = y->size() / dim;
 
   const float* y_ptr = y->data<float>();
   const uint32_t* label_ptr = labels->data<uint32_t>();

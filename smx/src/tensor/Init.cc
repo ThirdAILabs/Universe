@@ -10,7 +10,7 @@ DenseTensorPtr ones(const Shape& shape) { return fill(shape, 1.F); }
 
 DenseTensorPtr fill(const Shape& shape, float value) {
   auto tensor = DenseTensor::make(shape, Dtype::f32);
-  std::fill_n(tensor->data<float>(), tensor->shape().size(), value);
+  std::fill_n(tensor->data<float>(), tensor->size(), value);
   return tensor;
 }
 
@@ -22,7 +22,7 @@ DenseTensorPtr normal(const std::vector<size_t>& shape, float mean,
   std::mt19937 rng(seed);
 
   float* data = tensor->data<float>();
-  size_t len = tensor->shape().size();
+  size_t len = tensor->size();
   for (size_t i = 0; i < len; i++) {
     data[i] = dist(rng);
   }

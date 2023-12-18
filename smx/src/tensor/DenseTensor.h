@@ -101,7 +101,7 @@ class DenseTensor final : public Tensor {
     }
 
     size_t last_dim = shapeAt(ndim() - 1);
-    return {data<T>(), static_cast<int64_t>(shape().size() / last_dim),
+    return {data<T>(), static_cast<int64_t>(size() / last_dim),
             static_cast<int64_t>(last_dim)};
   }
 
@@ -115,7 +115,7 @@ class DenseTensor final : public Tensor {
     }
 
     size_t last_dim = shapeAt(ndim() - 1);
-    return {data<T>(), static_cast<int64_t>(shape().size() / last_dim),
+    return {data<T>(), static_cast<int64_t>(size() / last_dim),
             static_cast<int64_t>(last_dim)};
   }
 

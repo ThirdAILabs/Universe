@@ -27,7 +27,7 @@ DenseTensorPtr reluGrad(const DenseTensorPtr& out,
   const float* out_grad_ptr = out_grad->data<float>();
   float* in_grad_ptr = in_grad->data<float>();
 
-  size_t N = out->shape().size();
+  size_t N = out->size();
   // TODO(Nicholas) is 1000 an ok threshold for parallelism?
 #pragma omp parallel for default(none) \
     shared(in_grad_ptr, out_ptr, out_grad_ptr, N) if (N > 1000)

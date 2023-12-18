@@ -22,7 +22,7 @@ CsrTensor::CsrTensor(DenseTensorPtr row_offsets, DenseTensorPtr col_indices,
   CHECK(_col_indices->shapeAt(0) == _col_values->shapeAt(0),
         "Num indices and values must match.");
 
-  size_t indices_len = _col_indices->shape().size();
+  size_t indices_len = _col_indices->size();
   size_t indices_dim = _shape.last();
   const uint32_t* indices_data = _col_indices->data<uint32_t>();
   for (size_t i = 0; i < indices_len; i++) {
@@ -31,7 +31,7 @@ CsrTensor::CsrTensor(DenseTensorPtr row_offsets, DenseTensorPtr col_indices,
               " for CsrTensor with dim " + std::to_string(indices_dim) + ".");
   }
 
-  size_t offsets_len = _row_offsets->shape().size();
+  size_t offsets_len = _row_offsets->size();
   const uint32_t* offsets_data = _row_offsets->data<uint32_t>();
   size_t last_offset = offsets_data[0];
   CHECK(last_offset == 0, "First offset in CsrTensor should be 0.");

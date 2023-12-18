@@ -32,7 +32,7 @@ void generalTranspose(const DenseTensor& in, DenseTensor& out,
 
 #pragma omp parallel for default(none) \
     shared(out, ndim, out_strides, in_strides, perm, in_ptr, out_ptr)
-  for (size_t out_idx = 0; out_idx < out.shape().size(); out_idx++) {
+  for (size_t out_idx = 0; out_idx < out.size(); out_idx++) {
     size_t in_idx = 0;
     size_t rem = out_idx;
     for (size_t i = 0; i < ndim; i++) {
