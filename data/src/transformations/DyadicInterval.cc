@@ -11,13 +11,14 @@
 
 namespace thirdai::data {
 
-DyadicInterval::DyadicInterval(std::string input_column,
+DyadicInterval::DyadicInterval(std::string input_column, std::optional<std::string> context_column,
                                std::optional<std::string> prompt_column,
                                std::string output_interval_prefix,
                                std::string target_column, size_t n_intervals,
                                bool is_bidirectional)
-    : _prompt_column(std::move(prompt_column)),
-      _input_column(std::move(input_column)),
+    : _input_column(std::move(input_column)),
+      _context_column(std::move(context_column)),
+      _prompt_column(std::move(prompt_column)),
       _output_interval_prefix(std::move(output_interval_prefix)),
       _target_column(std::move(target_column)),
       _is_bidirectional(is_bidirectional),
@@ -28,7 +29,7 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
 
   auto texts = columns.getArrayColumn<uint32_t>(_input_column);
 
-  ArrayColumnBasePtr<uint32_t> prompts;
+  ArrayColumnBasePtr<uint32_t> prompts, contexts;
 
   size_t chunk_size = (1UL << (_n_intervals - 1)) + 1;
 
@@ -54,30 +55,40 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
     prompt_inputs.resize(sample_offsets.back());
     prompts = columns.getArrayColumn<uint32_t>(*_prompt_column);
   }
-
+  if (_context_column){
+    contexts = columns.getArrayColumn<uint32_t>(*_context_column);
+  }
   std::exception_ptr error;
 
 #pragma omp parallel for default(none)                                    \
     shared(texts, sample_offsets, interval_from_end, interval_from_start, \
-           prompts, prompt_inputs, targets, chunk_size, error)
+           prompts, prompt_inputs, contexts, targets, chunk_size, error)
   for (size_t i = 0; i < texts->numRows(); i++) {
     try {
-      auto tokens = texts->row(i);
+      auto input_tokens = texts->row(i);
+
+      std::vector<uint32_t> tokens(input_tokens.begin(), input_tokens.end());
+
+      if (_context_column){
+          auto context_tokens = contexts->row(i);
+          tokens.insert(tokens.end(), context_tokens.begin(), context_tokens.end());  
+        }
 
       size_t sample_offset = sample_offsets[i];
 
       for (size_t start = 0; start < tokens.size(); start += chunk_size) {
         size_t end = std::min(start + chunk_size, tokens.size());
-        for (size_t target = start + 1; target < end; target++) {
+        for (size_t target = std::max(start+1, input_tokens.size()); target < end; target++) {
           for (size_t interval = 0; interval < _n_intervals; interval++) {
             size_t int_len = std::min<size_t>(target - start, 1UL << interval);
             size_t int_start = target - int_len;
-            interval_from_end[interval][sample_offset] =
-                tokens.range(int_start, target);
+            std::vector<uint32_t> rangeVec(tokens.begin() + int_start, tokens.begin() + target);
+            interval_from_end[interval][sample_offset] = rangeVec;
+
             if (_is_bidirectional) {
               size_t int_end = start + int_len;
-              interval_from_start[interval][sample_offset] =
-                  tokens.range(start, int_end);
+              std::vector<uint32_t> rangeVec(tokens.begin() + start, tokens.begin() + int_end);
+              interval_from_end[interval][sample_offset] = rangeVec;
             }
           }
 

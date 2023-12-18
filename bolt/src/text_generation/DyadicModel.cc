@@ -40,11 +40,13 @@ bolt::TensorPtr DyadicModel::nextTokenProbs(
       _is_prompt_needed
           ? data::ColumnMap(
                 {{"target", data::ArrayColumn<uint32_t>::make(std::move(tokens),
-                                                              _vocab_size)},
+                                                              _vocab_size)},                                        
                  {"prompt", data::ArrayColumn<uint32_t>::make(
                                 std::move(prompt_columns), _vocab_size)}})
 
           : data::ColumnMap({{"target", data::ArrayColumn<uint32_t>::make(
+                                            std::move(tokens), _vocab_size)},
+                            {"context", data::ArrayColumn<uint32_t>::make(
                                             std::move(tokens), _vocab_size)}});
 
   auto columns = _dyadic_transform->inferenceFeaturization(data);
@@ -78,17 +80,21 @@ metrics::History DyadicModel::train(
 
 data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
                                         size_t batch_size, bool shuffle) {
-  auto data_iter = data::JsonIterator::make(data, {"target"});
+  auto data_iter = data::JsonIterator::make(data, {"target", "context"});
   auto transform =
       _is_prompt_needed
           ? data::Pipeline::make({std::make_shared<data::StringToTokenArray>(
                                       "target", "target", ' ', _vocab_size),
+                                  std::make_shared<data::StringToTokenArray>(
+                                      "context", "context", ' ', _vocab_size),
                                   _dyadic_transform,
                                   std::make_shared<data::StringToTokenArray>(
                                       "prompt", "prompt", ' ', _vocab_size)})
 
           : data::Pipeline::make({std::make_shared<data::StringToTokenArray>(
                                       "target", "target", ' ', _vocab_size),
+                                  std::make_shared<data::StringToTokenArray>(
+                                      "context", "context", ' ', _vocab_size),
                                   _dyadic_transform});
 
   return data::Loader(data_iter, transform, nullptr, _bolt_inputs,
