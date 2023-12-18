@@ -6,7 +6,6 @@ from typing import Callable, Dict, List, Optional, Sequence, Tuple
 import numpy as np
 import pandas as pd
 import thirdai
-import unidecode
 from thirdai._thirdai import bolt, data
 from thirdai.dataset.data_source import PyDataSource
 
@@ -16,8 +15,6 @@ from .mach_mixture_model import MachMixture
 from .models import CancelState, Mach
 from .savable_state import State
 from .training_state.checkpoint_config import CheckpointConfig
-from .training_state.factory import Factory
-from .training_state.training_progress_tracker import NeuralDbProgressTracker
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
 
@@ -194,7 +191,6 @@ class NeuralDB:
     def __init__(self, user_id: str = "user", number_models: int = 1, **kwargs) -> None:
         """user_id is used for logging purposes only"""
         self._user_id: str = user_id
-        print("The 2")
 
         # The savable_state kwarg is only used in static constructor methods
         # and should not be used by an external user.
@@ -373,13 +369,11 @@ class NeuralDB:
 
         ray_version = ray.__version__
         if LooseVersion(ray_version) >= LooseVersion("2.7"):
-            warnings.warn(
-                """
+            warnings.warn("""
                 Using ray version 2.7 or higher requires specifying a remote or NFS storage path. 
                 Support for local checkpoints has been discontinued in these versions. 
                 Refer to https://github.com/ray-project/ray/issues/37177 for details.
-                """.strip()
-            )
+                """.strip())
 
         if not isinstance(documents, list) or not all(
             isinstance(doc, CSV) for doc in documents

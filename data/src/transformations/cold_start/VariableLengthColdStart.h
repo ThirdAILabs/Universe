@@ -82,7 +82,7 @@ struct VariableLengthConfig {
     ss << ", stopword_insertion_probability = "
        << stopword_insertion_probability;
     ss << ", word_removal_probability = " << word_removal_probability;
-    ss << ", word_perturbation_probability" << word_perturbation_probability;
+    ss << ", word_perturbation_probability = " << word_perturbation_probability;
     ss << ")";
     return ss.str();
   }

@@ -15,12 +15,6 @@ class DataSourceCheckpointConfig:
         self.source_checkpoint_location = checkpoint_dir / f"{name}_source.csv"
         self.source_arguments_location = checkpoint_dir / f"{name}_arguments.json"
 
-    def args(self):
-        return {
-            "source_checkpoint_location": str(self.source_checkpoint_location),
-            "source_arguments_location": str(self.source_arguments_location),
-        }
-
     def assert_data_source_exists(self):
         assert_file_exists(self.source_checkpoint_location)
         assert_file_exists(self.source_arguments_location)
@@ -43,31 +37,11 @@ class DirectoryConfig:
             checkpoint_dir=self.checkpoint_dir, name="train"
         )
 
-        self.save_arguments_checkpoint_location = (
-            self.checkpoint_dir / "save_arguments.json"
-        )
-        self.intro_args_checkpoint_location = self.checkpoint_dir / "intro_args.json"
-        self.train_args_checkpoint_location = self.checkpoint_dir / "training_args.json"
-        self.train_status_checkpoint_location = (
-            self.checkpoint_dir / "training_status.json"
+        self.train_and_intro_state_checkpoint_location = (
+            self.checkpoint_dir / "train_state.json"
         )
 
-    def args(self):
-        return {
-            "neuraldb_model_checkpoint_location": str(
-                self.neuraldb_model_checkpoint_location
-            ),
-            "intro_source_args": self.intro_datasource_config.args(),
-            "train_source_args": self.train_datasource_config.args(),
-            "save_arguments_checkpoint_location": str(
-                self.save_arguments_checkpoint_location
-            ),
-            "intro_args_checkpoint_location": str(self.intro_args_checkpoint_location),
-            "train_args_checkpoint_location": str(self.train_args_checkpoint_location),
-            "train_status_checkpoint_location": str(
-                self.train_status_checkpoint_location
-            ),
-        }
+        self.vlc_path = self.checkpoint_dir / "vlc_config.vlc"
 
     @property
     def intro_source_arguments_location(self):

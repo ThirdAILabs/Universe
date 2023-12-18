@@ -8,7 +8,7 @@ from .documents import DocumentDataSource
 from .models import CancelState, Mach, Model
 from .sharded_documents import ShardedDataSource
 from .training_state.checkpoint_config import CheckpointConfig
-from .training_state.training_manager_factory import Factory
+from .training_state.training_manager_factory import TrainingProgressManagerFactory
 from .utils import requires_condition
 
 InferSamples = List
@@ -137,11 +137,34 @@ class MachMixture(Model):
 
         self.n_ids += intro_documents.size
 
-        modelwise_checkpoint_configs = (
-            Factory.make_modelwise_checkpoint_configs_from_config(
-                config=checkpoint_config, number_models=self.number_models
-            )
+        modelwise_checkpoint_configs = TrainingProgressManagerFactory.make_modelwise_checkpoint_configs_from_config(
+            config=checkpoint_config, number_models=self.number_models
         )
+
+        for model_id, (intro_shard, train_shard, model, config) in enumerate(
+            zip(
+                introduce_data_sources,
+                train_data_sources,
+                self.models,
+                modelwise_checkpoint_configs,
+            )
+        ):
+            modelwise_training_manager = (
+                TrainingProgressManagerFactory.make_training_progress_manager(
+                    model=model,
+                    intro_documents=intro_shard,
+                    train_documents=train_shard,
+                    should_train=should_train,
+                    fast_approximation=fast_approximation,
+                    num_buckets_to_sample=num_buckets_to_sample,
+                    max_in_memory_batches=max_in_memory_batches,
+                    override_number_classes=number_classes,
+                    variable_length=variable_length,
+                    checkpoint_config=config,
+                )
+            )
+            modelwise_training_manager.make_preindexing_checkpoint()
+
         for model_id, (
             intro_shard,
             train_shard,

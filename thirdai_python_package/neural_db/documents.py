@@ -230,14 +230,19 @@ class DocumentDataSource(PyDataSource):
     def resource_name(self) -> str:
         return "Documents:\n" + "\n".join([doc.name for doc, _ in self.documents])
 
-    def dataframe(self):
+    def save_to_csv(self, csv_path: Path, save_interval=100_000):
         """
         Iterates through the document data source and generates a dataframe
         """
-        string_io = StringIO("\n".join(self._get_line_iterator()))
-        df = pd.read_csv(string_io)
+        number_lines_in_buffer = 0
+        with open(csv_path, "w") as f:
+            for line in self._get_line_iterator():
+                f.write(line + "\n")
+                number_lines_in_buffer += 1
+            if number_lines_in_buffer > save_interval:
+                f.flush()
+                number_lines_in_buffer = 0
         self.restart()
-        return df
 
     def initialization_args(self):
         return {
@@ -247,7 +252,7 @@ class DocumentDataSource(PyDataSource):
         }
 
     @staticmethod
-    def load_from_dataframe(
+    def load_from_csv(
         csv_path: Path, id_column: str, strong_column: str, weak_column: str
     ):
         csv_document = CSV(

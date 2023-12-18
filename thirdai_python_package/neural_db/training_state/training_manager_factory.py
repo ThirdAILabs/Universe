@@ -1,10 +1,11 @@
 import json
 from pathlib import Path
 
+from ..utils import unpickle_from
 from .checkpoint_config import CheckpointConfig, DirectoryConfig
 from .training_callback import TrainingProgressManager
 from .training_progress_tracker import (
-    IntroConfig,
+    IntroState,
     NeuralDbProgressTracker,
     TrainState,
 )
@@ -45,15 +46,13 @@ class TrainingProgressManagerFactory:
         )
         dir_config.assert_checkpoint_source_exists()
 
-        tracker = NeuralDbProgressTracker()
-        tracker._intro_config = IntroConfig.load(
-            dir_config.intro_args_checkpoint_location
+        with open(dir_config.train_and_intro_state_checkpoint_location, "r") as f:
+            params = json.load(f)
+        vlc_config = unpickle_from(filepath=dir_config.vlc_path)
+
+        return NeuralDbProgressTracker.load(
+            arguments_json=params, vlc_config=vlc_config
         )
-        tracker._train_config = TrainState.load(
-            training_args_path=dir_config.train_args_checkpoint_location,
-            training_status_path=dir_config.train_status_checkpoint_location,
-        )
-        return tracker
 
     @staticmethod
     def make_default_tracker() -> NeuralDbProgressTracker:
@@ -102,6 +101,7 @@ class TrainingProgressManagerFactory:
         num_buckets_to_sample,
         max_in_memory_batches,
         override_number_classes,
+        variable_length,
         checkpoint_config: CheckpointConfig,
     ):
         tracker = TrainingProgressManagerFactory.make_default_tracker()
@@ -124,10 +124,11 @@ class TrainingProgressManagerFactory:
             ),
         )
 
-        training_progress_manager.set_introduce_arguments(
+        training_progress_manager.set_pretraining_arguments(
             fast_approximation=fast_approximation,
             num_buckets_to_sample=num_buckets_to_sample,
             override_number_classes=override_number_classes,
+            vlc_config=variable_length,
         )
 
         if not should_train:
@@ -146,6 +147,7 @@ class TrainingProgressManagerFactory:
         num_buckets_to_sample,
         max_in_memory_batches,
         override_number_classes,
+        variable_length,
         checkpoint_config: CheckpointConfig,
     ):
 
@@ -165,5 +167,6 @@ class TrainingProgressManagerFactory:
                 num_buckets_to_sample=num_buckets_to_sample,
                 max_in_memory_batches=max_in_memory_batches,
                 override_number_classes=override_number_classes,
+                variable_length=variable_length,
                 checkpoint_config=checkpoint_config,
             )

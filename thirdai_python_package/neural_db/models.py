@@ -353,11 +353,6 @@ class Mach(Model):
         ] = data.transformations.VariableLengthConfig(),
         training_progress_manager: TrainingProgressManager = None,
     ):
-        if training_progress_manager:
-            training_progress_manager.tracker.learning_rate = learning_rate
-            training_progress_manager.tracker.min_epochs = min_epochs
-            training_progress_manager.tracker.max_epochs = max_epochs
-
         unsupervised_train_on_docs(
             model=self.model,
             documents=train_documents,
@@ -438,9 +433,9 @@ class Mach(Model):
         Note: Given the datasources for introduction and training, we initialize a Mach model that has number_classes set to the size of introduce documents. But if we want to use this Mach model in our mixture of Models, this will not work because each Mach will be initialized with number of classes equal to the size of the datasource shard. Hence, we add override_number_classes parameters which if set, will initialize Mach Model with number of classes passed by the Mach Mixture.
 
         training_progress_manager backs up as both a callback object that can be used to maintain the checkpoint while training
-        and the source of truth for the current mach object. If we do not resume from a checkpoint, then the manager holds the current Mach object and calling load_model just returns it. Otherwise, the manager sets it's model attribute as None which means that calling load_model will first load the model from the checkpoint and then return the checkpointed model after unpickling it.
+        and the source of truth for the current mach object. If we do not resume from a checkpoint, then the manager holds the current Mach object and calling load_model just returns it. Otherwise, the manager sets it's model attribute after loading the saved model of the previous checkpoint.
 
-        This is designed the way it is to make sure that
+        This is designed the way it is to make sure that that we have identical function calls irrespective of whether we're resuming from a checkpoint/using checkpointing/doing no checkpointing. By making our training progress manager the source of truth for all training related variables/objects, we effectively offload the task of maintaining training state and checkpointing to the manager. And the manager internally decides when it should save what objects.
         """
         training_progress_manager = (
             TrainingProgressManagerFactory.make_training_progress_manager(
@@ -452,12 +447,12 @@ class Mach(Model):
                 num_buckets_to_sample=num_buckets_to_sample,
                 max_in_memory_batches=max_in_memory_batches,
                 override_number_classes=override_number_classes,
+                variable_length=variable_length,
                 checkpoint_config=checkpoint_config,
             )
         )
 
-        # We will checkpoint the document sources, model, and the training progress manager state here. The training manager takes care of what variables it need to save at what point. The function make_preindexing_checkpoint does not make a checkpoint if the training was resumed (the checkpoints for tracker, model, datasources are already present on disk.)
-        training_progress_manager.make_preindexing_checkpoint()
+        # Since, the training manager is the source of truth, we change the reference of this object to the model loaded by the training manager.
         self: Mach = training_progress_manager.neuraldb_mach_model
 
         if self.model is None:
@@ -500,7 +495,7 @@ class Mach(Model):
             max_epochs=max_epochs,
             freeze_before_train=freeze_before_train,
         )
-        # This function call checks whether insert has already been completed (could be the case when resumes from a checkpoint). Does not checkpoint if insert was completed when we resumed from a checkpoint. Checkpoints in all other cases. We also update the is_insert_completed in the training manager.
+        # This function call checks whether insert has already been completed (could be the case when resumes from a checkpoint). Does not checkpoint if insert was completed when we resumed from a checkpoint. Checkpoints in all other cases. We also update the is_insert_completed flag in the training manager.
         training_progress_manager.make_insert_checkpoint()
 
         if not training_progress_manager.is_training_completed:
@@ -512,7 +507,6 @@ class Mach(Model):
                 acc_to_stop=0.95,
                 on_progress=on_progress,
                 cancel_state=cancel_state,
-                variable_length=variable_length,
                 **train_arguments,
             )
         else:

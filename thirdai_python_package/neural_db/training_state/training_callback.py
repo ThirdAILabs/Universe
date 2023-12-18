@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Union
 
 from thirdai import bolt
+import shutil
 
 from ..documents import DocumentDataSource
 from ..utils import pickle_to, unpickle_from
@@ -25,7 +26,7 @@ class SaveLoadUtils:
         try:
             with open(arguments_path) as f:
                 args = json.load(f)
-            source = DocumentDataSource.load_from_dataframe(
+            source = DocumentDataSource.load_from_csv(
                 csv_path=source_path,
                 id_column=args["id_column"],
                 strong_column=args["strong_column"],
@@ -44,20 +45,28 @@ class SaveLoadUtils:
 
     @staticmethod
     def save_document_data_source(source, source_path, arguments_path):
-        dataframe = source._intro_source.dataframe()
-        dataframe.to_csv(
-            source_path,
-            index=False,
-        )
+        source.save_to_csv(csv_path=source_path)
+
         with open(arguments_path, "w") as f:
             json.dump(source.initialization_args(), f, indent=4)
+
+    @staticmethod
+    def copy_files_to_folder(src_config: DirectoryConfig, tgt_config: DirectoryConfig):
+        assert src_config and tgt_config
+
+        source_dir = src_config.checkpoint_dir
+        target_dir = tgt_config.checkpoint_dir
+        for item in source_dir.iterdir():
+            if item.is_file():
+                dest_file = target_dir / item.name
+                shutil.copy(item, dest_file)
 
 
 class TrainingProgressManager(bolt.train.callbacks.Callback):  # type: ignore
     def __init__(
         self,
         tracker: NeuralDbProgressTracker,
-        dir_config: Union[DirectoryConfig, None] = None,
+        dir_config: DirectoryConfig = None,
         neuraldb_mach_model=None,
         intro_source=None,
         train_source=None,
@@ -75,10 +84,16 @@ class TrainingProgressManager(bolt.train.callbacks.Callback):  # type: ignore
         self._is_resumed = is_resumed
 
         if self.dir_config:
+            self.backup_config = DirectoryConfig(
+                checkpoint_dir=self.dir_config.checkpoint_dir / ".temp"
+            )
+            print(str(self.backup_config.checkpoint_dir))
             os.makedirs(
-                os.path.join(self.dir_config.checkpoint_dir),
+                os.path.join(self.backup_config.checkpoint_dir),
                 exist_ok=True,
             )
+        else:
+            self.backup_config = None
 
     def on_epoch_end(self):
         self.tracker.current_epoch_number += 1
@@ -91,104 +106,114 @@ class TrainingProgressManager(bolt.train.callbacks.Callback):  # type: ignore
     @property
     def neuraldb_mach_model(self):
         if self._neuraldb_mach_model is None:
-            self.load_model()
+            self._neuraldb_mach_model = self.load_model()
         return self._neuraldb_mach_model
 
     @property
     def intro_source(self):
         if self._intro_source is None:
-            self.load_intro_source()
+            self._intro_source = self.load_intro_source()
         return self._intro_source
 
     @property
     def train_source(self):
         if self._train_source is None:
-            self.load_train_source()
+            self._train_source = self.load_train_source()
         return self._train_source
 
     def load_model(self):
         if self._is_resumed:
             assert self.dir_config != None
-            self._neuraldb_mach_model = SaveLoadUtils.load_mach_model(
+            return SaveLoadUtils.load_mach_model(
                 path=self.dir_config.neuraldb_model_checkpoint_location
             )
 
     def load_intro_source(self):
         if self._is_resumed:
             assert self.dir_config != None
-            self._intro_source = TrainingProgressManager.load_source(
-                arguments_location=self.dir_config.intro_source_arguments_location,
-                checkpoint_location=self.dir_config.intro_source_checkpoint_location,
+            return SaveLoadUtils.load_document_data_source(
+                source_path=self.dir_config.intro_source_checkpoint_location,
+                arguments_path=self.dir_config.intro_source_arguments_location,
             )
 
     def load_train_source(self):
         if self._is_resumed:
             assert self.dir_config != None
-            self._train_source = TrainingProgressManager.load_source(
-                arguments_location=self.dir_config.train_source_arguments_location,
-                checkpoint_location=self.dir_config.train_source_checkpoint_location,
-            )
-
-    def checkpoint_model(self):
-        if self.neuraldb_mach_model and self.dir_config:
-            SaveLoadUtils.save_mach_model(
-                self._neuraldb_mach_model,
-                self.dir_config.neuraldb_model_checkpoint_location,
-            )
-
-    def checkpoint_sources(self):
-        if self.dir_config:
-            SaveLoadUtils.save_document_data_source(
-                source=self.intro_source,
-                source_path=self.dir_config.intro_source_checkpoint_location,
-                arguments_path=self.dir_config.intro_source_arguments_location,
-            )
-            SaveLoadUtils.save_document_data_source(
-                source=self.train_source,
+            return SaveLoadUtils.load_document_data_source(
                 source_path=self.dir_config.train_source_checkpoint_location,
                 arguments_path=self.dir_config.train_source_arguments_location,
             )
 
+    def checkpoint_model(self):
+        if self.neuraldb_mach_model and self.backup_config:
+            SaveLoadUtils.save_mach_model(
+                self._neuraldb_mach_model,
+                self.backup_config.neuraldb_model_checkpoint_location,
+            )
+
+    def checkpoint_sources(self):
+        if self.backup_config:
+            SaveLoadUtils.save_document_data_source(
+                source=self.intro_source,
+                source_path=self.backup_config.intro_source_checkpoint_location,
+                arguments_path=self.backup_config.intro_source_arguments_location,
+            )
+            SaveLoadUtils.save_document_data_source(
+                source=self.train_source,
+                source_path=self.backup_config.train_source_checkpoint_location,
+                arguments_path=self.backup_config.train_source_arguments_location,
+            )
+            pickle_to(self.tracker.vlc_config, filepath=self.backup_config.vlc_path)
+
     def checkpoint_tracker(self):
-        if self.dir_config:
-            with open(self.dir_config.intro_args_checkpoint_location, "w") as f:
-                json.dump(self.tracker.introduce_arguments(), f, indent=4)
-
-            with open(self.dir_config.train_args_checkpoint_location, "w") as f:
-                json.dump(self.tracker.training_arguments(), f, indent=4)
-
-            with open(self.dir_config.train_status_checkpoint_location, "w") as f:
-                json.dump(self.tracker.training_state(), f, indent=4)
+        if self.backup_config:
+            tracker_state = self.tracker.__dict__()
+            with open(
+                self.backup_config.train_and_intro_state_checkpoint_location, "w"
+            ) as f:
+                json.dump(tracker_state, f, indent=4)
 
     def make_preindexing_checkpoint(self):
         if self._is_resumed:
             return
         self.full_checkpoint()
+        if self.dir_config:
+            SaveLoadUtils.copy_files_to_folder(self.backup_config, self.dir_config)  # type: ignore
 
     def make_insert_checkpoint(self):
         if self.is_insert_completed:
             return
-        self.checkpoint_without_sources()
         self.is_insert_completed = True
+        self.checkpoint_without_sources()
+        if self.dir_config:
+            SaveLoadUtils.copy_files_to_folder(self.backup_config, self.dir_config)  # type: ignore
 
     def checkpoint_without_sources(self):
+        print("making a checkpoint without sources")
         self.checkpoint_model()
         self.checkpoint_tracker()
+        if self.dir_config:
+            SaveLoadUtils.copy_files_to_folder(self.backup_config, self.dir_config)  # type: ignore
 
     def full_checkpoint(self):
+        print("making a full checkpoint")
         self.checkpoint_model()
         self.checkpoint_sources()
         self.checkpoint_tracker()
+        if self.dir_config:
+            SaveLoadUtils.copy_files_to_folder(self.backup_config, self.dir_config)  # type: ignore
 
-    def set_introduce_arguments(
+    def set_pretraining_arguments(
         self,
         fast_approximation: bool,
         num_buckets_to_sample: int,
         override_number_classes: int,
+        vlc_config,
     ):
         self.tracker.fast_approximation = fast_approximation
         self.tracker.num_buckets_to_sample = num_buckets_to_sample
         self.tracker.override_number_classes = override_number_classes
+        self.tracker.vlc_config = vlc_config
 
     def set_training_arguments(
         self,
@@ -237,5 +262,6 @@ class TrainingProgressManager(bolt.train.callbacks.Callback):  # type: ignore
             "learning_rate": self.tracker.learning_rate,
             "freeze_before_train": self.tracker.freeze_before_train,
             "max_in_memory_batches": self.tracker.max_in_memory_batches,
+            "variable_length": self.tracker.vlc_config,
             "training_progress_manager": self,
         }
