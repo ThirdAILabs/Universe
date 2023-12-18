@@ -1,7 +1,7 @@
 import json
 import time
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import List, Dict, Tuple, Union
 from urllib.parse import urljoin
 from uuid import UUID
 
@@ -63,13 +63,13 @@ class NeuralDBClient:
         insert(self, files: List[str]) -> None:
             Inserts documents into the ndb model.
 
-        associate(self, query1: str, query2: str) -> None:
+        associate(self, text_pairs (List[Tuple[str, str]])) -> None:
             Associates two queries in the ndb model.
 
-        upvote(self, query_id: UUID, query_text: str, reference: dict) -> None:
+        upvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]) -> None:
             Upvotes a response in the ndb model.
 
-        downvote(self, query_id: UUID, query_text: str, reference: dict) -> None:
+        downvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]) -> None:
             Downvotes a response in the ndb model.
     """
 
@@ -117,41 +117,44 @@ class NeuralDBClient:
         print(json.loads(response.content)["message"])
 
     @check_deployment_decorator
-    def associate(self, text_pairs: List[Tuple[str, str]]):
+    def associate(self, text_pairs: List[Dict[str, str]]):
         """
         Associates two queries in the ndb model.
 
         Args:
-            text_pairs (List[Tuple[str, str]]): List of tuples of form (query1, query2).
+            text_pairs (List[Tuple[str, str]]): List of dictionaries where each dictionary has 'source' and 'target' keys.
         """
         response = http_post_with_error(
-            urljoin(self.base_url, "associate"), json=text_pairs
+            urljoin(self.base_url, "associate"),
+            json={"text_pairs": text_pairs},
         )
 
     @check_deployment_decorator
-    def upvote(self, text_id_pairs: List[Tuple[str, int]]):
+    def upvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]):
         """
         Upvote responses in the ndb model.
 
         Args:
-            text_id_pairs: List[Tuple[str, int]]: List of tuples of form (query_text, reference_id).
+            text_id_pairs: (List[Dict[str, Union[str, int]]]): List of dictionaries where each dictionary has 'query_text' and 'reference_id' keys.
         """
         response = http_post_with_error(
-            urljoin(self.base_url, "upvote"), json=text_id_pairs
+            urljoin(self.base_url, "upvote"),
+            json={"text_id_pairs": text_id_pairs},
         )
 
         print("Successfully upvoted the specified search result.")
 
     @check_deployment_decorator
-    def downvote(self, text_id_pairs: List[Tuple[str, int]]):
+    def downvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]):
         """
         Downvote responses in the ndb model.
 
         Args:
-            text_id_pairs: List[Tuple[str, int]]: List of tuples of form (query_text, reference_id).
+            text_id_pairs: (List[Dict[str, Union[str, int]]]): List of dictionaries where each dictionary has 'query_text' and 'reference_id' keys.
         """
         response = http_post_with_error(
-            urljoin(self.base_url, "downvote"), json=text_id_pairs
+            urljoin(self.base_url, "downvote"),
+            json={"text_id_pairs": text_id_pairs},
         )
 
         print("Successfully downvoted the specified search result.")
