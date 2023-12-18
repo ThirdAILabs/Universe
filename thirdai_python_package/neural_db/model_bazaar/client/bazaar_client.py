@@ -1,7 +1,7 @@
 import json
 import time
 from pathlib import Path
-from typing import List, Dict, Tuple, Union
+from typing import Dict, List, Tuple, Union
 from urllib.parse import urljoin
 from uuid import UUID
 
