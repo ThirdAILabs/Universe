@@ -24,6 +24,10 @@ class Linear final : public UnaryModule {
 
   std::vector<VariablePtr> parameters() const final { return {_weight, _bias}; }
 
+  const auto& weight() const { return _weight; }
+
+  const auto& bias() const { return _bias; }
+
  private:
   VariablePtr _weight;
   VariablePtr _bias;

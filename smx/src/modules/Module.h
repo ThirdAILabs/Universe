@@ -65,6 +65,11 @@ class Sequential final : public UnaryModule {
     return parameters;
   }
 
+  const std::shared_ptr<UnaryModule>& operator[](size_t i) const {
+    return _modules.at(i);
+  }
+
+ private:
   std::vector<std::shared_ptr<UnaryModule>> _modules;
 };
 

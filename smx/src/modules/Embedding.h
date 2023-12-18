@@ -11,19 +11,21 @@ class Embedding final : public UnaryModule {
  public:
   Embedding(size_t n_embs, size_t emb_dim, bool reduce_mean = true)
       : _reduce_mean(reduce_mean) {
-    _embs = Variable::make(
+    _emb = Variable::make(
         smx::normal({n_embs, emb_dim}, /*mean=*/0.0, /*stddev=*/0.01),
         /*requires_grad=*/true);
   }
 
   VariablePtr forward(const VariablePtr& indices) final {
-    return embedding(indices, _embs, _reduce_mean);
+    return embedding(indices, _emb, _reduce_mean);
   }
 
-  std::vector<VariablePtr> parameters() const final { return {_embs}; }
+  std::vector<VariablePtr> parameters() const final { return {_emb}; }
+
+  const auto& emb() const { return _emb; }
 
  private:
-  VariablePtr _embs;
+  VariablePtr _emb;
   bool _reduce_mean;
 };
 

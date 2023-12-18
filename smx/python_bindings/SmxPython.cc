@@ -23,6 +23,7 @@
 #include <smx/src/tensor/Shape.h>
 #include <smx/src/tensor/Tensor.h>
 #include <utils/Random.h>
+#include <memory>
 #include <stdexcept>
 
 namespace thirdai::smx::python {
@@ -127,7 +128,9 @@ void defineTensor(py::module_& smx) {
            py::arg("col_values"), py::arg("dense_shape"))
       .def_property_readonly("row_offsets", &CsrTensor::rowOffsets)
       .def_property_readonly("col_indices", &CsrTensor::colIndices)
-      .def_property_readonly("col_values", &CsrTensor::colValues);
+      .def_property_readonly("col_values", &CsrTensor::colValues)
+      .def_property_readonly("n_rows", &CsrTensor::nRows)
+      .def_property_readonly("n_dense_cols", &CsrTensor::nDenseCols);
 
   smx.def("transpose", &transpose, py::arg("tensor"), py::arg("perm"));
   smx.def("reshape", &reshape, py::arg("tensor"), py::arg("new_shape"));
@@ -194,14 +197,26 @@ void defineModules(py::module_& smx) {
                                                                    "Sequential")
       .def(py::init<std::vector<std::shared_ptr<UnaryModule>>>(),
            py::arg("modules"))
-      .def("append", &Sequential::append, py::arg("module"));
+      .def(py::init([](const py::args& args) {
+        std::vector<std::shared_ptr<UnaryModule>> modules;
+        for (const auto& arg : args) {
+          modules.push_back(arg.cast<std::shared_ptr<UnaryModule>>());
+        }
+        return std::make_shared<Sequential>(modules);
+      }))
+      .def("append", &Sequential::append, py::arg("module"))
+      .def("__getitem__", &Sequential::operator[]);
 
   py::class_<Linear, std::shared_ptr<Linear>, UnaryModule>(smx, "Linear")
-      .def(py::init<size_t, size_t>(), py::arg("dim"), py::arg("input_dim"));
+      .def(py::init<size_t, size_t>(), py::arg("dim"), py::arg("input_dim"))
+      .def_property_readonly("weight", &Linear::weight)
+      .def_property_readonly("bias", &Linear::bias);
 
   py::class_<Embedding, std::shared_ptr<Embedding>, UnaryModule>(smx,
                                                                  "Embedding")
-      .def(py::init<size_t, size_t>(), py::arg("n_embs"), py::arg("emb_dim"));
+      .def(py::init<size_t, size_t, bool>(), py::arg("n_embs"),
+           py::arg("emb_dim"), py::arg("reduce_mean") = true)
+      .def_property_readonly("emb", &Embedding::emb);
 
   py::class_<Activation, std::shared_ptr<Activation>, UnaryModule>(smx,
                                                                    "Activation")

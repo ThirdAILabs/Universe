@@ -2,21 +2,23 @@
 #include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Functions.h>
 #include <smx/src/tensor/Init.h>
+#include <algorithm>
 
 namespace thirdai::smx {
 
 inline void embeddingGather(const uint32_t* indices, const float* values,
                             size_t n_indices, const float* embs, size_t emb_dim,
                             float* out, bool reduce_mean) {
+  std::fill(out, out + emb_dim, 0.0);
   for (size_t i = 0; i < n_indices; i++) {
-    const float* start = embs + indices[i] * emb_dim;
-#pragma omp simd
+    const float* emb = embs + indices[i] * emb_dim;
+    // #pragma omp simd
     for (size_t j = 0; j < emb_dim; j++) {
-      out[j] += values[i] * start[j];
+      out[j] += values[i] * emb[j];
     }
   }
   if (reduce_mean) {
-#pragma omp simd
+    // #pragma omp simd
     for (size_t i = 0; i < emb_dim; i++) {
       out[i] /= n_indices;
     }
@@ -56,9 +58,11 @@ DenseTensorPtr embedding(const CsrTensorPtr& indices,
   auto out = DenseTensor::make(Shape(batch_size, emb_dim), Dtype::f32);
   float* out_ptr = out->data<float>();
 
+// TODO(Nicholas): change parallelism condition to include number of tokens
+// embeddings are being computed for.
 #pragma omp parallel for default(none)                                       \
     shared(batch_size, row_offsets, col_indices, col_values, embeddings_ptr, \
-           emb_dim, out_ptr, reduce_mean)
+           emb_dim, out_ptr, reduce_mean) if (batch_size > 1)
   for (size_t i = 0; i < batch_size; i++) {
     size_t offset = row_offsets[i];
     embeddingGather(col_indices + offset, col_values + offset,

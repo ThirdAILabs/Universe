@@ -42,7 +42,7 @@ def test_smx_clinc(download_clinc_dataset):
 
     model = smx.Sequential(
         [
-            smx.Embedding(n_embs=100000, emb_dim=512),
+            smx.Embedding(n_embs=100000, emb_dim=512, reduce_mean=False),
             smx.Activation("relu"),
             smx.Linear(dim=150, input_dim=512),
         ]
@@ -50,7 +50,7 @@ def test_smx_clinc(download_clinc_dataset):
 
     optimizer = smx.optimizers.Adam(model.parameters(), lr=0.01)
 
-    for epoch in range(10):
+    for epoch in range(5):
         s = time.perf_counter()
         for x, y in zip(train_x, train_y):
             out = model(x[0])
@@ -60,7 +60,6 @@ def test_smx_clinc(download_clinc_dataset):
             optimizer.apply()
             optimizer.zero_grad()
         e = time.perf_counter()
-        print(f"Epoch {epoch} time={e-s}")
         correct, total = 0, 0
         for x, y in zip(val_x, val_y):
             out = model(x[0]).tensor.numpy()
@@ -70,6 +69,6 @@ def test_smx_clinc(download_clinc_dataset):
             total += len(np_y)
 
         accuracy = correct / total
-        print(f"Epoch {epoch} accuracy={accuracy}")
+        print(f"epoch {epoch} time={e-s}s val_accuracy={accuracy}\n")
 
     assert accuracy >= 0.85

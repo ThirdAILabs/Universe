@@ -89,6 +89,8 @@ def test_csr_tensor():
 
     tensor = smx.CsrTensor(offsets, indices, values, smx.Shape(4, 20))
 
+    assert tensor.n_rows == 4
+    assert tensor.n_dense_cols == 20
     assert np.array_equal(np.array(offsets), tensor.row_offsets.numpy())
     assert np.array_equal(np.array(indices), tensor.col_indices.numpy())
     assert np.array_equal(np.array(values), tensor.col_values.numpy())
