@@ -14,7 +14,7 @@ concurrency:
 # for more details.
 on: 
   push: 
-    branches: [main, speedup-dataloading]
+    branches: [main]
     tags: [ 'v*.*.*' ]
   workflow_dispatch:  
 
@@ -126,7 +126,7 @@ jobs:
           # test our distributed pipeline.
           #
           # TODO(any): A more future proof solution when stuff starts working.
-          CIBW_SKIP: "cp36-* cp37-* cp38-* cp310-* cp311-*"
+          CIBW_SKIP: "cp36-* cp37-*"
 
 
       - name: Upload wheels
