@@ -1,14 +1,14 @@
 import json
+from dataclasses import dataclass
 from pathlib import Path
 
 from ..utils import assert_file_exists
-from dataclasses import dataclass
 
 
 class DataSourceCheckpointConfig:
-    def __init__(self, checkpoint_dir: Path, type: str):
-        self.source_checkpoint_location = checkpoint_dir / f"{type}_source.csv"
-        self.source_arguments_location = checkpoint_dir / f"{type}_arguments.json"
+    def __init__(self, checkpoint_dir: Path, name: str):
+        self.source_checkpoint_location = checkpoint_dir / f"{name}_source.csv"
+        self.source_arguments_location = checkpoint_dir / f"{name}_arguments.json"
 
     def args(self):
         return {
@@ -28,10 +28,10 @@ class DirConfig:
 
         self.neuraldb_model_checkpoint_location = self.checkpoint_dir / "model.udt"
         self.intro_datasource_config = DataSourceCheckpointConfig(
-            checkpoint_dir=self.checkpoint_dir, type="intro"
+            checkpoint_dir=self.checkpoint_dir, name="intro"
         )
         self.train_datasource_config = DataSourceCheckpointConfig(
-            checkpoint_dir=self.checkpoint_dir, type="train"
+            checkpoint_dir=self.checkpoint_dir, name="train"
         )
 
         self.save_arguments_checkpoint_location = (

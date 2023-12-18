@@ -6,9 +6,9 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt, data
 
 from .documents import DocumentDataSource
+from .training_state.checkpoint_config import CheckpointConfig
 from .training_state.factory import Factory
 from .training_state.training_callback import TrainingProgressManager
-from .training_state.checkpoint_config import CheckpointConfig
 from .utils import clean_text
 
 InferSamples = List

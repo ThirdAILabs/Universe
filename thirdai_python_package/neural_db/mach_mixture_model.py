@@ -7,9 +7,9 @@ from thirdai import bolt, data
 from .documents import DocumentDataSource
 from .models import CancelState, Mach, Model
 from .sharded_documents import ShardedDataSource
-from .utils import requires_condition
 from .training_state.checkpoint_config import CheckpointConfig
 from .training_state.factory import Factory
+from .utils import requires_condition
 
 InferSamples = List
 Predictions = Sequence
@@ -142,11 +142,7 @@ class MachMixture(Model):
                 config=checkpoint_config, number_models=self.number_models
             )
         )
-        for model_id, (
-            intro_shard,
-            train_shard,
-            model,
-        ) in enumerate(
+        for model_id, (intro_shard, train_shard, model,) in enumerate(
             zip(
                 introduce_data_sources,
                 train_data_sources,

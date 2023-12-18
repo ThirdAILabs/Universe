@@ -1,8 +1,9 @@
 import json
 import os
 from pathlib import Path
-from thirdai import bolt
 from typing import Union
+
+from thirdai import bolt
 
 from ..documents import DocumentDataSource
 from ..utils import pickle_to, unpickle_from

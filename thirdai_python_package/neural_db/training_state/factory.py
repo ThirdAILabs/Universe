@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from .checkpoint_config import DirConfig, CheckpointConfig
+from .checkpoint_config import CheckpointConfig, DirConfig
 from .training_callback import TrainingProgressManager
 from .training_progress_tracker import (
     IntroConfig,
