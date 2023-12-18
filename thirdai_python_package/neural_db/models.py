@@ -7,7 +7,7 @@ from thirdai import bolt, data
 
 from .documents import DocumentDataSource
 from .training_state.checkpoint_config import CheckpointConfig
-from .training_state.factory import Factory
+from .training_state.training_manager_factory import TrainingProgressManagerFactory
 from .training_state.training_callback import TrainingProgressManager
 from .utils import clean_text
 
@@ -442,21 +442,23 @@ class Mach(Model):
 
         This is designed the way it is to make sure that
         """
-        training_progress_manager = Factory.make_training_progress_manager(
-            model=self,
-            intro_documents=intro_documents,
-            train_documents=train_documents,
-            should_train=should_train,
-            fast_approximation=fast_approximation,
-            num_buckets_to_sample=num_buckets_to_sample,
-            max_in_memory_batches=max_in_memory_batches,
-            override_number_classes=override_number_classes,
-            checkpoint_config=checkpoint_config,
+        training_progress_manager = (
+            TrainingProgressManagerFactory.make_training_progress_manager(
+                model=self,
+                intro_documents=intro_documents,
+                train_documents=train_documents,
+                should_train=should_train,
+                fast_approximation=fast_approximation,
+                num_buckets_to_sample=num_buckets_to_sample,
+                max_in_memory_batches=max_in_memory_batches,
+                override_number_classes=override_number_classes,
+                checkpoint_config=checkpoint_config,
+            )
         )
-        # We will checkpoint the document sources, model, and the training progress manager state here. Note that in case of resume checkpoint, the model is not saved. The training manager takes care of what variables it need to save at what point.
-        training_progress_manager.full_checkpoint()
-        model: Mach = training_progress_manager.neuraldb_mach_model
-        self = model
+
+        # We will checkpoint the document sources, model, and the training progress manager state here. The training manager takes care of what variables it need to save at what point. The function make_preindexing_checkpoint does not make a checkpoint if the training was resumed (the checkpoints for tracker, model, datasources are already present on disk.)
+        training_progress_manager.make_preindexing_checkpoint()
+        self: Mach = training_progress_manager.neuraldb_mach_model
 
         if self.model is None:
             print("Model is None initializing")
@@ -498,7 +500,7 @@ class Mach(Model):
             max_epochs=max_epochs,
             freeze_before_train=freeze_before_train,
         )
-        # This function call checks whether insert has already been completed (could be the case when resumes from a checkpoint). Does not checkpoint if insert was completed when we resumed from a checkpoint. Checkpoints in all other cases.
+        # This function call checks whether insert has already been completed (could be the case when resumes from a checkpoint). Does not checkpoint if insert was completed when we resumed from a checkpoint. Checkpoints in all other cases. We also update the is_insert_completed in the training manager.
         training_progress_manager.make_insert_checkpoint()
 
         if not training_progress_manager.is_training_completed:

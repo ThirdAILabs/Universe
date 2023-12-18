@@ -4,7 +4,7 @@ from pathlib import Path
 from ..utils import assert_file_exists
 
 
-class TrainingConfig:
+class TrainState:
     def __init__(
         self,
         learning_rate: float,
@@ -23,15 +23,6 @@ class TrainingConfig:
         self.current_epoch_number = current_epoch_number
         self.is_training_completed = is_training_completed
 
-    def __iter__(self):
-        yield "learning_rate", self.learning_rate
-        yield "min_epochs", self.min_epochs
-        yield "max_epochs", self.max_epochs
-        yield "freeze_before_train", self.freeze_before_train
-        yield "max_in_memory_batches", self.max_in_memory_batches
-        yield "current_epoch_number", self.current_epoch_number
-        yield "is_training_completed", self.is_training_completed
-
     def args(self):
         return {
             "learning_rate": self.learning_rate,
@@ -41,22 +32,22 @@ class TrainingConfig:
             "max_in_memory_batches": self.max_in_memory_batches,
         }
 
-    def state(self):
+    def status(self):
         return {
             "current_epoch_number": self.current_epoch_number,
             "is_training_completed": self.is_training_completed,
         }
 
     @staticmethod
-    def load(training_args_path: Path, training_state_path: Path):
+    def load(training_args_path: Path, training_status_path: Path):
         assert_file_exists(training_args_path)
-        assert_file_exists(training_state_path)
+        assert_file_exists(training_status_path)
 
         with open(training_args_path, "r") as f:
             args = json.load(f)
-        with open(training_state_path, "r") as f:
+        with open(training_status_path, "r") as f:
             state = json.load(f)
-        return TrainingConfig(
+        return TrainState(
             learning_rate=args["learning_rate"],
             min_epochs=args["min_epochs"],
             max_epochs=args["max_epochs"],
@@ -117,45 +108,6 @@ class DataSourceCheckpointConfig:
         assert_file_exists(self.source_arguments_location)
 
 
-class CheckpointConfig:
-    def __init__(self, checkpoint_dir: Path):
-        # Checkpoint dir here refers to model specific directory
-        self.neuraldb_model_checkpoint_location = checkpoint_dir / "model.udt"
-        self.intro_datasource_config = DataSourceCheckpointConfig(
-            checkpoint_dir=checkpoint_dir, type="intro"
-        )
-        self.train_datasource_config = DataSourceCheckpointConfig(
-            checkpoint_dir=checkpoint_dir, type="train"
-        )
-
-        self.save_arguments_checkpoint_location = checkpoint_dir / "save_arguments.json"
-        self.intro_args_checkpoint_location = checkpoint_dir / "intro_args.json"
-        self.train_args_checkpoint_location = checkpoint_dir / "training_args.json"
-        self.train_state_checkpoint_location = checkpoint_dir / "training_state.json"
-
-    def args(self):
-        return {
-            "neuraldb_model_checkpoint_location": str(
-                self.neuraldb_model_checkpoint_location
-            ),
-            "intro_source_args": self.intro_datasource_config.args(),
-            "train_source_args": self.train_datasource_config.args(),
-            "save_arguments_checkpoint_location": str(
-                self.save_arguments_checkpoint_location
-            ),
-            "intro_args_checkpoint_location": str(self.intro_args_checkpoint_location),
-            "train_args_checkpoint_location": str(self.train_args_checkpoint_location),
-            "train_state_checkpoint_location": str(
-                self.train_state_checkpoint_location
-            ),
-        }
-
-    def assert_checkpoint_source_exists(self):
-        self.intro_datasource_config.assert_data_source_exists()
-        self.train_datasource_config.assert_data_source_exists()
-        assert_file_exists(self.neuraldb_model_checkpoint_location)
-
-
 class NeuralDbProgressTracker:
     """
     This class will be used to track the current training status of a NeuralDB Mach Model.
@@ -168,19 +120,19 @@ class NeuralDbProgressTracker:
     def __init__(self):
         # These are the introduce state arguments and updated once the introduce document is done
         self._intro_config = IntroConfig(
-            num_buckets_to_sample=None,
-            fast_approximation=None,
-            override_number_classes=None,
+            num_buckets_to_sample=None,  # type: ignore
+            fast_approximation=None,  # type: ignore
+            override_number_classes=None,  # type: ignore
             is_insert_completed=False,
         )
 
         # These are training arguments and are updated while the training is in progress
-        self._train_config = TrainingConfig(
-            learning_rate=None,
-            min_epochs=None,
-            max_epochs=None,
-            freeze_before_train=None,
-            max_in_memory_batches=None,
+        self._train_config = TrainState(
+            learning_rate=None,  # type: ignore
+            min_epochs=None,  # type: ignore
+            max_epochs=None,  # type: ignore
+            freeze_before_train=None,  # type: ignore
+            max_in_memory_batches=None,  # type: ignore
             current_epoch_number=0,
             is_training_completed=False,
         )
@@ -220,7 +172,7 @@ class NeuralDbProgressTracker:
         if isinstance(is_insert_completed, bool):
             self._intro_config.is_insert_completed = is_insert_completed
         else:
-            raise Exception("Can set the property only with a bool")
+            raise TypeError("Can set the property only with a bool")
 
     @property
     def learning_rate(self):
@@ -277,7 +229,7 @@ class NeuralDbProgressTracker:
         if isinstance(current_epoch_number, int):
             self._train_config.current_epoch_number = current_epoch_number
         else:
-            raise Exception("Can set the property only with an int")
+            raise TypeError("Can set the property only with an int")
 
     @property
     def is_training_completed(self):
@@ -288,7 +240,7 @@ class NeuralDbProgressTracker:
         if isinstance(is_training_completed, bool):
             self._train_config.is_training_completed = is_training_completed
         else:
-            raise Exception("Can set the property only with a bool")
+            raise TypeError("Can set the property only with a bool")
 
     def introduce_arguments(self):
         return self._intro_config.args()
@@ -297,4 +249,4 @@ class NeuralDbProgressTracker:
         return self._train_config.args()
 
     def training_state(self):
-        return self._train_config.state()
+        return self._train_config.status()

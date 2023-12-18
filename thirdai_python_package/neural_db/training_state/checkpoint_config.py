@@ -6,6 +6,11 @@ from ..utils import assert_file_exists
 
 
 class DataSourceCheckpointConfig:
+    """
+    source_checkpoint_location : file where the data is stored
+    source_arguments_location : file used to initialize the DocumentDataSource object that will load the data.
+    """
+
     def __init__(self, checkpoint_dir: Path, name: str):
         self.source_checkpoint_location = checkpoint_dir / f"{name}_source.csv"
         self.source_arguments_location = checkpoint_dir / f"{name}_arguments.json"
@@ -21,7 +26,11 @@ class DataSourceCheckpointConfig:
         assert_file_exists(self.source_arguments_location)
 
 
-class DirConfig:
+class DirectoryConfig:
+    """
+    This config class is used to maining the paths of the objects which are created while we are tracking the training progress of NeuralDB. There is a directory config for each model that is present in NeuralDB.
+    """
+
     def __init__(self, checkpoint_dir: Path):
         # Checkpoint dir here refers to model specific directory
         self.checkpoint_dir = checkpoint_dir
@@ -39,8 +48,8 @@ class DirConfig:
         )
         self.intro_args_checkpoint_location = self.checkpoint_dir / "intro_args.json"
         self.train_args_checkpoint_location = self.checkpoint_dir / "training_args.json"
-        self.train_state_checkpoint_location = (
-            self.checkpoint_dir / "training_state.json"
+        self.train_status_checkpoint_location = (
+            self.checkpoint_dir / "training_status.json"
         )
 
     def args(self):
@@ -55,8 +64,8 @@ class DirConfig:
             ),
             "intro_args_checkpoint_location": str(self.intro_args_checkpoint_location),
             "train_args_checkpoint_location": str(self.train_args_checkpoint_location),
-            "train_state_checkpoint_location": str(
-                self.train_state_checkpoint_location
+            "train_status_checkpoint_location": str(
+                self.train_status_checkpoint_location
             ),
         }
 

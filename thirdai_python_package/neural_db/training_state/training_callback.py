@@ -7,19 +7,62 @@ from thirdai import bolt
 
 from ..documents import DocumentDataSource
 from ..utils import pickle_to, unpickle_from
-from .checkpoint_config import DirConfig
+from .checkpoint_config import DirectoryConfig
 from .training_progress_tracker import NeuralDbProgressTracker
+
+
+class SaveLoadUtils:
+    @staticmethod
+    def load_mach_model(path: Path):
+        try:
+            neural_db_mach_model = unpickle_from(filepath=path)
+            return neural_db_mach_model
+        except:
+            raise Exception(f"Could not find a valid model at the path{path}")
+
+    @staticmethod
+    def load_document_data_source(source_path: Path, arguments_path: Path):
+        try:
+            with open(arguments_path) as f:
+                args = json.load(f)
+            source = DocumentDataSource.load_from_dataframe(
+                csv_path=source_path,
+                id_column=args["id_column"],
+                strong_column=args["strong_column"],
+                weak_column=args["weak_column"],
+            )
+        except:
+            raise Exception(
+                f"Could not load datasource from {source_path}. Ensure that the"
+                " checkpoint path is valid."
+            )
+        return source
+
+    @staticmethod
+    def save_mach_model(model, path: Path):
+        pickle_to(obj=model, filepath=path)
+
+    @staticmethod
+    def save_document_data_source(source, source_path, arguments_path):
+        dataframe = source._intro_source.dataframe()
+        dataframe.to_csv(
+            source_path,
+            index=False,
+        )
+        with open(arguments_path, "w") as f:
+            json.dump(source.initialization_args(), f, indent=4)
 
 
 class TrainingProgressManager(bolt.train.callbacks.Callback):  # type: ignore
     def __init__(
         self,
         tracker: NeuralDbProgressTracker,
-        dir_config: Union[DirConfig, None] = None,
+        dir_config: Union[DirectoryConfig, None] = None,
         neuraldb_mach_model=None,
         intro_source=None,
         train_source=None,
         checkpoint_interval: int = 1,
+        is_resumed: bool = False,
     ):
         super().__init__()
         self.tracker = tracker
@@ -29,6 +72,7 @@ class TrainingProgressManager(bolt.train.callbacks.Callback):  # type: ignore
         self._intro_source = intro_source
         self._train_source = train_source
         self.checkpoint_interval = checkpoint_interval
+        self._is_resumed = is_resumed
 
         if self.dir_config:
             os.makedirs(
@@ -39,133 +83,102 @@ class TrainingProgressManager(bolt.train.callbacks.Callback):  # type: ignore
     def on_epoch_end(self):
         self.tracker.current_epoch_number += 1
         if self.tracker.current_epoch_number % self.checkpoint_interval == 0:
-            self.checkpoint_tracker()
-            self.checkpoint_model()
+            self.checkpoint_without_sources()
 
     def on_train_end(self):
-        self.checkpoint_tracker()
-        self.checkpoint_model()
+        self.checkpoint_without_sources()
 
     @property
     def neuraldb_mach_model(self):
         if self._neuraldb_mach_model is None:
-            self._neuraldb_mach_model = self.load_model()
-
-        if self._neuraldb_mach_model is None:
-            raise Exception("Invalid NeuralDB Model in Training Progress Manager.")
+            self.load_model()
         return self._neuraldb_mach_model
-
-    @neuraldb_mach_model.setter
-    def neuraldb_mach_model(self, model):
-        self._neuraldb_mach_model = model
 
     @property
     def intro_source(self):
-        return self.load_intro_source()
+        if self._intro_source is None:
+            self.load_intro_source()
+        return self._intro_source
 
     @property
     def train_source(self):
-        return self.load_train_source()
+        if self._train_source is None:
+            self.load_train_source()
+        return self._train_source
+
+    def load_model(self):
+        if self._is_resumed:
+            assert self.dir_config != None
+            self._neuraldb_mach_model = SaveLoadUtils.load_mach_model(
+                path=self.dir_config.neuraldb_model_checkpoint_location
+            )
+
+    def load_intro_source(self):
+        if self._is_resumed:
+            assert self.dir_config != None
+            self._intro_source = TrainingProgressManager.load_source(
+                arguments_location=self.dir_config.intro_source_arguments_location,
+                checkpoint_location=self.dir_config.intro_source_checkpoint_location,
+            )
+
+    def load_train_source(self):
+        if self._is_resumed:
+            assert self.dir_config != None
+            self._train_source = TrainingProgressManager.load_source(
+                arguments_location=self.dir_config.train_source_arguments_location,
+                checkpoint_location=self.dir_config.train_source_checkpoint_location,
+            )
 
     def checkpoint_model(self):
-        # We do not use the property attribute for accessing the underlying neuraldb_mach_model because calling it also loads it.
-        if self._neuraldb_mach_model and self.dir_config:
-            print("Checkpoint Model")
-            pickle_to(
-                obj=self._neuraldb_mach_model,
-                filepath=self.dir_config.neuraldb_model_checkpoint_location,
+        if self.neuraldb_mach_model and self.dir_config:
+            SaveLoadUtils.save_mach_model(
+                self._neuraldb_mach_model,
+                self.dir_config.neuraldb_model_checkpoint_location,
             )
 
     def checkpoint_sources(self):
         if self.dir_config:
-            if self._intro_source:
-                print("Checkpoint Intro Source")
-                dataframe = self._intro_source.dataframe()
-                dataframe.to_csv(
-                    self.dir_config.intro_source_checkpoint_location,
-                    index=False,
-                )
-                with open(self.dir_config.intro_source_arguments_location, "w") as f:
-                    json.dump(self._intro_source.initialization_args(), f, indent=4)
-
-            if self._train_source:
-                print("Checkpoint Train source")
-                dataframe = self._train_source.dataframe()
-                dataframe.to_csv(
-                    self.dir_config.train_source_checkpoint_location, index=False
-                )
-                with open(self.dir_config.train_source_arguments_location, "w") as f:
-                    json.dump(self._train_source.initialization_args(), f, indent=4)
+            SaveLoadUtils.save_document_data_source(
+                source=self.intro_source,
+                source_path=self.dir_config.intro_source_checkpoint_location,
+                arguments_path=self.dir_config.intro_source_arguments_location,
+            )
+            SaveLoadUtils.save_document_data_source(
+                source=self.train_source,
+                source_path=self.dir_config.train_source_checkpoint_location,
+                arguments_path=self.dir_config.train_source_arguments_location,
+            )
 
     def checkpoint_tracker(self):
         if self.dir_config:
-            print("Checkpointing Tracker")
             with open(self.dir_config.intro_args_checkpoint_location, "w") as f:
                 json.dump(self.tracker.introduce_arguments(), f, indent=4)
 
             with open(self.dir_config.train_args_checkpoint_location, "w") as f:
                 json.dump(self.tracker.training_arguments(), f, indent=4)
 
-            with open(self.dir_config.train_state_checkpoint_location, "w") as f:
+            with open(self.dir_config.train_status_checkpoint_location, "w") as f:
                 json.dump(self.tracker.training_state(), f, indent=4)
+
+    def make_preindexing_checkpoint(self):
+        if self._is_resumed:
+            return
+        self.full_checkpoint()
+
+    def make_insert_checkpoint(self):
+        if self.is_insert_completed:
+            return
+        self.checkpoint_without_sources()
+        self.is_insert_completed = True
+
+    def checkpoint_without_sources(self):
+        self.checkpoint_model()
+        self.checkpoint_tracker()
 
     def full_checkpoint(self):
         self.checkpoint_model()
         self.checkpoint_sources()
         self.checkpoint_tracker()
-
-    def make_insert_checkpoint(self):
-        if self.is_insert_completed:
-            return
-
-        self.is_insert_completed = True
-        self.full_checkpoint()
-
-    def load_model(self):
-        if self.dir_config and not self._neuraldb_mach_model:
-            try:
-                neural_db_mach_model = unpickle_from(
-                    filepath=self.dir_config.neuraldb_model_checkpoint_location
-                )
-                self._neuraldb_mach_model = neural_db_mach_model
-                print("loaded a valid model")
-            except:
-                raise Exception(
-                    "Could not model. Ensure that the model checkpoint is valid"
-                )
-        return self._neuraldb_mach_model
-
-    @staticmethod
-    def load_source(
-        arguments_location: Path, checkpoint_location: Path
-    ) -> DocumentDataSource:
-        with open(arguments_location) as f:
-            args = json.load(f)
-        source = DocumentDataSource.load_from_dataframe(
-            csv_path=checkpoint_location,
-            id_column=args["id_column"],
-            strong_column=args["strong_column"],
-            weak_column=args["weak_column"],
-        )
-        return source
-
-    def load_intro_source(self):
-        if not self._intro_source and self.dir_config:
-            intro_source = TrainingProgressManager.load_source(
-                arguments_location=self.dir_config.intro_source_arguments_location,
-                checkpoint_location=self.dir_config.intro_source_checkpoint_location,
-            )
-            self._intro_source = intro_source
-        return self._intro_source
-
-    def load_train_source(self):
-        if not self._train_source and self.dir_config:
-            train_source = TrainingProgressManager.load_source(
-                arguments_location=self.dir_config.train_source_arguments_location,
-                checkpoint_location=self.dir_config.train_source_checkpoint_location,
-            )
-            self._train_source = train_source
-        return self._train_source
 
     def set_introduce_arguments(
         self,
