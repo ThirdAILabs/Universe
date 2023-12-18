@@ -1,7 +1,7 @@
 #pragma once
 
 #include <exceptions/src/Exceptions.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <cstdint>
 #include <optional>
 #include <string>
