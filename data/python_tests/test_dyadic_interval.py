@@ -189,9 +189,9 @@ def test_dyadic_interval_with_context():
     columns = data.ColumnMap(
         {
             "context": data.columns.TokenArrayColumn(
-                [[100, 101, 102], [104]],
+                [[10, 11, 12], [14], [15, 16]],
                 dim=100,
-            )
+            ),
             "text": data.columns.TokenArrayColumn(
                 [[0, 1, 2, 3, 4], [5, 6, 7], [8]],
                 dim=100,
@@ -208,18 +208,46 @@ def test_dyadic_interval_with_context():
         is_bidirectional=True,
     )
 
-    columns = transform.inference_featurization(columns)
+    columns = transform(columns)
 
-    interval_1 = [[100], [104], [8]]
+    interval_1 = [[10], [10], [2], [2], [], [14], [14], [14], [15]]
+
+    interval_2 = [[10, 11], [10, 11], [2], [2, 3], [], [14], [14, 5], [14, 5], [15, 16]]
+    
+    interval_4 = [[10, 11, 12], [10, 11, 12, 0], [2], [2, 3], [], [14], [14, 5], [14, 5, 6], [15, 16]]
+    
+    print(columns["interval_from_start_1"].data())
+    print(columns["interval_from_start_2"].data())
+    print(columns["interval_from_start_4"].data())
+    print()
+    print(columns["interval_from_end_1"].data())
+    print(columns["interval_from_end_2"].data())
+    print(columns["interval_from_end_4"].data())
+    print()
+    print(columns["target"].data())
+    
     assert columns["interval_from_start_1"].data() == interval_1
 
-    interval_2 = [[100, 101], [104, 5], [8]]
+    
     assert columns["interval_from_start_2"].data() == interval_2
 
-    interval_4 = [[100, 101, 102, 0], [104, 5, 6], [8]]
+    
     assert columns["interval_from_start_4"].data() == interval_4
     
-    target = [1, 4, 7, 8]
+    end_interval_1 = [[12], [0], [2], [3], [], [14], [5], [6], [16]]
+    # print(columns["interval_from_end_1"].data())
+    # assert columns["interval_from_end_1"].data() == end_interval_1
+
+    end_interval_2 = [[11, 12], [12, 0], [2], [2, 3], [], [14], [14, 5], [5, 6], [15, 16]]
+    # print(columns["interval_from_end_2"].data())
+    # assert columns["interval_from_end_2"].data() == end_interval_2
+
+    end_interval_4 = [[10, 11, 12], [10, 11, 12, 0], [2], [2, 3], [], [14], [14, 5], [14, 5, 6], [15, 16]]
+    # print(columns["interval_from_end_4"].data())
+    # assert columns["interval_from_end_4"].data() == end_interval_4
+    
+    
+    target = [0, 1, 2, 3, 4, 5, 6, 7, 8]
     assert columns["target"].data() == target
     
 @pytest.mark.unit

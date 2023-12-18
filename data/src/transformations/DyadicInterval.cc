@@ -11,7 +11,8 @@
 
 namespace thirdai::data {
 
-DyadicInterval::DyadicInterval(std::string input_column, std::optional<std::string> context_column,
+DyadicInterval::DyadicInterval(std::string input_column,
+                               std::optional<std::string> context_column,
                                std::optional<std::string> prompt_column,
                                std::string output_interval_prefix,
                                std::string target_column, size_t n_intervals,
@@ -33,7 +34,10 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
 
   size_t chunk_size = (1UL << (_n_intervals - 1)) + 1;
 
-  std::vector<size_t> sample_offsets = computeOffsets(texts, chunk_size);
+  bool use_context = (_context_column != std::nullopt);
+
+  std::vector<size_t> sample_offsets =
+      computeOffsets(texts, chunk_size, use_context);
 
   std::vector<std::vector<std::vector<uint32_t>>> interval_from_end(
       _n_intervals);
@@ -55,40 +59,49 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
     prompt_inputs.resize(sample_offsets.back());
     prompts = columns.getArrayColumn<uint32_t>(*_prompt_column);
   }
-  if (_context_column){
+  if (_context_column) {
     contexts = columns.getArrayColumn<uint32_t>(*_context_column);
   }
   std::exception_ptr error;
 
-#pragma omp parallel for default(none)                                    \
-    shared(texts, sample_offsets, interval_from_end, interval_from_start, \
-           prompts, prompt_inputs, contexts, targets, chunk_size, error)
+#pragma omp parallel for default(none)                                       \
+    shared(texts, sample_offsets, interval_from_end, interval_from_start,    \
+               prompts, prompt_inputs, contexts, targets, chunk_size, error, \
+               output_vec)
   for (size_t i = 0; i < texts->numRows(); i++) {
     try {
       auto input_tokens = texts->row(i);
 
-      std::vector<uint32_t> tokens(input_tokens.begin(), input_tokens.end());
+      std::vector<uint32_t> tokens;
 
-      if (_context_column){
-          auto context_tokens = contexts->row(i);
-          tokens.insert(tokens.end(), context_tokens.begin(), context_tokens.end());  
-        }
+      if (_context_column) {
+        auto context_tokens = contexts->row(i);
+        tokens.insert(tokens.end(), context_tokens.begin(),
+                      context_tokens.end());
+      }
+      size_t target_start = tokens.size();
+
+      tokens.insert(tokens.end(), input_tokens.begin(), input_tokens.end());
 
       size_t sample_offset = sample_offsets[i];
 
       for (size_t start = 0; start < tokens.size(); start += chunk_size) {
         size_t end = std::min(start + chunk_size, tokens.size());
-        for (size_t target = std::max(start+1, input_tokens.size()); target < end; target++) {
+
+        for (size_t target = std::max(start + 1, target_start); target < end;
+             target++) {
           for (size_t interval = 0; interval < _n_intervals; interval++) {
             size_t int_len = std::min<size_t>(target - start, 1UL << interval);
             size_t int_start = target - int_len;
-            std::vector<uint32_t> rangeVec(tokens.begin() + int_start, tokens.begin() + target);
+            std::vector<uint32_t> rangeVec(tokens.begin() + int_start,
+                                           tokens.begin() + target);
             interval_from_end[interval][sample_offset] = rangeVec;
 
             if (_is_bidirectional) {
               size_t int_end = start + int_len;
-              std::vector<uint32_t> rangeVec(tokens.begin() + start, tokens.begin() + int_end);
-              interval_from_end[interval][sample_offset] = rangeVec;
+              std::vector<uint32_t> rangeVec(tokens.begin() + start,
+                                             tokens.begin() + int_end);
+              interval_from_start[interval][sample_offset] = rangeVec;
             }
           }
 
@@ -143,13 +156,17 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
 }
 
 std::vector<size_t> DyadicInterval::computeOffsets(
-    const ArrayColumnBasePtr<uint32_t>& texts, size_t chunk_size) {
+    const ArrayColumnBasePtr<uint32_t>& texts, size_t chunk_size,
+    bool use_context) {
   std::vector<size_t> offsets(texts->numRows() + 1);
   offsets[0] = 0;
 
   for (size_t i = 0; i < texts->numRows(); i++) {
     size_t text_len = texts->row(i).size();
     size_t n_chunks = (text_len + chunk_size - 1) / chunk_size;
+    if (use_context) {
+      n_chunks -= 1;
+    }
     // Since we always with at least 1 token as context, hence a chunk of size 4
     // only yields 3 samples.
     offsets[i + 1] = offsets[i] + (text_len - n_chunks);
@@ -176,7 +193,7 @@ ColumnMap DyadicInterval::inferenceFeaturization(ColumnMap columns) const {
 
 #pragma omp parallel for default(none)   \
     shared(tokens, intervals_from_start, \
-           intervals_from_end) if (tokens->numRows() > 1)
+               intervals_from_end) if (tokens->numRows() > 1)
   for (size_t i = 0; i < tokens->numRows(); i++) {
     auto row_tokens = tokens->row(i);
 
@@ -220,8 +237,8 @@ template void DyadicInterval::serialize(cereal::BinaryOutputArchive&);
 template <class Archive>
 void DyadicInterval::serialize(Archive& archive) {
   archive(cereal::base_class<Transformation>(this), _input_column,
-          _output_interval_prefix, _target_column, _n_intervals,
-          _is_bidirectional, _prompt_column);
+          _context_column, _output_interval_prefix, _target_column,
+          _n_intervals, _is_bidirectional, _prompt_column);
 }
 
 }  // namespace thirdai::data
