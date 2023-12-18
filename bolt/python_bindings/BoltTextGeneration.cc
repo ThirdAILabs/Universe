@@ -23,9 +23,9 @@ void addTextGenerationModels(py::module_& module) {
   py::class_<DyadicModel, GenerativeBackend, std::shared_ptr<DyadicModel>>(
       module, "DyadicModel")
       .def(py::init<bolt::ModelPtr, data::DyadicInterval,
-                    data::OutputColumnsList, bool>(),
+                    data::OutputColumnsList>(),
            py::arg("model"), py::arg("dyadic_transform"),
-           py::arg("bolt_inputs"), py::arg("is_prompt_needed") = false);
+           py::arg("bolt_inputs"));
 
   py::class_<ContextualModel, GenerativeBackend,
              std::shared_ptr<ContextualModel>>(module, "ContextualModel")
