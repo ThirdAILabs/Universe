@@ -4,11 +4,7 @@ from pathlib import Path
 from ..utils import unpickle_from
 from .checkpoint_config import CheckpointConfig, DirectoryConfig
 from .training_callback import TrainingProgressManager
-from .training_progress_tracker import (
-    IntroState,
-    NeuralDbProgressTracker,
-    TrainState,
-)
+from .training_progress_tracker import IntroState, NeuralDbProgressTracker, TrainState
 
 
 class TrainingProgressManagerFactory:
@@ -150,7 +146,6 @@ class TrainingProgressManagerFactory:
         variable_length,
         checkpoint_config: CheckpointConfig,
     ):
-
         if checkpoint_config and checkpoint_config.resume_from_checkpoint:
             return (
                 TrainingProgressManagerFactory.make_resumed_training_progress_manager(

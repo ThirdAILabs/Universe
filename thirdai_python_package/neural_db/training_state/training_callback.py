@@ -1,10 +1,10 @@
 import json
 import os
+import shutil
 from pathlib import Path
 from typing import Union
 
 from thirdai import bolt
-import shutil
 
 from ..documents import DocumentDataSource
 from ..utils import pickle_to, unpickle_from
@@ -59,7 +59,7 @@ class SaveLoadUtils:
         for item in source_dir.iterdir():
             if item.is_file():
                 dest_file = target_dir / item.name
-                shutil.copy(item, dest_file)
+                shutil.move(str(item), str(dest_file))
 
 
 class TrainingProgressManager(bolt.train.callbacks.Callback):  # type: ignore

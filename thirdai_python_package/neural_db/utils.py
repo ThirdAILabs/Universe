@@ -2,6 +2,7 @@ import hashlib
 import math
 import pickle
 import random
+import shutil
 from functools import wraps
 from pathlib import Path
 
@@ -72,6 +73,10 @@ def move_between_directories(src, dest):
         src_path = os.path.join(src, f)
         dst_path = os.path.join(dest, f)
         shutil.move(src_path, dst_path)
+
+
+def delete_folder(path: Path):
+    shutil.rmtree(path)
 
 
 # This decorator is used to raise a NotImplemented error if the check_func returns false. This is used for scenarios when a Funciton is not implemented for a particular class depending upon a condition

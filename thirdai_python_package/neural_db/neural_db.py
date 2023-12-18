@@ -15,6 +15,7 @@ from .mach_mixture_model import MachMixture
 from .models import CancelState, Mach
 from .savable_state import State
 from .training_state.checkpoint_config import CheckpointConfig
+from .utils import delete_folder
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
 
@@ -369,11 +370,13 @@ class NeuralDB:
 
         ray_version = ray.__version__
         if LooseVersion(ray_version) >= LooseVersion("2.7"):
-            warnings.warn("""
+            warnings.warn(
+                """
                 Using ray version 2.7 or higher requires specifying a remote or NFS storage path. 
                 Support for local checkpoints has been discontinued in these versions. 
                 Refer to https://github.com/ray-project/ray/issues/37177 for details.
-                """.strip())
+                """.strip()
+            )
 
         if not isinstance(documents, list) or not all(
             isinstance(doc, CSV) for doc in documents
@@ -567,6 +570,9 @@ class NeuralDB:
         )
 
         on_success()
+
+        delete_folder(checkpoint_config.checkpoint_dir)
+        self.save(save_to=str(checkpoint_config.checkpoint_dir))
         return ids
 
     def delete(self, source_id: str):
