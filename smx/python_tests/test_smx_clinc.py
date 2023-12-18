@@ -53,7 +53,7 @@ def test_smx_clinc(download_clinc_dataset):
     for epoch in range(10):
         s = time.perf_counter()
         for x, y in zip(train_x, train_y):
-            out = model(smx.Variable(x[0], requires_grad=False))
+            out = model(x[0])
 
             loss = smx.cross_entropy(out, y[0])
             loss.backward()
@@ -63,7 +63,7 @@ def test_smx_clinc(download_clinc_dataset):
         print(f"Epoch {epoch} time={e-s}")
         correct, total = 0, 0
         for x, y in zip(val_x, val_y):
-            out = model(smx.Variable(x[0], requires_grad=False)).tensor.numpy()
+            out = model(x[0]).tensor.numpy()
 
             np_y = y[0].numpy()
             correct += np.sum(np.argmax(out, axis=1) == np_y)

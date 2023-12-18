@@ -178,12 +178,17 @@ void defineAutograd(py::module_& smx) {
 void defineModules(py::module_& smx) {
   py::class_<Module, std::shared_ptr<Module>>(smx, "Module")
       .def("parameters", &Module::parameters)
-      .def("__call__", &Module::forward);
+      .def("__call__",
+           py::overload_cast<const std::vector<VariablePtr>&>(&Module::forward))
+      .def("__call__",
+           py::overload_cast<const std::vector<TensorPtr>&>(&Module::forward));
 
   py::class_<UnaryModule, std::shared_ptr<UnaryModule>, Module>(smx,
                                                                 "UnaryModule")
       .def("__call__",
-           py::overload_cast<const VariablePtr&>(&UnaryModule::forward));
+           py::overload_cast<const VariablePtr&>(&UnaryModule::forward))
+      .def("__call__",
+           py::overload_cast<const TensorPtr&>(&UnaryModule::forward));
 
   py::class_<Sequential, std::shared_ptr<Sequential>, UnaryModule>(smx,
                                                                    "Sequential")

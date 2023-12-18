@@ -1,6 +1,7 @@
 #pragma once
 
 #include <smx/src/autograd/Variable.h>
+#include <smx/src/tensor/Tensor.h>
 #include <memory>
 #include <vector>
 
@@ -10,6 +11,15 @@ class Module {
  public:
   virtual std::vector<VariablePtr> forward(
       const std::vector<VariablePtr>& inputs) = 0;
+
+  std::vector<VariablePtr> forward(const std::vector<TensorPtr>& inputs) {
+    std::vector<VariablePtr> input_vars;
+    input_vars.reserve(inputs.size());
+    for (const auto& input : inputs) {
+      input_vars.push_back(Variable::make(input, /*requires_grad=*/false));
+    }
+    return forward(input_vars);
+  }
 
   virtual std::vector<VariablePtr> parameters() const = 0;
 };
@@ -22,6 +32,10 @@ class UnaryModule : public Module {
   }
 
   virtual VariablePtr forward(const VariablePtr& input) = 0;
+
+  VariablePtr forward(const TensorPtr& input) {
+    return forward(Variable::make(input, /*requires_grad=*/false));
+  }
 };
 
 class Sequential final : public UnaryModule {
