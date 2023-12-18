@@ -40,14 +40,14 @@ bolt::TensorPtr DyadicModel::nextTokenProbs(
       _is_prompt_needed
           ? data::ColumnMap(
                 {{"target", data::ArrayColumn<uint32_t>::make(std::move(tokens),
-                                                              _vocab_size)},                                        
+                                                              _vocab_size)},
                  {"prompt", data::ArrayColumn<uint32_t>::make(
                                 std::move(prompt_columns), _vocab_size)}})
 
           : data::ColumnMap({{"target", data::ArrayColumn<uint32_t>::make(
                                             std::move(tokens), _vocab_size)},
-                            {"context", data::ArrayColumn<uint32_t>::make(
-                                            std::move(tokens), _vocab_size)}});
+                             {"context", data::ArrayColumn<uint32_t>::make(
+                                             std::move(tokens), _vocab_size)}});
 
   auto columns = _dyadic_transform->inferenceFeaturization(data);
 

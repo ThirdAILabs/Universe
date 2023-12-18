@@ -32,12 +32,13 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
 
   ArrayColumnBasePtr<uint32_t> prompts, contexts;
 
+  if (_context_column) {
+    contexts = columns.getArrayColumn<uint32_t>(*_context_column);
+  }
   size_t chunk_size = (1UL << (_n_intervals - 1)) + 1;
 
-  bool use_context = (_context_column != std::nullopt);
-
   std::vector<size_t> sample_offsets =
-      computeOffsets(texts, chunk_size, use_context);
+      computeOffsets(texts, contexts, chunk_size);
 
   std::vector<std::vector<std::vector<uint32_t>>> interval_from_end(
       _n_intervals);
@@ -59,15 +60,11 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
     prompt_inputs.resize(sample_offsets.back());
     prompts = columns.getArrayColumn<uint32_t>(*_prompt_column);
   }
-  if (_context_column) {
-    contexts = columns.getArrayColumn<uint32_t>(*_context_column);
-  }
   std::exception_ptr error;
 
-#pragma omp parallel for default(none)                                       \
-    shared(texts, sample_offsets, interval_from_end, interval_from_start,    \
-               prompts, prompt_inputs, contexts, targets, chunk_size, error, \
-               output_vec)
+#pragma omp parallel for default(none)                                    \
+    shared(texts, sample_offsets, interval_from_end, interval_from_start, \
+           prompts, prompt_inputs, contexts, targets, chunk_size, error)
   for (size_t i = 0; i < texts->numRows(); i++) {
     try {
       auto input_tokens = texts->row(i);
@@ -156,20 +153,26 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
 }
 
 std::vector<size_t> DyadicInterval::computeOffsets(
-    const ArrayColumnBasePtr<uint32_t>& texts, size_t chunk_size,
-    bool use_context) {
+    const ArrayColumnBasePtr<uint32_t>& texts,
+    const ArrayColumnBasePtr<uint32_t>& contexts, size_t chunk_size) {
   std::vector<size_t> offsets(texts->numRows() + 1);
   offsets[0] = 0;
 
   for (size_t i = 0; i < texts->numRows(); i++) {
+    offsets[i + 1] = 0;
+
     size_t text_len = texts->row(i).size();
-    size_t n_chunks = (text_len + chunk_size - 1) / chunk_size;
-    if (use_context) {
-      n_chunks -= 1;
+    if (contexts) {
+      size_t curr_target_len = std::min(
+          text_len, chunk_size - contexts->row(i).size() % (chunk_size));
+      offsets[i + 1] += curr_target_len;
+      text_len -= curr_target_len;
     }
+
+    size_t n_chunks = (text_len + chunk_size - 1) / chunk_size;
     // Since we always with at least 1 token as context, hence a chunk of size 4
     // only yields 3 samples.
-    offsets[i + 1] = offsets[i] + (text_len - n_chunks);
+    offsets[i + 1] += offsets[i] + (text_len - n_chunks);
   }
   return offsets;
 }
@@ -193,7 +196,7 @@ ColumnMap DyadicInterval::inferenceFeaturization(ColumnMap columns) const {
 
 #pragma omp parallel for default(none)   \
     shared(tokens, intervals_from_start, \
-               intervals_from_end) if (tokens->numRows() > 1)
+           intervals_from_end) if (tokens->numRows() > 1)
   for (size_t i = 0; i < tokens->numRows(); i++) {
     auto row_tokens = tokens->row(i);
 

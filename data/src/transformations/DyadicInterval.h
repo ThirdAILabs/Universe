@@ -19,8 +19,8 @@ class DyadicInterval final : public Transformation {
 
  private:
   static std::vector<size_t> computeOffsets(
-      const ArrayColumnBasePtr<uint32_t>& texts, size_t chunk_size,
-      bool use_context);
+      const ArrayColumnBasePtr<uint32_t>& texts,
+      const ArrayColumnBasePtr<uint32_t>& contexts, size_t chunk_size);
 
   std::string _input_column;
   std::optional<std::string> _context_column;

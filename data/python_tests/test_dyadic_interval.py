@@ -209,45 +209,27 @@ def test_dyadic_interval_with_context():
     )
 
     columns = transform(columns)
-
-    interval_1 = [[10], [10], [2], [2], [], [14], [14], [14], [15]]
-
-    interval_2 = [[10, 11], [10, 11], [2], [2, 3], [], [14], [14, 5], [14, 5], [15, 16]]
     
-    interval_4 = [[10, 11, 12], [10, 11, 12, 0], [2], [2, 3], [], [14], [14, 5], [14, 5, 6], [15, 16]]
-    
-    print(columns["interval_from_start_1"].data())
-    print(columns["interval_from_start_2"].data())
-    print(columns["interval_from_start_4"].data())
-    print()
-    print(columns["interval_from_end_1"].data())
-    print(columns["interval_from_end_2"].data())
-    print(columns["interval_from_end_4"].data())
-    print()
-    print(columns["target"].data())
-    
+    interval_1 = [[10], [10], [2], [2], [14], [14], [14], [15]]
     assert columns["interval_from_start_1"].data() == interval_1
-
     
+    interval_2 = [[10, 11], [10, 11], [2], [2, 3], [14], [14, 5], [14, 5], [15, 16]]
     assert columns["interval_from_start_2"].data() == interval_2
-
     
+    interval_4 = [[10, 11, 12], [10, 11, 12, 0], [2], [2, 3], [14], [14, 5], [14, 5, 6], [15, 16]]
     assert columns["interval_from_start_4"].data() == interval_4
     
-    end_interval_1 = [[12], [0], [2], [3], [], [14], [5], [6], [16]]
-    # print(columns["interval_from_end_1"].data())
-    # assert columns["interval_from_end_1"].data() == end_interval_1
+    end_interval_1 = [[12], [0], [2], [3], [14], [5], [6], [16]]
+    assert columns["interval_from_end_1"].data() == end_interval_1
 
-    end_interval_2 = [[11, 12], [12, 0], [2], [2, 3], [], [14], [14, 5], [5, 6], [15, 16]]
-    # print(columns["interval_from_end_2"].data())
-    # assert columns["interval_from_end_2"].data() == end_interval_2
+    end_interval_2 = [[11, 12], [12, 0], [2], [2, 3], [14], [14, 5], [5, 6], [15, 16]]
+    assert columns["interval_from_end_2"].data() == end_interval_2
 
-    end_interval_4 = [[10, 11, 12], [10, 11, 12, 0], [2], [2, 3], [], [14], [14, 5], [14, 5, 6], [15, 16]]
-    # print(columns["interval_from_end_4"].data())
-    # assert columns["interval_from_end_4"].data() == end_interval_4
+    end_interval_4 = [[10, 11, 12], [10, 11, 12, 0], [2], [2, 3], [14], [14, 5], [14, 5, 6], [15, 16]]
+    assert columns["interval_from_end_4"].data() == end_interval_4
     
     
-    target = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    target = [0, 1, 3, 4, 5, 6, 7, 8]
     assert columns["target"].data() == target
     
 @pytest.mark.unit
