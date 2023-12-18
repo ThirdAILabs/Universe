@@ -64,7 +64,7 @@ class NeuralDBClient:
             Inserts documents into the ndb model.
 
         associate(self, text_pairs (List[Tuple[str, str]])) -> None:
-            Associates two queries in the ndb model.
+            Associates source and target string pairs in the ndb model.
 
         upvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]) -> None:
             Upvotes a response in the ndb model.
@@ -119,7 +119,7 @@ class NeuralDBClient:
     @check_deployment_decorator
     def associate(self, text_pairs: List[Dict[str, str]]):
         """
-        Associates two queries in the ndb model.
+        Associates source and target string pairs in the ndb model.
 
         Args:
             text_pairs (List[Tuple[str, str]]): List of dictionaries where each dictionary has 'source' and 'target' keys.
@@ -132,7 +132,7 @@ class NeuralDBClient:
     @check_deployment_decorator
     def upvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]):
         """
-        Upvote responses in the ndb model.
+        Upvote response with 'reference_id' corresponding to 'query_text' in the ndb model.
 
         Args:
             text_id_pairs: (List[Dict[str, Union[str, int]]]): List of dictionaries where each dictionary has 'query_text' and 'reference_id' keys.
@@ -147,7 +147,7 @@ class NeuralDBClient:
     @check_deployment_decorator
     def downvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]):
         """
-        Downvote responses in the ndb model.
+        Downvote response with 'reference_id' corresponding to 'query_text' in the ndb model.
 
         Args:
             text_id_pairs: (List[Dict[str, Union[str, int]]]): List of dictionaries where each dictionary has 'query_text' and 'reference_id' keys.
