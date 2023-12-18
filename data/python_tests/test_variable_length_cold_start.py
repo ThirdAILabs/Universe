@@ -71,6 +71,7 @@ def test_vlcs_add_whole_doc(add_whole_doc):
         "something is strong text", "This is weak text"
     )
     actually_added = "something is strong text This is weak text" in samples
+    print(samples)
 
     assert actually_added == add_whole_doc
 
