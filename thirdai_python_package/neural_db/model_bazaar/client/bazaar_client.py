@@ -314,6 +314,7 @@ class ModelBazaar(Bazaar):
         docs: List[str],
         doc_type: str = "local",
         is_async: bool = False,
+        sharded: bool = False,
         base_model_identifier: str = None,
     ):
         """
@@ -347,6 +348,7 @@ class ModelBazaar(Bazaar):
             params={
                 "model_name": model_name,
                 "doc_type": doc_type,
+                "sharded": sharded,
                 "base_model_identifier": base_model_identifier,
             },
             files=files,
