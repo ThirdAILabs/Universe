@@ -438,9 +438,11 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
 
   py::class_<DyadicInterval, Transformation, std::shared_ptr<DyadicInterval>>(
       transformations_submodule, "DyadicInterval")
-      .def(py::init<std::string, std::optional<std::string>, std::string,
-                    std::string, size_t, bool>(),
-           py::arg("input_column"), py::arg("prompt_column") = std::nullopt,
+      .def(py::init<std::string, std::optional<std::string>,
+                    std::optional<std::string>, std::string, std::string,
+                    size_t, bool>(),
+           py::arg("input_column"), py::arg("context_column") = std::nullopt,
+           py::arg("prompt_column") = std::nullopt,
            py::arg("output_interval_prefix"), py::arg("target_column"),
            py::arg("n_intervals"), py::arg("is_bidirectional") = false)
       .def("inference_featurization", &DyadicInterval::inferenceFeaturization,

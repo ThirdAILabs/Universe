@@ -80,6 +80,7 @@ data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
   if (prompt_column) {
     columns_names.push_back(*prompt_column);
   }
+  auto context_column = _dyadic_transform->getContextColumn();
 
   auto data_iter = data::JsonIterator::make(data, columns_names);
   auto transform = data::Pipeline::make(
@@ -90,6 +91,10 @@ data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
   if (prompt_column) {
     transform->then(std::make_shared<data::StringToTokenArray>(
         *prompt_column, *prompt_column, ' ', _vocab_size));
+  }
+  if (context_column) {
+    transform->then(std::make_shared<data::StringToTokenArray>(
+        *context_column, *context_column, ' ', _vocab_size));
   }
   return data::Loader(
       data_iter, transform, nullptr, _bolt_inputs,
