@@ -50,8 +50,9 @@ VariablePtr linear(const VariablePtr& x, const VariablePtr& w,
                    const VariablePtr& b, float sparsity,
                    const NeuronIndexPtr& neuron_index,
                    const VariablePtr& labels) {
-  auto out = linear(dense(x->tensor()), dense(w->tensor()), dense(b->tensor()),
-                    sparsity, neuron_index, labels->tensor());
+  auto out =
+      linear(dense(x->tensor()), dense(w->tensor()), dense(b->tensor()),
+             sparsity, neuron_index, labels ? labels->tensor() : nullptr);
 
   GradFunc grad_func = [](const TensorPtr& out_grad,
                           const std::vector<VariablePtr>& inputs) {

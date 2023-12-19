@@ -1,6 +1,6 @@
-from thirdai import smx
-import pytest
 import numpy as np
+import pytest
+from thirdai import smx
 
 
 def test_smx_embeddings():

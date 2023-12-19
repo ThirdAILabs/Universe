@@ -1,5 +1,6 @@
 #pragma once
 
+#include <smx/src/autograd/Variable.h>
 #include <smx/src/autograd/functions/LinearAlgebra.h>
 #include <smx/src/modules/Module.h>
 #include <smx/src/tensor/Init.h>
@@ -27,7 +28,23 @@ class Linear final : public UnaryModule {
 
   const auto& weight() const { return _weight; }
 
+  void setWeight(VariablePtr w) {
+    CHECK(w->tensor()->shape() == _weight->tensor()->shape(),
+          "Shape must match in setWeight.");
+    CHECK(w->tensor()->dtype() == _weight->tensor()->dtype(),
+          "Dtype must match in setWeight.");
+    _weight = std::move(w);
+  }
+
   const auto& bias() const { return _bias; }
+
+  void setBias(VariablePtr b) {
+    CHECK(b->tensor()->shape() == _bias->tensor()->shape(),
+          "Shape must match in setBias.");
+    CHECK(b->tensor()->dtype() == _bias->tensor()->dtype(),
+          "Dtype must match in setBias.");
+    _bias = std::move(b);
+  }
 
  private:
   VariablePtr _weight;
@@ -72,7 +89,23 @@ class SparseLinear final : public Module {
 
   const auto& weight() const { return _weight; }
 
+  void setWeight(VariablePtr w) {
+    CHECK(w->tensor()->shape() == _weight->tensor()->shape(),
+          "Shape must match in setWeight.");
+    CHECK(w->tensor()->dtype() == _weight->tensor()->dtype(),
+          "Dtype must match in setWeight.");
+    _weight = std::move(w);
+  }
+
   const auto& bias() const { return _bias; }
+
+  void setBias(VariablePtr b) {
+    CHECK(b->tensor()->shape() == _bias->tensor()->shape(),
+          "Shape must match in setBias.");
+    CHECK(b->tensor()->dtype() == _bias->tensor()->dtype(),
+          "Dtype must match in setBias.");
+    _bias = std::move(b);
+  }
 
   std::function<void()> onUpdateCallback() {
     return [neuron_index = _neuron_index]() { neuron_index->onUpdate(); };

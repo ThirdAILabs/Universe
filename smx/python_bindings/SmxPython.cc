@@ -210,8 +210,8 @@ void defineModules(py::module_& smx) {
 
   py::class_<Linear, std::shared_ptr<Linear>, UnaryModule>(smx, "Linear")
       .def(py::init<size_t, size_t>(), py::arg("dim"), py::arg("input_dim"))
-      .def_property_readonly("weight", &Linear::weight)
-      .def_property_readonly("bias", &Linear::bias);
+      .def_property("weight", &Linear::weight, &Linear::setWeight)
+      .def_property("bias", &Linear::bias, &Linear::setBias);
 
   py::class_<NeuronIndex, NeuronIndexPtr>(smx, "NeuronIndex");  // NOLINT
 
@@ -225,7 +225,9 @@ void defineModules(py::module_& smx) {
       .def(py::init<size_t, size_t, float, NeuronIndexPtr>(), py::arg("dim"),
            py::arg("input_dim"), py::arg("sparsity"),
            py::arg("neuron_index") = nullptr)
-      .def("on_update_callback", &SparseLinear::onUpdateCallback);
+      .def("on_update_callback", &SparseLinear::onUpdateCallback)
+      .def_property("weight", &SparseLinear::weight, &SparseLinear::setWeight)
+      .def_property("bias", &SparseLinear::bias, &SparseLinear::setBias);
 
   py::class_<Embedding, std::shared_ptr<Embedding>, UnaryModule>(smx,
                                                                  "Embedding")

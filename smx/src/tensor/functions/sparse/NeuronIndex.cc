@@ -66,7 +66,7 @@ void LshIndex::query(const float* query, uint32_t* candidates,
     if (selected_size == n_candidates) {
       break;
     }
-    candidates[selected_size] = x;
+    candidates[selected_size++] = x;
   }
 }
 

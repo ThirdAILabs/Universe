@@ -1,8 +1,9 @@
-from thirdai import smx, data, dataset
 import time
+
 import numpy as np
-from download_dataset_fixtures import download_clinc_dataset
 import pytest
+from download_dataset_fixtures import download_clinc_dataset
+from thirdai import data, dataset, smx
 
 
 def load_data(filename, shuffle):
