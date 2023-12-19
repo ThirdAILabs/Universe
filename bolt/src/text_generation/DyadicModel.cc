@@ -50,11 +50,11 @@ bolt::TensorPtr DyadicModel::nextTokenProbs(
   }
 >>>>>>> origin/add-options-to-dyadic-model
 
-  auto columns = _dyadic_transform->inferenceFeaturization(data);
+          auto columns = _dyadic_transform->inferenceFeaturization(data);
 
-  auto tensors = data::toTensors(columns, _bolt_inputs);
+          auto tensors = data::toTensors(columns, _bolt_inputs);
 
-  return _model->forward(tensors).at(0);
+          return _model->forward(tensors).at(0);
 }
 
 metrics::History DyadicModel::train(
@@ -81,31 +81,13 @@ metrics::History DyadicModel::train(
 
 data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
                                         size_t batch_size, bool shuffle) {
-<<<<<<< HEAD
-  auto data_iter = data::JsonIterator::make(data, {"target", "context"});
-  auto transform =
-      _is_prompt_needed
-          ? data::Pipeline::make({std::make_shared<data::StringToTokenArray>(
-                                      "target", "target", ' ', _vocab_size),
-                                  std::make_shared<data::StringToTokenArray>(
-                                      "context", "context", ' ', _vocab_size),
-                                  _dyadic_transform,
-                                  std::make_shared<data::StringToTokenArray>(
-                                      "prompt", "prompt", ' ', _vocab_size)})
-
-          : data::Pipeline::make({std::make_shared<data::StringToTokenArray>(
-                                      "target", "target", ' ', _vocab_size),
-                                  std::make_shared<data::StringToTokenArray>(
-                                      "context", "context", ' ', _vocab_size),
-                                  _dyadic_transform});
-=======
   std::vector<std::string> columns_names = {
       _dyadic_transform->getInputColumn()};
   auto prompt_column = _dyadic_transform->getPromptColumn();
   if (prompt_column) {
     columns_names.push_back(*prompt_column);
   }
->>>>>>> origin/add-options-to-dyadic-model
+  auto context_column = _dyadic_transform->getContextColumn();
 
   auto data_iter = data::JsonIterator::make(data, columns_names);
   auto transform = data::Pipeline::make(
@@ -116,6 +98,10 @@ data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
   if (prompt_column) {
     transform->then(std::make_shared<data::StringToTokenArray>(
         *prompt_column, *prompt_column, ' ', _vocab_size));
+  }
+  if (context_column) {
+    transform->then(std::make_shared<data::StringToTokenArray>(
+        *context_column, *context_column, ' ', _vocab_size));
   }
   return data::Loader(
       data_iter, transform, nullptr, _bolt_inputs,

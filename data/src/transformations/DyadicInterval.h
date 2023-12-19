@@ -18,6 +18,11 @@ class DyadicInterval final : public Transformation {
   ColumnMap inferenceFeaturization(ColumnMap columns) const;
 
   std::optional<std::string> getPromptColumn() { return _prompt_column; }
+  std::optional<std::string> getContextColumn() { return _context_column; }
+  std::string getTargetColumn() { return _target_column; }
+  std::string getInputColumn() { return _input_column; }
+
+  std::optional<std::string> getPromptColumn() { return _prompt_column; }
   std::string getTargetColumn() { return _target_column; }
   std::string getInputColumn() { return _input_column; }
 
