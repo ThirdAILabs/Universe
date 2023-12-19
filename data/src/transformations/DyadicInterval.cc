@@ -64,7 +64,7 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
 
 #pragma omp parallel for default(none)                                    \
     shared(texts, sample_offsets, interval_from_end, interval_from_start, \
-           prompts, prompt_inputs, contexts, targets, chunk_size, error)
+               prompts, prompt_inputs, contexts, targets, chunk_size, error)
   for (size_t i = 0; i < texts->numRows(); i++) {
     try {
       auto input_tokens = texts->row(i);
@@ -90,15 +90,13 @@ ColumnMap DyadicInterval::apply(ColumnMap columns, State& state) const {
           for (size_t interval = 0; interval < _n_intervals; interval++) {
             size_t int_len = std::min<size_t>(target - start, 1UL << interval);
             size_t int_start = target - int_len;
-            std::vector<uint32_t> rangeVec(tokens.begin() + int_start,
-                                           tokens.begin() + target);
-            interval_from_end[interval][sample_offset] = rangeVec;
+            interval_from_end[interval][sample_offset] = {
+                tokens.begin() + int_start, tokens.begin() + target};
 
             if (_is_bidirectional) {
               size_t int_end = start + int_len;
-              std::vector<uint32_t> rangeVec(tokens.begin() + start,
-                                             tokens.begin() + int_end);
-              interval_from_start[interval][sample_offset] = rangeVec;
+              interval_from_start[interval][sample_offset] = {
+                  tokens.begin() + start, tokens.begin() + int_end};
             }
           }
 
@@ -196,7 +194,7 @@ ColumnMap DyadicInterval::inferenceFeaturization(ColumnMap columns) const {
 
 #pragma omp parallel for default(none)   \
     shared(tokens, intervals_from_start, \
-           intervals_from_end) if (tokens->numRows() > 1)
+               intervals_from_end) if (tokens->numRows() > 1)
   for (size_t i = 0; i < tokens->numRows(); i++) {
     auto row_tokens = tokens->row(i);
 
