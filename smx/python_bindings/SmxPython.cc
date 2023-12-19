@@ -228,7 +228,7 @@ void defineOptimizers(py::module_& smx) {
   auto optimizers = smx.def_submodule("optimizers");
 
   py::class_<Optimizer>(optimizers, "Optimizer")
-      .def("apply", py::overload_cast<>(&Optimizer::apply))
+      .def("step", py::overload_cast<>(&Optimizer::step))
       .def("zero_grad", &Optimizer::zeroGrad);
 
   py::class_<Adam, Optimizer>(optimizers, "Adam")

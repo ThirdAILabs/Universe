@@ -19,7 +19,7 @@ Adam::Adam(const std::vector<VariablePtr>& parameters, float lr, float beta_1,
   }
 }
 
-void Adam::apply(VariablePtr& parameter) {
+void Adam::step(VariablePtr& parameter) {
   float b1_corrected = 1 - pow(_beta_1, _n_steps);
   float b2_corrected = 1 - pow(_beta_2, _n_steps);
 
@@ -35,7 +35,8 @@ void Adam::apply(VariablePtr& parameter) {
 
   param += (_lr / b1_corrected) * mom / ((vel / b2_corrected).sqrt() + _eps);
 
-  // TODO(Nicholas): Should we add a check for NaNs here?
+  // TODO(Nicholas): Should we add a check for NaNs here, or just let them show
+  // up in the loss?
 }
 
 }  // namespace thirdai::smx

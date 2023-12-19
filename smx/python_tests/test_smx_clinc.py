@@ -57,7 +57,7 @@ def test_smx_clinc(download_clinc_dataset):
 
             loss = smx.cross_entropy(out, y[0])
             loss.backward()
-            optimizer.apply()
+            optimizer.step()
             optimizer.zero_grad()
         e = time.perf_counter()
         correct, total = 0, 0

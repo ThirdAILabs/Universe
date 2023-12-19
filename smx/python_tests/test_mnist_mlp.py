@@ -46,7 +46,7 @@ def test_smx_mlp_mnist():
 
             loss = smx.cross_entropy(out, smx.from_numpy(y.numpy().astype(np.uint32)))
             loss.backward()
-            optimizer.apply()
+            optimizer.step()
             optimizer.zero_grad()
 
         correct, total = 0, 0

@@ -9,10 +9,10 @@ class Optimizer {
   explicit Optimizer(std::vector<VariablePtr> parameters)
       : _parameters(std::move(parameters)) {}
 
-  void apply() {
+  void step() {
     _n_steps++;
     for (auto& param : _parameters) {
-      apply(param);
+      step(param);
     }
   }
 
@@ -26,7 +26,7 @@ class Optimizer {
   size_t _n_steps = 0;
 
  private:
-  virtual void apply(VariablePtr& parameter) = 0;
+  virtual void step(VariablePtr& parameter) = 0;
 
   std::vector<VariablePtr> _parameters;
 };
