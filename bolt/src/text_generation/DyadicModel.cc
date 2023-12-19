@@ -36,25 +36,18 @@ bolt::TensorPtr DyadicModel::nextTokenProbs(
       {{_dyadic_transform->getInputColumn(),
         data::ArrayColumn<uint32_t>::make(std::move(tokens), _vocab_size)}}));
 
-<<<<<<< HEAD
-          : data::ColumnMap({{"target", data::ArrayColumn<uint32_t>::make(
-                                            std::move(tokens), _vocab_size)},
-                             {"context", data::ArrayColumn<uint32_t>::make(
-                                             std::move(tokens), _vocab_size)}});
-=======
   if (prompt_column_name) {
     std::vector<std::vector<uint32_t>> prompt_columns(tokens_size, prompts);
     data.setColumn(*prompt_column_name,
                    data::ArrayColumn<uint32_t>::make(std::move(prompt_columns),
                                                      _vocab_size));
   }
->>>>>>> origin/add-options-to-dyadic-model
 
-          auto columns = _dyadic_transform->inferenceFeaturization(data);
+  auto columns = _dyadic_transform->inferenceFeaturization(data);
 
-          auto tensors = data::toTensors(columns, _bolt_inputs);
+  auto tensors = data::toTensors(columns, _bolt_inputs);
 
-          return _model->forward(tensors).at(0);
+  return _model->forward(tensors).at(0);
 }
 
 metrics::History DyadicModel::train(
