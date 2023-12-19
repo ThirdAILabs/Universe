@@ -13,7 +13,7 @@ class Tensor {
 
   const Shape& shape() const { return _shape; }
 
-  size_t shapeAt(size_t dim) const { return _shape[dim]; }
+  size_t shape(size_t dim) const { return _shape[dim]; }
 
   size_t ndim() const { return _shape.ndim(); }
 

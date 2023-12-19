@@ -31,7 +31,7 @@ DenseTensorPtr linear(const DenseTensorPtr& x, const DenseTensorPtr& w,
   CHECK(w->ndim() == 2, "Weight matrix must be 2D.");
   CHECK(b->ndim() == 1, "Bias must be 1D.");
   CHECK(x->shape().last() == w->shape().last(), "Cols of x and w must match.");
-  CHECK(w->shapeAt(0) == b->shapeAt(0), "Rows of w and b must match.");
+  CHECK(w->shape(0) == b->shape(0), "Rows of w and b must match.");
 
   auto X = x->eigenMatrix<float>();
   auto W = w->eigenMatrix<float>();

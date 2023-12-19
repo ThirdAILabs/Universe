@@ -17,9 +17,9 @@ CsrTensor::CsrTensor(DenseTensorPtr row_offsets, DenseTensorPtr col_indices,
   CHECK(_col_indices->ndim() == 1, "Col Indices Tensors must be 1d.");
   CHECK(_col_values->ndim() == 1, "Col Values Tensors must be 1d.");
 
-  CHECK(_row_offsets->shapeAt(0) == shapeAt(0) + 1,
+  CHECK(_row_offsets->shape(0) == shape(0) + 1,
         "Row offsets must have size shape[0] + 1.");
-  CHECK(_col_indices->shapeAt(0) == _col_values->shapeAt(0),
+  CHECK(_col_indices->shape(0) == _col_values->shape(0),
         "Num indices and values must match.");
 
   size_t indices_len = _col_indices->size();

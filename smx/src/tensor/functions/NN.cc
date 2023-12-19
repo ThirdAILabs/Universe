@@ -44,7 +44,7 @@ DenseTensorPtr embedding(const CsrTensorPtr& indices,
   CHECK(embeddings->dtype() == Dtype::f32, "Embeddings should have dtype f32.");
   CHECK(indices->dtype() == Dtype::f32, "Index weights should have dtype f32.");
   CHECK(embeddings->ndim() == 2, "Embeddings block should be 2d.");
-  CHECK(indices->nDenseCols() == embeddings->shapeAt(0),
+  CHECK(indices->nDenseCols() == embeddings->shape(0),
         "Indices range should match n-embeddings.");
 
   const uint32_t* row_offsets = indices->rowOffsets()->data<uint32_t>();
@@ -53,7 +53,7 @@ DenseTensorPtr embedding(const CsrTensorPtr& indices,
   const float* embeddings_ptr = embeddings->data<float>();
 
   size_t batch_size = indices->nRows();
-  size_t emb_dim = embeddings->shapeAt(1);
+  size_t emb_dim = embeddings->shape(1);
 
   auto out = DenseTensor::make(Shape(batch_size, emb_dim), Dtype::f32);
   float* out_ptr = out->data<float>();
@@ -81,9 +81,9 @@ DenseTensorPtr embeddingGrad(const CsrTensorPtr& indices,
   const float* out_grad_ptr = out_grad->data<float>();
 
   size_t batch_size = indices->nRows();
-  size_t emb_dim = out_grad->shapeAt(1);
+  size_t emb_dim = out_grad->shape(1);
 
-  auto emb_grad = zeros(Shape(indices->shapeAt(1), emb_dim));
+  auto emb_grad = zeros(Shape(indices->shape(1), emb_dim));
   float* emb_grad_ptr = emb_grad->data<float>();
 
 #pragma omp parallel for default(none)                                     \
