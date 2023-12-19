@@ -4,10 +4,10 @@
 #include <Eigen/src/Core/Array.h>
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/util/Constants.h>
-#include <Eigen/unsupported/Eigen/CXX11/Tensor>
 #include <smx/src/tensor/Dtype.h>
 #include <smx/src/tensor/MemoryHandle.h>
 #include <smx/src/tensor/Tensor.h>
+#include <unsupported/Eigen/CXX11/Tensor>
 #include <memory>
 #include <stdexcept>
 #include <string>

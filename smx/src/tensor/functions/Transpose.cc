@@ -1,6 +1,6 @@
-#include <Eigen/unsupported/Eigen/CXX11/Tensor>
 #include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Functions.h>
+#include <unsupported/Eigen/CXX11/Tensor>
 #include <stdexcept>
 #include <vector>
 
