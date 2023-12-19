@@ -16,13 +16,11 @@ namespace thirdai::bolt {
 
 DyadicModel::DyadicModel(bolt::ModelPtr model,
                          const data::DyadicInterval& dyadic_transform,
-                         data::OutputColumnsList bolt_inputs,
-                         bool is_prompt_needed)
+                         data::OutputColumnsList bolt_inputs)
     : _model(std::move(model)),
       _dyadic_transform(
           std::make_shared<data::DyadicInterval>(dyadic_transform)),
-      _bolt_inputs(std::move(bolt_inputs)),
-      _is_prompt_needed(is_prompt_needed) {
+      _bolt_inputs(std::move(bolt_inputs)) {
   if (_model->outputs().size() != 1) {
     throw std::invalid_argument("Expected model to have a single output.");
   }
@@ -32,22 +30,25 @@ DyadicModel::DyadicModel(bolt::ModelPtr model,
 
 bolt::TensorPtr DyadicModel::nextTokenProbs(
     std::vector<uint32_t>& prompts, std::vector<std::vector<uint32_t>> tokens) {
-  std::vector<std::vector<uint32_t>> prompt_columns;
-  if (_is_prompt_needed) {
-    prompt_columns.assign(tokens.size(), prompts);
-  }
-  data::ColumnMap data =
-      _is_prompt_needed
-          ? data::ColumnMap(
-                {{"target", data::ArrayColumn<uint32_t>::make(std::move(tokens),
-                                                              _vocab_size)},
-                 {"prompt", data::ArrayColumn<uint32_t>::make(
-                                std::move(prompt_columns), _vocab_size)}})
+  auto prompt_column_name = _dyadic_transform->getPromptColumn();
+  size_t tokens_size = tokens.size();
+  data::ColumnMap data(data::ColumnMap(
+      {{_dyadic_transform->getInputColumn(),
+        data::ArrayColumn<uint32_t>::make(std::move(tokens), _vocab_size)}}));
 
+<<<<<<< HEAD
           : data::ColumnMap({{"target", data::ArrayColumn<uint32_t>::make(
                                             std::move(tokens), _vocab_size)},
                              {"context", data::ArrayColumn<uint32_t>::make(
                                              std::move(tokens), _vocab_size)}});
+=======
+  if (prompt_column_name) {
+    std::vector<std::vector<uint32_t>> prompt_columns(tokens_size, prompts);
+    data.setColumn(*prompt_column_name,
+                   data::ArrayColumn<uint32_t>::make(std::move(prompt_columns),
+                                                     _vocab_size));
+  }
+>>>>>>> origin/add-options-to-dyadic-model
 
   auto columns = _dyadic_transform->inferenceFeaturization(data);
 
@@ -80,6 +81,7 @@ metrics::History DyadicModel::train(
 
 data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
                                         size_t batch_size, bool shuffle) {
+<<<<<<< HEAD
   auto data_iter = data::JsonIterator::make(data, {"target", "context"});
   auto transform =
       _is_prompt_needed
@@ -96,12 +98,31 @@ data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
                                   std::make_shared<data::StringToTokenArray>(
                                       "context", "context", ' ', _vocab_size),
                                   _dyadic_transform});
+=======
+  std::vector<std::string> columns_names = {
+      _dyadic_transform->getInputColumn()};
+  auto prompt_column = _dyadic_transform->getPromptColumn();
+  if (prompt_column) {
+    columns_names.push_back(*prompt_column);
+  }
+>>>>>>> origin/add-options-to-dyadic-model
 
-  return data::Loader(data_iter, transform, nullptr, _bolt_inputs,
-                      {data::OutputColumns("next_word")},
-                      /* batch_size= */ batch_size,
-                      /* shuffle= */ shuffle, /* verbose= */ true,
-                      /* shuffle_buffer_size= */ 200000);
+  auto data_iter = data::JsonIterator::make(data, columns_names);
+  auto transform = data::Pipeline::make(
+      {std::make_shared<data::StringToTokenArray>(
+           _dyadic_transform->getInputColumn(),
+           _dyadic_transform->getInputColumn(), ' ', _vocab_size),
+       _dyadic_transform});
+  if (prompt_column) {
+    transform->then(std::make_shared<data::StringToTokenArray>(
+        *prompt_column, *prompt_column, ' ', _vocab_size));
+  }
+  return data::Loader(
+      data_iter, transform, nullptr, _bolt_inputs,
+      {data::OutputColumns(_dyadic_transform->getTargetColumn())},
+      /* batch_size= */ batch_size,
+      /* shuffle= */ shuffle, /* verbose= */ true,
+      /* shuffle_buffer_size= */ 200000);
 }
 
 }  // namespace thirdai::bolt

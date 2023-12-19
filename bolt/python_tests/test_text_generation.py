@@ -58,7 +58,6 @@ def create_dyadic_backend():
         model=model,
         dyadic_transform=dyadic_transform,
         bolt_inputs=bolt_inputs,
-        is_prompt_needed=False,
     )
 
 

@@ -161,7 +161,7 @@ std::vector<size_t> DyadicInterval::computeOffsets(
 
     size_t text_len = texts->row(i).size();
 
-    if (contexts) {
+    if (contexts && (contexts->row(i).size() % (chunk_size) != 0)) {
       // Count offset for the first chunk containing context window
       size_t first_chunk_len = std::min(
           text_len, chunk_size - contexts->row(i).size() % (chunk_size));
