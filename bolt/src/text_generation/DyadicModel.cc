@@ -77,10 +77,13 @@ data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
   std::vector<std::string> columns_names = {
       _dyadic_transform->getInputColumn()};
   auto prompt_column = _dyadic_transform->getPromptColumn();
+  auto context_column = _dyadic_transform->getContextColumn();
   if (prompt_column) {
     columns_names.push_back(*prompt_column);
   }
-  auto context_column = _dyadic_transform->getContextColumn();
+  if(context_column){
+    columns_names.push_back(*context_column);
+  }
 
   auto data_iter = data::JsonIterator::make(data, columns_names);
   auto transform = data::Pipeline::make(
