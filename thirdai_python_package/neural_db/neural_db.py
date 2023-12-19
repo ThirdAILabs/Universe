@@ -285,8 +285,9 @@ class NeuralDB:
         Args:
             udt (bolt.UniversalDeepTransformer): The udt model to use in the NeuralDB.
             user_id (str): Optional, used to identify user/session in logging.
-            csv (Optional[str]): Optional, default None. Can be used to insert the
-                training data into the NeuralDB.
+            csv (Optional[str]): Optional, default None. The path to the CSV file
+                used to train the udt model. If supplied, the CSV file will be
+                inserted into NeuralDB.
             csv_id_column (Optional[str]): Optional, default None. The id column
                 of the training dataset. Required only if the data is being inserted via
                 the `csv` arg.
@@ -641,7 +642,7 @@ class NeuralDB:
         return ids
 
     def delete(self, source_id: str):
-        """Deletes an entity from the NeuralDB."""
+        """Deletes a document from the NeuralDB."""
         deleted_entities = self._savable_state.documents.delete(source_id)
         self._savable_state.model.delete_entities(deleted_entities)
         self._savable_state.logger.log(
@@ -711,22 +712,24 @@ class NeuralDB:
             rerank (bool): Optional, default False. When True an additional reranking
                 step is applied to results.
             top_k_rerank (int): Optional, default 100. If rerank=True then this argument
-                determines how many candidates are retreived, before reranking and
+                determines how many candidates are retrieved, before reranking and
                 returning the top_k.
-            rerank_threshold (float): Optional, default 1.5. In reranking this
-                parameter scales the threshold at which candidates are reranked.
-                Elements above the mean score of the top candidates are not reranked.
-                This argument scales that mean, increasing this value means that more
-                candidates are reranked.
-            top_k_threshold (Optional[float]): Optional, default None. If specified this
-                argument controls how many of the top candidates' scores are averaged
-                to obtain the mean that is used to determine which candidates are reranked.
-                For example passing rerank_threshold=2 and top_k_threshold=4 means
-                that the scores of the top 4 elements are averaged, and all elements below
+            rerank_threshold (float): Optional, default 1.5. In reranking all candidates
+                with a score under a certain threshold are reranked. This threshold
+                is computed as this argument (`rerank_threshold`) times the average score
+                over the first top_k_threshold candidates. Candidates with scores lower
+                than this threshold will be reranked. Thus, increasing this value
+                causes more candidates to be reranked.
+            top_k_threshold (Optional[float]): Optional, default None, which means
+                the arg `top_k` will be used. If specified this argument controls
+                how many of the top candidates' scores are averaged to obtain the
+                mean that is used to determine which candidates are reranked. For
+                example passing rerank_threshold=2 and top_k_threshold=4 means that
+                the scores of the top 4 elements are averaged, and all elements below
                 2x this average are reranked.
 
         Returns:
-            A list of Reference objects. Each reference object contains text data matching
+            List[Reference]: A list of Reference objects. Each reference object contains text data matching
             the query, along with information about which document contained that text.
 
         Examples:
@@ -919,8 +922,8 @@ class NeuralDB:
         product catalog. You also have supervised datasets - pairs of queries
         and correct products - for both categories. You can use this method to
         train NeuralDB on these supervised datasets. This method must be invoked
-        with either a csv file, and the query and id columns within it. Or an
-        explicit list of queries and expected labels should be provided.
+        with either A) a csv file with the query and id columns within it, or B) an
+        explicit list of queries and expected labels.
         """
         if isinstance(self._savable_state.model, MachMixture):
             raise NotImplementedError(

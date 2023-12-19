@@ -32,3 +32,12 @@ NeuralDB supports the following contraints that can be passed to the search meth
 .. autoclass:: thirdai.neural_db.GreaterThan
 .. autoclass:: thirdai.neural_db.LessThan
 .. autoclass:: thirdai.neural_db.InRange
+
+NeuralDB Enterprise Python Client
+_________________________________
+
+A deployed instance of NeuralDB enterprise can be accessed via this python api.
+
+.. autoclass:: thirdai.neural_db.model_bazaar.client.bazaar_client.NeuralDBClient
+
+.. autoclass:: thirdai.neural_db.ModelBazaar
