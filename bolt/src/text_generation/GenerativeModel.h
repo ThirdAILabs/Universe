@@ -111,9 +111,10 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
       std::optional<float> temperature = std::nullopt);
 
   std::vector<std::vector<uint32_t>> generateBatch(
-      const std::vector<std::vector<uint32_t>> input_tokens_batch,
-      std::vector<std::vector<uint32_t>> prompt_batch, size_t max_predictions,
-      size_t beam_width, std::optional<float> temperature = std::nullopt);
+      const std::vector<std::vector<uint32_t>>& input_tokens_batch,
+      const std::vector<std::vector<uint32_t>>& prompt_batch,
+      size_t max_predictions, size_t beam_width,
+      std::optional<float> temperature);
 
   BeamSearchDecoder streamingGenerate(
       const std::vector<uint32_t>& input_tokens, std::vector<uint32_t> prompt,

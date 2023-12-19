@@ -148,41 +148,36 @@ std::vector<uint32_t> GenerativeModel::generate(
     const std::vector<uint32_t>& input_tokens, std::vector<uint32_t> prompt,
     size_t max_predictions, size_t beam_width,
     std::optional<float> temperature) {
-    if(prompt.size() == 0){
-      return generateBatch({input_tokens}, {},max_predictions, beam_width, temperature)[0];
-    }
-    return generateBatch({input_tokens}, {prompt},max_predictions, beam_width, temperature)[0];
+  if (prompt.size() == 0) {
+    return generateBatch({input_tokens}, {}, max_predictions, beam_width,
+                         temperature)[0];
+  }
+  return generateBatch({input_tokens}, {prompt}, max_predictions, beam_width,
+                       temperature)[0];
 }
 
 std::vector<std::vector<uint32_t>> GenerativeModel::generateBatch(
-    const std::vector<std::vector<uint32_t>> input_tokens_batch,
-    std::vector<std::vector<uint32_t>> prompt_batch, size_t max_predictions,
-    size_t beam_width, std::optional<float> temperature) {
+    const std::vector<std::vector<uint32_t>>& input_tokens_batch,
+    const std::vector<std::vector<uint32_t>>& prompt_batch,
+    size_t max_predictions, size_t beam_width,
+    std::optional<float> temperature) {
   auto batch_size = input_tokens_batch.size();
-  bool is_prompt_present = prompt_batch.empty();
-
-  std::vector<std::vector<uint32_t>>
-          generation_batch(batch_size);
-
   auto generative_model = shared_from_this();
+  std::vector<std::vector<uint32_t>> generation_batch(batch_size);
 
-#pragma omp parallel for default(none)                         \
-    shared(generative_model, input_tokens_batch, prompt_batch, \
-           max_predictions, beam_width, temperature, generation_batch,is_prompt_present, batch_size)
-    for (size_t i = 0; i < batch_size; i++) {
-      auto createDecoder = [&](const std::vector<uint32_t> &prompt) {
-          return BeamSearchDecoder(
-              generative_model, prompt, input_tokens_batch[i],
-              max_predictions, max_predictions, beam_width, temperature
-          );
-      };
+#pragma omp parallel for default(none) shared(                           \
+    generative_model, input_tokens_batch, prompt_batch, max_predictions, \
+    beam_width, temperature, generation_batch, batch_size)
+  for (size_t i = 0; i < batch_size; i++) {
+    const auto& prompt =
+        prompt_batch.empty() ? std::vector<uint32_t>{} : prompt_batch[i];
+    BeamSearchDecoder decoder(generative_model, prompt, input_tokens_batch[i],
+                              max_predictions, max_predictions, beam_width,
+                              temperature);
 
-      BeamSearchDecoder decoder = is_prompt_present 
-                                  ? createDecoder({})
-                                  : createDecoder(prompt_batch[i]);
+    generation_batch[i] = decoder.next().value_or(std::vector<uint32_t>{});
+  }
 
-      generation_batch[i] = decoder.next().value_or(std::vector<uint32_t>{});
-    }
   return generation_batch;
 }
 
