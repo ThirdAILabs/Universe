@@ -22,10 +22,6 @@ class DyadicInterval final : public Transformation {
   std::string getTargetColumn() { return _target_column; }
   std::string getInputColumn() { return _input_column; }
 
-  std::optional<std::string> getPromptColumn() { return _prompt_column; }
-  std::string getTargetColumn() { return _target_column; }
-  std::string getInputColumn() { return _input_column; }
-
  private:
   static std::vector<size_t> computeOffsets(
       const ArrayColumnBasePtr<uint32_t>& texts,
