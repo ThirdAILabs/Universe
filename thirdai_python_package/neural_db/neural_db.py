@@ -254,7 +254,7 @@ class NeuralDB:
 
         udt.enable_rlhf()
         udt.set_mach_sampling_threshold(0.01)
-        fhr, emb_dim, out_dim = udt.model_dims()
+        fhr, emb_dim, *_, out_dim = udt.model_dims()
         data_types = udt.data_types()
 
         if len(data_types) != 2:
