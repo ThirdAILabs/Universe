@@ -101,7 +101,10 @@ class CharKGramTokenizer : public TextTokenizer {
   }
 
   std::vector<uint32_t> tokenize(const std::string& input) final {
-    return token_encoding::hashTokens(text::charKGrams(input, _k));
+    std::string preprocessed_string =
+        text::join(text::tokenizeSentence(input), " ");
+    return token_encoding::hashTokens(
+        text::charKGrams(preprocessed_string, _k));
   }
 
   std::string getResponsibleWord(const std::string& input,
