@@ -135,8 +135,6 @@ class MachMixture(Model):
             number_shards=self.number_models,
         )
 
-        self.n_ids += intro_documents.size
-
         modelwise_checkpoint_configs = TrainingProgressManagerFactory.make_modelwise_checkpoint_configs_from_config(
             config=checkpoint_config, number_models=self.number_models
         )
@@ -189,6 +187,8 @@ class MachMixture(Model):
                 variable_length=variable_length,
                 checkpoint_config=modelwise_checkpoint_configs[model_id],
             )
+            # This assumes that there is no overlap between shards.
+            self.n_ids += intro_shard.size
 
     def delete_entities(self, entities) -> None:
         for model in self.models:

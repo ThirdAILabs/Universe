@@ -2,9 +2,10 @@ import json
 from pathlib import Path
 
 from ..utils import unpickle_from
-from .checkpoint_config import CheckpointConfig, DirectoryConfig
+from .checkpoint_config import CheckpointConfig, TrainingDataCheckpointManager
 from .training_callback import TrainingProgressManager
-from .training_progress_tracker import IntroState, NeuralDbProgressTracker, TrainState
+from .training_progress_tracker import NeuralDbProgressTracker
+from ..documents import DocumentDataSource
 
 
 class TrainingProgressManagerFactory:
@@ -27,28 +28,27 @@ class TrainingProgressManagerFactory:
         else:
             return [None] * number_models
 
-    @staticmethod
-    def make_dir_config_for_checkpoint(
-        checkpoint_config: CheckpointConfig,
-    ) -> DirectoryConfig:
-        return DirectoryConfig(checkpoint_dir=checkpoint_config.checkpoint_dir)
-
-    @staticmethod
-    def load_tracker_from_checkpoint(
-        checkpoint_config: CheckpointConfig,
-    ) -> NeuralDbProgressTracker:
-        dir_config = TrainingProgressManagerFactory.make_dir_config_for_checkpoint(
-            checkpoint_config=checkpoint_config
+    def make_save_load_manager_scratch(
+        self,
+        checkpoint_dir: Path,
+        model,
+        intro_source: DocumentDataSource,
+        train_source: DocumentDataSource,
+        tracker: NeuralDbProgressTracker,
+    ):
+        return TrainingDataCheckpointManager(
+            checkpoint_dir=checkpoint_dir,
+            model=model,
+            intro_source=intro_source,
+            train_source=train_source,
+            tracker=tracker,
         )
-        dir_config.assert_checkpoint_source_exists()
 
-        with open(dir_config.train_and_intro_state_checkpoint_location, "r") as f:
-            params = json.load(f)
-        vlc_config = unpickle_from(filepath=dir_config.vlc_path)
-
-        return NeuralDbProgressTracker.load(
-            arguments_json=params, vlc_config=vlc_config
-        )
+    @staticmethod
+    def make_save_load_manager_from_checkpoint(
+        checkpoint_dir: Path,
+    ) -> TrainingDataCheckpointManager:
+        return TrainingDataCheckpointManager.load(checkpoint_dir=checkpoint_dir)
 
     @staticmethod
     def make_default_tracker() -> NeuralDbProgressTracker:
@@ -56,6 +56,7 @@ class TrainingProgressManagerFactory:
 
     @staticmethod
     def make_resumed_training_progress_manager(
+        original_mach_model,
         checkpoint_config: CheckpointConfig,
     ) -> TrainingProgressManager:
         """
@@ -63,28 +64,22 @@ class TrainingProgressManagerFactory:
         """
         assert checkpoint_config.checkpoint_dir != None
 
-        tracker = TrainingProgressManagerFactory.load_tracker_from_checkpoint(
-            checkpoint_config
+        save_load_manager = (
+            TrainingProgressManagerFactory.make_save_load_manager_from_checkpoint(
+                checkpoint_dir=checkpoint_config.checkpoint_dir
+            )
         )
-
-        dir_config = TrainingProgressManagerFactory.make_dir_config_for_checkpoint(
-            checkpoint_config=checkpoint_config
-        )
-
+        # We need to update the passed model with the state of the loaded model. Since, we need a model reference in the save_load_config as well, we update the model reference there as well.
+        original_mach_model.reset_model(save_load_manager.model)
+        save_load_manager.model = original_mach_model
         # We set neuraldb_mach_model, intro_source, train_source as None so that calling load on the training manager will initialize
         training_progress_manager = TrainingProgressManager(
-            tracker=tracker,
-            dir_config=dir_config,
-            neuraldb_mach_model=None,
-            intro_source=None,
-            train_source=None,
+            tracker=save_load_manager.tracker,
+            save_load_config=save_load_manager,
+            makes_checkpoint=True,
             is_resumed=True,
+            checkpoint_interval=checkpoint_config.checkpoint_interval,
         )
-        # Calling load on the training manager also updates the internal class attributes.
-        training_progress_manager.load_model()
-        training_progress_manager.load_intro_source()
-        training_progress_manager.load_train_source()
-
         return training_progress_manager
 
     @staticmethod
@@ -102,19 +97,21 @@ class TrainingProgressManagerFactory:
     ):
         tracker = TrainingProgressManagerFactory.make_default_tracker()
 
-        if checkpoint_config:
-            dir_config = TrainingProgressManagerFactory.make_dir_config_for_checkpoint(
-                checkpoint_config=checkpoint_config
-            )
-        else:
-            dir_config = None
+        save_load_manager = TrainingDataCheckpointManager(
+            checkpoint_dir=(
+                checkpoint_config.checkpoint_dir if checkpoint_config else None
+            ),
+            model=model,
+            intro_source=intro_documents,
+            train_source=train_documents,
+            tracker=tracker,
+        )
 
         training_progress_manager = TrainingProgressManager(
             tracker=tracker,
-            dir_config=dir_config,
-            neuraldb_mach_model=model,
-            intro_source=intro_documents,
-            train_source=train_documents,
+            save_load_config=save_load_manager,
+            makes_checkpoint=True if checkpoint_config else False,
+            is_resumed=False,
             checkpoint_interval=(
                 checkpoint_config.checkpoint_interval if checkpoint_config else 1
             ),
@@ -149,7 +146,7 @@ class TrainingProgressManagerFactory:
         if checkpoint_config and checkpoint_config.resume_from_checkpoint:
             return (
                 TrainingProgressManagerFactory.make_resumed_training_progress_manager(
-                    checkpoint_config=checkpoint_config
+                    model, checkpoint_config=checkpoint_config
                 )
             )
         else:

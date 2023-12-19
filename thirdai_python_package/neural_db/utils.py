@@ -22,6 +22,8 @@ def unpickle_from(filepath: Path):
 
 
 def assert_file_exists(path: Path):
+    if not path:
+        raise ValueError("Path cannot be none")
     if not path.exists():
         raise FileNotFoundError(f"File not found: {str(path)}")
 
@@ -75,8 +77,8 @@ def move_between_directories(src, dest):
         shutil.move(src_path, dst_path)
 
 
-def delete_folder(path: Path):
-    shutil.rmtree(path)
+def delete_folder(path: Path, ignore_errors: bool = True):
+    shutil.rmtree(path, ignore_errors=ignore_errors)
 
 
 # This decorator is used to raise a NotImplemented error if the check_func returns false. This is used for scenarios when a Funciton is not implemented for a particular class depending upon a condition

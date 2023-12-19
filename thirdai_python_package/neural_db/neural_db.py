@@ -6,6 +6,7 @@ from typing import Callable, Dict, List, Optional, Sequence, Tuple
 import numpy as np
 import pandas as pd
 import thirdai
+import shutil
 from thirdai._thirdai import bolt, data
 from thirdai.dataset.data_source import PyDataSource
 
@@ -549,6 +550,20 @@ class NeuralDB:
                 return []
             raise e
 
+        """
+        We need to store the model state so that our label_id -> reference mapping remains consistent.
+        """
+        if checkpoint_config:
+            if checkpoint_config.resume_from_checkpoint:
+                self._savable_state = State.load(
+                    checkpoint_config.checkpoint_dir / "checkpoint.ndb",
+                    on_progress=no_op,
+                )
+            else:
+                self.save(
+                    save_to=str(checkpoint_config.checkpoint_dir / "checkpoint.ndb")
+                )
+
         self._savable_state.model.index_documents(
             intro_documents=intro_and_train.intro,
             train_documents=intro_and_train.train,
@@ -570,8 +585,8 @@ class NeuralDB:
         on_success()
 
         if checkpoint_config:
-            delete_folder(checkpoint_config.checkpoint_dir)
-            self.save(save_to=str(checkpoint_config.checkpoint_dir))
+            self.save(save_to=str(checkpoint_config.checkpoint_dir / "trained.ndb"))
+            delete_folder(checkpoint_config.checkpoint_dir / "checkpoint.ndb")
         return ids
 
     def delete(self, source_id: str):

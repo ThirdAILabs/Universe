@@ -58,22 +58,6 @@ class IntroState:
         }
 
 
-class DataSourceCheckpointConfig:
-    def __init__(self, checkpoint_dir: Path, type: str):
-        self.source_checkpoint_location = checkpoint_dir / f"{type}_source.csv"
-        self.source_arguments_location = checkpoint_dir / f"{type}_arguments.json"
-
-    def args(self):
-        return {
-            "source_checkpoint_location": str(self.source_checkpoint_location),
-            "source_arguments_location": str(self.source_arguments_location),
-        }
-
-    def assert_data_source_exists(self):
-        assert_file_exists(self.source_checkpoint_location)
-        assert_file_exists(self.source_arguments_location)
-
-
 class NeuralDbProgressTracker:
     """
     This class will be used to track the current training status of a NeuralDB Mach Model.

@@ -58,7 +58,7 @@ class State:
 
         # make directory
         directory = Path(location)
-        os.mkdir(directory)
+        os.makedirs(directory)
         on_progress(1 / total_steps)
 
         # pickle model
@@ -87,6 +87,7 @@ class State:
 
         return str(directory)
 
+    @staticmethod
     def load(location: Path, on_progress: Callable = lambda **kwargs: None):
         total_steps = 6
 
