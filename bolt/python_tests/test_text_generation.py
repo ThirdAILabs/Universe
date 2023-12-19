@@ -156,10 +156,18 @@ def test_generation(backend):
         temperature=0.4,
     )
 
+    gen_3 = model.generate_batch(
+        input_tokens=[list(range(20))],
+        beam_width=5,
+        max_predictions=20,
+        temperature=0.4,
+    )[0]
+
     for res in stream:
         gen_2 = res
 
     assert gen_1 == gen_2
+    assert gen_2 == gen_3
 
 
 @pytest.mark.unit
@@ -176,6 +184,28 @@ def test_text_generation_with_prompt(backend):
         temperature=0.4,
         prompt=list(range(5)),
     )
+
+    stream = model.streaming_generate(
+        input_tokens=list(range(20)),
+        beam_width=5,
+        max_predictions=20,
+        prediction_chunk_size=6,
+        temperature=0.4,
+    )
+
+    for res in stream:
+        gen_2 = res
+
+    gen_3 = model.generate_batch(
+        input_tokens=[list(range(20))],
+        beam_width=5,
+        max_predictions=20,
+        temperature=0.4,
+        prompt=[list(range(5))],
+    )
+
+    assert gen_1 == gen_2
+    assert gen_2 == gen_3
 
 
 @pytest.fixture()

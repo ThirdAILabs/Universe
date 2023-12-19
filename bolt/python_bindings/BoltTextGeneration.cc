@@ -53,6 +53,11 @@ void addTextGenerationModels(py::module_& module) {
            py::arg("prompt") = std::vector<std::uint32_t>{},
            py::arg("max_predictions"), py::arg("beam_width"),
            py::arg("temperature") = std::nullopt)
+      .def("generate_batch", &GenerativeModel::generateBatch,
+           py::arg("input_tokens"),
+           py::arg("prompt") = std::vector<std::vector<std::uint32_t>>{},
+           py::arg("max_predictions"), py::arg("beam_width"),
+           py::arg("temperature") = std::nullopt)
       .def("streaming_generate", &GenerativeModel::streamingGenerate,
            py::arg("input_tokens"),
            py::arg("prompt") = std::vector<std::uint32_t>{},
