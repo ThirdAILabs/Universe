@@ -50,6 +50,8 @@ class DWTASamplingConfig final : public SamplingConfig {
   NeuronIndexPtr getNeuronIndex(uint32_t layer_dim,
                                 uint32_t input_dim) const final;
 
+  uint32_t reservoirSize() const { return _reservoir_size; }
+
   hashing::HashFunctionPtr getHashFunction(uint32_t input_dim) const;
 
   hashtable::SampledHashTablePtr getHashTable() const;

@@ -325,6 +325,8 @@ set(THIRDAI_SOURCES
     smx/src/tensor/functions/Transpose.cc
     smx/src/tensor/functions/Activations.cc
     smx/src/tensor/functions/LinearAlgebra.cc
+    smx/src/tensor/functions/sparse/SparseLinear.cc
+    smx/src/tensor/functions/sparse/NeuronIndex.cc
     smx/src/tensor/functions/NN.cc
     smx/src/tensor/functions/Loss.cc
     smx/src/tensor/Init.cc

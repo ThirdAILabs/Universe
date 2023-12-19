@@ -51,7 +51,7 @@ DenseTensorPtr linear(const DenseTensorPtr& x, const DenseTensorPtr& w,
 
 std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
     const DenseTensorPtr& x, const DenseTensorPtr& w, const DenseTensorPtr& b,
-    const TensorPtr& y_grad, bool compute_x_grad) {
+    const DenseTensorPtr& y_grad, bool compute_x_grad) {
   auto X = x->eigenMatrix<float>();
   auto W = w->eigenMatrix<float>();
   auto Y_grad = dense(y_grad)->eigenMatrix<float>();

@@ -14,12 +14,20 @@ class Optimizer {
     for (auto& param : _parameters) {
       step(param);
     }
+
+    if (_on_update_callback) {
+      _on_update_callback();
+    }
   }
 
   void zeroGrad() {
     for (const auto& param : _parameters) {
       param->zeroGrad();
     }
+  }
+
+  void registerOnUpdateCallback(std::function<void()> callback) {
+    _on_update_callback = std::move(callback);
   }
 
   virtual ~Optimizer() = default;
@@ -31,6 +39,7 @@ class Optimizer {
   virtual void step(VariablePtr& parameter) = 0;
 
   std::vector<VariablePtr> _parameters;
+  std::function<void()> _on_update_callback;
 };
 
 }  // namespace thirdai::smx

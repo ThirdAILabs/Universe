@@ -3,6 +3,7 @@
 #include <smx/src/tensor/CsrTensor.h>
 #include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Tensor.h>
+#include <smx/src/tensor/functions/sparse/NeuronIndex.h>
 
 namespace thirdai::smx {
 
@@ -47,7 +48,16 @@ DenseTensorPtr linear(const DenseTensorPtr& x, const DenseTensorPtr& w,
 
 std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
     const DenseTensorPtr& x, const DenseTensorPtr& w, const DenseTensorPtr& b,
-    const TensorPtr& y_grad, bool compute_x_grad);
+    const DenseTensorPtr& y_grad, bool compute_x_grad);
+
+CsrTensorPtr linear(const DenseTensorPtr& x, const DenseTensorPtr& w,
+                    const DenseTensorPtr& b, float sparsity,
+                    const NeuronIndexPtr& neuron_index,
+                    const TensorPtr& labels);
+
+std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
+    const DenseTensorPtr& x, const DenseTensorPtr& w, const DenseTensorPtr& b,
+    const CsrTensorPtr& y_grad);
 
 /**
  * NN functions.

@@ -213,6 +213,20 @@ void defineModules(py::module_& smx) {
       .def_property_readonly("weight", &Linear::weight)
       .def_property_readonly("bias", &Linear::bias);
 
+  py::class_<NeuronIndex, NeuronIndexPtr>(smx, "NeuronIndex");  // NOLINT
+
+  py::class_<LshIndex, std::shared_ptr<LshIndex>, NeuronIndex>(smx, "LshIndex")
+      .def(py::init(&LshIndex::make), py::arg("hash_fn"),
+           py::arg("reservoir_size"), py::arg("weight"),
+           py::arg("updates_per_rebuild"), py::arg("updates_per_new_hash_fn"));
+
+  py::class_<SparseLinear, std::shared_ptr<SparseLinear>, Module>(
+      smx, "SparseLinear")
+      .def(py::init<size_t, size_t, float, NeuronIndexPtr>(), py::arg("dim"),
+           py::arg("input_dim"), py::arg("sparsity"),
+           py::arg("neuron_index") = nullptr)
+      .def("on_update_callback", &SparseLinear::onUpdateCallback);
+
   py::class_<Embedding, std::shared_ptr<Embedding>, UnaryModule>(smx,
                                                                  "Embedding")
       .def(py::init<size_t, size_t, bool>(), py::arg("n_embs"),
@@ -229,7 +243,9 @@ void defineOptimizers(py::module_& smx) {
 
   py::class_<Optimizer>(optimizers, "Optimizer")
       .def("step", py::overload_cast<>(&Optimizer::step))
-      .def("zero_grad", &Optimizer::zeroGrad);
+      .def("zero_grad", &Optimizer::zeroGrad)
+      .def("register_on_update_callback", &Optimizer::registerOnUpdateCallback,
+           py::arg("callback"));
 
   py::class_<Adam, Optimizer>(optimizers, "Adam")
       .def(py::init<const std::vector<VariablePtr>&, float, float, float,
