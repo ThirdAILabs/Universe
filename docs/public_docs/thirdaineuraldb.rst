@@ -5,6 +5,8 @@ thirdai.neural_db
 
 .. autoclass:: thirdai.neural_db.Reference
 
+.. autoclass:: thirdai.neural_db.Sup
+
 Document Types
 ______________
 
@@ -19,7 +21,6 @@ NeuralDB currently supports the following types of documents and resources.
 .. autoclass:: thirdai.neural_db.SharePoint
 .. autoclass:: thirdai.neural_db.SentenceLevelPDF
 .. autoclass:: thirdai.neural_db.SentenceLevelDOCX
-.. autoclass:: thirdai.neural_db.SentenceLevelPDF
   
 Constrained Search
 __________________
