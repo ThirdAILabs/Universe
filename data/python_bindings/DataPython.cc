@@ -386,7 +386,8 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("strong_sample_num_words") = std::nullopt,
            py::arg("seed") = 42803)
       .def("augment_single_row", &ColdStartTextAugmentation::augmentSingleRow,
-           py::arg("strong_text"), py::arg("weak_text"))
+           py::arg("strong_text"), py::arg("weak_text"),
+           py::arg("row_id_salt") = global_random::nextSeed())
       .def("augment_map_input", &ColdStartTextAugmentation::augmentMapInput,
            py::arg("document"));
 
@@ -396,21 +397,27 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
              std::shared_ptr<VariableLengthConfig>>(  // NOLINT
       transformations_submodule, "VariableLengthConfig")
 #if THIRDAI_EXPOSE_ALL
-      .def(py::init<size_t, size_t, std::optional<uint32_t>, size_t,
-                    std::optional<size_t>, uint32_t, bool, bool, uint32_t,
-                    float, float, float, float>(),
-           py::arg("covering_min_length") = 5,
-           py::arg("covering_max_length") = 40,
-           py::arg("max_covering_samples") = std::nullopt,
-           py::arg("slice_min_length") = 5,
-           py::arg("slice_max_length") = std::nullopt,
-           py::arg("num_slices") = 7, py::arg("add_whole_doc") = true,
-           py::arg("prefilter_punctuation") = true,
-           py::arg("strong_sample_num_words") = 3,
-           py::arg("stopword_removal_probability") = 0,
-           py::arg("stopword_insertion_probability") = 0,
-           py::arg("word_removal_probability") = 0,
-           py::arg("word_perturbation_probability") = 0)
+      .def(
+          py::init<size_t, size_t, std::optional<uint32_t>, size_t,
+                   std::optional<size_t>, uint32_t, bool, bool, uint32_t, float,
+                   float, float, float, size_t, size_t, size_t, size_t>(),
+          py::arg("covering_min_length") = 5,
+          py::arg("covering_max_length") = 40,
+          py::arg("max_covering_samples") = std::nullopt,
+          py::arg("slice_min_length") = 5,
+          py::arg("slice_max_length") = std::nullopt, py::arg("num_slices") = 7,
+          py::arg("add_whole_doc") = true,
+          py::arg("prefilter_punctuation") = true,
+          py::arg("strong_sample_num_words") = 3,
+          py::arg("stopword_removal_probability") = 0,
+          py::arg("stopword_insertion_probability") = 0,
+          py::arg("word_removal_probability") = 0,
+          py::arg("word_perturbation_probability") = 0,
+          py::arg("chars_replace_with_space") = 0, py::arg("chars_deleted") = 0,
+          py::arg("chars_duplicated") = 0,
+          py::arg("chars_replace_with_adjacents") = 0
+
+      )
 #else
       .def(py::init<>())
 #endif
@@ -426,7 +433,8 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("output_column"), py::arg("config") = VariableLengthConfig(),
            py::arg("seed") = global_random::nextSeed())
       .def("augment_single_row", &VariableLengthColdStart::augmentSingleRow,
-           py::arg("strong_text"), py::arg("weak_text"));
+           py::arg("strong_text"), py::arg("weak_text"),
+           py::arg("row_id_salt") = global_random::nextSeed());
 
   py::class_<MachLabel, Transformation, std::shared_ptr<MachLabel>>(
       transformations_submodule, "MachLabel")
