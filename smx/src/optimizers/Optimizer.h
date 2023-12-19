@@ -22,6 +22,8 @@ class Optimizer {
     }
   }
 
+  virtual ~Optimizer() = default;
+
  protected:
   size_t _n_steps = 0;
 

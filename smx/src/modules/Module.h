@@ -22,6 +22,8 @@ class Module {
   }
 
   virtual std::vector<VariablePtr> parameters() const = 0;
+
+  virtual ~Module() = default;
 };
 
 class UnaryModule : public Module {
