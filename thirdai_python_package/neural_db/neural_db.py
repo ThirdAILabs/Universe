@@ -688,97 +688,38 @@ class NeuralDB:
         ]
 
     def search(
-        self,
-        query: str,
-        top_k: int,
-        constraints=None,
-        rerank=False,
-        top_k_rerank=100,
-        rerank_threshold=1.5,
-        top_k_threshold=None,
+        self, queries: str, top_k: int, constraints=None, rerank=False
     ) -> List[Reference]:
-        """
-        Searches the contents of the NeuralDB for documents relevant to the given query.
-
-        Args:
-            query (str): The query to search with.
-            top_k (int): The number of results to return.
-            constraints (Dict[str, Any]): A dictionary containing constraints to
-                apply to the metadata field of each document in the NeuralDB. This
-                allows for queries that will only return results with a certain property.
-                The constrains are in the form {"metadata_key": <constraint>} where
-                <constraint> is either an explicit value for the key in the metadata,
-                or a Filter object.
-            rerank (bool): Optional, default False. When True an additional reranking
-                step is applied to results.
-            top_k_rerank (int): Optional, default 100. If rerank=True then this argument
-                determines how many candidates are retrieved, before reranking and
-                returning the top_k.
-            rerank_threshold (float): Optional, default 1.5. In reranking all candidates
-                with a score under a certain threshold are reranked. This threshold
-                is computed as this argument (`rerank_threshold`) times the average score
-                over the first top_k_threshold candidates. Candidates with scores lower
-                than this threshold will be reranked. Thus, increasing this value
-                causes more candidates to be reranked.
-            top_k_threshold (Optional[float]): Optional, default None, which means
-                the arg `top_k` will be used. If specified this argument controls
-                how many of the top candidates' scores are averaged to obtain the
-                mean that is used to determine which candidates are reranked. For
-                example passing rerank_threshold=2 and top_k_threshold=4 means that
-                the scores of the top 4 elements are averaged, and all elements below
-                2x this average are reranked.
-
-        Returns:
-            List[Reference]: A list of Reference objects. Each reference object contains text data matching
-            the query, along with information about which document contained that text.
-
-        Examples:
-            >>> ndb.search("what is ...", top_k=5)
-            >>> ndb.search("what is ...", top_k=5, constraints={"file_type": "pdf", "file_created", GreaterThan(10)})
-        """
         matching_entities = None
-        top_k_to_search = top_k_rerank if rerank else top_k
         if constraints:
             matching_entities = self._savable_state.documents.entity_ids_by_constraints(
                 constraints
             )
             result_ids = self._savable_state.model.score(
-                samples=[query], entities=[matching_entities], n_results=top_k_to_search
+                samples=[query], entities=[matching_entities], n_results=top_k
             )[0]
         else:
-            result_ids = self._savable_state.model.infer_labels(
-                samples=[query], n_results=top_k_to_search
-            )[0]
-
-        references = []
-        for rid, score in result_ids:
-            ref = self._savable_state.documents.reference(rid)
-            ref._score = score
-            references.append(ref)
-
-        if rerank:
-            keep, to_rerank = NeuralDB._split_references_for_reranking(
-                references,
-                rerank_threshold,
-                average_top_k_scores=top_k_threshold if top_k_threshold else top_k,
+            all_result_ids = self._savable_state.model.infer_labels(
+                samples=queries, n_results=top_k
             )
+        
+        all_references = []
+        for i, result_ids in enumerate(all_result_ids):
+            references = []
+            for rid, score in result_ids:
+                ref = self._savable_state.documents.reference(rid)
+                ref._score = score
+                references.append(ref)
 
-            ranker = thirdai.dataset.KeywordOverlapRanker()
-            reranked_indices, reranked_scores = ranker.rank(
-                query, [ref.text for ref in to_rerank]
-            )
-            reranked_scores = NeuralDB._scale_reranked_scores(
-                original=[ref.score for ref in to_rerank],
-                reranked=reranked_scores,
-                leq=keep[-1].score if len(keep) > 0 else 1.0,
-            )
+            if rerank:
+                ranker = thirdai.dataset.KeywordOverlapRanker()
+                indices, scores = ranker.rank(queries[i], [ref.text for ref in references])
+                references = [references[i] for i in indices]
+                for i in range(len(references)):
+                    references[i]._score = scores[i]
+            all_references.append(references)
 
-            reranked = [to_rerank[i] for i in reranked_indices]
-            for i, ref in enumerate(reranked):
-                ref._score = reranked_scores[i]
-            references = (keep + reranked)[:top_k]
-
-        return references
+        return all_references
 
     def reference(self, element_id: int):
         """Returns a reference containing the text and other information for a given entity id."""
