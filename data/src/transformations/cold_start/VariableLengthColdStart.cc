@@ -5,6 +5,10 @@
 #include <utils/CommonChecks.h>
 #include <utils/text/Stopwords.h>
 #include <utils/text/StringManipulation.h>
+#include <iostream>
+#include <regex>
+#include <string>
+#include <vector>
 
 namespace thirdai::data {
 
@@ -17,9 +21,7 @@ VariableLengthConfig::VariableLengthConfig(
     float stopword_insertion_probability, float word_removal_probability,
     float word_perturbation_probability, size_t chars_replace_with_space,
     size_t chars_deleted, size_t chars_duplicated,
-    size_t chars_replace_with_adjacents,
-    std::optional<std::function<std::vector<std::string>(const std::string&)>>
-        python_tokenizer_func)
+    size_t chars_replace_with_adjacents, bool nltk_tokenize)
     : covering_min_length(covering_min_length),
       covering_max_length(covering_max_length),
       max_covering_samples(max_covering_samples),
@@ -37,7 +39,7 @@ VariableLengthConfig::VariableLengthConfig(
       chars_deleted(chars_deleted),
       chars_duplicated(chars_duplicated),
       chars_replace_with_adjacents(chars_replace_with_adjacents),
-      python_tokenizer_func(std::move(python_tokenizer_func)) {
+      nltk_tokenize(nltk_tokenize) {
   utils::validateGreaterThanZero(covering_min_length, "covering_min_length");
   utils::validateGreaterThanZero(covering_max_length, "covering_max_length");
   utils::validateGreaterThanZero(slice_min_length, "slice_min_length");
@@ -131,9 +133,49 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
   return output_samples;
 }
 
+std::vector<std::pair<std::regex, std::string>> STARTING_QUOTES = {
+    {std::regex("([«“‘„]|[`]+)"), " $1 "},
+    {std::regex("^\""), "``"},
+    {std::regex("(``)"), " $1 "},
+    {std::regex(R"(([ \(\[{<])("|'{2}))"), "$1 `` "},
+    {std::regex("('(?!re|ve|ll|m|t|s|d|n)(\\w)\\b"), "$1 $2"}};
+
+std::vector<std::pair<std::regex, std::string>> ENDING_QUOTES = {
+    {std::regex("([»”’])"), " $1 "},
+    {std::regex("''"), " '' "},
+    {std::regex("\""), " '' "},
+    {std::regex("([^' ])('[sS]|'[mM]|'[dD]|') "), "$1 $2 "},
+    {std::regex("([^' ])('ll|'LL|'re|'RE|'ve|'VE|n't|N'T) "), "$1 $2 "}};
+
+std::vector<std::pair<std::regex, std::string>> PUNCTUATION = {
+    {std::regex(R"(([^\.])(\.)([\]\)}>"]*)\s*$)"), "$1 $2 $3 "},
+    {std::regex("([:,])([^\\d])"), " $1 $2"},
+    {std::regex("([:,])$"), " $1 "},
+    {std::regex("\\.{2,}"), " $0 "},
+    {std::regex("[;@#$%&]"), " $0 "},
+    {std::regex(R"(([^\.])(\.)([\]\)}>"]*)\s*$)"), "$1 $2$3 "},
+    {std::regex("[?!]"), " $0 "},
+    {std::regex("([^'])' "), "$1 ' "},
+    {std::regex("[*]"), " $0 "}};
+
+Phrase custom_word_tokenize(std::string string) {
+  for (const auto& [regexp, substitution] : STARTING_QUOTES) {
+    string = std::regex_replace(string, regexp, substitution);
+  }
+  for (const auto& [regexp, substitution] : PUNCTUATION) {
+    string = std::regex_replace(string, regexp, substitution);
+  }
+  string = " " + string + " ";
+  for (const auto& [regexp, substitution] : ENDING_QUOTES) {
+    string = std::regex_replace(string, regexp, substitution);
+  }
+
+  return text::split(string, ' ');
+}
+
 Phrase VariableLengthColdStart::convertTextToPhrase(std::string string) const {
-  if (_config.python_tokenizer_func.has_value()) {
-    return _config.python_tokenizer_func.value()(string);
+  if (_config.nltk_tokenize) {
+    return custom_word_tokenize(string);
   }
 
   if (_config.prefilter_punctuation) {
