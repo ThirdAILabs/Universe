@@ -40,7 +40,7 @@ class MockBackend final : public GenerativeBackend {
     (void)batch_size, (void)train_metrics;
     (void)val_data;
     (void)val_metrics;
-    (void) max_in_memory_batches;
+    (void)max_in_memory_batches;
     (void)comm;
     return {};
   }
