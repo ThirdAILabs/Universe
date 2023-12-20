@@ -775,11 +775,26 @@ class NeuralDB:
             >>> ndb.search("what is ...", top_k=5)
             >>> ndb.search("what is ...", top_k=5, constraints={"file_type": "pdf", "file_created", GreaterThan(10)})
         """
-        if isinstance(query, str):
-            query = [query]
-        else:
-            queries = query
+        return self.search_batch(
+            [query],
+            top_k,
+            constraints,
+            rerank,
+            top_k_rerank,
+            rerank_threshold,
+            top_k_threshold,
+        )[0]
 
+    def search_batch(
+        self,
+        queries: List[str],
+        top_k: int = 1,
+        constraints=None,
+        rerank=False,
+        top_k_rerank=100,
+        rerank_threshold=1.5,
+        top_k_threshold=None,
+    ):
         matching_entities = None
         top_k_to_search = top_k_rerank if rerank else top_k
         if constraints:
@@ -801,9 +816,6 @@ class NeuralDB:
             )
 
             queries_references.append(references)
-
-        if len(queries) == 1:
-            return queries_references[0]
 
         return queries_references
 
