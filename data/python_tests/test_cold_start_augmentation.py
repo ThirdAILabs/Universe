@@ -87,7 +87,6 @@ def test_duplicated_natural_separators():
     augmentation = data.transformations.ColdStartText(
         strong_columns=["strong"],
         weak_columns=["weak"],
-        label_column="labels",
         output_column="data",
     )
 
@@ -125,7 +124,6 @@ def test_long_input():
     augmentation = data.transformations.ColdStartText(
         strong_columns=["strong"],
         weak_columns=["weak"],
-        label_column="labels",
         output_column="data",
         weak_max_len=3,
         weak_min_len=3,
@@ -152,7 +150,6 @@ def test_sample_strong_words():
     augmentation = data.transformations.ColdStartText(
         strong_columns=["strong"],
         weak_columns=["weak"],
-        label_column="labels",
         output_column="data",
         weak_max_len=3,
         weak_min_len=3,
@@ -180,7 +177,6 @@ def test_shuffle_correct():
     augmentation = data.transformations.ColdStartText(
         strong_columns=["strong"],
         weak_columns=["weak"],
-        label_column="labels",
         output_column="data",
     )
     # This will take all natural phrases: two 2-word phrases for the first
@@ -215,7 +211,6 @@ def test_sample_weak_words():
     augmentation = data.transformations.ColdStartText(
         strong_columns=["strong"],
         weak_columns=["weak"],
-        label_column="labels",
         output_column="data",
         weak_sample_num_words=2,
         weak_sample_reps=num_examples_per_phrase,
@@ -246,7 +241,6 @@ def test_long_strong_phrase():
     augmentation = data.transformations.ColdStartText(
         strong_columns=["strong"],
         weak_columns=["weak"],
-        label_column="labels",
         output_column="data",
         strong_max_len=3,
     )
@@ -286,7 +280,6 @@ def test_multiple_weak_columns():
     augmentation = data.transformations.ColdStartText(
         strong_columns=["strong"],
         weak_columns=["weak_0", "weak_1", "weak_2"],
-        label_column="labels",
         output_column="data",
     )
 
@@ -321,7 +314,6 @@ def test_multiple_strong_columns():
     augmentation = data.transformations.ColdStartText(
         strong_columns=["strong_0", "strong_1", "strong_2"],
         weak_columns=["weak"],
-        label_column="labels",
         output_column="data",
         weak_sample_num_words=1,
     )
@@ -353,7 +345,6 @@ def test_real_input():
     augmentation = data.transformations.ColdStartText(
         strong_columns=["strong"],
         weak_columns=["weak"],
-        label_column="labels",
         output_column="data",
         strong_sample_num_words=2,
         weak_min_len=5,

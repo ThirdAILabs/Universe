@@ -4,6 +4,8 @@
 #include <bolt/src/text_generation/ContextualModel.h>
 #include <bolt/src/text_generation/DyadicModel.h>
 #include <bolt/src/text_generation/GenerativeModel.h>
+#include <data/src/TensorConversion.h>
+#include <data/src/transformations/DyadicInterval.h>
 #include <dataset/src/featurizers/llm/TextGenerationFeaturizer.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/stl.h>
@@ -20,8 +22,10 @@ void addTextGenerationModels(py::module_& module) {
 
   py::class_<DyadicModel, GenerativeBackend, std::shared_ptr<DyadicModel>>(
       module, "DyadicModel")
-      .def(py::init<bolt::ModelPtr, bool>(), py::arg("model"),
-           py::arg("is_bidirectional") = false);
+      .def(py::init<bolt::ModelPtr, data::DyadicInterval,
+                    data::OutputColumnsList>(),
+           py::arg("model"), py::arg("dyadic_transform"),
+           py::arg("bolt_inputs"));
 
   py::class_<ContextualModel, GenerativeBackend,
              std::shared_ptr<ContextualModel>>(module, "ContextualModel")

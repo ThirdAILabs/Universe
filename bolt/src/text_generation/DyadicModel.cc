@@ -10,48 +10,42 @@
 #include <data/src/transformations/StringCast.h>
 #include <optional>
 #include <stdexcept>
-#include <string>
+#include <utility>
 
 namespace thirdai::bolt {
 
-DyadicModel::DyadicModel(bolt::ModelPtr model, bool is_bidirectional)
-    : _model(std::move(model)) {
-  size_t model_inputs = _model->inputs().size();
-
-  assert(!is_bidirectional || (model_inputs % 2 == 0));
-
-  size_t n_intervals = is_bidirectional ? model_inputs / 2 : model_inputs;
-
-  _dyadic_transform = std::make_shared<data::DyadicInterval>(
-      "target", std::nullopt, "interval_", "next_word", n_intervals);
-
+DyadicModel::DyadicModel(bolt::ModelPtr model,
+                         const data::DyadicInterval& dyadic_transform,
+                         data::OutputColumnsList bolt_inputs)
+    : _model(std::move(model)),
+      _dyadic_transform(
+          std::make_shared<data::DyadicInterval>(dyadic_transform)),
+      _bolt_inputs(std::move(bolt_inputs)) {
   if (_model->outputs().size() != 1) {
     throw std::invalid_argument("Expected model to have a single output.");
   }
 
   _vocab_size = _model->outputs().at(0)->dim();
-
-  for (size_t i = 0; i < n_intervals; i++) {
-    _bolt_inputs.push_back(
-        data::OutputColumns("interval_from_end_" + std::to_string(1 << i)));
-  }
-  if (is_bidirectional) {
-    for (size_t i = 0; i < n_intervals; i++) {
-      _bolt_inputs.push_back(
-          data::OutputColumns("interval_from_start_" + std::to_string(1 << i)));
-    }
-  }
 }
 
 bolt::TensorPtr DyadicModel::nextTokenProbs(
     std::vector<uint32_t>& prompt, std::vector<std::vector<uint32_t>> tokens) {
-  (void)prompt;
-  data::ColumnMap data({{"target", data::ArrayColumn<uint32_t>::make(
-                                       std::move(tokens), _vocab_size)}});
+  auto prompt_column_name = _dyadic_transform->getPromptColumn();
+  size_t tokens_size = tokens.size();
+  data::ColumnMap data(data::ColumnMap(
+      {{_dyadic_transform->getInputColumn(),
+        data::ArrayColumn<uint32_t>::make(std::move(tokens), _vocab_size)}}));
 
-  auto intervals = _dyadic_transform->inferenceFeaturization(data);
+  if (prompt_column_name) {
+    std::vector<std::vector<uint32_t>> prompt_column(tokens_size, prompt);
+    data.setColumn(*prompt_column_name,
+                   data::ArrayColumn<uint32_t>::make(std::move(prompt_column),
+                                                     _vocab_size));
+  }
 
-  auto tensors = data::toTensors(intervals, _bolt_inputs);
+  auto columns = _dyadic_transform->inferenceFeaturization(data);
+
+  auto tensors = data::toTensors(columns, _bolt_inputs);
 
   return _model->forward(tensors).at(0);
 }
@@ -80,18 +74,37 @@ metrics::History DyadicModel::train(
 
 data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
                                         size_t batch_size, bool shuffle) {
-  auto data_iter = data::JsonIterator::make(data, {"target"});
+  std::vector<std::string> columns_names = {
+      _dyadic_transform->getInputColumn()};
+  auto prompt_column = _dyadic_transform->getPromptColumn();
+  auto context_column = _dyadic_transform->getContextColumn();
+  if (prompt_column) {
+    columns_names.push_back(*prompt_column);
+  }
+  if (context_column) {
+    columns_names.push_back(*context_column);
+  }
 
+  auto data_iter = data::JsonIterator::make(data, columns_names);
   auto transform =
       data::Pipeline::make({std::make_shared<data::StringToTokenArray>(
-                                "target", "target", ' ', _vocab_size),
-                            _dyadic_transform});
-
-  return data::Loader(data_iter, transform, nullptr, _bolt_inputs,
-                      {data::OutputColumns("next_word")},
-                      /* batch_size= */ batch_size,
-                      /* shuffle= */ shuffle, /* verbose= */ true,
-                      /* shuffle_buffer_size= */ 200000);
+          _dyadic_transform->getInputColumn(),
+          _dyadic_transform->getInputColumn(), ' ', _vocab_size)});
+  if (prompt_column) {
+    transform = transform->then(std::make_shared<data::StringToTokenArray>(
+        *prompt_column, *prompt_column, ' ', _vocab_size));
+  }
+  if (context_column) {
+    transform = transform->then(std::make_shared<data::StringToTokenArray>(
+        *context_column, *context_column, ' ', _vocab_size));
+  }
+  transform = transform->then(_dyadic_transform);
+  return data::Loader(
+      data_iter, transform, nullptr, _bolt_inputs,
+      {data::OutputColumns(_dyadic_transform->getTargetColumn())},
+      /* batch_size= */ batch_size,
+      /* shuffle= */ shuffle, /* verbose= */ true,
+      /* shuffle_buffer_size= */ 200000);
 }
 
 }  // namespace thirdai::bolt

@@ -23,7 +23,9 @@ struct VariableLengthConfig {
       float stopword_removal_probability = 0,
       float stopword_insertion_probability = 0,
       float word_removal_probability = 0,
-      float word_perturbation_probability = 0);
+      float word_perturbation_probability = 0,
+      size_t chars_replace_with_space = 0, size_t chars_deleted = 0,
+      size_t chars_duplicated = 0, size_t chars_replace_with_adjacents = 0);
 
   size_t covering_min_length;
   size_t covering_max_length;
@@ -38,14 +40,19 @@ struct VariableLengthConfig {
   float stopword_insertion_probability;
   float word_removal_probability;
   float word_perturbation_probability;
-
+  size_t chars_replace_with_space;
+  size_t chars_deleted;
+  size_t chars_duplicated;
+  size_t chars_replace_with_adjacents;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(covering_min_length, covering_max_length, max_covering_samples,
             slice_min_length, slice_max_length, num_slices, add_whole_doc,
             prefilter_punctuation, strong_sample_num_words,
             stopword_removal_probability, stopword_insertion_probability,
-            word_removal_probability, word_perturbation_probability);
+            word_removal_probability, word_perturbation_probability,
+            chars_replace_with_space, chars_deleted, chars_duplicated,
+            chars_replace_with_adjacents);
   }
 
   void save_stream(std::ostream& output_stream) const {
@@ -83,6 +90,10 @@ struct VariableLengthConfig {
        << stopword_insertion_probability;
     ss << ", word_removal_probability = " << word_removal_probability;
     ss << ", word_perturbation_probability = " << word_perturbation_probability;
+    ss << ", chars_replace_with_space = " << chars_replace_with_space;
+    ss << ", chars_deleted = " << chars_deleted;
+    ss << ", chars_duplicated = " << chars_duplicated;
+    ss << ", chars_replace_with_adjacents = " << chars_replace_with_adjacents;
     ss << ")";
     return ss.str();
   }
@@ -92,7 +103,7 @@ class VariableLengthColdStart : public cold_start::TextAugmentationBase {
  public:
   VariableLengthColdStart(
       std::vector<std::string> strong_column_names,
-      std::vector<std::string> weak_column_names, std::string label_column_name,
+      std::vector<std::string> weak_column_names,
       std::string output_column_name,
       const VariableLengthConfig& config = VariableLengthConfig(),
       uint32_t seed = global_random::nextSeed());
@@ -101,32 +112,36 @@ class VariableLengthColdStart : public cold_start::TextAugmentationBase {
    * Helper method to perform the augmentation of a single row in the input.
    * Returns the augmented phrases from that input row as strings.
    */
-  std::vector<std::string> augmentSingleRow(
-      const std::string& strong_text, const std::string& weak_text) const final;
+  std::vector<std::string> augmentSingleRow(const std::string& strong_text,
+                                            const std::string& weak_text,
+                                            uint32_t row_id_salt) const final;
 
  private:
+  Phrase convertTextToPhrase(std::string string) const;
+
   /**
    * Returns a set of covering samples and random slices according to the
    * parameters specified at construction time.
    */
-  PhraseCollection getWeakPhrases(std::string weak_text) const;
+  PhraseCollection getWeakPhrases(std::string weak_text,
+                                  std::mt19937& rng) const;
 
   static void addCoveringPhrases(const Phrase& words, PhraseCollection& phrases,
                                  size_t min_len, size_t max_len,
                                  std::optional<size_t> max_covering_samples,
-                                 uint32_t seed);
+                                 std::mt19937& rng);
 
   static void addRandomSlicePhrases(const Phrase& words,
                                     PhraseCollection& phrases, size_t min_len,
                                     std::optional<size_t> max_len_opt,
-                                    uint32_t num_slices, uint32_t seed);
+                                    uint32_t num_slices, std::mt19937& rng);
 
   static std::string convertPhraseToText(const std::vector<std::string>& phrase,
                                          float stopword_removal_probability,
                                          float stopword_insertion_probability,
                                          float word_removal_probability,
                                          float word_perturbation_probability,
-                                         std::mt19937 rng);
+                                         std::mt19937& rng);
 
   VariableLengthConfig _config;
 };

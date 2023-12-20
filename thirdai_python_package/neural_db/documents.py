@@ -403,6 +403,30 @@ def safe_has_offset(this):
 
 
 class CSV(Document):
+    """
+    A document containing the rows of a csv file.
+
+    Args:
+        path (str): The path to the csv file.
+        id_column (Optional[str]). Optional, defaults to None. If provided then the
+            ids in this column are used to identify the rows in NeuralDB. If not provided
+            then ids are assigned.
+        strong_columns (Optional[List[str]]): Optional, defaults to None. This argument
+            can be used to provide NeuralDB with information about which columns are
+            likely to contain the strongest signal in matching with a given query. For
+            example this could be something like the name of a product.
+        weak_columns (Optional[List[str]]): Optional, defaults to None. This argument
+            can be used to provide NeuralDB with information about which columns are
+            likely to contain weaker signals in matching with a given query. For
+            example this could be something like the description of a product.
+        reference_columns (Optional[List[str]]): Optional, defaults to None. If provided
+            the specified columns are returned by NeuralDB as responses to queries. If
+            not specifed all columns are returned.
+        metadata (Dict[str, Any]): Optional, defaults to {}. Specifies metadata to
+            associate with entities from this file. Queries to NeuralDB can provide
+            constrains to restrict results based on the metadata.
+    """
+
     def valid_id_column(column):
         return (
             (len(column.unique()) == len(column))
@@ -542,23 +566,23 @@ class CSV(Document):
         return self.orig_to_assigned_id
 
     def strong_text_from_row(self, row) -> str:
-        return " ".join(str(row[col]) for col in self.strong_columns)
+        return " ".join(getattr(row, col) for col in self.strong_columns)
 
     def strong_text(self, element_id: int) -> str:
         row = self.df.loc[element_id]
         return self.strong_text_from_row(row)
 
     def weak_text_from_row(self, row) -> str:
-        return " ".join(str(row[col]) for col in self.weak_columns)
+        return " ".join(getattr(row, col) for col in self.weak_columns)
 
     def weak_text(self, element_id: int) -> str:
         row = self.df.loc[element_id]
         return self.weak_text_from_row(row)
 
     def row_iterator(self):
-        for row_id, row in self.df.iterrows():
+        for row in self.df.itertuples():
             yield DocumentRow(
-                element_id=row_id,
+                element_id=row.Index,
                 strong=self.strong_text_from_row(row),
                 weak=self.weak_text_from_row(row),
             )
@@ -811,28 +835,31 @@ def process_docx(path: str) -> pd.DataFrame:
 
 
 class PDF(Extracted):
-    """Parses a PDF document into chunks of text that can be indexed by
-    NeuralDB.
+    """
+    Parses a PDF document into chunks of text that can be indexed by NeuralDB.
 
-    Initialization arguments:
-        path: path to PDF file
-        chunk_size: number of words in each chunk of text. Defaults to 100
-        stride: number of words between each chunk of text. When stride <
+    Args:
+        path (str): path to PDF file
+        chunk_size (int): The number of words in each chunk of text. Defaults to 100
+        stride (int): The number of words between each chunk of text. When stride <
             chunk_size, the text chunks overlap. When stride = chunk_size, the
             text chunks do not overlap. Defaults to 40 so adjacent chunks have a
             60% overlap.
-        emphasize_first_words: number of words at the beginning of the document
-            to be passed into NeuralDB as a strong signal. For example, if your
-            document starts with a descriptive title that is 3 words long, then
-            you can set emphasize_first_words to 3 so that NeuralDB captures
+        emphasize_first_words (int): The number of words at the beginning of the
+            document to be passed into NeuralDB as a strong signal. For example,
+            if your document starts with a descriptive title that is 3 words long,
+            then you can set emphasize_first_words to 3 so that NeuralDB captures
             this strong signal. Defaults to 0.
-        ignore_header_footer: whether the parser should remove headers and
+        ignore_header_footer (bool): whether the parser should remove headers and
             footers. Defaults to True; headers and footers are removed by
             default.
-        ignore_nonstandard_orientation: whether the parser should remove lines
+        ignore_nonstandard_orientation (bool): whether the parser should remove lines
             of text that have a nonstandard orientation, such as margins that
             are oriented vertically. Defaults to True; lines with nonstandard
             orientation are removed by default.
+        metadata (Dict[str, Any]): Optional, defaults to {}. Specifies metadata to
+            associate with entities from this file. Queries to NeuralDB can provide
+            constrains to restrict results based on the metadata.
     """
 
     def __init__(
@@ -952,6 +979,22 @@ class Unstructured(Extracted):
 
 
 class URL(Document):
+    """
+    A URL document takes the data found at the provided URL (or in the provided reponse)
+    and creates entities that can be inserted into NeuralDB.
+
+    Args:
+        url (str): The URL where the data is located.
+        url_response (Reponse): Optional, defaults to None. If provided then the
+            data in the response is used to create the entities, otherwise a get request
+            is sent to the url.
+        title_is_strong (bool): Optional, defaults to False. If true then the title is
+            used as a strong signal for NeuralDB.
+        metadata (Dict[str, Any]): Optional, defaults to {}. Specifies metadata to
+            associate with entities from this file. Queries to NeuralDB can provide
+            constrains to restrict results based on the metadata.
+    """
+
     def __init__(
         self,
         url: str,
@@ -1189,10 +1232,13 @@ class SQLDatabase(DocumentConnector):
 
     def setup_connection(self, engine: sqlConn):
         """
-        This is a helper function to re-establish the connection upon loading the saved ndb model containing this SQLDatabase document.
+        This is a helper function to re-establish the connection upon loading the
+        saved ndb model containing this SQLDatabase document.
+
         Args:
             engine: SQLAlchemy Connection object
                     NOTE: Provide the same connection object.
+
         NOTE: Same table would be used to establish connection
         """
         try:
@@ -1387,10 +1433,17 @@ class SQLDatabase(DocumentConnector):
 class SharePoint(DocumentConnector):
     """
     Class for handling sharepoint connection, retrieving documents, processing and training the neural_db model
+
     Args:
-        - ctx (ClientContext): A ClientContext object for SharePoint connection.
-        - library_path (str): The server-relative directory path where documents are stored. Default: 'Shared Documents'
-        - chunk_size (int): The maximum amount of data (in bytes) that can be fetched at a time. (This limit may not apply if there are no files within this range.) Default: 10MB
+        ctx (ClientContext): A ClientContext object for SharePoint connection.
+        library_path (str): The server-relative directory path where documents
+            are stored. Default: 'Shared Documents'
+        chunk_size (int): The maximum amount of data (in bytes) that can be fetched
+            at a time. (This limit may not apply if there are no files within this
+            range.) Default: 10MB
+        metadata (Dict[str, Any]): Optional, defaults to {}. Specifies metadata to
+            associate with entities from this file. Queries to NeuralDB can provide
+            constrains to restrict results based on the metadata.
     """
 
     def __init__(
@@ -1440,9 +1493,9 @@ class SharePoint(DocumentConnector):
     def setup_connection(self, ctx: ClientContext):
         """
         This is a helper function to re-establish the connection upon loading the saved ndb model containing this Sharepoint document.
+
         Args:
-            engine: SQLAlchemy Connection object
-                    NOTE: Provide the same connection object.
+            engine: SQLAlchemy Connection object. NOTE: Provide the same connection object.
         NOTE: Same library path would be used
         """
         try:
@@ -1624,11 +1677,14 @@ class SharePoint(DocumentConnector):
 
 class SalesForce(DocumentConnector):
     """
-    Class for handling the Salesforce object connections and data retrieval for training the neural_db model
+    Class for handling the Salesforce object connections and data retrieval for
+    training the neural_db model
 
-    This class encapsulates functionality for connecting to an object, executing Salesforce Object Query Language (SOQL) queries, and retrieving
+    This class encapsulates functionality for connecting to an object, executing
+    Salesforce Object Query Language (SOQL) queries, and retrieving
 
-    NOTE: Allow the Bulk API access for the provided object. Also, it is being expected that the table will remain static in terms of both rows and columns.
+    NOTE: Allow the Bulk API access for the provided object. Also, it is being
+    expected that the table will remain static in terms of both rows and columns.
     """
 
     def __init__(
@@ -1683,9 +1739,10 @@ class SalesForce(DocumentConnector):
     def setup_connection(self, instance: Salesforce):
         """
         This is a helper function to re-establish the connection upon loading a saved ndb model containing this SalesForce document.
+
         Args:
-            instance: Salesforce instance
-                    NOTE: Provide the same connection object.
+            instance: Salesforce instance. NOTE: Provide the same connection object.
+
         NOTE: Same object name would be used to establish connection
         """
         try:
@@ -2067,6 +2124,20 @@ class SentenceLevelExtracted(Extracted):
 
 
 class SentenceLevelPDF(SentenceLevelExtracted):
+    """
+    Parses a document into sentences and creates a NeuralDB entry for each
+    sentence. The strong column of the entry is the sentence itself while the
+    weak column is the paragraph from which the sentence came. A NeuralDB
+    reference produced by this object displays the paragraph instead of the
+    sentence to increase recall.
+
+    Args:
+        path (str): The path to the pdf file.
+        metadata (Dict[str, Any]): Optional, defaults to {}. Specifies metadata to
+            associate with entities from this file. Queries to NeuralDB can provide
+            constrains to restrict results based on the metadata.
+    """
+
     def __init__(self, path: str, metadata={}):
         super().__init__(path=path, metadata=metadata)
 
@@ -2078,6 +2149,20 @@ class SentenceLevelPDF(SentenceLevelExtracted):
 
 
 class SentenceLevelDOCX(SentenceLevelExtracted):
+    """
+    Parses a document into sentences and creates a NeuralDB entry for each
+    sentence. The strong column of the entry is the sentence itself while the
+    weak column is the paragraph from which the sentence came. A NeuralDB
+    reference produced by this object displays the paragraph instead of the
+    sentence to increase recall.
+
+    Args:
+        path (str): The path to the docx file.
+        metadata (Dict[str, Any]): Optional, defaults to {}. Specifies metadata to
+            associate with entities from this file. Queries to NeuralDB can provide
+            constrains to restrict results based on the metadata.
+    """
+
     def __init__(self, path: str, metadata={}):
         super().__init__(path=path, metadata=metadata)
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <cmath>
 #include <numeric>
 #include <stdexcept>
