@@ -208,6 +208,8 @@ def create_simple_dataset(request):
 @pytest.mark.parametrize("create_simple_dataset", [True, False], indirect=True)
 def test_nwp_training(backend, create_simple_dataset, request):
     filename = create_simple_dataset
+    max_in_memory_batches = 1 if backend is create_dyadic_backend else None
+
     model = bolt.GenerativeModel(
         backend(True) if filename == "nwp_True.txt" else backend(),
         allowed_repeats=set(),
@@ -221,7 +223,9 @@ def test_nwp_training(backend, create_simple_dataset, request):
         train_data=train_data,
         epochs=3,
         learning_rate=0.0001,
+        batch_size=10,
         train_metrics=["loss"],
         val_data=val_data,
         val_metrics=["loss", "categorical_accuracy"],
+        max_in_memory_batches=max_in_memory_batches,
     )

@@ -75,12 +75,14 @@ metrics::History DyadicModel::train(
   // dataset::DatasetLoader while dyadic model is using data::Loader
   for (uint32_t e = 0; e < epochs; e++) {
     while (auto train_chunk = train_dataset_loader.next(batches_to_load)) {
-      trainer.train_with_metric_names(
-          *train_chunk, learning_rate, epochs, train_metrics, val_dataset,
-          val_metrics, /* steps_per_validation= */ std::nullopt,
-          /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
-          /* autotune_rehash_rebuild= */ false, /* verbose= */ true,
-          /* logging_interval= */ std::nullopt, comm);
+      if(train_chunk){
+        trainer.train_with_metric_names(
+            *train_chunk, learning_rate, 1, train_metrics, val_dataset,
+            val_metrics, /* steps_per_validation= */ std::nullopt,
+            /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
+            /* autotune_rehash_rebuild= */ false, /* verbose= */ true,
+            /* logging_interval= */ std::nullopt, comm);
+      }
     }
   }
   return trainer.getHistory();
