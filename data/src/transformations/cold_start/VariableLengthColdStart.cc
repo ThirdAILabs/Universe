@@ -236,10 +236,6 @@ std::string VariableLengthColdStart::convertPhraseToText(
       }
     }
 
-    // add the word
-    output_text.append(word);
-    output_text.push_back(' ');
-
     // decide to randomly insert a stopword
     if (stopword_insertion_probability &&
         dist(rng) < stopword_insertion_probability) {
@@ -250,6 +246,12 @@ std::string VariableLengthColdStart::convertPhraseToText(
       if (i != phrase.size() - 1) {
         output_text.push_back(' ');
       }
+    }
+
+    // add the word
+    output_text.append(word);
+    if (i != phrase.size() - 1) {
+      output_text.push_back(' ');
     }
   }
 
