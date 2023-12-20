@@ -564,11 +564,17 @@ class NeuralDB:
                     )
                 except:
                     raise Exception(
-                        f"{checkpoint_config.checkpoint_dir / 'checkpoint.ndb'} not"
-                        " found. Ensure that loading from a valid checkpoint or the"
-                        " training has not finished."
+                        "Failed to load"
+                        f" '{checkpoint_config.checkpoint_dir / 'checkpoint.ndb'}'."
+                        " Please verify it's a valid checkpoint and the training is"
+                        " incomplete."
                     )
             else:
+                # Deletes the checkpoint folder if there is one.
+                delete_folder(
+                    checkpoint_config.checkpoint_dir / "checkpoint.ndb",
+                    ignore_errors=True,
+                )
                 self.save(
                     save_to=str(checkpoint_config.checkpoint_dir / "checkpoint.ndb")
                 )
@@ -594,6 +600,10 @@ class NeuralDB:
         on_success()
 
         if checkpoint_config:
+            # Deleting the previous trained neuraldb
+            delete_folder(
+                checkpoint_config.checkpoint_dir / "trained.ndb", ignore_errors=True
+            )
             self.save(save_to=str(checkpoint_config.checkpoint_dir / "trained.ndb"))
             delete_folder(checkpoint_config.checkpoint_dir / "checkpoint.ndb")
         return ids

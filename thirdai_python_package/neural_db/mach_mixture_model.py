@@ -8,6 +8,7 @@ from .documents import DocumentDataSource
 from .models import CancelState, Mach, Model
 from .sharded_documents import ShardedDataSource
 from .training_state.checkpoint_config import CheckpointConfig
+from .training_state.training_callback import TrainingProgressManager
 from .training_state.training_manager_factory import TrainingProgressManagerFactory
 from .utils import requires_condition
 
@@ -104,6 +105,19 @@ class MachMixture(Model):
     def get_id_delimiter(self) -> str:
         return self.id_delimiter
 
+    def index_documents_impl(
+        self,
+        training_progress_managers: List[TrainingProgressManager],
+        on_progress: Callable,
+        cancel_state: CancelState,
+    ):
+        for model_id, model in enumerate(self.models):
+            model.index_documents_impl(
+                training_progress_manager=training_progress_managers[model_id],
+                on_progress=on_progress,
+                cancel_state=cancel_state,
+            )
+
     def index_documents(
         self,
         intro_documents: DocumentDataSource,
@@ -123,8 +137,10 @@ class MachMixture(Model):
         number_classes = intro_documents.size
 
         if checkpoint_config and checkpoint_config.resume_from_checkpoint:
-            # We should not shard the data again.
-
+            # When resuming from a checkpoint, the data is already stored in the respective Mach models checkpoint folders. Hence, we do not need to shard the data again.
+            introduce_data_sources = [None for _ in range(self.number_models)]
+            train_data_sources = [None for _ in range(self.number_models)]
+        else:
             # Make a sharded data source with introduce documents. When we call shard_data_source, this will shard the introduce data source, return a list of data sources, and modify the label index to keep track of what label goes to what shard
             sharded_data_source = ShardedDataSource(
                 document_data_source=intro_documents,
@@ -140,15 +156,14 @@ class MachMixture(Model):
                 label_to_segment_map=self.label_to_segment_map,
                 number_shards=self.number_models,
             )
-        else:
-            introduce_data_sources = [None for _ in range(self.number_models)]
-            train_data_sources = [None for _ in range(self.number_models)]
 
         modelwise_checkpoint_configs = TrainingProgressManagerFactory.make_modelwise_checkpoint_configs_from_config(
             config=checkpoint_config, number_models=self.number_models
         )
 
-        for model_id, (intro_shard, train_shard, model, config) in enumerate(
+        training_managers = []
+
+        for _, (intro_shard, train_shard, model, config) in enumerate(
             zip(
                 introduce_data_sources,
                 train_data_sources,
@@ -170,34 +185,15 @@ class MachMixture(Model):
                     checkpoint_config=config,
                 )
             )
-            # In case of resume_from_checkpooint and checkpoint_config = None, this will not store anything.
+            training_managers.append(modelwise_training_manager)
+            # In case of resume_from_checkpoint or checkpoint_config = None, this will not store anything.
             modelwise_training_manager.make_preindexing_checkpoint()
 
-        for model_id, (
-            intro_shard,
-            train_shard,
-            model,
-        ) in enumerate(
-            zip(
-                introduce_data_sources,
-                train_data_sources,
-                self.models,
-            )
-        ):
-            model.index_documents(
-                intro_documents=intro_shard,
-                train_documents=train_shard,
-                should_train=should_train,
-                fast_approximation=fast_approximation,
-                num_buckets_to_sample=num_buckets_to_sample,
-                on_progress=on_progress,
-                cancel_state=cancel_state,
-                max_in_memory_batches=max_in_memory_batches,
-                override_number_classes=number_classes,
-                variable_length=variable_length,
-                checkpoint_config=modelwise_checkpoint_configs[model_id],
-            )
-            # This assumes that there is no overlap between shards.
+        self.index_documents_impl(
+            training_progress_managers=training_managers,
+            on_progress=on_progress,
+            cancel_state=cancel_state,
+        )
 
     def delete_entities(self, entities) -> None:
         for model in self.models:

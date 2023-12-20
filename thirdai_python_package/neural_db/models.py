@@ -418,6 +418,71 @@ class Mach(Model):
                     num_buckets_to_sample=num_buckets_to_sample,
                 )
 
+    def index_documents_impl(
+        self,
+        training_progress_manager: TrainingProgressManager,
+        on_progress: Callable = lambda **kwargs: None,
+        cancel_state: CancelState = None,
+    ):
+        intro_documents = training_progress_manager.intro_source
+        train_documents = training_progress_manager.train_source
+
+        if self.model is None:
+            self.id_col = intro_documents.id_column
+            self.model = self.model_from_scratch(
+                intro_documents,
+                number_classes=training_progress_manager.tracker.override_number_classes,
+            )
+            learning_rate = 0.005
+            freeze_before_train = False
+            min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
+                train_documents.size
+            )
+            self.n_ids += intro_documents.size
+            self.add_balancing_samples(intro_documents)
+        else:
+            learning_rate = 0.001
+            # Freezing at the beginning prevents the model from forgetting
+            # things it learned from pretraining.
+            freeze_before_train = True
+            # Less epochs here since it converges faster when trained on a base
+            # model.
+            if not training_progress_manager.is_insert_completed:
+                intro_documents = training_progress_manager.intro_source
+                self.introduce_documents(
+                    intro_documents=intro_documents,
+                    fast_approximation=training_progress_manager.tracker.fast_approximation,
+                    num_buckets_to_sample=training_progress_manager.tracker.num_buckets_to_sample,
+                )
+                self.n_ids += intro_documents.size
+                self.add_balancing_samples(intro_documents)
+            min_epochs, max_epochs = autotune_from_base_min_max_epochs(
+                train_documents.size
+            )
+
+        # We can set all the training variables irrespective of whether we resumed from a checkpoint or training from scratch
+        training_progress_manager.set_training_arguments(
+            learning_rate=learning_rate,
+            min_epochs=min_epochs,
+            max_epochs=max_epochs,
+            freeze_before_train=freeze_before_train,
+        )
+        # This function call checks whether insert has already been completed (could be the case when resumes from a checkpoint). Does not checkpoint if insert was completed when we resumed from a checkpoint. Checkpoints in all other cases. We also update the is_insert_completed flag in the training manager.
+        training_progress_manager.insert_complete()
+
+        if not training_progress_manager.is_training_completed:
+            train_documents = training_progress_manager.train_source
+            train_arguments = training_progress_manager.get_training_arguments()
+            self.train_documents(
+                train_documents=train_documents,
+                metric="hash_precision@5",
+                acc_to_stop=0.95,
+                on_progress=on_progress,
+                cancel_state=cancel_state,
+                **train_arguments,
+            )
+            training_progress_manager.training_complete()
+
     def index_documents(
         self,
         intro_documents: DocumentDataSource,
@@ -470,60 +535,13 @@ class Mach(Model):
                 )
             )
 
-        if self.model is None:
-            self.id_col = intro_documents.id_column
-            self.model = self.model_from_scratch(
-                intro_documents, number_classes=override_number_classes
-            )
-            learning_rate = 0.005
-            freeze_before_train = False
-            min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
-                train_documents.size
-            )
-            self.n_ids += intro_documents.size
-            self.add_balancing_samples(intro_documents)
-        else:
-            learning_rate = 0.001
-            # Freezing at the beginning prevents the model from forgetting
-            # things it learned from pretraining.
-            freeze_before_train = True
-            # Less epochs here since it converges faster when trained on a base
-            # model.
-            if not training_progress_manager.is_insert_completed:
-                intro_documents = training_progress_manager.intro_source
-                self.introduce_documents(
-                    intro_documents=intro_documents,
-                    fast_approximation=training_progress_manager.tracker.fast_approximation,
-                    num_buckets_to_sample=training_progress_manager.tracker.num_buckets_to_sample,
-                )
-                self.n_ids += intro_documents.size
-                self.add_balancing_samples(intro_documents)
-            min_epochs, max_epochs = autotune_from_base_min_max_epochs(
-                train_documents.size
-            )
+        training_progress_manager.make_preindexing_checkpoint()
 
-        # We can set all the training variables irrespective of whether we resumed from a checkpoint or training from scratch
-        training_progress_manager.set_training_arguments(
-            learning_rate=learning_rate,
-            min_epochs=min_epochs,
-            max_epochs=max_epochs,
-            freeze_before_train=freeze_before_train,
+        self.index_documents_impl(
+            training_progress_manager=training_progress_manager,
+            on_progress=on_progress,
+            cancel_state=cancel_state,
         )
-        # This function call checks whether insert has already been completed (could be the case when resumes from a checkpoint). Does not checkpoint if insert was completed when we resumed from a checkpoint. Checkpoints in all other cases. We also update the is_insert_completed flag in the training manager.
-        training_progress_manager.insert_complete()
-
-        if not training_progress_manager.is_training_completed:
-            train_documents = training_progress_manager.train_source
-            train_arguments = training_progress_manager.get_training_arguments()
-            self.train_documents(
-                train_documents=train_documents,
-                metric="hash_precision@5",
-                acc_to_stop=0.95,
-                on_progress=on_progress,
-                cancel_state=cancel_state,
-                **train_arguments,
-            )
-            training_progress_manager.training_complete()
 
     def add_balancing_samples(self, documents: DocumentDataSource):
         samples = make_balancing_samples(documents)
