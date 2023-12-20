@@ -728,8 +728,8 @@ class NeuralDB:
 
     def search(
         self,
-        query: str | List[str],
-        top_k: int = 1,
+        query: str,
+        top_k: int,
         constraints=None,
         rerank=False,
         top_k_rerank=100,
