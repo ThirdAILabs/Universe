@@ -37,6 +37,9 @@ DenseTensorPtr softmax(const DenseTensorPtr& in);
 DenseTensorPtr softmaxGrad(const DenseTensorPtr& out,
                            const DenseTensorPtr& out_grad);
 
+CsrTensorPtr softmax(const CsrTensorPtr& in);
+
+CsrTensorPtr softmaxGrad(const CsrTensorPtr& out, const CsrTensorPtr& out_grad);
 /**
  * Linear algebra functions.
  */

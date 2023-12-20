@@ -1,3 +1,5 @@
+#include <_types/_uint32_t.h>
+#include <smx/src/tensor/CsrTensor.h>
 #include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Dtype.h>
 #include <stdexcept>
@@ -123,6 +125,81 @@ DenseTensorPtr softmaxGrad(const DenseTensorPtr& out,
       (gy - y.colwise() * gy.rowwise().sum()) * y_grad;
 
   return in_grad;
+}
+
+CsrTensorPtr softmax(const CsrTensorPtr& in) {
+  CHECK(in->dtype() == Dtype::f32,
+        "Softmax can only be applied to f32 tensors.");
+  size_t n_rows = in->nRows();
+
+  const uint32_t* offsets = in->rowOffsets()->data<uint32_t>();
+  const float* x = in->colValues()->data<float>();
+
+  auto out_values = DenseTensor::make(in->colValues()->shape(), Dtype::f32);
+  float* y = out_values->data<float>();
+
+#pragma omp parallel for default(none) shared(n_rows, offsets, x, y)
+  for (size_t n = 0; n < n_rows; n++) {
+    size_t start = offsets[n];
+    size_t end = offsets[n + 1];
+
+    float max = 0.0;
+    for (size_t i = start; i < end; i++) {
+      if (x[i] > max) {
+        max = x[i];
+      }
+    }
+    float sum = 0.0;
+    for (size_t i = start; i < end; i++) {
+      y[i] = std::exp(x[i] - max);
+      sum += y[i];
+    }
+    for (size_t i = start; i < end; i++) {
+      y[i] /= sum;
+    }
+  }
+
+  return CsrTensor::make(in->rowOffsets(), in->colIndices(), out_values,
+                         in->shape());
+}
+
+CsrTensorPtr softmaxGrad(const CsrTensorPtr& out,
+                         const CsrTensorPtr& out_grad) {
+  CHECK(out->dtype() == Dtype::f32,
+        "Activations are only supported for f32 tensors.")
+  CHECK(out_grad->dtype() == Dtype::f32,
+        "Activations are only supported for f32.")
+  CHECK(out->shape() == out_grad->shape(),
+        "Output and grad shapes must match.");
+
+  const uint32_t* offsets = out->rowOffsets()->data<uint32_t>();
+  const float* y = out->colValues()->data<float>();
+  const float* y_grad = out_grad->colValues()->data<float>();
+
+  auto in_grad = DenseTensor::make(out->colValues()->shape(), Dtype::f32);
+
+  float* x_grad = in_grad->data<float>();
+
+  size_t n_rows = out->nRows();
+
+#pragma omp parallel for default(none) \
+    shared(n_rows, offsets, y, y_grad, x_grad)
+  for (size_t n = 0; n < n_rows; n++) {
+    size_t start = offsets[n];
+    size_t end = offsets[n + 1];
+
+    float sum_gy = 0.0;
+    for (size_t i = start; i < end; i++) {
+      sum_gy += y[i] * y_grad[i];
+    }
+
+    for (size_t i = start; i < end; i++) {
+      x_grad[i] = y[i] * (y_grad[i] - sum_gy) * y_grad[i];
+    }
+  }
+
+  return CsrTensor::make(out->rowOffsets(), out->colIndices(), in_grad,
+                         out->shape());
 }
 
 }  // namespace thirdai::smx
