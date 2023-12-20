@@ -186,4 +186,8 @@ TEST(StringManipulationTest, PerturbationDuplicateCharacters) {
   ASSERT_EQ(num_duplicated_chars, 2);
 }
 
+TEST(StringManipulationTest, TestCustomTokenize) {
+  
+}
+
 }  // namespace thirdai::text
