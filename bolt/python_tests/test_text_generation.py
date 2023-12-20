@@ -207,7 +207,7 @@ def create_simple_dataset(request):
 @pytest.mark.parametrize("backend", [create_dyadic_backend, create_contextual_backend])
 @pytest.mark.parametrize("create_simple_dataset", [True, False], indirect=True)
 def test_nwp_training(backend, create_simple_dataset, request):
-    filename = request.getfixturevalue("create_simple_dataset")
+    filename = create_simple_dataset
     model = bolt.GenerativeModel(
         backend(True) if filename == "nwp_True.txt" else backend(),
         allowed_repeats=set(),
@@ -216,13 +216,6 @@ def test_nwp_training(backend, create_simple_dataset, request):
 
     train_data = dataset.FileDataSource(filename)
     val_data = dataset.FileDataSource(filename)
-    if os.path.exists(filename):
-        # Open and read the file
-        with open(filename, "r") as file:
-            contents = file.read()
-            print(contents)
-    else:
-        print(f"File {filename} does not exist.")
 
     model.train(
         train_data=train_data,

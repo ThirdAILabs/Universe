@@ -91,14 +91,14 @@ data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
            _dyadic_transform->getInputColumn(),
            _dyadic_transform->getInputColumn(), ' ', _vocab_size)});
   if (prompt_column) {
-    transform->then(std::make_shared<data::StringToTokenArray>(
+    transform = transform->then(std::make_shared<data::StringToTokenArray>(
         *prompt_column, *prompt_column, ' ', _vocab_size));
   }
   if (context_column) {
-    transform->then(std::make_shared<data::StringToTokenArray>(
+    transform = transform->then(std::make_shared<data::StringToTokenArray>(
         *context_column, *context_column, ' ', _vocab_size));
   }
-  transform->then(_dyadic_transform);
+  transform = transform->then(_dyadic_transform);
   return data::Loader(
       data_iter, transform, nullptr, _bolt_inputs,
       {data::OutputColumns(_dyadic_transform->getTargetColumn())},
