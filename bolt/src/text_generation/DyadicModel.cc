@@ -8,6 +8,7 @@
 #include <data/src/transformations/DyadicInterval.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
+#include <limits>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -56,20 +57,33 @@ metrics::History DyadicModel::train(
     const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
+    std::optional<size_t> max_in_memory_batches,
     const DistributedCommPtr& comm) {
-  auto train_dataset =
-      getDataLoader(train_data, batch_size, /* shuffle= */ true).all();
+  size_t batches_to_load = std::numeric_limits<size_t>::max();
+  if (max_in_memory_batches) {
+    batches_to_load = *max_in_memory_batches;
+  }
+
+  auto train_dataset_loader =
+      getDataLoader(train_data, batch_size, /* shuffle= */ true);
   auto val_dataset =
       getDataLoader(val_data, batch_size, /* shuffle= */ false).all();
 
   Trainer trainer(_model);
 
-  return trainer.train_with_metric_names(
-      train_dataset, learning_rate, epochs, train_metrics, val_dataset,
-      val_metrics, /* steps_per_validation= */ std::nullopt,
-      /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
-      /* autotune_rehash_rebuild= */ false, /* verbose= */ true,
-      /* logging_interval= */ std::nullopt, comm);
+  // We cannot use train_with_dataset_loader, since it is using the older
+  // dataset::DatasetLoader while dyadic model is using data::Loader
+  for (uint32_t e = 0; e < epochs; e++) {
+    while (auto train_chunk = train_dataset_loader.next(batches_to_load)) {
+      trainer.train_with_metric_names(
+          *train_chunk, learning_rate, epochs, train_metrics, val_dataset,
+          val_metrics, /* steps_per_validation= */ std::nullopt,
+          /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
+          /* autotune_rehash_rebuild= */ false, /* verbose= */ true,
+          /* logging_interval= */ std::nullopt, comm);
+    }
+  }
+  return trainer.getHistory();
 }
 
 data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,

@@ -27,6 +27,7 @@ class GenerativeBackend {
                                  const std::vector<std::string>& train_metrics,
                                  const dataset::DataSourcePtr& val_data,
                                  const std::vector<std::string>& val_metrics,
+                                 std::optional<size_t> max_in_memory_batches,
                                  const DistributedCommPtr& comm) = 0;
 
   virtual ModelPtr getBoltModel() = 0;
@@ -116,13 +117,14 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
       std::optional<float> temperature = std::nullopt);
 
   // TODO(Nicholas): should we add max_in_memory_batches option?
-  metrics::History train(const dataset::DataSourcePtr& train_data,
-                         float learning_rate, uint32_t epochs,
-                         size_t batch_size,
-                         const std::vector<std::string>& train_metrics = {},
-                         const dataset::DataSourcePtr& val_data = nullptr,
-                         const std::vector<std::string>& val_metrics = {},
-                         const DistributedCommPtr& comm = nullptr);
+  metrics::History train(
+      const dataset::DataSourcePtr& train_data, float learning_rate,
+      uint32_t epochs, size_t batch_size,
+      const std::vector<std::string>& train_metrics = {},
+      const dataset::DataSourcePtr& val_data = nullptr,
+      const std::vector<std::string>& val_metrics = {},
+      std::optional<size_t> max_in_memory_batches = std::nullopt,
+      const DistributedCommPtr& comm = nullptr);
 
   const auto& model() const { return _model; }
 
