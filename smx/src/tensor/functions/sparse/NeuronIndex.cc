@@ -16,6 +16,8 @@ LshIndex::LshIndex(const hashing::HashFunctionPtr& hash_fn,
   std::mt19937 rng(global_random::nextSeed());
   std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
   std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rng);
+
+  rebuild();
 }
 
 std::shared_ptr<LshIndex> LshIndex::autotune(size_t dim, size_t input_dim,
