@@ -795,6 +795,15 @@ class NeuralDB:
         rerank_threshold=1.5,
         top_k_threshold=None,
     ):
+        """
+        Runs search on a batch of queries for much faster throughput.
+
+        Args:
+            queries (List[str]): The queries to search.
+
+        Returns:
+            List[List[Reference]]: Combines each result of db.search into a list.
+        """
         matching_entities = None
         top_k_to_search = top_k_rerank if rerank else top_k
         if constraints:

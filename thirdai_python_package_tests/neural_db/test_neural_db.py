@@ -85,6 +85,11 @@ def search_works(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
                 assert type(result.text) == str
                 assert len(result.text) > 0
 
+            batch_results = db.search_batch([query, query], top_k)
+            assert len(batch_results == 2)
+            assert batch_results[0] == results
+            assert batch_results[0] == batch_results[1]
+
             correct_result += int(query in [r.text for r in results])
             correct_source += int(source in [r.source for r in results])
 
