@@ -167,6 +167,7 @@ neural_db_deps = [
     "scikit-learn",
     "Office365-REST-Python-Client==2.5.1",
     "simple-salesforce==1.12.5",
+    "ipython",
 ]
 
 # The information here can also be placed in setup.cfg - better separation of
