@@ -654,6 +654,45 @@ class NeuralDB:
         self._savable_state.documents.clear()
         self._savable_state.model.forget_documents()
 
+    def _get_query_references(
+        self,
+        query: str,
+        result_ids: List[Tuple[int, float]],
+        top_k: int,
+        rerank: bool,
+        rerank_threshold,
+        top_k_threshold,
+    ):
+        references = []
+        for rid, score in result_ids:
+            ref = self._savable_state.documents.reference(rid)
+            ref._score = score
+            references.append(ref)
+
+        if rerank:
+            keep, to_rerank = NeuralDB._split_references_for_reranking(
+                references,
+                rerank_threshold,
+                average_top_k_scores=top_k_threshold if top_k_threshold else top_k,
+            )
+
+            ranker = thirdai.dataset.KeywordOverlapRanker()
+            reranked_indices, reranked_scores = ranker.rank(
+                query, [ref.text for ref in to_rerank]
+            )
+            reranked_scores = NeuralDB._scale_reranked_scores(
+                original=[ref.score for ref in to_rerank],
+                reranked=reranked_scores,
+                leq=keep[-1].score if len(keep) > 0 else 1.0,
+            )
+
+            reranked = [to_rerank[i] for i in reranked_indices]
+            for i, ref in enumerate(reranked):
+                ref._score = reranked_scores[i]
+            references = (keep + reranked)[:top_k]
+
+        return references
+
     def _split_references_for_reranking(
         references,
         rerank_threshold,
@@ -689,8 +728,8 @@ class NeuralDB:
 
     def search(
         self,
-        query: str,
-        top_k: int,
+        query: str | List[str],
+        top_k: int = 1,
         constraints=None,
         rerank=False,
         top_k_rerank=100,
@@ -736,49 +775,37 @@ class NeuralDB:
             >>> ndb.search("what is ...", top_k=5)
             >>> ndb.search("what is ...", top_k=5, constraints={"file_type": "pdf", "file_created", GreaterThan(10)})
         """
+        if isinstance(query, str):
+            query = [query]
+        else:
+            queries = query
+
         matching_entities = None
         top_k_to_search = top_k_rerank if rerank else top_k
         if constraints:
             matching_entities = self._savable_state.documents.entity_ids_by_constraints(
                 constraints
             )
-            result_ids = self._savable_state.model.score(
-                samples=[query], entities=[matching_entities], n_results=top_k_to_search
-            )[0]
+            queries_result_ids = self._savable_state.model.score(
+                samples=queries, entities=[matching_entities], n_results=top_k_to_search
+            )
         else:
-            result_ids = self._savable_state.model.infer_labels(
-                samples=[query], n_results=top_k_to_search
-            )[0]
-
-        references = []
-        for rid, score in result_ids:
-            ref = self._savable_state.documents.reference(rid)
-            ref._score = score
-            references.append(ref)
-
-        if rerank:
-            keep, to_rerank = NeuralDB._split_references_for_reranking(
-                references,
-                rerank_threshold,
-                average_top_k_scores=top_k_threshold if top_k_threshold else top_k,
+            queries_result_ids = self._savable_state.model.infer_labels(
+                samples=queries, n_results=top_k_to_search
             )
 
-            ranker = thirdai.dataset.KeywordOverlapRanker()
-            reranked_indices, reranked_scores = ranker.rank(
-                query, [ref.text for ref in to_rerank]
-            )
-            reranked_scores = NeuralDB._scale_reranked_scores(
-                original=[ref.score for ref in to_rerank],
-                reranked=reranked_scores,
-                leq=keep[-1].score if len(keep) > 0 else 1.0,
+        queries_references = []
+        for query, result_ids in zip(queries, queries_result_ids):
+            references = self._get_query_references(
+                query, result_ids, top_k, rerank, rerank_threshold, top_k_threshold
             )
 
-            reranked = [to_rerank[i] for i in reranked_indices]
-            for i, ref in enumerate(reranked):
-                ref._score = reranked_scores[i]
-            references = (keep + reranked)[:top_k]
+            queries_references.append(references)
 
-        return references
+        if len(queries) == 1:
+            return queries_references[0]
+
+        return queries_references
 
     def reference(self, element_id: int):
         """Returns a reference containing the text and other information for a given entity id."""
