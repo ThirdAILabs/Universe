@@ -818,15 +818,12 @@ class NeuralDB:
                 samples=queries, n_results=top_k_to_search
             )
 
-        queries_references = []
-        for query, result_ids in zip(queries, queries_result_ids):
-            references = self._get_query_references(
+        return [
+            self._get_query_references(
                 query, result_ids, top_k, rerank, rerank_threshold, top_k_threshold
             )
-
-            queries_references.append(references)
-
-        return queries_references
+            for query, result_ids in zip(queries, queries_result_ids)
+        ]
 
     def reference(self, element_id: int):
         """Returns a reference containing the text and other information for a given entity id."""
