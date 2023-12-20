@@ -1,4 +1,5 @@
 import copy
+import shutil
 from enum import Enum
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
@@ -6,7 +7,6 @@ from typing import Callable, Dict, List, Optional, Sequence, Tuple
 import numpy as np
 import pandas as pd
 import thirdai
-import shutil
 from thirdai._thirdai import bolt, data
 from thirdai.dataset.data_source import PyDataSource
 
@@ -371,11 +371,13 @@ class NeuralDB:
 
         ray_version = ray.__version__
         if LooseVersion(ray_version) >= LooseVersion("2.7"):
-            warnings.warn("""
+            warnings.warn(
+                """
                 Using ray version 2.7 or higher requires specifying a remote or NFS storage path. 
                 Support for local checkpoints has been discontinued in these versions. 
                 Refer to https://github.com/ray-project/ray/issues/37177 for details.
-                """.strip())
+                """.strip()
+            )
 
         if not isinstance(documents, list) or not all(
             isinstance(doc, CSV) for doc in documents
@@ -555,10 +557,17 @@ class NeuralDB:
         """
         if checkpoint_config:
             if checkpoint_config.resume_from_checkpoint:
-                self._savable_state = State.load(
-                    checkpoint_config.checkpoint_dir / "checkpoint.ndb",
-                    on_progress=no_op,
-                )
+                try:
+                    self._savable_state = State.load(
+                        checkpoint_config.checkpoint_dir / "checkpoint.ndb",
+                        on_progress=no_op,
+                    )
+                except:
+                    raise Exception(
+                        f"{checkpoint_config.checkpoint_dir / 'checkpoint.ndb'} not"
+                        " found. Ensure that loading from a valid checkpoint or the"
+                        " training has not finished."
+                    )
             else:
                 self.save(
                     save_to=str(checkpoint_config.checkpoint_dir / "checkpoint.ndb")

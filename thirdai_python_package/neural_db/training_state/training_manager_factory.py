@@ -1,11 +1,11 @@
 import json
 from pathlib import Path
 
+from ..documents import DocumentDataSource
 from ..utils import unpickle_from
 from .checkpoint_config import CheckpointConfig, TrainingDataCheckpointManager
 from .training_callback import TrainingProgressManager
 from .training_progress_tracker import NeuralDbProgressTracker
-from ..documents import DocumentDataSource
 
 
 class TrainingProgressManagerFactory:

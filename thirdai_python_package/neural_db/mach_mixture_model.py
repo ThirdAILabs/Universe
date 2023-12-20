@@ -37,7 +37,6 @@ class MachMixture(Model):
         self.fhr = fhr
         self.embedding_dimension = embedding_dimension
         self.extreme_output_dim = extreme_output_dim
-        self.n_ids = 0
         self.model_config = model_config
 
         # These parameters are specific to Mach Mixture
@@ -62,6 +61,13 @@ class MachMixture(Model):
             )
             for _ in range(self.number_models)
         ]
+
+    @property
+    def n_ids(self):
+        n_ids = 0
+        for model in self.models:
+            n_ids += model.n_ids
+        return n_ids
 
     def set_mach_sampling_threshold(self, threshold: float):
         if self.models is None:
@@ -88,9 +94,6 @@ class MachMixture(Model):
         if self.models is not None:
             for model in self.models:
                 model.load_meta(directory)
-
-    def set_n_ids(self, n_ids: int):
-        self.n_ids = n_ids
 
     def get_query_col(self) -> str:
         return self.query_col
@@ -119,21 +122,27 @@ class MachMixture(Model):
         # We need the original number of classes from the original data source so that we can initialize the Mach models this mixture will have
         number_classes = intro_documents.size
 
-        # Make a sharded data source with introduce documents. When we call shard_data_source, this will shard the introduce data source, return a list of data sources, and modify the label index to keep track of what label goes to what shard
-        sharded_data_source = ShardedDataSource(
-            document_data_source=intro_documents,
-            number_shards=self.number_models,
-            label_to_segment_map=self.label_to_segment_map,
-            seed=self.seed_for_sharding,
-        )
-        introduce_data_sources = sharded_data_source.shard_data_source()
+        if checkpoint_config and checkpoint_config.resume_from_checkpoint:
+            # We should not shard the data again.
 
-        # Once the introduce datasource has been sharded, we can use the update label index to shard the training data source ( We do not want training samples to go to a Mach model that does not contain their labels)
-        train_data_sources = sharded_data_source.shard_using_index(
-            train_documents,
-            label_to_segment_map=self.label_to_segment_map,
-            number_shards=self.number_models,
-        )
+            # Make a sharded data source with introduce documents. When we call shard_data_source, this will shard the introduce data source, return a list of data sources, and modify the label index to keep track of what label goes to what shard
+            sharded_data_source = ShardedDataSource(
+                document_data_source=intro_documents,
+                number_shards=self.number_models,
+                label_to_segment_map=self.label_to_segment_map,
+                seed=self.seed_for_sharding,
+            )
+            introduce_data_sources = sharded_data_source.shard_data_source()
+
+            # Once the introduce datasource has been sharded, we can use the update label index to shard the training data source ( We do not want training samples to go to a Mach model that does not contain their labels)
+            train_data_sources = sharded_data_source.shard_using_index(
+                train_documents,
+                label_to_segment_map=self.label_to_segment_map,
+                number_shards=self.number_models,
+            )
+        else:
+            introduce_data_sources = [None for _ in range(self.number_models)]
+            train_data_sources = [None for _ in range(self.number_models)]
 
         modelwise_checkpoint_configs = TrainingProgressManagerFactory.make_modelwise_checkpoint_configs_from_config(
             config=checkpoint_config, number_models=self.number_models
@@ -161,6 +170,7 @@ class MachMixture(Model):
                     checkpoint_config=config,
                 )
             )
+            # In case of resume_from_checkpooint and checkpoint_config = None, this will not store anything.
             modelwise_training_manager.make_preindexing_checkpoint()
 
         for model_id, (
@@ -188,7 +198,6 @@ class MachMixture(Model):
                 checkpoint_config=modelwise_checkpoint_configs[model_id],
             )
             # This assumes that there is no overlap between shards.
-            self.n_ids += intro_shard.size
 
     def delete_entities(self, entities) -> None:
         for model in self.models:
@@ -197,7 +206,6 @@ class MachMixture(Model):
     def forget_documents(self) -> None:
         for model in self.models:
             model.forget_documents()
-        self.n_ids = 0
 
     @property
     def searchable(self) -> bool:

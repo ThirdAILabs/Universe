@@ -31,7 +31,8 @@ class TrainingProgressManager(bolt.train.callbacks.Callback):  # type: ignore
     def on_epoch_end(self):
         self.tracker.current_epoch_number += 1
         if self.tracker.current_epoch_number % self.checkpoint_interval == 0:
-            self.checkpoint_without_sources()
+            if self.makes_checkpoint:
+                self.checkpoint_without_sources()
 
     @property
     def intro_source(self) -> DocumentDataSource:

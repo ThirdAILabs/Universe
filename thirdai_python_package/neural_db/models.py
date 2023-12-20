@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import random
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence, Tuple
@@ -177,7 +178,7 @@ class ProgressUpdate(bolt.train.callbacks.Callback):
     def on_batch_end(self):
         self.batch_count += 1
 
-        # We update progress every other epoch because otherwise the updates are
+        # We update progress every other batch because otherwise the updates are
         # too fast for frontend components to display these changes.
         if self.batch_count % 2:
             batch_progress = self.batch_count / self.train_state.batches_in_dataset()

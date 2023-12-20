@@ -1,11 +1,13 @@
 from __future__ import annotations
+
 import json
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Union
-import shutil
-from ..utils import assert_file_exists, pickle_to, unpickle_from
+
 from ..documents import DocumentDataSource
+from ..utils import assert_file_exists, pickle_to, unpickle_from
 from .training_progress_tracker import NeuralDbProgressTracker
 
 
