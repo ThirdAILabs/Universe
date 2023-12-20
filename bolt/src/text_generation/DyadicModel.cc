@@ -103,8 +103,7 @@ data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
     columns_names.push_back(*context_column);
   }
 
-  auto data_iter = data::JsonIterator::make(data, columns_names,
-                                            rows_per_load = rows_per_load);
+  auto data_iter = data::JsonIterator::make(data, columns_names, rows_per_load);
   auto transform =
       data::Pipeline::make({std::make_shared<data::StringToTokenArray>(
           _dyadic_transform->getInputColumn(),
