@@ -7,12 +7,14 @@ from thirdai import bolt, data, dataset
 VOCAB_SIZE = 20
 
 
-def create_dyadic_backend():
+def create_dyadic_backend(with_prompt=False):
     N_INTERVALS = 5
     dyadic_transform = data.transformations.DyadicInterval(
         input_column="target",
         output_interval_prefix="interval_",
         target_column="next_word",
+        prompt_column="prompt" if with_prompt else None,
+        context_column="context" if with_prompt else None,
         n_intervals=N_INTERVALS,
         is_bidirectional=True,
     )
@@ -179,11 +181,14 @@ def test_text_generation_with_prompt(backend):
 
 
 @pytest.fixture()
-def create_simple_dataset():
+def create_simple_dataset(request):
     def to_json_sample(text):
+        if request.param:
+            return json.dumps({"target": text, "prompt": text, "context": text}) + "\n"
+
         return json.dumps({"target": text}) + "\n"
 
-    filename = "nwp.txt"
+    filename = f"nwp_{request.param}.txt"
     with open(filename, "w") as file:
         file.writelines(
             [
@@ -200,15 +205,24 @@ def create_simple_dataset():
 
 @pytest.mark.unit
 @pytest.mark.parametrize("backend", [create_dyadic_backend, create_contextual_backend])
-def test_nwp_training(backend, create_simple_dataset):
+@pytest.mark.parametrize("create_simple_dataset", [True, False], indirect=True)
+def test_nwp_training(backend, create_simple_dataset, request):
+    filename = request.getfixturevalue("create_simple_dataset")
     model = bolt.GenerativeModel(
-        backend(), allowed_repeats=set(), punctuation_tokens=set()
+        backend(True) if filename == "nwp_True.txt" else backend(),
+        allowed_repeats=set(),
+        punctuation_tokens=set(),
     )
-
-    filename = create_simple_dataset
 
     train_data = dataset.FileDataSource(filename)
     val_data = dataset.FileDataSource(filename)
+    if os.path.exists(filename):
+        # Open and read the file
+        with open(filename, "r") as file:
+            contents = file.read()
+            print(contents)
+    else:
+        print(f"File {filename} does not exist.")
 
     model.train(
         train_data=train_data,

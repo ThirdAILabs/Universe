@@ -89,8 +89,7 @@ data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
   auto transform = data::Pipeline::make(
       {std::make_shared<data::StringToTokenArray>(
            _dyadic_transform->getInputColumn(),
-           _dyadic_transform->getInputColumn(), ' ', _vocab_size),
-       _dyadic_transform});
+           _dyadic_transform->getInputColumn(), ' ', _vocab_size)});
   if (prompt_column) {
     transform->then(std::make_shared<data::StringToTokenArray>(
         *prompt_column, *prompt_column, ' ', _vocab_size));
@@ -99,6 +98,7 @@ data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
     transform->then(std::make_shared<data::StringToTokenArray>(
         *context_column, *context_column, ' ', _vocab_size));
   }
+  transform->then(_dyadic_transform);
   return data::Loader(
       data_iter, transform, nullptr, _bolt_inputs,
       {data::OutputColumns(_dyadic_transform->getTargetColumn())},
