@@ -122,7 +122,7 @@ class NeuralDBClient:
         Associates source and target string pairs in the ndb model.
 
         Args:
-            text_pairs (List[Tuple[str, str]]): List of dictionaries where each dictionary has 'source' and 'target' keys.
+            text_pairs (List[Dict[str, str]]): List of dictionaries where each dictionary has 'source' and 'target' keys.
         """
         response = http_post_with_error(
             urljoin(self.base_url, "associate"),
