@@ -161,12 +161,13 @@ std::vector<size_t> DyadicInterval::computeOffsets(
 
     size_t text_len = texts->row(i).size();
 
+    // In case context tokens passed are greater than 2048, we would ignore all the chunks created with just context.
     if (contexts && (contexts->row(i).size() % (chunk_size) != 0)) {
       // Count offset for the first chunk containing context window
-      size_t first_chunk_len = std::min(
+      size_t samples_in_first_chunk = std::min(
           text_len, chunk_size - contexts->row(i).size() % (chunk_size));
-      offsets[i + 1] += first_chunk_len;
-      text_len -= first_chunk_len;
+      offsets[i + 1] += samples_in_first_chunk;
+      text_len -= samples_in_first_chunk;
     }
 
     // Count n_chunks in remaining text len

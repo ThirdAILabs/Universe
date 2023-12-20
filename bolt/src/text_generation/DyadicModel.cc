@@ -29,7 +29,7 @@ DyadicModel::DyadicModel(bolt::ModelPtr model,
 }
 
 bolt::TensorPtr DyadicModel::nextTokenProbs(
-    std::vector<uint32_t>& prompts, std::vector<std::vector<uint32_t>> tokens) {
+    std::vector<uint32_t>& prompt, std::vector<std::vector<uint32_t>> tokens) {
   auto prompt_column_name = _dyadic_transform->getPromptColumn();
   size_t tokens_size = tokens.size();
   data::ColumnMap data(data::ColumnMap(
@@ -37,9 +37,9 @@ bolt::TensorPtr DyadicModel::nextTokenProbs(
         data::ArrayColumn<uint32_t>::make(std::move(tokens), _vocab_size)}}));
 
   if (prompt_column_name) {
-    std::vector<std::vector<uint32_t>> prompt_columns(tokens_size, prompts);
+    std::vector<std::vector<uint32_t>> prompt_column(tokens_size, prompt);
     data.setColumn(*prompt_column_name,
-                   data::ArrayColumn<uint32_t>::make(std::move(prompt_columns),
+                   data::ArrayColumn<uint32_t>::make(std::move(prompt_column),
                                                      _vocab_size));
   }
 
