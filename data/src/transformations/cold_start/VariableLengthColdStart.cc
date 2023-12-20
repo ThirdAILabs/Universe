@@ -2,16 +2,11 @@
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/StringConcat.h>
 #include <dataset/src/utils/TokenEncoding.h>
-#include <pybind11/attr.h>
-#include <pybind11/detail/common.h>
-#include <pybind11/numpy.h>
 #include <utils/CommonChecks.h>
 #include <utils/text/Stopwords.h>
 #include <utils/text/StringManipulation.h>
 
 namespace thirdai::data {
-
-namespace py = pybind11;
 
 VariableLengthConfig::VariableLengthConfig(
     size_t covering_min_length, size_t covering_max_length,
@@ -23,7 +18,8 @@ VariableLengthConfig::VariableLengthConfig(
     float word_perturbation_probability, size_t chars_replace_with_space,
     size_t chars_deleted, size_t chars_duplicated,
     size_t chars_replace_with_adjacents,
-    std::optional<py::function> python_tokenizer_func)
+    std::optional<std::function<std::vector<std::string>(const std::string&)>>
+        python_tokenizer_func)
     : covering_min_length(covering_min_length),
       covering_max_length(covering_max_length),
       max_covering_samples(max_covering_samples),
@@ -41,7 +37,7 @@ VariableLengthConfig::VariableLengthConfig(
       chars_deleted(chars_deleted),
       chars_duplicated(chars_duplicated),
       chars_replace_with_adjacents(chars_replace_with_adjacents),
-      python_tokenizer_func(python_tokenizer_func) {
+      python_tokenizer_func(std::move(python_tokenizer_func)) {
   utils::validateGreaterThanZero(covering_min_length, "covering_min_length");
   utils::validateGreaterThanZero(covering_max_length, "covering_max_length");
   utils::validateGreaterThanZero(slice_min_length, "slice_min_length");
@@ -136,14 +132,16 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
 }
 
 Phrase VariableLengthColdStart::convertTextToPhrase(std::string string) const {
-  // if (_config.prefilter_punctuation) {
-  //   string = text::replacePunctuation(string, ' ');
-  // }
-  // string = text::stripWhitespace(string);
+  if (_config.python_tokenizer_func.has_value()) {
+    return _config.python_tokenizer_func.value()(string);
+  }
 
-  // Phrase phrase = text::tokenizeSentence(string);
+  if (_config.prefilter_punctuation) {
+    string = text::replacePunctuation(string, ' ');
+  }
+  string = text::stripWhitespace(string);
 
-  Phrase phrase = _config.python_tokenizer_func(string);
+  Phrase phrase = text::tokenizeSentence(string);
 
   return phrase;
 }

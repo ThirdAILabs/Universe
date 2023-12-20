@@ -2,12 +2,9 @@
 
 #include "TextAugmentationUtils.h"
 #include <data/src/transformations/Transformation.h>
-#include <pybind11/pybind11.h>
 #include <random>
 
 namespace thirdai::data {
-
-namespace py = pybind11;
 
 using cold_start::Phrase;
 using cold_start::PhraseCollection;
@@ -26,7 +23,8 @@ struct VariableLengthConfig {
       float word_perturbation_probability = 0,
       size_t chars_replace_with_space = 0, size_t chars_deleted = 0,
       size_t chars_duplicated = 0, size_t chars_replace_with_adjacents = 0,
-      std::optional<py::function> python_tokenizer_func = std::nullopt);
+      std::optional<std::function<std::vector<std::string>(const std::string&)>>
+          python_tokenizer_func = std::nullopt);
 
   size_t covering_min_length;
   size_t covering_max_length;
@@ -45,7 +43,8 @@ struct VariableLengthConfig {
   size_t chars_deleted;
   size_t chars_duplicated;
   size_t chars_replace_with_adjacents;
-  std::optional<py::function> python_tokenizer_func;
+  std::optional<std::function<std::vector<std::string>(const std::string&)>>
+      python_tokenizer_func;
 };
 
 class VariableLengthColdStart : public cold_start::TextAugmentationBase {
