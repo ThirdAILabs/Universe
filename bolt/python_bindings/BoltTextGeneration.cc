@@ -65,6 +65,7 @@ void addTextGenerationModels(py::module_& module) {
            py::arg("val_data") = nullptr,
            py::arg("val_metrics") = std::vector<std::string>{},
            py::arg("max_in_memory_batches") = std::nullopt,
+           py::arg("rows_per_load") = std::nullopt,
            py::arg("comm") = nullptr)
       .def("save", &GenerativeModel::save)
       .def_static("load", &GenerativeModel::load, py::arg("filename"))

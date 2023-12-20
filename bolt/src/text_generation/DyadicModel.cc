@@ -58,6 +58,7 @@ metrics::History DyadicModel::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     std::optional<size_t> max_in_memory_batches,
+    std::optional<size_t> rows_per_load,
     const DistributedCommPtr& comm) {
   size_t batches_to_load = std::numeric_limits<size_t>::max();
   if (max_in_memory_batches) {
@@ -65,7 +66,7 @@ metrics::History DyadicModel::train(
   }
 
   auto train_dataset_loader =
-      getDataLoader(train_data, batch_size, /* shuffle= */ true);
+      getDataLoader(train_data, batch_size, /* shuffle= */ true, rows_per_load ? *rows_per_load : 10000);
   auto val_dataset =
       getDataLoader(val_data, batch_size, /* shuffle= */ false).all();
 
@@ -89,7 +90,7 @@ metrics::History DyadicModel::train(
 }
 
 data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
-                                        size_t batch_size, bool shuffle) {
+                                        size_t batch_size, bool shuffle, size_t rows_per_load) {
   std::vector<std::string> columns_names = {
       _dyadic_transform->getInputColumn()};
   auto prompt_column = _dyadic_transform->getPromptColumn();
@@ -101,7 +102,7 @@ data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
     columns_names.push_back(*context_column);
   }
 
-  auto data_iter = data::JsonIterator::make(data, columns_names);
+  auto data_iter = data::JsonIterator::make(data, columns_names, rows_per_load=rows_per_load);
   auto transform =
       data::Pipeline::make({std::make_shared<data::StringToTokenArray>(
           _dyadic_transform->getInputColumn(),
