@@ -134,18 +134,18 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
 }
 
 Phrase VariableLengthColdStart::convertTextToPhrase(std::string string) const {
-  if (_config.nltk_tokenize) {
-    return text::custom_word_tokenize(string);
-  }
+  // if (_config.nltk_tokenize) {
+  //   return text::custom_word_tokenize(string);
+  // }
 
-  if (_config.prefilter_punctuation) {
-    string = text::replacePunctuation(string, ' ');
-  }
-  string = text::stripWhitespace(string);
+  // if (_config.prefilter_punctuation) {
+  //   string = text::replacePunctuation(string, ' ');
+  // }
+  // string = text::stripWhitespace(string);
 
-  Phrase phrase = text::tokenizeSentence(string);
+  // Phrase phrase = text::tokenizeSentence(string);
 
-  return phrase;
+  return text::split(string, ' ');
 }
 
 PhraseCollection VariableLengthColdStart::getWeakPhrases(

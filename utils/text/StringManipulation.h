@@ -53,45 +53,45 @@ std::string perturbCharacters(const std::string& input,
                               size_t chars_replace_with_adjacents,
                               std::mt19937& rng);
 
-std::vector<std::pair<std::regex, std::string>> STARTING_QUOTES = {
-    {std::regex("([«“‘„]|[`]+)"), " $1 "},
-    {std::regex("^\""), "``"},
-    {std::regex("(``)"), " $1 "},
-    {std::regex(R"(([ \(\[{<])("|'{2}))"), "$1 `` "},
-    {std::regex("('(?!re|ve|ll|m|t|s|d|n)(\\w)\\b"), "$1 $2"}};
+// std::vector<std::pair<std::regex, std::string>> STARTING_QUOTES = {
+//     {std::regex("([«“‘„]|[`]+)"), " $1 "},
+//     {std::regex("^\""), "``"},
+//     {std::regex("(``)"), " $1 "},
+//     {std::regex(R"(([ \(\[{<])("|'{2}))"), "$1 `` "},
+//     {std::regex("('(?!re|ve|ll|m|t|s|d|n)(\\w)\\b"), "$1 $2"}};
 
-std::vector<std::pair<std::regex, std::string>> ENDING_QUOTES = {
-    {std::regex("([»”’])"), " $1 "},
-    {std::regex("''"), " '' "},
-    {std::regex("\""), " '' "},
-    {std::regex("([^' ])('[sS]|'[mM]|'[dD]|') "), "$1 $2 "},
-    {std::regex("([^' ])('ll|'LL|'re|'RE|'ve|'VE|n't|N'T) "), "$1 $2 "}};
+// std::vector<std::pair<std::regex, std::string>> ENDING_QUOTES = {
+//     {std::regex("([»”’])"), " $1 "},
+//     {std::regex("''"), " '' "},
+//     {std::regex("\""), " '' "},
+//     {std::regex("([^' ])('[sS]|'[mM]|'[dD]|') "), "$1 $2 "},
+//     {std::regex("([^' ])('ll|'LL|'re|'RE|'ve|'VE|n't|N'T) "), "$1 $2 "}};
 
-std::vector<std::pair<std::regex, std::string>> PUNCTUATION = {
-    {std::regex(R"(([^\.])(\.)([\]\)}>"]*)\s*$)"), "$1 $2 $3 "},
-    {std::regex("([:,])([^\\d])"), " $1 $2"},
-    {std::regex("([:,])$"), " $1 "},
-    {std::regex("\\.{2,}"), " $0 "},
-    {std::regex("[;@#$%&]"), " $0 "},
-    {std::regex(R"(([^\.])(\.)([\]\)}>"]*)\s*$)"), "$1 $2$3 "},
-    {std::regex("[?!]"), " $0 "},
-    {std::regex("([^'])' "), "$1 ' "},
-    {std::regex("[*]"), " $0 "}};
+// std::vector<std::pair<std::regex, std::string>> PUNCTUATION = {
+//     {std::regex(R"(([^\.])(\.)([\]\)}>"]*)\s*$)"), "$1 $2 $3 "},
+//     {std::regex("([:,])([^\\d])"), " $1 $2"},
+//     {std::regex("([:,])$"), " $1 "},
+//     {std::regex("\\.{2,}"), " $0 "},
+//     {std::regex("[;@#$%&]"), " $0 "},
+//     {std::regex(R"(([^\.])(\.)([\]\)}>"]*)\s*$)"), "$1 $2$3 "},
+//     {std::regex("[?!]"), " $0 "},
+//     {std::regex("([^'])' "), "$1 ' "},
+//     {std::regex("[*]"), " $0 "}};
 
-inline std::vector<std::string> custom_word_tokenize(std::string string) {
-  for (const auto& [regexp, substitution] : STARTING_QUOTES) {
-    string = std::regex_replace(string, regexp, substitution);
-  }
-  for (const auto& [regexp, substitution] : PUNCTUATION) {
-    string = std::regex_replace(string, regexp, substitution);
-  }
-  string = " " + string + " ";
-  for (const auto& [regexp, substitution] : ENDING_QUOTES) {
-    string = std::regex_replace(string, regexp, substitution);
-  }
+// inline std::vector<std::string> custom_word_tokenize(std::string string) {
+//   for (const auto& [regexp, substitution] : STARTING_QUOTES) {
+//     string = std::regex_replace(string, regexp, substitution);
+//   }
+//   for (const auto& [regexp, substitution] : PUNCTUATION) {
+//     string = std::regex_replace(string, regexp, substitution);
+//   }
+//   string = " " + string + " ";
+//   for (const auto& [regexp, substitution] : ENDING_QUOTES) {
+//     string = std::regex_replace(string, regexp, substitution);
+//   }
 
-  return text::split(string, ' ');
-}
+//   return text::split(string, ' ');
+// }
 
 /**
  * Joins a vector of strings into a single delimited string.
