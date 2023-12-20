@@ -415,7 +415,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/TextCompat.cc
     data/src/transformations/cold_start/TextAugmentationUtils.cc
     data/src/transformations/cold_start/ColdStartText.cc
-    data/src/transformations/cold_start/VariableLengthColdStart.cc
+    # data/src/transformations/cold_start/VariableLengthColdStart.cc
     data/src/transformations/FeatureHash.cc
     data/src/transformations/Pipeline.cc
     data/src/transformations/MachLabel.cc
@@ -519,6 +519,7 @@ pybind11_add_module(
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc
   data/python_bindings/DataPython.cc
+  data/src/transformations/cold_start/VariableLengthColdStart.cc
   search/python_bindings/SearchPython.cc
   search/python_bindings/BeamSearch.cc
   hashing/python_bindings/HashingPython.cc
