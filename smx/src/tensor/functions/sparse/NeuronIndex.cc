@@ -40,7 +40,6 @@ void LshIndex::query(const float* query, uint32_t* candidates,
 
   if (force_select) {
     selected_neurons.insert(force_select, force_select + n_force_select);
-    std::copy(force_select, force_select + n_force_select, candidates);
   }
 
   std::vector<uint32_t> hashes(_hash_fn->numTables());
@@ -61,12 +60,16 @@ void LshIndex::query(const float* query, uint32_t* candidates,
     }
   }
 
-  size_t selected_size = n_force_select;
+  size_t selected_idx = 0;
+  for (size_t i = 0; i < n_force_select && selected_idx < n_candidates; i++) {
+    candidates[selected_idx++] = force_select[i];
+    selected_neurons.erase(force_select[i]);
+  }
   for (auto x : selected_neurons) {
-    if (selected_size == n_candidates) {
+    if (selected_idx == n_candidates) {
       break;
     }
-    candidates[selected_size++] = x;
+    candidates[selected_idx++] = x;
   }
 }
 
