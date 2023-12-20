@@ -63,7 +63,7 @@ class NeuralDBClient:
         insert(self, files: List[str]) -> None:
             Inserts documents into the ndb model.
 
-        associate(self, text_pairs (List[Tuple[str, str]])) -> None:
+        associate(self, text_pairs (List[Dict[str, str]])) -> None:
             Associates source and target string pairs in the ndb model.
 
         upvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]) -> None:
