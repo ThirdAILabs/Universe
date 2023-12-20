@@ -4,6 +4,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <smx/python_bindings/PyModule.h>
 #include <smx/src/autograd/Variable.h>
 #include <smx/src/autograd/functions/Activations.h>
 #include <smx/src/autograd/functions/LinearAlgebra.h>
@@ -180,7 +181,11 @@ void defineAutograd(py::module_& smx) {
 }
 
 void defineModules(py::module_& smx) {
-  py::class_<Module, std::shared_ptr<Module>>(smx, "Module")
+  py::class_<Module, PyModule, std::shared_ptr<Module>>(smx, "Module")
+      .def(py::init<>())
+      .def("forward",
+           py::overload_cast<const std::vector<VariablePtr>&>(&Module::forward),
+           py::arg("inputs"))
       .def("parameters", &Module::parameters)
       .def("__call__",
            py::overload_cast<const std::vector<VariablePtr>&>(&Module::forward))
