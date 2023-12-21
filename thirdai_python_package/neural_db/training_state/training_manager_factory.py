@@ -60,7 +60,7 @@ class TrainingProgressManagerFactory:
         checkpoint_config: CheckpointConfig,
     ) -> TrainingProgressManager:
         """
-        Given a checkpoint, we will make a training manager that will load the model, data sources, tracker, and resume training.
+        Given a checkpoint, we will make a save load manager that will load the model, data sources, tracker.
         """
         assert checkpoint_config.checkpoint_dir != None
 
@@ -72,7 +72,6 @@ class TrainingProgressManagerFactory:
         # We need to update the passed model with the state of the loaded model. Since, we need a model reference in the save_load_config as well, we update the model reference there as well.
         original_mach_model.reset_model(save_load_manager.model)
         save_load_manager.model = original_mach_model
-        # We set neuraldb_mach_model, intro_source, train_source as None so that calling load on the training manager will initialize
         training_progress_manager = TrainingProgressManager(
             tracker=save_load_manager.tracker,
             save_load_config=save_load_manager,

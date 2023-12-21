@@ -124,7 +124,7 @@ class TrackerCheckpointManager:
 
 class TrainingDataCheckpointManager:
     """
-    This config class is used to maining the paths of the objects which are created while we are tracking the training progress of NeuralDB. There is a directory config for each model that is present in NeuralDB.
+    This manager class maintains the data needed by the training progress manager. Supports both saving and loading the data. When the manager is initialized with a checkpoint_dir as None, all save and load operations become a no_op.
     """
 
     def __init__(
@@ -254,7 +254,7 @@ class TrainingDataCheckpointManager:
 class CheckpointConfig:
     checkpoint_dir: Path
     resume_from_checkpoint: bool = False
-    checkpoint_interval: int = 1
+    checkpoint_interval: int = 1  # no of epochs between saving the checkpoints
 
     def __post_init__(self):
         if isinstance(self.checkpoint_dir, str):

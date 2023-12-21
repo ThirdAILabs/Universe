@@ -448,7 +448,6 @@ class Mach(Model):
             # Less epochs here since it converges faster when trained on a base
             # model.
             if not training_progress_manager.is_insert_completed:
-                intro_documents = training_progress_manager.intro_source
                 self.introduce_documents(
                     intro_documents=intro_documents,
                     fast_approximation=training_progress_manager.tracker.fast_approximation,
@@ -481,7 +480,7 @@ class Mach(Model):
                 cancel_state=cancel_state,
                 **train_arguments,
             )
-            training_progress_manager.training_complete()
+        training_progress_manager.training_complete()
 
     def index_documents(
         self,
@@ -516,9 +515,6 @@ class Mach(Model):
                     self, checkpoint_config=checkpoint_config
                 )
             )
-            # Since we are loading from a checkpoint, we need to ensure that the introduce and the training sources are also loaded from the checkpoint.
-            intro_documents = training_progress_manager.intro_source
-            train_documents = training_progress_manager.train_source
         else:
             training_progress_manager = (
                 TrainingProgressManagerFactory.make_training_manager_scratch(
