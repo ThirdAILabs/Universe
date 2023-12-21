@@ -250,9 +250,9 @@ std::string VariableLengthColdStart::convertPhraseToText(
 
     // add the word
     output_text.append(word);
-    if (i != phrase.size() - 1) {
+    // if (i != phrase.size() - 1) {
       output_text.push_back(' ');
-    }
+    // }
   }
 
   return output_text;
