@@ -6,6 +6,7 @@
 #include <dataset/src/utils/TokenEncoding.h>
 #include <utils/text/StringManipulation.h>
 #include <string>
+#include <utility>
 
 namespace thirdai::dataset {
 

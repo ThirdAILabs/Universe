@@ -14,6 +14,7 @@
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
+#include <dataset/src/blocks/text/HybridTokenizer.h>
 #include <dataset/src/blocks/text/Text.h>
 #include <dataset/src/blocks/text/WordpieceTokenizer.h>
 #include <dataset/src/cold_start/ColdStartDataSource.h>
@@ -137,6 +138,7 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &Block::isDense,
            "True if the block produces dense features, False otherwise.");
 
+#if THIRDAI_EXPOSE_ALL
   py::class_<TextTokenizer, TextTokenizerPtr>(  // NOLINT
       internal_dataset_submodule, "TextTokenizer");
 
@@ -162,9 +164,20 @@ void createDatasetSubmodule(py::module_& module) {
       .def("size", &WordpieceTokenizer::size)
       .def("unk_id", &WordpieceTokenizer::unkId)
       .def("mask_id", &WordpieceTokenizer::maskId)
-      .def("tokenize", &WordpieceTokenizer::tokenize, py::arg("sequence"))
+      .def("tokenize", &WordpieceTokenizer::tokenize, py::arg("sentence"))
       .def("decode", &WordpieceTokenizer::decode, py::arg("piece_ids"))
       .def("id", &WordpieceTokenizer::id, py::arg("token"));
+
+  py::class_<HybridWordpieceCharKTokenizer, TextTokenizer,
+             HybridWordpieceCharKTokenizerPtr>(dataset_submodule,
+                                               "HybridTokenizer")
+      .def(py::init<std::string, uint32_t, uint32_t, uint32_t, bool, bool>(),
+           py::arg("vocab_file_path"), py::arg("k"),
+           py::arg("char_k_range") = 70000, py::arg("wordpiece_range") = 30000,
+           py::arg("lowercase_wordpiece") = true,
+           py::arg("lowercase_char_k") = true)
+      .def("tokenize", &HybridWordpieceCharKTokenizer::tokenize,
+           py::arg("sentence"));
 
   py::class_<TextEncoder, TextEncoderPtr>(  // NOLINT
       dataset_submodule, "TextEncoder");
@@ -245,7 +258,6 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &MockBlock::isDense,
            "True if the block produces dense features, False otherwise.");
 
-#if THIRDAI_EXPOSE_ALL
   py::class_<TabularColumn, std::shared_ptr<TabularColumn>>(
       dataset_submodule, "TabularColumn",
       "Column configuration for TabularHashFeatures block.")
