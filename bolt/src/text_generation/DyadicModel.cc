@@ -8,7 +8,6 @@
 #include <data/src/transformations/DyadicInterval.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
-#include <limits>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -59,10 +58,8 @@ metrics::History DyadicModel::train(
     const std::vector<std::string>& val_metrics,
     std::optional<size_t> max_in_memory_batches,
     const DistributedCommPtr& comm) {
-  size_t batches_to_load = std::numeric_limits<size_t>::max();
-  if (max_in_memory_batches) {
-    batches_to_load = *max_in_memory_batches;
-  }
+  size_t batches_to_load =
+      max_in_memory_batches.value_or(data::Loader::NO_LIMIT);
 
   auto train_dataset_loader =
       getDataLoader(train_data, batch_size, /* shuffle= */ true);
@@ -101,7 +98,7 @@ data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
     columns_names.push_back(*context_column);
   }
 
-  auto data_iter = data::JsonIterator::make(data, columns_names);
+  auto data_iter = data::JsonIterator::make(data, columns_names, 1000);
   auto transform =
       data::Pipeline::make({std::make_shared<data::StringToTokenArray>(
           _dyadic_transform->getInputColumn(),

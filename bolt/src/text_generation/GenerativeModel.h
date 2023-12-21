@@ -116,7 +116,6 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
       size_t prediction_chunk_size, size_t max_predictions, size_t beam_width,
       std::optional<float> temperature = std::nullopt);
 
-  // TODO(Nicholas): should we add max_in_memory_batches option?
   metrics::History train(
       const dataset::DataSourcePtr& train_data, float learning_rate,
       uint32_t epochs, size_t batch_size,
