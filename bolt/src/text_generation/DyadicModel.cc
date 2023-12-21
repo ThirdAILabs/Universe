@@ -8,6 +8,7 @@
 #include <data/src/transformations/DyadicInterval.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
+#include <cstdint>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -29,17 +30,26 @@ DyadicModel::DyadicModel(bolt::ModelPtr model,
 }
 
 bolt::TensorPtr DyadicModel::nextTokenProbs(
-    std::vector<uint32_t>& prompt, std::vector<std::vector<uint32_t>> tokens) {
+    std::vector<std::vector<uint32_t>>& prompts, std::vector<std::vector<std::vector<uint32_t>>> tokens) {
   auto prompt_column_name = _dyadic_transform->getPromptColumn();
-  size_t tokens_size = tokens.size();
+  // each of the chunks inside tokens should be of the same length
+  size_t tokens_size = tokens[0].size();
+  std::vector<std::vector<uint32_t>> flatten_tokens;
+  for(auto & token : tokens){
+    flatten_tokens.insert(flatten_tokens.end(), token.begin(), token.end());
+  }
   data::ColumnMap data(data::ColumnMap(
       {{_dyadic_transform->getInputColumn(),
-        data::ArrayColumn<uint32_t>::make(std::move(tokens), _vocab_size)}}));
+        data::ArrayColumn<uint32_t>::make(std::move(flatten_tokens), _vocab_size)}}));
 
   if (prompt_column_name) {
+  std::vector<std::vector<uint32_t>> flatten_prompts;
+  for(auto &prompt: prompts){
     std::vector<std::vector<uint32_t>> prompt_column(tokens_size, prompt);
+    flatten_prompts.insert(flatten_prompts.end(), prompt_column.begin(), prompt_column.end());
+  }
     data.setColumn(*prompt_column_name,
-                   data::ArrayColumn<uint32_t>::make(std::move(prompt_column),
+                   data::ArrayColumn<uint32_t>::make(std::move(flatten_prompts),
                                                      _vocab_size));
   }
 
@@ -48,6 +58,7 @@ bolt::TensorPtr DyadicModel::nextTokenProbs(
   auto tensors = data::toTensors(columns, _bolt_inputs);
 
   return _model->forward(tensors).at(0);
+  
 }
 
 metrics::History DyadicModel::train(

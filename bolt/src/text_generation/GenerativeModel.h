@@ -18,8 +18,8 @@ namespace thirdai::bolt {
 class GenerativeBackend {
  public:
   virtual bolt::TensorPtr nextTokenProbs(
-      std::vector<uint32_t>& prompt,
-      std::vector<std::vector<uint32_t>> tokens) = 0;
+      std::vector<std::vector<uint32_t>>& prompts,
+      std::vector<std::vector<std::vector<uint32_t>>> tokens) = 0;
 
   virtual metrics::History train(const dataset::DataSourcePtr& train_data,
                                  float learning_rate, uint32_t epochs,
@@ -47,21 +47,22 @@ class GenerativeModel;
 class BeamSearchDecoder {
  public:
   BeamSearchDecoder(std::shared_ptr<GenerativeModel> generator,
-                    std::vector<uint32_t> prompt,
-                    const std::vector<uint32_t>& input_tokens,
+                    std::vector<std::vector<uint32_t>> prompts,
+                    const std::vector<std::vector<uint32_t>>& input_tokens,
                     size_t prediction_chunk_size, size_t max_predictions,
-                    size_t beam_width, std::optional<float> temperature)
+                    size_t beam_width, std::optional<float> temperature, uint32_t batch_size = 2048)
       : _generator(std::move(generator)),
         _n_input_tokens(input_tokens.size()),
         _prediction_chunk_size(prediction_chunk_size),
         _max_predictions(max_predictions),
         _beam_width(beam_width),
         _temperature(temperature),
-        _candidate_sequences({input_tokens}),
-        _prompt(std::move(prompt)),
-        _sequence_scores({0.0}) {}
+        _batch_size(batch_size),
+        _batched_candidate_sequences({input_tokens}),
+        _prompts(std::move(prompts)),
+        _sequence_scores(std::vector<std::vector<double>>(input_tokens.size(), {0.0})) {}
 
-  std::optional<std::vector<uint32_t>> next();
+  std::optional<std::vector<std::vector<uint32_t>>> next();
 
  private:
   void reduceProbsForRepeats(const std::vector<uint32_t>& sequence,
@@ -78,13 +79,15 @@ class BeamSearchDecoder {
   const size_t _beam_width;
   const std::optional<float> _temperature;
 
+  uint32_t _batch_size;
+
   // This isues two seperate containers for the sequences and scores instead of
   // a std::vector<CandidateSequence> so that the sequences can be passed into
   // nextTokenProbs directly, instead of having to split apart the sequences and
   // scores.
-  std::vector<std::vector<uint32_t>> _candidate_sequences;
-  std::vector<uint32_t> _prompt;
-  std::vector<double> _sequence_scores;
+  std::vector<std::vector<std::vector<uint32_t>>> _batched_candidate_sequences;
+  std::vector<std::vector<uint32_t>> _prompts;
+  std::vector<std::vector<double>> _sequence_scores;
 };
 
 class GenerationStream {};

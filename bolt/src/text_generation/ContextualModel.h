@@ -16,8 +16,8 @@ class ContextualModel final : public GenerativeBackend {
                   dataset::TextGenerationFeaturizerPtr featurizer);
 
   bolt::TensorPtr nextTokenProbs(
-      std::vector<uint32_t>& prompt,
-      std::vector<std::vector<uint32_t>> tokens) final;
+      std::vector<std::vector<uint32_t>>& prompts,
+      std::vector<std::vector<std::vector<uint32_t>>> tokens) final;
 
   metrics::History train(const dataset::DataSourcePtr& train_data,
                          float learning_rate, uint32_t epochs,

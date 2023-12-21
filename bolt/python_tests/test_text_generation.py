@@ -156,10 +156,15 @@ def test_generation(backend):
         max_predictions=20,
         prediction_chunk_size=6,
         temperature=0.4,
-    )
+    )[0]
 
     gen_3 = model.generate_batch(
-        input_tokens=[list(range(20))],
+        input_tokens=[
+            list(range(20)),
+            list(range(10)),
+            list(range(5)),
+            list(range(25)),
+        ],
         beam_width=5,
         max_predictions=20,
         temperature=0.4,
