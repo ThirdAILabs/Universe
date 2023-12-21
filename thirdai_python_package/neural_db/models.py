@@ -14,6 +14,7 @@ from .training_state.training_callback import (
 )
 from .training_state.training_manager_factory import TrainingProgressManagerFactory
 from .utils import clean_text
+from .mach_defaults import acc_to_stop, metric_to_track
 
 InferSamples = List
 Predictions = Sequence
@@ -428,8 +429,8 @@ class Mach(Model):
             train_arguments = training_progress_manager.training_arguments()
             self.train_documents(
                 train_documents=train_documents,
-                metric="hash_precision@5",
-                acc_to_stop=0.95,
+                metric=metric_to_track,
+                acc_to_stop=acc_to_stop,
                 on_progress=on_progress,
                 cancel_state=cancel_state,
                 training_progress_callback=TrainingProgressCallback(

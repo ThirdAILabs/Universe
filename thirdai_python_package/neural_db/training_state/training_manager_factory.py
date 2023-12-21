@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from ..defaults import training_arguments_for_scratch, training_arguments_from_base
+from ..mach_defaults import training_arguments_for_scratch, training_arguments_from_base
 from ..documents import DocumentDataSource
 from ..utils import unpickle_from
 from .checkpoint_config import NDBCheckpointConfig, TrainingDataCheckpointManager
