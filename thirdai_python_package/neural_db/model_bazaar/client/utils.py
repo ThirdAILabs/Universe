@@ -8,6 +8,7 @@ from functools import wraps
 from pathlib import Path
 
 import requests
+from IPython.display import clear_output
 from tqdm import tqdm
 
 
@@ -16,9 +17,7 @@ def print_progress_dots(duration: int):
         sys.stdout.write(".")
         sys.stdout.flush()
         time.sleep(1)
-    sys.stdout.write("\r")
-    sys.stdout.write(" " * 20)
-    sys.stdout.write("\r")
+    clear_output(wait=True)
 
 
 def create_model_identifier(model_name: str, author_username: str):

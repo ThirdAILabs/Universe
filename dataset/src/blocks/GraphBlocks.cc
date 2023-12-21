@@ -6,7 +6,7 @@
 #include <cereal/types/vector.hpp>
 #include <dataset/src/utils/CsvParser.h>
 #include <exceptions/src/Exceptions.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <cstdlib>
 #include <exception>
 #include <limits>

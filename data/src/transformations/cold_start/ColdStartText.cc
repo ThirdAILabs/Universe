@@ -2,7 +2,7 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/StringConcat.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <iterator>
 #include <numeric>
@@ -15,12 +15,11 @@ namespace thirdai::data {
 
 ColdStartTextAugmentation::ColdStartTextAugmentation(
     std::vector<std::string> strong_column_names,
-    std::vector<std::string> weak_column_names, std::string label_column_name,
-    std::string output_column_name, const ColdStartConfig& config,
-    uint32_t seed)
-    : TextAugmentationBase(
-          std::move(strong_column_names), std::move(weak_column_names),
-          std::move(label_column_name), std::move(output_column_name), seed),
+    std::vector<std::string> weak_column_names, std::string output_column_name,
+    const ColdStartConfig& config, uint32_t seed)
+    : TextAugmentationBase(std::move(strong_column_names),
+                           std::move(weak_column_names),
+                           std::move(output_column_name), seed),
       _weak_min_len(config.weak_min_len),
       _weak_max_len(config.weak_max_len),
       _weak_chunk_len(config.weak_chunk_len),
@@ -78,14 +77,22 @@ void ColdStartTextAugmentation::validateGreaterThanZero(
 }
 
 std::vector<std::string> ColdStartTextAugmentation::augmentSingleRow(
-    const std::string& strong_text, const std::string& weak_text) const {
+    const std::string& strong_text, const std::string& weak_text,
+    uint32_t row_id_salt) const {
+  // We salt with row_id to keep determinism in the augmentation while having
+  // each row perturbed with a different seed.
+  // We pass around this rng to every function that has randomness (by
+  // reference) for proper variability of random numbers across output
+  // samples, consistency of random numbers across training runs, and for
+  // performance reasons to not have to create the object over and over.
+  std::mt19937 rng(_seed + row_id_salt);
+
   // Now that we have both the weak and strong text, pass them into the
   // phrase generation pipeline to self-supervised (label, phrase) pairs.
-  Phrase strong_phrase =
-      cold_start::getStrongPhrase(strong_text, _strong_max_len);
-  PhraseCollection phrases = getWeakPhrases(weak_text);
+  Phrase strong_phrase = getStrongPhrase(strong_text, _strong_max_len);
+  PhraseCollection phrases = getWeakPhrases(weak_text, rng);
   phrases = cold_start::mergeStrongWithWeak(phrases, strong_phrase,
-                                            _strong_sample_num_words, _seed);
+                                            _strong_sample_num_words, rng);
 
   std::vector<std::string> output_samples;
   for (const auto& phrase : phrases) {
@@ -101,8 +108,27 @@ std::vector<std::string> ColdStartTextAugmentation::augmentSingleRow(
   return output_samples;
 }
 
+Phrase ColdStartTextAugmentation::getStrongPhrase(
+    const std::string& strong_text_in, std::optional<uint32_t> max_len) {
+  std::string strong_text = text::replacePunctuation(strong_text_in, ' ');
+  strong_text = text::stripWhitespace(strong_text);
+
+  // Note: This is slightly different than the original cold start
+  // implementation. This tokenization/split function splits on any character
+  // that isn't alpha-numeric. The old version just split on whitespace. This
+  // can cause slightly different results with certain special characters.
+  Phrase strong_phrase = text::tokenizeSentence(strong_text);
+
+  if (max_len) {
+    if (strong_phrase.size() > max_len.value()) {
+      strong_phrase.resize(max_len.value());
+    }
+  }
+  return strong_phrase;
+}
+
 PhraseCollection ColdStartTextAugmentation::getWeakPhrases(
-    std::string s) const {
+    std::string s, std::mt19937& rng) const {
   std::string::iterator phrase_start;
   std::string::iterator phrase_end;
   phrase_start = s.begin();
@@ -174,7 +200,7 @@ PhraseCollection ColdStartTextAugmentation::getWeakPhrases(
     phrases = cold_start::sampleFromPhrases(
         /* phrases= */ phrases,
         /* words_per_sampled_phrase= */ _weak_sample_num_words.value(),
-        /* n_sampled_phrases= */ _weak_sample_reps, _seed);
+        /* n_sampled_phrases= */ _weak_sample_reps, rng);
   }
   return phrases;
 }
@@ -200,7 +226,8 @@ std::vector<std::string> ColdStartTextAugmentation::augmentMapInput(
     weak_text.append(". ");
   }
 
-  return augmentSingleRow(strong_text, weak_text);
+  // we pass the _seed here as the row id salt because we don't know the row_id
+  return augmentSingleRow(strong_text, weak_text, /* row_id_salt= */ _seed);
 }
 
 }  // namespace thirdai::data
