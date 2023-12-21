@@ -107,6 +107,8 @@ class Trainer {
 
   ModelPtr getModel() { return _model; }
 
+  metrics::History getHistory() { return *_history; }
+
  private:
   static void verifyNumBatchesMatch(const LabeledDataset& data);
 
