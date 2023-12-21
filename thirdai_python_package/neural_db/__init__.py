@@ -6,6 +6,7 @@ try:
         DOCX,
         PDF,
         URL,
+        MBOX,
         Document,
         Reference,
         SalesForce,

@@ -26,7 +26,7 @@ from thirdai.dataset.data_source import PyDataSource
 
 from .connectors import SalesforceConnector, SharePointConnector, SQLConnector
 from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
-from .parsing_utils import doc_parse, pdf_parse, sliding_pdf_parse, url_parse
+from .parsing_utils import doc_parse, pdf_parse, sliding_pdf_parse, url_parse, mbox_parse
 from .utils import hash_file, hash_string, requires_condition
 
 
@@ -770,6 +770,15 @@ def process_docx(path: str) -> pd.DataFrame:
 
     return elements_df
 
+def process_mbox(path: str) -> pd.DataFrame:
+    elements, success = mbox_parse.get_elements(path)
+
+    if not success:
+        raise ValueError(f"Could not read MBOX file: {path}")
+
+    elements_df = mbox_parse.create_train_df(elements)
+
+    return elements_df
 
 class PDF(Extracted):
     """Parses a PDF document into chunks of text that can be indexed by
@@ -871,6 +880,18 @@ class DOCX(Extracted):
     ) -> pd.DataFrame:
         return process_docx(path)
 
+class MBOX(Extracted):
+    def __init__(
+        self,
+        path: str,
+    ):
+        super().__init__(path=path)
+
+    def process_data(
+        self,
+        path: str,
+    ) -> pd.DataFrame:
+        return process_mbox(path)
 
 class Unstructured(Extracted):
     def __init__(
