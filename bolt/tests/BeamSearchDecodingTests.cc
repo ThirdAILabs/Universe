@@ -33,7 +33,6 @@ class MockBackend final : public GenerativeBackend {
                          const dataset::DataSourcePtr& val_data,
                          const std::vector<std::string>& val_metrics,
                          std::optional<size_t> max_in_memory_batches,
-                         std::optional<size_t> rows_per_load,
                          const DistributedCommPtr& comm) final {
     (void)train_data;
     (void)learning_rate;
@@ -42,7 +41,6 @@ class MockBackend final : public GenerativeBackend {
     (void)val_data;
     (void)val_metrics;
     (void)max_in_memory_batches;
-    (void)rows_per_load;
     (void)comm;
     return {};
   }

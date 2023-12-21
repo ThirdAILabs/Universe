@@ -32,14 +32,13 @@ class DyadicModel final : public GenerativeBackend {
                          const dataset::DataSourcePtr& val_data,
                          const std::vector<std::string>& val_metrics,
                          std::optional<size_t> max_in_memory_batches,
-                         std::optional<size_t> rows_per_load,
                          const DistributedCommPtr& comm) final;
 
   bolt::ModelPtr getBoltModel() final { return _model; }
 
  private:
   data::Loader getDataLoader(const dataset::DataSourcePtr& data,
-                             size_t batch_size, bool shuffle, size_t rows_per_load=10000);
+                             size_t batch_size, bool shuffle);
 
   bolt::ModelPtr _model;
   std::shared_ptr<data::DyadicInterval> _dyadic_transform;

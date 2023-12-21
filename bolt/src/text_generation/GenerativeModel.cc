@@ -171,7 +171,6 @@ metrics::History GenerativeModel::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     std::optional<size_t> max_in_memory_batches,
-    std::optional<size_t> rows_per_load,
     const DistributedCommPtr& comm) {
   licensing::entitlements().verifyFullAccess();
 
@@ -182,7 +181,7 @@ metrics::History GenerativeModel::train(
 
   return _model->train(train_data, learning_rate, epochs, batch_size,
                        train_metrics, val_data, val_metrics,
-                       max_in_memory_batches, rows_per_load, comm);
+                       max_in_memory_batches, comm);
 }
 
 void GenerativeModel::save(const std::string& filename) const {
