@@ -94,26 +94,6 @@ data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
   if (prompt_column) {
     columns_names.push_back(*prompt_column);
   }
-<<<<<<< HEAD
-  if(context_column){
-    columns_names.push_back(*context_column);
-  }
-
-  auto data_iter = data::JsonIterator::make(data, columns_names);
-  auto transform = data::Pipeline::make(
-      {std::make_shared<data::StringToTokenArray>(
-           _dyadic_transform->getInputColumn(),
-           _dyadic_transform->getInputColumn(), ' ', _vocab_size),
-       _dyadic_transform});
-  if (prompt_column) {
-    transform->then(std::make_shared<data::StringToTokenArray>(
-        *prompt_column, *prompt_column, ' ', _vocab_size));
-  }
-  if (context_column) {
-    transform->then(std::make_shared<data::StringToTokenArray>(
-        *context_column, *context_column, ' ', _vocab_size));
-  }
-=======
   if (context_column) {
     columns_names.push_back(*context_column);
   }
@@ -132,7 +112,6 @@ data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
         *context_column, *context_column, ' ', _vocab_size));
   }
   transform = transform->then(_dyadic_transform);
->>>>>>> 398830b78f3480cb1b3d7bbb388cf2039bea4282
   return data::Loader(
       data_iter, transform, nullptr, _bolt_inputs,
       {data::OutputColumns(_dyadic_transform->getTargetColumn())},
