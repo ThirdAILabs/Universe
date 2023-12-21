@@ -2,7 +2,7 @@
 
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <functional>
 #include <type_traits>
 #include <unordered_map>

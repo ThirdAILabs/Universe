@@ -32,7 +32,7 @@ def train_model():
 
 # TODO(Any): add another version of this test that replaces words with synonyms
 # to test how assoicating between the synonyms transfers between different samples
-# which have occurences of the synonym.
+# which have occurrences of the synonym.
 
 
 def get_association_samples():
