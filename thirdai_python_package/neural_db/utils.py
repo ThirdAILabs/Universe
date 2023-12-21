@@ -5,6 +5,7 @@ import random
 import shutil
 from functools import wraps
 from pathlib import Path
+import os
 
 DIRECTORY_CONNECTOR_SUPPORTED_EXT = ["pdf", "docx", "pptx", "txt", "eml"]
 SUPPORTED_EXT = ["csv"] + DIRECTORY_CONNECTOR_SUPPORTED_EXT
@@ -79,6 +80,14 @@ def move_between_directories(src, dest):
 
 def delete_folder(path: Path, ignore_errors: bool = True):
     shutil.rmtree(path, ignore_errors=ignore_errors)
+
+
+def delete_file(path: Path, ignore_errors: bool = True):
+    try:
+        os.remove(path)
+    except:
+        if not ignore_errors:
+            raise
 
 
 # This decorator is used to raise a NotImplemented error if the check_func returns false. This is used for scenarios when a Funciton is not implemented for a particular class depending upon a condition

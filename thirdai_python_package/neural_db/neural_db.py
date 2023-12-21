@@ -2,7 +2,7 @@ import copy
 import shutil
 from enum import Enum
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -14,9 +14,18 @@ from . import loggers, teachers
 from .documents import CSV, Document, DocumentManager, Reference
 from .mach_mixture_model import MachMixture
 from .models import CancelState, Mach
-from .savable_state import State
-from .training_state.checkpoint_config import CheckpointConfig
+from .savable_state import (
+    State,
+    checkpoint_state_and_ids,
+    load_checkpoint_state_ids_from_config,
+    delete_checkpoint_state_and_ids,
+)
 from .utils import delete_folder
+
+from .training_state.checkpoint_config import (
+    NDBCheckpointConfig,
+    convert_ndb_checkpoint_config_to_mach,
+)
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
 
@@ -426,13 +435,11 @@ class NeuralDB:
 
         ray_version = ray.__version__
         if LooseVersion(ray_version) >= LooseVersion("2.7"):
-            warnings.warn(
-                """
+            warnings.warn("""
                 Using ray version 2.7 or higher requires specifying a remote or NFS storage path. 
                 Support for local checkpoints has been discontinued in these versions. 
                 Refer to https://github.com/ray-project/ray/issues/37177 for details.
-                """.strip()
-            )
+                """.strip())
 
         if not isinstance(documents, list) or not all(
             isinstance(doc, CSV) for doc in documents
@@ -569,25 +576,49 @@ class NeuralDB:
         """
         return self._savable_state.documents.sources()
 
-    def save(self, save_to: str, on_progress: Callable = no_op) -> str:
+    def save(self, save_to: Union[str, Path], on_progress: Callable = no_op) -> str:
         return self._savable_state.save(Path(save_to), on_progress)
 
-    def insert(
+    def _resume(
+        self,
+        on_progress: Callable,
+        cancel_state: CancelState,
+        checkpoint_config: NDBCheckpointConfig,
+    ):
+        try:
+            state, ids, resource_name = load_checkpoint_state_ids_from_config(
+                checkpoint_config=checkpoint_config
+            )
+            self._savable_state = state
+        except:
+            raise Exception(
+                "Failed to load"
+                f" '{checkpoint_config.checkpoint_dir / 'checkpoint.ndb'}'."
+                " Please verify it's a valid checkpoint and the training is"
+                " incomplete."
+            )
+
+        self._savable_state.model.resume(
+            on_progress=on_progress,
+            cancel_state=cancel_state,
+            checkpoint_config=convert_ndb_checkpoint_config_to_mach(checkpoint_config),
+        )
+
+        return ids, resource_name
+
+    def _insert_from_start(
         self,
         sources: List[Document],
-        train: bool = True,
-        fast_approximation: bool = True,
-        num_buckets_to_sample: Optional[int] = None,
-        on_progress: Callable = no_op,
-        on_success: Callable = no_op,
-        on_error: Callable = None,
-        cancel_state: CancelState = None,
-        max_in_memory_batches: int = None,
-        variable_length: Optional[
-            data.transformations.VariableLengthConfig
-        ] = data.transformations.VariableLengthConfig(),
-        checkpoint_config: CheckpointConfig = None,
-    ) -> List[str]:
+        train: bool,
+        fast_approximation: bool,
+        num_buckets_to_sample: Optional[int],
+        on_progress: Callable,
+        on_error: Callable,
+        cancel_state: CancelState,
+        max_in_memory_batches: int,
+        variable_length: Optional[data.transformations.VariableLengthConfig],
+        checkpoint_config: NDBCheckpointConfig,
+    ):
         """
         Inserts documents/resources into the database.
 
@@ -625,33 +656,19 @@ class NeuralDB:
             raise e
 
         """
-        We need to store the model state so that our label_id -> reference mapping remains consistent.
+        We need to store the model state so that our label_id -> reference mapping remains consistent on resuming.
         """
         if checkpoint_config:
-            if checkpoint_config.resume_from_checkpoint:
-                try:
-                    self._savable_state = State.load(
-                        checkpoint_config.checkpoint_dir / "checkpoint.ndb",
-                        on_progress=no_op,
-                    )
-                except:
-                    raise Exception(
-                        "Failed to load"
-                        f" '{checkpoint_config.checkpoint_dir / 'checkpoint.ndb'}'."
-                        " Please verify it's a valid checkpoint and the training is"
-                        " incomplete."
-                    )
-            else:
-                # Deletes the checkpoint folder if there is one.
-                delete_folder(
-                    checkpoint_config.checkpoint_dir / "checkpoint.ndb",
-                    ignore_errors=True,
-                )
-                self.save(
-                    save_to=str(checkpoint_config.checkpoint_dir / "checkpoint.ndb")
-                )
+            # If a checkpoint config is passed, then we delete any pass ndb checkpoints from the folder and save the current neural db object.
+            delete_checkpoint_state_and_ids(checkpoint_config, ignore_errors=True)
+            checkpoint_state_and_ids(
+                self._savable_state,
+                ids=ids,
+                resource_name=intro_and_train.intro.resource_name(),
+                checkpoint_config=checkpoint_config,
+            )
 
-        self._savable_state.model.index_documents(
+        self._savable_state.model.index_from_start(
             intro_documents=intro_and_train.intro,
             train_documents=intro_and_train.train,
             num_buckets_to_sample=num_buckets_to_sample,
@@ -661,23 +678,62 @@ class NeuralDB:
             cancel_state=cancel_state,
             max_in_memory_batches=max_in_memory_batches,
             variable_length=variable_length,
-            checkpoint_config=checkpoint_config,
+            checkpoint_config=convert_ndb_checkpoint_config_to_mach(checkpoint_config),
         )
+
+        return ids, intro_and_train.intro.resource_name()
+
+    def insert(
+        self,
+        sources: List[Document],
+        train: bool = True,
+        fast_approximation: bool = True,
+        num_buckets_to_sample: Optional[int] = None,
+        on_progress: Callable = no_op,
+        on_success: Callable = no_op,
+        on_error: Callable = None,
+        cancel_state: CancelState = None,
+        max_in_memory_batches: int = None,
+        variable_length: Optional[
+            data.transformations.VariableLengthConfig
+        ] = data.transformations.VariableLengthConfig(),
+        checkpoint_config: NDBCheckpointConfig = None,
+    ) -> List[str]:
+
+        if checkpoint_config and checkpoint_config.resume_from_checkpoint:
+            ids, resource_name = self._resume(
+                on_progress=on_progress,
+                cancel_state=cancel_state,
+                checkpoint_config=checkpoint_config,
+            )
+        else:
+            ids, resource_name = self._insert_from_start(
+                sources=sources,
+                train=train,
+                fast_approximation=fast_approximation,
+                num_buckets_to_sample=num_buckets_to_sample,
+                on_progress=on_progress,
+                on_error=on_error,
+                cancel_state=cancel_state,
+                max_in_memory_batches=max_in_memory_batches,
+                variable_length=variable_length,
+                checkpoint_config=checkpoint_config,
+            )
+
         self._savable_state.logger.log(
             session_id=self._user_id,
             action="Train",
-            args={"files": intro_and_train.intro.resource_name()},
+            args={"files": resource_name},
         )
+
+        if checkpoint_config:
+            # Once we have saved the model, we will delete the ndb checkpoint and save updated neural db with trained models.
+            delete_folder(checkpoint_config.ndb_trained_path, ignore_errors=True)
+            self.save(save_to=str(checkpoint_config.ndb_trained_path))
+            delete_checkpoint_state_and_ids(checkpoint_config)
 
         on_success()
 
-        if checkpoint_config:
-            # Deleting the previous trained neuraldb
-            delete_folder(
-                checkpoint_config.checkpoint_dir / "trained.ndb", ignore_errors=True
-            )
-            self.save(save_to=str(checkpoint_config.checkpoint_dir / "trained.ndb"))
-            delete_folder(checkpoint_config.checkpoint_dir / "checkpoint.ndb")
         return ids
 
     def delete(self, source_id: str):

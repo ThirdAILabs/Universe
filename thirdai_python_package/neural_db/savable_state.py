@@ -6,7 +6,8 @@ from typing import Callable
 from .documents import DocumentManager
 from .loggers import Logger
 from .models import Model
-from .utils import pickle_to, unpickle_from
+from .utils import pickle_to, unpickle_from, delete_folder, delete_file
+from .training_state.checkpoint_config import NDBCheckpointConfig
 
 
 def default_checkpoint_name():
@@ -52,7 +53,7 @@ class State:
     def save(
         self,
         location=default_checkpoint_name(),
-        on_progress: Callable = lambda **kwargs: None,
+        on_progress: Callable = lambda *args, **kwargs: None,
     ) -> str:
         total_steps = 7
 
@@ -88,7 +89,7 @@ class State:
         return str(directory)
 
     @staticmethod
-    def load(location: Path, on_progress: Callable = lambda **kwargs: None):
+    def load(location: Path, on_progress: Callable = lambda *args, **kwargs: None):
         total_steps = 6
 
         # load model
@@ -112,3 +113,25 @@ class State:
         on_progress(6 / total_steps)
 
         return state
+
+
+def checkpoint_state_and_ids(
+    savable_state: State, ids, resource_name, checkpoint_config: NDBCheckpointConfig
+):
+    savable_state.save(checkpoint_config.ndb_checkpoint_path)
+    pickle_to((ids, resource_name), checkpoint_config.pickled_ids_resource_name_path)
+
+
+def load_checkpoint_state_ids_from_config(checkpoint_config: NDBCheckpointConfig):
+    state = State.load(checkpoint_config.ndb_checkpoint_path)
+    ids, resource_name = unpickle_from(checkpoint_config.pickled_ids_resource_name_path)
+    return state, ids, resource_name
+
+
+def delete_checkpoint_state_and_ids(
+    checkpoint_config: NDBCheckpointConfig, ignore_errors=True
+):
+    delete_folder(checkpoint_config.ndb_checkpoint_path, ignore_errors=ignore_errors)
+    delete_file(
+        checkpoint_config.pickled_ids_resource_name_path, ignore_errors=ignore_errors
+    )

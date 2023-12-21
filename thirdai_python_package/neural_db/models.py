@@ -7,8 +7,11 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt, data
 
 from .documents import DocumentDataSource
-from .training_state.checkpoint_config import CheckpointConfig
-from .training_state.training_callback import TrainingProgressManager
+from .training_state.checkpoint_config import NDBCheckpointConfig
+from .training_state.training_callback import (
+    TrainingProgressManager,
+    TrainingProgressCallback,
+)
 from .training_state.training_manager_factory import TrainingProgressManagerFactory
 from .utils import clean_text
 
@@ -53,7 +56,7 @@ class Model:
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
-        checkpoint_config: CheckpointConfig = None,
+        checkpoint_config: NDBCheckpointConfig = None,
     ) -> None:
         raise NotImplementedError()
 
@@ -215,7 +218,7 @@ def unsupervised_train_on_docs(
     variable_length: Optional[
         data.transformations.VariableLengthConfig
     ] = data.transformations.VariableLengthConfig(),
-    training_progress_manager: TrainingProgressManager = None,
+    training_progress_callback: TrainingProgressCallback = None,
 ):
     if freeze_before_train:
         model._get_model().freeze_hash_tables()
@@ -237,8 +240,8 @@ def unsupervised_train_on_docs(
 
     callbacks = [early_stop_callback, progress_callback, cancel_training_callback]
 
-    if training_progress_manager:
-        callbacks.append(training_progress_manager)
+    if training_progress_callback:
+        callbacks.append(training_progress_callback)
 
     model.cold_start_on_data_source(
         data_source=documents,
@@ -261,26 +264,6 @@ def make_balancing_samples(documents: DocumentDataSource):
     if len(samples) > 25000:
         samples = random.sample(samples, k=25000)
     return samples
-
-
-def autotune_from_scratch_min_max_epochs(size):
-    if size < 1000:
-        return 10, 15
-    if size < 10000:
-        return 8, 13
-    if size < 100000:
-        return 5, 10
-    if size < 1000000:
-        return 3, 8
-    return 1, 5
-
-
-def autotune_from_base_min_max_epochs(size):
-    if size < 100000:
-        return 5, 10
-    if size < 1000000:
-        return 3, 8
-    return 1, 5
 
 
 class Mach(Model):
@@ -364,7 +347,7 @@ class Mach(Model):
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
-        training_progress_manager: TrainingProgressManager = None,
+        training_progress_callback=None,
     ):
         unsupervised_train_on_docs(
             model=self.model,
@@ -379,7 +362,7 @@ class Mach(Model):
             cancel_state=cancel_state,
             max_in_memory_batches=max_in_memory_batches,
             variable_length=variable_length,
-            training_progress_manager=training_progress_manager,
+            training_progress_callback=training_progress_callback,
         )
 
     def introduce_documents(
@@ -387,6 +370,7 @@ class Mach(Model):
         intro_documents: DocumentDataSource,
         fast_approximation: bool,
         num_buckets_to_sample: Optional[int],
+        override_number_classes: int,
     ):
         if intro_documents.id_column != self.id_col:
             raise ValueError(
@@ -394,9 +378,12 @@ class Mach(Model):
                 f" id_col={intro_documents.id_column}"
             )
         if self.model is None:
-            raise Exception(
-                "Cannot perform introduce documents on an uninitialized model."
+            self.id_col = intro_documents.id_column
+            self.model = self.model_from_scratch(
+                intro_documents,
+                number_classes=override_number_classes,
             )
+            self.n_ids += intro_documents.size
         else:
             if intro_documents.size > 0:
                 doc_id = intro_documents.id_column
@@ -427,62 +414,32 @@ class Mach(Model):
         intro_documents = training_progress_manager.intro_source
         train_documents = training_progress_manager.train_source
 
-        if self.model is None:
-            self.id_col = intro_documents.id_column
-            self.model = self.model_from_scratch(
-                intro_documents,
-                number_classes=training_progress_manager.tracker.override_number_classes,
-            )
-            learning_rate = 0.005
-            freeze_before_train = False
-            min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
-                train_documents.size
+        if not training_progress_manager.is_insert_completed:
+            self.introduce_documents(
+                intro_documents=intro_documents,
+                **training_progress_manager.introduce_arguments(),
             )
             self.n_ids += intro_documents.size
-            self.add_balancing_samples(intro_documents)
-        else:
-            learning_rate = 0.001
-            # Freezing at the beginning prevents the model from forgetting
-            # things it learned from pretraining.
-            freeze_before_train = True
-            # Less epochs here since it converges faster when trained on a base
-            # model.
-            if not training_progress_manager.is_insert_completed:
-                self.introduce_documents(
-                    intro_documents=intro_documents,
-                    fast_approximation=training_progress_manager.tracker.fast_approximation,
-                    num_buckets_to_sample=training_progress_manager.tracker.num_buckets_to_sample,
-                )
-                self.n_ids += intro_documents.size
-                self.add_balancing_samples(intro_documents)
-            min_epochs, max_epochs = autotune_from_base_min_max_epochs(
-                train_documents.size
-            )
 
-        # We can set all the training variables irrespective of whether we resumed from a checkpoint or training from scratch
-        training_progress_manager.set_training_arguments(
-            learning_rate=learning_rate,
-            min_epochs=min_epochs,
-            max_epochs=max_epochs,
-            freeze_before_train=freeze_before_train,
-        )
-        # This function call checks whether insert has already been completed (could be the case when resumes from a checkpoint). Does not checkpoint if insert was completed when we resumed from a checkpoint. Checkpoints in all other cases. We also update the is_insert_completed flag in the training manager.
+        # This function call checks whether insert has already been completed (could be the case when resumes from a checkpoint). Does not checkpoint if insert was completed when we resumed from a checkpoint. Checkpoints in all other cases. We also update the is_insert_completed flag in the tracker.
         training_progress_manager.insert_complete()
 
         if not training_progress_manager.is_training_completed:
-            train_documents = training_progress_manager.train_source
-            train_arguments = training_progress_manager.get_training_arguments()
+            train_arguments = training_progress_manager.training_arguments()
             self.train_documents(
                 train_documents=train_documents,
                 metric="hash_precision@5",
                 acc_to_stop=0.95,
                 on_progress=on_progress,
                 cancel_state=cancel_state,
+                training_progress_callback=TrainingProgressCallback(
+                    training_progress_manager=training_progress_manager
+                ),
                 **train_arguments,
             )
         training_progress_manager.training_complete()
 
-    def index_documents(
+    def index_from_start(
         self,
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
@@ -496,8 +453,8 @@ class Mach(Model):
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
-        checkpoint_config: CheckpointConfig = None,
-    ) -> None:
+        checkpoint_config: NDBCheckpointConfig = None,
+    ):
         """
         override_number_classes : The number of classes for the Mach model
 
@@ -507,31 +464,44 @@ class Mach(Model):
         and the source of truth for the current mach object. If we do not resume from a checkpoint, then the manager holds the current Mach object and calling load_model just returns it. Otherwise, the manager sets it's model attribute after loading the saved model of the previous checkpoint.
 
         This is designed the way it is to make sure that that we have identical function calls irrespective of whether we're resuming from a checkpoint/using checkpointing/doing no checkpointing. By making our training progress manager the source of truth for all training related variables/objects, we effectively offload the task of maintaining training state and checkpointing to the manager. And the manager internally decides when it should save what objects.
+
+        Another reason to explain this unified design is that if we have seperate calls for indexing with/out checkpoint, we have to be sure that making changes in one does not break the other.
         """
-        if checkpoint_config and checkpoint_config.resume_from_checkpoint:
-            # This will load the datasources, model, training config and upload the current model with the loaded one.
-            training_progress_manager = (
-                TrainingProgressManagerFactory.make_resumed_training_progress_manager(
-                    self, checkpoint_config=checkpoint_config
-                )
+
+        training_progress_manager = (
+            TrainingProgressManagerFactory.make_training_manager_scratch(
+                model=self,
+                intro_documents=intro_documents,
+                train_documents=train_documents,
+                should_train=should_train,
+                fast_approximation=fast_approximation,
+                num_buckets_to_sample=num_buckets_to_sample,
+                max_in_memory_batches=max_in_memory_batches,
+                override_number_classes=override_number_classes,
+                variable_length=variable_length,
+                checkpoint_config=checkpoint_config,
             )
-        else:
-            training_progress_manager = (
-                TrainingProgressManagerFactory.make_training_manager_scratch(
-                    model=self,
-                    intro_documents=intro_documents,
-                    train_documents=train_documents,
-                    should_train=should_train,
-                    fast_approximation=fast_approximation,
-                    num_buckets_to_sample=num_buckets_to_sample,
-                    max_in_memory_batches=max_in_memory_batches,
-                    override_number_classes=override_number_classes,
-                    variable_length=variable_length,
-                    checkpoint_config=checkpoint_config,
-                )
-            )
+        )
 
         training_progress_manager.make_preindexing_checkpoint()
+        self.index_documents_impl(
+            training_progress_manager=training_progress_manager,
+            on_progress=on_progress,
+            cancel_state=cancel_state,
+        )
+
+    def resume(
+        self,
+        on_progress: Callable,
+        cancel_state: CancelState,
+        checkpoint_config: NDBCheckpointConfig,
+    ):
+        # This will load the datasources, model, training config and upload the current model with the loaded one. This updates the underlying UDT MACH of the current model with the one from the checkpoint along with other class attributes.
+        training_progress_manager = (
+            TrainingProgressManagerFactory.make_resumed_training_progress_manager(
+                self, checkpoint_config=checkpoint_config
+            )
+        )
 
         self.index_documents_impl(
             training_progress_manager=training_progress_manager,

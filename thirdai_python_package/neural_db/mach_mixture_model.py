@@ -7,7 +7,7 @@ from thirdai import bolt, data
 from .documents import DocumentDataSource
 from .models import CancelState, Mach, Model
 from .sharded_documents import ShardedDataSource
-from .training_state.checkpoint_config import CheckpointConfig
+from .training_state.checkpoint_config import NDBCheckpointConfig
 from .training_state.training_callback import TrainingProgressManager
 from .training_state.training_manager_factory import TrainingProgressManagerFactory
 from .utils import requires_condition
@@ -81,6 +81,9 @@ class MachMixture(Model):
             model.set_mach_sampling_threshold(threshold)
 
     def get_model(self) -> List[bolt.UniversalDeepTransformer]:
+        for model in self.models:
+            if not model.get_model():
+                return None
         return self.models
 
     def set_model(self, models):
@@ -111,14 +114,46 @@ class MachMixture(Model):
         on_progress: Callable,
         cancel_state: CancelState,
     ):
-        for model_id, model in enumerate(self.models):
+        for progress_manager, model in zip(training_progress_managers, self.models):
             model.index_documents_impl(
-                training_progress_manager=training_progress_managers[model_id],
+                training_progress_manager=progress_manager,
                 on_progress=on_progress,
                 cancel_state=cancel_state,
             )
 
-    def index_documents(
+    def resume(
+        self,
+        on_progress: Callable,
+        cancel_state: CancelState,
+        checkpoint_config: NDBCheckpointConfig,
+    ):
+        modelwise_checkpoint_configs = TrainingProgressManagerFactory.make_modelwise_checkpoint_configs_from_config(
+            config=checkpoint_config, number_models=self.number_models
+        )
+
+        training_managers = []
+
+        for _, (model, config) in enumerate(
+            zip(
+                self.models,
+                modelwise_checkpoint_configs,
+            )
+        ):
+            modelwise_training_manager = (
+                TrainingProgressManagerFactory.make_resumed_training_progress_manager(
+                    original_mach_model=model,
+                    checkpoint_config=config,
+                )
+            )
+            training_managers.append(modelwise_training_manager)
+
+        self.index_documents_impl(
+            training_progress_managers=training_managers,
+            on_progress=on_progress,
+            cancel_state=cancel_state,
+        )
+
+    def index_from_start(
         self,
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
@@ -131,31 +166,26 @@ class MachMixture(Model):
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
-        checkpoint_config: CheckpointConfig = None,
-    ) -> None:
+        checkpoint_config: NDBCheckpointConfig = None,
+    ):
         # We need the original number of classes from the original data source so that we can initialize the Mach models this mixture will have
         number_classes = intro_documents.size
 
-        if checkpoint_config and checkpoint_config.resume_from_checkpoint:
-            # When resuming from a checkpoint, the data is already stored in the respective Mach models checkpoint folders. Hence, we do not need to shard the data again.
-            introduce_data_sources = [None for _ in range(self.number_models)]
-            train_data_sources = [None for _ in range(self.number_models)]
-        else:
-            # Make a sharded data source with introduce documents. When we call shard_data_source, this will shard the introduce data source, return a list of data sources, and modify the label index to keep track of what label goes to what shard
-            sharded_data_source = ShardedDataSource(
-                document_data_source=intro_documents,
-                number_shards=self.number_models,
-                label_to_segment_map=self.label_to_segment_map,
-                seed=self.seed_for_sharding,
-            )
-            introduce_data_sources = sharded_data_source.shard_data_source()
+        # Make a sharded data source with introduce documents. When we call shard_data_source, this will shard the introduce data source, return a list of data sources, and modify the label index to keep track of what label goes to what shard
+        sharded_data_source = ShardedDataSource(
+            document_data_source=intro_documents,
+            number_shards=self.number_models,
+            label_to_segment_map=self.label_to_segment_map,
+            seed=self.seed_for_sharding,
+        )
+        introduce_data_sources = sharded_data_source.shard_data_source()
 
-            # Once the introduce datasource has been sharded, we can use the update label index to shard the training data source ( We do not want training samples to go to a Mach model that does not contain their labels)
-            train_data_sources = sharded_data_source.shard_using_index(
-                train_documents,
-                label_to_segment_map=self.label_to_segment_map,
-                number_shards=self.number_models,
-            )
+        # Once the introduce datasource has been sharded, we can use the update label index to shard the training data source ( We do not want training samples to go to a Mach model that does not contain their labels)
+        train_data_sources = sharded_data_source.shard_using_index(
+            train_documents,
+            label_to_segment_map=self.label_to_segment_map,
+            number_shards=self.number_models,
+        )
 
         modelwise_checkpoint_configs = TrainingProgressManagerFactory.make_modelwise_checkpoint_configs_from_config(
             config=checkpoint_config, number_models=self.number_models
@@ -172,7 +202,7 @@ class MachMixture(Model):
             )
         ):
             modelwise_training_manager = (
-                TrainingProgressManagerFactory.make_training_progress_manager(
+                TrainingProgressManagerFactory.make_training_manager_scratch(
                     model=model,
                     intro_documents=intro_shard,
                     train_documents=train_shard,
@@ -186,7 +216,7 @@ class MachMixture(Model):
                 )
             )
             training_managers.append(modelwise_training_manager)
-            # In case of resume_from_checkpoint or checkpoint_config = None, this will not store anything.
+            # When we want to start from scratch, we will have to store the intro, train sources and the model.
             modelwise_training_manager.make_preindexing_checkpoint()
 
         self.index_documents_impl(

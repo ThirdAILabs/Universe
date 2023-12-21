@@ -251,7 +251,35 @@ class TrainingDataCheckpointManager:
 
 
 @dataclass
-class CheckpointConfig:
+class NDBCheckpointConfig:
+    checkpoint_dir: Path
+    resume_from_checkpoint: bool = False
+    checkpoint_interval: int = 1
+
+    def __post_init__(self):
+        if isinstance(self.checkpoint_dir, str):
+            self.checkpoint_dir = Path(self.checkpoint_dir)
+        elif isinstance(self.checkpoint_dir, Path):
+            pass
+        else:
+            raise TypeError(
+                "The 'checkpoint_dir' should be either a 'str' or 'pathlib.Path', but"
+                f" received: {type(self.checkpoint_dir)}"
+            )
+
+        # Before insert process is started, we first make a checkpoint of the neural db at ndb_checkpoint_path
+        self.ndb_checkpoint_path = self.checkpoint_dir / "checkpoint.ndb"
+        # After the completion of training, we store the trained neural db at ndb_trained_path
+        self.ndb_trained_path = self.checkpoint_dir / "trained.ndb"
+
+        self.pickled_ids_resource_name_path = (
+            self.checkpoint_dir / "ids_resource_name.pkl"
+        )
+
+
+@dataclass
+class MachCheckpointConfig:
+    # TODO(Shubh): NDB and Mach checkpoint config are almost identical. Should we just have one of them?
     checkpoint_dir: Path
     resume_from_checkpoint: bool = False
     checkpoint_interval: int = 1  # no of epochs between saving the checkpoints
@@ -259,11 +287,21 @@ class CheckpointConfig:
     def __post_init__(self):
         if isinstance(self.checkpoint_dir, str):
             self.checkpoint_dir = Path(self.checkpoint_dir)
-            return
-        if isinstance(self.checkpoint_dir, Path):
-            return
+        elif isinstance(self.checkpoint_dir, Path):
+            pass
         else:
             raise TypeError(
                 "The 'checkpoint_dir' should be either a 'str' or 'pathlib.Path', but"
                 f" received: {type(self.checkpoint_dir)}"
             )
+
+
+def convert_ndb_checkpoint_config_to_mach(ndb_config: NDBCheckpointConfig):
+    if ndb_config is None:
+        return None
+
+    return MachCheckpointConfig(
+        checkpoint_dir=ndb_config.checkpoint_dir,
+        resume_from_checkpoint=ndb_config.resume_from_checkpoint,
+        checkpoint_interval=ndb_config.checkpoint_interval,
+    )
