@@ -7,14 +7,14 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt, data
 
 from .documents import DocumentDataSource
+from .mach_defaults import acc_to_stop, metric_to_track
 from .training_state.checkpoint_config import NDBCheckpointConfig
 from .training_state.training_callback import (
-    TrainingProgressManager,
     TrainingProgressCallback,
+    TrainingProgressManager,
 )
 from .training_state.training_manager_factory import TrainingProgressManagerFactory
 from .utils import clean_text
-from .mach_defaults import acc_to_stop, metric_to_track
 
 InferSamples = List
 Predictions = Sequence

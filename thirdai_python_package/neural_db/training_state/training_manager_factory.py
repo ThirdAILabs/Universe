@@ -1,12 +1,12 @@
 import json
 from pathlib import Path
 
-from ..mach_defaults import training_arguments_for_scratch, training_arguments_from_base
 from ..documents import DocumentDataSource
+from ..mach_defaults import training_arguments_for_scratch, training_arguments_from_base
 from ..utils import unpickle_from
 from .checkpoint_config import NDBCheckpointConfig, TrainingDataCheckpointManager
 from .training_callback import TrainingProgressManager
-from .training_progress_tracker import NeuralDbProgressTracker, IntroState, TrainState
+from .training_progress_tracker import IntroState, NeuralDbProgressTracker, TrainState
 
 
 class TrainingProgressManagerFactory:

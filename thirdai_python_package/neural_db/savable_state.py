@@ -6,8 +6,8 @@ from typing import Callable
 from .documents import DocumentManager
 from .loggers import Logger
 from .models import Model
-from .utils import pickle_to, unpickle_from, delete_folder, delete_file
 from .training_state.checkpoint_config import NDBCheckpointConfig
+from .utils import delete_file, delete_folder, pickle_to, unpickle_from
 
 
 def default_checkpoint_name():

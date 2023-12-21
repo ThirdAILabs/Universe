@@ -1,11 +1,11 @@
 import hashlib
 import math
+import os
 import pickle
 import random
 import shutil
 from functools import wraps
 from pathlib import Path
-import os
 
 DIRECTORY_CONNECTOR_SUPPORTED_EXT = ["pdf", "docx", "pptx", "txt", "eml"]
 SUPPORTED_EXT = ["csv"] + DIRECTORY_CONNECTOR_SUPPORTED_EXT
