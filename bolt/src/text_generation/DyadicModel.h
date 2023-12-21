@@ -39,8 +39,7 @@ class DyadicModel final : public GenerativeBackend {
 
  private:
   data::Loader getDataLoader(const dataset::DataSourcePtr& data,
-                             size_t batch_size, bool shuffle,
-                             size_t rows_per_load = 10000);
+                             size_t batch_size, bool shuffle, size_t rows_per_load=10000);
 
   bolt::ModelPtr _model;
   std::shared_ptr<data::DyadicInterval> _dyadic_transform;

@@ -23,7 +23,8 @@ metrics::History ContextualModel::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     std::optional<size_t> max_in_memory_batches,
-    std::optional<size_t> rows_per_load, const DistributedCommPtr& comm) {
+    std::optional<size_t> rows_per_load,
+    const DistributedCommPtr& comm) {
   (void)rows_per_load;
   if (max_in_memory_batches) {
     throw std::runtime_error(
