@@ -65,6 +65,7 @@ class MachMixture(Model):
 
     @property
     def n_ids(self):
+        # We assume that the label spaces of underlying models are disjoint (True as of now.)
         n_ids = 0
         for model in self.models:
             n_ids += model.n_ids
@@ -114,6 +115,7 @@ class MachMixture(Model):
         on_progress: Callable,
         cancel_state: CancelState,
     ):
+        # This function is the entrypoint to underlying mach models in the mixture. The training progress manager becomes the absolute source of truth in this routine and holds all the data needed to index documents into a model irrespective of whether we are checkpointing or not.
         for progress_manager, model in zip(training_progress_managers, self.models):
             model.index_documents_impl(
                 training_progress_manager=progress_manager,
@@ -127,12 +129,13 @@ class MachMixture(Model):
         cancel_state: CancelState,
         checkpoint_config: NDBCheckpointConfig,
     ):
+        # If checkpoint_dir in checkpoint_config is /john/doe and number of models is 2, the underlying mach models will make checkpoint at /john/doe/0 and /john/doe/1 depending on model ids.
         modelwise_checkpoint_configs = TrainingProgressManagerFactory.make_modelwise_checkpoint_configs_from_config(
             config=checkpoint_config, number_models=self.number_models
         )
 
+        # The training manager corresponding to a model loads all the needed to complete the training such as model, document sources, tracker, etc.
         training_managers = []
-
         for _, (model, config) in enumerate(
             zip(
                 self.models,
@@ -192,7 +195,6 @@ class MachMixture(Model):
         )
 
         training_managers = []
-
         for _, (intro_shard, train_shard, model, config) in enumerate(
             zip(
                 introduce_data_sources,
@@ -216,8 +218,8 @@ class MachMixture(Model):
                 )
             )
             training_managers.append(modelwise_training_manager)
-            # When we want to start from scratch, we will have to store the intro, train sources and the model.
-            modelwise_training_manager.make_preindexing_checkpoint()
+            # When we want to start from scratch, we will have to checkpoint the intro, train sources, the model, tracker,etc. so that the training can be resumed from the checkpoint.
+            modelwise_training_manager.make_preindexing_checkpoint()  # no-op when checkpoint_config is None.
 
         self.index_documents_impl(
             training_progress_managers=training_managers,

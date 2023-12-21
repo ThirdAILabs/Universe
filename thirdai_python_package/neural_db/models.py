@@ -384,7 +384,6 @@ class Mach(Model):
                 intro_documents,
                 number_classes=override_number_classes,
             )
-            self.n_ids += intro_documents.size
         else:
             if intro_documents.size > 0:
                 doc_id = intro_documents.id_column
@@ -421,9 +420,7 @@ class Mach(Model):
                 **training_progress_manager.introduce_arguments(),
             )
             self.n_ids += intro_documents.size
-
-        # This function call checks whether insert has already been completed (could be the case when resumes from a checkpoint). Does not checkpoint if insert was completed when we resumed from a checkpoint. Checkpoints in all other cases. We also update the is_insert_completed flag in the tracker.
-        training_progress_manager.insert_complete()
+            training_progress_manager.insert_complete()
 
         if not training_progress_manager.is_training_completed:
             train_arguments = training_progress_manager.training_arguments()
@@ -438,7 +435,26 @@ class Mach(Model):
                 ),
                 **train_arguments,
             )
-        training_progress_manager.training_complete()
+            training_progress_manager.training_complete()
+
+    def resume(
+        self,
+        on_progress: Callable,
+        cancel_state: CancelState,
+        checkpoint_config: NDBCheckpointConfig,
+    ):
+        # This will load the datasources, model, training config and upload the current model with the loaded one. This updates the underlying UDT MACH of the current model with the one from the checkpoint along with other class attributes.
+        training_progress_manager = (
+            TrainingProgressManagerFactory.make_resumed_training_progress_manager(
+                self, checkpoint_config=checkpoint_config
+            )
+        )
+
+        self.index_documents_impl(
+            training_progress_manager=training_progress_manager,
+            on_progress=on_progress,
+            cancel_state=cancel_state,
+        )
 
     def index_from_start(
         self,
@@ -485,25 +501,6 @@ class Mach(Model):
         )
 
         training_progress_manager.make_preindexing_checkpoint()
-        self.index_documents_impl(
-            training_progress_manager=training_progress_manager,
-            on_progress=on_progress,
-            cancel_state=cancel_state,
-        )
-
-    def resume(
-        self,
-        on_progress: Callable,
-        cancel_state: CancelState,
-        checkpoint_config: NDBCheckpointConfig,
-    ):
-        # This will load the datasources, model, training config and upload the current model with the loaded one. This updates the underlying UDT MACH of the current model with the one from the checkpoint along with other class attributes.
-        training_progress_manager = (
-            TrainingProgressManagerFactory.make_resumed_training_progress_manager(
-                self, checkpoint_config=checkpoint_config
-            )
-        )
-
         self.index_documents_impl(
             training_progress_manager=training_progress_manager,
             on_progress=on_progress,

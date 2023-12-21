@@ -115,12 +115,16 @@ class NeuralDbProgressTracker:
         }
 
     def insert_complete(self):
+        if self.is_insert_completed:
+            raise Exception("Insert has already been finished.")
         self.is_insert_completed = True
 
     def epoch_complete(self):
         self.current_epoch_number += 1
 
     def training_complete(self):
+        if self.is_training_completed:
+            raise Exception("Training has already been finished.")
         self.is_training_completed = True
 
     def training_arguments(self):

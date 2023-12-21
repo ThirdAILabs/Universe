@@ -56,13 +56,13 @@ class TrainingProgressManager(bolt.train.callbacks.Callback):  # type: ignore
         self.save_load_config.save()
 
     def training_complete(self):
-        if self.is_training_completed or not self.makes_checkpoint:
+        if not self.makes_checkpoint:
             return
         self.tracker.training_complete()
         self.checkpoint_without_sources()
 
     def insert_complete(self):
-        if self.is_insert_completed or not self.makes_checkpoint:
+        if not self.makes_checkpoint:
             return
         self.tracker.insert_complete()
         self.checkpoint_without_sources()
