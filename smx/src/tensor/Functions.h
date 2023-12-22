@@ -17,21 +17,21 @@ TensorPtr reshape(const TensorPtr& tensor, const Shape& new_shape);
 /**
  * Activation functions.
  */
-DenseTensorPtr relu(const TensorPtr& in);
+TensorPtr relu(const TensorPtr& in);
 
-DenseTensorPtr reluGrad(const TensorPtr& out, const TensorPtr& out_grad);
+TensorPtr reluGrad(const TensorPtr& out, const TensorPtr& out_grad);
 
-DenseTensorPtr tanh(const TensorPtr& in);
+TensorPtr tanh(const TensorPtr& in);
 
-DenseTensorPtr tanhGrad(const TensorPtr& out, const TensorPtr& out_grad);
+TensorPtr tanhGrad(const TensorPtr& out, const TensorPtr& out_grad);
 
-DenseTensorPtr sigmoid(const TensorPtr& in);
+TensorPtr sigmoid(const TensorPtr& in);
 
-DenseTensorPtr sigmoidGrad(const TensorPtr& out, const TensorPtr& out_grad);
+TensorPtr sigmoidGrad(const TensorPtr& out, const TensorPtr& out_grad);
 
-DenseTensorPtr softmax(const TensorPtr& in);
+TensorPtr softmax(const TensorPtr& in);
 
-DenseTensorPtr softmaxGrad(const TensorPtr& out, const TensorPtr& out_grad);
+TensorPtr softmaxGrad(const TensorPtr& out, const TensorPtr& out_grad);
 
 /**
  * Linear algebra functions.
