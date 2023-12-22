@@ -20,17 +20,17 @@ def cleanup():
 def interrupt_immediately(percent_training_completed):
     # This is used to stop the training right after the first 2 batches are trained on.
     if percent_training_completed > 0:
-        raise Exception("Terminating training at the beginning")
+        raise StopIteration("Terminating training at the beginning")
 
 
 def interrupt_midway(percent_training_completed):
     if percent_training_completed > 0.5:
-        raise Exception("Terminating training at halfway mark")
+        raise StopIteration("Terminating training at halfway mark")
 
 
 def interrupt_at_end(percent_training_completed):
     if percent_training_completed >= 1:
-        raise Exception("Terminating training at the end")
+        raise StopIteration("Terminating training at the end")
 
 
 def train_neural_db_with_checkpoint(number_models: int):
@@ -101,8 +101,7 @@ def interrupted_training(number_models: int, interrupt_function):
             checkpoint_config=checkpoint_config,
             on_progress=interrupt_function,
         )
-    finally:
-        db = ndb.NeuralDB("user", number_models=number_models)
+    except StopIteration:
         checkpoint_config.resume_from_checkpoint = True
         db.insert(all_docs, checkpoint_config=checkpoint_config)
         search_works(db, all_docs, assert_acc=True)
@@ -111,8 +110,10 @@ def interrupted_training(number_models: int, interrupt_function):
             os.path.join(CHECKPOINT_DIR, "trained.ndb")
         )
         assert_same_dbs(db, new_db)
-
-    cleanup()
+    except Exception as ex:
+        raise ex
+    finally:
+        cleanup()
 
 
 def test_neural_db_checkpoint_on_single_mach():
