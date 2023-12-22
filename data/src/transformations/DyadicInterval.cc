@@ -202,9 +202,9 @@ ColumnMap DyadicInterval::inferenceFeaturization(ColumnMap columns) const {
     }
   }
 
-#pragma omp parallel for default(none)   \
-    shared(tokens, intervals_from_start, \
-           intervals_from_end) if (tokens->numRows() > 1)
+// #pragma omp parallel for default(none)   
+//     shared(tokens, intervals_from_start, 
+//            intervals_from_end) if (tokens->numRows() > 1)
   for (size_t i = 0; i < tokens->numRows(); i++) {
     auto row_tokens = tokens->row(i);
 

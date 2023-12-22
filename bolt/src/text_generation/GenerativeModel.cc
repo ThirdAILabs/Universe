@@ -40,15 +40,14 @@ std::optional<std::vector<std::vector<uint32_t>>> BeamSearchDecoder::next() {
   // given we would be generating next tokens for each of them, one by one,
   // they would all have same tokens generated at any time k.
   size_t n_predictions =
-      std::min(_prediction_chunk_size, _n_input_tokens + _max_predictions -
+      std::min(_prediction_chunk_size, _n_input_tokens[0] + _max_predictions -
                                            _batched_candidate_sequences[0].front().size());
-
   if (n_predictions == 0) {
     return std::nullopt;
   }
 
   for (size_t pred_idx = 0; pred_idx < n_predictions; pred_idx++) {
-    auto batch_size = _prompts.size();
+    auto batch_size = _batched_candidate_sequences.size();
     auto next_token_probs =
         _generator->model()->nextTokenProbs(_prompts, _batched_candidate_sequences);
 
@@ -105,7 +104,7 @@ std::optional<std::vector<std::vector<uint32_t>>> BeamSearchDecoder::next() {
   std::vector<std::vector<uint32_t>> generated_tokens;
   generated_tokens.reserve(_batched_candidate_sequences.size());
 for(size_t batch_id=0; batch_id<_batched_candidate_sequences.size(); batch_id+=1){
-    generated_tokens[batch_id] =  {_batched_candidate_sequences[batch_id].back().begin() + _n_input_tokens,
+    generated_tokens[batch_id] =  {_batched_candidate_sequences[batch_id].back().begin() + _n_input_tokens[batch_id],
       _batched_candidate_sequences[batch_id].back().end()};
   }
   

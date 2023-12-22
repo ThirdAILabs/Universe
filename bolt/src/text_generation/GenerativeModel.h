@@ -52,7 +52,6 @@ class BeamSearchDecoder {
                     size_t prediction_chunk_size, size_t max_predictions,
                     size_t beam_width, std::optional<float> temperature, uint32_t batch_size = 2048)
       : _generator(std::move(generator)),
-        _n_input_tokens(input_tokens.size()),
         _prediction_chunk_size(prediction_chunk_size),
         _max_predictions(max_predictions),
         _beam_width(beam_width),
@@ -60,7 +59,11 @@ class BeamSearchDecoder {
         _batch_size(batch_size),
         _batched_candidate_sequences({input_tokens}),
         _prompts(std::move(prompts)),
-        _sequence_scores(std::vector<std::vector<double>>(input_tokens.size(), {0.0})) {}
+        _sequence_scores(std::vector<std::vector<double>>(input_tokens.size(), {0.0})) {
+            for(const auto &tokens : input_tokens){
+                _n_input_tokens.push_back(tokens.size());
+            }
+        }
 
   std::optional<std::vector<std::vector<uint32_t>>> next();
 
@@ -73,7 +76,7 @@ class BeamSearchDecoder {
 
   std::shared_ptr<GenerativeModel> _generator;
 
-  const size_t _n_input_tokens;
+  std::vector<size_t> _n_input_tokens;
   const size_t _prediction_chunk_size;
   const size_t _max_predictions;
   const size_t _beam_width;
