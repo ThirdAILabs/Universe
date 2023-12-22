@@ -1,6 +1,5 @@
 #pragma once
 
-#include <_types/_uint32_t.h>
 #include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Tensor.h>
 #include <memory>

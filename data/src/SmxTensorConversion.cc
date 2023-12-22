@@ -1,5 +1,4 @@
 #include "SmxTensorConversion.h"
-#include <_types/_uint32_t.h>
 #include <smx/src/tensor/CsrTensor.h>
 
 namespace thirdai::data {

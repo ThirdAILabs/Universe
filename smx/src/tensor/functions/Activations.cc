@@ -1,4 +1,3 @@
-#include <_types/_uint32_t.h>
 #include <smx/src/tensor/CsrTensor.h>
 #include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Dtype.h>
@@ -40,6 +39,28 @@ DenseTensorPtr reluGrad(const DenseTensorPtr& out,
   return in_grad;
 }
 
+TensorPtr relu(const TensorPtr& in) {
+  if (in->isSparse()) {
+    auto in_csr = csr(in);
+    return CsrTensor::make(in_csr->rowOffsets(), in_csr->colIndices(),
+                           relu(in_csr->colValues()), in_csr->shape());
+  }
+  return relu(dense(in));
+}
+
+TensorPtr reluGrad(const TensorPtr& out, const TensorPtr& out_grad) {
+  if (out->isSparse()) {
+    auto out_csr = csr(out);
+    auto out_grad_csr = csr(out_grad);
+    return CsrTensor::make(
+        out_csr->rowOffsets(), out_csr->colIndices(),
+        reluGrad(out_csr->colValues(), out_grad_csr->colValues()),
+        out_csr->shape());
+  }
+
+  return reluGrad(dense(out), dense(out_grad));
+}
+
 DenseTensorPtr tanh(const DenseTensorPtr& in) {
   CHECK(in->dtype() == Dtype::f32,
         "Activations are only supported for f32 tensors.")
@@ -63,6 +84,28 @@ DenseTensorPtr tanhGrad(const DenseTensorPtr& out,
       (1 - out->eigenArray<float>().square()) * out_grad->eigenArray<float>();
 
   return in_grad;
+}
+
+TensorPtr tanh(const TensorPtr& in) {
+  if (in->isSparse()) {
+    auto in_csr = csr(in);
+    return CsrTensor::make(in_csr->rowOffsets(), in_csr->colIndices(),
+                           tanh(in_csr->colValues()), in_csr->shape());
+  }
+  return tanh(dense(in));
+}
+
+TensorPtr tanhGrad(const TensorPtr& out, const TensorPtr& out_grad) {
+  if (out->isSparse()) {
+    auto out_csr = csr(out);
+    auto out_grad_csr = csr(out_grad);
+    return CsrTensor::make(
+        out_csr->rowOffsets(), out_csr->colIndices(),
+        tanhGrad(out_csr->colValues(), out_grad_csr->colValues()),
+        out_csr->shape());
+  }
+
+  return tanhGrad(dense(out), dense(out_grad));
 }
 
 DenseTensorPtr sigmoid(const DenseTensorPtr& in) {
@@ -89,6 +132,28 @@ DenseTensorPtr sigmoidGrad(const DenseTensorPtr& out,
       (y - y.square()) * out_grad->eigenArray<float>();
 
   return in_grad;
+}
+
+TensorPtr sigmoid(const TensorPtr& in) {
+  if (in->isSparse()) {
+    auto in_csr = csr(in);
+    return CsrTensor::make(in_csr->rowOffsets(), in_csr->colIndices(),
+                           sigmoid(in_csr->colValues()), in_csr->shape());
+  }
+  return sigmoid(dense(in));
+}
+
+TensorPtr sigmoidGrad(const TensorPtr& out, const TensorPtr& out_grad) {
+  if (out->isSparse()) {
+    auto out_csr = csr(out);
+    auto out_grad_csr = csr(out_grad);
+    return CsrTensor::make(
+        out_csr->rowOffsets(), out_csr->colIndices(),
+        sigmoidGrad(out_csr->colValues(), out_grad_csr->colValues()),
+        out_csr->shape());
+  }
+
+  return sigmoidGrad(dense(out), dense(out_grad));
 }
 
 DenseTensorPtr softmax(const DenseTensorPtr& in) {
@@ -200,6 +265,21 @@ CsrTensorPtr softmaxGrad(const CsrTensorPtr& out,
 
   return CsrTensor::make(out->rowOffsets(), out->colIndices(), in_grad,
                          out->shape());
+}
+
+TensorPtr softmax(const TensorPtr& in) {
+  if (in->isSparse()) {
+    return softmax(csr(in));
+  }
+  return softmax(dense(in));
+}
+
+TensorPtr softmaxGrad(const TensorPtr& out, const TensorPtr& out_grad) {
+  if (out->isSparse()) {
+    return softmaxGrad(csr(out), csr(out_grad));
+  }
+
+  return softmaxGrad(dense(out), dense(out_grad));
 }
 
 }  // namespace thirdai::smx
