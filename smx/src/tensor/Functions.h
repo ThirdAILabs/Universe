@@ -69,10 +69,9 @@ DenseTensorPtr embeddingGrad(const CsrTensorPtr& indices,
  * Loss functions.
  */
 
-std::pair<DenseTensorPtr, DenseTensorPtr> sparseCrossEntropy(
-    const DenseTensorPtr& logits, const DenseTensorPtr& labels);
+std::pair<DenseTensorPtr, TensorPtr> sparseCrossEntropy(
+    const TensorPtr& logits, const TensorPtr& labels);
 
-DenseTensorPtr sparseCrossEntropyGrad(const DenseTensorPtr& y,
-                                      const DenseTensorPtr& labels);
+TensorPtr sparseCrossEntropyGrad(const TensorPtr& y, const TensorPtr& labels);
 
 }  // namespace thirdai::smx

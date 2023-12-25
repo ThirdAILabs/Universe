@@ -131,7 +131,7 @@ std::pair<DenseTensorPtr, CsrTensorPtr> sparseCrossEntropy(
 
 std::pair<DenseTensorPtr, CsrTensorPtr> sparseCrossEntropy(
     const CsrTensorPtr& logits, const CsrTensorPtr& labels) {
-  CHECK(labels->dtype() == Dtype::u32, "Labels should have dtype u32.");
+  CHECK(labels->dtype() == Dtype::f32, "Labels should have dtype u32.");
   CHECK(logits->dtype() == Dtype::f32, "Outputs should have dtype f32.");
 
   CHECK(logits->shape() == labels->shape(),
@@ -154,7 +154,7 @@ std::pair<DenseTensorPtr, CsrTensorPtr> sparseCrossEntropy(
     size_t label_start = label_offsets[i], label_end = label_offsets[i + 1];
     size_t y_start = y_offsets[i], y_end = y_offsets[i + 1];
     for (size_t j = label_start; j < label_end; j++) {
-      uint32_t label = label_indices[i];
+      uint32_t label = label_indices[j];
       CHECK(label < dim, "Invalid label " + std::to_string(label) +
                              " in cross_entropy with output dim " +
                              std::to_string(dim) + ".");
@@ -237,7 +237,7 @@ DenseTensorPtr sparseCrossEntropyGrad(const DenseTensorPtr& y,
     }
 
     for (size_t j = start; j < end; j++) {
-      uint32_t label = label_indices[i];
+      uint32_t label = label_indices[j];
       if (label >= dim) {
 #pragma omp critical
         invalid_label = label;
@@ -343,6 +343,33 @@ CsrTensorPtr sparseCrossEntropyGrad(const CsrTensorPtr& y,
 
   return CsrTensor::make(y->rowOffsets(), y->colIndices(), logits_grad,
                          y->shape());
+}
+
+std::pair<DenseTensorPtr, TensorPtr> sparseCrossEntropy(
+    const TensorPtr& logits, const TensorPtr& labels) {
+  if (logits->isSparse()) {
+    if (labels->isSparse()) {
+      return sparseCrossEntropy(csr(logits), csr(labels));
+    }
+    return sparseCrossEntropy(csr(logits), dense(labels));
+  }
+  if (labels->isSparse()) {
+    return sparseCrossEntropy(dense(logits), csr(labels));
+  }
+  return sparseCrossEntropy(dense(logits), dense(labels));
+}
+
+TensorPtr sparseCrossEntropyGrad(const TensorPtr& y, const TensorPtr& labels) {
+  if (y->isSparse()) {
+    if (labels->isSparse()) {
+      return sparseCrossEntropyGrad(csr(y), csr(labels));
+    }
+    return sparseCrossEntropyGrad(csr(y), dense(labels));
+  }
+  if (labels->isSparse()) {
+    return sparseCrossEntropyGrad(dense(y), csr(labels));
+  }
+  return sparseCrossEntropyGrad(dense(y), dense(labels));
 }
 
 }  // namespace thirdai::smx
