@@ -14,6 +14,7 @@ try:
         SharePoint,
         SQLDatabase,
         Unstructured,
+        Text,
     )
     from .model_bazaar import Bazaar, ModelBazaar
     from .neural_db import CancelState, NeuralDB, Strength, Sup
