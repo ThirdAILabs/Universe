@@ -35,13 +35,32 @@ class Bazaar:
         self._base_url = base_url
         self._cache_dir = Path(cache_dir)
         self._registry = {}
+        if not os.path.exists(self._cache_dir):
+            os.mkdir(self._cache_dir)
+        if os.path.exists(self._registry_cache()):
+            with open(self._registry_cache(), "r") as registry_cache:
+                self._registry = {
+                    key: BazaarEntry.from_dict(val)
+                    for key, val in json.load(registry_cache).items()
+                }
+
+    def _registry_cache(self):
+        return self._cache_dir / "registry.json"
 
     def fetch(self, filter: str = ""):
         url = urljoin(self._base_url, "list")
         response = http_get_with_error(url, params={"name": filter})
         json_entries = json.loads(response.content)["data"]
         entries = [BazaarEntry.from_dict(entry) for entry in json_entries]
-        self._registry = {entry.display_name: entry for entry in entries}
+        self._registry = {
+            **self._registry,
+            **{entry.display_name: entry for entry in entries},
+        }
+        with open(self._registry_cache(), "w") as registry_cache:
+            json.dump(
+                {key: dict(val) for key, val in self._registry.items()},
+                registry_cache,
+            )
 
     def list_model_names(self):
         return list(self._registry.keys())
