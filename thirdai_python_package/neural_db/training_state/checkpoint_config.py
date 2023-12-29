@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Union
 
 from ..documents import DocumentDataSource
-from ..utils import assert_file_exists, pickle_to, unpickle_from
+from ..utils import assert_file_exists, convert_str_to_path, pickle_to, unpickle_from
 from .training_progress_tracker import NeuralDbProgressTracker
 
 
@@ -48,10 +48,7 @@ class DataSourceCheckpointManager:
         with open(config.source_arguments_location, "r") as f:
             args = json.load(f)
         config.source = DocumentDataSource.load_from_csv(
-            csv_path=config.source_checkpoint_location,
-            id_column=args["id_column"],
-            strong_column=args["strong_column"],
-            weak_column=args["weak_column"],
+            csv_path=config.source_checkpoint_location, **args
         )
         return config
 
@@ -257,15 +254,7 @@ class NDBCheckpointConfig:
     checkpoint_interval: int = 1
 
     def __post_init__(self):
-        if isinstance(self.checkpoint_dir, str):
-            self.checkpoint_dir = Path(self.checkpoint_dir)
-        elif isinstance(self.checkpoint_dir, Path):
-            pass
-        else:
-            raise TypeError(
-                "The 'checkpoint_dir' should be either a 'str' or 'pathlib.Path', but"
-                f" received: {type(self.checkpoint_dir)}"
-            )
+        self.checkpoint_dir = convert_str_to_path(self.checkpoint_dir)
 
         # Before insert process is started, we first make a checkpoint of the neural db at ndb_checkpoint_path
         self.ndb_checkpoint_path = self.checkpoint_dir / "checkpoint.ndb"
@@ -285,15 +274,7 @@ class MachCheckpointConfig:
     checkpoint_interval: int = 1  # no of epochs between saving the checkpoints
 
     def __post_init__(self):
-        if isinstance(self.checkpoint_dir, str):
-            self.checkpoint_dir = Path(self.checkpoint_dir)
-        elif isinstance(self.checkpoint_dir, Path):
-            pass
-        else:
-            raise TypeError(
-                "The 'checkpoint_dir' should be either a 'str' or 'pathlib.Path', but"
-                f" received: {type(self.checkpoint_dir)}"
-            )
+        self.checkpoint_dir = convert_str_to_path(self.checkpoint_dir)
 
 
 def convert_ndb_checkpoint_config_to_mach(ndb_config: NDBCheckpointConfig):
