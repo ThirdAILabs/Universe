@@ -207,13 +207,25 @@ ColumnMap DyadicInterval::inferenceFeaturization(ColumnMap columns) const {
 //            intervals_from_end) if (tokens->numRows() > 1)
   for (size_t i = 0; i < tokens->numRows(); i++) {
     auto row_tokens = tokens->row(i);
-
+    std::cout << "row view, len=" << row_tokens.size() <<  std::endl;
+    auto row_tokens_vector = row_tokens.range(0, row_tokens.size());
+    for(auto val: row_tokens_vector){
+      std::cout << val << " ";
+    }
+    std::cout << std::endl;
     for (size_t interval = 0; interval < _n_intervals; interval++) {
       size_t int_len = std::min<size_t>(row_tokens.size(), 1UL << interval);
       size_t int_start = row_tokens.size() - int_len;
       intervals_from_end[interval][i] =
           row_tokens.range(int_start, row_tokens.size());
+      std::cout << "int_len=" << int_len << " ,int_start=" << int_start << std::endl;
       if (_is_bidirectional) {
+        std::cout << "row view, len=" << row_tokens.size() <<  std::endl;
+        auto row_tokens_vector = row_tokens.range(0, int_len);
+        for(auto val: row_tokens_vector){
+          std::cout << val << " ";
+        }
+        std::cout << std::endl;
         intervals_from_start[interval][i] = row_tokens.range(0, int_len);
       }
     }
