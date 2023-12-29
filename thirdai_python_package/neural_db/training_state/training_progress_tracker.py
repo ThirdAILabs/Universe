@@ -1,8 +1,3 @@
-from pathlib import Path
-
-from ..utils import assert_file_exists
-
-
 class TrainState:
     def __init__(
         self,
@@ -23,17 +18,6 @@ class TrainState:
         self.max_epochs = max_epochs
         self.freeze_before_train = freeze_before_train
 
-    def __dict__(self):
-        return {
-            "max_in_memory_batches": self.max_in_memory_batches,
-            "current_epoch_number": self.current_epoch_number,
-            "is_training_completed": self.is_training_completed,
-            "learning_rate": self.learning_rate,
-            "min_epochs": self.min_epochs,
-            "max_epochs": self.max_epochs,
-            "freeze_before_train": self.freeze_before_train,
-        }
-
 
 class IntroState:
     def __init__(
@@ -48,14 +32,6 @@ class IntroState:
         self.fast_approximation = fast_approximation
         self.override_number_classes = override_number_classes
         self.is_insert_completed = is_insert_completed
-
-    def __dict__(self):
-        return {
-            "num_buckets_to_sample": self.num_buckets_to_sample,
-            "fast_approximation": self.fast_approximation,
-            "override_number_classes": self.override_number_classes,
-            "is_insert_completed": self.is_insert_completed,
-        }
 
 
 class NeuralDbProgressTracker:
@@ -110,8 +86,8 @@ class NeuralDbProgressTracker:
 
     def __dict__(self):
         return {
-            "intro_state": self._intro_state.__dict__(),
-            "train_state": self._train_state.__dict__(),
+            "intro_state": self._intro_state.__dict__,
+            "train_state": self._train_state.__dict__,
         }
 
     def insert_complete(self):
@@ -145,11 +121,7 @@ class NeuralDbProgressTracker:
         }
 
     def introduce_arguments(self):
-        return {
-            "num_buckets_to_sample": self._intro_state.num_buckets_to_sample,
-            "fast_approximation": self._intro_state.fast_approximation,
-            "override_number_classes": self._intro_state.override_number_classes,
-        }
+        return self._intro_state.__dict__
 
     @staticmethod
     def load(arguments_json, vlc_config):

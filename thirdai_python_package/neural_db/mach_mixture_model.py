@@ -130,8 +130,10 @@ class MachMixture(Model):
         checkpoint_config: NDBCheckpointConfig,
     ):
         # If checkpoint_dir in checkpoint_config is /john/doe and number of models is 2, the underlying mach models will make checkpoint at /john/doe/0 and /john/doe/1 depending on model ids.
-        modelwise_checkpoint_configs = TrainingProgressManagerFactory.make_modelwise_checkpoint_configs_from_config(
-            config=checkpoint_config, number_models=self.number_models
+        modelwise_checkpoint_configs = (
+            TrainingProgressManagerFactory.generate_model_specific_checkpoint_configs(
+                config=checkpoint_config, number_models=self.number_models
+            )
         )
 
         # The training manager corresponding to a model loads all the needed to complete the training such as model, document sources, tracker, etc.
@@ -190,8 +192,10 @@ class MachMixture(Model):
             number_shards=self.number_models,
         )
 
-        modelwise_checkpoint_configs = TrainingProgressManagerFactory.make_modelwise_checkpoint_configs_from_config(
-            config=checkpoint_config, number_models=self.number_models
+        modelwise_checkpoint_configs = (
+            TrainingProgressManagerFactory.generate_model_specific_checkpoint_configs(
+                config=checkpoint_config, number_models=self.number_models
+            )
         )
 
         training_managers = []

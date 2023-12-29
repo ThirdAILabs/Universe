@@ -16,7 +16,7 @@ class TrainingProgressCallback(bolt.train.callbacks.Callback):  # type: ignore
         self.training_progress_manager.complete_epoch()
 
 
-class TrainingProgressManager(bolt.train.callbacks.Callback):  # type: ignore
+class TrainingProgressManager:  # type: ignore
     def __init__(
         self,
         tracker: NeuralDbProgressTracker,
@@ -24,7 +24,6 @@ class TrainingProgressManager(bolt.train.callbacks.Callback):  # type: ignore
         makes_checkpoint: bool,
         checkpoint_interval: int = 1,
     ):
-        super().__init__()
         self.tracker = tracker
         self.save_load_config = save_load_config
 

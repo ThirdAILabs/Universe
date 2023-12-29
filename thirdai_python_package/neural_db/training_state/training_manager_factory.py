@@ -11,7 +11,7 @@ from .training_progress_tracker import IntroState, NeuralDbProgressTracker, Trai
 
 class TrainingProgressManagerFactory:
     @staticmethod
-    def make_modelwise_checkpoint_configs_from_config(
+    def generate_model_specific_checkpoint_configs(
         config: NDBCheckpointConfig, number_models
     ):
         """

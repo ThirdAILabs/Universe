@@ -11,6 +11,18 @@ DIRECTORY_CONNECTOR_SUPPORTED_EXT = ["pdf", "docx", "pptx", "txt", "eml"]
 SUPPORTED_EXT = ["csv"] + DIRECTORY_CONNECTOR_SUPPORTED_EXT
 
 
+def convert_str_to_path(str_path):
+    if isinstance(str_path, str):
+        return Path(str_path)
+    elif isinstance(str_path, Path):
+        return str_path
+    else:
+        raise TypeError(
+            "The 'checkpoint_dir' should be either a 'str' or 'pathlib.Path', but"
+            f" received: {type(str_path)}"
+        )
+
+
 def pickle_to(obj: object, filepath: Path):
     with open(filepath, "wb") as pkl:
         pickle.dump(obj, pkl)
