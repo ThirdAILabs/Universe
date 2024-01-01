@@ -28,6 +28,7 @@ class GenerativeBackend {
                                  const dataset::DataSourcePtr& val_data,
                                  const std::vector<std::string>& val_metrics,
                                  std::optional<size_t> max_in_memory_batches,
+                                 const std::vector<callbacks::CallbackPtr>& callbacks,
                                  const DistributedCommPtr& comm) = 0;
 
   virtual ModelPtr getBoltModel() = 0;
@@ -123,6 +124,7 @@ class GenerativeModel : public std::enable_shared_from_this<GenerativeModel> {
       const dataset::DataSourcePtr& val_data = nullptr,
       const std::vector<std::string>& val_metrics = {},
       std::optional<size_t> max_in_memory_batches = std::nullopt,
+      const std::vector<callbacks::CallbackPtr>& callbacks = {},
       const DistributedCommPtr& comm = nullptr);
 
   const auto& model() const { return _model; }
