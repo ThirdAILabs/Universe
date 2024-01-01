@@ -21,15 +21,15 @@ class GenerativeBackend {
       std::vector<uint32_t>& prompt,
       std::vector<std::vector<uint32_t>> tokens) = 0;
 
-  virtual metrics::History train(const dataset::DataSourcePtr& train_data,
-                                 float learning_rate, uint32_t epochs,
-                                 size_t batch_size,
-                                 const std::vector<std::string>& train_metrics,
-                                 const dataset::DataSourcePtr& val_data,
-                                 const std::vector<std::string>& val_metrics,
-                                 std::optional<size_t> max_in_memory_batches,
-                                 const std::vector<callbacks::CallbackPtr>& callbacks,
-                                 const DistributedCommPtr& comm) = 0;
+  virtual metrics::History train(
+      const dataset::DataSourcePtr& train_data, float learning_rate,
+      uint32_t epochs, size_t batch_size,
+      const std::vector<std::string>& train_metrics,
+      const dataset::DataSourcePtr& val_data,
+      const std::vector<std::string>& val_metrics,
+      std::optional<size_t> max_in_memory_batches,
+      const std::vector<callbacks::CallbackPtr>& callbacks,
+      const DistributedCommPtr& comm) = 0;
 
   virtual ModelPtr getBoltModel() = 0;
 
