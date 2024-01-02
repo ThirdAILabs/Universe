@@ -19,7 +19,7 @@ class GenerativeBackend {
  public:
   virtual bolt::TensorPtr nextTokenProbs(
       std::vector<std::vector<uint32_t>>& prompts,
-      std::vector<std::vector<std::vector<uint32_t>>> tokens) = 0;
+      std::vector<std::vector<std::vector<uint32_t>>>& tokens) = 0;
 
   virtual metrics::History train(const dataset::DataSourcePtr& train_data,
                                  float learning_rate, uint32_t epochs,
@@ -50,7 +50,8 @@ class BeamSearchDecoder {
                     std::vector<std::vector<uint32_t>> prompts,
                     const std::vector<std::vector<uint32_t>>& input_tokens,
                     size_t prediction_chunk_size, size_t max_predictions,
-                    size_t beam_width, std::optional<float> temperature, uint32_t batch_size = 2048)
+                    size_t beam_width, std::optional<float> temperature,
+                    uint32_t batch_size = 2048)
       : _generator(std::move(generator)),
         _prediction_chunk_size(prediction_chunk_size),
         _max_predictions(max_predictions),
@@ -58,14 +59,15 @@ class BeamSearchDecoder {
         _temperature(temperature),
         _batch_size(batch_size),
         _prompts(std::move(prompts)),
-        _sequence_scores(std::vector<std::vector<double>>(input_tokens.size(), {0.0})) {
-            for(const auto &tokens : input_tokens){
-                _n_input_tokens.push_back(tokens.size());
-            }
-            for(const auto &tokens: input_tokens){
-              _batched_candidate_sequences.push_back({tokens});
-            }
-        }
+        _sequence_scores(
+            std::vector<std::vector<double>>(input_tokens.size(), {0.0})) {
+    for (const auto& tokens : input_tokens) {
+      _n_input_tokens.push_back(tokens.size());
+    }
+    for (const auto& tokens : input_tokens) {
+      _batched_candidate_sequences.push_back({tokens});
+    }
+  }
 
   std::optional<std::vector<std::vector<uint32_t>>> next();
 

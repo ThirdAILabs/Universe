@@ -8,7 +8,7 @@ class MockBackend final : public GenerativeBackend {
  public:
   bolt::TensorPtr nextTokenProbs(
       std::vector<uint32_t>& prompt,
-      std::vector<std::vector<uint32_t>> tokens) final {
+      std::vector<std::vector<uint32_t>>& tokens) final {
     (void)prompt;
     std::vector<std::vector<float>> transition_matrix = {
         {0.1, 0.6, 0.2, 0.1},
