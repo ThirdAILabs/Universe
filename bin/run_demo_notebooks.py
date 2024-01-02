@@ -4,7 +4,6 @@ import shutil
 import subprocess
 import tempfile
 
-
 DEMO_URL = "https://github.com/ThirdAILabs/Demos.git"
 
 IGNORED_NBS = [
