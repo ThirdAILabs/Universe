@@ -57,11 +57,13 @@ class BeamSearchDecoder {
         _beam_width(beam_width),
         _temperature(temperature),
         _batch_size(batch_size),
-        _batched_candidate_sequences({input_tokens}),
         _prompts(std::move(prompts)),
         _sequence_scores(std::vector<std::vector<double>>(input_tokens.size(), {0.0})) {
             for(const auto &tokens : input_tokens){
                 _n_input_tokens.push_back(tokens.size());
+            }
+            for(const auto &tokens: input_tokens){
+              _batched_candidate_sequences.push_back({tokens});
             }
         }
 
