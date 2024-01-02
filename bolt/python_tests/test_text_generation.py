@@ -193,7 +193,7 @@ def test_text_generation_with_prompt(backend):
     )
 
     stream = model.streaming_generate(
-        input_tokens=list(range(20)),
+        input_tokens=list(range(10)),
         beam_width=5,
         max_predictions=20,
         prediction_chunk_size=6,
@@ -204,15 +204,20 @@ def test_text_generation_with_prompt(backend):
         gen_2 = res[0]
 
     gen_3 = model.generate_batch(
-        input_tokens=[list(range(20))],
+        input_tokens=[
+            list(range(20)),
+            list(range(10)),
+            list(range(5)),
+            list(range(15)),
+        ],
         beam_width=5,
         max_predictions=20,
         temperature=0.4,
         prompt=[list(range(5))],
     )
 
-    assert gen_1 == gen_2
-    assert gen_2 == gen_3
+    assert gen_1 == gen_3[0]
+    assert gen_2 == gen_3[1]
 
 
 @pytest.fixture()
