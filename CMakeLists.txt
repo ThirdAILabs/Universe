@@ -354,6 +354,9 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/CosineSimilarity.cc
     bolt/src/nn/ops/PatchEmbedding.cc
     bolt/src/nn/ops/PatchSum.cc
+    bolt/src/nn/ops/WeightedSum.cc
+    bolt/src/nn/ops/MaxPool1D.cc
+    bolt/src/nn/ops/QuantileMixing.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
@@ -378,6 +381,7 @@ set(THIRDAI_SOURCES
     bolt/src/layers/FullyConnectedLayer.cc
     bolt/src/layers/LayerConfig.cc
     bolt/src/layers/SamplingConfig.cc
+    bolt/src/inference/EmbFcInference.cc
     bolt/src/text_generation/ContextualModel.cc
     bolt/src/text_generation/DyadicModel.cc
     bolt/src/text_generation/GenerativeModel.cc
@@ -426,7 +430,10 @@ set(THIRDAI_SOURCES
     data/src/transformations/Binning.cc
     data/src/transformations/StringHash.cc
     data/src/transformations/TextTokenizer.cc
-    data/src/transformations/ColdStartText.cc
+    data/src/transformations/TextCompat.cc
+    data/src/transformations/cold_start/TextAugmentationUtils.cc
+    data/src/transformations/cold_start/ColdStartText.cc
+    data/src/transformations/cold_start/VariableLengthColdStart.cc
     data/src/transformations/FeatureHash.cc
     data/src/transformations/Pipeline.cc
     data/src/transformations/MachLabel.cc
@@ -474,7 +481,7 @@ set(THIRDAI_SOURCES
     utils/src/SymSpellBackend/symspell.cc
     utils/src/SymSpellCpp/SymSpell.cc
     utils/Logging.cc
-    utils/StringManipulation.cc
+    utils/text/StringManipulation.cc
     utils/UUID.cc
     utils/Random.cc
     licensing/src/entitlements/RestrictionTree.cc

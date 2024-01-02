@@ -25,6 +25,7 @@ class ContextualModel final : public GenerativeBackend {
                          const std::vector<std::string>& train_metrics,
                          const dataset::DataSourcePtr& val_data,
                          const std::vector<std::string>& val_metrics,
+                         std::optional<size_t> max_in_memory_batches,
                          const DistributedCommPtr& comm) final;
 
   bolt::ModelPtr getBoltModel() final { return _model; }

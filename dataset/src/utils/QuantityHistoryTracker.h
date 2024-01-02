@@ -5,7 +5,7 @@
 #include <cereal/types/vector.hpp>
 #include "CountMinSketch.h"
 #include <dataset/src/utils/TimeUtils.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <cassert>
 #include <limits>
 #include <memory>

@@ -4,7 +4,7 @@
 #include <dataset/src/featurizers/ProcessorUtils.h>
 #include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/TokenEncoding.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <limits>
 #include <memory>
 #include <stdexcept>

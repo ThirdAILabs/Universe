@@ -1,7 +1,7 @@
 #include "symspell.h"
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/udt/Defaults.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 namespace thirdai::automl::udt {
 
 SymPreTrainer::SymPreTrainer(uint32_t max_edit_distance, uint32_t prefix_length,

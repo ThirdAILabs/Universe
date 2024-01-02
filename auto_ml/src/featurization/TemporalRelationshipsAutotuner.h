@@ -2,7 +2,7 @@
 
 #include "DataTypes.h"
 #include <dataset/src/utils/QuantityHistoryTracker.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <cstdint>
 #include <iterator>

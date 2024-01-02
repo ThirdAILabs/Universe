@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/vector.hpp>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
+#include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/cold_start/ColdStartDataSource.h>
 #include <memory>
@@ -67,7 +68,8 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
-    TabularDatasetFactoryPtr& dataset_factory, ColdStartMetaDataPtr& metadata);
+    TabularDatasetFactoryPtr& dataset_factory, ColdStartMetaDataPtr& metadata,
+    std::optional<data::VariableLengthConfig> variable_length = std::nullopt);
 
 /**
  * This function concatenates the values from the strong and weak columns into a

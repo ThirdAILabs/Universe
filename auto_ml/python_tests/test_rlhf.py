@@ -32,7 +32,7 @@ def train_model():
 
 # TODO(Any): add another version of this test that replaces words with synonyms
 # to test how assoicating between the synonyms transfers between different samples
-# which have occurences of the synonym.
+# which have occurrences of the synonym.
 
 
 def get_association_samples():
@@ -137,3 +137,43 @@ def test_associate_train_acronyms():
 
     print(matches_after_associate)  # Accuracy should be around 0.98-1.0
     assert matches_after_associate >= 0.9
+
+
+def get_upvote_samples():
+    df = pd.read_csv(QUERY_FILE)
+    df["acronym"] = df["text"].map(lambda s: "".join(w[0] for w in s.split()))
+
+    original_samples = []
+    acronyms = []
+    upvotes = []
+
+    for _, row in df.iterrows():
+        original_samples.append({"text": row["text"]})
+        acronyms.append({"text": row["acronym"]})
+        upvotes.append(({"text": row["acronym"]}, row["id"]))
+
+    return original_samples, acronyms, upvotes
+
+
+def test_upvote():
+    # This test trains a mach model on a simple dataset of 100 articles from ag-news.
+    # Then it creates "acronym" samples which are just the concatenation of the
+    # first letter of each word of each article. It checks that originally the
+    # accuracy on this new dataset is bad, then upvotes the acronym samples with
+    # the correct labels and checks that the accuracy improves.
+
+    model = train_model()
+
+    original_samples, acronym_samples, upvotes = get_upvote_samples()
+
+    matches_before_upvote = compare_predictions(
+        model, original_samples, acronym_samples
+    )
+    print(matches_before_upvote)
+    assert matches_before_upvote <= 0.2  # Should be close to 0
+
+    model.upvote(upvotes, learning_rate=0.01, epochs=2)
+
+    matches_after_upvote = compare_predictions(model, original_samples, acronym_samples)
+    print(matches_after_upvote)
+    assert matches_after_upvote >= 0.9  # Should be close to 0.99

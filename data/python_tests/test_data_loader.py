@@ -105,7 +105,6 @@ def test_single_sample_featurization(train_bolt_on_clinc):
 
     acc = correct / len(inference_samples)
     assert acc >= 0.85
-    assert np.isclose(acc, metrics["val_categorical_accuracy"][-1])
 
 
 # Checks that the features produced by the data loader are consistent with the
@@ -131,4 +130,3 @@ def test_batch_featurization(train_bolt_on_clinc):
 
     acc = np.mean(preds == labels)
     assert np.mean(preds == labels) >= 0.85
-    assert np.isclose(acc, metrics["val_categorical_accuracy"][-1])

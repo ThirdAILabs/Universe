@@ -1,5 +1,5 @@
 #include "WordpieceTokenizer.h"
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <cassert>
 #include <iostream>
 

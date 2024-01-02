@@ -7,7 +7,7 @@
 #include <hashing/src/HashUtils.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <dataset/src/utils/TokenEncoding.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
