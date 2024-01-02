@@ -147,7 +147,7 @@ def get_upvote_samples():
     for _, row in df.iterrows():
         original_samples.append({"text": row["text"]})
         acronyms.append({"text": row["acronym"]})
-        upvotes.append(({"text": row["acronym"]}, row["id"]))
+        upvotes.append((row["acronym"], row["id"]))
 
     return original_samples, acronyms, upvotes
 
