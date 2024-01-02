@@ -39,11 +39,11 @@ def split_large_chunk(chunk, max_len, text_splitter):
 def chunk_text(text: str):
     sentences = sent_tokenize(text)
     if len(sentences) == 1:
-        return [text]
+        return [text] if valid_chunk(text) else []
 
     words_per_sentence = [len(word_tokenize(sent)) for sent in sentences]
     if sum(words_per_sentence) < CHUNK_THRESHOLD:
-        return [text]
+        return [text] if valid_chunk(text) else []
 
     chunks = []
     cur_word_count = 0

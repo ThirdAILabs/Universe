@@ -1,13 +1,113 @@
-import copy
 import random
 import tempfile
 from collections import defaultdict
-from io import StringIO
 from typing import List
 
 import pandas as pd
 
 from .documents import CSV, DocumentDataSource
+
+
+class DataLoadMultiplexer:
+    """
+    A data loader that efficiently handles large datasets by segmenting them into smaller,
+    manageable temporary CSV files. This approach is particularly useful for processing
+    large datasets that do not fit entirely into memory.
+
+    The class optimizes memory usage by reading and writing data line by line,
+    rather than loading entire datasets into DataFrames. This method reduces the
+    memory footprint, especially when dealing with large datasets, and avoids
+    the overhead of storing extra DataFrame objects in memory.
+
+    Attributes:
+        num_segments (int): Number of segments to divide the data into.
+        flush_frequency (int): Frequency at which to flush data to the temporary files,
+                               reducing memory usage during processing.
+
+    Methods:
+        create_segments_with_data_source(data_source, label_to_segment_map, is_index_empty):
+            Creates data segments based on the provided data source and label mapping,
+            optionally sharding the data using an index.
+
+    The class utilizes temporary files to store individual data segments, which are then
+    processed independently. This design allows for efficient data handling and scalability,
+    making it suitable for large-scale data processing tasks where memory optimization is crucial.
+    """
+
+    def __init__(self, num_segments, flush_frequency=1_000_000):
+        self.num_segments = num_segments
+        self.flush_frequency = flush_frequency
+        self.seed = 42
+
+    def _generate_temp_csvs(self):
+        """
+        Stores a list of dataframes in temporary files so that they can be read as CSV files later.
+        """
+        segment_prefix = f"{random.randint(100000, 999999)}"
+        segment_filenames = []
+        # We need to store the segment objects so that we can delete the files once we are done with sharding and creating a new dataframe
+        segment_objects = []
+        for index in range(self.num_segments):
+            temp_file = tempfile.NamedTemporaryFile(
+                mode="w",
+                delete=True,
+                suffix=".csv",
+                prefix=f"{segment_prefix}_{index}_",
+            )
+
+            segment_filenames.append(temp_file.name)
+            segment_objects.append(temp_file)
+        return segment_filenames, segment_objects
+
+    def _create_segments_with_segment_map(self, data_source, label_to_segment_map):
+        segment_filenames, segment_objects = self._generate_temp_csvs()
+
+        current_index = 0
+        for data in data_source._get_line_iterator():
+            # header
+            if current_index == 0:
+                for segments in segment_objects:
+                    segments.write(data)
+            else:
+                current_label = int(data.split(",", 1)[0])
+                # TODO(pratik/shubh): Having list as map values is for experiments,
+                # we would be just having one elment in list for each index. We should
+                # remove this going forward.
+                if current_label not in label_to_segment_map:
+                    raise ValueError(
+                        "Label '{}' is not in 'label_to_segment_map'. Ensure it is included if sharding by index.".format(
+                            current_label
+                        )
+                    )
+                current_segment = label_to_segment_map[current_label][-1]
+                segment_objects[current_segment].write("\n" + data)
+
+            current_index += 1
+            if current_index % self.flush_frequency == 0:
+                for segment in segment_objects:
+                    segment.flush()
+
+        for segment in segment_objects:
+            segment.flush()
+
+        data_source.restart()
+        return (
+            segment_filenames,
+            segment_objects,
+            label_to_segment_map,
+        )
+
+    def create_segments_with_data_source(
+        self, data_source, label_to_segment_map, is_index_empty
+    ):
+        if is_index_empty:
+            indices = list(range(data_source.size))
+            random.seed(self.seed)
+            random.shuffle(indices)
+            for index, randomised_index in enumerate(indices):
+                label_to_segment_map[index].append(randomised_index % self.num_segments)
+
+        return self._create_segments_with_segment_map(data_source, label_to_segment_map)
 
 
 class ShardedDataSource:
@@ -28,7 +128,7 @@ class ShardedDataSource:
             Note:
                 Updates the label index with label_id -> shard index map
 
-        shard_using_index:
+        is_index_empty:
             Args:
                 data_source : DocumentDataSource
                     Data source to shard
@@ -57,29 +157,7 @@ class ShardedDataSource:
             self.label_to_segment_map = defaultdict(list)
         else:
             self.label_to_segment_map = label_to_segment_map
-
-    @staticmethod
-    def _generate_temp_csvs(segments: List[pd.DataFrame]):
-        """
-        Stores a list of dataframes in temporary files so that they can be read as CSV files later.
-        """
-        segment_prefix = f"{random.randint(100000, 999999)}"
-        segment_filenames = []
-        # We need to store the segment objects so that we can delete the files once we are done with sharding and creating a new dataframe
-        segment_objects = []
-        for index, segment in enumerate(segments):
-            temp_file = tempfile.NamedTemporaryFile(
-                mode="w",
-                delete=True,
-                suffix=".csv",
-                prefix=f"{segment_prefix}_{index}_",
-            )
-
-            segment_name = temp_file.name
-            segment.to_csv(segment_name, index=False)
-            segment_filenames.append(segment_name)
-            segment_objects.append(temp_file)
-        return segment_filenames, segment_objects
+        self.data_load_multiplexer = DataLoadMultiplexer(number_shards)
 
     @staticmethod
     def _get_csv_document(
@@ -101,16 +179,6 @@ class ShardedDataSource:
         )
         shard_object.close()
         return csv_object
-
-    @staticmethod
-    def _get_dataframe(data_source: DocumentDataSource):
-        """
-        Iterates through the document data source and generates a dataframe
-        """
-        string_io = StringIO("\n".join(data_source._get_line_iterator()))
-        df = pd.read_csv(string_io)
-        data_source.restart()
-        return df
 
     @staticmethod
     def _get_shards(
@@ -138,31 +206,13 @@ class ShardedDataSource:
         return shard_data_sources
 
     def shard_data_source(self):
-        df = ShardedDataSource._get_dataframe(self.data_source)
-
-        df = df.sample(frac=1, random_state=self.seed).reset_index(drop=True)
-
-        segment_size = len(df) // self.number_shards
-        remainder = len(df) - segment_size * self.number_shards
-        segments = [
-            df.iloc[
-                i * segment_size
-                + min(i, remainder) : (i + 1) * segment_size
-                + min(i + 1, remainder)
-            ]
-            for i in range(self.number_shards)
-        ]
-
-        for index, segment in enumerate(segments):
-            # TODO(Shubh) : This assumes that there is only one label in the column.
-            # This is consistent with the current design of Document Data source.
-            unique_labels = (
-                segment[self.data_source.id_column].unique().astype(int).tolist()
-            )
-            for label in unique_labels:
-                self.label_to_segment_map[label].append(index)
-
-        shard_names, shard_objects = ShardedDataSource._generate_temp_csvs(segments)
+        (
+            shard_names,
+            shard_objects,
+            self.label_to_segment_map,
+        ) = self.data_load_multiplexer.create_segments_with_data_source(
+            self.data_source, self.label_to_segment_map, is_index_empty=True
+        )
 
         shards = ShardedDataSource._get_shards(
             self.data_source, shard_names=shard_names, shard_objects=shard_objects
@@ -174,6 +224,7 @@ class ShardedDataSource:
         data_source: DocumentDataSource,
         label_to_segment_map: defaultdict,
         number_shards: int,
+        flush_frequency: int = 1_000_000,
     ):
         """
         This function is used to shard another data source using the label to shard mapping generated for the data source that this object was initialized with.
@@ -183,25 +234,11 @@ class ShardedDataSource:
                 "Cannot shard a data source without an uninitialized label index."
             )
 
-        df = ShardedDataSource._get_dataframe(data_source)
-
-        segments = [[] for _ in range(number_shards)]
-        for _, row in df.iterrows():
-            # TODO(SHUBH) : Add delimiter support here.
-            labels = [int(row[data_source.id_column])]
-
-            insertion_index_segments = set()
-            for label in labels:
-                if label in label_to_segment_map:
-                    target_segments = set(label_to_segment_map[label])
-                    for target in target_segments:
-                        insertion_index_segments.add(target)
-            for x in insertion_index_segments:
-                segments[x].append(row)
-
-        segments = [pd.DataFrame(segment) for segment in segments]
-
-        shard_names, shard_objects = ShardedDataSource._generate_temp_csvs(segments)
+        (shard_names, shard_objects, _) = DataLoadMultiplexer(
+            num_segments=number_shards, flush_frequency=flush_frequency
+        ).create_segments_with_data_source(
+            data_source, label_to_segment_map, is_index_empty=False
+        )
 
         return ShardedDataSource._get_shards(
             data_source=data_source,

@@ -9,7 +9,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/blocks/RecurrenceAugmentation.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <optional>
 #include <stdexcept>

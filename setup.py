@@ -167,6 +167,7 @@ neural_db_deps = [
     "scikit-learn",
     "Office365-REST-Python-Client==2.5.1",
     "simple-salesforce==1.12.5",
+    "ipython",
 ]
 
 # The information here can also be placed in setup.cfg - better separation of
@@ -246,7 +247,7 @@ setup(
         ]
         + neural_db_deps,
         # See https://github.com/readthedocs/sphinx_rtd_theme/issues/1343 for why we restrict the sphinx version
-        "docs": ["sphinx!=5.2.0.post0", "sphinx_rtd_theme"],
+        "docs": ["sphinx!=5.2.0.post0", "sphinx_rtd_theme"] + neural_db_deps,
     },
     packages=["thirdai"]
     + [
