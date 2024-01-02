@@ -1,40 +1,41 @@
 import os
-import shutil
-import pytest
 import pickle
+import shutil
+
+import pytest
 from thirdai import neural_db as ndb
 
 pytestmark = [pytest.mark.unit]
 
 
 def test_text_document_different_text_different_hash():
-    text1 = ndb.Text(name="text", texts=["text 1", "text 2"])
-    text2 = ndb.Text(name="text", texts=["text 3", "text 4"])
+    text1 = ndb.InMemoryText(name="text", texts=["text 1", "text 2"])
+    text2 = ndb.InMemoryText(name="text", texts=["text 3", "text 4"])
     assert text1.hash != text2.hash
 
 
 def test_text_document_different_metadata_different_hash():
-    text1 = ndb.Text(
+    text1 = ndb.InMemoryText(
         name="text", texts=["text 1", "text 2"], metadatas=[{"a": 1}, {"a": 2}]
     )
-    text2 = ndb.Text(
+    text2 = ndb.InMemoryText(
         name="text", texts=["text 1", "text 2"], metadatas=[{"a": 3}, {"a": 4}]
     )
     assert text1.hash != text2.hash
 
 
 def test_text_document_same_contents_same_hash():
-    text1 = ndb.Text(
+    text1 = ndb.InMemoryText(
         name="text", texts=["text 1", "text 2"], metadatas=[{"a": 1}, {"a": 2}]
     )
-    text2 = ndb.Text(
+    text2 = ndb.InMemoryText(
         name="text", texts=["text 1", "text 2"], metadatas=[{"a": 1}, {"a": 2}]
     )
     assert text1.hash == text2.hash
 
 
 def test_text_document_texts_are_weak_column():
-    text = ndb.Text(name="text", texts=["text 1", "text 2"])
+    text = ndb.InMemoryText(name="text", texts=["text 1", "text 2"])
     assert text.weak_text(0) == "text 1"
     assert text.weak_text(1) == "text 2"
     assert text.strong_text(0) == ""
@@ -42,7 +43,7 @@ def test_text_document_texts_are_weak_column():
 
 
 def test_text_document_filters_entity_ids_by_constraint():
-    text = ndb.Text(
+    text = ndb.InMemoryText(
         name="text",
         texts=["text 1", "text 2"],
         metadatas=[{"a": 1}, {"a": 2}],
@@ -55,7 +56,7 @@ def test_text_document_filters_entity_ids_by_constraint():
 
 
 def test_text_document_returns_references_with_text_and_metadata():
-    text = ndb.Text(
+    text = ndb.InMemoryText(
         name="text",
         texts=["text 1", "text 2"],
         metadatas=[{"a": 1}, {"a": 2}],
@@ -70,7 +71,7 @@ def test_text_document_returns_references_with_text_and_metadata():
 
 
 def test_text_document_serialization():
-    text = ndb.Text(
+    text = ndb.InMemoryText(
         name="text",
         texts=["text 1", "text 2"],
         metadatas=[{"a": 1}, {"a": 2}],

@@ -2117,7 +2117,7 @@ class SentenceLevelDOCX(SentenceLevelExtracted):
         return process_docx(path)
 
 
-class Text(Document):
+class InMemoryText(Document):
     """
     A wrapper around a batch of texts and their metadata to fit it in the
     NeuralDB Document framework.
