@@ -10,8 +10,8 @@
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
-#include <utils/StringManipulation.h>
 #include <utils/Version.h>
+#include <utils/text/StringManipulation.h>
 #include <versioning/src/Versions.h>
 #include <stdexcept>
 

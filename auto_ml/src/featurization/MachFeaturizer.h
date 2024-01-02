@@ -51,7 +51,7 @@ class MachFeaturizer final : public Featurizer {
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       std::optional<data::VariableLengthConfig> variable_length,
-      size_t n_balancing_samples, size_t rows_to_read);
+      size_t n_balancing_samples);
 
   const auto& machIndex() const { return _state->machIndex(); }
 

@@ -1,6 +1,8 @@
 #pragma once
 
+#include <utils/Random.h>
 #include <cstdint>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -28,6 +30,26 @@ std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k);
 std::vector<std::string> wordLevelCharKGrams(
     const std::vector<std::string>& words, uint32_t k,
     size_t min_word_length = 4);
+
+std::string deleteRandomCharacters(const std::string& input,
+                                   size_t num_to_delete, std::mt19937& rng);
+
+std::string duplicateRandomCharacters(const std::string& input,
+                                      size_t num_to_duplicate,
+                                      std::mt19937& rng);
+
+std::string replaceRandomCharactersWithSpaces(const std::string& input,
+                                              size_t num_to_replace,
+                                              std::mt19937& rng);
+
+std::string replaceRandomCharactersWithKeyboardAdjacents(
+    const std::string& input, size_t num_to_replace, std::mt19937& rng);
+
+std::string perturbCharacters(const std::string& input,
+                              size_t chars_replace_with_space,
+                              size_t chars_deleted, size_t chars_duplicated,
+                              size_t chars_replace_with_adjacents,
+                              std::mt19937& rng);
 
 /**
  * Joins a vector of strings into a single delimited string.

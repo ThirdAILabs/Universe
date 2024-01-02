@@ -185,11 +185,11 @@ data::ColumnMap MachFeaturizer::getBalancingSamples(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<data::VariableLengthConfig> variable_length,
-    size_t n_balancing_samples, size_t rows_to_read) {
+    size_t n_balancing_samples) {
   auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
 
-  auto data_iter = data::CsvIterator::make(
-      csv_data_source, _delimiter, std::max(n_balancing_samples, rows_to_read));
+  auto data_iter =
+      data::CsvIterator::make(csv_data_source, _delimiter, n_balancing_samples);
 
   auto columns_opt = data_iter->next();
   if (!columns_opt) {

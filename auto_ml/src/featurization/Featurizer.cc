@@ -179,7 +179,6 @@ data::TransformationPtr Featurizer::coldStartTransform(
     return std::make_shared<data::VariableLengthColdStart>(
         /* strong_column_names= */ strong_column_names,
         /* weak_column_names= */ weak_column_names,
-        /* label_column_name= */ _text_dataset->labelColumn(),
         /* output_column_name= */ _text_dataset->textColumn(),
         /* config= */ *variable_length);
   }
@@ -187,7 +186,6 @@ data::TransformationPtr Featurizer::coldStartTransform(
   return std::make_shared<data::ColdStartTextAugmentation>(
       /* strong_column_names= */ strong_column_names,
       /* weak_column_names= */ weak_column_names,
-      /* label_column_name= */ _text_dataset->labelColumn(),
       /* output_column_name= */ _text_dataset->textColumn());
 }
 

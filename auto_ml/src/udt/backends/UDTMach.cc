@@ -27,8 +27,8 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <utils/Random.h>
-#include <utils/StringManipulation.h>
 #include <utils/Version.h>
+#include <utils/text/StringManipulation.h>
 #include <versioning/src/Versions.h>
 #include <algorithm>
 #include <exception>
@@ -768,8 +768,7 @@ void UDTMach::addBalancingSamples(
     // range of samples.
     auto samples = _featurizer->getBalancingSamples(
         data, strong_column_names, weak_column_names, variable_length,
-        /*n_balancing_samples=*/defaults::MAX_BALANCING_SAMPLES,
-        /*rows_to_read=*/defaults::MAX_BALANCING_SAMPLES * 5);
+        /*n_balancing_samples=*/defaults::MAX_BALANCING_DOCS);
 
     _balancing_samples->addSamples(samples);
 

@@ -188,8 +188,28 @@ class SupDataSource(PyDataSource):
 
 
 class NeuralDB:
+    """
+    NeuralDB is a search and retrieval system that can be used to search over
+    knowledge bases and documents. It can also be used in RAG pipelines for the
+    search retrieval phase.
+
+    Examples:
+        >>> ndb = NeuralDB()
+        >>> ndb.insert([CSV(...), PDF(...), DOCX(...)])
+        >>> results = ndb.search("how to make chocolate chip cookies")
+    """
+
     def __init__(self, user_id: str = "user", number_models: int = 1, **kwargs) -> None:
-        """user_id is used for logging purposes only"""
+        """
+        Constructs an empty NeuralDB.
+
+        Args:
+            user_id (str): Optional, used to identify user/session in logging.
+            number_models (int): Optional, default 1. Used to control model sharding.
+
+        Returns:
+            A NeuralDB.
+        """
         self._user_id: str = user_id
 
         # The savable_state kwarg is only used in static constructor methods
@@ -224,6 +244,18 @@ class NeuralDB:
         user_id: str = "user",
         on_progress: Callable = no_op,
     ):
+        """
+        Constructs a NeuralDB from a checkpoint. This can be used save and reload
+        NeuralDBs, it is also used for loading pretrained NeuralDB models.
+
+        Args:
+            checkpoint_path (str): The path to the checkpoint directory.
+            user_id (str): Optional, used to identify user/session in logging.
+            on_progress (Callable): Optional, callback that can be called as loading the checkpoint progresses.
+
+        Returns:
+            A NeuralDB.
+        """
         checkpoint_path = Path(checkpoint_path)
         savable_state = State.load(checkpoint_path, on_progress)
         if savable_state.model and savable_state.model.get_model():
@@ -244,10 +276,33 @@ class NeuralDB:
         csv_weak_columns: Optional[List[str]] = None,
         csv_reference_columns: Optional[List[str]] = None,
     ):
-        """Instantiate a NeuralDB, using the given UDT as the underlying model.
+        """
+        Instantiate a NeuralDB, using the given UDT as the underlying model.
         Usually for porting a pretrained model into the NeuralDB format.
         Use the optional csv-related arguments to insert the pretraining dataset
         into the NeuralDB instance.
+
+        Args:
+            udt (bolt.UniversalDeepTransformer): The udt model to use in the NeuralDB.
+            user_id (str): Optional, used to identify user/session in logging.
+            csv (Optional[str]): Optional, default None. The path to the CSV file
+                used to train the udt model. If supplied, the CSV file will be
+                inserted into NeuralDB.
+            csv_id_column (Optional[str]): Optional, default None. The id column
+                of the training dataset. Required only if the data is being inserted via
+                the `csv` arg.
+            csv_strong_columns (Optional[str]): Optional, default None. The strong
+                signal columns from the training data. Required only if the data is
+                being inserted via the `csv` arg.
+            csv_weak_columns (Optional[str]): Optional, default None. The weak signal
+                columns from the training data. Required only if the data is being
+                inserted via the `csv` arg.
+            csv_reference_columns (Optional[str]): Optional, default None. The
+                columns whose data should be returned as search results to queries.
+                Required only if the data is being inserted via the `csv` arg.
+
+        Returns:
+            A NeuralDB.
         """
         if csv is None:
             udt.clear_index()
@@ -512,14 +567,31 @@ class NeuralDB:
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
     ) -> List[str]:
-        """Inserts sources into the database.
-        fast_approximation: much faster insertion with a slight drop in
-        performance.
-        num_buckets_to_sample: when assigning set of MACH buckets to an entity,
-        look at the top num_buckets_to_sample buckets, then choose the least
-        occupied ones. This prevents MACH buckets from overcrowding,
-        cancel_state: an object that can be used to stop an ongoing insertion.
-        Primarily used for PocketLLM.
+        """
+        Inserts documents/resources into the database.
+
+        Args:
+            train (bool): Optional, defaults True. When True this means that the
+                underlying model in the NeuralDB will undergo unsupervised pretraining
+                on the inserted documents.
+            fast_approximation (bool): Optional, default True. Much faster insertion
+                with a slight drop in performance.
+            num_buckets_to_sample (Optional[int]): Used to control load balacing when
+                inserting entities into the NeuralDB.
+            on_progress (Callable): Optional, a callback that is called at intervals
+                as documents are inserted.
+            on_success (Callable): Optional, a callback that is invoked when document
+                insertion is finished successfully.
+            on_error (Callable): Optional, a callback taht is invoked if an error occurs
+                during insertion.
+            cancel_state (CancelState): An object that can be used to stop an ongoing
+                insertion. Primarily used for PocketLLM.
+            max_in_memory_batches (int): Optional, default None. When supplied this limits
+                the maximum amount of data that is loaded into memory at once during training.
+                Useful for lower memory paradigms or with large datasets.
+
+        Returns:
+            A list of the ids assigned to the inserted documents.
         """
         documents_copy = copy.deepcopy(self._savable_state.documents)
         try:
@@ -552,6 +624,7 @@ class NeuralDB:
         return ids
 
     def delete(self, source_id: str):
+        """Deletes a document from the NeuralDB."""
         deleted_entities = self._savable_state.documents.delete(source_id)
         self._savable_state.model.delete_entities(deleted_entities)
         self._savable_state.logger.log(
@@ -559,6 +632,7 @@ class NeuralDB:
         )
 
     def clear_sources(self) -> None:
+        """Removes all documents stored in the NeuralDB."""
         self._savable_state.documents.clear()
         self._savable_state.model.forget_documents()
 
@@ -605,6 +679,45 @@ class NeuralDB:
         rerank_threshold=1.5,
         top_k_threshold=None,
     ) -> List[Reference]:
+        """
+        Searches the contents of the NeuralDB for documents relevant to the given query.
+
+        Args:
+            query (str): The query to search with.
+            top_k (int): The number of results to return.
+            constraints (Dict[str, Any]): A dictionary containing constraints to
+                apply to the metadata field of each document in the NeuralDB. This
+                allows for queries that will only return results with a certain property.
+                The constrains are in the form {"metadata_key": <constraint>} where
+                <constraint> is either an explicit value for the key in the metadata,
+                or a Filter object.
+            rerank (bool): Optional, default False. When True an additional reranking
+                step is applied to results.
+            top_k_rerank (int): Optional, default 100. If rerank=True then this argument
+                determines how many candidates are retrieved, before reranking and
+                returning the top_k.
+            rerank_threshold (float): Optional, default 1.5. In reranking all candidates
+                with a score under a certain threshold are reranked. This threshold
+                is computed as this argument (`rerank_threshold`) times the average score
+                over the first top_k_threshold candidates. Candidates with scores lower
+                than this threshold will be reranked. Thus, increasing this value
+                causes more candidates to be reranked.
+            top_k_threshold (Optional[float]): Optional, default None, which means
+                the arg `top_k` will be used. If specified this argument controls
+                how many of the top candidates' scores are averaged to obtain the
+                mean that is used to determine which candidates are reranked. For
+                example passing rerank_threshold=2 and top_k_threshold=4 means that
+                the scores of the top 4 elements are averaged, and all elements below
+                2x this average are reranked.
+
+        Returns:
+            List[Reference]: A list of Reference objects. Each reference object contains text data matching
+            the query, along with information about which document contained that text.
+
+        Examples:
+            >>> ndb.search("what is ...", top_k=5)
+            >>> ndb.search("what is ...", top_k=5, constraints={"file_type": "pdf", "file_created", GreaterThan(10)})
+        """
         matching_entities = None
         top_k_to_search = top_k_rerank if rerank else top_k
         if constraints:
@@ -650,6 +763,7 @@ class NeuralDB:
         return references
 
     def reference(self, element_id: int):
+        """Returns a reference containing the text and other information for a given entity id."""
         return self._savable_state.documents.reference(element_id)
 
     def _get_text(self, result_id) -> str:
@@ -658,6 +772,9 @@ class NeuralDB:
     def text_to_result(self, text: str, result_id: int) -> None:
         """Trains NeuralDB to map the given text to the given entity ID.
         Also known as "upvoting".
+
+        Example:
+            >>> ndb.text_to_result("a new query", result_id=4)
         """
         teachers.upvote(
             model=self._savable_state.model,
@@ -690,6 +807,19 @@ class NeuralDB:
         )
 
     def associate(self, source: str, target: str, strength: Strength = Strength.Strong):
+        """
+        Teaches the underlying model in the NeuralDB that two different texts
+        correspond to similar concepts or queries.
+
+        Args:
+            source (str): The source is the new text you want to teach the model about.
+            target (str): The target is the known text that is provided to the model
+                as an example of the type of information or query the source resembles.
+
+        Examples:
+            >>> ndb.associate("asap", "as soon as possible")
+            >>> ndb.associate("what is a 401k", "explain different types of retirement savings")
+        """
         top_k = self._get_associate_top_k(strength)
         teachers.associate(
             model=self._savable_state.model,
@@ -702,6 +832,7 @@ class NeuralDB:
     def associate_batch(
         self, text_pairs: List[Tuple[str, str]], strength: Strength = Strength.Strong
     ):
+        """Same as associate, but the process is applied to a batch of (source, target) pairs at once."""
         top_k = self._get_associate_top_k(strength)
         teachers.associate(
             model=self._savable_state.model,
@@ -727,11 +858,17 @@ class NeuralDB:
         learning_rate=0.0001,
         epochs=3,
     ):
-        """Train on supervised datasets that correspond to specific sources.
+        """
+        Train on supervised datasets that correspond to specific sources.
         Suppose you inserted a "sports" product catalog and a "furniture"
         product catalog. You also have supervised datasets - pairs of queries
         and correct products - for both categories. You can use this method to
         train NeuralDB on these supervised datasets.
+
+        Args:
+            data (List[Sup]): Supervised training samples.
+            learning_rate (float): Optional. The learning rate to use for training.
+            epochs (int): Optional. The number of epochs to train for.
         """
         if isinstance(self._savable_state.model, MachMixture):
             raise NotImplementedError(
@@ -766,7 +903,9 @@ class NeuralDB:
         Suppose you inserted a "sports" product catalog and a "furniture"
         product catalog. You also have supervised datasets - pairs of queries
         and correct products - for both categories. You can use this method to
-        train NeuralDB on these supervised datasets.
+        train NeuralDB on these supervised datasets. This method must be invoked
+        with either A) a csv file with the query and id columns within it, or B) an
+        explicit list of queries and expected labels.
         """
         if isinstance(self._savable_state.model, MachMixture):
             raise NotImplementedError(

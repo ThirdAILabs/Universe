@@ -363,6 +363,7 @@ set(THIRDAI_SOURCES
     bolt/src/layers/FullyConnectedLayer.cc
     bolt/src/layers/LayerConfig.cc
     bolt/src/layers/SamplingConfig.cc
+    bolt/src/inference/EmbFcInference.cc
     bolt/src/text_generation/ContextualModel.cc
     bolt/src/text_generation/DyadicModel.cc
     bolt/src/text_generation/GenerativeModel.cc
@@ -465,7 +466,7 @@ set(THIRDAI_SOURCES
     utils/src/SymSpellBackend/symspell.cc
     utils/src/SymSpellCpp/SymSpell.cc
     utils/Logging.cc
-    utils/StringManipulation.cc
+    utils/text/StringManipulation.cc
     utils/UUID.cc
     utils/Random.cc
     licensing/src/entitlements/RestrictionTree.cc

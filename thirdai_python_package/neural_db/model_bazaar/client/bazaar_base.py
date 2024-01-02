@@ -430,26 +430,12 @@ class Bazaar:
         trained_on: str = "Own Documents",
         is_indexed: bool = False,
         access_level: str = "public",
-        description: str = None,
+        description: str = "",
     ):
         model_path = Path(model_path)
         zip_path = zip_folder(model_path)
 
         model_hash = hash_path(model_path)
-
-        model_response = http_get_with_error(
-            urljoin(
-                self._login_instance._base_url,
-                f"bazaar/{self._login_instance._user_id}/model-check",
-            ),
-            headers=auth_header(self._login_instance._access_token),
-            params={"hash": str(model_hash)},
-        )
-
-        model_content = json.loads(model_response.content)
-
-        if model_content["data"]["model_present"]:
-            raise ValueError("This model is already uploaded.")
 
         # Generate upload token
         token_response = http_get_with_error(
@@ -508,7 +494,7 @@ class Bazaar:
 
         db = NeuralDB.from_checkpoint(checkpoint_path=model_path)
         model = db._savable_state.model.model._get_model()
-        num_params = 1000000
+        num_params = model.num_params()
         thirdai_version = model.thirdai_version()
 
         size = get_directory_size(model_path)

@@ -22,7 +22,13 @@ metrics::History ContextualModel::train(
     const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
+    std::optional<size_t> max_in_memory_batches,
     const DistributedCommPtr& comm) {
+  if (max_in_memory_batches) {
+    throw std::runtime_error(
+        "Streaming data loading is not implemented for ContextualModel");
+  }
+
   auto train_dataset = loadDataset(train_data, batch_size, /* shuffle= */ true);
   auto val_dataset = loadDataset(val_data, batch_size, /* shuffle= */ false);
 

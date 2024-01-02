@@ -39,6 +39,8 @@ class ColumnMap {
   // already exists in the ColumnMap it will be overwritten.
   void setColumn(const std::string& name, ColumnPtr column);
 
+  void dropColumn(const std::string& name);
+
   std::vector<std::string> columns() const;
 
   auto begin() const { return _columns.begin(); }
