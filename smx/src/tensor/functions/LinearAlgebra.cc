@@ -97,6 +97,8 @@ DenseTensorPtr sparseLinear(const CsrTensorPtr& x, const DenseTensorPtr& w,
   const float* w_ptr = w->data<float>();
   const float* b_ptr = b->data<float>();
 
+#pragma omp parallel for default(none) shared( \
+    rows, dim, input_dim, x_offsets, x_indices, x_values, w_ptr, b_ptr, y_ptr)
   for (size_t m = 0; m < rows; m++) {
     size_t start = x_offsets[m], end = x_offsets[m + 1];
 
@@ -133,6 +135,9 @@ std::tuple<CsrTensorPtr, DenseTensorPtr, DenseTensorPtr> sparseLinearGrad(
   const uint32_t* x_indices = x->colIndices()->data<uint32_t>();
   const float* x_values = x->colValues()->data<float>();
 
+#pragma omp parallel for default(none)                                       \
+    shared(rows, dim, input_dim, x_offsets, x_indices, x_values, y_grad_ptr, \
+           w_grad_ptr)
   for (size_t n = 0; n < dim; n++) {
     float* w_n_grad = w_grad_ptr + n * input_dim;
     std::fill(w_n_grad, w_n_grad + input_dim, 0);
@@ -154,6 +159,8 @@ std::tuple<CsrTensorPtr, DenseTensorPtr, DenseTensorPtr> sparseLinearGrad(
   auto x_grad = DenseTensor::make(x->colValues()->shape(), Dtype::f32);
   float* x_grad_ptr = x_grad->data<float>();
 
+#pragma omp parallel for default(none) shared( \
+    rows, dim, input_dim, x_offsets, x_indices, x_grad_ptr, y_grad_ptr, w_ptr)
   for (size_t m = 0; m < rows; m++) {
     size_t start = x_offsets[m], end = x_offsets[m + 1];
     std::fill(x_grad_ptr + start, x_grad_ptr + end, 0);
