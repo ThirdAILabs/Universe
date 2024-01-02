@@ -1,5 +1,5 @@
 #include "KeywordOverlapRanker.h"
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <string>
 

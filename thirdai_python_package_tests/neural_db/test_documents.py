@@ -6,9 +6,11 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+from ndb_utils import create_simple_dataset
 from thirdai import bolt, demos, neural_db
 from thirdai.neural_db import documents
-from thirdai.neural_db.sharded_documents import ShardedDataSource
+from thirdai.neural_db.documents import DocumentDataSource
+from thirdai.neural_db.sharded_documents import DataLoadMultiplexer, ShardedDataSource
 
 # We don't have a test on just the Document interface since it is just an
 # interface.
@@ -227,6 +229,7 @@ def test_sharded_data_source(prepare_documents_test):
 
     df = pd.concat([data_source_to_df(shard) for shard in sharded_data_sources])
     df = df.sort_values(id_column)
+
     check_first_doc(df)
     check_second_doc(df, position_offset=first_size, id_offset=first_size)
 
@@ -473,3 +476,35 @@ def test_csv_doc_autotuning():
     assert "lorem" in doc.reference(0).text
 
     os.remove(filename)
+
+
+@pytest.mark.unit
+def test_data_load_multiplexer(create_simple_dataset):
+    filename = create_simple_dataset
+
+    doc = neural_db.CSV(
+        filename, id_column="label", strong_columns=["text"], weak_columns=["text"]
+    )
+    document_data_source = DocumentDataSource(
+        id_column="label", strong_column="strong", weak_column="weak"
+    )
+    document_data_source.add(doc, start_id=0)
+    data_multiplexer = DataLoadMultiplexer(num_segments=1)
+    (
+        segment_filenames,
+        segment_objects,
+        _,
+    ) = data_multiplexer.create_segments_with_data_source(
+        document_data_source, defaultdict(list), is_index_empty=True
+    )
+    for i, filename in enumerate(segment_filenames):
+        try:
+            df = pd.read_csv(filename)
+            if "label" not in df.columns:
+                assert False, f"column label not found!"
+            if not df["label"].apply(lambda x: str(x).isdigit()).all():
+                assert False, f"Some values in column 'label' are not integers"
+
+        except Exception as e:
+            assert False, f"Error reading file: {e}"
+        segment_objects[i].close()
