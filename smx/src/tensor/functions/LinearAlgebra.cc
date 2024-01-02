@@ -1,4 +1,9 @@
+#include <smx/src/tensor/CsrTensor.h>
+#include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Functions.h>
+#include <smx/src/tensor/Init.h>
+#include <smx/src/tensor/Tensor.h>
+#include <algorithm>
 #include <cstddef>
 #include <stdexcept>
 
@@ -23,8 +28,8 @@ TensorPtr add(const TensorPtr& a, const TensorPtr& b) {
 }
 
 // TODO(Nicholas): Implement these kernels using dnnl_sgemm
-DenseTensorPtr linear(const DenseTensorPtr& x, const DenseTensorPtr& w,
-                      const DenseTensorPtr& b) {
+DenseTensorPtr denseLinear(const DenseTensorPtr& x, const DenseTensorPtr& w,
+                           const DenseTensorPtr& b) {
   CHECK(x->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
   CHECK(w->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
   CHECK(b->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
@@ -49,7 +54,7 @@ DenseTensorPtr linear(const DenseTensorPtr& x, const DenseTensorPtr& w,
   return out;
 }
 
-std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
+std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> denseLinearGrad(
     const DenseTensorPtr& x, const DenseTensorPtr& w, const DenseTensorPtr& b,
     const DenseTensorPtr& y_grad, bool compute_x_grad) {
   auto X = x->eigenMatrix<float>();
@@ -74,6 +79,122 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
   }
 
   return {nullptr, w_grad, b_grad};
+}
+
+DenseTensorPtr sparseLinear(const CsrTensorPtr& x, const DenseTensorPtr& w,
+                            const DenseTensorPtr& b) {
+  size_t rows = x->nRows();
+  size_t input_dim = w->shape(1);
+  size_t dim = w->shape(0);
+
+  auto y = DenseTensor::make(Shape(rows, dim), Dtype::f32);
+  float* y_ptr = y->data<float>();
+
+  const uint32_t* x_offsets = x->rowOffsets()->data<uint32_t>();
+  const uint32_t* x_indices = x->colIndices()->data<uint32_t>();
+  const float* x_values = x->colValues()->data<float>();
+
+  const float* w_ptr = w->data<float>();
+  const float* b_ptr = b->data<float>();
+
+  for (size_t m = 0; m < rows; m++) {
+    size_t start = x_offsets[m], end = x_offsets[m + 1];
+
+    for (size_t n = 0; n < dim; n++) {
+      float act = b_ptr[n];
+      for (size_t k = start; k < end; k++) {
+        act += w_ptr[n * input_dim + x_indices[k]] * x_values[k];
+      }
+      y_ptr[m * dim + n] = act;
+    }
+  }
+
+  return y;
+}
+
+std::tuple<CsrTensorPtr, DenseTensorPtr, DenseTensorPtr> sparseLinearGrad(
+    const CsrTensorPtr& x, const DenseTensorPtr& w, const DenseTensorPtr& b,
+    const DenseTensorPtr& y_grad, bool compute_x_grad) {
+  size_t rows = x->nRows();
+  size_t input_dim = w->shape(1);
+  size_t dim = w->shape(0);
+
+  const float* y_grad_ptr = y_grad->data<float>();
+
+  // Bias gradient
+  auto b_grad = DenseTensor::make(b->shape(), Dtype::f32);
+  b_grad->eigenMatrix<float>() = y_grad->eigenMatrix<float>().colwise().sum();
+
+  // Weight gradient
+  auto w_grad = DenseTensor::make(w->shape(), Dtype::f32);
+  float* w_grad_ptr = w_grad->data<float>();
+
+  const uint32_t* x_offsets = x->rowOffsets()->data<uint32_t>();
+  const uint32_t* x_indices = x->colIndices()->data<uint32_t>();
+  const float* x_values = x->colValues()->data<float>();
+
+  for (size_t n = 0; n < dim; n++) {
+    float* w_n_grad = w_grad_ptr + n * input_dim;
+    std::fill(w_n_grad, w_n_grad + input_dim, 0);
+    for (size_t m = 0; m < rows; m++) {
+      size_t start = x_offsets[m], end = x_offsets[m + 1];
+      for (size_t k = start; k < end; k++) {
+        w_n_grad[x_indices[k]] += y_grad_ptr[m * dim + n] * x_values[k];
+      }
+    }
+  }
+
+  if (!compute_x_grad) {
+    return {nullptr, w_grad, b_grad};
+  }
+
+  // Input gradient
+  const float* w_ptr = w->data<float>();
+
+  auto x_grad = DenseTensor::make(x->colValues()->shape(), Dtype::f32);
+  float* x_grad_ptr = x_grad->data<float>();
+
+  for (size_t m = 0; m < rows; m++) {
+    size_t start = x_offsets[m], end = x_offsets[m + 1];
+    std::fill(x_grad_ptr + start, x_grad_ptr + end, 0);
+    for (size_t n = 0; n < dim; n++) {
+      const float* w_n = w_ptr + n * input_dim;
+      float y_m_n_grad = y_grad_ptr[m * dim + n];
+      for (size_t k = start; k < end; k++) {
+        x_grad_ptr[k] += y_m_n_grad * w_n[x_indices[k]];
+      }
+    }
+  }
+
+  return {CsrTensor::make(x->rowOffsets(), x->colIndices(), x_grad, x->shape()),
+          w_grad, b_grad};
+}
+
+DenseTensorPtr linear(const TensorPtr& x, const DenseTensorPtr& w,
+                      const DenseTensorPtr& b) {
+  CHECK(x->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
+  CHECK(w->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
+  CHECK(b->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
+  CHECK(w->ndim() == 2, "Weight matrix must be 2D.");
+  CHECK(b->ndim() == 1, "Bias must be 1D.");
+  CHECK(x->shape().last() == w->shape().last(), "Cols of x and w must match.");
+  CHECK(w->shape(0) == b->shape(0), "Rows of w and b must match.");
+
+  if (x->isSparse()) {
+    return sparseLinear(csr(x), w, b);
+  }
+
+  return denseLinear(dense(x), w, b);
+}
+
+std::tuple<TensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
+    const TensorPtr& x, const DenseTensorPtr& w, const DenseTensorPtr& b,
+    const DenseTensorPtr& y_grad, bool compute_x_grad) {
+  if (x->isSparse()) {
+    return sparseLinearGrad(csr(x), w, b, y_grad, compute_x_grad);
+  }
+
+  return denseLinearGrad(dense(x), w, b, y_grad, compute_x_grad);
 }
 
 }  // namespace thirdai::smx

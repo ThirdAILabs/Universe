@@ -1,6 +1,7 @@
 #include "LinearAlgebra.h"
 #include <smx/src/autograd/Variable.h>
 #include <smx/src/tensor/Functions.h>
+#include <smx/src/tensor/Tensor.h>
 #include <vector>
 
 namespace thirdai::smx {
@@ -24,7 +25,7 @@ VariablePtr add(const VariablePtr& a, const VariablePtr& b) {
 
 VariablePtr linear(const VariablePtr& x, const VariablePtr& w,
                    const VariablePtr& b) {
-  auto out = linear(dense(x->tensor()), dense(w->tensor()), dense(b->tensor()));
+  auto out = linear(x->tensor(), dense(w->tensor()), dense(b->tensor()));
 
   GradFunc grad_func = [](const TensorPtr& out_grad,
                           const std::vector<VariablePtr>& inputs) {
@@ -33,7 +34,7 @@ VariablePtr linear(const VariablePtr& x, const VariablePtr& w,
     const auto& b = inputs.at(2);
 
     auto [x_grad, w_grad, b_grad] =
-        linearGrad(dense(x->tensor()), dense(w->tensor()), dense(b->tensor()),
+        linearGrad(x->tensor(), dense(w->tensor()), dense(b->tensor()),
                    dense(out_grad), x->requiresGrad());
 
     if (x->requiresGrad()) {
