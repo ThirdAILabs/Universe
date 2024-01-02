@@ -49,7 +49,7 @@ def perturb_sentence(sentence: str) -> str:
 
 @pytest.fixture(scope="session")
 def query_reformulation_dataset():
-    df = load_dataset("snips_built_in_intents", "small")["train"].to_pandas()
+    df = load_dataset("snips_built_in_intents")["train"].to_pandas()
     df = df.drop("label", axis=1)
     df = df.rename(columns={"text": "correct_query"})
 
