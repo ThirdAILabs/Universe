@@ -776,19 +776,19 @@ class NeuralDB:
             >>> ndb.search("what is ...", top_k=5, constraints={"file_type": "pdf", "file_created", GreaterThan(10)})
         """
         return self.search_batch(
-            [query],
-            top_k,
-            constraints,
-            rerank,
-            top_k_rerank,
-            rerank_threshold,
-            top_k_threshold,
+            queries=[query],
+            top_k=top_k,
+            constraints=constraints,
+            rerank=rerank,
+            top_k_rerank=top_k_rerank,
+            rerank_threshold=rerank_threshold,
+            top_k_threshold=top_k_threshold,
         )[0]
 
     def search_batch(
         self,
         queries: List[str],
-        top_k: int = 1,
+        top_k: int,
         constraints=None,
         rerank=False,
         top_k_rerank=100,
