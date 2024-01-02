@@ -30,14 +30,17 @@ DyadicModel::DyadicModel(bolt::ModelPtr model,
 }
 
 bolt::TensorPtr DyadicModel::nextTokenProbs(
-    std::vector<std::vector<uint32_t>>& prompts, std::vector<std::vector<std::vector<uint32_t>>> tokens) {
+    std::vector<std::vector<uint32_t>>& prompts, std::vector<std::vector<std::vector<uint32_t>>> batched_tokens) {
   auto prompt_column_name = _dyadic_transform->getPromptColumn();
   // each of the chunks inside tokens should be of the same length
-  size_t tokens_size = tokens[0].size();
+  size_t tokens_size = batched_tokens[0].size();
   std::vector<std::vector<uint32_t>> flatten_tokens;
-  for(auto & token : tokens){
-    flatten_tokens.insert(flatten_tokens.end(), token.begin(), token.end());
+  for(const auto& tokens: batched_tokens){
+    for(const auto& token: tokens){
+      flatten_tokens.push_back(token);
+    }
   }
+  
   data::ColumnMap data(data::ColumnMap(
       {{_dyadic_transform->getInputColumn(),
         data::ArrayColumn<uint32_t>::make(std::move(flatten_tokens), _vocab_size)}}));

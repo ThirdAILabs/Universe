@@ -51,7 +51,7 @@ std::optional<std::vector<std::vector<uint32_t>>> BeamSearchDecoder::next() {
     auto next_token_probs =
         _generator->model()->nextTokenProbs(_prompts, _batched_candidate_sequences);
 
-    for(size_t batch_id =0; batch_id< _batched_candidate_sequences.size(); batch_id++){      
+    for(size_t batch_id =0; batch_id< batch_size; batch_id++){      
       // This will be ordered such that the worst scoring sequence is on the top
       // of the queue so we can easily check if a given sequence is better than at
       // least one of the candidates already discovered.
