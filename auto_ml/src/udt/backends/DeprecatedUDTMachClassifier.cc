@@ -1,4 +1,4 @@
-#include "UDTMachClassifier.h"
+#include "DeprecatedUDTMachClassifier.h"
 #include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/inference/EmbFcInference.h>
@@ -49,6 +49,15 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+/**
+ ************************************************
+ ************************************************
+ **** NOTE: This backend will be deprecated. ****
+ **** Please add any new features to UDTMach ****
+ ************************************************
+ ************************************************
+ */
 
 namespace thirdai::automl::udt {
 

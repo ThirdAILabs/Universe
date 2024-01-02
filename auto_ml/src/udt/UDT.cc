@@ -4,10 +4,10 @@
 #include <bolt/src/utils/Timer.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <auto_ml/src/udt/backends/DeprecatedUDTMachClassifier.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
 #include <auto_ml/src/udt/backends/UDTGraphClassifier.h>
 #include <auto_ml/src/udt/backends/UDTMach.h>
-#include <auto_ml/src/udt/backends/UDTMachClassifier.h>
 #include <auto_ml/src/udt/backends/UDTQueryReformulation.h>
 #include <auto_ml/src/udt/backends/UDTRecurrentClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
@@ -366,7 +366,9 @@ void UDT::serialize(Archive& archive, const uint32_t version) {
   // Increment thirdai::versions::UDT_BASE_VERSION after serialization changes
   archive(_backend);
 
-  if constexpr (std::is_same_v<Archive, cereal::BinaryInputArchive>) {
+  constexpr bool deserializing =
+      std::is_same_v<Archive, cereal::BinaryInputArchive>;
+  if constexpr (deserializing) {
     if (auto* old_mach = dynamic_cast<UDTMachClassifier*>(_backend.get())) {
       _backend = std::make_unique<UDTMach>(old_mach->getMachInfo());
     }

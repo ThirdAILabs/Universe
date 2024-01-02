@@ -110,7 +110,7 @@ MachFeaturizer::featurizeForIntroduceDocuments(
 }
 
 std::pair<bolt::TensorList, bolt::TensorList>
-MachFeaturizer::featurizeHashesTrainingBatch(const MapInputBatch& samples) {
+MachFeaturizer::featurizeTrainWithHashesBatch(const MapInputBatch& samples) {
   auto columns = data::ColumnMap::fromMapInputBatch(samples);
 
   columns = _input_transform->apply(columns, *_state);

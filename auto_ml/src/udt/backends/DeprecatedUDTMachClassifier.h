@@ -23,6 +23,15 @@
 #include <optional>
 #include <stdexcept>
 
+/**
+ ************************************************
+ ************************************************
+ **** NOTE: This backend will be deprecated. ****
+ **** Please add any new features to UDTMach ****
+ ************************************************
+ ************************************************
+ */
+
 namespace thirdai::automl::udt {
 
 using bolt::metrics::InputMetrics;

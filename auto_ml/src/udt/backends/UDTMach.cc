@@ -116,7 +116,6 @@ UDTMach::UDTMach(
   _mach_sampling_threshold = user_args.get<float>(
       "mach_sampling_threshold", "float", defaults::MACH_SAMPLING_THRESHOLD);
 
-  // TODO(David): Should we call this in constructor as well?
   updateSamplingStrategy();
 
   if (user_args.get<bool>("rlhf", "bool", false)) {
@@ -201,7 +200,7 @@ py::object UDTMach::trainWithHashes(const MapInputBatch& batch,
                                     const std::vector<std::string>& metrics) {
   auto& model = _classifier->model();
 
-  auto [inputs, labels] = _featurizer->featurizeHashesTrainingBatch(batch);
+  auto [inputs, labels] = _featurizer->featurizeTrainWithHashesBatch(batch);
 
   model->trainOnBatch(inputs, labels);
   model->updateParameters(learning_rate);
@@ -228,18 +227,20 @@ py::object UDTMach::evaluate(const dataset::DataSourcePtr& data,
 py::object UDTMach::predict(const MapInput& sample, bool sparse_inference,
                             bool return_predicted_class,
                             std::optional<uint32_t> top_k) {
+  return predictBatch({sample}, sparse_inference, return_predicted_class,
+                      top_k)[0];
+}
+
+py::object UDTMach::predictBatch(const MapInputBatch& samples,
+                                 bool sparse_inference,
+                                 bool return_predicted_class,
+                                 std::optional<uint32_t> top_k) {
   if (return_predicted_class) {
     throw std::invalid_argument(
         "UDT Extreme Classification does not support the "
         "return_predicted_class flag.");
   }
 
-  return py::cast(predictImpl({sample}, sparse_inference, top_k).at(0));
-}
-
-std::vector<std::vector<std::pair<uint32_t, double>>> UDTMach::predictImpl(
-    const MapInputBatch& samples, bool sparse_inference,
-    std::optional<uint32_t> top_k) {
   auto outputs =
       _classifier->model()
           ->forward(_featurizer->featurizeInputBatch(samples), sparse_inference)
@@ -272,20 +273,7 @@ std::vector<std::vector<std::pair<uint32_t, double>>> UDTMach::predictImpl(
     predicted_entities[i] = predictions;
   }
 
-  return predicted_entities;
-}
-
-py::object UDTMach::predictBatch(const MapInputBatch& samples,
-                                 bool sparse_inference,
-                                 bool return_predicted_class,
-                                 std::optional<uint32_t> top_k) {
-  if (return_predicted_class) {
-    throw std::invalid_argument(
-        "UDT Extreme Classification does not support the "
-        "return_predicted_class flag.");
-  }
-
-  return py::cast(predictImpl(samples, sparse_inference, top_k));
+  return py::cast(predicted_entities);
 }
 
 py::object UDTMach::scoreBatch(const MapInputBatch& samples,

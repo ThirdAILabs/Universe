@@ -46,7 +46,6 @@ py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
       val_dataset, fromMetricNames(_model, val_metrics, /* prefix= */ "val_"),
       callbacks, options, comm);
 
-  // Note: binary prediction tuning is deleted here.
   return history;
 }
 
@@ -83,6 +82,11 @@ py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
       /* verbose= */ options.verbose,
       /* logging_interval= */ options.logging_interval,
       /*comm= */ comm);
+
+  // Note: binary prediction tuning is depreciated when using old data pipeline.
+  // It is enabled only for models using the new data pipeline. The only backend
+  // using the old data pipeline is the old mach backend, and a mach model would
+  // have more that 2 output neurons anyway.
 
   return py::cast(history);
 }
