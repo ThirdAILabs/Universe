@@ -44,7 +44,6 @@ class Model:
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
         should_train: bool,
-        reset_index: bool = False,
         epochs: Union[List[int], int] = None,
         learning_rates: Union[List[float], float] = None,
         fast_approximation: bool = True,
@@ -94,7 +93,6 @@ class Model:
         self,
         samples: InferSamples,
         n_results: int,
-        aggregate_rank: bool,
         **kwargs,
     ) -> Predictions:
         raise NotImplementedError()
@@ -140,6 +138,42 @@ class Model:
         epochs: int,
     ):
         raise NotImplementedError()
+
+    def assert_valid_epochs_lr(
+        self, epochs: Union[List[int], int], learning_rates: Union[List[float], float]
+    ):
+        if epochs is not None and learning_rates is not None:
+            if isinstance(epochs, int):
+                if not isinstance(learning_rates, float):
+                    raise AttributeError(
+                        "Incompaitble epoch and learning rate construct"
+                    )
+            elif isinstance(epochs, list) and all(
+                isinstance(item, int) for item in epochs
+            ):
+                if isinstance(learning_rates, list) and all(
+                    isinstance(item, int) for item in learning_rates
+                ):
+                    if len(epochs) != len(learning_rates):
+                        raise AttributeError(
+                            "Incompaitble epoch and learning rate construct"
+                        )
+                else:
+                    raise AttributeError(
+                        "Incompaitble epoch and learning rate construct"
+                    )
+            else:
+                raise AttributeError("Incompaitble epoch and learning rate construct")
+
+        if epochs is not None:
+            # learning_rates is None
+            if not isinstance(epochs, int):
+                raise AttributeError("Incompaitble epoch and learning rate construct")
+
+        if learning_rates is not None:
+            # epochs is None
+            if not isinstance(learning_rates, float):
+                raise AttributeError("Incompaitble epoch and learning rate construct")
 
 
 class EarlyStopWithMinEpochs(bolt.train.callbacks.Callback):
@@ -341,7 +375,6 @@ class Mach(Model):
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
         should_train: bool,
-        reset_index: bool = False,
         epochs: Union[List[int], int] = None,
         learning_rates: Union[List[float], float] = None,
         fast_approximation: bool = True,
@@ -359,6 +392,11 @@ class Mach(Model):
 
         Note: Given the datasources for introduction and training, we initialize a Mach model that has number_classes set to the size of introduce documents. But if we want to use this Mach model in our mixture of Models, this will not work because each Mach will be initialized with number of classes equal to the size of the datasource shard. Hence, we add override_number_classes parameters which if set, will initialize Mach Model with number of classes passed by the Mach Mixture.
         """
+        self.assert_valid_epochs_lr(
+            epochs=epochs,
+            learning_rates=learning_rates,
+        )
+
         if intro_documents.id_column != self.id_col:
             raise ValueError(
                 f"Model configured to use id_col={self.id_col}, received document with"
@@ -370,33 +408,11 @@ class Mach(Model):
             self.model = self.model_from_scratch(
                 intro_documents, number_classes=override_number_classes
             )
-            learning_rate = 0.005
+            default_learning_rate = 0.005
             freeze_before_train = False
-            min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
+            tuned_min_epochs, tuned_max_epochs = autotune_from_scratch_min_max_epochs(
                 train_documents.size
             )
-
-            if reset_index:
-                # retreiiving the shareded documentsource
-                string_io = StringIO("\n".join(intro_documents._get_line_iterator()))
-                df = pd.read_csv(string_io)
-                intro_documents.restart()
-
-                valid_ids = df[intro_documents.id_column].tolist()
-
-                # Retreiving the model indexes
-                index = self.model.get_index()
-                new_index = {}
-                for id in valid_ids:
-                    new_index[id] = copy.deepcopy(index.get_entity_hashes(id))
-
-                # Setting the new index
-                model_index_new = dataset.MachIndex(
-                    entity_to_hashes=new_index,
-                    output_range=index.output_range(),
-                    num_hashes=index.num_hashes(),
-                )
-                self.model.set_index(model_index_new)
         else:
             if intro_documents.size > 0:
                 doc_id = intro_documents.id_column
@@ -417,13 +433,13 @@ class Mach(Model):
                     fast_approximation=fast_approximation,
                     num_buckets_to_sample=num_buckets_to_sample,
                 )
-            learning_rate = 0.001
+            default_learning_rate = 0.001
             # Freezing at the beginning prevents the model from forgetting
             # things it learned from pretraining.
             freeze_before_train = True
             # Less epochs here since it converges faster when trained on a base
             # model.
-            min_epochs, max_epochs = autotune_from_base_min_max_epochs(
+            tuned_min_epochs, tuned_max_epochs = autotune_from_base_min_max_epochs(
                 train_documents.size
             )
 
@@ -431,12 +447,31 @@ class Mach(Model):
         self.add_balancing_samples(intro_documents)
 
         if should_train and train_documents.size > 0:
-            if epochs is None:
+            # Setting the min and max epochs
+            if epochs is not None:
+                min_epochs = [tuned_min_epochs]
+                max_epochs = [tuned_max_epochs]
+            elif isinstance(epochs, int):
+                min_epochs = [epochs]
+                max_epochs = [epochs]
+            else:
+                min_epochs = epochs
+                max_epochs = epochs
+
+            # Setting the learning_rates
+            if learning_rates is not None:
+                learning_rates = [default_learning_rate]
+            elif isinstance(learning_rates, float):
+                learning_rates = [learning_rates]
+
+            for min_num_epochs, max_num_epochs, learning_rate in zip(
+                min_epochs, max_epochs, learning_rates
+            ):
                 unsupervised_train_on_docs(
                     model=self.model,
                     documents=train_documents,
-                    min_epochs=min_epochs,
-                    max_epochs=max_epochs,
+                    min_epochs=min_num_epochs,
+                    max_epochs=max_num_epochs,
                     metric="hash_precision@5",
                     learning_rate=learning_rate,
                     acc_to_stop=0.95,
@@ -446,26 +481,6 @@ class Mach(Model):
                     max_in_memory_batches=max_in_memory_batches,
                     variable_length=variable_length,
                 )
-            else:
-                if isinstance(epochs, int):
-                    epochs = [epochs]
-                    learning_rates = [learning_rates]
-
-                for epoch, learning_rate in zip(epochs, learning_rates):
-                    unsupervised_train_on_docs(
-                        model=self.model,
-                        documents=train_documents,
-                        min_epochs=epoch,
-                        max_epochs=epoch,
-                        metric="hash_precision@5",
-                        learning_rate=learning_rate,
-                        acc_to_stop=1.0,
-                        on_progress=on_progress,
-                        freeze_before_train=freeze_before_train,
-                        cancel_state=cancel_state,
-                        max_in_memory_batches=max_in_memory_batches,
-                        variable_length=variable_length,
-                    )
 
     def add_balancing_samples(self, documents: DocumentDataSource):
         samples = make_balancing_samples(documents)
@@ -515,7 +530,6 @@ class Mach(Model):
         self,
         samples: InferSamples,
         n_results: int,
-        aggregate_rank: bool,
         **kwargs,
     ) -> Predictions:
         infer_batch = self.infer_samples_to_infer_batch(samples)

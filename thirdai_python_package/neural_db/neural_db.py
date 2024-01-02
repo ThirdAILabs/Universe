@@ -592,6 +592,7 @@ class NeuralDB:
         Inserts documents/resources into the database.
 
         Args:
+            sources (List[Doc]): List of NeuralDB documents to be inserted.
             train (bool): Optional, defaults True. When True this means that the
                 underlying model in the NeuralDB will undergo unsupervised pretraining
                 on the inserted documents.
@@ -614,22 +615,6 @@ class NeuralDB:
         Returns:
             A list of the ids assigned to the inserted documents.
         """
-        if epochs is not None or learning_rates is not None:
-            if epochs is None or learning_rates is None:
-                raise AttributeError(
-                    "Both epochs and learning_rates should be given, if provided"
-                )
-            else:
-                if type(epochs) is not type(learning_rates):
-                    raise AttributeError(
-                        "Epochs and learning_rates should be of same type"
-                    )
-
-                if isinstance(epochs, list) and len(epochs) != len(learning_rates):
-                    raise AttributeError(
-                        "Both epochs and learning_rates should be of same dimensions"
-                    )
-
         documents_copy = copy.deepcopy(self._savable_state.documents)
         try:
             intro_and_train, ids = self._savable_state.documents.add(sources)

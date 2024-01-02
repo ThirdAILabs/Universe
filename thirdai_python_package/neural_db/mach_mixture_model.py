@@ -25,7 +25,7 @@ class MachMixture(Model):
         fhr: int = 50_000,
         embedding_dimension: int = 2048,
         extreme_output_dim: int = 10_000,  # for Mach Mixture, we use default dim of 10k
-        extreme_num_hashes: int = 4,
+        extreme_num_hashes: int = 8,
         model_config=None,
         label_to_segment_map: defaultdict = None,
         seed_for_sharding: int = 0,
@@ -107,7 +107,6 @@ class MachMixture(Model):
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
         should_train: bool,
-        reset_index: bool = False,
         epochs: Union[List[int], int] = None,
         learning_rates: Union[List[float], float] = None,
         fast_approximation: bool = True,
@@ -119,6 +118,10 @@ class MachMixture(Model):
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
     ) -> None:
+        self.assert_valid_epochs_lr(
+            epochs=epochs,
+            learning_rates=learning_rates,
+        )
         # We need the original number of classes from the original data source so that we can initialize the Mach models this mixture will have
         number_classes = intro_documents.size
 
@@ -147,7 +150,6 @@ class MachMixture(Model):
                 intro_documents=intro_shard,
                 train_documents=train_shard,
                 should_train=should_train,
-                reset_index=reset_index,
                 epochs=epochs,
                 learning_rates=learning_rates,
                 fast_approximation=fast_approximation,
@@ -173,7 +175,7 @@ class MachMixture(Model):
         return self.n_ids != 0
 
     def infer_labels(
-        self, samples: InferSamples, n_results: int, aggregate_rank: bool, **kwargs
+        self, samples: InferSamples, n_results: int, **kwargs
     ) -> Predictions:
         results = [[] for _ in range(len(samples))]
         for model in self.models:
@@ -184,7 +186,6 @@ class MachMixture(Model):
                 single_model_outputs = model.infer_labels(
                     samples=samples,
                     n_results=n_results,
-                    aggregate_rank=aggregate_rank,
                     **kwargs,
                 )
             except Exception as e:
@@ -193,25 +194,19 @@ class MachMixture(Model):
                 for index in range(len(samples)):
                     results[index].extend(single_model_outputs[index])
 
-        if aggregate_rank:
-            aggregated_results = [[] for _ in range(len(samples))]
-            for index, current_sample_result in enumerate(results):
-                label_activation_map = {}
+        # Aggreagating the (label, activations)
+        aggregated_results = [[] for _ in range(len(samples))]
+        for index, segment_results in enumerate(results):
+            label_activation_map = defaultdict(lambda: 0)
+            # Collect and sum up activations for each label
+            for label, activation in segment_results:
+                label_activation_map[label] += activation
 
-                # Collect and sum up activations for each label
-                for model_output in current_sample_result:
-                    label = model_output[0]
-                    activation = model_output[1]
-                    label_activation_map[label] = (
-                        label_activation_map.get(label, 0.0) + activation
-                    )
-
-                aggregated_results[index] = list(label_activation_map.items())
-            results = aggregated_results
-        for index in range(len(results)):
-            results[index].sort(key=lambda x: x[1], reverse=True)
-            results[index] = results[index][:n_results]
-        return results
+            aggregated_results[index] = list(label_activation_map.items())
+        for index in range(len(aggregated_results)):
+            aggregated_results[index].sort(key=lambda x: x[1], reverse=True)
+            aggregated_results[index] = aggregated_results[index][:n_results]
+        return aggregated_results
 
     @requires_condition(
         check_func=lambda x: False,
