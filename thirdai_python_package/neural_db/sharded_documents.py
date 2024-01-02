@@ -37,6 +37,7 @@ class DataLoadMultiplexer:
     def __init__(self, num_segments, flush_frequency=1_000_000):
         self.num_segments = num_segments
         self.flush_frequency = flush_frequency
+        self.seed = 42
 
     def _generate_temp_csvs(self):
         """
@@ -101,6 +102,7 @@ class DataLoadMultiplexer:
     ):
         if is_index_empty:
             indices = list(range(data_source.size))
+            random.seed(self.seed)
             random.shuffle(indices)
             for index, randomised_index in enumerate(indices):
                 label_to_segment_map[index].append(randomised_index % self.num_segments)
