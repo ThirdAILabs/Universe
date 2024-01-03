@@ -143,7 +143,7 @@ class Model:
         self, epochs: Union[List[int], int], learning_rates: Union[List[float], float]
     ):
         if epochs is None and learning_rates is None:
-            return 
+            return
 
         if epochs is not None and learning_rates is not None:
             if isinstance(epochs, int) and isinstance(learning_rates, float):
