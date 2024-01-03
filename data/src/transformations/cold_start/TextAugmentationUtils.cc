@@ -1,7 +1,7 @@
 #include "TextAugmentationUtils.h"
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/StringConcat.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <random>
 
 namespace thirdai::data::cold_start {
@@ -48,7 +48,7 @@ ColumnMap TextAugmentationBase::apply(ColumnMap columns, State& state) const {
       std::string weak_text = weak_column->value(row_id);
 
       std::vector<std::string> augmented_samples =
-          augmentSingleRow(strong_text, weak_text);
+          augmentSingleRow(strong_text, weak_text, /* row_id_salt= */ row_id);
 
 #pragma omp critical
       {
@@ -95,7 +95,7 @@ ColumnMap TextAugmentationBase::apply(ColumnMap columns, State& state) const {
 
 PhraseCollection mergeStrongWithWeak(
     const PhraseCollection& weak_phrases, const Phrase& strong_phrase,
-    std::optional<uint32_t> strong_sample_num_words, uint32_t seed) {
+    std::optional<uint32_t> strong_sample_num_words, std::mt19937& rng) {
   if (weak_phrases.empty()) {
     return {strong_phrase};
   }
@@ -107,7 +107,7 @@ PhraseCollection mergeStrongWithWeak(
     downsampled_strong_phrases = sampleFromPhrases(
         /* phrases= */ {strong_phrase},
         /* words_per_sampled_phrase= */ strong_sample_num_words.value(),
-        /* n_sampled_phrases= */ weak_phrases.size(), seed);
+        /* n_sampled_phrases= */ weak_phrases.size(), rng);
   }
 
   PhraseCollection output_phrases(weak_phrases.size());
@@ -128,7 +128,8 @@ PhraseCollection mergeStrongWithWeak(
 
 PhraseCollection sampleFromPhrases(const PhraseCollection& phrases,
                                    uint32_t words_per_sampled_phrase,
-                                   uint32_t n_sampled_phrases, uint32_t seed) {
+                                   uint32_t n_sampled_phrases,
+                                   std::mt19937& rng) {
   // Only iterate over the original phrases, as we append new ones to the end.
   if (n_sampled_phrases == 0) {
     throw std::invalid_argument(
@@ -136,7 +137,6 @@ PhraseCollection sampleFromPhrases(const PhraseCollection& phrases,
         "must be greater than 0.");
   }
   PhraseCollection output_phrases;
-  std::mt19937 rng(seed);
   for (const auto& phrase : phrases) {
     if (phrase.size() > words_per_sampled_phrase) {
       // Then we can downsample some sub-phrases.
@@ -158,24 +158,6 @@ PhraseCollection sampleFromPhrases(const PhraseCollection& phrases,
     }
   }
   return output_phrases;
-}
-
-Phrase getStrongPhrase(const std::string& strong_text_in,
-                       std::optional<uint32_t> max_len) {
-  std::string strong_text = text::replacePunctuation(strong_text_in, ' ');
-  strong_text = text::stripWhitespace(strong_text);
-
-  // Note: This is slightly different than the original cold start
-  // implementation. This tokenization/split function splits on any character
-  // that isn't alpha-numeric. The old version just split on whitespace. This
-  // can cause slightly different results with certain special characters.
-  Phrase strong_phrase = text::tokenizeSentence(strong_text);
-  if (max_len) {
-    if (strong_phrase.size() > max_len.value()) {
-      strong_phrase.resize(max_len.value());
-    }
-  }
-  return strong_phrase;
 }
 
 }  // namespace thirdai::data::cold_start
