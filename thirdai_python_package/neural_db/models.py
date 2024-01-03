@@ -435,7 +435,7 @@ class Mach(Model):
 
         if should_train and train_documents.size > 0:
             # Setting the min and max epochs
-            if epochs is not None:
+            if epochs is None:
                 min_epochs = [tuned_min_epochs]
                 max_epochs = [tuned_max_epochs]
             elif isinstance(epochs, int):
@@ -446,7 +446,7 @@ class Mach(Model):
                 max_epochs = epochs
 
             # Setting the learning_rates
-            if learning_rates is not None:
+            if learning_rates is None:
                 learning_rates = [default_learning_rate]
             elif isinstance(learning_rates, float):
                 learning_rates = [learning_rates]
