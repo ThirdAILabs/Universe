@@ -53,7 +53,7 @@ class UnifiedLLMDataSource(PyDataSource):
             self._get_file_iterator(file_path) for file_path in self.file_paths
         ]
         self.probs = probs
-        self.restard_allowed
+        self.restart_allowed = restart_allowed
 
         assert sum(probs) == 1
         assert len(probs) == len(restart_allowed)
@@ -62,13 +62,6 @@ class UnifiedLLMDataSource(PyDataSource):
             [not element for element in restart_allowed]
         )  # check if any one file has restart_allowed=False
 
-        try:
-            from transformers import GPT2Tokenizer
-        except ImportError:
-            raise ImportError(
-                "transformers library is not installed. Please install it to use LLMDataSource."
-            )
-        self.tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
         PyDataSource.__init__(self)
         self.restart()
 
