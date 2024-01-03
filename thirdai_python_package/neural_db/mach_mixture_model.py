@@ -117,19 +117,19 @@ class MachMixture(Model):
         number_classes = intro_documents.size
 
         # Make a sharded data source with introduce documents. When we call shard_data_source, this will shard the introduce data source, return a list of data sources, and modify the label index to keep track of what label goes to what shard
-        sharded_data_source = ShardedDataSource(
-            document_data_source=intro_documents,
-            number_shards=self.number_models,
+        introduce_data_sources = ShardedDataSource.shard_data_source(
+            data_source=intro_documents,
             label_to_segment_map=self.label_to_segment_map,
-            seed=self.seed_for_sharding,
+            number_shards=self.number_models,
+            update_segment_map=True,
         )
-        introduce_data_sources = sharded_data_source.shard_data_source()
 
         # Once the introduce datasource has been sharded, we can use the update label index to shard the training data source ( We do not want training samples to go to a Mach model that does not contain their labels)
-        train_data_sources = sharded_data_source.shard_using_index(
+        train_data_sources = ShardedDataSource.shard_data_source(
             train_documents,
             label_to_segment_map=self.label_to_segment_map,
             number_shards=self.number_models,
+            update_segment_map=False,
         )
 
         self.n_ids += intro_documents.size
@@ -267,13 +267,12 @@ class MachMixture(Model):
         learning_rate: float,
         epochs: int,
     ):
-        sharded_data_source = ShardedDataSource(
-            document_data_source=balancing_data,
+        balancing_data_shards = ShardedDataSource.shard_data_source(
+            data_source=balancing_data,
             number_shards=self.number_models,
             label_to_segment_map=self.label_to_segment_map,
-            seed=self.seed_for_sharding,
+            update_segment_map=False,
         )
-        balancing_data_shards = sharded_data_source.shard_data_source()
         for model, shard in zip(self.models, balancing_data_shards):
             model.retrain(
                 balancing_data=shard,

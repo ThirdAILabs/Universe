@@ -1,11 +1,55 @@
 import random
 import tempfile
 from collections import defaultdict
-from typing import List
+from typing import List, Union
 
 import pandas as pd
 
 from .documents import CSV, DocumentDataSource
+from .supervised_datasource import Sup, SupDataSource
+
+
+def transform_shard_to_datasource(
+    original_data_source: Union[DocumentDataSource, SupDataSource],
+    shard_path,
+    shard_object,
+):
+    """
+    We assume that the shard is stored as a CSV on the machine. Depending on the underlying original data source, we create a new data source from the shard with the same attributes but with lesser documents in it.
+    """
+    if isinstance(original_data_source, DocumentDataSource):
+        data_source = DocumentDataSource(
+            id_column=original_data_source.id_column,
+            strong_column=original_data_source.strong_column,
+            weak_column=original_data_source.weak_column,
+        )
+        csv_doc = CSV(
+            path=shard_path,
+            id_column=original_data_source.id_column,
+            strong_columns=[original_data_source.strong_column],
+            weak_columns=[original_data_source.weak_column],
+            has_offset=True,
+        )
+
+        shard_object.close()
+        data_source.add(document=csv_doc, start_id=0)
+        return data_source
+
+    if isinstance(original_data_source, SupDataSource):
+        sup = Sup(
+            csv=shard_path,
+            query_column=original_data_source.query_col,
+            id_column=original_data_source.doc_manager.id_column,
+            id_delimiter=original_data_source.id_delimiter,
+            uses_db_id=True,
+        )
+        shard_object.close()
+        return SupDataSource(
+            doc_manager=original_data_source.doc_manager,
+            query_col=original_data_source.query_col,
+            data=[sup],
+            id_delimiter=original_data_source.id_delimiter,
+        )
 
 
 class DataLoadMultiplexer:
@@ -25,7 +69,7 @@ class DataLoadMultiplexer:
                                reducing memory usage during processing.
 
     Methods:
-        create_segments_with_data_source(data_source, label_to_segment_map, is_index_empty):
+        create_segments_with_data_source(data_source, label_to_segment_map, update_index):
             Creates data segments based on the provided data source and label mapping,
             optionally sharding the data using an index.
 
@@ -59,7 +103,11 @@ class DataLoadMultiplexer:
             segment_objects.append(temp_file)
         return segment_filenames, segment_objects
 
-    def _create_segments_with_segment_map(self, data_source, label_to_segment_map):
+    def _create_segments_with_segment_map(
+        self,
+        data_source: Union[DocumentDataSource, SupDataSource],
+        label_to_segment_map,
+    ):
         segment_filenames, segment_objects = self._generate_temp_csvs()
 
         current_index = 0
@@ -75,9 +123,8 @@ class DataLoadMultiplexer:
                 # remove this going forward.
                 if current_label not in label_to_segment_map:
                     raise ValueError(
-                        "Label '{}' is not in 'label_to_segment_map'. Ensure it is included if sharding by index.".format(
-                            current_label
-                        )
+                        "Label '{}' is not in 'label_to_segment_map'. Ensure it is"
+                        " included if sharding by index.".format(current_label)
                     )
                 current_segment = label_to_segment_map[current_label][-1]
                 segment_objects[current_segment].write("\n" + data)
@@ -98,150 +145,73 @@ class DataLoadMultiplexer:
         )
 
     def create_segments_with_data_source(
-        self, data_source, label_to_segment_map, is_index_empty
+        self, data_source, label_to_segment_map, update_index
     ):
-        if is_index_empty:
+        if update_index:
             indices = list(range(data_source.size))
             random.seed(self.seed)
             random.shuffle(indices)
             for index, randomised_index in enumerate(indices):
                 label_to_segment_map[index].append(randomised_index % self.num_segments)
+        else:
+            if len(label_to_segment_map) == 0:
+                raise Exception("label_to_segment_map is empty")
 
         return self._create_segments_with_segment_map(data_source, label_to_segment_map)
 
 
 class ShardedDataSource:
     """
-    Initialization Variables:
-        * document_data_source -> The data source we are supposed to shard.
-        * number_shards -> The number of shards to create for the data source.
-        * label_to_segment_map -> A dictionary that tracks what label goes to what shard. This label index is supposed to be a dictionary reference from Mach Mixture class and this class will modify the label_to_segment_map.
-        * seed -> Seed for sharding the dataset (since we randomly shard the data source)
-
     External APIs :
         shard_data_source :
             Args:
-                self : ShardedDataSource
+                data_source : DocumentDataSource or SupDataSource
+                    The data source to be sharded
+                label_to_segment_map : defaultdict
+                    map of label id to shard id
+                number_shards : int
+                    number of shards to shard the dataset into
+                update_segment_map : bool
+                    If set to True, then we first randomly shard the data_source, and update the label_to_segment_map.
+                    If set to False, then the data_source is sharded using the label_to_segment_map provided by the user.
             Returns:
-                sharded_data_sources : List[DocumentDataSource]
+                sharded_data_sources : List[DocumentDataSource] or List[SupDataSource]
                     Each element in the list corresponds to a shard of the original data source
             Note:
-                Updates the label index with label_id -> shard index map
-
-        is_index_empty:
-            Args:
-                data_source : DocumentDataSource
-                    Data source to shard
-                label_to_segment_map : dictionary
-                    Label index used to shard the data source
-                number_shards : int
-                    number of shards to create for the data source.
-            Returns:
-                sharded_data_sources : List[DocumentDataSource]
-                    Each element in the list corresponds to a shard of the original data source.
-            Note:
-                Does not modify the label index.
+                Updates the label index with label_id -> shard index map if update_segment_map is True.
     """
-
-    def __init__(
-        self,
-        document_data_source: DocumentDataSource,
-        number_shards: int,
-        label_to_segment_map: defaultdict = None,
-        seed: int = 0,
-    ):
-        self.data_source = document_data_source
-        self.number_shards = number_shards
-        self.seed = seed
-        if label_to_segment_map == None:
-            self.label_to_segment_map = defaultdict(list)
-        else:
-            self.label_to_segment_map = label_to_segment_map
-        self.data_load_multiplexer = DataLoadMultiplexer(number_shards)
-
-    @staticmethod
-    def _get_csv_document(
-        id_column: str,
-        strong_column: str,
-        weak_column: str,
-        shard_name: str,
-        shard_object: tempfile.NamedTemporaryFile,
-    ):
-        """
-        This function takes as input the name of the tempfile and the tempfile object. We load the tempfile into a CSV Document and then closes the tempfile (which effectively means deleting it)
-        """
-        csv_object = CSV(
-            path=shard_name,
-            id_column=id_column,
-            strong_columns=[strong_column],
-            weak_columns=[weak_column],
-            has_offset=True,
-        )
-        shard_object.close()
-        return csv_object
 
     @staticmethod
     def _get_shards(
-        data_source: DocumentDataSource, shard_names=None, shard_objects=None
-    ) -> List[DocumentDataSource]:
-        shard_data_sources = []
-        for name, temp_object in zip(shard_names, shard_objects):
-            shard_data_source = DocumentDataSource(
-                id_column=data_source.id_column,
-                strong_column=data_source.strong_column,
-                weak_column=data_source.weak_column,
-            )
+        data_source: Union[DocumentDataSource, SupDataSource],
+        shard_names,
+        shard_objects,
+    ) -> List[Union[DocumentDataSource, SupDataSource]]:
+        return [
+            transform_shard_to_datasource(data_source, shard_path, shard_object)
+            for shard_path, shard_object in zip(shard_names, shard_objects)
+        ]
 
-            shard_data_source.add(
-                ShardedDataSource._get_csv_document(
-                    data_source.id_column,
-                    data_source.strong_column,
-                    data_source.weak_column,
-                    name,
-                    temp_object,
-                ),
-                start_id=0,
-            )
-            shard_data_sources.append(shard_data_source)
-        return shard_data_sources
-
-    def shard_data_source(self):
+    @staticmethod
+    def shard_data_source(
+        data_source: Union[DocumentDataSource, SupDataSource],
+        label_to_segment_map: defaultdict,
+        number_shards: int,
+        update_segment_map: bool,
+        flush_frequency: int = 1_000_000,
+    ):
+        data_load_multiplexer = DataLoadMultiplexer(
+            number_shards, flush_frequency=flush_frequency
+        )
         (
             shard_names,
             shard_objects,
-            self.label_to_segment_map,
-        ) = self.data_load_multiplexer.create_segments_with_data_source(
-            self.data_source, self.label_to_segment_map, is_index_empty=True
+            _,
+        ) = data_load_multiplexer.create_segments_with_data_source(
+            data_source, label_to_segment_map, update_index=update_segment_map
         )
 
         shards = ShardedDataSource._get_shards(
-            self.data_source, shard_names=shard_names, shard_objects=shard_objects
+            data_source, shard_names=shard_names, shard_objects=shard_objects
         )
         return shards
-
-    @staticmethod
-    def shard_using_index(
-        data_source: DocumentDataSource,
-        label_to_segment_map: defaultdict,
-        number_shards: int,
-        flush_frequency: int = 1_000_000,
-    ):
-        """
-        This function is used to shard another data source using the label to shard mapping generated for the data source that this object was initialized with.
-        """
-        if len(label_to_segment_map) == 0:
-            raise Exception(
-                "Cannot shard a data source without an uninitialized label index."
-            )
-
-        (shard_names, shard_objects, _) = DataLoadMultiplexer(
-            num_segments=number_shards, flush_frequency=flush_frequency
-        ).create_segments_with_data_source(
-            data_source, label_to_segment_map, is_index_empty=False
-        )
-
-        return ShardedDataSource._get_shards(
-            data_source=data_source,
-            shard_names=shard_names,
-            shard_objects=shard_objects,
-        )
