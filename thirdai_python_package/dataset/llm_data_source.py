@@ -69,7 +69,7 @@ class UnifiedLLMDataSource(PyDataSource):
         with open(file_path, "r") as file:
             for line in file:
                 json_obj = json.loads(line.strip())
-                yield json_obj
+                yield json.dumps(json_obj)
 
     def _get_line_iterator(self):
         while True:

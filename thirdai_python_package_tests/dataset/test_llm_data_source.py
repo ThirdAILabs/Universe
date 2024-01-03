@@ -130,7 +130,7 @@ def test_unified_llm_data_source():
 
     retrieved_data = []
     for line in line_iterator:
-        retrieved_data.append(str(line).strip())
+        retrieved_data.append(line)
 
     num_common_1 = len(set(file1_data).intersection(retrieved_data))
     num_common_2 = len(set(file2_data).intersection(retrieved_data))
