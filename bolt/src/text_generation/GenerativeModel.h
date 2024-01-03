@@ -10,6 +10,7 @@
 #include <licensing/src/CheckLicense.h>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <unordered_set>
 #include <utility>
 
@@ -66,6 +67,12 @@ class BeamSearchDecoder {
     }
     for (const auto& tokens : input_tokens) {
       _batched_candidate_sequences.push_back({tokens});
+    }
+    if (!_prompts.empty() && _prompts.size() != input_tokens.size()) {
+      throw std::runtime_error(
+          "Inconsistent Size Detected. The 'prompts' container is not empty "
+          "but its size doesnot matches 'input_tokens'. Ensure both of them "
+          "have the same size.");
     }
   }
 

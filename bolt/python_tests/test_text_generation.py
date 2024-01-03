@@ -188,7 +188,7 @@ def test_generation_batch():
     ]
 
     gen_2 = model.generate_batch(
-        input_tokens=input_tokens_batch,
+        input_tokens_batch=input_tokens_batch,
         beam_width=5,
         max_predictions=20,
         temperature=0.4,
@@ -201,7 +201,7 @@ def test_generation_batch():
 @pytest.mark.parametrize("backend", [create_dyadic_backend, create_contextual_backend])
 def test_text_generation_with_prompt(backend):
     model = bolt.GenerativeModel(
-        backend(), allowed_repeats=set(), punctuation_tokens=set()
+        backend(with_prompt=True), allowed_repeats=set(), punctuation_tokens=set()
     )
 
     gen_1 = model.generate(
@@ -230,7 +230,9 @@ def test_text_generation_with_prompt(backend):
 @pytest.mark.unit
 def test_text_generation_batch_with_prompt():
     model = bolt.GenerativeModel(
-        create_dyadic_backend(), allowed_repeats=set(), punctuation_tokens=set()
+        create_dyadic_backend(with_prompt=True),
+        allowed_repeats=set(),
+        punctuation_tokens=set(),
     )
 
     input_tokens_batch = [
@@ -257,15 +259,15 @@ def test_text_generation_batch_with_prompt():
         for input_token, prompt in zip(input_tokens_batch, prompt_batch)
     ]
 
-    gen_3 = model.generate_batch(
-        input_tokens=input_tokens_batch,
+    gen_2 = model.generate_batch(
+        input_tokens_batch=input_tokens_batch,
         beam_width=5,
         max_predictions=20,
         temperature=0.4,
-        prompt=prompt_batch,
+        prompt_batch=prompt_batch,
     )
 
-    assert gen_1 == gen_3
+    assert gen_1 == gen_2
 
 
 @pytest.fixture()
