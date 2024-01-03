@@ -239,7 +239,7 @@ data::TransformationPtr MachFeaturizer::makeDocIdTransformation(
     const std::string& label_column_name, std::optional<char> label_delimiter) {
   if (label_delimiter) {
     return std::make_shared<data::StringToTokenArray>(
-        label_column_name, MACH_DOC_IDS, *label_delimiter,
+        label_column_name, MACH_DOC_IDS, label_delimiter.value(),
         std::numeric_limits<uint32_t>::max());
   }
   return std::make_shared<data::StringToToken>(

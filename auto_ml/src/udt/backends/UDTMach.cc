@@ -422,12 +422,6 @@ py::object UDTMach::coldstart(
   addBalancingSamples(data, strong_column_names, weak_column_names,
                       variable_length);
 
-  auto train_data_loader = _featurizer->getColdStartDataLoader(
-      data, strong_column_names, weak_column_names,
-      /* variable_length= */ variable_length, /* fast_approximation= */ false,
-      options.batchSize(), /* shuffle= */ true, options.verbose,
-      options.shuffle_config);
-
   data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader =
@@ -435,10 +429,22 @@ py::object UDTMach::coldstart(
                                    /* shuffle= */ false, options.verbose);
   }
 
-  return _classifier->train(train_data_loader, learning_rate, epochs,
-                            getMetrics(train_metrics, "train_"),
-                            val_data_loader, getMetrics(val_metrics, "val_"),
-                            callbacks, options, comm);
+  uint32_t epoch_step = variable_length.has_value() ? 1 : epochs;
+  py::object history;
+  for (uint32_t e = 0; e < epochs; e += epoch_step) {
+    auto train_data_loader = _featurizer->getColdStartDataLoader(
+        data, strong_column_names, weak_column_names,
+        /* variable_length= */ variable_length, /* fast_approximation= */
+        false, options.batchSize(), /* shuffle= */ true, options.verbose,
+        options.shuffle_config);
+
+    history = _classifier->train(
+        train_data_loader, learning_rate, epoch_step,
+        getMetrics(train_metrics, "train_"), val_data_loader,
+        getMetrics(val_metrics, "val_"), callbacks, options, comm);
+  }
+
+  return history;
 }
 
 py::object UDTMach::embedding(const MapInputBatch& sample) {
