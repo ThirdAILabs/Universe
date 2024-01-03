@@ -76,6 +76,8 @@ class DataLoadMultiplexer:
     The class utilizes temporary files to store individual data segments, which are then
     processed independently. This design allows for efficient data handling and scalability,
     making it suitable for large-scale data processing tasks where memory optimization is crucial.
+
+    NOTE: This multiplexer assumes that the id column is the first element of the csv lines yielded by the line iterator of the data source. And hence, this multiplexer is only supposed to be used with DataSources with the above behaviour.
     """
 
     def __init__(self, num_segments, flush_frequency=1_000_000):
@@ -162,6 +164,7 @@ class DataLoadMultiplexer:
 
 class ShardedDataSource:
     """
+    NOTE: Sharding only works for data sources that have id column as the first elements of the lines yielded by their line iterator.
     External APIs :
         shard_data_source :
             Args:
