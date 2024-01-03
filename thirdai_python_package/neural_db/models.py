@@ -293,7 +293,7 @@ class Mach(Model):
         self.fhr = fhr
         self.embedding_dimension = embedding_dimension
         self.extreme_output_dim = extreme_output_dim
-        self.hidden_bias
+        self.hidden_bias = hidden_bias
         self.n_ids = 0
         self.model = None
         self.balancing_samples = []
