@@ -1,6 +1,6 @@
 #include "DataSource.h"
 #include <dataset/src/utils/CsvParser.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <iostream>
 #include <stdexcept>
 
