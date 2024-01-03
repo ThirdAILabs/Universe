@@ -56,20 +56,33 @@ metrics::History DyadicModel::train(
     const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
+    std::optional<size_t> max_in_memory_batches,
     const DistributedCommPtr& comm) {
-  auto train_dataset =
-      getDataLoader(train_data, batch_size, /* shuffle= */ true).all();
+  size_t batches_to_load =
+      max_in_memory_batches.value_or(data::Loader::NO_LIMIT);
+
+  auto train_dataset_loader =
+      getDataLoader(train_data, batch_size, /* shuffle= */ true);
   auto val_dataset =
       getDataLoader(val_data, batch_size, /* shuffle= */ false).all();
 
   Trainer trainer(_model);
 
-  return trainer.train_with_metric_names(
-      train_dataset, learning_rate, epochs, train_metrics, val_dataset,
-      val_metrics, /* steps_per_validation= */ std::nullopt,
-      /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
-      /* autotune_rehash_rebuild= */ false, /* verbose= */ true,
-      /* logging_interval= */ std::nullopt, comm);
+  // We cannot use train_with_dataset_loader, since it is using the older
+  // dataset::DatasetLoader while dyadic model is using data::Loader
+  for (uint32_t e = 0; e < epochs; e++) {
+    while (auto train_chunk = train_dataset_loader.next(batches_to_load)) {
+      if (train_chunk) {
+        trainer.train_with_metric_names(
+            *train_chunk, learning_rate, 1, train_metrics, val_dataset,
+            val_metrics, /* steps_per_validation= */ std::nullopt,
+            /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
+            /* autotune_rehash_rebuild= */ false, /* verbose= */ true,
+            /* logging_interval= */ std::nullopt, comm);
+      }
+    }
+  }
+  return trainer.getHistory();
 }
 
 data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
@@ -85,7 +98,7 @@ data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
     columns_names.push_back(*context_column);
   }
 
-  auto data_iter = data::JsonIterator::make(data, columns_names);
+  auto data_iter = data::JsonIterator::make(data, columns_names, 1000);
   auto transform =
       data::Pipeline::make({std::make_shared<data::StringToTokenArray>(
           _dyadic_transform->getInputColumn(),
