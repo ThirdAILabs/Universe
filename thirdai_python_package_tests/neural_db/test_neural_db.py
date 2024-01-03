@@ -102,10 +102,15 @@ def search_works(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
         assert correct_result / sum([doc.size for doc in docs]) > 0.8
 
 
-def upvote_works(db: ndb.NeuralDB, number_models: int = 1):
+def upvote_works(db: ndb.NeuralDB):
     # We have more than 10 indexed entities.
     target_id = get_upvote_target_id(db, ARBITRARY_QUERY, top_k=10)
 
+    number_models = (
+        db._savable_state.model.number_models
+        if hasattr(db._savable_state.model, "number_models")
+        else 1
+    )
     # TODO(Shubh) : For mach mixture, it is not necessary that upvoting alone will
     # boost the label enough to be predicted at once. Look at a better solution than
     # upvoting multiple times.
@@ -172,7 +177,7 @@ def clear_sources_works(db: ndb.NeuralDB):
 def all_methods_work(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
     insert_works(db, docs)
     search_works(db, docs, assert_acc)
-    upvote_works(db, number_models=db._savable_state.model.number_models or 1)
+    upvote_works(db)
     associate_works(db)
     save_load_works(db)
     clear_sources_works(db)
