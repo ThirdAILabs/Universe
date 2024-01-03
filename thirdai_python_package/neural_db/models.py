@@ -283,7 +283,7 @@ class Mach(Model):
         embedding_dimension=2048,
         extreme_output_dim=50_000,
         tokenizer="char-4",
-        hidden_bias=True,
+        hidden_bias=False,
         model_config=None,
     ):
         self.id_col = id_col
