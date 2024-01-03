@@ -82,17 +82,17 @@ class UnifiedLLMDataSource(PyDataSource):
                 range(len(self.file_iterators)), weights=self.probs
             )[0]
             chosen_iterator = self.file_iterators[chosen_iterator_idx]
-            line = next(chosen_iterator, None)
+            line_json_obj = next(chosen_iterator, None)
 
-            if line is None and self.restart_allowed[chosen_iterator_idx]:
+            if line_json_obj is None and self.restart_allowed[chosen_iterator_idx]:
                 self.file_iterators[chosen_iterator_idx] = self._restart_file_iterator(
                     self.file_paths[chosen_iterator_idx]
                 )
                 chosen_iterator = self.file_iterators[chosen_iterator_idx]
-                line = next(chosen_iterator, None)
-            if line is None:
+                line_json_obj = next(chosen_iterator, None)
+            if line_json_obj is None:
                 break
-            yield line
+            yield line_json_obj
 
     def _restart_file_iterator(self, file_path):
         return self._get_file_iterator(file_path)
