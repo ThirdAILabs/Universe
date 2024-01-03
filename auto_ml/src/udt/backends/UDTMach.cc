@@ -757,7 +757,7 @@ void UDTMach::addBalancingSamples(
     // range of samples.
     auto samples = _featurizer->getBalancingSamples(
         data, strong_column_names, weak_column_names, variable_length,
-        /*n_balancing_samples=*/defaults::MAX_BALANCING_DOCS);
+        /*n_balancing_samples=*/defaults::MAX_BALANCING_SAMPLES_TO_LOAD);
 
     _balancing_samples->addSamples(samples);
 
