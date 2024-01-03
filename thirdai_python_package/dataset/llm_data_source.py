@@ -57,8 +57,10 @@ class UnifiedLLMDataSource(PyDataSource):
 
         assert sum(probs) == 1
         assert len(probs) == len(restart_allowed)
-        assert len(probs) == len(file_paths) 
-        assert any([not element for element in restart_allowed]) # check if any one file has restart_allowed=False
+        assert len(probs) == len(file_paths)
+        assert any(
+            [not element for element in restart_allowed]
+        )  # check if any one file has restart_allowed=False
 
         try:
             from transformers import GPT2Tokenizer
