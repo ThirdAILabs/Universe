@@ -117,6 +117,20 @@ class NeuralDBClient:
         print(json.loads(response.content)["message"])
 
     @check_deployment_decorator
+    def delete(self, source_ids: List[str]):
+        """
+        Deletes documents from the ndb model using source ids.
+
+        Args:
+            files (List[str]): A list of source ids to delete from the ndb model.
+        """
+        response = http_post_with_error(
+            urljoin(self.base_url, "delete"), json={source_ids: source_ids}
+        )
+
+        print(json.loads(response.content)["message"])
+
+    @check_deployment_decorator
     def associate(self, query1: str, query2: str):
         """
         Associates two queries in the ndb model.
