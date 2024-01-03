@@ -172,6 +172,10 @@ class Reference:
     def score(self):
         return self._score
 
+    @property
+    def document(self):
+        return self._document
+
     def context(self, radius: int):
         return self._context_fn(radius)
 
