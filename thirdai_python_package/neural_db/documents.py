@@ -146,6 +146,7 @@ class Reference:
         self._metadata = metadata
         self._context_fn = lambda radius: document.context(element_id, radius)
         self._score = 0
+        self._document = document
 
     @property
     def id(self):
