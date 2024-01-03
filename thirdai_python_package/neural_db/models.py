@@ -452,22 +452,7 @@ class Mach(Model):
             learning_rates = autotune_value(
                 learning_rates, default_learning_rate, float
             )
-            if epochs is None:
-                min_epochs = [tuned_min_epochs]
-                max_epochs = [tuned_max_epochs]
-            elif isinstance(epochs, int):
-                min_epochs = [epochs]
-                max_epochs = [epochs]
-            else:
-                min_epochs = epochs
-                max_epochs = epochs
-
-            # Setting the learning_rates
-            if learning_rates is None:
-                learning_rates = [default_learning_rate]
-            elif isinstance(learning_rates, float):
-                learning_rates = [learning_rates]
-
+            
             for min_num_epochs, max_num_epochs, learning_rate in zip(
                 min_epochs, max_epochs, learning_rates
             ):

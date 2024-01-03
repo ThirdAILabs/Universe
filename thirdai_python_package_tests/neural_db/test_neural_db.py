@@ -881,3 +881,6 @@ def test_custom_epoch_lr_construct(create_simple_dataset):
 
         for epochs, learning_rates in zip(epochs_list, learning_rates_list):
             db.insert(sources=[doc], epochs=epochs, learning_rates=learning_rates)
+    
+    # It should not throw any error
+    db.insert(sources=[doc], epochs=[3, 3], learning_rates=[4e-4, 4e-5])
