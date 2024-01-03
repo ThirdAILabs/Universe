@@ -184,29 +184,17 @@ class MachMixture(Model):
             """
             try:
                 single_model_outputs = model.infer_labels(
-                    samples=samples,
-                    n_results=n_results,
-                    **kwargs,
+                    samples=samples, n_results=n_results, **kwargs
                 )
             except Exception as e:
                 single_model_outputs = [[] for _ in range(len(samples))]
             finally:
                 for index in range(len(samples)):
                     results[index].extend(single_model_outputs[index])
-
-        # Aggreagating the (label, activations)
-        aggregated_results = [[] for _ in range(len(samples))]
-        for index, segment_results in enumerate(results):
-            label_activation_map = defaultdict(lambda: 0)
-            # Collect and sum up activations for each label
-            for label, activation in segment_results:
-                label_activation_map[label] += activation
-
-            aggregated_results[index] = list(label_activation_map.items())
-        for index in range(len(aggregated_results)):
-            aggregated_results[index].sort(key=lambda x: x[1], reverse=True)
-            aggregated_results[index] = aggregated_results[index][:n_results]
-        return aggregated_results
+        for index in range(len(results)):
+            results[index].sort(key=lambda x: x[1], reverse=True)
+            results[index] = results[index][:n_results]
+        return results
 
     @requires_condition(
         check_func=lambda x: False,

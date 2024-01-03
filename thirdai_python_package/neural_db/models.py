@@ -143,37 +143,24 @@ class Model:
         self, epochs: Union[List[int], int], learning_rates: Union[List[float], float]
     ):
         if epochs is not None and learning_rates is not None:
-            if isinstance(epochs, int):
-                if not isinstance(learning_rates, float):
-                    raise AttributeError(
-                        "Incompaitble epoch and learning rate construct"
-                    )
-            elif isinstance(epochs, list) and all(
-                isinstance(item, int) for item in epochs
-            ):
-                if isinstance(learning_rates, list) and all(
-                    isinstance(item, int) for item in learning_rates
+            if isinstance(epochs, int) and isinstance(learning_rates, float):
+                return
+            if isinstance(epochs, list) and isinstance(learning_rates, list):
+                if all(isinstance(item, int) for item in epochs) and all(
+                    isinstance(item, float) for item in learning_rates
                 ):
-                    if len(epochs) != len(learning_rates):
-                        raise AttributeError(
-                            "Incompaitble epoch and learning rate construct"
-                        )
-                else:
-                    raise AttributeError(
-                        "Incompaitble epoch and learning rate construct"
-                    )
-            else:
-                raise AttributeError("Incompaitble epoch and learning rate construct")
+                    if len(epochs) == len(learning_rates):
+                        return
 
-        if epochs is not None:
-            # learning_rates is None
-            if not isinstance(epochs, int):
-                raise AttributeError("Incompaitble epoch and learning rate construct")
+        if learning_rates is None:
+            if isinstance(epochs, int):
+                return
 
-        if learning_rates is not None:
-            # epochs is None
+        if epochs is None:
             if not isinstance(learning_rates, float):
-                raise AttributeError("Incompaitble epoch and learning rate construct")
+                return
+
+        raise AttributeError("Incompatible epoch and learning rate construct. ")
 
 
 class EarlyStopWithMinEpochs(bolt.train.callbacks.Callback):
