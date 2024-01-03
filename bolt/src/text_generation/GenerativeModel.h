@@ -51,14 +51,12 @@ class BeamSearchDecoder {
                     std::vector<std::vector<uint32_t>> prompts,
                     const std::vector<std::vector<uint32_t>>& input_tokens,
                     size_t prediction_chunk_size, size_t max_predictions,
-                    size_t beam_width, std::optional<float> temperature,
-                    uint32_t batch_size = 2048)
+                    size_t beam_width, std::optional<float> temperature)
       : _generator(std::move(generator)),
         _prediction_chunk_size(prediction_chunk_size),
         _max_predictions(max_predictions),
         _beam_width(beam_width),
         _temperature(temperature),
-        _batch_size(batch_size),
         _prompts(std::move(prompts)),
         _sequence_scores(
             std::vector<std::vector<double>>(input_tokens.size(), {0.0})) {
@@ -93,7 +91,6 @@ class BeamSearchDecoder {
   const size_t _beam_width;
   const std::optional<float> _temperature;
 
-  uint32_t _batch_size;
 
   // This isues two seperate containers for the sequences and scores instead of
   // a std::vector<CandidateSequence> so that the sequences can be passed into

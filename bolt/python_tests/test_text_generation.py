@@ -243,9 +243,9 @@ def test_text_generation_batch_with_prompt():
     ]
     prompt_batch = [
         list(range(5)),
-        list(range(5)),
-        list(range(5)),
-        list(range(5)),
+        list(range(6)),
+        list(range(7)),
+        list(range(8)),
     ]
 
     gen_1 = [

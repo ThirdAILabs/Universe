@@ -207,7 +207,6 @@ ColumnMap DyadicInterval::inferenceFeaturization(ColumnMap columns) const {
            intervals_from_end) if (tokens->numRows() > 1)
   for (size_t i = 0; i < tokens->numRows(); i++) {
     auto row_tokens = tokens->row(i);
-    auto row_tokens_vector = row_tokens.range(0, row_tokens.size());
     for (size_t interval = 0; interval < _n_intervals; interval++) {
       size_t int_len = std::min<size_t>(row_tokens.size(), 1UL << interval);
       size_t int_start = row_tokens.size() - int_len;
