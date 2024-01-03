@@ -449,9 +449,7 @@ class Mach(Model):
             # Setting the min and max epochs
             min_epochs = value_to_list(epochs, tuned_min_epochs, int)
             max_epochs = value_to_list(epochs, tuned_max_epochs, int)
-            learning_rates = value_to_list(
-                learning_rates, default_learning_rate, float
-            )
+            learning_rates = value_to_list(learning_rates, default_learning_rate, float)
 
             for min_num_epochs, max_num_epochs, learning_rate in zip(
                 min_epochs, max_epochs, learning_rates

@@ -867,7 +867,7 @@ def test_custom_epoch_lr_construct(create_simple_dataset):
     )
 
     with pytest.raises(AttributeError):
-        epochs_list = ["a", [5, "a"], [], 5, 5, 5, [5, 10], []]
+        epochs_list = ["a", [5, "a"], [], 5, 5, 5, [5, 10], [], None, [3, 6]]
         learning_rates_list = [
             1e-3,
             1e-3,
@@ -877,10 +877,17 @@ def test_custom_epoch_lr_construct(create_simple_dataset):
             [],
             [4e-4, 4e-5, 4e-6],
             [],
+            [4e-4],
+            None
         ]
 
         for epochs, learning_rates in zip(epochs_list, learning_rates_list):
             db.insert(sources=[doc], epochs=epochs, learning_rates=learning_rates)
     
-    # It should not throw any error
+    # These should not throw any error
+    db.insert(sources=[doc])
+    db.insert(sources=[doc], learning_rates=[4e-4, 4e-5])
+    db.insert(sources=[doc], epochs = 4)
+    db.insert(sources=[doc], epochs=5, learning_rates=4e-4)
     db.insert(sources=[doc], epochs=[3, 3], learning_rates=[4e-4, 4e-5])
+    
