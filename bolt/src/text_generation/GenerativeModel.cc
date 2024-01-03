@@ -62,9 +62,8 @@ std::optional<std::vector<std::vector<uint32_t>>> BeamSearchDecoder::next() {
       std::vector<double> sequence_scores = _sequence_scores[batch_id];
       for (size_t candidate = 0; candidate < candidate_sequences.size();
            candidate++) {
-
-        BoltVector& token_probs =
-            next_token_probs->getVector(batch_id * candidate_sequences.size() + candidate);
+        BoltVector& token_probs = next_token_probs->getVector(
+            batch_id * candidate_sequences.size() + candidate);
         reduceProbsForRepeats(candidate_sequences[candidate], token_probs,
                               _max_predictions);
 
