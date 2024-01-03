@@ -1,4 +1,6 @@
 import json
+import random
+from typing import List
 
 from thirdai.dataset.data_source import PyDataSource
 
@@ -39,6 +41,63 @@ class LLMDataSource(PyDataSource):
 
     def resource_name(self) -> str:
         return self.file_path
+
+
+class UnifiedLLMDataSource(PyDataSource):
+    def __init__(
+        self, file_paths: List[str], probs: List[float], restart_allowed: List[bool]
+    ):
+        self.file_paths = file_paths
+
+        self.file_iterators = [
+            self._get_file_iterator(file_path) for file_path in self.file_paths
+        ]
+        self.probs = probs
+        self.restard_allowed
+
+        assert sum(probs) == 1
+        assert len(probs) == len(restart_allowed)
+        assert restart_allowed
+
+        try:
+            from transformers import GPT2Tokenizer
+        except ImportError:
+            raise ImportError(
+                "transformers library is not installed. Please install it to use LLMDataSource."
+            )
+        self.tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+        PyDataSource.__init__(self)
+        self.restart()
+
+    def _get_file_iterator(self, file_path):
+        with open(file_path, "r") as file:
+            for line in file:
+                json_obj = json.loads(line.strip())
+                yield json_obj
+
+    def _get_line_iterator(self):
+        while True:
+            chosen_iterator_idx = random.choices(
+                range(len(self.file_iterators)), weights=self.probs
+            )[0]
+            chosen_iterator = self.file_iterators[chosen_iterator_idx]
+            line = next(chosen_iterator, None)
+
+            if line is None and self.restart_allowed[chosen_iterator_idx]:
+                self.file_iterators[chosen_iterator_idx] = self._restart_file_iterator(
+                    self.file_paths[chosen_iterator_idx]
+                )
+                chosen_iterator = self.file_iterators[chosen_iterator_idx]
+                line = next(chosen_iterator, None)
+            if line is None:
+                break
+            yield line
+
+    def _restart_file_iterator(self, file_path):
+        return self._get_file_iterator(file_path)
+
+    def resource_name(self) -> List[str]:
+        return self.file_paths
 
 
 class RayTextDataSource(PyDataSource):
