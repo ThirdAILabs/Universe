@@ -142,6 +142,9 @@ class Model:
     def assert_valid_epochs_lr(
         self, epochs: Union[List[int], int], learning_rates: Union[List[float], float]
     ):
+        if epochs is None and learning_rates is None:
+            return 
+
         if epochs is not None and learning_rates is not None:
             if isinstance(epochs, int) and isinstance(learning_rates, float):
                 return
@@ -158,7 +161,7 @@ class Model:
                 return
 
         if epochs is None:
-            if not isinstance(learning_rates, float) and learning_rates > 0:
+            if isinstance(learning_rates, float) and learning_rates > 0:
                 return
 
         raise AttributeError(

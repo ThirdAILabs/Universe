@@ -886,7 +886,7 @@ def test_custom_epoch_lr_construct(create_simple_dataset):
 
     # These should not throw any error
     db.insert(sources=[doc])
-    db.insert(sources=[doc], learning_rates=[4e-4, 4e-5])
+    db.insert(sources=[doc], learning_rates=4e-5)
     db.insert(sources=[doc], epochs=4)
     db.insert(sources=[doc], epochs=5, learning_rates=4e-4)
     db.insert(sources=[doc], epochs=[3, 3], learning_rates=[4e-4, 4e-5])
