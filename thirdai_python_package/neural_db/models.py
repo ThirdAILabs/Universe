@@ -304,7 +304,7 @@ def autotune_from_base_min_max_epochs(size):
     return 1, 5
 
 
-def autotune_value(param_value, default_param_value, param_base_type):
+def value_to_list(param_value, default_param_value, param_base_type):
     if param_value is None:
         return [default_param_value]
     elif isinstance(param_value, param_base_type):
@@ -447,12 +447,12 @@ class Mach(Model):
 
         if should_train and train_documents.size > 0:
             # Setting the min and max epochs
-            min_epochs = autotune_value(epochs, tuned_min_epochs, int)
-            max_epochs = autotune_value(epochs, tuned_max_epochs, int)
-            learning_rates = autotune_value(
+            min_epochs = value_to_list(epochs, tuned_min_epochs, int)
+            max_epochs = value_to_list(epochs, tuned_max_epochs, int)
+            learning_rates = value_to_list(
                 learning_rates, default_learning_rate, float
             )
-            
+
             for min_num_epochs, max_num_epochs, learning_rate in zip(
                 min_epochs, max_epochs, learning_rates
             ):
