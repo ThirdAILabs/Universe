@@ -170,35 +170,31 @@ def test_generation_batch():
         create_dyadic_backend(), allowed_repeats=set(), punctuation_tokens=set()
     )
 
-    gen_1 = model.generate(
-        input_tokens=list(range(20)), beam_width=5, max_predictions=20, temperature=0.4
-    )
+    input_tokens_batch = [
+        list(range(20)),
+        list(range(10)),
+        list(range(5)),
+        list(range(15)),
+    ]
 
-    stream = model.streaming_generate(
-        input_tokens=list(range(10)),
+    gen_1 = [
+        model.generate(
+            input_tokens=input_tokens,
+            beam_width=5,
+            max_predictions=20,
+            temperature=0.4,
+        )
+        for input_tokens in input_tokens_batch
+    ]
+
+    gen_2 = model.generate_batch(
+        input_tokens=input_tokens_batch,
         beam_width=5,
         max_predictions=20,
-        prediction_chunk_size=6,
         temperature=0.4,
     )
 
-    gen_3 = model.generate_batch(
-        input_tokens=[
-            list(range(20)),
-            list(range(10)),
-            list(range(5)),
-            list(range(15)),
-        ],
-        beam_width=5,
-        max_predictions=20,
-        temperature=0.4,
-    )
-
-    for res in stream:
-        gen_2 = res[0]
-
-    assert gen_1 == gen_3[0]
-    assert gen_2 == gen_3[1]
+    assert gen_1 == gen_2
 
 
 @pytest.mark.unit
@@ -237,41 +233,39 @@ def test_text_generation_batch_with_prompt():
         create_dyadic_backend(), allowed_repeats=set(), punctuation_tokens=set()
     )
 
-    gen_1 = model.generate(
-        input_tokens=list(range(20)),
-        beam_width=5,
-        max_predictions=20,
-        temperature=0.4,
-        prompt=list(range(5)),
-    )
+    input_tokens_batch = [
+        list(range(20)),
+        list(range(10)),
+        list(range(5)),
+        list(range(15)),
+    ]
+    prompt_batch = [
+        list(range(5)),
+        list(range(5)),
+        list(range(5)),
+        list(range(5)),
+    ]
 
-    stream = model.streaming_generate(
-        input_tokens=list(range(10)),
-        beam_width=5,
-        max_predictions=20,
-        prediction_chunk_size=6,
-        temperature=0.4,
-        prompt=list(range(5)),
-    )
-
-    for res in stream:
-        gen_2 = res[0]
+    gen_1 = [
+        model.generate(
+            input_tokens=input_token,
+            beam_width=5,
+            max_predictions=20,
+            temperature=0.4,
+            prompt=prompt,
+        )
+        for input_token, prompt in zip(input_tokens_batch, prompt_batch)
+    ]
 
     gen_3 = model.generate_batch(
-        input_tokens=[
-            list(range(20)),
-            list(range(10)),
-            list(range(5)),
-            list(range(15)),
-        ],
+        input_tokens=input_tokens_batch,
         beam_width=5,
         max_predictions=20,
         temperature=0.4,
-        prompt=[list(range(5)), list(range(5)), list(range(5)), list(range(5))],
+        prompt=prompt_batch,
     )
 
-    assert gen_1 == gen_3[0]
-    assert gen_2 == gen_3[1]
+    assert gen_1 == gen_3
 
 
 @pytest.fixture()
