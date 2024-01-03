@@ -91,7 +91,6 @@ class BeamSearchDecoder {
   const size_t _beam_width;
   const std::optional<float> _temperature;
 
-
   // This isues two seperate containers for the sequences and scores instead of
   // a std::vector<CandidateSequence> so that the sequences can be passed into
   // nextTokenProbs directly, instead of having to split apart the sequences and
