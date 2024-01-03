@@ -146,21 +146,24 @@ class Model:
             if isinstance(epochs, int) and isinstance(learning_rates, float):
                 return
             if isinstance(epochs, list) and isinstance(learning_rates, list):
-                if all(isinstance(item, int) for item in epochs) and all(
-                    isinstance(item, float) for item in learning_rates
+                if len(epochs) == len(learning_rates) and len(epochs) != 0:
+                    return
+                if all(isinstance(item, int) and item > 0 for item in epochs) and all(
+                    isinstance(item, float) and item > 0 for item in learning_rates
                 ):
-                    if len(epochs) == len(learning_rates):
-                        return
+                    return
 
         if learning_rates is None:
-            if isinstance(epochs, int):
+            if isinstance(epochs, int) and epochs > 0:
                 return
 
         if epochs is None:
-            if not isinstance(learning_rates, float):
+            if not isinstance(learning_rates, float) and learning_rates > 0:
                 return
 
-        raise AttributeError("Incompatible epoch and learning rate construct. ")
+        raise AttributeError(
+            "Incompatible epoch and learning rate construct. Both should be (single values or None) or matching lists"
+        )
 
 
 class EarlyStopWithMinEpochs(bolt.train.callbacks.Callback):
@@ -301,6 +304,15 @@ def autotune_from_base_min_max_epochs(size):
     return 1, 5
 
 
+def autotune_value(param_value, default_param_value, param_base_type):
+    if param_value is None:
+        return [default_param_value]
+    elif isinstance(param_value, param_base_type):
+        return [param_value]
+    else:
+        return param_value
+
+
 class Mach(Model):
     def __init__(
         self,
@@ -435,6 +447,11 @@ class Mach(Model):
 
         if should_train and train_documents.size > 0:
             # Setting the min and max epochs
+            min_epochs = autotune_value(epochs, tuned_min_epochs, int)
+            max_epochs = autotune_value(epochs, tuned_max_epochs, int)
+            learning_rates = autotune_value(
+                learning_rates, default_learning_rate, float
+            )
             if epochs is None:
                 min_epochs = [tuned_min_epochs]
                 max_epochs = [tuned_max_epochs]

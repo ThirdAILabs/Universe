@@ -853,3 +853,31 @@ def test_neural_db_reranking_threshold():
         ranker_results[: 10 - rerank_start],
         check_equal_scores=False,
     )
+
+
+def test_custom_epoch_lr_construct(create_simple_dataset):
+    db = ndb.NeuralDB(user_id="user")
+
+    doc = ndb.CSV(
+        path=create_simple_dataset,
+        id_column="label",
+        strong_columns=["text"],
+        weak_columns=["text"],
+        reference_columns=["text"],
+    )
+
+    with pytest.raises(AttributeError):
+        epochs_list = ["a", [5, "a"], [], 5, 5, 5, [5, 10], []]
+        learning_rates_list = [
+            1e-3,
+            1e-3,
+            1e-3,
+            "a",
+            [5e-5, "a"],
+            [],
+            [4e-4, 4e-5, 4e-6],
+            [],
+        ]
+
+        for epochs, learning_rates in zip(epochs_list, learning_rates_list):
+            db.insert(sources=[doc], epochs=epochs, learning_rates=learning_rates)
