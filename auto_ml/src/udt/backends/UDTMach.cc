@@ -442,6 +442,11 @@ py::object UDTMach::coldstart(
         train_data_loader, learning_rate, epoch_step,
         getMetrics(train_metrics, "train_"), val_data_loader,
         getMetrics(val_metrics, "val_"), callbacks, options, comm);
+
+    data->restart();
+    if (val_data_loader) {
+      val_data_loader->restart();
+    }
   }
 
   return history;
