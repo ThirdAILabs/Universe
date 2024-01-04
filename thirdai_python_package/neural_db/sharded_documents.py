@@ -70,7 +70,13 @@ class DataLoadMultiplexer:
         segment_filenames, segment_objects = self._generate_temp_csvs()
 
         current_index = 0
-        for data in data_source._get_line_iterator():
+
+        if isinstance(data_source, DocumentDataSource):
+            line_iterator = data_source._get_line_iterator()
+        if isinstance(data_source, SupDataSource):
+            line_iterator = data_source._get_line_iterator(concat_labels=False)  # type: ignore
+
+        for data in line_iterator:  # type: ignore
             # header
             if current_index == 0:
                 for segments in segment_objects:

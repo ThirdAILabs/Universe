@@ -151,13 +151,16 @@ class SupDataSource(PyDataSource):
 
         return [map(mapper, labels) for labels in sup.labels]
 
-    def _get_line_iterator(self):
+    def _get_line_iterator(self, concat_labels=True):
+        """
+        If concat_labels is True and id_delimiter is not None, then the labels are joined using id_delimiter and yielded in a single row. Return one label per row in all other cases.
+        """
         # First yield the header
         yield self._csv_line(self.doc_manager.id_column, self.query_col)
         # Then yield rows
         for sup in self.data:
             for query, labels in zip(sup.queries, self._labels(sup)):
-                if self.id_delimiter:
+                if self.id_delimiter and concat_labels:
                     yield self._csv_line(
                         self.id_delimiter.join(labels),
                         query,

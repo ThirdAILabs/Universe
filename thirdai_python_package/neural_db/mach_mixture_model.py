@@ -124,6 +124,11 @@ class MachMixture(Model):
             number_shards=self.number_models,
             update_segment_map=True,
         )
+        # REMOVE
+        for index, shard in enumerate(introduce_data_sources):
+            print(index)
+            for line in shard._get_line_iterator():
+                print(line)
 
         # Once the introduce datasource has been sharded, we can use the update label index to shard the training data source ( We do not want training samples to go to a Mach model that does not contain their labels)
         train_data_sources = DataSourceSharder.shard_data_source(
@@ -298,6 +303,11 @@ class MachMixture(Model):
             label_to_segment_map=self.label_to_segment_map,
             update_segment_map=False,
         )
+        # REMOVE
+        for index, shard in enumerate(supervised_data_source_shards):
+            print(index)
+            for line in shard._get_line_iterator():
+                print(line)
 
         for shard, model in zip(supervised_data_source_shards, self.models):
             model.train_on_supervised_data_source(

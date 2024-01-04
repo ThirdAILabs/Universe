@@ -497,7 +497,7 @@ def test_data_load_multiplexer(create_simple_dataset):
         segment_objects,
         _,
     ) = data_multiplexer.create_segments_with_data_source(
-        document_data_source, defaultdict(list), is_index_empty=True
+        document_data_source, defaultdict(list), update_index=True
     )
     for i, filename in enumerate(segment_filenames):
         try:
