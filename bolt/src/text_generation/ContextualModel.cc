@@ -1,7 +1,6 @@
 #include "ContextualModel.h"
 #include <bolt/src/train/trainer/Dataset.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
-#include <csignal>
 #include <stdexcept>
 
 namespace thirdai::bolt {
@@ -13,7 +12,7 @@ ContextualModel::ContextualModel(
 bolt::TensorPtr ContextualModel::nextTokenProbs(
     std::vector<std::vector<uint32_t>>& prompts,
     std::vector<std::vector<std::vector<uint32_t>>>& tokens) {
-  if (prompts.size() > 1 || tokens.size() > 1) {
+  if (prompts.size() != 1 || tokens.size() != 1) {
     throw std::runtime_error(
         "Batched generation is not supported for contextual model.");
   }

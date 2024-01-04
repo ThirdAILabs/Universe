@@ -17,7 +17,7 @@ class MockBackend final : public GenerativeBackend {
         {0.05, 0.1, 0.8, 0.05},
     };
 
-    auto output = bolt::Tensor::dense(tokens.size(), 4);
+    auto output = bolt::Tensor::dense(tokens[0].size(), 4);
     for (size_t i = 0; i < tokens[0].size(); i++) {
       const auto& scores = transition_matrix[tokens[0][i].back()];
       std::copy(scores.begin(), scores.end(), output->getVector(i).activations);
@@ -72,7 +72,7 @@ TEST(BeamSearchDecoding, AllowRepeats) {
                                      /* punctuation_repeat_threshold= */ 0.8);
 
   auto output = model->generate(/* input_tokens= */ {0}, /* prompt= */ {},
-                                /* n_predictions= */ 3,
+                                /* max_predictions= */ 3,
                                 /* beam_width= */ 1);
 
   std::vector<uint32_t> expected_output = {1, 2, 1};
@@ -87,7 +87,7 @@ TEST(BeamSearchDecoding, NoRepeatPunctuationUnderThreshold) {
                                      /* punctuation_repeat_threshold= */ 0.8);
 
   auto output = model->generate(/* input_tokens= */ {0}, /* prompt= */ {},
-                                /* n_predictions= */ 3,
+                                /* max_predictions= */ 3,
                                 /* beam_width= */ 1);
 
   std::vector<uint32_t> expected_output = {1, 2, 3};
@@ -102,7 +102,7 @@ TEST(BeamSearchDecoding, AllowRepeatPunctuationOverThreshold) {
                                      /* punctuation_repeat_threshold= */ 0.3);
 
   auto output = model->generate(/* input_tokens= */ {0}, /* prompt= */ {},
-                                /* n_predictions= */ 3,
+                                /* max_predictions= */ 3,
                                 /* beam_width= */ 1);
 
   std::vector<uint32_t> expected_output = {1, 2, 1};
@@ -117,7 +117,7 @@ TEST(BeamSearchDecoding, FindBestPath) {
                                      /* punctuation_repeat_threshold= */ 0.8);
 
   auto output = model->generate(/* input_tokens= */ {0}, /* prompt */ {},
-                                /* n_predictions= */ 3,
+                                /* max_predictions= */ 3,
                                 /* beam_width= */ 2);
 
   // The greedy path would be 1 -> 2 -> 1, however the score for 1 -> 3 -> 2 is

@@ -69,7 +69,7 @@ class BeamSearchDecoder {
     if (!_prompts.empty() && _prompts.size() != input_tokens.size()) {
       throw std::runtime_error(
           "Inconsistent Size Detected. The 'prompts' container is not empty "
-          "but its size doesnot matches 'input_tokens'. Ensure both of them "
+          "but its size does not matches 'input_tokens'. Ensure both of them "
           "have the same size.");
     }
   }
