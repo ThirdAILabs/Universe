@@ -7,6 +7,7 @@ from typing import Callable, List, Optional, Union
 from urllib.parse import urljoin
 
 import requests
+import threading
 from pydantic import BaseModel, ValidationError
 from requests.auth import HTTPBasicAuth
 from thirdai.neural_db.models import CancelState
@@ -422,6 +423,28 @@ class Bazaar:
                     f.write(chunk)
                     bar.update(len(chunk))
 
+    def upload_chunk(self, upload_token, chunk_number, chunk_data, bar):
+        files = {"chunk": chunk_data}
+        response = requests.post(
+            urljoin(
+                self._login_instance._base_url,
+                "bazaar/upload-chunk",
+            ),
+            files=files,
+            params={"chunk_number": chunk_number},
+            headers=auth_header(upload_token),
+        )
+
+        if response.status_code == 200:
+            # Update the progress bar
+            bar.update(len(chunk_data))
+        else:
+            print(f"Upload failed with status code: {response.status_code}")
+            print(response.text)
+            return False
+
+        return True
+
     @login_required
     def push(
         self,
@@ -462,6 +485,8 @@ class Bazaar:
             # Open the file in binary mode
             with open(zip_path, "rb") as file:
                 chunk_number = 0
+                upload_threads = []
+
                 while True:
                     # Read a chunk of the file
                     chunk_data = file.read(chunk_size)
@@ -471,26 +496,22 @@ class Bazaar:
                     # Increment the chunk number
                     chunk_number += 1
 
-                    # Send the chunk to the FastAPI endpoint
-                    files = {"chunk": chunk_data}
-                    response = requests.post(
-                        urljoin(
-                            self._login_instance._base_url,
-                            "bazaar/upload-chunk",
-                        ),
-                        files=files,
-                        params={"chunk_number": chunk_number},
-                        headers=auth_header(upload_token),
+                    # Create a thread for uploading the chunk
+                    thread = threading.Thread(
+                        target=self.upload_chunk,
+                        args=(upload_token, chunk_number, chunk_data, bar),
                     )
+                    upload_threads.append(thread)
+                    thread.start()
 
-                    # Check the response status
-                    if response.status_code == 200:
-                        # Update the progress bar
-                        bar.update(len(chunk_data))
-                    else:
-                        print(f"Upload failed with status code: {response.status_code}")
-                        print(response.text)
-                        break
+                # Wait for all threads to finish and collect results
+                results = [thread.join() for thread in upload_threads]
+
+                # Check if all uploads were successful
+                if all(results):
+                    print("File upload completed successfully.")
+                else:
+                    print("File upload failed.")
 
         db = NeuralDB.from_checkpoint(checkpoint_path=model_path)
         model = db._savable_state.model.model._get_model()
