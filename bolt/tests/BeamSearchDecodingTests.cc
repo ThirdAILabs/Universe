@@ -7,9 +7,9 @@ namespace thirdai::bolt::tests {
 class MockBackend final : public GenerativeBackend {
  public:
   bolt::TensorPtr nextTokenProbs(
-      std::vector<uint32_t>& prompt,
-      std::vector<std::vector<uint32_t>>& tokens) final {
-    (void)prompt;
+      std::vector<std::vector<uint32_t>>& prompts,
+      std::vector<std::vector<std::vector<uint32_t>>>& tokens) final {
+    (void)prompts;
     std::vector<std::vector<float>> transition_matrix = {
         {0.1, 0.6, 0.2, 0.1},
         {0.1, 0.2, 0.4, 0.3},
@@ -18,8 +18,8 @@ class MockBackend final : public GenerativeBackend {
     };
 
     auto output = bolt::Tensor::dense(tokens.size(), 4);
-    for (size_t i = 0; i < tokens.size(); i++) {
-      const auto& scores = transition_matrix[tokens[i].back()];
+    for (size_t i = 0; i < tokens[0].size(); i++) {
+      const auto& scores = transition_matrix[tokens[0][i].back()];
       std::copy(scores.begin(), scores.end(), output->getVector(i).activations);
     }
 
@@ -55,7 +55,7 @@ TEST(BeamSearchDecoding, GreedySearch) {
                                      /* punctuation_repeat_threshold= */ 0.8);
 
   auto output = model->generate(/* input_tokens= */ {0}, /* prompt= */ {},
-                                /* n_predictions= */ 3,
+                                /* max_predictions= */ 3,
                                 /* beam_width= */ 1);
 
   // 1 -> 2 -> 1 is the "greedy" best path, but it won't predict 0,1,2 again, so
