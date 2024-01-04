@@ -47,13 +47,13 @@ class Bazaar:
     def _registry_cache(self):
         return self._cache_dir / "registry.json"
 
-    def fetch(self, filter: str = ""):
+    def fetch(self, filter: str = "", remove_outdated: bool = True):
         url = urljoin(self._base_url, "list")
         response = http_get_with_error(url, params={"name": filter})
         json_entries = json.loads(response.content)["data"]
         entries = [BazaarEntry.from_dict(entry) for entry in json_entries]
         self._registry = {
-            **self._registry,
+            **(self._registry if not remove_outdated else {}),
             **{entry.display_name: entry for entry in entries},
         }
         with open(self._registry_cache(), "w") as registry_cache:
