@@ -174,6 +174,15 @@ class Reference:
     def context(self, radius: int):
         return self._context_fn(radius)
 
+    def __eq__(self, other):
+        if isinstance(other, Reference):
+            return (
+                self.id == other.id
+                and self.text == other.text
+                and self.source == other.source
+            )
+        return False
+
 
 class DocumentRow:
     def __init__(self, element_id: int, strong: str, weak: str):
