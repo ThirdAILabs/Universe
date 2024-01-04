@@ -423,7 +423,7 @@ class Bazaar:
                     f.write(chunk)
                     bar.update(len(chunk))
 
-    def upload_chunk(self, upload_token, chunk_number, chunk_data, bar):
+    def upload_chunk(self, upload_token, chunk_number, chunk_data, bar, threads_status):
         files = {"chunk": chunk_data}
         response = requests.post(
             urljoin(
@@ -438,12 +438,11 @@ class Bazaar:
         if response.status_code == 200:
             # Update the progress bar
             bar.update(len(chunk_data))
+            threads_status.append(True)
         else:
             print(f"Upload failed with status code: {response.status_code}")
             print(response.text)
-            return False
-
-        return True
+            threads_status.append(False)
 
     @login_required
     def push(
@@ -474,11 +473,11 @@ class Bazaar:
         )
         upload_token = json.loads(token_response.content)["data"]["token"]
 
-        # Determine the chunk size you want to upload per request
-        chunk_size = 1024 * 1024  # 1MB chunks
-
         # Get the total file size for progress bar
         total_size = os.path.getsize(zip_path)
+
+        # Determine the chunk size you want to upload per request
+        chunk_size = total_size // 10  # create 10 chunks
 
         # Initialize the progress bar
         with tqdm(total=total_size, unit="B", unit_scale=True, desc=zip_path) as bar:
@@ -486,6 +485,7 @@ class Bazaar:
             with open(zip_path, "rb") as file:
                 chunk_number = 0
                 upload_threads = []
+                threads_status = []
 
                 while True:
                     # Read a chunk of the file
@@ -499,7 +499,13 @@ class Bazaar:
                     # Create a thread for uploading the chunk
                     thread = threading.Thread(
                         target=self.upload_chunk,
-                        args=(upload_token, chunk_number, chunk_data, bar),
+                        args=(
+                            upload_token,
+                            chunk_number,
+                            chunk_data,
+                            bar,
+                            threads_status,
+                        ),
                     )
                     upload_threads.append(thread)
                     thread.start()
@@ -507,6 +513,7 @@ class Bazaar:
                 # Wait for all threads to finish and collect results
                 results = [thread.join() for thread in upload_threads]
 
+                print(results)
                 # Check if all uploads were successful
                 if all(results):
                     print("File upload completed successfully.")
