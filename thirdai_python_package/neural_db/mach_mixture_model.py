@@ -167,11 +167,13 @@ class MachMixture(Model):
         self, samples: InferSamples, n_results: int, **kwargs
     ) -> Predictions:
         for model in self.models:
-            model.model.set_decode_params(min(self.n_ids, n_results), min(self.n_ids, 100))
+            model.model.set_decode_params(
+                min(self.n_ids, n_results), min(self.n_ids, 100)
+            )
 
         per_model_results = bolt.UniversalDeepTransformer.parallel_inference(
-            models=[model.model for model in self.models], 
-            batch = [{self.query_col: x} for x in samples]
+            models=[model.model for model in self.models],
+            batch=[{self.query_col: x} for x in samples],
         )
 
         results = []
