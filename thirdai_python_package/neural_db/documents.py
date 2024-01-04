@@ -2139,11 +2139,11 @@ class InMemoryText(Document):
     ):
         self._name = name
         self.df = pd.DataFrame({"texts": texts})
-        self.indexed_columns = []
+        self.metadata_columns = []
         if metadatas:
             metadata_df = pd.DataFrame.from_records(metadatas)
             self.df = pd.concat([self.df, metadata_df], axis=1)
-            self.indexed_columns = metadata_df.columns
+            self.metadata_columns = metadata_df.columns
         self.hash_val = hash_string(str(texts) + str(metadatas))
         self.global_metadata = global_metadata or {}
 
@@ -2161,17 +2161,11 @@ class InMemoryText(Document):
 
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
-        return {
-            key: ConstraintValue(value) for key, value in self.global_metadata.items()
-        }
-
-    @property
-    def matched_constraints(self) -> Dict[str, ConstraintValue]:
         metadata_constraints = {
             key: ConstraintValue(value) for key, value in self.global_metadata.items()
         }
         indexed_column_constraints = {
-            key: ConstraintValue(is_any=True) for key in self.indexed_columns
+            key: ConstraintValue(is_any=True) for key in self.metadata_columns
         }
         return {**metadata_constraints, **indexed_column_constraints}
 
@@ -2195,9 +2189,6 @@ class InMemoryText(Document):
     def weak_text(self, element_id: int) -> str:
         return self.df["texts"].iloc[element_id]
 
-    def show_fn(text, source, **kwargs):
-        return text
-
     def reference(self, element_id: int) -> Reference:
         if element_id >= len(self.df):
             _raise_unknown_doc_error(element_id)
@@ -2210,13 +2201,9 @@ class InMemoryText(Document):
         )
 
     def context(self, element_id, radius) -> str:
-        if not 0 <= element_id or not element_id < self.size:
-            raise ("Element id not in document.")
-
-        rows = self.df.iloc[
-            max(0, element_id - radius) : min(len(self.df), element_id + radius + 1)
-        ]
-        return "\n".join(rows["texts"])
+        # We don't return neighboring texts because they are not necessarily
+        # related.
+        return self.df["texts"].iloc[element_id]
 
     def save_meta(self, directory: Path):
         pass
