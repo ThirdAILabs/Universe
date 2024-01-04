@@ -510,12 +510,12 @@ class Bazaar:
                     upload_threads.append(thread)
                     thread.start()
 
-                # Wait for all threads to finish and collect results
-                results = [thread.join() for thread in upload_threads]
+                # Wait for all threads to finish
+                for thread in upload_threads:
+                    thread.join()
 
-                print(results)
                 # Check if all uploads were successful
-                if all(results):
+                if all(threads_status):
                     print("File upload completed successfully.")
                 else:
                     print("File upload failed.")
