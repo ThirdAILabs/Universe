@@ -2124,3 +2124,98 @@ class SentenceLevelDOCX(SentenceLevelExtracted):
         path: str,
     ) -> pd.DataFrame:
         return process_docx(path)
+
+
+class InMemoryText(Document):
+    """
+    A wrapper around a batch of texts and their metadata to fit it in the
+    NeuralDB Document framework.
+
+    Args:
+        name (str): A name for the batch of texts.
+        texts (List[str]): A batch of texts.
+        metadatas (List[Dict[str, Any]]): Optional. Metadata for each text.
+        global_metadata (Dict[str, Any]): Optional. Metadata for the whole batch
+        of texts.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        texts: List[str],
+        metadatas: Optional[List[dict]] = None,
+        global_metadata=None,
+    ):
+        self._name = name
+        self.df = pd.DataFrame({"texts": texts})
+        self.metadata_columns = []
+        if metadatas:
+            metadata_df = pd.DataFrame.from_records(metadatas)
+            self.df = pd.concat([self.df, metadata_df], axis=1)
+            self.metadata_columns = metadata_df.columns
+        self.hash_val = hash_string(str(texts) + str(metadatas))
+        self.global_metadata = global_metadata or {}
+
+    @property
+    def hash(self) -> str:
+        return self.hash_val
+
+    @property
+    def size(self) -> int:
+        return len(self.df)
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def matched_constraints(self) -> Dict[str, ConstraintValue]:
+        metadata_constraints = {
+            key: ConstraintValue(value) for key, value in self.global_metadata.items()
+        }
+        indexed_column_constraints = {
+            key: ConstraintValue(is_any=True) for key in self.metadata_columns
+        }
+        return {**metadata_constraints, **indexed_column_constraints}
+
+    def all_entity_ids(self) -> List[int]:
+        return list(range(self.size))
+
+    def filter_entity_ids(self, filters: Dict[str, Filter]):
+        df = self.df
+        row_filters = {
+            k: v for k, v in filters.items() if k not in self.global_metadata.keys()
+        }
+        for column_name, filterer in row_filters.items():
+            if column_name not in self.df.columns:
+                return []
+            df = filterer.filter_df_column(df, column_name)
+        return df.index.to_list()
+
+    def strong_text(self, element_id: int) -> str:
+        return ""
+
+    def weak_text(self, element_id: int) -> str:
+        return self.df["texts"].iloc[element_id]
+
+    def reference(self, element_id: int) -> Reference:
+        if element_id >= len(self.df):
+            _raise_unknown_doc_error(element_id)
+        return Reference(
+            document=self,
+            element_id=element_id,
+            text=self.df["texts"].iloc[element_id],
+            source=self._name,
+            metadata={**self.df.iloc[element_id].to_dict(), **self.global_metadata},
+        )
+
+    def context(self, element_id, radius) -> str:
+        # We don't return neighboring texts because they are not necessarily
+        # related.
+        return self.df["texts"].iloc[element_id]
+
+    def save_meta(self, directory: Path):
+        pass
+
+    def load_meta(self, directory: Path):
+        pass
