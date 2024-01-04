@@ -236,6 +236,7 @@ def unsupervised_train_on_docs(
         data_source=documents,
         strong_column_names=[documents.strong_column],
         weak_column_names=[documents.weak_column],
+        batch_size=batch_size,
         learning_rate=learning_rate,
         epochs=max_epochs,
         metrics=[metric],
