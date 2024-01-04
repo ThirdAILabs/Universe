@@ -1,5 +1,6 @@
 import os
 import shutil
+
 import pytest
 from thirdai.neural_db import Bazaar
 
