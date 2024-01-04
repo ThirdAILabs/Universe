@@ -2,12 +2,12 @@ import json
 import os
 import pickle
 import shutil
+import threading
 from pathlib import Path
 from typing import Callable, List, Optional, Union
 from urllib.parse import urljoin
 
 import requests
-import threading
 from pydantic import BaseModel, ValidationError
 from requests.auth import HTTPBasicAuth
 from thirdai.neural_db.models import CancelState
