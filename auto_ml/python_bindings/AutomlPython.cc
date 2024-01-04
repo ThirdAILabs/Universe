@@ -250,8 +250,12 @@ void defineAutomlInModule(py::module_& module) {
            [](udt::UDT& udt, NumpyArray<float>& new_parameters) {
              thirdai::bolt::python::setParameters(udt.model(), new_parameters);
            })
-      .def(bolt::python::getPickleFunction<udt::UDT>());
-  ;
+      .def(bolt::python::getPickleFunction<udt::UDT>())
+      .def_static("parallel_inference", &udt::parallelInference,
+                  py::arg("models"), py::arg("batch"),
+                  py::arg("sparse_inference") = false,
+                  py::arg("return_predicted_class") = false,
+                  py::arg("top_k") = std::nullopt);
 }
 
 void createModelsSubmodule(py::module_& module) {
