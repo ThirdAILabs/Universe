@@ -261,13 +261,11 @@ class NeuralDB:
 
         ray_version = ray.__version__
         if LooseVersion(ray_version) >= LooseVersion("2.7"):
-            warnings.warn(
-                """
+            warnings.warn("""
                 Using ray version 2.7 or higher requires specifying a remote or NFS storage path. 
                 Support for local checkpoints has been discontinued in these versions. 
                 Refer to https://github.com/ray-project/ray/issues/37177 for details.
-                """.strip()
-            )
+                """.strip())
 
         if not isinstance(documents, list) or not all(
             isinstance(doc, CSV) for doc in documents
@@ -725,15 +723,10 @@ class NeuralDB:
             learning_rate (float): Optional. The learning rate to use for training.
             epochs (int): Optional. The number of epochs to train for.
         """
-        if isinstance(self._savable_state.model, MachMixture):
-            raise NotImplementedError(
-                "Supervised Training is not supported for NeuralDB initialized with a"
-                " mixture of experts."
-            )
         doc_manager = self._savable_state.documents
         query_col = self._savable_state.model.get_query_col()
-        self._savable_state.model.get_model().train_on_data_source(
-            data_source=SupDataSource(
+        self._savable_state.model.train_on_supervised_data_source(
+            supervised_data_source=SupDataSource(
                 doc_manager=doc_manager,
                 query_col=query_col,
                 data=data,
@@ -762,15 +755,10 @@ class NeuralDB:
         with either A) a csv file with the query and id columns within it, or B) an
         explicit list of queries and expected labels.
         """
-        if isinstance(self._savable_state.model, MachMixture):
-            raise NotImplementedError(
-                "Supervised Training is not supported for NeuralDB initialized with a"
-                " mixture of experts."
-            )
         doc_manager = self._savable_state.documents
         model_query_col = self._savable_state.model.get_query_col()
-        self._savable_state.model.get_model().train_on_data_source(
-            data_source=SupDataSource(
+        self._savable_state.model.train_on_supervised_data_source(
+            supervised_data_source=SupDataSource(
                 doc_manager=doc_manager,
                 query_col=model_query_col,
                 data=[

@@ -6,7 +6,8 @@ from thirdai import bolt, data
 
 from .documents import DocumentDataSource
 from .models import CancelState, Mach, Model
-from .sharded_documents import ShardedDataSource
+from .sharded_documents import DataSourceSharder
+from .supervised_datasource import SupDataSource
 from .utils import requires_condition
 
 InferSamples = List
@@ -117,7 +118,7 @@ class MachMixture(Model):
         number_classes = intro_documents.size
 
         # Make a sharded data source with introduce documents. When we call shard_data_source, this will shard the introduce data source, return a list of data sources, and modify the label index to keep track of what label goes to what shard
-        introduce_data_sources = ShardedDataSource.shard_data_source(
+        introduce_data_sources = DataSourceSharder.shard_data_source(
             data_source=intro_documents,
             label_to_segment_map=self.label_to_segment_map,
             number_shards=self.number_models,
@@ -125,7 +126,7 @@ class MachMixture(Model):
         )
 
         # Once the introduce datasource has been sharded, we can use the update label index to shard the training data source ( We do not want training samples to go to a Mach model that does not contain their labels)
-        train_data_sources = ShardedDataSource.shard_data_source(
+        train_data_sources = DataSourceSharder.shard_data_source(
             train_documents,
             label_to_segment_map=self.label_to_segment_map,
             number_shards=self.number_models,
@@ -267,7 +268,7 @@ class MachMixture(Model):
         learning_rate: float,
         epochs: int,
     ):
-        balancing_data_shards = ShardedDataSource.shard_data_source(
+        balancing_data_shards = DataSourceSharder.shard_data_source(
             data_source=balancing_data,
             number_shards=self.number_models,
             label_to_segment_map=self.label_to_segment_map,
@@ -287,3 +288,18 @@ class MachMixture(Model):
             # Add model_config field if an older model is being loaded.
             state["model_config"] = None
         self.__dict__.update(state)
+
+    def train_on_supervised_data_source(
+        self, supervised_data_source: SupDataSource, learning_rate: float, epochs: int
+    ):
+        supervised_data_source_shards = DataSourceSharder.shard_data_source(
+            data_source=supervised_data_source,
+            number_shards=self.number_models,
+            label_to_segment_map=self.label_to_segment_map,
+            update_segment_map=False,
+        )
+
+        for shard, model in zip(supervised_data_source_shards, self.models):
+            model.train_on_supervised_data_source(
+                supervised_data_source=shard, learning_rate=learning_rate, epochs=epochs
+            )

@@ -8,11 +8,11 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
 def expected_rows(queries, labels, delimiter):
     if delimiter:
         return [
-            query + "," + delimiter.join(map(str, label_row))
+            delimiter.join(map(str, label_row)) + "," + query
             for query, label_row in zip(queries, labels)
         ]
     return [
-        query + "," + str(label)
+        str(label) + "," + query
         for query, label_row in zip(queries, labels)
         for label in label_row
     ]
@@ -55,7 +55,7 @@ def test_sup_data_source(model_id_delimiter):
         doc_manager, query_col="query", data=[sup_doc], id_delimiter=model_id_delimiter
     )
     assert data_source.next_batch(TARGET_BATCH_SIZE) == [
-        "query,id",
+        "id,query",
         *expected_rows(
             queries=[
                 "this is the first query",
@@ -83,9 +83,9 @@ def test_sup_data_source(model_id_delimiter):
         doc_manager, query_col="query", data=[sup_doc], id_delimiter=model_id_delimiter
     )
     assert data_source.next_batch(TARGET_BATCH_SIZE) == [
-        "query,id",
-        "this is the first query,0",
-        "this is the second query,1",
+        "id,query",
+        "0,this is the first query",
+        "1,this is the second query",
     ]
 
     data_source = SupDataSource(
@@ -102,7 +102,7 @@ def test_sup_data_source(model_id_delimiter):
         id_delimiter=model_id_delimiter,
     )
     assert data_source.next_batch(TARGET_BATCH_SIZE) == [
-        "query,id",
+        "id,query",
         *expected_rows(
             queries=[
                 "this is the first query",
@@ -156,8 +156,8 @@ def test_sup_data_source_with_id_map():
     )
 
     assert data_source.next_batch(TARGET_BATCH_SIZE) == [
-        "model_query,model_id",
-        "this is the first query,0",
-        "this is the second query,0 1",
-        "trailing label delimiter,0 1",
+        "model_id,model_query",
+        "0,this is the first query",
+        "0 1,this is the second query",
+        "0 1,trailing label delimiter",
     ]

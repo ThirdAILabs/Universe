@@ -9,49 +9,6 @@ from .documents import CSV, DocumentDataSource
 from .supervised_datasource import Sup, SupDataSource
 
 
-def transform_shard_to_datasource(
-    original_data_source: Union[DocumentDataSource, SupDataSource],
-    shard_path,
-    shard_object,
-):
-    """
-    We assume that the shard is stored as a CSV on the machine. Depending on the underlying original data source, we create a new data source from the shard with the same attributes but with lesser documents in it.
-    """
-    if isinstance(original_data_source, DocumentDataSource):
-        data_source = DocumentDataSource(
-            id_column=original_data_source.id_column,
-            strong_column=original_data_source.strong_column,
-            weak_column=original_data_source.weak_column,
-        )
-        csv_doc = CSV(
-            path=shard_path,
-            id_column=original_data_source.id_column,
-            strong_columns=[original_data_source.strong_column],
-            weak_columns=[original_data_source.weak_column],
-            has_offset=True,
-        )
-
-        shard_object.close()
-        data_source.add(document=csv_doc, start_id=0)
-        return data_source
-
-    if isinstance(original_data_source, SupDataSource):
-        sup = Sup(
-            csv=shard_path,
-            query_column=original_data_source.query_col,
-            id_column=original_data_source.doc_manager.id_column,
-            id_delimiter=original_data_source.id_delimiter,
-            uses_db_id=True,
-        )
-        shard_object.close()
-        return SupDataSource(
-            doc_manager=original_data_source.doc_manager,
-            query_col=original_data_source.query_col,
-            data=[sup],
-            id_delimiter=original_data_source.id_delimiter,
-        )
-
-
 class DataLoadMultiplexer:
     """
     A data loader that efficiently handles large datasets by segmenting them into smaller,
@@ -162,7 +119,7 @@ class DataLoadMultiplexer:
         return self._create_segments_with_segment_map(data_source, label_to_segment_map)
 
 
-class ShardedDataSource:
+class DataSourceSharder:
     """
     NOTE: Sharding only works for data sources that have id column as the first elements of the lines yielded by their line iterator.
     External APIs :
@@ -185,15 +142,54 @@ class ShardedDataSource:
     """
 
     @staticmethod
-    def _get_shards(
-        data_source: Union[DocumentDataSource, SupDataSource],
-        shard_names,
-        shard_objects,
-    ) -> List[Union[DocumentDataSource, SupDataSource]]:
-        return [
-            transform_shard_to_datasource(data_source, shard_path, shard_object)
-            for shard_path, shard_object in zip(shard_names, shard_objects)
-        ]
+    def verify_data_source_type(data_source):
+        if not isinstance(data_source, DocumentDataSource) and not isinstance(
+            data_source, SupDataSource
+        ):
+            raise TypeError(f"Cannot shard datasource of the type {type(data_source)}")
+
+    @staticmethod
+    def transform_shard_to_datasource(
+        original_data_source: Union[DocumentDataSource, SupDataSource],
+        shard_path,
+        shard_object,
+    ):
+        """
+        We assume that the shard is stored as a CSV on the machine. Depending on the underlying original data source, we create a new data source from the shard with the same attributes but with lesser documents in it.
+        """
+        if isinstance(original_data_source, DocumentDataSource):
+            data_source = DocumentDataSource(
+                id_column=original_data_source.id_column,
+                strong_column=original_data_source.strong_column,
+                weak_column=original_data_source.weak_column,
+            )
+            csv_doc = CSV(
+                path=shard_path,
+                id_column=original_data_source.id_column,
+                strong_columns=[original_data_source.strong_column],
+                weak_columns=[original_data_source.weak_column],
+                has_offset=True,
+            )
+
+            shard_object.close()
+            data_source.add(document=csv_doc, start_id=0)
+            return data_source
+
+        if isinstance(original_data_source, SupDataSource):
+            sup = Sup(
+                csv=shard_path,
+                query_column=original_data_source.query_col,
+                id_column=original_data_source.doc_manager.id_column,
+                id_delimiter=original_data_source.id_delimiter,
+                uses_db_id=True,
+            )
+            shard_object.close()
+            return SupDataSource(
+                doc_manager=original_data_source.doc_manager,
+                query_col=original_data_source.query_col,
+                data=[sup],
+                id_delimiter=original_data_source.id_delimiter,
+            )
 
     @staticmethod
     def shard_data_source(
@@ -203,6 +199,8 @@ class ShardedDataSource:
         update_segment_map: bool,
         flush_frequency: int = 1_000_000,
     ):
+        DataSourceSharder.verify_data_source_type(data_source)
+
         data_load_multiplexer = DataLoadMultiplexer(
             number_shards, flush_frequency=flush_frequency
         )
@@ -214,7 +212,9 @@ class ShardedDataSource:
             data_source, label_to_segment_map, update_index=update_segment_map
         )
 
-        shards = ShardedDataSource._get_shards(
-            data_source, shard_names=shard_names, shard_objects=shard_objects
-        )
-        return shards
+        return [
+            DataSourceSharder.transform_shard_to_datasource(
+                data_source, shard_path, shard_object
+            )
+            for shard_path, shard_object in zip(shard_names, shard_objects)
+        ]

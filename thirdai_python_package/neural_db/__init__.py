@@ -17,7 +17,7 @@ try:
     )
     from .model_bazaar import Bazaar, ModelBazaar
     from .neural_db import CancelState, NeuralDB, Strength, Sup, SupDataSource
-    from .sharded_documents import ShardedDataSource, ShardedSupervisedSource
+    from .sharded_documents import DataSourceSharder
 
 except ImportError as error:
     raise ImportError(
