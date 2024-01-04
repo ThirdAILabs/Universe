@@ -239,16 +239,24 @@ def many_perturbations_augmentation(seed=81):
 
 
 def test_vlcs_consistent_augmentations_with_seeds():
-    augmentation1 = many_perturbations_augmentation()
-    augmentation2 = many_perturbations_augmentation()
+    for i in range(100):
+        augmentation1 = many_perturbations_augmentation()
+        augmentation2 = many_perturbations_augmentation()
 
-    columns = default_start_columns()
-    columns1 = augmentation1(columns)
+        columns = default_start_columns()
+        columns1 = augmentation1(columns)
 
-    columns = default_start_columns()
-    columns2 = augmentation2(columns)
+        columns = default_start_columns()
+        columns2 = augmentation2(columns)
 
-    assert columns1["OUTPUT"].data() == columns2["OUTPUT"].data()
+        if columns1["OUTPUT"].data() != columns2["OUTPUT"].data():
+            print(columns1["OUTPUT"].data())
+            print(columns2["OUTPUT"].data())
+            assert False
+        else:
+            print(columns1["OUTPUT"].data())
+            print(columns2["OUTPUT"].data())
+            print("----------------")
 
 
 def test_vlcs_different_augmentations_with_different_seeds():
