@@ -10,7 +10,7 @@ from ndb_utils import create_simple_dataset
 from thirdai import bolt, demos, neural_db
 from thirdai.neural_db import documents
 from thirdai.neural_db.documents import DocumentDataSource
-from thirdai.neural_db.sharded_documents import DataLoadMultiplexer, ShardedDataSource
+from thirdai.neural_db.sharded_documents import DataLoadMultiplexer, DataSourceSharder
 
 # We don't have a test on just the Document interface since it is just an
 # interface.
@@ -60,7 +60,10 @@ def prepare_documents_test():
         def expected_context_for_id_and_radius(
             doc_id: str, element_id: int, radius: int
         ):
-            return f'"Context" from {doc_id}, with id {element_id} and radius {radius}, plus ""'
+            return (
+                f'"Context" from {doc_id}, with id {element_id} and radius {radius},'
+                ' plus ""'
+            )
 
         def check_id(self, element_id: int):
             if element_id >= self._size:
@@ -215,13 +218,12 @@ def test_sharded_data_source(prepare_documents_test):
 
     label_to_segment_map = defaultdict(list)
     number_shards = 3
-    sharder = ShardedDataSource(
-        document_data_source=data_source,
+    sharded_data_sources = DataSourceSharder.shard_data_source(
+        data_source=data_source,
         number_shards=number_shards,
         label_to_segment_map=label_to_segment_map,
-        seed=0,
+        update_segment_map=True,
     )
-    sharded_data_sources = sharder.shard_data_source()
 
     assert len(sharded_data_sources) == number_shards
     assert sum(shard.size for shard in sharded_data_sources) == first_size + second_size
