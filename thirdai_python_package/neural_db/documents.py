@@ -25,9 +25,16 @@ from thirdai.data import get_udt_col_types
 from thirdai.dataset.data_source import PyDataSource
 
 from .connectors import SalesforceConnector, SharePointConnector, SQLConnector
-from .constraint_matcher import ConstraintMatcher, ConstraintValue, Filter, to_filters
+from .constraint_matcher import (
+    ConstraintMatcher,
+    ConstraintValue,
+    Filter,
+    to_filters,
+    TableFilter,
+)
 from .parsing_utils import doc_parse, pdf_parse, sliding_pdf_parse, url_parse
 from .utils import hash_file, hash_string, requires_condition
+from .table import DataFrameTable, SQLiteTable
 
 
 class Reference:
@@ -415,29 +422,27 @@ class CSV(Document):
         metadata={},
         index_columns=[],
         has_offset=False,
+        on_disk=False,
     ) -> None:
-        self.df = pd.read_csv(path)
+        df = pd.read_csv(path)
 
         # This variable is used to check whether the id's in the CSV are supposed to start with 0 or with some custom offset. We need the latter when we shard the datasource.
         self.has_offset = has_offset
 
         if reference_columns is None:
-            reference_columns = list(self.df.columns)
+            reference_columns = list(df.columns)
 
         self.orig_to_assigned_id = None
         self.id_column = id_column
         orig_id_column = id_column
-        if self.id_column and (
-            has_offset or CSV.valid_id_column(self.df[self.id_column])
-        ):
-            self.df = self.df.sort_values(self.id_column)
+        if self.id_column and (has_offset or CSV.valid_id_column(df[self.id_column])):
+            df = df.sort_values(self.id_column)
         else:
             self.id_column = "thirdai_index"
-            self.df[self.id_column] = range(self.df.shape[0])
+            df[self.id_column] = range(df.shape[0])
             if orig_id_column:
                 self.orig_to_assigned_id = {
-                    row[orig_id_column]: row[self.id_column]
-                    for _, row in self.df.iterrows()
+                    row[orig_id_column]: row[self.id_column] for _, row in df.iterrows()
                 }
 
         if strong_columns is None and weak_columns is None:
@@ -448,11 +453,11 @@ class CSV(Document):
                     if type(udt_col_type) == type(bolt.types.text()):
                         text_col_names.append(col_name)
             except:
-                text_col_names = list(self.df.columns)
-                text_col_names.remove(self.id_column)
+                text_col_names = list(df.columns)
+                text_col_names.remove(id_column)
                 if orig_id_column:
                     text_col_names.remove(orig_id_column)
-                self.df[text_col_names] = self.df[text_col_names].astype(str)
+                df[text_col_names] = df[text_col_names].astype(str)
             strong_columns = []
             weak_columns = text_col_names
         elif strong_columns is None:
@@ -461,16 +466,16 @@ class CSV(Document):
             weak_columns = []
 
         for col in strong_columns + weak_columns:
-            self.df[col] = self.df[col].fillna("")
+            df[col] = df[col].fillna("")
 
-        # So we can do df.loc[]
-        self.df = self.df.set_index(self.id_column)
+        Table = SQLiteTable if on_disk else DataFrameTable
+        self.table = Table(df, id_column=self.id_column)
 
         self.path = Path(path)
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
         self.reference_columns = [
-            col for col in reference_columns if col != self.df.index.name
+            col for col in reference_columns if col != self.id_column
         ]
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
@@ -496,7 +501,7 @@ class CSV(Document):
 
     @property
     def size(self) -> int:
-        return len(self.df)
+        return self.table.size
 
     @property
     def name(self) -> str:
@@ -519,40 +524,35 @@ class CSV(Document):
         return {**metadata_constraints, **indexed_column_constraints}
 
     def all_entity_ids(self) -> List[int]:
-        return self.df.index.to_list()
+        return self.table.ids
 
     def filter_entity_ids(self, filters: Dict[str, Filter]):
-        df = self.df
-        row_filters = {
-            k: v for k, v in filters.items() if k not in self.doc_metadata_keys
-        }
-        for column_name, filterer in row_filters.items():
-            if column_name not in self.df.columns:
-                return []
-            df = filterer.filter_df_column(df, column_name)
-        return df.index.to_list()
+        table_filter = TableFilter(
+            {k: v for k, v in filters.items() if k not in self.doc_metadata_keys}
+        )
+        return table_filter.filter_ids(self.table)
 
     def id_map(self) -> Optional[Dict[str, int]]:
         return self.orig_to_assigned_id
 
     def strong_text_from_row(self, row) -> str:
-        return " ".join(getattr(row, col) for col in self.strong_columns)
+        return " ".join(row[col] for col in self.strong_columns)
 
     def strong_text(self, element_id: int) -> str:
-        row = self.df.loc[element_id]
+        row = self.table.row_as_dict(element_id)
         return self.strong_text_from_row(row)
 
     def weak_text_from_row(self, row) -> str:
-        return " ".join(getattr(row, col) for col in self.weak_columns)
+        return " ".join(row[col] for col in self.weak_columns)
 
     def weak_text(self, element_id: int) -> str:
-        row = self.df.loc[element_id]
+        row = self.table.row_as_dict(element_id)
         return self.weak_text_from_row(row)
 
     def row_iterator(self):
-        for row in self.df.itertuples():
+        for row_id, row in self.table.iter_rows_as_dicts():
             yield DocumentRow(
-                element_id=row.Index,
+                element_id=row_id,
                 strong=self.strong_text_from_row(row),
                 weak=self.weak_text_from_row(row),
             )
@@ -564,27 +564,28 @@ class CSV(Document):
         condition_unmet_string=" when there is an offset in the CSV document",
     )
     def reference(self, element_id: int) -> Reference:
-        if element_id >= len(self.df):
+        if element_id >= self.table.size:
             _raise_unknown_doc_error(element_id)
-        row = self.df.loc[element_id]
+        row = self.table.row_as_dict(element_id)
         text = "\n\n".join([f"{col}: {row[col]}" for col in self.reference_columns])
         return Reference(
             document=self,
             element_id=element_id,
             text=text,
             source=str(self.path.absolute()),
-            metadata={**row.to_dict(), **self.doc_metadata},
+            metadata={**row, **self.doc_metadata},
         )
 
     def context(self, element_id: int, radius) -> str:
-        rows = self.df.loc[
-            max(0, element_id - radius) : min(len(self.df), element_id + radius + 1)
-        ]
+        rows = self.table.range_rows_as_dicts(
+            from_row_id=max(0, element_id - radius),
+            to_row_id=min(len(self.table.size), element_id + radius + 1),
+        )
 
         return " ".join(
             [
                 "\n\n".join([f"{col}: {row[col]}" for col in self.reference_columns])
-                for _, row in rows.iterrows()
+                for row in rows
             ]
         )
 
@@ -644,28 +645,38 @@ class CSV(Document):
         if not hasattr(self, "has_offset"):
             self.has_offset = False
 
-        # So we can do df.loc[]
-        if self.df.index.name != self.id_column:
-            self.df = self.df.set_index(self.id_column)
-            self.reference_columns = [
-                col for col in self.reference_columns if col != self.id_column
-            ]
+        if hasattr(self, "df"):
+            if self.df.index.name != self.id_column:
+                self.reference_columns = [
+                    col for col in self.reference_columns if col != self.id_column
+                ]
+            self.df = self.df.reset_index()
+            self.table = DataFrameTable(self.df, id_column=self.id_column)
+            del self.df
 
 
 # Base class for PDF, DOCX and Unstructured classes because they share the same logic.
 class Extracted(Document):
     def __init__(
-        self, path: str, save_extra_info=True, metadata={}, strong_column=None
+        self,
+        path: str,
+        save_extra_info=True,
+        metadata={},
+        strong_column=None,
+        on_disk=False,
     ):
         path = str(path)
-        self.df = self.process_data(path)
+        df = self.process_data(path)
+        df["__ids__"] = range(len(df))
+        Table = SQLiteTable if on_disk else DataFrameTable
+        self.table = Table(df, "__ids__")
         self.hash_val = hash_file(path, metadata="extracted-" + str(metadata))
         self._save_extra_info = save_extra_info
 
         self.path = Path(path)
         self.doc_metadata = metadata
         self.strong_column = strong_column
-        if self.strong_column and self.strong_column not in self.df.columns:
+        if self.strong_column and self.strong_column not in self.table.columns:
             raise RuntimeError(
                 f"Strong column '{self.strong_column}' not found in the dataframe."
             )
@@ -682,7 +693,7 @@ class Extracted(Document):
 
     @property
     def size(self) -> int:
-        return len(self.df)
+        return self.table.size
 
     @property
     def name(self) -> str:
@@ -699,34 +710,35 @@ class Extracted(Document):
         return (
             ""
             if not self.strong_column
-            else self.df[self.strong_column].iloc[element_id]
+            else self.table.field(element_id, self.strong_column)
         )
 
     def weak_text(self, element_id: int) -> str:
-        return self.df["para"].iloc[element_id]
+        return self.table.field(element_id, "para")
 
     def show_fn(text, source, **kwargs):
         return text
 
     def reference(self, element_id: int) -> Reference:
-        if element_id >= len(self.df):
+        if element_id >= self.table.size:
             _raise_unknown_doc_error(element_id)
         return Reference(
             document=self,
             element_id=element_id,
-            text=self.df["display"].iloc[element_id],
+            text=self.table.field(element_id, "display"),
             source=str(self.path.absolute()),
-            metadata={**self.df.iloc[element_id].to_dict(), **self.doc_metadata},
+            metadata={**self.table.row_as_dict(element_id), **self.doc_metadata},
         )
 
     def context(self, element_id, radius) -> str:
         if not 0 <= element_id or not element_id < self.size:
             raise ("Element id not in document.")
 
-        rows = self.df.iloc[
-            max(0, element_id - radius) : min(len(self.df), element_id + radius + 1)
-        ]
-        return "\n".join(rows["para"])
+        rows = self.table.range_rows_as_dicts(
+            from_row_id=max(0, element_id - radius),
+            to_row_id=min(self.table.size, element_id + radius + 1),
+        )
+        return "\n".join(row["para"] for row in rows)
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -742,7 +754,8 @@ class Extracted(Document):
                 return element.name
             return element
 
-        state["df"] = state["df"].applymap(path_to_str)
+        if "df" in state:
+            state["df"] = state["df"].applymap(path_to_str)
 
         # Remove the path attribute because it is not cross platform compatible
         del state["path"]
@@ -765,6 +778,7 @@ class Extracted(Document):
         # Let's copy the original file to the provided directory
         if self.save_extra_info:
             shutil.copy(self.path, directory)
+        self.table.save_meta(directory)
 
     def load_meta(self, directory: Path):
         # Since we've moved the file to the provided directory, let's make
@@ -780,6 +794,13 @@ class Extracted(Document):
 
         if not hasattr(self, "strong_column"):
             self.strong_column = None
+
+        if hasattr(self, "df"):
+            self.df["__ids__"] = range(len(self.df))
+            self.table = DataFrameTable(self.df, "__ids__")
+            del self.df
+        elif hasattr(self, "table"):
+            self.table.load_meta(directory)
 
 
 def process_pdf(path: str) -> pd.DataFrame:
@@ -972,9 +993,13 @@ class URL(Document):
         save_extra_info: bool = True,
         title_is_strong: bool = False,
         metadata={},
+        on_disk=False,
     ):
         self.url = url
-        self.df = self.process_data(url, url_response)
+        df = self.process_data(url, url_response)
+        df["__ids__"] = range(len(df))
+        Table = SQLiteTable if on_disk else DataFrameTable
+        self.table = Table(df, "__ids__")
         self.hash_val = hash_string(url + str(metadata))
         self._save_extra_info = save_extra_info
         self._strong_column = "title" if title_is_strong else "text"
@@ -997,7 +1022,7 @@ class URL(Document):
 
     @property
     def size(self) -> int:
-        return len(self.df)
+        return self.table.size
 
     @property
     def name(self) -> str:
@@ -1011,24 +1036,25 @@ class URL(Document):
         return list(range(self.size))
 
     def strong_text(self, element_id: int) -> str:
-        return self.df[self._strong_column if self._strong_column else "text"].iloc[
-            element_id
-        ]
+        return self.table.field(
+            row_id=element_id,
+            column=self._strong_column if self._strong_column else "text",
+        )
 
     def weak_text(self, element_id: int) -> str:
-        return self.df["text"].iloc[element_id]
+        return self.table.field(element_id, "text")
 
     def reference(self, element_id: int) -> Reference:
-        if element_id >= len(self.df):
+        if element_id >= self.table.size:
             _raise_unknown_doc_error(element_id)
         return Reference(
             document=self,
             element_id=element_id,
-            text=self.df["display"].iloc[element_id],
+            text=self.table.field(element_id, "display"),
             source=self.url,
             metadata=(
-                {"title": self.df["title"].iloc[element_id], **self.doc_metadata}
-                if "title" in self.df.columns
+                {"title": self.table.field(element_id, "title"), **self.doc_metadata}
+                if "title" in self.table.columns
                 else self.doc_metadata
             ),
         )
@@ -1036,14 +1062,24 @@ class URL(Document):
     def context(self, element_id, radius) -> str:
         if not 0 <= element_id or not element_id < self.size:
             raise ("Element id not in document.")
-        rows = self.df.iloc[
-            max(0, element_id - radius) : min(len(self.df), element_id + radius + 1)
-        ]
-        return "\n".join(rows["text"])
+        rows = self.table.range_rows_as_dicts(
+            from_row_id=max(0, element_id - radius),
+            to_row_id=min(self.table.size, element_id + radius + 1),
+        )
+        return "\n".join(row["text"] for row in rows)
+
+    def save_meta(self, directory: Path):
+        self.table.save_meta(directory)
 
     def load_meta(self, directory: Path):
         if not hasattr(self, "doc_metadata"):
             self.doc_metadata = {}
+        if hasattr(self, "df"):
+            self.df["__ids__"] = range(len(self.df))
+            self.table = DataFrameTable(self.df, "__ids__")
+            del self.df
+        elif hasattr(self, "table"):
+            self.table.load_meta(directory)
 
 
 class DocumentConnector(Document):
@@ -2145,14 +2181,18 @@ class InMemoryText(Document):
         texts: List[str],
         metadatas: Optional[List[dict]] = None,
         global_metadata=None,
+        on_disk=False,
     ):
         self._name = name
-        self.df = pd.DataFrame({"texts": texts})
+        df = pd.DataFrame({"texts": texts})
         self.metadata_columns = []
         if metadatas:
             metadata_df = pd.DataFrame.from_records(metadatas)
-            self.df = pd.concat([self.df, metadata_df], axis=1)
+            df = pd.concat([df, metadata_df], axis=1)
             self.metadata_columns = metadata_df.columns
+        df["__id__"] = range(len(df))
+        Table = SQLiteTable if on_disk else DataFrameTable
+        self.table = Table(df, "__id__")
         self.hash_val = hash_string(str(texts) + str(metadatas))
         self.global_metadata = global_metadata or {}
 
@@ -2162,7 +2202,7 @@ class InMemoryText(Document):
 
     @property
     def size(self) -> int:
-        return len(self.df)
+        return self.table.size
 
     @property
     def name(self) -> str:
@@ -2182,40 +2222,35 @@ class InMemoryText(Document):
         return list(range(self.size))
 
     def filter_entity_ids(self, filters: Dict[str, Filter]):
-        df = self.df
-        row_filters = {
-            k: v for k, v in filters.items() if k not in self.global_metadata.keys()
-        }
-        for column_name, filterer in row_filters.items():
-            if column_name not in self.df.columns:
-                return []
-            df = filterer.filter_df_column(df, column_name)
-        return df.index.to_list()
+        table_filter = TableFilter(
+            {k: v for k, v in filters.items() if k not in self.global_metadata.keys()}
+        )
+        return table_filter.filter_ids(self.table)
 
     def strong_text(self, element_id: int) -> str:
         return ""
 
     def weak_text(self, element_id: int) -> str:
-        return self.df["texts"].iloc[element_id]
+        return self.table.field(element_id, "texts")
 
     def reference(self, element_id: int) -> Reference:
-        if element_id >= len(self.df):
+        if element_id >= self.table.size:
             _raise_unknown_doc_error(element_id)
         return Reference(
             document=self,
             element_id=element_id,
-            text=self.df["texts"].iloc[element_id],
+            text=self.table.field(element_id, "texts"),
             source=self._name,
-            metadata={**self.df.iloc[element_id].to_dict(), **self.global_metadata},
+            metadata={**self.table.row_as_dict(element_id), **self.global_metadata},
         )
 
     def context(self, element_id, radius) -> str:
         # We don't return neighboring texts because they are not necessarily
         # related.
-        return self.df["texts"].iloc[element_id]
+        return self.table.field(element_id, "texts")
 
     def save_meta(self, directory: Path):
-        pass
+        self.table.save_meta(directory)
 
     def load_meta(self, directory: Path):
-        pass
+        self.table.load_meta(directory)

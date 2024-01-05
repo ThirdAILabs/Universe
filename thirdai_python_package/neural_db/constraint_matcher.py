@@ -4,6 +4,7 @@ from collections import defaultdict
 from typing import Any, Dict, Generic, Iterable, List, Optional, Set, TypeVar
 
 import pandas as pd
+import sqlite3
 from sortedcontainers import SortedDict
 
 ItemT = TypeVar("ItemT")
@@ -19,6 +20,15 @@ class Filter(Generic[ItemT]):
     def filter_df_column(self, df: pd.DataFrame, column_name: str):
         raise NotImplementedError()
 
+    def sql_condition(self, column_name):
+        raise NotImplementedError()
+
+
+def format_value_for_sql(val):
+    if not isinstance(val, str):
+        return val
+    return "'" + val.replace("'", "''") + "'"
+
 
 class AnyOf(Filter[ItemT]):
     def __init__(self, values: Iterable[Any]):
@@ -33,6 +43,10 @@ class AnyOf(Filter[ItemT]):
 
     def filter_df_column(self, df: pd.DataFrame, column_name: str):
         return df[df[column_name].isin(self.values)]
+
+    def sql_condition(self, column_name: str):
+        formatted_values = [format_value_for_sql(val) for val in self.values]
+        return " or ".join(f"{column_name}=={val}" for val in formatted_values)
 
 
 class EqualTo(AnyOf[ItemT]):
@@ -69,6 +83,38 @@ class InRange(Filter[ItemT]):
 
         return df[df[column_name].between(self.min, self.max, inclusive=inclusive)]
 
+    def sql_condition(self, column_name: str):
+        left_inclusive, right_inclusive = self.inclusive
+        left_comp = ">=" if left_inclusive else ">"
+        right_comp = "<=" if right_inclusive else "<"
+        return f"{column_name}{left_comp}{self.min} and {column_name}{right_comp}{self.max}"
+
+
+class TableFilter:
+    def __init__(self, filters: Dict[str, Filter]):
+        self.filters = filters
+
+    def filter_ids(self, table):
+        table.apply_filter(self)
+
+    def filter_df_ids(self, df) -> List[int]:
+        for column_name, filterer in self.filters.items():
+            if column_name not in df.columns:
+                return []
+            df = filterer.filter_df_column(df, column_name)
+        return df.index.to_list()
+
+    def filter_sql_ids(
+        self, con: sqlite3.Connection, table_name: str, id_column: str
+    ) -> List[int]:
+        condition = " and ".join(
+            filterer.sql_condition(column_name)
+            for column_name, filterer in self.filters.items()
+        )
+        return list(
+            pd.read_sql(f"select {id_column} from {table_name} where {condition}", con)
+        )
+
 
 class GreaterThan(InRange[ItemT]):
     def __init__(self, minimum: Any, include_equal=False):
@@ -84,6 +130,15 @@ class GreaterThan(InRange[ItemT]):
             return df[df[column_name].ge(self.minimum)]
         return df[df[column_name].gt(self.minimum)]
 
+    def filter_sql_column(
+        self, con: sqlite3.Connection, table_name: str, column_name: str
+    ):
+        comp = ">=" if self.include_equal else ">"
+        return pd.read_sql(
+            f"select * from {table_name} where {column_name}{comp}{self.minimum}",
+            con,
+        )
+
 
 class LessThan(InRange[ItemT]):
     def __init__(self, maximum: Any, include_equal=False):
@@ -98,6 +153,15 @@ class LessThan(InRange[ItemT]):
         if self.include_equal:
             return df[df[column_name].le(self.maximum)]
         return df[df[column_name].lt(self.maximum)]
+
+    def filter_sql_column(
+        self, con: sqlite3.Connection, table_name: str, column_name: str
+    ):
+        comp = "<=" if self.include_equal else "<"
+        return pd.read_sql(
+            f"select * from {table_name} where {column_name}{comp}{self.maximum}",
+            con,
+        )
 
 
 class ConstraintValue:
