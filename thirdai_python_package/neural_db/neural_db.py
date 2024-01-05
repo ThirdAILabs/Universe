@@ -491,6 +491,7 @@ class NeuralDB:
         self._savable_state.documents.clear()
         self._savable_state.model.forget_documents()
 
+    @staticmethod
     def _split_references_for_reranking(
         references,
         rerank_threshold,
@@ -506,6 +507,7 @@ class NeuralDB:
             )
         return references[:rerank_start], references[rerank_start:]
 
+    @staticmethod
     def _scale_reranked_scores(
         original: List[float], reranked: List[float], leq: float
     ):
