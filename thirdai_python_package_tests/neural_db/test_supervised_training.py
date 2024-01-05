@@ -107,6 +107,26 @@ def test_neural_db_supervised_training_multilabel_csv(
         model_id_delimiter, number_models=number_models
     )
     print(label_to_segment_map)
+    dd = defaultdict(list)
+
+    # Populate the defaultdict with the specified key-value pairs
+    initial_values = {
+        0: [1],
+        1: [1],
+        2: [0],
+        3: [0],
+        4: [1],
+        5: [0],
+        6: [1],
+        7: [0],
+        8: [0],
+        9: [1],
+    }
+
+    for key, value in initial_values.items():
+        dd[key] = value
+
+    assert label_to_segment_map == dd
     """
     The new labels assigned to a query in this test case are such that they belong to the same shard as the original label. This means that changing the sharding logic (anything that changes the label to segment map) can break this test case. 
 
