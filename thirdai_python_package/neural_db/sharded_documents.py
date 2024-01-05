@@ -126,9 +126,6 @@ class DataLoadMultiplexer:
 
 def verify_data_source_type(data_source, valid_types: List, operation_name: str):
     if not any(isinstance(data_source, data_type) for data_type in valid_types):
-        for data_type in valid_types:
-            print(data_type.__name__)
-            print(type(data_type.__name__))
         valid_types_str = ", ".join([data_type.__name__ for data_type in valid_types])
         raise TypeError(
             f"{operation_name} not supported for data source of the type"
