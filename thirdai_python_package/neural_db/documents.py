@@ -1984,13 +1984,20 @@ class SentenceLevelExtracted(Extracted):
     sentence to increase recall.
     """
 
-    def __init__(self, path: str, save_extra_info: bool = True, metadata={}):
+    def __init__(
+        self, path: str, save_extra_info: bool = True, metadata={}, on_disk=False
+    ):
         self.path = Path(path)
-        self.df = self.parse_sentences(self.process_data(path))
         self.hash_val = hash_file(
             path, metadata="sentence-level-extracted-" + str(metadata)
         )
-        self.para_df = self.df["para"].unique()
+        Table = SQLiteTable if on_disk else DataFrameTable
+        df = self.parse_sentences(self.process_data(path))
+        df["__id__"] = range(len(df))
+        self.table = Table(df, "__id__")
+        para_df = df["para"].unique()
+        para_df["__id__"] = range(len(para_df))
+        self.para_table = Table(para_df, "__id__")
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
 
@@ -2053,7 +2060,7 @@ class SentenceLevelExtracted(Extracted):
 
     @property
     def size(self) -> int:
-        return len(self.df)
+        return self.table.size
 
     def get_strong_columns(self):
         return ["sentence"]
@@ -2063,41 +2070,43 @@ class SentenceLevelExtracted(Extracted):
         return self.path.name if self.path else None
 
     def strong_text(self, element_id: int) -> str:
-        return self.df["sentence"].iloc[element_id]
+        return self.table.field(element_id, "sentence")
 
     def weak_text(self, element_id: int) -> str:
-        return self.df["para"].iloc[element_id]
+        return self.table.field(element_id, "para")
 
     def show_fn(text, source, **kwargs):
         return text
 
     def reference(self, element_id: int) -> Reference:
-        if element_id >= len(self.df):
+        if element_id >= self.table.size:
             _raise_unknown_doc_error(element_id)
         return Reference(
             document=self,
             element_id=element_id,
-            text=self.df["display"].iloc[element_id],
+            text=self.table.field(element_id, "display"),
             source=str(self.path.absolute()),
-            metadata={**self.df.iloc[element_id].to_dict(), **self.doc_metadata},
-            upvote_ids=self.df["sentence_ids_in_para"].iloc[element_id],
+            metadata={**self.table.row_as_dict(element_id), **self.doc_metadata},
+            upvote_ids=self.table.field(element_id, "sentence_ids_in_para"),
         )
 
     def context(self, element_id, radius) -> str:
         if not 0 <= element_id or not element_id < self.size:
             raise ("Element id not in document.")
 
-        para_id = self.df.iloc[element_id]["para_id"]
+        para_id = self.table.field(element_id, "para_id")
 
-        rows = self.para_df[
-            max(0, para_id - radius) : min(len(self.para_df), para_id + radius + 1)
-        ]
+        rows = self.para_table.range_rows_as_dicts(
+            from_row_id=max(0, para_id - radius),
+            to_row_id=min(self.para_table.size, para_id + radius + 1),
+        )
         return "\n\n".join(rows)
 
     def save_meta(self, directory: Path):
         # Let's copy the original file to the provided directory
         if self.save_extra_info:
             shutil.copy(self.path, directory)
+        self.table.save_meta(directory)
 
     def load_meta(self, directory: Path):
         # Since we've moved the file to the provided directory, let's make
@@ -2110,6 +2119,13 @@ class SentenceLevelExtracted(Extracted):
 
         if not hasattr(self, "doc_metadata"):
             self.doc_metadata = {}
+
+        if hasattr(self, "df"):
+            self.df["__ids__"] = range(len(self.df))
+            self.table = DataFrameTable(self.df, "__ids__")
+            del self.df
+        elif hasattr(self, "table"):
+            self.table.load_meta(directory)
 
 
 class SentenceLevelPDF(SentenceLevelExtracted):
