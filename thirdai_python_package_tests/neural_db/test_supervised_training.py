@@ -106,6 +106,7 @@ def test_neural_db_supervised_training_multilabel_csv(
     db, source_ids, label_to_segment_map = train_model_for_supervised_training_test(
         model_id_delimiter, number_models=number_models
     )
+    print(label_to_segment_map)
     """
     The new labels assigned to a query in this test case are such that they belong to the same shard as the original label. This means that changing the sharding logic (anything that changes the label to segment map) can break this test case. 
 
