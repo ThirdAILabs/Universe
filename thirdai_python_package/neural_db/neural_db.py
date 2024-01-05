@@ -261,13 +261,11 @@ class NeuralDB:
 
         ray_version = ray.__version__
         if LooseVersion(ray_version) >= LooseVersion("2.7"):
-            warnings.warn(
-                """
+            warnings.warn("""
                 Using ray version 2.7 or higher requires specifying a remote or NFS storage path. 
                 Support for local checkpoints has been discontinued in these versions. 
                 Refer to https://github.com/ray-project/ray/issues/37177 for details.
-                """.strip()
-            )
+                """.strip())
 
         if not isinstance(documents, list) or not all(
             isinstance(doc, CSV) for doc in documents
@@ -756,6 +754,10 @@ class NeuralDB:
         labels: Sequence[Sequence[int]] = None,
         learning_rate=0.0001,
         epochs=3,
+        batch_size: Optional[int] = None,
+        max_in_memory_batches: Optional[int] = None,
+        metrics: List[str] = [],
+        callbacks: List[bolt.train.callbacks.Callback] = [],
     ):
         """Train on supervised datasets that correspond to specific sources.
         Suppose you inserted a "sports" product catalog and a "furniture"
@@ -786,6 +788,10 @@ class NeuralDB:
             ),
             learning_rate=learning_rate,
             epochs=epochs,
+            batch_size=batch_size,
+            max_in_memory_batches=max_in_memory_batches,
+            metrics=metrics,
+            callbacks=callbacks,
         )
 
     def get_associate_samples(self):
