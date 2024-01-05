@@ -793,7 +793,8 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
   }
 
   uint32_t num_informed_hashes =
-      num_hashes - num_random_hashes ? sort_before : num_hashes;
+      sort_before ? (num_hashes - num_random_hashes) : num_hashes;
+
   for (uint32_t i = 0; i < num_informed_hashes; i++) {
     auto [hash, freq_score_pair] = sorted_hashes[i];
     new_hashes.push_back(hash);
