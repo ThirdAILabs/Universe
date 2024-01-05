@@ -29,12 +29,12 @@ from .constraint_matcher import (
     ConstraintMatcher,
     ConstraintValue,
     Filter,
-    to_filters,
     TableFilter,
+    to_filters,
 )
 from .parsing_utils import doc_parse, pdf_parse, sliding_pdf_parse, url_parse
-from .utils import hash_file, hash_string, requires_condition
 from .table import DataFrameTable, SQLiteTable
+from .utils import hash_file, hash_string, requires_condition
 
 
 class Reference:

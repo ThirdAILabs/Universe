@@ -1,13 +1,13 @@
 # Python
-from abc import ABC, abstractmethod
-from typing import List, Generator, Tuple
-import uuid
-from pathlib import Path
 import shutil
+import sqlite3
+import uuid
+from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Generator, List, Tuple
 
 # Libraries
 import pandas as pd
-import sqlite3
 
 # Local
 from .constraint_matcher import Filter

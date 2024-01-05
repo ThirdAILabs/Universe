@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import sqlite3
 from collections import defaultdict
 from typing import Any, Dict, Generic, Iterable, List, Optional, Set, TypeVar
 
 import pandas as pd
-import sqlite3
 from sortedcontainers import SortedDict
 
 ItemT = TypeVar("ItemT")
