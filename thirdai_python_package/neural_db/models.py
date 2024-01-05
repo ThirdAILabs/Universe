@@ -211,6 +211,7 @@ def unsupervised_train_on_docs(
     variable_length: Optional[
         data.transformations.VariableLengthConfig
     ] = data.transformations.VariableLengthConfig(),
+    batch_size = 2048,
 ):
     if freeze_before_train:
         model._get_model().freeze_hash_tables()
@@ -240,6 +241,7 @@ def unsupervised_train_on_docs(
         callbacks=[early_stop_callback, progress_callback, cancel_training_callback],
         max_in_memory_batches=max_in_memory_batches,
         variable_length=variable_length,
+        batch_size=batch_size,
     )
 
 
@@ -283,6 +285,8 @@ class Mach(Model):
         embedding_dimension=2048,
         extreme_output_dim=50_000,
         model_config=None,
+        tokenizer="words",
+        extreme_num_hashes=4,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -294,6 +298,8 @@ class Mach(Model):
         self.model = None
         self.balancing_samples = []
         self.model_config = model_config
+        self.tokenizer = tokenizer
+        self.extreme_num_hashes = extreme_num_hashes
 
     def set_mach_sampling_threshold(self, threshold: float):
         if self.model is None:
@@ -327,6 +333,11 @@ class Mach(Model):
     def get_id_delimiter(self) -> str:
         return self.id_delimiter
 
+    def print_instance_variables(self):
+        instance_variables = vars(self)
+        for variable_name, variable_value in instance_variables.items():
+            print(f"{variable_name}: {variable_value}")
+
     def index_documents(
         self,
         intro_documents: DocumentDataSource,
@@ -341,6 +352,8 @@ class Mach(Model):
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
+        learning_rate = 0.005,
+        batch_size=2048,
     ) -> None:
         """
         override_number_classes : The number of classes for the Mach model
@@ -356,9 +369,8 @@ class Mach(Model):
         if self.model is None:
             self.id_col = intro_documents.id_column
             self.model = self.model_from_scratch(
-                intro_documents, number_classes=override_number_classes
+                intro_documents, number_classes=override_number_classes, tokenizer=self.tokenizer
             )
-            learning_rate = 0.005
             freeze_before_train = False
             min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
                 train_documents.size
@@ -383,7 +395,6 @@ class Mach(Model):
                     fast_approximation=fast_approximation,
                     num_buckets_to_sample=num_buckets_to_sample,
                 )
-            learning_rate = 0.001
             # Freezing at the beginning prevents the model from forgetting
             # things it learned from pretraining.
             freeze_before_train = True
@@ -410,6 +421,7 @@ class Mach(Model):
                 cancel_state=cancel_state,
                 max_in_memory_batches=max_in_memory_batches,
                 variable_length=variable_length,
+                batch_size=batch_size,
             )
 
     def add_balancing_samples(self, documents: DocumentDataSource):
@@ -423,11 +435,11 @@ class Mach(Model):
             self.get_model().forget(entity)
 
     def model_from_scratch(
-        self, documents: DocumentDataSource, number_classes: int = None
+        self, documents: DocumentDataSource, number_classes: int = None, tokenizer: str = "words",
     ):
         return bolt.UniversalDeepTransformer(
             data_types={
-                self.query_col: bolt.types.text(tokenizer="char-4"),
+                self.query_col: bolt.types.text(tokenizer),
                 self.id_col: bolt.types.categorical(delimiter=self.id_delimiter),
             },
             target=self.id_col,
@@ -441,6 +453,7 @@ class Mach(Model):
                 "fhr": self.fhr,
                 "embedding_dimension": self.embedding_dimension,
                 "rlhf": True,
+                "extreme_num_hashes": self.extreme_num_hashes,
             },
             model_config=self.model_config,
         )

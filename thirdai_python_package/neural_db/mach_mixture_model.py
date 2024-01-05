@@ -28,6 +28,8 @@ class MachMixture(Model):
         model_config=None,
         label_to_segment_map: defaultdict = None,
         seed_for_sharding: int = 0,
+        tokenizer: str = "words",
+        extreme_num_hashes = 4,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -37,6 +39,8 @@ class MachMixture(Model):
         self.extreme_output_dim = extreme_output_dim
         self.n_ids = 0
         self.model_config = model_config
+        self.tokenizer = tokenizer
+        self.extreme_num_hashes = extreme_num_hashes
 
         # These parameters are specific to Mach Mixture
         self.number_models = number_models
@@ -57,6 +61,8 @@ class MachMixture(Model):
                 embedding_dimension=self.embedding_dimension,
                 extreme_output_dim=self.extreme_output_dim,
                 model_config=self.model_config,
+                tokenizer=self.tokenizer,
+                extreme_num_hashes=self.extreme_num_hashes,
             )
             for _ in range(self.number_models)
         ]
@@ -112,6 +118,8 @@ class MachMixture(Model):
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
+        batch_size=2048,
+        learning_rate=0.005,
     ) -> None:
         # We need the original number of classes from the original data source so that we can initialize the Mach models this mixture will have
         number_classes = intro_documents.size
@@ -148,6 +156,8 @@ class MachMixture(Model):
                 max_in_memory_batches=max_in_memory_batches,
                 override_number_classes=number_classes,
                 variable_length=variable_length,
+                batch_size=batch_size,
+                learning_rate=learning_rate,
             )
 
     def delete_entities(self, entities) -> None:
