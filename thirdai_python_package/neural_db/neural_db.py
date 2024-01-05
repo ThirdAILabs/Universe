@@ -584,6 +584,7 @@ class NeuralDB:
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
+        **kwargs,
     ) -> List[str]:
         """
         Inserts documents/resources into the database.
@@ -631,6 +632,7 @@ class NeuralDB:
             cancel_state=cancel_state,
             max_in_memory_batches=max_in_memory_batches,
             variable_length=variable_length,
+            **kwargs,
         )
         self._savable_state.logger.log(
             session_id=self._user_id,

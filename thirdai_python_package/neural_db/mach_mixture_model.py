@@ -112,6 +112,7 @@ class MachMixture(Model):
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
+        **kwargs,
     ) -> None:
         # We need the original number of classes from the original data source so that we can initialize the Mach models this mixture will have
         number_classes = intro_documents.size
@@ -148,6 +149,7 @@ class MachMixture(Model):
                 max_in_memory_batches=max_in_memory_batches,
                 override_number_classes=number_classes,
                 variable_length=variable_length,
+                **kwargs,
             )
 
     def delete_entities(self, entities) -> None:

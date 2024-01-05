@@ -65,6 +65,11 @@ def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document]):
 
     assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
 
+    db.insert(docs, train=True, batch_size=1, learning_rate=0.0002)
+    assert len(db.sources()) == len(docs) - num_duplicate_docs
+
+    assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
+
 
 def search_works(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
     top_k = 5
