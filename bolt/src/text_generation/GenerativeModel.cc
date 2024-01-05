@@ -42,15 +42,15 @@ std::optional<std::vector<std::vector<uint32_t>>> BeamSearchDecoder::next() {
   size_t n_predictions =
       std::min(_prediction_chunk_size,
                _n_input_tokens[0] + _max_predictions -
-                   _batched_candidate_sequences[0].front().size());
+                   _candidate_contexts[0].candidate_sequences.front().size());
   if (n_predictions == 0) {
     return std::nullopt;
   }
 
   for (size_t pred_idx = 0; pred_idx < n_predictions; pred_idx++) {
-    auto batch_size = _batched_candidate_sequences.size();
+    auto batch_size = _candidate_contexts.size();
     auto next_token_probs = _generator->model()->nextTokenProbs(
-        _prompts, _batched_candidate_sequences);
+        getPrompts(), getCandidateSequences());
 
     for (size_t batch_id = 0; batch_id < batch_size; batch_id++) {
       // This will be ordered such that the worst scoring sequence is on the top
@@ -58,8 +58,9 @@ std::optional<std::vector<std::vector<uint32_t>>> BeamSearchDecoder::next() {
       // at least one of the candidates already discovered.
       CandidateQueue candidates;
       std::vector<std::vector<uint32_t>> candidate_sequences =
-          _batched_candidate_sequences[batch_id];
-      std::vector<double> sequence_scores = _sequence_scores[batch_id];
+          _candidate_contexts[batch_id].candidate_sequences;
+      std::vector<double> sequence_scores =
+          _candidate_contexts[batch_id].sequence_scores;
       for (size_t candidate = 0; candidate < candidate_sequences.size();
            candidate++) {
         BoltVector& token_probs = next_token_probs->getVector(
@@ -103,18 +104,18 @@ std::optional<std::vector<std::vector<uint32_t>>> BeamSearchDecoder::next() {
         sequence_scores.push_back(candidates.top().score);
         candidates.pop();
       }
-      _sequence_scores[batch_id] = sequence_scores;
-      _batched_candidate_sequences[batch_id] = candidate_sequences;
+      _candidate_contexts[batch_id].sequence_scores = sequence_scores;
+      _candidate_contexts[batch_id].candidate_sequences = candidate_sequences;
     }
   }
 
   std::vector<std::vector<uint32_t>> generated_tokens;
-  for (size_t batch_id = 0; batch_id < _batched_candidate_sequences.size();
+  for (size_t batch_id = 0; batch_id < _candidate_contexts.size();
        batch_id += 1) {
     generated_tokens.push_back(
-        {_batched_candidate_sequences[batch_id].back().begin() +
+        {_candidate_contexts[batch_id].candidate_sequences.back().begin() +
              _n_input_tokens[batch_id],
-         _batched_candidate_sequences[batch_id].back().end()});
+         _candidate_contexts[batch_id].candidate_sequences.back().end()});
   }
 
   return generated_tokens;

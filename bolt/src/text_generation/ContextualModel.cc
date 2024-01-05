@@ -10,8 +10,8 @@ ContextualModel::ContextualModel(
     : _model(std::move(model)), _featurizer(std::move(featurizer)) {}
 
 bolt::TensorPtr ContextualModel::nextTokenProbs(
-    std::vector<std::vector<uint32_t>>& prompts,
-    std::vector<std::vector<std::vector<uint32_t>>>& tokens) {
+    const std::vector<std::vector<uint32_t>>& prompts,
+    const std::vector<std::vector<std::vector<uint32_t>>>& tokens) {
   if (prompts.size() != 1 || tokens.size() != 1) {
     throw std::runtime_error(
         "Batched generation is not supported for contextual model.");

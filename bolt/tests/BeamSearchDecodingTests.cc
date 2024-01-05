@@ -7,8 +7,8 @@ namespace thirdai::bolt::tests {
 class MockBackend final : public GenerativeBackend {
  public:
   bolt::TensorPtr nextTokenProbs(
-      std::vector<std::vector<uint32_t>>& prompts,
-      std::vector<std::vector<std::vector<uint32_t>>>& tokens) final {
+      const std::vector<std::vector<uint32_t>>& prompts,
+      const std::vector<std::vector<std::vector<uint32_t>>>& tokens) final {
     (void)prompts;
     std::vector<std::vector<float>> transition_matrix = {
         {0.1, 0.6, 0.2, 0.1},

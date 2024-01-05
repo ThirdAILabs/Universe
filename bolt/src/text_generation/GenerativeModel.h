@@ -16,11 +16,24 @@
 
 namespace thirdai::bolt {
 
+struct CandidateContext {
+  std::vector<std::vector<uint32_t>> candidate_sequences;
+  std::vector<uint32_t> prompt;
+  std::vector<double> sequence_scores;
+
+  CandidateContext(std::vector<std::vector<uint32_t>> candidate_sequences,
+                   std::vector<double> sequence_scores,
+                   std::vector<uint32_t> prompt)
+      : candidate_sequences(std::move(candidate_sequences)),
+        prompt(std::move(prompt)),
+        sequence_scores(std::move(sequence_scores)) {}
+};
+
 class GenerativeBackend {
  public:
   virtual bolt::TensorPtr nextTokenProbs(
-      std::vector<std::vector<uint32_t>>& prompts,
-      std::vector<std::vector<std::vector<uint32_t>>>& tokens) = 0;
+      const std::vector<std::vector<uint32_t>>& prompts,
+      const std::vector<std::vector<std::vector<uint32_t>>>& tokens) = 0;
 
   virtual metrics::History train(const dataset::DataSourcePtr& train_data,
                                  float learning_rate, uint32_t epochs,
@@ -56,25 +69,44 @@ class BeamSearchDecoder {
         _prediction_chunk_size(prediction_chunk_size),
         _max_predictions(max_predictions),
         _beam_width(beam_width),
-        _temperature(temperature),
-        _prompts(std::move(prompts)),
-        _sequence_scores(
-            std::vector<std::vector<double>>(input_tokens.size(), {0.0})) {
-    for (const auto& tokens : input_tokens) {
-      _n_input_tokens.push_back(tokens.size());
-    }
-    for (const auto& tokens : input_tokens) {
-      _batched_candidate_sequences.push_back({tokens});
-    }
-    if (!_prompts.empty() && _prompts.size() != input_tokens.size()) {
+        _temperature(temperature) {
+    bool is_prompt_empty = prompts.empty();
+    if (!is_prompt_empty && prompts.size() != input_tokens.size()) {
       throw std::runtime_error(
           "Inconsistent Size Detected. The 'prompts' container is not empty "
           "but its size does not matches 'input_tokens'. Ensure both of them "
           "have the same size.");
     }
+    for (const auto& tokens : input_tokens) {
+      _n_input_tokens.push_back(tokens.size());
+    }
+    for (uint32_t token_idx = 0; token_idx < input_tokens.size();
+         token_idx += 1) {
+      _candidate_contexts.push_back(CandidateContext(
+          {input_tokens[token_idx]}, {0.0},
+          is_prompt_empty ? std::vector<uint32_t>{} : prompts[token_idx]));
+    }
   }
 
   std::optional<std::vector<std::vector<uint32_t>>> next();
+
+  std::vector<std::vector<std::vector<uint32_t>>> getCandidateSequences() {
+    std::vector<std::vector<std::vector<uint32_t>>> batched_candidate_sequences;
+    batched_candidate_sequences.reserve(_candidate_contexts.size());
+    for (auto& context : _candidate_contexts) {
+      batched_candidate_sequences.push_back(context.candidate_sequences);
+    }
+    return batched_candidate_sequences;
+  }
+
+  std::vector<std::vector<uint32_t>> getPrompts() {
+    std::vector<std::vector<uint32_t>> batched_prompts;
+    batched_prompts.reserve(_candidate_contexts.size());
+    for (auto& context : _candidate_contexts) {
+      batched_prompts.push_back(context.prompt);
+    }
+    return batched_prompts;
+  }
 
  private:
   void reduceProbsForRepeats(const std::vector<uint32_t>& sequence,
@@ -95,9 +127,7 @@ class BeamSearchDecoder {
   // a std::vector<CandidateSequence> so that the sequences can be passed into
   // nextTokenProbs directly, instead of having to split apart the sequences and
   // scores.
-  std::vector<std::vector<std::vector<uint32_t>>> _batched_candidate_sequences;
-  std::vector<std::vector<uint32_t>> _prompts;
-  std::vector<std::vector<double>> _sequence_scores;
+  std::vector<CandidateContext> _candidate_contexts;
 };
 
 class GenerationStream {};
