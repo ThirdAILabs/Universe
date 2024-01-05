@@ -37,8 +37,16 @@ using CandidateQueue =
                         MinimizeScore>;
 
 std::optional<std::vector<std::vector<uint32_t>>> BeamSearchDecoder::next() {
-  // given we would be generating next tokens for each of them, one by one,
-  // they would all have same tokens generated at any time t.
+  // The calculation of n_predictions aims to determine the number of
+  // predictions to generate. It's important to note that the size of the first
+  // sequence in _candidate_contexts[i].candidate_sequences is always equal to
+  // _n_input_tokens[i] plus an additional constant value since, it just stores
+  // the inital text. Therefore, the value of
+  // (_n_input_tokens[i] + _max_predictions -
+  // _candidate_contexts[i].candidate_sequences.front().size()) effectively
+  // remains constant irrespective of the actual value of _n_input_tokens[i].
+  // This ensures a consistent number of predictions across different inputs at
+  // any given time t.
   size_t n_predictions =
       std::min(_prediction_chunk_size,
                _n_input_tokens[0] + _max_predictions -
