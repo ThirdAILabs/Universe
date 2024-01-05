@@ -51,6 +51,8 @@ std::string perturbCharacters(const std::string& input,
                               size_t chars_replace_with_adjacents,
                               std::mt19937& rng);
 
+std::string nltkWordTokenize(const std::string& input);
+
 /**
  * Joins a vector of strings into a single delimited string.
  */

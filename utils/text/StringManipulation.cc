@@ -245,6 +245,17 @@ std::string perturbCharacters(const std::string& input,
   return result;
 }
 
+std::string nltkWordTokenize(const std::string& input) {
+  std::regex regexp(R"((\')(?!re|ve|ll|m|t|s|d|n)(\w)\b)");
+
+  // Replacement pattern
+  std::string substitution = "$1 $2";
+
+  // Apply the regular expression
+  std::string result = std::regex_replace(input, regexp, substitution);
+  return result;
+}
+
 std::string join(const std::vector<std::string>& strings,
                  const std::string& delimiter) {
   if (strings.empty()) {
