@@ -712,6 +712,10 @@ class NeuralDB:
         data: List[Sup],
         learning_rate=0.0001,
         epochs=3,
+        batch_size: Optional[int] = None,
+        max_in_memory_batches: Optional[int] = None,
+        metrics: List[str] = [],
+        callbacks: List[bolt.train.callbacks.Callback] = [],
     ):
         """
         Train on supervised datasets that correspond to specific sources.
@@ -736,6 +740,10 @@ class NeuralDB:
             ),
             learning_rate=learning_rate,
             epochs=epochs,
+            batch_size=batch_size,
+            max_in_memory_batches=max_in_memory_batches,
+            metrics=metrics,
+            callbacks=callbacks,
         )
 
     def supervised_train_with_ref_ids(

@@ -4,7 +4,7 @@ from copy import deepcopy
 import pytest
 from thirdai import neural_db as ndb
 from thirdai.neural_db.neural_db import DocumentManager
-from thirdai.neural_db.sharded_documents import DataSourceSharder
+from thirdai.neural_db.sharded_documents import shard_data_source
 from thirdai.neural_db.supervised_datasource import SupDataSource
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
@@ -212,7 +212,7 @@ def test_sup_data_source_sharding():
     )
     label_to_segment_map = defaultdict(list)
 
-    document_data_source_shards = DataSourceSharder.shard_data_source(
+    document_data_source_shards = shard_data_source(
         data_source=document_data_source,
         label_to_segment_map=label_to_segment_map,
         number_shards=2,
@@ -221,7 +221,7 @@ def test_sup_data_source_sharding():
 
     copied_label_to_segment_map = deepcopy(label_to_segment_map)
 
-    sup_data_source_shards = DataSourceSharder.shard_data_source(
+    sup_data_source_shards = shard_data_source(
         sup_data_source,
         label_to_segment_map=label_to_segment_map,
         number_shards=2,
@@ -266,7 +266,7 @@ def test_sup_data_source_sharding_multilabel():
     for i in range(1, 4):
         label_to_segment_map[i] = [0]
 
-    sup_shards = DataSourceSharder.shard_data_source(
+    sup_shards = shard_data_source(
         data_source=sup_source,
         label_to_segment_map=label_to_segment_map,
         number_shards=2,

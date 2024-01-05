@@ -3,8 +3,6 @@ import tempfile
 from collections import defaultdict
 from typing import List, Union
 
-import pandas as pd
-
 from .documents import CSV, DocumentDataSource
 from .supervised_datasource import Sup, SupDataSource
 
@@ -74,6 +72,7 @@ class DataLoadMultiplexer:
         if isinstance(data_source, DocumentDataSource):
             line_iterator = data_source._get_line_iterator()
         if isinstance(data_source, SupDataSource):
+            # SupDataSource's line iterator can return multiple labels in the same line concatened by its id_delimiter and hence, we pass concat_labels = False so that each line has just one label.
             line_iterator = data_source._get_line_iterator(concat_labels=False)  # type: ignore
 
         for data in line_iterator:  # type: ignore
@@ -125,102 +124,108 @@ class DataLoadMultiplexer:
         return self._create_segments_with_segment_map(data_source, label_to_segment_map)
 
 
-class DataSourceSharder:
-    """
-    NOTE: Sharding only works for data sources that have id column as the first elements of the lines yielded by their line iterator.
-    External APIs :
-        shard_data_source :
-            Args:
-                data_source : DocumentDataSource or SupDataSource
-                    The data source to be sharded
-                label_to_segment_map : defaultdict
-                    map of label id to shard id
-                number_shards : int
-                    number of shards to shard the dataset into
-                update_segment_map : bool
-                    If set to True, then we first randomly shard the data_source, and update the label_to_segment_map.
-                    If set to False, then the data_source is sharded using the label_to_segment_map provided by the user.
-            Returns:
-                sharded_data_sources : List[DocumentDataSource] or List[SupDataSource]
-                    Each element in the list corresponds to a shard of the original data source
-            Note:
-                Updates the label index with label_id -> shard index map if update_segment_map is True.
-    """
-
-    @staticmethod
-    def verify_data_source_type(data_source):
-        if not isinstance(data_source, DocumentDataSource) and not isinstance(
-            data_source, SupDataSource
-        ):
-            raise TypeError(f"Cannot shard datasource of the type {type(data_source)}")
-
-    @staticmethod
-    def transform_shard_to_datasource(
-        original_data_source: Union[DocumentDataSource, SupDataSource],
-        shard_path,
-        shard_object,
-    ):
-        """
-        We assume that the shard is stored as a CSV on the machine. Depending on the underlying original data source, we create a new data source from the shard with the same attributes but with lesser documents in it.
-        """
-        if isinstance(original_data_source, DocumentDataSource):
-            data_source = DocumentDataSource(
-                id_column=original_data_source.id_column,
-                strong_column=original_data_source.strong_column,
-                weak_column=original_data_source.weak_column,
-            )
-            csv_doc = CSV(
-                path=shard_path,
-                id_column=original_data_source.id_column,
-                strong_columns=[original_data_source.strong_column],
-                weak_columns=[original_data_source.weak_column],
-                has_offset=True,
-            )
-
-            shard_object.close()
-            data_source.add(document=csv_doc, start_id=0)
-            return data_source
-
-        if isinstance(original_data_source, SupDataSource):
-            sup = Sup(
-                csv=shard_path,
-                query_column=original_data_source.query_col,
-                id_column=original_data_source.doc_manager.id_column,
-                id_delimiter=original_data_source.id_delimiter,
-                uses_db_id=True,
-            )
-            shard_object.close()
-            return SupDataSource(
-                doc_manager=original_data_source.doc_manager,
-                query_col=original_data_source.query_col,
-                data=[sup],
-                id_delimiter=original_data_source.id_delimiter,
-            )
-
-    @staticmethod
-    def shard_data_source(
-        data_source: Union[DocumentDataSource, SupDataSource],
-        label_to_segment_map: defaultdict,
-        number_shards: int,
-        update_segment_map: bool,
-        flush_frequency: int = 1_000_000,
-    ):
-        DataSourceSharder.verify_data_source_type(data_source)
-
-        data_load_multiplexer = DataLoadMultiplexer(
-            number_shards, flush_frequency=flush_frequency
-        )
-        (
-            shard_names,
-            shard_objects,
-            _,
-        ) = data_load_multiplexer.create_segments_with_data_source(
-            data_source, label_to_segment_map, update_index=update_segment_map
+def verify_data_source_type(data_source, valid_types: List, operation_name: str):
+    if not any(isinstance(data_source, data_type) for data_type in valid_types):
+        valid_types_str = ", ".join([data_type.__name__] for data_type in valid_types)
+        raise TypeError(
+            f"{operation_name} not supported for data source of the type"
+            f" {type(data_source)}.Expected types are: {valid_types_str}"
         )
 
-        return [
-            DataSourceSharder.transform_shard_to_datasource(
-                data_source, shard_path, shard_object
-            )
-            for shard_path, shard_object in zip(shard_names, shard_objects)
-        ]
+
+def transform_shard_to_datasource(
+    original_data_source: Union[DocumentDataSource, SupDataSource],
+    shard_path,
+    shard_object,
+):
+    """
+    We assume that the shard is stored as a CSV on the machine. Depending on the underlying original data source, we create a new data source from the shard with the same attributes except that the documents are loaded from the shard.
+    """
+    verify_data_source_type(
+        data_source=original_data_source,
+        valid_types=[DocumentDataSource, SupDataSource],
+        operation_name="transform_shard_to_datasource",
+    )
+    if isinstance(original_data_source, DocumentDataSource):
+        data_source = DocumentDataSource(
+            id_column=original_data_source.id_column,
+            strong_column=original_data_source.strong_column,
+            weak_column=original_data_source.weak_column,
+        )
+        csv_doc = CSV(
+            path=shard_path,
+            id_column=original_data_source.id_column,
+            strong_columns=[original_data_source.strong_column],
+            weak_columns=[original_data_source.weak_column],
+            has_offset=True,
+        )
+
+        shard_object.close()
+        data_source.add(document=csv_doc, start_id=0)
+        return data_source
+
+    if isinstance(original_data_source, SupDataSource):
+        sup = Sup(
+            csv=shard_path,
+            query_column=original_data_source.query_col,
+            id_column=original_data_source.doc_manager.id_column,
+            id_delimiter=original_data_source.id_delimiter,
+            uses_db_id=True,
+        )
+        shard_object.close()
+        return SupDataSource(
+            doc_manager=original_data_source.doc_manager,
+            query_col=original_data_source.query_col,
+            data=[sup],
+            id_delimiter=original_data_source.id_delimiter,
+        )
+
+
+def shard_data_source(
+    data_source: Union[DocumentDataSource, SupDataSource],
+    label_to_segment_map: defaultdict,
+    number_shards: int,
+    update_segment_map: bool,
+    flush_frequency: int = 1_000_000,
+):
+    """
+    NOTE:
+    1. Sharding only works for data sources that have id column as the first element of the lines yielded by their line iterator and that each line contains only one id.
+    2. Sharding is supported for DocumentDataSource and SupDataSource currently.
+    Args:
+        data_source : DocumentDataSource or SupDataSource
+            The data source to be sharded
+        label_to_segment_map : defaultdict
+            map of label id to shard id
+        number_shards : int
+            number of shards to shard the dataset into
+        update_segment_map : bool
+            If set to True, then we first randomly shard the data_source, and update the label_to_segment_map.
+            If set to False, then the data_source is sharded using the label_to_segment_map provided by the user.
+    Returns:
+        sharded_data_sources : List[DocumentDataSource] or List[SupDataSource]
+            Each element in the list corresponds to a shard of the original data source
+    Note:
+        Updates the label_to_segment_map with label_id -> shard index map if update_segment_map is True.
+    """
+    verify_data_source_type(
+        data_source=data_source,
+        valid_types=[DocumentDataSource, SupDataSource],
+        operation_name="shard_data_source",
+    )
+
+    data_load_multiplexer = DataLoadMultiplexer(
+        number_shards, flush_frequency=flush_frequency
+    )
+    (
+        shard_names,
+        shard_objects,
+        _,
+    ) = data_load_multiplexer.create_segments_with_data_source(
+        data_source, label_to_segment_map, update_index=update_segment_map
+    )
+
+    return [
+        transform_shard_to_datasource(data_source, shard_path, shard_object)
+        for shard_path, shard_object in zip(shard_names, shard_objects)
+    ]

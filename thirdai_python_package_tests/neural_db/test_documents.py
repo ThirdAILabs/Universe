@@ -10,7 +10,7 @@ from ndb_utils import create_simple_dataset
 from thirdai import bolt, demos, neural_db
 from thirdai.neural_db import documents
 from thirdai.neural_db.documents import DocumentDataSource
-from thirdai.neural_db.sharded_documents import DataLoadMultiplexer, DataSourceSharder
+from thirdai.neural_db.sharded_documents import DataLoadMultiplexer, shard_data_source
 
 # We don't have a test on just the Document interface since it is just an
 # interface.
@@ -218,7 +218,7 @@ def test_sharded_data_source(prepare_documents_test):
 
     label_to_segment_map = defaultdict(list)
     number_shards = 3
-    sharded_data_sources = DataSourceSharder.shard_data_source(
+    sharded_data_sources = shard_data_source(
         data_source=data_source,
         number_shards=number_shards,
         label_to_segment_map=label_to_segment_map,

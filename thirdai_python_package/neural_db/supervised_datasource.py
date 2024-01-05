@@ -154,6 +154,8 @@ class SupDataSource(PyDataSource):
     def _get_line_iterator(self, concat_labels=True):
         """
         If concat_labels is True and id_delimiter is not None, then the labels are joined using id_delimiter and yielded in a single row. Return one label per row in all other cases.
+
+        This is done to enable data sharding for SupDataSource as currently we can only shard data sources that have a label per line without any delimiters.
         """
         # First yield the header
         yield self._csv_line(self.doc_manager.id_column, self.query_col)
