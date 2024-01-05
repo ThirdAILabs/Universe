@@ -384,16 +384,29 @@ void UDT::throwUnsupportedUDTConfigurationError(
   throw std::invalid_argument(error_msg.str());
 }
 
-std::vector<py::object> parallelInference(
-    const std::vector<std::shared_ptr<UDT>>& models, const MapInputBatch& batch,
-    bool sparse_inference, bool return_predicted_class,
-    std::optional<uint32_t> top_k) {
-  std::vector<py::object> outputs(models.size());
-#pragma omp parallel for default(none) shared( \
-    models, batch, outputs, sparse_inference, return_predicted_class, top_k)
+std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
+UDT::parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
+                       const MapInputBatch& batch, bool sparse_inference,
+                       std::optional<uint32_t> top_k) {
+  std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>> outputs(
+      models.size());
+
+  bool non_mach = false;
+#pragma omp parallel for default(none) \
+    shared(models, batch, outputs, sparse_inference, top_k, non_mach)
   for (size_t i = 0; i < models.size(); i++) {
-    outputs[i] = models[i]->predictBatch(batch, sparse_inference,
-                                         return_predicted_class, top_k);
+    if (auto* mach =
+            dynamic_cast<UDTMachClassifier*>(models[i]->_backend.get())) {
+      outputs[i] = mach->predictImpl(batch, sparse_inference, top_k);
+    } else {
+#pragma omp critical
+      non_mach = true;
+    }
+  }
+
+  if (non_mach) {
+    throw std::invalid_argument(
+        "Cannot perform parallel inference on non mach model.");
   }
 
   return outputs;

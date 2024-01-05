@@ -7,7 +7,7 @@ from thirdai import bolt, data
 from .documents import DocumentDataSource
 from .models import CancelState, Mach, Model
 from .sharded_documents import ShardedDataSource
-from .utils import requires_condition
+from .utils import clean_text, requires_condition
 
 InferSamples = List
 Predictions = Sequence
@@ -173,13 +173,14 @@ class MachMixture(Model):
 
         per_model_results = bolt.UniversalDeepTransformer.parallel_inference(
             models=[model.model for model in self.models],
-            batch=[{self.query_col: x} for x in samples],
+            batch=[{self.query_col: clean_text(text)} for text in samples],
         )
 
         results = []
         for index in range(len(samples)):
             sample_results = []
-            map(sample_results.extend, (y[index] for y in per_model_results))
+            for y in per_model_results:
+                sample_results.extend(y[index])
             sample_results.sort(key=lambda x: x[1], reverse=True)
             results.append(sample_results[:n_results])
         return results

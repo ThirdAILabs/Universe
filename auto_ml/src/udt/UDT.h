@@ -484,6 +484,11 @@ class UDT {
 
   static std::shared_ptr<UDT> load_stream(std::istream& input_stream);
 
+  static std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
+  parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
+                    const MapInputBatch& batch, bool sparse_inference,
+                    std::optional<uint32_t> top_k);
+
  private:
   UDT() {}
 
@@ -501,10 +506,5 @@ class UDT {
 
   std::unique_ptr<UDTBackend> _backend;
 };
-
-std::vector<py::object> parallelInference(
-    const std::vector<std::shared_ptr<UDT>>& models, const MapInputBatch& batch,
-    bool sparse_inference, bool return_predicted_class,
-    std::optional<uint32_t> top_k);
 
 }  // namespace thirdai::automl::udt
