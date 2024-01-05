@@ -20,7 +20,7 @@ EmbFcInference::EmbFcInference(EmbeddingPtr emb, const FullyConnectedPtr& fc)
 TensorPtr EmbFcInference::forward(const TensorPtr& input) {
   Matrix embs(input->batchSize(), _emb->dim());
 
-#pragma omp parallel for default(none) shared(input, embs)
+#pragma omp parallel for default(none) shared(input, embs, Eigen::Dynamic)
   for (size_t i = 0; i < input->batchSize(); i++) {
     _emb->forward(input->getVector(i), embs.row(i).data());
   }

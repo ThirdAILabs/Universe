@@ -294,14 +294,18 @@ class Mach(Model):
         fhr=50_000,
         embedding_dimension=2048,
         extreme_output_dim=50_000,
+        tokenizer="char-4",
+        hidden_bias=False,
         model_config=None,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
+        self.tokenizer = tokenizer
         self.query_col = query_col
         self.fhr = fhr
         self.embedding_dimension = embedding_dimension
         self.extreme_output_dim = extreme_output_dim
+        self.hidden_bias = hidden_bias
         self.n_ids = 0
         self.model = None
         self.balancing_samples = []
@@ -439,7 +443,7 @@ class Mach(Model):
     ):
         return bolt.UniversalDeepTransformer(
             data_types={
-                self.query_col: bolt.types.text(tokenizer="char-4"),
+                self.query_col: bolt.types.text(tokenizer=self.tokenizer),
                 self.id_col: bolt.types.categorical(delimiter=self.id_delimiter),
             },
             target=self.id_col,
@@ -452,6 +456,7 @@ class Mach(Model):
                 "extreme_output_dim": self.extreme_output_dim,
                 "fhr": self.fhr,
                 "embedding_dimension": self.embedding_dimension,
+                "hidden_bias": self.hidden_bias,
                 "rlhf": True,
             },
             model_config=self.model_config,
