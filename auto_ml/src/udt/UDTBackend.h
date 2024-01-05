@@ -199,7 +199,7 @@ class UDTBackend {
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
-      bool fast_approximation, bool verbose, bool sort_before = true) {
+      bool fast_approximation, bool verbose, bool sort_before) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
@@ -217,7 +217,7 @@ class UDTBackend {
       const std::vector<std::string>& weak_column_names,
       const std::variant<uint32_t, std::string>& new_label,
       std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
-      bool sort_before = true) {
+      bool sort_before) {
     (void)document;
     (void)strong_column_names;
     (void)weak_column_names;
@@ -232,7 +232,7 @@ class UDTBackend {
       const MapInputBatch& sample,
       const std::variant<uint32_t, std::string>& new_label,
       std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
-      bool sort_before = true) {
+      bool sort_before) {
     (void)sample;
     (void)new_label;
     (void)num_buckets_to_sample;
