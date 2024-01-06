@@ -71,9 +71,7 @@ MachFeaturizer::featurizeForIntroduceDocuments(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, bool fast_approximation,
     size_t batch_size) {
-  auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
-
-  data::ColumnMap columns = data::CsvIterator::all(csv_data_source, _delimiter);
+  data::ColumnMap columns = data::CsvIterator::all(data_source, _delimiter);
 
   auto transform = data::Pipeline::make({
       coldStartTransform(strong_column_names, weak_column_names,
@@ -128,9 +126,7 @@ data::ColumnMap MachFeaturizer::featurizeDataset(
     const dataset::DataSourcePtr& data_source,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names) {
-  auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
-
-  data::ColumnMap columns = data::CsvIterator::all(csv_data_source, _delimiter);
+  data::ColumnMap columns = data::CsvIterator::all(data_source, _delimiter);
 
   if (!strong_column_names.empty() || !weak_column_names.empty()) {
     columns = coldStartTransform(strong_column_names, weak_column_names,
@@ -186,10 +182,8 @@ data::ColumnMap MachFeaturizer::getBalancingSamples(
     const std::vector<std::string>& weak_column_names,
     std::optional<data::VariableLengthConfig> variable_length,
     size_t n_balancing_samples) {
-  auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
-
   auto data_iter =
-      data::CsvIterator::make(csv_data_source, _delimiter, n_balancing_samples);
+      data::CsvIterator::make(data_source, _delimiter, n_balancing_samples);
 
   auto columns_opt = data_iter->next();
   if (!columns_opt) {

@@ -88,9 +88,7 @@ data::LoaderPtr Featurizer::getDataLoaderHelper(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
     bool verbose, dataset::DatasetShuffleConfig shuffle_config,
     const data::TransformationPtr& cold_start_transform) {
-  auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
-
-  auto data_iter = data::CsvIterator::make(csv_data_source, _delimiter);
+  auto data_iter = data::CsvIterator::make(data_source, _delimiter);
 
   std::vector<data::TransformationPtr> transformations;
   if (cold_start_transform) {
