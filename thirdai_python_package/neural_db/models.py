@@ -50,6 +50,7 @@ class Model:
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
+        **kwargs,
     ) -> None:
         raise NotImplementedError()
 
@@ -203,6 +204,7 @@ def unsupervised_train_on_docs(
     max_epochs: int,
     metric: str,
     learning_rate: float,
+    batch_size: int,
     acc_to_stop: float,
     on_progress: Callable,
     freeze_before_train: bool,
@@ -234,6 +236,7 @@ def unsupervised_train_on_docs(
         data_source=documents,
         strong_column_names=[documents.strong_column],
         weak_column_names=[documents.weak_column],
+        batch_size=batch_size,
         learning_rate=learning_rate,
         epochs=max_epochs,
         metrics=[metric],
@@ -282,14 +285,18 @@ class Mach(Model):
         fhr=50_000,
         embedding_dimension=2048,
         extreme_output_dim=50_000,
+        tokenizer="char-4",
+        hidden_bias=False,
         model_config=None,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
+        self.tokenizer = tokenizer
         self.query_col = query_col
         self.fhr = fhr
         self.embedding_dimension = embedding_dimension
         self.extreme_output_dim = extreme_output_dim
+        self.hidden_bias = hidden_bias
         self.n_ids = 0
         self.model = None
         self.balancing_samples = []
@@ -341,6 +348,7 @@ class Mach(Model):
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
+        **kwargs,
     ) -> None:
         """
         override_number_classes : The number of classes for the Mach model
@@ -353,12 +361,14 @@ class Mach(Model):
                 f" id_col={intro_documents.id_column}"
             )
 
+        batch_size = kwargs.get("batch_size", None)
+
         if self.model is None:
             self.id_col = intro_documents.id_column
             self.model = self.model_from_scratch(
                 intro_documents, number_classes=override_number_classes
             )
-            learning_rate = 0.005
+            learning_rate = kwargs.get("learning_rate", 0.005)
             freeze_before_train = False
             min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
                 train_documents.size
@@ -383,7 +393,7 @@ class Mach(Model):
                     fast_approximation=fast_approximation,
                     num_buckets_to_sample=num_buckets_to_sample,
                 )
-            learning_rate = 0.001
+            learning_rate = kwargs.get("learning_rate", 0.001)
             # Freezing at the beginning prevents the model from forgetting
             # things it learned from pretraining.
             freeze_before_train = True
@@ -404,6 +414,7 @@ class Mach(Model):
                 max_epochs=max_epochs,
                 metric="hash_precision@5",
                 learning_rate=learning_rate,
+                batch_size=batch_size,
                 acc_to_stop=0.95,
                 on_progress=on_progress,
                 freeze_before_train=freeze_before_train,
@@ -427,7 +438,7 @@ class Mach(Model):
     ):
         return bolt.UniversalDeepTransformer(
             data_types={
-                self.query_col: bolt.types.text(tokenizer="char-4"),
+                self.query_col: bolt.types.text(tokenizer=self.tokenizer),
                 self.id_col: bolt.types.categorical(delimiter=self.id_delimiter),
             },
             target=self.id_col,
@@ -440,6 +451,7 @@ class Mach(Model):
                 "extreme_output_dim": self.extreme_output_dim,
                 "fhr": self.fhr,
                 "embedding_dimension": self.embedding_dimension,
+                "hidden_bias": self.hidden_bias,
                 "rlhf": True,
             },
             model_config=self.model_config,

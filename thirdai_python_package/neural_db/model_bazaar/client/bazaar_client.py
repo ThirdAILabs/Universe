@@ -298,8 +298,10 @@ class ModelBazaar(Bazaar):
         model_name: str,
         docs: List[str],
         doc_type: str = "local",
+        sharded: bool = False,
         is_async: bool = False,
         base_model_identifier: str = None,
+        train_extra_options: dict = {},
     ):
         """
         Initiates training for a model and returns a Model instance.
@@ -326,12 +328,20 @@ class ModelBazaar(Bazaar):
             else ("files", (file_path, "don't care"))
             for file_path in docs
         ]
+        if train_extra_options:
+            files.append(
+                (
+                    "extra_options_form",
+                    (None, json.dumps(train_extra_options), "application/json"),
+                )
+            )
 
         response = http_post_with_error(
             url,
             params={
                 "model_name": model_name,
                 "doc_type": doc_type,
+                "sharded": sharded,
                 "base_model_identifier": base_model_identifier,
             },
             files=files,

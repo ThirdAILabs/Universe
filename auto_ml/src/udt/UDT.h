@@ -456,6 +456,11 @@ class UDT {
 
   bool isV1() const;
 
+  static std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
+  parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
+                    const MapInputBatch& batch, bool sparse_inference,
+                    std::optional<uint32_t> top_k);
+
  private:
   UDT() {}
 
