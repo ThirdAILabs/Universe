@@ -31,7 +31,8 @@ struct CandidateContext {
 
 class GenerativeBackend {
  public:
-  virtual bolt::TensorPtr nextTokenProbs(
+  virtual std::pair<bolt::TensorPtr, std::vector<std::vector<size_t>>>
+  nextTokenProbs(
       const std::vector<std::vector<uint32_t>>& prompts,
       const std::vector<std::vector<std::vector<uint32_t>>>& tokens) = 0;
 

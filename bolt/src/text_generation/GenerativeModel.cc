@@ -57,7 +57,7 @@ std::optional<std::vector<std::vector<uint32_t>>> BeamSearchDecoder::next() {
 
   for (size_t pred_idx = 0; pred_idx < n_predictions; pred_idx++) {
     auto batch_size = _candidate_contexts.size();
-    auto next_token_probs = _generator->model()->nextTokenProbs(
+    auto [next_token_probs, mapping] = _generator->model()->nextTokenProbs(
         getPrompts(), getCandidateSequences());
 
     for (size_t batch_id = 0; batch_id < batch_size; batch_id++) {
@@ -71,8 +71,8 @@ std::optional<std::vector<std::vector<uint32_t>>> BeamSearchDecoder::next() {
           _candidate_contexts[batch_id].sequence_scores;
       for (size_t candidate = 0; candidate < candidate_sequences.size();
            candidate++) {
-        BoltVector& token_probs = next_token_probs->getVector(
-            batch_id * candidate_sequences.size() + candidate);
+        BoltVector& token_probs =
+            next_token_probs->getVector(mapping[batch_id][candidate]);
         reduceProbsForRepeats(candidate_sequences[candidate], token_probs,
                               _max_predictions);
 

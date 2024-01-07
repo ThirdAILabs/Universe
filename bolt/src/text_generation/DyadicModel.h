@@ -21,7 +21,7 @@ class DyadicModel final : public GenerativeBackend {
                        const data::DyadicInterval& dyadic_transform,
                        data::OutputColumnsList bolt_inputs);
 
-  bolt::TensorPtr nextTokenProbs(
+  std::pair<bolt::TensorPtr, std::vector<std::vector<size_t>>> nextTokenProbs(
       const std::vector<std::vector<uint32_t>>& prompts,
       const std::vector<std::vector<std::vector<uint32_t>>>& tokens) final;
 

@@ -6,7 +6,7 @@ namespace thirdai::bolt::tests {
 
 class MockBackend final : public GenerativeBackend {
  public:
-  bolt::TensorPtr nextTokenProbs(
+  std::pair<bolt::TensorPtr, std::vector<std::vector<size_t>>> nextTokenProbs(
       const std::vector<std::vector<uint32_t>>& prompts,
       const std::vector<std::vector<std::vector<uint32_t>>>& tokens) final {
     (void)prompts;
@@ -17,13 +17,17 @@ class MockBackend final : public GenerativeBackend {
         {0.05, 0.1, 0.8, 0.05},
     };
 
+    std::vector<std::vector<size_t>> mapping(
+        1, std::vector<size_t>(tokens[0].size()));
+    std::iota(mapping[0].begin(), mapping[0].end(), 0);
+
     auto output = bolt::Tensor::dense(tokens[0].size(), 4);
     for (size_t i = 0; i < tokens[0].size(); i++) {
       const auto& scores = transition_matrix[tokens[0][i].back()];
       std::copy(scores.begin(), scores.end(), output->getVector(i).activations);
     }
 
-    return output;
+    return {output, mapping};
   }
 
   metrics::History train(const dataset::DataSourcePtr& train_data,

@@ -29,17 +29,28 @@ DyadicModel::DyadicModel(bolt::ModelPtr model,
   _vocab_size = _model->outputs().at(0)->dim();
 }
 
-bolt::TensorPtr DyadicModel::nextTokenProbs(
+std::pair<bolt::TensorPtr, std::vector<std::vector<size_t>>>
+DyadicModel::nextTokenProbs(
     const std::vector<std::vector<uint32_t>>& prompts,
     const std::vector<std::vector<std::vector<uint32_t>>>& tokens) {
   auto prompt_column_name = _dyadic_transform->getPromptColumn();
   // each of the chunks inside tokens should be of the same length
   size_t tokens_size = tokens[0].size();
   std::vector<std::vector<uint32_t>> flattened_tokens;
+
+  // stores a mapping where mapping[i][j] stores location of token[i][j] in
+  // flttened_tokens
+  std::vector<std::vector<size_t>> mapping;
+
+  size_t current_location = 0;
   for (const auto& batch : tokens) {
+    std::vector<size_t> local_map;
     for (const auto& tokens : batch) {
       flattened_tokens.push_back(tokens);
+      local_map.push_back(current_location);
+      current_location += 1;
     }
+    mapping.push_back(local_map);
   }
 
   data::ColumnMap data(
@@ -63,7 +74,9 @@ bolt::TensorPtr DyadicModel::nextTokenProbs(
 
   auto tensors = data::toTensors(columns, _bolt_inputs);
 
-  return _model->forward(tensors).at(0);
+  auto token_probs = _model->forward(tensors).at(0);
+
+  return {token_probs, mapping};
 }
 
 metrics::History DyadicModel::train(

@@ -1,6 +1,7 @@
 #include "ContextualModel.h"
 #include <bolt/src/train/trainer/Dataset.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <numeric>
 #include <stdexcept>
 
 namespace thirdai::bolt {
@@ -9,16 +10,24 @@ ContextualModel::ContextualModel(
     bolt::ModelPtr model, dataset::TextGenerationFeaturizerPtr featurizer)
     : _model(std::move(model)), _featurizer(std::move(featurizer)) {}
 
-bolt::TensorPtr ContextualModel::nextTokenProbs(
+std::pair<bolt::TensorPtr, std::vector<std::vector<size_t>>>
+ContextualModel::nextTokenProbs(
     const std::vector<std::vector<uint32_t>>& prompts,
     const std::vector<std::vector<std::vector<uint32_t>>>& tokens) {
   if (prompts.size() != 1 || tokens.size() != 1) {
     throw std::runtime_error(
         "Batched generation is not supported for contextual model.");
   }
+
+  // size must be one since, contextual model doesnt supports batched inference
+  std::vector<std::vector<size_t>> mapping(
+      1, std::vector<size_t>(tokens[0].size()));
+  std::iota(mapping[0].begin(), mapping[0].end(), 0);
+
   auto tensors = _featurizer->featurizeInputBatch(prompts[0], tokens[0],
                                                   _model->inputDims());
-  return _model->forward(tensors).at(0);
+  auto token_probs = _model->forward(tensors).at(0);
+  return {token_probs, mapping};
 }
 
 metrics::History ContextualModel::train(

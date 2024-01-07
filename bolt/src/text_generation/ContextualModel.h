@@ -15,7 +15,7 @@ class ContextualModel final : public GenerativeBackend {
   ContextualModel(bolt::ModelPtr model,
                   dataset::TextGenerationFeaturizerPtr featurizer);
 
-  bolt::TensorPtr nextTokenProbs(
+  std::pair<bolt::TensorPtr, std::vector<std::vector<size_t>>> nextTokenProbs(
       const std::vector<std::vector<uint32_t>>& prompts,
       const std::vector<std::vector<std::vector<uint32_t>>>& tokens) final;
 
