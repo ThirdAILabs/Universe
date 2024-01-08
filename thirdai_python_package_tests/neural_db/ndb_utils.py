@@ -62,18 +62,6 @@ PPTX_FILE = os.path.join(BASE_DIR, "quantum_mechanics.pptx")
 TXT_FILE = os.path.join(BASE_DIR, "nature.txt")
 EML_FILE = os.path.join(BASE_DIR, "Message.eml")
 
-# connection instances for connector document
-# SQL connector attributes
-ENGINE = base.get_sql_engine()
-TABLE_NAME = base.get_sql_table()
-
-# SharePoint connector attributes
-CLIENT_CONTEXT = base.get_client_context()
-LIBRARY_PATH = base.get_library_path()
-
-# SalesForce Connector attributes
-SF_INSTANCE = base.get_salesforce_instance()
-OBJECT_NAME = base.get_salesforce_object_name()
 
 CSV_EXPLICIT_META = "csv-explicit"
 PDF_META = "pdf"
@@ -167,8 +155,8 @@ def build_local_sharepoint_doc():
 all_connector_doc_getters = [
     Equivalent_doc(
         connector_doc=lambda: ndb.SQLDatabase(
-            engine=ENGINE,
-            table_name=TABLE_NAME,
+            engine=base.get_sql_engine(),
+            table_name=base.get_sql_table(),
             id_col="id",
             strong_columns=["content"],
             weak_columns=["content"],
@@ -185,14 +173,14 @@ all_connector_doc_getters = [
     ),
     Equivalent_doc(
         connector_doc=lambda: ndb.SharePoint(
-            ctx=CLIENT_CONTEXT, library_path=LIBRARY_PATH
+            ctx=base.get_client_context(), library_path=base.get_library_path()
         ),
         local_doc=build_local_sharepoint_doc,
     ),
     Equivalent_doc(
         connector_doc=lambda: ndb.SalesForce(
-            instance=SF_INSTANCE,
-            object_name=OBJECT_NAME,
+            instance=base.get_salesforce_instance(),
+            object_name=base.get_salesforce_object_name(),
             id_col="ID__c",
             strong_columns=["Review__c"],
             weak_columns=["Review__c"],
