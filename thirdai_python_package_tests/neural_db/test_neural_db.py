@@ -594,3 +594,27 @@ def test_neural_db_reranking_threshold():
         ranker_results[: 10 - rerank_start],
         check_equal_scores=False,
     )
+
+
+def test_custom_epoch(create_simple_dataset):
+    db = ndb.NeuralDB(user_id="user")
+
+    doc = ndb.CSV(
+        path=create_simple_dataset,
+        id_column="label",
+        strong_columns=["text"],
+        weak_columns=["text"],
+        reference_columns=["text"],
+    )
+
+    batch_count = 0
+
+    def count_batch(progress):
+        nonlocal batch_count
+        batch_count += 2  # Because progress function gets called for even batches only.
+
+    num_epochs = 10
+    db.insert(sources=[doc], epochs=num_epochs, on_progress=count_batch)
+
+    # And number of batches in 'create_simple_dataset' is 1, so, number of epochs that the model got trained for will be number of batches.
+    assert num_epochs == batch_count

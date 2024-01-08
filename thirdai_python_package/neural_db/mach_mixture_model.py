@@ -26,6 +26,7 @@ class MachMixture(Model):
         fhr: int = 50_000,
         embedding_dimension: int = 2048,
         extreme_output_dim: int = 10_000,  # for Mach Mixture, we use default dim of 10k
+        extreme_num_hashes: int = 8,
         model_config=None,
         label_to_segment_map: defaultdict = None,
         seed_for_sharding: int = 0,
@@ -36,6 +37,7 @@ class MachMixture(Model):
         self.fhr = fhr
         self.embedding_dimension = embedding_dimension
         self.extreme_output_dim = extreme_output_dim
+        self.extreme_num_hashes = extreme_num_hashes
         self.n_ids = 0
         self.model_config = model_config
 
@@ -57,6 +59,7 @@ class MachMixture(Model):
                 fhr=self.fhr,
                 embedding_dimension=self.embedding_dimension,
                 extreme_output_dim=self.extreme_output_dim,
+                extreme_num_hashes=self.extreme_num_hashes,
                 model_config=self.model_config,
             )
             for _ in range(self.number_models)

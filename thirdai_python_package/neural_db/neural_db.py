@@ -427,6 +427,7 @@ class NeuralDB:
         Inserts documents/resources into the database.
 
         Args:
+            sources (List[Doc]): List of NeuralDB documents to be inserted.
             train (bool): Optional, defaults True. When True this means that the
                 underlying model in the NeuralDB will undergo unsupervised pretraining
                 on the inserted documents.
