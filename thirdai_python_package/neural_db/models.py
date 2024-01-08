@@ -5,7 +5,7 @@ from io import StringIO
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence, Tuple
 
-from thirdai import bolt, data, dataset
+from thirdai import bolt, data
 
 from .documents import DocumentDataSource
 from .supervised_datasource import SupDataSource
