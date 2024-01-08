@@ -261,7 +261,7 @@ def unsupervised_train_on_docs(
     cancel_training_callback = CancelTraining(cancel_state=cancel_state)
 
     freeze_hashtable_callback = FreezeHashTable(
-        initial_freeze=freeze_before_train,
+        freeze_before_train=freeze_before_train,
         freeze_after_epoch=kwargs.get("freeze_after_epoch", max_epochs - 1),
         tracked_metric=metric,
         metric_threshold=kwargs.get(
