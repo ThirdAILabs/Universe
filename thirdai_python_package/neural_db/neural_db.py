@@ -573,7 +573,6 @@ class NeuralDB:
         query: str,
         top_k: int,
         constraints=None,
-        aggregate_rank: bool = False,
         rerank=False,
         top_k_rerank=100,
         rerank_threshold=1.5,
