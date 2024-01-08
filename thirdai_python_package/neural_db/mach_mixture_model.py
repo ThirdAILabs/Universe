@@ -307,6 +307,8 @@ class MachMixture(Model):
         )
 
         for shard, model in zip(supervised_data_source_shards, self.models):
+            if shard.size == 0:
+                continue
             model.train_on_supervised_data_source(
                 supervised_data_source=shard,
                 learning_rate=learning_rate,

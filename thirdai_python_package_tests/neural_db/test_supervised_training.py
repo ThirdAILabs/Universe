@@ -1,6 +1,6 @@
 import os
+import random
 from collections import defaultdict
-from itertools import product
 
 import pytest
 from thirdai import neural_db as ndb
@@ -8,19 +8,34 @@ from thirdai.neural_db.sharded_documents import shard_data_source
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
-"""
-Supervised Training Tests for a mixture of mach models requires that the new label associated with the query is in the same shard as the original label. 
 
-For example, 
-number_models = 2
-labels in model 1 : label_1 = {0,1,2}
-label_2 = {3,4,5}
+def get_label_from_same_shard(db: ndb.NeuralDB, original_label: int, number_labels):
+    """
+    Supervised Training Tests for a mixture of mach models requires that the new label associated with the query is in the same shard as the original label.
 
-If original data had (query, label) (q,0), to test supervised training, we should have new label l from the set {1,2}. 
-This is because if l is in {3,4,5} then model 1 will always predict 0 with high activation and hence, irrespective of how long we train, there's no guarantee that activations of any of 3,4,5 can be as high as 0 while predicting for query q.
+    For example,
+    number_models = 2
+    labels in model 1 : label_1 = {0,1,2}
+    label_2 = {3,4,5}
 
-Hence, we return a label_to_segment_map that denotes what labels goes to what model so that it is easier to write a test case to test supervised training in case of a mixture of mach models.
-"""
+    If original data had (query, label) (q,0), to test supervised training, we should have new label l from the set {1,2}.
+    This is because if l is in {3,4,5} then model 1 will always predict 0 with high activation and hence, irrespective of how long we train, there's no guarantee that activations of any of 3,4,5 can be as high as 0 while predicting for query q.
+
+    Hence, we return labels from the same shard for supervised training.
+    """
+    label_to_segment_map = db._savable_state.model.label_to_segment_map
+    segment_to_label_map = defaultdict(list)
+    for label in label_to_segment_map:
+        segment_to_label_map[label_to_segment_map[label][0]].append(label)
+
+    filtered_labels = [
+        l
+        for l in segment_to_label_map[label_to_segment_map[original_label][0]]
+        if l != original_label
+    ]
+
+    assert number_labels <= len(filtered_labels)
+    return random.sample(filtered_labels, number_labels)
 
 
 def train_model_for_supervised_training_test(model_id_delimiter, number_models=1):
@@ -76,20 +91,7 @@ def train_model_for_supervised_training_test(model_id_delimiter, number_models=1
     os.remove("mock_unsup_1.csv")
     os.remove("mock_unsup_2.csv")
 
-    document_data_source = db._savable_state.documents.get_data_source()
-    if number_models > 1:
-        label_to_segment_map = defaultdict(list)
-        # The below function call updates label_to_segment_map inplace
-        sharded_data_source = shard_data_source(
-            data_source=document_data_source,
-            label_to_segment_map=label_to_segment_map,
-            number_shards=number_models,
-            update_segment_map=True,
-        )
-    else:
-        label_to_segment_map = {i: 0 for i in range(document_data_source.size)}
-
-    return db, source_ids, label_to_segment_map
+    return db, source_ids
 
 
 def expect_top_2_results(db, query, expected_results):
@@ -97,41 +99,32 @@ def expect_top_2_results(db, query, expected_results):
     assert len(result_ids.intersection(set(expected_results))) >= 1
 
 
-@pytest.mark.parametrize(
-    "model_id_delimiter, number_models", product([" ", None], [1, 2])
-)
-def test_neural_db_supervised_training_multilabel_csv(
-    model_id_delimiter, number_models
-):
-    db, source_ids, label_to_segment_map = train_model_for_supervised_training_test(
-        model_id_delimiter, number_models=number_models
+@pytest.mark.parametrize("model_id_delimiter", [" "])
+def test_neural_db_supervised_training_mixture(model_id_delimiter):
+    number_models = 2
+    db, _ = train_model_for_supervised_training_test(
+        model_id_delimiter=model_id_delimiter, number_models=number_models
     )
-    print(label_to_segment_map)
-    dd = defaultdict(list)
 
-    # Populate the defaultdict with the specified key-value pairs
-    initial_values = {
-        0: [1],
-        1: [1],
-        2: [0],
-        3: [0],
-        4: [1],
-        5: [0],
-        6: [1],
-        7: [0],
-        8: [0],
-        9: [1],
-    }
+    queries = ["first", "sixth"]
+    new_labels = [
+        get_label_from_same_shard(db, original_label=0, number_labels=1),
+        get_label_from_same_shard(db, original_label=5, number_labels=2),
+    ]
 
-    for key, value in initial_values.items():
-        dd[key] = value
+    db.supervised_train(
+        [ndb.Sup(queries=queries, labels=new_labels, uses_db_id=True)],
+        learning_rate=0.1,
+        epochs=20,
+    )
 
-    assert label_to_segment_map == dd
-    """
-    The new labels assigned to a query in this test case are such that they belong to the same shard as the original label. This means that changing the sharding logic (anything that changes the label to segment map) can break this test case. 
+    assert db.search(queries[0], top_k=1)[0].id == new_labels[0][0]
+    expect_top_2_results(db, queries[1], new_labels[1])
 
-    TODO(Shubh) : Modify test case such that this test cases passes for all label_to_segment_map.
-    """
+
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
+def test_neural_db_supervised_training_multilabel_csv(model_id_delimiter):
+    db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
 
     with open("mock_sup_1.csv", "w") as out:
         out.write("id,query\n")
@@ -183,7 +176,7 @@ def test_neural_db_supervised_training_multilabel_csv(
 
 @pytest.mark.parametrize("model_id_delimiter", [" ", None])
 def test_neural_db_supervised_training_singlelabel_csv(model_id_delimiter):
-    db, source_ids, _ = train_model_for_supervised_training_test(model_id_delimiter)
+    db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
 
     with open("mock_sup_1.csv", "w") as out:
         out.write("id,query\n")
@@ -231,7 +224,7 @@ def test_neural_db_supervised_training_singlelabel_csv(model_id_delimiter):
 
 @pytest.mark.parametrize("model_id_delimiter", [" ", None])
 def test_neural_db_supervised_training_sequence_input(model_id_delimiter):
-    db, source_ids, _ = train_model_for_supervised_training_test(model_id_delimiter)
+    db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
 
     db.supervised_train(
         [
@@ -268,7 +261,7 @@ def test_neural_db_supervised_training_sequence_input(model_id_delimiter):
 
 @pytest.mark.parametrize("model_id_delimiter", [" ", None])
 def test_neural_db_ref_id_supervised_training_multilabel_csv(model_id_delimiter):
-    db, _, _ = train_model_for_supervised_training_test(model_id_delimiter)
+    db, _ = train_model_for_supervised_training_test(model_id_delimiter)
 
     with open("mock_sup.csv", "w") as out:
         out.write("id,query\n")
@@ -296,7 +289,7 @@ def test_neural_db_ref_id_supervised_training_multilabel_csv(model_id_delimiter)
 
 @pytest.mark.parametrize("model_id_delimiter", [" ", None])
 def test_neural_db_ref_id_supervised_training_singlelabel_csv(model_id_delimiter):
-    db, _, _ = train_model_for_supervised_training_test(model_id_delimiter)
+    db, _ = train_model_for_supervised_training_test(model_id_delimiter)
 
     with open("mock_sup.csv", "w") as out:
         out.write("id,query\n")
@@ -321,7 +314,7 @@ def test_neural_db_ref_id_supervised_training_singlelabel_csv(model_id_delimiter
 
 @pytest.mark.parametrize("model_id_delimiter", [" ", None])
 def test_neural_db_ref_id_supervised_training_sequence_input(model_id_delimiter):
-    db, source_ids, _ = train_model_for_supervised_training_test(model_id_delimiter)
+    db, source_ids = train_model_for_supervised_training_test(model_id_delimiter)
 
     db.supervised_train_with_ref_ids(
         queries=["first", "fourth", "second"],
