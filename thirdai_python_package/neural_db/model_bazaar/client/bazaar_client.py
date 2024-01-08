@@ -524,3 +524,22 @@ class ModelBazaar(Bazaar):
             )
 
         raise Exception("The model isn't deployed...")
+    
+    def restart(
+        self,
+    ):
+        url = urljoin(
+                self._login_instance.base_url,
+                f"jobs/{self._user_id}/restart_enterprise"
+            )
+        
+        response = http_post_with_error(
+            url,
+            headers=auth_header(self._access_token),
+        )
+
+        if response.status_code != 202:
+            raise Exception(f"error: {response.json()['message']}")
+        
+        print(response.json()['message'])
+        
