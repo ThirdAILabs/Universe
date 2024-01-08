@@ -679,6 +679,7 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             variable_length=variable_length,
             checkpoint_config=convert_ndb_checkpoint_config_to_mach(checkpoint_config),
+            **kwargs,
         )
 
         return ids, intro_and_train.intro.resource_name()
@@ -718,6 +719,7 @@ class NeuralDB:
                 max_in_memory_batches=max_in_memory_batches,
                 variable_length=variable_length,
                 checkpoint_config=checkpoint_config,
+                **kwargs,
             )
 
         self._savable_state.logger.log(

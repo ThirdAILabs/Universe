@@ -8,6 +8,7 @@ class TrainState:
         min_epochs: int,
         max_epochs: int,
         freeze_before_train: bool,
+        batch_size: int,
         **kwargs,
     ):
         self.max_in_memory_batches = max_in_memory_batches
@@ -17,6 +18,7 @@ class TrainState:
         self.min_epochs = min_epochs
         self.max_epochs = max_epochs
         self.freeze_before_train = freeze_before_train
+        self.batch_size = batch_size
 
 
 class IntroState:
@@ -118,6 +120,7 @@ class NeuralDbProgressTracker:
             "variable_length": self.vlc_config,
             "min_epochs": min_epochs,
             "max_epochs": max_epochs,
+            "batch_size": self._train_state.batch_size,
         }
 
     def introduce_arguments(self):

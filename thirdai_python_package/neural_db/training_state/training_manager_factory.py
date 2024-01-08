@@ -65,6 +65,7 @@ class TrainingProgressManagerFactory:
         override_number_classes,
         variable_length,
         checkpoint_config: NDBCheckpointConfig,
+        **kwargs
     ):
         intro_state = IntroState(
             num_buckets_to_sample=num_buckets_to_sample,
@@ -77,6 +78,11 @@ class TrainingProgressManagerFactory:
             train_args = training_arguments_for_scratch(train_documents.size)
         else:
             train_args = training_arguments_from_base(train_documents.size)
+
+        train_args["batch_size"] = kwargs.get("batch_size", None)
+        train_args["learning_rate"] = kwargs.get(
+            "learning_rate", train_args["learning_rate"]
+        )
 
         train_state = TrainState(
             max_in_memory_batches=max_in_memory_batches,
@@ -125,6 +131,7 @@ class TrainingProgressManagerFactory:
         override_number_classes,
         variable_length,
         checkpoint_config: NDBCheckpointConfig,
+        **kwargs
     ):
         if checkpoint_config and checkpoint_config.resume_from_checkpoint:
             return (
@@ -144,4 +151,5 @@ class TrainingProgressManagerFactory:
                 override_number_classes=override_number_classes,
                 variable_length=variable_length,
                 checkpoint_config=checkpoint_config,
+                **kwargs
             )
