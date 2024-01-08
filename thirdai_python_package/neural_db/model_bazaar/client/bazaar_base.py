@@ -1,8 +1,8 @@
+import concurrent.futures
 import json
 import os
 import pickle
 import shutil
-import threading
 from pathlib import Path
 from typing import Callable, List, Optional, Union
 from urllib.parse import urljoin
@@ -423,7 +423,7 @@ class Bazaar:
                     f.write(chunk)
                     bar.update(len(chunk))
 
-    def upload_chunk(self, upload_token, chunk_number, chunk_data, bar, threads_status):
+    def upload_chunk(self, upload_token, chunk_number, chunk_data, bar):
         files = {"chunk": chunk_data}
         response = requests.post(
             urljoin(
@@ -438,11 +438,12 @@ class Bazaar:
         if response.status_code == 200:
             # Update the progress bar
             bar.update(len(chunk_data))
-            threads_status.append(True)
         else:
             print(f"Upload failed with status code: {response.status_code}")
             print(response.text)
-            threads_status.append(False)
+            return False
+
+        return True
 
     @login_required
     def push(
@@ -477,42 +478,41 @@ class Bazaar:
         total_size = os.path.getsize(zip_path)
 
         # Determine the chunk size you want to upload per request
-        chunk_size = total_size // 10  # create 10 chunks
+        chunk_size = 1024 * 1024  # 1 MB chunk
 
         # Initialize the progress bar
         with tqdm(total=total_size, unit="B", unit_scale=True, desc=zip_path) as bar:
             # Open the file in binary mode
             with open(zip_path, "rb") as file:
                 chunk_number = 0
-                upload_threads = []
-                threads_status = []
 
-                while True:
-                    # Read a chunk of the file
-                    chunk_data = file.read(chunk_size)
-                    if not chunk_data:
-                        break  # End of file
+                with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+                    futures = []
 
-                    # Increment the chunk number
-                    chunk_number += 1
+                    while True:
+                        # Read a chunk of the file
+                        chunk_data = file.read(chunk_size)
+                        if not chunk_data:
+                            break  # End of file
 
-                    # Create a thread for uploading the chunk
-                    thread = threading.Thread(
-                        target=self.upload_chunk,
-                        args=(
+                        # Increment the chunk number
+                        chunk_number += 1
+
+                        # Submit the task to the thread pool
+                        future = executor.submit(
+                            self.upload_chunk,
                             upload_token,
                             chunk_number,
                             chunk_data,
                             bar,
-                            threads_status,
-                        ),
-                    )
-                    upload_threads.append(thread)
-                    thread.start()
+                        )
+                        futures.append(future)
 
-                # Wait for all threads to finish
-                for thread in upload_threads:
-                    thread.join()
+                    # Collect the return status of all threads
+                    threads_status = [
+                        future.result()
+                        for future in concurrent.futures.as_completed(futures)
+                    ]
 
                 # Check if all uploads were successful
                 if all(threads_status):
