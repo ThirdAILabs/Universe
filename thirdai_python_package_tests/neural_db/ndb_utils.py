@@ -222,8 +222,37 @@ all_local_doc_getters = [
     lambda: ndb.SentenceLevelDOCX(DOCX_FILE),
 ]
 
-# The two URL docs are different constructor invocationsfor the same thing.
-num_duplicate_docs = 1
+# The two URL docs are different constructor invocations for the same thing.
+num_duplicate_local_doc_getters = 1
+
+
+def on_diskable_doc_getters(on_disk):
+    return [
+        # Test both CSV constructors to make sure we capture all edge cases
+        # relating to how we process the id column.
+        lambda: ndb.CSV(
+            CSV_FILE,
+            id_column="category",
+            strong_columns=["text"],
+            weak_columns=["text"],
+            reference_columns=["text"],
+            on_disk=on_disk,
+        ),
+        lambda: ndb.CSV(CSV_FILE, on_disk=on_disk),
+        # For everything else, only test one constructor per document type.
+        lambda: ndb.PDF(PDF_FILE, on_disk=on_disk),
+        lambda: ndb.DOCX(DOCX_FILE, on_disk=on_disk),
+        lambda: ndb.URL(
+            "https://en.wikipedia.org/wiki/Rice_University", on_disk=on_disk
+        ),
+        lambda: ndb.Unstructured(PPTX_FILE, on_disk=on_disk),
+        lambda: ndb.SentenceLevelPDF(PDF_FILE, on_disk=on_disk),
+        lambda: ndb.SentenceLevelDOCX(DOCX_FILE, on_disk=on_disk),
+    ]
+
+
+num_duplicate_on_diskable_doc_getters = 0
+
 
 all_doc_getters = all_local_doc_getters + [
     eq_doc.connector_doc for eq_doc in all_connector_doc_getters

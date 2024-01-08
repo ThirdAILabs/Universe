@@ -57,10 +57,8 @@ class Table(ABC):
 
 
 class DataFrameTable(Table):
-    def __init__(self, df: pd.DataFrame, id_column: str):
+    def __init__(self, df: pd.DataFrame):
         self.df = df
-        # TODO: Reset index first?
-        self.df = self.df.set_index(id_column)
 
     @property
     def columns(self) -> List[str]:
@@ -92,12 +90,48 @@ class DataFrameTable(Table):
 
 
 class SQLiteTable(Table):
-    def __init__(self, df: pd.DataFrame, id_column: str):
+    EVAL_PREFIX = "__eval__"
+
+    @staticmethod
+    def _to_primitive(val):
+        if isinstance(val, str) or isinstance(val, int) or isinstance(val, float):
+            return val
+        return f"{SQLiteTable.EVAL_PREFIX}{str(val)}"
+
+    @staticmethod
+    def _to_primitive_df(df):
+        for col in df.columns:
+            df[col] = df[col].apply(SQLiteTable._to_primitive)
+        return df
+
+    @staticmethod
+    def _from_primitive(val):
+        if isinstance(val, str) and val.startswith(SQLiteTable.EVAL_PREFIX):
+            return eval(val[len(SQLiteTable.EVAL_PREFIX) :])
+        return val
+
+    @staticmethod
+    def _from_primitive_df(df):
+        for col in df.columns:
+            df[col] = df[col].apply(SQLiteTable._from_primitive)
+        return df
+
+    def __init__(self, df: pd.DataFrame):
         # TODO: Reset index first?
         self.db_path = f"{uuid.uuid4()}.db"
-        self.id_column = id_column
+        self.db_columns = df.columns
         self.db_size = len(df)
-        self.db_columns = [col for col in df.columns if col != id_column]
+        if df.index.name:
+            self.id_column = df.index.name
+            df = df.reset_index()
+        else:
+            self.id_column = "__id__"
+            while self.id_column in df.columns:
+                self.id_column += "_"
+            df[self.id_column] = range(len(df))
+
+        df = SQLiteTable._to_primitive_df(df)
+
         # We don't save the db connection and instead create a new connection
         # each time to simplify serialization.
         con = sqlite3.connect(self.db_path)
@@ -116,26 +150,32 @@ class SQLiteTable(Table):
         con = sqlite3.connect(self.db_path)
         return pd.read_sql(f"select {self.id_column} from sqlitetable", con)[
             self.id_column
-        ]
+        ].apply(SQLiteTable._from_primitive)
 
     def field(self, row_id: int, column: str):
         con = sqlite3.connect(self.db_path)
-        return pd.read_sql(
-            f"select {column} from sqlitetable where {self.id_column}=={row_id}",
-            con,
-        )[column][0]
+        return SQLiteTable._from_primitive(
+            pd.read_sql(
+                f"select {column} from sqlitetable where {self.id_column}=={row_id}",
+                con,
+            )[column][0]
+        )
 
     def row_as_dict(self, row_id: int) -> dict:
         con = sqlite3.connect(self.db_path)
-        return pd.read_sql(
-            f"select * from sqlitetable where {self.id_column}=={row_id}", con
+        return SQLiteTable._from_primitive_df(
+            pd.read_sql(
+                f"select * from sqlitetable where {self.id_column}=={row_id}", con
+            )
         ).to_dict("records")[0]
 
     def range_rows_as_dicts(self, from_row_id: int, to_row_id: int) -> List[dict]:
         con = sqlite3.connect(self.db_path)
-        return pd.read_sql(
-            f"select * from sqlitetable where {self.id_column}>={from_row_id} and {self.id_column}<{to_row_id}",
-            con,
+        return SQLiteTable._from_primitive_df(
+            pd.read_sql(
+                f"select * from sqlitetable where {self.id_column}>={from_row_id} and {self.id_column}<{to_row_id}",
+                con,
+            )
         ).to_dict("records")
 
     def iter_rows_as_dicts(self) -> Generator[Tuple[int, dict], None, None]:

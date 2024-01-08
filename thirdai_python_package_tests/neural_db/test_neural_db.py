@@ -9,10 +9,12 @@ import thirdai
 from ndb_utils import (
     PDF_FILE,
     all_local_doc_getters,
+    on_diskable_doc_getters,
+    num_duplicate_local_doc_getters,
+    num_duplicate_on_diskable_doc_getters,
     create_simple_dataset,
     docs_with_meta,
     metadata_constraints,
-    num_duplicate_docs,
     train_simple_neural_db,
 )
 from thirdai import dataset
@@ -54,7 +56,7 @@ ARBITRARY_QUERY = "This is an arbitrary search query"
 # They are only written as separate functions to make it easier to read.
 
 
-def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document]):
+def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document], num_duplicate_docs):
     db.insert(docs, train=False)
     assert len(db.sources()) == len(docs) - num_duplicate_docs
 
@@ -156,10 +158,19 @@ def associate_works(db: ndb.NeuralDB):
 
 
 def save_load_works(db: ndb.NeuralDB):
+    search_results = [r.text for r in db.search(ARBITRARY_QUERY, top_k=5)]
+
     if os.path.exists("temp.ndb"):
         shutil.rmtree("temp.ndb")
     db.save("temp.ndb")
-    search_results = [r.text for r in db.search(ARBITRARY_QUERY, top_k=5)]
+
+    # Change working directory to catch edge cases. E.g. if we don't properly
+    # save a sqlite database, this test may still pass if the original sqlite
+    # database is still in the current working directory.
+    if not os.path.exists("new_dir"):
+        os.mkdir("new_dir")
+    shutil.move("temp.ndb", "new_dir/temp.ndb")
+    os.chdir("new_dir")
 
     new_db = ndb.NeuralDB.from_checkpoint("temp.ndb")
     new_search_results = [r.text for r in new_db.search(ARBITRARY_QUERY, top_k=5)]
@@ -171,6 +182,8 @@ def save_load_works(db: ndb.NeuralDB):
     ]
 
     shutil.rmtree("temp.ndb")
+    os.chdir("..")
+    shutil.rmtree("new_dir")
 
 
 def clear_sources_works(db: ndb.NeuralDB):
@@ -179,8 +192,13 @@ def clear_sources_works(db: ndb.NeuralDB):
     assert len(db.sources()) == 0
 
 
-def all_methods_work(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
-    insert_works(db, docs)
+def all_methods_work(
+    db: ndb.NeuralDB,
+    docs: List[ndb.Document],
+    num_duplicate_docs: int,
+    assert_acc: bool,
+):
+    insert_works(db, docs, num_duplicate_docs)
     search_works(db, docs, assert_acc)
     upvote_works(db)
     associate_works(db)
@@ -195,20 +213,57 @@ def test_neural_db_loads_from_model_bazaar():
 def test_neural_db_all_methods_work_on_new_model():
     db = ndb.NeuralDB("user")
     all_docs = [get_doc() for get_doc in all_local_doc_getters]
-    all_methods_work(db, all_docs, assert_acc=False)
+    all_methods_work(
+        db,
+        all_docs,
+        num_duplicate_docs=num_duplicate_local_doc_getters,
+        assert_acc=False,
+    )
+
+
+def test_neural_db_all_methods_work_on_new_model_with_on_disk_docs():
+    db = ndb.NeuralDB("user")
+    all_docs = [get_doc() for get_doc in on_diskable_doc_getters(on_disk=True)]
+    all_methods_work(
+        db,
+        all_docs,
+        num_duplicate_docs=num_duplicate_on_diskable_doc_getters,
+        assert_acc=False,
+    )
 
 
 def test_neuralb_db_all_methods_work_on_new_mach_mixture():
     number_models = 2
     db = ndb.NeuralDB("user", number_models=number_models)
     all_docs = [get_doc() for get_doc in all_local_doc_getters]
-    all_methods_work(db, all_docs, assert_acc=False)
+    all_methods_work(
+        db,
+        all_docs,
+        num_duplicate_docs=num_duplicate_local_doc_getters,
+        assert_acc=False,
+    )
 
 
 def test_neural_db_all_methods_work_on_loaded_bazaar_model():
     db = db_from_bazaar()
     all_docs = [get_doc() for get_doc in all_local_doc_getters]
-    all_methods_work(db, all_docs, assert_acc=True)
+    all_methods_work(
+        db,
+        all_docs,
+        num_duplicate_docs=num_duplicate_local_doc_getters,
+        assert_acc=True,
+    )
+
+
+def test_neural_db_all_methods_work_on_loaded_bazaar_model_with_on_disk_docs():
+    db = db_from_bazaar()
+    all_docs = [get_doc() for get_doc in on_diskable_doc_getters]
+    all_methods_work(
+        db,
+        all_docs,
+        num_duplicate_docs=num_duplicate_on_diskable_doc_getters,
+        assert_acc=True,
+    )
 
 
 def train_model_for_supervised_training_test(model_id_delimiter):

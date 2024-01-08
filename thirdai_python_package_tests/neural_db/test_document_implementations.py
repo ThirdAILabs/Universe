@@ -8,12 +8,14 @@ nltk.download("punkt")
 
 import pytest
 from document_common_tests import assess_doc_methods_properties
-from ndb_utils import all_local_doc_getters
+from ndb_utils import all_local_doc_getters, on_diskable_doc_getters
 from thirdai import neural_db as ndb
 
 pytestmark = [
     pytest.mark.unit,
-    pytest.mark.parametrize("get_doc", all_local_doc_getters),
+    pytest.mark.parametrize(
+        "get_doc", all_local_doc_getters + on_diskable_doc_getters(on_disk=True)
+    ),
 ]
 
 

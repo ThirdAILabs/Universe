@@ -468,8 +468,10 @@ class CSV(Document):
         for col in strong_columns + weak_columns:
             df[col] = df[col].fillna("")
 
+        df = df.set_index(self.id_column)
+
         Table = SQLiteTable if on_disk else DataFrameTable
-        self.table = Table(df, id_column=self.id_column)
+        self.table = Table(df)
 
         self.path = Path(path)
         self.strong_columns = strong_columns
@@ -579,7 +581,7 @@ class CSV(Document):
     def context(self, element_id: int, radius) -> str:
         rows = self.table.range_rows_as_dicts(
             from_row_id=max(0, element_id - radius),
-            to_row_id=min(len(self.table.size), element_id + radius + 1),
+            to_row_id=min(self.table.size, element_id + radius + 1),
         )
 
         return " ".join(
@@ -650,8 +652,8 @@ class CSV(Document):
                 self.reference_columns = [
                     col for col in self.reference_columns if col != self.id_column
                 ]
-            self.df = self.df.reset_index()
-            self.table = DataFrameTable(self.df, id_column=self.id_column)
+                self.df = self.df.set_index(self.id_column)
+            self.table = DataFrameTable(self.df)
             del self.df
 
 
@@ -667,9 +669,8 @@ class Extracted(Document):
     ):
         path = str(path)
         df = self.process_data(path)
-        df["__ids__"] = range(len(df))
         Table = SQLiteTable if on_disk else DataFrameTable
-        self.table = Table(df, "__ids__")
+        self.table = Table(df)
         self.hash_val = hash_file(path, metadata="extracted-" + str(metadata))
         self._save_extra_info = save_extra_info
 
@@ -796,8 +797,7 @@ class Extracted(Document):
             self.strong_column = None
 
         if hasattr(self, "df"):
-            self.df["__ids__"] = range(len(self.df))
-            self.table = DataFrameTable(self.df, "__ids__")
+            self.table = DataFrameTable(self.df)
             del self.df
         elif hasattr(self, "table"):
             self.table.load_meta(directory)
@@ -863,11 +863,12 @@ class PDF(Extracted):
         ignore_header_footer=True,
         ignore_nonstandard_orientation=True,
         metadata={},
+        on_disk=False,
     ):
         self.version = version
 
         if version == "v1":
-            super().__init__(path=path, metadata=metadata)
+            super().__init__(path=path, metadata=metadata, on_disk=on_disk)
             return
 
         if version != "v2":
@@ -893,6 +894,7 @@ class PDF(Extracted):
                 "__stride__": stride,
             },
             strong_column="emphasis",
+            on_disk=on_disk,
         )
 
     def process_data(
@@ -919,8 +921,8 @@ class PDF(Extracted):
 
 
 class DOCX(Extracted):
-    def __init__(self, path: str, metadata={}):
-        super().__init__(path=path, metadata=metadata)
+    def __init__(self, path: str, metadata={}, on_disk=False):
+        super().__init__(path=path, metadata=metadata, on_disk=on_disk)
 
     def process_data(
         self,
@@ -931,9 +933,18 @@ class DOCX(Extracted):
 
 class Unstructured(Extracted):
     def __init__(
-        self, path: Union[str, Path], save_extra_info: bool = True, metadata={}
+        self,
+        path: Union[str, Path],
+        save_extra_info: bool = True,
+        metadata={},
+        on_disk=False,
     ):
-        super().__init__(path=path, save_extra_info=save_extra_info, metadata=metadata)
+        super().__init__(
+            path=path,
+            save_extra_info=save_extra_info,
+            metadata=metadata,
+            on_disk=on_disk,
+        )
 
     def process_data(
         self,
@@ -997,9 +1008,8 @@ class URL(Document):
     ):
         self.url = url
         df = self.process_data(url, url_response)
-        df["__ids__"] = range(len(df))
         Table = SQLiteTable if on_disk else DataFrameTable
-        self.table = Table(df, "__ids__")
+        self.table = Table(df)
         self.hash_val = hash_string(url + str(metadata))
         self._save_extra_info = save_extra_info
         self._strong_column = "title" if title_is_strong else "text"
@@ -1075,8 +1085,7 @@ class URL(Document):
         if not hasattr(self, "doc_metadata"):
             self.doc_metadata = {}
         if hasattr(self, "df"):
-            self.df["__ids__"] = range(len(self.df))
-            self.table = DataFrameTable(self.df, "__ids__")
+            self.table = DataFrameTable(self.df)
             del self.df
         elif hasattr(self, "table"):
             self.table.load_meta(directory)
@@ -1993,11 +2002,9 @@ class SentenceLevelExtracted(Extracted):
         )
         Table = SQLiteTable if on_disk else DataFrameTable
         df = self.parse_sentences(self.process_data(path))
-        df["__id__"] = range(len(df))
-        self.table = Table(df, "__id__")
-        para_df = df["para"].unique()
-        para_df["__id__"] = range(len(para_df))
-        self.para_table = Table(para_df, "__id__")
+        self.table = Table(df)
+        para_df = pd.DataFrame({"para": df["para"].unique()})
+        self.para_table = Table(para_df)
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
 
@@ -2100,7 +2107,7 @@ class SentenceLevelExtracted(Extracted):
             from_row_id=max(0, para_id - radius),
             to_row_id=min(self.para_table.size, para_id + radius + 1),
         )
-        return "\n\n".join(rows)
+        return "\n\n".join(row["para"] for row in rows)
 
     def save_meta(self, directory: Path):
         # Let's copy the original file to the provided directory
@@ -2121,11 +2128,13 @@ class SentenceLevelExtracted(Extracted):
             self.doc_metadata = {}
 
         if hasattr(self, "df"):
-            self.df["__ids__"] = range(len(self.df))
-            self.table = DataFrameTable(self.df, "__ids__")
+            self.table = DataFrameTable(self.df)
+            self.para_table = DataFrameTable(pd.DataFrame({"para": self.para_df}))
             del self.df
+            del self.para_df
         elif hasattr(self, "table"):
             self.table.load_meta(directory)
+            self.para_table.load_meta(directory)
 
 
 class SentenceLevelPDF(SentenceLevelExtracted):
@@ -2143,8 +2152,8 @@ class SentenceLevelPDF(SentenceLevelExtracted):
             constrains to restrict results based on the metadata.
     """
 
-    def __init__(self, path: str, metadata={}):
-        super().__init__(path=path, metadata=metadata)
+    def __init__(self, path: str, metadata={}, on_disk=False):
+        super().__init__(path=path, metadata=metadata, on_disk=on_disk)
 
     def process_data(
         self,
@@ -2168,8 +2177,8 @@ class SentenceLevelDOCX(SentenceLevelExtracted):
             constrains to restrict results based on the metadata.
     """
 
-    def __init__(self, path: str, metadata={}):
-        super().__init__(path=path, metadata=metadata)
+    def __init__(self, path: str, metadata={}, on_disk=False):
+        super().__init__(path=path, metadata=metadata, on_disk=on_disk)
 
     def process_data(
         self,
@@ -2206,9 +2215,8 @@ class InMemoryText(Document):
             metadata_df = pd.DataFrame.from_records(metadatas)
             df = pd.concat([df, metadata_df], axis=1)
             self.metadata_columns = metadata_df.columns
-        df["__id__"] = range(len(df))
         Table = SQLiteTable if on_disk else DataFrameTable
-        self.table = Table(df, "__id__")
+        self.table = Table(df)
         self.hash_val = hash_string(str(texts) + str(metadatas))
         self.global_metadata = global_metadata or {}
 
