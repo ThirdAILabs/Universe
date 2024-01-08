@@ -862,7 +862,8 @@ def test_neural_db_reranking_threshold():
     )
 
 
-def test_custom_epoch_lr_construct(create_simple_dataset):
+def test_custom_epoch(create_simple_dataset):
+    # num of batches in 'create_simple_dataset' is 1, so train_step should be equal to number of epochs trained.
     db = ndb.NeuralDB(user_id="user")
 
     doc = ndb.CSV(
@@ -873,27 +874,10 @@ def test_custom_epoch_lr_construct(create_simple_dataset):
         reference_columns=["text"],
     )
 
-    with pytest.raises(AttributeError):
-        epochs_list = ["a", [5, "a"], [], 5, 5, 5, [5, 10], [], None, [3, 6]]
-        learning_rates_list = [
-            1e-3,
-            1e-3,
-            1e-3,
-            "a",
-            [5e-5, "a"],
-            [],
-            [4e-4, 4e-5, 4e-6],
-            [],
-            [4e-4],
-            None,
-        ]
-
-        for epochs, learning_rates in zip(epochs_list, learning_rates_list):
-            db.insert(sources=[doc], epochs=epochs, learning_rates=learning_rates)
-
     # These should not throw any error
-    db.insert(sources=[doc])
-    db.insert(sources=[doc], learning_rates=4e-5)
-    db.insert(sources=[doc], epochs=4)
-    db.insert(sources=[doc], epochs=5, learning_rates=4e-4)
-    db.insert(sources=[doc], epochs=[3, 3], learning_rates=[4e-4, 4e-5])
+    num_epochs = 5
+    db.insert(
+        sources=[doc], epochs=num_epochs, learning_rates=4e-4, acc_to_stop=1.1
+    )  # setting acc_to_stop so that early_stop_callback doesn't stop the training.
+
+    assert db._savable_state.model.get_model()._get_model().train_steps() == num_epochs

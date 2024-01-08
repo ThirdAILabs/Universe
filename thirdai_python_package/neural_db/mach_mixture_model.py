@@ -107,8 +107,6 @@ class MachMixture(Model):
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
         should_train: bool,
-        epochs: Union[List[int], int] = None,
-        learning_rates: Union[List[float], float] = None,
         fast_approximation: bool = True,
         num_buckets_to_sample: Optional[int] = None,
         on_progress: Callable = lambda **kwargs: None,
@@ -119,10 +117,6 @@ class MachMixture(Model):
         ] = data.transformations.VariableLengthConfig(),
         **kwargs,
     ) -> None:
-        self.assert_valid_epochs_lr(
-            epochs=epochs,
-            learning_rates=learning_rates,
-        )
         # We need the original number of classes from the original data source so that we can initialize the Mach models this mixture will have
         number_classes = intro_documents.size
 
@@ -151,8 +145,6 @@ class MachMixture(Model):
                 intro_documents=intro_shard,
                 train_documents=train_shard,
                 should_train=should_train,
-                epochs=epochs,
-                learning_rates=learning_rates,
                 fast_approximation=fast_approximation,
                 num_buckets_to_sample=num_buckets_to_sample,
                 on_progress=on_progress,

@@ -44,8 +44,6 @@ class Model:
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
         should_train: bool,
-        epochs: Union[List[int], int] = None,
-        learning_rates: Union[List[float], float] = None,
         fast_approximation: bool = True,
         num_buckets_to_sample: Optional[int] = None,
         on_progress: Callable = lambda **kwargs: None,
@@ -139,35 +137,6 @@ class Model:
         epochs: int,
     ):
         raise NotImplementedError()
-
-    def assert_valid_epochs_lr(
-        self, epochs: Union[List[int], int], learning_rates: Union[List[float], float]
-    ):
-        if epochs is None and learning_rates is None:
-            return
-
-        if epochs is not None and learning_rates is not None:
-            if isinstance(epochs, int) and isinstance(learning_rates, float):
-                return
-            if isinstance(epochs, list) and isinstance(learning_rates, list):
-                if len(epochs) == len(learning_rates) and len(epochs) != 0:
-                    return
-                if all(isinstance(item, int) and item > 0 for item in epochs) and all(
-                    isinstance(item, float) and item > 0 for item in learning_rates
-                ):
-                    return
-
-        if learning_rates is None:
-            if isinstance(epochs, int) and epochs > 0:
-                return
-
-        if epochs is None:
-            if isinstance(learning_rates, float) and learning_rates > 0:
-                return
-
-        raise AttributeError(
-            "Incompatible epoch and learning rate construct. Both should be (single values or None) or matching lists"
-        )
 
 
 class EarlyStopWithMinEpochs(bolt.train.callbacks.Callback):
@@ -310,15 +279,6 @@ def autotune_from_base_min_max_epochs(size):
     return 1, 5
 
 
-def value_to_list(param_value, default_param_value, param_base_type):
-    if param_value is None:
-        return [default_param_value]
-    elif isinstance(param_value, param_base_type):
-        return [param_value]
-    else:
-        return param_value
-
-
 class Mach(Model):
     def __init__(
         self,
@@ -384,8 +344,6 @@ class Mach(Model):
         intro_documents: DocumentDataSource,
         train_documents: DocumentDataSource,
         should_train: bool,
-        epochs: Union[List[int], int] = None,
-        learning_rates: Union[List[float], float] = None,
         fast_approximation: bool = True,
         num_buckets_to_sample: Optional[int] = None,
         on_progress: Callable = lambda **kwargs: None,
@@ -402,10 +360,6 @@ class Mach(Model):
 
         Note: Given the datasources for introduction and training, we initialize a Mach model that has number_classes set to the size of introduce documents. But if we want to use this Mach model in our mixture of Models, this will not work because each Mach will be initialized with number of classes equal to the size of the datasource shard. Hence, we add override_number_classes parameters which if set, will initialize Mach Model with number of classes passed by the Mach Mixture.
         """
-        self.assert_valid_epochs_lr(
-            epochs=epochs,
-            learning_rates=learning_rates,
-        )
 
         if intro_documents.id_column != self.id_col:
             raise ValueError(
@@ -422,8 +376,11 @@ class Mach(Model):
             )
             learning_rate = kwargs.get("learning_rate", 0.005)
             freeze_before_train = False
-            tuned_min_epochs, tuned_max_epochs = autotune_from_scratch_min_max_epochs(
-                train_documents.size
+            min_epochs = kwargs.get(
+                "epochs", autotune_from_scratch_min_max_epochs(train_documents.size)[0]
+            )
+            max_epochs = kwargs.get(
+                "epochs", autotune_from_scratch_min_max_epochs(train_documents.size)[1]
             )
         else:
             if intro_documents.size > 0:
@@ -451,36 +408,17 @@ class Mach(Model):
             freeze_before_train = True
             # Less epochs here since it converges faster when trained on a base
             # model.
-            tuned_min_epochs, tuned_max_epochs = autotune_from_base_min_max_epochs(
-                train_documents.size
+            min_epochs = kwargs.get(
+                "epochs", autotune_from_base_min_max_epochs(train_documents.size)[0]
+            )
+            max_epochs = kwargs.get(
+                "epochs", autotune_from_base_min_max_epochs(train_documents.size)[1]
             )
 
         self.n_ids += intro_documents.size
         self.add_balancing_samples(intro_documents)
 
         if should_train and train_documents.size > 0:
-            # Setting the min and max epochs
-            min_epochs = value_to_list(epochs, tuned_min_epochs, int)
-            max_epochs = value_to_list(epochs, tuned_max_epochs, int)
-            learning_rates = value_to_list(learning_rates, default_learning_rate, float)
-
-            for min_num_epochs, max_num_epochs, learning_rate in zip(
-                min_epochs, max_epochs, learning_rates
-            ):
-                unsupervised_train_on_docs(
-                    model=self.model,
-                    documents=train_documents,
-                    min_epochs=min_num_epochs,
-                    max_epochs=max_num_epochs,
-                    metric="hash_precision@5",
-                    learning_rate=learning_rate,
-                    acc_to_stop=0.95,
-                    on_progress=on_progress,
-                    freeze_before_train=freeze_before_train,
-                    cancel_state=cancel_state,
-                    max_in_memory_batches=max_in_memory_batches,
-                    variable_length=variable_length,
-                )
             unsupervised_train_on_docs(
                 model=self.model,
                 documents=train_documents,
@@ -489,7 +427,7 @@ class Mach(Model):
                 metric="hash_precision@5",
                 learning_rate=learning_rate,
                 batch_size=batch_size,
-                acc_to_stop=0.95,
+                acc_to_stop=kwargs.get("acc_to_stop", 0.95),
                 on_progress=on_progress,
                 freeze_before_train=freeze_before_train,
                 cancel_state=cancel_state,
