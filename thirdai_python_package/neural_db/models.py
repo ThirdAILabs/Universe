@@ -1,4 +1,3 @@
-import copy
 import math
 import random
 from pathlib import Path
