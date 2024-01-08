@@ -288,6 +288,20 @@ def autotune_from_base_min_max_epochs(size):
     return 1, 5
 
 
+def autotune_batch_size(train_documents_size, number_max_epochs):
+    approximate_number_cold_start_samples = 20
+    number_updates = 5000
+
+    min_batch_size = 1000
+    max_batch_size = 20_000
+
+    batch_size = (
+        train_documents_size * approximate_number_cold_start_samples * number_max_epochs
+    ) / number_updates
+
+    return min(max_batch_size, max(batch_size, min_batch_size))
+
+
 class Mach(Model):
     def __init__(
         self,
@@ -373,8 +387,6 @@ class Mach(Model):
                 f" id_col={intro_documents.id_column}"
             )
 
-        batch_size = kwargs.get("batch_size", None)
-
         if self.model is None:
             self.id_col = intro_documents.id_column
             self.model = self.model_from_scratch(
@@ -417,6 +429,11 @@ class Mach(Model):
 
         self.n_ids += intro_documents.size
         self.add_balancing_samples(intro_documents)
+
+        batch_size = kwargs.get(
+            "batch_size",
+            autotune_batch_size(train_documents.size, number_max_epochs=max_epochs),
+        )
 
         if should_train and train_documents.size > 0:
             unsupervised_train_on_docs(
