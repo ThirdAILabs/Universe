@@ -215,7 +215,6 @@ class FreezeHashTable(bolt.train.callbacks.Callback):
             self.history[f"train_{self.tracked_metric}"][-1] > self.metric_threshold
         ):
             self.model.freeze_hash_tables()
-            self.freeze = True
 
 
 class CancelTraining(bolt.train.callbacks.Callback):
