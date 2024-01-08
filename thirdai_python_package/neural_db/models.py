@@ -6,7 +6,7 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt, data
 
 from .documents import DocumentDataSource
-from .sharded_documents import ShardedDataSource
+from .supervised_datasource import SupDataSource
 from .utils import clean_text, random_sample
 
 InferSamples = List
@@ -132,6 +132,18 @@ class Model:
         n_buckets: int,
         learning_rate: float,
         epochs: int,
+    ):
+        raise NotImplementedError()
+
+    def train_on_supervised_data_source(
+        self,
+        supervised_data_source: SupDataSource,
+        learning_rate: float,
+        epochs: int,
+        batch_size: Optional[int],
+        max_in_memory_batches: Optional[int],
+        metrics: List[str],
+        callbacks: List[bolt.train.callbacks.Callback],
     ):
         raise NotImplementedError()
 
@@ -564,3 +576,23 @@ class Mach(Model):
             # Add model_config field if an older model is being loaded.
             state["model_config"] = None
         self.__dict__.update(state)
+
+    def train_on_supervised_data_source(
+        self,
+        supervised_data_source: SupDataSource,
+        learning_rate: float,
+        epochs: int,
+        batch_size: Optional[int],
+        max_in_memory_batches: Optional[int],
+        metrics: List[str],
+        callbacks: List[bolt.train.callbacks.Callback],
+    ):
+        self.model.train_on_data_source(
+            data_source=supervised_data_source,
+            learning_rate=learning_rate,
+            epochs=epochs,
+            batch_size=batch_size,
+            max_in_memory_batches=max_in_memory_batches,
+            metrics=metrics,
+            callbacks=callbacks,
+        )
