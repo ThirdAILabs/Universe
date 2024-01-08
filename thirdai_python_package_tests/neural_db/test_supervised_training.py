@@ -99,7 +99,7 @@ def expect_top_2_results(db, query, expected_results):
     assert len(result_ids.intersection(set(expected_results))) >= 1
 
 
-@pytest.mark.parametrize("model_id_delimiter", [" "])
+@pytest.mark.parametrize("model_id_delimiter", [" ", None])
 def test_neural_db_supervised_training_mixture(model_id_delimiter):
     number_models = 2
     db, _ = train_model_for_supervised_training_test(
