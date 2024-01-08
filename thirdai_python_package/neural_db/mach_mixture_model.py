@@ -8,7 +8,7 @@ from .documents import DocumentDataSource
 from .models import CancelState, Mach, Model
 from .sharded_documents import shard_data_source
 from .supervised_datasource import SupDataSource
-from .utils import requires_condition, clean_text
+from .utils import clean_text, requires_condition
 
 InferSamples = List
 Predictions = Sequence
