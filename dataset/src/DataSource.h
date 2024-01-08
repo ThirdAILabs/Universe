@@ -183,7 +183,7 @@ class UnifiedDataSource final : public DataSource {
   std::string resourceName() const final {
     std::ostringstream resource_name;
     for (const auto& _source : _data_sources) {
-      resource_name << _source->resourceName();
+      resource_name << _source->resourceName() << " ";
     }
     return resource_name.str();
   }
