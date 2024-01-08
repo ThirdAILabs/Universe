@@ -1,6 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Callable, List, Optional, Sequence, Tuple, Union
+from typing import Callable, List, Optional, Sequence, Tuple
 
 from thirdai import bolt, data
 

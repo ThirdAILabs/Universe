@@ -3,9 +3,8 @@ import math
 import random
 from io import StringIO
 from pathlib import Path
-from typing import Callable, List, Optional, Sequence, Tuple, Union
+from typing import Callable, List, Optional, Sequence, Tuple
 
-import pandas as pd
 from thirdai import bolt, data, dataset
 
 from .documents import DocumentDataSource

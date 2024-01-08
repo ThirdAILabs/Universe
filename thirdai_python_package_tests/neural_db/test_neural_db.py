@@ -862,6 +862,7 @@ def test_neural_db_reranking_threshold():
     )
 
 
+@pytest.mark.unit
 def test_custom_epoch(create_simple_dataset):
     # num of batches in 'create_simple_dataset' is 1, so train_step should be equal to number of epochs trained.
     db = ndb.NeuralDB(user_id="user")
@@ -878,6 +879,6 @@ def test_custom_epoch(create_simple_dataset):
     num_epochs = 5
     db.insert(
         sources=[doc], epochs=num_epochs, learning_rates=4e-4, acc_to_stop=1.1
-    )  # setting acc_to_stop so that early_stop_callback doesn't stop the training.
+    )  # setting acc_to_stop > 1 so that early_stop_callback doesn't stop the training.
 
     assert db._savable_state.model.get_model()._get_model().train_steps() == num_epochs
