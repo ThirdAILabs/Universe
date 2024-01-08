@@ -37,6 +37,7 @@
 #include <utils/Random.h>
 #include <chrono>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <type_traits>
 #include <unordered_map>
@@ -343,6 +344,13 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<FileDataSource, DataSource, std::shared_ptr<FileDataSource>>(
       dataset_submodule, "FileDataSource")
       .def(py::init<const std::string&>(), py::arg("filename"));
+
+  py::class_<UnifiedDataSource, DataSource, std::shared_ptr<UnifiedDataSource>>(
+      dataset_submodule, "UnifiedDataSource")
+      .def(py::init<std::vector<DataSourcePtr>, const std::vector<double>&,
+                    uint32_t, uint32_t>(),
+           py::arg("data_sources"), py::arg("probabilities"),
+           py::arg("stop_data_source_id"), py::arg("seed") = 42);
 
   dataset_submodule.def("make_sparse_vector",
                         py::overload_cast<const std::vector<uint32_t>&,

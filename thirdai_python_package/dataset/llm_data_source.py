@@ -1,6 +1,4 @@
 import json
-import random
-from typing import List
 
 from thirdai.dataset.data_source import PyDataSource
 
@@ -41,59 +39,6 @@ class LLMDataSource(PyDataSource):
 
     def resource_name(self) -> str:
         return self.file_path
-
-
-class UnifiedLLMDataSource(PyDataSource):
-    def __init__(
-        self, file_paths: List[str], probs: List[float], restart_allowed: List[bool]
-    ):
-        self.file_paths = file_paths
-
-        self.file_iterators = [
-            self._get_file_iterator(file_path) for file_path in self.file_paths
-        ]
-        self.probs = probs
-        self.restart_allowed = restart_allowed
-
-        assert sum(probs) == 1
-        assert len(probs) == len(restart_allowed)
-        assert len(probs) == len(file_paths)
-        assert any(
-            [not element for element in restart_allowed]
-        )  # check if any one file has restart_allowed=False
-
-        PyDataSource.__init__(self)
-        self.restart()
-
-    def _get_file_iterator(self, file_path):
-        with open(file_path, "r") as file:
-            for line in file:
-                json_obj = json.loads(line.strip())
-                yield json.dumps(json_obj)
-
-    def _get_line_iterator(self):
-        while True:
-            chosen_iterator_idx = random.choices(
-                range(len(self.file_iterators)), weights=self.probs
-            )[0]
-            chosen_iterator = self.file_iterators[chosen_iterator_idx]
-            line_json_obj = next(chosen_iterator, None)
-
-            if line_json_obj is None and self.restart_allowed[chosen_iterator_idx]:
-                self.file_iterators[chosen_iterator_idx] = self._restart_file_iterator(
-                    self.file_paths[chosen_iterator_idx]
-                )
-                chosen_iterator = self.file_iterators[chosen_iterator_idx]
-                line_json_obj = next(chosen_iterator, None)
-            if line_json_obj is None:
-                break
-            yield line_json_obj
-
-    def _restart_file_iterator(self, file_path):
-        return self._get_file_iterator(file_path)
-
-    def resource_name(self) -> List[str]:
-        return self.file_paths
 
 
 class RayTextDataSource(PyDataSource):

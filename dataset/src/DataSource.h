@@ -6,7 +6,11 @@
 #include <ios>
 #include <memory>
 #include <optional>
+#include <random>
+#include <sstream>
+#include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace thirdai::dataset {
@@ -140,6 +144,67 @@ class CsvDataSource final : public DataSource {
   DataSourcePtr _source;
   char _delimiter;
   std::optional<std::string> _remains;
+};
+
+class WeightedIndexGenerator {
+ private:
+  std::mt19937 _gen;
+  std::discrete_distribution<size_t> _dist;
+
+ public:
+  // Constructor that initializes the generator and distribution
+  explicit WeightedIndexGenerator(const std::vector<double>& weights,
+                                  uint32_t seed = 42)
+      : _gen(seed), _dist(weights.begin(), weights.end()) {}
+
+  // Method to get the next random index
+  size_t getNextIndex() { return _dist(_gen); }
+};
+
+class UnifiedDataSource final : public DataSource {
+ public:
+  UnifiedDataSource(std::vector<DataSourcePtr> data_sources,
+                    const std::vector<double>& probabilities,
+                    uint32_t stop_data_source_id, uint32_t seed = 42)
+      : _data_sources(std::move(data_sources)),
+        _gen(WeightedIndexGenerator(probabilities, seed)),
+        _stop_data_source_id(stop_data_source_id) {
+    if (_data_sources.size() != probabilities.size()) {
+      throw std::invalid_argument(
+          "Mismatch in counts: data sources and probabilities.");
+    }
+  }
+
+  std::optional<std::string> nextLine() final;
+
+  std::optional<std::vector<std::string>> nextBatch(
+      size_t target_batch_size) final;
+
+  std::string resourceName() const final {
+    std::ostringstream resource_name;
+    for (const auto& _source : _data_sources) {
+      resource_name << _source->resourceName();
+    }
+    return resource_name.str();
+  }
+
+  void restart() final {
+    for (auto& _source : _data_sources) {
+      _source->restart();
+    }
+  }
+
+  static auto make(std::vector<DataSourcePtr> data_sources,
+                   const std::vector<double>& probabilities,
+                   uint32_t stop_data_source_id, uint32_t seed = 42) {
+    return std::make_shared<UnifiedDataSource>(
+        std::move(data_sources), probabilities, stop_data_source_id, seed);
+  }
+
+ private:
+  std::vector<DataSourcePtr> _data_sources;
+  WeightedIndexGenerator _gen;
+  uint32_t _stop_data_source_id;
 };
 
 }  // namespace thirdai::dataset
