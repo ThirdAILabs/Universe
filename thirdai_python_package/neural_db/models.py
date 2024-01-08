@@ -190,7 +190,7 @@ class ProgressUpdate(bolt.train.callbacks.Callback):
 class FreezeHashTable(bolt.train.callbacks.Callback):
     def __init__(
         self,
-        initial_freeze,
+        freeze_before_train,
         freeze_after_epoch,
         tracked_metric,
         metric_threshold,
@@ -201,11 +201,15 @@ class FreezeHashTable(bolt.train.callbacks.Callback):
         self.freeze_after_epoch = freeze_after_epoch
         self.tracked_metric = tracked_metric
         self.metric_threshold = metric_threshold
-        self.freeze = initial_freeze
+        self.freeze_before_train = freeze_before_train
+
+    def on_train_start(self):
+        if self.freeze_before_train:
+            self.model.freeze_hash_tables()
 
     def on_epoch_end(self):
         self.epoch_count += 1
-        if self.freeze:
+        if self.freeze_before_train:
             return
         if (self.epoch_count == self.freeze_after_epoch) or (
             self.history[f"train_{self.tracked_metric}"][-1] > self.metric_threshold
@@ -237,15 +241,11 @@ def unsupervised_train_on_docs(
     freeze_before_train: bool,
     cancel_state: CancelState,
     max_in_memory_batches: int,
-    freeze_after_epoch: int,
-    freeze_after_acc: float,
     variable_length: Optional[
         data.transformations.VariableLengthConfig
     ] = data.transformations.VariableLengthConfig(),
+    **kwargs,
 ):
-    if freeze_before_train:
-        model._get_model().freeze_hash_tables()
-
     documents.restart()
 
     early_stop_callback = EarlyStopWithMinEpochs(
@@ -263,9 +263,11 @@ def unsupervised_train_on_docs(
 
     freeze_hashtable_callback = FreezeHashTable(
         initial_freeze=freeze_before_train,
-        freeze_after_epoch=freeze_after_epoch,
+        freeze_after_epoch=kwargs.get("freeze_after_epoch", max_epochs - 1),
         tracked_metric=metric,
-        metric_threshold=freeze_after_acc,
+        metric_threshold=kwargs.get(
+            "freeze_after_acc", 0.80 if "freeze_after_epoch" not in kwargs else 1
+        ),
     )
 
     model.cold_start_on_data_source(
@@ -446,8 +448,6 @@ class Mach(Model):
 
         self.n_ids += intro_documents.size
         self.add_balancing_samples(intro_documents)
-        freeze_after_epoch = kwargs.get("freeze_after_epoch", max_epochs - 1)
-        freeze_after_acc = kwargs.get("freeze_after_acc", 0.80)
 
         if should_train and train_documents.size > 0:
             unsupervised_train_on_docs(
@@ -463,9 +463,8 @@ class Mach(Model):
                 freeze_before_train=freeze_before_train,
                 cancel_state=cancel_state,
                 max_in_memory_batches=max_in_memory_batches,
-                freeze_after_epoch=freeze_after_epoch,
-                freeze_after_acc=freeze_after_acc,
                 variable_length=variable_length,
+                **kwargs,
             )
 
     def add_balancing_samples(self, documents: DocumentDataSource):
