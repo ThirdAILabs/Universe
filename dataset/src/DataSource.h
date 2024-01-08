@@ -152,12 +152,10 @@ class WeightedIndexGenerator {
   std::discrete_distribution<size_t> _dist;
 
  public:
-  // Constructor that initializes the generator and distribution
   explicit WeightedIndexGenerator(const std::vector<double>& weights,
                                   uint32_t seed = 42)
       : _gen(seed), _dist(weights.begin(), weights.end()) {}
 
-  // Method to get the next random index
   size_t getNextIndex() { return _dist(_gen); }
 };
 
