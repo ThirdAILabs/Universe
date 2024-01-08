@@ -4,6 +4,7 @@ import os
 import pickle
 import shutil
 from pathlib import Path
+import threading
 from typing import Callable, List, Optional, Union
 from urllib.parse import urljoin
 
@@ -423,7 +424,7 @@ class Bazaar:
                     f.write(chunk)
                     bar.update(len(chunk))
 
-    def upload_chunk(self, upload_token, chunk_number, chunk_data, bar):
+    def upload_chunk(self, upload_token, chunk_number, chunk_data, bar, progress_lock):
         files = {"chunk": chunk_data}
         response = requests.post(
             urljoin(
@@ -436,8 +437,9 @@ class Bazaar:
         )
 
         if response.status_code == 200:
-            # Update the progress bar
-            bar.update(len(chunk_data))
+            with progress_lock:
+                # Update the progress bar
+                bar.update(len(chunk_data))
         else:
             print(f"Upload failed with status code: {response.status_code}")
             print(response.text)
@@ -488,6 +490,7 @@ class Bazaar:
 
                 with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
                     futures = []
+                    progress_lock = threading.Lock()
 
                     while True:
                         # Read a chunk of the file
@@ -505,6 +508,7 @@ class Bazaar:
                             chunk_number,
                             chunk_data,
                             bar,
+                            progress_lock,
                         )
                         futures.append(future)
 
