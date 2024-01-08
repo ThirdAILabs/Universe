@@ -7,6 +7,7 @@ try:
         PDF,
         URL,
         Document,
+        InMemoryText,
         Reference,
         SalesForce,
         SentenceLevelDOCX,

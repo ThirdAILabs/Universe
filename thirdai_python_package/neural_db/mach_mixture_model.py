@@ -10,7 +10,7 @@ from .sharded_documents import ShardedDataSource
 from .training_state.checkpoint_config import NDBCheckpointConfig
 from .training_state.training_callback import TrainingProgressManager
 from .training_state.training_manager_factory import TrainingProgressManagerFactory
-from .utils import requires_condition
+from .utils import clean_text, requires_condition
 
 InferSamples = List
 Predictions = Sequence
@@ -172,7 +172,8 @@ class MachMixture(Model):
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
         checkpoint_config: NDBCheckpointConfig = None,
-    ):
+        **kwargs,
+    ) -> None:
         # We need the original number of classes from the original data source so that we can initialize the Mach models this mixture will have
         number_classes = intro_documents.size
 
@@ -219,6 +220,7 @@ class MachMixture(Model):
                     override_number_classes=number_classes,
                     variable_length=variable_length,
                     checkpoint_config=config,
+                    **kwargs,
                 )
             )
             training_managers.append(modelwise_training_manager)
@@ -246,23 +248,23 @@ class MachMixture(Model):
     def infer_labels(
         self, samples: InferSamples, n_results: int, **kwargs
     ) -> Predictions:
-        results = [[] for _ in range(len(samples))]
         for model in self.models:
-            """
-            The try-except block is because even though there are documents indexed in the Mach Mixture, there might be an individual Mach model that has no documents indexed in it.
-            """
-            try:
-                single_model_outputs = model.infer_labels(
-                    samples=samples, n_results=n_results, **kwargs
-                )
-            except Exception as e:
-                single_model_outputs = [[] for _ in range(len(samples))]
-            finally:
-                for index in range(len(samples)):
-                    results[index].extend(single_model_outputs[index])
-        for index in range(len(results)):
-            results[index].sort(key=lambda x: x[1], reverse=True)
-            results[index] = results[index][:n_results]
+            model.model.set_decode_params(
+                min(self.n_ids, n_results), min(self.n_ids, 100)
+            )
+
+        per_model_results = bolt.UniversalDeepTransformer.parallel_inference(
+            models=[model.model for model in self.models],
+            batch=[{self.query_col: clean_text(text)} for text in samples],
+        )
+
+        results = []
+        for index in range(len(samples)):
+            sample_results = []
+            for y in per_model_results:
+                sample_results.extend(y[index])
+            sample_results.sort(key=lambda x: x[1], reverse=True)
+            results.append(sample_results[:n_results])
         return results
 
     @requires_condition(
