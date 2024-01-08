@@ -187,6 +187,33 @@ class ProgressUpdate(bolt.train.callbacks.Callback):
             self.progress_callback_fn(progress)
 
 
+class FreezeHashTable(bolt.train.callbacks.Callback):
+    def __init__(
+        self,
+        initial_freeze,
+        freeze_after_epoch,
+        tracked_metric,
+        metric_threshold,
+    ):
+        super().__init__()
+
+        self.epoch_count = 0
+        self.freeze_after_epoch = freeze_after_epoch
+        self.tracked_metric = tracked_metric
+        self.metric_threshold = metric_threshold
+        self.freeze = initial_freeze
+
+    def on_epoch_end(self):
+        self.epoch_count += 1
+        if self.freeze:
+            return
+        if (self.epoch_count == self.freeze_after_epoch) or (
+            self.history[f"train_{self.tracked_metric}"][-1] > self.metric_threshold
+        ):
+            self.model.freeze_hash_tables()
+            self.freeze = True
+
+
 class CancelTraining(bolt.train.callbacks.Callback):
     def __init__(self, cancel_state):
         super().__init__()
@@ -210,6 +237,8 @@ def unsupervised_train_on_docs(
     freeze_before_train: bool,
     cancel_state: CancelState,
     max_in_memory_batches: int,
+    freeze_after_epoch: int,
+    freeze_after_acc: float,
     variable_length: Optional[
         data.transformations.VariableLengthConfig
     ] = data.transformations.VariableLengthConfig(),
@@ -232,6 +261,13 @@ def unsupervised_train_on_docs(
 
     cancel_training_callback = CancelTraining(cancel_state=cancel_state)
 
+    freeze_hashtable_callback = FreezeHashTable(
+        initial_freeze=freeze_before_train,
+        freeze_after_epoch=freeze_after_epoch,
+        tracked_metric=metric,
+        metric_threshold=freeze_after_acc,
+    )
+
     model.cold_start_on_data_source(
         data_source=documents,
         strong_column_names=[documents.strong_column],
@@ -240,7 +276,12 @@ def unsupervised_train_on_docs(
         learning_rate=learning_rate,
         epochs=max_epochs,
         metrics=[metric],
-        callbacks=[early_stop_callback, progress_callback, cancel_training_callback],
+        callbacks=[
+            early_stop_callback,
+            progress_callback,
+            cancel_training_callback,
+            freeze_hashtable_callback,
+        ],
         max_in_memory_batches=max_in_memory_batches,
         variable_length=variable_length,
     )
@@ -405,6 +446,8 @@ class Mach(Model):
 
         self.n_ids += intro_documents.size
         self.add_balancing_samples(intro_documents)
+        freeze_after_epoch = kwargs.get("freeze_after_epoch", max_epochs - 1)
+        freeze_after_acc = kwargs.get("freeze_after_acc", 0.80)
 
         if should_train and train_documents.size > 0:
             unsupervised_train_on_docs(
@@ -420,6 +463,8 @@ class Mach(Model):
                 freeze_before_train=freeze_before_train,
                 cancel_state=cancel_state,
                 max_in_memory_batches=max_in_memory_batches,
+                freeze_after_epoch=freeze_after_epoch,
+                freeze_after_acc=freeze_after_acc,
                 variable_length=variable_length,
             )
 
