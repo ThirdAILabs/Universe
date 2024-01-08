@@ -105,7 +105,6 @@ def test_neural_db_supervised_training_mixture(model_id_delimiter):
     db, _ = train_model_for_supervised_training_test(
         model_id_delimiter=model_id_delimiter, number_models=number_models
     )
-
     queries = ["first", "sixth"]
     new_labels = [
         get_label_from_same_shard(db, original_label=0, number_labels=1),
@@ -114,8 +113,8 @@ def test_neural_db_supervised_training_mixture(model_id_delimiter):
 
     db.supervised_train(
         [ndb.Sup(queries=queries, labels=new_labels, uses_db_id=True)],
-        learning_rate=0.1,
-        epochs=20,
+        learning_rate=0.001,
+        epochs=50,
     )
 
     assert db.search(queries[0], top_k=1)[0].id == new_labels[0][0]
