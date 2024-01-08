@@ -607,17 +607,14 @@ def test_custom_epoch(create_simple_dataset):
         reference_columns=["text"],
     )
 
-    batches = 0
+    batch_count = 0
 
     def count_batch(progress):
-        nonlocal batches
-        batches += 1
+        nonlocal batch_count
+        batch_count += 2  # Because progress function gets called for even batches only.
 
     num_epochs = 10
     db.insert(sources=[doc], epochs=num_epochs, on_progress=count_batch)
 
-    # Because progress function gets called for even batches.
-    batches *= 2
-
     # And number of batches in 'create_simple_dataset' is 1, so, number of epochs that the model got trained for will be number of batches.
-    assert num_epochs == batches
+    assert num_epochs == batch_count
