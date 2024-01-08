@@ -1,15 +1,15 @@
 # Python
-import sys
-import shutil
 import os
+import shutil
+import sys
 
 # Libraries
 import pytest
-from thirdai import neural_db as ndb
+from document_common_tests import assess_doc_methods_properties
 
 # Local
-from ndb_utils import on_diskable_doc_getters, BASE_DIR
-from document_common_tests import assess_doc_methods_properties
+from ndb_utils import BASE_DIR, on_diskable_doc_getters
+from thirdai import neural_db as ndb
 
 
 def get_size(obj, seen=None):

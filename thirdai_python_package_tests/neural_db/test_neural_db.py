@@ -9,12 +9,12 @@ import thirdai
 from ndb_utils import (
     PDF_FILE,
     all_local_doc_getters,
-    on_diskable_doc_getters,
-    num_duplicate_local_doc_getters,
-    num_duplicate_on_diskable_doc_getters,
     create_simple_dataset,
     docs_with_meta,
     metadata_constraints,
+    num_duplicate_local_doc_getters,
+    num_duplicate_on_diskable_doc_getters,
+    on_diskable_doc_getters,
     train_simple_neural_db,
 )
 from thirdai import dataset
