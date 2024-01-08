@@ -1,10 +1,11 @@
 # Python
 import sys
-from pathlib import Path
-import pickle
+import shutil
+import os
 
 # Libraries
 import pytest
+from thirdai import neural_db as ndb
 
 # Local
 from ndb_utils import on_diskable_doc_getters, BASE_DIR
@@ -46,26 +47,28 @@ def get_size(obj, seen=None):
 def test_tables_on_disk_table_uses_less_memory(
     on_disk_doc, in_memory_doc_1, in_memory_doc_2
 ):
-    assert get_size(in_memory_doc_1.table) == get_size(in_memory_doc_2.table)
-    assert get_size(on_disk_doc.table) < get_size(in_memory_doc_1.table)
+    assert get_size(in_memory_doc_1) == get_size(in_memory_doc_2)
+    assert get_size(on_disk_doc) < get_size(in_memory_doc_1)
 
 
 @pytest.mark.unit
 @pytest.mark.parametrize(
-    "save_dir",
+    "DocClass, save_dir",
     [
-        "csv",
-        "url",
+        (ndb.CSV, "csv"),
+        (ndb.URL, "url"),
         # Backwards compatibility code for both DOCX and PDF is handled by a single
         # parent class so we only need to test one. Same is true for
         # SentenceLevelDOCX and SentenceLevelPDF.
-        "pdf",
-        "sentence_pdf",
+        (ndb.PDF, "pdf"),
+        (ndb.SentenceLevelPDF, "sentence_pdf"),
     ],
 )
-def test_tables_dataframe_table_backwards_compatibility(save_dir):
-    base_path = f"{BASE_DIR}/v0.7.26_doc_checkpoints"
-    with open(f"{base_path}/{save_dir}/doc.pkl", "rb") as pkl:
-        doc = pickle.load(pkl)
-        doc.load_meta(Path(f"{base_path}/{save_dir}"))
+def test_tables_dataframe_table_backwards_compatibility(DocClass, save_dir):
+    load_from = f"{BASE_DIR}/v0.7.26_doc_checkpoints/{save_dir}"
+    try:
+        doc = DocClass.load(load_from)
         assess_doc_methods_properties(doc)
+    finally:
+        if os.path.exists(load_from):
+            shutil.rmtree(load_from)

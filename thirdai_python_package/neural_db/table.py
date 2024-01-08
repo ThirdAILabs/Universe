@@ -10,7 +10,7 @@ from typing import Generator, List, Tuple
 import pandas as pd
 
 # Local
-from .constraint_matcher import Filter
+from .constraint_matcher import TableFilter
 
 
 class Table(ABC):
@@ -46,7 +46,7 @@ class Table(ABC):
         pass
 
     @abstractmethod
-    def apply_filter(self, filterer: Filter, column_name: str):
+    def apply_filter(self, table_filter: TableFilter, column_name: str):
         pass
 
     def save_meta(self, directory: Path):
@@ -85,8 +85,8 @@ class DataFrameTable(Table):
         for row_id, row in self.df.iterrows():
             yield (row_id, row.to_dict())
 
-    def apply_filter(self, filterer: Filter):
-        filterer.filter_df_column(self.df)
+    def apply_filter(self, table_filter: TableFilter):
+        table_filter.filter_df_ids(self.df)
 
 
 class SQLiteTable(Table):
@@ -153,6 +153,7 @@ class SQLiteTable(Table):
         ].apply(SQLiteTable._from_primitive)
 
     def field(self, row_id: int, column: str):
+        print(self.db_path)
         con = sqlite3.connect(self.db_path)
         return SQLiteTable._from_primitive(
             pd.read_sql(
@@ -193,5 +194,5 @@ class SQLiteTable(Table):
     def load_meta(self, directory: Path):
         self.db_path = str(directory / Path(self.db_path).name)
 
-    def apply_filter(self, filterer: Filter):
-        filterer.filter_sql_column(sqlite3.connect(self.db_path), "sqlitetable")
+    def apply_filter(self, table_filter: TableFilter):
+        table_filter.filter_sql_ids(sqlite3.connect(self.db_path), "sqlitetable")

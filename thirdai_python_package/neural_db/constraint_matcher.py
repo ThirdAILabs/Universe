@@ -90,32 +90,6 @@ class InRange(Filter[ItemT]):
         return f"{column_name}{left_comp}{self.min} and {column_name}{right_comp}{self.max}"
 
 
-class TableFilter:
-    def __init__(self, filters: Dict[str, Filter]):
-        self.filters = filters
-
-    def filter_ids(self, table):
-        table.apply_filter(self)
-
-    def filter_df_ids(self, df) -> List[int]:
-        for column_name, filterer in self.filters.items():
-            if column_name not in df.columns:
-                return []
-            df = filterer.filter_df_column(df, column_name)
-        return df.index.to_list()
-
-    def filter_sql_ids(
-        self, con: sqlite3.Connection, table_name: str, id_column: str
-    ) -> List[int]:
-        condition = " and ".join(
-            filterer.sql_condition(column_name)
-            for column_name, filterer in self.filters.items()
-        )
-        return list(
-            pd.read_sql(f"select {id_column} from {table_name} where {condition}", con)
-        )
-
-
 class GreaterThan(InRange[ItemT]):
     def __init__(self, minimum: Any, include_equal=False):
         self.minimum = minimum
@@ -161,6 +135,29 @@ class LessThan(InRange[ItemT]):
         return pd.read_sql(
             f"select * from {table_name} where {column_name}{comp}{self.maximum}",
             con,
+        )
+
+
+class TableFilter:
+    def __init__(self, filters: Dict[str, Filter]):
+        self.filters = filters
+
+    def filter_df_ids(self, df) -> List[int]:
+        for column_name, filterer in self.filters.items():
+            if column_name not in df.columns:
+                return []
+            df = filterer.filter_df_column(df, column_name)
+        return df.index.to_list()
+
+    def filter_sql_ids(
+        self, con: sqlite3.Connection, table_name: str, id_column: str
+    ) -> List[int]:
+        condition = " and ".join(
+            filterer.sql_condition(column_name)
+            for column_name, filterer in self.filters.items()
+        )
+        return list(
+            pd.read_sql(f"select {id_column} from {table_name} where {condition}", con)
         )
 
 

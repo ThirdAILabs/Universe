@@ -257,7 +257,7 @@ def test_neural_db_all_methods_work_on_loaded_bazaar_model():
 
 def test_neural_db_all_methods_work_on_loaded_bazaar_model_with_on_disk_docs():
     db = db_from_bazaar()
-    all_docs = [get_doc() for get_doc in on_diskable_doc_getters]
+    all_docs = [get_doc() for get_doc in on_diskable_doc_getters(on_disk=True)]
     all_methods_work(
         db,
         all_docs,

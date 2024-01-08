@@ -532,7 +532,7 @@ class CSV(Document):
         table_filter = TableFilter(
             {k: v for k, v in filters.items() if k not in self.doc_metadata_keys}
         )
-        return table_filter.filter_ids(self.table)
+        return self.table.apply_filter(table_filter)
 
     def id_map(self) -> Optional[Dict[str, int]]:
         return self.orig_to_assigned_id
@@ -1615,7 +1615,6 @@ class SharePoint(DocumentConnector):
                         metadata=self.doc_metadata,
                     )
 
-                df = doc.df
                 temp_df = pd.DataFrame(
                     columns=chunk_df.columns.tolist(), index=range(doc.size)
                 )
@@ -1633,7 +1632,7 @@ class SharePoint(DocumentConnector):
                 temp_df[self.strong_column] = strong_text
                 temp_df[self.weak_column] = weak_text
                 temp_df["internal_doc_id"] = internal_doc_id
-                temp_df["server_relative_url"] = [server_relative_url] * len(df)
+                temp_df["server_relative_url"] = [server_relative_url] * doc.size
                 temp_df["page"] = page
 
                 temp_dfs.append(temp_df)
@@ -2249,7 +2248,7 @@ class InMemoryText(Document):
         table_filter = TableFilter(
             {k: v for k, v in filters.items() if k not in self.global_metadata.keys()}
         )
-        return table_filter.filter_ids(self.table)
+        return self.table.apply_filter(table_filter)
 
     def strong_text(self, element_id: int) -> str:
         return ""
