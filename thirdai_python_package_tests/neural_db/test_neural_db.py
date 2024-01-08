@@ -862,9 +862,7 @@ def test_neural_db_reranking_threshold():
     )
 
 
-@pytest.mark.unit
 def test_custom_epoch(create_simple_dataset):
-    # num of batches in 'create_simple_dataset' is 1, so train_step should be equal to number of epochs trained.
     db = ndb.NeuralDB(user_id="user")
 
     doc = ndb.CSV(
@@ -875,10 +873,17 @@ def test_custom_epoch(create_simple_dataset):
         reference_columns=["text"],
     )
 
-    # These should not throw any error
-    num_epochs = 5
-    db.insert(
-        sources=[doc], epochs=num_epochs, learning_rates=4e-4, acc_to_stop=1.1
-    )  # setting acc_to_stop > 1 so that early_stop_callback doesn't stop the training.
+    batches = 0
 
-    assert db._savable_state.model.get_model()._get_model().train_steps() == num_epochs
+    def count_batch(progress):
+        nonlocal batches
+        batches += 1
+
+    num_epochs = 10
+    db.insert(sources=[doc], epochs=num_epochs, on_progress=count_batch)
+
+    # Because progress function gets called for even batches.
+    batches *= 2
+
+    # And number of batches in 'create_simple_dataset' is 1, so, number of epochs that the model got trained for will be number of batches.
+    assert num_epochs == batches
