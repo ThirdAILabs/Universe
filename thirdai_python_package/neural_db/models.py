@@ -469,6 +469,12 @@ class Mach(Model):
         self.n_ids += intro_documents.size
         self.add_balancing_samples(intro_documents)
 
+        freeze_hash_table_kwargs = {
+            key: value
+            for key, value in kwargs.items()
+            if key in ["freeze_after_epoch", "freeze_after_acc"]
+        }
+
         if should_train and train_documents.size > 0:
             unsupervised_train_on_docs(
                 model=self.model,
@@ -484,7 +490,7 @@ class Mach(Model):
                 cancel_state=cancel_state,
                 max_in_memory_batches=max_in_memory_batches,
                 variable_length=variable_length,
-                **kwargs,
+                **freeze_hash_table_kwargs,
             )
 
     def add_balancing_samples(self, documents: DocumentDataSource):
