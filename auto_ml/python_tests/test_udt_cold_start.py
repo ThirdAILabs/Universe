@@ -136,7 +136,10 @@ def test_coldstart_missing_values():
 
 
 def test_coldstart_bad_csv_line():
-    with pytest.raises(ValueError, match=r"Expected 4 columns. But received row.*"):
+    with pytest.raises(
+        ValueError,
+        match=r"Received a row with a different number of entries than in the header. Expected 4 entries but received 3 entries. Line: 1,theres a new line,",
+    ):
         run_coldstart(bad_csv_line=True)
 
 

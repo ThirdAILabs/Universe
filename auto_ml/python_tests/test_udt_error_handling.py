@@ -36,7 +36,7 @@ def test_too_many_cols_in_train():
 
     with pytest.raises(
         ValueError,
-        match="Expected 3 columns. But received row '1,1,1,1' with 4 columns.",
+        match='Expected 3 columns in each row of the dataset. Found row with 4 columns: "1" "1" "1" "1"',
     ):
         model.train("too_many_cols", epochs=100)
 
@@ -64,7 +64,8 @@ def test_too_few_cols_in_train():
     )
 
     with pytest.raises(
-        ValueError, match="Expected 3 columns. But received row '1,1' with 2 columns."
+        ValueError,
+        match='Expected 3 columns in each row of the dataset. Found row with 2 columns: "1" "1"',
     ):
         model.train("too_few_cols", epochs=100)
 
@@ -86,12 +87,9 @@ def test_header_missing_cols():
         n_target_classes=2,
     )
 
-    # TODO(Nicholas): Is it ok to display the intermediate column names?
     with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Unable to find column with name 'c'. ColumnMap contains columns ['__featurized_input_values__', '__b_tokenized__', '__featurized_input_indices__', '__a_tokenized__', 'b', 'a']."
-        ),
+        RuntimeError,
+        match="Expected a column named 'c' in header but could not find it",
     ):
         model.train("header_missing_cols", epochs=100)
 
@@ -130,9 +128,7 @@ def test_invalid_column_name_in_udt_predict(mach):
 
     with pytest.raises(
         ValueError,
-        match=re.escape(
-            "Unable to find column with name 'text_col'. ColumnMap contains columns ['HAHAHA']."
-        ),
+        match=re.escape(f"Input column name 'HAHAHA' not found in data_types."),
     ):
         model.predict({"HAHAHA": "some text"})
         model.predict_batch([{"HAHAHA": "some text"}])

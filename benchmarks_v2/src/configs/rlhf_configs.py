@@ -107,7 +107,10 @@ class WayfairRlhfConfig(RlhfConfig):
         for _, row in test_df.iterrows():
             for product_id in map(int, row["PRODUCT_ID"].split(";")):
                 rlhf_samples.append(
-                    (row["QUERY"], random.choice(labels_to_descriptions[product_id]))
+                    (
+                        {"QUERY": row["QUERY"]},
+                        {"QUERY": random.choice(labels_to_descriptions[product_id])},
+                    )
                 )
 
         random.shuffle(rlhf_samples)
@@ -258,7 +261,9 @@ class CuadRlhfConfig(RlhfConfig):
 
         association_samples = []
         for _, row in association_data.iterrows():
-            association_samples.append((row["source"], row["target_paragraph"]))
+            association_samples.append(
+                ({"text": row["source"]}, {"text": row["target_paragraph"]})
+            )
         random.shuffle(association_samples)
 
         batch_size = 512

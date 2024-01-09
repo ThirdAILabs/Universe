@@ -108,8 +108,6 @@ class TabularFeaturizer : public Featurizer {
                                                has_header, delimiter, parallel);
   }
 
-  const auto& blockLists() const { return _block_lists; }
-
  private:
   std::vector<std::vector<BoltVector>> featurizeSampleInBatch(
       ColumnarInputSample& input_sample);
