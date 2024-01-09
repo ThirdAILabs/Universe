@@ -71,7 +71,7 @@ class VariableLengthColdStart : public cold_start::TextAugmentationBase {
                                   std::mt19937& rng) const;
 
   static void addCoveringPhrases(const Phrase& words, PhraseCollection& phrases,
-                                 size_t min_len, size_t max_len,
+                                 size_t min_len, std::optional<size_t> max_len,
                                  std::optional<size_t> max_covering_samples,
                                  std::mt19937& rng);
 

@@ -153,10 +153,11 @@ PhraseCollection VariableLengthColdStart::getWeakPhrases(
                      _config.covering_max_length, _config.max_covering_samples,
                      rng);
 
-  // Unless otherwise specified, number of slices should be proportional to the
-  // length of the document. Covering samples should have this property so we
-  // use them as a heuristic
-  size_t num_slices = _config.num_slices.value_or(phrases.size());
+  // We've generally seen that autotuning the number of slices proportional to
+  // the length of the document tends to improe results. Covering samples should
+  // already be proportional to doc length so we use them as a heuristic. We add
+  // 2 extra slices as an inherent bias
+  size_t num_slices = _config.num_slices.value_or(phrases.size() + 2);
 
   addRandomSlicePhrases(weak_phrase, phrases, _config.slice_min_length,
                         _config.slice_max_length, num_slices, rng);
@@ -166,9 +167,11 @@ PhraseCollection VariableLengthColdStart::getWeakPhrases(
 
 void VariableLengthColdStart::addCoveringPhrases(
     const Phrase& words, PhraseCollection& phrases, size_t min_len,
-    size_t max_len, std::optional<size_t> max_covering_samples,
+    std::optional<size_t> max_len_opt, std::optional<size_t> max_covering_samples,
     std::mt19937& rng) {
   min_len = std::min(min_len, words.size());
+  size_t max_len = max_len_opt.value_or(words.size());
+  max_len = std::min(max_len, words.size());
   std::uniform_int_distribution<size_t> dist(min_len, max_len);
 
   size_t start_pos = 0;
