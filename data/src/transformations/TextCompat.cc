@@ -5,7 +5,6 @@
 #include <cereal/types/polymorphic.hpp>
 #include <data/src/columns/ArrayColumns.h>
 #include <dataset/src/utils/TokenEncoding.h>
-#include <utils/text/RegexPatterns.h>
 #include <string>
 #include <tuple>
 #include <vector>

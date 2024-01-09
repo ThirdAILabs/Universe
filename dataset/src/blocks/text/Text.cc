@@ -1,5 +1,4 @@
 #include "Text.h"
-#include <utils/text/RegexPatterns.h>
 
 namespace thirdai::dataset {
 

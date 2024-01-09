@@ -131,6 +131,8 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
 }
 
 Phrase VariableLengthColdStart::convertTextToPhrase(std::string string) const {
+  return text::split(text::nltkWordTokenize(string), ' ');
+
   string = text::stripWhitespace(string);
 
   Phrase phrase = text::split(string, ' ');
