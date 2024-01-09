@@ -6,6 +6,7 @@
 #include <data/src/transformations/Transformation.h>
 #include <memory>
 #include <random>
+#include <sstream>
 
 namespace thirdai::data {
 
@@ -67,34 +68,25 @@ struct VariableLengthConfig {
     iarchive(*config);
     return config;
   }
-
   std::string to_string() const {
     std::stringstream ss;
-    ss << "VariableLengthConfig(covering_min_length = " << covering_min_length;
-    ss << ", covering_max_length = " << covering_max_length;
-    ss << ", max_covering_samples = "
-       << (max_covering_samples.has_value()
-               ? std::to_string(max_covering_samples.value())
-               : "NA");
-    ss << ", slice_min_length = " << slice_min_length;
-    ss << ", slice_max_length = "
-       << (slice_max_length.has_value()
-               ? std::to_string(slice_max_length.value())
-               : "NA");
-    ss << ", num_slices = " << num_slices
-       << ", add_whole_doc = " << add_whole_doc;
-    ss << ", prefilter_punctuations = " << prefilter_punctuation;
-    ss << ", strong_sample_num_words = " << strong_sample_num_words;
-    ss << ", stopword_removal_probability = " << stopword_removal_probability;
-    ss << ", stopword_insertion_probability = "
-       << stopword_insertion_probability;
-    ss << ", word_removal_probability = " << word_removal_probability;
-    ss << ", word_perturbation_probability = " << word_perturbation_probability;
-    ss << ", chars_replace_with_space = " << chars_replace_with_space;
-    ss << ", chars_deleted = " << chars_deleted;
-    ss << ", chars_duplicated = " << chars_duplicated;
-    ss << ", chars_replace_with_adjacents = " << chars_replace_with_adjacents;
-    ss << ")";
+    ss << "VariableLengthConfig(";
+    ss << VARIABLE_TO_STRING(covering_min_length, ", ");
+    ss << VARIABLE_TO_STRING(max_covering_samples, ", ");
+    ss << VARIABLE_TO_STRING(slice_min_length, ", ");
+    ss << VARIABLE_TO_STRING(slice_max_length, ", ");
+    ss << VARIABLE_TO_STRING(num_slices, ", ");
+    ss << VARIABLE_TO_STRING(add_whole_doc, ", ");
+    ss << VARIABLE_TO_STRING(prefilter_punctuation, ", ");
+    ss << VARIABLE_TO_STRING(strong_sample_num_words, ", ");
+    ss << VARIABLE_TO_STRING(stopword_removal_probability, ", ");
+    ss << VARIABLE_TO_STRING(stopword_insertion_probability, ", ");
+    ss << VARIABLE_TO_STRING(word_removal_probability, ", ");
+    ss << VARIABLE_TO_STRING(word_perturbation_probability, ", ");
+    ss << VARIABLE_TO_STRING(chars_replace_with_space, ", ");
+    ss << VARIABLE_TO_STRING(chars_deleted, ", ");
+    ss << VARIABLE_TO_STRING(chars_duplicated, ", ");
+    ss << VARIABLE_TO_STRING(chars_replace_with_adjacents, ")");
     return ss.str();
   }
 };

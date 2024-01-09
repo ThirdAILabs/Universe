@@ -416,9 +416,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
           py::arg("word_perturbation_probability") = 0,
           py::arg("chars_replace_with_space") = 0, py::arg("chars_deleted") = 0,
           py::arg("chars_duplicated") = 0,
-          py::arg("chars_replace_with_adjacents") = 0
-
-          )
+          py::arg("chars_replace_with_adjacents") = 0)
       .def("__str__", &VariableLengthConfig::to_string)
 #else
       .def(py::init<>())
