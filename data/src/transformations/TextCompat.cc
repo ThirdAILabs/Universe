@@ -16,14 +16,13 @@ TextCompat::TextCompat(std::string input_column, std::string output_indices,
                        std::string output_values,
                        dataset::TextTokenizerPtr tokenizer,
                        dataset::TextEncoderPtr encoder, bool lowercase,
-                       bool cleaner, size_t encoding_dim, size_t hash_range)
+                       size_t encoding_dim, size_t hash_range)
     : _input_column(std::move(input_column)),
       _output_indices(std::move(output_indices)),
       _output_values(std::move(output_values)),
       _tokenizer(std::move(tokenizer)),
       _encoder(std::move(encoder)),
       _lowercase(lowercase),
-      _cleaner(cleaner),
       _encoding_dim(encoding_dim),
       _hash_range(hash_range) {}
 
@@ -40,10 +39,6 @@ ColumnMap TextCompat::apply(ColumnMap columns, State& state) const {
     shared(text_col, output_indices, output_values) if (columns.numRows() > 1)
   for (size_t i = 0; i < text_col->numRows(); i++) {
     std::string string = text_col->value(i);
-
-    if (_cleaner) {
-      string = text::nltkWordTokenize(string);
-    }
 
     if (_lowercase) {
       string = text::lower(string);
@@ -83,7 +78,7 @@ template <class Archive>
 void TextCompat::serialize(Archive& archive) {
   archive(cereal::base_class<Transformation>(this), _input_column,
           _output_indices, _output_values, _tokenizer, _encoder, _lowercase,
-          _cleaner, _encoding_dim, _hash_range);
+          _encoding_dim, _hash_range);
 }
 
 }  // namespace thirdai::data

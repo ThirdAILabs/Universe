@@ -438,8 +438,7 @@ dataset::BlockList UDTQueryReformulation::ngramBlockList(
         /* col = */ column_name,
         /* tokenizer= */ dataset::CharKGramTokenizer::make(/* k = */ n_gram),
         /* lowercase= */ true,
-        /* dim = */ std::numeric_limits<uint32_t>::max(),
-        /* cleaner= */ false));
+        /* dim = */ std::numeric_limits<uint32_t>::max()));
   }
 
   return dataset::BlockList(

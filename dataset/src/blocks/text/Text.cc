@@ -7,10 +7,6 @@ Explanation TextBlock::explainIndex(uint32_t index_within_block,
                                     ColumnarInputSample& input) {
   std::string string = input.column(_col);
 
-  if (_cleaner) {
-    string = text::nltkWordTokenize(string);
-  }
-
   if (_lowercase) {
     string = text::lower(string);
   }
@@ -28,10 +24,6 @@ Explanation TextBlock::explainIndex(uint32_t index_within_block,
 void TextBlock::buildSegment(ColumnarInputSample& input,
                              SegmentedFeatureVector& vec) {
   std::string string = input.column(_col);
-
-  if (_cleaner) {
-    string = text::nltkWordTokenize(string);
-  }
 
   if (_lowercase) {
     string = text::lower(string);

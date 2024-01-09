@@ -93,8 +93,7 @@ std::vector<dataset::BlockPtr> makeNonTemporalInputBlocks(
             dataset::NaiveSplitTokenizer::make(*categorical->delimiter),
             /* encoder = */ dataset::NGramEncoder::make(/* n = */ 1),
             /* lowercase = */ false,
-            /* dim= */ std::numeric_limits<uint32_t>::max(),
-            /* cleaner = */ false));
+            /* dim= */ std::numeric_limits<uint32_t>::max()));
       } else {
         tabular_columns.push_back(dataset::TabularColumn::Categorical(
             /* identifier= */ col_name));

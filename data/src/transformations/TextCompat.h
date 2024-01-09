@@ -46,7 +46,6 @@ class TextCompat final : public Transformation {
   dataset::TextEncoderPtr _encoder;
 
   bool _lowercase;
-  bool _cleaner;
   size_t _encoding_dim;
   size_t _hash_range;
 
