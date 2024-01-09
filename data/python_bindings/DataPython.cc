@@ -28,6 +28,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <utils/Random.h>
+#include <utils/text/RegexPatterns.h>
 #include <cstddef>
 #include <memory>
 #include <optional>
@@ -403,7 +404,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       .def(
           py::init<size_t, size_t, std::optional<uint32_t>, size_t,
                    std::optional<size_t>, uint32_t, bool, bool, uint32_t, float,
-                   float, float, float, size_t, size_t, size_t, size_t>(),
+                   float, float, float, size_t, size_t, size_t, size_t, bool>(),
           py::arg("covering_min_length") = 5,
           py::arg("covering_max_length") = 40,
           py::arg("max_covering_samples") = std::nullopt,
@@ -418,9 +419,8 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
           py::arg("word_perturbation_probability") = 0,
           py::arg("chars_replace_with_space") = 0, py::arg("chars_deleted") = 0,
           py::arg("chars_duplicated") = 0,
-          py::arg("chars_replace_with_adjacents") = 0
-
-      )
+          py::arg("chars_replace_with_adjacents") = 0,
+          py::arg("nltk_text_cleaning"))
 #else
       .def(py::init<>())
 #endif

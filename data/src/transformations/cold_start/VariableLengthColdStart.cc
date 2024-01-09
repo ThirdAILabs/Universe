@@ -3,6 +3,7 @@
 #include <data/src/transformations/StringConcat.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <utils/CommonChecks.h>
+#include <utils/text/RegexPatterns.h>
 #include <utils/text/Stopwords.h>
 #include <utils/text/StringManipulation.h>
 
@@ -17,7 +18,7 @@ VariableLengthConfig::VariableLengthConfig(
     float stopword_insertion_probability, float word_removal_probability,
     float word_perturbation_probability, size_t chars_replace_with_space,
     size_t chars_deleted, size_t chars_duplicated,
-    size_t chars_replace_with_adjacents)
+    size_t chars_replace_with_adjacents, bool nltk_text_cleaning)
     : covering_min_length(covering_min_length),
       covering_max_length(covering_max_length),
       max_covering_samples(max_covering_samples),
@@ -34,7 +35,8 @@ VariableLengthConfig::VariableLengthConfig(
       chars_replace_with_space(chars_replace_with_space),
       chars_deleted(chars_deleted),
       chars_duplicated(chars_duplicated),
-      chars_replace_with_adjacents(chars_replace_with_adjacents) {
+      chars_replace_with_adjacents(chars_replace_with_adjacents),
+      nltk_text_cleaning(nltk_text_cleaning) {
   utils::validateGreaterThanZero(covering_min_length, "covering_min_length");
   utils::validateGreaterThanZero(covering_max_length, "covering_max_length");
   utils::validateGreaterThanZero(slice_min_length, "slice_min_length");
@@ -129,6 +131,10 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
 }
 
 Phrase VariableLengthColdStart::convertTextToPhrase(std::string string) const {
+  if (_config.nltk_text_cleaning) {
+    return text::split(text::nltkWordTokenize(string), ' ');
+  }
+
   if (_config.prefilter_punctuation) {
     string = text::replacePunctuation(string, ' ');
   }
