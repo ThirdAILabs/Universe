@@ -11,7 +11,7 @@ namespace thirdai::data {
 VariableLengthConfig::VariableLengthConfig(
     size_t covering_min_length, size_t covering_max_length,
     std::optional<uint32_t> max_covering_samples, size_t slice_min_length,
-    std::optional<size_t> slice_max_length, uint32_t num_slices,
+    std::optional<size_t> slice_max_length, std::optional<uint32_t> num_slices,
     bool add_whole_doc, bool prefilter_punctuation,
     uint32_t strong_sample_num_words, float stopword_removal_probability,
     float stopword_insertion_probability, float word_removal_probability,
@@ -153,8 +153,13 @@ PhraseCollection VariableLengthColdStart::getWeakPhrases(
                      _config.covering_max_length, _config.max_covering_samples,
                      rng);
 
+  // Unless otherwise specified, number of slices should be proportional to the
+  // length of the document. Covering samples should have this property so we
+  // use them as a heuristic
+  size_t num_slices = _config.num_slices.value_or(phrases.size());
+
   addRandomSlicePhrases(weak_phrase, phrases, _config.slice_min_length,
-                        _config.slice_max_length, _config.num_slices, rng);
+                        _config.slice_max_length, num_slices, rng);
 
   return phrases;
 }
@@ -189,7 +194,7 @@ void VariableLengthColdStart::addCoveringPhrases(
 
 void VariableLengthColdStart::addRandomSlicePhrases(
     const Phrase& words, PhraseCollection& phrases, size_t min_len,
-    std::optional<size_t> max_len_opt, uint32_t num_slices, std::mt19937& rng) {
+    std::optional<size_t> max_len_opt, size_t num_slices, std::mt19937& rng) {
   min_len = std::min(min_len, words.size());
   size_t max_len = max_len_opt.has_value()
                        ? std::min(words.size(), *max_len_opt)

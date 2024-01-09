@@ -12,11 +12,11 @@ using cold_start::PhraseCollection;
 struct VariableLengthConfig {
   explicit VariableLengthConfig(
       size_t covering_min_length = 5, size_t covering_max_length = 40,
-      std::optional<uint32_t> max_covering_samples = std::nullopt,
-      size_t slice_min_length = 5,
-      std::optional<size_t> slice_max_length = std::nullopt,
-      uint32_t num_slices = 7, bool add_whole_doc = true,
-      bool prefilter_punctuation = true, uint32_t strong_sample_num_words = 3,
+      std::optional<size_t> max_covering_samples = std::nullopt,
+      size_t slice_min_length = 5, std::optional<size_t> slice_max_length = 50,
+      std::optional<size_t> num_slices = std::nullopt,
+      bool add_whole_doc = true, bool prefilter_punctuation = true,
+      size_t strong_sample_num_words = 3,
       float stopword_removal_probability = 0,
       float stopword_insertion_probability = 0,
       float word_removal_probability = 0,
@@ -26,13 +26,13 @@ struct VariableLengthConfig {
 
   size_t covering_min_length;
   size_t covering_max_length;
-  std::optional<uint32_t> max_covering_samples;
+  std::optional<size_t> max_covering_samples;
   size_t slice_min_length;
   std::optional<size_t> slice_max_length;
-  uint32_t num_slices;
+  std::optional<size_t> num_slices;
   bool add_whole_doc;
   bool prefilter_punctuation;
-  uint32_t strong_sample_num_words;
+  size_t strong_sample_num_words;
   float stopword_removal_probability;
   float stopword_insertion_probability;
   float word_removal_probability;
@@ -50,7 +50,7 @@ class VariableLengthColdStart : public cold_start::TextAugmentationBase {
       std::vector<std::string> weak_column_names,
       std::string output_column_name,
       const VariableLengthConfig& config = VariableLengthConfig(),
-      uint32_t seed = global_random::nextSeed());
+      size_t seed = global_random::nextSeed());
 
   /**
    * Helper method to perform the augmentation of a single row in the input.
@@ -78,7 +78,7 @@ class VariableLengthColdStart : public cold_start::TextAugmentationBase {
   static void addRandomSlicePhrases(const Phrase& words,
                                     PhraseCollection& phrases, size_t min_len,
                                     std::optional<size_t> max_len_opt,
-                                    uint32_t num_slices, std::mt19937& rng);
+                                    size_t num_slices, std::mt19937& rng);
 
   static std::string convertPhraseToText(const std::vector<std::string>& phrase,
                                          float stopword_removal_probability,
