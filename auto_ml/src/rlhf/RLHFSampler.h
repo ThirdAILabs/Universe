@@ -10,7 +10,11 @@
 
 namespace thirdai::automl::udt {
 
+class BalancingSamples;
+
 class RLHFSampler {
+  friend class BalancingSamples;
+
  public:
   RLHFSampler() : RLHFSampler(0, 0) {}  // Required for serializing optional.
 

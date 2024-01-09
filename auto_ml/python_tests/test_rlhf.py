@@ -69,10 +69,7 @@ def get_association_samples():
         new_sample = " ".join(new_words)
         acronym_samples.append({"text": new_sample})
 
-        association = (
-            {"text": acronym},
-            {"text": " ".join(words[start:end])},
-        )
+        association = (acronym, " ".join(words[start:end]))
         associations.append(association)
 
     return original_samples, acronym_samples, associations
@@ -150,7 +147,7 @@ def get_upvote_samples():
     for _, row in df.iterrows():
         original_samples.append({"text": row["text"]})
         acronyms.append({"text": row["acronym"]})
-        upvotes.append(({"text": row["acronym"]}, row["id"]))
+        upvotes.append((row["acronym"], row["id"]))
 
     return original_samples, acronyms, upvotes
 

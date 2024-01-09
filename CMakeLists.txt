@@ -417,6 +417,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/cold_start/ColdStartText.cc
     data/src/transformations/cold_start/VariableLengthColdStart.cc
     data/src/transformations/FeatureHash.cc
+    data/src/transformations/Tabular.cc
     data/src/transformations/Pipeline.cc
     data/src/transformations/MachLabel.cc
     data/src/transformations/StringConcat.cc
@@ -448,17 +449,20 @@ set(THIRDAI_SOURCES
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/featurization/DataTypes.cc
-    auto_ml/src/featurization/TabularBlockComposer.cc
-    auto_ml/src/featurization/TabularDatasetFactory.cc
-    auto_ml/src/featurization/RecurrentDatasetFactory.cc
-    auto_ml/src/featurization/GraphDatasetManager.cc
     auto_ml/src/featurization/TabularTransformations.cc
+    auto_ml/src/featurization/Featurizer.cc
+    auto_ml/src/featurization/MachFeaturizer.cc
+    auto_ml/src/featurization/GraphFeaturizer.cc
+    auto_ml/src/featurization/RecurrentFeaturizer.cc
     auto_ml/src/featurization/ReservedColumns.cc
+    auto_ml/src/featurization/TabularBlockComposer.cc # Deprecate
+    auto_ml/src/featurization/TabularDatasetFactory.cc # Deprecate
+    auto_ml/src/cold_start/ColdStartUtils.cc # Deprecate
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
-    auto_ml/src/cold_start/ColdStartUtils.cc
-    auto_ml/src/rlhf/RLHFSampler.cc
+    auto_ml/src/rlhf/BalancingSamples.cc
+    auto_ml/src/rlhf/RLHFSampler.cc # Deprecate
     utils/src/SymSpellBackend/symspell.cc
     utils/src/SymSpellCpp/SymSpell.cc
     utils/Logging.cc
@@ -527,7 +531,8 @@ pybind11_add_module(
   auto_ml/src/udt/utils/Models.cc
   auto_ml/src/udt/utils/Classifier.cc
   auto_ml/src/udt/backends/UDTClassifier.cc
-  auto_ml/src/udt/backends/UDTMachClassifier.cc
+  auto_ml/src/udt/backends/UDTMach.cc
+  auto_ml/src/udt/backends/DeprecatedUDTMachClassifier.cc # Deprecate
   auto_ml/src/udt/backends/UDTRecurrentClassifier.cc
   auto_ml/src/udt/backends/UDTRegression.cc
   auto_ml/src/udt/backends/UDTQueryReformulation.cc
