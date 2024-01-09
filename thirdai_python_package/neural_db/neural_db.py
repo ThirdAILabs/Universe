@@ -15,176 +15,13 @@ from .documents import CSV, Document, DocumentManager, Reference
 from .mach_mixture_model import MachMixture
 from .models import CancelState, Mach
 from .savable_state import State
+from .supervised_datasource import Sup, SupDataSource
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
 
 
 def no_op(*args, **kwargs):
     pass
-
-
-"""Sup and SupDataSource are classes that manage entity IDs for supervised
-training.
-
-Entity = an item that can be retrieved by NeuralDB. If we insert an ndb.CSV
-object into NeuralDB, then each row of the CSV file is an entity. If we insert 
-an ndb.PDF object, then each paragraph is an entity. If we insert an 
-ndb.SentenceLevelDOCX object, then each sentence is an entity.
-
-If this still doesn't make sense, consider a scenario where you insert a CSV 
-file into NeuralDB and want to improve the performance of the database by
-training it on supervised training samples. That is, you want the model to 
-learn from (query, ID) pairs.
-
-Since you only inserted one file, the ID of each entity in NeuralDB's index
-is the same as the ID given in the file. Thus, the model can directly ingest
-the (query, ID) pairs from your supervised dataset. However, this is not the 
-case if you inserted multiple CSV files. For example, suppose you insert file A 
-containing entities with IDs 0 through 100 and also insert file B containing 
-its own set of entities with IDs 0 through 100. To disambiguate between entities
-from different files, NeuralDB automatically offsets the IDs of the second file.
-Consequently, you also have to adjust the labels of supervised training samples
-corresponding to entities in file B. 
-
-Instead of leaking the abstraction by making the user manually change the labels
-of their dataset, we created Sup and SupDataSource to handle this.
-
-If the user would rather use the database-assigned IDs instead of IDs from the 
-original document, this can be done by passing uses_db_id = True to Sup(). This
-is useful for cases where the user does not know the IDs of the entities in the
-original documents. For example, if the original document is a PDF, then it is
-NeuralDB that parses it into paragraphs; the user does not know the ID of each
-paragraph beforehand. In this scenario, it is much easier for the user to just
-use the database-assigned IDs.
-"""
-
-
-class Sup:
-    """An object that contains supervised samples. This object is to be passed
-    into NeuralDB.supervised_train().
-
-    It can be initialized either with a CSV file, in which case it needs query
-    and ID column names, or with sequences of queries and labels. It also needs
-    to know which source object (i.e. which inserted CSV or PDF object) contains
-    the relevant entities to the supervised samples.
-
-    If uses_db_id is True, then the labels are assumed to use database-assigned
-    IDs and will not be converted.
-    """
-
-    def __init__(
-        self,
-        csv: str = None,
-        query_column: str = None,
-        id_column: str = None,
-        id_delimiter: str = None,
-        queries: Sequence[str] = None,
-        labels: Sequence[Sequence[int]] = None,
-        source_id: str = "",
-        uses_db_id: bool = False,
-    ):
-        if csv is not None and query_column is not None and id_column is not None:
-            df = pd.read_csv(csv)
-            self.queries = df[query_column]
-            self.labels = df[id_column]
-            for i, label in enumerate(self.labels):
-                if label == None or label == "":
-                    raise ValueError(
-                        "Got a supervised sample with an empty label, query:"
-                        f" '{self.queries[i]}'"
-                    )
-            if id_delimiter:
-                self.labels = self.labels.apply(
-                    lambda label: list(
-                        str(label).strip(id_delimiter).split(id_delimiter)
-                    )
-                )
-            else:
-                self.labels = self.labels.apply(lambda label: [str(label)])
-
-        elif queries is not None and labels is not None:
-            if len(queries) != len(labels):
-                raise ValueError(
-                    "Queries and labels sequences must be the same length."
-                )
-            self.queries = queries
-            self.labels = labels
-        # elif csv is None and
-        else:
-            raise ValueError(
-                "Sup must be initialized with csv, query_column and id_column, or"
-                " queries and labels."
-            )
-        self.source_id = source_id
-        self.uses_db_id = uses_db_id
-
-
-class SupDataSource(PyDataSource):
-    """Combines supervised samples from multiple Sup objects into a single data
-    source. This allows NeuralDB's underlying model to train on all provided
-    supervised datasets simultaneously.
-    """
-
-    def __init__(
-        self,
-        doc_manager: DocumentManager,
-        query_col: str,
-        data: List[Sup],
-        id_delimiter: Optional[str],
-    ):
-        PyDataSource.__init__(self)
-        self.doc_manager = doc_manager
-        self.query_col = query_col
-        self.data = data
-        self.id_delimiter = id_delimiter
-        if not self.id_delimiter:
-            print("WARNING: this model does not fully support multi-label datasets.")
-        self.restart()
-
-    def _csv_line(self, query: str, label: str):
-        df = pd.DataFrame(
-            {
-                self.query_col: [query],
-                self.doc_manager.id_column: [label],
-            }
-        )
-        return df.to_csv(header=None, index=None).strip("\n")
-
-    def _source_for_sup(self, sup: Sup):
-        source_ids = self.doc_manager.match_source_id_by_prefix(sup.source_id)
-        if len(source_ids) == 0:
-            raise ValueError(f"Cannot find source with id {sup.source_id}")
-        if len(source_ids) > 1:
-            raise ValueError(f"Multiple sources match the prefix {sup.source_id}")
-        return self.doc_manager.source_by_id(source_ids[0])
-
-    def _labels(self, sup: Sup):
-        if sup.uses_db_id:
-            return [map(str, labels) for labels in sup.labels]
-
-        doc, start_id = self._source_for_sup(sup)
-        doc_id_map = doc.id_map()
-        if doc_id_map:
-            mapper = lambda label: str(doc_id_map[label] + start_id)
-        else:
-            mapper = lambda label: str(int(label) + start_id)
-
-        return [map(mapper, labels) for labels in sup.labels]
-
-    def _get_line_iterator(self):
-        # First yield the header
-        yield self._csv_line(self.query_col, self.doc_manager.id_column)
-        # Then yield rows
-        for sup in self.data:
-            for query, labels in zip(sup.queries, self._labels(sup)):
-                if self.id_delimiter:
-                    yield self._csv_line(query, self.id_delimiter.join(labels))
-                else:
-                    for label in labels:
-                        yield self._csv_line(query, label)
-
-    def resource_name(self) -> str:
-        return "Supervised training samples"
 
 
 class NeuralDB:
@@ -584,11 +421,13 @@ class NeuralDB:
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
+        **kwargs,
     ) -> List[str]:
         """
         Inserts documents/resources into the database.
 
         Args:
+            sources (List[Doc]): List of NeuralDB documents to be inserted.
             train (bool): Optional, defaults True. When True this means that the
                 underlying model in the NeuralDB will undergo unsupervised pretraining
                 on the inserted documents.
@@ -631,6 +470,7 @@ class NeuralDB:
             cancel_state=cancel_state,
             max_in_memory_batches=max_in_memory_batches,
             variable_length=variable_length,
+            **kwargs,
         )
         self._savable_state.logger.log(
             session_id=self._user_id,
@@ -654,6 +494,46 @@ class NeuralDB:
         self._savable_state.documents.clear()
         self._savable_state.model.forget_documents()
 
+    def _get_query_references(
+        self,
+        query: str,
+        result_ids: List[Tuple[int, float]],
+        top_k: int,
+        rerank: bool,
+        rerank_threshold,
+        top_k_threshold,
+    ):
+        references = []
+        for rid, score in result_ids:
+            ref = self._savable_state.documents.reference(rid)
+            ref._score = score
+            references.append(ref)
+
+        if rerank:
+            keep, to_rerank = NeuralDB._split_references_for_reranking(
+                references,
+                rerank_threshold,
+                average_top_k_scores=top_k_threshold if top_k_threshold else top_k,
+            )
+
+            ranker = thirdai.dataset.KeywordOverlapRanker()
+            reranked_indices, reranked_scores = ranker.rank(
+                query, [ref.text for ref in to_rerank]
+            )
+            reranked_scores = NeuralDB._scale_reranked_scores(
+                original=[ref.score for ref in to_rerank],
+                reranked=reranked_scores,
+                leq=keep[-1].score if len(keep) > 0 else 1.0,
+            )
+
+            reranked = [to_rerank[i] for i in reranked_indices]
+            for i, ref in enumerate(reranked):
+                ref._score = reranked_scores[i]
+            references = (keep + reranked)[:top_k]
+
+        return references
+
+    @staticmethod
     def _split_references_for_reranking(
         references,
         rerank_threshold,
@@ -669,6 +549,7 @@ class NeuralDB:
             )
         return references[:rerank_start], references[rerank_start:]
 
+    @staticmethod
     def _scale_reranked_scores(
         original: List[float], reranked: List[float], leq: float
     ):
@@ -736,49 +617,55 @@ class NeuralDB:
             >>> ndb.search("what is ...", top_k=5)
             >>> ndb.search("what is ...", top_k=5, constraints={"file_type": "pdf", "file_created", GreaterThan(10)})
         """
+        return self.search_batch(
+            queries=[query],
+            top_k=top_k,
+            constraints=constraints,
+            rerank=rerank,
+            top_k_rerank=top_k_rerank,
+            rerank_threshold=rerank_threshold,
+            top_k_threshold=top_k_threshold,
+        )[0]
+
+    def search_batch(
+        self,
+        queries: List[str],
+        top_k: int,
+        constraints=None,
+        rerank=False,
+        top_k_rerank=100,
+        rerank_threshold=1.5,
+        top_k_threshold=None,
+    ):
+        """
+        Runs search on a batch of queries for much faster throughput.
+
+        Args:
+            queries (List[str]): The queries to search.
+
+        Returns:
+            List[List[Reference]]: Combines each result of db.search into a list.
+        """
         matching_entities = None
         top_k_to_search = top_k_rerank if rerank else top_k
         if constraints:
             matching_entities = self._savable_state.documents.entity_ids_by_constraints(
                 constraints
             )
-            result_ids = self._savable_state.model.score(
-                samples=[query], entities=[matching_entities], n_results=top_k_to_search
-            )[0]
+            queries_result_ids = self._savable_state.model.score(
+                samples=queries, entities=[matching_entities], n_results=top_k_to_search
+            )
         else:
-            result_ids = self._savable_state.model.infer_labels(
-                samples=[query], n_results=top_k_to_search
-            )[0]
-
-        references = []
-        for rid, score in result_ids:
-            ref = self._savable_state.documents.reference(rid)
-            ref._score = score
-            references.append(ref)
-
-        if rerank:
-            keep, to_rerank = NeuralDB._split_references_for_reranking(
-                references,
-                rerank_threshold,
-                average_top_k_scores=top_k_threshold if top_k_threshold else top_k,
+            queries_result_ids = self._savable_state.model.infer_labels(
+                samples=queries, n_results=top_k_to_search
             )
 
-            ranker = thirdai.dataset.KeywordOverlapRanker()
-            reranked_indices, reranked_scores = ranker.rank(
-                query, [ref.text for ref in to_rerank]
+        return [
+            self._get_query_references(
+                query, result_ids, top_k, rerank, rerank_threshold, top_k_threshold
             )
-            reranked_scores = NeuralDB._scale_reranked_scores(
-                original=[ref.score for ref in to_rerank],
-                reranked=reranked_scores,
-                leq=keep[-1].score if len(keep) > 0 else 1.0,
-            )
-
-            reranked = [to_rerank[i] for i in reranked_indices]
-            for i, ref in enumerate(reranked):
-                ref._score = reranked_scores[i]
-            references = (keep + reranked)[:top_k]
-
-        return references
+            for query, result_ids in zip(queries, queries_result_ids)
+        ]
 
     def reference(self, element_id: int):
         """Returns a reference containing the text and other information for a given entity id."""
@@ -875,6 +762,10 @@ class NeuralDB:
         data: List[Sup],
         learning_rate=0.0001,
         epochs=3,
+        batch_size: Optional[int] = None,
+        max_in_memory_batches: Optional[int] = None,
+        metrics: List[str] = [],
+        callbacks: List[bolt.train.callbacks.Callback] = [],
     ):
         """
         Train on supervised datasets that correspond to specific sources.
@@ -888,15 +779,10 @@ class NeuralDB:
             learning_rate (float): Optional. The learning rate to use for training.
             epochs (int): Optional. The number of epochs to train for.
         """
-        if isinstance(self._savable_state.model, MachMixture):
-            raise NotImplementedError(
-                "Supervised Training is not supported for NeuralDB initialized with a"
-                " mixture of experts."
-            )
         doc_manager = self._savable_state.documents
         query_col = self._savable_state.model.get_query_col()
-        self._savable_state.model.get_model().train_on_data_source(
-            data_source=SupDataSource(
+        self._savable_state.model.train_on_supervised_data_source(
+            supervised_data_source=SupDataSource(
                 doc_manager=doc_manager,
                 query_col=query_col,
                 data=data,
@@ -904,6 +790,10 @@ class NeuralDB:
             ),
             learning_rate=learning_rate,
             epochs=epochs,
+            batch_size=batch_size,
+            max_in_memory_batches=max_in_memory_batches,
+            metrics=metrics,
+            callbacks=callbacks,
         )
 
     def supervised_train_with_ref_ids(
@@ -916,6 +806,10 @@ class NeuralDB:
         labels: Sequence[Sequence[int]] = None,
         learning_rate=0.0001,
         epochs=3,
+        batch_size: Optional[int] = None,
+        max_in_memory_batches: Optional[int] = None,
+        metrics: List[str] = [],
+        callbacks: List[bolt.train.callbacks.Callback] = [],
     ):
         """Train on supervised datasets that correspond to specific sources.
         Suppose you inserted a "sports" product catalog and a "furniture"
@@ -925,15 +819,10 @@ class NeuralDB:
         with either A) a csv file with the query and id columns within it, or B) an
         explicit list of queries and expected labels.
         """
-        if isinstance(self._savable_state.model, MachMixture):
-            raise NotImplementedError(
-                "Supervised Training is not supported for NeuralDB initialized with a"
-                " mixture of experts."
-            )
         doc_manager = self._savable_state.documents
         model_query_col = self._savable_state.model.get_query_col()
-        self._savable_state.model.get_model().train_on_data_source(
-            data_source=SupDataSource(
+        self._savable_state.model.train_on_supervised_data_source(
+            supervised_data_source=SupDataSource(
                 doc_manager=doc_manager,
                 query_col=model_query_col,
                 data=[
@@ -951,6 +840,10 @@ class NeuralDB:
             ),
             learning_rate=learning_rate,
             epochs=epochs,
+            batch_size=batch_size,
+            max_in_memory_batches=max_in_memory_batches,
+            metrics=metrics,
+            callbacks=callbacks,
         )
 
     def get_associate_samples(self):
