@@ -6,7 +6,8 @@ from thirdai import bolt, data
 
 from .documents import DocumentDataSource
 from .models import CancelState, Mach, Model
-from .sharded_documents import ShardedDataSource
+from .sharded_documents import shard_data_source
+from .supervised_datasource import SupDataSource
 from .training_state.checkpoint_config import NDBCheckpointConfig
 from .training_state.training_callback import TrainingProgressManager
 from .training_state.training_manager_factory import TrainingProgressManagerFactory
@@ -28,6 +29,7 @@ class MachMixture(Model):
         fhr: int = 50_000,
         embedding_dimension: int = 2048,
         extreme_output_dim: int = 10_000,  # for Mach Mixture, we use default dim of 10k
+        extreme_num_hashes: int = 8,
         model_config=None,
         label_to_segment_map: defaultdict = None,
         seed_for_sharding: int = 0,
@@ -38,6 +40,8 @@ class MachMixture(Model):
         self.fhr = fhr
         self.embedding_dimension = embedding_dimension
         self.extreme_output_dim = extreme_output_dim
+        self.extreme_num_hashes = extreme_num_hashes
+        self.n_ids = 0
         self.model_config = model_config
 
         # These parameters are specific to Mach Mixture
@@ -58,6 +62,7 @@ class MachMixture(Model):
                 fhr=self.fhr,
                 embedding_dimension=self.embedding_dimension,
                 extreme_output_dim=self.extreme_output_dim,
+                extreme_num_hashes=self.extreme_num_hashes,
                 model_config=self.model_config,
             )
             for _ in range(self.number_models)
@@ -178,19 +183,19 @@ class MachMixture(Model):
         number_classes = intro_documents.size
 
         # Make a sharded data source with introduce documents. When we call shard_data_source, this will shard the introduce data source, return a list of data sources, and modify the label index to keep track of what label goes to what shard
-        sharded_data_source = ShardedDataSource(
-            document_data_source=intro_documents,
-            number_shards=self.number_models,
+        introduce_data_sources = shard_data_source(
+            data_source=intro_documents,
             label_to_segment_map=self.label_to_segment_map,
-            seed=self.seed_for_sharding,
+            number_shards=self.number_models,
+            update_segment_map=True,
         )
-        introduce_data_sources = sharded_data_source.shard_data_source()
 
         # Once the introduce datasource has been sharded, we can use the update label index to shard the training data source ( We do not want training samples to go to a Mach model that does not contain their labels)
-        train_data_sources = sharded_data_source.shard_using_index(
+        train_data_sources = shard_data_source(
             train_documents,
             label_to_segment_map=self.label_to_segment_map,
             number_shards=self.number_models,
+            update_segment_map=False,
         )
 
         modelwise_checkpoint_configs = (
@@ -223,6 +228,7 @@ class MachMixture(Model):
                     **kwargs,
                 )
             )
+
             training_managers.append(modelwise_training_manager)
             # When we want to start from scratch, we will have to checkpoint the intro, train sources, the model, tracker,etc. so that the training can be resumed from the checkpoint.
             modelwise_training_manager.make_preindexing_checkpoint()  # no-op when checkpoint_config is None.
@@ -349,13 +355,12 @@ class MachMixture(Model):
         learning_rate: float,
         epochs: int,
     ):
-        sharded_data_source = ShardedDataSource(
-            document_data_source=balancing_data,
+        balancing_data_shards = shard_data_source(
+            data_source=balancing_data,
             number_shards=self.number_models,
             label_to_segment_map=self.label_to_segment_map,
-            seed=self.seed_for_sharding,
+            update_segment_map=False,
         )
-        balancing_data_shards = sharded_data_source.shard_data_source()
         for model, shard in zip(self.models, balancing_data_shards):
             model.retrain(
                 balancing_data=shard,
@@ -370,3 +375,33 @@ class MachMixture(Model):
             # Add model_config field if an older model is being loaded.
             state["model_config"] = None
         self.__dict__.update(state)
+
+    def train_on_supervised_data_source(
+        self,
+        supervised_data_source: SupDataSource,
+        learning_rate: float,
+        epochs: int,
+        batch_size: Optional[int],
+        max_in_memory_batches: Optional[int],
+        metrics: List[str],
+        callbacks: List[bolt.train.callbacks.Callback],
+    ):
+        supervised_data_source_shards = shard_data_source(
+            data_source=supervised_data_source,
+            number_shards=self.number_models,
+            label_to_segment_map=self.label_to_segment_map,
+            update_segment_map=False,
+        )
+
+        for shard, model in zip(supervised_data_source_shards, self.models):
+            if shard.size == 0:
+                continue
+            model.train_on_supervised_data_source(
+                supervised_data_source=shard,
+                learning_rate=learning_rate,
+                epochs=epochs,
+                batch_size=batch_size,
+                max_in_memory_batches=max_in_memory_batches,
+                metrics=metrics,
+                callbacks=callbacks,
+            )

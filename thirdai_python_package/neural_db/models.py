@@ -7,6 +7,7 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt, data
 
 from .documents import DocumentDataSource
+from .supervised_datasource import SupDataSource
 from .mach_defaults import acc_to_stop, metric_to_track
 from .training_state.checkpoint_config import NDBCheckpointConfig
 from .training_state.training_callback import (
@@ -14,7 +15,7 @@ from .training_state.training_callback import (
     TrainingProgressManager,
 )
 from .training_state.training_manager_factory import TrainingProgressManagerFactory
-from .utils import clean_text
+from .utils import clean_text, random_sample
 
 InferSamples = List
 Predictions = Sequence
@@ -140,6 +141,18 @@ class Model:
         n_buckets: int,
         learning_rate: float,
         epochs: int,
+    ):
+        raise NotImplementedError()
+
+    def train_on_supervised_data_source(
+        self,
+        supervised_data_source: SupDataSource,
+        learning_rate: float,
+        epochs: int,
+        batch_size: Optional[int],
+        max_in_memory_batches: Optional[int],
+        metrics: List[str],
+        callbacks: List[bolt.train.callbacks.Callback],
     ):
         raise NotImplementedError()
 
@@ -279,6 +292,7 @@ class Mach(Model):
         fhr=50_000,
         embedding_dimension=2048,
         extreme_output_dim=50_000,
+        extreme_num_hashes=8,
         tokenizer="char-4",
         hidden_bias=False,
         model_config=None,
@@ -290,6 +304,7 @@ class Mach(Model):
         self.fhr = fhr
         self.embedding_dimension = embedding_dimension
         self.extreme_output_dim = extreme_output_dim
+        self.extreme_num_hashes = extreme_num_hashes
         self.hidden_bias = hidden_bias
         self.n_ids = 0
         self.model = None
@@ -379,6 +394,7 @@ class Mach(Model):
         fast_approximation: bool,
         num_buckets_to_sample: Optional[int],
         override_number_classes: int,
+        **kwargs,
     ):
         if intro_documents.id_column != self.id_col:
             raise ValueError(
@@ -395,10 +411,11 @@ class Mach(Model):
             )
             learning_rate = kwargs.get("learning_rate", 0.005)
             freeze_before_train = False
-            min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
-                train_documents.size
-                intro_documents,
-                number_classes=override_number_classes,
+            min_epochs = kwargs.get(
+                "epochs", autotune_from_scratch_min_max_epochs(train_documents.size)[0]
+            )
+            max_epochs = kwargs.get(
+                "epochs", autotune_from_scratch_min_max_epochs(train_documents.size)[1]
             )
         else:
             if intro_documents.size > 0:
@@ -551,6 +568,7 @@ class Mach(Model):
                 "extreme_output_dim": self.extreme_output_dim,
                 "fhr": self.fhr,
                 "embedding_dimension": self.embedding_dimension,
+                "extreme_num_hashes": self.extreme_num_hashes,
                 "hidden_bias": self.hidden_bias,
                 "rlhf": True,
             },
@@ -664,3 +682,23 @@ class Mach(Model):
             # Add model_config field if an older model is being loaded.
             state["model_config"] = None
         self.__dict__.update(state)
+
+    def train_on_supervised_data_source(
+        self,
+        supervised_data_source: SupDataSource,
+        learning_rate: float,
+        epochs: int,
+        batch_size: Optional[int],
+        max_in_memory_batches: Optional[int],
+        metrics: List[str],
+        callbacks: List[bolt.train.callbacks.Callback],
+    ):
+        self.model.train_on_data_source(
+            data_source=supervised_data_source,
+            learning_rate=learning_rate,
+            epochs=epochs,
+            batch_size=batch_size,
+            max_in_memory_batches=max_in_memory_batches,
+            metrics=metrics,
+            callbacks=callbacks,
+        )
