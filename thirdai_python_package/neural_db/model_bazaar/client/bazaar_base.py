@@ -551,4 +551,4 @@ class Bazaar:
             },
         )
 
-        print("Successfully requested admin to delete the model.")
+        return json.loads(delete_response.content)["message"]
