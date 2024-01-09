@@ -9,7 +9,7 @@ std::vector<float> getLRSchedule(uint32_t linear_warmup_steps) {
   callbacks::CosineAnnealingWarmRestart cos_schedule(
       /*min_lr=*/MIN_LR, /*max_lr=*/MAX_LR, /*steps_until_restart=*/3,
       /*linear_warmup_steps=*/linear_warmup_steps,
-      /*steps_until_restart_scaling_factor-*/ 2);
+      /*steps_until_restart_scaling_factor=*/2);
 
   std::vector<float> schedule;
   // 2 cycles, 3 steps until first restart, 6 steps until second restart.
@@ -22,6 +22,12 @@ std::vector<float> getLRSchedule(uint32_t linear_warmup_steps) {
 
 void checkCosCyles(const std::vector<float>& schedule) {
   ASSERT_EQ(schedule.size(), 9);
+
+  // The schedule should decay the learning rate for the first 3 steps (first
+  // cycle). Then the schedule will restart and increase the cycle to 6 steps.
+  // It will then decay for 6 steps (second cycle). Because of the  nature of
+  // the cosine lr schedule, the lr will decay slower at the beginning and end
+  // of a cycle than in the middle.
 
   // First cycle
   ASSERT_EQ(schedule[0], MAX_LR);
