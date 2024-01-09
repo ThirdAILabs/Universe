@@ -6,6 +6,7 @@ import string
 from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
+import json
 
 import numpy as np
 import pandas as pd
@@ -238,41 +239,42 @@ class DocumentDataSource(PyDataSource):
     def resource_name(self) -> str:
         return "Documents:\n" + "\n".join([doc.name for doc, _ in self.documents])
 
-    def save_to_csv(self, csv_path: Path, save_interval=100_000):
+    def save(self, path: Path, save_interval=100_000):
         """
         Iterates through the document data source and generates a dataframe
         """
         number_lines_in_buffer = 0
-        with open(csv_path, "w") as f:
+        with open(path / "source.csv", "w") as f:
             for line in self._get_line_iterator():
                 f.write(line + "\n")
                 number_lines_in_buffer += 1
             if number_lines_in_buffer > save_interval:
                 f.flush()
                 number_lines_in_buffer = 0
+
+        with open(path / "arguments.json", "w") as f:
+            json.dump(
+                {
+                    "id_column": self.id_column,
+                    "strong_column": self.strong_column,
+                    "weak_column": self.weak_column,
+                }
+            )
         self.restart()
 
-    def initialization_args(self):
-        return {
-            "id_column": self.id_column,
-            "strong_column": self.strong_column,
-            "weak_column": self.weak_column,
-        }
-
     @staticmethod
-    def load_from_csv(
-        csv_path: Path, id_column: str, strong_column: str, weak_column: str
-    ):
+    def load(path: Path):
+        with open(path / "arguments.json", "w") as f:
+            args = json.load(f)
+
         csv_document = CSV(
-            path=csv_path,
-            id_column=id_column,
-            strong_columns=[strong_column],
-            weak_columns=[weak_column],
+            path=path / "source.csv",
+            id_column=args["id_column"],
+            strong_columns=[args["strong_column"]],
+            weak_columns=[args["weak_column"]],
             has_offset=True,
         )
-        data_source = DocumentDataSource(
-            id_column=id_column, strong_column=strong_column, weak_column=weak_column
-        )
+        data_source = DocumentDataSource(**args)
         data_source.add(csv_document, start_id=0)
         return data_source
 

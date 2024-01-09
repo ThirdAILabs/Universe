@@ -20,8 +20,6 @@ class DataSourceCheckpointManager:
     def __init__(self, checkpoint_dir: Union[Path, None], source: DocumentDataSource):
         self.checkpoint_dir = checkpoint_dir
         if self.checkpoint_dir:
-            self.source_checkpoint_location = self.checkpoint_dir / f"source.csv"
-            self.source_arguments_location = self.checkpoint_dir / f"arguments.json"
             self.checkpoint_dir.mkdir(exist_ok=True, parents=True)
         self.source = source
 
@@ -36,20 +34,14 @@ class DataSourceCheckpointManager:
 
     def save(self):
         if self.checkpoint_dir:
-            self.source.save_to_csv(csv_path=self.source_checkpoint_location)
-            with open(self.source_arguments_location, "w") as f:
-                json.dump(self.source.initialization_args(), f, indent=4)
+            self.source.save(csv_path=self.checkpoint_dir)
 
     @staticmethod
     def load(checkpoint_dir: Path):
         config = DataSourceCheckpointManager(checkpoint_dir=checkpoint_dir, source=None)
         config.assert_data_source_exists()
 
-        with open(config.source_arguments_location, "r") as f:
-            args = json.load(f)
-        config.source = DocumentDataSource.load_from_csv(
-            csv_path=config.source_checkpoint_location, **args
-        )
+        config.source = DocumentDataSource.load(csv_path=config.checkpoint_dir)
         return config
 
 

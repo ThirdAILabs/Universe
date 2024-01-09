@@ -18,7 +18,7 @@ def convert_str_to_path(str_path):
         return str_path
     else:
         raise TypeError(
-            "The 'checkpoint_dir' should be either a 'str' or 'pathlib.Path', but"
+            "Error converting to Path. Expected the type a 'str' or 'pathlib.Path', but"
             f" received: {type(str_path)}"
         )
 
