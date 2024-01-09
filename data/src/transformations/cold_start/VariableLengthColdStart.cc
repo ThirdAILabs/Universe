@@ -10,10 +10,10 @@ namespace thirdai::data {
 
 VariableLengthConfig::VariableLengthConfig(
     size_t covering_min_length, size_t covering_max_length,
-    std::optional<uint32_t> max_covering_samples, size_t slice_min_length,
-    std::optional<size_t> slice_max_length, std::optional<uint32_t> num_slices,
+    std::optional<size_t> max_covering_samples, size_t slice_min_length,
+    std::optional<size_t> slice_max_length, std::optional<size_t> num_slices,
     bool add_whole_doc, bool prefilter_punctuation,
-    uint32_t strong_sample_num_words, float stopword_removal_probability,
+    size_t strong_sample_num_words, float stopword_removal_probability,
     float stopword_insertion_probability, float word_removal_probability,
     float word_perturbation_probability, size_t chars_replace_with_space,
     size_t chars_deleted, size_t chars_duplicated,
@@ -66,7 +66,7 @@ VariableLengthConfig::VariableLengthConfig(
 VariableLengthColdStart::VariableLengthColdStart(
     std::vector<std::string> strong_column_names,
     std::vector<std::string> weak_column_names, std::string output_column_name,
-    const VariableLengthConfig& config, uint32_t seed)
+    const VariableLengthConfig& config, size_t seed)
     : TextAugmentationBase(std::move(strong_column_names),
                            std::move(weak_column_names),
                            std::move(output_column_name), seed),

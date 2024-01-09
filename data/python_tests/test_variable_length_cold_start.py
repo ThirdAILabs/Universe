@@ -118,6 +118,32 @@ def test_vlcs_random_slices():
         assert 3 <= length and length <= 5
 
 
+def test_vlcs_autotuning_random_slices():
+    augmentation_0_slices = default_augmentation(
+        covering_min_length=3,
+        covering_max_length=5,
+        num_slices=0,
+        add_whole_doc=False,
+    )
+
+    augmentation_autotune_slices = default_augmentation(
+        covering_min_length=3,
+        covering_max_length=5,
+        slice_min_length=3,
+        slice_max_length=5,
+        num_slices=None,
+        add_whole_doc=False,
+    )
+
+    sentence = "This is weak text that has more than a certain amount of words"
+
+    samples_0_slices = augmentation_0_slices.augment_single_row("", sentence)
+    samples_autotuned_slices = augmentation_autotune_slices.augment_single_row(
+        "", sentence
+    )
+    assert len(samples_0_slices) == len(samples_autotuned_slices) / 2
+
+
 def test_vlcs_word_removal():
     augmentation = default_augmentation(
         slice_min_length=10000,
