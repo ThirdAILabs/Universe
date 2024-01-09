@@ -416,8 +416,11 @@ UDT::parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
 #pragma omp parallel for default(none) \
     shared(models, batch, outputs, sparse_inference, top_k, non_mach)
   for (size_t i = 0; i < models.size(); i++) {
-    if (auto* mach =
-            dynamic_cast<UDTMachClassifier*>(models[i]->_backend.get())) {
+    if (auto* mach = dynamic_cast<UDTMach*>(models[i]->_backend.get())) {
+      outputs[i] = mach->predictBatchImpl(
+          batch, sparse_inference, /*return_predicted_class*/ false, top_k);
+    } else if (auto* mach = dynamic_cast<UDTMachClassifier*>(
+                   models[i]->_backend.get())) {
       outputs[i] = mach->predictImpl(batch, sparse_inference, top_k);
     } else {
 #pragma omp critical

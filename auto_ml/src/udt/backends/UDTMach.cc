@@ -236,6 +236,13 @@ py::object UDTMach::predictBatch(const MapInputBatch& samples,
                                  bool sparse_inference,
                                  bool return_predicted_class,
                                  std::optional<uint32_t> top_k) {
+  return py::cast(predictBatchImpl(samples, sparse_inference,
+                                   return_predicted_class, top_k));
+}
+
+std::vector<std::vector<std::pair<uint32_t, double>>> UDTMach::predictBatchImpl(
+    const MapInputBatch& samples, bool sparse_inference,
+    bool return_predicted_class, std::optional<uint32_t> top_k) {
   if (return_predicted_class) {
     throw std::invalid_argument(
         "UDT Extreme Classification does not support the "
@@ -274,7 +281,7 @@ py::object UDTMach::predictBatch(const MapInputBatch& samples,
     predicted_entities[i] = predictions;
   }
 
-  return py::cast(predicted_entities);
+  return predicted_entities;
 }
 
 py::object UDTMach::scoreBatch(const MapInputBatch& samples,
@@ -289,8 +296,8 @@ py::object UDTMach::scoreBatch(const MapInputBatch& samples,
   }
 
   // sparse inference could become an issue here because maybe the entities
-  // we score wouldn't otherwise be in the top results, thus their buckets have
-  // lower similarity and don't get selected by LSH
+  // we score wouldn't otherwise be in the top results, thus their buckets
+  // have lower similarity and don't get selected by LSH
   auto outputs = _classifier->model()
                      ->forward(_featurizer->featurizeInputBatch(samples),
                                /* use_sparsity= */ false)
@@ -965,7 +972,8 @@ void UDTMach::setDecodeParams(uint32_t top_k_to_return,
 }
 
 void UDTMach::setIndex(const dataset::mach::MachIndexPtr& index) {
-  // block allows indexes with different number of hashes but not output ranges
+  // block allows indexes with different number of hashes but not output
+  // ranges
   _featurizer->state()->setMachIndex(index);
 
   updateSamplingStrategy();
