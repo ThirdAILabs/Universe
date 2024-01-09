@@ -111,8 +111,7 @@ std::vector<dataset::BlockPtr> makeNonTemporalInputBlocks(
       blocks.push_back(dataset::TextBlock::make(
           col_name, text_meta->tokenizer, text_meta->encoder,
           /* lowercase = */ text_meta->lowercase,
-          /* dim = */ std::numeric_limits<uint32_t>::max(),
-          /* cleaner = */ text_meta->cleaner));
+          /* dim = */ std::numeric_limits<uint32_t>::max()));
     }
 
     if (asDate(data_type)) {
