@@ -13,7 +13,7 @@ std::optional<std::string> UnifiedDataSource::nextLine() {
 
   assert(chosen_data_source_index <= _data_sources.size());
 
-  auto choosen_data_source = _data_sources[chosen_data_source_index];
+  auto& choosen_data_source = _data_sources[chosen_data_source_index];
   auto line = choosen_data_source->nextLine();
   if (!line && chosen_data_source_index == _stop_data_source_id) {
     return std::nullopt;
