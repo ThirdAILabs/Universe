@@ -67,7 +67,7 @@ using bolt::metrics::MachRecall;
 using bolt::metrics::PrecisionAtK;
 using bolt::metrics::RecallAtK;
 
-uint32_t expectInteger(const Label& label) {
+inline uint32_t expectInteger(const Label& label) {
   if (!std::holds_alternative<uint32_t>(label)) {
     throw std::invalid_argument("Must use integer label.");
   }
