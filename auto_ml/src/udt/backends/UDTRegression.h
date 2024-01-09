@@ -2,9 +2,9 @@
 
 #include <bolt/src/nn/model/Model.h>
 #include <auto_ml/src/config/ArgumentMap.h>
-#include <auto_ml/src/featurization/Featurizer.h>
+#include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/UDTBackend.h>
-#include <data/src/transformations/RegressionBinning.h>
+#include <dataset/src/blocks/Categorical.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -43,6 +43,14 @@ class UDTRegression final : public UDTBackend {
 
   ModelPtr model() const final { return _model; }
 
+  ColumnDataTypes dataTypes() const final {
+    return _dataset_factory->dataTypes();
+  }
+
+  TabularDatasetFactoryPtr tabularDatasetFactory() const final {
+    return _dataset_factory;
+  }
+
  private:
   float unbinActivations(const BoltVector& output) const;
 
@@ -54,10 +62,11 @@ class UDTRegression final : public UDTBackend {
   void serialize(Archive& archive, uint32_t version);
 
   ModelPtr _model;
+  TabularDatasetFactoryPtr _dataset_factory;
 
-  FeaturizerPtr _featurizer;
+  dataset::RegressionBinningStrategy _binning;
 
-  std::shared_ptr<data::RegressionBinning> _binning;
+  bool _freeze_hash_tables;
 };
 
 }  // namespace thirdai::automl::udt

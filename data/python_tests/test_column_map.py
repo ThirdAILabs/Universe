@@ -43,20 +43,6 @@ def test_column_map_concat():
         assert concat_column_map["string"][i] == str(i)
 
 
-def test_concat_array_and_value_column():
-    first_half_data = [[1, 2], [3, 4], [5, 6]]
-    first_half = data.ColumnMap({"col": data.columns.TokenArrayColumn(first_half_data)})
-
-    second_half_data = [10, 11, 12]
-    second_half = data.ColumnMap({"col": data.columns.TokenColumn(second_half_data)})
-
-    columns = first_half.concat(second_half)
-
-    expected_data = first_half_data + [[x] for x in second_half_data]
-
-    assert columns["col"].data() == expected_data
-
-
 def test_column_map_split():
     ROWS = 1000
 

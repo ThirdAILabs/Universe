@@ -14,7 +14,6 @@
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <limits>
 #include <memory>
-#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -24,6 +23,11 @@ namespace thirdai::automl {
 // This represents the transformations and the output for a column in the input.
 using TransformSeries =
     std::pair<std::vector<data::TransformationPtr>, std::string>;
+
+// This represents the transformations and outputs for a set of columns in the
+// input.
+using MergedTransformSeries =
+    std::pair<std::vector<data::TransformationPtr>, std::vector<std::string>>;
 
 TransformSeries text(const std::string& column_name,
                      const TextDataTypePtr& text,
@@ -66,10 +70,8 @@ TransformSeries sequence(const std::string& column_name,
                          const SequenceDataTypePtr& sequence) {
   std::string output = sequenceOutputColumn(column_name);
 
-  auto hash = std::make_shared<data::StringHash>(
-      column_name, column_name,
-      /* hash_range= */ std::numeric_limits<uint32_t>::max(),
-      /* delimiter= */ sequence->delimiter);
+  auto hash = std::make_shared<data::StringHash>(column_name, column_name,
+                                                 sequence->delimiter);
 
   auto transformation = std::make_shared<data::HashPositionTransform>(
       column_name, output,
@@ -237,19 +239,17 @@ MergedTransformSeries temporalTransformations(
 
       // This is just an additional check to ensure that we don't leak labels if
       // the tracked column is the labels.
-      bool tracking_labels = categorical_temporal.column_name == label_column;
       bool include_current_row =
-          categorical_temporal.include_current_row && !tracking_labels;
+          categorical_temporal.include_current_row &&
+          (categorical_temporal.column_name != label_column);
 
       std::string item_column =
           temporalItemIdsOutput(categorical_temporal.column_name);
 
-      if (should_update_history || !tracking_labels) {
-        auto item_hash = std::make_shared<data::StringHash>(
-            categorical_temporal.column_name, item_column, std::nullopt,
-            tracked_column->delimiter);
-        transformations.push_back(item_hash);
-      }
+      auto item_hash = std::make_shared<data::StringHash>(
+          categorical_temporal.column_name, item_column,
+          tracked_column->delimiter);
+      transformations.push_back(item_hash);
 
       std::string output = temporalTrackingOutput(temporal_id++);
 
@@ -345,23 +345,9 @@ inputTransformations(const ColumnDataTypes& data_types,
 
   auto pipeline = data::Pipeline::make(transformations);
 
-  return {pipeline,
-          {data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)}};
-}
-
-MergedTransformSeries nonTemporalTransformations(
-    ColumnDataTypes data_types, const std::string& label_column,
-    const TabularOptions& options) {
-  if (!data_types.count(label_column)) {
-    throw std::invalid_argument(
-        "Target column was not specified in data_types.");
-  }
-
-  checkNoReservedColumnNames(data_types);
-
-  data_types.erase(label_column);
-
-  return nonTemporalTransformations(data_types, options);
+  return {
+      pipeline,
+      {thirdai::data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)}};
 }
 
 }  // namespace thirdai::automl

@@ -89,6 +89,20 @@ def test_udt_recurrence_long_output_does_not_break():
     os.remove(TRAIN_FILE)
 
 
+def test_udt_recurrence_long_output_ignores_remaining():
+    model = recursive_model(
+        inputs=["1 2 3 4", "3 4 5"],
+        outputs=["1 2 3 4 5 6 7", "3 4 5 6 7 8 9"],
+        output_delimiter=" ",
+        # If not ignored, it will throw since there are 9 unique output classes
+        n_target_classes=6,
+    )
+    predictions = model.predict_batch([{"input": "1 2 3 4"}, {"input": "3 4 5"}])
+    assert predictions == ["1 2 3 4", "3 4 5 6"]
+
+    os.remove(TRAIN_FILE)
+
+
 def test_udt_recurrence_short_output_does_not_break():
     model = recursive_model(
         inputs=["1 2 3 4", "3 4 5"],
@@ -103,7 +117,7 @@ def test_udt_recurrence_short_output_does_not_break():
 
 def test_udt_recurrence_target_no_max_length_throws():
     with pytest.raises(
-        ValueError, match="Paramter max_length must be specified for target sequence."
+        ValueError, match="Must provide max_length for target sequence."
     ):
         model = bolt.UniversalDeepTransformer(
             data_types={

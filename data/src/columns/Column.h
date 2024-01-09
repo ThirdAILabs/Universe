@@ -75,8 +75,6 @@ class RowView {
     return {begin() + start, begin() + end};
   }
 
-  std::vector<T> toVector() const { return {begin(), end()}; }
-
   size_t size() const { return _len; }
 
   const T* data() const { return _data; }

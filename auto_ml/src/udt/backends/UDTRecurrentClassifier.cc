@@ -2,6 +2,7 @@
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Trainer.h>
+#include <auto_ml/src/featurization/RecurrentDatasetFactory.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
@@ -26,17 +27,18 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
     uint32_t n_target_classes, const TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
     const config::ArgumentMap& user_args)
-    : _target_name(target_name), _target(target) {
+    : _target(target) {
   if (!temporal_tracking_relationships.empty()) {
     throw std::invalid_argument(
         "UDT does not support temporal tracking when doing recurrent "
         "classification.");
   }
 
-  _featurizer = std::make_shared<RecurrentFeaturizer>(
+  _dataset_factory = std::make_shared<RecurrentDatasetFactory>(
       input_data_types, target_name, target, n_target_classes, tabular_options);
 
-  uint32_t output_dim = _featurizer->vocabSize() * target->max_length.value();
+  auto output_dim = _dataset_factory->outputDim();
+
   if (model_config) {
     _model = utils::loadModel({tabular_options.feature_hash_range}, output_dim,
                               *model_config);
@@ -60,11 +62,12 @@ py::object UDTRecurrentClassifier::train(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
-  data::LoaderPtr val_dataset = nullptr;
+  size_t batch_size = options.batch_size.value_or(defaults::BATCH_SIZE);
+
+  dataset::DatasetLoaderPtr val_dataset = nullptr;
   if (val_data) {
-    val_dataset =
-        _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
-                                   /* shuffle= */ false, options.verbose);
+    val_dataset = _dataset_factory->getDatasetLoader(val_data,
+                                                     /* shuffle= */ false);
   }
 
   std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;
@@ -76,13 +79,13 @@ py::object UDTRecurrentClassifier::train(
                         /* gradient_update_interval */ 1,
                         bolt::python::CtrlCCheck{});
 
-  auto train_dataset = _featurizer->getDataLoader(
-      data, options.batchSize(), /* shuffle= */ true, options.verbose,
-      /* shuffle_config= */ options.shuffle_config);
+  auto train_dataset = _dataset_factory->getDatasetLoader(
+      data, /* shuffle= */ true, /* shuffle_config= */ options.shuffle_config);
 
-  auto history = trainer.train_with_data_loader(
+  auto history = trainer.train_with_dataset_loader(
       /* train_data_loader= */ train_dataset,
       /* learning_rate= */ learning_rate, /* epochs= */ epochs,
+      /* batch_size= */ batch_size,
       /* max_in_memory_batches= */ options.max_in_memory_batches,
       /* train_metrics= */
       fromMetricNames(_model, train_metrics, /* prefix= */ "train_"),
@@ -109,10 +112,9 @@ py::object UDTRecurrentClassifier::evaluate(
   bolt::Trainer trainer(_model, std::nullopt, /* gradient_update_interval */ 1,
                         bolt::python::CtrlCCheck{});
 
-  auto dataset = _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
-                                            /* shuffle= */ false, verbose);
+  auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 
-  auto history = trainer.validate_with_data_loader(
+  auto history = trainer.validate_with_dataset_loader(
       dataset, fromMetricNames(_model, metrics, /* prefix= */ "val_"),
       sparse_inference, verbose);
 
@@ -127,28 +129,24 @@ py::object UDTRecurrentClassifier::predict(const MapInput& sample,
   (void)return_predicted_class;
   (void)top_k;
 
-  const auto& vocab = _featurizer->vocab();
-  size_t vocab_size = _featurizer->vocabSize();
-
   auto mutable_sample = sample;
-  mutable_sample[_target_name] = "";
 
   std::vector<std::string> predictions;
 
   for (uint32_t step = 0; step < _target->max_length; step++) {
-    auto output = _model
-                      ->forward(_featurizer->featurizeInput(mutable_sample),
-                                sparse_inference)
-                      .at(0);
+    auto output =
+        _model
+            ->forward(_dataset_factory->featurizeInput(mutable_sample),
+                      sparse_inference)
+            .at(0);
     auto predicted_id =
-        predictionAtStep(output->getVector(0), step, vocab_size);
-    if (_featurizer->isEos(predicted_id)) {
+        _dataset_factory->elementIdAtStep(output->getVector(0), step);
+    if (_dataset_factory->isEOS(predicted_id)) {
       break;
     }
 
-    std::string prediction = elementString(predicted_id, vocab);
-    addPredictionToSample(mutable_sample, prediction);
-    predictions.push_back(prediction);
+    _dataset_factory->addPredictionToSample(mutable_sample, predicted_id);
+    predictions.push_back(_dataset_factory->elementString(predicted_id));
   }
 
   // We previously incorporated predictions at each step into the sample.
@@ -183,38 +181,32 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
   (void)return_predicted_class;
   (void)top_k;
 
-  const auto& vocab = _featurizer->vocab();
-  size_t vocab_size = _featurizer->vocabSize();
-
   PredictBatchProgress progress(samples.size());
   std::vector<std::vector<std::string>> all_predictions(samples.size());
   auto mutable_samples = samples;
-
-  for (auto& sample : mutable_samples) {
-    sample[_target_name] = "";
-  }
 
   for (uint32_t step = 0; step < _target->max_length && !progress.allDone();
        step++) {
     auto batch_activations =
         _model
-            ->forward(_featurizer->featurizeInputBatch(mutable_samples),
+            ->forward(_dataset_factory->featurizeInputBatch(mutable_samples),
                       sparse_inference)
             .at(0);
 
     for (uint32_t i = 0; i < batch_activations->batchSize(); i++) {
       // Update the list of returned predictions.
       if (!progress.sampleIsDone(i)) {
-        auto predicted_id =
-            predictionAtStep(batch_activations->getVector(i), step, vocab_size);
-        if (_featurizer->isEos(predicted_id)) {
+        auto predicted_id = _dataset_factory->elementIdAtStep(
+            batch_activations->getVector(i), step);
+        if (_dataset_factory->isEOS(predicted_id)) {
           progress.markSampleDone(i);
           continue;
         }
 
-        std::string prediction = elementString(predicted_id, vocab);
-        addPredictionToSample(mutable_samples[i], prediction);
-        all_predictions[i].push_back(prediction);
+        _dataset_factory->addPredictionToSample(mutable_samples[i],
+                                                predicted_id);
+        all_predictions[i].push_back(
+            _dataset_factory->elementString(predicted_id));
       }
     }
   }
@@ -226,39 +218,6 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
   }
 
   return std::move(output);
-}
-
-uint32_t UDTRecurrentClassifier::predictionAtStep(const BoltVector& output,
-                                                  uint32_t step,
-                                                  size_t vocab_size) {
-  size_t begin = step * vocab_size;
-  size_t end = begin + vocab_size;
-
-  uint32_t arg_max = 0;
-  float max_act = -std::numeric_limits<float>::max();
-  for (uint32_t neuron = begin; neuron < end; neuron++) {
-    if (output.activations[neuron] > max_act) {
-      arg_max = neuron;
-      max_act = output.activations[neuron];
-    }
-  }
-
-  return arg_max - begin;
-}
-
-std::string UDTRecurrentClassifier::elementString(
-    uint32_t element_id, const data::ThreadSafeVocabularyPtr& vocab) {
-  uint32_t element_id_without_position = element_id % vocab->maxSize().value();
-  return vocab->getString(element_id_without_position);
-}
-
-void UDTRecurrentClassifier::addPredictionToSample(
-    MapInput& sample, const std::string& prediction) const {
-  auto& intermediate_column = sample[_target_name];
-  if (!intermediate_column.empty()) {
-    intermediate_column += _target->delimiter;
-  }
-  intermediate_column += prediction;
 }
 
 template void UDTRecurrentClassifier::serialize(cereal::BinaryInputArchive&,
@@ -277,8 +236,8 @@ void UDTRecurrentClassifier::serialize(Archive& archive,
 
   // Increment thirdai::versions::UDT_RECURRENT_CLASSIFIER_VERSION after
   // serialization changes
-  archive(cereal::base_class<UDTBackend>(this), _target_name, _target, _model,
-          _featurizer, _freeze_hash_tables);
+  archive(cereal::base_class<UDTBackend>(this), _target, _model,
+          _dataset_factory, _freeze_hash_tables, _binary_prediction_threshold);
 }
 
 }  // namespace thirdai::automl::udt

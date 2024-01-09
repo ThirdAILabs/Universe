@@ -4,13 +4,10 @@
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/RobeZ.h>
-#include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
-#include <data/src/Loader.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
-#include <limits>
 
 namespace thirdai::automl::udt {
 
@@ -24,11 +21,13 @@ UDTGraphClassifier::UDTGraphClassifier(const ColumnDataTypes& data_types,
         "We do not yet support non integer classes on graphs.");
   }
 
-  _featurizer = std::make_shared<GraphFeaturizer>(data_types, target_col,
-                                                  n_target_classes, options);
+  _dataset_manager = std::make_shared<GraphDatasetManager>(
+      data_types, target_col, n_target_classes, options);
 
   // TODO(Any): Add customization/autotuning like in UDTClassifier
-  auto model = createGNN(n_target_classes);
+  auto model = createGNN(
+      /* input_dims = */ _dataset_manager->getInputDims(),
+      /* output_dim = */ _dataset_manager->getLabelDim());
 
   _classifier =
       utils::Classifier::make(model, /* freeze_hash_tables = */ false);
@@ -41,18 +40,17 @@ py::object UDTGraphClassifier::train(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
-  auto train_data_loader = _featurizer->indexAndGetDataLoader(
-      data, options.batchSize(), /* shuffle = */ true, options.verbose,
-      options.shuffle_config);
+  auto train_dataset_loader = _dataset_manager->indexAndGetLabeledDatasetLoader(
+      data, /* shuffle = */ true, /* shuffle_config= */ options.shuffle_config);
 
-  data::LoaderPtr val_data_loader;
+  dataset::DatasetLoaderPtr val_dataset_loader;
   if (val_data) {
-    val_data_loader = _featurizer->indexAndGetDataLoader(
-        val_data, defaults::BATCH_SIZE, /* shuffle = */ false, options.verbose);
+    val_dataset_loader = _dataset_manager->indexAndGetLabeledDatasetLoader(
+        val_data, /* shuffle = */ false);
   }
 
-  return _classifier->train(train_data_loader, learning_rate, epochs,
-                            train_metrics, val_data_loader, val_metrics,
+  return _classifier->train(train_dataset_loader, learning_rate, epochs,
+                            train_metrics, val_dataset_loader, val_metrics,
                             callbacks, options, comm);
 }
 
@@ -62,8 +60,8 @@ py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,
                                         std::optional<uint32_t> top_k) {
   (void)top_k;
 
-  auto eval_dataset_loader = _featurizer->indexAndGetDataLoader(
-      data, defaults::BATCH_SIZE, /* shuffle = */ false, verbose);
+  auto eval_dataset_loader = _dataset_manager->indexAndGetLabeledDatasetLoader(
+      data, /* shuffle = */ false);
 
   return _classifier->evaluate(eval_dataset_loader, metrics, sparse_inference,
                                verbose);
@@ -84,13 +82,15 @@ void UDTGraphClassifier::serialize(Archive& archive, const uint32_t version) {
 
   // Increment thirdai::versions::UDT_GRAPH_CLASSIFIER_VERSION after
   // serialization changes
-  archive(cereal::base_class<UDTBackend>(this), _classifier, _featurizer);
+  archive(cereal::base_class<UDTBackend>(this), _classifier, _dataset_manager);
 }
 
-ModelPtr UDTGraphClassifier::createGNN(uint32_t output_dim) {
-  auto node_features_input = bolt::Input::make(defaults::FEATURE_HASH_RANGE);
-  auto neighbor_token_input =
-      bolt::Input::make(std::numeric_limits<uint32_t>::max());
+ModelPtr UDTGraphClassifier::createGNN(std::vector<uint32_t> input_dims,
+                                       uint32_t output_dim) {
+  assert(input_dims.size() == 2);
+
+  auto node_features_input = bolt::Input::make(input_dims.at(0));
+  auto neighbor_token_input = bolt::Input::make(input_dims.at(1));
 
   auto embedding_1 =
       bolt::RobeZ::make(
