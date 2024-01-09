@@ -298,11 +298,10 @@ void createUDTTypesSubmodule(py::module_& module) {
 
   py::class_<TextDataType, DataType, TextDataTypePtr>(udt_types_submodule,
                                                       "text")
-      // TODO(any): run benchmarks to improve the defaults
-      .def(py::init<std::string, std::string, bool>(),
+      .def(py::init<std::string, std::string, bool, bool>(),
            py::arg("tokenizer") = "words",
            py::arg("contextual_encoding") = "none", py::arg("lowercase") = true,
-           docs::UDT_TEXT_TYPE)
+           py::arg("cleaner") = true, docs::UDT_TEXT_TYPE)
       .def(py::init<dataset::WordpieceTokenizerPtr, std::string>(),
            py::arg("tokenizer"), py::arg("contextual_encoding") = "none",
            docs::UDT_TEXT_TYPE);

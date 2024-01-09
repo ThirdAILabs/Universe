@@ -171,12 +171,13 @@ applyTransformations(const dataset::DataSourcePtr& data,
                      const MachIndexPtr& mach_index,
                      const dataset::TextTokenizerPtr& tokenizer,
                      const dataset::TextEncoderPtr& encoder,
-                     size_t encoding_dim, size_t hash_range, bool lowercase) {
+                     size_t encoding_dim, size_t hash_range, bool lowercase,
+                     bool cleaner) {
   auto pipeline =
       Pipeline::make()
-          ->then(std::make_shared<TextCompat>("TEXT", "indices", "values",
-                                              tokenizer, encoder, lowercase,
-                                              encoding_dim, hash_range))
+          ->then(std::make_shared<TextCompat>(
+              "TEXT", "indices", "values", tokenizer, encoder, lowercase,
+              cleaner, encoding_dim, hash_range))
           ->then(
               std::make_shared<StringToTokenArray>("IDS", "labels", ':', 100))
           ->then(std::make_shared<MachLabel>("labels", "mach_labels"));
@@ -211,10 +212,10 @@ std::tuple<IndicesAndValues, IndicesAndValues, IndicesAndValues> applyBlocks(
     const dataset::DataSourcePtr& data, const MachIndexPtr& mach_index,
     const dataset::TextTokenizerPtr& tokenizer,
     const dataset::TextEncoderPtr& encoder, size_t encoding_dim,
-    size_t hash_range, bool lowercase) {
+    size_t hash_range, bool lowercase, bool cleaner) {
   auto text =
       dataset::TextBlock::make(dataset::ColumnIdentifier("TEXT"), tokenizer,
-                               encoder, lowercase, encoding_dim);
+                               encoder, lowercase, encoding_dim, cleaner);
 
   auto labels = dataset::NumericalCategoricalBlock::make(
       dataset::ColumnIdentifier("IDS"), 100, ':');
@@ -259,17 +260,21 @@ TEST(TextCompatTest, FullPipeline) {
       for (auto encoding_dim : getEncodingDims()) {
         for (auto hash_range : getHashRanges()) {
           for (auto lowercase : {true, false}) {
-            auto [inputs_1, labels_1, mach_labels_1] = applyTransformations(
-                std::make_shared<MockDataSource>(lines), mach_index, tokenizer,
-                encoder, encoding_dim, hash_range, lowercase);
+            for (auto cleaner : {true, false}) {
+              auto [inputs_1, labels_1, mach_labels_1] = applyTransformations(
+                  std::make_shared<MockDataSource>(lines), mach_index,
+                  tokenizer, encoder, encoding_dim, hash_range, lowercase,
+                  cleaner);
 
-            auto [inputs_2, labels_2, mach_labels_2] = applyBlocks(
-                std::make_shared<MockDataSource>(lines), mach_index, tokenizer,
-                encoder, encoding_dim, hash_range, lowercase);
+              auto [inputs_2, labels_2, mach_labels_2] =
+                  applyBlocks(std::make_shared<MockDataSource>(lines),
+                              mach_index, tokenizer, encoder, encoding_dim,
+                              hash_range, lowercase, cleaner);
 
-            ASSERT_EQ(inputs_1, inputs_2);
-            ASSERT_EQ(labels_1, labels_2);
-            ASSERT_EQ(mach_labels_1, mach_labels_2);
+              ASSERT_EQ(inputs_1, inputs_2);
+              ASSERT_EQ(labels_1, labels_2);
+              ASSERT_EQ(mach_labels_1, mach_labels_2);
+            }
           }
         }
       }

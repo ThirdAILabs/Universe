@@ -314,7 +314,8 @@ inputTransformations(const ColumnDataTypes& data_types,
     if (auto text_type = asText(type)) {
       auto transform = std::make_shared<data::TextTokenizer>(
           name, FEATURIZED_INDICES, FEATURIZED_VALUES, text_type->tokenizer,
-          text_type->encoder, text_type->lowercase, options.feature_hash_range);
+          text_type->encoder, text_type->lowercase, text_type->cleaner,
+          options.feature_hash_range);
 
       return {transform,
               {data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)}};

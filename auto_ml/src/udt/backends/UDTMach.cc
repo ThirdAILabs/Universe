@@ -137,8 +137,8 @@ UDTMach::UDTMach(const MachInfo& mach_info)
   auto text_transform = std::make_shared<data::TextCompat>(
       mach_info.text_column_name, FEATURIZED_INDICES, FEATURIZED_VALUES,
       mach_info.text_block->tokenizer(), mach_info.text_block->encoder(),
-      mach_info.text_block->lowercase(), mach_info.text_block->featureDim(),
-      mach_info.feature_hash_range);
+      mach_info.text_block->lowercase(), mach_info.text_block->cleaner(),
+      mach_info.text_block->featureDim(), mach_info.feature_hash_range);
 
   _featurizer = std::make_shared<MachFeaturizer>(
       text_transform,

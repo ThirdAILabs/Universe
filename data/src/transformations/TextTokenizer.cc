@@ -4,6 +4,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <data/src/columns/ArrayColumns.h>
+#include <utils/text/RegexPatterns.h>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -15,13 +16,14 @@ TextTokenizer::TextTokenizer(std::string input_column,
                              std::optional<std::string> output_values,
                              dataset::TextTokenizerPtr tokenizer,
                              dataset::TextEncoderPtr encoder, bool lowercase,
-                             size_t dim)
+                             bool cleaner, size_t dim)
     : _input_column(std::move(input_column)),
       _output_indices(std::move(output_indices)),
       _output_values(std::move(output_values)),
       _tokenizer(std::move(tokenizer)),
       _encoder(std::move(encoder)),
       _lowercase(lowercase),
+      _cleaner(cleaner),
       _dim(dim) {}
 
 ColumnMap TextTokenizer::apply(ColumnMap columns, State& state) const {
@@ -40,6 +42,10 @@ ColumnMap TextTokenizer::apply(ColumnMap columns, State& state) const {
     shared(text_col, output_indices, output_values) if (columns.numRows() > 1)
   for (size_t i = 0; i < text_col->numRows(); i++) {
     std::string string = text_col->value(i);
+
+    if (_cleaner) {
+      string = text::nltkWordTokenize(string);
+    }
 
     if (_lowercase) {
       string = text::lower(string);
@@ -131,7 +137,7 @@ template <class Archive>
 void TextTokenizer::serialize(Archive& archive) {
   archive(cereal::base_class<Transformation>(this), _input_column,
           _output_indices, _output_values, _tokenizer, _encoder, _lowercase,
-          _dim);
+          _cleaner, _dim);
 }
 
 }  // namespace thirdai::data

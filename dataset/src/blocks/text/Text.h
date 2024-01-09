@@ -18,8 +18,10 @@ class TextBlock : public Block {
  public:
   explicit TextBlock(ColumnIdentifier col, TextTokenizerPtr tokenizer,
                      TextEncoderPtr encoder, bool lowercase = false,
-                     uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM)
+                     uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM,
+                     bool cleaner = true)
       : _col(std::move(col)),
+        _cleaner(cleaner),
         _lowercase(lowercase),
         _tokenizer(std::move(tokenizer)),
         _encoder(std::move(encoder)),
@@ -28,16 +30,19 @@ class TextBlock : public Block {
   static auto make(const ColumnIdentifier& col,
                    const TextTokenizerPtr& tokenizer,
                    const TextEncoderPtr& encoder, bool lowercase = false,
-                   uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM) {
-    return std::make_shared<TextBlock>(col, tokenizer, encoder, lowercase, dim);
+                   uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM,
+                   bool cleaner = true) {
+    return std::make_shared<TextBlock>(col, tokenizer, encoder, lowercase, dim,
+                                       cleaner);
   }
 
   static auto make(const ColumnIdentifier& col,
                    const TextTokenizerPtr& tokenizer, bool lowercase = false,
-                   uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM) {
+                   uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM,
+                   bool cleaner = true) {
     return std::make_shared<TextBlock>(col, tokenizer,
                                        dataset::NGramEncoder::make(/* n = */ 1),
-                                       lowercase, dim);
+                                       lowercase, dim, cleaner);
   }
 
   uint32_t featureDim() const final { return _dim; };
@@ -48,6 +53,8 @@ class TextBlock : public Block {
                            ColumnarInputSample& input) final;
 
   bool lowercase() const { return _lowercase; }
+
+  bool cleaner() const { return _cleaner; }
 
   TextTokenizerPtr tokenizer() const { return _tokenizer; }
 
@@ -66,6 +73,7 @@ class TextBlock : public Block {
   TextBlock() {}
 
   ColumnIdentifier _col;
+  bool _cleaner;
   bool _lowercase;
   TextTokenizerPtr _tokenizer;
   TextEncoderPtr _encoder;
@@ -74,8 +82,8 @@ class TextBlock : public Block {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Block>(this), _col, _lowercase, _tokenizer,
-            _encoder, _dim);
+    archive(cereal::base_class<Block>(this), _col, _cleaner, _lowercase,
+            _tokenizer, _encoder, _dim);
   }
 };
 

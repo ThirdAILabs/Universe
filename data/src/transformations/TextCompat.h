@@ -21,7 +21,7 @@ class TextCompat final : public Transformation {
  public:
   TextCompat(std::string input_column, std::string output_indices,
              std::string output_values, dataset::TextTokenizerPtr tokenizer,
-             dataset::TextEncoderPtr encoder, bool lowercase,
+             dataset::TextEncoderPtr encoder, bool lowercase, bool cleaner,
              size_t encoding_dim, size_t hash_range);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
@@ -46,6 +46,7 @@ class TextCompat final : public Transformation {
   dataset::TextEncoderPtr _encoder;
 
   bool _lowercase;
+  bool _cleaner;
   size_t _encoding_dim;
   size_t _hash_range;
 

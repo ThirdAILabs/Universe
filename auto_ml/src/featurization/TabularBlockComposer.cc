@@ -93,7 +93,8 @@ std::vector<dataset::BlockPtr> makeNonTemporalInputBlocks(
             dataset::NaiveSplitTokenizer::make(*categorical->delimiter),
             /* encoder = */ dataset::NGramEncoder::make(/* n = */ 1),
             /* lowercase = */ false,
-            /* dim= */ std::numeric_limits<uint32_t>::max()));
+            /* dim= */ std::numeric_limits<uint32_t>::max(),
+            /* cleaner = */ false));
       } else {
         tabular_columns.push_back(dataset::TabularColumn::Categorical(
             /* identifier= */ col_name));
@@ -111,7 +112,8 @@ std::vector<dataset::BlockPtr> makeNonTemporalInputBlocks(
       blocks.push_back(dataset::TextBlock::make(
           col_name, text_meta->tokenizer, text_meta->encoder,
           /* lowercase = */ text_meta->lowercase,
-          /* dim = */ std::numeric_limits<uint32_t>::max()));
+          /* dim = */ std::numeric_limits<uint32_t>::max(),
+          /* cleaner = */ true));
     }
 
     if (asDate(data_type)) {
