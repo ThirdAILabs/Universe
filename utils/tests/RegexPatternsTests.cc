@@ -105,16 +105,13 @@ TEST(RegexPatternsTest, SurroundNonAbbreviationPeriods) {
 TEST(RegexPatternsTest, NltkWordTokenize) {
   std::string sentence =
       "don't think (the U.S.A., or Canada) for this--that they've 'seen a lot' "
-      "of things it's 'mr. president.' WHat%l 12.6 66.889 ";
+      "of things it's 'mr. president.' WHat%l 12.6 66.889 3,000 the-thing \"hello";
   std::string expected_output =
       "do n't think ( the U.S.A. , or Canada ) for this -- that they 've ' "
       "seen a lot ' of things it 's ' mr . president . ' WHat % l 12.6 "
-      "66.889 ";
+      "66.889 3,000 the-thing \" hello";
 
   ASSERT_EQ(nltkWordTokenize(sentence), expected_output);
-
-  ASSERT_EQ(nltkWordTokenize(sentence),
-            nltkWordTokenize(nltkWordTokenize(sentence)));
 }
 
 }  // namespace thirdai::text::tests

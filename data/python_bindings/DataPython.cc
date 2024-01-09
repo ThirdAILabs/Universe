@@ -420,7 +420,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
           py::arg("chars_replace_with_space") = 0, py::arg("chars_deleted") = 0,
           py::arg("chars_duplicated") = 0,
           py::arg("chars_replace_with_adjacents") = 0,
-          py::arg("nltk_text_cleaning"))
+          py::arg("nltk_text_cleaning") = true)
 #else
       .def(py::init<>())
 #endif
