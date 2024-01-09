@@ -6,7 +6,7 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDTBackend.h>
-#include <auto_ml/src/udt/backends/UDTMachClassifier.h>
+#include <auto_ml/src/udt/backends/UDTMach.h>
 #include <dataset/src/DataSource.h>
 #include <memory>
 #include <optional>
@@ -111,7 +111,7 @@ class UDT {
    * Generates an explaination of the prediction for a given sample. Optional
    * method that is not supported by default for backends.
    */
-  std::vector<dataset::Explanation> explain(
+  std::vector<std::pair<std::string, float>> explain(
       const MapInput& sample,
       const std::optional<std::variant<uint32_t, std::string>>& target_class);
 
@@ -130,16 +130,6 @@ class UDT {
       const std::vector<std::string>& val_metrics,
       const std::vector<CallbackPtr>& callbacks, TrainOptions options,
       const bolt::DistributedCommPtr& comm);
-
-  /**
-   * Returns metadata for ColdStart which are needed to be passed to
-   * ColdStartPreprocessing. Optional Method that is not supported by
-   * defaults for backends. This method is primarily used for distributed
-   * training.
-   */
-  cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
-    return _backend->getColdStartMetaData();
-  }
 
   /**
    * Returns some embedding representation for the given sample. Optional method
@@ -166,33 +156,20 @@ class UDT {
   }
 
   void updateTemporalTrackers(const MapInput& sample) {
-    if (auto tabular_factory = _backend->tabularDatasetFactory()) {
-      tabular_factory->updateTemporalTrackers(sample);
+    if (auto featurizer = _backend->featurizer()) {
+      featurizer->updateTemporalTrackers(sample);
     }
   }
 
   void updateTemporalTrackersBatch(const MapInputBatch& samples) {
-    if (auto tabular_factory = _backend->tabularDatasetFactory()) {
-      tabular_factory->updateTemporalTrackersBatch(samples);
+    if (auto featurizer = _backend->featurizer()) {
+      featurizer->updateTemporalTrackersBatch(samples);
     }
   }
 
   void resetTemporalTrackers() {
-    if (auto tabular_factory = _backend->tabularDatasetFactory()) {
-      tabular_factory->resetTemporalTrackers();
-    }
-  }
-
-  void updateMetadata(const std::string& column, const MapInput& sample) {
-    if (auto tabular_factory = _backend->tabularDatasetFactory()) {
-      tabular_factory->updateMetadata(column, sample);
-    }
-  }
-
-  void updateMetadataBatch(const std::string& column,
-                           const MapInputBatch& samples) {
-    if (auto tabular_factory = _backend->tabularDatasetFactory()) {
-      tabular_factory->updateMetadataBatch(column, samples);
+    if (auto featurizer = _backend->featurizer()) {
+      featurizer->resetTemporalTrackers();
     }
   }
 
@@ -227,7 +204,9 @@ class UDT {
 
   std::vector<uint32_t> modelDims() const;
 
-  ColumnDataTypes dataTypes() const { return _backend->dataTypes(); }
+  TextDatasetConfig textDatasetConfig() const {
+    return _backend->textDatasetConfig();
+  }
 
   /**
    * Used in UDTMachClassifier to introduce new documents to the model from a
@@ -364,10 +343,10 @@ class UDT {
    * of data in order to prevent overfitting.
    */
   void associate(
-      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
       uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
-    _backend->associate(source_target_samples, n_buckets, n_association_samples,
+    _backend->associate(rlhf_samples, n_buckets, n_association_samples,
                         n_balancing_samples, learning_rate, epochs);
   }
 
@@ -386,10 +365,10 @@ class UDT {
    * on. We will include n_balancing_samples random samples from this collection
    * of data in order to prevent overfitting.
    */
-  void upvote(
-      const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,
-      uint32_t n_upvote_samples, uint32_t n_balancing_samples,
-      float learning_rate, uint32_t epochs) {
+  void upvote(const std::vector<std::pair<std::string, uint32_t>>&
+                  source_target_samples,
+              uint32_t n_upvote_samples, uint32_t n_balancing_samples,
+              float learning_rate, uint32_t epochs) {
     licensing::entitlements().verifyFullAccess();
 
     _backend->upvote(source_target_samples, n_upvote_samples,
@@ -398,31 +377,31 @@ class UDT {
 
   py::object associateTrain(
       const dataset::DataSourcePtr& balancing_data,
-      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
       uint32_t epochs, const std::vector<std::string>& metrics,
       TrainOptions options) {
     licensing::entitlements().verifyDataSource(balancing_data);
 
-    return _backend->associateTrain(balancing_data, source_target_samples,
-                                    n_buckets, n_association_samples,
-                                    learning_rate, epochs, metrics, options);
+    return _backend->associateTrain(balancing_data, rlhf_samples, n_buckets,
+                                    n_association_samples, learning_rate,
+                                    epochs, metrics, options);
   }
 
   py::object associateColdStart(
       const dataset::DataSourcePtr& balancing_data,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
-      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
       uint32_t epochs, const std::vector<std::string>& metrics,
       TrainOptions options) {
     licensing::entitlements().verifyDataSource(balancing_data);
 
     return _backend->associateColdStart(
-        balancing_data, strong_column_names, weak_column_names,
-        source_target_samples, n_buckets, n_association_samples, learning_rate,
-        epochs, metrics, options);
+        balancing_data, strong_column_names, weak_column_names, rlhf_samples,
+        n_buckets, n_association_samples, learning_rate, epochs, metrics,
+        options);
   }
 
   /**
@@ -458,15 +437,6 @@ class UDT {
   }
 
   /**
-   * Returns the tabular dataset factor if it is used for the model. If a
-   * backend implements this method then UDT instances that use it will support
-   * methods relating to temporal tracking and metadata.
-   */
-  TabularDatasetFactoryPtr tabularDatasetFactory() const {
-    return _backend->tabularDatasetFactory();
-  }
-
-  /**
    * Determines if the model can support distributed training. By default
    * backends do not support distributed training.
    */
@@ -483,6 +453,8 @@ class UDT {
   static std::shared_ptr<UDT> load(const std::string& filename);
 
   static std::shared_ptr<UDT> load_stream(std::istream& input_stream);
+
+  bool isV1() const;
 
   static std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
   parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
