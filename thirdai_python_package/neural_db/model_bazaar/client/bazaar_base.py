@@ -1,7 +1,9 @@
+import concurrent.futures
 import json
 import os
 import pickle
 import shutil
+import threading
 from pathlib import Path
 from typing import Callable, List, Optional, Union
 from urllib.parse import urljoin
@@ -16,6 +18,7 @@ from tqdm import tqdm
 from .utils import (
     create_model_identifier,
     get_directory_size,
+    get_file_size,
     hash_path,
     http_get_with_error,
     http_post_with_error,
@@ -24,7 +27,7 @@ from .utils import (
 
 
 class BazaarEntry(BaseModel):
-    model_name: str
+    name: str
     author_username: str
     identifier: str
     trained_on: Optional[str] = None
@@ -43,7 +46,7 @@ class BazaarEntry(BaseModel):
     @staticmethod
     def from_dict(entry):
         return BazaarEntry(
-            model_name=entry["model_name"],
+            name=entry["model_name"],
             author_username=entry["username"],
             identifier=create_model_identifier(
                 model_name=entry["model_name"], author_username=entry["username"]
@@ -77,7 +80,7 @@ class Login:
         self,
         email: str,
         password: str,
-        base_url: str = "https://staging-modelzoo.azurewebsites.net/api/",
+        base_url: str,
     ):
         self._base_url = base_url
         # We are using HTTPBasic Auth in backend. update this when we change the Authentication in Backend.
@@ -421,6 +424,29 @@ class Bazaar:
                     f.write(chunk)
                     bar.update(len(chunk))
 
+    def upload_chunk(self, upload_token, chunk_number, chunk_data, bar, progress_lock):
+        files = {"chunk": chunk_data}
+        response = requests.post(
+            urljoin(
+                self._login_instance._base_url,
+                "bazaar/upload-chunk",
+            ),
+            files=files,
+            params={"chunk_number": chunk_number},
+            headers=auth_header(upload_token),
+        )
+
+        if response.status_code == 200:
+            with progress_lock:
+                # Update the progress bar
+                bar.update(len(chunk_data))
+        else:
+            print(f"Upload failed with status code: {response.status_code}")
+            print(response.text)
+            return False
+
+        return True
+
     @login_required
     def push(
         self,
@@ -429,26 +455,12 @@ class Bazaar:
         trained_on: str = "Own Documents",
         is_indexed: bool = False,
         access_level: str = "public",
-        description: str = None,
+        description: str = "",
     ):
         model_path = Path(model_path)
         zip_path = zip_folder(model_path)
 
         model_hash = hash_path(model_path)
-
-        model_response = http_get_with_error(
-            urljoin(
-                self._login_instance._base_url,
-                f"bazaar/{self._login_instance._user_id}/model-check",
-            ),
-            headers=auth_header(self._login_instance._access_token),
-            params={"hash": str(model_hash)},
-        )
-
-        model_content = json.loads(model_response.content)
-
-        if model_content["data"]["model_present"]:
-            raise ValueError("This model is already uploaded.")
 
         # Generate upload token
         token_response = http_get_with_error(
@@ -457,50 +469,60 @@ class Bazaar:
                 f"bazaar/{self._login_instance._user_id}/upload-token",
             ),
             headers=auth_header(self._login_instance._access_token),
-            params={"model_name": name},
+            params={
+                "model_name": name,
+                "size": int(get_file_size(zip_path, "MB")),
+            },
         )
         upload_token = json.loads(token_response.content)["data"]["token"]
 
-        # Determine the chunk size you want to upload per request
-        chunk_size = 1024 * 1024  # 1MB chunks
-
         # Get the total file size for progress bar
         total_size = os.path.getsize(zip_path)
+
+        # Determine the chunk size you want to upload per request
+        chunk_size = 1024 * 1024  # 1 MB chunk
 
         # Initialize the progress bar
         with tqdm(total=total_size, unit="B", unit_scale=True, desc=zip_path) as bar:
             # Open the file in binary mode
             with open(zip_path, "rb") as file:
                 chunk_number = 0
-                while True:
-                    # Read a chunk of the file
-                    chunk_data = file.read(chunk_size)
-                    if not chunk_data:
-                        break  # End of file
 
-                    # Increment the chunk number
-                    chunk_number += 1
+                with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+                    futures = []
+                    progress_lock = threading.Lock()
 
-                    # Send the chunk to the FastAPI endpoint
-                    files = {"chunk": chunk_data}
-                    response = requests.post(
-                        urljoin(
-                            self._login_instance._base_url,
-                            f"bazaar/upload-chunk",
-                        ),
-                        files=files,
-                        params={"chunk_number": chunk_number},
-                        headers=auth_header(upload_token),
-                    )
+                    while True:
+                        # Read a chunk of the file
+                        chunk_data = file.read(chunk_size)
+                        if not chunk_data:
+                            break  # End of file
 
-                    # Check the response status
-                    if response.status_code == 200:
-                        # Update the progress bar
-                        bar.update(len(chunk_data))
-                    else:
-                        print(f"Upload failed with status code: {response.status_code}")
-                        print(response.text)
-                        break
+                        # Increment the chunk number
+                        chunk_number += 1
+
+                        # Submit the task to the thread pool
+                        future = executor.submit(
+                            self.upload_chunk,
+                            upload_token,
+                            chunk_number,
+                            chunk_data,
+                            bar,
+                            progress_lock,
+                        )
+                        futures.append(future)
+
+                    # Collect the return status of all threads
+                    threads_status = [
+                        future.result()
+                        for future in concurrent.futures.as_completed(futures)
+                    ]
+
+                # Check if all uploads were successful
+                if all(threads_status):
+                    print("File upload completed successfully.")
+                else:
+                    print("File upload failed.")
 
         db = NeuralDB.from_checkpoint(checkpoint_path=model_path)
         model = db._savable_state.model.model._get_model()
@@ -533,10 +555,10 @@ class Bazaar:
             "thirdai_version": thirdai_version,
         }
 
-        response = requests.post(
+        response = http_post_with_error(
             urljoin(
                 self._login_instance._base_url,
-                f"bazaar/upload-commit",
+                "bazaar/upload-commit",
             ),
             params={"total_chunks": chunk_number},
             json=json_data,

@@ -14,26 +14,19 @@ To get access to our package, refer to `thirdai.com
 <https://www.thirdai.com/>`_. 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    installation
    
    thirdaibase
 
-   thirdaibolt
-   thirdaiboltmodels
-   thirdaibolttypes
-   thirdaibolttemporal
-   thirdaiboltcallbacks
+   thirdaineuraldb
 
-   thirdaidataset
-   thirdaidata
+   thirdaibolt
 
    thirdailog
    
    thirdailicensing
-
-   thirdaisearch
 
 
 

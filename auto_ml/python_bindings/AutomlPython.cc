@@ -151,6 +151,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("classes"), py::arg("top_k") = std::nullopt)
       .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
            py::arg("strong_column_names"), py::arg("weak_column_names"),
+           py::arg("variable_length") = data::VariableLengthConfig(),
            py::arg("learning_rate"), py::arg("epochs"),
            py::arg("train_metrics"), py::arg("val_data"),
            py::arg("val_metrics"), py::arg("callbacks"), py::arg("options"),
@@ -249,8 +250,11 @@ void defineAutomlInModule(py::module_& module) {
            [](udt::UDT& udt, NumpyArray<float>& new_parameters) {
              thirdai::bolt::python::setParameters(udt.model(), new_parameters);
            })
-      .def(bolt::python::getPickleFunction<udt::UDT>());
-  ;
+      .def(bolt::python::getPickleFunction<udt::UDT>())
+      .def_static("parallel_inference", &udt::UDT::parallelInference,
+                  py::arg("models"), py::arg("batch"),
+                  py::arg("sparse_inference") = false,
+                  py::arg("top_k") = std::nullopt);
 }
 
 void createModelsSubmodule(py::module_& module) {

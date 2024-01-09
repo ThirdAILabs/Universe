@@ -1,12 +1,17 @@
 #include "StringManipulation.h"
-#include "CommonChecks.h"
+#include "NeighboringCharacters.h"
+#include <utils/CommonChecks.h>
+#include <utils/Random.h>
 #include <algorithm>
 #include <cctype>
 #include <iostream>
 #include <optional>
+#include <random>
 #include <regex>
 #include <sstream>
 #include <stdexcept>
+#include <unordered_map>
+#include <unordered_set>
 #include <utf8proc.h>
 #include <vector>
 
@@ -104,6 +109,142 @@ std::vector<std::string> wordLevelCharKGrams(
   return all_char_k_grams;
 }
 
+std::unordered_set<size_t> nUniqueRandomInt(size_t n, size_t range,
+                                            std::mt19937& rng) {
+  std::uniform_int_distribution<size_t> dist(0, range - 1);
+
+  std::unordered_set<size_t> indices;
+  while (indices.size() != n) {
+    size_t index = dist(rng);
+    if (!indices.count(index)) {
+      indices.insert(index);
+    }
+  }
+
+  return indices;
+}
+
+std::string deleteRandomCharacters(const std::string& input,
+                                   size_t num_to_delete, std::mt19937& rng) {
+  num_to_delete = std::min(num_to_delete, input.size());
+
+  auto indices =
+      nUniqueRandomInt(/* n= */ num_to_delete, /* range= */ input.size(), rng);
+
+  std::string result;
+  result.reserve(input.size() - num_to_delete);
+  for (size_t i = 0; i < input.size(); ++i) {
+    if (!indices.count(i)) {
+      result += input[i];
+    }
+  }
+
+  return result;
+}
+
+std::string duplicateRandomCharacters(const std::string& input,
+                                      size_t num_to_duplicate,
+                                      std::mt19937& rng) {
+  num_to_duplicate = std::min(num_to_duplicate, input.size());
+
+  auto indices = nUniqueRandomInt(/* n= */ num_to_duplicate,
+                                  /* range= */ input.size(), rng);
+
+  std::string result;
+  result.reserve(input.size() + num_to_duplicate);
+  for (size_t i = 0; i < input.size(); ++i) {
+    if (indices.count(i)) {
+      result += input[i];
+    }
+    result += input[i];
+  }
+
+  return result;
+}
+
+std::string replaceRandomCharactersWithSpaces(const std::string& input,
+                                              size_t num_to_replace,
+                                              std::mt19937& rng) {
+  num_to_replace = std::min(num_to_replace, input.size());
+
+  auto indices =
+      nUniqueRandomInt(/* n= */ num_to_replace, /* range= */ input.size(), rng);
+
+  std::string result;
+  result.reserve(input.size());
+  for (size_t i = 0; i < input.size(); ++i) {
+    if (indices.count(i)) {
+      result += ' ';
+    } else {
+      result += input[i];
+    }
+  }
+
+  return result;
+}
+
+std::string replaceRandomCharactersWithKeyboardAdjacents(
+    const std::string& input, size_t num_to_replace, std::mt19937& rng) {
+  num_to_replace = std::min(num_to_replace, input.size());
+
+  auto indices = nUniqueRandomInt(/* n= */ num_to_replace,
+                                  /* range= */ input.size(), /* rng=*/rng);
+
+  std::string result;
+  result.reserve(input.size());
+  for (size_t i = 0; i < input.size(); ++i) {
+    if (!indices.count(i)) {
+      result += input[i];
+      continue;
+    }
+
+    char ch = input[i];
+    bool uppercase = std::isupper(ch);
+    ch = std::tolower(ch);
+    if (keyboard_char_neighbors.count(ch)) {
+      char neighbor;
+      std::sample(keyboard_char_neighbors.at(ch).begin(),
+                  keyboard_char_neighbors.at(ch).end(), &neighbor, 1, rng);
+      if (uppercase) {
+        neighbor = std::toupper(neighbor);
+      }
+      result += neighbor;
+    } else {
+      result += input[i];
+    }
+  }
+
+  return result;
+}
+
+std::string perturbCharacters(const std::string& input,
+                              size_t chars_replace_with_space,
+                              size_t chars_deleted, size_t chars_duplicated,
+                              size_t chars_replace_with_adjacents,
+                              std::mt19937& rng) {
+  std::string result = input;
+
+  if (chars_replace_with_space) {
+    result = replaceRandomCharactersWithSpaces(result, chars_replace_with_space,
+                                               rng);
+  }
+
+  if (chars_deleted) {
+    result = deleteRandomCharacters(result, chars_deleted, rng);
+  }
+
+  if (chars_duplicated) {
+    result = duplicateRandomCharacters(result, chars_duplicated, rng);
+  }
+
+  if (chars_replace_with_adjacents) {
+    result = replaceRandomCharactersWithKeyboardAdjacents(
+        result, chars_replace_with_adjacents, rng);
+  }
+
+  return result;
+}
+
 std::string join(const std::vector<std::string>& strings,
                  const std::string& delimiter) {
   if (strings.empty()) {
@@ -124,6 +265,17 @@ bool startsWith(const std::string& to_search_in, const std::string& prefix) {
   }
 
   return std::string_view(to_search_in.data(), prefix.size()) == prefix;
+}
+
+std::string stripWhitespace(const std::string& s,
+                            const std::string& strip_characters) {
+  auto first_valid = s.find_first_not_of(strip_characters);
+  auto last_valid = s.find_last_not_of(strip_characters);
+  if (first_valid == std::string::npos || last_valid == std::string::npos) {
+    // Whole string is whitespace.
+    return "";
+  }
+  return s.substr(first_valid, last_valid + 1 - first_valid);
 }
 
 std::string replacePunctuation(std::string string, char replace_char) {

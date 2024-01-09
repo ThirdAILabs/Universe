@@ -13,6 +13,7 @@
 #include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/CheckLicense.h>
+#include <pybind11/pytypes.h>
 #include <telemetry/src/PrometheusClient.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
@@ -239,21 +240,23 @@ std::vector<dataset::Explanation> UDT::explain(
   return result;
 }
 
-py::object UDT::coldstart(const dataset::DataSourcePtr& data,
-                          const std::vector<std::string>& strong_column_names,
-                          const std::vector<std::string>& weak_column_names,
-                          float learning_rate, uint32_t epochs,
-                          const std::vector<std::string>& train_metrics,
-                          const dataset::DataSourcePtr& val_data,
-                          const std::vector<std::string>& val_metrics,
-                          const std::vector<CallbackPtr>& callbacks,
-                          TrainOptions options,
-                          const bolt::DistributedCommPtr& comm) {
+py::object UDT::coldstart(
+    const dataset::DataSourcePtr& data,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names,
+    std::optional<data::VariableLengthConfig> variable_length,
+    float learning_rate, uint32_t epochs,
+    const std::vector<std::string>& train_metrics,
+    const dataset::DataSourcePtr& val_data,
+    const std::vector<std::string>& val_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    const bolt::DistributedCommPtr& comm) {
   licensing::entitlements().verifyDataSource(data);
 
   return _backend->coldstart(data, strong_column_names, weak_column_names,
-                             learning_rate, epochs, train_metrics, val_data,
-                             val_metrics, callbacks, options, comm);
+                             variable_length, learning_rate, epochs,
+                             train_metrics, val_data, val_metrics, callbacks,
+                             options, comm);
 }
 
 std::vector<uint32_t> UDT::modelDims() const {
@@ -379,6 +382,34 @@ void UDT::throwUnsupportedUDTConfigurationError(
 
   error_msg << ".";
   throw std::invalid_argument(error_msg.str());
+}
+
+std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
+UDT::parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
+                       const MapInputBatch& batch, bool sparse_inference,
+                       std::optional<uint32_t> top_k) {
+  std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>> outputs(
+      models.size());
+
+  bool non_mach = false;
+#pragma omp parallel for default(none) \
+    shared(models, batch, outputs, sparse_inference, top_k, non_mach)
+  for (size_t i = 0; i < models.size(); i++) {
+    if (auto* mach =
+            dynamic_cast<UDTMachClassifier*>(models[i]->_backend.get())) {
+      outputs[i] = mach->predictImpl(batch, sparse_inference, top_k);
+    } else {
+#pragma omp critical
+      non_mach = true;
+    }
+  }
+
+  if (non_mach) {
+    throw std::invalid_argument(
+        "Cannot perform parallel inference on non mach model.");
+  }
+
+  return outputs;
 }
 
 }  // namespace thirdai::automl::udt

@@ -1,6 +1,8 @@
 #pragma once
 
+#include <utils/Random.h>
 #include <cstdint>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -29,6 +31,26 @@ std::vector<std::string> wordLevelCharKGrams(
     const std::vector<std::string>& words, uint32_t k,
     size_t min_word_length = 4);
 
+std::string deleteRandomCharacters(const std::string& input,
+                                   size_t num_to_delete, std::mt19937& rng);
+
+std::string duplicateRandomCharacters(const std::string& input,
+                                      size_t num_to_duplicate,
+                                      std::mt19937& rng);
+
+std::string replaceRandomCharactersWithSpaces(const std::string& input,
+                                              size_t num_to_replace,
+                                              std::mt19937& rng);
+
+std::string replaceRandomCharactersWithKeyboardAdjacents(
+    const std::string& input, size_t num_to_replace, std::mt19937& rng);
+
+std::string perturbCharacters(const std::string& input,
+                              size_t chars_replace_with_space,
+                              size_t chars_deleted, size_t chars_duplicated,
+                              size_t chars_replace_with_adjacents,
+                              std::mt19937& rng);
+
 /**
  * Joins a vector of strings into a single delimited string.
  */
@@ -40,11 +62,20 @@ std::string join(const std::vector<std::string>& strings,
  */
 inline std::string lower(const std::string_view& str) {
   std::string lower_name;
-  for (char c : str) {
+  for (const char c : str) {
     lower_name.push_back(std::tolower(c));
   }
   return lower_name;
 }
+
+const std::string DEFAULT_STRING_STRIP_CHARACTERS = " \t\n\r\v\f";
+
+/**
+ *Strips leading and tailing whitespace.
+ */
+std::string stripWhitespace(
+    const std::string& s,
+    const std::string& strip_characters = DEFAULT_STRING_STRIP_CHARACTERS);
 
 /**
  * Extracts an integer value from an integer string.

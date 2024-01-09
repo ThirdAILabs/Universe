@@ -119,16 +119,17 @@ class UDT {
    * Performs cold start pretraining. Optional method that is not supported by
    * default for backends.
    */
-  py::object coldstart(const dataset::DataSourcePtr& data,
-                       const std::vector<std::string>& strong_column_names,
-                       const std::vector<std::string>& weak_column_names,
-                       float learning_rate, uint32_t epochs,
-                       const std::vector<std::string>& train_metrics,
-                       const dataset::DataSourcePtr& val_data,
-                       const std::vector<std::string>& val_metrics,
-                       const std::vector<CallbackPtr>& callbacks,
-                       TrainOptions options,
-                       const bolt::DistributedCommPtr& comm);
+  py::object coldstart(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names,
+      std::optional<data::VariableLengthConfig> variable_length,
+      float learning_rate, uint32_t epochs,
+      const std::vector<std::string>& train_metrics,
+      const dataset::DataSourcePtr& val_data,
+      const std::vector<std::string>& val_metrics,
+      const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+      const bolt::DistributedCommPtr& comm);
 
   /**
    * Returns metadata for ColdStart which are needed to be passed to
@@ -482,6 +483,11 @@ class UDT {
   static std::shared_ptr<UDT> load(const std::string& filename);
 
   static std::shared_ptr<UDT> load_stream(std::istream& input_stream);
+
+  static std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
+  parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
+                    const MapInputBatch& batch, bool sparse_inference,
+                    std::optional<uint32_t> top_k);
 
  private:
   UDT() {}
