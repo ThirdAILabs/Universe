@@ -6,7 +6,7 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt, data
 
 from .documents import DocumentDataSource
-from .sharded_documents import ShardedDataSource
+from .supervised_datasource import SupDataSource
 from .utils import clean_text, random_sample
 
 InferSamples = List
@@ -132,6 +132,18 @@ class Model:
         n_buckets: int,
         learning_rate: float,
         epochs: int,
+    ):
+        raise NotImplementedError()
+
+    def train_on_supervised_data_source(
+        self,
+        supervised_data_source: SupDataSource,
+        learning_rate: float,
+        epochs: int,
+        batch_size: Optional[int],
+        max_in_memory_batches: Optional[int],
+        metrics: List[str],
+        callbacks: List[bolt.train.callbacks.Callback],
     ):
         raise NotImplementedError()
 
@@ -327,6 +339,7 @@ class Mach(Model):
         fhr=50_000,
         embedding_dimension=2048,
         extreme_output_dim=50_000,
+        extreme_num_hashes=8,
         tokenizer="char-4",
         hidden_bias=False,
         model_config=None,
@@ -338,6 +351,7 @@ class Mach(Model):
         self.fhr = fhr
         self.embedding_dimension = embedding_dimension
         self.extreme_output_dim = extreme_output_dim
+        self.extreme_num_hashes = extreme_num_hashes
         self.hidden_bias = hidden_bias
         self.n_ids = 0
         self.model = None
@@ -397,6 +411,7 @@ class Mach(Model):
 
         Note: Given the datasources for introduction and training, we initialize a Mach model that has number_classes set to the size of introduce documents. But if we want to use this Mach model in our mixture of Models, this will not work because each Mach will be initialized with number of classes equal to the size of the datasource shard. Hence, we add override_number_classes parameters which if set, will initialize Mach Model with number of classes passed by the Mach Mixture.
         """
+
         if intro_documents.id_column != self.id_col:
             raise ValueError(
                 f"Model configured to use id_col={self.id_col}, received document with"
@@ -412,8 +427,11 @@ class Mach(Model):
             )
             learning_rate = kwargs.get("learning_rate", 0.005)
             freeze_before_train = False
-            min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
-                train_documents.size
+            min_epochs = kwargs.get(
+                "epochs", autotune_from_scratch_min_max_epochs(train_documents.size)[0]
+            )
+            max_epochs = kwargs.get(
+                "epochs", autotune_from_scratch_min_max_epochs(train_documents.size)[1]
             )
         else:
             if intro_documents.size > 0:
@@ -441,8 +459,11 @@ class Mach(Model):
             freeze_before_train = True
             # Less epochs here since it converges faster when trained on a base
             # model.
-            min_epochs, max_epochs = autotune_from_base_min_max_epochs(
-                train_documents.size
+            min_epochs = kwargs.get(
+                "epochs", autotune_from_base_min_max_epochs(train_documents.size)[0]
+            )
+            max_epochs = kwargs.get(
+                "epochs", autotune_from_base_min_max_epochs(train_documents.size)[1]
             )
 
         self.n_ids += intro_documents.size
@@ -457,7 +478,7 @@ class Mach(Model):
                 metric="hash_precision@5",
                 learning_rate=learning_rate,
                 batch_size=batch_size,
-                acc_to_stop=0.95,
+                acc_to_stop=kwargs.get("acc_to_stop", 0.95),
                 on_progress=on_progress,
                 freeze_before_train=freeze_before_train,
                 cancel_state=cancel_state,
@@ -494,6 +515,7 @@ class Mach(Model):
                 "extreme_output_dim": self.extreme_output_dim,
                 "fhr": self.fhr,
                 "embedding_dimension": self.embedding_dimension,
+                "extreme_num_hashes": self.extreme_num_hashes,
                 "hidden_bias": self.hidden_bias,
                 "rlhf": True,
             },
@@ -607,3 +629,23 @@ class Mach(Model):
             # Add model_config field if an older model is being loaded.
             state["model_config"] = None
         self.__dict__.update(state)
+
+    def train_on_supervised_data_source(
+        self,
+        supervised_data_source: SupDataSource,
+        learning_rate: float,
+        epochs: int,
+        batch_size: Optional[int],
+        max_in_memory_batches: Optional[int],
+        metrics: List[str],
+        callbacks: List[bolt.train.callbacks.Callback],
+    ):
+        self.model.train_on_data_source(
+            data_source=supervised_data_source,
+            learning_rate=learning_rate,
+            epochs=epochs,
+            batch_size=batch_size,
+            max_in_memory_batches=max_in_memory_batches,
+            metrics=metrics,
+            callbacks=callbacks,
+        )
