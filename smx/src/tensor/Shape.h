@@ -23,6 +23,8 @@ class Shape {
     return std::reduce(_shape.begin(), _shape.end(), 1, std::multiplies<>{});
   }
 
+  bool isScalar() const { return _shape.empty(); }
+
   auto begin() const { return _shape.begin(); }
 
   auto end() const { return _shape.end(); }

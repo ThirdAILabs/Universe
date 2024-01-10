@@ -31,7 +31,8 @@ DenseTensorPtr normal(const std::vector<size_t>& shape, float mean,
 }
 
 DenseTensorPtr scalar(float value) {
-  auto tensor = DenseTensor::make(Shape(1UL), Dtype::f32);
+  auto tensor = DenseTensor::make(Shape(), Dtype::f32,
+                                  DefaultMemoryHandle::allocate(sizeof(float)));
   tensor->data<float>()[0] = value;
 
   return tensor;
