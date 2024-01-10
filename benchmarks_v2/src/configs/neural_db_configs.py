@@ -25,10 +25,14 @@ class FiqaNDBConfig(NDBConfig):
     config_name = "fiqa_ndb"
     dataset_name = "fiqa"
 
+    trn_supervised_path = None
+
 
 class TrecCovidNDBConfig(NDBConfig):
     config_name = "trec_covid_ndb"
     dataset_name = "trec-covid"
+
+    trn_supervised_path = None
 
 
 class CookingNDBConfig(NDBConfig):
