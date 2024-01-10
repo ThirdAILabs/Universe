@@ -1,0 +1,70 @@
+name: Run NeuralDB Benchmarks 
+
+# Kills old jobs from the same pr if we push a new commit
+# See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# Controls when the workflow will run
+on:
+  schedule:
+      # Sets the workflow to run at 1600 UTC on Sundays and Wednesdays
+      # Ref: https://jasonet.co/posts/scheduled-actions/
+      - cron: "0 16 * * 0,3" 
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  benchmarks:
+    runs-on: self-hosted
+    timeout-minutes: 1200  # Github Actions defaults to a timeout of 360 minutes
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
+      # the rest of the steps
+
+      - name: Open Permissions
+        run: sudo chmod -R 777 ${{ github.workspace }}
+      
+      - uses: AutoModality/action-clean@v1
+      - uses: actions/checkout@v2
+        with:           
+          submodules: 'recursive'
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+
+      - name: Build docker
+        run: bin/docker-benchmarking-build.sh
+
+      - name: Build Package and Run Benchmark
+        env:
+          USERNAME: ${{secrets.MLFLOW_TRACKING_USERNAME}}
+          PASSWORD: ${{secrets.MLFLOW_TRACKING_PASSWORD}}
+          NDB_BENCHMARK_SLACK_WEBHOOK: ${{secrets.NDB_BENCHMARK_SLACK_WEBHOOK}}
+          BRANCH_NDB_BENCHMARK_SLACK_WEBHOOK: ${{secrets.BRANCH_NDB_BENCHMARK_SLACK_WEBHOOK}}
+        run: >- 
+          bin/docker-benchmarking-run.sh "export MLFLOW_TRACKING_USERNAME=$USERNAME && export MLFLOW_TRACKING_PASSWORD=$PASSWORD && 
+          python3 -m Universe.benchmarks_v2.src.main --runner distributed_ndb neural_db --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --official_slack_webhook $NDB_BENCHMARK_SLACK_WEBHOOK --branch_slack_webhook $BRANCH_NDB_BENCHMARK_SLACK_WEBHOOK --branch_name ${GITHUB_REF##*/} &&
+          python3 -m Universe.benchmarks_v2.src.slack_benchmark_results --runner distributed_ndb neural_db --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --official_slack_webhook $NDB_BENCHMARK_SLACK_WEBHOOK --branch_slack_webhook $BRANCH_NDB_BENCHMARK_SLACK_WEBHOOK --branch_name ${GITHUB_REF##*/}"
+      - name: Delete Container
+        run: sudo docker system prune -a -f
+
+      - name: Notify slack fail  # Ref: https://github.com/marketplace/actions/slack-notify-build
+        if: failure() && github.ref == 'refs/heads/main'
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel_id: daily_ndb_benchmarks
+          status: FAILED
+          color: danger
+
+      - name: Notify slack fail
+        if: failure() && github.ref != 'refs/heads/main'
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel_id: branch_ndb_benchmarks
+          status: FAILED
+          color: danger

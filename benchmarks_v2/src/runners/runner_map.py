@@ -7,6 +7,7 @@ from .mini_benchmark_runners.query_reformulation import (
 )
 from .mini_benchmark_runners.temporal import MiniBenchmarkTemporalRunner
 from .mini_benchmark_runners.udt import MiniBenchmarkUDTRunner
+from .neural_db import NDBRunner
 from .query_reformulation import QueryReformulationRunner
 from .rlhf import RlhfRunner
 from .temporal import TemporalRunner
@@ -24,4 +25,5 @@ runner_map = {
     "distributed": DistributedRunner,
     "rlhf": RlhfRunner,
     "distributed_ndb": DistributedNDBRunner,
+    "neural_db": NDBRunner,
 }
