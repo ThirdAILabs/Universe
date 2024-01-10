@@ -15,6 +15,8 @@ class TrainState:
         max_epochs: int,
         freeze_before_train: bool,
         batch_size: int,
+        freeze_after_epoch: int,
+        freeze_after_acc: float,
         **kwargs,
     ):
         self.max_in_memory_batches = max_in_memory_batches
@@ -25,6 +27,8 @@ class TrainState:
         self.max_epochs = max_epochs
         self.freeze_before_train = freeze_before_train
         self.batch_size = batch_size
+        self.freeze_after_epoch = freeze_after_epoch
+        self.freeze_after_acc = freeze_after_acc
 
 
 class IntroState:
@@ -118,16 +122,17 @@ class NeuralDbProgressTracker:
         max_epochs = (
             self._train_state.max_epochs - self._train_state.current_epoch_number
         )
+        freeze_after_epochs = (
+            self._train_state.freeze_after_epoch
+            - self._train_state.current_epoch_number
+        )
 
-        return {
-            "learning_rate": self._train_state.learning_rate,
-            "freeze_before_train": self._train_state.freeze_before_train,
-            "max_in_memory_batches": self._train_state.max_in_memory_batches,
-            "variable_length": self.vlc_config,
-            "min_epochs": min_epochs,
-            "max_epochs": max_epochs,
-            "batch_size": self._train_state.batch_size,
-        }
+        args = self._train_state.__dict__
+
+        args["min_epochs"] = min_epochs
+        args["max_epochs"] = max_epochs
+
+        return args
 
     def introduce_arguments(self):
         return {

@@ -266,6 +266,7 @@ def unsupervised_train_on_docs(
         data.transformations.VariableLengthConfig
     ] = data.transformations.VariableLengthConfig(),
     training_progress_callback: Optional[TrainingProgressCallback] = None,
+    **kwargs,
 ):
     documents.restart()
 

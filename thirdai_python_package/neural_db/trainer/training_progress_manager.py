@@ -143,8 +143,15 @@ class TrainingProgressManager:
         train_args["learning_rate"] = kwargs.get(
             "learning_rate", train_args["learning_rate"]
         )
-        train_args["min_epochs"] = kwargs.get("min_epochs", train_args["min_epochs"])
-        train_args["max_epochs"] = kwargs.get("max_epochs", train_args["max_epochs"])
+        train_args["min_epochs"] = kwargs.get("epochs", train_args["min_epochs"])
+        train_args["max_epochs"] = kwargs.get("epochs", train_args["max_epochs"])
+
+        train_args["freeze_after_epoch"] = kwargs.get(
+            "freeze_after_epoch", train_args["max_epochs"] - 1
+        )
+        train_args["freeze_after_acc"] = kwargs.get(
+            "freeze_after_acc", 0.80 if "freeze_after_epoch" not in kwargs else 1
+        )
 
         train_state = TrainState(
             max_in_memory_batches=max_in_memory_batches,
