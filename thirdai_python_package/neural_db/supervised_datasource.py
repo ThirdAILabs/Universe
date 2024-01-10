@@ -127,8 +127,14 @@ class SupDataSource(PyDataSource):
             print("WARNING: this model does not fully support multi-label datasets.")
         self.restart()
 
-    def _csv_line(self, label: str, query: str):
-        return f"{label},{query}"
+    def _csv_line(self, query: str, label: str):
+        df = pd.DataFrame(
+            {
+                self.query_col: [query],
+                self.doc_manager.id_column: [label],
+            }
+        )
+        return df.to_csv(header=None, index=None).strip("\n")
 
     def _source_for_sup(self, sup: Sup):
         source_ids = self.doc_manager.match_source_id_by_prefix(sup.source_id)

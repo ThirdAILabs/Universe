@@ -4,7 +4,6 @@ from collections import defaultdict
 
 import pytest
 from thirdai import neural_db as ndb
-from thirdai.neural_db.sharded_documents import shard_data_source
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -327,3 +326,28 @@ def test_neural_db_ref_id_supervised_training_sequence_input(model_id_delimiter)
     expect_top_2_results(db, "second", [8, 9])
     assert set([ref.id for ref in db.search("fourth", top_k=2)]) == set([0, 1])
     assert set([ref.id for ref in db.search("second", top_k=2)]) == set([8, 9])
+
+
+def test_neural_db_supervised_train_with_comma():
+    db = ndb.NeuralDB()
+
+    with open("mock_unsup.csv", "w") as f:
+        f.write("id,strong\n")
+        f.write('0,"first, second"\n')
+
+    source_ids = db.insert(
+        ndb.CSV("mock_unsup.csv", id_column="id", strong_columns=["strong"])
+    )
+
+    with open("mock_sup.csv", "w") as f:
+        f.write("id,query\n")
+        f.write('4,"sixth, seventh"\n')
+
+    sup_doc = ndb.Sup(
+        "mock_sup.csv",
+        query_column="query",
+        id_column="id",
+        source_id=source_ids[0],
+    )
+
+    db.supervised_train([sup_doc], learning_rate=0.1, epochs=1)
