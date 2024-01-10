@@ -100,6 +100,7 @@ void defineTensor(py::module_& smx) {
   py::class_<Tensor, TensorPtr>(smx, "Tensor")
       .def_property_readonly(
           "shape", [](const TensorPtr& tensor) { return tensor->shape(); })
+      .def("__len__", [](const TensorPtr& tensor) { return tensor->shape(0); })
       .def_property_readonly("dtype", &Tensor::dtype)
       .def_property_readonly("ndim", &Tensor::ndim);
 

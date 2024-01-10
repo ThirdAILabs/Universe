@@ -112,6 +112,3 @@ def test_smx_sparse_mlp_mnist():
 
         accuracy = correct / total
         print(f"Epoch {epoch} accuracy={accuracy}")
-
-
-test_smx_sparse_mlp_mnist()

@@ -70,6 +70,6 @@ def test_smx_clinc(download_clinc_dataset):
             total += len(np_y)
 
         accuracy = correct / total
-        print(f"epoch {epoch} time={e-s}s val_accuracy={accuracy}\n")
+        print(f"epoch {epoch} time={e-s:.3f}s val_accuracy={accuracy:.4f}\n")
 
     assert accuracy >= 0.85
