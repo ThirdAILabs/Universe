@@ -207,6 +207,36 @@ class ProgressUpdate(bolt.train.callbacks.Callback):
             self.progress_callback_fn(progress)
 
 
+class FreezeHashTable(bolt.train.callbacks.Callback):
+    def __init__(
+        self,
+        freeze_before_train,
+        freeze_after_epoch,
+        tracked_metric,
+        metric_threshold,
+    ):
+        super().__init__()
+
+        self.epoch_count = 0
+        self.freeze_after_epoch = freeze_after_epoch
+        self.tracked_metric = tracked_metric
+        self.metric_threshold = metric_threshold
+        self.freeze_before_train = freeze_before_train
+
+    def on_train_start(self):
+        if self.freeze_before_train:
+            self.model.freeze_hash_tables()
+
+    def on_epoch_end(self):
+        self.epoch_count += 1
+        if self.freeze_before_train:
+            return
+        if (self.epoch_count == self.freeze_after_epoch) or (
+            self.history[f"train_{self.tracked_metric}"][-1] > self.metric_threshold
+        ):
+            self.model.freeze_hash_tables()
+
+
 class CancelTraining(bolt.train.callbacks.Callback):
     def __init__(self, cancel_state):
         super().__init__()
@@ -228,6 +258,8 @@ def unsupervised_train_on_docs(
     acc_to_stop: float,
     on_progress: Callable,
     freeze_before_train: bool,
+    freeze_after_epoch: int,
+    freeze_after_acc: float,
     cancel_state: CancelState,
     max_in_memory_batches: int,
     variable_length: Optional[
@@ -235,9 +267,6 @@ def unsupervised_train_on_docs(
     ] = data.transformations.VariableLengthConfig(),
     training_progress_callback: Optional[TrainingProgressCallback] = None,
 ):
-    if freeze_before_train:
-        model._get_model().freeze_hash_tables()
-
     documents.restart()
 
     early_stop_callback = EarlyStopWithMinEpochs(
@@ -253,7 +282,19 @@ def unsupervised_train_on_docs(
 
     cancel_training_callback = CancelTraining(cancel_state=cancel_state)
 
-    callbacks = [early_stop_callback, progress_callback, cancel_training_callback]
+    freeze_hashtable_callback = FreezeHashTable(
+        freeze_before_train=freeze_before_train,
+        freeze_after_epoch=freeze_after_epoch,
+        tracked_metric=metric,
+        metric_threshold=freeze_after_acc,
+    )
+
+    callbacks = [
+        early_stop_callback,
+        progress_callback,
+        cancel_training_callback,
+        freeze_hashtable_callback,
+    ]
 
     if training_progress_callback:
         callbacks.append(training_progress_callback)
