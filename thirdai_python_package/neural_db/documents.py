@@ -243,7 +243,7 @@ class DocumentDataSource(PyDataSource):
         """
         Iterates through the document data source and generates a dataframe
         """
-        path.mkdir(exist_ok=True, parents = True)
+        path.mkdir(exist_ok=True, parents=True)
         number_lines_in_buffer = 0
         with open(path / "source.csv", "w") as f:
             for line in self._get_line_iterator():

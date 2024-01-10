@@ -8,7 +8,6 @@ from .documents import DocumentDataSource
 from .models import CancelState, Mach, Model
 from .sharded_documents import shard_data_source
 from .supervised_datasource import SupDataSource
-
 from .trainer.checkpoint_config import (
     CheckpointConfig,
     generate_model_specific_checkpoint_configs,

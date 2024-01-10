@@ -3,13 +3,13 @@ from __future__ import annotations
 from thirdai import bolt
 
 from ..documents import DocumentDataSource
-from .training_data_manager import TrainingDataManager
-from .checkpoint_config import CheckpointConfig
-from .training_progress_tracker import IntroState, NeuralDbProgressTracker, TrainState
 from ..mach_defaults import (
-    training_arguments_from_scratch,
     training_arguments_from_base,
+    training_arguments_from_scratch,
 )
+from .checkpoint_config import CheckpointConfig
+from .training_data_manager import TrainingDataManager
+from .training_progress_tracker import IntroState, NeuralDbProgressTracker, TrainState
 
 
 class TrainingProgressCallback(bolt.train.callbacks.Callback):

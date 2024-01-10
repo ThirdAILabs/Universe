@@ -10,8 +10,6 @@ import thirdai
 from thirdai._thirdai import bolt, data
 
 from . import loggers, teachers
-from .trainer.checkpoint_config import CheckpointConfig
-
 from .documents import CSV, Document, Reference
 from .mach_mixture_model import MachMixture
 from .models import CancelState, Mach
@@ -22,6 +20,7 @@ from .savable_state import (
     make_training_checkpoint,
 )
 from .supervised_datasource import Sup, SupDataSource
+from .trainer.checkpoint_config import CheckpointConfig
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
 
@@ -267,11 +266,13 @@ class NeuralDB:
 
         ray_version = ray.__version__
         if LooseVersion(ray_version) >= LooseVersion("2.7"):
-            warnings.warn("""
+            warnings.warn(
+                """
                 Using ray version 2.7 or higher requires specifying a remote or NFS storage path. 
                 Support for local checkpoints has been discontinued in these versions. 
                 Refer to https://github.com/ray-project/ray/issues/37177 for details.
-                """.strip())
+                """.strip()
+            )
 
         if not isinstance(documents, list) or not all(
             isinstance(doc, CSV) for doc in documents

@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from ..documents import DocumentDataSource
-from ..utils import assert_file_exists, unpickle_from, move_between_directories
+from ..utils import assert_file_exists, move_between_directories, unpickle_from
 from .training_progress_tracker import NeuralDbProgressTracker
 
 

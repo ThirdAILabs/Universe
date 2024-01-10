@@ -1,5 +1,6 @@
-from pathlib import Path
 import json
+from pathlib import Path
+
 from ..utils import pickle_to, unpickle_from
 
 
