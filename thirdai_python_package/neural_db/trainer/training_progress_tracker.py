@@ -1,3 +1,8 @@
+from pathlib import Path
+import json
+from ..utils import pickle_to, unpickle_from
+
+
 class TrainState:
     def __init__(
         self,
@@ -124,13 +129,27 @@ class NeuralDbProgressTracker:
         }
 
     def introduce_arguments(self):
-        return self._intro_state.__dict__
+        return {
+            "num_buckets_to_sample": self._intro_state.num_buckets_to_sample,
+            "fast_approximation": self._intro_state.fast_approximation,
+            "override_number_classes": self._intro_state.override_number_classes,
+        }
+
+    def save(self, path: Path):
+        path.mkdir(exist_ok=True, parents=True)
+        with open(path / "tracker.json", "w") as f:
+            json.dump(self.__dict__(), f, indent=4)
+        pickle_to(self.vlc_config, path / "vlc.config")
 
     @staticmethod
-    def load(arguments_json, vlc_config):
-        intro_state = IntroState(**(arguments_json["intro_state"]))
-        train_state = TrainState(**(arguments_json["train_state"]))
-        tracker = NeuralDbProgressTracker(
-            intro_state=intro_state, train_state=train_state, vlc_config=vlc_config
+    def load(path: Path):
+        with open(path / "tracker.json", "r") as f:
+            args = json.load(f)
+
+        vlc_config = unpickle_from(path / "vlc.config")
+
+        return NeuralDbProgressTracker(
+            intro_state=IntroState(**args["intro_state"]),
+            train_state=TrainState(**args["train_state"]),
+            vlc_config=vlc_config,
         )
-        return tracker

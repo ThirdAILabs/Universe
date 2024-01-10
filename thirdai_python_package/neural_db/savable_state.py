@@ -1,13 +1,13 @@
 import datetime
 import os
 from pathlib import Path
-from typing import Callable
+from typing import Callable, List
 
 from .documents import DocumentManager
 from .loggers import Logger
 from .models import Model
-from .training_state.checkpoint_config import NDBCheckpointConfig
-from .utils import delete_file, delete_folder, pickle_to, unpickle_from
+from .utils import pickle_to, unpickle_from, delete_folder
+from .trainer.checkpoint_config import CheckpointConfig
 
 
 def default_checkpoint_name():
@@ -32,21 +32,27 @@ class State:
             and self.model.searchable
         )
 
+    @staticmethod
     def model_pkl_path(directory: Path) -> Path:
         return directory / "model.pkl"
 
+    @staticmethod
     def model_meta_path(directory: Path) -> Path:
         return directory / "model"
 
+    @staticmethod
     def logger_pkl_path(directory: Path) -> Path:
         return directory / "logger.pkl"
 
+    @staticmethod
     def logger_meta_path(directory: Path) -> Path:
         return directory / "logger"
 
+    @staticmethod
     def documents_pkl_path(directory: Path) -> Path:
         return directory / "documents.pkl"
 
+    @staticmethod
     def documents_meta_path(directory: Path) -> Path:
         return directory / "documents"
 
@@ -115,23 +121,34 @@ class State:
         return state
 
 
-def checkpoint_state_and_ids(
-    savable_state: State, ids, resource_name, checkpoint_config: NDBCheckpointConfig
+def load_checkpoint(checkpoint_config: CheckpointConfig):
+    try:
+        state = State.load(checkpoint_config.ndb_checkpoint_path)
+        ids, resource_name = unpickle_from(
+            checkpoint_config.pickled_ids_resource_name_path
+        )
+        return state, ids, resource_name
+    except:
+        raise Exception(
+            "Failed to load"
+            f" '{checkpoint_config.checkpoint_dir / 'checkpoint.ndb'}'."
+            " Please verify it's a valid checkpoint and the training is"
+            " incomplete."
+        )
+
+
+def make_preinsertion_checkpoint(
+    savable_state: State,
+    ids: List[str],
+    resource_name: str,
+    checkpoint_config: CheckpointConfig,
 ):
+    delete_folder(checkpoint_config.ndb_checkpoint_path)
     savable_state.save(checkpoint_config.ndb_checkpoint_path)
     pickle_to((ids, resource_name), checkpoint_config.pickled_ids_resource_name_path)
 
 
-def load_checkpoint_state_ids_from_config(checkpoint_config: NDBCheckpointConfig):
-    state = State.load(checkpoint_config.ndb_checkpoint_path)
-    ids, resource_name = unpickle_from(checkpoint_config.pickled_ids_resource_name_path)
-    return state, ids, resource_name
-
-
-def delete_checkpoint_state_and_ids(
-    checkpoint_config: NDBCheckpointConfig, ignore_errors=True
-):
-    delete_folder(checkpoint_config.ndb_checkpoint_path, ignore_errors=ignore_errors)
-    delete_file(
-        checkpoint_config.pickled_ids_resource_name_path, ignore_errors=ignore_errors
-    )
+def make_training_checkpoint(savable_state: State, checkpoint_config: CheckpointConfig):
+    delete_folder(checkpoint_config.ndb_trained_path)
+    savable_state.save(location=checkpoint_config.ndb_trained_path)
+    delete_folder(checkpoint_config.ndb_checkpoint_path)

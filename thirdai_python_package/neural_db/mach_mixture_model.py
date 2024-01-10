@@ -8,9 +8,12 @@ from .documents import DocumentDataSource
 from .models import CancelState, Mach, Model
 from .sharded_documents import shard_data_source
 from .supervised_datasource import SupDataSource
-from .training_state.checkpoint_config import NDBCheckpointConfig
-from .training_state.training_callback import TrainingProgressManager
-from .training_state.training_manager_factory import TrainingProgressManagerFactory
+
+from .trainer.checkpoint_config import (
+    CheckpointConfig,
+    generate_model_specific_checkpoint_configs,
+)
+from .trainer.training_progress_manager import TrainingProgressManager
 from .utils import clean_text, requires_condition
 
 InferSamples = List
@@ -41,7 +44,6 @@ class MachMixture(Model):
         self.embedding_dimension = embedding_dimension
         self.extreme_output_dim = extreme_output_dim
         self.extreme_num_hashes = extreme_num_hashes
-        self.n_ids = 0
         self.model_config = model_config
 
         # These parameters are specific to Mach Mixture
@@ -132,13 +134,11 @@ class MachMixture(Model):
         self,
         on_progress: Callable,
         cancel_state: CancelState,
-        checkpoint_config: NDBCheckpointConfig,
+        checkpoint_config: CheckpointConfig,
     ):
         # If checkpoint_dir in checkpoint_config is /john/doe and number of models is 2, the underlying mach models will make checkpoint at /john/doe/0 and /john/doe/1 depending on model ids.
-        modelwise_checkpoint_configs = (
-            TrainingProgressManagerFactory.generate_model_specific_checkpoint_configs(
-                config=checkpoint_config, number_models=self.number_models
-            )
+        modelwise_checkpoint_configs = generate_model_specific_checkpoint_configs(
+            config=checkpoint_config, number_models=self.number_models
         )
 
         # The training manager corresponding to a model loads all the needed to complete the training such as model, document sources, tracker, etc.
@@ -150,7 +150,7 @@ class MachMixture(Model):
             )
         ):
             modelwise_training_manager = (
-                TrainingProgressManagerFactory.make_resumed_training_progress_manager(
+                TrainingProgressManager.make_resumed_training_progress_manager(
                     original_mach_model=model,
                     checkpoint_config=config,
                 )
@@ -176,7 +176,7 @@ class MachMixture(Model):
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
-        checkpoint_config: NDBCheckpointConfig = None,
+        checkpoint_config: CheckpointConfig = None,
         **kwargs,
     ) -> None:
         # We need the original number of classes from the original data source so that we can initialize the Mach models this mixture will have
@@ -198,10 +198,8 @@ class MachMixture(Model):
             update_segment_map=False,
         )
 
-        modelwise_checkpoint_configs = (
-            TrainingProgressManagerFactory.generate_model_specific_checkpoint_configs(
-                config=checkpoint_config, number_models=self.number_models
-            )
+        modelwise_checkpoint_configs = generate_model_specific_checkpoint_configs(
+            config=checkpoint_config, number_models=self.number_models
         )
 
         training_managers = []
@@ -214,7 +212,7 @@ class MachMixture(Model):
             )
         ):
             modelwise_training_manager = (
-                TrainingProgressManagerFactory.make_training_manager_scratch(
+                TrainingProgressManager.make_training_manager_scratch(
                     model=model,
                     intro_documents=intro_shard,
                     train_documents=train_shard,

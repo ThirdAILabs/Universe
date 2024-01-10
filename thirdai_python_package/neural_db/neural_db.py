@@ -8,26 +8,20 @@ import numpy as np
 import pandas as pd
 import thirdai
 from thirdai._thirdai import bolt, data
-from thirdai.dataset.data_source import PyDataSource
 
 from . import loggers, teachers
-from .documents import CSV, Document, DocumentManager, Reference
+from .trainer.checkpoint_config import CheckpointConfig
+
+from .documents import CSV, Document, Reference
 from .mach_mixture_model import MachMixture
 from .models import CancelState, Mach
-from .savable_state import State
-from .supervised_datasource import Sup, SupDataSource
-
 from .savable_state import (
     State,
-    checkpoint_state_and_ids,
-    delete_checkpoint_state_and_ids,
-    load_checkpoint_state_ids_from_config,
+    load_checkpoint,
+    make_preinsertion_checkpoint,
+    make_training_checkpoint,
 )
-from .training_state.checkpoint_config import (
-    NDBCheckpointConfig,
-    convert_ndb_checkpoint_config_to_mach,
-)
-from .utils import delete_folder
+from .supervised_datasource import Sup, SupDataSource
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
 
@@ -421,25 +415,14 @@ class NeuralDB:
         self,
         on_progress: Callable,
         cancel_state: CancelState,
-        checkpoint_config: NDBCheckpointConfig,
+        checkpoint_config: CheckpointConfig,
     ):
-        try:
-            state, ids, resource_name = load_checkpoint_state_ids_from_config(
-                checkpoint_config=checkpoint_config
-            )
-            self._savable_state = state
-        except:
-            raise Exception(
-                "Failed to load"
-                f" '{checkpoint_config.checkpoint_dir / 'checkpoint.ndb'}'."
-                " Please verify it's a valid checkpoint and the training is"
-                " incomplete."
-            )
-
+        state, ids, resource_name = load_checkpoint(checkpoint_config=checkpoint_config)
+        self._savable_state = state
         self._savable_state.model.resume(
             on_progress=on_progress,
             cancel_state=cancel_state,
-            checkpoint_config=convert_ndb_checkpoint_config_to_mach(checkpoint_config),
+            checkpoint_config=checkpoint_config.get_mach_config(),
         )
 
         return ids, resource_name
@@ -455,7 +438,7 @@ class NeuralDB:
         cancel_state: CancelState,
         max_in_memory_batches: int,
         variable_length: Optional[data.transformations.VariableLengthConfig],
-        checkpoint_config: NDBCheckpointConfig,
+        checkpoint_config: CheckpointConfig,
         **kwargs,
     ):
         """
@@ -499,10 +482,9 @@ class NeuralDB:
         We need to store the model state so that our label_id -> reference mapping remains consistent on resuming.
         """
         if checkpoint_config:
-            # If a checkpoint config is passed, then we delete any pass ndb checkpoints from the folder and save the current neural db object.
-            delete_checkpoint_state_and_ids(checkpoint_config, ignore_errors=True)
-            checkpoint_state_and_ids(
-                self._savable_state,
+            # If a checkpoint config is passed, then we delete any past ndb checkpoints from the folder and save the current neural db object.
+            make_preinsertion_checkpoint(
+                savable_state=self._savable_state,
                 ids=ids,
                 resource_name=intro_and_train.intro.resource_name(),
                 checkpoint_config=checkpoint_config,
@@ -518,7 +500,9 @@ class NeuralDB:
             cancel_state=cancel_state,
             max_in_memory_batches=max_in_memory_batches,
             variable_length=variable_length,
-            checkpoint_config=convert_ndb_checkpoint_config_to_mach(checkpoint_config),
+            checkpoint_config=(
+                checkpoint_config.get_mach_config() if checkpoint_config else None
+            ),
             **kwargs,
         )
 
@@ -538,7 +522,7 @@ class NeuralDB:
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
-        checkpoint_config: NDBCheckpointConfig = None,
+        checkpoint_config: CheckpointConfig = None,
         **kwargs,
     ) -> List[str]:
         if checkpoint_config and checkpoint_config.resume_from_checkpoint:
@@ -570,9 +554,9 @@ class NeuralDB:
 
         if checkpoint_config:
             # Once we have saved the model, we will delete the ndb checkpoint and save updated neural db with trained models.
-            delete_folder(checkpoint_config.ndb_trained_path, ignore_errors=True)
-            self.save(save_to=str(checkpoint_config.ndb_trained_path))
-            delete_checkpoint_state_and_ids(checkpoint_config)
+            make_training_checkpoint(
+                savable_state=self._savable_state, checkpoint_config=checkpoint_config
+            )
 
         on_success()
 

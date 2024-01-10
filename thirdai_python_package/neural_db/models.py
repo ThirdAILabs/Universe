@@ -7,15 +7,14 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt, data
 
 from .documents import DocumentDataSource
-from .supervised_datasource import SupDataSource
 from .mach_defaults import acc_to_stop, metric_to_track
-from .training_state.checkpoint_config import NDBCheckpointConfig
-from .training_state.training_callback import (
+from .supervised_datasource import SupDataSource
+from .trainer.checkpoint_config import CheckpointConfig
+from .trainer.training_progress_manager import (
     TrainingProgressCallback,
     TrainingProgressManager,
 )
-from .training_state.training_manager_factory import TrainingProgressManagerFactory
-from .utils import clean_text, random_sample
+from .utils import clean_text, pickle_to
 
 InferSamples = List
 Predictions = Sequence
@@ -58,7 +57,7 @@ class Model:
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
-        checkpoint_config: NDBCheckpointConfig = None,
+        checkpoint_config: CheckpointConfig = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError()
@@ -234,7 +233,7 @@ def unsupervised_train_on_docs(
     variable_length: Optional[
         data.transformations.VariableLengthConfig
     ] = data.transformations.VariableLengthConfig(),
-    training_progress_callback: TrainingProgressCallback = None,
+    training_progress_callback: Optional[TrainingProgressCallback] = None,
 ):
     if freeze_before_train:
         model._get_model().freeze_hash_tables()
@@ -331,6 +330,9 @@ class Mach(Model):
         self.balancing_samples = new_model.balancing_samples
         self.model_config = new_model.model_config
 
+    def save(self, path: Path):
+        pickle_to(self, filepath=path)
+
     def get_model(self) -> bolt.UniversalDeepTransformer:
         return self.model
 
@@ -362,6 +364,7 @@ class Mach(Model):
         max_epochs: int,
         metric: str,
         learning_rate: float,
+        batch_size: int,
         acc_to_stop: float,
         on_progress: Callable,
         freeze_before_train: bool,
@@ -379,6 +382,7 @@ class Mach(Model):
             max_epochs=max_epochs,
             metric=metric,
             learning_rate=learning_rate,
+            batch_size=batch_size,
             acc_to_stop=acc_to_stop,
             on_progress=on_progress,
             freeze_before_train=freeze_before_train,
@@ -394,7 +398,6 @@ class Mach(Model):
         fast_approximation: bool,
         num_buckets_to_sample: Optional[int],
         override_number_classes: int,
-        **kwargs,
     ):
         if intro_documents.id_column != self.id_col:
             raise ValueError(
@@ -402,20 +405,10 @@ class Mach(Model):
                 f" id_col={intro_documents.id_column}"
             )
 
-        batch_size = kwargs.get("batch_size", None)
-
         if self.model is None:
             self.id_col = intro_documents.id_column
             self.model = self.model_from_scratch(
                 intro_documents, number_classes=override_number_classes
-            )
-            learning_rate = kwargs.get("learning_rate", 0.005)
-            freeze_before_train = False
-            min_epochs = kwargs.get(
-                "epochs", autotune_from_scratch_min_max_epochs(train_documents.size)[0]
-            )
-            max_epochs = kwargs.get(
-                "epochs", autotune_from_scratch_min_max_epochs(train_documents.size)[1]
             )
         else:
             if intro_documents.size > 0:
@@ -474,11 +467,11 @@ class Mach(Model):
         self,
         on_progress: Callable,
         cancel_state: CancelState,
-        checkpoint_config: NDBCheckpointConfig,
+        checkpoint_config: CheckpointConfig,
     ):
         # This will load the datasources, model, training config and upload the current model with the loaded one. This updates the underlying UDT MACH of the current model with the one from the checkpoint along with other class attributes.
         training_progress_manager = (
-            TrainingProgressManagerFactory.make_resumed_training_progress_manager(
+            TrainingProgressManager.make_resumed_training_progress_manager(
                 self, checkpoint_config=checkpoint_config
             )
         )
@@ -503,7 +496,8 @@ class Mach(Model):
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
-        checkpoint_config: NDBCheckpointConfig = None,
+        checkpoint_config: CheckpointConfig = None,
+        **kwargs,
     ):
         """
         override_number_classes : The number of classes for the Mach model
@@ -519,7 +513,7 @@ class Mach(Model):
         """
 
         training_progress_manager = (
-            TrainingProgressManagerFactory.make_training_manager_scratch(
+            TrainingProgressManager.make_training_manager_scratch(
                 model=self,
                 intro_documents=intro_documents,
                 train_documents=train_documents,
@@ -530,6 +524,7 @@ class Mach(Model):
                 override_number_classes=override_number_classes,
                 variable_length=variable_length,
                 checkpoint_config=checkpoint_config,
+                **kwargs,
             )
         )
 

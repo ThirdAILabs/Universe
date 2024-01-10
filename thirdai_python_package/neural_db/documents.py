@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 import pickle
 import shutil
@@ -6,7 +7,6 @@ import string
 from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
-import json
 
 import numpy as np
 import pandas as pd
@@ -243,6 +243,7 @@ class DocumentDataSource(PyDataSource):
         """
         Iterates through the document data source and generates a dataframe
         """
+        path.mkdir(exist_ok=True, parents = True)
         number_lines_in_buffer = 0
         with open(path / "source.csv", "w") as f:
             for line in self._get_line_iterator():
@@ -258,13 +259,15 @@ class DocumentDataSource(PyDataSource):
                     "id_column": self.id_column,
                     "strong_column": self.strong_column,
                     "weak_column": self.weak_column,
-                }
+                },
+                f,
+                indent=4,
             )
         self.restart()
 
     @staticmethod
     def load(path: Path):
-        with open(path / "arguments.json", "w") as f:
+        with open(path / "arguments.json", "r") as f:
             args = json.load(f)
 
         csv_document = CSV(
