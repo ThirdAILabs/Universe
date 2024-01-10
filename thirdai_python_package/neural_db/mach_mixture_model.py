@@ -148,11 +148,9 @@ class MachMixture(Model):
                 modelwise_checkpoint_configs,
             )
         ):
-            modelwise_training_manager = (
-                TrainingProgressManager.make_resumed_training_progress_manager(
-                    original_mach_model=model,
-                    checkpoint_config=config,
-                )
+            modelwise_training_manager = TrainingProgressManager.from_checkpoint(
+                original_mach_model=model,
+                checkpoint_config=config,
             )
             training_managers.append(modelwise_training_manager)
 
@@ -210,20 +208,18 @@ class MachMixture(Model):
                 modelwise_checkpoint_configs,
             )
         ):
-            modelwise_training_manager = (
-                TrainingProgressManager.make_training_manager_scratch(
-                    model=model,
-                    intro_documents=intro_shard,
-                    train_documents=train_shard,
-                    should_train=should_train,
-                    fast_approximation=fast_approximation,
-                    num_buckets_to_sample=num_buckets_to_sample,
-                    max_in_memory_batches=max_in_memory_batches,
-                    override_number_classes=number_classes,
-                    variable_length=variable_length,
-                    checkpoint_config=config,
-                    **kwargs,
-                )
+            modelwise_training_manager = TrainingProgressManager.from_scratch(
+                model=model,
+                intro_documents=intro_shard,
+                train_documents=train_shard,
+                should_train=should_train,
+                fast_approximation=fast_approximation,
+                num_buckets_to_sample=num_buckets_to_sample,
+                max_in_memory_batches=max_in_memory_batches,
+                override_number_classes=number_classes,
+                variable_length=variable_length,
+                checkpoint_config=config,
+                **kwargs,
             )
 
             training_managers.append(modelwise_training_manager)

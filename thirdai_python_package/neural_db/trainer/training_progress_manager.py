@@ -22,6 +22,14 @@ class TrainingProgressCallback(bolt.train.callbacks.Callback):
 
 
 class TrainingProgressManager:
+    """
+    TrainingProgressManager class is used to maintain the checkpoint while training and is the source of truth for inserting documents into the current model object.
+
+    This is designed the way it is to make sure that that we have identical function calls irrespective of whether we're resuming from a checkpoint/using checkpointing/doing no checkpointing. By making our training progress manager the source of truth for all training related variables/objects, we effectively offload the task of maintaining training state and checkpointing to the manager. And the manager internally decides when it should save what objects.
+
+    Another reason to explain this unified design is that if we have seperate calls for indexing with/out checkpoint, we have to be sure that making changes in one does not break the other.
+    """
+
     def __init__(
         self,
         tracker: NeuralDbProgressTracker,
@@ -106,7 +114,7 @@ class TrainingProgressManager:
         return self.tracker.introduce_arguments()
 
     @staticmethod
-    def make_training_manager_scratch(
+    def from_scratch(
         model,
         intro_documents,
         train_documents,
@@ -118,7 +126,7 @@ class TrainingProgressManager:
         variable_length,
         checkpoint_config: CheckpointConfig,
         **kwargs,
-    ):
+    ) -> TrainingProgressManager:
         intro_state = IntroState(
             num_buckets_to_sample=num_buckets_to_sample,
             fast_approximation=fast_approximation,
@@ -174,7 +182,7 @@ class TrainingProgressManager:
         return training_progress_manager
 
     @staticmethod
-    def make_resumed_training_progress_manager(
+    def from_checkpoint(
         original_mach_model,
         checkpoint_config: CheckpointConfig,
     ) -> TrainingProgressManager:

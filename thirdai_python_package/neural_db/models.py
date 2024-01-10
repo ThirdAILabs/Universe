@@ -357,41 +357,6 @@ class Mach(Model):
     def get_id_delimiter(self) -> str:
         return self.id_delimiter
 
-    def train_documents(
-        self,
-        train_documents: DocumentDataSource,
-        min_epochs: int,
-        max_epochs: int,
-        metric: str,
-        learning_rate: float,
-        batch_size: int,
-        acc_to_stop: float,
-        on_progress: Callable,
-        freeze_before_train: bool,
-        cancel_state: CancelState,
-        max_in_memory_batches: int,
-        variable_length: Optional[
-            data.transformations.VariableLengthConfig
-        ] = data.transformations.VariableLengthConfig(),
-        training_progress_callback=None,
-    ):
-        unsupervised_train_on_docs(
-            model=self.model,
-            documents=train_documents,
-            min_epochs=min_epochs,
-            max_epochs=max_epochs,
-            metric=metric,
-            learning_rate=learning_rate,
-            batch_size=batch_size,
-            acc_to_stop=acc_to_stop,
-            on_progress=on_progress,
-            freeze_before_train=freeze_before_train,
-            cancel_state=cancel_state,
-            max_in_memory_batches=max_in_memory_batches,
-            variable_length=variable_length,
-            training_progress_callback=training_progress_callback,
-        )
-
     def introduce_documents(
         self,
         intro_documents: DocumentDataSource,
@@ -430,6 +395,7 @@ class Mach(Model):
                     fast_approximation=fast_approximation,
                     num_buckets_to_sample=num_buckets_to_sample,
                 )
+        self.n_ids += intro_documents.size
 
     def index_documents_impl(
         self,
@@ -445,13 +411,13 @@ class Mach(Model):
                 intro_documents=intro_documents,
                 **training_progress_manager.introduce_arguments(),
             )
-            self.n_ids += intro_documents.size
             training_progress_manager.insert_complete()
 
         if not training_progress_manager.is_training_completed:
             train_arguments = training_progress_manager.training_arguments()
-            self.train_documents(
-                train_documents=train_documents,
+            unsupervised_train_on_docs(
+                model=self.model,
+                documents=train_documents,
                 metric=metric_to_track,
                 acc_to_stop=acc_to_stop,
                 on_progress=on_progress,
@@ -470,10 +436,8 @@ class Mach(Model):
         checkpoint_config: CheckpointConfig,
     ):
         # This will load the datasources, model, training config and upload the current model with the loaded one. This updates the underlying UDT MACH of the current model with the one from the checkpoint along with other class attributes.
-        training_progress_manager = (
-            TrainingProgressManager.make_resumed_training_progress_manager(
-                self, checkpoint_config=checkpoint_config
-            )
+        training_progress_manager = TrainingProgressManager.from_checkpoint(
+            self, checkpoint_config=checkpoint_config
         )
 
         self.index_documents_impl(
@@ -503,29 +467,20 @@ class Mach(Model):
         override_number_classes : The number of classes for the Mach model
 
         Note: Given the datasources for introduction and training, we initialize a Mach model that has number_classes set to the size of introduce documents. But if we want to use this Mach model in our mixture of Models, this will not work because each Mach will be initialized with number of classes equal to the size of the datasource shard. Hence, we add override_number_classes parameters which if set, will initialize Mach Model with number of classes passed by the Mach Mixture.
-
-        training_progress_manager backs up as both a callback object that can be used to maintain the checkpoint while training
-        and the source of truth for the current mach object. If we do not resume from a checkpoint, then the manager holds the current Mach object and calling load_model just returns it. Otherwise, the manager sets it's model attribute after loading the saved model of the previous checkpoint.
-
-        This is designed the way it is to make sure that that we have identical function calls irrespective of whether we're resuming from a checkpoint/using checkpointing/doing no checkpointing. By making our training progress manager the source of truth for all training related variables/objects, we effectively offload the task of maintaining training state and checkpointing to the manager. And the manager internally decides when it should save what objects.
-
-        Another reason to explain this unified design is that if we have seperate calls for indexing with/out checkpoint, we have to be sure that making changes in one does not break the other.
         """
 
-        training_progress_manager = (
-            TrainingProgressManager.make_training_manager_scratch(
-                model=self,
-                intro_documents=intro_documents,
-                train_documents=train_documents,
-                should_train=should_train,
-                fast_approximation=fast_approximation,
-                num_buckets_to_sample=num_buckets_to_sample,
-                max_in_memory_batches=max_in_memory_batches,
-                override_number_classes=override_number_classes,
-                variable_length=variable_length,
-                checkpoint_config=checkpoint_config,
-                **kwargs,
-            )
+        training_progress_manager = TrainingProgressManager.from_scratch(
+            model=self,
+            intro_documents=intro_documents,
+            train_documents=train_documents,
+            should_train=should_train,
+            fast_approximation=fast_approximation,
+            num_buckets_to_sample=num_buckets_to_sample,
+            max_in_memory_batches=max_in_memory_batches,
+            override_number_classes=override_number_classes,
+            variable_length=variable_length,
+            checkpoint_config=checkpoint_config,
+            **kwargs,
         )
 
         training_progress_manager.make_preindexing_checkpoint()
