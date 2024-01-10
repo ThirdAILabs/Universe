@@ -336,12 +336,12 @@ def test_neural_db_supervised_train_with_comma():
         f.write('0,"first, second"\n')
 
     source_ids = db.insert(
-        ndb.CSV("mock_unsup.csv", id_column="id", strong_columns=["strong"])
+        [ndb.CSV("mock_unsup.csv", id_column="id", strong_columns=["strong"])]
     )
 
     with open("mock_sup.csv", "w") as f:
         f.write("id,query\n")
-        f.write('4,"sixth, seventh"\n')
+        f.write('0,"sixth, seventh"\n')
 
     sup_doc = ndb.Sup(
         "mock_sup.csv",
