@@ -1,4 +1,6 @@
 #include "DenseTensor.h"
+#include <smx/src/tensor/Dtype.h>
+#include <string>
 
 namespace thirdai::smx {
 
@@ -39,6 +41,27 @@ DenseTensorPtr DenseTensor::make(const std::vector<uint32_t>& data,
   auto tensor = make(shape, Dtype::u32);
   std::copy(data.begin(), data.end(), tensor->data<uint32_t>());
   return tensor;
+}
+
+std::shared_ptr<DenseTensor> DenseTensor::index(
+    const std::vector<size_t>& indices) {
+  CHECK(indices.size() <= ndim(),
+        "Cannot index a tensor with ndim=" + std::to_string(ndim()) + " with " +
+            std::to_string(indices.size()) + " indices.");
+
+  size_t offset = 0;
+  for (size_t i = 0; i < indices.size(); i++) {
+    CHECK(indices[i] < _shape[i], "Cannot index the " + std::to_string(i) +
+                                      "-th dimension of tensor with shape " +
+                                      _shape.toString() + " with index " +
+                                      std::to_string(indices[i]) + ".");
+    offset += indices[i] * _strides[i];
+  }
+  offset *= sizeofDtype(_dtype);
+
+  return std::shared_ptr<DenseTensor>(new DenseTensor(
+      _shape.slice(indices.size()), _strides.slice(indices.size()), _dtype,
+      reinterpret_cast<uint8_t*>(_ptr) + offset, _data));
 }
 
 }  // namespace thirdai::smx

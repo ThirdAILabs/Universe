@@ -161,6 +161,8 @@ class DenseTensor final : public Tensor {
 
   const MemoryHandlePtr& handle() const { return _data; }
 
+  std::shared_ptr<DenseTensor> index(const std::vector<size_t>& indices);
+
   template <typename T>
   T scalar() const {
     checkDtypeCompatability<T>();
@@ -173,6 +175,9 @@ class DenseTensor final : public Tensor {
   }
 
  private:
+  DenseTensor(Shape shape, Shape strides, Dtype dtype, void* ptr,
+              MemoryHandlePtr data);
+
   template <typename T>
   void checkDtypeCompatability() const {
     if (getDtype<T>() != _dtype) {

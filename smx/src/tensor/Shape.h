@@ -29,6 +29,18 @@ class Shape {
 
   auto end() const { return _shape.end(); }
 
+  Shape slice(size_t start, size_t end) const {
+    if (start > end || end > ndim()) {
+      throw std::invalid_argument(
+          "Cannot slice shape with ndim=" + std::to_string(ndim()) +
+          " with indices (" + std::to_string(start) + ", " +
+          std::to_string(end) + ").");
+    }
+    return Shape(std::vector<size_t>{begin() + start, begin() + end});
+  }
+
+  Shape slice(size_t start) const { return slice(start, ndim()); }
+
   size_t operator[](size_t dim) const {
     if (dim >= _shape.size()) {
       throw std::out_of_range("Cannot access dim " + std::to_string(dim) +

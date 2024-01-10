@@ -59,10 +59,16 @@ DenseTensorPtr denseTensorFromNumpy(const NumpyArray<T>& array) {
 py::object denseTensorToNumpy(const DenseTensorPtr& tensor) {
   switch (tensor->dtype()) {
     case Dtype::f32:
+      if (tensor->shape().isScalar()) {
+        return py::cast(tensor->scalar<float>());
+      }
       return NumpyArray<float>(/*shape=*/tensor->shape().vector(),
                                /*ptr=*/tensor->data<float>(),
                                /*base=*/py::cast(tensor));
     case Dtype::u32:
+      if (tensor->shape().isScalar()) {
+        return py::cast(tensor->scalar<uint32_t>());
+      }
       return NumpyArray<uint32_t>(/*shape=*/tensor->shape().vector(),
                                   /*ptr=*/tensor->data<uint32_t>(),
                                   /*base=*/py::cast(tensor));
