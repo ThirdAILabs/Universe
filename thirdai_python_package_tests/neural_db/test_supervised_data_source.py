@@ -136,11 +136,11 @@ def test_sup_data_source(model_id_delimiter):
         id_delimiter=model_id_delimiter,
     )
     assert data_source.next_batch(TARGET_BATCH_SIZE) == [
-        "id,query",
+        'id,"query"',
         *expected_rows(
             queries=[
-                "this is the first query",
-                "this is the second query",
+                '"this is the first query"',
+                '"this is the second query"',
             ],
             labels=[[0], [0, 1]],
             delimiter=model_id_delimiter,
