@@ -183,11 +183,15 @@ FullyConnected::parameterAndGradNorms() const {
   };
 
   compute_norms(_kernel->weights(), "weight");
-  compute_norms(_kernel->weightsGradient(), "weight_grad");
+  if (_kernel->hasOptimizers()) {
+    compute_norms(_kernel->weightsGradient(), "weight_grad");
+  }
 
   if (_kernel->useBias()) {
     compute_norms(_kernel->biases(), "bias");
-    compute_norms(_kernel->biasGradient(), "bias_grad");
+    if (_kernel->hasOptimizers()) {
+      compute_norms(_kernel->biasGradient(), "bias_grad");
+    }
   }
 
   return all_norms;

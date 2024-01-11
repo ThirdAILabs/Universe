@@ -256,11 +256,15 @@ std::vector<std::pair<std::string, double>> Embedding::parameterAndGradNorms()
   };
 
   compute_norms(_embeddings, "embeddings");
-  compute_norms(_embedding_optimizer->gradients, "embeddings_grad");
+  if (_embedding_optimizer) {
+    compute_norms(_embedding_optimizer->gradients, "embeddings_grad");
+  }
 
   if (_bias) {
     compute_norms(_biases, "bias");
-    compute_norms(_bias_optimizer->gradients, "bias_grad");
+    if (_bias_optimizer) {
+      compute_norms(_bias_optimizer->gradients, "bias_grad");
+    }
   }
 
   return all_norms;
