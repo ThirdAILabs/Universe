@@ -13,6 +13,7 @@ from ndb_utils import (
     docs_with_meta,
     metadata_constraints,
     num_duplicate_docs,
+    search_works,
     train_simple_neural_db,
 )
 from thirdai import dataset
@@ -69,42 +70,6 @@ def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document]):
     assert len(db.sources()) == len(docs) - num_duplicate_docs
 
     assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
-
-
-def search_works(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
-    top_k = 5
-    correct_result = 0
-    correct_source = 0
-    for doc in docs:
-        if isinstance(doc, ndb.SharePoint):
-            continue
-        source = doc.reference(0).source
-        for elem_id in range(doc.size):
-            query = doc.reference(elem_id).text
-            results = db.search(query, top_k)
-
-            assert len(results) >= 1
-            assert len(results) <= top_k
-
-            for result in results:
-                assert type(result.text) == str
-                assert len(result.text) > 0
-
-            correct_result += int(query in [r.text for r in results])
-            correct_source += int(source in [r.source for r in results])
-
-            batch_results = db.search_batch(
-                [query, query, "SOME TOTAL RANDOM QUERY"], top_k
-            )
-
-            assert len(batch_results) == 3
-            assert batch_results[0] == results
-            assert batch_results[0] == batch_results[1]
-            assert batch_results[0] != batch_results[2]
-
-    assert correct_source / sum([doc.size for doc in docs]) > 0.8
-    if assert_acc:
-        assert correct_result / sum([doc.size for doc in docs]) > 0.8
 
 
 def upvote_works(db: ndb.NeuralDB):

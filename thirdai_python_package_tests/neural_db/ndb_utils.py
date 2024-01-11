@@ -1,4 +1,5 @@
 import os
+from typing import List
 
 import pandas as pd
 import pytest
@@ -265,3 +266,48 @@ metadata_constraints = [
     SENTENCE_PDF_META,
     SENTENCE_DOCX_META,
 ]
+
+
+def search_works(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
+    top_k = 5
+    correct_result = 0
+    correct_source = 0
+    for doc in docs:
+        if isinstance(doc, ndb.SharePoint):
+            continue
+        source = doc.reference(0).source
+        for elem_id in range(doc.size):
+            query = doc.reference(elem_id).text
+            results = db.search(query, top_k)
+
+            assert len(results) >= 1
+            assert len(results) <= top_k
+
+            for result in results:
+                assert type(result.text) == str
+                assert len(result.text) > 0
+
+            correct_result += int(query in [r.text for r in results])
+            correct_source += int(source in [r.source for r in results])
+
+            batch_results = db.search_batch(
+                [query, query, "SOME TOTAL RANDOM QUERY"], top_k
+            )
+            print("=" * 100)
+            print(query)
+            print("*" * 100)
+            print(batch_results[0])
+            print("*" * 100)
+            print(batch_results[1])
+            print("*" * 100)
+            print(batch_results[2])
+            print("=" * 100)
+
+            assert len(batch_results) == 3
+            assert batch_results[0] == results
+            assert batch_results[0] == batch_results[1]
+            assert batch_results[0] != batch_results[2]
+
+    assert correct_source / sum([doc.size for doc in docs]) > 0.8
+    if assert_acc:
+        assert correct_result / sum([doc.size for doc in docs]) > 0.8
