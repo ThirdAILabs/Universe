@@ -117,7 +117,7 @@ def test_sup_data_source(model_id_delimiter):
         doc_manager, query_col="query", data=[sup_doc], id_delimiter=model_id_delimiter
     )
     assert data_source.next_batch(TARGET_BATCH_SIZE) == [
-        "id,query",
+        'id,"query"',
         '0,"this is the first query"',
         '1,"this is the second query"',
     ]
