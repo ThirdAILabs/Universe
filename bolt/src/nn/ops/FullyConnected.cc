@@ -170,6 +170,29 @@ void FullyConnected::registerModel(const std::weak_ptr<Model>& new_model) {
   }
 }
 
+std::vector<std::pair<std::string, double>>
+FullyConnected::parameterAndGradNorms() const {
+  std::vector<std::pair<std::string, double>> all_norms;
+
+  auto compute_norms = [&all_norms](const std::vector<float>& data,
+                                    const std::string& prefix) {
+    auto [l1_norm, l2_norm, l_inf_norm] = norms(data.data(), data.size());
+    all_norms.emplace_back(prefix + "_l1_norm", l1_norm);
+    all_norms.emplace_back(prefix + "_l2_norm", l2_norm);
+    all_norms.emplace_back(prefix + "_l_inf_norm", l_inf_norm);
+  };
+
+  compute_norms(_kernel->weights(), "weight");
+  compute_norms(_kernel->weightsGradient(), "weight_grad");
+
+  if (_kernel->useBias()) {
+    compute_norms(_kernel->biases(), "bias");
+    compute_norms(_kernel->biasGradient(), "bias_grad");
+  }
+
+  return all_norms;
+}
+
 ComputationPtr FullyConnected::apply(ComputationPtr input) {
   if (input->dim() != _kernel->getInputDim()) {
     std::stringstream error;

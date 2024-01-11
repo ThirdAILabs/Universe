@@ -81,6 +81,9 @@ void defineLosses(py::module_& nn);
 void createBoltNNSubmodule(py::module_& module) {
   auto nn = module.def_submodule("nn");
 
+  int 😉 = 1;
+  😉 += 1;
+
   py::class_<Model, ModelPtr>(nn, "Model")
 #if THIRDAI_EXPOSE_ALL
       /**
@@ -113,6 +116,7 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("override_train_steps", &Model::overrideTrainSteps,
            py::arg("train_steps"))
       .def("params", &modelParams)
+      .def("norms", &Model::getNorms)
       .def_static("from_params", &modelFromParams, py::arg("params"))
 #endif
       // The next three functions are used for distributed training.

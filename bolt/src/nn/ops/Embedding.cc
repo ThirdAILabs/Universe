@@ -243,6 +243,29 @@ void Embedding::summary(std::ostream& summary, const ComputationList& inputs,
           << ", bias=" << std::boolalpha << _bias << "]";
 }
 
+std::vector<std::pair<std::string, double>> Embedding::parameterAndGradNorms()
+    const {
+  std::vector<std::pair<std::string, double>> all_norms;
+
+  auto compute_norms = [&all_norms](const std::vector<float>& data,
+                                    const std::string& prefix) {
+    auto [l1_norm, l2_norm, l_inf_norm] = norms(data.data(), data.size());
+    all_norms.emplace_back(prefix + "_l1_norm", l1_norm);
+    all_norms.emplace_back(prefix + "_l2_norm", l2_norm);
+    all_norms.emplace_back(prefix + "_l_inf_norm", l_inf_norm);
+  };
+
+  compute_norms(_embeddings, "embeddings");
+  compute_norms(_embedding_optimizer->gradients, "embeddings_grad");
+
+  if (_bias) {
+    compute_norms(_biases, "bias");
+    compute_norms(_bias_optimizer->gradients, "bias_grad");
+  }
+
+  return all_norms;
+}
+
 ComputationPtr Embedding::apply(ComputationPtr input) {
   if (input->dim() != _input_dim) {
     throw std::invalid_argument(

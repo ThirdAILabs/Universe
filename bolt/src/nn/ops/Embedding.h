@@ -65,6 +65,9 @@ class Embedding final : public Op,
     _should_serialize_optimizer = should_serialize_optimizer;
   }
 
+  std::vector<std::pair<std::string, double>> parameterAndGradNorms()
+      const final;
+
   ComputationPtr apply(ComputationPtr input);
 
   uint32_t inputDim() const { return _input_dim; }
