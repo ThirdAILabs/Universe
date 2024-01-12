@@ -186,6 +186,17 @@ py::object UDTMachClassifier::train(
                             callbacks, options, comm);
 }
 
+py::object UDTMachClassifier::trainOnTensors(
+    const bolt::LabeledDataset& train_data, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    const bolt::LabeledDataset& val_data,
+    const std::vector<std::string>& val_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
+  return _classifier->train(
+      train_data, learning_rate, epochs, getMetrics(train_metrics, "train_"),
+      val_data, getMetrics(val_metrics, "val_"), callbacks, options);
+}
+
 py::object UDTMachClassifier::trainBatch(
     const MapInputBatch& batch, float learning_rate,
     const std::vector<std::string>& metrics) {

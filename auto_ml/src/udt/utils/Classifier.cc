@@ -3,6 +3,7 @@
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/metrics/Metric.h>
+#include <bolt/src/nn/model/Model.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/udt/Defaults.h>
@@ -104,6 +105,98 @@ py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
       /* verbose= */ options.verbose,
       /* logging_interval= */ options.logging_interval,
       /*comm= */ comm);
+
+  return py::cast(history);
+}
+
+py::object Classifier::train(const bolt::LabeledDataset& train_data,
+                             float learning_rate, uint32_t epochs,
+                             const InputMetrics& train_metrics,
+                             const bolt::LabeledDataset& val_data,
+                             const InputMetrics& val_metrics,
+                             const std::vector<CallbackPtr>& callbacks,
+                             TrainOptions options) {
+  // We first need to verify whether the tensors are of appropriate dimensions
+  // or not
+  auto vec_eq = [](const auto& a, const auto& b) -> bool {
+    if (a.size() != b.size()) {
+      return false;
+    }
+    for (uint32_t i = 0; i < a.size(); i++) {
+      if (a[i] != b[i]) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  auto get_tensor_size =
+      [](const bolt::Dataset& dataset) -> std::vector<uint32_t> {
+    std::vector<uint32_t> dims;
+    for (const auto& tensor : dataset[0]) {
+      dims.push_back(tensor->dim());
+    }
+    return dims;
+  };
+
+  auto assert_valid_tensors = [get_tensor_size, vec_eq](
+                                  const bolt::ModelPtr& model,
+                                  const bolt::LabeledDataset& dataset) -> void {
+    auto model_input_dims = model->inputDims();
+    auto input_tensor_dims = get_tensor_size(dataset.first);
+
+    if (!vec_eq(model_input_dims, input_tensor_dims)) {
+      throw std::invalid_argument(
+          "Input dim mismatch while training on tensors.");
+    }
+
+    auto model_output_dims = model->labelDims();
+    auto output_tensor_dims = get_tensor_size(dataset.second);
+    if (!vec_eq(model_output_dims, output_tensor_dims)) {
+      throw std::invalid_argument(
+          "Label dim mismatch while training on tensors.");
+    }
+  };
+  auto print_vector = [](const std::vector<uint32_t>& vec) -> void {
+    for (const auto& x : vec) {
+      std::cout << x << ", ";
+    }
+    std::cout << std::endl;
+  };
+
+  assert_valid_tensors(_model, train_data);
+  assert_valid_tensors(_model, val_data);
+
+  std::cout << "Input Dims: ";
+  print_vector(_model->inputDims());
+
+  std::cout << "Data Input Dims: ";
+  print_vector(get_tensor_size(train_data.first));
+
+  std::cout << "Output Dims: ";
+  print_vector(_model->labelDims());
+
+  std::cout << "Data Label Dims: ";
+  print_vector(get_tensor_size(train_data.second));
+
+  std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;
+  if (_freeze_hash_tables) {
+    freeze_hash_tables_epoch = 1;
+  }
+  bolt::Trainer trainer(_model, freeze_hash_tables_epoch,
+                        /* gradient_update_interval */ 1,
+                        bolt::python::CtrlCCheck{});
+  auto history = trainer.train(
+      /* train_data= */ train_data,
+      /* learning_rate= */ learning_rate, /* epochs= */ epochs,
+      /* train_metrics= */ train_metrics,
+      /* validation_data= */ val_data,
+      /* validation_metrics= */ val_metrics,
+      /* steps_per_validation= */ options.steps_per_validation,
+      /* use_sparsity_in_validation= */ options.sparse_validation,
+      /* callbacks= */ callbacks, /* autotune_rehash_rebuild= */ true,
+      /* verbose= */ options.verbose,
+      /* logging_interval= */ options.logging_interval);
 
   return py::cast(history);
 }

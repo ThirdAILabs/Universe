@@ -44,6 +44,14 @@ class UDTMachClassifier final : public UDTBackend {
                    TrainOptions options,
                    const bolt::DistributedCommPtr& comm) final;
 
+  py::object trainOnTensors(const bolt::LabeledDataset& train_data,
+                            float learning_rate, uint32_t epochs,
+                            const std::vector<std::string>& train_metrics,
+                            const bolt::LabeledDataset& val_data,
+                            const std::vector<std::string>& val_metrics,
+                            const std::vector<CallbackPtr>& callbacks,
+                            TrainOptions options) final;
+
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics) final;
 

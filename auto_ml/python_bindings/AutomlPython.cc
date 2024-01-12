@@ -1,6 +1,8 @@
 #include "AutomlPython.h"
 #include "AutomlDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
+#include <bolt/src/nn/tensor/Tensor.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/config/ModelConfig.h>
@@ -128,6 +130,17 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("callbacks") = std::vector<udt::CallbackPtr>{},
            py::arg("options") = udt::TrainOptions(), py::arg("comm") = nullptr,
            bolt::python::OutputRedirect())
+      .def(
+          "train_on_tensors",
+          [](udt::UDT& udt, const bolt::Dataset& input,
+             const bolt::Dataset& output) {
+            bolt::LabeledDataset dataset = std::make_pair(input, output);
+            return udt.trainOnTensors(
+                dataset, 0.001, 1, std::vector<std::string>{}, dataset,
+                std::vector<std::string>{}, std::vector<udt::CallbackPtr>{},
+                udt::TrainOptions());
+          },
+          py::arg("input"), py::arg("output"))
       .def("train_batch", &udt::UDT::trainBatch, py::arg("batch"),
            py::arg("learning_rate") = 0.001,
            py::arg("metrics") = std::vector<std::string>{},
