@@ -420,7 +420,6 @@ class CSV(Document):
         reference_columns: Optional[List[str]] = None,
         save_extra_info=True,
         metadata={},
-        index_columns=[],
         has_offset=False,
         on_disk=False,
     ) -> None:
@@ -482,7 +481,6 @@ class CSV(Document):
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
         self.doc_metadata_keys = set(self.doc_metadata.keys())
-        self.indexed_columns = index_columns
         # Add column names to hash metadata so that CSVs with different
         # hyperparameters are treated as different documents. Otherwise, this
         # may break training.
@@ -493,7 +491,6 @@ class CSV(Document):
             + str(sorted(self.strong_columns))
             + str(sorted(self.weak_columns))
             + str(sorted(self.reference_columns))
-            + str(sorted(self.indexed_columns))
             + str(sorted(list(self.doc_metadata.items()))),
         )
 
@@ -521,7 +518,7 @@ class CSV(Document):
             key: ConstraintValue(value) for key, value in self.doc_metadata.items()
         }
         indexed_column_constraints = {
-            key: ConstraintValue(is_any=True) for key in self.indexed_columns
+            key: ConstraintValue(is_any=True) for key in self.table.columns
         }
         return {**metadata_constraints, **indexed_column_constraints}
 
@@ -640,8 +637,6 @@ class CSV(Document):
             self.doc_metadata = {}
         if not hasattr(self, "doc_metadata_keys"):
             self.doc_metadata_keys = set()
-        if not hasattr(self, "indexed_columns"):
-            self.indexed_columns = []
         if not hasattr(self, "orig_to_assigned_id"):
             self.orig_to_assigned_id = None
         if not hasattr(self, "has_offset"):

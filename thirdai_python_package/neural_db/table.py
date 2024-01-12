@@ -62,6 +62,7 @@ class DataFrameTable(Table):
 
     @property
     def columns(self) -> List[str]:
+        # Excludes ID column
         return self.df.columns
 
     @property
@@ -139,6 +140,7 @@ class SQLiteTable(Table):
 
     @property
     def columns(self) -> List[str]:
+        # Excludes ID column
         return self.db_columns
 
     @property
