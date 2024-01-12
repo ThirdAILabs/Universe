@@ -1,6 +1,6 @@
-from thirdai import bolt
 import numpy as np
 import pytest
+from thirdai import bolt
 
 pytestmark = [pytest.mark.unit]
 
