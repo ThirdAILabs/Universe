@@ -174,23 +174,15 @@ std::vector<std::pair<std::string, double>>
 FullyConnected::parameterAndGradNorms() const {
   std::vector<std::pair<std::string, double>> all_norms;
 
-  auto compute_norms = [&all_norms](const std::vector<float>& data,
-                                    const std::string& prefix) {
-    auto [l1_norm, l2_norm, l_inf_norm] = norms(data.data(), data.size());
-    all_norms.emplace_back(prefix + "_l1_norm", l1_norm);
-    all_norms.emplace_back(prefix + "_l2_norm", l2_norm);
-    all_norms.emplace_back(prefix + "_l_inf_norm", l_inf_norm);
-  };
-
-  compute_norms(_kernel->weights(), "weight");
+  computeNorms(_kernel->weights(), "weight", all_norms);
   if (_kernel->hasOptimizers()) {
-    compute_norms(_kernel->weightsGradient(), "weight_grad");
+    computeNorms(_kernel->weightsGradient(), "weight_grad", all_norms);
   }
 
   if (_kernel->useBias()) {
-    compute_norms(_kernel->biases(), "bias");
+    computeNorms(_kernel->biases(), "bias", all_norms);
     if (_kernel->hasOptimizers()) {
-      compute_norms(_kernel->biasGradient(), "bias_grad");
+      computeNorms(_kernel->biasGradient(), "bias_grad", all_norms);
     }
   }
 

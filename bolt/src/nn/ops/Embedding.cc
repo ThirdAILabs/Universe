@@ -247,23 +247,15 @@ std::vector<std::pair<std::string, double>> Embedding::parameterAndGradNorms()
     const {
   std::vector<std::pair<std::string, double>> all_norms;
 
-  auto compute_norms = [&all_norms](const std::vector<float>& data,
-                                    const std::string& prefix) {
-    auto [l1_norm, l2_norm, l_inf_norm] = norms(data.data(), data.size());
-    all_norms.emplace_back(prefix + "_l1_norm", l1_norm);
-    all_norms.emplace_back(prefix + "_l2_norm", l2_norm);
-    all_norms.emplace_back(prefix + "_l_inf_norm", l_inf_norm);
-  };
-
-  compute_norms(_embeddings, "embeddings");
+  computeNorms(_embeddings, "embeddings", all_norms);
   if (_embedding_optimizer) {
-    compute_norms(_embedding_optimizer->gradients, "embeddings_grad");
+    computeNorms(_embedding_optimizer->gradients, "embeddings_grad", all_norms);
   }
 
   if (_bias) {
-    compute_norms(_biases, "bias");
+    computeNorms(_biases, "bias", all_norms);
     if (_bias_optimizer) {
-      compute_norms(_bias_optimizer->gradients, "bias_grad");
+      computeNorms(_bias_optimizer->gradients, "bias_grad", all_norms);
     }
   }
 

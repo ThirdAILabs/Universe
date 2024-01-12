@@ -96,6 +96,8 @@ class EmbeddingLayer {
 
   uint32_t hashSeed() const { return _hash_fn.seed(); }
 
+  bool hasOptimizer() const { return _optimizer.has_value(); }
+
   ~EmbeddingLayer() = default;
 
  private:
