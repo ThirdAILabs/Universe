@@ -355,6 +355,11 @@ class UDTBackend {
     throw notSupported("set_mach_sampling_threshold");
   }
 
+  virtual void saveCppClassifier(const std::string& save_path) const {
+    (void)save_path;
+    throw notSupported("save_cpp_classifier");
+  }
+
   virtual ~UDTBackend() = default;
 
  protected:

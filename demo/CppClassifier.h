@@ -16,11 +16,6 @@ class Featurizer;
 
 class CppClassifier {
  public:
-  CppClassifier(std::shared_ptr<automl::Featurizer> featurizer,
-                std::shared_ptr<bolt::Model> model);
-
-  CppClassifier();
-
   static std::shared_ptr<CppClassifier> load(const std::string& saved_model);
 
   uint32_t predict(const std::unordered_map<std::string, std::string>& input);

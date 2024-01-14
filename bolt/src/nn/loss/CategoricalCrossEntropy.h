@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/nn/loss/ComparativeLoss.h>
 
 namespace thirdai::bolt {
@@ -35,3 +37,10 @@ class CategoricalCrossEntropy final : public ComparativeLoss {
 using CategoricalCrossEntropyPtr = std::shared_ptr<CategoricalCrossEntropy>;
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE_WITH_NAME(
+    thirdai::bolt::CategoricalCrossEntropy,
+    "thirdai::bolt::nn::loss::CategoricalCrossEntropy")
+
+CEREAL_REGISTER_POLYMORPHIC_RELATION(thirdai::bolt::Loss,
+                                     thirdai::bolt::CategoricalCrossEntropy)

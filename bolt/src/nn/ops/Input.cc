@@ -80,6 +80,3 @@ void Input::serialize(Archive& archive) {
 }
 
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::Input,
-                               "thirdai::bolt::nn::ops::Input")
