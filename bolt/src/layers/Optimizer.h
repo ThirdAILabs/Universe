@@ -34,9 +34,12 @@ struct AdamOptimizer {
     float B1_bias_corrected = static_cast<float>(1 - pow(BETA1, train_steps));
     float B2_bias_corrected = static_cast<float>(1 - pow(BETA2, train_steps));
 
-#pragma omp parallel for default(none) \
-    shared(params, B1_bias_corrected, B2_bias_corrected, learning_rate)
+    float w_decay = 1 - learning_rate * 0.01;
+
+#pragma omp parallel for default(none) shared( \
+    params, B1_bias_corrected, B2_bias_corrected, learning_rate, w_decay)
     for (uint64_t n = 0; n < params.size(); n++) {
+      params[n] *= w_decay;
       float grad = gradients[n];
       assert(!std::isnan(grad));
 

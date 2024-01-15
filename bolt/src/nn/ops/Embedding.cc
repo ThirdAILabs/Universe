@@ -203,8 +203,10 @@ void Embedding::sparseEmbeddingUpdate(float learning_rate,
   float B1_bias_corrected = static_cast<float>(1 - pow(BETA1, train_steps));
   float B2_bias_corrected = static_cast<float>(1 - pow(BETA2, train_steps));
 
+  float w_decay = 0.01 * learning_rate;
+
 #pragma omp parallel for default(none) \
-    shared(B1_bias_corrected, B2_bias_corrected, learning_rate)
+    shared(B1_bias_corrected, B2_bias_corrected, learning_rate, w_decay)
   for (size_t n = 0; n < _input_dim; n++) {
     if (!_embeddings_used[n]) {
       continue;
@@ -212,6 +214,9 @@ void Embedding::sparseEmbeddingUpdate(float learning_rate,
     _embeddings_used[n] = false;
     for (size_t i = 0; i < _dim; i++) {
       size_t index = n * _dim + i;
+
+      _embeddings[index] *= w_decay;
+
       float grad = _embedding_optimizer->gradients[index];
 
       _embedding_optimizer->momentum[index] =
