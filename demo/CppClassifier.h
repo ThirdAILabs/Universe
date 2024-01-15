@@ -10,14 +10,6 @@ namespace licensing {
 void activate(std::string api_key);
 }  // namespace licensing
 
-namespace bolt {
-class Model;
-}  // namespace bolt
-
-namespace automl {
-class Featurizer;
-}  // namespace automl
-
 class CppClassifier {
  public:
   static std::shared_ptr<CppClassifier> load(const std::string& saved_model);
@@ -26,10 +18,6 @@ class CppClassifier {
 
   template <class Archive>
   void serialize(Archive& archive);
-
- private:
-  std::shared_ptr<automl::Featurizer> _featurizer;
-  std::shared_ptr<bolt::Model> _model;
 };
 
 }  // namespace thirdai
