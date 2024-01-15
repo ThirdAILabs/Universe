@@ -1,8 +1,6 @@
 #pragma once
 
 #include <cereal/access.hpp>
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/nn/loss/ComparativeLoss.h>
 
 namespace thirdai::bolt {

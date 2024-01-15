@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>

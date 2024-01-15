@@ -2,7 +2,6 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/optional.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/layers/Optimizer.h>
