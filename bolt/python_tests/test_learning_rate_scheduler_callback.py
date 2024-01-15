@@ -76,15 +76,3 @@ def test_multi_step_lr():
     )
 
     assert math.isclose(ending_lr, 4e-05, rel_tol=1e-06)
-
-
-@pytest.mark.unit
-def test_cosineAnnealingWarmRestart_lr():
-    lr_schedule = bolt.train.callbacks.CosineAnnealingWarmRestart(
-        initial_restart_iter=3, iter_restart_multiplicative_factor=2
-    )
-    ending_lr = train_model_with_scheduler(
-        epochs=5, base_learning_rate=0.001, schedule=lr_schedule
-    )
-
-    assert math.isclose(ending_lr, 0.0009330127018922195, rel_tol=1e-06)

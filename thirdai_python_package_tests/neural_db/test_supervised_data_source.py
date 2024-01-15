@@ -89,12 +89,12 @@ def test_sup_data_source(model_id_delimiter):
         doc_manager, query_col="query", data=[sup_doc], id_delimiter=model_id_delimiter
     )
     assert data_source.next_batch(TARGET_BATCH_SIZE) == [
-        "id,query",
+        'id,"query"',
         *expected_rows(
             queries=[
-                "this is the first query",
-                "this is the second query",
-                "trailing label delimiter",
+                '"this is the first query"',
+                '"this is the second query"',
+                '"trailing label delimiter"',
             ],
             labels=[[0], [0, 1], [0, 1]],
             delimiter=model_id_delimiter,
@@ -117,9 +117,9 @@ def test_sup_data_source(model_id_delimiter):
         doc_manager, query_col="query", data=[sup_doc], id_delimiter=model_id_delimiter
     )
     assert data_source.next_batch(TARGET_BATCH_SIZE) == [
-        "id,query",
-        "0,this is the first query",
-        "1,this is the second query",
+        'id,"query"',
+        '0,"this is the first query"',
+        '1,"this is the second query"',
     ]
 
     data_source = SupDataSource(
@@ -136,11 +136,11 @@ def test_sup_data_source(model_id_delimiter):
         id_delimiter=model_id_delimiter,
     )
     assert data_source.next_batch(TARGET_BATCH_SIZE) == [
-        "id,query",
+        'id,"query"',
         *expected_rows(
             queries=[
-                "this is the first query",
-                "this is the second query",
+                '"this is the first query"',
+                '"this is the second query"',
             ],
             labels=[[0], [0, 1]],
             delimiter=model_id_delimiter,
@@ -190,10 +190,10 @@ def test_sup_data_source_with_id_map():
     )
 
     assert data_source.next_batch(TARGET_BATCH_SIZE) == [
-        "model_id,model_query",
-        "0,this is the first query",
-        "0 1,this is the second query",
-        "0 1,trailing label delimiter",
+        'model_id,"model_query"',
+        '0,"this is the first query"',
+        '0 1,"this is the second query"',
+        '0 1,"trailing label delimiter"',
     ]
 
 
