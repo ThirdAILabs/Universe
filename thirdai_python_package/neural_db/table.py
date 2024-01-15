@@ -195,4 +195,4 @@ class SQLiteTable(Table):
         self.db_path = str(directory / Path(self.db_path).name)
 
     def apply_filter(self, table_filter: TableFilter):
-        table_filter.filter_sql_ids(sqlite3.connect(self.db_path), "sqlitetable")
+        return table_filter.filter_sql_ids(sqlite3.connect(self.db_path), "sqlitetable")
