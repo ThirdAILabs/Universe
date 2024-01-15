@@ -5,6 +5,8 @@
 #include <utility>
 
 int main() {
+  thirdai::licensing::activate("<your api key>");
+
   auto model = thirdai::CppClassifier::load("./udt_classifier");
 
   uint32_t correct = 0, total = 0;

@@ -6,6 +6,10 @@
 
 namespace thirdai {
 
+namespace licensing {
+void activate(std::string api_key);
+}  // namespace licensing
+
 namespace bolt {
 class Model;
 }  // namespace bolt
