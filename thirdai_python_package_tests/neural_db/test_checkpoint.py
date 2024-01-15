@@ -20,7 +20,7 @@ from thirdai.neural_db.trainer.training_progress_tracker import (
 )
 from thirdai.neural_db.utils import pickle_to, unpickle_from
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit]
 
 ARBITRARY_QUERY = "This is an arbitrary search query"
 CHECKPOINT_DIR = "/tmp/neural_db"
@@ -140,7 +140,7 @@ def make_db_and_training_manager(makes_checkpoint=True):
     document_manager.add(DOCS_TO_INSERT)
 
     save_load_manager = TrainingDataManager(
-        checkpoint_dir=Path(CHECKPOINT_DIR) / str(0),
+        checkpoint_dir=checkpoint_dir,
         model=db._savable_state.model.models[0],
         intro_source=document_manager.get_data_source(),
         train_source=document_manager.get_data_source(),
@@ -163,9 +163,7 @@ def make_db_and_training_manager(makes_checkpoint=True):
                 freeze_after_epoch=7,
                 freeze_after_acc=0.95,
             ),
-            vlc_config=data.transformations.VariableLengthConfig(
-                covering_min_length=20
-            ),
+            vlc_config=data.transformations.VariableLengthConfig(),
         ),
     )
 
@@ -179,6 +177,7 @@ def make_db_and_training_manager(makes_checkpoint=True):
 
 
 # Asserts that the final checkpoint created is the same as the db who reference is held rn.
+@pytest.mark.release
 def test_neural_db_checkpoint_on_single_mach():
     db = train_neural_db_with_checkpoint(number_models=1)
     loaded_db = ndb.NeuralDB.from_checkpoint(
@@ -189,6 +188,7 @@ def test_neural_db_checkpoint_on_single_mach():
     cleanup()
 
 
+@pytest.mark.release
 def test_neural_db_checkpoint_on_mach_mixture():
     db = train_neural_db_with_checkpoint(number_models=2)
     loaded_db = ndb.NeuralDB.from_checkpoint(
@@ -198,18 +198,21 @@ def test_neural_db_checkpoint_on_mach_mixture():
     cleanup()
 
 
+@pytest.mark.release
 def test_interrupted_training_single_mach():
     interrupted_training(number_models=1, interrupt_function=interrupt_immediately)
     interrupted_training(number_models=1, interrupt_function=interrupt_midway)
     interrupted_training(number_models=1, interrupt_function=interrupt_at_end)
 
 
+@pytest.mark.release
 def test_interrupted_training_mach_mixture():
     interrupted_training(number_models=2, interrupt_function=interrupt_immediately)
     interrupted_training(number_models=2, interrupt_function=interrupt_midway)
     interrupted_training(number_models=2, interrupt_function=interrupt_at_end)
 
 
+@pytest.mark.release
 def test_reset_model_while_checkpointing():
     model1 = Mach(
         id_col="id",
@@ -233,6 +236,7 @@ def test_reset_model_while_checkpointing():
     assert_same_objects(model1, model2)
 
 
+@pytest.mark.release
 def test_meta_save_load_for_mach_mixture():
     # This test asserts that the label to segment map is saved and loaded correctly.
     setup()
@@ -308,7 +312,7 @@ def test_tracker_save_load():
             freeze_after_epoch=7,
             freeze_after_acc=0.95,
         ),
-        vlc_config=data.transformations.VariableLengthConfig(covering_min_length=20),
+        vlc_config=data.transformations.VariableLengthConfig(),
     )
 
     tracker.save(Path(CHECKPOINT_DIR) / "tracker")
@@ -320,6 +324,7 @@ def test_tracker_save_load():
     cleanup()
 
 
+@pytest.mark.release
 def test_save_load_training_data_manager():
     setup()
     _, training_manager, _ = make_db_and_training_manager(makes_checkpoint=True)
@@ -344,6 +349,7 @@ def test_save_load_training_data_manager():
     cleanup()
 
 
+@pytest.mark.release
 def test_training_progress_manager_no_checkpointing():
     setup()
 
@@ -374,6 +380,7 @@ def test_training_progress_manager_no_checkpointing():
     cleanup()
 
 
+@pytest.mark.release
 def test_training_progress_manager_with_resuming():
     db, training_manager, checkpoint_dir = make_db_and_training_manager(
         makes_checkpoint=True
