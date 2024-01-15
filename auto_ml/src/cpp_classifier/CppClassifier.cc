@@ -15,8 +15,11 @@
 namespace thirdai {
 
 CppClassifier::CppClassifier(std::shared_ptr<automl::Featurizer> featurizer,
-                             std::shared_ptr<bolt::Model> model)
-    : _featurizer(std::move(featurizer)), _model(std::move(model)) {
+                             std::shared_ptr<bolt::Model> model,
+                             std::optional<float> binary_prediction_threshold)
+    : _featurizer(std::move(featurizer)),
+      _model(std::move(model)),
+      _binary_prediction_threshold(binary_prediction_threshold) {
   auto comps = _model->computationOrder();
   bool ops_compatible =
       comps.size() == 3 &&
@@ -32,6 +35,9 @@ CppClassifier::CppClassifier(std::shared_ptr<automl::Featurizer> featurizer,
   if (!ops_compatible || !loss_compatible) {
     throw std::invalid_argument(
         "Model architecture is not compatible for use with CppClassifier.");
+  }
+  if (_binary_prediction_threshold && _model->outputs()[0]->dim() != 2) {
+    throw std::invalid_argument("Binary classifier must have output dim=2.");
   }
 }
 
@@ -53,6 +59,9 @@ uint32_t CppClassifier::predict(
     const std::unordered_map<std::string, std::string>& input) {
   auto output = _model->forward(_featurizer->featurizeInput(input)).at(0);
 
+  if (_binary_prediction_threshold) {
+    return output->getVector(0).activations[1] >= *_binary_prediction_threshold;
+  }
   return output->getVector(0).getHighestActivationId();
 }
 

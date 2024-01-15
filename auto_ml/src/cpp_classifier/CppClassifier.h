@@ -17,7 +17,8 @@ class Featurizer;
 class CppClassifier {
  public:
   CppClassifier(std::shared_ptr<automl::Featurizer> featurizer,
-                std::shared_ptr<bolt::Model> model);
+                std::shared_ptr<bolt::Model> model,
+                std::optional<float> binary_prediction_threshold);
 
   CppClassifier();
 
@@ -33,6 +34,7 @@ class CppClassifier {
  private:
   std::shared_ptr<automl::Featurizer> _featurizer;
   std::shared_ptr<bolt::Model> _model;
+  std::optional<float> _binary_prediction_threshold;
 };
 
 }  // namespace thirdai
