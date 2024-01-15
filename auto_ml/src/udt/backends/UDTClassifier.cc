@@ -326,7 +326,8 @@ bool UDTClassifier::integerTarget() const {
 }
 
 void UDTClassifier::saveCppClassifier(const std::string& save_path) const {
-  CppClassifier classifier(_featurizer, _classifier->model());
+  CppClassifier classifier(_featurizer, _classifier->model(),
+                           _classifier->binaryPredictionThreshold());
 
   auto ostream = dataset::SafeFileIO::ofstream(save_path);
   cereal::BinaryOutputArchive oarchive(ostream);

@@ -70,7 +70,7 @@ template void CppClassifier::serialize(cereal::BinaryOutputArchive& archive);
 
 template <class Archive>
 void CppClassifier::serialize(Archive& archive) {
-  archive(_featurizer, _model);
+  archive(_featurizer, _model, _binary_prediction_threshold);
 }
 
 }  // namespace thirdai
