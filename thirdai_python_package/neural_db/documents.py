@@ -397,6 +397,7 @@ class CSV(Document):
             constrains to restrict results based on the metadata.
     """
 
+    @staticmethod
     def valid_id_column(column):
         return (
             (len(column.unique()) == len(column))
@@ -415,6 +416,7 @@ class CSV(Document):
         metadata={},
         index_columns=[],
         has_offset=False,
+        override_size=None,
     ) -> None:
         self.df = pd.read_csv(path)
 
@@ -490,24 +492,28 @@ class CSV(Document):
             + str(sorted(list(self.doc_metadata.items()))),
         )
 
+        self.override_size = override_size
+
     @property
     def hash(self) -> str:
         return self._hash
 
     @property
     def size(self) -> int:
-        return len(self.df)
+        if self.override_size:
+            return self.override_size
+        return self.df.index.nunique()
 
     @property
     def name(self) -> str:
         return self.path.name
 
-    @requires_condition(
-        check_func=lambda self: not safe_has_offset(self),
-        method_name="matched_constraints",
-        method_class="CSV(Document)",
-        condition_unmet_string=" when there is an offset in the CSV document",
-    )
+    # @requires_condition(
+    #     check_func=lambda self: not safe_has_offset(self),
+    #     method_name="matched_constraints",
+    #     method_class="CSV(Document)",
+    #     condition_unmet_string=" when there is an offset in the CSV document",
+    # )
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
         metadata_constraints = {
@@ -539,15 +545,37 @@ class CSV(Document):
         return " ".join(getattr(row, col) for col in self.strong_columns)
 
     def strong_text(self, element_id: int) -> str:
-        row = self.df.loc[element_id]
-        return self.strong_text_from_row(row)
+        try:
+            rows = self.df.loc[element_id]
+        except:
+            return "NOTHING FOUND"
+        if isinstance(rows, pd.DataFrame):
+            result = ""
+            match_id = 0
+            for _, row in rows.iterrows():
+                result += str(match_id) + "\n" + self.strong_text_from_row(row) + "\n"
+                match_id += 1
+            return result
+        else:
+            return self.strong_text_from_row(rows)
 
     def weak_text_from_row(self, row) -> str:
         return " ".join(getattr(row, col) for col in self.weak_columns)
 
     def weak_text(self, element_id: int) -> str:
-        row = self.df.loc[element_id]
-        return self.weak_text_from_row(row)
+        try:
+            rows = self.df.loc[element_id]
+        except:
+            return "NOTHING FOUND"
+        if isinstance(rows, pd.DataFrame):
+            result = ""
+            match_id = 0
+            for _, row in rows.iterrows():
+                result += str(match_id) + "\n" + self.weak_text_from_row(row) + "\n"
+                match_id += 1
+            return result
+        else:
+            return self.weak_text_from_row(rows)
 
     def row_iterator(self):
         for row in self.df.itertuples():
@@ -557,24 +585,59 @@ class CSV(Document):
                 weak=self.weak_text_from_row(row),
             )
 
-    @requires_condition(
-        check_func=lambda self: not safe_has_offset(self),
-        method_name="reference",
-        method_class="CSV(Document)",
-        condition_unmet_string=" when there is an offset in the CSV document",
-    )
     def reference(self, element_id: int) -> Reference:
         if element_id >= len(self.df):
             _raise_unknown_doc_error(element_id)
-        row = self.df.loc[element_id]
-        text = "\n\n".join([f"{col}: {row[col]}" for col in self.reference_columns])
-        return Reference(
-            document=self,
-            element_id=element_id,
-            text=text,
-            source=str(self.path.absolute()),
-            metadata={**row.to_dict(), **self.doc_metadata},
-        )
+        try:
+            rows = self.df.loc[element_id]
+        except:
+            return Reference(
+                document=self,
+                element_id=element_id,
+                text="NOTHING FOUND",
+                source=str(self.path.absolute()),
+                metadata={
+                    **{"id": element_id, "strong": "NA", "weak": "NA"},
+                    **self.doc_metadata,
+                },
+            )
+        if isinstance(rows, pd.DataFrame):
+            text = ""
+            match_id = 0
+            for _, row in rows.iterrows():
+                text += (
+                    f"match_id: {match_id} \n"
+                    + "\n\n".join(
+                        [f"{col}: {row[col]}" for col in self.reference_columns]
+                    )
+                    + "\n"
+                )
+                match_id += 1
+                return Reference(
+                    document=self,
+                    element_id=element_id,
+                    text=text,
+                    source=str(self.path.absolute()),
+                    metadata={
+                        **{
+                            "id": element_id,
+                            "strong": self.strong_text(element_id),
+                            "weak": self.weak_text(element_id),
+                        },
+                        **self.doc_metadata,
+                    },
+                )
+        else:
+            text = "\n\n".join(
+                [f"{col}: {rows[col]}" for col in self.reference_columns]
+            )
+            return Reference(
+                document=self,
+                element_id=element_id,
+                text=text,
+                source=str(self.path.absolute()),
+                metadata={**rows.to_dict(), **self.doc_metadata},
+            )
 
     def context(self, element_id: int, radius) -> str:
         rows = self.df.loc[
@@ -607,23 +670,23 @@ class CSV(Document):
 
         self.__dict__.update(state)
 
-    @requires_condition(
-        check_func=lambda self: not safe_has_offset(self),
-        method_name="save_meta",
-        method_class="CSV(Document)",
-        condition_unmet_string=" when there is an offset in the CSV document",
-    )
+    # @requires_condition(
+    #     check_func=lambda self: not safe_has_offset(self),
+    #     method_name="save_meta",
+    #     method_class="CSV(Document)",
+    #     condition_unmet_string=" when there is an offset in the CSV document",
+    # )
     def save_meta(self, directory: Path):
         # Let's copy the original CSV file to the provided directory
         if self.save_extra_info:
             shutil.copy(self.path, directory)
 
-    @requires_condition(
-        check_func=lambda self: not safe_has_offset(self),
-        method_name="load_meta",
-        method_class="CSV(Document)",
-        condition_unmet_string=" when there is an offset in the CSV document",
-    )
+    # @requires_condition(
+    #     check_func=lambda self: not safe_has_offset(self),
+    #     method_name="load_meta",
+    #     method_class="CSV(Document)",
+    #     condition_unmet_string=" when there is an offset in the CSV document",
+    # )
     def load_meta(self, directory: Path):
         # Since we've moved the CSV file to the provided directory, let's make
         # sure that we point to this CSV file.
@@ -643,6 +706,8 @@ class CSV(Document):
             self.orig_to_assigned_id = None
         if not hasattr(self, "has_offset"):
             self.has_offset = False
+        if not hasattr(self, "override_size"):
+            self.override_size = None
 
         # So we can do df.loc[]
         if self.df.index.name != self.id_column:
@@ -1785,7 +1850,10 @@ class SalesForce(DocumentConnector):
 
         try:
             result = self._connector.execute(
-                query=f"SELECT {','.join(self.reference_columns)} FROM {self.object_name} WHERE {self.id_col} = '{element_id}'"
+                query=(
+                    f"SELECT {','.join(self.reference_columns)} FROM"
+                    f" {self.object_name} WHERE {self.id_col} = '{element_id}'"
+                )
             )["records"][0]
             del result["attributes"]
             text = "\n\n".join(
@@ -1793,7 +1861,10 @@ class SalesForce(DocumentConnector):
             )
 
         except Exception as e:
-            text = f"Unable to connect to the object instance, Referenced row with {self.id_col}: {element_id} "
+            text = (
+                "Unable to connect to the object instance, Referenced row with"
+                f" {self.id_col}: {element_id} "
+            )
 
         return Reference(
             document=self,
@@ -1850,14 +1921,20 @@ class SalesForce(DocumentConnector):
 
         expected_min_row_id = 0
         min_id = self._connector.execute(
-            query=f"SELECT {self.id_col} FROM {self.object_name} WHERE {self.id_col} = '{expected_min_row_id}'"
+            query=(
+                f"SELECT {self.id_col} FROM {self.object_name} WHERE {self.id_col} ="
+                f" '{expected_min_row_id}'"
+            )
         )
 
         # This one is not required probably because user can't put the auto-number field mannually.
         # User just can provide the start of the auto-number so if the min_id is 0, then max_id should be size - 1
         expected_max_row_id = self.size - 1
         max_id = self._connector.execute(
-            query=f"SELECT {self.id_col} FROM {self.object_name} WHERE {self.id_col} = '{expected_max_row_id}'"
+            query=(
+                f"SELECT {self.id_col} FROM {self.object_name} WHERE {self.id_col} ="
+                f" '{expected_max_row_id}'"
+            )
         )
 
         if not (min_id["totalSize"] == 1 and max_id["totalSize"] == 1):
@@ -1877,7 +1954,10 @@ class SalesForce(DocumentConnector):
         fields_set = set([field["name"] for field in all_fields])
 
         # Checking for strong, weak and reference columns (if provided) to be present in column list of the table
-        column_name_error = "Remember if it is a custom column, salesforce requires it to be appended with __c."
+        column_name_error = (
+            "Remember if it is a custom column, salesforce requires it to be appended"
+            " with __c."
+        )
         if (self.strong_columns is not None) and (
             not set(self.strong_columns).issubset(fields_set)
         ):
@@ -1908,7 +1988,8 @@ class SalesForce(DocumentConnector):
                 and field["type"] not in supported_text_types
             ):
                 raise AttributeError(
-                    f"Strong column '{field['name']}' needs to be type from {supported_text_types}"
+                    f"Strong column '{field['name']}' needs to be type from"
+                    f" {supported_text_types}"
                 )
             if (
                 self.weak_columns is not None
@@ -1916,7 +1997,8 @@ class SalesForce(DocumentConnector):
                 and field["type"] not in supported_text_types
             ):
                 raise AttributeError(
-                    f"Weak column '{field['name']}' needs to be type {supported_text_types}"
+                    f"Weak column '{field['name']}' needs to be type"
+                    f" {supported_text_types}"
                 )
 
     def default_fields(
