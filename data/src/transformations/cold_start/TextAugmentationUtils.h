@@ -6,7 +6,7 @@
 #include <string>
 
 #define VARIABLE_TO_STRING(name, ends_with) \
-  thirdai::data::cold_start::convertToString(#name, (name), ends_with)
+  thirdai::data::cold_start::convertToString(#name, (name), ends_with)  // NOLINT
 
 namespace thirdai::data::cold_start {
 

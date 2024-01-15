@@ -363,10 +363,13 @@ class Mach(Model):
     def reset_model(self, new_model: Mach):
         self.id_col = new_model.id_col
         self.id_delimiter = new_model.id_delimiter
+        self.tokenizer = new_model.tokenizer
         self.query_col = new_model.query_col
         self.fhr = new_model.fhr
         self.embedding_dimension = new_model.embedding_dimension
         self.extreme_output_dim = new_model.extreme_output_dim
+        self.extreme_num_hashes = new_model.extreme_num_hashes
+        self.hidden_bias = new_model.hidden_bias
         self.n_ids = new_model.n_ids
         self.model = new_model.model
         self.balancing_samples = new_model.balancing_samples

@@ -442,33 +442,6 @@ class NeuralDB:
         checkpoint_config: CheckpointConfig,
         **kwargs,
     ):
-        """
-        Inserts documents/resources into the database.
-
-        Args:
-            sources (List[Doc]): List of NeuralDB documents to be inserted.
-            train (bool): Optional, defaults True. When True this means that the
-                underlying model in the NeuralDB will undergo unsupervised pretraining
-                on the inserted documents.
-            fast_approximation (bool): Optional, default True. Much faster insertion
-                with a slight drop in performance.
-            num_buckets_to_sample (Optional[int]): Used to control load balacing when
-                inserting entities into the NeuralDB.
-            on_progress (Callable): Optional, a callback that is called at intervals
-                as documents are inserted.
-            on_success (Callable): Optional, a callback that is invoked when document
-                insertion is finished successfully.
-            on_error (Callable): Optional, a callback taht is invoked if an error occurs
-                during insertion.
-            cancel_state (CancelState): An object that can be used to stop an ongoing
-                insertion. Primarily used for PocketLLM.
-            max_in_memory_batches (int): Optional, default None. When supplied this limits
-                the maximum amount of data that is loaded into memory at once during training.
-                Useful for lower memory paradigms or with large datasets.
-
-        Returns:
-            A list of the ids assigned to the inserted documents.
-        """
         documents_copy = copy.deepcopy(self._savable_state.documents)
         try:
             intro_and_train, ids = self._savable_state.documents.add(sources)
@@ -523,9 +496,37 @@ class NeuralDB:
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
-        checkpoint_config: CheckpointConfig = None,
+        checkpoint_config: Optional[CheckpointConfig] = None,
         **kwargs,
     ) -> List[str]:
+        """
+        Inserts documents/resources into the database.
+
+        Args:
+            sources (List[Doc]): List of NeuralDB documents to be inserted.
+            train (bool): Optional, defaults True. When True this means that the
+                underlying model in the NeuralDB will undergo unsupervised pretraining
+                on the inserted documents.
+            fast_approximation (bool): Optional, default True. Much faster insertion
+                with a slight drop in performance.
+            num_buckets_to_sample (Optional[int]): Used to control load balacing when
+                inserting entities into the NeuralDB.
+            on_progress (Callable): Optional, a callback that is called at intervals
+                as documents are inserted.
+            on_success (Callable): Optional, a callback that is invoked when document
+                insertion is finished successfully.
+            on_error (Callable): Optional, a callback taht is invoked if an error occurs
+                during insertion.
+            cancel_state (CancelState): An object that can be used to stop an ongoing
+                insertion. Primarily used for PocketLLM.
+            max_in_memory_batches (int): Optional, default None. When supplied this limits
+                the maximum amount of data that is loaded into memory at once during training.
+                Useful for lower memory paradigms or with large datasets.
+            checkpoint_config (CheckpointConfig): Optional, default None. Configuration for checkpointing during insertion. No checkpoints are created if checkpoint_config is unspecified.
+
+        Returns:
+            A list of the ids assigned to the inserted documents.
+        """
         if checkpoint_config and checkpoint_config.resume_from_checkpoint:
             ids, resource_name = self._resume(
                 on_progress=on_progress,

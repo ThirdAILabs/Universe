@@ -241,7 +241,7 @@ class DocumentDataSource(PyDataSource):
 
     def save(self, path: Path, save_interval=100_000):
         """
-        Iterates through the document data source and generates a dataframe
+        DocumentDataSource is agnostic to the documents that are a part of it as the line_iterator is agnostic to the kind of document and returns data in a specific format. Hence, to serialize DocumentDataSource, we do not need to serialize the documents but rather, dump the lines yielded by the line iterator into a CSV. This makes the saving and loading logic simpler.
         """
         path.mkdir(exist_ok=True, parents=True)
         number_lines_in_buffer = 0

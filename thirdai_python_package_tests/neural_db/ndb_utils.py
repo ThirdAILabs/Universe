@@ -293,15 +293,6 @@ def search_works(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
             batch_results = db.search_batch(
                 [query, query, "SOME TOTAL RANDOM QUERY"], top_k
             )
-            print("=" * 100)
-            print(query)
-            print("*" * 100)
-            print(batch_results[0])
-            print("*" * 100)
-            print(batch_results[1])
-            print("*" * 100)
-            print(batch_results[2])
-            print("=" * 100)
 
             assert len(batch_results) == 3
             assert batch_results[0] == results

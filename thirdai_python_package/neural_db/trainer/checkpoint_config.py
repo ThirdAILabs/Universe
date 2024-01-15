@@ -6,6 +6,15 @@ from ..utils import convert_str_to_path
 
 @dataclass
 class CheckpointConfig:
+    """
+    Configuration for checkpointing NeuralDB during document insertion.
+
+    Args:
+        checkpoint_dir (Path): Directory where models and related metadata will be stored.
+        resume_from_checkpoint (bool, optional): If a checkpoint exists, set to True to resume, else False. Defaults to False.
+        checkpoint_interval (int, optional): Number of epochs between checkpoints. Defaults to 1.
+    """
+
     checkpoint_dir: Path
     resume_from_checkpoint: bool = False
     checkpoint_interval: int = 1
@@ -73,7 +82,7 @@ class CheckpointConfig:
         return config
 
 
-def generate_model_specific_checkpoint_configs(config: CheckpointConfig, number_models):
+def generate_modelwise_checkpoint_configs(config: CheckpointConfig, number_models):
     """
     We maintain a checkpoint config for each Mach model in the Mixture while training. This is designed so that Mach models can maintain their training state independent of their Mixture which is necessary for distributed training.
     """

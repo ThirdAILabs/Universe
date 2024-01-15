@@ -10,10 +10,10 @@ from .sharded_documents import shard_data_source
 from .supervised_datasource import SupDataSource
 from .trainer.checkpoint_config import (
     CheckpointConfig,
-    generate_model_specific_checkpoint_configs,
+    generate_modelwise_checkpoint_configs,
 )
 from .trainer.training_progress_manager import TrainingProgressManager
-from .utils import clean_text, requires_condition
+from .utils import clean_text, pickle_to, requires_condition, unpickle_from
 
 InferSamples = List
 Predictions = Sequence
@@ -101,10 +101,18 @@ class MachMixture(Model):
             for model in self.models:
                 model.save_meta(directory)
 
+        pickle_to(
+            [self.label_to_segment_map, self.seed_for_sharding],
+            directory / "segment_map_and_seed.pkl",
+        )
+
     def load_meta(self, directory: Path):
         if self.models is not None:
             for model in self.models:
                 model.load_meta(directory)
+        self.label_to_segment_map, self.seed_for_sharding = unpickle_from(
+            directory / "segment_map_and_seed.pkl"
+        )
 
     def get_query_col(self) -> str:
         return self.query_col
@@ -136,9 +144,11 @@ class MachMixture(Model):
         checkpoint_config: CheckpointConfig,
     ):
         # If checkpoint_dir in checkpoint_config is /john/doe and number of models is 2, the underlying mach models will make checkpoint at /john/doe/0 and /john/doe/1 depending on model ids.
-        modelwise_checkpoint_configs = generate_model_specific_checkpoint_configs(
+        modelwise_checkpoint_configs = generate_modelwise_checkpoint_configs(
             config=checkpoint_config, number_models=self.number_models
         )
+
+        self.load_meta(checkpoint_config.checkpoint_dir)
 
         # The training manager corresponding to a model loads all the needed to complete the training such as model, document sources, tracker, etc.
         training_managers = []
@@ -195,7 +205,11 @@ class MachMixture(Model):
             update_segment_map=False,
         )
 
-        modelwise_checkpoint_configs = generate_model_specific_checkpoint_configs(
+        # Before we start training individual mach models, we need to save the label to segment map of the current mach mixture so that we can resume in case the training fails.
+        if checkpoint_config:
+            self.save_meta(checkpoint_config.checkpoint_dir)
+
+        modelwise_checkpoint_configs = generate_modelwise_checkpoint_configs(
             config=checkpoint_config, number_models=self.number_models
         )
 
