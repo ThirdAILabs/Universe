@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/ops/Op.h>
@@ -134,8 +132,3 @@ class Embedding final : public Op,
 using EmbeddingPtr = std::shared_ptr<Embedding>;
 
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::Embedding,
-                               "thirdai::bolt::nn::ops::Embedding")
-CEREAL_REGISTER_POLYMORPHIC_RELATION(thirdai::bolt::Op,
-                                     thirdai::bolt::Embedding)

@@ -2,6 +2,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/optional.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/layers/Optimizer.h>
@@ -295,3 +296,6 @@ struct specialize<Archive, thirdai::bolt::Embedding,
                   cereal::specialization::member_load_save> {};
 
 }  // namespace cereal
+
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::Embedding,
+                               "thirdai::bolt::nn::ops::Embedding")

@@ -56,6 +56,3 @@ class Input final : public Op, public std::enable_shared_from_this<Input> {
 using InputPtr = std::shared_ptr<Input>;
 
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::Input,
-                               "thirdai::bolt::nn::ops::Input")

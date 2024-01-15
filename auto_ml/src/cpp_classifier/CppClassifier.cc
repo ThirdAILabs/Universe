@@ -4,17 +4,33 @@
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Embedding.h>
+#include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <auto_ml/src/featurization/Featurizer.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <memory>
+#include <stdexcept>
 
 namespace thirdai {
 
 CppClassifier::CppClassifier(std::shared_ptr<automl::Featurizer> featurizer,
                              std::shared_ptr<bolt::Model> model)
-    : _featurizer(std::move(featurizer)), _model(std::move(model)) {}
+    : _featurizer(std::move(featurizer)), _model(std::move(model)) {
+  bool ops_compatible = std::dynamic_pointer_cast<bolt::Input>(
+                            _model->computationOrder()[0]->op()) &&
+                        _model->ops().size() == 2 &&
+                        bolt::Embedding::cast(_model->ops()[0]) &&
+                        bolt::FullyConnected::cast(_model->ops()[1]);
+  bool loss_compatible =
+      _model->losses().size() == 1 &&
+      std::dynamic_pointer_cast<bolt::CategoricalCrossEntropy>(
+          _model->losses()[0]);
+  if (!ops_compatible || !loss_compatible) {
+    throw std::invalid_argument(
+        "Model architecture is not compatible for use with CppClassifier.");
+  }
+}
 
 CppClassifier::CppClassifier() {}
 
