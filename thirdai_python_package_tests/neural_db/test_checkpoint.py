@@ -213,7 +213,7 @@ def test_interrupted_training_mach_mixture():
 
 
 @pytest.mark.release
-def test_reset_model_while_checkpointing():
+def test_reset_mach_model():
     model1 = Mach(
         id_col="id",
         id_delimiter=",",
