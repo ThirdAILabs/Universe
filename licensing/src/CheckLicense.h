@@ -22,7 +22,7 @@ Entitlements entitlements();
 // ------ Methods to activate and deactivate licenses:
 
 // License verification method 1: Keygen api key
-void activate(std::string api_key);
+__attribute__((visibility("default"))) void activate(std::string api_key);
 
 // License verification method 2: heartbeat
 void startHeartbeat(std::string heartbeat_url,

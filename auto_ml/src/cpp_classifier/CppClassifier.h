@@ -21,9 +21,11 @@ class CppClassifier {
 
   CppClassifier();
 
-  static std::shared_ptr<CppClassifier> load(const std::string& saved_model);
+  __attribute__((visibility("default"))) static std::shared_ptr<CppClassifier>
+  load(const std::string& saved_model);
 
-  uint32_t predict(const std::unordered_map<std::string, std::string>& input);
+  __attribute__((visibility("default"))) uint32_t predict(
+      const std::unordered_map<std::string, std::string>& input);
 
   template <class Archive>
   void serialize(Archive& archive);
