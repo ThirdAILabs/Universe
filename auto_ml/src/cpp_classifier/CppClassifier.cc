@@ -17,15 +17,18 @@ namespace thirdai {
 CppClassifier::CppClassifier(std::shared_ptr<automl::Featurizer> featurizer,
                              std::shared_ptr<bolt::Model> model)
     : _featurizer(std::move(featurizer)), _model(std::move(model)) {
-  bool ops_compatible = std::dynamic_pointer_cast<bolt::Input>(
-                            _model->computationOrder()[0]->op()) &&
-                        _model->ops().size() == 2 &&
-                        bolt::Embedding::cast(_model->ops()[0]) &&
-                        bolt::FullyConnected::cast(_model->ops()[1]);
+  auto comps = _model->computationOrder();
+  bool ops_compatible =
+      comps.size() == 3 &&
+      std::dynamic_pointer_cast<bolt::Input>(comps[0]->op()) &&
+      bolt::Embedding::cast(comps[1]->op()) &&
+      bolt::FullyConnected::cast(comps[2]->op());
+
   bool loss_compatible =
       _model->losses().size() == 1 &&
       std::dynamic_pointer_cast<bolt::CategoricalCrossEntropy>(
           _model->losses()[0]);
+
   if (!ops_compatible || !loss_compatible) {
     throw std::invalid_argument(
         "Model architecture is not compatible for use with CppClassifier.");
