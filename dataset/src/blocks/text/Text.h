@@ -47,6 +47,12 @@ class TextBlock : public Block {
   Explanation explainIndex(uint32_t index_within_block,
                            ColumnarInputSample& input) final;
 
+  bool lowercase() const { return _lowercase; }
+
+  TextTokenizerPtr tokenizer() const { return _tokenizer; }
+
+  TextEncoderPtr encoder() const { return _encoder; }
+
  protected:
   void buildSegment(ColumnarInputSample& input,
                     SegmentedFeatureVector& vec) final;
