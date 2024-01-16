@@ -461,6 +461,10 @@ class UDT {
                     const MapInputBatch& batch, bool sparse_inference,
                     std::optional<uint32_t> top_k);
 
+  void saveCppClassifier(const std::string& save_path) const {
+    _backend->saveCppClassifier(save_path);
+  }
+
  private:
   UDT() {}
 

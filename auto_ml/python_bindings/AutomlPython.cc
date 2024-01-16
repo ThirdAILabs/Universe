@@ -251,6 +251,8 @@ void defineAutomlInModule(py::module_& module) {
            })
       .def("is_v1", &udt::UDT::isV1)
       .def(bolt::python::getPickleFunction<udt::UDT>())
+      .def("save_cpp_classifier", &udt::UDT::saveCppClassifier,
+           py::arg("save_path"))
       .def_static("parallel_inference", &udt::UDT::parallelInference,
                   py::arg("models"), py::arg("batch"),
                   py::arg("sparse_inference") = false,

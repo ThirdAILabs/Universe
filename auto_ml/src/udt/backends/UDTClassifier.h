@@ -111,6 +111,8 @@ class UDTClassifier final : public UDTBackend {
     }
   }
 
+  void saveCppClassifier(const std::string& save_path) const final;
+
  private:
   data::TransformationPtr labelTransformation(
       const std::string& target_name, CategoricalDataTypePtr& target_config,
