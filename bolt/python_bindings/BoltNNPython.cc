@@ -113,6 +113,7 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("override_train_steps", &Model::overrideTrainSteps,
            py::arg("train_steps"))
       .def("params", &modelParams)
+      .def("norms", &Model::getNorms)
       .def_static("from_params", &modelFromParams, py::arg("params"))
 #endif
       // The next three functions are used for distributed training.

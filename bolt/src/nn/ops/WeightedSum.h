@@ -48,6 +48,9 @@ class WeightedSum final : public Op,
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final;
 
+  std::vector<std::pair<std::string, double>> parameterAndGradNorms()
+      const final;
+
   ComputationPtr apply(ComputationPtr input);
 
  private:
