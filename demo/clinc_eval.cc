@@ -4,14 +4,19 @@
 #include <string>
 #include <utility>
 
-int main() {
-  thirdai::licensing::activate("<your api key>");
+int main(int argc, const char** argv) {
+  if (argc != 3) {
+    std::cerr << "Usage: ./clinc_eval <saved_model> <test_file>" << std::endl;
+    return 1;
+  }
 
-  auto model = thirdai::CppClassifier::load("./udt_classifier");
+  thirdai::licensing::activate("<license key here>");
+
+  auto model = thirdai::CppClassifier::load(argv[1]);
 
   uint32_t correct = 0, total = 0;
 
-  std::ifstream test_file("./clinc_test.csv");
+  std::ifstream test_file(argv[2]);
   std::string line;
   std::getline(test_file, line);  // Remove header
   while (std::getline(test_file, line)) {

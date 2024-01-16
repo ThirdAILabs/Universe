@@ -508,6 +508,11 @@ target_link_libraries(
   thirdai_core PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
                  prometheus-cpp::pull utf8proc nlohmann_json::nlohmann_json)
 
+if(${LICENSE_BUILD_FLAG_FOUND})
+  target_link_libraries(thirdai_core PUBLIC cryptopp::cryptopp OpenSSL::Crypto
+                                     OpenSSL::SSL)
+endif()
+
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
 # builds, but not our ASan builds. This means that for now we can't run ASan
 # from python, but honestly this is more trouble than it's worth so for now this
