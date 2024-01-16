@@ -157,7 +157,7 @@ PhraseCollection VariableLengthColdStart::getWeakPhrases(
   // the length of the document tends to improe results. Covering samples should
   // already be proportional to doc length so we use them as a heuristic. We add
   // 2 extra slices as an inherent bias
-  size_t num_slices = _config.num_slices.value_or(phrases.size() + 2);
+  size_t num_slices = _config.num_slices.value_or(phrases.size() + 1);
 
   addRandomSlicePhrases(weak_phrase, phrases, _config.slice_min_length,
                         _config.slice_max_length, num_slices, rng);
