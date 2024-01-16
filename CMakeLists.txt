@@ -505,12 +505,13 @@ target_link_libraries(thirdai PUBLIC nlohmann_json::nlohmann_json)
 
 add_library(thirdai_core SHARED ${THIRDAI_SOURCES})
 target_link_libraries(
-  thirdai_core PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
-                 prometheus-cpp::pull utf8proc nlohmann_json::nlohmann_json)
+  thirdai_core
+  PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal prometheus-cpp::pull
+         utf8proc nlohmann_json::nlohmann_json)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai_core PUBLIC cryptopp::cryptopp OpenSSL::Crypto
-                                     OpenSSL::SSL)
+                                            OpenSSL::SSL)
 endif()
 
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
