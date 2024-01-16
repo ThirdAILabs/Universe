@@ -113,6 +113,9 @@ void defineTensor(py::module_& smx) {
   py::class_<DenseTensor, DenseTensorPtr, Tensor>(smx, "DenseTensor")
       .def_property_readonly("strides", &DenseTensor::strides)
       .def("numpy", &denseTensorToNumpy)
+      .def("__getitem__", [](const DenseTensorPtr& tensor,
+                             size_t i) { return tensor->index({i}); })
+      .def("__getitem__", &DenseTensor::index)
       .def("scalar", [](const DenseTensorPtr& tensor) {
         switch (tensor->dtype()) {
           case Dtype::f32:

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wrappers/src/EigenDenseWrapper.h>
 #include <Eigen/Core>
 #include <Eigen/src/Core/Array.h>
 #include <Eigen/src/Core/Map.h>
@@ -161,6 +162,8 @@ class DenseTensor final : public Tensor {
 
   const MemoryHandlePtr& handle() const { return _data; }
 
+  // TODO(Nicholas): Add explicit index methods for up to 5 indices (don't use
+  // vector).
   std::shared_ptr<DenseTensor> index(const std::vector<size_t>& indices);
 
   template <typename T>

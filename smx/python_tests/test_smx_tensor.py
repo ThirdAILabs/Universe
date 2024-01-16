@@ -128,3 +128,17 @@ def test_csr_invalid_indices():
 
     with pytest.raises(RuntimeError):
         smx.CsrTensor(offsets, bad_indices, values, smx.Shape(4, 20))
+
+
+def test_tensor_indexing():
+    array = np.random.rand(2, 3, 4, 2).astype(np.float32)
+    tensor = smx.from_numpy(array)
+
+    for i in range(array.shape[0]):
+        assert np.array_equal(tensor[i].numpy(), array[i])
+        for j in range(array.shape[1]):
+            assert np.array_equal(tensor[i, j].numpy(), array[i, j])
+            for k in range(array.shape[2]):
+                assert np.array_equal(tensor[i, j, k].numpy(), array[i, j, k])
+                for n in range(array.shape[3]):
+                    assert tensor[i, j, k, n].scalar() == array[i, j, k, n]

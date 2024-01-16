@@ -23,6 +23,13 @@ DenseTensor::DenseTensor(const Shape& shape, Dtype dtype, MemoryHandlePtr data)
   }
 }
 
+DenseTensor::DenseTensor(Shape shape, Shape strides, Dtype dtype, void* ptr,
+                         MemoryHandlePtr data)
+    : Tensor(std::move(shape), dtype),
+      _strides(std::move(strides)),
+      _ptr(ptr),
+      _data(std::move(data)) {}
+
 DenseTensorPtr DenseTensor::make(const std::vector<float>& data,
                                  const Shape& shape) {
   CHECK(shape.size() == data.size(),
