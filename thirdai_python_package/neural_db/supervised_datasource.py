@@ -128,6 +128,7 @@ class SupDataSource(PyDataSource):
         self.restart()
 
     def _csv_line(self, label: str, query: str):
+        query = '"' + query.replace('"', '""') + '"'
         return f"{label},{query}"
 
     def _source_for_sup(self, sup: Sup):

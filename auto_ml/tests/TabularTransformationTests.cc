@@ -149,7 +149,7 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
   auto t_list = std::dynamic_pointer_cast<data::Pipeline>(transformation)
                     ->transformations();
 
-  ASSERT_EQ(t_list.size(), 11);
+  ASSERT_EQ(t_list.size(), 10);
 
   ASSERT_TRANSFORM_TYPE(t_list[0], data::TextTokenizer);
   ASSERT_TRANSFORM_TYPE(t_list[1], data::StringHash);
@@ -159,9 +159,8 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
   ASSERT_TRANSFORM_TYPE(t_list[5], data::StringToTimestamp);
   ASSERT_TRANSFORM_TYPE(t_list[6], data::StringHash);
   ASSERT_TRANSFORM_TYPE(t_list[7], data::CategoricalTemporal);
-  ASSERT_TRANSFORM_TYPE(t_list[8], data::StringHash);
-  ASSERT_TRANSFORM_TYPE(t_list[9], data::CategoricalTemporal);
-  ASSERT_TRANSFORM_TYPE(t_list[10], data::FeatureHash);
+  ASSERT_TRANSFORM_TYPE(t_list[8], data::CategoricalTemporal);
+  ASSERT_TRANSFORM_TYPE(t_list[9], data::FeatureHash);
 
   auto tabular = std::dynamic_pointer_cast<data::Tabular>(t_list[4]);
 
@@ -171,7 +170,7 @@ TEST(TabularTransformationTests, TabularTransformationsTemporal) {
   ASSERT_EQ(tabular->categoricalColumns().at(0).name, "b");
 
   auto fh_cols =
-      std::dynamic_pointer_cast<data::FeatureHash>(t_list[10])->inputColumns();
+      std::dynamic_pointer_cast<data::FeatureHash>(t_list[9])->inputColumns();
 
   // The transformations on columns b and d are at the end because after
   // processing all data types we check if cross column pairgrams is enabled and
