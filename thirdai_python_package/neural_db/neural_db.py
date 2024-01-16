@@ -1,4 +1,5 @@
 import copy
+from collections import defaultdict
 from enum import Enum
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
@@ -96,7 +97,12 @@ class NeuralDB:
         checkpoint_path = Path(checkpoint_path)
         savable_state = State.load(checkpoint_path, on_progress)
         if savable_state.model and savable_state.model.get_model():
-            savable_state.model.set_mach_sampling_threshold(0.01)
+            model = savable_state.model
+            if not isinstance(model, List):
+                model.set_mach_sampling_threshold(0.01)
+            else:
+                for individual_mach_model in model:
+                    individual_mach_model.set_mach_sampling_threshold(0.01)
         if not isinstance(savable_state.logger, loggers.LoggerList):
             # TODO(Geordie / Yash): Add DBLogger to LoggerList once ready.
             savable_state.logger = loggers.LoggerList([savable_state.logger])
@@ -178,6 +184,97 @@ class NeuralDB:
                 error_msg += " - `csv_weak_columns`\n"
                 error_msg += " - `csv_reference_columns`\n"
                 raise ValueError(error_msg)
+            csv_doc = CSV(
+                path=csv,
+                id_column=csv_id_column,
+                strong_columns=csv_strong_columns,
+                weak_columns=csv_weak_columns,
+                reference_columns=csv_reference_columns,
+            )
+            savable_state.documents.add([csv_doc])
+            savable_state.model.set_n_ids(csv_doc.size)
+
+        return NeuralDB(user_id, savable_state=savable_state)
+
+    @staticmethod
+    def from_udts(
+        udts: List[bolt.UniversalDeepTransformer],
+        user_id: str = "user",
+        csv: Optional[str] = None,
+        csv_id_column: Optional[str] = None,
+        csv_strong_columns: Optional[List[str]] = None,
+        csv_weak_columns: Optional[List[str]] = None,
+        csv_reference_columns: Optional[List[str]] = None,
+        label_to_segment_map: Optional[defaultdict] = None,
+    ):
+        """
+        Instantiate a NeuralDB, using the given UDTs as the underlying mach mixture model.
+        Usually for porting a pretrained model into the NeuralDB format.
+        Use the optional csv-related arguments to insert the pretraining dataset
+        into the NeuralDB instance.
+        """
+        if csv is None:
+            for udt in udts:
+                udt.clear_index()
+
+        udt0 = udts[0]
+        fhr, emb_dim, out_dim = udt0.model_dims()
+        data_types = udt0.data_types()
+        if len(data_types) != 2:
+            raise ValueError(
+                "Incompatible UDT model. Expected two data types but found"
+                f" {len(data_types)}."
+            )
+        query_col = None
+        id_col = None
+        id_delimiter = None
+        for column, dtype in data_types.items():
+            if isinstance(dtype, bolt.types.text):
+                query_col = column
+            if isinstance(dtype, bolt.types.categorical):
+                id_col = column
+                id_delimiter = dtype.delimiter
+        if query_col is None:
+            raise ValueError(f"Incompatible UDT model. Cannot find a query column.")
+        if id_col is None:
+            raise ValueError(f"Incompatible UDT model. Cannot find an id column.")
+
+        mach_mixture = MachMixture(
+            number_models=len(udts),
+            id_col=id_col,
+            id_delimiter=id_delimiter,
+            query_col=query_col,
+            fhr=fhr,
+            embedding_dimension=emb_dim,
+            extreme_output_dim=out_dim,
+            label_to_segment_map=label_to_segment_map,
+        )
+
+        for mixture_model, udt in zip(mach_mixture.models, udts):
+            udt.enable_rlhf()
+            udt.set_mach_sampling_threshold(0.01)
+            mixture_model.model = udt
+
+        logger = loggers.LoggerList([loggers.InMemoryLogger()])
+        savable_state = State(model=mach_mixture, logger=logger)
+
+        if csv is not None:
+            if (
+                csv_id_column is None
+                or csv_strong_columns is None
+                or csv_weak_columns is None
+                or csv_reference_columns is None
+            ):
+                error_msg = (
+                    "If the `csv` arg is provided, then the following args must also be"
+                    " provided:\n"
+                )
+                error_msg += " - `csv_id_column`\n"
+                error_msg += " - `csv_strong_columns`\n"
+                error_msg += " - `csv_weak_columns`\n"
+                error_msg += " - `csv_reference_columns`\n"
+                raise ValueError(error_msg)
+
             csv_doc = CSV(
                 path=csv,
                 id_column=csv_id_column,

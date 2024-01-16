@@ -93,6 +93,8 @@ class MachMixture(Model):
 
     def set_n_ids(self, n_ids: int):
         self.n_ids = n_ids
+        for model in self.models:
+            model.set_n_ids(n_ids)
 
     def get_query_col(self) -> str:
         return self.query_col
