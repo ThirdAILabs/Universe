@@ -150,6 +150,10 @@ void defineTensor(py::module_& nn) {
              return Tensor::convert(std::move(vector), dim);
            }),
            py::arg("vector"), py::arg("dim"))
+      .def(py::init([](std::vector<BoltVector> vectors, uint32_t dim) {
+             return Tensor::convert(std::move(vectors), dim);
+           }),
+           py::arg("vectors"), py::arg("dim"))
       .def(py::init(&fromNumpySparse), py::arg("indices"), py::arg("values"),
            py::arg("dense_dim"), py::arg("with_grad") = false)
       .def(py::init(&fromNumpyDense), py::arg("values"),
