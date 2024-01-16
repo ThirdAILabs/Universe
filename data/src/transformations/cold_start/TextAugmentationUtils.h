@@ -5,9 +5,9 @@
 #include <random>
 #include <string>
 
-#define VARIABLE_TO_STRING(name, ends_with)                 \
-  thirdai::data::cold_start::convertToString(#name, (name), \
-                                             ends_with)  // NOLINT
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define VARIABLE_TO_STRING(name, ends_with) \
+  thirdai::data::cold_start::convertToString(#name, (name), ends_with)
 
 namespace thirdai::data::cold_start {
 

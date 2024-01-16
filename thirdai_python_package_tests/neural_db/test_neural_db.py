@@ -9,12 +9,18 @@ import thirdai
 from ndb_utils import (
     PDF_FILE,
     all_local_doc_getters,
+    associate_works,
+    clear_sources_works,
     create_simple_dataset,
     docs_with_meta,
+    insert_works,
     metadata_constraints,
     num_duplicate_docs,
+    save_load_works,
     search_works,
     train_simple_neural_db,
+    upvote_batch_works,
+    upvote_works,
 )
 from thirdai import dataset
 from thirdai import neural_db as ndb
@@ -37,112 +43,6 @@ def db_from_bazaar():
     bazaar = ndb.Bazaar(cache_dir=".")
     bazaar.fetch()
     return bazaar.get_model("General QnA")
-
-
-def get_upvote_target_id(db: ndb.NeuralDB, query: str, top_k: int):
-    initial_ids = [r.id for r in db.search(query, top_k)]
-    target_id = 0
-    while target_id in initial_ids:
-        target_id += 1
-    return target_id
-
-
-ARBITRARY_QUERY = "This is an arbitrary search query"
-
-
-# Some of the following helper functions depend on others being called before them.
-# It is best to call them in the order that these helper functions are written.
-# They are only written as separate functions to make it easier to read.
-
-
-def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document]):
-    db.insert(docs, train=False)
-    assert len(db.sources()) == len(docs) - num_duplicate_docs
-
-    initial_scores = [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)]
-
-    db.insert(docs, train=True)
-    assert len(db.sources()) == len(docs) - num_duplicate_docs
-
-    assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
-
-    db.insert(docs, train=True, batch_size=1, learning_rate=0.0002)
-    assert len(db.sources()) == len(docs) - num_duplicate_docs
-
-    assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
-
-
-def upvote_works(db: ndb.NeuralDB):
-    # We have more than 10 indexed entities.
-    target_id = get_upvote_target_id(db, ARBITRARY_QUERY, top_k=10)
-
-    number_models = (
-        db._savable_state.model.number_models
-        if hasattr(db._savable_state.model, "number_models")
-        else 1
-    )
-
-    # TODO(Shubh) : For mach mixture, it is not necessary that upvoting alone will
-    # boost the label enough to be predicted at once. Look at a better solution than
-    # upvoting multiple times.
-    times_to_upvote = 3 if number_models > 1 else 5
-    for i in range(times_to_upvote):
-        db.text_to_result(ARBITRARY_QUERY, target_id)
-    assert target_id in [r.id for r in db.search(ARBITRARY_QUERY, top_k=10)]
-
-
-def upvote_batch_works(db: ndb.NeuralDB):
-    queries = [
-        "This query is not related to any document.",
-        "Neither is this one.",
-        "Wanna get some biryani so we won't have to cook dinner?",
-    ]
-    target_ids = [get_upvote_target_id(db, query, top_k=10) for query in queries]
-    db.text_to_result_batch(list(zip(queries, target_ids)))
-    for query, target_id in zip(queries, target_ids):
-        assert target_id in [r.id for r in db.search(query, top_k=10)]
-
-
-def associate_works(db: ndb.NeuralDB):
-    # Since this is still unstable, we only check that associate() updates the
-    # model in *some* way, but we don't want to make stronger assertions as it
-    # would make the test flaky.
-    search_results = db.search(ARBITRARY_QUERY, top_k=5)
-    initial_scores = [r.score for r in search_results]
-    initial_ids = [r.id for r in search_results]
-
-    another_arbitrary_query = "Eating makes me sleepy"
-    db.associate(ARBITRARY_QUERY, another_arbitrary_query)
-
-    new_search_results = db.search(ARBITRARY_QUERY, top_k=5)
-    new_scores = [r.score for r in new_search_results]
-    new_ids = [r.id for r in new_search_results]
-
-    assert (initial_scores != new_scores) or (initial_ids != new_ids)
-
-
-def save_load_works(db: ndb.NeuralDB):
-    if os.path.exists("temp.ndb"):
-        shutil.rmtree("temp.ndb")
-    db.save("temp.ndb")
-    search_results = [r.text for r in db.search(ARBITRARY_QUERY, top_k=5)]
-
-    new_db = ndb.NeuralDB.from_checkpoint("temp.ndb")
-    new_search_results = [r.text for r in new_db.search(ARBITRARY_QUERY, top_k=5)]
-
-    assert search_results == new_search_results
-    assert db.sources().keys() == new_db.sources().keys()
-    assert [doc.name for doc in db.sources().values()] == [
-        doc.name for doc in new_db.sources().values()
-    ]
-
-    shutil.rmtree("temp.ndb")
-
-
-def clear_sources_works(db: ndb.NeuralDB):
-    assert len(db.sources()) > 0
-    db.clear_sources()
-    assert len(db.sources()) == 0
 
 
 def all_methods_work(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):

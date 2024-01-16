@@ -1,12 +1,11 @@
 import os
-import random
 import shutil
 from collections import defaultdict
 from pathlib import Path
 from typing import List
 
 import pytest
-from ndb_utils import PDF_FILE, all_local_doc_getters
+from ndb_utils import PDF_FILE, all_local_doc_getters, associate_works, upvote_works
 from thirdai import data
 from thirdai import neural_db as ndb
 from thirdai.neural_db.mach_mixture_model import MachMixture
@@ -24,7 +23,7 @@ pytestmark = [pytest.mark.unit]
 
 ARBITRARY_QUERY = "This is an arbitrary search query"
 CHECKPOINT_DIR = "/tmp/neural_db"
-NUMBER_DOCS = 1
+NUMBER_DOCS = 3
 DOCS_TO_INSERT = [get_doc() for get_doc in all_local_doc_getters[:NUMBER_DOCS]]
 OUTPUT_DIM = 1000
 
@@ -125,7 +124,11 @@ def interrupted_training(number_models: int, interrupt_function):
         new_db = ndb.NeuralDB.from_checkpoint(
             os.path.join(CHECKPOINT_DIR, "trained.ndb")
         )
+
         assert_same_dbs(db, new_db)
+        upvote_works(db)
+        associate_works(db)
+
     except Exception as ex:
         raise ex
     finally:
@@ -176,7 +179,7 @@ def make_db_and_training_manager(makes_checkpoint=True):
     return db, training_manager, checkpoint_dir
 
 
-# Asserts that the final checkpoint created is the same as the db who reference is held rn.
+# Asserts that the final checkpoint created is the same as the db whose reference is held rn.
 @pytest.mark.release
 def test_neural_db_checkpoint_on_single_mach():
     db = train_neural_db_with_checkpoint(number_models=1)
