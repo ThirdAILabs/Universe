@@ -26,14 +26,22 @@ def test_model_norms():
 
     norms = model.norms()
 
+    emb_name = model.ops()[0].name
     emb_w = np.ravel(model.ops()[0].weights)
-    assert np.isclose(norms["emb_1_embeddings_l1_norm"], np.linalg.norm(emb_w, ord=1))
-    assert np.isclose(norms["emb_1_embeddings_l2_norm"], np.linalg.norm(emb_w, ord=2))
     assert np.isclose(
-        norms["emb_1_embeddings_l_inf_norm"], np.linalg.norm(emb_w, ord=np.inf)
+        norms[f"{emb_name}_embeddings_l1_norm"], np.linalg.norm(emb_w, ord=1)
+    )
+    assert np.isclose(
+        norms[f"{emb_name}_embeddings_l2_norm"], np.linalg.norm(emb_w, ord=2)
+    )
+    assert np.isclose(
+        norms[f"{emb_name}_embeddings_l_inf_norm"], np.linalg.norm(emb_w, ord=np.inf)
     )
 
+    fc_name = model.ops()[1].name
     fc_w = np.ravel(model.ops()[1].weights)
-    assert np.isclose(norms["fc_1_weight_l1_norm"], np.linalg.norm(fc_w, ord=1))
-    assert np.isclose(norms["fc_1_weight_l2_norm"], np.linalg.norm(fc_w, ord=2))
-    assert np.isclose(norms["fc_1_weight_l_inf_norm"], np.linalg.norm(fc_w, ord=np.inf))
+    assert np.isclose(norms[f"{fc_name}_weight_l1_norm"], np.linalg.norm(fc_w, ord=1))
+    assert np.isclose(norms[f"{fc_name}_weight_l2_norm"], np.linalg.norm(fc_w, ord=2))
+    assert np.isclose(
+        norms[f"{fc_name}_weight_l_inf_norm"], np.linalg.norm(fc_w, ord=np.inf)
+    )
