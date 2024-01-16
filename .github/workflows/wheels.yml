@@ -14,7 +14,7 @@ concurrency:
 # for more details.
 on: 
   push: 
-    branches: [main, fix_punkt_download]
+    branches: [main]
     tags: [ 'v*.*.*' ]
   workflow_dispatch:  
 
