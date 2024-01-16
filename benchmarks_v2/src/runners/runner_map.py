@@ -7,7 +7,7 @@ from .mini_benchmark_runners.query_reformulation import (
 )
 from .mini_benchmark_runners.temporal import MiniBenchmarkTemporalRunner
 from .mini_benchmark_runners.udt import MiniBenchmarkUDTRunner
-from .neural_db import NDBRunner
+from .ndb_runner import NDBRunner
 from .query_reformulation import QueryReformulationRunner
 from .rlhf import RlhfRunner
 from .temporal import TemporalRunner

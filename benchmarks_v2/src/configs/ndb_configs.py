@@ -58,3 +58,11 @@ class WayfairNDBConfig(NDBConfig):
 class Amazon1_3MConfig(NDBConfig):
     config_name = "amazontitles-1.3mm_ndb"
     dataset_name = "amazontitles-1.3mm"
+
+    strong_columns = []
+    weak_columns = ["TITLE"]
+
+
+class Pubmed800kConfig(NDBConfig):
+    config_name = "pubmed_800k_ndb"
+    dataset_name = "pubmed_800k"
