@@ -168,12 +168,12 @@ def save_load_works(db: ndb.NeuralDB):
     # Change working directory to catch edge cases. E.g. if we don't properly
     # save a sqlite database, this test may still pass if the original sqlite
     # database is still in the current working directory.
-    if not os.path.exists("new_dir"):
-        os.mkdir("new_dir")
+    if os.path.exists("new_dir"):
+        shutil.rmtree("new_dir")
+    os.mkdir("new_dir")
     shutil.move("temp.ndb", "new_dir/temp.ndb")
-    os.chdir("new_dir")
 
-    new_db = ndb.NeuralDB.from_checkpoint("temp.ndb")
+    new_db = ndb.NeuralDB.from_checkpoint("new_dir/temp.ndb")
     new_search_results = [r.text for r in new_db.search(ARBITRARY_QUERY, top_k=5)]
 
     assert search_results == new_search_results
@@ -182,8 +182,6 @@ def save_load_works(db: ndb.NeuralDB):
         doc.name for doc in new_db.sources().values()
     ]
 
-    shutil.rmtree("temp.ndb")
-    os.chdir("..")
     shutil.rmtree("new_dir")
 
 

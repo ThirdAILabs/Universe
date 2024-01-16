@@ -66,9 +66,5 @@ def test_tables_on_disk_table_uses_less_memory(
 )
 def test_tables_dataframe_table_backwards_compatibility(DocClass, save_dir):
     load_from = f"{BASE_DIR}/v0.7.26_doc_checkpoints/{save_dir}"
-    try:
-        doc = DocClass.load(load_from)
-        assess_doc_methods_properties(doc)
-    finally:
-        if os.path.exists(load_from):
-            shutil.rmtree(load_from)
+    doc = DocClass.load(load_from)
+    assess_doc_methods_properties(doc)

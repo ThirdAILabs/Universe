@@ -86,7 +86,7 @@ class DataFrameTable(Table):
             yield (row_id, row.to_dict())
 
     def apply_filter(self, table_filter: TableFilter):
-        table_filter.filter_df_ids(self.df)
+        return table_filter.filter_df_ids(self.df)
 
 
 class SQLiteTable(Table):
@@ -153,7 +153,6 @@ class SQLiteTable(Table):
         ].apply(SQLiteTable._from_primitive)
 
     def field(self, row_id: int, column: str):
-        print(self.db_path)
         con = sqlite3.connect(self.db_path)
         return SQLiteTable._from_primitive(
             pd.read_sql(
@@ -193,6 +192,7 @@ class SQLiteTable(Table):
 
     def load_meta(self, directory: Path):
         self.db_path = str(directory / Path(self.db_path).name)
+        print("DBPATH", self.db_path)
 
     def apply_filter(self, table_filter: TableFilter):
         return table_filter.filter_sql_ids(sqlite3.connect(self.db_path), "sqlitetable")
