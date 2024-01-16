@@ -132,15 +132,36 @@ void defineAutomlInModule(py::module_& module) {
            bolt::python::OutputRedirect())
       .def(
           "train_on_tensors",
-          [](udt::UDT& udt, const bolt::Dataset& input,
-             const bolt::Dataset& output) {
-            bolt::LabeledDataset dataset = std::make_pair(input, output);
-            return udt.trainOnTensors(
-                dataset, 0.001, 1, std::vector<std::string>{}, dataset,
-                std::vector<std::string>{}, std::vector<udt::CallbackPtr>{},
-                udt::TrainOptions());
+          [](udt::UDT& udt, const bolt::Dataset& train_input,
+             const bolt::Dataset& train_output, float learning_rate,
+             uint32_t epochs, const std::vector<std::string>& train_metrics,
+             const std::optional<bolt::Dataset>& val_input,
+             const std::optional<bolt::Dataset>& val_output,
+             const std::vector<std::string>& val_metrics,
+             std::vector<udt::CallbackPtr>& callbacks) {
+            bolt::LabeledDataset dataset =
+                std::make_pair(train_input, train_output);
+
+            std::optional<bolt::LabeledDataset> val_dataset;
+
+            if (val_input && val_output) {
+              val_dataset =
+                  std::make_pair(val_input.value(), val_output.value());
+            } else {
+              val_dataset = std::nullopt;
+            }
+            return udt.trainOnTensors(dataset, learning_rate, epochs,
+                                      train_metrics, val_dataset, val_metrics,
+                                      callbacks, udt::TrainOptions());
           },
-          py::arg("input"), py::arg("output"))
+          py::arg("train_input"), py::arg("train_output"),
+          py::arg("learning_rate"), py::arg("epochs"),
+          py::arg("train_metrics") = std::vector<std::string>{},
+          py::arg("val_input") = std::nullopt,
+          py::arg("val_output") = std::nullopt,
+          py::arg("val_metrics") = std::vector<std::string>{},
+          py::arg("callbacks") = std::vector<udt::CallbackPtr>{},
+          bolt::python::OutputRedirect())
       .def("train_batch", &udt::UDT::trainBatch, py::arg("batch"),
            py::arg("learning_rate") = 0.001,
            py::arg("metrics") = std::vector<std::string>{},

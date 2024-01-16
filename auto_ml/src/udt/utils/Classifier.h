@@ -36,7 +36,7 @@ class Classifier {
 
   py::object train(const bolt::LabeledDataset& train_data, float learning_rate,
                    uint32_t epochs, const InputMetrics& train_metrics,
-                   const bolt::LabeledDataset& val_data,
+                   const std::optional<bolt::LabeledDataset>& val_data,
                    const InputMetrics& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
                    TrainOptions options);

@@ -62,7 +62,7 @@ class UDTBackend {
   virtual py::object trainOnTensors(
       const bolt::LabeledDataset& train_data, float learning_rate,
       uint32_t epochs, const std::vector<std::string>& train_metrics,
-      const bolt::LabeledDataset& val_data,
+      const std::optional<bolt::LabeledDataset>& val_data,
       const std::vector<std::string>& val_metrics,
       const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
     (void)train_data;

@@ -109,13 +109,12 @@ py::object Classifier::train(const dataset::DatasetLoaderPtr& dataset,
   return py::cast(history);
 }
 
-py::object Classifier::train(const bolt::LabeledDataset& train_data,
-                             float learning_rate, uint32_t epochs,
-                             const InputMetrics& train_metrics,
-                             const bolt::LabeledDataset& val_data,
-                             const InputMetrics& val_metrics,
-                             const std::vector<CallbackPtr>& callbacks,
-                             TrainOptions options) {
+py::object Classifier::train(
+    const bolt::LabeledDataset& train_data, float learning_rate,
+    uint32_t epochs, const InputMetrics& train_metrics,
+    const std::optional<bolt::LabeledDataset>& val_data,
+    const InputMetrics& val_metrics, const std::vector<CallbackPtr>& callbacks,
+    TrainOptions options) {
   // We first need to verify whether the tensors are of appropriate dimensions
   // or not
   auto vec_eq = [](const auto& a, const auto& b) -> bool {
@@ -165,7 +164,9 @@ py::object Classifier::train(const bolt::LabeledDataset& train_data,
   };
 
   assert_valid_tensors(_model, train_data);
-  assert_valid_tensors(_model, val_data);
+  if (val_data.has_value()) {
+    assert_valid_tensors(_model, val_data.value());
+  }
 
   std::cout << "Input Dims: ";
   print_vector(_model->inputDims());

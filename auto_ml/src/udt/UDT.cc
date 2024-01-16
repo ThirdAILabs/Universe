@@ -146,13 +146,12 @@ py::object UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
   return output;
 }
 
-py::object UDT::trainOnTensors(const bolt::LabeledDataset& train_data,
-                               float learning_rate, uint32_t epochs,
-                               const std::vector<std::string>& train_metrics,
-                               const bolt::LabeledDataset& val_data,
-                               const std::vector<std::string>& val_metrics,
-                               const std::vector<CallbackPtr>& callbacks,
-                               TrainOptions options) {
+py::object UDT::trainOnTensors(
+    const bolt::LabeledDataset& train_data, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    const std::optional<bolt::LabeledDataset>& val_data,
+    const std::vector<std::string>& val_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
   bolt::utils::Timer timer;
   auto output =
       _backend->trainOnTensors(train_data, learning_rate, epochs, train_metrics,
