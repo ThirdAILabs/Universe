@@ -68,6 +68,10 @@ class UDTMach final : public UDTBackend {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
 
+  std::vector<std::vector<std::pair<uint32_t, double>>> predictBatchImpl(
+      const MapInputBatch& samples, bool sparse_inference,
+      bool return_predicted_class, std::optional<uint32_t> top_k);
+
   py::object predictHashes(const MapInput& sample, bool sparse_inference,
                            bool force_non_empty,
                            std::optional<uint32_t> num_hashes) final;
@@ -197,10 +201,6 @@ class UDTMach final : public UDTBackend {
   static std::string type() { return "udt_mach"; }
 
  private:
-  std::vector<std::vector<std::pair<uint32_t, double>>> predictImpl(
-      const MapInputBatch& samples, bool sparse_inference,
-      std::optional<uint32_t> top_k);
-
   std::vector<std::vector<uint32_t>> predictHashesImpl(
       const MapInputBatch& samples, bool sparse_inference,
       bool force_non_empty = true,

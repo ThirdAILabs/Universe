@@ -365,6 +365,7 @@ set(THIRDAI_SOURCES
     bolt/src/layers/FullyConnectedLayer.cc
     bolt/src/layers/LayerConfig.cc
     bolt/src/layers/SamplingConfig.cc
+    bolt/src/inference/EmbFcInference.cc
     bolt/src/text_generation/ContextualModel.cc
     bolt/src/text_generation/DyadicModel.cc
     bolt/src/text_generation/GenerativeModel.cc
@@ -404,6 +405,7 @@ set(THIRDAI_SOURCES
     dataset/src/blocks/RecurrenceAugmentation.cc
     dataset/src/blocks/Sequence.cc
     dataset/src/blocks/text/Text.cc
+    dataset/src/blocks/TabularHashFeatures.cc
     dataset/src/blocks/text/WordpieceTokenizer.cc
     dataset/src/blocks/text/TextTokenizer.cc
     dataset/src/mach/MachIndex.cc
@@ -467,10 +469,11 @@ set(THIRDAI_SOURCES
     auto_ml/src/config/Parameter.cc
     auto_ml/src/rlhf/BalancingSamples.cc
     auto_ml/src/rlhf/RLHFSampler.cc # Deprecate
+    auto_ml/src/cpp_classifier/CppClassifier.cc
     utils/src/SymSpellBackend/symspell.cc
     utils/src/SymSpellCpp/SymSpell.cc
     utils/Logging.cc
-    utils/StringManipulation.cc
+    utils/text/StringManipulation.cc
     utils/UUID.cc
     utils/Random.cc
     licensing/src/entitlements/RestrictionTree.cc
@@ -505,6 +508,17 @@ endif()
 
 target_link_libraries(thirdai PUBLIC nlohmann_json::nlohmann_json)
 
+add_library(thirdai_core SHARED ${THIRDAI_SOURCES})
+target_link_libraries(
+  thirdai_core
+  PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal prometheus-cpp::pull
+         utf8proc nlohmann_json::nlohmann_json)
+
+if(${LICENSE_BUILD_FLAG_FOUND})
+  target_link_libraries(thirdai_core PUBLIC cryptopp::cryptopp OpenSSL::Crypto
+                                            OpenSSL::SSL)
+endif()
+
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
 # builds, but not our ASan builds. This means that for now we can't run ASan
 # from python, but honestly this is more trouble than it's worth so for now this
@@ -525,7 +539,6 @@ pybind11_add_module(
   bolt/src/seismic/SeismicClassifier.cc
   bolt/python_bindings/BoltSeismic.cc
   dataset/python_bindings/DatasetPython.cc
-  dataset/src/blocks/TabularHashFeatures.cc
   data/python_bindings/DataPython.cc
   search/python_bindings/SearchPython.cc
   search/python_bindings/BeamSearch.cc
@@ -536,7 +549,7 @@ pybind11_add_module(
   auto_ml/src/udt/utils/Classifier.cc
   auto_ml/src/udt/backends/UDTClassifier.cc
   auto_ml/src/udt/backends/UDTMach.cc
-  auto_ml/src/udt/backends/UDTMachClassifier.cc # Deprecate
+  auto_ml/src/udt/backends/DeprecatedUDTMachClassifier.cc # Deprecate
   auto_ml/src/udt/backends/UDTRecurrentClassifier.cc
   auto_ml/src/udt/backends/UDTRegression.cc
   auto_ml/src/udt/backends/UDTQueryReformulation.cc

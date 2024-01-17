@@ -3,7 +3,7 @@
 #include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/HashFunction.h>
 #include <hashing/src/MinHash.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 
 namespace thirdai::automl::config {
 

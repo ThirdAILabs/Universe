@@ -105,6 +105,8 @@ metrics::History Trainer::train(
       }
 
       if (is_update_interval_reached) {
+        callbacks.beforeUpdate();
+
         utils::Timer update_param_timer;
         _model->updateParameters(train_state->learningRate());
         update_param_timer.stop();

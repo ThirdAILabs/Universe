@@ -51,6 +51,9 @@ class RobeZ final : public Op, public std::enable_shared_from_this<RobeZ> {
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final;
 
+  std::vector<std::pair<std::string, double>> parameterAndGradNorms()
+      const final;
+
   ComputationPtr apply(ComputationPtr input);
 
   std::shared_ptr<RobeZ> duplicateWithNewReduction(

@@ -47,8 +47,7 @@ class UDTRegression final : public UDTBackend {
 
   ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
 
-  static std::unique_ptr<UDTRegression> fromArchive(
-      const ar::Archive& archive);
+  static std::unique_ptr<UDTRegression> fromArchive(const ar::Archive& archive);
 
   static std::string type() { return "udt_regression"; }
 

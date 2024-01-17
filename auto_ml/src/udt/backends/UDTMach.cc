@@ -27,8 +27,8 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <utils/Random.h>
-#include <utils/StringManipulation.h>
 #include <utils/Version.h>
+#include <utils/text/StringManipulation.h>
 #include <versioning/src/Versions.h>
 #include <algorithm>
 #include <exception>
@@ -116,7 +116,6 @@ UDTMach::UDTMach(
   _mach_sampling_threshold = user_args.get<float>(
       "mach_sampling_threshold", "float", defaults::MACH_SAMPLING_THRESHOLD);
 
-  // TODO(David): Should we call this in constructor as well?
   updateSamplingStrategy();
 
   if (user_args.get<bool>("rlhf", "bool", false)) {
@@ -201,7 +200,7 @@ py::object UDTMach::trainWithHashes(const MapInputBatch& batch,
                                     const std::vector<std::string>& metrics) {
   auto& model = _classifier->model();
 
-  auto [inputs, labels] = _featurizer->featurizeHashesTrainingBatch(batch);
+  auto [inputs, labels] = _featurizer->featurizeTrainWithHashesBatch(batch);
 
   model->trainOnBatch(inputs, labels);
   model->updateParameters(learning_rate);
@@ -228,18 +227,28 @@ py::object UDTMach::evaluate(const dataset::DataSourcePtr& data,
 py::object UDTMach::predict(const MapInput& sample, bool sparse_inference,
                             bool return_predicted_class,
                             std::optional<uint32_t> top_k) {
+  auto output =
+      predictBatch({sample}, sparse_inference, return_predicted_class, top_k);
+  return output.cast<py::list>()[0];
+}
+
+py::object UDTMach::predictBatch(const MapInputBatch& samples,
+                                 bool sparse_inference,
+                                 bool return_predicted_class,
+                                 std::optional<uint32_t> top_k) {
+  return py::cast(predictBatchImpl(samples, sparse_inference,
+                                   return_predicted_class, top_k));
+}
+
+std::vector<std::vector<std::pair<uint32_t, double>>> UDTMach::predictBatchImpl(
+    const MapInputBatch& samples, bool sparse_inference,
+    bool return_predicted_class, std::optional<uint32_t> top_k) {
   if (return_predicted_class) {
     throw std::invalid_argument(
         "UDT Extreme Classification does not support the "
         "return_predicted_class flag.");
   }
 
-  return py::cast(predictImpl({sample}, sparse_inference, top_k).at(0));
-}
-
-std::vector<std::vector<std::pair<uint32_t, double>>> UDTMach::predictImpl(
-    const MapInputBatch& samples, bool sparse_inference,
-    std::optional<uint32_t> top_k) {
   auto outputs =
       _classifier->model()
           ->forward(_featurizer->featurizeInputBatch(samples), sparse_inference)
@@ -273,19 +282,6 @@ std::vector<std::vector<std::pair<uint32_t, double>>> UDTMach::predictImpl(
   }
 
   return predicted_entities;
-}
-
-py::object UDTMach::predictBatch(const MapInputBatch& samples,
-                                 bool sparse_inference,
-                                 bool return_predicted_class,
-                                 std::optional<uint32_t> top_k) {
-  if (return_predicted_class) {
-    throw std::invalid_argument(
-        "UDT Extreme Classification does not support the "
-        "return_predicted_class flag.");
-  }
-
-  return py::cast(predictImpl(samples, sparse_inference, top_k));
 }
 
 py::object UDTMach::scoreBatch(const MapInputBatch& samples,
@@ -433,12 +429,6 @@ py::object UDTMach::coldstart(
   addBalancingSamples(data, strong_column_names, weak_column_names,
                       variable_length);
 
-  auto train_data_loader = _featurizer->getColdStartDataLoader(
-      data, strong_column_names, weak_column_names,
-      /* variable_length= */ variable_length, /* fast_approximation= */ false,
-      options.batchSize(), /* shuffle= */ true, options.verbose,
-      options.shuffle_config);
-
   data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader =
@@ -446,10 +436,27 @@ py::object UDTMach::coldstart(
                                    /* shuffle= */ false, options.verbose);
   }
 
-  return _classifier->train(train_data_loader, learning_rate, epochs,
-                            getMetrics(train_metrics, "train_"),
-                            val_data_loader, getMetrics(val_metrics, "val_"),
-                            callbacks, options, comm);
+  uint32_t epoch_step = variable_length.has_value() ? 1 : epochs;
+  py::object history;
+  for (uint32_t e = 0; e < epochs; e += epoch_step) {
+    auto train_data_loader = _featurizer->getColdStartDataLoader(
+        data, strong_column_names, weak_column_names,
+        /* variable_length= */ variable_length, /* fast_approximation= */
+        false, options.batchSize(), /* shuffle= */ true, options.verbose,
+        options.shuffle_config);
+
+    history = _classifier->train(
+        train_data_loader, learning_rate, epoch_step,
+        getMetrics(train_metrics, "train_"), val_data_loader,
+        getMetrics(val_metrics, "val_"), callbacks, options, comm);
+
+    data->restart();
+    if (val_data_loader) {
+      val_data_loader->restart();
+    }
+  }
+
+  return history;
 }
 
 py::object UDTMach::embedding(const MapInputBatch& sample) {
@@ -768,8 +775,7 @@ void UDTMach::addBalancingSamples(
     // range of samples.
     auto samples = _featurizer->getBalancingSamples(
         data, strong_column_names, weak_column_names, variable_length,
-        /*n_balancing_samples=*/defaults::MAX_BALANCING_SAMPLES,
-        /*rows_to_read=*/defaults::MAX_BALANCING_SAMPLES * 5);
+        /*n_balancing_samples=*/defaults::MAX_BALANCING_SAMPLES_TO_LOAD);
 
     _balancing_samples->addSamples(samples);
 

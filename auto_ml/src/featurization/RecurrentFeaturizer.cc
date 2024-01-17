@@ -92,11 +92,9 @@ RecurrentFeaturizer::makeTransformation(
 data::LoaderPtr RecurrentFeaturizer::getDataLoader(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
     bool verbose, dataset::DatasetShuffleConfig shuffle_config) {
-  auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
+  data_source->restart();
 
-  csv_data_source->restart();
-
-  auto data_iter = data::CsvIterator::make(csv_data_source, _delimiter);
+  auto data_iter = data::CsvIterator::make(data_source, _delimiter);
 
   return data::Loader::make(
       data_iter, _augmenting_transform, _state, _bolt_input_columns,

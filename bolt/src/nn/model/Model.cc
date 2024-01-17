@@ -640,6 +640,19 @@ void Model::setSerializeOptimizer(bool should_save_optimizer) {
   }
 }
 
+std::unordered_map<std::string, double> Model::getNorms() const {
+  std::unordered_map<std::string, double> norms;
+
+  for (const auto& op : _ops) {
+    auto op_norms = op->parameterAndGradNorms();
+    for (const auto& [name, norm] : op_norms) {
+      norms[op->name() + "_" + name] = norm;
+    }
+  }
+
+  return norms;
+}
+
 std::shared_ptr<Model> Model::load(const std::string& filename) {
   auto input_stream = dataset::SafeFileIO::ifstream(filename, std::ios::binary);
   return load_stream(input_stream);

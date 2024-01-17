@@ -21,7 +21,7 @@ def make_simple_test_file(invalid_data=False):
         f.write("text,label\n")
         f.write("haha one time,0\n")
         f.write("haha two times,1\n")
-        f.write("haha thrice occurances,2\n")
+        f.write("haha thrice occurrences,2\n")
         if invalid_data:
             f.write("haha,3\n")
 
@@ -519,7 +519,7 @@ def test_mach_manual_index_creation():
     samples = {
         0: "haha one time",
         1: "haha two times",
-        2: "haha thrice occurances",
+        2: "haha thrice occurrences",
     }
 
     entity_to_hashes = {
@@ -711,39 +711,6 @@ def test_associate():
     new_intersection = len(new_target_hashes.intersection(new_source_hashes))
 
     assert new_intersection > original_intersection
-
-
-def test_upvote():
-    model = train_simple_mach_udt(
-        rlhf_args={
-            "rlhf": True,
-            "rlhf_balancing_docs": 100,
-            "rlhf_balancing_samples_per_doc": 10,
-        }
-    )
-
-    target_sample = {"text": "random sample text"}
-    model.introduce_label([target_sample], label=200)
-
-    source_sample = {"text": "tomato"}
-    model.introduce_label([source_sample], label=300)
-
-    predicted_label = model.predict(source_sample)[0][0]
-    for _ in range(10):
-        model.upvote([(source_sample["text"], 300)], learning_rate=0.01)
-        predicted_label = model.predict(source_sample)[0][0]
-        if predicted_label != 200:
-            break
-
-    assert predicted_label != 200
-
-    for _ in range(10):
-        model.upvote([(source_sample["text"], 200)], learning_rate=0.01)
-        predicted_label = model.predict(source_sample)[0][0]
-        if predicted_label == 200:
-            break
-
-    assert predicted_label == 200
 
 
 def test_enable_rlhf():

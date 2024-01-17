@@ -99,6 +99,8 @@ class FullyConnectedLayer final {
 
   float* getBiasesPtr() { return _biases.data(); }
 
+  bool hasOptimizers() const { return _weight_optimizer && _bias_optimizer; }
+
   float* getWeightGradientsPtr() { return _weight_optimizer->gradients.data(); }
 
   float* getBiasGradientsPtr() { return _bias_optimizer->gradients.data(); }

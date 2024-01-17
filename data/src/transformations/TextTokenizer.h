@@ -39,6 +39,7 @@ class TextTokenizer final : public Transformation {
   dataset::TextEncoderPtr _encoder;
 
   bool _lowercase;
+  bool _clean_text;  // Placeholder to avoid compatability issue, unused now.
   size_t _dim;
 
   TextTokenizer() {}

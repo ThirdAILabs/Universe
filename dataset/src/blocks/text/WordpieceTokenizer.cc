@@ -1,6 +1,6 @@
 #include "WordpieceTokenizer.h"
 #include <archive/src/Archive.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <cassert>
 #include <iostream>
 

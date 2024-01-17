@@ -10,6 +10,8 @@
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
 #include <utils/UUID.h>
 #include <memory>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -261,6 +263,8 @@ class Model : public std::enable_shared_from_this<Model> {
    * Controls if the model will save the optimizer along with the parameters.
    */
   void setSerializeOptimizer(bool should_save_optimizer);
+
+  std::unordered_map<std::string, double> getNorms() const;
 
   /**
    * Loads the model and automatically initializes the optimizer state.

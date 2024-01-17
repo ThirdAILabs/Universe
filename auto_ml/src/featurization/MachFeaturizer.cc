@@ -71,9 +71,7 @@ MachFeaturizer::featurizeForIntroduceDocuments(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, bool fast_approximation,
     size_t batch_size) {
-  auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
-
-  data::ColumnMap columns = data::CsvIterator::all(csv_data_source, _delimiter);
+  data::ColumnMap columns = data::CsvIterator::all(data_source, _delimiter);
 
   auto transform = data::Pipeline::make({
       coldStartTransform(strong_column_names, weak_column_names,
@@ -110,7 +108,7 @@ MachFeaturizer::featurizeForIntroduceDocuments(
 }
 
 std::pair<bolt::TensorList, bolt::TensorList>
-MachFeaturizer::featurizeHashesTrainingBatch(const MapInputBatch& samples) {
+MachFeaturizer::featurizeTrainWithHashesBatch(const MapInputBatch& samples) {
   auto columns = data::ColumnMap::fromMapInputBatch(samples);
 
   columns = _input_transform->apply(columns, *_state);
@@ -128,9 +126,7 @@ data::ColumnMap MachFeaturizer::featurizeDataset(
     const dataset::DataSourcePtr& data_source,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names) {
-  auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
-
-  data::ColumnMap columns = data::CsvIterator::all(csv_data_source, _delimiter);
+  data::ColumnMap columns = data::CsvIterator::all(data_source, _delimiter);
 
   if (!strong_column_names.empty() || !weak_column_names.empty()) {
     columns = coldStartTransform(strong_column_names, weak_column_names,
@@ -185,11 +181,9 @@ data::ColumnMap MachFeaturizer::getBalancingSamples(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<data::VariableLengthConfig> variable_length,
-    size_t n_balancing_samples, size_t rows_to_read) {
-  auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
-
-  auto data_iter = data::CsvIterator::make(
-      csv_data_source, _delimiter, std::max(n_balancing_samples, rows_to_read));
+    size_t n_balancing_samples) {
+  auto data_iter =
+      data::CsvIterator::make(data_source, _delimiter, n_balancing_samples);
 
   auto columns_opt = data_iter->next();
   if (!columns_opt) {
@@ -239,7 +233,7 @@ data::TransformationPtr MachFeaturizer::makeDocIdTransformation(
     const std::string& label_column_name, std::optional<char> label_delimiter) {
   if (label_delimiter) {
     return std::make_shared<data::StringToTokenArray>(
-        label_column_name, MACH_DOC_IDS, *label_delimiter,
+        label_column_name, MACH_DOC_IDS, label_delimiter.value(),
         std::numeric_limits<uint32_t>::max());
   }
   return std::make_shared<data::StringToToken>(

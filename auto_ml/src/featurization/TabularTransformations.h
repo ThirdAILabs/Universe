@@ -16,8 +16,7 @@ inputTransformations(const ColumnDataTypes& data_types,
                      const TemporalRelationships& temporal_relationships,
                      const TabularOptions& options, bool should_update_history);
 
-// This represents the transformations and outputs for a set of columns in the
-// input.
+// This represents a sequence of transformations and the final output columns.
 using MergedTransformSeries =
     std::pair<std::vector<data::TransformationPtr>, std::vector<std::string>>;
 

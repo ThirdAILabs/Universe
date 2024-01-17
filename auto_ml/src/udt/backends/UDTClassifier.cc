@@ -5,12 +5,14 @@
 #include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/root_cause_analysis/RCA.h>
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <archive/src/Archive.h>
+#include <auto_ml/src/cpp_classifier/CppClassifier.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
@@ -23,6 +25,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <licensing/src/CheckLicense.h>
 #include <pybind11/stl.h>
 #include <utils/Version.h>
@@ -339,6 +342,16 @@ std::unique_ptr<UDTClassifier> UDTClassifier::fromArchive(
 UDTClassifier::UDTClassifier(const ar::Archive& archive)
     : _classifier(utils::Classifier::fromArchive(archive)),
       _featurizer(Featurizer::fromArchive(*archive.get("featurizer"))) {}
+
+void UDTClassifier::saveCppClassifier(const std::string& save_path) const {
+  CppClassifier classifier(_featurizer, _classifier->model(),
+                           _classifier->binaryPredictionThreshold());
+
+  auto ostream = dataset::SafeFileIO::ofstream(save_path);
+  cereal::BinaryOutputArchive oarchive(ostream);
+
+  oarchive(classifier);
+}
 
 template void UDTClassifier::serialize(cereal::BinaryInputArchive&,
                                        const uint32_t version);

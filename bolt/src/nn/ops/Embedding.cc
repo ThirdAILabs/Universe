@@ -54,21 +54,25 @@ void Embedding::forward(const ComputationList& inputs, TensorPtr& output,
   BoltVector& output_vec = output->getVector(index_in_batch);
   assert(output_vec.isDense());
 
+  forward(tokens, output_vec.activations);
+}
+
+void Embedding::forward(const BoltVector& tokens, float* output) const {
   if (_bias) {
-    std::copy(_biases.begin(), _biases.end(), output_vec.activations);
+    std::copy(_biases.begin(), _biases.end(), output);
   } else {
-    std::fill_n(output_vec.activations, output_vec.len, 0.F);
+    std::fill_n(output, _dim, 0.F);
   }
 
   for (size_t n = 0; n < tokens.len; n++) {
     float weight = tokens.activations[n];
     const float* emb = embedding(tokens.active_neurons[n]);
     for (size_t i = 0; i < _dim; i++) {
-      output_vec.activations[i] += weight * emb[i];
+      output[i] += weight * emb[i];
     }
   }
 
-  applyActivationFunction(output_vec.activations);
+  applyActivationFunction(output);
 }
 
 void Embedding::backpropagate(ComputationList& inputs, TensorPtr& output,
@@ -129,7 +133,7 @@ void softmax(float* activations, size_t dim) {
   }
 }
 
-void Embedding::applyActivationFunction(float* activations) {
+inline void Embedding::applyActivationFunction(float* activations) const {
   switch (_act_func) {
     case ActivationFunction::ReLU:
       for (size_t i = 0; i < _dim; i++) {
@@ -301,6 +305,25 @@ void Embedding::summary(std::ostream& summary, const ComputationList& inputs,
           << output->name() << " [dim=" << _dim
           << ", activation=" << activationFunctionToStr(_act_func)
           << ", bias=" << std::boolalpha << _bias << "]";
+}
+
+std::vector<std::pair<std::string, double>> Embedding::parameterAndGradNorms()
+    const {
+  std::vector<std::pair<std::string, double>> all_norms;
+
+  computeNorms(_embeddings, "embeddings", all_norms);
+  if (_embedding_optimizer) {
+    computeNorms(_embedding_optimizer->gradients, "embeddings_grad", all_norms);
+  }
+
+  if (_bias) {
+    computeNorms(_biases, "bias", all_norms);
+    if (_bias_optimizer) {
+      computeNorms(_bias_optimizer->gradients, "bias_grad", all_norms);
+    }
+  }
+
+  return all_norms;
 }
 
 ComputationPtr Embedding::apply(ComputationPtr input) {

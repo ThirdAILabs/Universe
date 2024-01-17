@@ -110,9 +110,9 @@ def batch_update():
 
 
 def compare_explanations(explanations_1, explanations_2, assert_mode):
-    all_equal = len(explanations_1) == len(explanations_2)
-    for exp_1, exp_2 in zip(explanations_1, explanations_2):
-        all_equal = all_equal and (exp_1 == exp_2)
+    all_equal = len(explanations_1) == len(explanations_2) and all(
+        exp_1 == exp_2 for exp_1, exp_2 in zip(explanations_1, explanations_2)
+    )
 
     # If we want to assert equality, we want everything to be equal
     # Otherwise, we want something to be inequal.

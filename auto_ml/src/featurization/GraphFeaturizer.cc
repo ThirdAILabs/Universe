@@ -61,13 +61,11 @@ GraphFeaturizer::GraphFeaturizer(const ColumnDataTypes& data_types,
 data::LoaderPtr GraphFeaturizer::indexAndGetDataLoader(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
     bool verbose, dataset::DatasetShuffleConfig shuffle_config) {
-  auto csv_data_source = dataset::CsvDataSource::make(data_source, _delimiter);
+  index(data_source);
 
-  index(csv_data_source);
+  data_source->restart();
 
-  csv_data_source->restart();
-
-  auto data_iter = data::CsvIterator::make(csv_data_source, _delimiter);
+  auto data_iter = data::CsvIterator::make(data_source, _delimiter);
 
   auto transformation_list =
       data::Pipeline::make({_input_transform, _label_transform});

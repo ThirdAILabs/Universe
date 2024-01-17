@@ -160,7 +160,7 @@ template <class Archive>
 void TextTokenizer::serialize(Archive& archive) {
   archive(cereal::base_class<Transformation>(this), _input_column,
           _output_indices, _output_values, _tokenizer, _encoder, _lowercase,
-          _dim);
+          _clean_text, _dim);
 }
 
 }  // namespace thirdai::data

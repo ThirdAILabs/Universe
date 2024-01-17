@@ -88,6 +88,10 @@ class Classifier {
 
   static std::shared_ptr<Classifier> fromArchive(const ar::Archive& archive);
 
+  const auto& binaryPredictionThreshold() const {
+    return _binary_prediction_threshold;
+  }
+
  private:
   uint32_t predictedClass(const BoltVector& output);
 

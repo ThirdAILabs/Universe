@@ -5,16 +5,17 @@
 #include <archive/src/Archive.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <auto_ml/src/udt/backends/DeprecatedUDTMachClassifier.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
 #include <auto_ml/src/udt/backends/UDTGraphClassifier.h>
 #include <auto_ml/src/udt/backends/UDTMach.h>
-#include <auto_ml/src/udt/backends/UDTMachClassifier.h>
 #include <auto_ml/src/udt/backends/UDTQueryReformulation.h>
 #include <auto_ml/src/udt/backends/UDTRecurrentClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
 #include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/CheckLicense.h>
+#include <pybind11/pytypes.h>
 #include <telemetry/src/PrometheusClient.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
@@ -379,7 +380,9 @@ void UDT::serialize(Archive& archive, const uint32_t version) {
   // Increment thirdai::versions::UDT_BASE_VERSION after serialization changes
   archive(_backend);
 
-  if constexpr (std::is_same_v<Archive, cereal::BinaryInputArchive>) {
+  constexpr bool deserializing =
+      std::is_same_v<Archive, cereal::BinaryInputArchive>;
+  if constexpr (deserializing) {
     if (auto* old_mach = dynamic_cast<UDTMachClassifier*>(_backend.get())) {
       _backend = std::make_unique<UDTMach>(old_mach->getMachInfo());
     }
@@ -413,6 +416,37 @@ void UDT::throwUnsupportedUDTConfigurationError(
 
 bool UDT::isV1() const {
   return dynamic_cast<UDTMachClassifier*>(_backend.get());
+}
+
+std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
+UDT::parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
+                       const MapInputBatch& batch, bool sparse_inference,
+                       std::optional<uint32_t> top_k) {
+  std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>> outputs(
+      models.size());
+
+  bool non_mach = false;
+#pragma omp parallel for default(none) \
+    shared(models, batch, outputs, sparse_inference, top_k, non_mach)
+  for (size_t i = 0; i < models.size(); i++) {
+    if (auto* mach = dynamic_cast<UDTMach*>(models[i]->_backend.get())) {
+      outputs[i] = mach->predictBatchImpl(
+          batch, sparse_inference, /*return_predicted_class*/ false, top_k);
+    } else if (auto* mach = dynamic_cast<UDTMachClassifier*>(
+                   models[i]->_backend.get())) {
+      outputs[i] = mach->predictImpl(batch, sparse_inference, top_k);
+    } else {
+#pragma omp critical
+      non_mach = true;
+    }
+  }
+
+  if (non_mach) {
+    throw std::invalid_argument(
+        "Cannot perform parallel inference on non mach model.");
+  }
+
+  return outputs;
 }
 
 }  // namespace thirdai::automl::udt

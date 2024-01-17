@@ -23,6 +23,15 @@
 #include <optional>
 #include <stdexcept>
 
+/**
+ ************************************************
+ ************************************************
+ **** NOTE: This backend will be deprecated. ****
+ **** Please add any new features to UDTMach ****
+ ************************************************
+ ************************************************
+ */
+
 namespace thirdai::automl::udt {
 
 using bolt::metrics::InputMetrics;
@@ -65,6 +74,10 @@ class UDTMachClassifier final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
+
+  std::vector<std::vector<std::pair<uint32_t, double>>> predictImpl(
+      const MapInputBatch& samples, bool sparse_inference,
+      std::optional<uint32_t> top_k);
 
   py::object predictHashes(const MapInput& sample, bool sparse_inference,
                            bool force_non_empty,
@@ -196,10 +209,6 @@ class UDTMachClassifier final : public UDTBackend {
   }
 
  private:
-  std::vector<std::vector<std::pair<uint32_t, double>>> predictImpl(
-      const MapInputBatch& samples, bool sparse_inference,
-      std::optional<uint32_t> top_k);
-
   std::vector<std::vector<uint32_t>> predictHashesImpl(
       const MapInputBatch& samples, bool sparse_inference,
       bool force_non_empty = true,
