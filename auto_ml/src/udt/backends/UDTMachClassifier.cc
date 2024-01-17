@@ -296,6 +296,42 @@ UDTMachClassifier::predictImpl(const MapInputBatch& samples,
   return predicted_entities;
 }
 
+py::object UDTMachClassifier::predictTensors(const bolt::TensorList& input_data,
+                                             bool sparse_inference,
+                                             std::optional<uint32_t> top_k) {
+  auto outputs =
+      _classifier->model()->forward(input_data, sparse_inference).at(0);
+
+  uint32_t num_classes = _mach_label_block->index()->numEntities();
+
+  if (top_k && *top_k > num_classes) {
+    throw std::invalid_argument(
+        "Cannot return more results than the model is trained to "
+        "predict. "
+        "Model currently can predict one of " +
+        std::to_string(num_classes) + " classes.");
+  }
+
+  uint32_t k = top_k.value_or(_default_top_k_to_return);
+
+  uint32_t batch_size = outputs->batchSize();
+
+  std::vector<std::vector<std::pair<uint32_t, double>>> predicted_entities(
+      batch_size);
+#pragma omp parallel for default(none) \
+    shared(outputs, predicted_entities, k, batch_size) if (batch_size > 1)
+  for (uint32_t i = 0; i < batch_size; i++) {
+    const BoltVector& vector = outputs->getVector(i);
+    auto predictions = _mach_label_block->index()->decode(
+        /* output = */ vector,
+        /* top_k = */ k,
+        /* num_buckets_to_eval = */ _num_buckets_to_eval);
+    predicted_entities[i] = predictions;
+  }
+
+  return py::cast(predicted_entities);
+}
+
 py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
                                            bool sparse_inference,
                                            bool return_predicted_class,

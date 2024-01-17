@@ -354,6 +354,12 @@ class UDT {
                                         force_non_empty, num_hashes);
   }
 
+  py::object predictTensors(const bolt::TensorList& input_data,
+                            bool sparse_inference,
+                            std::optional<uint32_t> top_k) {
+    return _backend->predictTensors(input_data, sparse_inference, top_k);
+  }
+
   /**
    * Used for fine tuning in UDTMachClassifier. Predicts the outputs of the
    * target samples and trains the model to map the source samples to those

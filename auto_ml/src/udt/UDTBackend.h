@@ -294,6 +294,15 @@ class UDTBackend {
     throw notSupported("predict_hashes_batch");
   }
 
+  virtual py::object predictTensors(const bolt::TensorList& input_data,
+                                    bool sparse_inference,
+                                    std::optional<uint32_t> top_k) {
+    (void)input_data;
+    (void)sparse_inference;
+    (void)top_k;
+    throw notSupported("predict_tensors");
+  }
+
   virtual void associate(
       const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
       uint32_t n_buckets, uint32_t n_association_samples,

@@ -157,8 +157,8 @@ void defineAutomlInModule(py::module_& module) {
           py::arg("train_input"), py::arg("train_output"),
           py::arg("learning_rate"), py::arg("epochs"),
           py::arg("train_metrics") = std::vector<std::string>{},
-          py::arg("val_input") = std::nullopt,
-          py::arg("val_output") = std::nullopt,
+          py::arg("val_input") = std::optional<bolt::Dataset>{},
+          py::arg("val_output") = std::optional<bolt::Dataset>{},
           py::arg("val_metrics") = std::vector<std::string>{},
           py::arg("callbacks") = std::vector<udt::CallbackPtr>{},
           bolt::python::OutputRedirect())
@@ -232,6 +232,8 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("samples"), py::arg("sparse_inference") = false,
            py::arg("force_non_empty") = true,
            py::arg("num_hashes") = std::nullopt)
+      .def("predict_tensors", &udt::UDT::predictTensors, py::arg("input_data"),
+           py::arg("sparse_infernce") = false, py::arg("top_k") = std::nullopt)
       .def("associate", &udt::UDT::associate, py::arg("source_target_samples"),
            py::arg("n_buckets"), py::arg("n_association_samples") = 16,
            py::arg("n_balancing_samples") = 50,

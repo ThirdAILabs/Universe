@@ -1,6 +1,8 @@
 #pragma once
 
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/tensor/Tensor.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
@@ -82,6 +84,10 @@ class UDTMachClassifier final : public UDTBackend {
   py::object predictHashesBatch(const MapInputBatch& samples,
                                 bool sparse_inference, bool force_non_empty,
                                 std::optional<uint32_t> num_hashes) final;
+
+  py::object predictTensors(const bolt::TensorList& input_data,
+                            bool sparse_inference,
+                            std::optional<uint32_t> top_k) final;
 
   py::object scoreBatch(const MapInputBatch& samples,
                         const std::vector<std::vector<Label>>& classes,
