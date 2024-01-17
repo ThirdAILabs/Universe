@@ -2,6 +2,7 @@
 #include "bolt/src/nn/autograd/Computation.h"
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Map.h>
 #include <memory>
 #include <stdexcept>
 
@@ -105,6 +106,30 @@ std::optional<uint32_t> DlrmAttention::nonzeros(const ComputationList& inputs,
 }
 
 void DlrmAttention::initOptimizer() {}
+
+ComputationPtr DlrmAttention::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument(
+        "Expected DlrmAttention op to have two inputs.");
+  }
+  return apply(inputs.at(0), inputs.at(1));
+}
+
+ar::ConstArchivePtr DlrmAttention::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = ar::Map::make();
+  map->set("name", ar::str(name()));
+  map->set("type", ar::str(type()));
+  return map;
+}
+
+std::shared_ptr<DlrmAttention> DlrmAttention::fromArchive(
+    const ar::Archive& archive) {
+  auto op = DlrmAttention::make();
+  op->setName(archive.str("name"));
+  return op;
+}
 
 void DlrmAttention::summary(std::ostream& summary,
                             const ComputationList& inputs,

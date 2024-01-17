@@ -3,6 +3,7 @@
 #include <bolt/src/nn/loss/ComparativeLoss.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <cstddef>
 #include <set>
 
 namespace thirdai::bolt::tests {
@@ -26,6 +27,8 @@ class LossTracker final : public ComparativeLoss {
   const auto& lossCalledWith() const { return _loss_called_with; }
 
   const auto& gradientCalledWith() const { return _gradient_called_with; }
+
+  ar::ConstArchivePtr toArchive() const final { return nullptr; }
 
  private:
   float singleLoss(float activation, float label) const override {

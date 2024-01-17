@@ -323,6 +323,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/autograd/ComputationGraph.cc
     bolt/src/nn/model/AllocationManager.cc
     bolt/src/nn/model/Model.cc
+    bolt/src/nn/ops/Op.cc
     bolt/src/nn/ops/FullyConnected.cc
     bolt/src/nn/ops/Embedding.cc
     bolt/src/nn/ops/RobeZ.cc
@@ -340,6 +341,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/MaxPool1D.cc
     bolt/src/nn/ops/QuantileMixing.cc
     bolt/src/nn/tensor/Tensor.cc
+    bolt/src/nn/loss/Loss.cc
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
     bolt/src/nn/loss/BinaryCrossEntropy.cc

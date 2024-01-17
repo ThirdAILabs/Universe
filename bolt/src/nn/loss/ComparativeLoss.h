@@ -28,7 +28,6 @@ class ComparativeLoss : public Loss {
  protected:
   ComparativeLoss() {}
 
- private:
   /**
    * Helper functions to iterate over the activations and labels depending on
    * their sparsities.

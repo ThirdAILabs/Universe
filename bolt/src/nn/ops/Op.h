@@ -1,8 +1,9 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/tensor/Tensor.h>
-#include <cmath>
+#include <archive/src/Archive.h>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -128,6 +129,12 @@ class Op {
    */
   virtual std::vector<std::vector<float>*> parameters() = 0;
 
+  virtual ComputationPtr applyToInputs(const ComputationList& inputs) = 0;
+
+  virtual ar::ConstArchivePtr toArchive(bool with_optimizer) const = 0;
+
+  static std::shared_ptr<Op> fromArchive(const ar::Archive& archive);
+
   /**
    * Appends a line to the summary to describe the op when applied to the given
    * inputs and yielding the given output. Ideally this should be in the form:
@@ -201,6 +208,12 @@ class Op {
     archive(_name);
   }
 };
+
+ar::ConstArchivePtr optimizerToArchive(const AdamOptimizer& optimizer,
+                                       const std::shared_ptr<const Op>& op,
+                                       size_t rows, size_t cols);
+
+AdamOptimizer optimizerFromArchive(const ar::Archive& archive);
 
 using OpPtr = std::shared_ptr<Op>;
 

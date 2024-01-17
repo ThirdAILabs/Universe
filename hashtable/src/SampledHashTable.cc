@@ -2,6 +2,8 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <cassert>
 #include <limits>
@@ -189,6 +191,34 @@ uint32_t SampledHashTable::maxElement() const {
 
   return max_elem;
 }
+
+ar::ConstArchivePtr SampledHashTable::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("num_tables", ar::u64(_num_tables));
+  map->set("reservoir_size", ar::u64(_reservoir_size));
+  map->set("range", ar::u64(_range));
+
+  map->set("data", ar::vecU32(_data));
+  map->set("counters", ar::vecU32(_counters));
+  map->set("gen_rand", ar::vecU32(_gen_rand));
+
+  return map;
+}
+
+std::shared_ptr<SampledHashTable> SampledHashTable::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_shared<SampledHashTable>(archive);
+}
+
+SampledHashTable::SampledHashTable(const ar::Archive& archive)
+    : _num_tables(archive.u64("num_tables")),
+      _reservoir_size(archive.u64("reservoir_size")),
+      _range(archive.u64("range")),
+      _max_rand(archive.getAs<ar::VecU32>("gen_rand").size()),
+      _data(archive.getAs<ar::VecU32>("data")),
+      _counters(archive.getAs<ar::VecU32>("counters")),
+      _gen_rand(archive.getAs<ar::VecU32>("gen_rand")) {}
 
 void SampledHashTable::save(const std::string& filename) const {
   auto output_stream =

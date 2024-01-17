@@ -1,5 +1,6 @@
 #include "ExternalLoss.h"
 #include <cereal/types/base_class.hpp>
+#include <archive/src/Map.h>
 #include <stdexcept>
 
 namespace thirdai::bolt {
@@ -29,6 +30,23 @@ float ExternalLoss::loss(uint32_t index_in_batch) const {
   (void)index_in_batch;
   throw std::invalid_argument(
       "Cannot compute loss for external loss function.");
+}
+
+ar::ConstArchivePtr ExternalLoss::toArchive() const {
+  auto map = ar::Map::make();
+  map->set("type", ar::str(type()));
+  map->set("output", ar::str(_output->name()));
+  map->set("external_gradients", ar::str(_external_gradients->name()));
+
+  return map;
+}
+
+std::shared_ptr<ExternalLoss> ExternalLoss::fromArchive(
+    const ar::Archive& archive,
+    const std::unordered_map<std::string, ComputationPtr>& computations) {
+  return std::make_shared<ExternalLoss>(
+      computations.at(archive.str("output")),
+      computations.at(archive.str("external_gradients")));
 }
 
 template <class Archive>

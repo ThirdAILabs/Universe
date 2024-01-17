@@ -16,6 +16,7 @@ set(BOLT_NN_TESTS
     SaveLoadTests
     BeamSearchDecodingTests
     SwitchOpTests
+    ArchiveSerializationTests
     EmbFcInferenceTests
     CosineLRScheduleTests)
 
