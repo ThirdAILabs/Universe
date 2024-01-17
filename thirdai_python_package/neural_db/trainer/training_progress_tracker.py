@@ -129,6 +129,7 @@ class NeuralDbProgressTracker:
 
         args = self._train_state.__dict__.copy()
 
+        args["freeze_after_epochs"] = freeze_after_epochs
         args["min_epochs"] = min_epochs
         args["max_epochs"] = max_epochs
 
