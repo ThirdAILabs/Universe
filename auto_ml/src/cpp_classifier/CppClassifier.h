@@ -23,11 +23,17 @@ class CppClassifier {
 
   CppClassifier();
 
-  __attribute__((visibility("default"))) static std::shared_ptr<CppClassifier>
+#if !_WIN32
+  __attribute__((visibility("default")))
+#endif
+  static std::shared_ptr<CppClassifier>
   load(const std::string& saved_model);
 
-  __attribute__((visibility("default"))) uint32_t predict(
-      const std::unordered_map<std::string, std::string>& input);
+#if !_WIN32
+  __attribute__((visibility("default")))
+#endif
+  uint32_t
+  predict(const std::unordered_map<std::string, std::string>& input);
 
   template <class Archive>
   void serialize(Archive& archive);
