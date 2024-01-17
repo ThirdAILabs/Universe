@@ -65,4 +65,10 @@ void CallbackList::onBatchEnd() {
   }
 }
 
+void CallbackList::beforeUpdate() {
+  for (auto& callback : _callbacks) {
+    callback->beforeUpdate();
+  }
+}
+
 }  // namespace thirdai::bolt::callbacks

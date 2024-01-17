@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 import pickle
 import shutil
@@ -237,6 +238,48 @@ class DocumentDataSource(PyDataSource):
 
     def resource_name(self) -> str:
         return "Documents:\n" + "\n".join([doc.name for doc, _ in self.documents])
+
+    def save(self, path: Path, save_interval=100_000):
+        """
+        DocumentDataSource is agnostic to the documents that are a part of it as the line_iterator is agnostic to the kind of document and returns data in a specific format. Hence, to serialize DocumentDataSource, we do not need to serialize the documents but rather, dump the lines yielded by the line iterator into a CSV. This makes the saving and loading logic simpler.
+        """
+        path.mkdir(exist_ok=True, parents=True)
+        number_lines_in_buffer = 0
+        with open(path / "source.csv", "w") as f:
+            for line in self._get_line_iterator():
+                f.write(line + "\n")
+                number_lines_in_buffer += 1
+            if number_lines_in_buffer > save_interval:
+                f.flush()
+                number_lines_in_buffer = 0
+
+        with open(path / "arguments.json", "w") as f:
+            json.dump(
+                {
+                    "id_column": self.id_column,
+                    "strong_column": self.strong_column,
+                    "weak_column": self.weak_column,
+                },
+                f,
+                indent=4,
+            )
+        self.restart()
+
+    @staticmethod
+    def load(path: Path):
+        with open(path / "arguments.json", "r") as f:
+            args = json.load(f)
+
+        csv_document = CSV(
+            path=path / "source.csv",
+            id_column=args["id_column"],
+            strong_columns=[args["strong_column"]],
+            weak_columns=[args["weak_column"]],
+            has_offset=True,
+        )
+        data_source = DocumentDataSource(**args)
+        data_source.add(csv_document, start_id=0)
+        return data_source
 
 
 class IntroAndTrainDocuments:
@@ -1785,7 +1828,10 @@ class SalesForce(DocumentConnector):
 
         try:
             result = self._connector.execute(
-                query=f"SELECT {','.join(self.reference_columns)} FROM {self.object_name} WHERE {self.id_col} = '{element_id}'"
+                query=(
+                    f"SELECT {','.join(self.reference_columns)} FROM"
+                    f" {self.object_name} WHERE {self.id_col} = '{element_id}'"
+                )
             )["records"][0]
             del result["attributes"]
             text = "\n\n".join(
@@ -1793,7 +1839,10 @@ class SalesForce(DocumentConnector):
             )
 
         except Exception as e:
-            text = f"Unable to connect to the object instance, Referenced row with {self.id_col}: {element_id} "
+            text = (
+                "Unable to connect to the object instance, Referenced row with"
+                f" {self.id_col}: {element_id} "
+            )
 
         return Reference(
             document=self,
@@ -1850,14 +1899,20 @@ class SalesForce(DocumentConnector):
 
         expected_min_row_id = 0
         min_id = self._connector.execute(
-            query=f"SELECT {self.id_col} FROM {self.object_name} WHERE {self.id_col} = '{expected_min_row_id}'"
+            query=(
+                f"SELECT {self.id_col} FROM {self.object_name} WHERE {self.id_col} ="
+                f" '{expected_min_row_id}'"
+            )
         )
 
         # This one is not required probably because user can't put the auto-number field mannually.
         # User just can provide the start of the auto-number so if the min_id is 0, then max_id should be size - 1
         expected_max_row_id = self.size - 1
         max_id = self._connector.execute(
-            query=f"SELECT {self.id_col} FROM {self.object_name} WHERE {self.id_col} = '{expected_max_row_id}'"
+            query=(
+                f"SELECT {self.id_col} FROM {self.object_name} WHERE {self.id_col} ="
+                f" '{expected_max_row_id}'"
+            )
         )
 
         if not (min_id["totalSize"] == 1 and max_id["totalSize"] == 1):
@@ -1877,7 +1932,10 @@ class SalesForce(DocumentConnector):
         fields_set = set([field["name"] for field in all_fields])
 
         # Checking for strong, weak and reference columns (if provided) to be present in column list of the table
-        column_name_error = "Remember if it is a custom column, salesforce requires it to be appended with __c."
+        column_name_error = (
+            "Remember if it is a custom column, salesforce requires it to be appended"
+            " with __c."
+        )
         if (self.strong_columns is not None) and (
             not set(self.strong_columns).issubset(fields_set)
         ):
@@ -1908,7 +1966,8 @@ class SalesForce(DocumentConnector):
                 and field["type"] not in supported_text_types
             ):
                 raise AttributeError(
-                    f"Strong column '{field['name']}' needs to be type from {supported_text_types}"
+                    f"Strong column '{field['name']}' needs to be type from"
+                    f" {supported_text_types}"
                 )
             if (
                 self.weak_columns is not None
@@ -1916,7 +1975,8 @@ class SalesForce(DocumentConnector):
                 and field["type"] not in supported_text_types
             ):
                 raise AttributeError(
-                    f"Weak column '{field['name']}' needs to be type {supported_text_types}"
+                    f"Weak column '{field['name']}' needs to be type"
+                    f" {supported_text_types}"
                 )
 
     def default_fields(
