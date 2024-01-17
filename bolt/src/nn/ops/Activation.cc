@@ -7,7 +7,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <cmath>
 #include <memory>
 #include <stdexcept>

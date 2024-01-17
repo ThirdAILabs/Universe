@@ -69,6 +69,9 @@ class FullyConnected final
 
   void registerModel(const std::weak_ptr<Model>& new_model) final;
 
+  std::vector<std::pair<std::string, double>> parameterAndGradNorms()
+      const final;
+
   /**
    * Applies the op to an input tensor and yields a new output tensor. Used to
    * add the op to a computation graph.

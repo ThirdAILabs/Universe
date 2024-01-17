@@ -106,8 +106,6 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("outputs", &Model::outputs)
       .def("labels", &Model::labels)
       .def("summary", &Model::summary, py::arg("print") = true)
-      .def("num_params", &Model::numParams)
-      .def("thirdai_version", &Model::thirdaiVersion)
       .def("get_parameters", &getParameters,
            py::return_value_policy::reference_internal)
       .def("set_parameters", &setParameters, py::arg("new_values"))
@@ -115,6 +113,7 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("override_train_steps", &Model::overrideTrainSteps,
            py::arg("train_steps"))
       .def("params", &modelParams)
+      .def("norms", &Model::getNorms)
       .def_static("from_params", &modelFromParams, py::arg("params"))
 #endif
       // The next three functions are used for distributed training.
@@ -123,6 +122,8 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("get_gradients", &getGradients,
            py::return_value_policy::reference_internal)
       .def("set_gradients", &setGradients, py::arg("new_values"))
+      .def("num_params", &Model::numParams)
+      .def("thirdai_version", &Model::thirdaiVersion)
       .def("enable_sparse_parameter_updates",
            &Model::enableSparseParameterUpdates)
       .def("freeze_hash_tables", &Model::freezeHashTables,

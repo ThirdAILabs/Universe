@@ -2,7 +2,7 @@
 
 #include "LayerUtils.h"
 #include "SamplingConfig.h"
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <cmath>
 #include <exception>
 #include <iostream>

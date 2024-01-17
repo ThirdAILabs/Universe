@@ -171,6 +171,18 @@ void WeightedSum::setSerializeOptimizer(bool should_serialize_optimizer) {
   _should_serialize_optimizer = should_serialize_optimizer;
 }
 
+std::vector<std::pair<std::string, double>> WeightedSum::parameterAndGradNorms()
+    const {
+  std::vector<std::pair<std::string, double>> all_norms;
+
+  computeNorms(_weights, "weights", all_norms);
+  if (_optimizer) {
+    computeNorms(_optimizer->gradients, "embeddings_grad", all_norms);
+  }
+
+  return all_norms;
+}
+
 ComputationPtr WeightedSum::apply(ComputationPtr input) {
   if (input->dim() != _n_chunks * _chunk_size) {
     throw std::invalid_argument(
