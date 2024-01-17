@@ -127,7 +127,7 @@ class NeuralDbProgressTracker:
             - self._train_state.current_epoch_number
         )
 
-        args = self._train_state.__dict__
+        args = self._train_state.__dict__.copy()
 
         args["min_epochs"] = min_epochs
         args["max_epochs"] = max_epochs
