@@ -203,7 +203,7 @@ void Embedding::sparseEmbeddingUpdate(float learning_rate,
   float B1_bias_corrected = static_cast<float>(1 - pow(BETA1, train_steps));
   float B2_bias_corrected = static_cast<float>(1 - pow(BETA2, train_steps));
 
-  float w_decay = (1 - 0.01 * learning_rate);
+  float w_decay = (1 - ADAM_W_DECAY * learning_rate);
 
 #pragma omp parallel for default(none) \
     shared(B1_bias_corrected, B2_bias_corrected, learning_rate, w_decay)

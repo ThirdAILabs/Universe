@@ -16,6 +16,8 @@ constexpr float BETA1 = 0.9;
 constexpr float BETA2 = 0.999;
 constexpr float EPS = 0.0000001;
 
+constexpr float ADAM_W_DECAY = 0.01;
+
 struct AdamOptimizer {
   explicit AdamOptimizer(uint64_t len)
       : gradients(len, 0.0), momentum(len, 0.0), velocity(len, 0.0) {}
@@ -34,7 +36,7 @@ struct AdamOptimizer {
     float B1_bias_corrected = static_cast<float>(1 - pow(BETA1, train_steps));
     float B2_bias_corrected = static_cast<float>(1 - pow(BETA2, train_steps));
 
-    float w_decay = 1 - learning_rate * 0.01;
+    float w_decay = 1 - learning_rate * ADAM_W_DECAY;
 
 #pragma omp parallel for default(none) shared( \
     params, B1_bias_corrected, B2_bias_corrected, learning_rate, w_decay)

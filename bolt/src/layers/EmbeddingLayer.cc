@@ -164,7 +164,7 @@ void EmbeddingLayer::updateParametersSparse(float lr, uint32_t iter, float B1,
   // Preform outer dereferencing once here to avoid repeating it later.
   auto& embedding_block = *_embedding_block;
 
-  float w_decay = 1 - 0.01 * lr;
+  float w_decay = 1 - ADAM_W_DECAY * lr;
 #pragma omp parallel for default(none)                                         \
     shared(embedding_block, B1, B2, B1_bias_corrected, B2_bias_corrected, eps, \
            lr, w_decay)

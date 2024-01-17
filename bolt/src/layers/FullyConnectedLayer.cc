@@ -469,7 +469,7 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
       continue;
     }
 
-    _biases[cur_neuron] *= (1 - lr * 0.01);
+    _biases[cur_neuron] *= (1 - lr * ADAM_W_DECAY);
 
     float grad = _bias_optimizer->gradients[cur_neuron];
     assert(!std::isnan(grad));
@@ -503,7 +503,7 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
   assert(_weight_optimizer.has_value());
 
   auto indx = cur_neuron * _prev_dim + prev_neuron;
-  _weights[indx] *= (1 - lr * 0.01);
+  _weights[indx] *= (1 - lr * ADAM_W_DECAY);
 
   float grad = _weight_optimizer->gradients[indx];
   assert(!std::isnan(grad));
