@@ -32,6 +32,8 @@ class TextCompat final : public Transformation {
 
   static std::string type() { return "text_compat"; }
 
+  const std::string& inputColumn() const { return _input_column; }
+
  private:
   inline uint32_t mimicHashedFeatureVector(uint32_t index) const {
     /**

@@ -10,7 +10,7 @@
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/utils/TimeUtils.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <exception>
 #include <stdexcept>
 #include <string>

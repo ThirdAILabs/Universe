@@ -4,6 +4,12 @@
 #include <data/src/ColumnMap.h>
 #include <data/src/transformations/Transformation.h>
 #include <stdexcept>
+#include <random>
+#include <string>
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define VARIABLE_TO_STRING(name, ends_with) \
+  thirdai::data::cold_start::convertToString(#name, (name), ends_with)
 
 namespace thirdai::data::cold_start {
 
@@ -14,13 +20,13 @@ class TextAugmentationBase : public Transformation {
  public:
   TextAugmentationBase(std::vector<std::string> strong_column_names,
                        std::vector<std::string> weak_column_names,
-                       std::string label_column_name,
                        std::string output_column_name, uint32_t seed);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   virtual std::vector<std::string> augmentSingleRow(
-      const std::string& strong_text, const std::string& weak_text) const = 0;
+      const std::string& strong_text, const std::string& weak_text,
+      uint32_t row_id_salt) const = 0;
 
   ar::ConstArchivePtr toArchive() const final {
     // We never actually serialize cold start transformations because we create
@@ -33,7 +39,6 @@ class TextAugmentationBase : public Transformation {
  protected:
   std::vector<std::string> _strong_column_names;
   std::vector<std::string> _weak_column_names;
-  std::string _label_column_name;
   std::string _output_column_name;
   uint32_t _seed;
 };
@@ -45,7 +50,7 @@ class TextAugmentationBase : public Transformation {
  */
 PhraseCollection mergeStrongWithWeak(
     const PhraseCollection& weak_phrases, const Phrase& strong_phrase,
-    std::optional<uint32_t> strong_sample_num_words, uint32_t seed);
+    std::optional<uint32_t> strong_sample_num_words, std::mt19937& rng);
 
 /**
  * Randomly deletes elements from each phrase, resulting in new phrases.
@@ -57,14 +62,21 @@ PhraseCollection mergeStrongWithWeak(
  */
 PhraseCollection sampleFromPhrases(const PhraseCollection& phrases,
                                    uint32_t words_per_sampled_phrase,
-                                   uint32_t n_sampled_phrases, uint32_t seed);
+                                   uint32_t n_sampled_phrases,
+                                   std::mt19937& rng);
 
-/**
- * Returns a single phrase that takes in the concatenated string of strong
- * columns and returns a strong phrase (this will just be a cleaned version of
- * the input string, possibly length restricted).
- */
-Phrase getStrongPhrase(const std::string& strong_text_in,
-                       std::optional<uint32_t> max_len = std::nullopt);
+template <typename T>
+std::string convertToString(const char* name, const T& variable,
+                            const std::string& ends_with = ", ") {
+  return std::string(name) + ": " + std::to_string(variable) + ends_with;
+}
+
+template <typename T>
+std::string convertToString(const char* name, const std::optional<T>& variable,
+                            const std::string& ends_with = ",") {
+  return std::string(name) + ": " +
+         (variable.has_value() ? std::to_string(variable.value()) : "NA") +
+         ends_with;
+}
 
 }  // namespace thirdai::data::cold_start

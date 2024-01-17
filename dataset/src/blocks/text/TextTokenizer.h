@@ -6,7 +6,7 @@
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <dataset/src/utils/TokenEncoding.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <string>
 
 namespace thirdai::dataset {
