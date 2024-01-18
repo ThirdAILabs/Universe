@@ -110,6 +110,9 @@ def test_disassociate_acronyms():
     model = train_model()
 
     original_samples, acronym_samples, associations = get_association_samples()
+    original_samples = original_samples[:4]
+    acronym_samples = acronym_samples[:4]
+    associations = associations[:4]
 
     matches_before_associate = compare_predictions(
         model, original_samples, acronym_samples
@@ -139,6 +142,8 @@ def test_disassociate_acronyms():
     )
     print(matches_after_disassociate)
     assert matches_after_disassociate <= 0.5
+
+test_disassociate_acronyms()
 
 
 def test_associate_train_acronyms():

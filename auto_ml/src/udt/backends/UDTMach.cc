@@ -866,23 +866,25 @@ void UDTMach::teach(const data::ColumnMap& rlhf_samples,
                     uint32_t epochs) {
   requireRLHFSampler();
 
-  auto balancing_samples =
-      _balancing_samples->balancingSamples(n_balancing_samples);
-
   auto rlhf_data = _featurizer->featurizeRlhfSamples(rlhf_samples);
 
-  if (rlhf_data.containsColumn(MACH_LABEL_WEIGHTS)) {
-    balancing_samples.setColumn(
-        MACH_LABEL_WEIGHTS,
-        defaultLabelWeights(
-            balancing_samples.getArrayColumn<uint32_t>(MACH_LABELS)));
+  if (n_balancing_samples > 0) {
+    auto balancing_samples =
+        _balancing_samples->balancingSamples(n_balancing_samples);
+
+    if (rlhf_data.containsColumn(MACH_LABEL_WEIGHTS)) {
+      balancing_samples.setColumn(
+          MACH_LABEL_WEIGHTS,
+          defaultLabelWeights(
+              balancing_samples.getArrayColumn<uint32_t>(MACH_LABELS)));
+    }
+    rlhf_data = rlhf_data.concat(balancing_samples);
   }
 
-  auto columns = rlhf_data.concat(balancing_samples);
-  columns.shuffle();
+  rlhf_data.shuffle();
 
   auto [data, labels] =
-      _featurizer->columnsToTensors(columns, defaults::ASSOCIATE_BATCH_SIZE);
+      _featurizer->columnsToTensors(rlhf_data, defaults::ASSOCIATE_BATCH_SIZE);
 
   for (uint32_t e = 0; e < epochs; e++) {
     for (size_t i = 0; i < data.size(); i++) {
