@@ -95,6 +95,7 @@ class DataFrameTable(Table):
 
 class SQLiteTable(Table):
     EVAL_PREFIX = "__eval__"
+    TABLE_NAME = "sqlitetable"
 
     @staticmethod
     def _to_primitive(val):
@@ -139,7 +140,7 @@ class SQLiteTable(Table):
         # We don't save the db connection and instead create a new connection
         # each time to simplify serialization.
         con = sqlite3.connect(self.db_path)
-        df.to_sql(name="sqlitetable", con=con)
+        df.to_sql(name=SQLiteTable.TABLE_NAME, con=con)
 
     @property
     def columns(self) -> List[str]:
@@ -152,15 +153,15 @@ class SQLiteTable(Table):
     @property
     def ids(self) -> List[int]:
         con = sqlite3.connect(self.db_path)
-        return pd.read_sql(f"select {self.id_column} from sqlitetable", con)[
-            self.id_column
-        ].apply(SQLiteTable._from_primitive)
+        return pd.read_sql(
+            f"select {self.id_column} from {SQLiteTable.TABLE_NAME}", con
+        )[self.id_column].apply(SQLiteTable._from_primitive)
 
     def field(self, row_id: int, column: str):
         con = sqlite3.connect(self.db_path)
         return SQLiteTable._from_primitive(
             pd.read_sql(
-                f"select {column} from sqlitetable where {self.id_column}=={row_id}",
+                f"select {column} from {SQLiteTable.TABLE_NAME} where {self.id_column}=={row_id}",
                 con,
             )[column][0]
         )
@@ -169,7 +170,8 @@ class SQLiteTable(Table):
         con = sqlite3.connect(self.db_path)
         return SQLiteTable._from_primitive_df(
             pd.read_sql(
-                f"select * from sqlitetable where {self.id_column}=={row_id}", con
+                f"select * from {SQLiteTable.TABLE_NAME} where {self.id_column}=={row_id}",
+                con,
             )
         ).to_dict("records")[0]
 
@@ -177,7 +179,7 @@ class SQLiteTable(Table):
         con = sqlite3.connect(self.db_path)
         return SQLiteTable._from_primitive_df(
             pd.read_sql(
-                f"select * from sqlitetable where {self.id_column}>={from_row_id} and {self.id_column}<{to_row_id}",
+                f"select * from {SQLiteTable.TABLE_NAME} where {self.id_column}>={from_row_id} and {self.id_column}<{to_row_id}",
                 con,
             )
         ).to_dict("records")
@@ -199,4 +201,6 @@ class SQLiteTable(Table):
         print("DBPATH", self.db_path)
 
     def apply_filter(self, table_filter: TableFilter):
-        return table_filter.filter_sql_ids(sqlite3.connect(self.db_path), "sqlitetable")
+        return table_filter.filter_sql_ids(
+            sqlite3.connect(self.db_path), SQLiteTable.TABLE_NAME
+        )
