@@ -133,6 +133,8 @@ class NeuralDbProgressTracker:
         args["min_epochs"] = min_epochs
         args["max_epochs"] = max_epochs
 
+        args["variable_length"] = self.vlc_config
+
         return args
 
     def introduce_arguments(self):
