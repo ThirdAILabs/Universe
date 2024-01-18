@@ -171,9 +171,18 @@ def save_load_works(db: ndb.NeuralDB):
     if os.path.exists("new_dir"):
         shutil.rmtree("new_dir")
     os.mkdir("new_dir")
-    shutil.move("temp.ndb", "new_dir/temp.ndb")
+    if os.path.exists("inner_new_dir"):
+        shutil.rmtree("inner_new_dir")
+    os.mkdir("inner_new_dir")
+    shutil.move("temp.ndb", "inner_new_dir/temp.ndb")
+    shutil.move("inner_new_dir", "new_dir/inner_new_dir")
+    os.chdir("new_dir")
 
-    new_db = ndb.NeuralDB.from_checkpoint("new_dir/temp.ndb")
+    # We new_dir/, and inner_new_dir/ inside of new_dir/ which contains
+    # temp.ndb. By only cd-ing into new_dir/ and loading from
+    # inner_new_dir/temp.ndb, we make sure that path changes are handled
+    # correctly.
+    new_db = ndb.NeuralDB.from_checkpoint("inner_new_dir/temp.ndb")
     new_search_results = [r.text for r in new_db.search(ARBITRARY_QUERY, top_k=5)]
 
     assert search_results == new_search_results
@@ -182,6 +191,21 @@ def save_load_works(db: ndb.NeuralDB):
         doc.name for doc in new_db.sources().values()
     ]
 
+    # Save the loaded model and test the second saved model. Some metadata is
+    # updated during the loading process. If saving a loaded model and then
+    # loading it again works, we can induce that the metadata will not be
+    # corrupted if we save and load an arbitrary number of times.
+    new_db.save("temp_2.ndb")
+    new_new_db = ndb.NeuralDB.from_checkpoint("temp_2.ndb")
+    new_search_results = [r.text for r in new_new_db.search(ARBITRARY_QUERY, top_k=5)]
+
+    assert search_results == new_search_results
+    assert db.sources().keys() == new_db.sources().keys()
+    assert [doc.name for doc in db.sources().values()] == [
+        doc.name for doc in new_db.sources().values()
+    ]
+
+    os.chdir("..")
     shutil.rmtree("new_dir")
 
 

@@ -620,6 +620,7 @@ class CSV(Document):
         # Let's copy the original CSV file to the provided directory
         if self.save_extra_info:
             shutil.copy(self.path, directory)
+        self.table.save_meta(directory)
 
     @requires_condition(
         check_func=lambda self: not safe_has_offset(self),
@@ -655,6 +656,8 @@ class CSV(Document):
                 self.df = self.df.set_index(self.id_column)
             self.table = DataFrameTable(self.df)
             del self.df
+        else:
+            self.table.load_meta(directory)
 
 
 # Base class for PDF, DOCX and Unstructured classes because they share the same logic.
