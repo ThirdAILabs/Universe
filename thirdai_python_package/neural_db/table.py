@@ -58,6 +58,10 @@ class Table(ABC):
 
 class DataFrameTable(Table):
     def __init__(self, df: pd.DataFrame):
+        """The index of the dataframe is assumed to be the ID column.
+        In other words, the ID column of a data frame must be set as its index
+        before being passed into this constructor.
+        """
         self.df = df
 
     @property
