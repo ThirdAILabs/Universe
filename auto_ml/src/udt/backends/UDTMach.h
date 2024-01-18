@@ -129,11 +129,13 @@ class UDTMach final : public UDTBackend {
                          const std::vector<std::string>& weak_column_names,
                          const Label& new_label,
                          std::optional<uint32_t> num_buckets_to_sample,
-                         uint32_t num_random_hashes, bool sort_random_hashes) final;
+                         uint32_t num_random_hashes,
+                         bool sort_random_hashes) final;
 
   void introduceLabel(const MapInputBatch& samples, const Label& new_label,
                       std::optional<uint32_t> num_buckets_to_sample,
-                      uint32_t num_random_hashes, bool sort_random_hashes) final;
+                      uint32_t num_random_hashes,
+                      bool sort_random_hashes) final;
 
   void forget(const Label& label) final;
 
@@ -200,7 +202,8 @@ class UDTMach final : public UDTBackend {
   void introduceLabelHelper(const bolt::TensorList& samples,
                             const Label& new_label,
                             std::optional<uint32_t> num_buckets_to_sample_opt,
-                            uint32_t num_random_hashes, bool sort_random_hashes);
+                            uint32_t num_random_hashes,
+                            bool sort_random_hashes);
 
   void teach(const std::vector<RlhfSample>& rlhf_samples,
              uint32_t n_balancing_samples, float learning_rate,
@@ -225,7 +228,8 @@ class UDTMach final : public UDTBackend {
 
   std::vector<uint32_t> topHashesForDoc(
       std::vector<TopKActivationsQueue>&& top_k_per_sample,
-      uint32_t num_buckets_to_sample, uint32_t num_random_hashes = 0, bool sort_random_hashes = false) const;
+      uint32_t num_buckets_to_sample, uint32_t num_random_hashes = 0,
+      bool sort_random_hashes = false) const;
 
   InputMetrics getMetrics(const std::vector<std::string>& metric_names,
                           const std::string& prefix);

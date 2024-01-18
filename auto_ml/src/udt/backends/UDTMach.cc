@@ -546,7 +546,8 @@ void UDTMach::introduceDocuments(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, bool fast_approximation, bool verbose, bool sort_random_hashes) {
+    uint32_t num_random_hashes, bool fast_approximation, bool verbose,
+    bool sort_random_hashes) {
   (void)verbose;
   // TODO(Nicholas): add progress bar here.
 
@@ -597,7 +598,8 @@ void UDTMach::introduceDocument(
     const MapInput& document,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, const Label& new_label,
-    std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes, bool sort_random_hashes) {
+    std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
+    bool sort_random_hashes) {
   auto samples = _featurizer->featurizeInputColdStart(
       document, strong_column_names, weak_column_names);
 
@@ -622,7 +624,8 @@ struct CompareBuckets {
 
 std::vector<uint32_t> UDTMach::topHashesForDoc(
     std::vector<TopKActivationsQueue>&& top_k_per_sample,
-    uint32_t num_buckets_to_sample, uint32_t num_random_hashes, bool sort_random_hashes) const {
+    uint32_t num_buckets_to_sample, uint32_t num_random_hashes,
+    bool sort_random_hashes) const {
   const auto& mach_index = getIndex();
 
   uint32_t num_hashes = mach_index->numHashes();
@@ -710,7 +713,7 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
 
   uint32_t num_informed_hashes =
       sort_random_hashes ? num_hashes : (num_hashes - num_random_hashes);
-  
+
   for (uint32_t i = 0; i < num_informed_hashes; i++) {
     auto [hash, freq_score_pair] = sorted_hashes[i];
     new_hashes.push_back(hash);
@@ -728,9 +731,11 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
 void UDTMach::introduceLabel(const MapInputBatch& samples,
                              const Label& new_label,
                              std::optional<uint32_t> num_buckets_to_sample_opt,
-                             uint32_t num_random_hashes, bool sort_random_hashes) {
+                             uint32_t num_random_hashes,
+                             bool sort_random_hashes) {
   introduceLabelHelper(_featurizer->featurizeInputBatch(samples), new_label,
-                       num_buckets_to_sample_opt, num_random_hashes, sort_random_hashes);
+                       num_buckets_to_sample_opt, num_random_hashes,
+                       sort_random_hashes);
 }
 
 void UDTMach::introduceLabelHelper(
@@ -754,7 +759,7 @@ void UDTMach::introduceLabelHelper(
   }
 
   auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
-                                num_random_hashes,sort_random_hashes);
+                                num_random_hashes, sort_random_hashes);
 
   getIndex()->insert(expectInteger(new_label), hashes);
 

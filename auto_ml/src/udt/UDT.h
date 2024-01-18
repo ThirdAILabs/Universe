@@ -244,9 +244,9 @@ class UDT {
                           bool verbose, bool sort_random_hashes) {
     licensing::entitlements().verifyDataSource(data);
 
-    _backend->introduceDocuments(data, strong_column_names, weak_column_names,
-                                 num_buckets_to_sample, num_random_hashes,
-                                 fast_approximation, verbose, sort_random_hashes);
+    _backend->introduceDocuments(
+        data, strong_column_names, weak_column_names, num_buckets_to_sample,
+        num_random_hashes, fast_approximation, verbose, sort_random_hashes);
   }
 
   /**

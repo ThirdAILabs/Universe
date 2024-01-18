@@ -141,11 +141,13 @@ class UDTMachClassifier final : public UDTBackend {
                          const std::vector<std::string>& weak_column_names,
                          const Label& new_label,
                          std::optional<uint32_t> num_buckets_to_sample,
-                         uint32_t num_random_hashes, bool sort_random_hashes) final;
+                         uint32_t num_random_hashes,
+                         bool sort_random_hashes) final;
 
   void introduceLabel(const MapInputBatch& samples, const Label& new_label,
                       std::optional<uint32_t> num_buckets_to_sample,
-                      uint32_t num_random_hashes, bool sort_random_hashes) final;
+                      uint32_t num_random_hashes,
+                      bool sort_random_hashes) final;
 
   void forget(const Label& label) final;
 
