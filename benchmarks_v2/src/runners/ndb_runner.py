@@ -24,24 +24,15 @@ class NDBRunner(Runner):
 
         start_insert_time = time.time()
         source_ids = db.insert(sources=[doc], train=True)
+
         if mlflow_logger:
+            unsup_prefix = "unsup" if config.trn_supervised_path else ""
+            cls.log_precision_metrics(db, config, prefix=unsup_prefix)
             mlflow.log_metric("insertion time", time.time() - start_insert_time)
 
-        tst_supervised = os.path.join(path_prefix, config.tst_supervised_path)
-        precision = cls.get_precision(
-            db,
-            tst_supervised,
-            config.query_column,
-            config.doc_col,
-            config.id_delimiter,
-        )
-
-        if mlflow_logger:
-            mlflow.log_metric("unsup precision at 1", precision)
-
-        trn_supervised = os.path.join(path_prefix, config.trn_supervised_path)
-        if os.path.exists():
-            start_sup_train_time = time.time()
+        if config.trn_supervised_path:
+            trn_supervised = os.path.join(path_prefix, config.trn_supervised_path)
+            start_sup_train = time.time()
             sup_doc = ndb.Sup(
                 trn_supervised,
                 query_column=config.query_column,
@@ -51,33 +42,40 @@ class NDBRunner(Runner):
             )
             db.supervised_train([sup_doc], learning_rate=0.001, epochs=10)
 
-            precision = cls.get_precision(
-                db,
-                tst_supervised,
-                config.query_column,
-                config.doc_col,
-                config.id_delimiter,
-            )
-
             if mlflow_logger:
-                mlflow.log_metric("sup precision at 1", precision)
-                mlflow.log_metric(
-                    "sup training time", time.time() - start_sup_train_time
-                )
+                cls.log_precision_metrics(db, config, prefix="sup")
+                mlflow.log_metric("sup training time", time.time() - start_sup_train)
 
         if mlflow_logger:
-            test_df = pd.read_csv(tst_supervised)
+            test_df = pd.read_csv(config.tst_sets[0])
             num_queries = 20
             total_query_time = 0
             for i in range(num_queries):
                 start_query_time = time.perf_counter_ns()
                 db.search(test_df[config.query_column][i % len(test_df)], top_k=5)
                 total_query_time += time.perf_counter_ns() - start_query_time
-            mlflow.log_metric("avg query time", total_query_time / num_queries)
+            mlflow.log_metric("query time", total_query_time / num_queries)
 
     @classmethod
-    def get_precision(db, tst_supervised, query_col, doc_col, id_delimiter):
-        test_df = pd.read_csv(tst_supervised)
+    def log_precision_metrics(cls, db, config, prefix):
+        tst_sets = config.tst_sets
+        if len(tst_sets) == 0:
+            precision = cls.get_precision(
+                db, tst_sets[0], config.query_col, config.doc_col, config.id_delimiter
+            )
+            mlflow.log_metric(f"{prefix} P at 1", precision)
+            return
+
+        for tst_set in tst_sets:
+            precision = cls.get_precision(
+                db, tst_set, config.query_col, config.doc_col, config.id_delimiter
+            )
+            tst_set_name = tst_set.split("/")[-1].split(".")[0]
+            mlflow.log_metric(f"{prefix} P at 1 {tst_set_name}", precision)
+
+    @classmethod
+    def get_precision(cls, db, tst_set, query_col, doc_col, id_delimiter):
+        test_df = pd.read_csv(tst_set)
         correct_count = 0
         batched_results = db.search_batch(queries=list(test_df[query_col]), top_k=1)
         for i in range(test_df.shape[0]):

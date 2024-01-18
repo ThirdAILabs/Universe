@@ -9,9 +9,9 @@ concurrency:
 # Controls when the workflow will run
 on:
   schedule:
-      # Sets the workflow to run at 1600 UTC on Sundays and Wednesdays
+      # Sets the workflow to run at 1200 UTC on Mondays and Thursdays
       # Ref: https://jasonet.co/posts/scheduled-actions/
-      - cron: "0 16 * * 0,3" 
+      - cron: "0 12 * * 1,4" 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
