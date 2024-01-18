@@ -884,13 +884,12 @@ std::vector<RlhfSample> UDTMach::getAssociateSamples(
 
   for (size_t i = 0; i < rlhf_samples.size(); i++) {
     for (size_t j = 0; j < n_association_samples; j++) {
-      const auto& all_buckets = rlhf_samples[i].second;
+      const std::vector<uint32_t>& all_buckets = all_predicted_hashes[i];
       std::vector<uint32_t> sampled_buckets;
       std::sample(all_buckets.begin(), all_buckets.end(),
                   std::back_inserter(sampled_buckets), n_buckets, rng);
 
-      associate_samples.emplace_back(rlhf_samples[i].first,
-                                     all_predicted_hashes[i]);
+      associate_samples.emplace_back(rlhf_samples[i].first, sampled_buckets);
     }
   }
 
