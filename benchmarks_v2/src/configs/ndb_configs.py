@@ -42,29 +42,37 @@ class CookingNDBConfig(NDBConfig):
 
     id_column = "LABEL_IDS"
     strong_columns = ["TITLE", "BULLET_POINTS"]
-    weak_column = ["DESCRIPTION", "BRAND"]
+    weak_columns = ["DESCRIPTION", "BRAND"]
     id_delimiter = ";"
 
     unsupervised_path = "catalog_recommender/cooking/reformatted_trn_unsupervised.csv"
     tst_sets = ["catalog_recommender/cooking/reformatted_tst_supervised.csv"]
 
 
-# class Wiki5KNDBConfig(NDBConfig):
-#     config_name = "wiki_5k_ndb"
+class Wiki5KNDBConfig(NDBConfig):
+    config_name = "wiki_5k_ndb"
 
-#     strong_columns = []
+    strong_columns = []
 
-#     unsupervised_path = "wiki/unsupervised_small.csv"
-#     tst_sets = ["wiki/supervised.csv"]
+    unsupervised_path = "wiki/unsupervised_small.csv"
+    tst_sets = [
+        f"wiki/len_{l}{perturbation}.csv"
+        for l in [5, 10, 15, 20]
+        for perturbation in ["", "_perturbed"]
+    ]
 
 
-# class Wiki5KNDBConfig(NDBConfig):
-#     config_name = "wiki_105k_ndb"
+class Wiki105KNDBConfig(NDBConfig):
+    config_name = "wiki_105k_ndb"
 
-#     strong_columns = []
+    strong_columns = []
 
-#     unsupervised_path = "wiki/unsupervised_large.csv"
-#     tst_sets = ["wiki/supervised.csv"]
+    unsupervised_path = "wiki/unsupervised_large.csv"
+    tst_sets = [
+        f"wiki/len_{l}{perturbation}.csv"
+        for l in [5, 10, 15, 20]
+        for perturbation in ["", "_perturbed"]
+    ]
 
 
 class Amazon1_3MConfig(NDBConfig):
@@ -84,6 +92,7 @@ class Pubmed800kConfig(NDBConfig):
     id_column = "label"
     strong_columns = ["title"]
     weak_columns = ["abstract"]
+    query_column = "query"
 
     unsupervised_path = "pubmed_800k/unsupervised.csv"
     tst_sets = ["pubmed_800k/titles.csv", "pubmed_800k/titles.csv"]
