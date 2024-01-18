@@ -360,6 +360,55 @@ class ModelBazaar(Bazaar):
         self.await_train(model)
         return model
 
+    def supervised_train(
+        self,
+        model_name: str,
+        docs: List[str],
+        base_model_id: str,
+        doc_type: str = "local",
+        sharded: bool = False,
+        train_extra_options: dict = {},
+    ):
+        if doc_type not in self._doc_types:
+            raise ValueError(
+                f"Invalid doc_type value. Supported doc_type are {self._doc_types}"
+            )
+
+        url = urljoin(self._base_url, f"jobs/{self._user_id}/supervised-train")
+        files = [
+            ("files", open(file_path, "rb"))
+            if doc_type == "local"
+            else ("files", (file_path, "don't care"))
+            for file_path in docs
+        ]
+        if train_extra_options:
+            files.append(
+                (
+                    "extra_options_form",
+                    (None, json.dumps(train_extra_options), "application/json"),
+                )
+            )
+
+        response = http_post_with_error(
+            url,
+            params={
+                "model_name": model_name,
+                "doc_type": doc_type,
+                "sharded": sharded,
+                "base_model_id": base_model_id,
+            },
+            files=files,
+            headers=auth_header(self._access_token),
+        )
+        response_data = json.loads(response.content)["data"]
+        model = Model(
+            model_identifier=create_model_identifier(
+                model_name=model_name, author_username=self._username
+            ),
+        )
+
+        return model
+
     def await_train(self, model: Model):
         """
         Waits for the training of a model to complete.
