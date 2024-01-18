@@ -319,7 +319,7 @@ def modify_mach_udt():
     def wrapped_associate_train(
         self,
         filename: str,
-        source_target_samples: List[Tuple[Dict[str, str], Dict[str, str]]],
+        source_target_samples: List[Tuple[str, str, float]],
         n_buckets: int,
         n_association_samples: int = 3,
         learning_rate: float = 0.001,
@@ -347,7 +347,7 @@ def modify_mach_udt():
         filename: str,
         strong_column_names: List[str],
         weak_column_names: List[str],
-        source_target_samples: List[Tuple[Dict[str, str], Dict[str, str]]],
+        source_target_samples: List[Tuple[str, str, float]],
         n_buckets: int,
         n_association_samples: int = 3,
         learning_rate: float = 0.001,

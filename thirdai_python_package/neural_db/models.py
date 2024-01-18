@@ -610,7 +610,7 @@ class Mach(Model):
 
     def associate(
         self,
-        pairs: List[Tuple[str, str]],
+        pairs: List[Tuple[str, str, float]],
         n_buckets: int,
         n_association_samples: int = 16,
         n_balancing_samples: int = 50,
@@ -647,7 +647,7 @@ class Mach(Model):
     def retrain(
         self,
         balancing_data: DocumentDataSource,
-        source_target_pairs: List[Tuple[str, str]],
+        source_target_pairs: List[Tuple[str, str, float]],
         n_buckets: int,
         learning_rate: float,
         epochs: int,

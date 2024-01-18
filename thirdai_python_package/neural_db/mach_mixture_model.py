@@ -304,7 +304,7 @@ class MachMixture(Model):
 
     def associate(
         self,
-        pairs: List[Tuple[str, str]],
+        pairs: List[Tuple[str, str, float]],
         n_buckets: int,
         n_association_samples: int = 16,
         n_balancing_samples: int = 50,

@@ -161,7 +161,7 @@ bolt::LabeledDataset MachFeaturizer::columnsToTensors(
     label_columns[0] =
         data::OutputColumns(label_columns[0].indices(), MACH_LABEL_WEIGHTS);
   }
-  auto labels = data::toTensorBatches(columns, _bolt_label_columns, batch_size);
+  auto labels = data::toTensorBatches(columns, label_columns, batch_size);
 
   return std::make_pair(std::move(data), std::move(labels));
 }
@@ -215,6 +215,9 @@ data::ColumnMap MachFeaturizer::removeIntermediateColumns(
     if (column.values()) {
       new_columns[*column.values()] = columns.getColumn(*column.values());
     }
+  }
+  if (columns.containsColumn(MACH_LABEL_WEIGHTS)) {
+    new_columns[MACH_LABEL_WEIGHTS] = columns.getColumn(MACH_LABEL_WEIGHTS);
   }
   return data::ColumnMap(std::move(new_columns));
 }

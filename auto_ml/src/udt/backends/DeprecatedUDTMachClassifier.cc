@@ -955,7 +955,7 @@ std::vector<std::pair<MapInput, MapInput>> convertSamples(
   std::vector<std::pair<MapInput, MapInput>> converted_samples;
   converted_samples.reserve(samples.size());
   for (const auto& [x, y, l] : samples) {
-    if (!l) {
+    if (l != 1.0) {
       throw std::invalid_argument(
           "Negative associate samples are not supported in mach v1.");
     }

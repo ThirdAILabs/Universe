@@ -815,7 +815,7 @@ void UDTMach::associate(const std::vector<RlhfSample>& rlhf_samples,
   auto teaching_samples =
       getAssociateSamples(rlhf_samples, n_buckets, n_association_samples);
 
-  teach(teaching_samples, teaching_samples.numRows() * n_balancing_samples,
+  teach(teaching_samples, rlhf_samples.size() * n_balancing_samples,
         learning_rate, epochs);
 }
 
@@ -915,8 +915,8 @@ data::ColumnMap UDTMach::getAssociateSamples(
 
   bool has_negative_samples = false;
   for (size_t i = 0; i < rlhf_samples.size(); i++) {
-    const auto& [source, _, label] = rlhf_samples[i];
-    has_negative_samples = has_negative_samples || !label;
+    const auto& [source, _, label_weight] = rlhf_samples[i];
+    has_negative_samples = has_negative_samples || (label_weight != 1.0);
 
     const std::vector<uint32_t>& all_buckets = all_predicted_hashes[i];
 
@@ -926,7 +926,7 @@ data::ColumnMap UDTMach::getAssociateSamples(
                   std::back_inserter(sampled_buckets), n_buckets, rng);
 
       inputs.push_back(source);
-      label_values.emplace_back(sampled_buckets.size(), label);
+      label_values.emplace_back(sampled_buckets.size(), label_weight);
       label_indices.emplace_back(std::move(sampled_buckets));
     }
   }

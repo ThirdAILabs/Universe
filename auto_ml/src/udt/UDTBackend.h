@@ -26,7 +26,7 @@ using bolt::ModelPtr;
 
 using Label = std::variant<uint32_t, std::string>;
 
-using RlhfSample = std::tuple<std::string, std::string, bool>;
+using RlhfSample = std::tuple<std::string, std::string, float>;
 
 struct TrainOptions {
   std::optional<size_t> batch_size = std::nullopt;

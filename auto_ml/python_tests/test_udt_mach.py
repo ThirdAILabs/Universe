@@ -703,7 +703,9 @@ def test_associate():
     original_intersection = len(target_hashes.intersection(source_hashes))
 
     for _ in range(100):
-        model.associate([(source_sample["text"], target_sample["text"])], n_buckets=7)
+        model.associate(
+            [(source_sample["text"], target_sample["text"], 1.0)], n_buckets=7
+        )
 
     new_target_hashes = set(model.predict_hashes(target_sample))
     new_source_hashes = set(model.predict_hashes(source_sample))
@@ -720,7 +722,7 @@ def test_enable_rlhf():
         RuntimeError,
         match=r"This model was not configured to support rlhf. Please pass {'rlhf': True} in the model options or call enable_rlhf().",
     ):
-        model.associate([("text", "text")], n_buckets=7)
+        model.associate([("text", "text"), 1.0], n_buckets=7)
 
     model.enable_rlhf(num_balancing_docs=100, num_balancing_samples_per_doc=10)
 
@@ -730,7 +732,7 @@ def test_enable_rlhf():
         SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001, shuffle_reservoir_size=32000
     )
 
-    model.associate([("text", "text")], n_buckets=7)
+    model.associate([("text", "text"), 1.0], n_buckets=7)
 
 
 def regularized_introduce_helper(model, num_random_hashes):

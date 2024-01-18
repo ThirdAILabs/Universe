@@ -210,6 +210,11 @@ bool ColumnMap::containsSameColumns(const ColumnMap& other) const {
       [&other](const auto& col) { return other.containsColumn(col.first); });
 }
 
+std::string ColumnMap::debugStr() const {
+  return "ColumnMap(columns=" + formatColumnNames() +
+         ", num_rows=" + std::to_string(numRows()) + ")";
+}
+
 ColumnMap ColumnMap::createStringColumnMapFromFile(
     const dataset::DataSourcePtr& source, char delimiter) {
   auto header_string = source->nextLine();

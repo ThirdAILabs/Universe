@@ -75,6 +75,8 @@ class ColumnMap {
   static ColumnMap createStringColumnMapFromFile(
       const dataset::DataSourcePtr& source, char delimiter);
 
+  std::string debugStr() const;
+
  private:
   void clear();
 
