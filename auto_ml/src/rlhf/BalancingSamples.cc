@@ -21,12 +21,14 @@ std::vector<T> vec(const T* data, uint32_t len) {
 BalancingSamples::BalancingSamples(std::string indices_col,
                                    std::string values_col,
                                    std::string labels_col,
-                                   std::string doc_ids_col,
-                                   const RLHFSampler& sampler)
+                                   std::string doc_ids_col, size_t indices_dim,
+                                   size_t label_dim, const RLHFSampler& sampler)
     : _indices_col(std::move(indices_col)),
       _values_col(std::move(values_col)),
       _labels_col(std::move(labels_col)),
       _doc_ids_col(std::move(doc_ids_col)),
+      _indices_dim(indices_dim),
+      _label_dim(label_dim),
       _max_docs(sampler._max_docs),
       _max_samples_per_doc(sampler._max_samples_per_doc),
       _doc_ids(sampler._doc_ids) {
@@ -95,7 +97,7 @@ data::ColumnMap BalancingSamples::balancingSamples(size_t num_samples) {
        data::ArrayColumn<uint32_t>::make(std::move(indices), _indices_dim)},
       {_values_col, data::ArrayColumn<float>::make(std::move(values))},
       {_labels_col,
-       data::ArrayColumn<uint32_t>::make(std::move(labels), _labels_dim)},
+       data::ArrayColumn<uint32_t>::make(std::move(labels), _label_dim)},
       {_doc_ids_col,
        data::ValueColumn<uint32_t>::make(std::move(doc_ids),
                                          std::numeric_limits<uint32_t>::max())},
@@ -107,12 +109,6 @@ void BalancingSamples::addSamples(const data::ColumnMap& data) {
   auto indices = data.getArrayColumn<uint32_t>(_indices_col);
   auto values = data.getArrayColumn<float>(_values_col);
   auto labels = data.getArrayColumn<uint32_t>(_labels_col);
-
-  // The dims are checked when the columns are constructed later, and bolt will
-  // check the dims as well. So there is no need to check that the dims match
-  // here, we just need to store them.
-  _indices_dim = indices->dim();
-  _labels_dim = labels->dim();
 
   for (size_t i = 0; i < data.numRows(); i++) {
     BalancingSample sample{
@@ -145,8 +141,9 @@ template void BalancingSamples::serialize(cereal::BinaryOutputArchive& archive);
 
 template <class Archive>
 void BalancingSamples::serialize(Archive& archive) {
-  archive(_indices_col, _values_col, _labels_col, _doc_ids_col, _max_docs,
-          _max_samples_per_doc, _samples_per_doc, _doc_ids);
+  archive(_indices_col, _values_col, _labels_col, _doc_ids_col, _indices_dim,
+          _label_dim, _max_docs, _max_samples_per_doc, _samples_per_doc,
+          _doc_ids);
 }
 
 }  // namespace thirdai::automl::udt
