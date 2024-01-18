@@ -962,12 +962,17 @@ std::vector<std::pair<MapInput, MapInput>> convertSamples(
 }
 
 void UDTMachClassifier::associate(
-    const std::vector<std::pair<std::string, std::string>>&
-        source_target_samples,
+    const std::vector<std::pair<std::string, std::string>>& positive_samples,
+    const std::vector<std::pair<std::string, std::string>>& negative_samples,
     uint32_t n_buckets, uint32_t n_association_samples,
     uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
-  auto teaching_samples = getAssociateSamples(convertSamples(
-      textColumnForDocumentIntroduction(), source_target_samples));
+  if (!negative_samples.empty()) {
+    throw std::invalid_argument(
+        "Negative samples are not supported for mach v1.");
+  }
+
+  auto teaching_samples = getAssociateSamples(
+      convertSamples(textColumnForDocumentIntroduction(), positive_samples));
 
   teach(teaching_samples, n_buckets, n_association_samples, n_balancing_samples,
         learning_rate, epochs);

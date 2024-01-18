@@ -159,11 +159,11 @@ class UDTMachClassifier final : public UDTBackend {
     }
   }
 
-  void associate(const std::vector<std::pair<std::string, std::string>>&
-                     source_target_samples,
-                 uint32_t n_buckets, uint32_t n_association_samples,
-                 uint32_t n_balancing_samples, float learning_rate,
-                 uint32_t epochs) final;
+  void associate(
+      const std::vector<std::pair<std::string, std::string>>& positive_samples,
+      const std::vector<std::pair<std::string, std::string>>& negative_samples,
+      uint32_t n_buckets, uint32_t n_association_samples,
+      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) final;
 
   void upvote(const std::vector<std::pair<std::string, uint32_t>>&
                   source_target_samples,

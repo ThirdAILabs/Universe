@@ -106,6 +106,41 @@ def test_associate_acronyms():
     assert matches_after_associate >= 0.9
 
 
+def test_disassociate_acronyms():
+    model = train_model()
+
+    original_samples, acronym_samples, associations = get_association_samples()
+
+    matches_before_associate = compare_predictions(
+        model, original_samples, acronym_samples
+    )
+    print(matches_before_associate)
+    assert matches_before_associate <= 0.5
+
+    model.associate(associations, n_buckets=4, epochs=10, learning_rate=0.01)
+
+    matches_after_associate = compare_predictions(
+        model, original_samples, acronym_samples
+    )
+    print(matches_after_associate)
+    assert matches_after_associate >= 0.9
+
+    model.associate(
+        positive_samples=[],
+        negative_samples=associations,
+        n_buckets=7,
+        epochs=10,
+        n_balancing_samples=0,
+        learning_rate=0.01,
+    )
+
+    matches_after_disassociate = compare_predictions(
+        model, original_samples, acronym_samples
+    )
+    print(matches_after_disassociate)
+    assert matches_after_disassociate <= 0.5
+
+
 def test_associate_train_acronyms():
     model = train_model()
 

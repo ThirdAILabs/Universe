@@ -272,10 +272,12 @@ class UDTBackend {
   }
 
   virtual void associate(
-      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
+      const std::vector<std::pair<std::string, std::string>>& positive_samples,
+      const std::vector<std::pair<std::string, std::string>>& negative_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
       uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
-    (void)rlhf_samples;
+    (void)positive_samples;
+    (void)negative_samples;
     (void)n_association_samples;
     (void)n_balancing_samples;
     (void)n_buckets;

@@ -343,11 +343,13 @@ class UDT {
    * of data in order to prevent overfitting.
    */
   void associate(
-      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
+      const std::vector<std::pair<std::string, std::string>>& positive_samples,
+      const std::vector<std::pair<std::string, std::string>>& negative_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
       uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
-    _backend->associate(rlhf_samples, n_buckets, n_association_samples,
-                        n_balancing_samples, learning_rate, epochs);
+    _backend->associate(positive_samples, negative_samples, n_buckets,
+                        n_association_samples, n_balancing_samples,
+                        learning_rate, epochs);
   }
 
   /**

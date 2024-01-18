@@ -11,6 +11,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/backends/MachPorting.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
+#include <data/src/ColumnMap.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -148,7 +149,8 @@ class UDTMach final : public UDTBackend {
   }
 
   void associate(
-      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
+      const std::vector<std::pair<std::string, std::string>>& positive_samples,
+      const std::vector<std::pair<std::string, std::string>>& negative_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
       uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) final;
 
@@ -202,12 +204,12 @@ class UDTMach final : public UDTBackend {
                             std::optional<uint32_t> num_buckets_to_sample_opt,
                             uint32_t num_random_hashes);
 
-  void teach(const std::vector<RlhfSample>& rlhf_samples,
-             uint32_t n_balancing_samples, float learning_rate,
-             uint32_t epochs);
+  void teach(const data::ColumnMap& rlhf_samples, uint32_t n_balancing_samples,
+             float learning_rate, uint32_t epochs);
 
-  std::vector<RlhfSample> getAssociateSamples(
-      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
+  data::ColumnMap getAssociateSamples(
+      const std::vector<std::pair<std::string, std::string>>& positive_samples,
+      const std::vector<std::pair<std::string, std::string>>& negative_samples,
       size_t n_buckets, size_t n_association_samples);
 
   void updateSamplingStrategy();

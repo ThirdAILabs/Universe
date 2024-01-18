@@ -4,6 +4,7 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/featurization/Featurizer.h>
+#include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/transformations/TextCompat.h>
 #include <dataset/src/mach/MachIndex.h>
@@ -41,7 +42,7 @@ class MachFeaturizer final : public Featurizer {
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names);
 
-  data::ColumnMap featurizeRlhfSamples(const std::vector<RlhfSample>& samples);
+  data::ColumnMap featurizeRlhfSamples(data::ColumnMap columns);
 
   bolt::LabeledDataset columnsToTensors(const data::ColumnMap& columns,
                                         size_t batch_size) const;

@@ -36,6 +36,8 @@ const std::string FEATURIZED_LABELS = "__labels__";
 
 const std::string MACH_LABELS = "__mach_labels__";
 
+const std::string MACH_LABEL_WEIGHTS = "__mach_label_weights__";
+
 const std::string MACH_DOC_IDS = "__mach_doc_ids__";
 
 const std::string GRAPH_NBR_FEATURES = "__graph_nbr_features__";

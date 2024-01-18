@@ -140,28 +140,12 @@ data::ColumnMap MachFeaturizer::featurizeDataset(
   return removeIntermediateColumns(columns);
 }
 
-data::ColumnMap MachFeaturizer::featurizeRlhfSamples(
-    const std::vector<RlhfSample>& samples) {
+data::ColumnMap MachFeaturizer::featurizeRlhfSamples(data::ColumnMap columns) {
   if (!_text_dataset) {
     throw std::invalid_argument("RLHF is only supported for text datasets.");
   }
 
-  std::vector<std::string> text;
-  std::vector<std::vector<uint32_t>> labels;
-  for (const auto& sample : samples) {
-    text.push_back(sample.first);
-    labels.push_back(sample.second);
-  }
-
-  data::ColumnMap columns(
-      {{_text_dataset->textColumn(),
-        data::ValueColumn<std::string>::make(std::move(text))}});
-
   columns = _input_transform->apply(columns, *_state);
-
-  columns.setColumn(MACH_LABELS,
-                    data::ArrayColumn<uint32_t>::make(
-                        std::move(labels), _state->machIndex()->numBuckets()));
 
   addDummyDocIds(columns);
 
