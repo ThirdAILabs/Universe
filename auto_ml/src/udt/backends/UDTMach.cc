@@ -546,7 +546,7 @@ void UDTMach::introduceDocuments(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, bool fast_approximation, bool verbose) {
+    uint32_t num_random_hashes, bool fast_approximation, bool verbose, bool sort_random_hashes) {
   (void)verbose;
   // TODO(Nicholas): add progress bar here.
 
@@ -581,7 +581,7 @@ void UDTMach::introduceDocuments(
 
   for (auto& [doc, top_ks] : top_k_per_doc) {
     auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
-                                  num_random_hashes);
+                                  num_random_hashes, sort_random_hashes);
     mach_index->insert(doc, hashes);
 
     ctrl_c_check();
@@ -597,12 +597,12 @@ void UDTMach::introduceDocument(
     const MapInput& document,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, const Label& new_label,
-    std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes) {
+    std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes, bool sort_random_hashes) {
   auto samples = _featurizer->featurizeInputColdStart(
       document, strong_column_names, weak_column_names);
 
   introduceLabelHelper(samples, new_label, num_buckets_to_sample,
-                       num_random_hashes);
+                       num_random_hashes, sort_random_hashes);
 }
 
 struct BucketScore {
@@ -622,7 +622,7 @@ struct CompareBuckets {
 
 std::vector<uint32_t> UDTMach::topHashesForDoc(
     std::vector<TopKActivationsQueue>&& top_k_per_sample,
-    uint32_t num_buckets_to_sample, uint32_t num_random_hashes) const {
+    uint32_t num_buckets_to_sample, uint32_t num_random_hashes, bool sort_random_hashes) const {
   const auto& mach_index = getIndex();
 
   uint32_t num_hashes = mach_index->numHashes();
@@ -650,6 +650,22 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
         hash_freq_and_scores[active_neuron].score += activation;
       }
       top_k.pop();
+    }
+  }
+
+  uint32_t num_buckets = mach_index->numBuckets();
+  std::uniform_int_distribution<uint32_t> int_dist(0, num_buckets - 1);
+  std::mt19937 rand(global_random::nextSeed());
+
+  if (sort_random_hashes) {
+    for (uint32_t i = 0; i < num_random_hashes; i++) {
+      uint32_t active_neuron = int_dist(rand);
+      if (!hash_freq_and_scores.count(active_neuron)) {
+        hash_freq_and_scores[active_neuron] = BucketScore{1, 0};
+      } else {
+        hash_freq_and_scores[active_neuron].frequency += 1;
+        hash_freq_and_scores[active_neuron].score += 0;
+      }
     }
   }
 
@@ -692,18 +708,18 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
         "num_random_hashes cannot be greater than num hashes.");
   }
 
-  uint32_t num_informed_hashes = num_hashes - num_random_hashes;
+  uint32_t num_informed_hashes =
+      sort_random_hashes ? num_hashes : (num_hashes - num_random_hashes);
+  
   for (uint32_t i = 0; i < num_informed_hashes; i++) {
     auto [hash, freq_score_pair] = sorted_hashes[i];
     new_hashes.push_back(hash);
   }
 
-  uint32_t num_buckets = mach_index->numBuckets();
-  std::uniform_int_distribution<uint32_t> int_dist(0, num_buckets - 1);
-  std::mt19937 rand(global_random::nextSeed());
-
-  for (uint32_t i = 0; i < num_random_hashes; i++) {
-    new_hashes.push_back(int_dist(rand));
+  if (!sort_random_hashes) {
+    for (uint32_t i = 0; i < num_random_hashes; i++) {
+      new_hashes.push_back(int_dist(rand));
+    }
   }
 
   return new_hashes;
@@ -712,15 +728,15 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
 void UDTMach::introduceLabel(const MapInputBatch& samples,
                              const Label& new_label,
                              std::optional<uint32_t> num_buckets_to_sample_opt,
-                             uint32_t num_random_hashes) {
+                             uint32_t num_random_hashes, bool sort_random_hashes) {
   introduceLabelHelper(_featurizer->featurizeInputBatch(samples), new_label,
-                       num_buckets_to_sample_opt, num_random_hashes);
+                       num_buckets_to_sample_opt, num_random_hashes, sort_random_hashes);
 }
 
 void UDTMach::introduceLabelHelper(
     const bolt::TensorList& samples, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes) {
+    uint32_t num_random_hashes, bool sort_random_hashes) {
   // Note: using sparse inference here could cause issues because the
   // mach index sampler will only return nonempty buckets, which could
   // cause new docs to only be mapped to buckets already containing
@@ -738,7 +754,7 @@ void UDTMach::introduceLabelHelper(
   }
 
   auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
-                                num_random_hashes);
+                                num_random_hashes,sort_random_hashes);
 
   getIndex()->insert(expectInteger(new_label), hashes);
 

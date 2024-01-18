@@ -660,7 +660,7 @@ void UDTMachClassifier::introduceDocuments(
     const std::vector<std::string>& weak_column_names,
     std::optional<uint32_t> num_buckets_to_sample_opt,
     uint32_t num_random_hashes, bool fast_approximation, bool verbose,
-    bool sort_before) {
+    bool sort_random_hashes) {
   auto metadata = getColdStartMetaData();
 
   dataset::cold_start::ColdStartDataSourcePtr cold_start_data;
@@ -717,7 +717,7 @@ void UDTMachClassifier::introduceDocuments(
 
   for (auto& [doc, top_ks] : top_k_per_doc) {
     auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
-                                  num_random_hashes, sort_before);
+                                  num_random_hashes, sort_random_hashes);
     _mach_label_block->index()->insert(doc, hashes);
 
     ctrl_c_check();
@@ -733,7 +733,7 @@ void UDTMachClassifier::introduceDocument(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
-    bool sort_before) {
+    bool sort_random_hashes) {
   std::string text_column_name = textColumnForDocumentIntroduction();
 
   data::ColdStartTextAugmentation augmentation(
@@ -748,7 +748,7 @@ void UDTMachClassifier::introduceDocument(
   }
 
   introduceLabel(batch, new_label, num_buckets_to_sample, num_random_hashes,
-                 sort_before);
+                 sort_random_hashes);
 }
 
 struct BucketScore {
@@ -769,7 +769,7 @@ struct CompareBuckets {
 std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
     std::vector<TopKActivationsQueue>&& top_k_per_sample,
     uint32_t num_buckets_to_sample, uint32_t num_random_hashes,
-    bool sort_before) const {
+    bool sort_random_hashes) const {
   const auto& mach_index = _mach_label_block->index();
 
   uint32_t num_hashes = mach_index->numHashes();
@@ -804,7 +804,7 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
   std::uniform_int_distribution<uint32_t> int_dist(0, num_buckets - 1);
   std::mt19937 rand(global_random::nextSeed());
 
-  if (!sort_before) {
+  if (sort_random_hashes) {
     for (uint32_t i = 0; i < num_random_hashes; i++) {
       uint32_t active_neuron = int_dist(rand);
       if (!hash_freq_and_scores.count(active_neuron)) {
@@ -856,14 +856,14 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
   }
 
   uint32_t num_informed_hashes =
-      sort_before ? (num_hashes - num_random_hashes) : num_hashes;
+      sort_random_hashes ? num_hashes : (num_hashes - num_random_hashes);
 
   for (uint32_t i = 0; i < num_informed_hashes; i++) {
     auto [hash, freq_score_pair] = sorted_hashes[i];
     new_hashes.push_back(hash);
   }
 
-  if (sort_before) {
+  if (!sort_random_hashes) {
     for (uint32_t i = 0; i < num_random_hashes; i++) {
       new_hashes.push_back(int_dist(rand));
     }
@@ -875,7 +875,7 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
 void UDTMachClassifier::introduceLabel(
     const MapInputBatch& samples, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, bool sort_before) {
+    uint32_t num_random_hashes, bool sort_random_hashes) {
   // Note: using sparse inference here could cause issues because the
   // mach index sampler will only return nonempty buckets, which could
   // cause new docs to only be mapped to buckets already containing
@@ -895,7 +895,7 @@ void UDTMachClassifier::introduceLabel(
   }
 
   auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
-                                num_random_hashes, sort_before);
+                                num_random_hashes, sort_random_hashes);
 
   _mach_label_block->index()->insert(expectInteger(new_label), hashes);
 

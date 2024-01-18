@@ -134,18 +134,18 @@ class UDTMachClassifier final : public UDTBackend {
                           const std::vector<std::string>& weak_column_names,
                           std::optional<uint32_t> num_buckets_to_sample,
                           uint32_t num_random_hashes, bool fast_approximation,
-                          bool verbose, bool sort_before) final;
+                          bool verbose, bool sort_random_hashes) final;
 
   void introduceDocument(const MapInput& document,
                          const std::vector<std::string>& strong_column_names,
                          const std::vector<std::string>& weak_column_names,
                          const Label& new_label,
                          std::optional<uint32_t> num_buckets_to_sample,
-                         uint32_t num_random_hashes, bool sort_before) final;
+                         uint32_t num_random_hashes, bool sort_random_hashes) final;
 
   void introduceLabel(const MapInputBatch& samples, const Label& new_label,
                       std::optional<uint32_t> num_buckets_to_sample,
-                      uint32_t num_random_hashes, bool sort_before) final;
+                      uint32_t num_random_hashes, bool sort_random_hashes) final;
 
   void forget(const Label& label) final;
 
@@ -246,7 +246,7 @@ class UDTMachClassifier final : public UDTBackend {
   std::vector<uint32_t> topHashesForDoc(
       std::vector<TopKActivationsQueue>&& top_k_per_sample,
       uint32_t num_buckets_to_sample, uint32_t num_random_hashes = 0,
-      bool sort_before = true) const;
+      bool sort_random_hashes = false) const;
 
   InputMetrics getMetrics(const std::vector<std::string>& metric_names,
                           const std::string& prefix);
