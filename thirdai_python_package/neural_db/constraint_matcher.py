@@ -87,7 +87,10 @@ class InRange(Filter[ItemT]):
         left_inclusive, right_inclusive = self.inclusive
         left_comp = ">=" if left_inclusive else ">"
         right_comp = "<=" if right_inclusive else "<"
-        return f"{column_name}{left_comp}{self.min} and {column_name}{right_comp}{self.max}"
+        return (
+            f"{column_name}{left_comp}{format_value_for_sql(self.min)} and "
+            f"{column_name}{right_comp}{format_value_for_sql(self.max)}"
+        )
 
 
 class GreaterThan(InRange[ItemT]):
@@ -109,7 +112,8 @@ class GreaterThan(InRange[ItemT]):
     ):
         comp = ">=" if self.include_equal else ">"
         return pd.read_sql(
-            f"select * from {table_name} where {column_name}{comp}{self.minimum}",
+            f"select * from {table_name} where "
+            f"{column_name}{comp}{format_value_for_sql(self.minimum)}",
             con,
         )
 
@@ -133,7 +137,8 @@ class LessThan(InRange[ItemT]):
     ):
         comp = "<=" if self.include_equal else "<"
         return pd.read_sql(
-            f"select * from {table_name} where {column_name}{comp}{self.maximum}",
+            f"select * from {table_name} where {column_name}{comp}"
+            f"{format_value_for_sql(self.maximum)}",
             con,
         )
 
