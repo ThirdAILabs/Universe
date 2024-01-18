@@ -4,9 +4,9 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/trainer/DistributedComm.h>
 #include <auto_ml/src/Aliases.h>
-#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/featurization/DataTypes.h>
-#include <auto_ml/src/featurization/TabularDatasetFactory.h>
+#include <auto_ml/src/featurization/Featurizer.h>
+#include <auto_ml/src/udt/Defaults.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -35,6 +35,8 @@ struct TrainOptions {
   std::optional<uint32_t> logging_interval = std::nullopt;
   dataset::DatasetShuffleConfig shuffle_config =
       dataset::DatasetShuffleConfig();
+
+  size_t batchSize() const { return batch_size.value_or(defaults::BATCH_SIZE); }
 };
 
 /**
@@ -114,11 +116,13 @@ class UDTBackend {
     throw notSupported("modifying underlying model");
   }
 
+  virtual FeaturizerPtr featurizer() const { return nullptr; }
+
   virtual void verifyCanDistribute() const {
     throw notSupported("train_distributed");
   }
 
-  virtual std::vector<dataset::Explanation> explain(
+  virtual std::vector<std::pair<std::string, float>> explain(
       const MapInput& sample,
       const std::optional<std::variant<uint32_t, std::string>>& target_class) {
     (void)sample;
@@ -168,16 +172,8 @@ class UDTBackend {
     throw notSupported("class_name");
   }
 
-  virtual TabularDatasetFactoryPtr tabularDatasetFactory() const {
-    return nullptr;
-  }
-
-  virtual ColumnDataTypes dataTypes() const {
-    throw notSupported("data_types");
-  }
-
-  virtual cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
-    throw notSupported("get_cold_start_meta_data");
+  virtual TextDatasetConfig textDatasetConfig() const {
+    throw notSupported("text_dataset_config");
   }
 
   virtual void indexNodes(const dataset::DataSourcePtr& source) {
@@ -279,10 +275,10 @@ class UDTBackend {
   }
 
   virtual void associate(
-      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
       uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
-    (void)source_target_samples;
+    (void)rlhf_samples;
     (void)n_association_samples;
     (void)n_balancing_samples;
     (void)n_buckets;
@@ -292,10 +288,10 @@ class UDTBackend {
   }
 
   virtual void upvote(
-      const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,
+      const std::vector<std::pair<std::string, uint32_t>>& rlhf_samples,
       uint32_t n_upvote_samples, uint32_t n_balancing_samples,
       float learning_rate, uint32_t epochs) {
-    (void)source_target_samples;
+    (void)rlhf_samples;
     (void)n_upvote_samples;
     (void)n_balancing_samples;
     (void)learning_rate;
@@ -305,12 +301,12 @@ class UDTBackend {
 
   virtual py::object associateTrain(
       const dataset::DataSourcePtr& balancing_data,
-      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
       uint32_t epochs, const std::vector<std::string>& metrics,
       TrainOptions options) {
     (void)balancing_data;
-    (void)source_target_samples;
+    (void)rlhf_samples;
     (void)n_buckets;
     (void)n_association_samples;
     (void)learning_rate;
@@ -324,14 +320,14 @@ class UDTBackend {
       const dataset::DataSourcePtr& balancing_data,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
-      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
       uint32_t epochs, const std::vector<std::string>& metrics,
       TrainOptions options) {
     (void)balancing_data;
     (void)strong_column_names;
     (void)weak_column_names;
-    (void)source_target_samples;
+    (void)rlhf_samples;
     (void)n_buckets;
     (void)n_association_samples;
     (void)learning_rate;
@@ -348,7 +344,7 @@ class UDTBackend {
     throw notSupported("enable_rlhf");
   }
 
-  virtual dataset::mach::MachIndexPtr getIndex() {
+  virtual dataset::mach::MachIndexPtr getIndex() const {
     throw notSupported("get_index");
   }
 
@@ -360,6 +356,11 @@ class UDTBackend {
   virtual void setMachSamplingThreshold(float threshold) {
     (void)threshold;
     throw notSupported("set_mach_sampling_threshold");
+  }
+
+  virtual void saveCppClassifier(const std::string& save_path) const {
+    (void)save_path;
+    throw notSupported("save_cpp_classifier");
   }
 
   virtual ~UDTBackend() = default;

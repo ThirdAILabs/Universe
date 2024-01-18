@@ -57,6 +57,14 @@ class PyCallback : public callbacks::Callback {
                            onBatchEnd,     /* Name of C++ function */
                            /* Empty list of arguments */);
   }
+
+  void beforeUpdate() override {
+    PYBIND11_OVERRIDE_NAME(void,            /* Return type */
+                           Callback,        /* Parent class */
+                           "before_update", /* Name of Python function */
+                           beforeUpdate,    /* Name of C++ function */
+                           /* Empty list of arguments */);
+  }
 };
 
 }  // namespace thirdai::bolt::python

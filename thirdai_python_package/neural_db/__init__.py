@@ -17,8 +17,9 @@ try:
         Unstructured,
     )
     from .model_bazaar import Bazaar, ModelBazaar
-    from .neural_db import CancelState, NeuralDB, Strength, Sup
+    from .neural_db import CancelState, CheckpointConfig, NeuralDB, Strength, Sup
 except ImportError as error:
     raise ImportError(
-        "To use thirdai.neural_db, please install the additional dependencies by running 'pip install thirdai[neural_db]'"
+        "To use thirdai.neural_db, please install the additional dependencies by"
+        " running 'pip install thirdai[neural_db]'"
     )
