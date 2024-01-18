@@ -15,7 +15,7 @@
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/blocks/text/WordpieceTokenizer.h>
 #include <utils/Logging.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <iostream>
 #include <limits>
 #include <map>

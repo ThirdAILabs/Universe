@@ -55,6 +55,14 @@ class UDT {
                    const std::vector<CallbackPtr>& callbacks,
                    TrainOptions options, const bolt::DistributedCommPtr& comm);
 
+  py::object trainOnTensors(const bolt::LabeledDataset& train_data,
+                            float learning_rate, uint32_t epochs,
+                            const std::vector<std::string>& train_metrics,
+                            const std::optional<bolt::LabeledDataset>& val_data,
+                            const std::vector<std::string>& val_metrics,
+                            const std::vector<CallbackPtr>& callbacks,
+                            TrainOptions options);
+
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                         const std::vector<std::string>& metrics);
 
@@ -356,6 +364,12 @@ class UDT {
                                         force_non_empty, num_hashes);
   }
 
+  py::object predictTensors(const bolt::TensorList& input_data,
+                            bool sparse_inference,
+                            std::optional<uint32_t> top_k) {
+    return _backend->predictTensors(input_data, sparse_inference, top_k);
+  }
+
   /**
    * Used for fine tuning in UDTMachClassifier. Predicts the outputs of the
    * target samples and trains the model to map the source samples to those
@@ -493,6 +507,11 @@ class UDT {
   static std::shared_ptr<UDT> load(const std::string& filename);
 
   static std::shared_ptr<UDT> load_stream(std::istream& input_stream);
+
+  static std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
+  parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
+                    const MapInputBatch& batch, bool sparse_inference,
+                    std::optional<uint32_t> top_k);
 
  private:
   UDT() {}

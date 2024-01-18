@@ -11,8 +11,8 @@
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
-#include <utils/StringManipulation.h>
 #include <utils/Version.h>
+#include <utils/text/StringManipulation.h>
 #include <versioning/src/Versions.h>
 #include <stdexcept>
 
@@ -76,6 +76,7 @@ py::object UDTRecurrentClassifier::train(
   }
 
   bolt::Trainer trainer(_model, freeze_hash_tables_epoch,
+                        /* gradient_update_interval */ 1,
                         bolt::python::CtrlCCheck{});
 
   auto train_dataset = _dataset_factory->getDatasetLoader(
@@ -108,7 +109,8 @@ py::object UDTRecurrentClassifier::evaluate(
 
   throwIfSparseInference(sparse_inference);
 
-  bolt::Trainer trainer(_model, std::nullopt, bolt::python::CtrlCCheck{});
+  bolt::Trainer trainer(_model, std::nullopt, /* gradient_update_interval */ 1,
+                        bolt::python::CtrlCCheck{});
 
   auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 

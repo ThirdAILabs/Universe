@@ -43,6 +43,12 @@ class Tensor {
 
   static std::shared_ptr<Tensor> convert(BoltVector&& vector, size_t dim);
 
+  static std::shared_ptr<Tensor> convert(std::vector<BoltVector>&& batch,
+                                         size_t dim) {
+    BoltBatch bolt_batch(std::move(batch));
+    return std::make_shared<Tensor>(std::move(bolt_batch), dim);
+  }
+
   /**
    * Returns the dimension of the vectors in the tensor.
    */

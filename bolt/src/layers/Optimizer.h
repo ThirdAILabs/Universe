@@ -5,6 +5,7 @@
 #include <cereal/cereal.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
+#include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <vector>

@@ -92,7 +92,7 @@ constexpr bool EXPERIMENTAL_HIDDEN_LAYER_CONFIG = false;
 
 // Maximum number of samples to take from a dataset to use as balancing samples
 // for rlhf.
-constexpr uint32_t MAX_BALANCING_SAMPLES = 10000;
+constexpr uint32_t MAX_BALANCING_SAMPLES_TO_LOAD = 100000;
 
 // Max documents to store samples from for rlhf balancing.
 constexpr uint32_t MAX_BALANCING_DOCS = 1000;

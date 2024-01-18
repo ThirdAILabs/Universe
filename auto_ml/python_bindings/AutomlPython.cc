@@ -1,6 +1,8 @@
 #include "AutomlPython.h"
 #include "AutomlDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
+#include <bolt/src/nn/tensor/Tensor.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/config/ModelConfig.h>
@@ -128,6 +130,38 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("callbacks") = std::vector<udt::CallbackPtr>{},
            py::arg("options") = udt::TrainOptions(), py::arg("comm") = nullptr,
            bolt::python::OutputRedirect())
+      .def(
+          "train_on_tensors",
+          [](udt::UDT& udt, const bolt::Dataset& train_input,
+             const bolt::Dataset& train_output, float learning_rate,
+             uint32_t epochs, const std::vector<std::string>& train_metrics,
+             const std::optional<bolt::Dataset>& val_input,
+             const std::optional<bolt::Dataset>& val_output,
+             const std::vector<std::string>& val_metrics,
+             std::vector<udt::CallbackPtr>& callbacks) {
+            bolt::LabeledDataset dataset =
+                std::make_pair(train_input, train_output);
+
+            std::optional<bolt::LabeledDataset> val_dataset;
+
+            if (val_input && val_output) {
+              val_dataset =
+                  std::make_pair(val_input.value(), val_output.value());
+            } else {
+              val_dataset = std::nullopt;
+            }
+            return udt.trainOnTensors(dataset, learning_rate, epochs,
+                                      train_metrics, val_dataset, val_metrics,
+                                      callbacks, udt::TrainOptions());
+          },
+          py::arg("train_input"), py::arg("train_output"),
+          py::arg("learning_rate"), py::arg("epochs"),
+          py::arg("train_metrics") = std::vector<std::string>{},
+          py::arg("val_input") = std::optional<bolt::Dataset>{},
+          py::arg("val_output") = std::optional<bolt::Dataset>{},
+          py::arg("val_metrics") = std::vector<std::string>{},
+          py::arg("callbacks") = std::vector<udt::CallbackPtr>{},
+          bolt::python::OutputRedirect())
       .def("train_batch", &udt::UDT::trainBatch, py::arg("batch"),
            py::arg("learning_rate") = 0.001,
            py::arg("metrics") = std::vector<std::string>{},
@@ -202,6 +236,8 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("samples"), py::arg("sparse_inference") = false,
            py::arg("force_non_empty") = true,
            py::arg("num_hashes") = std::nullopt)
+      .def("predict_tensors", &udt::UDT::predictTensors, py::arg("input_data"),
+           py::arg("sparse_infernce") = false, py::arg("top_k") = std::nullopt)
       .def("associate", &udt::UDT::associate, py::arg("source_target_samples"),
            py::arg("n_buckets"), py::arg("n_association_samples") = 16,
            py::arg("n_balancing_samples") = 50,
@@ -254,8 +290,11 @@ void defineAutomlInModule(py::module_& module) {
            [](udt::UDT& udt, NumpyArray<float>& new_parameters) {
              thirdai::bolt::python::setParameters(udt.model(), new_parameters);
            })
-      .def(bolt::python::getPickleFunction<udt::UDT>());
-  ;
+      .def(bolt::python::getPickleFunction<udt::UDT>())
+      .def_static("parallel_inference", &udt::UDT::parallelInference,
+                  py::arg("models"), py::arg("batch"),
+                  py::arg("sparse_inference") = false,
+                  py::arg("top_k") = std::nullopt);
 }
 
 void createModelsSubmodule(py::module_& module) {

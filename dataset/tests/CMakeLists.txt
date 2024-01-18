@@ -3,6 +3,7 @@ enable_testing()
 set(DATASET_TESTS
     CsvParserTests
     CsvDataSourceTests
+    UnifiedDataSourceTests
     SvmDatasetTests
     ClickThroughDatasetTests
     SegmentedFeatureVectorsTests

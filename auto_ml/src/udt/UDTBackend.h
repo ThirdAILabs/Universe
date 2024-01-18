@@ -2,6 +2,7 @@
 
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/train/callbacks/Callback.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <bolt/src/train/trainer/DistributedComm.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
@@ -9,6 +10,7 @@
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
+#include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/mach/MachIndex.h>
@@ -56,6 +58,23 @@ class UDTBackend {
                            const std::vector<CallbackPtr>& callbacks,
                            TrainOptions options,
                            const bolt::DistributedCommPtr& comm) = 0;
+
+  virtual py::object trainOnTensors(
+      const bolt::LabeledDataset& train_data, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& train_metrics,
+      const std::optional<bolt::LabeledDataset>& val_data,
+      const std::vector<std::string>& val_metrics,
+      const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
+    (void)train_data;
+    (void)learning_rate;
+    (void)epochs;
+    (void)train_metrics;
+    (void)val_data;
+    (void)val_metrics;
+    (void)callbacks;
+    (void)options;
+    throw notSupported("train_on_tensors");
+  }
 
   virtual py::object trainBatch(const MapInputBatch& batch, float learning_rate,
                                 const std::vector<std::string>& metrics) {
@@ -286,6 +305,15 @@ class UDTBackend {
     (void)force_non_empty;
     (void)num_hashes;
     throw notSupported("predict_hashes_batch");
+  }
+
+  virtual py::object predictTensors(const bolt::TensorList& input_data,
+                                    bool sparse_inference,
+                                    std::optional<uint32_t> top_k) {
+    (void)input_data;
+    (void)sparse_inference;
+    (void)top_k;
+    throw notSupported("predict_tensors");
   }
 
   virtual void associate(

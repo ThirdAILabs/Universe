@@ -1,7 +1,7 @@
 import json
 import time
 from pathlib import Path
-from typing import List, Union
+from typing import Dict, List, Tuple, Union
 from urllib.parse import urljoin
 from uuid import UUID
 
@@ -63,13 +63,13 @@ class NeuralDBClient:
         insert(self, files: List[str]) -> None:
             Inserts documents into the ndb model.
 
-        associate(self, query1: str, query2: str) -> None:
-            Associates two queries in the ndb model.
+        associate(self, text_pairs (List[Dict[str, str]])) -> None:
+            Associates source and target string pairs in the ndb model.
 
-        upvote(self, query_id: UUID, query_text: str, reference: dict) -> None:
+        upvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]) -> None:
             Upvotes a response in the ndb model.
 
-        downvote(self, query_id: UUID, query_text: str, reference: dict) -> None:
+        downvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]) -> None:
             Downvotes a response in the ndb model.
     """
 
@@ -94,7 +94,7 @@ class NeuralDBClient:
             top_k (int): The number of top results to retrieve (default is 10).
 
         Returns:
-            List[dict]: A list of search results.
+            Dict: A dict of search results containing keys: `query_text` and `references`.
         """
         response = http_get_with_error(
             urljoin(self.base_url, "predict"),
@@ -117,59 +117,44 @@ class NeuralDBClient:
         print(json.loads(response.content)["message"])
 
     @check_deployment_decorator
-    def associate(self, query1: str, query2: str):
+    def associate(self, text_pairs: List[Dict[str, str]]):
         """
-        Associates two queries in the ndb model.
+        Associates source and target string pairs in the ndb model.
 
         Args:
-            query1 (str): The first query.
-            query2 (str): The second query.
+            text_pairs (List[Dict[str, str]]): List of dictionaries where each dictionary has 'source' and 'target' keys.
         """
         response = http_post_with_error(
             urljoin(self.base_url, "associate"),
-            json={"query1": query1, "query2": query2},
+            json={"text_pairs": text_pairs},
         )
 
     @check_deployment_decorator
-    def upvote(self, query_id: UUID, query_text: str, reference: dict):
+    def upvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]):
         """
-        Upvotes a response in the ndb model.
+        Upvote response with 'reference_id' corresponding to 'query_text' in the ndb model.
 
         Args:
-            query_id (UUID): The ID of the query.
-            query_text (str): The text of the query.
-            reference (dict): A dictionary containing the reference information.
+            text_id_pairs: (List[Dict[str, Union[str, int]]]): List of dictionaries where each dictionary has 'query_text' and 'reference_id' keys.
         """
         response = http_post_with_error(
             urljoin(self.base_url, "upvote"),
-            json={
-                "query_id": query_id,
-                "query_text": query_text,
-                "reference_id": reference["id"],
-                "reference_text": reference["text"],
-            },
+            json={"text_id_pairs": text_id_pairs},
         )
 
         print("Successfully upvoted the specified search result.")
 
     @check_deployment_decorator
-    def downvote(self, query_id: UUID, query_text: str, reference: dict):
+    def downvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]):
         """
-        Downvotes a response in the ndb model.
+        Downvote response with 'reference_id' corresponding to 'query_text' in the ndb model.
 
         Args:
-            query_id (UUID): The ID of the query.
-            query_text (str): The text of the query.
-            reference (dict): A dictionary containing the reference information.
+            text_id_pairs: (List[Dict[str, Union[str, int]]]): List of dictionaries where each dictionary has 'query_text' and 'reference_id' keys.
         """
         response = http_post_with_error(
             urljoin(self.base_url, "downvote"),
-            json={
-                "query_id": query_id,
-                "query_text": query_text,
-                "reference_id": reference["id"],
-                "reference_text": reference["text"],
-            },
+            json={"text_id_pairs": text_id_pairs},
         )
 
         print("Successfully downvoted the specified search result.")
@@ -283,6 +268,8 @@ class ModelBazaar(Bazaar):
             model_path=local_path,
             trained_on="Own Documents",
             access_level=access_level,
+            is_indexed=True,
+            description="",
         )
 
     def pull_model(self, model_identifier: str):
@@ -311,8 +298,10 @@ class ModelBazaar(Bazaar):
         model_name: str,
         docs: List[str],
         doc_type: str = "local",
+        sharded: bool = False,
         is_async: bool = False,
         base_model_identifier: str = None,
+        train_extra_options: dict = {},
     ):
         """
         Initiates training for a model and returns a Model instance.
@@ -339,12 +328,20 @@ class ModelBazaar(Bazaar):
             else ("files", (file_path, "don't care"))
             for file_path in docs
         ]
+        if train_extra_options:
+            files.append(
+                (
+                    "extra_options_form",
+                    (None, json.dumps(train_extra_options), "application/json"),
+                )
+            )
 
         response = http_post_with_error(
             url,
             params={
                 "model_name": model_name,
                 "doc_type": doc_type,
+                "sharded": sharded,
                 "base_model_identifier": base_model_identifier,
             },
             files=files,
@@ -383,7 +380,7 @@ class ModelBazaar(Bazaar):
                 print("\nTraining completed")
                 return
 
-            print("Training in progress", end="", flush=True)
+            print("Training: In progress", end="", flush=True)
             print_progress_dots(duration=5)
 
     def deploy(self, model_identifier: str, deployment_name: str, is_async=False):
@@ -444,7 +441,7 @@ class ModelBazaar(Bazaar):
                 print("\nDeployment completed")
                 return
 
-            print("Deployment in progress", end="", flush=True)
+            print("Deployment: In progress", end="", flush=True)
             print_progress_dots(duration=5)
 
     def undeploy(self, ndb_client: NeuralDBClient):
@@ -461,8 +458,6 @@ class ModelBazaar(Bazaar):
         response = http_post_with_error(
             url, params=params, headers=auth_header(self._access_token)
         )
-
-        print(response)
 
         print("Deployment is shutting down.")
 

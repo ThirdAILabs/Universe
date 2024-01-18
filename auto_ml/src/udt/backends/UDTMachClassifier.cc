@@ -2,10 +2,14 @@
 #include <wrappers/src/EigenDenseWrapper.h>
 #include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
+#include <bolt/src/inference/EmbFcInference.h>
+#include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/neuron_index/LshIndex.h>
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
+#include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/metrics/LossMetric.h>
 #include <bolt/src/train/metrics/MachPrecision.h>
@@ -31,8 +35,8 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <utils/Random.h>
-#include <utils/StringManipulation.h>
 #include <utils/Version.h>
+#include <utils/text/StringManipulation.h>
 #include <versioning/src/Versions.h>
 #include <algorithm>
 #include <exception>
@@ -185,6 +189,17 @@ py::object UDTMachClassifier::train(
                             callbacks, options, comm);
 }
 
+py::object UDTMachClassifier::trainOnTensors(
+    const bolt::LabeledDataset& train_data, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    const std::optional<bolt::LabeledDataset>& val_data,
+    const std::vector<std::string>& val_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options) {
+  return _classifier->train(
+      train_data, learning_rate, epochs, getMetrics(train_metrics, "train_"),
+      val_data, getMetrics(val_metrics, "val_"), callbacks, options);
+}
+
 py::object UDTMachClassifier::trainBatch(
     const MapInputBatch& batch, float learning_rate,
     const std::vector<std::string>& metrics) {
@@ -282,6 +297,42 @@ UDTMachClassifier::predictImpl(const MapInputBatch& samples,
   }
 
   return predicted_entities;
+}
+
+py::object UDTMachClassifier::predictTensors(const bolt::TensorList& input_data,
+                                             bool sparse_inference,
+                                             std::optional<uint32_t> top_k) {
+  auto outputs =
+      _classifier->model()->forward(input_data, sparse_inference).at(0);
+
+  uint32_t num_classes = _mach_label_block->index()->numEntities();
+
+  if (top_k && *top_k > num_classes) {
+    throw std::invalid_argument(
+        "Cannot return more results than the model is trained to "
+        "predict. "
+        "Model currently can predict one of " +
+        std::to_string(num_classes) + " classes.");
+  }
+
+  uint32_t k = top_k.value_or(_default_top_k_to_return);
+
+  uint32_t batch_size = outputs->batchSize();
+
+  std::vector<std::vector<std::pair<uint32_t, double>>> predicted_entities(
+      batch_size);
+#pragma omp parallel for default(none) \
+    shared(outputs, predicted_entities, k, batch_size) if (batch_size > 1)
+  for (uint32_t i = 0; i < batch_size; i++) {
+    const BoltVector& vector = outputs->getVector(i);
+    auto predictions = _mach_label_block->index()->decode(
+        /* output = */ vector,
+        /* top_k = */ k,
+        /* num_buckets_to_eval = */ _num_buckets_to_eval);
+    predicted_entities[i] = predictions;
+  }
+
+  return py::cast(predicted_entities);
 }
 
 py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
@@ -565,6 +616,31 @@ void UDTMachClassifier::updateSamplingStrategy() {
   }
 }
 
+std::optional<bolt::EmbFcInference> inferenceModel(
+    const bolt::ModelPtr& model) {
+  auto computations = model->computationOrder();
+  if (computations.size() != 3) {
+    return std::nullopt;
+  }
+
+  auto input = std::dynamic_pointer_cast<bolt::Input>(computations.at(0)->op());
+  auto emb = bolt::Embedding::cast(computations.at(1)->op());
+  auto fc = bolt::FullyConnected::cast(computations.at(2)->op());
+
+  // Model must be Input -> Embedding -> FullyConnected
+  if (!input || !emb || !fc) {
+    return std::nullopt;
+  }
+  // Currently this is only implmented for sigmoid activations for mach, but
+  // could be extended in the future.
+  if (fc->kernel()->getActivationFunction() !=
+      bolt::ActivationFunction::Sigmoid) {
+    return std::nullopt;
+  }
+
+  return std::make_optional<bolt::EmbFcInference>(emb, fc);
+}
+
 void UDTMachClassifier::introduceDocuments(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
@@ -600,6 +676,8 @@ void UDTMachClassifier::introduceDocuments(
 
   std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>> top_k_per_doc;
 
+  auto inference_model = inferenceModel(_classifier->model());
+
   bolt::python::CtrlCCheck ctrl_c_check;
 
   for (const auto& batch : doc_samples_tensors) {
@@ -607,7 +685,12 @@ void UDTMachClassifier::introduceDocuments(
     // mach index sampler will only return nonempty buckets, which could
     // cause new docs to only be mapped to buckets already containing
     // entities.
-    auto scores = _classifier->model()->forward(batch).at(0);
+    bolt::TensorPtr scores;
+    if (inference_model) {
+      scores = inference_model->forward(batch.at(0));
+    } else {
+      scores = _classifier->model()->forward(batch).at(0);
+    }
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
       uint32_t label = std::stoi(labels->value(row_idx++));
@@ -698,9 +781,7 @@ void UDTMachClassifier::introduceDocument(
   data::ColdStartTextAugmentation augmentation(
       /* strong_column_names= */ strong_column_names,
       /* weak_column_names= */ weak_column_names,
-      /* label_column_name= */ _mach_label_block->columnName(),
-      /* output_column_name= */
-      text_column_name);
+      /* output_column_name= */ text_column_name);
 
   MapInputBatch batch;
   for (const auto& row : augmentation.augmentMapInput(document)) {
@@ -759,7 +840,7 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
     }
   }
 
-  // We sort the hashes first by number of occurances and tiebreak with
+  // We sort the hashes first by number of occurrences and tiebreak with
   // the higher aggregated score if necessary. We don't only use the
   // activations since those typically aren't as useful as the
   // frequencies.
@@ -869,8 +950,9 @@ void UDTMachClassifier::addBalancingSamples(
     // the entire dataset and see if it makes a difference.
     auto optional_samples =
         _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ true)
-            ->loadSome(/* batch_size= */ defaults::MAX_BALANCING_SAMPLES,
-                       /* num_batches= */ 1, /* verbose= */ false);
+            ->loadSome(
+                /* batch_size= */ defaults::MAX_BALANCING_SAMPLES_TO_LOAD,
+                /* num_batches= */ 1, /* verbose= */ false);
 
     if (!optional_samples) {
       throw std::invalid_argument("No data found for training.");

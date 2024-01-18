@@ -24,6 +24,8 @@ class Embedding final : public Op,
   void forward(const ComputationList& inputs, TensorPtr& output,
                uint32_t index_in_batch, bool training) final;
 
+  void forward(const BoltVector& tokens, float* output) const;
+
   void backpropagate(ComputationList& inputs, TensorPtr& output,
                      uint32_t index_in_batch) final;
 
@@ -88,11 +90,11 @@ class Embedding final : public Op,
   }
 
  private:
-  void applyActivationFunction(float* activations);
+  inline void applyActivationFunction(float* activations) const;
 
   void applyActivationFunctionGrad(const float* activations, float* gradients);
 
-  inline const float* embedding(size_t token) {
+  inline const float* embedding(size_t token) const {
     return _embeddings.data() + token * _dim;
   }
 

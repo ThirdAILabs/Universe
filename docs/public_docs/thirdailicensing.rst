@@ -1,4 +1,4 @@
 thirdai.licensing
 ===================================
 
-.. automodule:: thirdai.bolt.licensing
+.. automodule:: thirdai.licensing

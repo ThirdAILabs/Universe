@@ -6,7 +6,7 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt, data
 
 from .documents import DocumentDataSource
-from .sharded_documents import ShardedDataSource
+from .supervised_datasource import SupDataSource
 from .utils import clean_text, random_sample
 
 InferSamples = List
@@ -50,6 +50,7 @@ class Model:
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
+        **kwargs,
     ) -> None:
         raise NotImplementedError()
 
@@ -134,6 +135,18 @@ class Model:
     ):
         raise NotImplementedError()
 
+    def train_on_supervised_data_source(
+        self,
+        supervised_data_source: SupDataSource,
+        learning_rate: float,
+        epochs: int,
+        batch_size: Optional[int],
+        max_in_memory_batches: Optional[int],
+        metrics: List[str],
+        callbacks: List[bolt.train.callbacks.Callback],
+    ):
+        raise NotImplementedError()
+
 
 class EarlyStopWithMinEpochs(bolt.train.callbacks.Callback):
     def __init__(
@@ -186,6 +199,36 @@ class ProgressUpdate(bolt.train.callbacks.Callback):
             self.progress_callback_fn(progress)
 
 
+class FreezeHashTable(bolt.train.callbacks.Callback):
+    def __init__(
+        self,
+        freeze_before_train,
+        freeze_after_epoch,
+        tracked_metric,
+        metric_threshold,
+    ):
+        super().__init__()
+
+        self.epoch_count = 0
+        self.freeze_after_epoch = freeze_after_epoch
+        self.tracked_metric = tracked_metric
+        self.metric_threshold = metric_threshold
+        self.freeze_before_train = freeze_before_train
+
+    def on_train_start(self):
+        if self.freeze_before_train:
+            self.model.freeze_hash_tables()
+
+    def on_epoch_end(self):
+        self.epoch_count += 1
+        if self.freeze_before_train:
+            return
+        if (self.epoch_count == self.freeze_after_epoch) or (
+            self.history[f"train_{self.tracked_metric}"][-1] > self.metric_threshold
+        ):
+            self.model.freeze_hash_tables()
+
+
 class CancelTraining(bolt.train.callbacks.Callback):
     def __init__(self, cancel_state):
         super().__init__()
@@ -203,6 +246,7 @@ def unsupervised_train_on_docs(
     max_epochs: int,
     metric: str,
     learning_rate: float,
+    batch_size: int,
     acc_to_stop: float,
     on_progress: Callable,
     freeze_before_train: bool,
@@ -211,10 +255,8 @@ def unsupervised_train_on_docs(
     variable_length: Optional[
         data.transformations.VariableLengthConfig
     ] = data.transformations.VariableLengthConfig(),
+    **kwargs,
 ):
-    if freeze_before_train:
-        model._get_model().freeze_hash_tables()
-
     documents.restart()
 
     early_stop_callback = EarlyStopWithMinEpochs(
@@ -230,14 +272,29 @@ def unsupervised_train_on_docs(
 
     cancel_training_callback = CancelTraining(cancel_state=cancel_state)
 
+    freeze_hashtable_callback = FreezeHashTable(
+        freeze_before_train=freeze_before_train,
+        freeze_after_epoch=kwargs.get("freeze_after_epoch", max_epochs - 1),
+        tracked_metric=metric,
+        metric_threshold=kwargs.get(
+            "freeze_after_acc", 0.80 if "freeze_after_epoch" not in kwargs else 1
+        ),
+    )
+
     model.cold_start_on_data_source(
         data_source=documents,
         strong_column_names=[documents.strong_column],
         weak_column_names=[documents.weak_column],
+        batch_size=batch_size,
         learning_rate=learning_rate,
         epochs=max_epochs,
         metrics=[metric],
-        callbacks=[early_stop_callback, progress_callback, cancel_training_callback],
+        callbacks=[
+            early_stop_callback,
+            progress_callback,
+            cancel_training_callback,
+            freeze_hashtable_callback,
+        ],
         max_in_memory_batches=max_in_memory_batches,
         variable_length=variable_length,
     )
@@ -282,14 +339,20 @@ class Mach(Model):
         fhr=50_000,
         embedding_dimension=2048,
         extreme_output_dim=50_000,
+        extreme_num_hashes=8,
+        tokenizer="char-4",
+        hidden_bias=False,
         model_config=None,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
+        self.tokenizer = tokenizer
         self.query_col = query_col
         self.fhr = fhr
         self.embedding_dimension = embedding_dimension
         self.extreme_output_dim = extreme_output_dim
+        self.extreme_num_hashes = extreme_num_hashes
+        self.hidden_bias = hidden_bias
         self.n_ids = 0
         self.model = None
         self.balancing_samples = []
@@ -341,27 +404,34 @@ class Mach(Model):
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
+        **kwargs,
     ) -> None:
         """
         override_number_classes : The number of classes for the Mach model
 
         Note: Given the datasources for introduction and training, we initialize a Mach model that has number_classes set to the size of introduce documents. But if we want to use this Mach model in our mixture of Models, this will not work because each Mach will be initialized with number of classes equal to the size of the datasource shard. Hence, we add override_number_classes parameters which if set, will initialize Mach Model with number of classes passed by the Mach Mixture.
         """
+
         if intro_documents.id_column != self.id_col:
             raise ValueError(
                 f"Model configured to use id_col={self.id_col}, received document with"
                 f" id_col={intro_documents.id_column}"
             )
 
+        batch_size = kwargs.get("batch_size", None)
+
         if self.model is None:
             self.id_col = intro_documents.id_column
             self.model = self.model_from_scratch(
                 intro_documents, number_classes=override_number_classes
             )
-            learning_rate = 0.005
+            learning_rate = kwargs.get("learning_rate", 0.005)
             freeze_before_train = False
-            min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
-                train_documents.size
+            min_epochs = kwargs.get(
+                "epochs", autotune_from_scratch_min_max_epochs(train_documents.size)[0]
+            )
+            max_epochs = kwargs.get(
+                "epochs", autotune_from_scratch_min_max_epochs(train_documents.size)[1]
             )
         else:
             if intro_documents.size > 0:
@@ -383,18 +453,27 @@ class Mach(Model):
                     fast_approximation=fast_approximation,
                     num_buckets_to_sample=num_buckets_to_sample,
                 )
-            learning_rate = 0.001
+            learning_rate = kwargs.get("learning_rate", 0.001)
             # Freezing at the beginning prevents the model from forgetting
             # things it learned from pretraining.
             freeze_before_train = True
             # Less epochs here since it converges faster when trained on a base
             # model.
-            min_epochs, max_epochs = autotune_from_base_min_max_epochs(
-                train_documents.size
+            min_epochs = kwargs.get(
+                "epochs", autotune_from_base_min_max_epochs(train_documents.size)[0]
+            )
+            max_epochs = kwargs.get(
+                "epochs", autotune_from_base_min_max_epochs(train_documents.size)[1]
             )
 
         self.n_ids += intro_documents.size
         self.add_balancing_samples(intro_documents)
+
+        freeze_hash_table_kwargs = {
+            key: value
+            for key, value in kwargs.items()
+            if key in ["freeze_after_epoch", "freeze_after_acc"]
+        }
 
         if should_train and train_documents.size > 0:
             unsupervised_train_on_docs(
@@ -404,12 +483,14 @@ class Mach(Model):
                 max_epochs=max_epochs,
                 metric="hash_precision@5",
                 learning_rate=learning_rate,
-                acc_to_stop=0.95,
+                batch_size=batch_size,
+                acc_to_stop=kwargs.get("acc_to_stop", 0.95),
                 on_progress=on_progress,
                 freeze_before_train=freeze_before_train,
                 cancel_state=cancel_state,
                 max_in_memory_batches=max_in_memory_batches,
                 variable_length=variable_length,
+                **freeze_hash_table_kwargs,
             )
 
     def add_balancing_samples(self, documents: DocumentDataSource):
@@ -427,7 +508,7 @@ class Mach(Model):
     ):
         return bolt.UniversalDeepTransformer(
             data_types={
-                self.query_col: bolt.types.text(tokenizer="char-4"),
+                self.query_col: bolt.types.text(tokenizer=self.tokenizer),
                 self.id_col: bolt.types.categorical(delimiter=self.id_delimiter),
             },
             target=self.id_col,
@@ -440,6 +521,8 @@ class Mach(Model):
                 "extreme_output_dim": self.extreme_output_dim,
                 "fhr": self.fhr,
                 "embedding_dimension": self.embedding_dimension,
+                "extreme_num_hashes": self.extreme_num_hashes,
+                "hidden_bias": self.hidden_bias,
                 "rlhf": True,
             },
             model_config=self.model_config,
@@ -552,3 +635,23 @@ class Mach(Model):
             # Add model_config field if an older model is being loaded.
             state["model_config"] = None
         self.__dict__.update(state)
+
+    def train_on_supervised_data_source(
+        self,
+        supervised_data_source: SupDataSource,
+        learning_rate: float,
+        epochs: int,
+        batch_size: Optional[int],
+        max_in_memory_batches: Optional[int],
+        metrics: List[str],
+        callbacks: List[bolt.train.callbacks.Callback],
+    ):
+        self.model.train_on_data_source(
+            data_source=supervised_data_source,
+            learning_rate=learning_rate,
+            epochs=epochs,
+            batch_size=batch_size,
+            max_in_memory_batches=max_in_memory_batches,
+            metrics=metrics,
+            callbacks=callbacks,
+        )
