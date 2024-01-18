@@ -155,6 +155,12 @@ data::ColumnMap MachFeaturizer::featurizeRlhfSamples(data::ColumnMap columns) {
 bolt::LabeledDataset MachFeaturizer::columnsToTensors(
     const data::ColumnMap& columns, size_t batch_size) const {
   auto data = data::toTensorBatches(columns, _bolt_input_columns, batch_size);
+
+  data::OutputColumnsList label_columns = _bolt_label_columns;
+  if (columns.containsColumn(MACH_LABEL_WEIGHTS)) {
+    label_columns[0] =
+        data::OutputColumns(label_columns[0].indices(), MACH_LABEL_WEIGHTS);
+  }
   auto labels = data::toTensorBatches(columns, _bolt_label_columns, batch_size);
 
   return std::make_pair(std::move(data), std::move(labels));

@@ -203,10 +203,8 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("samples"), py::arg("sparse_inference") = false,
            py::arg("force_non_empty") = true,
            py::arg("num_hashes") = std::nullopt)
-      .def("associate", &udt::UDT::associate, py::arg("positive_samples"),
-           py::arg("negative_samples") =
-               std::vector<std::pair<std::string, std::string>>{},
-           py::arg("n_buckets") = 7, py::arg("n_association_samples") = 16,
+      .def("associate", &udt::UDT::associate, py::arg("rlhf_samples"),
+           py::arg("n_buckets"), py::arg("n_association_samples") = 16,
            py::arg("n_balancing_samples") = 50,
            py::arg("learning_rate") = 0.001, py::arg("epochs") = 3)
       .def("upvote", &udt::UDT::upvote, py::arg("source_target_samples"),

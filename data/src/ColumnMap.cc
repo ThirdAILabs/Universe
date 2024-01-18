@@ -254,8 +254,10 @@ std::string ColumnMap::formatColumnNames() const {
   for (const auto& [name, _] : _columns) {
     column_names += "'" + name + "', ";
   }
-  column_names.pop_back();  // remove last space
-  column_names.pop_back();  // remove last commas
+  if (column_names.size() > 2) {
+    column_names.pop_back();  // remove last space
+    column_names.pop_back();  // remove last commas
+  }
 
   column_names += "]";
 

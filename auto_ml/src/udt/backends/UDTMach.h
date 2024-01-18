@@ -148,31 +148,29 @@ class UDTMach final : public UDTBackend {
     }
   }
 
-  void associate(
-      const std::vector<std::pair<std::string, std::string>>& positive_samples,
-      const std::vector<std::pair<std::string, std::string>>& negative_samples,
-      uint32_t n_buckets, uint32_t n_association_samples,
-      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) final;
+  void associate(const std::vector<RlhfSample>& rlhf_samples,
+                 uint32_t n_buckets, uint32_t n_association_samples,
+                 uint32_t n_balancing_samples, float learning_rate,
+                 uint32_t epochs) final;
 
   void upvote(const std::vector<std::pair<std::string, uint32_t>>& rlhf_samples,
               uint32_t n_upvote_samples, uint32_t n_balancing_samples,
               float learning_rate, uint32_t epochs) final;
 
-  py::object associateTrain(
-      const dataset::DataSourcePtr& balancing_data,
-      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& metrics,
-      TrainOptions options) final;
+  py::object associateTrain(const dataset::DataSourcePtr& balancing_data,
+                            const std::vector<RlhfSample>& rlhf_samples,
+                            uint32_t n_buckets, uint32_t n_association_samples,
+                            float learning_rate, uint32_t epochs,
+                            const std::vector<std::string>& metrics,
+                            TrainOptions options) final;
 
   py::object associateColdStart(
       const dataset::DataSourcePtr& balancing_data,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
-      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& metrics,
-      TrainOptions options) final;
+      const std::vector<RlhfSample>& rlhf_samples, uint32_t n_buckets,
+      uint32_t n_association_samples, float learning_rate, uint32_t epochs,
+      const std::vector<std::string>& metrics, TrainOptions options) final;
 
   void setDecodeParams(uint32_t top_k_to_return,
                        uint32_t num_buckets_to_eval) final;
@@ -208,9 +206,8 @@ class UDTMach final : public UDTBackend {
              float learning_rate, uint32_t epochs);
 
   data::ColumnMap getAssociateSamples(
-      const std::vector<std::pair<std::string, std::string>>& positive_samples,
-      const std::vector<std::pair<std::string, std::string>>& negative_samples,
-      size_t n_buckets, size_t n_association_samples);
+      const std::vector<RlhfSample>& rlhf_samples, size_t n_buckets,
+      size_t n_association_samples);
 
   void updateSamplingStrategy();
 

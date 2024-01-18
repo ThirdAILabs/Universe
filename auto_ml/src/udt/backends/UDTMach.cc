@@ -808,13 +808,12 @@ void UDTMach::enableRlhf(uint32_t num_balancing_docs,
       num_balancing_docs, num_balancing_samples_per_doc);
 }
 
-void UDTMach::associate(
-    const std::vector<std::pair<std::string, std::string>>& positive_samples,
-    const std::vector<std::pair<std::string, std::string>>& negative_samples,
-    uint32_t n_buckets, uint32_t n_association_samples,
-    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
-  auto teaching_samples = getAssociateSamples(
-      positive_samples, negative_samples, n_buckets, n_association_samples);
+void UDTMach::associate(const std::vector<RlhfSample>& rlhf_samples,
+                        uint32_t n_buckets, uint32_t n_association_samples,
+                        uint32_t n_balancing_samples, float learning_rate,
+                        uint32_t epochs) {
+  auto teaching_samples =
+      getAssociateSamples(rlhf_samples, n_buckets, n_association_samples);
 
   teach(teaching_samples, teaching_samples.numRows() * n_balancing_samples,
         learning_rate, epochs);
@@ -832,8 +831,6 @@ void UDTMach::upvote(
   const auto& mach_index = getIndex();
 
   for (const auto& [source, target] : rlhf_samples) {
-    RlhfSample sample = {source, mach_index->getHashes(target)};
-
     for (size_t i = 0; i < n_upvote_samples; i++) {
       inputs.push_back(source);
       labels.push_back(mach_index->getHashes(target));
@@ -895,55 +892,43 @@ void UDTMach::teach(const data::ColumnMap& rlhf_samples,
 }
 
 data::ColumnMap UDTMach::getAssociateSamples(
-    const std::vector<std::pair<std::string, std::string>>& positive_samples,
-    const std::vector<std::pair<std::string, std::string>>& negative_samples,
-    size_t n_buckets, size_t n_association_samples) {
+    const std::vector<RlhfSample>& rlhf_samples, size_t n_buckets,
+    size_t n_association_samples) {
   std::string text_column = _featurizer->textDatasetConfig().textColumn();
 
-  size_t total_samples = (positive_samples.size() + negative_samples.size()) *
-                         n_association_samples;
   std::vector<std::string> inputs;
-  inputs.reserve(total_samples);
+  inputs.reserve(rlhf_samples.size());
   std::vector<std::vector<uint32_t>> label_indices;
-  label_indices.reserve(total_samples);
+  label_indices.reserve(rlhf_samples.size());
   std::vector<std::vector<float>> label_values;
-  label_values.reserve(total_samples);
+  label_values.reserve(rlhf_samples.size());
 
-  auto add_samples =
-      [this, n_association_samples, n_buckets, &text_column, &inputs,
-       &label_indices, &label_values](
-          const std::vector<std::pair<std::string, std::string>>& samples,
-          bool positive) {
-        MapInputBatch batch;
-        for (const auto& [_, target] : samples) {
-          batch.push_back({{text_column, target}});
-        }
-        auto all_predicted_hashes =
-            predictHashesImpl(batch, /* sparse_inference = */ false,
-                              /* force_non_empty = */ true);
-
-        std::mt19937 rng(global_random::nextSeed());
-
-        for (size_t i = 0; i < samples.size(); i++) {
-          for (size_t j = 0; j < n_association_samples; j++) {
-            const std::vector<uint32_t>& all_buckets = all_predicted_hashes[i];
-            std::vector<uint32_t> sampled_buckets;
-            std::sample(all_buckets.begin(), all_buckets.end(),
-                        std::back_inserter(sampled_buckets), n_buckets, rng);
-
-            inputs.emplace_back(samples[i].first);
-
-            label_values.emplace_back(sampled_buckets.size(), positive);
-            label_indices.emplace_back(std::move(sampled_buckets));
-          }
-        }
-      };
-
-  if (!positive_samples.empty()) {
-    add_samples(positive_samples, /*positive=*/true);
+  MapInputBatch batch;
+  for (const auto& [unused_s, target, unused_l] : rlhf_samples) {
+    batch.push_back({{text_column, target}});
   }
-  if (!negative_samples.empty()) {
-    add_samples(negative_samples, /*positive=*/false);
+  auto all_predicted_hashes =
+      predictHashesImpl(batch, /* sparse_inference = */ false,
+                        /* force_non_empty = */ true);
+
+  std::mt19937 rng(global_random::nextSeed());
+
+  bool has_negative_samples = false;
+  for (size_t i = 0; i < rlhf_samples.size(); i++) {
+    const auto& [source, _, label] = rlhf_samples[i];
+    has_negative_samples = has_negative_samples || !label;
+
+    const std::vector<uint32_t>& all_buckets = all_predicted_hashes[i];
+
+    for (size_t j = 0; j < n_association_samples; j++) {
+      std::vector<uint32_t> sampled_buckets;
+      std::sample(all_buckets.begin(), all_buckets.end(),
+                  std::back_inserter(sampled_buckets), n_buckets, rng);
+
+      inputs.push_back(source);
+      label_values.emplace_back(sampled_buckets.size(), label);
+      label_indices.emplace_back(std::move(sampled_buckets));
+    }
   }
 
   data::ColumnMap columns(
@@ -951,7 +936,7 @@ data::ColumnMap UDTMach::getAssociateSamples(
        {MACH_LABELS, data::ArrayColumn<uint32_t>::make(
                          std::move(label_indices), getIndex()->numBuckets())}});
 
-  if (!negative_samples.empty()) {
+  if (has_negative_samples) {
     columns.setColumn(MACH_LABEL_WEIGHTS,
                       data::ArrayColumn<float>::make(std::move(label_values)));
   }
@@ -959,12 +944,13 @@ data::ColumnMap UDTMach::getAssociateSamples(
   return columns;
 }
 
-py::object UDTMach::associateTrain(
-    const dataset::DataSourcePtr& balancing_data,
-    const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-    uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
-    uint32_t epochs, const std::vector<std::string>& metrics,
-    TrainOptions options) {
+py::object UDTMach::associateTrain(const dataset::DataSourcePtr& balancing_data,
+                                   const std::vector<RlhfSample>& rlhf_samples,
+                                   uint32_t n_buckets,
+                                   uint32_t n_association_samples,
+                                   float learning_rate, uint32_t epochs,
+                                   const std::vector<std::string>& metrics,
+                                   TrainOptions options) {
   return associateColdStart(balancing_data, {}, {}, rlhf_samples, n_buckets,
                             n_association_samples, learning_rate, epochs,
                             metrics, options);
@@ -974,10 +960,9 @@ py::object UDTMach::associateColdStart(
     const dataset::DataSourcePtr& balancing_data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
-    const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-    uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
-    uint32_t epochs, const std::vector<std::string>& metrics,
-    TrainOptions options) {
+    const std::vector<RlhfSample>& rlhf_samples, uint32_t n_buckets,
+    uint32_t n_association_samples, float learning_rate, uint32_t epochs,
+    const std::vector<std::string>& metrics, TrainOptions options) {
   warnOnNonHashBasedMetrics(metrics);
 
   // TODO(nicholas): make sure max_in_memory_batches is none
@@ -985,8 +970,8 @@ py::object UDTMach::associateColdStart(
   auto featurized_data = _featurizer->featurizeDataset(
       balancing_data, strong_column_names, weak_column_names);
 
-  auto associate_samples = getAssociateSamples(
-      rlhf_samples, /*negative_samples=*/{}, n_buckets, n_association_samples);
+  auto associate_samples =
+      getAssociateSamples(rlhf_samples, n_buckets, n_association_samples);
 
   auto featurized_rlhf_data =
       _featurizer->featurizeRlhfSamples(associate_samples);

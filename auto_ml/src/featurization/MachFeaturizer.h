@@ -11,8 +11,6 @@
 
 namespace thirdai::automl {
 
-using RlhfSample = std::pair<std::string, std::vector<uint32_t>>;
-
 class MachFeaturizer final : public Featurizer {
  public:
   MachFeaturizer(ColumnDataTypes data_types,

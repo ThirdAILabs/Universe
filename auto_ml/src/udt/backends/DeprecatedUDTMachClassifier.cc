@@ -951,28 +951,26 @@ BoltVector makeLabelFromHashes(const std::vector<uint32_t>& hashes,
 }
 
 std::vector<std::pair<MapInput, MapInput>> convertSamples(
-    const std::string& text_col,
-    const std::vector<std::pair<std::string, std::string>>& samples) {
+    const std::string& text_col, const std::vector<RlhfSample>& samples) {
   std::vector<std::pair<MapInput, MapInput>> converted_samples;
   converted_samples.reserve(samples.size());
-  for (const auto& [x, y] : samples) {
+  for (const auto& [x, y, l] : samples) {
+    if (!l) {
+      throw std::invalid_argument(
+          "Negative associate samples are not supported in mach v1.");
+    }
     converted_samples.push_back({{{text_col, x}}, {{text_col, y}}});
   }
   return converted_samples;
 }
 
-void UDTMachClassifier::associate(
-    const std::vector<std::pair<std::string, std::string>>& positive_samples,
-    const std::vector<std::pair<std::string, std::string>>& negative_samples,
-    uint32_t n_buckets, uint32_t n_association_samples,
-    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
-  if (!negative_samples.empty()) {
-    throw std::invalid_argument(
-        "Negative samples are not supported for mach v1.");
-  }
-
+void UDTMachClassifier::associate(const std::vector<RlhfSample>& rlhf_samples,
+                                  uint32_t n_buckets,
+                                  uint32_t n_association_samples,
+                                  uint32_t n_balancing_samples,
+                                  float learning_rate, uint32_t epochs) {
   auto teaching_samples = getAssociateSamples(
-      convertSamples(textColumnForDocumentIntroduction(), positive_samples));
+      convertSamples(textColumnForDocumentIntroduction(), rlhf_samples));
 
   teach(teaching_samples, n_buckets, n_association_samples, n_balancing_samples,
         learning_rate, epochs);
@@ -1076,11 +1074,9 @@ UDTMachClassifier::getAssociateSamples(
 
 py::object UDTMachClassifier::associateTrain(
     const dataset::DataSourcePtr& balancing_data,
-    const std::vector<std::pair<std::string, std::string>>&
-        source_target_samples,
-    uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
-    uint32_t epochs, const std::vector<std::string>& metrics,
-    TrainOptions options) {
+    const std::vector<RlhfSample>& source_target_samples, uint32_t n_buckets,
+    uint32_t n_association_samples, float learning_rate, uint32_t epochs,
+    const std::vector<std::string>& metrics, TrainOptions options) {
   warnOnNonHashBasedMetrics(metrics);
 
   auto dataset = _dataset_factory->getLabeledDatasetLoader(balancing_data,
@@ -1111,11 +1107,9 @@ py::object UDTMachClassifier::associateColdStart(
     const dataset::DataSourcePtr& balancing_data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
-    const std::vector<std::pair<std::string, std::string>>&
-        source_target_samples,
-    uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
-    uint32_t epochs, const std::vector<std::string>& metrics,
-    TrainOptions options) {
+    const std::vector<RlhfSample>& source_target_samples, uint32_t n_buckets,
+    uint32_t n_association_samples, float learning_rate, uint32_t epochs,
+    const std::vector<std::string>& metrics, TrainOptions options) {
   auto metadata = getColdStartMetaData();
 
   auto cold_start_balancing_data = cold_start::preprocessColdStartTrainSource(

@@ -342,14 +342,12 @@ class UDT {
    * on. We will include n_balancing_samples random samples from this collection
    * of data in order to prevent overfitting.
    */
-  void associate(
-      const std::vector<std::pair<std::string, std::string>>& positive_samples,
-      const std::vector<std::pair<std::string, std::string>>& negative_samples,
-      uint32_t n_buckets, uint32_t n_association_samples,
-      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
-    _backend->associate(positive_samples, negative_samples, n_buckets,
-                        n_association_samples, n_balancing_samples,
-                        learning_rate, epochs);
+  void associate(const std::vector<RlhfSample>& rlhf_samples,
+                 uint32_t n_buckets, uint32_t n_association_samples,
+                 uint32_t n_balancing_samples, float learning_rate,
+                 uint32_t epochs) {
+    _backend->associate(rlhf_samples, n_buckets, n_association_samples,
+                        n_balancing_samples, learning_rate, epochs);
   }
 
   /**
@@ -377,12 +375,12 @@ class UDT {
                      n_balancing_samples, learning_rate, epochs);
   }
 
-  py::object associateTrain(
-      const dataset::DataSourcePtr& balancing_data,
-      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& metrics,
-      TrainOptions options) {
+  py::object associateTrain(const dataset::DataSourcePtr& balancing_data,
+                            const std::vector<RlhfSample>& rlhf_samples,
+                            uint32_t n_buckets, uint32_t n_association_samples,
+                            float learning_rate, uint32_t epochs,
+                            const std::vector<std::string>& metrics,
+                            TrainOptions options) {
     licensing::entitlements().verifyDataSource(balancing_data);
 
     return _backend->associateTrain(balancing_data, rlhf_samples, n_buckets,
@@ -394,10 +392,9 @@ class UDT {
       const dataset::DataSourcePtr& balancing_data,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
-      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& metrics,
-      TrainOptions options) {
+      const std::vector<RlhfSample>& rlhf_samples, uint32_t n_buckets,
+      uint32_t n_association_samples, float learning_rate, uint32_t epochs,
+      const std::vector<std::string>& metrics, TrainOptions options) {
     licensing::entitlements().verifyDataSource(balancing_data);
 
     return _backend->associateColdStart(
