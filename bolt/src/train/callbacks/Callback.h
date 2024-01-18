@@ -38,6 +38,8 @@ class Callback {
   // Called after each training batch.
   virtual void onBatchEnd() {}
 
+  virtual void beforeUpdate() {}
+
   ModelPtr& getModel() { return model; }
 
   TrainStatePtr& getTrainState() { return train_state; }
@@ -100,6 +102,8 @@ class CallbackList {
   void onBatchBegin();
 
   void onBatchEnd();
+
+  void beforeUpdate();
 
  private:
   std::vector<CallbackPtr> _callbacks;
