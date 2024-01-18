@@ -422,6 +422,11 @@ def safe_has_offset(this):
     return False
 
 
+def create_table(df, on_disk):
+    Table = SQLiteTable if on_disk else DataFrameTable
+    return Table(df)
+
+
 class CSV(Document):
     """
     A document containing the rows of a csv file.
@@ -513,8 +518,7 @@ class CSV(Document):
 
         df = df.set_index(self.id_column)
 
-        Table = SQLiteTable if on_disk else DataFrameTable
-        self.table = Table(df)
+        self.table = create_table(df, on_disk)
 
         self.path = Path(path)
         self.strong_columns = strong_columns
@@ -715,8 +719,7 @@ class Extracted(Document):
     ):
         path = str(path)
         df = self.process_data(path)
-        Table = SQLiteTable if on_disk else DataFrameTable
-        self.table = Table(df)
+        self.table = create_table(df, on_disk)
         self.hash_val = hash_file(path, metadata="extracted-" + str(metadata))
         self._save_extra_info = save_extra_info
 
@@ -1054,8 +1057,7 @@ class URL(Document):
     ):
         self.url = url
         df = self.process_data(url, url_response)
-        Table = SQLiteTable if on_disk else DataFrameTable
-        self.table = Table(df)
+        self.table = create_table(df, on_disk)
         self.hash_val = hash_string(url + str(metadata))
         self._save_extra_info = save_extra_info
         self._strong_column = "title" if title_is_strong else "text"
@@ -2062,11 +2064,10 @@ class SentenceLevelExtracted(Extracted):
         self.hash_val = hash_file(
             path, metadata="sentence-level-extracted-" + str(metadata)
         )
-        Table = SQLiteTable if on_disk else DataFrameTable
         df = self.parse_sentences(self.process_data(path))
-        self.table = Table(df)
+        self.table = create_table(df, on_disk)
         para_df = pd.DataFrame({"para": df["para"].unique()})
-        self.para_table = Table(para_df)
+        self.para_table = create_table(para_df, on_disk)
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
 
@@ -2277,8 +2278,7 @@ class InMemoryText(Document):
             metadata_df = pd.DataFrame.from_records(metadatas)
             df = pd.concat([df, metadata_df], axis=1)
             self.metadata_columns = metadata_df.columns
-        Table = SQLiteTable if on_disk else DataFrameTable
-        self.table = Table(df)
+        self.table = create_table(df, on_disk)
         self.hash_val = hash_string(str(texts) + str(metadatas))
         self.global_metadata = global_metadata or {}
 
