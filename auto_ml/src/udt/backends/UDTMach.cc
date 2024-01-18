@@ -148,9 +148,12 @@ UDTMach::UDTMach(const MachInfo& mach_info)
       mach_info.csv_delimiter, mach_info.label_delimiter);
 
   if (mach_info.balancing_samples) {
-    _balancing_samples = std::make_optional<BalancingSamples>(
-        FEATURIZED_INDICES, FEATURIZED_VALUES, MACH_LABELS, MACH_DOC_IDS,
-        mach_info.balancing_samples.value());
+    _balancing_samples = BalancingSamples(
+        /*indices_col=*/FEATURIZED_INDICES, /*values_col=*/FEATURIZED_VALUES,
+        /*labels_col=*/MACH_LABELS, /*doc_ids_col=*/MACH_DOC_IDS,
+        /*indices_dim=*/model()->inputDims().at(0),
+        /*label_dim=*/getIndex()->numBuckets(),
+        /*sampler=*/mach_info.balancing_samples.value());
   }
 }
 
@@ -798,9 +801,13 @@ void UDTMach::enableRlhf(uint32_t num_balancing_docs,
     return;
   }
 
-  _balancing_samples = std::make_optional<BalancingSamples>(
-      FEATURIZED_INDICES, FEATURIZED_VALUES, MACH_LABELS, MACH_DOC_IDS,
-      num_balancing_docs, num_balancing_samples_per_doc);
+  _balancing_samples = BalancingSamples(
+      /*indices_col=*/FEATURIZED_INDICES, /*values_col=*/FEATURIZED_VALUES,
+      /*labels_col=*/MACH_LABELS, /*doc_ids_col=*/MACH_DOC_IDS,
+      /*indices_dim=*/model()->inputDims().at(0),
+      /*label_dim=*/getIndex()->numBuckets(),
+      /*max_docs=*/num_balancing_docs,
+      /*max_samples_per_doc=*/num_balancing_samples_per_doc);
 }
 
 void UDTMach::associate(
