@@ -135,7 +135,7 @@ class UDTMachClassifier final : public UDTBackend {
                           bool verbose) final;
 
   void introduceDocumentsAsVectors(
-      const std::vector<bolt::TensorPtr>& input_tensors,
+      const std::vector<std::vector<bolt::TensorPtr>>& input_tensors,
       const std::vector<uint32_t>& labels,
       std::optional<uint32_t> num_buckets_to_sample_opt,
       uint32_t num_random_hashes, bool verbose) final;

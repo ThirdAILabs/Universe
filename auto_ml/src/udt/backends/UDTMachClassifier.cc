@@ -715,60 +715,53 @@ void UDTMachClassifier::introduceDocuments(
 }
 
 void UDTMachClassifier::introduceDocumentsAsVectors(
-    const std::vector<bolt::TensorPtr>& input_tensors,
+    const std::vector<std::vector<bolt::TensorPtr>>& input_tensors,
     const std::vector<uint32_t>& labels,
     std::optional<uint32_t> num_buckets_to_sample_opt,
     uint32_t num_random_hashes, bool verbose) {
-  std::cout << __LINE__ << std::endl;
-  (void)verbose;
-  auto computations = _classifier->model()->computationOrder();
-  auto emb = bolt::Embedding::cast(computations.at(1)->op());
-  auto fc = bolt::FullyConnected::cast(computations.at(2)->op());
-  using Matrix =
-      Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-  Eigen::Map<Matrix> weights(const_cast<float*>(fc->weightsPtr()), fc->dim(),
-                             fc->inputDim());
-  Eigen::Map<Eigen::Matrix<float, 1, Eigen::Dynamic, Eigen::RowMajor>> biases(
-      const_cast<float*>(fc->biasesPtr()), 1, fc->dim());
-
   uint32_t num_buckets_to_sample = num_buckets_to_sample_opt.value_or(
       _mach_label_block->index()->numHashes());
 
-  uint32_t label_idx = 0;
-  std::unordered_map<uint32_t, TopKActivationsQueue> top_k_per_doc;
-  for (uint32_t batch_idx = 0; batch_idx < input_tensors.size(); batch_idx++) {
-    bolt::TensorPtr batch = input_tensors[batch_idx];
+  std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>> top_k_per_doc;
 
-    Matrix embs(batch->batchSize(), emb->dim());
+  auto inference_model = inferenceModel(_classifier->model());
 
-#pragma omp parallel for default(none) shared(batch, emb, embs)
-    for (size_t i = 0; i < batch->batchSize(); i++) {
-      Eigen::Map<Eigen::RowVectorXf> rowVec(batch->getVector(i).activations,
-                                            emb->dim());
-      embs.row(i) = rowVec;
+  bolt::python::CtrlCCheck ctrl_c_check;
+
+  uint32_t row_idx = 0;
+
+  for (const auto& batch : input_tensors) {
+    // Note: using sparse inference here could cause issues because the
+    // mach index sampler will only return nonempty buckets, which could
+    // cause new docs to only be mapped to buckets already containing
+    // entities.
+    bolt::TensorPtr scores;
+    if (inference_model) {
+      scores = inference_model->forward(batch.at(0));
+    } else {
+      scores = _classifier->model()->forward(batch).at(0);
     }
-    auto output = bolt::Tensor::dense(batch->batchSize(), fc->dim());
 
-    Eigen::Map<Matrix> out(const_cast<float*>(output->activationsPtr()),
-                           batch->batchSize(), fc->dim());
-
-    out.noalias() = (embs * weights.transpose());
-    out.rowwise() += biases;
-
-    out.array() = (1 + (-out.array()).exp()).inverse();
-    for (uint32_t i = 0; i < batch->batchSize(); i++) {
-      uint32_t label = labels[label_idx];
-      label_idx++;
-      top_k_per_doc[label] =
-          output->getVector(i).findKLargestActivations(num_buckets_to_sample);
+    for (uint32_t i = 0; i < scores->batchSize(); i++) {
+      uint32_t label = labels[row_idx++];
+      top_k_per_doc[label].push_back(
+          scores->getVector(i).findKLargestActivations(num_buckets_to_sample));
     }
+
+    ctrl_c_check();
   }
 
   for (auto& [doc, top_ks] : top_k_per_doc) {
-    auto hashes =
-        topHashesForDoc({top_ks}, num_buckets_to_sample, num_random_hashes);
+    auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
+                                  num_random_hashes);
     _mach_label_block->index()->insert(doc, hashes);
+
+    ctrl_c_check();
   }
+
+  // addBalancingSamples(cold_start_data);
+
+  updateSamplingStrategy();
 }
 
 void UDTMachClassifier::introduceDocument(
