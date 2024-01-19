@@ -732,7 +732,7 @@ def test_enable_rlhf():
         SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001, shuffle_reservoir_size=32000
     )
 
-    model.associate([("text", "text"), 1.0], n_buckets=7)
+    model.associate([("text", "text", 1.0)], n_buckets=7)
 
 
 def regularized_introduce_helper(model, num_random_hashes):

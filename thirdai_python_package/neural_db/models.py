@@ -605,8 +605,11 @@ class Mach(Model):
         ]
         return predictions
 
-    def _format_associate_samples(self, pairs: List[Tuple[str, str]]):
-        return [(clean_text(source), clean_text(target)) for source, target in pairs]
+    def _format_associate_samples(self, pairs: List[Tuple[str, str, float]]):
+        return [
+            (clean_text(source), clean_text(target), label)
+            for source, target, label in pairs
+        ]
 
     def associate(
         self,
