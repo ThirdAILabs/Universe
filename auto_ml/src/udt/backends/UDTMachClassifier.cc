@@ -719,6 +719,7 @@ void UDTMachClassifier::introduceDocumentsAsVectors(
     const std::vector<uint32_t>& labels,
     std::optional<uint32_t> num_buckets_to_sample_opt,
     uint32_t num_random_hashes, bool verbose) {
+  (void)verbose;
   uint32_t num_buckets_to_sample = num_buckets_to_sample_opt.value_or(
       _mach_label_block->index()->numHashes());
 
