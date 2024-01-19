@@ -26,8 +26,7 @@ struct VariableLengthConfig {
       float word_removal_probability = 0,
       float word_perturbation_probability = 0,
       size_t chars_replace_with_space = 0, size_t chars_deleted = 0,
-      size_t chars_duplicated = 0, size_t chars_replace_with_adjacents = 0,
-      bool nltk_text_cleaning = true);
+      size_t chars_duplicated = 0, size_t chars_replace_with_adjacents = 0);
 
   size_t covering_min_length;
   size_t covering_max_length;

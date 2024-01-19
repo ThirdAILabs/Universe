@@ -23,7 +23,7 @@ TextTokenizer::TextTokenizer(std::string input_column,
       _tokenizer(std::move(tokenizer)),
       _encoder(std::move(encoder)),
       _lowercase(lowercase),
-      _cleaner(cleaner),
+      _clean_text(cleaner),
       _dim(dim) {}
 
 ColumnMap TextTokenizer::apply(ColumnMap columns, State& state) const {
@@ -43,7 +43,7 @@ ColumnMap TextTokenizer::apply(ColumnMap columns, State& state) const {
   for (size_t i = 0; i < text_col->numRows(); i++) {
     std::string string = text_col->value(i);
 
-    if (_cleaner) {
+    if (_clean_text) {
       string = text::nltkWordTokenize(string);
     }
 

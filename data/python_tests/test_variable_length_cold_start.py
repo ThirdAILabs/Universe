@@ -22,7 +22,6 @@ def default_augmentation(
     chars_deleted=0,
     chars_duplicated=0,
     chars_replace_with_adjacents=0,
-    nltk_text_cleaning=True,
     seed=81,
 ):
     return data.transformations.VariableLengthColdStart(
@@ -47,14 +46,13 @@ def default_augmentation(
             chars_deleted=chars_deleted,
             chars_duplicated=chars_duplicated,
             chars_replace_with_adjacents=chars_replace_with_adjacents,
-            nltk_text_cleaning=nltk_text_cleaning,
         ),
         seed=seed,
     )
 
 
 def test_vlcs_prefilter_punctuation():
-    augmentation = default_augmentation(nltk_text_cleaning=False)
+    augmentation = default_augmentation()
     samples = augmentation.augment_single_row(
         "something is, strong text", "This is (weak) text."
     )

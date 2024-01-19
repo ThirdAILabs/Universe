@@ -18,7 +18,7 @@ VariableLengthConfig::VariableLengthConfig(
     float stopword_insertion_probability, float word_removal_probability,
     float word_perturbation_probability, size_t chars_replace_with_space,
     size_t chars_deleted, size_t chars_duplicated,
-    size_t chars_replace_with_adjacents, bool nltk_text_cleaning)
+    size_t chars_replace_with_adjacents)
     : covering_min_length(covering_min_length),
       covering_max_length(covering_max_length),
       max_covering_samples(max_covering_samples),
@@ -35,8 +35,7 @@ VariableLengthConfig::VariableLengthConfig(
       chars_replace_with_space(chars_replace_with_space),
       chars_deleted(chars_deleted),
       chars_duplicated(chars_duplicated),
-      chars_replace_with_adjacents(chars_replace_with_adjacents),
-      nltk_text_cleaning(nltk_text_cleaning) {
+      chars_replace_with_adjacents(chars_replace_with_adjacents){
   utils::validateGreaterThanZero(covering_min_length, "covering_min_length");
   utils::validateGreaterThanZero(covering_max_length, "covering_max_length");
   utils::validateGreaterThanZero(slice_min_length, "slice_min_length");
