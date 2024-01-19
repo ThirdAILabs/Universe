@@ -273,11 +273,11 @@ class UDTBackend {
     throw notSupported("predict_hashes_batch");
   }
 
-  virtual void associate(const std::vector<RlhfSample>& rlhf_samples,
+  virtual void associate(const std::vector<RlhfSample>& source_target_samples,
                          uint32_t n_buckets, uint32_t n_association_samples,
                          uint32_t n_balancing_samples, float learning_rate,
                          uint32_t epochs) {
-    (void)rlhf_samples;
+    (void)source_target_samples;
     (void)n_association_samples;
     (void)n_balancing_samples;
     (void)n_buckets;

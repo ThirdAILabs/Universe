@@ -25,7 +25,9 @@
 namespace thirdai::automl {
 
 static data::OutputColumnsList machLabelColumns() {
-  return {data::OutputColumns(MACH_LABELS), data::OutputColumns(MACH_DOC_IDS)};
+  return {data::OutputColumns(MACH_LABELS, MACH_LABEL_WEIGHTS,
+                              data::ValueFillType::Ones),
+          data::OutputColumns(MACH_DOC_IDS)};
 }
 
 MachFeaturizer::MachFeaturizer(
@@ -156,12 +158,7 @@ bolt::LabeledDataset MachFeaturizer::columnsToTensors(
     const data::ColumnMap& columns, size_t batch_size) const {
   auto data = data::toTensorBatches(columns, _bolt_input_columns, batch_size);
 
-  data::OutputColumnsList label_columns = _bolt_label_columns;
-  if (columns.containsColumn(MACH_LABEL_WEIGHTS)) {
-    label_columns[0] =
-        data::OutputColumns(label_columns[0].indices(), MACH_LABEL_WEIGHTS);
-  }
-  auto labels = data::toTensorBatches(columns, label_columns, batch_size);
+  auto labels = data::toTensorBatches(columns, _bolt_label_columns, batch_size);
 
   return std::make_pair(std::move(data), std::move(labels));
 }
@@ -206,19 +203,17 @@ data::ColumnMap MachFeaturizer::removeIntermediateColumns(
   std::unordered_map<std::string, data::ColumnPtr> new_columns;
   for (const auto& column : _bolt_input_columns) {
     new_columns[column.indices()] = columns.getColumn(column.indices());
-    if (column.values()) {
+    if (column.values() && columns.containsColumn(*column.values())) {
       new_columns[*column.values()] = columns.getColumn(*column.values());
     }
   }
   for (const auto& column : _bolt_label_columns) {
     new_columns[column.indices()] = columns.getColumn(column.indices());
-    if (column.values()) {
+    if (column.values() && columns.containsColumn(*column.values())) {
       new_columns[*column.values()] = columns.getColumn(*column.values());
     }
   }
-  if (columns.containsColumn(MACH_LABEL_WEIGHTS)) {
-    new_columns[MACH_LABEL_WEIGHTS] = columns.getColumn(MACH_LABEL_WEIGHTS);
-  }
+
   return data::ColumnMap(std::move(new_columns));
 }
 

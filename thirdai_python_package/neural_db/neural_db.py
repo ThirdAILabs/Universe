@@ -922,8 +922,11 @@ class NeuralDB:
         associate_logs = logs[logs["action"] == "associate"]
         associate_samples = []
         for _, row in associate_logs.iterrows():
-            for source, target in row["args"]["pairs"]:
-                associate_samples.append((source, target))
+            for pair in row["args"]["pairs"]:
+                if len(pair) == 2:
+                    associate_samples.append((pair[0], pair[1], 1.0))
+                else:
+                    associate_samples.append(pair)
 
         return associate_samples
 

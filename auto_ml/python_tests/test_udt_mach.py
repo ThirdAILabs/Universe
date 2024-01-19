@@ -722,7 +722,7 @@ def test_enable_rlhf():
         RuntimeError,
         match=r"This model was not configured to support rlhf. Please pass {'rlhf': True} in the model options or call enable_rlhf().",
     ):
-        model.associate([("text", "text"), 1.0], n_buckets=7)
+        model.associate([("text", "text", 1.0)], n_buckets=7)
 
     model.enable_rlhf(num_balancing_docs=100, num_balancing_samples_per_doc=10)
 

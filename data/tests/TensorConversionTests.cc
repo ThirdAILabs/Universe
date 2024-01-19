@@ -5,10 +5,12 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <numeric>
 #include <optional>
+#include <stdexcept>
 
 namespace thirdai::data::tests {
 
-void runConversionTest(bool specify_values, bool values_sum_to_one = true) {
+void runConversionTest(bool provide_values_col, bool explicit_values,
+                       ValueFillType fill_type) {
   std::vector<std::vector<uint32_t>> indices;
   std::vector<std::vector<float>> values;
 
@@ -35,12 +37,13 @@ void runConversionTest(bool specify_values, bool values_sum_to_one = true) {
   auto values_col =
       ArrayColumn<float>::make(std::move(values_copy), /* dim= */ std::nullopt);
 
-  ColumnMap columns({{"indices", indices_col}, {"values", values_col}});
+  ColumnMap columns({{"indices", indices_col}});
+  if (provide_values_col) {
+    columns.setColumn("values", values_col);
+  }
 
-  ValueFillType fill_type =
-      values_sum_to_one ? ValueFillType::SumToOne : ValueFillType::Ones;
-  OutputColumns to_convert = specify_values
-                                 ? OutputColumns("indices", "values")
+  OutputColumns to_convert = explicit_values
+                                 ? OutputColumns("indices", "values", fill_type)
                                  : OutputColumns("indices", fill_type);
 
   auto tensors = toTensorBatches(columns, {to_convert}, /* batch_size= */ 3);
@@ -60,10 +63,10 @@ void runConversionTest(bool specify_values, bool values_sum_to_one = true) {
 
       for (size_t j = 0; j < vec.len; j++) {
         EXPECT_EQ(vec.active_neurons[j], value_cnt);
-        if (specify_values) {
+        if (provide_values_col && explicit_values) {
           EXPECT_EQ(vec.activations[j], static_cast<float>(value_cnt));
         } else {
-          if (values_sum_to_one) {
+          if (fill_type == ValueFillType::SumToOne) {
             EXPECT_FLOAT_EQ(vec.activations[i],
                             1.0 / indices.at(row_cnt).size());
           } else {
@@ -79,17 +82,42 @@ void runConversionTest(bool specify_values, bool values_sum_to_one = true) {
   ASSERT_EQ(row_cnt, row_lens.size());
 }
 
-TEST(TensorConversionTests, WithValues) {
-  runConversionTest(/* specify_values= */ true);
+TEST(TensorConversionTests, ExplicitValues) {
+  runConversionTest(/* provide_values_col= */ true, /* explicit_values= */ true,
+                    ValueFillType::None);
+}
+
+TEST(TensorConversionTests, ExplicitValuesAndFallbackFillValuesOnes) {
+  runConversionTest(/* provide_values_col= */ false,
+                    /* explicit_values= */ true, ValueFillType::Ones);
+}
+
+TEST(TensorConversionTests, ExplicitValuesAndFallbackFillValuesSumToOne) {
+  runConversionTest(/* provide_values_col= */ false,
+                    /* explicit_values= */ true, ValueFillType::SumToOne);
+}
+
+TEST(TensorConversionTests, ExplicitValuesAndNoFallback) {
+  try {
+    runConversionTest(/* provide_values_col= */ false,
+                      /* explicit_values= */ true, ValueFillType::None);
+  } catch (const std::invalid_argument& e) {
+    ASSERT_EQ(std::string(e.what()),
+              "Value column was not present in ColumnMap, and no fallback fill "
+              "type was specified.");
+    return;
+  }
+  FAIL();
 }
 
 TEST(TensorConversionTests, FillValuesOnes) {
-  runConversionTest(/* specify_values= */ false,
-                    /* values_sum_to_one= */ false);
+  runConversionTest(/* provide_values_col= */ true,
+                    /* explicit_values= */ false, ValueFillType::Ones);
 }
 
 TEST(TensorConversionTests, FillValuesSumToOne) {
-  runConversionTest(/* specify_values= */ false, /* values_sum_to_one= */ true);
+  runConversionTest(/* provide_values_col= */ true,
+                    /* explicit_values= */ false, ValueFillType::SumToOne);
 }
 
 using thirdai::tests::BoltVectorTestUtils;

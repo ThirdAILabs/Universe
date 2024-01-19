@@ -8,6 +8,7 @@
 namespace thirdai::data {
 
 enum ValueFillType {
+  None,
   Ones,
   SumToOne,
 };
@@ -18,8 +19,11 @@ class OutputColumns {
                          ValueFillType value_fill_type = ValueFillType::Ones)
       : _indices(std::move(indices)), _value_fill_type(value_fill_type) {}
 
-  OutputColumns(std::string indices, std::string values)
-      : _indices(std::move(indices)), _values(std::move(values)) {}
+  OutputColumns(std::string indices, std::string values,
+                ValueFillType value_fill_type = ValueFillType::None)
+      : _indices(std::move(indices)),
+        _values(std::move(values)),
+        _value_fill_type(value_fill_type) {}
 
   const auto& indices() const { return _indices; }
 

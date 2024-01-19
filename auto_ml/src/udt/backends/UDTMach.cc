@@ -814,14 +814,14 @@ void UDTMach::enableRlhf(uint32_t num_balancing_docs,
       /*max_samples_per_doc=*/num_balancing_samples_per_doc);
 }
 
-void UDTMach::associate(const std::vector<RlhfSample>& rlhf_samples,
+void UDTMach::associate(const std::vector<RlhfSample>& source_target_samples,
                         uint32_t n_buckets, uint32_t n_association_samples,
                         uint32_t n_balancing_samples, float learning_rate,
                         uint32_t epochs) {
-  auto teaching_samples =
-      getAssociateSamples(rlhf_samples, n_buckets, n_association_samples);
+  auto teaching_samples = getAssociateSamples(source_target_samples, n_buckets,
+                                              n_association_samples);
 
-  teach(teaching_samples, rlhf_samples.size() * n_balancing_samples,
+  teach(teaching_samples, source_target_samples.size() * n_balancing_samples,
         learning_rate, epochs);
 }
 
@@ -950,23 +950,21 @@ data::ColumnMap UDTMach::getAssociateSamples(
   return columns;
 }
 
-py::object UDTMach::associateTrain(const dataset::DataSourcePtr& balancing_data,
-                                   const std::vector<RlhfSample>& rlhf_samples,
-                                   uint32_t n_buckets,
-                                   uint32_t n_association_samples,
-                                   float learning_rate, uint32_t epochs,
-                                   const std::vector<std::string>& metrics,
-                                   TrainOptions options) {
-  return associateColdStart(balancing_data, {}, {}, rlhf_samples, n_buckets,
-                            n_association_samples, learning_rate, epochs,
-                            metrics, options);
+py::object UDTMach::associateTrain(
+    const dataset::DataSourcePtr& balancing_data,
+    const std::vector<RlhfSample>& source_target_samples, uint32_t n_buckets,
+    uint32_t n_association_samples, float learning_rate, uint32_t epochs,
+    const std::vector<std::string>& metrics, TrainOptions options) {
+  return associateColdStart(balancing_data, {}, {}, source_target_samples,
+                            n_buckets, n_association_samples, learning_rate,
+                            epochs, metrics, options);
 }
 
 py::object UDTMach::associateColdStart(
     const dataset::DataSourcePtr& balancing_data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
-    const std::vector<RlhfSample>& rlhf_samples, uint32_t n_buckets,
+    const std::vector<RlhfSample>& source_target_samples, uint32_t n_buckets,
     uint32_t n_association_samples, float learning_rate, uint32_t epochs,
     const std::vector<std::string>& metrics, TrainOptions options) {
   warnOnNonHashBasedMetrics(metrics);
@@ -976,8 +974,8 @@ py::object UDTMach::associateColdStart(
   auto featurized_data = _featurizer->featurizeDataset(
       balancing_data, strong_column_names, weak_column_names);
 
-  auto associate_samples =
-      getAssociateSamples(rlhf_samples, n_buckets, n_association_samples);
+  auto associate_samples = getAssociateSamples(source_target_samples, n_buckets,
+                                               n_association_samples);
 
   auto featurized_rlhf_data =
       _featurizer->featurizeRlhfSamples(associate_samples);
