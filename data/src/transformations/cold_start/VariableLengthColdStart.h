@@ -1,8 +1,12 @@
 #pragma once
 
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/optional.hpp>
 #include "TextAugmentationUtils.h"
 #include <data/src/transformations/Transformation.h>
+#include <memory>
 #include <random>
+#include <sstream>
 
 namespace thirdai::data {
 
@@ -42,7 +46,50 @@ struct VariableLengthConfig {
   size_t chars_deleted;
   size_t chars_duplicated;
   size_t chars_replace_with_adjacents;
-  bool nltk_text_cleaning;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(covering_min_length, covering_max_length, max_covering_samples,
+            slice_min_length, slice_max_length, num_slices, add_whole_doc,
+            prefilter_punctuation, strong_sample_num_words,
+            stopword_removal_probability, stopword_insertion_probability,
+            word_removal_probability, word_perturbation_probability,
+            chars_replace_with_space, chars_deleted, chars_duplicated,
+            chars_replace_with_adjacents);
+  }
+
+  void save_stream(std::ostream& output_stream) const {
+    cereal::BinaryOutputArchive oarchive(output_stream);
+    oarchive(*this);
+  }
+
+  static std::shared_ptr<VariableLengthConfig> load_stream(
+      std::istream& input_stream) {
+    cereal::BinaryInputArchive iarchive(input_stream);
+    auto config = std::make_shared<VariableLengthConfig>();
+    iarchive(*config);
+    return config;
+  }
+  std::string to_string() const {
+    std::stringstream ss;
+    ss << "VariableLengthConfig(";
+    ss << VARIABLE_TO_STRING(covering_min_length, ", ");
+    ss << VARIABLE_TO_STRING(max_covering_samples, ", ");
+    ss << VARIABLE_TO_STRING(slice_min_length, ", ");
+    ss << VARIABLE_TO_STRING(slice_max_length, ", ");
+    ss << VARIABLE_TO_STRING(num_slices, ", ");
+    ss << VARIABLE_TO_STRING(add_whole_doc, ", ");
+    ss << VARIABLE_TO_STRING(prefilter_punctuation, ", ");
+    ss << VARIABLE_TO_STRING(strong_sample_num_words, ", ");
+    ss << VARIABLE_TO_STRING(stopword_removal_probability, ", ");
+    ss << VARIABLE_TO_STRING(stopword_insertion_probability, ", ");
+    ss << VARIABLE_TO_STRING(word_removal_probability, ", ");
+    ss << VARIABLE_TO_STRING(word_perturbation_probability, ", ");
+    ss << VARIABLE_TO_STRING(chars_replace_with_space, ", ");
+    ss << VARIABLE_TO_STRING(chars_deleted, ", ");
+    ss << VARIABLE_TO_STRING(chars_duplicated, ", ");
+    ss << VARIABLE_TO_STRING(chars_replace_with_adjacents, ")");
+    return ss.str();
+  }
 };
 
 class VariableLengthColdStart : public cold_start::TextAugmentationBase {

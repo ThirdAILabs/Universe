@@ -82,6 +82,10 @@ class Classifier {
 
   const auto& model() const { return _model; }
 
+  const auto& binaryPredictionThreshold() const {
+    return _binary_prediction_threshold;
+  }
+
  private:
   uint32_t predictedClass(const BoltVector& output);
 
