@@ -107,15 +107,9 @@ class GreaterThan(InRange[ItemT]):
             return df[df[column_name].ge(self.minimum)]
         return df[df[column_name].gt(self.minimum)]
 
-    def filter_sql_column(
-        self, con: sqlite3.Connection, table_name: str, column_name: str
-    ):
+    def sql_condition(self, column_name: str):
         comp = ">=" if self.include_equal else ">"
-        return pd.read_sql(
-            f"select * from {table_name} where "
-            f"{column_name}{comp}{format_value_for_sql(self.minimum)}",
-            con,
-        )
+        return f"{column_name}{comp}{format_value_for_sql(self.minimum)}"
 
 
 class LessThan(InRange[ItemT]):
@@ -132,15 +126,9 @@ class LessThan(InRange[ItemT]):
             return df[df[column_name].le(self.maximum)]
         return df[df[column_name].lt(self.maximum)]
 
-    def filter_sql_column(
-        self, con: sqlite3.Connection, table_name: str, column_name: str
-    ):
+    def sql_condition(self, column_name: str):
         comp = "<=" if self.include_equal else "<"
-        return pd.read_sql(
-            f"select * from {table_name} where {column_name}{comp}"
-            f"{format_value_for_sql(self.maximum)}",
-            con,
-        )
+        return f"{column_name}{comp}{format_value_for_sql(self.maximum)}"
 
 
 class TableFilter:
