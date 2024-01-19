@@ -405,7 +405,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       .def(
           py::init<size_t, size_t, std::optional<uint32_t>, size_t,
                    std::optional<size_t>, uint32_t, bool, bool, uint32_t, float,
-                   float, float, float, size_t, size_t, size_t, size_t, bool>(),
+                   float, float, float, size_t, size_t, size_t, size_t>(),
           py::arg("covering_min_length") = 5,
           py::arg("covering_max_length") = 40,
           py::arg("max_covering_samples") = std::nullopt,
