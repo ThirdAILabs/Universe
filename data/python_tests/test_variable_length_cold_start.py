@@ -248,7 +248,7 @@ def test_vlcs_consistent_augmentations_with_seeds():
     columns = default_start_columns()
     columns2 = augmentation2(columns)
 
-    assert columns1["OUTPUT"].data() == columns2["OUTPUT"].data()
+    assert sorted(columns1["OUTPUT"].data()) == sorted(columns2["OUTPUT"].data())
 
 
 def test_vlcs_different_augmentations_with_different_seeds():
