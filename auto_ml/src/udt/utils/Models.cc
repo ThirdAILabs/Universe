@@ -66,8 +66,8 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
 
   const auto* hidden_activation = use_tanh ? "tanh" : "relu";
 
-  auto hidden = bolt::FullyConnected::make(hidden_dim, input_dim, 1.0, hidden_activation, nullptr, 
-                                      /* use_bias= */ hidden_bias)
+  auto hidden = bolt::Embedding::make(hidden_dim, input_dim, hidden_activation,
+                                      /* bias= */ hidden_bias)
                     ->apply(input);
 
   if (normalize_embeddings) {
