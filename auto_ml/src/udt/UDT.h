@@ -91,9 +91,12 @@ class UDT {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k);
 
+  py::object predictActivationsBatch(const MapInputBatch& samples,
+                                     bool sparse_inference);
+
   /**
-   * Performs inference on a batch of samples in parallel and returns the scores
-   * for each of the provided output classes.
+   * Performs inference on a batch of samples in parallel and returns the
+   * scores for each of the provided output classes.
    */
   py::object scoreBatch(const MapInputBatch& samples,
                         const std::vector<std::vector<Label>>& classes,
