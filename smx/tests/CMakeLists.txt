@@ -3,7 +3,8 @@ enable_testing()
 include(GoogleTest)
 
 set(SMX_TESTS
-    AutogradTests)
+    AutogradTests
+    ModuleTests)
 
 foreach(SMX_TEST IN LISTS SMX_TESTS)
   add_executable(${SMX_TEST} ${SMX_TEST}.cc)

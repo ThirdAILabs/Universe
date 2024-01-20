@@ -61,12 +61,37 @@ class Module {
       }
     }
 
+    // If the module we're registering contains this module then registering it
+    // would create a cycle. This would leak memory sense the Modules are stored
+    // using shared_ptr's and also cause issues for traversing the module
+    // structure to discover parameters.
+    if (module.get() == this) {
+      throw std::runtime_error("Cannot register a module with itself.");
+    }
+    if (module->modules().count(this)) {
+      throw std::runtime_error(
+          "Cannot register module as it contains the module it is being "
+          "registered with as a submodule.");
+    }
+
     _modules[name] = module;
   }
 
   virtual ~Module() = default;
 
  private:
+  std::unordered_set<Module*> modules() const {
+    std::unordered_set<Module*> modules;
+    for (const auto& [_, module] : _modules) {
+      modules.insert(module.get());
+
+      auto submodules = module->modules();
+      modules.insert(submodules.begin(), submodules.end());
+    }
+
+    return modules;
+  }
+
   std::unordered_map<std::string, VariablePtr> _parameters;
   std::unordered_map<std::string, std::shared_ptr<Module>> _modules;
 };
@@ -88,7 +113,7 @@ class UnaryModule : public Module {
 class Sequential final : public UnaryModule {
  public:
   explicit Sequential(
-      const std::vector<std::shared_ptr<UnaryModule>>& modules) {
+      const std::vector<std::shared_ptr<UnaryModule>>& modules = {}) {
     for (const auto& module : modules) {
       append(module);
     }
