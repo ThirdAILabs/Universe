@@ -923,7 +923,7 @@ data::ColumnMap UDTMach::getAssociateSamples(
   }
   auto all_predicted_hashes =
       predictHashesImpl(batch, /* sparse_inference = */ false,
-                        /* force_non_empty = */ true);
+                        /* force_non_empty = */ false);
 
   std::mt19937 rng(global_random::nextSeed());
 

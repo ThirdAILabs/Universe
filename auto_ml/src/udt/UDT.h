@@ -92,7 +92,9 @@ class UDT {
                           std::optional<uint32_t> top_k);
 
   py::object predictActivationsBatch(const MapInputBatch& samples,
-                                     bool sparse_inference);
+                                     bool sparse_inference) {
+    return _backend->predictActivationsBatch(samples, sparse_inference);
+  }
 
   /**
    * Performs inference on a batch of samples in parallel and returns the
