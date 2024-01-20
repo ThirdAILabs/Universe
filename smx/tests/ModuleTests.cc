@@ -21,25 +21,28 @@ TEST(ModuleTests, ParameterDiscover) {
   seq1->append(l2);
 
   auto seq2 = std::make_shared<Sequential>();
-  seq2->append(l1);
+  seq2->append(l2);
   seq2->append(seq1);
-  seq2->append(l3);
 
-  auto params1 = seq1->parameters();
-  ASSERT_EQ(params1.size(), 4);
-  ASSERT_TRUE(containsParam(params1, l1->weight()));
-  ASSERT_TRUE(containsParam(params1, l1->bias()));
-  ASSERT_TRUE(containsParam(params1, l2->weight()));
-  ASSERT_TRUE(containsParam(params1, l2->bias()));
+  auto seq3 = std::make_shared<Sequential>();
+  seq3->append(l3);
+  seq3->append(seq2);
 
-  auto params2 = seq2->parameters();
-  ASSERT_EQ(params2.size(), 6);
-  ASSERT_TRUE(containsParam(params2, l1->weight()));
-  ASSERT_TRUE(containsParam(params2, l1->bias()));
-  ASSERT_TRUE(containsParam(params2, l2->weight()));
-  ASSERT_TRUE(containsParam(params2, l2->bias()));
-  ASSERT_TRUE(containsParam(params2, l3->weight()));
-  ASSERT_TRUE(containsParam(params2, l3->bias()));
+  auto seq1_params = seq1->parameters();
+  ASSERT_EQ(seq1_params.size(), 4);
+  ASSERT_TRUE(containsParam(seq1_params, l1->weight()));
+  ASSERT_TRUE(containsParam(seq1_params, l1->bias()));
+  ASSERT_TRUE(containsParam(seq1_params, l2->weight()));
+  ASSERT_TRUE(containsParam(seq1_params, l2->bias()));
+
+  auto seq3_params = seq3->parameters();
+  ASSERT_EQ(seq3_params.size(), 6);
+  ASSERT_TRUE(containsParam(seq3_params, l1->weight()));
+  ASSERT_TRUE(containsParam(seq3_params, l1->bias()));
+  ASSERT_TRUE(containsParam(seq3_params, l2->weight()));
+  ASSERT_TRUE(containsParam(seq3_params, l2->bias()));
+  ASSERT_TRUE(containsParam(seq3_params, l3->weight()));
+  ASSERT_TRUE(containsParam(seq3_params, l3->bias()));
 }
 
 TEST(ModuleTests, RegisteringModuleWithItself) {
