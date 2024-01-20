@@ -3,6 +3,9 @@
 #include <smx/src/autograd/Variable.h>
 #include <smx/src/tensor/Tensor.h>
 #include <memory>
+#include <stdexcept>
+#include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace thirdai::smx {
@@ -21,9 +24,51 @@ class Module {
     return forward(input_vars);
   }
 
-  virtual std::vector<VariablePtr> parameters() const = 0;
+  std::vector<VariablePtr> parameters() const {
+    std::unordered_set<VariablePtr> parameters;
+    for (const auto& [_, param] : _parameters) {
+      parameters.insert(param);
+    }
+
+    for (const auto& [_, module] : _modules) {
+      auto module_parameters = module->parameters();
+      parameters.insert(module_parameters.begin(), module_parameters.end());
+    }
+
+    return {parameters.begin(), parameters.end()};
+  }
+
+  void registerParameter(const std::string& name,
+                         const VariablePtr& parameter) {
+    if (_parameters.count(name)) {
+      if (_parameters.at(name) != parameter) {
+        throw std::runtime_error(
+            "Cannot register parameter with name '" + name +
+            "' as a parameter with that name already exists.");
+      }
+    }
+
+    _parameters[name] = parameter;
+  }
+
+  void registerModule(const std::string& name,
+                      const std::shared_ptr<Module>& module) {
+    if (_modules.count(name)) {
+      if (_modules.at(name) != module) {
+        throw std::runtime_error(
+            "Cannot register module with name '" + name +
+            "' as a module with that name already exists.");
+      }
+    }
+
+    _modules[name] = module;
+  }
 
   virtual ~Module() = default;
+
+ private:
+  std::unordered_map<std::string, VariablePtr> _parameters;
+  std::unordered_map<std::string, std::shared_ptr<Module>> _modules;
 };
 
 class UnaryModule : public Module {
@@ -42,10 +87,15 @@ class UnaryModule : public Module {
 
 class Sequential final : public UnaryModule {
  public:
-  explicit Sequential(std::vector<std::shared_ptr<UnaryModule>> modules)
-      : _modules(std::move(modules)) {}
+  explicit Sequential(
+      const std::vector<std::shared_ptr<UnaryModule>>& modules) {
+    for (const auto& module : modules) {
+      append(module);
+    }
+  }
 
   Sequential& append(const std::shared_ptr<UnaryModule>& mod) {
+    registerModule("mod_" + std::to_string(_modules.size()), mod);
     _modules.push_back(mod);
     return *this;
   }
@@ -56,15 +106,6 @@ class Sequential final : public UnaryModule {
       out = mod->forward(out);
     }
     return out;
-  }
-
-  std::vector<VariablePtr> parameters() const final {
-    std::vector<VariablePtr> parameters;
-    for (const auto& mod : _modules) {
-      const auto& mod_params = mod->parameters();
-      parameters.insert(parameters.end(), mod_params.begin(), mod_params.end());
-    }
-    return parameters;
   }
 
   const std::shared_ptr<UnaryModule>& operator[](size_t i) const {

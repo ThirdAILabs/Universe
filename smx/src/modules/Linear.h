@@ -18,13 +18,14 @@ class Linear final : public UnaryModule {
 
     _bias = Variable::make(smx::normal({dim}, /*mean=*/0.0, /*stddev=*/0.01),
                            /*requires_grad=*/true);
+
+    registerParameter("weight", _weight);
+    registerParameter("bias", _bias);
   }
 
   VariablePtr forward(const VariablePtr& x) final {
     return linear(x, _weight, _bias);
   }
-
-  std::vector<VariablePtr> parameters() const final { return {_weight, _bias}; }
 
   const auto& weight() const { return _weight; }
 
@@ -63,6 +64,9 @@ class SparseLinear final : public Module {
     _bias = Variable::make(smx::normal({dim}, /*mean=*/0.0, /*stddev=*/0.01),
                            /*requires_grad=*/true);
 
+    registerParameter("weight", _weight);
+    registerParameter("bias", _bias);
+
     if (neuron_index) {
       _neuron_index = std::move(neuron_index);
     } else {
@@ -72,20 +76,21 @@ class SparseLinear final : public Module {
     }
   }
 
+  VariablePtr forward(const VariablePtr& x,
+                      const VariablePtr& labels = nullptr) {
+    return linear(x, _weight, _bias, _sparsity, _neuron_index, labels);
+  }
+
   std::vector<VariablePtr> forward(const std::vector<VariablePtr>& x) final {
     if (x.size() == 2) {
-      return {linear(x[0], _weight, _bias, _sparsity, _neuron_index,
-                     /*labels=*/x[1])};
+      return {forward(x[0], x[1])};
     }
     if (x.size() == 1) {
-      return {linear(x[0], _weight, _bias, _sparsity, _neuron_index,
-                     /*labels=*/nullptr)};
+      return {forward(x[0])};
     }
     throw std::invalid_argument(
         "Sparse linear can only take 1 or 2 arguments.");
   }
-
-  std::vector<VariablePtr> parameters() const final { return {_weight, _bias}; }
 
   const auto& weight() const { return _weight; }
 

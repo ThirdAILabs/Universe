@@ -39,8 +39,6 @@ class Activation final : public UnaryModule {
     }
   }
 
-  std::vector<VariablePtr> parameters() const final { return {}; }
-
  private:
   enum Type { relu, tanh, sigmoid, softmax };
 

@@ -14,13 +14,13 @@ class Embedding final : public UnaryModule {
     _emb = Variable::make(
         smx::normal({n_embs, emb_dim}, /*mean=*/0.0, /*stddev=*/0.01),
         /*requires_grad=*/true);
+
+    registerParameter("emb", _emb);
   }
 
   VariablePtr forward(const VariablePtr& indices) final {
     return embedding(indices, _emb, _reduce_mean);
   }
-
-  std::vector<VariablePtr> parameters() const final { return {_emb}; }
 
   const auto& emb() const { return _emb; }
 

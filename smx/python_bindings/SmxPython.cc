@@ -5,7 +5,6 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <smx/python_bindings/PyModule.h>
 #include <smx/src/autograd/Variable.h>
 #include <smx/src/autograd/functions/Activations.h>
 #include <smx/src/autograd/functions/LinearAlgebra.h>
@@ -191,17 +190,35 @@ void defineAutograd(py::module_& smx) {
   smx.def("cross_entropy", &crossEntropy, py::arg("logits"), py::arg("labels"));
 }
 
+class PyModule : public Module {
+ public:
+  std::vector<VariablePtr> forward(
+      const std::vector<VariablePtr>& inputs) override {
+    // We define the python method name as _forward so that users can define a
+    // method using positional args, and then the _forward interface method can
+    // use "out = self.forward(*inputs)".
+
+    PYBIND11_OVERRIDE_PURE_NAME(
+        /* return type */ std::vector<VariablePtr>,
+        /* parent class */ Module,
+        /* python method name */ "_forward",
+        /* c++ method name */ forward,
+        /* args */ inputs);
+  }
+};
+
 void defineModules(py::module_& smx) {
-  py::class_<Module, PyModule, std::shared_ptr<Module>>(smx, "Module")
+  // Modules are bound to python using _Module so that we can define the class
+  // Module as a wrapper around it in python which can make use of python
+  // syntax to automtatically register parameters/modules and use *args for
+  // inputs to forward.
+  py::class_<Module, PyModule, std::shared_ptr<Module>>(smx, "_Module")
       .def(py::init<>())
-      .def("forward",
-           py::overload_cast<const std::vector<VariablePtr>&>(&Module::forward),
-           py::arg("inputs"))
       .def("parameters", &Module::parameters)
-      .def("__call__",
-           py::overload_cast<const std::vector<VariablePtr>&>(&Module::forward))
-      .def("__call__",
-           py::overload_cast<const std::vector<TensorPtr>&>(&Module::forward));
+      .def("register_parameter", &Module::registerParameter, py::arg("name"),
+           py::arg("parameter"))
+      .def("register_module", &Module::registerModule, py::arg("name"),
+           py::arg("module"));
 
   py::class_<UnaryModule, std::shared_ptr<UnaryModule>, Module>(smx,
                                                                 "UnaryModule")
@@ -241,6 +258,9 @@ void defineModules(py::module_& smx) {
       .def(py::init<size_t, size_t, float, NeuronIndexPtr>(), py::arg("dim"),
            py::arg("input_dim"), py::arg("sparsity"),
            py::arg("neuron_index") = nullptr)
+      .def("__call__",
+           py::overload_cast<const VariablePtr&, const VariablePtr&>(
+               &SparseLinear::forward))
       .def("on_update_callback", &SparseLinear::onUpdateCallback)
       .def_property("weight", &SparseLinear::weight, &SparseLinear::setWeight)
       .def_property("bias", &SparseLinear::bias, &SparseLinear::setBias);
