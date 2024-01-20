@@ -280,6 +280,14 @@ std::vector<std::vector<std::pair<uint32_t, double>>> UDTMach::predictBatchImpl(
   return predicted_entities;
 }
 
+py::object UDTMach::predictActivationsBatch(const MapInputBatch& samples,
+                                            bool sparse_inference) {
+  return py::cast(
+      _classifier->model()
+          ->forward(_featurizer->featurizeInputBatch(samples), sparse_inference)
+          .at(0));
+}
+
 py::object UDTMach::scoreBatch(const MapInputBatch& samples,
                                const std::vector<std::vector<Label>>& classes,
                                std::optional<uint32_t> top_k) {

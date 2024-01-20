@@ -68,6 +68,9 @@ class UDTMach final : public UDTBackend {
       const MapInputBatch& samples, bool sparse_inference,
       bool return_predicted_class, std::optional<uint32_t> top_k);
 
+  py::object predictActivationsBatch(const MapInputBatch& samples,
+                                     bool sparse_inference) final;
+
   py::object predictHashes(const MapInput& sample, bool sparse_inference,
                            bool force_non_empty,
                            std::optional<uint32_t> num_hashes) final;
