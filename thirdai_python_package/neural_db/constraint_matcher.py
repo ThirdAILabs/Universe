@@ -46,7 +46,9 @@ class AnyOf(Filter[ItemT]):
 
     def sql_condition(self, column_name: str):
         formatted_values = [format_value_for_sql(val) for val in self.values]
-        return " or ".join(f"{column_name}=={val}" for val in formatted_values)
+        return (
+            "(" + " or ".join(f"{column_name}=={val}" for val in formatted_values) + ")"
+        )
 
 
 class EqualTo(AnyOf[ItemT]):
