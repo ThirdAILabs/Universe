@@ -211,6 +211,10 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("num_buckets_to_sample") = std::nullopt,
            py::arg("num_random_hashes") = 0,
            py::arg("fast_approximation") = false, py::arg("verbose") = true)
+      .def("introduce_documents_as_vectors",
+           &udt::UDT::introduceDocumentsAsVectors, py::arg("input_tensors"),
+           py::arg("labels"), py::arg("num_buckets_to_sample") = std::nullopt,
+           py::arg("num_random_hashes") = 0, py::arg("verbose") = true)
       .def("introduce_document", &udt::UDT::introduceDocument,
            py::arg("document"), py::arg("strong_column_names"),
            py::arg("weak_column_names"), py::arg("label"),

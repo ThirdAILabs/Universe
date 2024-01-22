@@ -278,6 +278,16 @@ class UDT {
                                  fast_approximation, verbose);
   }
 
+  void introduceDocumentsAsVectors(
+      const std::vector<std::vector<bolt::TensorPtr>>& input_tensors,
+      const std::vector<uint32_t>& labels,
+      std::optional<uint32_t> num_buckets_to_sample_opt,
+      uint32_t num_random_hashes, bool verbose) {
+    _backend->introduceDocumentsAsVectors(input_tensors, labels,
+                                          num_buckets_to_sample_opt,
+                                          num_random_hashes, verbose);
+  }
+
   /**
    * Used in UDTMachClassifier. Introduces a single new document to the model
    * from an in memory map input. Used in conjunction with coldstart.

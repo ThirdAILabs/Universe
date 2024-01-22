@@ -1,4 +1,5 @@
 #include "UDTMachClassifier.h"
+#include <wrappers/src/EigenDenseWrapper.h>
 #include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/inference/EmbFcInference.h>
@@ -17,6 +18,8 @@
 #include <bolt/src/train/metrics/RecallAtK.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <Eigen/src/Core/Map.h>
+#include <Eigen/src/Core/util/Constants.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -707,6 +710,57 @@ void UDTMachClassifier::introduceDocuments(
   }
 
   addBalancingSamples(cold_start_data);
+
+  updateSamplingStrategy();
+}
+
+void UDTMachClassifier::introduceDocumentsAsVectors(
+    const std::vector<std::vector<bolt::TensorPtr>>& input_tensors,
+    const std::vector<uint32_t>& labels,
+    std::optional<uint32_t> num_buckets_to_sample_opt,
+    uint32_t num_random_hashes, bool verbose) {
+  (void)verbose;
+  uint32_t num_buckets_to_sample = num_buckets_to_sample_opt.value_or(
+      _mach_label_block->index()->numHashes());
+
+  std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>> top_k_per_doc;
+
+  auto inference_model = inferenceModel(_classifier->model());
+
+  bolt::python::CtrlCCheck ctrl_c_check;
+
+  uint32_t row_idx = 0;
+
+  for (const auto& batch : input_tensors) {
+    // Note: using sparse inference here could cause issues because the
+    // mach index sampler will only return nonempty buckets, which could
+    // cause new docs to only be mapped to buckets already containing
+    // entities.
+    bolt::TensorPtr scores;
+    if (inference_model) {
+      scores = inference_model->forward(batch.at(0));
+    } else {
+      scores = _classifier->model()->forward(batch).at(0);
+    }
+
+    for (uint32_t i = 0; i < scores->batchSize(); i++) {
+      uint32_t label = labels[row_idx++];
+      top_k_per_doc[label].push_back(
+          scores->getVector(i).findKLargestActivations(num_buckets_to_sample));
+    }
+
+    ctrl_c_check();
+  }
+
+  for (auto& [doc, top_ks] : top_k_per_doc) {
+    auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
+                                  num_random_hashes);
+    _mach_label_block->index()->insert(doc, hashes);
+
+    ctrl_c_check();
+  }
+
+  // addBalancingSamples(cold_start_data);
 
   updateSamplingStrategy();
 }
