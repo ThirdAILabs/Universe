@@ -91,7 +91,7 @@ class SparseLinear final : public Module {
     } else {
       _neuron_index = LshIndex::autotune(
           dim, input_dim, sparsity, dense(_weight->tensor()),
-          /* updates_per_rebuild=*/4, /*updates_per_new_hash_fn=*/100);
+          /* updates_per_rebuild=*/6, /*updates_per_new_hash_fn=*/125);
     }
   }
 
