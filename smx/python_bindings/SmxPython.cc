@@ -1,4 +1,5 @@
 #include "SmxPython.h"
+#include <hashing/src/HashFunction.h>
 #include <pybind11/attr.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/functional.h>
@@ -246,24 +247,25 @@ void defineModules(py::module_& smx) {
       .def_property("weight", &Linear::weight, &Linear::setWeight)
       .def_property("bias", &Linear::bias, &Linear::setBias);
 
-  py::class_<NeuronIndex, NeuronIndexPtr>(smx, "NeuronIndex");  // NOLINT
-
-  py::class_<LshIndex, std::shared_ptr<LshIndex>, NeuronIndex>(smx, "LshIndex")
-      .def(py::init(&LshIndex::make), py::arg("hash_fn"),
-           py::arg("reservoir_size"), py::arg("weight"),
+  py::class_<LshIndexConfig>(smx, "LshIndex")
+      .def(py::init<hashing::HashFunctionPtr, size_t, size_t, size_t>(),
+           py::arg("hash_fn"), py::arg("reservoir_size"),
            py::arg("updates_per_rebuild"), py::arg("updates_per_new_hash_fn"));
 
   py::class_<SparseLinear, std::shared_ptr<SparseLinear>, Module>(
       smx, "SparseLinear")
-      .def(py::init<size_t, size_t, float, NeuronIndexPtr>(), py::arg("dim"),
-           py::arg("input_dim"), py::arg("sparsity"),
-           py::arg("neuron_index") = nullptr)
+      .def(py::init<size_t, size_t, float,
+                    const std::optional<LshIndexConfig>&>(),
+           py::arg("dim"), py::arg("input_dim"), py::arg("sparsity"),
+           py::arg("lsh_index") = std::nullopt)
       .def("__call__",
            py::overload_cast<const VariablePtr&, const VariablePtr&>(
                &SparseLinear::forward))
       .def("on_update_callback", &SparseLinear::onUpdateCallback)
       .def_property("weight", &SparseLinear::weight, &SparseLinear::setWeight)
-      .def_property("bias", &SparseLinear::bias, &SparseLinear::setBias);
+      .def_property("bias", &SparseLinear::bias, &SparseLinear::setBias)
+      .def_property("sparsity", &SparseLinear::sparsity,
+                    &SparseLinear::setSparsity);
 
   py::class_<Embedding, std::shared_ptr<Embedding>, UnaryModule>(smx,
                                                                  "Embedding")

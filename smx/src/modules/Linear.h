@@ -1,5 +1,6 @@
 #pragma once
 
+#include <hashing/src/HashFunction.h>
 #include <smx/src/autograd/Variable.h>
 #include <smx/src/autograd/functions/LinearAlgebra.h>
 #include <smx/src/modules/Module.h>
@@ -52,10 +53,25 @@ class Linear final : public UnaryModule {
   VariablePtr _bias;
 };
 
+class LshIndexConfig {
+ public:
+  LshIndexConfig(hashing::HashFunctionPtr hash_fn, size_t reservoir_size,
+                 size_t updates_per_rebuild, size_t updates_per_new_hash_fn)
+      : hash_fn(std::move(hash_fn)),
+        reservoir_size(reservoir_size),
+        updates_per_rebuild(updates_per_rebuild),
+        updates_per_new_hash_fn(updates_per_new_hash_fn) {}
+
+  hashing::HashFunctionPtr hash_fn;
+  size_t reservoir_size;
+  size_t updates_per_rebuild;
+  size_t updates_per_new_hash_fn;
+};
+
 class SparseLinear final : public Module {
  public:
   SparseLinear(size_t dim, size_t input_dim, float sparsity,
-               NeuronIndexPtr neuron_index)
+               const std::optional<LshIndexConfig>& lsh_index)
       : _sparsity(sparsity) {
     _weight = Variable::make(
         smx::normal({dim, input_dim}, /*mean=*/0.0, /*stddev=*/0.01),
@@ -67,8 +83,11 @@ class SparseLinear final : public Module {
     registerParameter("weight", _weight);
     registerParameter("bias", _bias);
 
-    if (neuron_index) {
-      _neuron_index = std::move(neuron_index);
+    if (lsh_index) {
+      _neuron_index = LshIndex::make(
+          lsh_index->hash_fn, lsh_index->reservoir_size,
+          dense(_weight->tensor()), lsh_index->updates_per_rebuild,
+          lsh_index->updates_per_new_hash_fn);
     } else {
       _neuron_index = LshIndex::autotune(
           dim, input_dim, sparsity, dense(_weight->tensor()),
@@ -78,7 +97,10 @@ class SparseLinear final : public Module {
 
   VariablePtr forward(const VariablePtr& x,
                       const VariablePtr& labels = nullptr) {
-    return linear(x, _weight, _bias, _sparsity, _neuron_index, labels);
+    if (_sparsity < 1.0) {
+      return linear(x, _weight, _bias, _sparsity, _neuron_index, labels);
+    }
+    return linear(x, _weight, _bias);
   }
 
   std::vector<VariablePtr> forward(const std::vector<VariablePtr>& x) final {
@@ -115,6 +137,10 @@ class SparseLinear final : public Module {
   std::function<void()> onUpdateCallback() {
     return [neuron_index = _neuron_index]() { neuron_index->onUpdate(); };
   }
+
+  float sparsity() const { return _sparsity; }
+
+  void setSparsity(float sparsity) { _sparsity = sparsity; }
 
  private:
   VariablePtr _weight;

@@ -22,7 +22,7 @@ def run_sparse_linear_test(labels, indices_check, exact_param_grad_check):
     sparse_linear.weight = w
     sparse_linear.bias = b
 
-    y = sparse_linear([x, labels])[0]
+    y = sparse_linear(x, labels)
 
     assert tuple(y.tensor.shape) == (BATCH_SIZE, DIM)
     assert np.array_equal(
