@@ -79,6 +79,7 @@ n_classes = 670091
 model = SparseModel(input_dim=input_dim, n_classes=n_classes)
 
 optimizer = smx.optimizers.Adam(model.parameters(), lr=1e-4)
+optimizer.register_on_update_callback(model.output.on_update_callback())
 
 train_batches = load_dataset(
     path="/share/data/amazon-670k/train_shuffled_noHeader.txt",
@@ -88,7 +89,7 @@ train_batches = load_dataset(
     training=True,
 )
 test_batches = load_dataset(
-    path="/share/data/amzn670k/test_shuffled_noHeader_sampled.txt",
+    path="/share/data/amazon-670k/test_shuffled_noHeader_sampled.txt",
     batch_size=2048,
     input_dim=input_dim,
     n_classes=n_classes,
