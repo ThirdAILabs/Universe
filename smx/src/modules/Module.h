@@ -24,73 +24,17 @@ class Module {
     return forward(input_vars);
   }
 
-  std::vector<VariablePtr> parameters() const {
-    std::unordered_set<VariablePtr> parameters;
-    for (const auto& [_, param] : _parameters) {
-      parameters.insert(param);
-    }
+  std::vector<VariablePtr> parameters() const;
 
-    for (const auto& [_, module] : _modules) {
-      auto module_parameters = module->parameters();
-      parameters.insert(module_parameters.begin(), module_parameters.end());
-    }
-
-    return {parameters.begin(), parameters.end()};
-  }
-
-  void registerParameter(const std::string& name,
-                         const VariablePtr& parameter) {
-    if (_parameters.count(name)) {
-      if (_parameters.at(name) != parameter) {
-        throw std::runtime_error(
-            "Cannot register parameter with name '" + name +
-            "' as a parameter with that name already exists.");
-      }
-    }
-
-    _parameters[name] = parameter;
-  }
+  void registerParameter(const std::string& name, const VariablePtr& parameter);
 
   void registerModule(const std::string& name,
-                      const std::shared_ptr<Module>& module) {
-    if (_modules.count(name)) {
-      if (_modules.at(name) != module) {
-        throw std::runtime_error(
-            "Cannot register module with name '" + name +
-            "' as a module with that name already exists.");
-      }
-    }
-
-    // If the module we're registering contains this module then registering it
-    // would create a cycle. This would leak memory sense the Modules are stored
-    // using shared_ptr's and also cause issues for traversing the module
-    // structure to discover parameters.
-    if (module.get() == this) {
-      throw std::runtime_error("Cannot register a module with itself.");
-    }
-    if (module->modules().count(this)) {
-      throw std::runtime_error(
-          "Cannot register module as it contains the module it is being "
-          "registered with as a submodule.");
-    }
-
-    _modules[name] = module;
-  }
+                      const std::shared_ptr<Module>& module);
 
   virtual ~Module() = default;
 
  private:
-  std::unordered_set<Module*> modules() const {
-    std::unordered_set<Module*> modules;
-    for (const auto& [_, module] : _modules) {
-      modules.insert(module.get());
-
-      auto submodules = module->modules();
-      modules.insert(submodules.begin(), submodules.end());
-    }
-
-    return modules;
-  }
+  std::unordered_set<Module*> modules() const;
 
   std::unordered_map<std::string, VariablePtr> _parameters;
   std::unordered_map<std::string, std::shared_ptr<Module>> _modules;
