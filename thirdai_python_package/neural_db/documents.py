@@ -2106,7 +2106,7 @@ class SentenceLevelExtracted(Extracted):
                     "sentence": sentence,
                     "para_id": para_id,
                     "sentence_id": i + record["id_offsets"],
-                    "sentence_ids_in_para": get_ids(record),
+                    "sentence_ids_in_para": str(get_ids(record)),
                     **record,
                 }
                 for para_id, record in enumerate(df.to_dict(orient="records"))
@@ -2157,7 +2157,7 @@ class SentenceLevelExtracted(Extracted):
             text=self.table.field(element_id, "display"),
             source=str(self.path.absolute()),
             metadata={**self.table.row_as_dict(element_id), **self.doc_metadata},
-            upvote_ids=self.table.field(element_id, "sentence_ids_in_para"),
+            upvote_ids=eval(self.table.field(element_id, "sentence_ids_in_para")),
         )
 
     def context(self, element_id, radius) -> str:
@@ -2191,6 +2191,7 @@ class SentenceLevelExtracted(Extracted):
             self.doc_metadata = {}
 
         if hasattr(self, "df"):
+            self.df["sentence_ids_in_para"] = self.df["sentence_ids_in_para"].apply(str)
             self.table = DataFrameTable(self.df)
             self.para_table = DataFrameTable(pd.DataFrame({"para": self.para_df}))
             del self.df
