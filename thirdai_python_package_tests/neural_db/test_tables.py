@@ -1,15 +1,17 @@
 # Python
 import os
-import shutil
 import sys
+import time
 
 # Libraries
 import pytest
-from document_common_tests import assess_doc_methods_properties
+import pandas as pd
+from thirdai import neural_db as ndb
+from thirdai.neural_db.table import SQLiteTable
 
 # Local
 from ndb_utils import BASE_DIR, on_diskable_doc_getters
-from thirdai import neural_db as ndb
+from document_common_tests import assess_doc_methods_properties
 
 
 def get_size(obj, seen=None):
@@ -68,3 +70,32 @@ def test_tables_dataframe_table_backwards_compatibility(DocClass, save_dir):
     load_from = f"{BASE_DIR}/v0.7.26_doc_checkpoints/{save_dir}"
     doc = DocClass.load(load_from)
     assess_doc_methods_properties(doc)
+
+
+@pytest.mark.unit
+def test_row_id_is_primary_key():
+    df = pd.DataFrame(
+        {
+            "id": range(100000),
+            "other": range(100000),
+        }
+    )
+
+    df = df.set_index("id")
+    table = SQLiteTable(df)
+
+    s = time.time()
+    for i in range(1000):
+        table.select_with_constraint(column="id", value=i)
+    id_duration = time.time() - s
+
+    s = time.time()
+    for i in range(1000):
+        table.select_with_constraint(column="other", value=i)
+    other_duration = time.time() - s
+
+    # Querying by primary key is about 6.6X faster on mac.
+    # Use factor of 3 for testing so it's not flaky.
+    assert other_duration > (3 * id_duration)
+
+    os.remove(table.db_path)
