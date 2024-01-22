@@ -1,17 +1,13 @@
-# Python
 import os
 import sys
 import time
 
-# Libraries
-import pytest
 import pandas as pd
+import pytest
+from document_common_tests import assess_doc_methods_properties
+from ndb_utils import BASE_DIR, on_diskable_doc_getters
 from thirdai import neural_db as ndb
 from thirdai.neural_db.table import SQLiteTable
-
-# Local
-from ndb_utils import BASE_DIR, on_diskable_doc_getters
-from document_common_tests import assess_doc_methods_properties
 
 
 def get_size(obj, seen=None):

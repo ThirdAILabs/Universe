@@ -1,15 +1,16 @@
-from typing import List, Any
+from typing import Any, List
+
 import pandas as pd
 from pandas.api import types as pd_types
 from sqlalchemy import (
-    create_engine,
+    Column,
     Engine,
-    Integer,
     Float,
+    Integer,
+    MetaData,
     String,
     Table,
-    MetaData,
-    Column,
+    create_engine,
     select,
 )
 
