@@ -280,16 +280,42 @@ class MachMixture(Model):
             results.append(sample_results[:n_results])
         return results
 
-    @requires_condition(
-        check_func=lambda x: False,
-        method_name="score",
-        method_class="MachMixture",
-        condition_unmet_string="when multiple models are initialized",
-    )
+    def _shard_label_constraints(
+        self, entities: List[List[int]]
+    ) -> List[List[List[int]]]:
+        shards = [[[] for _ in range(len(entities))] for _ in range(self.number_models)]
+        for i in range(len(entities)):
+            for label in entities[i]:
+                model_ids = self.label_to_segment_map.get(label)
+                if model_ids is None:
+                    raise Exception(f"The Label {label} is not a part of Label Index")
+                for model_id in model_ids:
+                    shards[model_id][i].append(label)
+        return shards
+
     def score(
         self, samples: InferSamples, entities: List[List[int]], n_results: int = None
     ) -> Predictions:
-        pass
+        sharded_entities = self._shard_label_constraints(entities=entities)
+        model_scores = []
+
+        for model, shard_entity in zip(self.models, sharded_entities):
+            score = model.score(
+                samples=samples, entities=shard_entity, n_results=n_results
+            )
+            model_scores.append(score)
+
+        aggregated_scores = [{} for _ in range(len(samples))]
+
+        for i in range(len(samples)):
+            for score in model_scores:
+                for label, value in score[i]:
+                    if label in aggregated_scores[i]:
+                        aggregated_scores[i][label] += value
+                    else:
+                        aggregated_scores[i][label] = value
+
+        return [list(label_score.items()) for label_score in aggregated_scores]
 
     @requires_condition(
         check_func=lambda x: False,
