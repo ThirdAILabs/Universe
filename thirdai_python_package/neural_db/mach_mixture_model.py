@@ -96,23 +96,24 @@ class MachMixture(Model):
     def set_model(self, models):
         self.models = models
 
-    def save_meta(self, directory: Path):
+    def save_meta(self, directory: Path, make_checkpoint: bool = False):
         if self.models is not None:
             for model in self.models:
                 model.save_meta(directory)
+        if make_checkpoint:
+            pickle_to(
+                [self.label_to_segment_map, self.seed_for_sharding],
+                directory / "segment_map_and_seed.pkl",
+            )
 
-        pickle_to(
-            [self.label_to_segment_map, self.seed_for_sharding],
-            directory / "segment_map_and_seed.pkl",
-        )
-
-    def load_meta(self, directory: Path):
+    def load_meta(self, directory: Path, from_checkpoint: bool = False):
         if self.models is not None:
             for model in self.models:
                 model.load_meta(directory)
-        self.label_to_segment_map, self.seed_for_sharding = unpickle_from(
-            directory / "segment_map_and_seed.pkl"
-        )
+        if from_checkpoint:
+            self.label_to_segment_map, self.seed_for_sharding = unpickle_from(
+                directory / "segment_map_and_seed.pkl"
+            )
 
     def get_query_col(self) -> str:
         return self.query_col
@@ -148,7 +149,7 @@ class MachMixture(Model):
             config=checkpoint_config, number_models=self.number_models
         )
 
-        self.load_meta(checkpoint_config.checkpoint_dir)
+        self.load_meta(checkpoint_config.checkpoint_dir, from_checkpoint=True)
 
         # The training manager corresponding to a model loads all the needed to complete the training such as model, document sources, tracker, etc.
         training_managers = []
@@ -207,7 +208,7 @@ class MachMixture(Model):
 
         # Before we start training individual mach models, we need to save the label to segment map of the current mach mixture so that we can resume in case the training fails.
         if checkpoint_config:
-            self.save_meta(checkpoint_config.checkpoint_dir)
+            self.save_meta(checkpoint_config.checkpoint_dir, make_checkpoint=True)
 
         modelwise_checkpoint_configs = generate_modelwise_checkpoint_configs(
             config=checkpoint_config, number_models=self.number_models

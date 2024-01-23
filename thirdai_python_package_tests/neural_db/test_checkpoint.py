@@ -276,9 +276,9 @@ def test_meta_save_load_for_mach_mixture(setup_and_cleanup):
         seed_for_sharding=1,
     )
 
-    model2.save_meta(Path(CHECKPOINT_DIR))
+    model2.save_meta(Path(CHECKPOINT_DIR), make_checkpoint=True)
 
-    model1.load_meta(Path(CHECKPOINT_DIR))
+    model1.load_meta(Path(CHECKPOINT_DIR), from_checkpoint=True)
 
     assert_same_objects(model1, model2)
 
