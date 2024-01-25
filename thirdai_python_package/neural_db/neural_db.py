@@ -100,7 +100,7 @@ class NeuralDB:
         """
         checkpoint_path = Path(checkpoint_path)
         savable_state = State.load(checkpoint_path, on_progress)
-        if savable_state.model and savable_state.model.get_model():
+        if savable_state.model:
             savable_state.model.set_mach_sampling_threshold(0.01)
         if not isinstance(savable_state.logger, loggers.LoggerList):
             # TODO(Geordie / Yash): Add DBLogger to LoggerList once ready.

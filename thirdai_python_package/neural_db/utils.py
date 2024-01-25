@@ -90,6 +90,10 @@ def move_between_directories(src, dest):
         shutil.move(src_path, dst_path)
 
 
+def move_file(src, dest):
+    shutil.move(src, dest)
+
+
 def delete_folder(path: Path, ignore_errors: bool = True):
     shutil.rmtree(path, ignore_errors=ignore_errors)
 

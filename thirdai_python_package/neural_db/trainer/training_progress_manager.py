@@ -68,7 +68,7 @@ class TrainingProgressManager:
         # to be able to resume.
         if not self.makes_checkpoint:
             return
-        self.save_load_manager.save()
+        self.save_load_manager.save_sources_and_tracker()
 
     def training_complete(self):
         # Updates the tracker state by marking training as completed and saves the resources (tracker and model)
@@ -77,7 +77,7 @@ class TrainingProgressManager:
         if not self.makes_checkpoint:
             return
         self.checkpoint_without_sources()
-        self.backup_config.delete_checkpoint()
+        self.delete_backup()
 
     def insert_complete(self):
         # Updates the tracker state by marking insert as completed and saves the resources (tracker and model)
@@ -91,7 +91,7 @@ class TrainingProgressManager:
         # First save the model in the backup directory. Once the resources have been successfully saved,
         # we can move them to their intended checkpoint location. We only need to maintain backups of the
         # model and the tracker because other resources (intro and train source) are never modified.
-        self.backup_config.save_without_sources()
+        self.backup_config.save_model_and_tracker()
         TrainingDataManager.update_model_and_tracker_from_backup(
             backup_config=self.backup_config, target_config=self.save_load_manager
         )

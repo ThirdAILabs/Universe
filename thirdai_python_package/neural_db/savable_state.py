@@ -5,8 +5,13 @@ from typing import Callable, List
 
 from .documents import DocumentManager
 from .loggers import Logger
-from .models import Model
-from .trainer.checkpoint_config import CheckpointConfig
+from .mach_mixture_model import MachMixture
+from .models import Mach, Model
+from .trainer.checkpoint_config import (
+    CLASS_TYPE_LOCATION,
+    MODEL_SAVE_FOLDER,
+    CheckpointConfig,
+)
 from .utils import delete_folder, pickle_to, unpickle_from
 
 
@@ -33,12 +38,8 @@ class State:
         )
 
     @staticmethod
-    def model_pkl_path(directory: Path) -> Path:
-        return directory / "model.pkl"
-
-    @staticmethod
-    def model_meta_path(directory: Path) -> Path:
-        return directory / "model"
+    def model_save_path(directory: Path) -> Path:
+        return directory / MODEL_SAVE_FOLDER
 
     @staticmethod
     def logger_pkl_path(directory: Path) -> Path:
@@ -61,62 +62,68 @@ class State:
         location=default_checkpoint_name(),
         on_progress: Callable = lambda *args, **kwargs: None,
     ) -> str:
-        total_steps = 7
+        total_steps = 6
 
         # make directory
         directory = Path(location)
         os.makedirs(directory)
         on_progress(1 / total_steps)
 
-        # pickle model
-        pickle_to(self.model, State.model_pkl_path(directory))
+        # save model
+        os.mkdir(State.model_save_path(directory))
+        self.model.save(State.model_save_path(directory))
         on_progress(2 / total_steps)
-        # save model meta
-        os.mkdir(State.model_meta_path(directory))
-        self.model.save_meta(State.model_meta_path(directory))
-        on_progress(3 / total_steps)
 
         # pickle logger
         pickle_to(self.logger, State.logger_pkl_path(directory))
-        on_progress(4 / total_steps)
+        on_progress(3 / total_steps)
         # save logger meta
         os.mkdir(State.logger_meta_path(directory))
         self.logger.save_meta(State.logger_meta_path(directory))
-        on_progress(5 / total_steps)
+        on_progress(4 / total_steps)
 
         # pickle documents
         pickle_to(self.documents, State.documents_pkl_path(directory))
-        on_progress(6 / total_steps)
+        on_progress(5 / total_steps)
         # save documents meta
         os.mkdir(State.documents_meta_path(directory))
         self.documents.save_meta(State.documents_meta_path(directory))
-        on_progress(7 / total_steps)
+        on_progress(6 / total_steps)
 
         return str(directory)
 
     @staticmethod
     def load(location: Path, on_progress: Callable = lambda *args, **kwargs: None):
-        total_steps = 6
+        total_steps = 5
 
         # load model
-        model = unpickle_from(State.model_pkl_path(location))
+        class_type = unpickle_from(
+            State.model_save_path(location) / CLASS_TYPE_LOCATION
+        )
+        if class_type == MachMixture:
+            model = MachMixture.load(State.model_save_path(location))
+        elif class_type == Mach:
+            model = Mach.load(State.model_save_path(location))
+        else:
+            raise Exception(
+                "Invalid Class Type found at location:"
+                f" {State.model_save_path(location) / CLASS_TYPE_LOCATION}"
+            )
         on_progress(1 / total_steps)
-        model.load_meta(State.model_meta_path(location))
-        on_progress(2 / total_steps)
 
         # load logger
         logger = unpickle_from(State.logger_pkl_path(location))
-        on_progress(3 / total_steps)
+        on_progress(2 / total_steps)
         logger.load_meta(State.logger_meta_path(location))
-        on_progress(4 / total_steps)
+        on_progress(3 / total_steps)
 
         state = State(model=model, logger=logger)
 
         # load documents
         state.documents = unpickle_from(State.documents_pkl_path(location))
-        on_progress(5 / total_steps)
+        on_progress(4 / total_steps)
         state.documents.load_meta(State.documents_meta_path(location))
-        on_progress(6 / total_steps)
+        on_progress(5 / total_steps)
 
         return state
 

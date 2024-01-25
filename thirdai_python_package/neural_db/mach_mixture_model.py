@@ -1,3 +1,4 @@
+import os
 from collections import defaultdict
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence, Tuple
@@ -5,6 +6,7 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt, data
 
 from .documents import DocumentDataSource
+from .mach_defaults import CLASS_TYPE_LOCATION, STATE_LOCATION
 from .models import CancelState, Mach, Model
 from .sharded_documents import shard_data_source
 from .supervised_datasource import SupDataSource
@@ -36,35 +38,23 @@ class MachMixture(Model):
         label_to_segment_map: defaultdict = None,
         seed_for_sharding: int = 0,
     ):
-        self.id_col = id_col
-        self.id_delimiter = id_delimiter
-        self.query_col = query_col
-        self.fhr = fhr
-        self.embedding_dimension = embedding_dimension
-        self.extreme_output_dim = extreme_output_dim
-        self.extreme_num_hashes = extreme_num_hashes
-        self.model_config = model_config
-
-        # These parameters are specific to Mach Mixture
-        self.number_models = number_models
-
         if label_to_segment_map == None:
             self.label_to_segment_map = defaultdict(list)
         else:
             self.label_to_segment_map = label_to_segment_map
 
         self.seed_for_sharding = seed_for_sharding
-
+        self.number_models = number_models
         self.models: List[Mach] = [
             Mach(
-                id_col=self.id_col,
-                id_delimiter=self.id_delimiter,
-                query_col=self.query_col,
-                fhr=self.fhr,
-                embedding_dimension=self.embedding_dimension,
-                extreme_output_dim=self.extreme_output_dim,
-                extreme_num_hashes=self.extreme_num_hashes,
-                model_config=self.model_config,
+                id_col=id_col,
+                id_delimiter=id_delimiter,
+                query_col=query_col,
+                fhr=fhr,
+                embedding_dimension=embedding_dimension,
+                extreme_output_dim=extreme_output_dim,
+                extreme_num_hashes=extreme_num_hashes,
+                model_config=model_config,
             )
             for _ in range(self.number_models)
         ]
@@ -77,51 +67,63 @@ class MachMixture(Model):
             n_ids += model.n_ids
         return n_ids
 
-    def set_mach_sampling_threshold(self, threshold: float):
-        if self.models is None:
-            raise Exception(
-                "Cannot set Sampling Threshold for a model that has not been"
-                " initialized"
-            )
-
-        for model in self.models:
-            model.set_mach_sampling_threshold(threshold)
-
-    def get_model(self) -> List[bolt.UniversalDeepTransformer]:
-        for model in self.models:
-            if not model.get_model():
-                return None
-        return self.models
-
-    def set_model(self, models):
-        self.models = models
-
-    def save_meta(self, directory: Path):
-        if self.models is not None:
-            for model in self.models:
-                model.save_meta(directory)
-
-        pickle_to(
-            [self.label_to_segment_map, self.seed_for_sharding],
-            directory / "segment_map_and_seed.pkl",
-        )
-
-    def load_meta(self, directory: Path):
-        if self.models is not None:
-            for model in self.models:
-                model.load_meta(directory)
-        self.label_to_segment_map, self.seed_for_sharding = unpickle_from(
-            directory / "segment_map_and_seed.pkl"
-        )
-
     def get_query_col(self) -> str:
-        return self.query_col
+        return self.models[0].get_query_col()
 
     def get_id_col(self) -> str:
-        return self.id_col
+        return self.models[0].get_id_col()
 
     def get_id_delimiter(self) -> str:
-        return self.id_delimiter
+        return self.models[0].get_id_delimiter()
+
+    @property
+    def state_dict(self) -> dict:
+        return {
+            "label_to_segment_map": self.label_to_segment_map,
+            "seed_for_sharding": self.seed_for_sharding,
+            "number_models": self.number_models,
+        }
+
+    @state_dict.setter
+    def state_dict(self, new_state_dict) -> None:
+        self.label_to_segment_map = new_state_dict["label_to_segment_map"]
+        self.seed_for_sharding = new_state_dict["seed_for_sharding"]
+        self.number_models = new_state_dict["number_models"]
+
+    def set_mach_sampling_threshold(self, threshold: float):
+        for model in self.models:
+            if model.get_model():
+                model.set_mach_sampling_threshold(threshold)
+
+    def save(self, path: Path):
+        pickle_to(self.__class__, path / CLASS_TYPE_LOCATION)
+        self._save_model(path=path)
+        self._save_state_dict(path=path / STATE_LOCATION)
+
+    def _save_model(self, path):
+        for model_id, model in enumerate(self.models):
+            location = path / str(model_id)
+            os.makedirs(path / str(model_id), exist_ok=True)
+            model.save(path=location)
+
+    def _save_state_dict(self, path):
+        pickle_to(self.state_dict, path)
+
+    @staticmethod
+    def load(path: Path):
+        model = MachMixture(number_models=0)
+        model._load_state_dict(path / STATE_LOCATION)
+        model._load_model(path)
+        return model
+
+    def _load_model(self, path):
+        models = []
+        for model_id in range(self.number_models):
+            models.append(Mach.load(path=path / str(model_id)))
+        self.models = models
+
+    def _load_state_dict(self, path):
+        self.state_dict = unpickle_from(path)
 
     def index_documents_impl(
         self,
@@ -147,8 +149,6 @@ class MachMixture(Model):
         modelwise_checkpoint_configs = generate_modelwise_checkpoint_configs(
             config=checkpoint_config, number_models=self.number_models
         )
-
-        self.load_meta(checkpoint_config.checkpoint_dir)
 
         # The training manager corresponding to a model loads all the needed to complete the training such as model, document sources, tracker, etc.
         training_managers = []
@@ -207,7 +207,7 @@ class MachMixture(Model):
 
         # Before we start training individual mach models, we need to save the label to segment map of the current mach mixture so that we can resume in case the training fails.
         if checkpoint_config:
-            self.save_meta(checkpoint_config.checkpoint_dir)
+            self._save_state_dict(checkpoint_config.checkpoint_dir / STATE_LOCATION)
 
         modelwise_checkpoint_configs = generate_modelwise_checkpoint_configs(
             config=checkpoint_config, number_models=self.number_models
@@ -237,7 +237,7 @@ class MachMixture(Model):
             )
 
             training_managers.append(modelwise_training_manager)
-            # When we want to start from scratch, we will have to checkpoint the intro, train sources, the model, tracker,etc. so that the training can be resumed from the checkpoint.
+            # When we want to start from scratch, we will have to checkpoint the intro, train sources, and the tracker so that the training can be resumed from the checkpoint.
             modelwise_training_manager.make_preindexing_checkpoint()  # no-op when checkpoint_config is None.
 
         self.index_documents_impl(
@@ -268,7 +268,7 @@ class MachMixture(Model):
 
         per_model_results = bolt.UniversalDeepTransformer.parallel_inference(
             models=[model.model for model in self.models],
-            batch=[{self.query_col: clean_text(text)} for text in samples],
+            batch=[{self.get_query_col(): clean_text(text)} for text in samples],
         )
 
         results = []

@@ -7,14 +7,19 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt, data
 
 from .documents import DocumentDataSource
-from .mach_defaults import acc_to_stop, metric_to_track
+from .mach_defaults import (
+    CLASS_TYPE_LOCATION,
+    MODEL_SAVE_LOCATION,
+    acc_to_stop,
+    metric_to_track,
+)
 from .supervised_datasource import SupDataSource
 from .trainer.checkpoint_config import CheckpointConfig
 from .trainer.training_progress_manager import (
     TrainingProgressCallback,
     TrainingProgressManager,
 )
-from .utils import clean_text, pickle_to
+from .utils import clean_text, pickle_to, unpickle_from
 
 InferSamples = List
 Predictions = Sequence
@@ -351,12 +356,8 @@ class Mach(Model):
         self.model_config = model_config
 
     def set_mach_sampling_threshold(self, threshold: float):
-        if self.model is None:
-            raise Exception(
-                "Cannot set Sampling Threshold for a model that has not been"
-                " initialized"
-            )
-        self.model.set_mach_sampling_threshold(threshold)
+        if self.model is not None:
+            self.model.set_mach_sampling_threshold(threshold)
 
     def reset_model(self, new_model: Mach):
         self.id_col = new_model.id_col
@@ -374,19 +375,18 @@ class Mach(Model):
         self.model_config = new_model.model_config
 
     def save(self, path: Path):
-        pickle_to(self, filepath=path)
+        pickle_to(self.__class__, path / CLASS_TYPE_LOCATION)
+        pickle_to(self, filepath=path / MODEL_SAVE_LOCATION)
+
+    @staticmethod
+    def load(path: Path):
+        return unpickle_from(path / MODEL_SAVE_LOCATION)
 
     def get_model(self) -> bolt.UniversalDeepTransformer:
         return self.model
 
     def set_model(self, model):
         self.model = model
-
-    def save_meta(self, directory: Path):
-        pass
-
-    def load_meta(self, directory: Path):
-        pass
 
     def set_n_ids(self, n_ids: int):
         self.n_ids = n_ids

@@ -10,6 +10,7 @@ nltk.download("punkt")
 from ndb_utils import PDF_FILE, all_local_doc_getters, associate_works, upvote_works
 from thirdai import data
 from thirdai import neural_db as ndb
+from thirdai.neural_db.mach_defaults import STATE_LOCATION
 from thirdai.neural_db.mach_mixture_model import MachMixture
 from thirdai.neural_db.models import Mach
 from thirdai.neural_db.trainer.training_data_manager import TrainingDataManager
@@ -207,14 +208,14 @@ def test_neural_db_checkpoint_on_mach_mixture(setup_and_cleanup):
 
 
 @pytest.mark.release
-def test_interrupted_training_single_mach():
+def test_interrupted_training_single_mach(setup_and_cleanup):
     interrupted_training(number_models=1, interrupt_function=interrupt_immediately)
     interrupted_training(number_models=1, interrupt_function=interrupt_midway)
     interrupted_training(number_models=1, interrupt_function=interrupt_at_end)
 
 
 @pytest.mark.release
-def test_interrupted_training_mach_mixture():
+def test_interrupted_training_mach_mixture(setup_and_cleanup):
     interrupted_training(number_models=2, interrupt_function=interrupt_immediately)
     interrupted_training(number_models=2, interrupt_function=interrupt_midway)
     interrupted_training(number_models=2, interrupt_function=interrupt_at_end)
@@ -276,9 +277,9 @@ def test_meta_save_load_for_mach_mixture(setup_and_cleanup):
         seed_for_sharding=1,
     )
 
-    model2.save_meta(Path(CHECKPOINT_DIR))
+    model2._save_state_dict(Path(CHECKPOINT_DIR) / STATE_LOCATION)
 
-    model1.load_meta(Path(CHECKPOINT_DIR))
+    model1._load_state_dict(Path(CHECKPOINT_DIR) / STATE_LOCATION)
 
     assert_same_objects(model1, model2)
 
@@ -381,6 +382,7 @@ def test_training_progress_manager_with_resuming(setup_and_cleanup):
     )
 
     training_manager.make_preindexing_checkpoint()
+    training_manager.save_load_manager.save_model_and_tracker()
 
     resume_training_manager = TrainingProgressManager.from_checkpoint(
         original_mach_model=db._savable_state.model.models[0],

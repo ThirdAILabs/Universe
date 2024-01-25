@@ -5,7 +5,13 @@ from pathlib import Path
 from typing import Optional
 
 from ..documents import DocumentDataSource
-from ..utils import assert_file_exists, move_between_directories, unpickle_from
+from ..mach_defaults import MODEL_SAVE_LOCATION
+from ..utils import (
+    assert_file_exists,
+    move_between_directories,
+    move_file,
+    unpickle_from,
+)
 from .training_progress_tracker import NeuralDbProgressTracker
 
 
@@ -26,7 +32,7 @@ class TrainingDataManager:
         self.checkpoint_dir = checkpoint_dir
 
         if self.checkpoint_dir:
-            self.model_location = self.checkpoint_dir / "model.pkl"
+            self.model_folder = self.checkpoint_dir
             self.intro_source_folder = self.checkpoint_dir / "intro_source"
             self.train_source_folder = self.checkpoint_dir / "train_source"
             self.tracker_folder = self.checkpoint_dir / "tracker"
@@ -42,7 +48,7 @@ class TrainingDataManager:
 
     def save(self):
         if self.checkpoint_dir:
-            self.model.save(path=self.model_location)
+            self.model.save(path=self.model_folder)
             self.intro_source.save(path=self.intro_source_folder)
             self.train_source.save(path=self.train_source_folder)
             self.tracker.save(path=self.tracker_folder)
@@ -54,9 +60,22 @@ class TrainingDataManager:
                 " operation."
             )
 
-    def save_without_sources(self):
+    def save_sources_and_tracker(self):
         if self.checkpoint_dir:
-            self.model.save(path=self.model_location)
+            self.intro_source.save(path=self.intro_source_folder)
+            self.train_source.save(path=self.train_source_folder)
+            self.tracker.save(path=self.tracker_folder)
+        else:
+            raise Exception(
+                "Invalid method call: 'save_without_model' operation for"
+                " TrainingDataManager cannot be executed because 'checkpoint_dir' is"
+                " None. Please provide a valid directory path for 'checkpoint_dir' to"
+                " proceed with the save operation."
+            )
+
+    def save_model_and_tracker(self):
+        if self.checkpoint_dir:
+            self.model.save(path=self.model_folder)
             self.tracker.save(path=self.tracker_folder)
         else:
             raise Exception(
@@ -71,11 +90,10 @@ class TrainingDataManager:
         manager = TrainingDataManager(checkpoint_dir, None, None, None, None)
 
         try:
-            manager.model = unpickle_from(manager.model_location)
+            manager.model = unpickle_from(manager.model_folder / MODEL_SAVE_LOCATION)
         except:
             raise Exception(
-                "Could not find a valid Mach model at the path:"
-                f" {manager.model_location}"
+                f"Could not find a valid Mach model at the path: {manager.model_folder}"
             )
 
         manager.intro_source = DocumentDataSource.load(path=manager.intro_source_folder)
@@ -92,16 +110,17 @@ class TrainingDataManager:
         backup_config: TrainingDataManager,
         target_config: TrainingDataManager,
     ):
-        assert_file_exists(path=backup_config.model_location)
+        assert_file_exists(path=backup_config.model_folder)
         assert_file_exists(path=backup_config.tracker_folder)
 
-        shutil.move(
-            backup_config.model_location,
-            target_config.model_location,
+        move_file(
+            backup_config.model_folder / MODEL_SAVE_LOCATION,
+            target_config.model_folder / MODEL_SAVE_LOCATION,
         )
 
         move_between_directories(
-            backup_config.tracker_folder, target_config.tracker_folder
+            backup_config.tracker_folder,
+            target_config.tracker_folder,
         )
 
     def copy_with_new_dir(self, new_directory):

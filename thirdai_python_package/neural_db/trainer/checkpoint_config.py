@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+from ..mach_defaults import CLASS_TYPE_LOCATION, MODEL_SAVE_FOLDER
 from ..utils import convert_str_to_path
 
 
@@ -72,28 +73,36 @@ class CheckpointConfig:
         This function sets the attributes specific to neural db to None so that we do not make any bad accesses. Ideally, Model object should have no idea about neural db and hence, it should also not be able to access any attributes that disclose any information about neural db
         """
         config = CheckpointConfig(
-            checkpoint_dir=self.checkpoint_dir,
+            checkpoint_dir=self.ndb_checkpoint_path / MODEL_SAVE_FOLDER,
             resume_from_checkpoint=self.resume_from_checkpoint,
             checkpoint_interval=self.checkpoint_interval,
         )
-        config._ndb_checkpoint_path = None
-        config._ndb_trained_path = None
-        config._pickled_ids_resource_name_path = None
+        config.disable_non_mach_attributes()
         return config
+
+    def disable_non_mach_attributes(self):
+        self._ndb_checkpoint_path = None
+        self._ndb_trained_path = None
+        self._pickled_ids_resource_name_path = None
+        return self
 
 
 def generate_modelwise_checkpoint_configs(config: CheckpointConfig, number_models):
     """
     We maintain a checkpoint config for each Mach model in the Mixture while training. This is designed so that Mach models can maintain their training state independent of their Mixture which is necessary for distributed training.
     """
-    if config:
-        return [
-            CheckpointConfig(
-                config.checkpoint_dir / str(model_id),
-                config.resume_from_checkpoint,
-                config.checkpoint_interval,
-            ).get_mach_config()
-            for model_id in range(number_models)
-        ]
-    else:
+    if config is None:
         return [None] * number_models
+
+    modelwise_configs = [
+        CheckpointConfig(
+            config.checkpoint_dir / str(model_id),
+            config.resume_from_checkpoint,
+            config.checkpoint_interval,
+        )
+        for model_id in range(number_models)
+    ]
+    for modelwise_config in modelwise_configs:
+        modelwise_config.disable_non_mach_attributes()
+
+    return modelwise_configs
