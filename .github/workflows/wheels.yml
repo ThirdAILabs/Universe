@@ -45,6 +45,8 @@ jobs:
             runs-on: [self-hosted, macOS, ARM64]
             deployment_target: "11.0"
             # cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=ON -DOPENSSL_CROSS_COMPILE_MACOSX_ARM=OFF"
+    
+    runs-on: ${{ matrix.runs-on }}
 
     steps:
       - uses: actions/checkout@v2
