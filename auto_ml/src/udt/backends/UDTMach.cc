@@ -88,11 +88,13 @@ UDTMach::UDTMach(
       "extreme_num_hashes", "integer",
       autotuneMachNumHashes(n_target_classes, num_buckets));
 
+  uint32_t softmax = user_args.get<bool>("softmax", "bool", false);
+
   _classifier = utils::Classifier::make(
       utils::buildModel(
           /* input_dim= */ input_dim, /* output_dim= */ num_buckets,
           /* args= */ user_args, /* model_config= */ model_config,
-          /* use_sigmoid_bce = */ true, /* mach= */ true),
+          /* use_sigmoid_bce = */ !softmax, /* mach= */ true),
       user_args.get<bool>("freeze_hash_tables", "boolean",
                           defaults::FREEZE_HASH_TABLES));
 
@@ -113,9 +115,12 @@ UDTMach::UDTMach(
       input_data_types, temporal_tracking_relationships,
       tabular_options.lookahead);
 
+  data::ValueFillType value_fill =
+      softmax ? data::ValueFillType::SumToOne : data::ValueFillType::Ones;
+
   _featurizer = std::make_shared<MachFeaturizer>(
       input_data_types, temporal_relationships, target_name, mach_index,
-      tabular_options);
+      tabular_options, value_fill);
 
   _mach_sampling_threshold = user_args.get<float>(
       "mach_sampling_threshold", "float", defaults::MACH_SAMPLING_THRESHOLD);
