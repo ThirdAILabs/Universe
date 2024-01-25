@@ -26,10 +26,16 @@ jobs:
       matrix:
         # See https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs#expanding-or-adding-matrix-configurations
         # for the semantics of using the matrix and the includes.
-        # os: [ubuntu-latest-8-cores, windows-2022]
         include:
+          # - name: linux-x86
+          #   os: ubuntu-latest-8-cores
+          #   runs-on: ubuntu-latest-8-cores
+          # - name: windows
+          #   os: windows-2022
+          #   runs-on: windows-2022
           # - name: macos-x86_64
           #   os: macos-12
+          #   runs_on: macos-12
           #   archs: x86_64
           #   deployment_target: "10.15"
           #   cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=OFF"
@@ -39,9 +45,6 @@ jobs:
             runs-on: [self-hosted, macOS, ARM64]
             deployment_target: "11.0"
             # cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=ON -DOPENSSL_CROSS_COMPILE_MACOSX_ARM=OFF"
-
-    name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v2
