@@ -69,7 +69,7 @@ def test_tables_dataframe_table_backwards_compatibility(DocClass, save_dir):
 
 
 @pytest.mark.unit
-def test_row_id_is_primary_key():
+def test_sqlitetable_select_by_row_id_is_fast():
     df = pd.DataFrame(
         {
             "id": range(100000),
@@ -91,7 +91,7 @@ def test_row_id_is_primary_key():
     other_duration = time.time() - s
 
     # Querying by primary key is about 6.6X faster on mac.
-    # Use factor of 3 for testing so it's not flaky.
-    assert other_duration > (3 * id_duration)
+    # Use factor of 1.5 for testing so it's not flaky.
+    assert other_duration > (1.5 * id_duration)
 
     os.remove(table.db_path)

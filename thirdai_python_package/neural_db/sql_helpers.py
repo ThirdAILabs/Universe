@@ -66,7 +66,7 @@ def df_to_sql(db_path: str, df: pd.DataFrame, table_name: str):
         dtype=types,
         if_exists="append",
     )
-    return table
+    return table, index_name
 
 
 def select_as_df(db_path: str, table: Table, constraints: List[Any] = None):

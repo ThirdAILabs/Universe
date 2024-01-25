@@ -106,7 +106,9 @@ class SQLiteTable(Table):
 
         # We don't save the db connection and instead create a new connection
         # each time to simplify serialization.
-        self.sql_table = df_to_sql(self.db_path, df, SQLiteTable.TABLE_NAME)
+        self.sql_table, self.id_column = df_to_sql(
+            self.db_path, df, SQLiteTable.TABLE_NAME
+        )
 
     @property
     def columns(self) -> List[str]:
