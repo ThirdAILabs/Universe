@@ -1,4 +1,5 @@
 import os
+import random
 import sys
 import time
 
@@ -7,7 +8,7 @@ import pytest
 from document_common_tests import assess_doc_methods_properties
 from ndb_utils import BASE_DIR, on_diskable_doc_getters
 from thirdai import neural_db as ndb
-from thirdai.neural_db.table import SQLiteTable
+from thirdai.neural_db.table import DataFrameTable, SQLiteTable
 
 
 def get_size(obj, seen=None):
@@ -95,3 +96,34 @@ def test_sqlitetable_select_by_row_id_is_fast():
     assert other_duration > (1.5 * id_duration)
 
     os.remove(table.db_path)
+
+
+@pytest.mark.unit
+def test_table_methods_consistent_across_implementations():
+    df = pd.DataFrame(
+        {
+            "id": range(100),
+            "other": range(100),
+        }
+    )
+
+    df = df.set_index("id")
+
+    sqlite = SQLiteTable(df)
+    pandas = DataFrameTable(df)
+
+    assert all(sqlite.columns == pandas.columns)
+    assert sqlite.size == pandas.size
+    assert all(sqlite.ids == pandas.ids)
+
+    sqlite_iter = sqlite.iter_rows_as_dicts()
+    pandas_iter = sqlite.iter_rows_as_dicts()
+    for sqlite_row, pandas_row in zip(sqlite_iter, pandas_iter):
+        assert sqlite_row == pandas_row
+
+    for i in range(10, 20):
+        assert sqlite.field(i, "other") == pandas.field(i, "other")
+        assert sqlite.row_as_dict(i) == pandas.row_as_dict(i)
+        assert sqlite.range_rows_as_dicts(i, i + 10) == pandas.range_rows_as_dicts(
+            i, i + 10
+        )

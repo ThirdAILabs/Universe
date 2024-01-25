@@ -49,10 +49,10 @@ def create_table(engine: Engine, df: pd.DataFrame, name: str, types: dict):
 
 
 def df_to_sql(db_path: str, df: pd.DataFrame, table_name: str):
-    if not df.index.name:
+    index_name = df.index.name
+    if not index_name:
         index_name = "__id__"
         while index_name in df.columns:
-            print(index_name, df.columns)
             index_name += "_"
         df.index.name = index_name
 
