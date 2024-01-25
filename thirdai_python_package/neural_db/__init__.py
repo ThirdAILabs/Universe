@@ -1,4 +1,6 @@
 try:
+    import nltk
+
     from . import parsing_utils
     from .constraint_matcher import AnyOf, EqualTo, GreaterThan, InRange, LessThan
     from .documents import (
@@ -18,7 +20,7 @@ try:
     )
     from .model_bazaar import Bazaar, ModelBazaar
     from .neural_db import CancelState, CheckpointConfig, NeuralDB, Strength, Sup
-    import nltk
+
     nltk.download("punkt")
 except ImportError as error:
     raise ImportError(
