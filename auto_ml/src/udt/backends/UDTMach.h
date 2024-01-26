@@ -152,7 +152,8 @@ class UDTMach final : public UDTBackend {
   void associate(
       const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
-      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) final;
+      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+      bool force_non_empty) final;
 
   void upvote(const std::vector<std::pair<std::string, uint32_t>>& rlhf_samples,
               uint32_t n_upvote_samples, uint32_t n_balancing_samples,
@@ -211,7 +212,8 @@ class UDTMach final : public UDTBackend {
 
   std::vector<RlhfSample> getAssociateSamples(
       const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-      size_t n_buckets, size_t n_association_samples);
+      size_t n_buckets, size_t n_association_samples,
+      bool force_non_empty = true);
 
   void updateSamplingStrategy();
 

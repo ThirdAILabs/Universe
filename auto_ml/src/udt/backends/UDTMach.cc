@@ -834,7 +834,8 @@ void UDTMach::enableRlhf(uint32_t num_balancing_docs,
 void UDTMach::associate(
     const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
     uint32_t n_buckets, uint32_t n_association_samples,
-    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
+    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+    bool force_non_empty) {
   auto teaching_samples =
       getAssociateSamples(rlhf_samples, n_buckets, n_association_samples);
 
@@ -888,15 +889,16 @@ void UDTMach::teach(const std::vector<RlhfSample>& rlhf_samples,
 
 std::vector<RlhfSample> UDTMach::getAssociateSamples(
     const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-    size_t n_buckets, size_t n_association_samples) {
+    size_t n_buckets, size_t n_association_samples, bool force_non_empty) {
   std::string text_column = _featurizer->textDatasetConfig().textColumn();
   MapInputBatch batch;
   for (const auto& [_, target] : rlhf_samples) {
     batch.push_back({{text_column, target}});
   }
 
-  auto all_predicted_hashes = predictHashesImpl(
-      batch, /* sparse_inference = */ false, /* force_non_empty = */ true);
+  auto all_predicted_hashes =
+      predictHashesImpl(batch, /* sparse_inference = */ false,
+                        /* force_non_empty = */ force_non_empty);
 
   std::mt19937 rng(global_random::nextSeed());
 

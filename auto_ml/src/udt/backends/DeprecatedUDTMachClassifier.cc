@@ -985,9 +985,12 @@ void UDTMachClassifier::associate(
     const std::vector<std::pair<std::string, std::string>>&
         source_target_samples,
     uint32_t n_buckets, uint32_t n_association_samples,
-    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
-  auto teaching_samples = getAssociateSamples(convertSamples(
-      textColumnForDocumentIntroduction(), source_target_samples));
+    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+    bool force_non_empty) {
+  auto teaching_samples =
+      getAssociateSamples(convertSamples(textColumnForDocumentIntroduction(),
+                                         source_target_samples),
+                          force_non_empty);
 
   teach(teaching_samples, n_buckets, n_association_samples, n_balancing_samples,
         learning_rate, epochs);
@@ -1070,14 +1073,16 @@ void UDTMachClassifier::teach(
 
 std::vector<std::pair<MapInput, std::vector<uint32_t>>>
 UDTMachClassifier::getAssociateSamples(
-    const std::vector<std::pair<MapInput, MapInput>>& source_target_samples) {
+    const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+    bool force_non_empty) {
   MapInputBatch batch;
   for (const auto& [_, target] : source_target_samples) {
     batch.emplace_back(target);
   }
 
-  auto all_predicted_hashes = predictHashesImpl(
-      batch, /* sparse_inference = */ false, /* force_non_empty = */ true);
+  auto all_predicted_hashes =
+      predictHashesImpl(batch, /* sparse_inference = */ false,
+                        /* force_non_empty = */ force_non_empty);
 
   std::vector<std::pair<MapInput, std::vector<uint32_t>>> associate_samples;
   associate_samples.reserve(source_target_samples.size());
