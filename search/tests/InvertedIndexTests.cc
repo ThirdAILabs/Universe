@@ -160,7 +160,7 @@ TEST(InvertedIndexTests, SyntheticDataset) {
   InvertedIndex index;
   index.index(docs);
 
-  auto results = index.query(queries, /*k=*/5);
+  auto results = index.queryBatch(queries, /*k=*/5);
 
   for (size_t i = 0; i < queries.size(); i++) {
     // i-th query goes to i-th doc.
@@ -178,7 +178,7 @@ TEST(InvertedIndexTests, SyntheticDataset) {
         {docs.begin() + i * chunksize, docs.begin() + (i + 1) * chunksize});
   }
 
-  auto incremental_results = incremental_index.query(queries, /*k=*/5);
+  auto incremental_results = incremental_index.queryBatch(queries, /*k=*/5);
 
   ASSERT_EQ(results, incremental_results);
 }

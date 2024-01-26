@@ -51,7 +51,7 @@ void InvertedIndex::computeIdfs() {
   // TODO(Nicholas): Logic to prune elements with low idf.
 }
 
-std::vector<std::vector<DocScore>> InvertedIndex::query(
+std::vector<std::vector<DocScore>> InvertedIndex::queryBatch(
     const std::vector<Tokens>& queries, uint32_t k) const {
   std::vector<std::vector<DocScore>> scores(queries.size());
 

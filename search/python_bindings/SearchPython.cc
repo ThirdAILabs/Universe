@@ -1,6 +1,8 @@
 #include "BeamSearch.h"
 #include "DocSearchPython.h"
+#include <pybind11/detail/common.h>
 #include <pybind11/stl.h>
+#include <search/src/InvertedIndex.h>
 
 namespace thirdai::search::python {
 
@@ -68,6 +70,15 @@ void createSearchSubmodule(py::module_& module) {
   search_submodule.def("beam_search", &beamSearchBatch,
                        py::arg("probabilities"), py::arg("transition_matrix"),
                        py::arg("beam_size"));
+
+  py::class_<InvertedIndex, std::shared_ptr<InvertedIndex>>(search_submodule,
+                                                            "InvertedIndex")
+      .def(py::init<float, float>(), py::arg("k") = InvertedIndex::DEFAULT_K,
+           py::arg("b") = InvertedIndex::DEFAULT_B)
+      .def("index", &InvertedIndex::index, py::arg("documents"))
+      .def("query", &InvertedIndex::queryBatch, py::arg("queries"),
+           py::arg("k"))
+      .def("query", &InvertedIndex::query, py::arg("query"), py::arg("k"));
 }
 
 }  // namespace thirdai::search::python
