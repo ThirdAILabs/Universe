@@ -836,8 +836,8 @@ void UDTMach::associate(
     uint32_t n_buckets, uint32_t n_association_samples,
     uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
     bool force_non_empty) {
-  auto teaching_samples =
-      getAssociateSamples(rlhf_samples, n_buckets, n_association_samples);
+  auto teaching_samples = getAssociateSamples(
+      rlhf_samples, n_buckets, n_association_samples, force_non_empty);
 
   teach(teaching_samples, rlhf_samples.size() * n_balancing_samples,
         learning_rate, epochs);
