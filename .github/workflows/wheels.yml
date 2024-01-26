@@ -14,10 +14,9 @@ concurrency:
 # for more details.
 on: 
   push: 
-    branches: [main, self-hosted-osx-arm]
+    branches: [main]
     tags: [ 'v*.*.*' ]
   workflow_dispatch:  
-
 
 jobs:
   build_wheels:
@@ -27,20 +26,18 @@ jobs:
         # See https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs#expanding-or-adding-matrix-configurations
         # for the semantics of using the matrix and the includes.
         include:
-          # - name: linux-x86
-          #   runs-on: ubuntu-latest-8-cores
-          # - name: windows
-          #   runs-on: windows-2022
-          # - name: macos-x86_64
-          #   runs_on: macos-12
-          #   archs: x86_64
-          #   deployment_target: "10.15"
-          #   cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=OFF"
+          - name: linux-x86
+            runs-on: ubuntu-latest-8-cores
+          - name: windows
+            runs-on: windows-2022
+          - name: macos-x86_64
+            runs_on: macos-12
+            archs: x86_64
+            deployment_target: "10.15"
           - name: macos-arm64
             archs: arm64
             runs-on: [self-hosted, macOS, ARM64]
             deployment_target: "11.0"
-            cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=OFF"
     
     runs-on: ${{ matrix.runs-on }}
 
@@ -89,7 +86,6 @@ jobs:
               KMP_DUPLICATE_LIB_OK=TRUE
               THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
           CIBW_ENVIRONMENT_MACOS:
-            # CMAKE_ARGS='${{ matrix.cmake_additional_args }}'
             MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
             OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
             OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
