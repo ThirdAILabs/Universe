@@ -35,19 +35,15 @@ def get_size(obj, seen=None):
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize(
-    "on_disk_doc, in_memory_doc_1, in_memory_doc_2",
-    zip(
-        [get_doc() for get_doc in on_diskable_doc_getters(on_disk=True)],
-        [get_doc() for get_doc in on_diskable_doc_getters(on_disk=False)],
-        [get_doc() for get_doc in on_diskable_doc_getters(on_disk=False)],
-    ),
-)
-def test_tables_on_disk_table_uses_less_memory(
-    on_disk_doc, in_memory_doc_1, in_memory_doc_2
-):
-    assert get_size(in_memory_doc_1) == get_size(in_memory_doc_2)
-    assert get_size(on_disk_doc) < get_size(in_memory_doc_1)
+def test_tables_on_disk_table_uses_less_memory():
+    df = pd.DataFrame(
+        {
+            "id": range(100000),
+            "text": [f"this is the {i}-th line" for i in range(100000)],
+        }
+    )
+    df = df.set_index("id")
+    assert get_size(SQLiteTable(df)) < get_size(DataFrameTable(df))
 
 
 @pytest.mark.unit
