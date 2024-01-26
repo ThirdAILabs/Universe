@@ -15,7 +15,7 @@ def test_inverted_index(download_scifact_dataset):
 
     docs = [(row["DOC_ID"], row["TEXT"]) for _, row in doc_df.iterrows()]
 
-    index = search.InvertedIndex()
+    index = search.InvertedIndex(max_doc_frac_w_token=0.3)
 
     index.index(docs)
 
@@ -31,4 +31,5 @@ def test_inverted_index(download_scifact_dataset):
             correct += 1
 
     acc = correct / len(query_df)
+    print("accuracy=", acc)
     assert acc >= 0.4

@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <exception>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -37,18 +38,28 @@ void InvertedIndex::index(
   _avg_doc_length = static_cast<float>(_sum_doc_lens) / _doc_lengths.size();
 }
 
+constexpr float idf(size_t n_docs, size_t docs_w_token) {
+  float num = n_docs - docs_w_token + 0.5;
+  float denom = docs_w_token + 0.5;
+  return std::log(num / denom);
+}
+
 void InvertedIndex::computeIdfs() {
+  size_t n_docs = _doc_lengths.size();
+
+  size_t max_docs_with_token = n_docs * _max_doc_frac_w_token;
+  float idf_cuttoff = idf(n_docs, max_docs_with_token);
+
   _token_to_idf.clear();
   for (const auto& [token, docs] : _token_to_docs) {
     size_t docs_w_token = docs.size();
-
-    float num = _doc_lengths.size() - docs_w_token + 0.5;
-    float denom = docs_w_token + 0.5;
-
-    _token_to_idf[token] = std::log(num / denom);
+    float idf_score = idf(n_docs, docs_w_token);
+    if (idf_score >= idf_cuttoff) {
+      _token_to_idf[token] = idf_score;
+    } else {
+      std::cerr << "Ignoring token: '" << token << "'" << std::endl;
+    }
   }
-
-  // TODO(Nicholas): Logic to prune elements with low idf.
 }
 
 std::vector<std::vector<DocScore>> InvertedIndex::queryBatch(
