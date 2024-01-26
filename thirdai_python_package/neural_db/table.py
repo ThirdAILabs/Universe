@@ -14,6 +14,16 @@ from .constraint_matcher import TableFilter
 from .sql_helpers import df_to_sql, select_as_df
 
 
+def df_with_index_name(df):
+    index_name = df.index.name
+    if not index_name:
+        index_name = "__id__"
+        while index_name in df.columns:
+            index_name += "_"
+        df.index.name = index_name
+    return df
+
+
 class Table(ABC):
     @property
     @abstractmethod
@@ -63,7 +73,7 @@ class DataFrameTable(Table):
         In other words, the ID column of a data frame must be set as its index
         before being passed into this constructor.
         """
-        self.df = df
+        self.df = df_with_index_name(df)
 
     @property
     def columns(self) -> List[str]:
@@ -78,17 +88,25 @@ class DataFrameTable(Table):
         return self.df.index.to_list()
 
     def field(self, row_id: int, column: str):
+        if column == self.df.index.name:
+            return row_id
         return self.df[column].loc[row_id]
 
     def row_as_dict(self, row_id: int) -> dict:
-        return self.df.loc[row_id].to_dict()
+        row = self.df.loc[row_id].to_dict()
+        row[self.df.index.name] = row_id
+        return row
 
     def range_rows_as_dicts(self, from_row_id: int, to_row_id: int) -> List[dict]:
-        return self.df.loc[from_row_id:to_row_id].to_dict(orient="records")
+        return (
+            self.df.loc[from_row_id:to_row_id].reset_index().to_dict(orient="records")
+        )
 
     def iter_rows_as_dicts(self) -> Generator[Tuple[int, dict], None, None]:
         for row_id, row in self.df.iterrows():
-            yield (row_id, row.to_dict())
+            row_dict = row.to_dict()
+            row_dict[self.df.index.name] = row_id
+            yield (row_id, row_dict)
 
     def apply_filter(self, table_filter: TableFilter):
         return table_filter.filter_df_ids(self.df)
@@ -106,9 +124,9 @@ class SQLiteTable(Table):
 
         # We don't save the db connection and instead create a new connection
         # each time to simplify serialization.
-        self.sql_table, self.id_column = df_to_sql(
-            self.db_path, df, SQLiteTable.TABLE_NAME
-        )
+        df = df_with_index_name(df)
+        self.id_column = df.index.name
+        self.sql_table = df_to_sql(self.db_path, df, SQLiteTable.TABLE_NAME)
 
     @property
     def columns(self) -> List[str]:

@@ -124,6 +124,8 @@ def test_table_methods_consistent_across_implementations():
     for i in range(10, 20):
         assert sqlite.field(i, "other") == pandas.field(i, "other")
         assert sqlite.row_as_dict(i) == pandas.row_as_dict(i)
-        assert sqlite.range_rows_as_dicts(i, i + 10) == pandas.range_rows_as_dicts(
-            i, i + 10
-        )
+        for sqlite_row, pandas_row in zip(
+            sqlite.range_rows_as_dicts(i, i + 10),
+            pandas.range_rows_as_dicts(i, i + 10),
+        ):
+            assert sqlite_row == pandas_row

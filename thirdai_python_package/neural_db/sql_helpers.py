@@ -49,13 +49,6 @@ def create_table(engine: Engine, df: pd.DataFrame, name: str, types: dict):
 
 
 def df_to_sql(db_path: str, df: pd.DataFrame, table_name: str):
-    index_name = df.index.name
-    if not index_name:
-        index_name = "__id__"
-        while index_name in df.columns:
-            index_name += "_"
-        df.index.name = index_name
-
     engine = get_engine(db_path)
     types = infer_types(df)
     table = create_table(engine, df, table_name, types)
@@ -66,7 +59,7 @@ def df_to_sql(db_path: str, df: pd.DataFrame, table_name: str):
         dtype=types,
         if_exists="append",
     )
-    return table, index_name
+    return table
 
 
 def select_as_df(db_path: str, table: Table, constraints: List[Any] = None):
