@@ -1,8 +1,7 @@
-from thirdai import search
-
-from download_dataset_fixtures import download_scifact_dataset
 import pandas as pd
+from download_dataset_fixtures import download_scifact_dataset
 from nltk.tokenize import word_tokenize
+from thirdai import search
 
 
 def test_inverted_index(download_scifact_dataset):
