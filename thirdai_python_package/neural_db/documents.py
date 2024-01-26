@@ -2164,7 +2164,7 @@ class SentenceLevelExtracted(Extracted):
         if not 0 <= element_id or not element_id < self.size:
             raise ("Element id not in document.")
 
-        # Cast to int because the actual return type is numpy.int64, which 
+        # Cast to int because the actual return type is numpy.int64, which
         # causes problems in the self.para_table.range_rows_as_dicts line.
         para_id = int(self.table.field(element_id, "para_id"))
 
