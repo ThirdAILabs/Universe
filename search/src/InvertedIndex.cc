@@ -39,25 +39,23 @@ void InvertedIndex::index(
 }
 
 constexpr float idf(size_t n_docs, size_t docs_w_token) {
-  float num = n_docs - docs_w_token + 0.5;
-  float denom = docs_w_token + 0.5;
+  const float num = n_docs - docs_w_token + 0.5;
+  const float denom = docs_w_token + 0.5;
   return std::log(num / denom);
 }
 
 void InvertedIndex::computeIdfs() {
-  size_t n_docs = _doc_lengths.size();
+  const size_t n_docs = _doc_lengths.size();
 
-  size_t max_docs_with_token = n_docs * _max_doc_frac_w_token;
-  float idf_cuttoff = idf(n_docs, max_docs_with_token);
+  const size_t max_docs_with_token = n_docs * _max_doc_frac_w_token;
+  const float idf_cuttoff = idf(n_docs, max_docs_with_token);
 
   _token_to_idf.clear();
   for (const auto& [token, docs] : _token_to_docs) {
-    size_t docs_w_token = docs.size();
-    float idf_score = idf(n_docs, docs_w_token);
+    const size_t docs_w_token = docs.size();
+    const float idf_score = idf(n_docs, docs_w_token);
     if (idf_score >= idf_cuttoff) {
       _token_to_idf[token] = idf_score;
-    } else {
-      std::cerr << "Ignoring token: '" << token << "'" << std::endl;
     }
   }
 }
@@ -89,10 +87,10 @@ std::vector<DocScore> InvertedIndex::query(const Tokens& query,
     if (!_token_to_idf.count(token)) {
       continue;
     }
-    float token_idf = _token_to_idf.at(token);
+    const float token_idf = _token_to_idf.at(token);
 
     for (const auto& [doc_id, token_freq] : _token_to_docs.at(token)) {
-      uint64_t doc_len = _doc_lengths.at(doc_id);
+      const uint64_t doc_len = _doc_lengths.at(doc_id);
 
       // Note: This bm25 could be precomputed for each (token, doc) pair.
       // However it would mean that all scores would need to be recomputed when
@@ -105,7 +103,7 @@ std::vector<DocScore> InvertedIndex::query(const Tokens& query,
 
   std::vector<std::pair<DocId, float>> top_scores(scores.begin(), scores.end());
 
-  CompareScores cmp;
+  const CompareScores cmp;
   std::sort(top_scores.begin(), top_scores.end(), cmp);
   if (top_scores.size() > k) {
     top_scores.resize(k);

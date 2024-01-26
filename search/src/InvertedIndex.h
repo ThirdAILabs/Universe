@@ -34,8 +34,8 @@ class InvertedIndex {
   void computeIdfs();
 
   inline float bm25(float idf, uint32_t freq, uint64_t doc_len) const {
-    float num = freq * (_k + 1);
-    float denom = freq + _k * (1 - _b + _b * doc_len / _avg_doc_length);
+    const float num = freq * (_k + 1);
+    const float denom = freq + _k * (1 - _b + _b * doc_len / _avg_doc_length);
     return idf * num / denom;
   }
 

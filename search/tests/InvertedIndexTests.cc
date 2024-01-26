@@ -17,7 +17,7 @@ void checkQuery(const InvertedIndex& index, const Tokens& query,
 }
 
 TEST(InvertedIndexTests, BasicRetrieval) {
-  InvertedIndex index;
+  InvertedIndex index(1.0);
 
   index.index({
       {1, {"a", "b", "c", "d", "e", "g"}},
@@ -46,7 +46,7 @@ TEST(InvertedIndexTests, BasicRetrieval) {
 }
 
 TEST(InvertedIndexTests, LessFrequentTokensScoreHigher) {
-  InvertedIndex index;
+  InvertedIndex index(1.0);
 
   index.index({
       {1, {"a", "b", "c", "d"}},  // 2 query tokens
@@ -67,7 +67,7 @@ TEST(InvertedIndexTests, LessFrequentTokensScoreHigher) {
 }
 
 TEST(InvertedIndexTests, RepeatedTokensInDocs) {
-  InvertedIndex index;
+  InvertedIndex index(1.0);
 
   index.index({
       {1, {"c", "a", "z", "a"}},
@@ -88,7 +88,7 @@ TEST(InvertedIndexTests, RepeatedTokensInDocs) {
 }
 
 TEST(InvertedIndexTests, RepeatedTokensInQuery) {
-  InvertedIndex index;
+  InvertedIndex index(1.0);
 
   index.index({
       {1, {"y", "r", "q", "z"}},
@@ -105,7 +105,7 @@ TEST(InvertedIndexTests, RepeatedTokensInQuery) {
 }
 
 TEST(InvertedIndexTests, ShorterDocsScoreHigherWithSameTokens) {
-  InvertedIndex index;
+  InvertedIndex index(1.0);
 
   index.index({
       {1, {"x", "w", "z", "k"}},
