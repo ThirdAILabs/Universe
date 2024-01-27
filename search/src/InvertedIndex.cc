@@ -47,6 +47,11 @@ constexpr float idf(size_t n_docs, size_t docs_w_token) {
 void InvertedIndex::computeIdfs() {
   const size_t n_docs = _doc_lengths.size();
 
+  // We can calculate the idf of a hypothetical token that occured in the
+  // specified fraction of the documents. We know that any idf less than this
+  // corresponds to a token that occurs in more than that fraction of docs. An
+  // alternative idea would be to throw away the x% most common tokens (lowest
+  // idf).
   const size_t max_docs_with_token = n_docs * _max_doc_frac_w_token;
   const float idf_cuttoff = idf(n_docs, max_docs_with_token);
 
