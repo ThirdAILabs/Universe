@@ -427,6 +427,14 @@ def create_table(df, on_disk):
     return Table(df)
 
 
+def metadata_with_source(metadata, source: str):
+    if "source" in metadata:
+        raise ValueError(
+            "Document metadata cannot contain the key 'source'. 'source' is a reserved key."
+        )
+    return {**metadata, "source": source}
+
+
 class CSV(Document):
     """
     A document containing the rows of a csv file.
@@ -467,7 +475,7 @@ class CSV(Document):
         weak_columns: Optional[List[str]] = None,
         reference_columns: Optional[List[str]] = None,
         save_extra_info=True,
-        metadata={},
+        metadata=None,
         has_offset=False,
         on_disk=False,
     ) -> None:
@@ -526,7 +534,7 @@ class CSV(Document):
             col for col in reference_columns if col != self.id_column
         ]
         self._save_extra_info = save_extra_info
-        self.doc_metadata = metadata
+        self.doc_metadata = metadata_with_source(metadata or {}, Path(path).name)
         self.doc_metadata_keys = set(self.doc_metadata.keys())
         # Add column names to hash metadata so that CSVs with different
         # hyperparameters are treated as different documents. Otherwise, this
@@ -708,7 +716,7 @@ class Extracted(Document):
         self,
         path: str,
         save_extra_info=True,
-        metadata={},
+        metadata=None,
         strong_column=None,
         on_disk=False,
     ):
@@ -719,7 +727,7 @@ class Extracted(Document):
         self._save_extra_info = save_extra_info
 
         self.path = Path(path)
-        self.doc_metadata = metadata
+        self.doc_metadata = metadata_with_source(metadata or {}, Path(path).name)
         self.strong_column = strong_column
         if self.strong_column and self.strong_column not in self.table.columns:
             raise RuntimeError(
@@ -906,7 +914,7 @@ class PDF(Extracted):
         emphasize_first_words=0,
         ignore_header_footer=True,
         ignore_nonstandard_orientation=True,
-        metadata={},
+        metadata=None,
         on_disk=False,
     ):
         self.version = version
@@ -932,7 +940,7 @@ class PDF(Extracted):
         super().__init__(
             path=path,
             metadata={
-                **metadata,
+                **(metadata or {}),
                 "__version__": "v2",
                 "__chunk_size__": chunk_size,
                 "__stride__": stride,
@@ -965,7 +973,7 @@ class PDF(Extracted):
 
 
 class DOCX(Extracted):
-    def __init__(self, path: str, metadata={}, on_disk=False):
+    def __init__(self, path: str, metadata=None, on_disk=False):
         super().__init__(path=path, metadata=metadata, on_disk=on_disk)
 
     def process_data(
@@ -980,7 +988,7 @@ class Unstructured(Extracted):
         self,
         path: Union[str, Path],
         save_extra_info: bool = True,
-        metadata={},
+        metadata=None,
         on_disk=False,
     ):
         super().__init__(
@@ -1047,7 +1055,7 @@ class URL(Document):
         url_response: Response = None,
         save_extra_info: bool = True,
         title_is_strong: bool = False,
-        metadata={},
+        metadata=None,
         on_disk=False,
     ):
         self.url = url
@@ -1056,7 +1064,7 @@ class URL(Document):
         self.hash_val = hash_string(url + str(metadata))
         self._save_extra_info = save_extra_info
         self._strong_column = "title" if title_is_strong else "text"
-        self.doc_metadata = metadata
+        self.doc_metadata = metadata_with_source(metadata or {}, url)
 
     def process_data(self, url, url_response=None) -> pd.DataFrame:
         # Extract elements from each file
@@ -2053,7 +2061,7 @@ class SentenceLevelExtracted(Extracted):
     """
 
     def __init__(
-        self, path: str, save_extra_info: bool = True, metadata={}, on_disk=False
+        self, path: str, save_extra_info: bool = True, metadata=None, on_disk=False
     ):
         self.path = Path(path)
         self.hash_val = hash_file(
@@ -2064,7 +2072,7 @@ class SentenceLevelExtracted(Extracted):
         para_df = pd.DataFrame({"para": df["para"].unique()})
         self.para_table = create_table(para_df, on_disk)
         self._save_extra_info = save_extra_info
-        self.doc_metadata = metadata
+        self.doc_metadata = metadata_with_source(metadata or {}, Path(path).name)
 
     def not_just_punctuation(sentence: str):
         for character in sentence:
@@ -2213,7 +2221,7 @@ class SentenceLevelPDF(SentenceLevelExtracted):
             constrains to restrict results based on the metadata.
     """
 
-    def __init__(self, path: str, metadata={}, on_disk=False):
+    def __init__(self, path: str, metadata=None, on_disk=False):
         super().__init__(path=path, metadata=metadata, on_disk=on_disk)
 
     def process_data(
@@ -2238,7 +2246,7 @@ class SentenceLevelDOCX(SentenceLevelExtracted):
             constrains to restrict results based on the metadata.
     """
 
-    def __init__(self, path: str, metadata={}, on_disk=False):
+    def __init__(self, path: str, metadata=None, on_disk=False):
         super().__init__(path=path, metadata=metadata, on_disk=on_disk)
 
     def process_data(
