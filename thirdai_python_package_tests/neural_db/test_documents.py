@@ -7,16 +7,14 @@ from pathlib import Path
 import pandas as pd
 import pytest
 from ndb_utils import (
-    create_simple_dataset,
     CSV_FILE,
-    URL_LINK,
-    PDF_FILE,
     DOCX_FILE,
-    PPTX_FILE,
-    TXT_FILE,
     EML_FILE,
     PDF_FILE,
-    DOCX_FILE,
+    PPTX_FILE,
+    TXT_FILE,
+    URL_LINK,
+    create_simple_dataset,
     docs_with_meta,
 )
 from thirdai import bolt, demos, neural_db
