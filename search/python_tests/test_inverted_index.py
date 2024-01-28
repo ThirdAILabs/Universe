@@ -1,9 +1,11 @@
 import pandas as pd
+import pytest
 from download_dataset_fixtures import download_scifact_dataset
 from nltk.tokenize import word_tokenize
 from thirdai import search
 
 
+@pytest.mark.unit
 def test_inverted_index(download_scifact_dataset):
     doc_file, _, query_file, _ = download_scifact_dataset
 
