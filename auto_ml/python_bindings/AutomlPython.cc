@@ -2,7 +2,6 @@
 #include "AutomlDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
 #include <auto_ml/src/Aliases.h>
-#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDT.h>
@@ -95,6 +94,12 @@ void defineAutomlInModule(py::module_& module) {
       .def_readwrite("logging_interval", &udt::TrainOptions::logging_interval)
       .def_readwrite("shuffle_config", &udt::TrainOptions::shuffle_config);
 
+  py::class_<TextDatasetConfig>(module, "TextDatasetConfig")
+      .def_property_readonly("text_column", &TextDatasetConfig::textColumn)
+      .def_property_readonly("label_column", &TextDatasetConfig::labelColumn)
+      .def_property_readonly("label_delimiter",
+                             &TextDatasetConfig::labelDelimiter);
+
   py::class_<udt::UDT, std::shared_ptr<udt::UDT>>(module,
                                                   "UniversalDeepTransformer")
       .def(py::init(&makeUDT), py::arg("data_types"),
@@ -176,15 +181,18 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("weak_column_names"),
            py::arg("num_buckets_to_sample") = std::nullopt,
            py::arg("num_random_hashes") = 0,
-           py::arg("fast_approximation") = false, py::arg("verbose") = true)
+           py::arg("fast_approximation") = false, py::arg("verbose") = true,
+           py::arg("sort_random_hashes") = false)
       .def("introduce_document", &udt::UDT::introduceDocument,
            py::arg("document"), py::arg("strong_column_names"),
            py::arg("weak_column_names"), py::arg("label"),
            py::arg("num_buckets_to_sample") = std::nullopt,
-           py::arg("num_random_hashes") = 0)
+           py::arg("num_random_hashes") = 0,
+           py::arg("sort_random_hashes") = false)
       .def("introduce_label", &udt::UDT::introduceLabel, py::arg("input_batch"),
            py::arg("label"), py::arg("num_buckets_to_sample") = std::nullopt,
-           py::arg("num_random_hashes") = 0)
+           py::arg("num_random_hashes") = 0,
+           py::arg("sort_random_hashes") = false)
       .def("forget", &udt::UDT::forget, py::arg("label"))
       .def("clear_index", &udt::UDT::clearIndex)
       .def("train_with_hashes", &udt::UDT::trainWithHashes, py::arg("batch"),
@@ -225,20 +233,14 @@ void defineAutomlInModule(py::module_& module) {
       .def("set_index", &udt::UDT::setIndex, py::arg("index"))
       .def("set_mach_sampling_threshold", &udt::UDT::setMachSamplingThreshold)
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
-      .def("index_metadata", &udt::UDT::updateMetadata, py::arg("column_name"),
-           py::arg("update"))
-      .def("index_metadata_batch", &udt::UDT::updateMetadataBatch,
-           py::arg("column_name"), py::arg("updates"))
       .def("explain", &udt::UDT::explain, py::arg("input_sample"),
            py::arg("target_class") = std::nullopt)
       .def("class_name", &udt::UDT::className)
-      .def("get_data_processor", &udt::UDT::tabularDatasetFactory)
       .def("_get_model", &udt::UDT::model)
       .def("_set_model", &udt::UDT::setModel, py::arg("trained_model"))
       .def("model_dims", &udt::UDT::modelDims)
-      .def("data_types", &udt::UDT::dataTypes)
+      .def("text_dataset_config", &udt::UDT::textDatasetConfig)
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
-      .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
       .def("save", &udt::UDT::save, py::arg("filename"))
       .def("checkpoint", &udt::UDT::checkpoint, py::arg("filename"))
       .def_static("load", &udt::UDT::load, py::arg("filename"))
@@ -250,23 +252,14 @@ void defineAutomlInModule(py::module_& module) {
            [](udt::UDT& udt, NumpyArray<float>& new_parameters) {
              thirdai::bolt::python::setParameters(udt.model(), new_parameters);
            })
+      .def("is_v1", &udt::UDT::isV1)
       .def(bolt::python::getPickleFunction<udt::UDT>())
+      .def("save_cpp_classifier", &udt::UDT::saveCppClassifier,
+           py::arg("save_path"))
       .def_static("parallel_inference", &udt::UDT::parallelInference,
                   py::arg("models"), py::arg("batch"),
                   py::arg("sparse_inference") = false,
                   py::arg("top_k") = std::nullopt);
-}
-
-void createModelsSubmodule(py::module_& module) {
-  auto models_submodule = module.def_submodule("models");
-
-  py::class_<TabularDatasetFactory, TabularDatasetFactoryPtr>(
-      models_submodule, "TabularDatasetFactory")
-      .def("get_dataset_loader",
-           &TabularDatasetFactory::getLabeledDatasetLoader,
-           py::arg("data_source"), py::arg("training"),
-           py::arg("shuffle_config") = std::nullopt)
-      .def(bolt::python::getPickleFunction<TabularDatasetFactory>());
 }
 
 void createUDTTypesSubmodule(py::module_& module) {

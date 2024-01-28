@@ -46,7 +46,9 @@ class AnyOf(Filter[ItemT]):
 
     def sql_condition(self, column_name: str):
         formatted_values = [format_value_for_sql(val) for val in self.values]
-        return " or ".join(f"{column_name}=={val}" for val in formatted_values)
+        return (
+            "(" + " or ".join(f"{column_name}=={val}" for val in formatted_values) + ")"
+        )
 
 
 class EqualTo(AnyOf[ItemT]):
@@ -87,7 +89,10 @@ class InRange(Filter[ItemT]):
         left_inclusive, right_inclusive = self.inclusive
         left_comp = ">=" if left_inclusive else ">"
         right_comp = "<=" if right_inclusive else "<"
-        return f"{column_name}{left_comp}{self.min} and {column_name}{right_comp}{self.max}"
+        return (
+            f"{column_name}{left_comp}{format_value_for_sql(self.min)} and "
+            f"{column_name}{right_comp}{format_value_for_sql(self.max)}"
+        )
 
 
 class GreaterThan(InRange[ItemT]):
@@ -104,14 +109,9 @@ class GreaterThan(InRange[ItemT]):
             return df[df[column_name].ge(self.minimum)]
         return df[df[column_name].gt(self.minimum)]
 
-    def filter_sql_column(
-        self, con: sqlite3.Connection, table_name: str, column_name: str
-    ):
+    def sql_condition(self, column_name: str):
         comp = ">=" if self.include_equal else ">"
-        return pd.read_sql(
-            f"select * from {table_name} where {column_name}{comp}{self.minimum}",
-            con,
-        )
+        return f"{column_name}{comp}{format_value_for_sql(self.minimum)}"
 
 
 class LessThan(InRange[ItemT]):
@@ -128,14 +128,9 @@ class LessThan(InRange[ItemT]):
             return df[df[column_name].le(self.maximum)]
         return df[df[column_name].lt(self.maximum)]
 
-    def filter_sql_column(
-        self, con: sqlite3.Connection, table_name: str, column_name: str
-    ):
+    def sql_condition(self, column_name: str):
         comp = "<=" if self.include_equal else "<"
-        return pd.read_sql(
-            f"select * from {table_name} where {column_name}{comp}{self.maximum}",
-            con,
-        )
+        return f"{column_name}{comp}{format_value_for_sql(self.maximum)}"
 
 
 class TableFilter:

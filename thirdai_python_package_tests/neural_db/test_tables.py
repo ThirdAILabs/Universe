@@ -1,15 +1,14 @@
-# Python
 import os
-import shutil
+import random
 import sys
+import time
 
-# Libraries
+import pandas as pd
 import pytest
 from document_common_tests import assess_doc_methods_properties
-
-# Local
 from ndb_utils import BASE_DIR, on_diskable_doc_getters
 from thirdai import neural_db as ndb
+from thirdai.neural_db.table import DataFrameTable, SQLiteTable
 
 
 def get_size(obj, seen=None):
@@ -36,19 +35,15 @@ def get_size(obj, seen=None):
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize(
-    "on_disk_doc, in_memory_doc_1, in_memory_doc_2",
-    zip(
-        [get_doc() for get_doc in on_diskable_doc_getters(on_disk=True)],
-        [get_doc() for get_doc in on_diskable_doc_getters(on_disk=False)],
-        [get_doc() for get_doc in on_diskable_doc_getters(on_disk=False)],
-    ),
-)
-def test_tables_on_disk_table_uses_less_memory(
-    on_disk_doc, in_memory_doc_1, in_memory_doc_2
-):
-    assert get_size(in_memory_doc_1) == get_size(in_memory_doc_2)
-    assert get_size(on_disk_doc) < get_size(in_memory_doc_1)
+def test_tables_on_disk_table_uses_less_memory():
+    df = pd.DataFrame(
+        {
+            "id": range(100000),
+            "text": [f"this is the {i}-th line" for i in range(100000)],
+        }
+    )
+    df = df.set_index("id")
+    assert get_size(SQLiteTable(df)) < get_size(DataFrameTable(df))
 
 
 @pytest.mark.unit
@@ -66,9 +61,67 @@ def test_tables_on_disk_table_uses_less_memory(
 )
 def test_tables_dataframe_table_backwards_compatibility(DocClass, save_dir):
     load_from = f"{BASE_DIR}/v0.7.26_doc_checkpoints/{save_dir}"
-    try:
-        doc = DocClass.load(load_from)
-        assess_doc_methods_properties(doc)
-    finally:
-        if os.path.exists(load_from):
-            shutil.rmtree(load_from)
+    doc = DocClass.load(load_from)
+    assess_doc_methods_properties(doc)
+
+
+@pytest.mark.unit
+def test_sqlitetable_select_by_row_id_is_fast():
+    df = pd.DataFrame(
+        {
+            "id": range(100000),
+            "other": range(100000),
+        }
+    )
+
+    df = df.set_index("id")
+    table = SQLiteTable(df)
+
+    s = time.time()
+    for i in range(1000):
+        table.select_with_constraint(column="id", value=i)
+    id_duration = time.time() - s
+
+    s = time.time()
+    for i in range(1000):
+        table.select_with_constraint(column="other", value=i)
+    other_duration = time.time() - s
+
+    # Querying by primary key is about 6.6X faster on mac.
+    # Use factor of 1.5 for testing so it's not flaky.
+    assert other_duration > (1.5 * id_duration)
+
+    os.remove(table.db_path)
+
+
+@pytest.mark.unit
+def test_table_methods_consistent_across_implementations():
+    df = pd.DataFrame(
+        {
+            "id": range(100),
+            "other": range(100),
+        }
+    )
+
+    df = df.set_index("id")
+
+    sqlite = SQLiteTable(df)
+    pandas = DataFrameTable(df)
+
+    assert all(sqlite.columns == pandas.columns)
+    assert sqlite.size == pandas.size
+    assert all(sqlite.ids == pandas.ids)
+
+    sqlite_iter = sqlite.iter_rows_as_dicts()
+    pandas_iter = sqlite.iter_rows_as_dicts()
+    for sqlite_row, pandas_row in zip(sqlite_iter, pandas_iter):
+        assert sqlite_row == pandas_row
+
+    for i in range(10, 20):
+        assert sqlite.field(i, "other") == pandas.field(i, "other")
+        assert sqlite.row_as_dict(i) == pandas.row_as_dict(i)
+        for sqlite_row, pandas_row in zip(
+            sqlite.range_rows_as_dicts(i, i + 10),
+            pandas.range_rows_as_dicts(i, i + 10),
+        ):
+            assert sqlite_row == pandas_row

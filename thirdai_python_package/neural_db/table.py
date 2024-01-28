@@ -11,6 +11,17 @@ import pandas as pd
 
 # Local
 from .constraint_matcher import TableFilter
+from .sql_helpers import df_to_sql, select_as_df
+
+
+def df_with_index_name(df):
+    index_name = df.index.name
+    if not index_name:
+        index_name = "__id__"
+        while index_name in df.columns:
+            index_name += "_"
+        df.index.name = index_name
+    return df
 
 
 class Table(ABC):
@@ -58,7 +69,11 @@ class Table(ABC):
 
 class DataFrameTable(Table):
     def __init__(self, df: pd.DataFrame):
-        self.df = df
+        """The index of the dataframe is assumed to be the ID column.
+        In other words, the ID column of a data frame must be set as its index
+        before being passed into this constructor.
+        """
+        self.df = df_with_index_name(df)
 
     @property
     def columns(self) -> List[str]:
@@ -74,69 +89,45 @@ class DataFrameTable(Table):
         return self.df.index.to_list()
 
     def field(self, row_id: int, column: str):
+        if column == self.df.index.name:
+            return row_id
         return self.df[column].loc[row_id]
 
     def row_as_dict(self, row_id: int) -> dict:
-        return self.df.loc[row_id].to_dict()
+        row = self.df.loc[row_id].to_dict()
+        row[self.df.index.name] = row_id
+        return row
 
     def range_rows_as_dicts(self, from_row_id: int, to_row_id: int) -> List[dict]:
-        return self.df.loc[from_row_id:to_row_id].to_dict(orient="records")
+        return (
+            self.df.loc[from_row_id:to_row_id].reset_index().to_dict(orient="records")
+        )
 
     def iter_rows_as_dicts(self) -> Generator[Tuple[int, dict], None, None]:
         for row_id, row in self.df.iterrows():
-            yield (row_id, row.to_dict())
+            row_dict = row.to_dict()
+            row_dict[self.df.index.name] = row_id
+            yield (row_id, row_dict)
 
     def apply_filter(self, table_filter: TableFilter):
-        table_filter.filter_df_ids(self.df)
+        return table_filter.filter_df_ids(self.df)
 
 
 class SQLiteTable(Table):
     EVAL_PREFIX = "__eval__"
-
-    @staticmethod
-    def _to_primitive(val):
-        if isinstance(val, str) or isinstance(val, int) or isinstance(val, float):
-            return val
-        return f"{SQLiteTable.EVAL_PREFIX}{str(val)}"
-
-    @staticmethod
-    def _to_primitive_df(df):
-        for col in df.columns:
-            df[col] = df[col].apply(SQLiteTable._to_primitive)
-        return df
-
-    @staticmethod
-    def _from_primitive(val):
-        if isinstance(val, str) and val.startswith(SQLiteTable.EVAL_PREFIX):
-            return eval(val[len(SQLiteTable.EVAL_PREFIX) :])
-        return val
-
-    @staticmethod
-    def _from_primitive_df(df):
-        for col in df.columns:
-            df[col] = df[col].apply(SQLiteTable._from_primitive)
-        return df
+    TABLE_NAME = "sqlitetable"
 
     def __init__(self, df: pd.DataFrame):
         # TODO: Reset index first?
         self.db_path = f"{uuid.uuid4()}.db"
         self.db_columns = df.columns
         self.db_size = len(df)
-        if df.index.name:
-            self.id_column = df.index.name
-            df = df.reset_index()
-        else:
-            self.id_column = "__id__"
-            while self.id_column in df.columns:
-                self.id_column += "_"
-            df[self.id_column] = range(len(df))
-
-        df = SQLiteTable._to_primitive_df(df)
 
         # We don't save the db connection and instead create a new connection
         # each time to simplify serialization.
-        con = sqlite3.connect(self.db_path)
-        df.to_sql(name="sqlitetable", con=con)
+        df = df_with_index_name(df)
+        self.id_column = df.index.name
+        self.sql_table = df_to_sql(self.db_path, df, SQLiteTable.TABLE_NAME)
 
     @property
     def columns(self) -> List[str]:
@@ -149,36 +140,42 @@ class SQLiteTable(Table):
 
     @property
     def ids(self) -> List[int]:
-        con = sqlite3.connect(self.db_path)
-        return pd.read_sql(f"select {self.id_column} from sqlitetable", con)[
-            self.id_column
-        ].apply(SQLiteTable._from_primitive)
+        return select_as_df(
+            db_path=self.db_path,
+            table=self.sql_table.c[self.id_column],
+        )[self.id_column]
 
     def field(self, row_id: int, column: str):
-        print(self.db_path)
-        con = sqlite3.connect(self.db_path)
-        return SQLiteTable._from_primitive(
-            pd.read_sql(
-                f"select {column} from sqlitetable where {self.id_column}=={row_id}",
-                con,
-            )[column][0]
-        )
+        return select_as_df(
+            db_path=self.db_path,
+            table=self.sql_table.c[column],
+            constraints=[self.sql_table.c[self.id_column] == row_id],
+        )[column][0]
 
     def row_as_dict(self, row_id: int) -> dict:
-        con = sqlite3.connect(self.db_path)
-        return SQLiteTable._from_primitive_df(
-            pd.read_sql(
-                f"select * from sqlitetable where {self.id_column}=={row_id}", con
-            )
+        return select_as_df(
+            db_path=self.db_path,
+            table=self.sql_table,
+            constraints=[self.sql_table.c[self.id_column] == row_id],
         ).to_dict("records")[0]
 
     def range_rows_as_dicts(self, from_row_id: int, to_row_id: int) -> List[dict]:
-        con = sqlite3.connect(self.db_path)
-        return SQLiteTable._from_primitive_df(
-            pd.read_sql(
-                f"select * from sqlitetable where {self.id_column}>={from_row_id} and {self.id_column}<{to_row_id}",
-                con,
-            )
+        return select_as_df(
+            db_path=self.db_path,
+            table=self.sql_table,
+            constraints=[
+                self.sql_table.c[self.id_column] >= from_row_id,
+                self.sql_table.c[self.id_column] < to_row_id,
+            ],
+        ).to_dict("records")
+
+    def select_with_constraint(self, column, value) -> List[dict]:
+        return select_as_df(
+            db_path=self.db_path,
+            table=self.sql_table,
+            constraints=[
+                self.sql_table.c[column] == value,
+            ],
         ).to_dict("records")
 
     def iter_rows_as_dicts(self) -> Generator[Tuple[int, dict], None, None]:
@@ -197,4 +194,6 @@ class SQLiteTable(Table):
         self.db_path = str(directory / Path(self.db_path).name)
 
     def apply_filter(self, table_filter: TableFilter):
-        return table_filter.filter_sql_ids(sqlite3.connect(self.db_path), "sqlitetable")
+        return table_filter.filter_sql_ids(
+            sqlite3.connect(self.db_path), SQLiteTable.TABLE_NAME
+        )

@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 import pickle
 import shutil
@@ -245,6 +246,48 @@ class DocumentDataSource(PyDataSource):
     def resource_name(self) -> str:
         return "Documents:\n" + "\n".join([doc.name for doc, _ in self.documents])
 
+    def save(self, path: Path, save_interval=100_000):
+        """
+        DocumentDataSource is agnostic to the documents that are a part of it as the line_iterator is agnostic to the kind of document and returns data in a specific format. Hence, to serialize DocumentDataSource, we do not need to serialize the documents but rather, dump the lines yielded by the line iterator into a CSV. This makes the saving and loading logic simpler.
+        """
+        path.mkdir(exist_ok=True, parents=True)
+        number_lines_in_buffer = 0
+        with open(path / "source.csv", "w") as f:
+            for line in self._get_line_iterator():
+                f.write(line + "\n")
+                number_lines_in_buffer += 1
+            if number_lines_in_buffer > save_interval:
+                f.flush()
+                number_lines_in_buffer = 0
+
+        with open(path / "arguments.json", "w") as f:
+            json.dump(
+                {
+                    "id_column": self.id_column,
+                    "strong_column": self.strong_column,
+                    "weak_column": self.weak_column,
+                },
+                f,
+                indent=4,
+            )
+        self.restart()
+
+    @staticmethod
+    def load(path: Path):
+        with open(path / "arguments.json", "r") as f:
+            args = json.load(f)
+
+        csv_document = CSV(
+            path=path / "source.csv",
+            id_column=args["id_column"],
+            strong_columns=[args["strong_column"]],
+            weak_columns=[args["weak_column"]],
+            has_offset=True,
+        )
+        data_source = DocumentDataSource(**args)
+        data_source.add(csv_document, start_id=0)
+        return data_source
+
 
 class IntroAndTrainDocuments:
     def __init__(self, intro: DocumentDataSource, train: DocumentDataSource) -> None:
@@ -379,6 +422,11 @@ def safe_has_offset(this):
     return False
 
 
+def create_table(df, on_disk):
+    Table = SQLiteTable if on_disk else DataFrameTable
+    return Table(df)
+
+
 class CSV(Document):
     """
     A document containing the rows of a csv file.
@@ -469,8 +517,7 @@ class CSV(Document):
 
         df = df.set_index(self.id_column)
 
-        Table = SQLiteTable if on_disk else DataFrameTable
-        self.table = Table(df)
+        self.table = create_table(df, on_disk)
 
         self.path = Path(path)
         self.strong_columns = strong_columns
@@ -617,6 +664,7 @@ class CSV(Document):
         # Let's copy the original CSV file to the provided directory
         if self.save_extra_info:
             shutil.copy(self.path, directory)
+        self.table.save_meta(directory)
 
     @requires_condition(
         check_func=lambda self: not safe_has_offset(self),
@@ -650,6 +698,8 @@ class CSV(Document):
                 self.df = self.df.set_index(self.id_column)
             self.table = DataFrameTable(self.df)
             del self.df
+        else:
+            self.table.load_meta(directory)
 
 
 # Base class for PDF, DOCX and Unstructured classes because they share the same logic.
@@ -664,8 +714,7 @@ class Extracted(Document):
     ):
         path = str(path)
         df = self.process_data(path)
-        Table = SQLiteTable if on_disk else DataFrameTable
-        self.table = Table(df)
+        self.table = create_table(df, on_disk)
         self.hash_val = hash_file(path, metadata="extracted-" + str(metadata))
         self._save_extra_info = save_extra_info
 
@@ -1003,8 +1052,7 @@ class URL(Document):
     ):
         self.url = url
         df = self.process_data(url, url_response)
-        Table = SQLiteTable if on_disk else DataFrameTable
-        self.table = Table(df)
+        self.table = create_table(df, on_disk)
         self.hash_val = hash_string(url + str(metadata))
         self._save_extra_info = save_extra_info
         self._strong_column = "title" if title_is_strong else "text"
@@ -1824,7 +1872,10 @@ class SalesForce(DocumentConnector):
 
         try:
             result = self._connector.execute(
-                query=f"SELECT {','.join(self.reference_columns)} FROM {self.object_name} WHERE {self.id_col} = '{element_id}'"
+                query=(
+                    f"SELECT {','.join(self.reference_columns)} FROM"
+                    f" {self.object_name} WHERE {self.id_col} = '{element_id}'"
+                )
             )["records"][0]
             del result["attributes"]
             text = "\n\n".join(
@@ -1832,7 +1883,10 @@ class SalesForce(DocumentConnector):
             )
 
         except Exception as e:
-            text = f"Unable to connect to the object instance, Referenced row with {self.id_col}: {element_id} "
+            text = (
+                "Unable to connect to the object instance, Referenced row with"
+                f" {self.id_col}: {element_id} "
+            )
 
         return Reference(
             document=self,
@@ -1889,14 +1943,20 @@ class SalesForce(DocumentConnector):
 
         expected_min_row_id = 0
         min_id = self._connector.execute(
-            query=f"SELECT {self.id_col} FROM {self.object_name} WHERE {self.id_col} = '{expected_min_row_id}'"
+            query=(
+                f"SELECT {self.id_col} FROM {self.object_name} WHERE {self.id_col} ="
+                f" '{expected_min_row_id}'"
+            )
         )
 
         # This one is not required probably because user can't put the auto-number field mannually.
         # User just can provide the start of the auto-number so if the min_id is 0, then max_id should be size - 1
         expected_max_row_id = self.size - 1
         max_id = self._connector.execute(
-            query=f"SELECT {self.id_col} FROM {self.object_name} WHERE {self.id_col} = '{expected_max_row_id}'"
+            query=(
+                f"SELECT {self.id_col} FROM {self.object_name} WHERE {self.id_col} ="
+                f" '{expected_max_row_id}'"
+            )
         )
 
         if not (min_id["totalSize"] == 1 and max_id["totalSize"] == 1):
@@ -1916,7 +1976,10 @@ class SalesForce(DocumentConnector):
         fields_set = set([field["name"] for field in all_fields])
 
         # Checking for strong, weak and reference columns (if provided) to be present in column list of the table
-        column_name_error = "Remember if it is a custom column, salesforce requires it to be appended with __c."
+        column_name_error = (
+            "Remember if it is a custom column, salesforce requires it to be appended"
+            " with __c."
+        )
         if (self.strong_columns is not None) and (
             not set(self.strong_columns).issubset(fields_set)
         ):
@@ -1947,7 +2010,8 @@ class SalesForce(DocumentConnector):
                 and field["type"] not in supported_text_types
             ):
                 raise AttributeError(
-                    f"Strong column '{field['name']}' needs to be type from {supported_text_types}"
+                    f"Strong column '{field['name']}' needs to be type from"
+                    f" {supported_text_types}"
                 )
             if (
                 self.weak_columns is not None
@@ -1955,7 +2019,8 @@ class SalesForce(DocumentConnector):
                 and field["type"] not in supported_text_types
             ):
                 raise AttributeError(
-                    f"Weak column '{field['name']}' needs to be type {supported_text_types}"
+                    f"Weak column '{field['name']}' needs to be type"
+                    f" {supported_text_types}"
                 )
 
     def default_fields(
@@ -1994,11 +2059,10 @@ class SentenceLevelExtracted(Extracted):
         self.hash_val = hash_file(
             path, metadata="sentence-level-extracted-" + str(metadata)
         )
-        Table = SQLiteTable if on_disk else DataFrameTable
         df = self.parse_sentences(self.process_data(path))
-        self.table = Table(df)
+        self.table = create_table(df, on_disk)
         para_df = pd.DataFrame({"para": df["para"].unique()})
-        self.para_table = Table(para_df)
+        self.para_table = create_table(para_df, on_disk)
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata
 
@@ -2037,7 +2101,7 @@ class SentenceLevelExtracted(Extracted):
                     "sentence": sentence,
                     "para_id": para_id,
                     "sentence_id": i + record["id_offsets"],
-                    "sentence_ids_in_para": get_ids(record),
+                    "sentence_ids_in_para": str(get_ids(record)),
                     **record,
                 }
                 for para_id, record in enumerate(df.to_dict(orient="records"))
@@ -2088,14 +2152,16 @@ class SentenceLevelExtracted(Extracted):
             text=self.table.field(element_id, "display"),
             source=str(self.path.absolute()),
             metadata={**self.table.row_as_dict(element_id), **self.doc_metadata},
-            upvote_ids=self.table.field(element_id, "sentence_ids_in_para"),
+            upvote_ids=eval(self.table.field(element_id, "sentence_ids_in_para")),
         )
 
     def context(self, element_id, radius) -> str:
         if not 0 <= element_id or not element_id < self.size:
             raise ("Element id not in document.")
 
-        para_id = self.table.field(element_id, "para_id")
+        # Cast to int because the actual return type is numpy.int64, which
+        # causes problems in the self.para_table.range_rows_as_dicts line.
+        para_id = int(self.table.field(element_id, "para_id"))
 
         rows = self.para_table.range_rows_as_dicts(
             from_row_id=max(0, para_id - radius),
@@ -2122,6 +2188,7 @@ class SentenceLevelExtracted(Extracted):
             self.doc_metadata = {}
 
         if hasattr(self, "df"):
+            self.df["sentence_ids_in_para"] = self.df["sentence_ids_in_para"].apply(str)
             self.table = DataFrameTable(self.df)
             self.para_table = DataFrameTable(pd.DataFrame({"para": self.para_df}))
             del self.df
@@ -2209,8 +2276,7 @@ class InMemoryText(Document):
             metadata_df = pd.DataFrame.from_records(metadatas)
             df = pd.concat([df, metadata_df], axis=1)
             self.metadata_columns = metadata_df.columns
-        Table = SQLiteTable if on_disk else DataFrameTable
-        self.table = Table(df)
+        self.table = create_table(df, on_disk)
         self.hash_val = hash_string(str(texts) + str(metadatas))
         self.global_metadata = global_metadata or {}
 
