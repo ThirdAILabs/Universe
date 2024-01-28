@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <cmath>
 #include <exception>
-#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -78,7 +77,7 @@ std::vector<std::vector<DocScore>> InvertedIndex::queryBatch(
   return scores;
 }
 
-struct CompareScores {
+struct HighestScore {
   bool operator()(const DocScore& a, const DocScore& b) const {
     return a.second > b.second;
   }
@@ -86,7 +85,7 @@ struct CompareScores {
 
 std::vector<DocScore> InvertedIndex::query(const Tokens& query,
                                            uint32_t k) const {
-  std::unordered_map<DocId, float> scores;
+  std::unordered_map<DocId, float> doc_scores;
 
   for (const Token& token : query) {
     if (!_token_to_idf.count(token)) {
@@ -102,17 +101,37 @@ std::vector<DocScore> InvertedIndex::query(const Tokens& query,
       // more docs are added since the idf and avg_doc_len will change. So if we
       // do not need to support small incremental additions then it might make
       // sense to precompute these values.
-      scores[doc_id] += bm25(token_idf, token_freq, doc_len);
+      doc_scores[doc_id] += bm25(token_idf, token_freq, doc_len);
     }
   }
 
-  std::vector<std::pair<DocId, float>> top_scores(scores.begin(), scores.end());
+  // std::vector<DocScore> top_scores(doc_scores.begin(), doc_scores.end());
 
-  const CompareScores cmp;
-  std::sort(top_scores.begin(), top_scores.end(), cmp);
-  if (top_scores.size() > k) {
-    top_scores.resize(k);
+  // std::sort(top_scores.begin(), top_scores.end(),
+  //           [](const auto& a, const auto& b) { return a.second > b.second;
+  //           });
+
+  // if (top_scores.size() > k) {
+  //   top_scores.resize(k);
+  // }
+
+  std::vector<DocScore> top_scores;
+  top_scores.reserve(k + 1);
+  const HighestScore cmp;
+
+  for (const auto& [doc, score] : doc_scores) {
+    if (top_scores.size() < k || top_scores.front().second < score) {
+      top_scores.emplace_back(doc, score);
+      std::push_heap(top_scores.begin(), top_scores.end(), cmp);
+    }
+
+    if (top_scores.size() > k) {
+      std::pop_heap(top_scores.begin(), top_scores.end(), cmp);
+      top_scores.pop_back();
+    }
   }
+
+  std::sort_heap(top_scores.begin(), top_scores.end(), cmp);
 
   return top_scores;
 }
