@@ -28,6 +28,29 @@ class TrainingProgressManager:
     This is designed the way it is to make sure that that we have identical function calls irrespective of whether we're resuming from a checkpoint/using checkpointing/doing no checkpointing. By making our training progress manager the source of truth for all training related variables/objects, we effectively offload the task of maintaining training state and checkpointing to the manager. And the manager internally decides when it should save what objects.
 
     Another reason to explain this unified design is that if we have seperate calls for indexing with/out checkpoint, we have to be sure that making changes in one does not break the other.
+
+    Directory Structure
+
+    checkpoint_dir
+    └──model
+
+    └──tracker
+        └──tracker.json
+        └──vlc.config
+
+    └──intro_source
+        └──arguments.json
+        └──source.csv
+
+    └──train_source
+        └──arugments.json
+        └──source.csv
+
+    └──backup
+        └──model
+        └──tracker
+
+    While training, the model and training state is saved in backup and then moved to checkpoint_dir.
     """
 
     def __init__(

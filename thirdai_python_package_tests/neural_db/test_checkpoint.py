@@ -247,24 +247,13 @@ def test_reset_mach_model():
 
 @pytest.mark.release
 def test_meta_save_load_for_mach_mixture(setup_and_cleanup):
-    # This test asserts that the label to segment map is saved and loaded correctly.
-
-    model1 = MachMixture(
-        number_models=3,
-        id_col="id",
-        id_delimiter=",",
-        query_col="query",
-        fhr=50_000,
-        embedding_dimension=2048,
-        extreme_output_dim=1000,
-        extreme_num_hashes=16,
-    )
+    # This test asserts that the mach mixture is saved and loaded correctly.
 
     label_to_segment_map = defaultdict(list)
     label_to_segment_map[0] = 1
     label_to_segment_map[2] = [3, 4]
 
-    model2 = MachMixture(
+    model = MachMixture(
         number_models=3,
         id_col="id",
         id_delimiter=",",
@@ -277,11 +266,12 @@ def test_meta_save_load_for_mach_mixture(setup_and_cleanup):
         seed_for_sharding=1,
     )
 
-    model2._save_state_dict(Path(CHECKPOINT_DIR) / STATE_LOCATION)
+    model.save(Path(CHECKPOINT_DIR))
+    new_model = MachMixture.load(Path(CHECKPOINT_DIR))
 
-    model1._load_state_dict(Path(CHECKPOINT_DIR) / STATE_LOCATION)
-
-    assert_same_objects(model1, model2)
+    assert new_model.number_models == model.number_models
+    assert new_model.label_to_segment_map == model.label_to_segment_map
+    assert new_model.seed_for_sharding == model.seed_for_sharding
 
 
 def test_vlc_save_load(setup_and_cleanup):

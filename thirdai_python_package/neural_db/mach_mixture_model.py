@@ -96,6 +96,14 @@ class MachMixture(Model):
                 model.set_mach_sampling_threshold(threshold)
 
     def save(self, path: Path):
+        """
+        model
+        ├── class.pkl
+        └── state.plk
+        └── 0 (individual mach models)
+            └──model.pkl
+            └──class.pkl
+        """
         pickle_to(self.__class__, path / CLASS_LOCATION)
         self._save_model(path=path)
         self._save_state_dict(path=path / STATE_LOCATION)

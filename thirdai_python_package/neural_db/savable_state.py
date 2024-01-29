@@ -69,6 +69,13 @@ class State:
         on_progress(1 / total_steps)
 
         # save model
+        """
+        model save structure
+        .ndb
+        └── model
+            ├── class.pkl
+            └── Model.save() here
+        """
         os.mkdir(State.model_save_path(directory))
         self.model.save(State.model_save_path(directory))
         on_progress(2 / total_steps)
