@@ -579,6 +579,58 @@ Returns:
 
 )pbdoc";
 
+const char* const UDT_CATEGORICAL_METADATA_CONFIG = R"pbdoc(
+ A configuration object for processing a metadata file to enrich categorical
+ features from the main dataset. To illustrate when this is useful, suppose
+ we are building a movie recommendation system. The contents of the training
+ dataset may look something like the following:
+ user_id,movie_id,timestamp
+ A526,B894,2022-01-01
+ A339,B801,2022-01-01
+ A293,B801,2022-01-01
+ ...
+ If you have additional information about users or movies, such as users' 
+ age groups or movie genres, you can use that information to enrich your 
+ model. Adding these features into the main dataset as new columns is wasteful
+ because the same users and movies ids will be repeated many times throughout
+ the dataset. Instead, we can put them all in a metadata file and UDT will
+ inject these features where appropriate.
+ Args:
+     filename (str): Path to metadata file. The file should be in CSV format.
+     key_column_name (str): The name of the column whose values are used as
+         keys to map metadata features back to values in the main dataset. 
+         This column does not need to be passed into the `data_types` argument. 
+     data_types (Dict[str, bolt.types.ColumnType]): A mapping from column name 
+         to column type. Column type is one of:
+         - `bolt.types.categorical`
+         - `bolt.types.numerical`
+         - `bolt.types.text`
+         - `bolt.types.date`
+     delimiter (str): Optional. Defaults to ','. A single character 
+         (length-1 string) that separates the columns of the metadata file.
+ Example:
+     >>> for line in open("user_meta.csv"):
+     >>>     print(line)
+     user_id,age
+     A526,52
+     A531,22
+     A339,29
+     ...
+     >>> bolt.UniversalDeepTransformer(
+             data_types: {
+                 "user_id": bolt.types.categorical(
+                     delimiter=' ',
+                     metadata=bolt.types.metadata(
+                         filename="user_meta.csv", 
+                         data_types={"age": bolt.types.numerical()}, 
+                         key_column_name="user_id"
+                     )
+                 )
+             }
+             ...
+         )
+ )pbdoc";
+
 const char* const UDT_CATEGORICAL_TEMPORAL = R"pbdoc(
 Temporal categorical config. Use this object to configure how a 
 categorical column is tracked over time. 

@@ -283,6 +283,13 @@ void createUDTTypesSubmodule(py::module_& module) {
                                                           "node_id")
       .def(py::init<>());
 
+  py::class_<CategoricalMetadataConfig, CategoricalMetadataConfigPtr>(
+      udt_types_submodule, "metadata")
+      .def(py::init<std::string, std::string, ColumnDataTypes, char>(),
+           py::arg("filename"), py::arg("key_column_name"),
+           py::arg("data_types"), py::arg("delimiter") = ',',
+           docs::UDT_CATEGORICAL_METADATA_CONFIG);
+
   py::class_<CategoricalDataType, DataType, CategoricalDataTypePtr>(
       udt_types_submodule, "categorical")
       .def(py::init<std::optional<char>, CategoricalMetadataConfigPtr>(),
