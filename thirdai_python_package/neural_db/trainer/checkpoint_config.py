@@ -68,23 +68,30 @@ class CheckpointConfig:
             )
         return self._pickled_ids_resource_name_path
 
-    def get_mach_config(self):
+    def disable_non_mach_attributes(self):
         """
         This function sets the attributes specific to neural db to None so that we do not make any bad accesses. Ideally, Model object should have no idea about neural db and hence, it should also not be able to access any attributes that disclose any information about neural db
         """
-        config = CheckpointConfig(
-            checkpoint_dir=self.ndb_checkpoint_path / MODEL_SAVE_FOLDER,
-            resume_from_checkpoint=self.resume_from_checkpoint,
-            checkpoint_interval=self.checkpoint_interval,
-        )
-        config.disable_non_mach_attributes()
-        return config
-
-    def disable_non_mach_attributes(self):
         self._ndb_checkpoint_path = None
         self._ndb_trained_path = None
         self._pickled_ids_resource_name_path = None
         return self
+
+
+def convert_ndb_config_to_mach_config(config: CheckpointConfig):
+    """
+    We save neural db in checkpoint.ndb file and models are stored under checkpoint.ndb/model/ dir. Hence, we need to change the checkpoint dir and disable non-mach attributes of the config.
+    """
+    if config is None:
+        return None
+
+    mach_config = CheckpointConfig(
+        config.ndb_checkpoint_path / MODEL_SAVE_FOLDER,
+        config.resume_from_checkpoint,
+        config.checkpoint_interval,
+    )
+    mach_config.disable_non_mach_attributes()
+    return mach_config
 
 
 def generate_modelwise_checkpoint_configs(config: CheckpointConfig, number_models):

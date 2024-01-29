@@ -20,7 +20,10 @@ from .savable_state import (
     make_training_checkpoint,
 )
 from .supervised_datasource import Sup, SupDataSource
-from .trainer.checkpoint_config import CheckpointConfig
+from .trainer.checkpoint_config import (
+    CheckpointConfig,
+    convert_ndb_config_to_mach_config,
+)
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
 
@@ -405,7 +408,7 @@ class NeuralDB:
         self._savable_state.model.resume(
             on_progress=on_progress,
             cancel_state=cancel_state,
-            checkpoint_config=checkpoint_config.get_mach_config(),
+            checkpoint_config=convert_ndb_config_to_mach_config(checkpoint_config),
         )
 
         return ids, resource_name
@@ -456,9 +459,7 @@ class NeuralDB:
             cancel_state=cancel_state,
             max_in_memory_batches=max_in_memory_batches,
             variable_length=variable_length,
-            checkpoint_config=(
-                checkpoint_config.get_mach_config() if checkpoint_config else None
-            ),
+            checkpoint_config=convert_ndb_config_to_mach_config(checkpoint_config),
             **kwargs,
         )
 
