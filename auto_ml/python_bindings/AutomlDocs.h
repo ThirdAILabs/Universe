@@ -2,322 +2,6 @@
 
 namespace thirdai::automl::python::docs {
 
-const char* const MODEL_PIPELINE_INIT_FROM_CONFIG = R"pbdoc(
-Constructs a ModelPipeline from a deployment config and a set of input parameters.
-
-Args:
-    deployment_config (DeploymentConfig): A config for the ModelPipeline.
-    parameters (Dict[str, Union[bool, int, float, str]]): A mapping from parameter 
-        names to values. This is used to pass in any additional parameters required
-        to construct the desired model. The keys should be the names of the parameters
-        as strings and the values can be integers, floats, strings, or bools depending
-        on what the type of the parameter is. An exception will be thrown if a required
-        parameter is not specified or if the the parameter is not the right type.
-
-Returns
-    ModelPipeline:
-
-Examples:
-    >>> model = bolt.Pipeline(
-            deployment_config=deployment.DeploymentConfig(...),
-            parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
-        )
-
-)pbdoc";
-
-const char* const MODEL_PIPELINE_INIT_FROM_SAVED_CONFIG = R"pbdoc(
-Constructs a ModelPipeline from a serialized deployment config and a set of input 
-parameters.
-
-Args:
-    config_path (str): A path to a serialized deployment config for the ModelPipeline.
-    parameters (Dict[str, Union[bool, int, float, str]]): A mapping from parameter 
-        names to values. This is used to pass in any additional parameters required
-        to construct the desired model. The keys should be the names of the parameters
-        as strings and the values can be integers, floats, strings, or bools depending
-        on what the type of the parameter is. An exception will be thrown if a required
-        parameter is not specified or if the the parameter is not the right type.
-
-Returns
-    ModelPipeline:
-
-Examples:
-    >>> model = bolt.Pipeline(
-            config_path="path_to_a_config",
-            parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
-        )
-
-)pbdoc";
-
-const char* const MODEL_PIPELINE_TRAIN_FILE = R"pbdoc(
-Trains a ModelPipeline on a given dataset using a file on disk.
-
-Args:
-    filename (str): Path to the dataset file.
-    train_config (bolt.TrainConfig): The training config specifies the number
-        of epochs and learning_rate, and optionally allows for specification of a
-        validation dataset, metrics, callbacks, and how frequently to log metrics 
-        during training. 
-    batch_size (Optional[int]): This is an optional parameter indicating which batch
-        size to use for training. If not specified the default batch size from the 
-        TrainEvalParameters is used.
-    validation (Optional[bolt.Validation]): This is an optional parameter that specifies 
-        a validation dataset, metrics, and interval to use during training.
-    max_in_memory_batches (Optional[int]): The maximum number of batches to load in
-        memory at a given time. If this is specified then the dataset will be processed
-        in a streaming fashion.
-
-Returns:
-    None
-
-Examples:
-    >>> train_config = bolt.TrainConfig(
-            epochs=5, learning_rate=0.01
-        ).with_metrics(["mean_squared_error"])
-    >>> model.train(
-            filename="./train_file", train_config=train_config , max_in_memory_batches=12
-        )
-
-)pbdoc";
-
-const char* const MODEL_PIPELINE_TRAIN_DATA_SOURCE = R"pbdoc(
-Trains a ModelPipeline on a given dataset using any DataSource.
-
-Args:
-    data_source (dataset.DataSource): A data source for the given dataset.
-    train_config (bolt.TrainConfig): The training config specifies the number
-        of epochs and learning_rate, and optionally allows for specification of a
-        validation dataset, metrics, callbacks, and how frequently to log metrics 
-        during training. 
-    validation (Optional[bolt.Validation]): This is an optional parameter that specifies 
-        a validation dataset, metrics, and interval to use during training.
-    max_in_memory_batches (Optional[int]): The maximum number of batches to load in
-        memory at a given time. If this is specified then the dataset will be processed
-        in a streaming fashion.
-
-Returns:
-    None
-
-Examples:
-    >>> train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
-    >>> model.train(
-            data_source=dataset.CSVDataSource(...), train_config=train_config, max_in_memory_batches=12
-        )
-
-)pbdoc";
-
-const char* const MODEL_PIPELINE_EVALUATE_FILE = R"pbdoc(
-Evaluates the ModelPipeline on the given dataset and returns a numpy array of the 
-activations.
-
-Args:
-    filename (str): Path to the dataset file.
-    eval_config (Option[bolt.EvalConfig]): The predict config is optional
-        and allows for specification of metrics to compute and whether to use sparse
-        inference.
-    return_predicted_class (bool): Optional, defaults to false. When true the model
-        will output the predicted class for each sample rather than the activations 
-        of the final layer. This has no effect for regression models.
-    return_metrics (bool): Optional, defaults to false. When true, the model will
-        output the evaluation metrics rather than activations of the final layer.
-        If true, this nullifies the `return_predicted_class` argument.
-
-Returns:
-    (np.ndarray or Tuple[np.ndarray, np.ndarray] or Dict): 
-    If return_metrics = True, returns a dictionary that maps metric names to their
-    values. Otherwise, returns a numpy array of the activations if the output is 
-    dense, or a tuple of the active neurons and activations if the output is sparse. 
-    The shape of each array will be (dataset_length, num_nonzeros_in_output).
-
-Examples:
-    >>> eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"])
-    >>> activations = model.evaluate(filename="./test_file", eval_config=eval_config)
-
-)pbdoc";
-
-const char* const MODEL_PIPELINE_EVALUATE_DATA_SOURCE = R"pbdoc(
-Evaluates the ModelPipeline on the given dataset and returns a numpy array of the 
-activations.
-
-Args:
-    data_source (dataset.DataSource): A data source for the given dataset.
-    eval_config (Option[bolt.EvalConfig]): The predict config is optional
-        and allows for specification of metrics to compute and whether to use sparse
-        inference.
-    return_predicted_class (bool): Optional, defaults to false. When true the model
-        will output the predicted class for each sample rather than the activations 
-        of the final layer. This has no effect for regression models.
-    return_metrics (bool): Optional, defaults to false. When true, the model will
-        output the evaluation metrics rather than activations of the final layer.
-        If true, this nullifies the `return_predicted_class` argument.
-
-Returns:
-    (np.ndarray or Tuple[np.ndarray, np.ndarray] or Dict): 
-    If return_metrics = True, returns a dictionary that maps metric names to their
-    values. Otherwise, returns a numpy array of the activations if the output is 
-    dense, or a tuple of the active neurons and activations if the output is sparse. 
-    The shape of each array will be (dataset_length, num_nonzeros_in_output).
-
-Examples:
-    >>> (active_neurons, activations) = model.evaluate(data_source=dataset.CSVDataSource(...))
-
-)pbdoc";
-
-const char* const MODEL_PIPELINE_PREDICT = R"pbdoc(
-Performs inference on a single sample.
-
-Args:
-    input_sample (str): A str representing the input. This will be processed in the 
-        same way as the dataset, and thus should be the same format as a line in 
-        the dataset, except with the label columns removed.
-    use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
-    return_predicted_class (bool): Optional, defaults to false. When true the model
-        will output the predicted class rather than the activations 
-        of the final layer. This has no effect for regression models.
-Returns: 
-    (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
-    Returns a numpy array of the activations if the output is dense, or a tuple 
-    of the active neurons and activations if the output is sparse. The shape of 
-    each array will be (num_nonzeros_in_output, ).
-
-Examples:
-    >>> activations = model.predict("The blue cat jumped")
-
-)pbdoc";
-
-const char* const MODEL_PIPELINE_EXPLAIN = R"pbdoc(
-Identifies the columns that are most responsible for a predicted outcome 
-and provides a brief description of the column's value.
-
-If a target is provided, the model will identify the columns that need 
-to change for the model to predict the target class.
-
-Args:
-    input_sample (Dict[str, str]): The input sample as a dictionary 
-        where the keys are column names as specified in data_types and the "
-        values are the respective column values. 
-    target (str): Optional. The desired target class. If provided, the
-    model will identify the columns that need to change for the model to 
-    predict the target class.
-
-Returns:
-    List[Explanation]:
-    A sorted list of `Explanation` objects that each contain the following fields:
-    `column_number`, `column_name`, `keyword`, and `percentage_significance`.
-    `column_number` and `column_name` identify the responsible column, 
-    `keyword` is a brief description of the value in this column, and
-    `percentage_significance` represents this column's contribution to the
-    predicted outcome. The list is sorted in descending order by the 
-    absolute value of the `percentage_significance` field of each element.
-    
-)pbdoc";
-
-const char* const MODEL_PIPELINE_PREDICT_TOKENS = R"pbdoc(
-Performs inference on a single sample represented as bert tokens
-
-Args:
-    tokens (List[int]): A list of integers representing bert tokens.
-    use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
-
-Returns: 
-    (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
-    Returns a numpy array of the activations if the output is dense, or a tuple 
-    of the active neurons and activations if the output is sparse. The shape of 
-    each array will be (num_nonzeros_in_output, ).
-
-Examples:
-    >>> activations = model.predict_tokens(tokens=[9, 42, 19, 71, 33])
-
-)pbdoc";
-
-const char* const MODEL_PIPELINE_PREDICT_BATCH = R"pbdoc(
-Performs inference on a batch of samples samples in parallel.
-
-Args:
-    input_samples (List[str]): A list of strings representing each sample. Each 
-        input will be processed in the same way as the dataset, and thus should 
-        be the same format as a line in the dataset, except with the label columns 
-        removed.
-    use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
-    return_predicted_class (bool): Optional, defaults to false. When true the model
-        will output the predicted class for each sample rather than the activations 
-        of the final layer. This has no effect for regression models.
-
-Returns: 
-    (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
-    Returns a numpy array of the activations if the output is dense, or a tuple 
-    of the active neurons and activations if the output is sparse. The shape of 
-    each array will be (batch_size, num_nonzeros_in_output).
-
-Examples:
-    >>> activations = model.predict_batch([
-            "The cat ran",
-            "The dog sat", 
-            "The cow ate grass"
-        ])
-
-)pbdoc";
-
-const char* const MODEL_PIPELINE_SAVE = R"pbdoc(
-Saves a serialized version of the ModelPipeline.
-
-Args:
-    filename (str): The file to save the serialized ModelPipeline in.
-
-Returns:
-    None
-
-)pbdoc";
-
-const char* const MODEL_PIPELINE_LOAD = R"pbdoc(
-Loads a saved deployment config. 
-
-Args:
-    filename (str): The file which contains the serialized config.
-
-Returns:
-    DeploymentConfig:
-
-)pbdoc";
-
-const char* const MODEL_PIPELINE_GET_DATA_PROCESSOR = R"pbdoc(
-Returns the data processor of the model pipeline.
-)pbdoc";
-
-const char* const TEMPORAL_CONTEXT_RESET = R"pbdoc(
-Resets UDT's temporal trackers. When temporal relationships are supplied, 
-UDT assumes that we feed it data in chronological order. Thus, if we break 
-this assumption, we need to first reset the temporal trackers. 
-An example of when you would use this is when you want to repeat the UDT 
-training routine on the same dataset. Since you would be training on data from 
-the same time period as before, we need to first reset the temporal trackers so 
-that we don't double count events.
-
-)pbdoc";
-
-const char* const TEMPORAL_CONTEXT_UPDATE = R"pbdoc(
-Updates the temporal trackers.
-
-If temporal tracking relationships are provided, UDT can make better predictions 
-by taking temporal context into account. For example, UDT may keep track of 
-the last few movies that a user has watched to better recommend the next movie. 
-Thus, UDT is at its best when its internal temporal context gets updated with
-new true samples. `.update_temporal_trackers()` does exactly this. 
-
-)pbdoc";
-
-const char* const TEMPORAL_CONTEXT_UPDATE_BATCH = R"pbdoc(
-Updates the temporal trackers with batch input.
-
-If temporal tracking relationships are provided, UDT can make better predictions 
-by taking temporal context into account. For example, UDT may keep track of 
-the last few movies that a user has watched to better recommend the next movie. 
-Thus, UDT is at its best when its internal temporal context gets updated with
-new true samples. Just like `.update_temporal_trackers()`, 
-`.batch_update_temporal_trackers()` does exactly this, except with a batch input.
-
-)pbdoc";
-
 const char* const VALIDATION = R"pbdoc(
 Creates a validation object that stores the necessary information for the model 
 to perform validation during training.
@@ -337,22 +21,6 @@ Examples:
             filename="validation.csv", metrics=["categorical_accuracy"], interval=10
         )
     >>> model.train("train.csv", epochs=5, validation=validation)
-)pbdoc";
-
-const char* const UDT_CLASS = R"pbdoc(
-UniversalDeepTransformer (UDT) An all-purpose classifier for tabular datasets and 
-generator model for performing query reformulation. 
-In addition to learning from the columns of a single row, the UDT classifier can
-make use of "temporal context". For example, if used to build a movie recommender,
-UDT may use information about the last 5 movies that a user has watched to recommend
-the next movie. Similarly, if used to forecast the outcome of marketing campaigns, 
-UDT may use several months' worth of campaign history for each product to make 
-better forecasts.
-
-In addition to exposing a classifier model for tabular data, UDT exposes a generator
-model for query reformulation tasks. For instance, given a dataset with consisting of
-queries that have spelling mistakes, UDT can be used to generate relevant reformulations
-with the correct spelling. 
 )pbdoc";
 
 const char* const UDT_INIT = R"pbdoc(
@@ -460,7 +128,7 @@ Notes:
       and temporal tracking configurations.
 )pbdoc";
 
-const char* const UDT_GENERATOR_INIT = R"pbdoc(
+const char* const UDT_QUERY_REFORMULATION_INIT = R"pbdoc(
 UniversalDeepTransformer (UDT) Constructor. 
 
 Args:
@@ -493,84 +161,23 @@ Example:
         )
 )pbdoc";
 
-const char* const UDT_GENERATOR_TRAIN = R"pbdoc(
-Trains a UniversalDeepTransformer (UDT) model for query reformulation on a given dataset 
-using a file on disk. The filename must contain at least 1 column containing the target
-queries. If a source column (specified when the model was constructed) is present 
-then the model is additionally trained in a supervised setting using the (source, target) pairs, 
-(beyond just self supervised (target, target) pairs).
+const char* const UDT_TRAIN_BATCH = R"pbdoc(
+Trains the model on the given training batch. 
 
 Args:
-    filename (str): Path to the dataset file.
-    use_supervised (bool): Whether to try to use an additional "source" query 
-        column to do supervised training if the column is present. Defaults to
-        true. If a "source" column is not present, this is a NOOP.
+    batch (List[Dict[str, str]]): The raw data comprising the training batch. This should 
+        be in the form {"column_name": "column_value"} for each column the model expects.
+    learning_rate (float): Optional, uses default if not provided.
 
-Returns:
+Returns: 
     None
-
-Examples:
-    >>> model = bolt.UniversalDeepTransformer(
-            target_column_index=0, 
-            source_column_index=1,
-            dataset_size="medium"
-        )
-    >>> model.train(filename="./train_file")
-
-Note:
-    - The UDT model expects different training inputs for query reformulation versus
-        other machine learning tasks. 
 )pbdoc";
 
-const char* const UDT_CLASS_NAME = R"pbdoc(
-Returns the target class name associated with an output neuron ID.
+const char* const UDT_EVALUATE = R"pbdoc(
+Evaluates the model on the given dataset using the provided metrics. 
 
 Args:
-    neuron_id (int): The index of the neuron in UDT's output layer. This is 
-        useful for mapping the activations returned by `evaluate()` and 
-        `predict()` back to class names.
-
-Returns:
-    str:
-    The class names that corresponds to the given neuron_id.
-
-Example:
-    >>> activations = model.predict(
-            input_sample={"user_id": "A33225", "timestamp": "2022-12-25", "special_event": "christmas"}
-        )
-    >>> top_recommendation = np.argmax(activations)
-    >>> model.class_name(top_recommendation)
-    "Die Hard"
-)pbdoc";
-
-const char* const UDT_GENERATOR_EVALUATE = R"pbdoc(
-Evaluates the UniversalDeepTransformer (UDT) model on the given dataset and returns
-a list of generated queries as reformulations of the incorrect queries. 
-
-Args:
-    filename (str): Path to the dataset file 
-    top_k (int): The number of candidate query reformulations suggested by the UDT model.
-        The default value for k is 5.
-    return_scores (bool): Whether or not to return the scores for the reformulations.
-
-Returns:
-    Tuple(List[List[str]]) or Tuple(List[List[str]], List[List[str]])
-    Returns a tuple of list of k reformulations for each incorrect query to be 
-    reformulated in the input dataset. If return_scores is True, also returns 
-    the corresponding scores for the reformulations.
-
-Notes:
-    - If the input dataset file contains pairs of correct and incorrect queries, this 
-     method will also print out the recall value at k. 
-
-Examples:
-    >>> model = bolt.UniversalDeepTransformer(
-            target_column_index=0, 
-            source_column_index=1,
-            dataset_size="medium"
-        )
-    >>> model.train(filename="./train_file")
-    >>> reformulated_queries = model.evaluate(filename="./test_file", top_k=5)
+    
 )pbdoc";
 
 const char* const UDT_PREDICT = R"pbdoc(
@@ -579,19 +186,24 @@ Performs inference on a single sample.
 Args:
     input_sample (Dict[str, str]): The input sample as a dictionary 
         where the keys are column names and the values are the respective column values. 
-    use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
+    use_sparse_inference (bool) = False: Whether or not to use sparse inference.
+    return_predicted_class (bool) = False: If true then the model will return the id of the 
+        predicted class instead of the activations of the output layer. This argument is only 
+        applicable to classification models. 
+    top_k (Optional[int]) = None: If specified then the model will return the ids of the 
+        top k predicted classes instead of the activations of the output layer. This argument
+        is only applicable to classification models. 
 
 Returns: 
-    (np.ndarray, Tuple[np.ndarray, np.ndarray], List[int], or str): 
+    (np.ndarray, Tuple[np.ndarray, np.ndarray], List[int], or int): 
     Returns a numpy array of the activations if the output is dense, or a tuple 
     of the active neurons and activations if the output is sparse. The shape of 
-    each array will be (num_nonzeros_in_output, ). When the 
-    `consecutive_integer_ids` argument of target column's categorical ColumnType
-    object is set to False (as it is by default), UDT creates an internal 
-    mapping between target class names and neuron ids. You can map neuron ids back to
-    target class names by calling the `class_names()` method. If the target column is 
-    a sequence, UDT will perform inference recursively and return a sequence in the 
-    same format as the target column; a string of elements delimited by a character.
+    each array will be (num_nonzeros_in_output, ). If return predicted class is specified
+    then the class id (an integer) will be returned. If top_k is specified then a list of 
+    integer class ids will be returned. You can map neuron ids back to target class names 
+    by calling the `class_name()` method. If the target column is a sequence, UDT will 
+    perform inference recursively and return a sequence in the same format as the target 
+    column.
 
 Examples:
     >>> # Suppose we configure UDT as follows:
@@ -630,32 +242,6 @@ Notes:
 
 )pbdoc";
 
-const char* const UDT_GENERATOR_PREDICT = R"pbdoc(
-Performs inference on a single sample.
-
-Args:
-    input_query (str): The input query as a string. 
-    top_k (int): The number of candidate query reformulations suggested by the UDT model
-        for this input. The default value for k is 5. 
-    return_scores (bool): Whether or not to return the scores for the reformulations.
-
-Returns:
-    Tuple(List[List[str]]) or Tuple(List[List[str]], List[List[str]])
-    Returns a tuple of list of k reformulations for each incorrect query to be 
-    reformulated in the input dataset. If return_scores is True, also returns 
-    the corresponding scores for the reformulations.
-
-Example:
-    >>> model = bolt.UniversalDeepTransformer(
-            target_column_index=0, 
-            source_column_index=1,
-            dataset_size="medium"
-        )
-    >>> model.train(filename="./train_file")
-    >>> udt_refomulation_suggestions = model.predict(input_query="sample query", top_k=5)
-    
-)pbdoc";
-
 const char* const UDT_PREDICT_BATCH = R"pbdoc(
 Performs inference on a batch of samples in parallel.
 
@@ -664,18 +250,23 @@ Args:
         where the keys are column names as specified in data_types and the 
         values are the respective column values. 
     use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
+    return_predicted_class (bool) = False: If true then the model will return the id of the 
+        predicted class instead of the activations of the output layer. This argument is only 
+        applicable to classification models. 
+    top_k (Optional[int]) = None: If specified then the model will return the ids of the 
+        top k predicted classes instead of the activations of the output layer. This argument
+        is only applicable to classification models. 
 
 Returns: 
-    (np.ndarray, Tuple[np.ndarray, np.ndarray], List[List[int]], or List[str]): 
+    (np.ndarray, Tuple[np.ndarray, np.ndarray], List[List[int]], or List[int]): 
     Returns a numpy array of the activations if the output is dense, or a tuple 
     of the active neurons and activations if the output is sparse. The shape of 
-    each array will be (batch_size, num_nonzeros_in_output). When the 
-    `consecutive_integer_ids` argument of target column's categorical ColumnType
-    object is set to False (as it is by default), UDT creates an internal 
-    mapping between target class names and neuron ids. You can map neuron ids back to
-    target class names by calling the `class_names()` method. If the target column is 
-    a sequence, UDT will perform inference recursively and return a sequence in the 
-    same format as the target column; a string of elements delimited by a character. 
+    each array will be (batch_size, num_nonzeros_in_output). If return predicted class is specified
+    then the class id (an integer) will be returned. If top_k is specified then a list of 
+    integer class ids will be returned. You can map neuron ids back to target class names 
+    by calling the `class_name()` method. If the target column is a sequence, UDT will 
+    perform inference recursively and return a sequence in the same format as the target 
+    column.
 
 Examples:
     >>> activations = model.predict_batch([
@@ -700,33 +291,6 @@ Notes:
       `model.index_batch()`. Read about `model.index()` and `model.index_batch()` 
       for details.
 
-)pbdoc";
-
-const char* const UDT_GENERATOR_PREDICT_BATCH = R"pbdoc(
-Performs inference on a batch of sammples in parallel.
-
-Args:
-    input_queries (List[str]): A list of target queries to be reformulated. 
-    top_k (int): The number of candidate query reformulations suggested by the UDT model
-        for this input batch. The default value for k is 5. 
-    return_scores (bool): Whether or not to return the scores for the reformulations.
-
-Returns:
-    Tuple(List[List[str]]) or Tuple(List[List[str]], List[List[str]])
-    Returns a tuple of list of k reformulations for each incorrect query to be 
-    reformulated in the input dataset. If return_scores is True, also returns 
-    the corresponding scores for the reformulations.
-
-Example:
-    >>> input_queries = # An arbitrary list of incorrect queries. 
-    >>> model = bolt.UniversalDeepTransformer(
-            target_column_index=0, 
-            source_column_index=1,
-            dataset_size="medium"
-        )
-    >>> model.train(filename="./train_file")
-    >>> udt_refomulation_suggestions = model.predict(input_queries=input_queries, top_k=5)
-    
 )pbdoc";
 
 const char* const UDT_EMBEDDING_REPRESENTATION = R"pbdoc(
@@ -793,6 +357,27 @@ Args:
 
 Returns:
     A 1D numpy array of floats representing a dense embedding of that entity.
+)pbdoc";
+
+const char* const UDT_CLASS_NAME = R"pbdoc(
+Returns the target class name associated with an output neuron ID.
+
+Args:
+    neuron_id (int): The index of the neuron in UDT's output layer. This is 
+        useful for mapping the activations returned by `evaluate()` and 
+        `predict()` back to class names.
+
+Returns:
+    str:
+    The class names that corresponds to the given neuron_id.
+
+Example:
+    >>> activations = model.predict(
+            input_sample={"user_id": "A33225", "timestamp": "2022-12-25", "special_event": "christmas"}
+        )
+    >>> top_recommendation = np.argmax(activations)
+    >>> model.class_name(top_recommendation)
+    "Die Hard"
 )pbdoc";
 
 const char* const UDT_INDEX = R"pbdoc(
@@ -881,82 +466,6 @@ Example:
         )
 )pbdoc";
 
-const char* const UDT_INDEX_METADATA = R"pbdoc(
-Indexes a single column metadata sample.
-
-Args: 
-    column_name (str): The name of the column associated with the metadata.
-    update (Dict[str, str]): The metadata sample as a dictionary 
-        where the keys are column names as specified in the data_types map of 
-        the metadata config and the values are the respective column values. This
-        map should also contain the metadata key.
-
-Example:
-    >>> model = bolt.UniversalDeepTransformer(
-            data_types={
-                "user_id": bolt.types.categorical(
-                    metadata=bolt.types.metadata(
-                        filename="user_meta.csv", 
-                        data_types={"age": bolt.types.numerical()}, 
-                        key_column_name="user_id"
-                    )
-                )
-            },
-            target="movie_title",
-            n_target_classes=500,
-        )
-    >>> model.index_metadata(
-            column_name="user_id", 
-            update={
-                "user_id": "XAEA12", # "user_id" column from metadata config's key_column_name
-                "age": "2", # "age" column as from metadata config's data_types
-            },
-        )
-)pbdoc";
-
-const char* const UDT_INDEX_METADATA_BATCH = R"pbdoc(
-Indexes a batch of column metadata samples.
-
-Args: 
-    column_name (str): The name of the column associated with the metadata.
-    updates (List[Dict[str, str]]): The metadata samples as a list of dictionaries 
-        where the keys are column names as specified in the data_types map of 
-        the metadata config and the values are the respective column values. The
-        maps should also contain the metadata key.
-
-Example:
-    >>> model = bolt.UniversalDeepTransformer(
-            data_types={
-                "user_id": bolt.types.categorical(
-                    metadata=bolt.types.metadata(
-                        filename="user_meta.csv", 
-                        data_types={"age": bolt.types.numerical()}, 
-                        key_column_name="user_id"
-                    )
-                )
-            },
-            target="movie_title",
-            n_target_classes=500,
-        )
-    >>> model.index_metadata_batch(
-            column_name="user_id", 
-            updates=[
-                {
-                    "user_id": "XAEA12", # "user_id" column from metadata config's key_column_name
-                    "age": "2", # "age" column as from metadata config's data_types
-                },
-                {
-                    "user_id": "A22298",
-                    "age": "52",
-                },
-                {
-                    "user_id": "B39915",
-                    "age": "33",
-                },
-            ],
-        )
-)pbdoc";
-
 const char* const UDT_RESET_TEMPORAL_TRACKERS = R"pbdoc(
 Resets UniversalDeepTransformer's (UDT) temporal context. When temporal 
 relationships are supplied, UDT assumes that we feed it data in chronological 
@@ -994,15 +503,9 @@ Args:
 
 
 Returns:
-    List[Explanation]:
-    A sorted list of `Explanation` objects that each contain the following fields:
-    `column_number`, `column_name`, `keyword`, and `percentage_significance`.
-    `column_number` and `column_name` identify the responsible column, 
-    `keyword` is a brief description of the column value, and
-    `percentage_significance` represents this column's contribution to the
-    predicted outcome. The list is sorted in descending order by the 
-    absolute value of the `percentage_significance` field of each element.
-    See `dataset.Explanation` for details.
+    List[Tuple[str, float]]:
+    A list of explanations from the input features along with weights representing the 
+    significance of that feature.
 
 Example:
     >>> # Suppose we configure UDT as follows:
@@ -1023,57 +526,24 @@ Example:
     >>> explanations = model.explain(
             input_sample={"user_id": "A33225", "timestamp": "2022-02-02", "special_event": "christmas"}, target_class=35
         )
-    >>> print(explanations[0])
-    column_number: 0 | column_name: "special_event" | keyword: "christmas" | percentage_significance: 25.2
-    >>> print(explanations[1])
-    column_number: 1 | column_name: "movie_title" | keyword: "'Die Hard' is one of last 5 values" | percentage_significance: -22.3
-    
-Notes: 
-    - `percentage_significance` can be positive or negative depending on the 
-      relationship between the responsible column and the prediction. In the above
-      example, the `percentage_significance` associated with the explanation
-      "'Die Hard' is one of last 5 values" is negative because recently watching "Die Hard" is 
-      negatively correlated with the target class "Home Alone". A large negative value
-      is just as "explanatory" as a large positive value.
-    - The values of columns that are tracked temporally may be unknown during inference
-      (the column_known_during_inference attribute of the bolt.temporal objects are False
-      by default). These columns do not need to be passed into `model.explain()`.
-      For example, we did not pass the "movie_title" column to `model.explain()`.
-      All other columns must be passed in.
-    - If temporal tracking relationships are provided, UDT can make better predictions 
-      by taking temporal context into account. For example, UDT may keep track of 
-      the last few movies that a user has watched to better recommend the next movie. 
-      Thus, UDT is at its best when its internal temporal context gets updated with
-      new true samples. `model.explain()` does not update UDT's temporal context.
-      To do this without retraining the model, we need to use `model.index()` or 
-      `model.index_batch()`. Read about `model.index()` and `model.index_batch()` 
-      for details.
 
 )pbdoc";
 
-const char* const UDT_SAVE = R"pbdoc(
+const char* const UDT_SAVE_CHECKPOINT = R"pbdoc(
 Serializes an instance of UniversalDeepTransformer (UDT) into a file on disk. 
-The serialized UDT includes its current temporal context.
+The serialized UDT includes its current temporal context. The `save` method just saves 
+the model parameters, the `checkpoint` method saves additional information such as 
+the optimizer state to use if training is resumed.
 
 Args:
     filename (str): The file on disk to serialize this instance of UDT into.
 
 Example:
     >>> model.save("udt_savefile.bolt")
+    >>> model.checkpoint("udt_savefile.bolt")
 )pbdoc";
 
-const char* const UDT_GENERATOR_SAVE = R"pbdoc(
-Serializes an instance of UDTGenerator to a file on disk. 
-
-Args:
-    filename (str): The file on disk to serialize in which the instance of 
-        UDTGenerator is to be serialized. 
-
-Example:
-    >>> model.save("udt_savefile.bolt")
-)pbdoc";
-
-const char* const UDT_CLASSIFIER_AND_GENERATOR_LOAD = R"pbdoc(
+const char* const UDT_LOAD = R"pbdoc(
 Loads a serialized instance of a UniversalDeepTransformer (UDT) model from a 
 file on disk. 
 
@@ -1089,166 +559,24 @@ Example:
     >>> model = bolt.UniversalDeepTransformer.load("udt_savefile.bolt")
 )pbdoc";
 
-const char* const UDT_CONFIG_INIT = R"pbdoc(
-A configuration object for UDT.
-
-UDT is an all-purpose classifier for tabular datasets. In addition to learning from
-the columns of a single row, UDT can make use of "temporal context". For 
-example, if used to build a movie recommender, UDT may use information 
-about the last 5 movies that a user has watched to recommend the next movie.
-Similarly, if used to forecast the outcome of marketing campaigns, UDT may 
-use several months' worth of campaign history for each product to make better
-forecasts.
+const char* const UDT_INDEX_NODES = R"pbdoc(
+Updates the graph that the UDT model is performing graph node classification on. The file 
+should have the same node id, neighbors, and features columns as the model is configured to accept.
 
 Args:
-    data_types (Dict[str, bolt.types.ColumnType]): A mapping from column name to column type. 
-        This map specifies the columns that we want to pass into the model; it does 
-        not need to include all columns in the dataset.
+    filename (str): The filename to load the graph from.
 
-        Column type is one of:
-        - `bolt.types.categorical()`
-        - `bolt.types.numerical(range: tuple(float, float))`
-        - `bolt.types.text()`
-        - `bolt.types.date()`
-        See bolt.types for details.
-
-        If `temporal_tracking_relationships` is non-empty, there must one 
-        bolt.types.date() column. This column contains date strings in YYYY-MM-DD format.
-        There can only be one bolt.types.date() column.
-    temporal_tracking_relationships (Dict[str, List[str or bolt.temporal.TemporalConfig]]): Optional. 
-        A mapping from column name to a list of either other column names or bolt.temporal objects.
-        This mapping tells UDT what columns can be tracked over time for each key.
-        For example, we may want to tell UDT that we want to track a user's watch 
-        history by passing in a map like `{"user_id": ["movie_id"]}`
-
-        If we provide a mapping from a string to a list of strings like the above, 
-        the temporal tracking configuration will be autotuned. We can take control by 
-        passing in bolt.temporal objects intead of strings.
-
-        bolt.temporal object is one of:
-        - `bolt.temporal.categorical(column_name: str, track_last_n: int, column_known_during_inference: bool=False)
-        - `bolt.temporal.numerical(column_name: str, history_length: int, column_known_during_inference: bool=False)
-        See bolt.temporal for details.
-    target (str): Name of the column that contains the value to be predicted by
-        UDT. The target column has to be a categorical column.
-    time_granularity (str): Optional. Either `"daily"`/`"d"`, `"weekly"`/`"w"`, `"biweekly"`/`"b"`, 
-        or `"monthly"`/`"m"`. Interval of time that we are interested in. Temporal numerical 
-        features are clubbed according to this time granularity. E.g. if 
-        `time_granularity="w"` and the numerical values on days 1 and 2 are
-        345.25 and 201.1 respectively, then UDT captures a single numerical 
-        value of 546.26 for the week instead of individual values for the two days.
-        Defaults to "daily".
-    lookahead (str): Optional. How far into the future the model needs to predict. This length of
-        time is in terms of time_granularity. E.g. 'time_granularity="daily"` and 
-        `lookahead=5` means the model needs to learn to predict 5 days ahead. Defaults to 0
-        (predict the immediate next thing).
-
-Examples:
-    >>> # Suppose each row of our data has the following columns: "product_id", "timestamp", "ad_spend", "sales_quantity", "sales_performance"
-    >>> # We want to predict next week's sales performance for each product using temporal context.
-    >>> # For each product ID, we would like to track both their ad spend and sales quantity over time.
-    >>> config = deployment.UDTConfig(
-            data_types={
-                "product_id": bolt.types.categorical(),
-                "timestamp": bolt.types.date(),
-                "ad_spend": bolt.types.numerical(range=(0, 10000)),
-                "sales_quantity": bolt.types.numerical(range=(0, 20)),
-                "sales_performance": bolt.types.categorical(),
-            },
-            temporal_tracking_relationships={
-                "product_id": [
-                    # Track last 5 weeks of ad spend
-                    bolt.temporal.numerical(column_name="ad_spend", history_length=5),
-                    # Track last 10 weeks of ad spend
-                    bolt.temporal.numerical(column_name="ad_spend", history_length=10),
-                    # Track last 5 weeks of sales performance
-                    bolt.temporal.categorical(column_name="sales_performance", history_length=5),
-                ]
-            },
-            target="sales_performance"
-            time_granularity="weekly",
-            lookahead=2 # predict 2 weeks ahead
-        )
-    >>> # Alternatively suppose our data has the following columns: "user_id", "movie_id", "hours_watched", "timestamp"
-    >>> # We want to build a movie recommendation system.
-    >>> # Then we may configure UDT as follows:
-    >>> config = deployment.UDTConfig(
-            data_types={
-                "user_id": bolt.types.categorical(),
-                "timestamp": bolt.types.date(),
-                "movie_id": bolt.types.categorical(),
-                "hours_watched": bolt.types.numerical(range=(0, 25)),
-            },
-            temporal_tracking_relationships={
-                "user_id": [
-                    "movie_id", # autotuned movie temporal tracking
-                    bolt.temporal.numerical(column_name="hours_watched", history_length="5") # track last 5 days of hours watched.
-                ]
-            },
-            target="movie_id",
-            n_target_classes=3000
-        )
-
-Notes:
-    - Refer to the documentation bolt.types.ColumnType and bolt.temporal.TemporalConfig to better understand column types 
-        and temporal tracking configurations.
+Returns:
+    None
 
 )pbdoc";
 
-const char* const UDT_CATEGORICAL_METADATA_CONFIG = R"pbdoc(
-A configuration object for processing a metadata file to enrich categorical
-features from the main dataset. To illustrate when this is useful, suppose
-we are building a movie recommendation system. The contents of the training
-dataset may look something like the following:
+const char* const UDT_CLEAR_GRAPH = R"pbdoc(
+Clears all graph info that is being tracked by the model.
 
-user_id,movie_id,timestamp
-A526,B894,2022-01-01
-A339,B801,2022-01-01
-A293,B801,2022-01-01
-...
+Returns:
+    None
 
-If you have additional information about users or movies, such as users' 
-age groups or movie genres, you can use that information to enrich your 
-model. Adding these features into the main dataset as new columns is wasteful
-because the same users and movies ids will be repeated many times throughout
-the dataset. Instead, we can put them all in a metadata file and UDT will
-inject these features where appropriate.
-
-Args:
-    filename (str): Path to metadata file. The file should be in CSV format.
-    key_column_name (str): The name of the column whose values are used as
-        keys to map metadata features back to values in the main dataset. 
-        This column does not need to be passed into the `data_types` argument. 
-    data_types (Dict[str, bolt.types.ColumnType]): A mapping from column name 
-        to column type. Column type is one of:
-        - `bolt.types.categorical`
-        - `bolt.types.numerical`
-        - `bolt.types.text`
-        - `bolt.types.date`
-    delimiter (str): Optional. Defaults to ','. A single character 
-        (length-1 string) that separates the columns of the metadata file.
-
-Example:
-    >>> for line in open("user_meta.csv"):
-    >>>     print(line)
-    user_id,age
-    A526,52
-    A531,22
-    A339,29
-    ...
-    >>> bolt.UniversalDeepTransformer(
-            data_types: {
-                "user_id": bolt.types.categorical(
-                    delimiter=' ',
-                    metadata=bolt.types.metadata(
-                        filename="user_meta.csv", 
-                        data_types={"age": bolt.types.numerical()}, 
-                        key_column_name="user_id"
-                    )
-                )
-            }
-            ...
-        )
 )pbdoc";
 
 const char* const UDT_CATEGORICAL_TEMPORAL = R"pbdoc(
@@ -1447,103 +775,5 @@ const char* const UDT_SEQUENCE_TYPE = R"pbdoc(
              ...
          )
  )pbdoc";
-
-const char* const TEXT_CLASSIFIER_INIT = R"pbdoc(
-Constructs a text classifier which takes in bert tokens and metadata and returns 
-scores for each of the N output classes.
-
-Args:
-    input_vocab_size (int): The number of tokens in the input vocabulary. This 
-        should be the the number of possible tokens returned by the tokenizer.
-    metadata_dim (int): The dimension of the metadata. If this is specified as 0
-        the metadata is not used and will be ignored if passed in.
-    n_classes (int): The number of output classes the model will predict scores for.
-
-Returns:
-    A UDTTextClassifier for the given data.
-)pbdoc";
-
-const char* const TEXT_CLASSIFIER_TRAIN = R"pbdoc(
-Trains the model for a single input batch.
-
-Args:
-    data (Dict): A dictionary containing the input data. This should contain the 
-        following fields. Two fields contain the bert tokens for each sample in 
-        the batch in CSR format. The field "tokens" should be a flattened numpy 
-        array of uint32 of all the tokens. The field "offsets" is a numpy array 
-        of uint32 of length (batch_size + 1) that gives the offsets of the tokens 
-        for each document. The tokens for document i should be in the range [offsets[i], 
-        offsets[i+1]) in the tokens array. The field "metadata" should be a 2D numpy 
-        array of 0/1 values (dtype is uint32) that represent the metadata for each 
-        document.
-    labels (np.ndarray): A 2D numpy array of type float32. The shape should be 
-        (batch_size, n_classes) and the label values should be 0/1.
-    learning_rate (float): The learning rate to use for updating the model for the
-        given batch.
-
-Returns:
-    The mean cross entropy loss over all the output classes in the batch. 
-)pbdoc";
-
-const char* const TEXT_CLASSIFIER_VALIDATE = R"pbdoc(
-Evaluates the model on a single input batch and returns the loss.
-
-Args:
-    data (Dict): A dictionary containing the input data. This should contain the 
-        following fields. Two fields contain the bert tokens for each sample in 
-        the batch in CSR format. The field "tokens" should be a flattened numpy 
-        array of uint32 of all the tokens. The field "offsets" is a numpy array 
-        of uint32 of length (batch_size + 1) that gives the offsets of the tokens 
-        for each document. The tokens for document i should be in the range [offsets[i], 
-        offsets[i+1]) in the tokens array. The field "metadata" should be a 2D numpy 
-        array of 0/1 values (dtype is uint32) that represent the metadata for each 
-        document.
-    labels (np.ndarray): A 2D numpy array of type float32. The shape should be 
-        (batch_size, n_classes) and the label values should be 0/1.
-
-Returns: 
-    A dictionary containing the mean cross entropy loss over all the output classes
-    and the cross entropy loss for each output class individually. 
-)pbdoc";
-
-const char* const TEXT_CLASSIFIER_PREDICT = R"pbdoc(
-Returns the predicted scores for the model for each output class for each sample
-in the batch. 
-
-Args:
-    data (Dict): A dictionary containing the input data. This should contain the 
-        following fields. Two fields contain the bert tokens for each sample in 
-        the batch in CSR format. The field "tokens" should be a flattened numpy 
-        array of uint32 of all the tokens. The field "offsets" is a numpy array 
-        of uint32 of length (batch_size + 1) that gives the offsets of the tokens 
-        for each document. The tokens for document i should be in the range [offsets[i], 
-        offsets[i+1]) in the tokens array. The field "metadata" should be a 2D numpy 
-        array of 0/1 values (dtype is uint32) that represent the metadata for each 
-        document.
-
-Returns:
-    A 2D numpy array with dtype float32 and shape (batch_size, n_classes) which 
-    contains the predicted scores from the model for the given input samples.
-)pbdoc";
-
-const char* const TEXT_CLASSIFIER_SAVE = R"pbdoc(
-Saves the model in a binary archive with the given filename.
-
-Args:
-    filename (str): The location to save the model.
-)pbdoc";
-
-const char* const UDT_SET_OUTPUT_SPARSITY = R"pbdoc(
-Modifies the sparsity of the output layer for UDT Classifier. 
-Note: Only works with UDT Classifier (without extreme classification enabled)
-
-Args:
-    sparsity (float): Sets the sparsity of the output layer to this value.
-    rebuild_hash_tables (bool): Rebuilds the hash tables of the model if true. Note 
-    that, model should be finetuned if rebuild_hash_tables is set to true.
-
-Example:
-    >>> model.set_output_sparsity(sparsity = 0.2, rebuild_hash_tables = False)
-)pbdoc";
 
 }  // namespace thirdai::automl::python::docs
