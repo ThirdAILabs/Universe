@@ -155,6 +155,29 @@ def test_neural_db_constrained_search_with_multiple_constraints():
         )
 
 
+def test_neural_db_constrained_search_with_multiple_constraints_multiple_models():
+    documents = [
+        ndb.PDF(PDF_FILE, metadata={"language": "English", "county": "Harris"}),
+        ndb.PDF(PDF_FILE, metadata={"language": "Spanish", "county": "Austin"}),
+    ]
+    db = ndb.NeuralDB(number_models=3)
+    db.insert(documents, train=False)
+    for constraints in [
+        {"language": "English", "county": "Harris"},
+        {"language": "Spanish", "county": "Austin"},
+    ]:
+        # Since we always use the same query, we know that we're getting different
+        # results solely due to the imposed constraints.
+        references = db.search("hello", top_k=10, constraints=constraints)
+        assert len(references) == 10
+        assert all(
+            [
+                all([ref.metadata[key] == value for key, value in constraints.items()])
+                for ref in references
+            ]
+        )
+
+
 def test_neural_db_constrained_search_with_set_constraint():
     documents = [
         ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10"}),
