@@ -15,7 +15,9 @@ from ndb_utils import (
     docs_with_meta,
     insert_works,
     metadata_constraints,
-    num_duplicate_docs,
+    num_duplicate_local_doc_getters,
+    num_duplicate_on_diskable_doc_getters,
+    on_diskable_doc_getters,
     save_load_works,
     search_works,
     train_simple_neural_db,
@@ -45,8 +47,13 @@ def db_from_bazaar():
     return bazaar.get_model("General QnA")
 
 
-def all_methods_work(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
-    insert_works(db, docs)
+def all_methods_work(
+    db: ndb.NeuralDB,
+    docs: List[ndb.Document],
+    num_duplicate_docs: int,
+    assert_acc: bool,
+):
+    insert_works(db, docs, num_duplicate_docs)
     search_works(db, docs, assert_acc)
     upvote_works(db)
     associate_works(db)
@@ -61,20 +68,57 @@ def test_neural_db_loads_from_model_bazaar():
 def test_neural_db_all_methods_work_on_new_model():
     db = ndb.NeuralDB("user")
     all_docs = [get_doc() for get_doc in all_local_doc_getters]
-    all_methods_work(db, all_docs, assert_acc=False)
+    all_methods_work(
+        db,
+        all_docs,
+        num_duplicate_docs=num_duplicate_local_doc_getters,
+        assert_acc=False,
+    )
+
+
+def test_neural_db_all_methods_work_on_new_model_with_on_disk_docs():
+    db = ndb.NeuralDB("user")
+    all_docs = [get_doc() for get_doc in on_diskable_doc_getters(on_disk=True)]
+    all_methods_work(
+        db,
+        all_docs,
+        num_duplicate_docs=num_duplicate_on_diskable_doc_getters,
+        assert_acc=False,
+    )
 
 
 def test_neuralb_db_all_methods_work_on_new_mach_mixture():
     number_models = 2
     db = ndb.NeuralDB("user", number_models=number_models)
     all_docs = [get_doc() for get_doc in all_local_doc_getters]
-    all_methods_work(db, all_docs, assert_acc=False)
+    all_methods_work(
+        db,
+        all_docs,
+        num_duplicate_docs=num_duplicate_local_doc_getters,
+        assert_acc=False,
+    )
 
 
 def test_neural_db_all_methods_work_on_loaded_bazaar_model():
     db = db_from_bazaar()
     all_docs = [get_doc() for get_doc in all_local_doc_getters]
-    all_methods_work(db, all_docs, assert_acc=True)
+    all_methods_work(
+        db,
+        all_docs,
+        num_duplicate_docs=num_duplicate_local_doc_getters,
+        assert_acc=True,
+    )
+
+
+def test_neural_db_all_methods_work_on_loaded_bazaar_model_with_on_disk_docs():
+    db = db_from_bazaar()
+    all_docs = [get_doc() for get_doc in on_diskable_doc_getters(on_disk=True)]
+    all_methods_work(
+        db,
+        all_docs,
+        num_duplicate_docs=num_duplicate_on_diskable_doc_getters,
+        assert_acc=True,
+    )
 
 
 def test_neural_db_constrained_search_with_single_constraint():
