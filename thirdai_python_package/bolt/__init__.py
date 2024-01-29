@@ -1,11 +1,7 @@
 import thirdai._thirdai.bolt
 from thirdai._thirdai.bolt import *
 
-from .udt_modifications import (
-    modify_graph_udt,
-    modify_mach_udt,
-    modify_udt,
-)
+from .udt_modifications import modify_graph_udt, modify_mach_udt, modify_udt
 
 modify_udt()
 modify_graph_udt()
