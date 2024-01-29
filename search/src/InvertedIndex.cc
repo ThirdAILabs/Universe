@@ -22,10 +22,11 @@ void InvertedIndex::index(
       freqs[token]++;
     }
 
-    // The rest of this would need to be in a critical section.
-    // TODO(Nicholas): is it faster to have a critical section around the
-    // following or have the frequencies computed foreach doc and then aggregate
-    // everyting serially at the end.
+    // TODO(Nicholas): Should this index creation be parallelized, currently the
+    // index construction time is only a few seconds. If so, is it faster to
+    // have a critical section around the following lines or have the
+    // frequencies computed foreach doc in parallel and then aggregate everyting
+    // serially at the end.
     for (const auto& [token, freq] : freqs) {
       _token_to_docs[token].emplace_back(doc_id, freq);
     }
@@ -96,7 +97,7 @@ std::vector<DocScore> InvertedIndex::query(const Tokens& query,
     for (const auto& [doc_id, token_freq] : _token_to_docs.at(token)) {
       const uint64_t doc_len = _doc_lengths.at(doc_id);
 
-      // Note: This bm25 could be precomputed for each (token, doc) pair.
+      // Note: This bm25 score could be precomputed for each (token, doc) pair.
       // However it would mean that all scores would need to be recomputed when
       // more docs are added since the idf and avg_doc_len will change. So if we
       // do not need to support small incremental additions then it might make
@@ -105,16 +106,8 @@ std::vector<DocScore> InvertedIndex::query(const Tokens& query,
     }
   }
 
-  // std::vector<DocScore> top_scores(doc_scores.begin(), doc_scores.end());
-
-  // std::sort(top_scores.begin(), top_scores.end(),
-  //           [](const auto& a, const auto& b) { return a.second > b.second;
-  //           });
-
-  // if (top_scores.size() > k) {
-  //   top_scores.resize(k);
-  // }
-
+  // Using a heap like this is O(N log(K)) where N is the number of docs.
+  // Sorting the entire list and taking the top K would be O(N log(N)). 
   std::vector<DocScore> top_scores;
   top_scores.reserve(k + 1);
   const HighestScore cmp;
