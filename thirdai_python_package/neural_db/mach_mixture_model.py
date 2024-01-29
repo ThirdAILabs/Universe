@@ -1,4 +1,4 @@
-from collections import Counter, defaultdict
+from collections import defaultdict
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence, Tuple
 
@@ -297,20 +297,18 @@ class MachMixture(Model):
         self, samples: InferSamples, entities: List[List[int]], n_results: int = None
     ) -> Predictions:
         sharded_entities = self._shard_label_constraints(entities=entities)
+
         model_scores = [
             model.score(samples=samples, entities=shard_entity, n_results=n_results)
             for model, shard_entity in zip(self.models, sharded_entities)
         ]
 
-        aggregated_scores = [
-            Counter(
-                (label, value) for scores in model_scores for label, value in scores[i]
-            )
-            for i in range(len(samples))
-        ]
+        aggregated_scores = [defaultdict(int) for _ in range(len(samples))]
 
-        # Convert Counter objects to dictionaries
-        aggregated_scores = [dict(counter) for counter in aggregated_scores]
+        for i in range(len(samples)):
+            for score in model_scores:
+                for label, value in score[i]:
+                    aggregated_scores[i][label] += value
 
         # Sort the aggregated scores and keep only the top k results
         top_k_results = []
