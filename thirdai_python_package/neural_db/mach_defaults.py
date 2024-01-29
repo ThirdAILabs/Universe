@@ -53,4 +53,4 @@ def training_arguments_from_base(size):
 MODEL_SAVE_LOCATION = "model.pkl"
 STATE_LOCATION = "state.pkl"
 MODEL_SAVE_FOLDER = "model"
-CLASS_TYPE_LOCATION = "class_type.pkl"
+CLASS_LOCATION = "class.pkl"

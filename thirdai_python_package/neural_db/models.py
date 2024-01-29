@@ -8,7 +8,7 @@ from thirdai import bolt, data
 
 from .documents import DocumentDataSource
 from .mach_defaults import (
-    CLASS_TYPE_LOCATION,
+    CLASS_LOCATION,
     MODEL_SAVE_LOCATION,
     acc_to_stop,
     metric_to_track,
@@ -375,7 +375,7 @@ class Mach(Model):
         self.model_config = new_model.model_config
 
     def save(self, path: Path):
-        pickle_to(self.__class__, path / CLASS_TYPE_LOCATION)
+        pickle_to(self.__class__, path / CLASS_LOCATION)
         pickle_to(self, filepath=path / MODEL_SAVE_LOCATION)
 
     @staticmethod

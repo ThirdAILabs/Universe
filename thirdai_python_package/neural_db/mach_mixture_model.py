@@ -6,7 +6,7 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt, data
 
 from .documents import DocumentDataSource
-from .mach_defaults import CLASS_TYPE_LOCATION, STATE_LOCATION
+from .mach_defaults import CLASS_LOCATION, STATE_LOCATION
 from .models import CancelState, Mach, Model
 from .sharded_documents import shard_data_source
 from .supervised_datasource import SupDataSource
@@ -96,7 +96,7 @@ class MachMixture(Model):
                 model.set_mach_sampling_threshold(threshold)
 
     def save(self, path: Path):
-        pickle_to(self.__class__, path / CLASS_TYPE_LOCATION)
+        pickle_to(self.__class__, path / CLASS_LOCATION)
         self._save_model(path=path)
         self._save_state_dict(path=path / STATE_LOCATION)
 

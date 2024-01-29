@@ -5,10 +5,9 @@ from typing import Callable, List
 
 from .documents import DocumentManager
 from .loggers import Logger
-from .mach_mixture_model import MachMixture
-from .models import Mach, Model
+from .models import Model
 from .trainer.checkpoint_config import (
-    CLASS_TYPE_LOCATION,
+    CLASS_LOCATION,
     MODEL_SAVE_FOLDER,
     CheckpointConfig,
 )
@@ -97,18 +96,8 @@ class State:
         total_steps = 5
 
         # load model
-        class_type = unpickle_from(
-            State.model_save_path(location) / CLASS_TYPE_LOCATION
-        )
-        if class_type == MachMixture:
-            model = MachMixture.load(State.model_save_path(location))
-        elif class_type == Mach:
-            model = Mach.load(State.model_save_path(location))
-        else:
-            raise Exception(
-                "Invalid Class Type found at location:"
-                f" {State.model_save_path(location) / CLASS_TYPE_LOCATION}"
-            )
+        ModelClass = unpickle_from(State.model_save_path(location) / CLASS_LOCATION)
+        model = ModelClass.load(State.model_save_path(location))
         on_progress(1 / total_steps)
 
         # load logger

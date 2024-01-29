@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..mach_defaults import CLASS_TYPE_LOCATION, MODEL_SAVE_FOLDER
+from ..mach_defaults import CLASS_LOCATION, MODEL_SAVE_FOLDER
 from ..utils import convert_str_to_path
 
 
