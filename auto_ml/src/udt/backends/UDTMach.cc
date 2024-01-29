@@ -900,7 +900,7 @@ void UDTMach::teach(const data::ColumnMap& rlhf_samples,
   rlhf_data.shuffle();
 
   auto [data, labels] =
-      _featurizer->columnsToTensors(rlhf_data, defaults::ASSOCIATE_BATCH_SIZE);
+      _featurizer->columnsToTensors(rlhf_data, rlhf_data.numRows());
 
   for (uint32_t e = 0; e < epochs; e++) {
     for (size_t i = 0; i < data.size(); i++) {
@@ -928,7 +928,7 @@ data::ColumnMap UDTMach::getAssociateSamples(
   }
   auto all_predicted_hashes =
       predictHashesImpl(batch, /* sparse_inference = */ false,
-                        /* force_non_empty = */ false);
+                        /* force_non_empty = */ false, n_buckets);
 
   std::mt19937 rng(global_random::nextSeed());
 
@@ -940,9 +940,9 @@ data::ColumnMap UDTMach::getAssociateSamples(
     const std::vector<uint32_t>& all_buckets = all_predicted_hashes[i];
 
     for (size_t j = 0; j < n_association_samples; j++) {
-      std::vector<uint32_t> sampled_buckets;
-      std::sample(all_buckets.begin(), all_buckets.end(),
-                  std::back_inserter(sampled_buckets), n_buckets, rng);
+      std::vector<uint32_t> sampled_buckets = all_buckets;
+      // std::sample(all_buckets.begin(), all_buckets.end(),
+      //             std::back_inserter(sampled_buckets), n_buckets, rng);
 
       inputs.push_back(source);
       label_values.emplace_back(sampled_buckets.size(), label_weight);
