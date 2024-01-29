@@ -45,20 +45,19 @@ udt_train_doc = """
 
     Notes:
         - If temporal tracking relationships are provided, UDT can make better 
-        predictions by taking temporal context into account. For example, UDT may 
-        keep track of the last few movies that a user has watched to better 
-        recommend the next movie. `model.train()` automatically updates UDT's 
-        temporal context.
+          predictions by taking temporal context into account. For example, UDT may 
+          keep track of the last few movies that a user has watched to better 
+          recommend the next movie. `model.train()` automatically updates UDT's 
+          temporal context.
         - If the prediction task is binary classification then the model will attempt 
-        to find an optimal threshold for predictions that will be used if `return_predicted_class=True`
-        is passed to calls to evaluate, predict, and predict_batch. The optimal threshold
-        will be selected based on what threshold maximizes the first validation metric
-        on the validation data. If no validation data or metrics are passed in then 
-        it will use the first 100 batches of the training data and the first training
-        metric. If there is also no training metrics then it will not choose a prediction
-        threshold. 
-
-    """
+          to find an optimal threshold for predictions that will be used if `return_predicted_class=True`
+          is passed to calls to evaluate, predict, and predict_batch. The optimal threshold
+          will be selected based on what threshold maximizes the first validation metric
+          on the validation data. If no validation data or metrics are passed in then 
+          it will use the first 100 batches of the training data and the first training
+          metric. If there is also no training metrics then it will not choose a prediction
+          threshold. 
+"""
 
 udt_train_on_datasource_doc = """
 Same as train except for arg `filename` is replaced by an arg `data_source` which accepts an DataSource object.
@@ -92,11 +91,10 @@ udt_eval_doc = """
 
     Notes: 
         - If temporal tracking relationships are provided, UDT can make better predictions 
-            by taking temporal context into account. For example, UDT may keep track of 
-            the last few movies that a user has watched to better recommend the next movie.
-        `   model.evaluate()` automatically updates UDT's temporal context.
-
-    """
+          by taking temporal context into account. For example, UDT may keep track of 
+          the last few movies that a user has watched to better recommend the next movie.
+          `model.evaluate()` automatically updates UDT's temporal context.
+ """
 
 udt_eval_on_data_source_doc = """
 Same as evaluate except for arg `filename` is replaced by an arg `data_source` which accepts an DataSource object.
