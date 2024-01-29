@@ -315,7 +315,17 @@ class MachMixture(Model):
                     else:
                         aggregated_scores[i][label] = value
 
-        return [list(label_score.items()) for label_score in aggregated_scores]
+        # Sort the aggregated scores and keep only the top k results
+        top_k_results = []
+        for i in range(len(samples)):
+            sorted_scores = sorted(
+                aggregated_scores[i].items(), key=lambda x: x[1], reverse=True
+            )
+            top_k_results.append(
+                sorted_scores[:n_results] if n_results else sorted_scores
+            )
+
+        return top_k_results
 
     @requires_condition(
         check_func=lambda x: False,
