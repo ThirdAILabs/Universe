@@ -20,6 +20,7 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
                     const config::ArgumentMap& args,
                     const std::optional<std::string>& model_config,
                     bool use_sigmoid_bce, bool mach) {
+  std::cout << "USE SIGMOID " << use_sigmoid_bce << std::endl;
   if (model_config) {
     return utils::loadModel({input_dim}, output_dim, *model_config, mach);
   }
@@ -76,6 +77,7 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
 
   auto sparsity = autotuneSparsity(output_dim);
   const auto* activation = use_sigmoid_bce ? "sigmoid" : "softmax";
+  std::cout << "activation " << activation << std::endl;
   auto output = bolt::FullyConnected::make(
                     output_dim, hidden->dim(), sparsity, activation,
                     /* sampling= */ nullptr, /* use_bias= */ output_bias)
