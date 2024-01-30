@@ -41,12 +41,6 @@ def test_neural_db_reference_scores(train_simple_neural_db):
     assert scores == sorted(scores, reverse=True)
 
 
-def db_from_bazaar():
-    bazaar = ndb.Bazaar(cache_dir=".")
-    bazaar.fetch()
-    return bazaar.get_model("General QnA")
-
-
 def all_methods_work(
     db: ndb.NeuralDB,
     docs: List[ndb.Document],
@@ -59,10 +53,6 @@ def all_methods_work(
     associate_works(db)
     save_load_works(db)
     clear_sources_works(db)
-
-
-def test_neural_db_loads_from_model_bazaar():
-    db_from_bazaar()
 
 
 def test_neural_db_all_methods_work_on_new_model():
@@ -96,28 +86,6 @@ def test_neuralb_db_all_methods_work_on_new_mach_mixture():
         all_docs,
         num_duplicate_docs=num_duplicate_local_doc_getters,
         assert_acc=False,
-    )
-
-
-def test_neural_db_all_methods_work_on_loaded_bazaar_model():
-    db = db_from_bazaar()
-    all_docs = [get_doc() for get_doc in all_local_doc_getters]
-    all_methods_work(
-        db,
-        all_docs,
-        num_duplicate_docs=num_duplicate_local_doc_getters,
-        assert_acc=True,
-    )
-
-
-def test_neural_db_all_methods_work_on_loaded_bazaar_model_with_on_disk_docs():
-    db = db_from_bazaar()
-    all_docs = [get_doc() for get_doc in on_diskable_doc_getters(on_disk=True)]
-    all_methods_work(
-        db,
-        all_docs,
-        num_duplicate_docs=num_duplicate_on_diskable_doc_getters,
-        assert_acc=True,
     )
 
 

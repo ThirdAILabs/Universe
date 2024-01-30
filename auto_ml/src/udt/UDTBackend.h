@@ -59,11 +59,10 @@ class UDTBackend {
                            TrainOptions options,
                            const bolt::DistributedCommPtr& comm) = 0;
 
-  virtual py::object trainBatch(const MapInputBatch& batch, float learning_rate,
-                                const std::vector<std::string>& metrics) {
+  virtual py::object trainBatch(const MapInputBatch& batch,
+                                float learning_rate) {
     (void)batch;
     (void)learning_rate;
-    (void)metrics;
     throw notSupported("train_batch");
   }
 
@@ -245,11 +244,9 @@ class UDTBackend {
   virtual void clearIndex() { throw notSupported("clear_index"); }
 
   virtual py::object trainWithHashes(const MapInputBatch& batch,
-                                     float learning_rate,
-                                     const std::vector<std::string>& metrics) {
+                                     float learning_rate) {
     (void)batch;
     (void)learning_rate;
-    (void)metrics;
     throw notSupported("train_with_hashes");
   }
 

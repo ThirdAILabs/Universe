@@ -155,13 +155,12 @@ py::object UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
   return output;
 }
 
-py::object UDT::trainBatch(const MapInputBatch& batch, float learning_rate,
-                           const std::vector<std::string>& metrics) {
+py::object UDT::trainBatch(const MapInputBatch& batch, float learning_rate) {
   licensing::entitlements().verifyFullAccess();
 
   bolt::utils::Timer timer;
 
-  auto output = _backend->trainBatch(batch, learning_rate, metrics);
+  auto output = _backend->trainBatch(batch, learning_rate);
 
   timer.stop();
 
