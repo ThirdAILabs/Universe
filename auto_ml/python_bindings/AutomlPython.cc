@@ -115,12 +115,12 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("target_column"), py::arg("dataset_size"),
            py::arg("use_spell_checker") = false, py::arg("delimiter") = ',',
            py::arg("model_config") = std::nullopt,
-           py::arg("options") = py::dict(), docs::UDT_GENERATOR_INIT)
+           py::arg("options") = py::dict(), docs::UDT_QUERY_REFORMULATION_INIT)
       .def(py::init(&makeQueryReformulationTargetOnly),
            py::arg("target_column"), py::arg("dataset_size"),
            py::arg("use_spell_checker") = false, py::arg("delimiter") = ',',
            py::arg("model_config") = std::nullopt,
-           py::arg("options") = py::dict(), docs::UDT_GENERATOR_INIT)
+           py::arg("options") = py::dict(), docs::UDT_QUERY_REFORMULATION_INIT)
       .def(py::init(&makeSvmClassifier), py::arg("file_format"),
            py::arg("n_target_classes"), py::arg("input_dim"),
            py::arg("model_config") = std::nullopt,
@@ -134,12 +134,11 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("options") = udt::TrainOptions(), py::arg("comm") = nullptr,
            bolt::python::OutputRedirect())
       .def("train_batch", &udt::UDT::trainBatch, py::arg("batch"),
-           py::arg("learning_rate") = 0.001,
-           py::arg("metrics") = std::vector<std::string>{},
-           bolt::python::OutputRedirect())
+           py::arg("learning_rate") = 0.001, bolt::python::OutputRedirect(),
+           docs::UDT_TRAIN_BATCH)
       .def("set_output_sparsity", &udt::UDT::setOutputSparsity,
            py::arg("sparsity"), py::arg("rebuild_hash_tables") = false,
-           docs::UDT_SET_OUTPUT_SPARSITY, bolt::python::OutputRedirect())
+           bolt::python::OutputRedirect())
       .def("evaluate", &udt::UDT::evaluate, py::arg("data"),
            py::arg("metrics") = std::vector<std::string>{},
            py::arg("sparse_inference") = false, py::arg("verbose") = true,
@@ -147,11 +146,11 @@ void defineAutomlInModule(py::module_& module) {
       .def("predict", &udt::UDT::predict, py::arg("sample"),
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false,
-           py::arg("top_k") = std::nullopt)
+           py::arg("top_k") = std::nullopt, docs::UDT_PREDICT)
       .def("predict_batch", &udt::UDT::predictBatch, py::arg("samples"),
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false,
-           py::arg("top_k") = std::nullopt)
+           py::arg("top_k") = std::nullopt, docs::UDT_PREDICT_BATCH)
       .def("score_batch", &udt::UDT::scoreBatch, py::arg("samples"),
            py::arg("classes"), py::arg("top_k") = std::nullopt)
       .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
@@ -166,14 +165,18 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("sparse_inference") = false,
            py::arg("num_hashes") = std::nullopt)
       .def("embedding_representation", &udt::UDT::embedding,
-           py::arg("input_sample"))
+           py::arg("input_sample"), docs::UDT_EMBEDDING_REPRESENTATION)
       .def("get_entity_embedding", &udt::UDT::entityEmbedding,
-           py::arg("label_id"))
-      .def("index", &udt::UDT::updateTemporalTrackers, py::arg("input_sample"))
+           py::arg("label_id"), docs::UDT_ENTITY_EMBEDDING)
+      .def("index", &udt::UDT::updateTemporalTrackers, py::arg("input_sample"),
+           docs::UDT_INDEX)
       .def("index_batch", &udt::UDT::updateTemporalTrackersBatch,
-           py::arg("input_samples"))
-      .def("index_nodes", &udt::UDT::indexNodes, py::arg("data_source"))
-      .def("clear_graph", &udt::UDT::clearGraph)
+           py::arg("input_samples"), docs::UDT_INDEX_BATCH)
+      .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers,
+           docs::UDT_RESET_TEMPORAL_TRACKERS)
+      .def("index_nodes", &udt::UDT::indexNodes, py::arg("data_source"),
+           docs::UDT_INDEX_NODES)
+      .def("clear_graph", &udt::UDT::clearGraph, docs::UDT_CLEAR_GRAPH)
       .def("set_decode_params", &udt::UDT::setDecodeParams,
            py::arg("top_k_to_return"), py::arg("num_buckets_to_eval"))
       .def("introduce_documents", &udt::UDT::introduceDocuments,
@@ -196,8 +199,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("forget", &udt::UDT::forget, py::arg("label"))
       .def("clear_index", &udt::UDT::clearIndex)
       .def("train_with_hashes", &udt::UDT::trainWithHashes, py::arg("batch"),
-           py::arg("learning_rate") = 0.001,
-           py::arg("metrics") = std::vector<std::string>{})
+           py::arg("learning_rate") = 0.001)
       .def("predict_hashes", &udt::UDT::predictHashes, py::arg("sample"),
            py::arg("sparse_inference") = false,
            py::arg("force_non_empty") = true,
@@ -232,18 +234,19 @@ void defineAutomlInModule(py::module_& module) {
       .def("get_index", &udt::UDT::getIndex)
       .def("set_index", &udt::UDT::setIndex, py::arg("index"))
       .def("set_mach_sampling_threshold", &udt::UDT::setMachSamplingThreshold)
-      .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
       .def("explain", &udt::UDT::explain, py::arg("input_sample"),
-           py::arg("target_class") = std::nullopt)
-      .def("class_name", &udt::UDT::className)
+           py::arg("target_class") = std::nullopt, docs::UDT_EXPLAIN)
+      .def("class_name", &udt::UDT::className, docs::UDT_CLASS_NAME)
       .def("_get_model", &udt::UDT::model)
       .def("_set_model", &udt::UDT::setModel, py::arg("trained_model"))
       .def("model_dims", &udt::UDT::modelDims)
       .def("text_dataset_config", &udt::UDT::textDatasetConfig)
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
-      .def("save", &udt::UDT::save, py::arg("filename"))
-      .def("checkpoint", &udt::UDT::checkpoint, py::arg("filename"))
-      .def_static("load", &udt::UDT::load, py::arg("filename"))
+      .def("save", &udt::UDT::save, py::arg("filename"),
+           docs::UDT_SAVE_CHECKPOINT)
+      .def("checkpoint", &udt::UDT::checkpoint, py::arg("filename"),
+           docs::UDT_SAVE_CHECKPOINT)
+      .def_static("load", &udt::UDT::load, py::arg("filename"), docs::UDT_LOAD)
       .def("get_parameters",
            [](udt::UDT& udt) {
              return thirdai::bolt::python::getParameters(udt.model());

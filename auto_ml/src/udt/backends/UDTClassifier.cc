@@ -99,17 +99,13 @@ py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
 }
 
 py::object UDTClassifier::trainBatch(const MapInputBatch& batch,
-                                     float learning_rate,
-                                     const std::vector<std::string>& metrics) {
+                                     float learning_rate) {
   auto& model = _classifier->model();
 
   auto [inputs, labels] = _featurizer->featurizeTrainingBatch(batch);
 
   model->trainOnBatch(inputs, labels);
   model->updateParameters(learning_rate);
-
-  // TODO(Nicholas): Add back metrics
-  (void)metrics;
 
   return py::none();
 }
