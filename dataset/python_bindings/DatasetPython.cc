@@ -123,6 +123,7 @@ void createDatasetSubmodule(py::module_& module) {
       .def("get_hash_to_entities", &mach::MachIndex::getEntities,
            py::arg("hash"))
 #endif
+      .def("num_entities", &mach::MachIndex::numEntities)
       .def("num_hashes", &mach::MachIndex::numHashes)
       .def("output_range", &mach::MachIndex::numBuckets)
       .def("save", &mach::MachIndex::save, py::arg("filename"))
