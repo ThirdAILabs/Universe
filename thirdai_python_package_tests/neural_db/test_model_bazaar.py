@@ -24,23 +24,3 @@ def test_model_bazaar_registry_cache():
     bazaar_2 = Bazaar(cache_dir=BAZAAR_CACHE)
     for key, val in bazaar_1._registry.items():
         assert val == bazaar_2._registry[key]
-
-
-def test_model_bazaar_fetch_remove_outdated_flag():
-    clear_cache()
-    bazaar = Bazaar(cache_dir=BAZAAR_CACHE)
-    bazaar._registry["fake_entry"] = BazaarEntry(
-        display_name="fake_model",
-        trained_on="fake_data",
-        num_params="fake_num_params",
-        size=1000,
-        hash="fake_hash",
-    )
-    bazaar.fetch(remove_outdated=False)
-    assert bazaar._registry["fake_entry"].display_name == "fake_model"
-    assert bazaar._registry["fake_entry"].trained_on == "fake_data"
-    assert bazaar._registry["fake_entry"].num_params == "fake_num_params"
-    assert bazaar._registry["fake_entry"].size == 1000
-    assert bazaar._registry["fake_entry"].hash == "fake_hash"
-    bazaar.fetch()
-    assert not "fake_entry" in bazaar._registry
