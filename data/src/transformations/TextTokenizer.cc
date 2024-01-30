@@ -4,6 +4,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <data/src/columns/ArrayColumns.h>
+#include <utils/text/StringManipulation.h>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -80,20 +81,16 @@ void TextTokenizer::buildExplanationMap(const ColumnMap& input, State& state,
 
   const std::string& input_text =
       input.getValueColumn<std::string>(_input_column)->value(0);
-  std::string to_tokeinze;
-  if (_lowercase) {
-    to_tokeinze = text::lower(input_text);
-  } else {
-    to_tokeinze = input_text;
-  }
 
-  std::vector<uint32_t> tokens = _tokenizer->tokenize(to_tokeinze);
+  std::string to_tokenize = _lowercase ? text::lower(input_text) : input_text;
+
+  std::vector<uint32_t> tokens = _tokenizer->tokenize(to_tokenize);
   std::vector<uint32_t> indices = _encoder->encode(tokens);
   dataset::token_encoding::mod(indices, _dim);
 
   for (const auto& index : indices) {
     uint32_t token = _encoder->undoEncoding(tokens, index, _dim);
-    auto word = _tokenizer->getResponsibleWord(to_tokeinze, token);
+    auto word = _tokenizer->getResponsibleWord(to_tokenize, token);
 
     explanations.store(_output_indices, index,
                        "word '" + word + "' from " +
