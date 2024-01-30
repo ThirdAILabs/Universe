@@ -78,20 +78,26 @@ void TextTokenizer::buildExplanationMap(const ColumnMap& input, State& state,
                                         ExplanationMap& explanations) const {
   (void)state;
 
-  const std::string& text =
+  const std::string& input_text =
       input.getValueColumn<std::string>(_input_column)->value(0);
+  std::string to_tokeinze;
+  if (_lowercase) {
+    to_tokeinze = text::lower(input_text);
+  } else {
+    to_tokeinze = input_text;
+  }
 
-  std::vector<uint32_t> tokens = _tokenizer->tokenize(text);
+  std::vector<uint32_t> tokens = _tokenizer->tokenize(to_tokeinze);
   std::vector<uint32_t> indices = _encoder->encode(tokens);
   dataset::token_encoding::mod(indices, _dim);
 
   for (const auto& index : indices) {
     uint32_t token = _encoder->undoEncoding(tokens, index, _dim);
-    auto word = _tokenizer->getResponsibleWord(text, token);
+    auto word = _tokenizer->getResponsibleWord(to_tokeinze, token);
 
     explanations.store(_output_indices, index,
                        "word '" + word + "' from " +
-                           explanations.explain(_input_column, text));
+                           explanations.explain(_input_column, input_text));
   }
 }
 
