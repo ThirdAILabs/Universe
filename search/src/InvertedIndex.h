@@ -15,14 +15,14 @@ using DocScore = std::pair<DocId, float>;
 
 class InvertedIndex {
  public:
-  static constexpr float DEFAULT_K = 1.2;
+  static constexpr float DEFAULT_K1 = 1.2;
   static constexpr float DEFAULT_B = 0.75;
   static constexpr float DEFAULT_MAX_DOC_FRAC_W_TOKEN = 0.1;
 
   explicit InvertedIndex(
       float max_doc_frac_w_token = DEFAULT_MAX_DOC_FRAC_W_TOKEN,
-      float k = DEFAULT_K, float b = DEFAULT_B)
-      : _max_doc_frac_w_token(max_doc_frac_w_token), _k(k), _b(b) {}
+      float k1 = DEFAULT_K1, float b = DEFAULT_B)
+      : _max_doc_frac_w_token(max_doc_frac_w_token), _k1(k1), _b(b) {}
 
   void index(const std::vector<std::pair<DocId, Tokens>>& documents);
 
@@ -35,8 +35,8 @@ class InvertedIndex {
   void computeIdfs();
 
   inline float bm25(float idf, uint32_t freq, uint64_t doc_len) const {
-    const float num = freq * (_k + 1);
-    const float denom = freq + _k * (1 - _b + _b * doc_len / _avg_doc_length);
+    const float num = freq * (_k1 + 1);
+    const float denom = freq + _k1 * (1 - _b + _b * doc_len / _avg_doc_length);
     return idf * num / denom;
   }
 
@@ -56,7 +56,7 @@ class InvertedIndex {
   float _avg_doc_length;
 
   // Parameters for computing the BM25 score.
-  float _k, _b;
+  float _k1, _b;
 };
 
 }  // namespace thirdai::search

@@ -76,7 +76,7 @@ void createSearchSubmodule(py::module_& module) {
       .def(py::init<float, float, float>(),
            py::arg("max_doc_frac_w_token") =
                InvertedIndex::DEFAULT_MAX_DOC_FRAC_W_TOKEN,
-           py::arg("k") = InvertedIndex::DEFAULT_K,
+           py::arg("k1") = InvertedIndex::DEFAULT_K1,
            py::arg("b") = InvertedIndex::DEFAULT_B)
       .def("index", &InvertedIndex::index, py::arg("documents"))
       .def("query", &InvertedIndex::queryBatch, py::arg("queries"),
