@@ -27,9 +27,7 @@ def associate(
     top_k: int,
     **kwargs,
 ):
-    model.associate(
-        text_pairs, n_buckets=top_k, force_non_empty=kwargs.get("force_non_empty", True)
-    )
+    model.associate(text_pairs, n_buckets=top_k, **kwargs)
     logger.log(
         session_id=user_id,
         action="associate",
