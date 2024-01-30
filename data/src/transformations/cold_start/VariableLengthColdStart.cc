@@ -3,6 +3,7 @@
 #include <data/src/transformations/StringConcat.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <utils/CommonChecks.h>
+#include <utils/text/RegexPatterns.h>
 #include <utils/text/Stopwords.h>
 #include <utils/text/StringManipulation.h>
 
@@ -34,7 +35,7 @@ VariableLengthConfig::VariableLengthConfig(
       chars_replace_with_space(chars_replace_with_space),
       chars_deleted(chars_deleted),
       chars_duplicated(chars_duplicated),
-      chars_replace_with_adjacents(chars_replace_with_adjacents) {
+      chars_replace_with_adjacents(chars_replace_with_adjacents){
   utils::validateGreaterThanZero(covering_min_length, "covering_min_length");
   utils::validateGreaterThanZero(covering_max_length, "covering_max_length");
   utils::validateGreaterThanZero(slice_min_length, "slice_min_length");
@@ -129,12 +130,11 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
 }
 
 Phrase VariableLengthColdStart::convertTextToPhrase(std::string string) const {
-  if (_config.prefilter_punctuation) {
-    string = text::replacePunctuation(string, ' ');
-  }
+  return text::split(string, ' ');
+
   string = text::stripWhitespace(string);
 
-  Phrase phrase = text::tokenizeSentence(string);
+  Phrase phrase = text::split(string, ' ');
 
   return phrase;
 }

@@ -2,7 +2,7 @@
 #include <utils/text/NeighboringCharacters.h>
 #include <utils/text/StringManipulation.h>
 
-namespace thirdai::text {
+namespace thirdai::text::tests {
 
 void assertSplitSentence(std::vector<std::string>& words) {
   ASSERT_EQ(words.size(), 7);
@@ -186,4 +186,4 @@ TEST(StringManipulationTest, PerturbationDuplicateCharacters) {
   ASSERT_EQ(num_duplicated_chars, 2);
 }
 
-}  // namespace thirdai::text
+}  // namespace thirdai::text::tests

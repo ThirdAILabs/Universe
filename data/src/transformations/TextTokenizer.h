@@ -14,7 +14,7 @@ class TextTokenizer final : public Transformation {
       std::string input_column, std::string output_indices,
       std::optional<std::string> output_values,
       dataset::TextTokenizerPtr tokenizer, dataset::TextEncoderPtr encoder,
-      bool lowercase = false,
+      bool lowercase = false, bool cleaner = false,
       size_t dim = dataset::token_encoding::DEFAULT_TEXT_ENCODING_DIM);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;

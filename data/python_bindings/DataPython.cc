@@ -29,6 +29,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <utils/Random.h>
+#include <utils/text/RegexPatterns.h>
 #include <cstddef>
 #include <memory>
 #include <optional>
@@ -110,6 +111,9 @@ void createDataSubmodule(py::module_& dataset_submodule) {
 
   dataset_submodule.def("to_tensors", &toTensorBatches, py::arg("column_map"),
                         py::arg("columns_to_convert"), py::arg("batch_size"));
+
+  dataset_submodule.def("clean_text", &text::nltkWordTokenize,
+                        py::arg("input"));
 }
 
 template <typename T>
