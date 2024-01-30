@@ -30,7 +30,9 @@ class BazaarEntry(BaseModel):
 
 class Bazaar:
     def __init__(
-        self, cache_dir: str, base_url: str = "https://model-zoo.azurewebsites.net/"
+        self,
+        cache_dir: str,
+        base_url: str = "https://staging-modelzoo.azurewebsites.net/api/",
     ):
         self._base_url = base_url
         self._cache_dir = Path(cache_dir)
