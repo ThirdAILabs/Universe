@@ -197,9 +197,8 @@ py::object UDTMachClassifier::train(
                             callbacks, options, comm);
 }
 
-py::object UDTMachClassifier::trainBatch(
-    const MapInputBatch& batch, float learning_rate,
-    const std::vector<std::string>& metrics) {
+py::object UDTMachClassifier::trainBatch(const MapInputBatch& batch,
+                                         float learning_rate) {
   auto& model = _classifier->model();
 
   auto [inputs, labels] = _dataset_factory->featurizeTrainingBatch(batch);
@@ -207,15 +206,11 @@ py::object UDTMachClassifier::trainBatch(
   model->trainOnBatch(inputs, labels);
   model->updateParameters(learning_rate);
 
-  // TODO(Nicholas): Add back metrics
-  (void)metrics;
-
   return py::none();
 }
 
-py::object UDTMachClassifier::trainWithHashes(
-    const MapInputBatch& batch, float learning_rate,
-    const std::vector<std::string>& metrics) {
+py::object UDTMachClassifier::trainWithHashes(const MapInputBatch& batch,
+                                              float learning_rate) {
   auto& model = _classifier->model();
 
   auto [inputs, labels] =
@@ -224,9 +219,6 @@ py::object UDTMachClassifier::trainWithHashes(
 
   model->trainOnBatch(inputs, labels);
   model->updateParameters(learning_rate);
-
-  // TODO(Nicholas): Add back metrics
-  (void)metrics;
 
   return py::none();
 }
