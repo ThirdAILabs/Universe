@@ -24,11 +24,16 @@ from ndb_utils import (
     train_simple_neural_db,
     upvote_batch_works,
     upvote_works,
+    empty_neural_db,
 )
 from thirdai import dataset
 from thirdai import neural_db as ndb
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
+
+
+small_doc_set = [ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE, on_disk=True)]
+all_local_docs = [get_doc() for get_doc in all_local_doc_getters]
 
 
 def test_neural_db_reference_scores(train_simple_neural_db):
@@ -70,7 +75,7 @@ def test_neural_db_all_methods_work_on_new_model():
     db = ndb.NeuralDB("user")
     all_methods_work(
         db,
-        docs=[ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE, on_disk=True)],
+        docs=small_doc_set,
         num_duplicate_docs=0,
         assert_acc=False,
     )
@@ -81,7 +86,7 @@ def test_neuralb_db_all_methods_work_on_new_mach_mixture():
     db = ndb.NeuralDB("user", number_models=number_models)
     all_methods_work(
         db,
-        docs=[ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE, on_disk=True)],
+        docs=small_doc_set,
         num_duplicate_docs=0,
         assert_acc=False,
     )
@@ -91,7 +96,7 @@ def test_neural_db_all_methods_work_on_loaded_bazaar_model():
     db = db_from_bazaar()
     all_methods_work(
         db,
-        docs=[ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE, on_disk=True)],
+        docs=small_doc_set,
         num_duplicate_docs=num_duplicate_local_doc_getters,
         assert_acc=True,
     )
@@ -108,12 +113,13 @@ def test_neural_db_constrained_search_with_single_constraint():
         assert all([constraint == ref.metadata["meta"] for ref in references])
 
 
-def test_neural_db_constrained_search_with_multiple_constraints():
+def test_neural_db_constrained_search_with_multiple_constraints(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"language": "English", "county": "Harris"}),
         ndb.PDF(PDF_FILE, metadata={"language": "Spanish", "county": "Austin"}),
     ]
-    db = ndb.NeuralDB()
+    db = empty_neural_db
+    db.clear_sources()  # clear sources in case a different test added sources
     db.insert(documents, train=False)
     for constraints in [
         {"language": "English", "county": "Harris"},
@@ -131,12 +137,15 @@ def test_neural_db_constrained_search_with_multiple_constraints():
         )
 
 
-def test_neural_db_constrained_search_with_multiple_constraints_multiple_models():
+def test_neural_db_constrained_search_with_multiple_constraints_multiple_models(
+    empty_neural_db,
+):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"language": "English", "county": "Harris"}),
         ndb.PDF(PDF_FILE, metadata={"language": "Spanish", "county": "Austin"}),
     ]
-    db = ndb.NeuralDB(number_models=3)
+    db = empty_neural_db
+    db.clear_sources()  # clear sources in case a different test added sources
     db.insert(documents, train=False)
     for constraints in [
         {"language": "English", "county": "Harris"},
@@ -154,13 +163,14 @@ def test_neural_db_constrained_search_with_multiple_constraints_multiple_models(
         )
 
 
-def test_neural_db_constrained_search_with_set_constraint():
+def test_neural_db_constrained_search_with_set_constraint(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10"}),
         ndb.PDF(PDF_FILE, metadata={"date": "2022-10-10"}),
         ndb.PDF(PDF_FILE, metadata={"date": "2021-10-10"}),
     ]
-    db = ndb.NeuralDB()
+    db = empty_neural_db
+    db.clear_sources()  # clear sources in case a different test added sources
     db.insert(documents, train=False)
 
     references = db.search(
@@ -183,12 +193,13 @@ def test_neural_db_constrained_search_with_set_constraint():
     assert any([ref.metadata["date"] == "2021-10-10" for ref in references])
 
 
-def test_neural_db_constrained_search_with_range_constraint():
+def test_neural_db_constrained_search_with_range_constraint(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10", "score": 0.5}),
         ndb.PDF(PDF_FILE, metadata={"date": "2022-10-10", "score": 0.9}),
     ]
-    db = ndb.NeuralDB()
+    db = empty_neural_db
+    db.clear_sources()  # clear sources in case a different test added sources
     db.insert(documents, train=False)
 
     # Make sure that without constraints, we get results from both documents.
@@ -209,12 +220,13 @@ def test_neural_db_constrained_search_with_range_constraint():
     assert all([ref.metadata["score"] == 0.9 for ref in references])
 
 
-def test_neural_db_constrained_search_with_comparison_constraint():
+def test_neural_db_constrained_search_with_comparison_constraint(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10", "score": 0.5}),
         ndb.PDF(PDF_FILE, metadata={"date": "2022-10-10", "score": 0.9}),
     ]
-    db = ndb.NeuralDB()
+    db = empty_neural_db
+    db.clear_sources()  # clear sources in case a different test added sources
     db.insert(documents, train=False)
 
     # Make sure that without constraints, we get results from both documents.
@@ -233,11 +245,12 @@ def test_neural_db_constrained_search_with_comparison_constraint():
     assert all([ref.metadata["score"] == 0.5 for ref in references])
 
 
-def test_neural_db_constrained_search_no_matches():
+def test_neural_db_constrained_search_no_matches(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10", "score": 0.5}),
     ]
-    db = ndb.NeuralDB()
+    db = empty_neural_db
+    db.clear_sources()  # clear sources in case a different test added sources
     db.insert(documents, train=False)
 
     references = db.search(
@@ -246,7 +259,7 @@ def test_neural_db_constrained_search_no_matches():
     assert len(references) == 0
 
 
-def test_neural_db_constrained_search_row_level_constraints():
+def test_neural_db_constrained_search_row_level_constraints(empty_neural_db):
     csv_contents = [
         "id,text,date",
     ] + [f"{i},a reusable chunk of text,{1950 + i}-10-10" for i in range(100)]
@@ -265,7 +278,8 @@ def test_neural_db_constrained_search_row_level_constraints():
             index_columns=["date"],
         )
     ]
-    db = ndb.NeuralDB()
+    db = empty_neural_db
+    db.clear_sources()  # clear sources in case a different test added sources
     db.insert(documents, train=True)
 
     references = db.search(
@@ -281,7 +295,7 @@ def test_neural_db_constrained_search_row_level_constraints():
     assert any([r.metadata["date"] > "2000-01-01" for r in references])
 
 
-def test_neural_db_delete_document():
+def test_neural_db_delete_document(empty_neural_db):
     with open("ice_cream.csv", "w") as f:
         f.write("text,id\n")
         f.write("ice cream,0\n")
@@ -290,7 +304,8 @@ def test_neural_db_delete_document():
         f.write("text,id\n")
         f.write("pizza,0\n")
 
-    db = ndb.NeuralDB()
+    db = empty_neural_db
+    db.clear_sources()  # clear sources in case a different test added sources
     docs = [
         ndb.CSV(
             "ice_cream.csv",
@@ -378,8 +393,7 @@ def test_neural_db_rerank_search():
         return len(query_tokens.intersection(docs_tokens))
 
     db = ndb.NeuralDB("user")
-    all_docs = [get_doc() for get_doc in all_local_doc_getters]
-    db.insert(all_docs, train=False)
+    db.insert(all_local_docs, train=False)
 
     query = (
         "The standard chunk of Lorem Ipsum used since the 1500s is reproduced below for"
@@ -416,8 +430,7 @@ def descending_order(seq):
 
 def test_neural_db_reranking():
     db = ndb.NeuralDB("user")
-    all_docs = [get_doc() for get_doc in all_local_doc_getters]
-    db.insert(all_docs, train=True)
+    db.insert(all_local_docs, train=True)
 
     query = "Lorem Ipsum"
 
@@ -458,8 +471,7 @@ def test_neural_db_reranking():
 
 def test_neural_db_reranking_threshold():
     db = ndb.NeuralDB("user")
-    all_docs = [get_doc() for get_doc in all_local_doc_getters]
-    db.insert(all_docs, train=True)
+    db.insert(all_local_docs, train=True)
 
     query = "agreement"
 
