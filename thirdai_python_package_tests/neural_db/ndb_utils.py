@@ -224,37 +224,8 @@ all_local_doc_getters = [
     lambda: ndb.SentenceLevelDOCX(DOCX_FILE),
 ]
 
-# The two URL docs are different constructor invocations for the same thing.
-num_duplicate_local_doc_getters = 1
-
-
-def on_diskable_doc_getters(on_disk):
-    return [
-        # Test both CSV constructors to make sure we capture all edge cases
-        # relating to how we process the id column.
-        lambda: ndb.CSV(
-            CSV_FILE,
-            id_column="category",
-            strong_columns=["text"],
-            weak_columns=["text"],
-            reference_columns=["text"],
-            on_disk=on_disk,
-        ),
-        lambda: ndb.CSV(CSV_FILE, on_disk=on_disk),
-        # For everything else, only test one constructor per document type.
-        lambda: ndb.PDF(PDF_FILE, on_disk=on_disk),
-        lambda: ndb.DOCX(DOCX_FILE, on_disk=on_disk),
-        lambda: ndb.URL(
-            "https://en.wikipedia.org/wiki/Rice_University", on_disk=on_disk
-        ),
-        lambda: ndb.Unstructured(PPTX_FILE, on_disk=on_disk),
-        lambda: ndb.SentenceLevelPDF(PDF_FILE, on_disk=on_disk),
-        lambda: ndb.SentenceLevelDOCX(DOCX_FILE, on_disk=on_disk),
-    ]
-
-
-num_duplicate_on_diskable_doc_getters = 0
-
+# The two URL docs are different constructor invocationsfor the same thing.
+num_duplicate_docs = 1
 
 all_doc_getters = all_local_doc_getters + [
     eq_doc.connector_doc for eq_doc in all_connector_doc_getters
@@ -350,7 +321,7 @@ ARBITRARY_QUERY = "This is an arbitrary search query"
 # They are only written as separate functions to make it easier to read.
 
 
-def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document], num_duplicate_docs):
+def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document]):
     db.insert(docs, train=False)
     assert len(db.sources()) == len(docs) - num_duplicate_docs
 
@@ -417,30 +388,12 @@ def associate_works(db: ndb.NeuralDB):
 
 
 def save_load_works(db: ndb.NeuralDB):
-    search_results = [r.text for r in db.search(ARBITRARY_QUERY, top_k=5)]
-
     if os.path.exists("temp.ndb"):
         shutil.rmtree("temp.ndb")
     db.save("temp.ndb")
+    search_results = [r.text for r in db.search(ARBITRARY_QUERY, top_k=5)]
 
-    # Change working directory to catch edge cases. E.g. if we don't properly
-    # save a sqlite database, this test may still pass if the original sqlite
-    # database is still in the current working directory.
-    if os.path.exists("new_dir"):
-        shutil.rmtree("new_dir")
-    os.mkdir("new_dir")
-    if os.path.exists("inner_new_dir"):
-        shutil.rmtree("inner_new_dir")
-    os.mkdir("inner_new_dir")
-    shutil.move("temp.ndb", "inner_new_dir/temp.ndb")
-    shutil.move("inner_new_dir", "new_dir/inner_new_dir")
-    os.chdir("new_dir")
-
-    # We new_dir/, and inner_new_dir/ inside of new_dir/ which contains
-    # temp.ndb. By only cd-ing into new_dir/ and loading from
-    # inner_new_dir/temp.ndb, we make sure that path changes are handled
-    # correctly.
-    new_db = ndb.NeuralDB.from_checkpoint("inner_new_dir/temp.ndb")
+    new_db = ndb.NeuralDB.from_checkpoint("temp.ndb")
     new_search_results = [r.text for r in new_db.search(ARBITRARY_QUERY, top_k=5)]
 
     assert search_results == new_search_results
@@ -449,22 +402,7 @@ def save_load_works(db: ndb.NeuralDB):
         doc.name for doc in new_db.sources().values()
     ]
 
-    # Save the loaded model and test the second saved model. Some metadata is
-    # updated during the loading process. If saving a loaded model and then
-    # loading it again works, we can induce that the metadata will not be
-    # corrupted if we save and load an arbitrary number of times.
-    new_db.save("temp_2.ndb")
-    new_new_db = ndb.NeuralDB.from_checkpoint("temp_2.ndb")
-    new_search_results = [r.text for r in new_new_db.search(ARBITRARY_QUERY, top_k=5)]
-
-    assert search_results == new_search_results
-    assert db.sources().keys() == new_db.sources().keys()
-    assert [doc.name for doc in db.sources().values()] == [
-        doc.name for doc in new_db.sources().values()
-    ]
-
-    os.chdir("..")
-    shutil.rmtree("new_dir")
+    shutil.rmtree("temp.ndb")
 
 
 def clear_sources_works(db: ndb.NeuralDB):
