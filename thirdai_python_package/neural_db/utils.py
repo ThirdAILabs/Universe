@@ -1,10 +1,44 @@
 import hashlib
 import math
+import os
+import pickle
 import random
+import shutil
 from functools import wraps
+from pathlib import Path
 
 DIRECTORY_CONNECTOR_SUPPORTED_EXT = ["pdf", "docx", "pptx", "txt", "eml"]
 SUPPORTED_EXT = ["csv"] + DIRECTORY_CONNECTOR_SUPPORTED_EXT
+
+
+def convert_str_to_path(str_path):
+    if isinstance(str_path, str):
+        return Path(str_path)
+    elif isinstance(str_path, Path):
+        return str_path
+    else:
+        raise TypeError(
+            "Error converting to Path. Expected the type a 'str' or 'pathlib.Path', but"
+            f" received: {type(str_path)}"
+        )
+
+
+def pickle_to(obj: object, filepath: Path):
+    with open(filepath, "wb") as pkl:
+        pickle.dump(obj, pkl)
+
+
+def unpickle_from(filepath: Path):
+    with open(filepath, "rb") as pkl:
+        obj = pickle.load(pkl)
+    return obj
+
+
+def assert_file_exists(path: Path):
+    if not path:
+        raise ValueError("Path cannot be none")
+    if not path.exists():
+        raise FileNotFoundError(f"File not found: {str(path)}")
 
 
 def clean_text(text):
@@ -54,6 +88,18 @@ def move_between_directories(src, dest):
         src_path = os.path.join(src, f)
         dst_path = os.path.join(dest, f)
         shutil.move(src_path, dst_path)
+
+
+def delete_folder(path: Path, ignore_errors: bool = True):
+    shutil.rmtree(path, ignore_errors=ignore_errors)
+
+
+def delete_file(path: Path, ignore_errors: bool = True):
+    try:
+        os.remove(path)
+    except:
+        if not ignore_errors:
+            raise
 
 
 # This decorator is used to raise a NotImplemented error if the check_func returns false. This is used for scenarios when a Funciton is not implemented for a particular class depending upon a condition

@@ -3,6 +3,11 @@
 #include <data/src/ColumnMap.h>
 #include <data/src/transformations/Transformation.h>
 #include <random>
+#include <string>
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define VARIABLE_TO_STRING(name, ends_with) \
+  thirdai::data::cold_start::convertToString(#name, (name), ends_with)
 
 namespace thirdai::data::cold_start {
 
@@ -49,5 +54,19 @@ PhraseCollection sampleFromPhrases(const PhraseCollection& phrases,
                                    uint32_t words_per_sampled_phrase,
                                    uint32_t n_sampled_phrases,
                                    std::mt19937& rng);
+
+template <typename T>
+std::string convertToString(const char* name, const T& variable,
+                            const std::string& ends_with = ", ") {
+  return std::string(name) + ": " + std::to_string(variable) + ends_with;
+}
+
+template <typename T>
+std::string convertToString(const char* name, const std::optional<T>& variable,
+                            const std::string& ends_with = ",") {
+  return std::string(name) + ": " +
+         (variable.has_value() ? std::to_string(variable.value()) : "NA") +
+         ends_with;
+}
 
 }  // namespace thirdai::data::cold_start

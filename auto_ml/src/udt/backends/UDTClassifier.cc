@@ -5,11 +5,13 @@
 #include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/root_cause_analysis/RCA.h>
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/trainer/Dataset.h>
+#include <auto_ml/src/cpp_classifier/CppClassifier.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
@@ -22,6 +24,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <licensing/src/CheckLicense.h>
 #include <pybind11/stl.h>
 #include <utils/Version.h>
@@ -96,17 +99,13 @@ py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
 }
 
 py::object UDTClassifier::trainBatch(const MapInputBatch& batch,
-                                     float learning_rate,
-                                     const std::vector<std::string>& metrics) {
+                                     float learning_rate) {
   auto& model = _classifier->model();
 
   auto [inputs, labels] = _featurizer->featurizeTrainingBatch(batch);
 
   model->trainOnBatch(inputs, labels);
   model->updateParameters(learning_rate);
-
-  // TODO(Nicholas): Add back metrics
-  (void)metrics;
 
   return py::none();
 }
@@ -320,6 +319,16 @@ uint32_t UDTClassifier::labelToNeuronId(
 
 bool UDTClassifier::integerTarget() const {
   return !_featurizer->state()->containsVocab(LABEL_VOCAB);
+}
+
+void UDTClassifier::saveCppClassifier(const std::string& save_path) const {
+  CppClassifier classifier(_featurizer, _classifier->model(),
+                           _classifier->binaryPredictionThreshold());
+
+  auto ostream = dataset::SafeFileIO::ofstream(save_path);
+  cereal::BinaryOutputArchive oarchive(ostream);
+
+  oarchive(classifier);
 }
 
 template void UDTClassifier::serialize(cereal::BinaryInputArchive&,

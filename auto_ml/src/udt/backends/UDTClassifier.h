@@ -36,8 +36,7 @@ class UDTClassifier final : public UDTBackend {
                    TrainOptions options,
                    const bolt::DistributedCommPtr& comm) final;
 
-  py::object trainBatch(const MapInputBatch& batch, float learning_rate,
-                        const std::vector<std::string>& metrics) final;
+  py::object trainBatch(const MapInputBatch& batch, float learning_rate) final;
 
   /**
    * Modifies the sparsity of the output layer. If rebuild_hash_tables is true,
@@ -110,6 +109,8 @@ class UDTClassifier final : public UDTBackend {
           "setting.");
     }
   }
+
+  void saveCppClassifier(const std::string& save_path) const final;
 
  private:
   data::TransformationPtr labelTransformation(

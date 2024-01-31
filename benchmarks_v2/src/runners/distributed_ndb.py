@@ -50,7 +50,7 @@ class DistributedNDBRunner(Runner):
         )
 
         _, doc = list(ndb_model.sources().items())[0]
-        sampled_df = doc.df.sample(1000)
+        sampled_df = doc.table.df.sample(1000)
 
         scores = test_ndb(ndb_model, sampled_df)
         for key, val in scores.items():
