@@ -52,7 +52,7 @@ void InvertedIndex::computeIdfs() {
   // corresponds to a token that occurs in more than that fraction of docs. An
   // alternative idea would be to throw away the x% most common tokens (lowest
   // idf).
-  const size_t max_docs_with_token = n_docs * _max_doc_frac_w_token;
+  const size_t max_docs_with_token = n_docs * _idf_cuttoff_frac;
   const float idf_cuttoff = idf(n_docs, max_docs_with_token);
 
   _token_to_idf.clear();
@@ -107,7 +107,7 @@ std::vector<DocScore> InvertedIndex::query(const Tokens& query,
   }
 
   // Using a heap like this is O(N log(K)) where N is the number of docs.
-  // Sorting the entire list and taking the top K would be O(N log(N)). 
+  // Sorting the entire list and taking the top K would be O(N log(N)).
   std::vector<DocScore> top_scores;
   top_scores.reserve(k + 1);
   const HighestScore cmp;
