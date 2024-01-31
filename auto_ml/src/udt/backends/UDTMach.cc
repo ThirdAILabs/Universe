@@ -777,7 +777,7 @@ void UDTMach::introduceLabelHelper(
   const auto& mach_index = getIndex();
 
   uint32_t approx_num_hashes_per_bucket =
-      mach_index->approxNumHashesPerBucket(1);
+      mach_index->approxNumHashesPerBucket(samples.size());
 
   auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
                                 approx_num_hashes_per_bucket, num_random_hashes,
