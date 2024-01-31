@@ -74,8 +74,7 @@ void createSearchSubmodule(py::module_& module) {
   py::class_<InvertedIndex, std::shared_ptr<InvertedIndex>>(search_submodule,
                                                             "InvertedIndex")
       .def(py::init<float, float, float>(),
-           py::arg("max_doc_frac_w_token") =
-               InvertedIndex::DEFAULT_MAX_DOC_FRAC_W_TOKEN,
+           py::arg("idf_cutoff_frac") = InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC,
            py::arg("k1") = InvertedIndex::DEFAULT_K1,
            py::arg("b") = InvertedIndex::DEFAULT_B)
       .def("index", &InvertedIndex::index, py::arg("documents"))

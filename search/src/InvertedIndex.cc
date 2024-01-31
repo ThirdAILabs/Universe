@@ -52,14 +52,14 @@ void InvertedIndex::computeIdfs() {
   // corresponds to a token that occurs in more than that fraction of docs. An
   // alternative idea would be to throw away the x% most common tokens (lowest
   // idf).
-  const size_t max_docs_with_token = n_docs * _idf_cuttoff_frac;
-  const float idf_cuttoff = idf(n_docs, max_docs_with_token);
+  const size_t max_docs_with_token = n_docs * _idf_cutoff_frac;
+  const float idf_cutoff = idf(n_docs, max_docs_with_token);
 
   _token_to_idf.clear();
   for (const auto& [token, docs] : _token_to_docs) {
     const size_t docs_w_token = docs.size();
     const float idf_score = idf(n_docs, docs_w_token);
-    if (idf_score >= idf_cuttoff) {
+    if (idf_score >= idf_cutoff) {
       _token_to_idf[token] = idf_score;
     }
   }
