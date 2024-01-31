@@ -17,7 +17,7 @@ def test_inverted_index(download_scifact_dataset):
 
     docs = [(row["DOC_ID"], row["TEXT"]) for _, row in doc_df.iterrows()]
 
-    index = search.InvertedIndex(max_doc_frac_w_token=0.3)
+    index = search.InvertedIndex()
 
     index.index(docs)
 
