@@ -11,6 +11,7 @@
 
 namespace thirdai::text::porter_stemmer {
 
+// NOLINTNEXTLINE (clang-tidy doens't like recursion)
 inline bool isConsonant(const std::string& word, size_t i) {
   const char c = word[i];
   if (c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u') {
@@ -21,7 +22,7 @@ inline bool isConsonant(const std::string& word, size_t i) {
     if (i == 0) {
       return true;
     }
-    return !isConsonant(word, i - 1);  // NOLINT
+    return !isConsonant(word, i - 1);
   }
 
   return true;
@@ -35,7 +36,7 @@ inline size_t measure(const std::string& stem) {
   size_t measure = 0;
   bool last_is_consonant = isConsonant(stem, 0);
   for (size_t i = 1; i < stem.size(); i++) {
-    bool is_consonant = isConsonant(stem, i);
+    const bool is_consonant = isConsonant(stem, i);
 
     if (!last_is_consonant && is_consonant) {
       measure++;
@@ -56,7 +57,7 @@ inline bool containsVowel(const std::string& stem) {
 }
 
 inline bool endsDoubleConsonant(const std::string& word) {
-  size_t last_index = word.size() - 1;
+  const size_t last_index = word.size() - 1;
   return word.size() >= 2 && (word[last_index] == word[last_index - 1]) &&
          isConsonant(word, last_index);
 }
@@ -113,14 +114,14 @@ std::string applyRules(const std::string& word,
                        const std::vector<Rule>& rules) {
   for (const auto& [suffix, replacement, condition] : rules) {
     if (suffix == "*d" && endsDoubleConsonant(word)) {
-      std::string stem = word.substr(0, word.size() - 2);
+      const std::string stem = word.substr(0, word.size() - 2);
       if (!condition || condition(stem)) {
         return stem + replacement;
       }
       return word;
     }
     if (endsWith(word, suffix)) {
-      std::string stem = removeSuffix(word, suffix);
+      const std::string stem = removeSuffix(word, suffix);
       if (!condition || condition(stem)) {
         return stem + replacement;
       }
@@ -151,7 +152,7 @@ std::string step1b(const std::string& word) {
   }
 
   if (endsWith(word, "eed")) {
-    std::string stem = removeSuffix(word, "eed");
+    const std::string stem = removeSuffix(word, "eed");
     if (measure(stem) > 0) {
       return stem + "ee";
     }
@@ -204,10 +205,11 @@ inline bool hasPositiveMeasure(const std::string& stem) {
   return measure(stem) > 0;
 }
 
+// NOLINTNEXTLINE (clang-tidy doens't like recursion)
 std::string step2(const std::string& word) {
   if (endsWith(word, "alli") &&
       hasPositiveMeasure(removeSuffix(word, "alli"))) {
-    return step2(replaceSuffix(word, "alli", "al"));  // NOLINT
+    return step2(replaceSuffix(word, "alli", "al"));
   }
 
   return applyRules(word, {{"ational", "ate", hasPositiveMeasure},
@@ -282,7 +284,7 @@ std::string step4(const std::string& word) {
 std::string step5a(const std::string& word) {
   if (word.back() == 'e') {
     std::string stem = removeSuffix(word, "e");
-    size_t m = measure(stem);
+    const size_t m = measure(stem);
     if (m > 1) {
       return stem;
     }

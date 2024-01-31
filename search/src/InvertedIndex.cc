@@ -1,4 +1,5 @@
 #include "InvertedIndex.h"
+#include <utils/text/PorterStemmer.h>
 #include <algorithm>
 #include <cmath>
 #include <exception>
@@ -11,7 +12,15 @@ namespace thirdai::search {
 
 void InvertedIndex::index(
     const std::vector<std::pair<DocId, Tokens>>& documents) {
-  for (const auto& [doc_id, tokens] : documents) {
+  std::vector<std::pair<DocId, Tokens>> stemmed_documents(documents.size());
+
+#pragma omp parallel for default(none) shared(documents, stemmed_documents)
+  for (size_t i = 0; i < documents.size(); i++) {
+    stemmed_documents[i] = {documents[i].first,
+                            text::porter_stemmer::stem(documents[i].second)};
+  }
+
+  for (const auto& [doc_id, tokens] : stemmed_documents) {
     if (_doc_lengths.count(doc_id)) {
       throw std::runtime_error("Document with id " + std::to_string(doc_id) +
                                " is already in InvertedIndex.");
@@ -88,7 +97,7 @@ std::vector<DocScore> InvertedIndex::query(const Tokens& query,
                                            uint32_t k) const {
   std::unordered_map<DocId, float> doc_scores;
 
-  for (const Token& token : query) {
+  for (const Token& token : text::porter_stemmer::stem(query)) {
     if (!_token_to_idf.count(token)) {
       continue;
     }
