@@ -724,7 +724,17 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
     if (mach_index->bucketSize(hash) <= approx_num_hashes_per_bucket) {
       new_hashes.push_back(hash);
       required_hashes++;
+      sorted_hashes.erase(sorted_hashes.begin() + available_hashes);
+    } else {
+      available_hashes++;
     }
+  }
+
+  available_hashes = 0;
+  while (required_hashes < num_informed_hashes) {
+    auto [hash, freq_score_pair] = sorted_hashes[available_hashes];
+    new_hashes.push_back(hash);
+    required_hashes++;
     available_hashes++;
   }
 
