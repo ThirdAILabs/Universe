@@ -718,20 +718,19 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
       sort_random_hashes ? num_hashes : (num_hashes - num_random_hashes);
 
   uint32_t required_hashes = 0, available_hashes = 0;
-  while (required_hashes < num_informed_hashes) {
+  while (required_hashes < num_informed_hashes &&
+         available_hashes < sorted_hashes.size()) {
     auto [hash, freq_score_pair] = sorted_hashes[available_hashes];
-    if (mach_index->bucketSize(hash) >= approx_num_hashes_per_bucket) {
-      available_hashes++;
-    } else {
+    if (mach_index->bucketSize(hash) <= approx_num_hashes_per_bucket) {
       new_hashes.push_back(hash);
       required_hashes++;
     }
+    available_hashes++;
   }
 
   if (!sort_random_hashes) {
     for (uint32_t i = 0; i < num_random_hashes; i++) {
       uint32_t random_hash = int_dist(rand);
-
       while (mach_index->bucketSize(random_hash) >=
              approx_num_hashes_per_bucket) {
         random_hash = int_dist(rand);
