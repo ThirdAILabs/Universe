@@ -941,7 +941,7 @@ class PDF(Extracted):
             path=path,
             metadata={
                 **(metadata or {}),
-                "__version__": "v2",
+                "__version__": version,
                 "__chunk_size__": chunk_size,
                 "__stride__": stride,
             },
