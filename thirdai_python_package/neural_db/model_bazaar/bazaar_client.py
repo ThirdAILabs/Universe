@@ -337,9 +337,11 @@ class ModelBazaar(Bazaar):
 
         url = urljoin(self._base_url, f"jobs/{self._user_id}/train")
         files = [
-            ("files", open(file_path, "rb"))
-            if doc_type == "local"
-            else ("files", (file_path, "don't care"))
+            (
+                ("files", open(file_path, "rb"))
+                if doc_type == "local"
+                else ("files", (file_path, "don't care"))
+            )
             for file_path in docs
         ]
         if train_extra_options:
