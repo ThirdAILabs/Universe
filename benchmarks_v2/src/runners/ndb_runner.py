@@ -24,14 +24,17 @@ class NDBRunner(Runner):
         )
 
         start_insert_time = time.time()
-        source_ids = db.insert(sources=[doc], train=True)
+        source_ids = db.insert(
+            sources=[doc], train=True, variable_length=config.vlc_config
+        )
+        end_insert_time = time.time()
 
         metrics = cls.get_precision_metrics(db, config, path_prefix)
 
         if mlflow_logger:
             unsup_prefix = "unsup" if config.trn_supervised_path else ""
             cls.log_precision_metrics(metrics, prefix=unsup_prefix)
-            mlflow.log_metric("insertion time", time.time() - start_insert_time)
+            mlflow.log_metric("insertion time", end_insert_time - start_insert_time)
 
         if config.trn_supervised_path:
             trn_supervised = os.path.join(path_prefix, config.trn_supervised_path)
@@ -44,12 +47,13 @@ class NDBRunner(Runner):
                 source_id=source_ids[0],
             )
             db.supervised_train([sup_doc], learning_rate=0.001, epochs=10)
+            end_sup_train = time.time()
 
             metrics = cls.get_precision_metrics(db, config, path_prefix)
 
             if mlflow_logger:
                 cls.log_precision_metrics(metrics, prefix="sup")
-                mlflow.log_metric("sup training time", time.time() - start_sup_train)
+                mlflow.log_metric("sup training time", end_sup_train - start_sup_train)
 
         if mlflow_logger:
             test_df = pd.read_csv(config.tst_sets[0])

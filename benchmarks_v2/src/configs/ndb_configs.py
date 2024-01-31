@@ -1,5 +1,7 @@
 from abc import ABC
 
+from thirdai import data
+
 
 class NDBConfig(ABC):
     config_name = None
@@ -13,6 +15,8 @@ class NDBConfig(ABC):
 
     trn_supervised_path = None
     tst_sets = []
+
+    vlc_config = data.transformations.VariableLengthConfig()
 
 
 class ScifactNDBConfig(NDBConfig):
@@ -85,6 +89,10 @@ class Amazon1_3MConfig(NDBConfig):
     strong_columns = []
     weak_columns = ["TITLE"]
 
+    vlc_config = data.transformations.VariableLengthConfig(
+        num_slices=3,
+    )
+
 
 class Pubmed800kConfig(NDBConfig):
     config_name = "pubmed_800k_ndb"
@@ -95,4 +103,9 @@ class Pubmed800kConfig(NDBConfig):
     query_column = "query"
 
     unsupervised_path = "pubmed_800k/unsupervised.csv"
-    tst_sets = ["pubmed_800k/titles.csv", "pubmed_800k/titles.csv"]
+    tst_sets = ["pubmed_800k/titles.csv", "pubmed_800k/abstracts.csv"]
+
+    vlc_config = data.transformations.VariableLengthConfig(
+        num_slices=13,
+        strong_sample_num_words=7,
+    )
