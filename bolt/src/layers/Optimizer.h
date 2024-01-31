@@ -80,7 +80,6 @@ struct AdamOptimizer {
   bool isAdam() const { return !momentum.empty() && !velocity.empty(); }
 
   void switchToSgd() {
-    std ::cerr << "clearing mom and vel" << std::endl;
     momentum = {};
     velocity = {};
   }
