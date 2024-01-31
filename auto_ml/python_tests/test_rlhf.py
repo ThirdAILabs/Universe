@@ -87,19 +87,15 @@ def test_associate_acronyms():
 
     correct_labels, acronym_samples, associations = get_association_samples()
 
-    matches_before_associate = compare_predictions(
-        model, correct_labels, acronym_samples
-    )
-    print(matches_before_associate)
-    assert matches_before_associate <= 0.5
+    acc_before_associate = compare_predictions(model, correct_labels, acronym_samples)
+    print(acc_before_associate)
+    assert acc_before_associate <= 0.5
 
     model.associate(associations, n_buckets=4, epochs=10, learning_rate=0.01)
 
-    matches_after_associate = compare_predictions(
-        model, correct_labels, acronym_samples
-    )
-    print(matches_after_associate)
-    assert matches_after_associate >= 0.9
+    acc_after_associate = compare_predictions(model, correct_labels, acronym_samples)
+    print(acc_after_associate)
+    assert acc_after_associate >= 0.9
 
 
 def test_associate_train_acronyms():
@@ -107,11 +103,9 @@ def test_associate_train_acronyms():
 
     correct_labels, acronym_samples, associations = get_association_samples()
 
-    matches_before_associate = compare_predictions(
-        model, correct_labels, acronym_samples
-    )
-    print(matches_before_associate)
-    assert matches_before_associate <= 0.5
+    acc_before_associate = compare_predictions(model, correct_labels, acronym_samples)
+    print(acc_before_associate)
+    assert acc_before_associate <= 0.5
 
     model.associate_train(
         filename=QUERY_FILE,
@@ -124,12 +118,10 @@ def test_associate_train_acronyms():
         batch_size=100,
     )
 
-    matches_after_associate = compare_predictions(
-        model, correct_labels, acronym_samples
-    )
+    acc_after_associate = compare_predictions(model, correct_labels, acronym_samples)
 
-    print(matches_after_associate)  # Accuracy should be around 0.98-1.0
-    assert matches_after_associate >= 0.9
+    print(acc_after_associate)  # Accuracy should be around 0.98-1.0
+    assert acc_after_associate >= 0.9
 
 
 def get_upvote_samples():
@@ -157,12 +149,12 @@ def test_upvote():
 
     correct_labels, acronym_samples, upvotes = get_upvote_samples()
 
-    matches_before_upvote = compare_predictions(model, correct_labels, acronym_samples)
-    print(matches_before_upvote)
-    assert matches_before_upvote <= 0.3  # Should be close to 0
+    acc_before_upvote = compare_predictions(model, correct_labels, acronym_samples)
+    print(acc_before_upvote)
+    assert acc_before_upvote <= 0.3  # Should be close to 0
 
     model.upvote(upvotes, learning_rate=0.01, epochs=2)
 
-    matches_after_upvote = compare_predictions(model, correct_labels, acronym_samples)
-    print(matches_after_upvote)
-    assert matches_after_upvote >= 0.9  # Should be close to 0.99
+    acc_after_upvote = compare_predictions(model, correct_labels, acronym_samples)
+    print(acc_after_upvote)
+    assert acc_after_upvote >= 0.9  # Should be close to 0.99
