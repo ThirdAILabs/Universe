@@ -213,15 +213,15 @@ class ConstraintMatcher(Generic[ItemT]):
         return matches
 
     def index(self, item: ItemT, constraints: Dict[str, ConstraintValue]) -> None:
+        self._all_items.add(item)
         for key, constraint_value in constraints.items():
-            self._all_items.add(item)
             if key not in self._item_constraints:
                 self._item_constraints[key] = ConstraintIndex[ItemT]()
             self._item_constraints[key].index(item, constraint_value)
 
     def delete(self, item: ItemT, constraints: Dict[str, ConstraintValue]) -> None:
+        self._all_items.remove(item)
         for key, constraint_value in constraints.items():
-            self._all_items.remove(item)
             self._item_constraints[key].delete(item, constraint_value)
 
 
