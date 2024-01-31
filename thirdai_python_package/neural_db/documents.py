@@ -364,6 +364,7 @@ class DocumentManager:
     def clear(self):
         self.registry = OrderedDict()
         self.source_id_prefix_trie = StringTrie()
+        self.constraint_matcher = ConstraintMatcher[DocAndOffset]()
 
     def _get_doc_and_start_id(self, element_id: int):
         for doc, start_id in reversed(self.registry.values()):
