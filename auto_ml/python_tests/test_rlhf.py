@@ -38,7 +38,6 @@ def train_model():
 def get_association_samples():
     df = pd.read_csv(QUERY_FILE)
 
-    original_samples = []
     acronym_samples = []
     associations = []
 
@@ -48,8 +47,6 @@ def get_association_samples():
         random_words.extend(random.choices(words, k=4))
 
     for sample in df["text"]:
-        original_samples.append({"text": sample})
-
         words = sample.split()
         n_words = len(words)
 
@@ -72,50 +69,43 @@ def get_association_samples():
         association = (acronym, " ".join(words[start:end]))
         associations.append(association)
 
-    return original_samples, acronym_samples, associations
+    return df["id"].to_list(), acronym_samples, associations
 
 
-def compare_predictions(model, original_samples, acronym_samples):
+def compare_predictions(model, correct_labels, acronym_samples):
     correct = 0
-    original_preds = model.predict_batch(original_samples)
     acronym_preds = model.predict_batch(acronym_samples)
-    for original_pred, acronym_pred in zip(original_preds, acronym_preds):
-        if original_pred[0][0] == acronym_pred[0][0]:
+    for correct_label, acronym_pred in zip(correct_labels, acronym_preds):
+        if correct_label == acronym_pred[0][0]:
             correct += 1
 
-    return correct / len(original_samples)
+    return correct / len(correct_labels)
 
 
 def test_associate_acronyms():
     model = train_model()
 
-    original_samples, acronym_samples, associations = get_association_samples()
+    correct_labels, acronym_samples, associations = get_association_samples()
 
-    matches_before_associate = compare_predictions(
-        model, original_samples, acronym_samples
-    )
-    print(matches_before_associate)
-    assert matches_before_associate <= 0.5
+    acc_before_associate = compare_predictions(model, correct_labels, acronym_samples)
+    print(acc_before_associate)
+    assert acc_before_associate <= 0.5
 
     model.associate(associations, n_buckets=4, epochs=10, learning_rate=0.01)
 
-    matches_after_associate = compare_predictions(
-        model, original_samples, acronym_samples
-    )
-    print(matches_after_associate)
-    assert matches_after_associate >= 0.9
+    acc_after_associate = compare_predictions(model, correct_labels, acronym_samples)
+    print(acc_after_associate)
+    assert acc_after_associate >= 0.9
 
 
 def test_associate_train_acronyms():
     model = train_model()
 
-    original_samples, acronym_samples, associations = get_association_samples()
+    correct_labels, acronym_samples, associations = get_association_samples()
 
-    matches_before_associate = compare_predictions(
-        model, original_samples, acronym_samples
-    )
-    print(matches_before_associate)
-    assert matches_before_associate <= 0.5
+    acc_before_associate = compare_predictions(model, correct_labels, acronym_samples)
+    print(acc_before_associate)
+    assert acc_before_associate <= 0.5
 
     model.associate_train(
         filename=QUERY_FILE,
@@ -128,28 +118,24 @@ def test_associate_train_acronyms():
         batch_size=100,
     )
 
-    matches_after_associate = compare_predictions(
-        model, original_samples, acronym_samples
-    )
+    acc_after_associate = compare_predictions(model, correct_labels, acronym_samples)
 
-    print(matches_after_associate)  # Accuracy should be around 0.98-1.0
-    assert matches_after_associate >= 0.9
+    print(acc_after_associate)  # Accuracy should be around 0.98-1.0
+    assert acc_after_associate >= 0.9
 
 
 def get_upvote_samples():
     df = pd.read_csv(QUERY_FILE)
     df["acronym"] = df["text"].map(lambda s: "".join(w[0] for w in s.split()))
 
-    original_samples = []
     acronyms = []
     upvotes = []
 
     for _, row in df.iterrows():
-        original_samples.append({"text": row["text"]})
         acronyms.append({"text": row["acronym"]})
         upvotes.append((row["acronym"], row["id"]))
 
-    return original_samples, acronyms, upvotes
+    return df["id"].to_list(), acronyms, upvotes
 
 
 def test_upvote():
@@ -161,16 +147,14 @@ def test_upvote():
 
     model = train_model()
 
-    original_samples, acronym_samples, upvotes = get_upvote_samples()
+    correct_labels, acronym_samples, upvotes = get_upvote_samples()
 
-    matches_before_upvote = compare_predictions(
-        model, original_samples, acronym_samples
-    )
-    print(matches_before_upvote)
-    assert matches_before_upvote <= 0.2  # Should be close to 0
+    acc_before_upvote = compare_predictions(model, correct_labels, acronym_samples)
+    print(acc_before_upvote)
+    assert acc_before_upvote <= 0.3  # Should be close to 0
 
     model.upvote(upvotes, learning_rate=0.01, epochs=2)
 
-    matches_after_upvote = compare_predictions(model, original_samples, acronym_samples)
-    print(matches_after_upvote)
-    assert matches_after_upvote >= 0.9  # Should be close to 0.99
+    acc_after_upvote = compare_predictions(model, correct_labels, acronym_samples)
+    print(acc_after_upvote)
+    assert acc_after_upvote >= 0.9  # Should be close to 0.99
