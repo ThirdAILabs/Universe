@@ -29,6 +29,15 @@ struct AdamOptimizer {
 
   void applyUpdate(std::vector<float>& params, float learning_rate,
                    uint32_t train_steps) {
+    if (isAdam()) {
+      applyUpdateAdam(params, learning_rate, train_steps);
+    } else {
+      applyUpdateSgd(params, learning_rate);
+    }
+  }
+
+  void applyUpdateAdam(std::vector<float>& params, float learning_rate,
+                       uint32_t train_steps) {
     assert(params.size() == gradients.size());
 
     float B1_bias_corrected = static_cast<float>(1 - pow(BETA1, train_steps));
@@ -51,6 +60,29 @@ struct AdamOptimizer {
 
       gradients[n] = 0;
     }
+  }
+
+  void applyUpdateSgd(std::vector<float>& params, float learning_rate) {
+    assert(params.size() == gradients.size());
+
+#pragma omp parallel for default(none) shared(params, learning_rate)
+    for (uint64_t n = 0; n < params.size(); n++) {
+      float grad = gradients[n];
+      assert(!std::isnan(grad));
+
+      params[n] += learning_rate * grad;
+      assert(!std::isnan(params[n]));
+
+      gradients[n] = 0;
+    }
+  }
+
+  bool isAdam() const { return !momentum.empty() && !velocity.empty(); }
+
+  void switchToSgd() {
+    std ::cerr << "clearing mom and vel" << std::endl;
+    momentum = {};
+    velocity = {};
   }
 
  private:

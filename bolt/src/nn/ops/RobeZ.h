@@ -44,6 +44,8 @@ class RobeZ final : public Op, public std::enable_shared_from_this<RobeZ> {
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final;
 
+  void switchToSgd() final { _kernel->switchToSgd(); }
+
   std::vector<std::pair<std::string, double>> parameterAndGradNorms()
       const final;
 

@@ -183,7 +183,11 @@ void Embedding::updateParameters(float learning_rate, uint32_t train_steps) {
   if (_disable_sparse_parameter_updates) {
     _embedding_optimizer->applyUpdate(_embeddings, learning_rate, train_steps);
   } else {
-    sparseEmbeddingUpdate(learning_rate, train_steps);
+    if (_embedding_optimizer->isAdam()) {
+      sparseEmbeddingUpdateAdam(learning_rate, train_steps);
+    } else {
+      sparseEmbeddingUpdateSgd(learning_rate);
+    }
   }
 
   if (_bias) {
@@ -198,8 +202,8 @@ void Embedding::initOptimizer() {
   }
 }
 
-void Embedding::sparseEmbeddingUpdate(float learning_rate,
-                                      uint32_t train_steps) {
+void Embedding::sparseEmbeddingUpdateAdam(float learning_rate,
+                                          uint32_t train_steps) {
   float B1_bias_corrected = static_cast<float>(1 - pow(BETA1, train_steps));
   float B2_bias_corrected = static_cast<float>(1 - pow(BETA2, train_steps));
 
@@ -227,6 +231,26 @@ void Embedding::sparseEmbeddingUpdate(float learning_rate,
           adam(_embedding_optimizer->momentum[index],
                _embedding_optimizer->velocity[index], learning_rate,
                B1_bias_corrected, B2_bias_corrected);
+
+      assert(!std::isnan(_embeddings[index]));
+
+      _embedding_optimizer->gradients[index] = 0;
+    }
+  }
+}
+
+void Embedding::sparseEmbeddingUpdateSgd(float learning_rate) {
+#pragma omp parallel for default(none) shared(learning_rate)
+  for (size_t n = 0; n < _input_dim; n++) {
+    if (!_embeddings_used[n]) {
+      continue;
+    }
+    _embeddings_used[n] = false;
+    for (size_t i = 0; i < _dim; i++) {
+      size_t index = n * _dim + i;
+      float grad = _embedding_optimizer->gradients[index];
+
+      _embeddings[index] = learning_rate * grad;
 
       assert(!std::isnan(_embeddings[index]));
 

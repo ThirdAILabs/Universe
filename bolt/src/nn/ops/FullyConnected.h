@@ -59,6 +59,8 @@ class FullyConnected final
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final;
 
+  void switchToSgd() final { _kernel->switchToSgd(); }
+
   void registerModel(const std::weak_ptr<Model>& new_model) final;
 
   std::vector<std::pair<std::string, double>> parameterAndGradNorms()

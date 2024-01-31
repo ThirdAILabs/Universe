@@ -100,6 +100,7 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("backpropagate", &Model::backpropagate, py::arg("labels"))
       .def("update_parameters", &Model::updateParameters,
            py::arg("learning_rate"))
+      .def("switch_to_sgd", &Model::switchToSgd)
       .def("ops", &Model::opExecutionOrder)
       .def("__getitem__", &Model::getOp, py::arg("name"))
       .def("computation", &Model::getComputation, py::arg("name"))

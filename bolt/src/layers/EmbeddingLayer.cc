@@ -152,12 +152,16 @@ void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
   if (_disable_sparse_parameter_updates) {
     _optimizer->applyUpdate(*_embedding_block, lr, iter);
   } else {
-    updateParametersSparse(lr, iter, B1, B2, eps);
+    if (_optimizer->isAdam()) {
+      updateParametersSparseAdam(lr, iter, B1, B2, eps);
+    } else {
+      updateParametersSparseSgd(lr);
+    }
   }
 }
 
-void EmbeddingLayer::updateParametersSparse(float lr, uint32_t iter, float B1,
-                                            float B2, float eps) {
+void EmbeddingLayer::updateParametersSparseAdam(float lr, uint32_t iter,
+                                                float B1, float B2, float eps) {
   float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
   float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
 
@@ -195,6 +199,39 @@ void EmbeddingLayer::updateParametersSparse(float lr, uint32_t iter, float B1,
       embedding_block[n] +=
           lr * (_optimizer->momentum[n] / B1_bias_corrected) /
           (std::sqrt(_optimizer->velocity[n] / B2_bias_corrected) + eps);
+      assert(!std::isnan(embedding_block[n]));
+
+      _optimizer->gradients[n] = 0;
+    }
+  }
+}
+
+void EmbeddingLayer::updateParametersSparseSgd(float lr) {
+  // Preform outer dereferencing once here to avoid repeating it later.
+  auto& embedding_block = *_embedding_block;
+
+#pragma omp parallel for default(none) shared(embedding_block, lr)
+  for (uint64_t chunk_id = 0; chunk_id < _embedding_chunks_used.size();
+       chunk_id++) {
+    if (!_embedding_chunks_used[chunk_id]) {
+      continue;
+    }
+
+    _embedding_chunks_used[chunk_id] = false;
+
+    for (uint64_t n = chunk_id * _update_chunk_size;
+         n < (chunk_id + 1) * _update_chunk_size; n++) {
+      float grad = _optimizer->gradients[n];
+      if (grad == 0.0) {
+        // Because the chunk being updated may not have entirely been used we
+        // check for this to avoid updating unused elements of the embedding
+        // table. It is highly unlikely that the gradient would be zero if the
+        // section of the embedding table was used.
+        continue;
+      }
+      assert(!std::isnan(grad));
+
+      embedding_block[n] += lr * grad;
       assert(!std::isnan(embedding_block[n]));
 
       _optimizer->gradients[n] = 0;

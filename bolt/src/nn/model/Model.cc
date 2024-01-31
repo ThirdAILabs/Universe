@@ -402,6 +402,12 @@ void Model::enableSparseParameterUpdates() {
   }
 }
 
+void Model::switchToSgd() {
+  for (const auto& op : _ops) {
+    op->switchToSgd();
+  }
+}
+
 void Model::freezeHashTables(bool insert_labels_if_not_found) {
   for (auto& op : _ops) {
     if (auto fc = std::dynamic_pointer_cast<FullyConnected>(op)) {

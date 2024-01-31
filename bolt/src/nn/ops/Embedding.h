@@ -65,6 +65,11 @@ class Embedding final : public Op,
     _should_serialize_optimizer = should_serialize_optimizer;
   }
 
+  void switchToSgd() final {
+    _embedding_optimizer->switchToSgd();
+    _bias_optimizer->switchToSgd();
+  }
+
   std::vector<std::pair<std::string, double>> parameterAndGradNorms()
       const final;
 
@@ -105,7 +110,9 @@ class Embedding final : public Op,
     return _embedding_optimizer->gradients.data() + token * _dim;
   }
 
-  void sparseEmbeddingUpdate(float learning_rate, uint32_t train_steps);
+  void sparseEmbeddingUpdateAdam(float learning_rate, uint32_t train_steps);
+
+  void sparseEmbeddingUpdateSgd(float learning_rate);
 
   size_t _dim, _input_dim;
   bool _bias;

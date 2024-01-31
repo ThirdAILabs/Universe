@@ -66,6 +66,12 @@ class Switch final : public Op, public std::enable_shared_from_this<Switch> {
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final;
 
+  void switchToSgd() final {
+    for (const auto& layer : _fc_ops) {
+      layer->switchToSgd();
+    }
+  }
+
   /**
    * Applies the op to an input tensor and yields a new output tensor. Used to
    * add the op to a computation graph.

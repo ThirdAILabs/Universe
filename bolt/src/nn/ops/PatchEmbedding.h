@@ -58,6 +58,8 @@ class PatchEmbedding final
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final;
 
+  void switchToSgd() final { _kernel->switchToSgd(); }
+
   ComputationPtr apply(ComputationPtr input);
 
   void setWeights(const float* new_weights);

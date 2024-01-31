@@ -38,6 +38,11 @@ class LayerNorm final : public Op,
 
   std::vector<std::vector<float>*> parameters() final;
 
+  void switchToSgd() final {
+    _gamma_optimizer.switchToSgd();
+    _beta_optimizer.switchToSgd();
+  }
+
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 

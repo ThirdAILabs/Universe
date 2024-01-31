@@ -56,6 +56,8 @@ class EmbeddingLayer {
     _disable_sparse_parameter_updates = false;
   };
 
+  void switchToSgd() { _optimizer->switchToSgd(); }
+
   std::vector<float>& getRawEmbeddingBlock() { return *_embedding_block; }
   void saveWithOptimizer(bool should_save_optimizer) {
     _should_save_optimizer = should_save_optimizer;
@@ -101,8 +103,10 @@ class EmbeddingLayer {
   ~EmbeddingLayer() = default;
 
  private:
-  void updateParametersSparse(float lr, uint32_t iter, float B1, float B2,
-                              float eps);
+  void updateParametersSparseAdam(float lr, uint32_t iter, float B1, float B2,
+                                  float eps);
+
+  void updateParametersSparseSgd(float lr);
 
   inline uint64_t getEmbeddingBlockOffset(uint32_t token,
                                           uint64_t lookup_index) {

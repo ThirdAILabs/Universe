@@ -57,6 +57,11 @@ class FullyConnectedLayer final {
     _should_save_optimizer = should_save_optimizer;
   }
 
+  void switchToSgd() {
+    _weight_optimizer->switchToSgd();
+    _bias_optimizer->switchToSgd();
+  }
+
   BoltBatch createBatchState(const uint32_t batch_size,
                              bool use_sparsity) const {
     bool is_sparse = (_sparsity < 1.0) && use_sparsity;
@@ -215,31 +220,36 @@ class FullyConnectedLayer final {
 
   void initActiveNeuronsTrackers();
 
+  template <bool ADAM>
+  void updateParametersImpl(float lr, uint32_t iter, float B1, float B2,
+                            float eps);
+
+  template <bool ADAM>
   inline void updateSparseSparseWeightParameters(float lr, float B1, float B2,
                                                  float eps,
                                                  float B1_bias_corrected,
                                                  float B2_bias_corrected);
 
+  template <bool ADAM>
   inline void updateSparseDenseWeightParameters(float lr, float B1, float B2,
                                                 float eps,
                                                 float B1_bias_corrected,
                                                 float B2_bias_corrected);
 
+  template <bool ADAM>
   inline void updateDenseSparseWeightParameters(float lr, float B1, float B2,
                                                 float eps,
                                                 float B1_bias_corrected,
                                                 float B2_bias_corrected);
-  inline void updateDenseDenseWeightParameters(float lr, float B1, float B2,
-                                               float eps,
-                                               float B1_bias_corrected,
-                                               float B2_bias_corrected);
 
+  template <bool ADAM>
   inline void updateSingleWeightParameters(uint64_t prev_neuron,
                                            uint64_t cur_neuron, float lr,
                                            float B1, float B2, float eps,
                                            float B1_bias_corrected,
                                            float B2_bias_corrected);
 
+  template <bool ADAM>
   inline void updateBiasParameters(float lr, float B1, float B2, float eps,
                                    float B1_bias_corrected,
                                    float B2_bias_corrected);

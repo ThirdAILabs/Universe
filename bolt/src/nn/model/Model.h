@@ -247,6 +247,8 @@ class Model : public std::enable_shared_from_this<Model> {
 
   void enableSparseParameterUpdates();
 
+  void switchToSgd();
+
   /**
    * Helper function to save the model to a stream.
    */

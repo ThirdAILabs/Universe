@@ -358,6 +358,16 @@ void FullyConnectedLayer::eigenDenseDenseBackpropagate(BoltVector& input,
 
 void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
                                            float B2, float eps) {
+  if (_weight_optimizer->isAdam()) {
+    updateParametersImpl<true>(lr, iter, B1, B2, eps);
+  } else {
+    updateParametersImpl<false>(lr, iter, B1, B2, eps);
+  }
+}
+
+template <bool ADAM>
+void FullyConnectedLayer::updateParametersImpl(float lr, uint32_t iter,
+                                               float B1, float B2, float eps) {
   float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
   float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
 
@@ -371,26 +381,26 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
    * was thinking of having different blocks. It also make is visually
    * more clear.
    */
-  if (_disable_sparse_parameter_updates ||
-      (_prev_is_dense && _this_is_dense)) {  // NOLINT
-    updateDenseDenseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
-                                     B2_bias_corrected);
+  if (_disable_sparse_parameter_updates || (_prev_is_dense && _this_is_dense)) {
+    _weight_optimizer->applyUpdate(_weights, lr, iter);
   } else if (!_prev_is_dense && !_this_is_dense) {
-    updateSparseSparseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
-                                       B2_bias_corrected);
+    updateSparseSparseWeightParameters<ADAM>(lr, B1, B2, eps, B1_bias_corrected,
+                                             B2_bias_corrected);
   } else if (!_prev_is_dense && _this_is_dense) {
-    updateSparseDenseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
-                                      B2_bias_corrected);
+    updateSparseDenseWeightParameters<ADAM>(lr, B1, B2, eps, B1_bias_corrected,
+                                            B2_bias_corrected);
   } else if (_prev_is_dense && !_this_is_dense) {
-    updateDenseSparseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
-                                      B2_bias_corrected);
+    updateDenseSparseWeightParameters<ADAM>(lr, B1, B2, eps, B1_bias_corrected,
+                                            B2_bias_corrected);
   }
 
-  updateBiasParameters(lr, B1, B2, eps, B1_bias_corrected, B2_bias_corrected);
+  updateBiasParameters<ADAM>(lr, B1, B2, eps, B1_bias_corrected,
+                             B2_bias_corrected);
 
   cleanupWithinBatchVars();
 }
 
+template <bool ADAM>
 inline void FullyConnectedLayer::updateSparseSparseWeightParameters(
     float lr, float B1, float B2, float eps, float B1_bias_corrected,
     float B2_bias_corrected) {
@@ -402,13 +412,15 @@ inline void FullyConnectedLayer::updateSparseSparseWeightParameters(
     }
     for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
       if (_prev_is_active[prev_neuron]) {
-        updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
-                                     B1_bias_corrected, B2_bias_corrected);
+        updateSingleWeightParameters<ADAM>(prev_neuron, cur_neuron, lr, B1, B2,
+                                           eps, B1_bias_corrected,
+                                           B2_bias_corrected);
       }
     }
   }
 }
 
+template <bool ADAM>
 inline void FullyConnectedLayer::updateSparseDenseWeightParameters(
     float lr, float B1, float B2, float eps, float B1_bias_corrected,
     float B2_bias_corrected) {
@@ -417,13 +429,15 @@ inline void FullyConnectedLayer::updateSparseDenseWeightParameters(
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
     for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
       if (_prev_is_active[prev_neuron]) {
-        updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
-                                     B1_bias_corrected, B2_bias_corrected);
+        updateSingleWeightParameters<ADAM>(prev_neuron, cur_neuron, lr, B1, B2,
+                                           eps, B1_bias_corrected,
+                                           B2_bias_corrected);
       }
     }
   }
 }
 
+template <bool ADAM>
 inline void FullyConnectedLayer::updateDenseSparseWeightParameters(
     float lr, float B1, float B2, float eps, float B1_bias_corrected,
     float B2_bias_corrected) {
@@ -434,25 +448,14 @@ inline void FullyConnectedLayer::updateDenseSparseWeightParameters(
       continue;
     }
     for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
-      updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
-                                   B1_bias_corrected, B2_bias_corrected);
+      updateSingleWeightParameters<ADAM>(prev_neuron, cur_neuron, lr, B1, B2,
+                                         eps, B1_bias_corrected,
+                                         B2_bias_corrected);
     }
   }
 }
 
-inline void FullyConnectedLayer::updateDenseDenseWeightParameters(
-    float lr, float B1, float B2, float eps, float B1_bias_corrected,
-    float B2_bias_corrected) {
-#pragma omp parallel for default(none) \
-    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
-  for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
-    for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
-      updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
-                                   B1_bias_corrected, B2_bias_corrected);
-    }
-  }
-}
-
+template <bool ADAM>
 inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
                                                       float B2, float eps,
                                                       float B1_bias_corrected,
@@ -472,18 +475,23 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
     float grad = _bias_optimizer->gradients[cur_neuron];
     assert(!std::isnan(grad));
 
-    _bias_optimizer->momentum[cur_neuron] =
-        B1 * _bias_optimizer->momentum[cur_neuron] + (1 - B1) * grad;
-    _bias_optimizer->velocity[cur_neuron] =
-        B2 * _bias_optimizer->velocity[cur_neuron] + (1 - B2) * grad * grad;
+    if constexpr (ADAM) {
+      _bias_optimizer->momentum[cur_neuron] =
+          B1 * _bias_optimizer->momentum[cur_neuron] + (1 - B1) * grad;
+      _bias_optimizer->velocity[cur_neuron] =
+          B2 * _bias_optimizer->velocity[cur_neuron] + (1 - B2) * grad * grad;
 
-    assert(!std::isnan(_bias_optimizer->momentum[cur_neuron]));
-    assert(!std::isnan(_bias_optimizer->velocity[cur_neuron]));
+      assert(!std::isnan(_bias_optimizer->momentum[cur_neuron]));
+      assert(!std::isnan(_bias_optimizer->velocity[cur_neuron]));
 
-    _biases[cur_neuron] +=
-        lr * (_bias_optimizer->momentum[cur_neuron] / B1_bias_corrected) /
-        (std::sqrt(_bias_optimizer->velocity[cur_neuron] / B2_bias_corrected) +
-         eps);
+      _biases[cur_neuron] +=
+          lr * (_bias_optimizer->momentum[cur_neuron] / B1_bias_corrected) /
+          (std::sqrt(_bias_optimizer->velocity[cur_neuron] /
+                     B2_bias_corrected) +
+           eps);
+    } else {
+      _biases[cur_neuron] = lr * grad;
+    }
     assert(!std::isnan(_biases[cur_neuron]));
 
     _bias_optimizer->gradients[cur_neuron] = 0;
@@ -495,6 +503,7 @@ inline void FullyConnectedLayer::cleanupWithinBatchVars() {
   std::fill(_is_active.begin(), _is_active.end(), 0);
 }
 
+template <bool ADAM>
 inline void FullyConnectedLayer::updateSingleWeightParameters(
     uint64_t prev_neuron, uint64_t cur_neuron, float lr, float B1, float B2,
     float eps, float B1_bias_corrected, float B2_bias_corrected) {
@@ -504,16 +513,23 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
   float grad = _weight_optimizer->gradients[indx];
   assert(!std::isnan(grad));
 
-  _weight_optimizer->momentum[indx] =
-      B1 * _weight_optimizer->momentum[indx] + (1 - B1) * grad;
-  _weight_optimizer->velocity[indx] =
-      B2 * _weight_optimizer->velocity[indx] + (1 - B2) * grad * grad;
-  assert(!std::isnan(_weight_optimizer->momentum[indx]));
-  assert(!std::isnan(_weight_optimizer->velocity[indx]));
+  if constexpr (ADAM) {
+    _weight_optimizer->momentum[indx] =
+        B1 * _weight_optimizer->momentum[indx] + (1 - B1) * grad;
+    _weight_optimizer->velocity[indx] =
+        B2 * _weight_optimizer->velocity[indx] + (1 - B2) * grad * grad;
+    assert(!std::isnan(_weight_optimizer->momentum[indx]));
+    assert(!std::isnan(_weight_optimizer->velocity[indx]));
 
-  _weights[indx] +=
-      lr * (_weight_optimizer->momentum[indx] / B1_bias_corrected) /
-      (std::sqrt(_weight_optimizer->velocity[indx] / B2_bias_corrected) + eps);
+    _weights[indx] +=
+        lr * (_weight_optimizer->momentum[indx] / B1_bias_corrected) /
+        (std::sqrt(_weight_optimizer->velocity[indx] / B2_bias_corrected) +
+         eps);
+
+  } else {
+    _weights[indx] = lr * grad;
+  }
+
   assert(!std::isnan(_weights[indx]));
 
   _weight_optimizer->gradients[indx] = 0;

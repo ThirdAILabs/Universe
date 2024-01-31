@@ -48,6 +48,8 @@ class WeightedSum final : public Op,
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final;
 
+  void switchToSgd() final { _optimizer->switchToSgd(); }
+
   std::vector<std::pair<std::string, double>> parameterAndGradNorms()
       const final;
 

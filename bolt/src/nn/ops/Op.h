@@ -143,6 +143,8 @@ class Op {
     (void)setSerializeOptimizer;
   }
 
+  virtual void switchToSgd() {}
+
   virtual void registerModel(const std::weak_ptr<Model>& model) { (void)model; }
 
   virtual std::vector<std::pair<std::string, double>> parameterAndGradNorms()
