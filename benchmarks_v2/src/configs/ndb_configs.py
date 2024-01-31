@@ -5,6 +5,7 @@ from thirdai import data
 
 class NDBConfig(ABC):
     config_name = None
+    dataset_name = None
     unsupervised_path = None
 
     id_column = "DOC_ID"
@@ -21,6 +22,7 @@ class NDBConfig(ABC):
 
 class ScifactNDBConfig(NDBConfig):
     config_name = "scifact_ndb"
+    dataset_name = "scifact"
 
     unsupervised_path = "scifact/unsupervised.csv"
     trn_supervised_path = "scifact/trn_supervised.csv"
@@ -29,6 +31,7 @@ class ScifactNDBConfig(NDBConfig):
 
 class FiqaNDBConfig(NDBConfig):
     config_name = "fiqa_ndb"
+    dataset_name = "fiqa"
 
     unsupervised_path = "fiqa/unsupervised.csv"
     tst_sets = ["fiqa/tst_supervised.csv"]
@@ -36,6 +39,7 @@ class FiqaNDBConfig(NDBConfig):
 
 class TrecCovidNDBConfig(NDBConfig):
     config_name = "trec_covid_ndb"
+    dataset_name = "trec-covid"
 
     unsupervised_path = "trec-covid/unsupervised.csv"
     tst_sets = ["trec-covid/tst_supervised.csv"]
@@ -43,6 +47,7 @@ class TrecCovidNDBConfig(NDBConfig):
 
 class CookingNDBConfig(NDBConfig):
     config_name = "cooking_ndb"
+    dataset_name = "cooking"
 
     id_column = "LABEL_IDS"
     strong_columns = ["TITLE", "BULLET_POINTS"]
@@ -55,6 +60,7 @@ class CookingNDBConfig(NDBConfig):
 
 class Wiki5KNDBConfig(NDBConfig):
     config_name = "wiki_5k_ndb"
+    dataset_name = "wiki-5k"
 
     strong_columns = []
 
@@ -68,6 +74,7 @@ class Wiki5KNDBConfig(NDBConfig):
 
 class Wiki105KNDBConfig(NDBConfig):
     config_name = "wiki_105k_ndb"
+    dataset_name = "wiki-105k"
 
     strong_columns = []
 
@@ -81,6 +88,7 @@ class Wiki105KNDBConfig(NDBConfig):
 
 class Amazon1_3MConfig(NDBConfig):
     config_name = "amazontitles-1.3mm_ndb"
+    dataset_name = "amazontitles-1.3mm"
 
     unsupervised_path = "amazontitles-1.3mm/unsupervised.csv"
     trn_supervised_path = "amazontitles-1.3mm/trn_supervised.csv"
@@ -96,6 +104,7 @@ class Amazon1_3MConfig(NDBConfig):
 
 class Pubmed800kConfig(NDBConfig):
     config_name = "pubmed_800k_ndb"
+    dataset_name = "pubmed-800k"
 
     id_column = "label"
     strong_columns = ["title"]

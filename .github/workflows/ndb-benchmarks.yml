@@ -9,6 +9,11 @@ concurrency:
 # Controls when the workflow will run
 on:
   schedule:
+      # This is a good ~12 hours past the longest run of the udt benchmarks found.
+      # TODO(any): At some point we should either use separate machines for the 
+      # benchmarks if they get too long or maybe put the benchmarks into one 
+      # single action so if one goes too long then the other wont fail.  
+      #
       # Sets the workflow to run at 1200 UTC on Mondays and Thursdays
       # Ref: https://jasonet.co/posts/scheduled-actions/
       - cron: "0 12 * * 1,4" 
