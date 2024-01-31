@@ -1,9 +1,8 @@
-from nltk.stem import PorterStemmer
-from download_dataset_fixtures import download_scifact_dataset
-import pytest
-from thirdai import data
 import pandas as pd
-import time
+import pytest
+from download_dataset_fixtures import download_scifact_dataset
+from nltk.stem import PorterStemmer
+from thirdai import data
 
 
 @pytest.mark.unit
