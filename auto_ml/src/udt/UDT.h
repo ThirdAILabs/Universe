@@ -55,8 +55,7 @@ class UDT {
                    const std::vector<CallbackPtr>& callbacks,
                    TrainOptions options, const bolt::DistributedCommPtr& comm);
 
-  py::object trainBatch(const MapInputBatch& batch, float learning_rate,
-                        const std::vector<std::string>& metrics);
+  py::object trainBatch(const MapInputBatch& batch, float learning_rate);
 
   void setOutputSparsity(float sparsity, bool rebuild_hash_tables);
 
@@ -299,11 +298,10 @@ class UDT {
    * has the target column mapping to space separated strings representing the
    * actual output metaclasses to predict in mach.
    */
-  py::object trainWithHashes(const MapInputBatch& batch, float learning_rate,
-                             const std::vector<std::string>& metrics) {
+  py::object trainWithHashes(const MapInputBatch& batch, float learning_rate) {
     licensing::entitlements().verifyFullAccess();
 
-    return _backend->trainWithHashes(batch, learning_rate, metrics);
+    return _backend->trainWithHashes(batch, learning_rate);
   }
 
   /**

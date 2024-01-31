@@ -2,7 +2,6 @@ import os
 import shutil
 from collections import defaultdict
 from pathlib import Path
-from typing import List
 
 import nltk
 import pytest
@@ -31,12 +30,15 @@ DOCS_TO_INSERT = [get_doc() for get_doc in all_local_doc_getters[:NUMBER_DOCS]]
 OUTPUT_DIM = 1000
 
 
-def setup():
+@pytest.fixture
+def setup_and_cleanup():
+    # Setup step
     shutil.rmtree(CHECKPOINT_DIR, ignore_errors=True)
     os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
+    yield
 
-def cleanup():
+    # Cleanup step
     shutil.rmtree(CHECKPOINT_DIR, ignore_errors=True)
 
 
@@ -134,12 +136,10 @@ def interrupted_training(number_models: int, interrupt_function):
 
     except Exception as ex:
         raise ex
-    finally:
-        cleanup()
 
 
-def make_db_and_training_manager(makes_checkpoint=True):
-    db = ndb.NeuralDB(number_models=2)
+def make_db_and_training_manager(number_models=2, makes_checkpoint=True):
+    db = ndb.NeuralDB(number_models=number_models)
     checkpoint_dir = Path(CHECKPOINT_DIR) / str(0)
 
     document_manager = db._savable_state.documents
@@ -147,7 +147,11 @@ def make_db_and_training_manager(makes_checkpoint=True):
 
     save_load_manager = TrainingDataManager(
         checkpoint_dir=checkpoint_dir,
-        model=db._savable_state.model.models[0],
+        model=(
+            db._savable_state.model.models[0]
+            if number_models > 1
+            else db._savable_state.model
+        ),
         intro_source=document_manager.get_data_source(),
         train_source=document_manager.get_data_source(),
         tracker=NeuralDbProgressTracker(
@@ -184,24 +188,22 @@ def make_db_and_training_manager(makes_checkpoint=True):
 
 # Asserts that the final checkpoint created is the same as the db whose reference is held rn.
 @pytest.mark.release
-def test_neural_db_checkpoint_on_single_mach():
+def test_neural_db_checkpoint_on_single_mach(setup_and_cleanup):
     db = train_neural_db_with_checkpoint(number_models=1)
     loaded_db = ndb.NeuralDB.from_checkpoint(
         os.path.join(CHECKPOINT_DIR, "trained.ndb")
     )
 
     assert_same_dbs(db, loaded_db)
-    cleanup()
 
 
 @pytest.mark.release
-def test_neural_db_checkpoint_on_mach_mixture():
+def test_neural_db_checkpoint_on_mach_mixture(setup_and_cleanup):
     db = train_neural_db_with_checkpoint(number_models=2)
     loaded_db = ndb.NeuralDB.from_checkpoint(
         os.path.join(CHECKPOINT_DIR, "trained.ndb")
     )
     assert_same_dbs(db, loaded_db)
-    cleanup()
 
 
 @pytest.mark.release
@@ -243,9 +245,8 @@ def test_reset_mach_model():
 
 
 @pytest.mark.release
-def test_meta_save_load_for_mach_mixture():
+def test_meta_save_load_for_mach_mixture(setup_and_cleanup):
     # This test asserts that the label to segment map is saved and loaded correctly.
-    setup()
 
     model1 = MachMixture(
         number_models=3,
@@ -281,11 +282,8 @@ def test_meta_save_load_for_mach_mixture():
 
     assert_same_objects(model1, model2)
 
-    cleanup()
 
-
-def test_vlc_save_load():
-    setup()
+def test_vlc_save_load(setup_and_cleanup):
     vlc_config = data.transformations.VariableLengthConfig(
         covering_min_length=10, covering_max_length=20, slice_min_length=12
     )
@@ -294,11 +292,9 @@ def test_vlc_save_load():
     unpickled_config = unpickle_from(Path(CHECKPOINT_DIR) / "config.vlc")
 
     assert str(vlc_config) == str(unpickled_config)
-    cleanup()
 
 
-def test_tracker_save_load():
-    setup()
+def test_tracker_save_load(setup_and_cleanup):
     tracker = NeuralDbProgressTracker(
         IntroState(
             num_buckets_to_sample=8,
@@ -327,12 +323,10 @@ def test_tracker_save_load():
     assert_same_objects(tracker._intro_state, new_tracker._intro_state)
     assert_same_objects(tracker._train_state, tracker._train_state)
     assert str(new_tracker.vlc_config) == str(tracker.vlc_config)
-    cleanup()
 
 
 @pytest.mark.release
-def test_save_load_training_data_manager():
-    setup()
+def test_save_load_training_data_manager(setup_and_cleanup):
     _, training_manager, _ = make_db_and_training_manager(makes_checkpoint=True)
 
     save_load_manager = training_manager.save_load_manager
@@ -352,13 +346,9 @@ def test_save_load_training_data_manager():
     assert_same_data_sources(save_load_manager.intro_source, new_manager.intro_source)
     assert_same_data_sources(save_load_manager.train_source, new_manager.train_source)
 
-    cleanup()
-
 
 @pytest.mark.release
-def test_training_progress_manager_no_checkpointing():
-    setup()
-
+def test_training_progress_manager_no_checkpointing(setup_and_cleanup):
     _, training_manager, checkpoint_dir = make_db_and_training_manager(
         makes_checkpoint=False
     )
@@ -383,11 +373,9 @@ def test_training_progress_manager_no_checkpointing():
     assert training_manager.tracker.is_training_completed
     assert_no_checkpoints(training_manager.save_load_manager)
 
-    cleanup()
-
 
 @pytest.mark.release
-def test_training_progress_manager_with_resuming():
+def test_training_progress_manager_with_resuming(setup_and_cleanup):
     db, training_manager, checkpoint_dir = make_db_and_training_manager(
         makes_checkpoint=True
     )
@@ -413,3 +401,27 @@ def test_training_progress_manager_with_resuming():
         training_manager.save_load_manager.model,
         resume_training_manager.save_load_manager.model,
     )
+
+
+def test_training_progress_manager_gives_correct_arguments(setup_and_cleanup):
+    _, training_manager, _ = make_db_and_training_manager(
+        number_models=1, makes_checkpoint=False
+    )
+
+    assert {
+        "num_buckets_to_sample": 8,
+        "fast_approximation": False,
+        "override_number_classes": None,
+    } == training_manager.introduce_arguments()
+
+    training_manager.insert_complete()
+
+    for _ in range(3):
+        training_manager.complete_epoch()
+
+    assert training_manager.tracker.current_epoch_number == 3
+
+    training_arguments = training_manager.training_arguments()
+    assert training_arguments["max_epochs"] == 10 - 3
+    assert training_arguments["min_epochs"] == 5 - 3
+    assert training_arguments["freeze_after_epochs"] == 7 - 3
