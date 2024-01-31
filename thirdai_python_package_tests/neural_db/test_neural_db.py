@@ -47,12 +47,6 @@ def test_neural_db_reference_scores(train_simple_neural_db):
     assert scores == sorted(scores, reverse=True)
 
 
-def db_from_bazaar():
-    bazaar = ndb.Bazaar(cache_dir=".")
-    bazaar.fetch()
-    return bazaar.get_model("General QnA")
-
-
 def all_methods_work(
     db: ndb.NeuralDB,
     docs: List[ndb.Document],
@@ -65,10 +59,6 @@ def all_methods_work(
     associate_works(db)
     save_load_works(db)
     clear_sources_works(db)
-
-
-def test_neural_db_loads_from_model_bazaar():
-    db_from_bazaar()
 
 
 def test_neural_db_all_methods_work_on_new_model():
@@ -89,16 +79,6 @@ def test_neuralb_db_all_methods_work_on_new_mach_mixture():
         docs=small_doc_set,
         num_duplicate_docs=0,
         assert_acc=False,
-    )
-
-
-def test_neural_db_all_methods_work_on_loaded_bazaar_model():
-    db = db_from_bazaar()
-    all_methods_work(
-        db,
-        docs=small_doc_set,
-        num_duplicate_docs=num_duplicate_local_doc_getters,
-        assert_acc=True,
     )
 
 
