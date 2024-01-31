@@ -7,13 +7,14 @@ import numpy as np
 import pytest
 import thirdai
 from ndb_utils import (
-    PDF_FILE,
     CSV_FILE,
+    PDF_FILE,
     all_local_doc_getters,
     associate_works,
     clear_sources_works,
     create_simple_dataset,
     docs_with_meta,
+    empty_neural_db,
     insert_works,
     metadata_constraints,
     num_duplicate_local_doc_getters,
@@ -24,7 +25,6 @@ from ndb_utils import (
     train_simple_neural_db,
     upvote_batch_works,
     upvote_works,
-    empty_neural_db,
 )
 from thirdai import dataset
 from thirdai import neural_db as ndb
