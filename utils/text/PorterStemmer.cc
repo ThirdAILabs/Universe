@@ -21,7 +21,7 @@ inline bool isConsonant(const std::string& word, size_t i) {
     if (i == 0) {
       return true;
     }
-    return !isConsonant(word, i - 1);
+    return !isConsonant(word, i - 1);  // NOLINT
   }
 
   return true;
@@ -207,7 +207,7 @@ inline bool hasPositiveMeasure(const std::string& stem) {
 std::string step2(const std::string& word) {
   if (endsWith(word, "alli") &&
       hasPositiveMeasure(removeSuffix(word, "alli"))) {
-    return step2(replaceSuffix(word, "alli", "al"));
+    return step2(replaceSuffix(word, "alli", "al"));  // NOLINT
   }
 
   return applyRules(word, {{"ational", "ate", hasPositiveMeasure},
