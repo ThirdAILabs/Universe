@@ -274,13 +274,15 @@ class UDTBackend {
   virtual void associate(
       const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
-      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
+      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+      bool force_non_empty) {
     (void)rlhf_samples;
     (void)n_association_samples;
     (void)n_balancing_samples;
     (void)n_buckets;
     (void)learning_rate;
     (void)epochs;
+    (void)force_non_empty;
     throw notSupported("associate");
   }
 
