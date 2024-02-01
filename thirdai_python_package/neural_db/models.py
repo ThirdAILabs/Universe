@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 import random
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence, Tuple
@@ -325,6 +324,30 @@ def make_balancing_samples(documents: DocumentDataSource):
     return samples
 
 
+def merge_results(results_a, results_b, k):
+    results = []
+    cache = set()
+
+    min_len = min(len(results_a), len(results_b))
+    for a, b in zip(results_a, results_b):
+        if a[0] not in cache:
+            results.append(a)
+            cache.add(a[0])
+        if b[0] not in cache:
+            results.append(b)
+            cache.add(b[0])
+
+    if len(results) < k:
+        for i in range(min_len, len(results_a)):
+            if results_a[i][0] not in cache:
+                results.append(results_a[i])
+        for i in range(min_len, len(results_b)):
+            if results_b[i][0] not in cache:
+                results.append(results_b[i])
+
+    return results[:k]
+
+
 class Mach(Model):
     def __init__(
         self,
@@ -604,22 +627,14 @@ class Mach(Model):
         infer_batch = self.infer_samples_to_infer_batch(samples)
         if self.inverted_index:
             k = min(self.n_ids, n_results)
-            index_results = self.inverted_index.query(
-                queries=samples, k=math.floor(k / 2)
-            )
-            self.model.set_decode_params(math.ceil(k / 2), min(self.n_ids, 100))
+            index_results = self.inverted_index.query(queries=samples, k=k)
+            self.model.set_decode_params(k, min(self.n_ids, 100))
             mach_results = self.model.predict_batch(infer_batch)
 
-            results = []
-            for ir, mr in zip(index_results, mach_results):
-                sample_results = []
-                for i in range(max(ir, mr)):
-                    if i < len(mr):
-                        sample_results.append(mr[i])
-                    if i < len(ir):
-                        sample_results.append(ir[i])
-                results.append(sample_results)
-            return results
+            return [
+                merge_results(mr, ir, k) for mr, ir in zip(mach_results, index_results)
+            ]
+
         else:
             self.model.set_decode_params(
                 min(self.n_ids, n_results), min(self.n_ids, 100)

@@ -1,6 +1,7 @@
-from .documents import DocumentDataSource
-from thirdai import search
 from nltk.tokenize import word_tokenize
+from thirdai import search
+
+from .documents import DocumentDataSource
 
 
 class InvertedIndex:
