@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <cstdint>
 #include <string>
 #include <unordered_map>
@@ -33,6 +34,10 @@ class InvertedIndex {
 
   std::vector<DocScore> query(const Tokens& query, uint32_t k) const;
 
+  void save(const std::string& filename) const;
+
+  static std::shared_ptr<InvertedIndex> load(const std::string& filename);
+
  private:
   void computeIdfs();
 
@@ -61,6 +66,10 @@ class InvertedIndex {
 
   // Parameters for computing the BM25 score.
   float _k1, _b;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::search

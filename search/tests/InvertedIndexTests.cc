@@ -182,4 +182,32 @@ TEST(InvertedIndexTests, SyntheticDataset) {
   ASSERT_EQ(results, incremental_results);
 }
 
+TEST(InvertedIndexTests, SaveLoad) {
+  size_t vocab_size = 1000;
+  size_t n_docs = 100;
+
+  auto [docs, queries] = makeDocsAndQueries(vocab_size, n_docs);
+
+  InvertedIndex index;
+  index.index({docs.begin(), docs.begin() + n_docs / 2});
+  auto original_partial_results = index.queryBatch(queries, /*k=*/5);
+
+  std::string save_path = "./test_partial_index";
+  index.save(save_path);
+
+  index.index({docs.begin() + n_docs / 2, docs.end()});
+  auto original_full_results = index.queryBatch(queries, /*k=*/5);
+
+  auto loaded_index = InvertedIndex::load(save_path);
+
+  auto loaded_partial_results = loaded_index->queryBatch(queries, /*k=*/5);
+
+  ASSERT_EQ(original_partial_results, loaded_partial_results);
+
+  loaded_index->index({docs.begin() + n_docs / 2, docs.end()});
+  auto loaded_full_results = loaded_index->queryBatch(queries, /*k=*/5);
+
+  ASSERT_EQ(original_full_results, loaded_full_results);
+}
+
 }  // namespace thirdai::search::tests
