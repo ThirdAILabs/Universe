@@ -34,6 +34,8 @@ class InvertedIndex {
 
   std::vector<DocScore> query(const Tokens& query, uint32_t k) const;
 
+  void remove(const std::vector<DocId>& ids);
+
   void save(const std::string& filename) const;
 
   static std::shared_ptr<InvertedIndex> load(const std::string& filename);

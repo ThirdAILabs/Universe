@@ -148,6 +148,27 @@ std::vector<DocScore> InvertedIndex::query(const Tokens& query,
   return top_scores;
 }
 
+void InvertedIndex::remove(const std::vector<DocId>& ids) {
+  for (DocId id : ids) {
+    if (!_doc_lengths.count(id)) {
+      continue;
+    }
+
+    _sum_doc_lens -= _doc_lengths.at(id);
+    _doc_lengths.erase(id);
+
+    for (auto& [token, docs] : _token_to_docs) {
+      docs.erase(
+          std::remove_if(docs.begin(), docs.end(),
+                         [id](const auto& item) { return item.first == id; }),
+          docs.end());
+    }
+  }
+
+  computeIdfs();
+  _avg_doc_length = static_cast<float>(_sum_doc_lens) / _doc_lengths.size();
+}
+
 void InvertedIndex::save(const std::string& filename) const {
   auto ostream = dataset::SafeFileIO::ofstream(filename);
   cereal::BinaryOutputArchive oarchive(ostream);
