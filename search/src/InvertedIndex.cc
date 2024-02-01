@@ -12,23 +12,23 @@ namespace thirdai::search {
 
 void InvertedIndex::index(
     const std::vector<std::pair<DocId, Tokens>>& documents) {
-  std::vector<std::pair<DocId, Tokens>> stemmed_documents(documents.size());
+  std::vector<std::tuple<DocId, size_t, std::unordered_map<Token, uint32_t>>>
+      document_freqs(documents.size());
 
-#pragma omp parallel for default(none) shared(documents, stemmed_documents)
+#pragma omp parallel for default(none) shared(documents, document_freqs)
   for (size_t i = 0; i < documents.size(); i++) {
-    stemmed_documents[i] = {documents[i].first,
-                            text::porter_stemmer::stem(documents[i].second)};
+    const auto& tokens = documents[i].second;
+    std::unordered_map<Token, uint32_t> freqs;
+    for (const auto& token : text::porter_stemmer::stem(tokens)) {
+      freqs[token]++;
+    }
+    document_freqs[i] = {documents[i].first, tokens.size(), std::move(freqs)};
   }
 
-  for (const auto& [doc_id, tokens] : stemmed_documents) {
+  for (const auto& [doc_id, doc_len, freqs] : document_freqs) {
     if (_doc_lengths.count(doc_id)) {
       throw std::runtime_error("Document with id " + std::to_string(doc_id) +
                                " is already in InvertedIndex.");
-    }
-
-    std::unordered_map<Token, uint32_t> freqs;
-    for (const auto& token : tokens) {
-      freqs[token]++;
     }
 
     // TODO(Nicholas): Should this index creation be parallelized, currently the
@@ -39,8 +39,8 @@ void InvertedIndex::index(
     for (const auto& [token, freq] : freqs) {
       _token_to_docs[token].emplace_back(doc_id, freq);
     }
-    _doc_lengths[doc_id] = tokens.size();
-    _sum_doc_lens += tokens.size();
+    _doc_lengths[doc_id] = doc_len;
+    _sum_doc_lens += doc_len;
   }
 
   computeIdfs();
