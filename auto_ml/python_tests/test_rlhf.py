@@ -101,21 +101,17 @@ def test_associate_acronyms():
 def test_disassociate_acronyms():
     model = train_model()
 
-    original_samples, acronym_samples, positive_associations = get_association_samples()
+    correct_labels, acronym_samples, positive_associations = get_association_samples()
 
-    matches_before_associate = compare_predictions(
-        model, original_samples, acronym_samples
-    )
-    print(matches_before_associate)
-    assert matches_before_associate <= 0.5
+    acc_before_associate = compare_predictions(model, correct_labels, acronym_samples)
+    print(acc_before_associate)
+    assert acc_before_associate <= 0.5
 
     model.associate(positive_associations, n_buckets=4, epochs=10, learning_rate=0.01)
 
-    matches_after_associate = compare_predictions(
-        model, original_samples, acronym_samples
-    )
-    print(matches_after_associate)
-    assert matches_after_associate >= 0.9
+    acc_after_associate = compare_predictions(model, correct_labels, acronym_samples)
+    print(acc_after_associate)
+    assert acc_after_associate >= 0.9
 
     negative_associations = [(s, t, 0.0) for (s, t, _) in positive_associations]
 
@@ -127,11 +123,9 @@ def test_disassociate_acronyms():
         learning_rate=0.1,
     )
 
-    matches_after_disassociate = compare_predictions(
-        model, original_samples, acronym_samples
-    )
-    print(matches_after_disassociate)
-    assert matches_after_disassociate <= 0.7
+    acc_after_disassociate = compare_predictions(model, correct_labels, acronym_samples)
+    print(acc_after_disassociate)
+    assert acc_after_disassociate <= 0.7
 
 
 def test_associate_train_acronyms():
