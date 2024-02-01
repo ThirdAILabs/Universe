@@ -33,6 +33,8 @@ FullyConnectedLayer::FullyConnectedLayer(
       _use_bias(use_bias),
       _prev_is_active(prev_dim, false),
       _is_active(config.getDim(), false) {
+  std::cout << "Used SGD Optimizer"
+            << "\n";
   std::mt19937 rng(global_random::nextSeed());
   std::normal_distribution<float> dist(0.0, 0.01);
 
