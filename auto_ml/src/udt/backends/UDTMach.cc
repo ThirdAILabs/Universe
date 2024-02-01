@@ -88,7 +88,7 @@ UDTMach::UDTMach(
       "extreme_num_hashes", "integer",
       autotuneMachNumHashes(n_target_classes, num_buckets));
 
-  uint32_t softmax = user_args.get<bool>("softmax", "bool", false);
+  uint32_t softmax = user_args.get<bool>("softmax", "bool", true);
 
   _classifier = utils::Classifier::make(
       utils::buildModel(
