@@ -197,9 +197,8 @@ py::object UDTMachClassifier::train(
                             callbacks, options, comm);
 }
 
-py::object UDTMachClassifier::trainBatch(
-    const MapInputBatch& batch, float learning_rate,
-    const std::vector<std::string>& metrics) {
+py::object UDTMachClassifier::trainBatch(const MapInputBatch& batch,
+                                         float learning_rate) {
   auto& model = _classifier->model();
 
   auto [inputs, labels] = _dataset_factory->featurizeTrainingBatch(batch);
@@ -207,15 +206,11 @@ py::object UDTMachClassifier::trainBatch(
   model->trainOnBatch(inputs, labels);
   model->updateParameters(learning_rate);
 
-  // TODO(Nicholas): Add back metrics
-  (void)metrics;
-
   return py::none();
 }
 
-py::object UDTMachClassifier::trainWithHashes(
-    const MapInputBatch& batch, float learning_rate,
-    const std::vector<std::string>& metrics) {
+py::object UDTMachClassifier::trainWithHashes(const MapInputBatch& batch,
+                                              float learning_rate) {
   auto& model = _classifier->model();
 
   auto [inputs, labels] =
@@ -224,9 +219,6 @@ py::object UDTMachClassifier::trainWithHashes(
 
   model->trainOnBatch(inputs, labels);
   model->updateParameters(learning_rate);
-
-  // TODO(Nicholas): Add back metrics
-  (void)metrics;
 
   return py::none();
 }
@@ -659,7 +651,8 @@ void UDTMachClassifier::introduceDocuments(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, bool fast_approximation, bool verbose) {
+    uint32_t num_random_hashes, bool fast_approximation, bool verbose,
+    bool sort_random_hashes) {
   auto metadata = getColdStartMetaData();
 
   dataset::cold_start::ColdStartDataSourcePtr cold_start_data;
@@ -716,7 +709,7 @@ void UDTMachClassifier::introduceDocuments(
 
   for (auto& [doc, top_ks] : top_k_per_doc) {
     auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
-                                  num_random_hashes);
+                                  num_random_hashes, sort_random_hashes);
     _mach_label_block->index()->insert(doc, hashes);
 
     ctrl_c_check();
@@ -731,7 +724,8 @@ void UDTMachClassifier::introduceDocument(
     const MapInput& document,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, const Label& new_label,
-    std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes) {
+    std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
+    bool sort_random_hashes) {
   std::string text_column_name = textColumnForDocumentIntroduction();
 
   data::ColdStartTextAugmentation augmentation(
@@ -745,7 +739,8 @@ void UDTMachClassifier::introduceDocument(
     batch.push_back(input);
   }
 
-  introduceLabel(batch, new_label, num_buckets_to_sample, num_random_hashes);
+  introduceLabel(batch, new_label, num_buckets_to_sample, num_random_hashes,
+                 sort_random_hashes);
 }
 
 struct BucketScore {
@@ -765,7 +760,8 @@ struct CompareBuckets {
 
 std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
     std::vector<TopKActivationsQueue>&& top_k_per_sample,
-    uint32_t num_buckets_to_sample, uint32_t num_random_hashes) const {
+    uint32_t num_buckets_to_sample, uint32_t num_random_hashes,
+    bool sort_random_hashes) const {
   const auto& mach_index = _mach_label_block->index();
 
   uint32_t num_hashes = mach_index->numHashes();
@@ -793,6 +789,22 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
         hash_freq_and_scores[active_neuron].score += activation;
       }
       top_k.pop();
+    }
+  }
+
+  uint32_t num_buckets = _mach_label_block->index()->numBuckets();
+  std::uniform_int_distribution<uint32_t> int_dist(0, num_buckets - 1);
+  std::mt19937 rand(global_random::nextSeed());
+
+  if (sort_random_hashes) {
+    for (uint32_t i = 0; i < num_random_hashes; i++) {
+      uint32_t active_neuron = int_dist(rand);
+      if (!hash_freq_and_scores.count(active_neuron)) {
+        hash_freq_and_scores[active_neuron] = BucketScore{1, 0};
+      } else {
+        hash_freq_and_scores[active_neuron].frequency += 1;
+        hash_freq_and_scores[active_neuron].score += 0;
+      }
     }
   }
 
@@ -835,18 +847,18 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
         "num_random_hashes cannot be greater than num hashes.");
   }
 
-  uint32_t num_informed_hashes = num_hashes - num_random_hashes;
+  uint32_t num_informed_hashes =
+      sort_random_hashes ? num_hashes : (num_hashes - num_random_hashes);
+
   for (uint32_t i = 0; i < num_informed_hashes; i++) {
     auto [hash, freq_score_pair] = sorted_hashes[i];
     new_hashes.push_back(hash);
   }
 
-  uint32_t num_buckets = _mach_label_block->index()->numBuckets();
-  std::uniform_int_distribution<uint32_t> int_dist(0, num_buckets - 1);
-  std::mt19937 rand(global_random::nextSeed());
-
-  for (uint32_t i = 0; i < num_random_hashes; i++) {
-    new_hashes.push_back(int_dist(rand));
+  if (!sort_random_hashes) {
+    for (uint32_t i = 0; i < num_random_hashes; i++) {
+      new_hashes.push_back(int_dist(rand));
+    }
   }
 
   return new_hashes;
@@ -855,7 +867,7 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
 void UDTMachClassifier::introduceLabel(
     const MapInputBatch& samples, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes) {
+    uint32_t num_random_hashes, bool sort_random_hashes) {
   // Note: using sparse inference here could cause issues because the
   // mach index sampler will only return nonempty buckets, which could
   // cause new docs to only be mapped to buckets already containing
@@ -875,7 +887,7 @@ void UDTMachClassifier::introduceLabel(
   }
 
   auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
-                                num_random_hashes);
+                                num_random_hashes, sort_random_hashes);
 
   _mach_label_block->index()->insert(expectInteger(new_label), hashes);
 
@@ -968,9 +980,11 @@ void UDTMachClassifier::associate(const std::vector<RlhfSample>& rlhf_samples,
                                   uint32_t n_buckets,
                                   uint32_t n_association_samples,
                                   uint32_t n_balancing_samples,
-                                  float learning_rate, uint32_t epochs) {
+                                  float learning_rate, uint32_t epochs,
+                                  bool force_non_empty) {
   auto teaching_samples = getAssociateSamples(
-      convertSamples(textColumnForDocumentIntroduction(), rlhf_samples));
+      convertSamples(textColumnForDocumentIntroduction(), rlhf_samples),
+      force_non_empty);
 
   teach(teaching_samples, n_buckets, n_association_samples, n_balancing_samples,
         learning_rate, epochs);
@@ -1053,14 +1067,16 @@ void UDTMachClassifier::teach(
 
 std::vector<std::pair<MapInput, std::vector<uint32_t>>>
 UDTMachClassifier::getAssociateSamples(
-    const std::vector<std::pair<MapInput, MapInput>>& source_target_samples) {
+    const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+    bool force_non_empty) {
   MapInputBatch batch;
   for (const auto& [_, target] : source_target_samples) {
     batch.emplace_back(target);
   }
 
-  auto all_predicted_hashes = predictHashesImpl(
-      batch, /* sparse_inference = */ false, /* force_non_empty = */ true);
+  auto all_predicted_hashes =
+      predictHashesImpl(batch, /* sparse_inference = */ false,
+                        /* force_non_empty = */ force_non_empty);
 
   std::vector<std::pair<MapInput, std::vector<uint32_t>>> associate_samples;
   associate_samples.reserve(source_target_samples.size());

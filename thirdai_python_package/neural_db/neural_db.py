@@ -777,7 +777,12 @@ class NeuralDB:
         )
 
     def associate(
-        self, source: str, target: str, label=1.0, strength: Strength = Strength.Strong
+        self,
+        source: str,
+        target: str,
+        label=1.0,
+        strength: Strength = Strength.Strong,
+        **kwargs,
     ):
         """
         Teaches the underlying model in the NeuralDB that two different texts
@@ -799,21 +804,26 @@ class NeuralDB:
             user_id=self._user_id,
             text_pairs=[(source, target, label)],
             top_k=top_k,
+            **kwargs,
         )
 
     def associate_batch(
         self,
         text_pairs: List[Tuple[str, str, float]],
         strength: Strength = Strength.Strong,
+        **kwargs,
     ):
         """Same as associate, but the process is applied to a batch of (source, target) pairs at once."""
         top_k = self._get_associate_top_k(strength)
+        if all(len(p) == 2 for p in text_pairs):
+            text_pairs = [(s, t, 1.0) for s, t in text_pairs]
         teachers.associate(
             model=self._savable_state.model,
             logger=self._savable_state.logger,
             user_id=self._user_id,
             text_pairs=text_pairs,
             top_k=top_k,
+            **kwargs,
         )
 
     def _get_associate_top_k(self, strength):

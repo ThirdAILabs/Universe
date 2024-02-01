@@ -25,8 +25,9 @@ def associate(
     user_id: str,
     text_pairs: List[Tuple[str, str, float]],
     top_k: int,
+    **kwargs,
 ):
-    model.associate(text_pairs, n_buckets=top_k)
+    model.associate(text_pairs, n_buckets=top_k, **kwargs)
     logger.log(
         session_id=user_id,
         action="associate",

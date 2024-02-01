@@ -261,7 +261,7 @@ std::string ColumnMap::formatColumnNames() const {
   }
   if (column_names.size() > 2) {
     column_names.pop_back();  // remove last space
-    column_names.pop_back();  // remove last commas
+    column_names.pop_back();  // remove last comma
   }
 
   column_names += "]";
