@@ -3,6 +3,7 @@ from typing import List
 from thirdai.dataset.data_source import PyDataSource
 from core.types import Document
 
+# I want to deprecate DocumentDataSource.It's just to get POC working
 
 class DocumentDataSource(PyDataSource):
     def __init__(self, docs: List[Document], doc_id, strong, weak, query):
