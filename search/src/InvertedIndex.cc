@@ -42,7 +42,7 @@ void InvertedIndex::index(
   _avg_doc_length = static_cast<float>(_sum_doc_lens) / _doc_lengths.size();
 }
 
-constexpr float idf(size_t n_docs, size_t docs_w_token) {
+inline float idf(size_t n_docs, size_t docs_w_token) {
   const float num = n_docs - docs_w_token + 0.5;
   const float denom = docs_w_token + 0.5;
   return std::log(num / denom);
