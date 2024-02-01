@@ -485,7 +485,11 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
     //     (std::sqrt(_bias_optimizer->velocity[cur_neuron] / B2_bias_corrected)
     //     +
     //      eps);
-    _biases[cur_neuron] += lr * grad;
+    if (grad > 0) {
+      _biases[cur_neuron] += lr;
+    } else {
+      _biases[cur_neuron] -= lr;
+    }
     assert(!std::isnan(_biases[cur_neuron]));
 
     (void)B1_bias_corrected;
@@ -522,7 +526,11 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
   //     (std::sqrt(_weight_optimizer->velocity[indx] / B2_bias_corrected) +
   //     eps);
 
-  _weights[indx] += lr * grad;
+  if (grad > 0) {
+    _weights[indx] += lr;
+  } else {
+    _weights[indx] -= lr;
+  }
   assert(!std::isnan(_weights[indx]));
   (void)B1_bias_corrected;
   (void)B2_bias_corrected;
