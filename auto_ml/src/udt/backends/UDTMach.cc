@@ -576,7 +576,8 @@ void UDTMach::introduceDocuments(
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
       uint32_t label = doc_ids[i];
       top_k_per_doc[label].push_back(
-          scores->getVector(i).findKLargestActivations(num_buckets_to_sample));
+          scores->getVector(i).findKLargestActivations(
+              mach_index->numBuckets()));
     }
 
     ctrl_c_check();
@@ -721,7 +722,7 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
   while (required_hashes < num_informed_hashes &&
          available_hashes < sorted_hashes.size()) {
     auto [hash, freq_score_pair] = sorted_hashes[available_hashes];
-    if (mach_index->bucketSize(hash) <= approx_num_hashes_per_bucket) {
+    if (mach_index->bucketSize(hash) < approx_num_hashes_per_bucket) {
       new_hashes.push_back(hash);
       required_hashes++;
       sorted_hashes.erase(sorted_hashes.begin() + available_hashes);
@@ -777,13 +778,13 @@ void UDTMach::introduceLabelHelper(
   uint32_t num_buckets_to_sample =
       num_buckets_to_sample_opt.value_or(getIndex()->numHashes());
 
+  const auto& mach_index = getIndex();
+
   std::vector<TopKActivationsQueue> top_ks;
   for (uint32_t i = 0; i < output->batchSize(); i++) {
     top_ks.push_back(
-        output->getVector(i).findKLargestActivations(num_buckets_to_sample));
+        output->getVector(i).findKLargestActivations(mach_index->numBuckets()));
   }
-
-  const auto& mach_index = getIndex();
 
   uint32_t approx_num_hashes_per_bucket =
       mach_index->approxNumHashesPerBucket(samples.size());

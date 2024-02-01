@@ -608,7 +608,7 @@ def test_load_balancing():
     )
 
     # Check that it inserts into the empty buckets without load balancing.
-    assert set(hashes_with_load_balancing) == set(hash_locs[half_num_hashes:])
+    assert set(hashes_without_load_balancing) == set(hash_locs[half_num_hashes:])
 
     # Check that the buckets it inserts into with load balancing is different
     # than the buckets it inserts into without load balancing
@@ -755,13 +755,6 @@ def regularized_introduce_helper(model, num_random_hashes):
 
 def test_introduce_hash_regularization():
     model = train_simple_mach_udt()
-
-    model.clear_index()
-
-    # without any regularization or balancing, introducing 3 labels with the
-    # same representative sample should yield 3 sets of identical hashes
-    load = regularized_introduce_helper(model, num_random_hashes=0)
-    assert np.sum(load > 0) == NUM_HASHES
 
     model.clear_index()
 
