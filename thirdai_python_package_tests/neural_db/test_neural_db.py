@@ -32,8 +32,14 @@ from thirdai import neural_db as ndb
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 
-small_doc_set = [ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE, on_disk=True)]
-all_local_docs = [get_doc() for get_doc in all_local_doc_getters]
+@pytest.fixture(scope="session")
+def small_doc_set():
+    return [ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE, on_disk=True)]
+
+
+@pytest.fixture(scope="session")
+def all_local_docs():
+    return [get_doc() for get_doc in all_local_doc_getters]
 
 
 def test_neural_db_reference_scores(train_simple_neural_db):
@@ -61,7 +67,7 @@ def all_methods_work(
     clear_sources_works(db)
 
 
-def test_neural_db_all_methods_work_on_new_model():
+def test_neural_db_all_methods_work_on_new_model(small_doc_set):
     db = ndb.NeuralDB("user")
     all_methods_work(
         db,
@@ -71,7 +77,7 @@ def test_neural_db_all_methods_work_on_new_model():
     )
 
 
-def test_neuralb_db_all_methods_work_on_new_mach_mixture():
+def test_neuralb_db_all_methods_work_on_new_mach_mixture(small_doc_set):
     number_models = 2
     db = ndb.NeuralDB("user", number_models=number_models)
     all_methods_work(
@@ -354,7 +360,7 @@ def test_neural_db_delete_document(empty_neural_db):
     assert result.text == "text: ice cream"
 
 
-def test_neural_db_rerank_search():
+def test_neural_db_rerank_search(all_local_docs):
     def char4(sentence):
         return [sentence[i : i + 4] for i in range(len(sentence) - 3)]
 
@@ -408,7 +414,7 @@ def descending_order(seq):
     return all(seq[i] >= seq[i + 1] for i in range(len(seq) - 1))
 
 
-def test_neural_db_reranking():
+def test_neural_db_reranking(all_local_docs):
     db = ndb.NeuralDB("user")
     db.insert(all_local_docs, train=True)
 
@@ -449,7 +455,7 @@ def test_neural_db_reranking():
     assert reranked_results[-1].score >= base_results[-1].score
 
 
-def test_neural_db_reranking_threshold():
+def test_neural_db_reranking_threshold(all_local_docs):
     db = ndb.NeuralDB("user")
     db.insert(all_local_docs, train=True)
 
