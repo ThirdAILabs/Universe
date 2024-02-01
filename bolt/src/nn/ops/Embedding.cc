@@ -250,7 +250,7 @@ void Embedding::sparseEmbeddingUpdateSgd(float learning_rate) {
       size_t index = n * _dim + i;
       float grad = _embedding_optimizer->gradients[index];
 
-      _embeddings[index] = learning_rate * grad;
+      _embeddings[index] += learning_rate * grad;
 
       assert(!std::isnan(_embeddings[index]));
 
