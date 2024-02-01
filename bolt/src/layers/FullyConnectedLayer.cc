@@ -490,7 +490,7 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
                      B2_bias_corrected) +
            eps);
     } else {
-      _biases[cur_neuron] = lr * grad;
+      _biases[cur_neuron] += lr * grad;
     }
     assert(!std::isnan(_biases[cur_neuron]));
 
@@ -527,7 +527,7 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
          eps);
 
   } else {
-    _weights[indx] = lr * grad;
+    _weights[indx] += lr * grad;
   }
 
   assert(!std::isnan(_weights[indx]));
