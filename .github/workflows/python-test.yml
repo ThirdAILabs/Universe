@@ -42,7 +42,7 @@ jobs:
           go-version: 1.19
 
       - name: Run python unit tests
-        run: bin/python-test.sh -m unit
+        run: bin/python-test.sh -m unit --durations=0
 
   python-release-tests:
     runs-on: ubuntu-latest
@@ -66,7 +66,7 @@ jobs:
           go-version: 1.19
 
       - name: Run python release tests
-        run: bin/python-test.sh -m release
+        run: bin/python-test.sh -m release --durations=0
 
   distributed-python-tests:
     runs-on: ubuntu-latest-8-cores
