@@ -56,7 +56,7 @@ class NDBRunner(Runner):
                 mlflow.log_metric("sup training time", end_sup_train - start_sup_train)
 
         if mlflow_logger:
-            test_df = pd.read_csv(config.tst_sets[0])
+            test_df = pd.read_csv(os.path.join(path_prefix, config.tst_sets[0]))
             num_queries = 20
             total_query_time = 0
             for i in range(num_queries):
