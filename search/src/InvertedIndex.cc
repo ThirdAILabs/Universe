@@ -17,22 +17,30 @@
 
 namespace thirdai::search {
 
-void InvertedIndex::index(
-    const std::vector<std::pair<DocId, Tokens>>& documents) {
-  std::vector<std::tuple<DocId, size_t, std::unordered_map<Token, uint32_t>>>
-      document_freqs(documents.size());
+void InvertedIndex::index(const std::vector<DocId>& ids,
+                          const std::vector<Tokens>& docs) {
+  if (ids.size() != docs.size()) {
+    throw std::invalid_argument(
+        "Number of ids must match the number of docs in index.");
+  }
+  std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>> doc_freqs(
+      docs.size());
 
-#pragma omp parallel for default(none) shared(documents, document_freqs)
-  for (size_t i = 0; i < documents.size(); i++) {
-    const auto& tokens = documents[i].second;
+#pragma omp parallel for default(none) shared(docs, doc_freqs)
+  for (size_t i = 0; i < docs.size(); i++) {
+    const auto& tokens = docs[i];
     std::unordered_map<Token, uint32_t> freqs;
     for (const auto& token : text::porter_stemmer::stem(tokens)) {
       freqs[token]++;
     }
-    document_freqs[i] = {documents[i].first, tokens.size(), std::move(freqs)};
+    doc_freqs[i] = {tokens.size(), std::move(freqs)};
   }
 
-  for (const auto& [doc_id, doc_len, freqs] : document_freqs) {
+  for (size_t i = 0; i < docs.size(); i++) {
+    const DocId doc_id = ids[i];
+    const size_t doc_len = doc_freqs[i].first;
+    const auto& freqs = doc_freqs[i].second;
+
     if (_doc_lengths.count(doc_id)) {
       throw std::runtime_error("Document with id " + std::to_string(doc_id) +
                                " is already in InvertedIndex.");

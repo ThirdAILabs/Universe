@@ -77,7 +77,7 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("idf_cutoff_frac") = InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC,
            py::arg("k1") = InvertedIndex::DEFAULT_K1,
            py::arg("b") = InvertedIndex::DEFAULT_B)
-      .def("index", &InvertedIndex::index, py::arg("documents"))
+      .def("index", &InvertedIndex::index, py::arg("ids"), py::arg("docs"))
       .def("query", &InvertedIndex::queryBatch, py::arg("queries"),
            py::arg("k"))
       .def("query", &InvertedIndex::query, py::arg("query"), py::arg("k"));

@@ -27,7 +27,7 @@ class InvertedIndex {
                          float k1 = DEFAULT_K1, float b = DEFAULT_B)
       : _idf_cutoff_frac(idf_cutoff_frac), _k1(k1), _b(b) {}
 
-  void index(const std::vector<std::pair<DocId, Tokens>>& documents);
+  void index(const std::vector<DocId>& ids, const std::vector<Tokens>& docs);
 
   std::vector<std::vector<DocScore>> queryBatch(
       const std::vector<Tokens>& queries, uint32_t k) const;
