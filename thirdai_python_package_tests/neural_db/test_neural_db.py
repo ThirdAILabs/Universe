@@ -261,7 +261,6 @@ def test_neural_db_constrained_search_row_level_constraints(empty_neural_db):
             strong_columns=["text"],
             weak_columns=["text"],
             reference_columns=["text"],
-            index_columns=["date"],
         )
     ]
     db = empty_neural_db
