@@ -930,7 +930,8 @@ data::ColumnMap UDTMach::getAssociateSamples(
 
   auto all_predicted_hashes = predictHashesImpl(
       batch, /* sparse_inference= */ false,
-      /* force_non_empty= */ force_non_empty, /* num_hashes= */ n_buckets);
+      /* force_non_empty= */ force_non_empty,
+      /* num_hashes= */ std::max<size_t>(n_buckets, getIndex()->numHashes()));
 
   std::mt19937 rng(global_random::nextSeed());
 
