@@ -164,7 +164,7 @@ class UDTMachClassifier final : public UDTBackend {
                      source_target_samples,
                  uint32_t n_buckets, uint32_t n_association_samples,
                  uint32_t n_balancing_samples, float learning_rate,
-                 uint32_t epochs) final;
+                 uint32_t epochs, bool force_non_empty) final;
 
   void upvote(const std::vector<std::pair<std::string, uint32_t>>&
                   source_target_samples,
@@ -217,7 +217,8 @@ class UDTMachClassifier final : public UDTBackend {
              uint32_t epochs);
 
   std::vector<std::pair<MapInput, std::vector<uint32_t>>> getAssociateSamples(
-      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples);
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      bool force_non_empty = true);
 
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() const {
     return std::make_shared<cold_start::ColdStartMetaData>(

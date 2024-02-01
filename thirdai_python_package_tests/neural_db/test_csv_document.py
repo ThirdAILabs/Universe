@@ -145,3 +145,24 @@ def test_csv_with_explicit_columns_without_doc_id_column(make_csv_doc):
     assert valid_explicit_strong_columns(doc)
     assert valid_explicit_weak_columns(doc)
     assert ids_are_row_numbers(doc)
+
+
+def test_csv_row_level_constraints():
+    file = "row_constraint_temp.csv"
+    pd.DataFrame(
+        {
+            "text": ["hi", "there", "stranger"],
+            "meta": ["greeting", "position", "object"],
+        }
+    ).to_csv(file, index=False)
+    try:
+        csv = ndb.CSV(file)
+        matches = csv.filter_entity_ids(filters={"meta": ndb.EqualTo("position")})
+        assert len(matches) == 1
+        # We don't durectly assert the matching ID because ID assignment is an
+        # implementation detail.
+        assert csv.reference(matches[0]).metadata["meta"] == "position"
+        os.remove(file)
+    except Exception as e:
+        os.remove(file)
+        raise e

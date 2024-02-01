@@ -122,6 +122,7 @@ class Model:
         n_balancing_samples: int = 50,
         learning_rate: float = 0.001,
         epochs: int = 3,
+        **kwargs,
     ):
         raise NotImplementedError()
 
@@ -651,6 +652,7 @@ class Mach(Model):
         n_balancing_samples: int = 50,
         learning_rate: float = 0.001,
         epochs: int = 3,
+        **kwargs,
     ):
         self.model.associate(
             source_target_samples=self._format_associate_samples(pairs),
@@ -659,6 +661,7 @@ class Mach(Model):
             n_balancing_samples=n_balancing_samples,
             learning_rate=learning_rate,
             epochs=epochs,
+            force_non_empty=kwargs.get("force_non_empty", True),
         )
 
     def upvote(

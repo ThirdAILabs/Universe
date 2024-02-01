@@ -58,6 +58,7 @@ BASE_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "document_test_data"
 )
 CSV_FILE = os.path.join(BASE_DIR, "lorem_ipsum.csv")
+URL_LINK = "https://en.wikipedia.org/wiki/Rice_University"
 PDF_FILE = os.path.join(BASE_DIR, "mutual_nda.pdf")
 DOCX_FILE = os.path.join(BASE_DIR, "four_english_words.docx")
 PPTX_FILE = os.path.join(BASE_DIR, "quantum_mechanics.pptx")
@@ -212,11 +213,8 @@ all_local_doc_getters = [
     lambda: ndb.PDF(PDF_FILE),
     lambda: ndb.PDF(PDF_FILE, version="v2"),
     lambda: ndb.DOCX(DOCX_FILE),
-    lambda: ndb.URL("https://en.wikipedia.org/wiki/Rice_University"),
-    lambda: ndb.URL(
-        "https://en.wikipedia.org/wiki/Rice_University",
-        requests.get("https://en.wikipedia.org/wiki/Rice_University"),
-    ),
+    lambda: ndb.URL(URL_LINK),
+    lambda: ndb.URL(URL_LINK, requests.get(URL_LINK)),
     lambda: ndb.Unstructured(PPTX_FILE),
     lambda: ndb.Unstructured(TXT_FILE),
     lambda: ndb.Unstructured(EML_FILE),
@@ -244,9 +242,7 @@ def on_diskable_doc_getters(on_disk):
         # For everything else, only test one constructor per document type.
         lambda: ndb.PDF(PDF_FILE, on_disk=on_disk),
         lambda: ndb.DOCX(DOCX_FILE, on_disk=on_disk),
-        lambda: ndb.URL(
-            "https://en.wikipedia.org/wiki/Rice_University", on_disk=on_disk
-        ),
+        lambda: ndb.URL(URL_LINK, on_disk=on_disk),
         lambda: ndb.Unstructured(PPTX_FILE, on_disk=on_disk),
         lambda: ndb.SentenceLevelPDF(PDF_FILE, on_disk=on_disk),
         lambda: ndb.SentenceLevelDOCX(DOCX_FILE, on_disk=on_disk),
@@ -273,10 +269,7 @@ def docs_with_meta():
         ),
         ndb.PDF(PDF_FILE, metadata=meta(PDF_META)),
         ndb.DOCX(DOCX_FILE, metadata=meta(DOCX_META)),
-        ndb.URL(
-            "https://en.wikipedia.org/wiki/Rice_University",
-            metadata=meta(URL_NO_RESPONSE_META),
-        ),
+        ndb.URL(URL_LINK, metadata=meta(URL_NO_RESPONSE_META)),
         ndb.Unstructured(PPTX_FILE, metadata=meta(PPTX_META)),
         ndb.Unstructured(TXT_FILE, metadata=meta(TXT_META)),
         ndb.Unstructured(EML_FILE, metadata=meta(EML_META)),
@@ -471,3 +464,16 @@ def clear_sources_works(db: ndb.NeuralDB):
     assert len(db.sources()) > 0
     db.clear_sources()
     assert len(db.sources()) == 0
+
+
+@pytest.fixture(scope="session")
+def empty_neural_db():
+    """Initializes an empty NeuralDB once per test session to speed up tests.
+    Best used for tests that don't assert accuracy.
+    """
+    db = ndb.NeuralDB()
+    # db.insert() initializes the mach model so this only happens once per
+    # test session. Clear the sources so it's back to being empty.
+    db.insert([ndb.CSV(CSV_FILE)], train=False)
+    db.clear_sources()
+    yield db

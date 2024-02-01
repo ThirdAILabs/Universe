@@ -341,6 +341,7 @@ class MachMixture(Model):
         n_balancing_samples: int = 50,
         learning_rate: float = 0.001,
         epochs: int = 3,
+        **kwargs,
     ):
         for model in self.models:
             model.associate(
@@ -350,6 +351,7 @@ class MachMixture(Model):
                 n_balancing_samples=n_balancing_samples,
                 learning_rate=learning_rate,
                 epochs=epochs,
+                force_non_empty=kwargs.get("force_non_empty", True),
             )
 
     def _shard_upvote_pairs(
