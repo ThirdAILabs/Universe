@@ -262,10 +262,8 @@ def unsupervised_train_on_docs(
     freeze_after_acc: float,
     cancel_state: CancelState,
     max_in_memory_batches: int,
-    variable_length: Optional[
-        data.transformations.VariableLengthConfig
-    ] = data.transformations.VariableLengthConfig(),
-    training_progress_callback: Optional[TrainingProgressCallback] = None,
+    variable_length: Optional[data.transformations.VariableLengthConfig],
+    training_progress_callback: Optional[TrainingProgressCallback],
     **kwargs,
 ):
     documents.restart()

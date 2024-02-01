@@ -55,8 +55,7 @@ class UDT {
                    const std::vector<CallbackPtr>& callbacks,
                    TrainOptions options, const bolt::DistributedCommPtr& comm);
 
-  py::object trainBatch(const MapInputBatch& batch, float learning_rate,
-                        const std::vector<std::string>& metrics);
+  py::object trainBatch(const MapInputBatch& batch, float learning_rate);
 
   void setOutputSparsity(float sparsity, bool rebuild_hash_tables);
 
@@ -246,12 +245,12 @@ class UDT {
                           const std::vector<std::string>& weak_column_names,
                           std::optional<uint32_t> num_buckets_to_sample,
                           uint32_t num_random_hashes, bool fast_approximation,
-                          bool verbose) {
+                          bool verbose, bool sort_random_hashes) {
     licensing::entitlements().verifyDataSource(data);
 
-    _backend->introduceDocuments(data, strong_column_names, weak_column_names,
-                                 num_buckets_to_sample, num_random_hashes,
-                                 fast_approximation, verbose);
+    _backend->introduceDocuments(
+        data, strong_column_names, weak_column_names, num_buckets_to_sample,
+        num_random_hashes, fast_approximation, verbose, sort_random_hashes);
   }
 
   /**
@@ -263,12 +262,12 @@ class UDT {
                          const std::vector<std::string>& weak_column_names,
                          const std::variant<uint32_t, std::string>& new_label,
                          std::optional<uint32_t> num_buckets_to_sample,
-                         uint32_t num_random_hashes) {
+                         uint32_t num_random_hashes, bool sort_random_hashes) {
     licensing::entitlements().verifyFullAccess();
 
-    _backend->introduceDocument(document, strong_column_names,
-                                weak_column_names, new_label,
-                                num_buckets_to_sample, num_random_hashes);
+    _backend->introduceDocument(
+        document, strong_column_names, weak_column_names, new_label,
+        num_buckets_to_sample, num_random_hashes, sort_random_hashes);
   }
 
   /**
@@ -279,11 +278,11 @@ class UDT {
   void introduceLabel(const MapInputBatch& sample,
                       const std::variant<uint32_t, std::string>& new_label,
                       std::optional<uint32_t> num_buckets_to_sample,
-                      uint32_t num_random_hashes) {
+                      uint32_t num_random_hashes, bool sort_random_hashes) {
     licensing::entitlements().verifyFullAccess();
 
     _backend->introduceLabel(sample, new_label, num_buckets_to_sample,
-                             num_random_hashes);
+                             num_random_hashes, sort_random_hashes);
   }
 
   /**
@@ -304,11 +303,10 @@ class UDT {
    * has the target column mapping to space separated strings representing the
    * actual output metaclasses to predict in mach.
    */
-  py::object trainWithHashes(const MapInputBatch& batch, float learning_rate,
-                             const std::vector<std::string>& metrics) {
+  py::object trainWithHashes(const MapInputBatch& batch, float learning_rate) {
     licensing::entitlements().verifyFullAccess();
 
-    return _backend->trainWithHashes(batch, learning_rate, metrics);
+    return _backend->trainWithHashes(batch, learning_rate);
   }
 
   /**

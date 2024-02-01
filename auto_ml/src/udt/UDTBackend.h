@@ -61,11 +61,10 @@ class UDTBackend {
                            TrainOptions options,
                            const bolt::DistributedCommPtr& comm) = 0;
 
-  virtual py::object trainBatch(const MapInputBatch& batch, float learning_rate,
-                                const std::vector<std::string>& metrics) {
+  virtual py::object trainBatch(const MapInputBatch& batch,
+                                float learning_rate) {
     (void)batch;
     (void)learning_rate;
-    (void)metrics;
     throw notSupported("train_batch");
   }
 
@@ -204,7 +203,7 @@ class UDTBackend {
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
-      bool fast_approximation, bool verbose) {
+      bool fast_approximation, bool verbose, bool sort_random_hashes) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
@@ -212,6 +211,7 @@ class UDTBackend {
     (void)num_random_hashes;
     (void)fast_approximation;
     (void)verbose;
+    (void)sort_random_hashes;
     throw notSupported("introduce_documents");
   }
 
@@ -220,26 +220,28 @@ class UDTBackend {
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       const std::variant<uint32_t, std::string>& new_label,
-      std::optional<uint32_t> num_buckets_to_sample,
-      uint32_t num_random_hashes) {
+      std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
+      bool sort_random_hashes) {
     (void)document;
     (void)strong_column_names;
     (void)weak_column_names;
     (void)new_label;
     (void)num_buckets_to_sample;
     (void)num_random_hashes;
+    (void)sort_random_hashes;
     throw notSupported("introduce_document");
   }
 
   virtual void introduceLabel(
       const MapInputBatch& sample,
       const std::variant<uint32_t, std::string>& new_label,
-      std::optional<uint32_t> num_buckets_to_sample,
-      uint32_t num_random_hashes) {
+      std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
+      bool sort_random_hashes) {
     (void)sample;
     (void)new_label;
     (void)num_buckets_to_sample;
     (void)num_random_hashes;
+    (void)sort_random_hashes;
     throw notSupported("introduce_label");
   }
 
@@ -251,11 +253,9 @@ class UDTBackend {
   virtual void clearIndex() { throw notSupported("clear_index"); }
 
   virtual py::object trainWithHashes(const MapInputBatch& batch,
-                                     float learning_rate,
-                                     const std::vector<std::string>& metrics) {
+                                     float learning_rate) {
     (void)batch;
     (void)learning_rate;
-    (void)metrics;
     throw notSupported("train_with_hashes");
   }
 

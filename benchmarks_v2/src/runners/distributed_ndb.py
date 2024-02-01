@@ -35,7 +35,7 @@ class DistributedNDBRunner(Runner):
         if not os.path.exists(ckpt_path):
             os.makedirs(ckpt_path, exist_ok=True)
         run_config = RunConfig(
-            name="testing_distributed_NDB_with_amazon-200K",
+            name=config.ray_config,
             storage_path=ckpt_path,
         )
 
@@ -50,7 +50,7 @@ class DistributedNDBRunner(Runner):
         )
 
         _, doc = list(ndb_model.sources().items())[0]
-        sampled_df = doc.df.sample(1000)
+        sampled_df = doc.table.df.sample(1000)
 
         scores = test_ndb(ndb_model, sampled_df)
         for key, val in scores.items():
