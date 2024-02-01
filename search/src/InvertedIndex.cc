@@ -31,11 +31,6 @@ void InvertedIndex::index(
                                " is already in InvertedIndex.");
     }
 
-    // TODO(Nicholas): Should this index creation be parallelized, currently the
-    // index construction time is only a few seconds. If so, is it faster to
-    // have a critical section around the following lines or have the
-    // frequencies computed foreach doc in parallel and then aggregate everyting
-    // serially at the end.
     for (const auto& [token, freq] : freqs) {
       _token_to_docs[token].emplace_back(doc_id, freq);
     }
