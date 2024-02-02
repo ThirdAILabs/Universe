@@ -69,7 +69,7 @@ def get_association_samples():
         new_sample = " ".join(new_words)
         acronym_samples.append({"text": new_sample})
 
-        association = (acronym, " ".join(words[start:end]))
+        association = (acronym, " ".join(words[start:end]), 1.0)
         associations.append(association)
 
     return original_samples, acronym_samples, associations
@@ -104,6 +104,42 @@ def test_associate_acronyms():
     )
     print(matches_after_associate)
     assert matches_after_associate >= 0.9
+
+
+def test_disassociate_acronyms():
+    model = train_model()
+
+    original_samples, acronym_samples, positive_associations = get_association_samples()
+
+    matches_before_associate = compare_predictions(
+        model, original_samples, acronym_samples
+    )
+    print(matches_before_associate)
+    assert matches_before_associate <= 0.5
+
+    model.associate(positive_associations, n_buckets=4, epochs=10, learning_rate=0.01)
+
+    matches_after_associate = compare_predictions(
+        model, original_samples, acronym_samples
+    )
+    print(matches_after_associate)
+    assert matches_after_associate >= 0.9
+
+    negative_associations = [(s, t, 0.0) for (s, t, _) in positive_associations]
+
+    model.associate(
+        negative_associations,
+        n_buckets=7,
+        epochs=20,
+        n_balancing_samples=0,
+        learning_rate=0.1,
+    )
+
+    matches_after_disassociate = compare_predictions(
+        model, original_samples, acronym_samples
+    )
+    print(matches_after_disassociate)
+    assert matches_after_disassociate <= 0.7
 
 
 def test_associate_train_acronyms():

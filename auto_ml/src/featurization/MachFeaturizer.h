@@ -4,13 +4,12 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/featurization/Featurizer.h>
+#include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/transformations/TextCompat.h>
 #include <dataset/src/mach/MachIndex.h>
 
 namespace thirdai::automl {
-
-using RlhfSample = std::pair<std::string, std::vector<uint32_t>>;
 
 class MachFeaturizer final : public Featurizer {
  public:
@@ -18,13 +17,15 @@ class MachFeaturizer final : public Featurizer {
                  const TemporalRelationships& temporal_relationship,
                  const std::string& label_column,
                  const dataset::mach::MachIndexPtr& mach_index,
-                 const TabularOptions& options);
+                 const TabularOptions& options,
+                 data::ValueFillType value_fill = data::ValueFillType::Ones);
 
   MachFeaturizer(const std::shared_ptr<data::TextCompat>& text_transform,
                  data::OutputColumnsList bolt_input_columns,
                  const std::string& label_column,
                  const dataset::mach::MachIndexPtr& mach_index,
-                 char csv_delimiter, std::optional<char> label_delimiter);
+                 char csv_delimiter, std::optional<char> label_delimiter,
+                 data::ValueFillType value_fill = data::ValueFillType::Ones);
 
   std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>
   featurizeForIntroduceDocuments(
@@ -41,7 +42,7 @@ class MachFeaturizer final : public Featurizer {
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names);
 
-  data::ColumnMap featurizeRlhfSamples(const std::vector<RlhfSample>& samples);
+  data::ColumnMap featurizeRlhfSamples(data::ColumnMap columns);
 
   bolt::LabeledDataset columnsToTensors(const data::ColumnMap& columns,
                                         size_t batch_size) const;

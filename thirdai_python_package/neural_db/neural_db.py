@@ -776,7 +776,9 @@ class NeuralDB:
             query_id_para=query_id_para,
         )
 
-    def associate(self, source: str, target: str, strength: Strength = Strength.Strong):
+    def associate(
+        self, source: str, target: str, label=1.0, strength: Strength = Strength.Strong
+    ):
         """
         Teaches the underlying model in the NeuralDB that two different texts
         correspond to similar concepts or queries.
@@ -795,12 +797,14 @@ class NeuralDB:
             model=self._savable_state.model,
             logger=self._savable_state.logger,
             user_id=self._user_id,
-            text_pairs=[(source, target)],
+            text_pairs=[(source, target, label)],
             top_k=top_k,
         )
 
     def associate_batch(
-        self, text_pairs: List[Tuple[str, str]], strength: Strength = Strength.Strong
+        self,
+        text_pairs: List[Tuple[str, str, float]],
+        strength: Strength = Strength.Strong,
     ):
         """Same as associate, but the process is applied to a batch of (source, target) pairs at once."""
         top_k = self._get_associate_top_k(strength)
@@ -918,8 +922,11 @@ class NeuralDB:
         associate_logs = logs[logs["action"] == "associate"]
         associate_samples = []
         for _, row in associate_logs.iterrows():
-            for source, target in row["args"]["pairs"]:
-                associate_samples.append((source, target))
+            for pair in row["args"]["pairs"]:
+                if len(pair) == 2:
+                    associate_samples.append((pair[0], pair[1], 1.0))
+                else:
+                    associate_samples.append(pair)
 
         return associate_samples
 

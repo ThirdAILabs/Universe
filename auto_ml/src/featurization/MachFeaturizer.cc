@@ -24,8 +24,10 @@
 
 namespace thirdai::automl {
 
-static data::OutputColumnsList machLabelColumns() {
-  return {data::OutputColumns(MACH_LABELS), data::OutputColumns(MACH_DOC_IDS)};
+static data::OutputColumnsList machLabelColumns(
+    data::ValueFillType value_fill = data::ValueFillType::Ones) {
+  return {data::OutputColumns(MACH_LABELS, MACH_LABEL_WEIGHTS, value_fill),
+          data::OutputColumns(MACH_DOC_IDS)};
 }
 
 MachFeaturizer::MachFeaturizer(
@@ -33,12 +35,12 @@ MachFeaturizer::MachFeaturizer(
     const TemporalRelationships& temporal_relationship,
     const std::string& label_column,
     const dataset::mach::MachIndexPtr& mach_index,
-    const TabularOptions& options)
+    const TabularOptions& options, data::ValueFillType value_fill)
     : Featurizer(data_types, temporal_relationship, label_column,
                  makeLabelTransformations(
                      label_column,
                      asCategorical(data_types.at(label_column))->delimiter),
-                 machLabelColumns(), options) {
+                 machLabelColumns(value_fill), options) {
   _state = std::make_shared<data::State>(mach_index);
 
   _prehashed_labels_transform = std::make_shared<data::StringToTokenArray>(
@@ -52,10 +54,10 @@ MachFeaturizer::MachFeaturizer(
     const std::shared_ptr<data::TextCompat>& text_transform,
     data::OutputColumnsList bolt_input_columns, const std::string& label_column,
     const dataset::mach::MachIndexPtr& mach_index, char csv_delimiter,
-    std::optional<char> label_delimiter)
+    std::optional<char> label_delimiter, data::ValueFillType value_fill)
     : Featurizer(text_transform, text_transform,
                  makeLabelTransformations(label_column, label_delimiter),
-                 std::move(bolt_input_columns), machLabelColumns(),
+                 std::move(bolt_input_columns), machLabelColumns(value_fill),
                  csv_delimiter, std::make_shared<data::State>(mach_index),
                  TextDatasetConfig(text_transform->inputColumn(), label_column,
                                    label_delimiter)) {
@@ -140,28 +142,12 @@ data::ColumnMap MachFeaturizer::featurizeDataset(
   return removeIntermediateColumns(columns);
 }
 
-data::ColumnMap MachFeaturizer::featurizeRlhfSamples(
-    const std::vector<RlhfSample>& samples) {
+data::ColumnMap MachFeaturizer::featurizeRlhfSamples(data::ColumnMap columns) {
   if (!_text_dataset) {
     throw std::invalid_argument("RLHF is only supported for text datasets.");
   }
 
-  std::vector<std::string> text;
-  std::vector<std::vector<uint32_t>> labels;
-  for (const auto& sample : samples) {
-    text.push_back(sample.first);
-    labels.push_back(sample.second);
-  }
-
-  data::ColumnMap columns(
-      {{_text_dataset->textColumn(),
-        data::ValueColumn<std::string>::make(std::move(text))}});
-
   columns = _input_transform->apply(columns, *_state);
-
-  columns.setColumn(MACH_LABELS,
-                    data::ArrayColumn<uint32_t>::make(
-                        std::move(labels), _state->machIndex()->numBuckets()));
 
   addDummyDocIds(columns);
 
@@ -171,6 +157,7 @@ data::ColumnMap MachFeaturizer::featurizeRlhfSamples(
 bolt::LabeledDataset MachFeaturizer::columnsToTensors(
     const data::ColumnMap& columns, size_t batch_size) const {
   auto data = data::toTensorBatches(columns, _bolt_input_columns, batch_size);
+
   auto labels = data::toTensorBatches(columns, _bolt_label_columns, batch_size);
 
   return std::make_pair(std::move(data), std::move(labels));
@@ -216,16 +203,17 @@ data::ColumnMap MachFeaturizer::removeIntermediateColumns(
   std::unordered_map<std::string, data::ColumnPtr> new_columns;
   for (const auto& column : _bolt_input_columns) {
     new_columns[column.indices()] = columns.getColumn(column.indices());
-    if (column.values()) {
+    if (column.values() && columns.containsColumn(*column.values())) {
       new_columns[*column.values()] = columns.getColumn(*column.values());
     }
   }
   for (const auto& column : _bolt_label_columns) {
     new_columns[column.indices()] = columns.getColumn(column.indices());
-    if (column.values()) {
+    if (column.values() && columns.containsColumn(*column.values())) {
       new_columns[*column.values()] = columns.getColumn(*column.values());
     }
   }
+
   return data::ColumnMap(std::move(new_columns));
 }
 

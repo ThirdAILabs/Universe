@@ -76,6 +76,7 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
 
   auto sparsity = autotuneSparsity(output_dim);
   const auto* activation = use_sigmoid_bce ? "sigmoid" : "softmax";
+  std::cout << "activation " << activation << std::endl;
   auto output = bolt::FullyConnected::make(
                     output_dim, hidden->dim(), sparsity, activation,
                     /* sampling= */ nullptr, /* use_bias= */ output_bias)
