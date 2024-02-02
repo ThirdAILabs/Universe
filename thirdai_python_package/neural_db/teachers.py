@@ -23,10 +23,10 @@ def associate(
     model: Model,
     logger: Logger,
     user_id: str,
-    text_pairs: List[Tuple[str, str]],
+    text_pairs: List[Tuple[str, str, float]],
     top_k: int,
 ):
-    model.associate(text_pairs, top_k)
+    model.associate(text_pairs, n_buckets=top_k)
     logger.log(
         session_id=user_id,
         action="associate",

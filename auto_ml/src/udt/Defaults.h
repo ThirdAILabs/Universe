@@ -104,7 +104,7 @@ constexpr uint32_t MAX_BALANCING_SAMPLES_PER_DOC = 10;
 const std::vector<uint32_t> N_GRAMS_FOR_GENERATOR = {3, 4};
 
 // Batch size to use during associate.
-constexpr uint32_t ASSOCIATE_BATCH_SIZE = 200;
+// constexpr uint32_t ASSOCIATE_BATCH_SIZE = 200;
 
 // Edit distance to be used in SpellChecker
 constexpr uint32_t MAX_EDIT_DISTANCE = 3;

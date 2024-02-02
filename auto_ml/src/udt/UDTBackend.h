@@ -26,6 +26,8 @@ using bolt::ModelPtr;
 
 using Label = std::variant<uint32_t, std::string>;
 
+using RlhfSample = std::tuple<std::string, std::string, float>;
+
 struct TrainOptions {
   std::optional<size_t> batch_size = std::nullopt;
   std::optional<size_t> max_in_memory_batches = std::nullopt;
@@ -278,11 +280,11 @@ class UDTBackend {
     throw notSupported("predict_hashes_batch");
   }
 
-  virtual void associate(
-      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-      uint32_t n_buckets, uint32_t n_association_samples,
-      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
-    (void)rlhf_samples;
+  virtual void associate(const std::vector<RlhfSample>& source_target_samples,
+                         uint32_t n_buckets, uint32_t n_association_samples,
+                         uint32_t n_balancing_samples, float learning_rate,
+                         uint32_t epochs) {
+    (void)source_target_samples;
     (void)n_association_samples;
     (void)n_balancing_samples;
     (void)n_buckets;
@@ -305,10 +307,9 @@ class UDTBackend {
 
   virtual py::object associateTrain(
       const dataset::DataSourcePtr& balancing_data,
-      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& metrics,
-      TrainOptions options) {
+      const std::vector<RlhfSample>& rlhf_samples, uint32_t n_buckets,
+      uint32_t n_association_samples, float learning_rate, uint32_t epochs,
+      const std::vector<std::string>& metrics, TrainOptions options) {
     (void)balancing_data;
     (void)rlhf_samples;
     (void)n_buckets;
@@ -324,10 +325,9 @@ class UDTBackend {
       const dataset::DataSourcePtr& balancing_data,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
-      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& metrics,
-      TrainOptions options) {
+      const std::vector<RlhfSample>& rlhf_samples, uint32_t n_buckets,
+      uint32_t n_association_samples, float learning_rate, uint32_t epochs,
+      const std::vector<std::string>& metrics, TrainOptions options) {
     (void)balancing_data;
     (void)strong_column_names;
     (void)weak_column_names;

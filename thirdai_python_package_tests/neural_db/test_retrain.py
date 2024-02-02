@@ -19,6 +19,6 @@ def test_neural_db_associate(create_simple_dataset):
 
     ndb.insert(sources=[doc])
 
-    ndb.associate_batch([("fruit", "apple"), ("vegetable", "spinach")])
+    ndb.associate_batch([("fruit", "apple", 1.0), ("vegetable", "spinach", 1.0)])
 
     ndb.retrain()

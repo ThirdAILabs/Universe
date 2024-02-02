@@ -603,12 +603,15 @@ class Mach(Model):
         ]
         return predictions
 
-    def _format_associate_samples(self, pairs: List[Tuple[str, str]]):
-        return [(clean_text(source), clean_text(target)) for source, target in pairs]
+    def _format_associate_samples(self, pairs: List[Tuple[str, str, float]]):
+        return [
+            (clean_text(source), clean_text(target), label)
+            for source, target, label in pairs
+        ]
 
     def associate(
         self,
-        pairs: List[Tuple[str, str]],
+        pairs: List[Tuple[str, str, float]],
         n_buckets: int,
         n_association_samples: int = 16,
         n_balancing_samples: int = 50,
@@ -645,7 +648,7 @@ class Mach(Model):
     def retrain(
         self,
         balancing_data: DocumentDataSource,
-        source_target_pairs: List[Tuple[str, str]],
+        source_target_pairs: List[Tuple[str, str, float]],
         n_buckets: int,
         learning_rate: float,
         epochs: int,

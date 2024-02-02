@@ -23,9 +23,14 @@ std::vector<bolt::TensorList> toTensorBatches(
 
     ArrayColumnBasePtr<float> values = nullptr;
     ValueFillType value_fill_type = ValueFillType::Ones;
-    if (column_info.values()) {
+    if (column_info.values() && columns.containsColumn(*column_info.values())) {
       values = columns.getArrayColumn<float>(*column_info.values());
     } else {
+      if (column_info.valueFillType() == ValueFillType::None) {
+        throw std::invalid_argument(
+            "Value column was not present in ColumnMap, and no fallback fill "
+            "type was specified.");
+      }
       value_fill_type = column_info.valueFillType();
     }
 
