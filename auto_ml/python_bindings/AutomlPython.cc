@@ -150,7 +150,9 @@ void defineAutomlInModule(py::module_& module) {
       .def("predict_batch", &udt::UDT::predictBatch, py::arg("samples"),
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false,
-           py::arg("top_k") = std::nullopt, docs::UDT_PREDICT_BATCH)
+           py::arg("top_k") = std::nullopt)
+      .def("predict_activations_batch", &udt::UDT::predictActivationsBatch,
+           py::arg("samples"), py::arg("sparse_inference") = false)
       .def("score_batch", &udt::UDT::scoreBatch, py::arg("samples"),
            py::arg("classes"), py::arg("top_k") = std::nullopt)
       .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
