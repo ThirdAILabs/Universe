@@ -480,16 +480,17 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
     assert(!std::isnan(_bias_optimizer->momentum[cur_neuron]));
     assert(!std::isnan(_bias_optimizer->velocity[cur_neuron]));
 
-    _biases[cur_neuron] +=
-        lr * (_bias_optimizer->momentum[cur_neuron] / B1_bias_corrected) /
-        (std::sqrt(_bias_optimizer->velocity[cur_neuron] / B2_bias_corrected) +
-         eps);
-    // _biases[cur_neuron] += lr * grad;
+    // _biases[cur_neuron] +=
+    //     lr * (_bias_optimizer->momentum[cur_neuron] / B1_bias_corrected) /
+    //     (std::sqrt(_bias_optimizer->velocity[cur_neuron] / B2_bias_corrected)
+    //     +
+    //      eps);
+    _biases[cur_neuron] += lr * grad;
     assert(!std::isnan(_biases[cur_neuron]));
 
-    // (void)B1_bias_corrected;
-    // (void)B2_bias_corrected;
-    // (void)eps;
+    (void)B1_bias_corrected;
+    (void)B2_bias_corrected;
+    (void)eps;
 
     _bias_optimizer->gradients[cur_neuron] = 0;
   }
@@ -516,15 +517,16 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
   assert(!std::isnan(_weight_optimizer->momentum[indx]));
   assert(!std::isnan(_weight_optimizer->velocity[indx]));
 
-  _weights[indx] +=
-      lr * (_weight_optimizer->momentum[indx] / B1_bias_corrected) /
-      (std::sqrt(_weight_optimizer->velocity[indx] / B2_bias_corrected) + eps);
+  // _weights[indx] +=
+  //     lr * (_weight_optimizer->momentum[indx] / B1_bias_corrected) /
+  //     (std::sqrt(_weight_optimizer->velocity[indx] / B2_bias_corrected) +
+  //     eps);
 
-  // _weights[indx] += lr * grad;
+  _weights[indx] += lr * grad;
   assert(!std::isnan(_weights[indx]));
-  // (void)B1_bias_corrected;
-  // (void)B2_bias_corrected;
-  // (void)eps;
+  (void)B1_bias_corrected;
+  (void)B2_bias_corrected;
+  (void)eps;
 
   _weight_optimizer->gradients[indx] = 0;
 }
