@@ -45,6 +45,8 @@ class InvertedIndex {
   static std::shared_ptr<InvertedIndex> load_stream(std::istream& istream);
 
  private:
+  void recomputeMetadata();
+
   void computeIdfs();
 
   inline float bm25(float idf, uint32_t freq, uint64_t doc_len) const {

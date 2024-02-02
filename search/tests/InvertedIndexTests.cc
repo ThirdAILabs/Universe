@@ -114,6 +114,25 @@ TEST(InvertedIndexTests, ShorterDocsScoreHigherWithSameTokens) {
   checkQuery(index, {"c", "a", "q"}, {2, 3});
 }
 
+TEST(InvertedIndexTests, DocRemoval) {
+  InvertedIndex index(1.0);
+
+  index.index({1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, {{"a", "b", "c", "d", "e"},
+                                                {"a", "b", "c", "d"},
+                                                {"a", "b", "c"},
+                                                {"a", "b"},
+                                                {"a"},
+                                                {},
+                                                {},
+                                                {},
+                                                {},
+                                                {}});
+
+  checkQuery(index, {"a", "b", "c", "d", "e"}, {1, 2, 3, 4, 5});
+  index.remove({2, 4});
+  checkQuery(index, {"a", "b", "c", "d", "e"}, {1, 3, 5});
+}
+
 std::tuple<std::vector<DocId>, std::vector<Tokens>, std::vector<Tokens>>
 makeDocsAndQueries(size_t vocab_size, size_t n_docs) {
   std::uniform_int_distribution<> doc_length_dist(20, 70);

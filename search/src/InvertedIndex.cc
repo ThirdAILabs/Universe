@@ -53,6 +53,10 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
     _sum_doc_lens += doc_len;
   }
 
+  recomputeMetadata();
+}
+
+void InvertedIndex::recomputeMetadata() {
   computeIdfs();
   _avg_doc_length = static_cast<float>(_sum_doc_lens) / _doc_lengths.size();
 }
@@ -165,8 +169,7 @@ void InvertedIndex::remove(const std::vector<DocId>& ids) {
     }
   }
 
-  computeIdfs();
-  _avg_doc_length = static_cast<float>(_sum_doc_lens) / _doc_lengths.size();
+  recomputeMetadata();
 }
 
 void InvertedIndex::save(const std::string& filename) const {
