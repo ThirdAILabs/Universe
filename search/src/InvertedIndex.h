@@ -38,7 +38,11 @@ class InvertedIndex {
 
   void save(const std::string& filename) const;
 
+  void save_stream(std::ostream& ostream) const;
+
   static std::shared_ptr<InvertedIndex> load(const std::string& filename);
+
+  static std::shared_ptr<InvertedIndex> load_stream(std::istream& istream);
 
  private:
   void computeIdfs();

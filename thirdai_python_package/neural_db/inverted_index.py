@@ -8,10 +8,10 @@ class InvertedIndex:
     def __init__(self):
         self.index = search.InvertedIndex()
 
-    def insert(self, docs: DocumentDataSource):
+    def insert(self, doc_data_source: DocumentDataSource):
         ids = []
         docs = []
-        for row in docs.row_iterator():
+        for row in doc_data_source.row_iterator():
             ids.append(row.id)
             docs.append(word_tokenize(row.strong + row.weak))
 

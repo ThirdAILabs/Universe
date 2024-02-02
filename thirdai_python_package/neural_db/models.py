@@ -745,3 +745,5 @@ class Mach(Model):
             metrics=metrics,
             callbacks=callbacks,
         )
+        # Invalidate inverted index once supervised data is used.
+        self.inverted_index = None

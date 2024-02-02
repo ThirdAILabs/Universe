@@ -171,6 +171,10 @@ void InvertedIndex::remove(const std::vector<DocId>& ids) {
 
 void InvertedIndex::save(const std::string& filename) const {
   auto ostream = dataset::SafeFileIO::ofstream(filename);
+  save_stream(ostream);
+}
+
+void InvertedIndex::save_stream(std::ostream& ostream) const {
   cereal::BinaryOutputArchive oarchive(ostream);
   oarchive(*this);
 }
@@ -178,6 +182,11 @@ void InvertedIndex::save(const std::string& filename) const {
 std::shared_ptr<InvertedIndex> InvertedIndex::load(
     const std::string& filename) {
   auto istream = dataset::SafeFileIO::ifstream(filename);
+  return load_stream(istream);
+}
+
+std::shared_ptr<InvertedIndex> InvertedIndex::load_stream(
+    std::istream& istream) {
   cereal::BinaryInputArchive iarchive(istream);
   auto index = std::make_shared<InvertedIndex>();
   iarchive(*index);
