@@ -45,17 +45,17 @@ struct AdamOptimizer {
       assert(!std::isnan(momentum[n]));
       assert(!std::isnan(velocity[n]));
 
-      // params[n] += learning_rate * (momentum[n] / B1_bias_corrected) /
-      //              (std::sqrt(velocity[n] / B2_bias_corrected) + EPS);
+      params[n] += learning_rate * (momentum[n] / B1_bias_corrected) /
+                   (std::sqrt(velocity[n] / B2_bias_corrected) + EPS);
 
-      params[n] += learning_rate * grad;
+      // params[n] += learning_rate * grad;
 
       assert(!std::isnan(params[n]));
 
       gradients[n] = 0;
 
-      (void)B1_bias_corrected;
-      (void)B2_bias_corrected;
+      // (void)B1_bias_corrected;
+      // (void)B2_bias_corrected;
     }
   }
 
