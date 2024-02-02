@@ -1,9 +1,11 @@
 import os
 import shutil
 from pathlib import Path
+import random
 from typing import List
 
 import numpy as np
+import pandas as pd
 import pytest
 import thirdai
 from ndb_utils import (
@@ -523,3 +525,32 @@ def test_custom_epoch(create_simple_dataset):
 
     # And number of batches in 'create_simple_dataset' is 1, so, number of epochs that the model got trained for will be number of batches.
     assert num_epochs == batch_count
+
+
+def test_inverted_index_improves_zero_shot():
+    docs = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "../../auto_ml/python_tests/texts.csv",
+    )
+
+    df = pd.read_csv(docs)
+
+    queries = df["text"].map(lambda t: " ".join(random.choices(t.split(" "), k=15)))
+
+    def compute_acc(use_inverted_index):
+        db = ndb.NeuralDB(use_inverted_index=use_inverted_index)
+        db.insert([ndb.CSV(docs, id_column="id", weak_columns=["text"])], train=False)
+
+        correct = 0
+        for label, q in enumerate(queries):
+            results = [r.id for r in db.search(q, top_k=2)]
+            if label in results:
+                correct += 1
+
+        return correct / len(queries)
+
+    mach_only_acc = compute_acc(use_inverted_index=False)
+    combined_acc = compute_acc(use_inverted_index=True)
+
+    assert mach_only_acc < 0.1
+    assert combined_acc > 0.9

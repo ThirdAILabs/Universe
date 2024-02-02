@@ -468,9 +468,9 @@ class Mach(Model):
                     num_buckets_to_sample=num_buckets_to_sample,
                 )
 
-                if self.inverted_index:
-                    intro_documents.restart()
-                    self.inverted_index.insert(intro_documents)
+        if self.inverted_index:
+            intro_documents.restart()
+            self.inverted_index.insert(intro_documents)
 
         self.n_ids += intro_documents.size
 
