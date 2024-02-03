@@ -1,13 +1,14 @@
-from typing import Union, Optional, Iterable
+from typing import Union, Optional, Iterable, List
 from pathlib import Path
 
-from core.types import Document
+from core.types import NewChunk
 from core.retriever import Retriever
-from core.index import Index
-from utils.checkpointing import prepare_checkpoint_location
+from core.documents import Document
+from thirdai_python_package.neural_db_v2.core.chunk_store import ChunkStore
 from utils.kwarg_processing import extract_kwargs
 from retrievers import retriever_by_name
-from indexes import index_by_name
+from documents import document_by_name
+from chunk_stores import chunk_store_by_name
 
 
 class NeuralDB:
@@ -21,14 +22,14 @@ class NeuralDB:
 
     def __init__(
         self,
-        index: Optional[Union[Index, str]] = "default",
+        chunk_store: Optional[Union[ChunkStore, str]] = "default",
         retriever: Optional[Union[Retriever, str]] = "default",
         **kwargs
     ):
         self.index = (
-            index
-            if isinstance(index, Index)
-            else index_by_name(index, **NeuralDB._index_kwargs(kwargs))
+            chunk_store
+            if isinstance(chunk_store, ChunkStore)
+            else chunk_store_by_name(chunk_store, **NeuralDB._index_kwargs(kwargs))
         )
         self.retriever = (
             retriever
@@ -36,26 +37,26 @@ class NeuralDB:
             else retriever_by_name(retriever, **NeuralDB._retriever_kwargs(kwargs))
         )
 
-    def insert(
-        self, docs: Iterable[Document], checkpoint: Optional[Union[Path, str]], **kwargs
-    ):
-        checkpoint = checkpoint and Path(checkpoint)
-        prepare_checkpoint_location(checkpoint)
-        self.index.insert_batch(
-            docs,
+    def insert_chunks(self, chunks: Iterable[NewChunk], **kwargs):
+        stored_chunks = self.index.insert_batch(
+            chunks=chunks,
             assign_new_unique_ids=True,
-            checkpoint=checkpoint and checkpoint / "index",
             **NeuralDB._index_kwargs(kwargs),
         )
         self.retriever.insert_batch(
-            docs,
-            checkpoint=checkpoint and checkpoint / "retriever",
+            chunks=stored_chunks,
             **NeuralDB._retriever_kwargs(kwargs),
         )
 
-    def find(self, query: str, top_k: int, constraints: dict = None, **kwargs):
+    def insert(self, docs: List[Union[str, Document]], **kwargs):
+        docs = [
+            doc if isinstance(doc, Document) else document_by_name(doc) for doc in docs
+        ]
+        self.insert_chunks([chunk for doc in docs for chunk in doc.chunks()], **kwargs)
+
+    def search(self, query: str, top_k: int, constraints: dict = None, **kwargs):
         if not constraints:
-            return self.retriever.find(
+            return self.retriever.search(
                 query, top_k, **NeuralDB._retriever_kwargs(kwargs)
             )
         choices = self.index.matching_doc_ids(

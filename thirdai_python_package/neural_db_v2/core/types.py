@@ -1,13 +1,19 @@
 from dataclasses import dataclass
+from typing import Union
 
 
 # We typedef doc ID to anticipate switching over to string IDs
-DocId = int
+ChunkId = int
 
 
 @dataclass
-class Document:
-    doc_id: DocId
+class NewChunk:
+    user_assigned_id: Union[str, int, None]
     text: str
     keywords: str
     metadata: dict
+
+
+@dataclass
+class Chunk(NewChunk):
+    doc_id: ChunkId
