@@ -1,5 +1,6 @@
-from thirdai_python_package.neural_db_v2.core.chunk_store import ChunkStore
 from chunk_stores.dataframe_index import DataFrameIndex
+
+from thirdai_python_package.neural_db_v2.core.chunk_store import ChunkStore
 
 
 def chunk_store_by_name(name: str, **kwargs) -> ChunkStore:

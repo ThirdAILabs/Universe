@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import Union
 
-
 # We typedef doc ID to anticipate switching over to string IDs
 ChunkId = int
 

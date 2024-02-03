@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import List, Iterable, Set, Union
-from core.types import ChunkId, NewChunk, Chunk
+from typing import Iterable, List, Set, Union
+
+from core.types import Chunk, ChunkId, NewChunk
 
 
 # Calling this ChunkStore instead of DocumentStore because it stores chunks

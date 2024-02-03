@@ -1,13 +1,14 @@
-from typing import Union, Optional, Iterable, List
+from typing import Iterable, List, Optional, Union
 
-from core.types import NewChunk
-from core.retriever import Retriever
-from core.documents import Document
-from thirdai_python_package.neural_db_v2.core.chunk_store import ChunkStore
-from utils.kwarg_processing import extract_kwargs
-from retrievers import retriever_by_name
-from documents import document_by_name
 from chunk_stores import chunk_store_by_name
+from core.documents import Document
+from core.retriever import Retriever
+from core.types import NewChunk
+from documents import document_by_name
+from retrievers import retriever_by_name
+from utils.kwarg_processing import extract_kwargs
+
+from thirdai_python_package.neural_db_v2.core.chunk_store import ChunkStore
 
 
 class NeuralDB:

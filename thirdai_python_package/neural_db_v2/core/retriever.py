@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Iterable
-from core.types import ChunkId, Chunk
+from typing import Iterable, List, Tuple
 
+from core.types import Chunk, ChunkId
 
 Score = float
 
