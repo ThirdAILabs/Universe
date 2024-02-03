@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Iterable
-from pathlib import Path
 from core.types import ChunkId, Chunk
 
 

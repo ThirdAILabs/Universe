@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import List, Iterable, Set
-from pathlib import Path
+from typing import List, Iterable, Set, Union
 from core.types import ChunkId, NewChunk, Chunk
 
 
+# Calling this ChunkStore instead of DocumentStore because it stores chunks
+# instead of documents.
 class ChunkStore(ABC):
     @abstractmethod
     def insert(self, chunk: NewChunk, **kwargs) -> Chunk:
@@ -31,4 +32,10 @@ class ChunkStore(ABC):
 
     @abstractmethod
     def matching_doc_ids(self, constraints: dict, **kwargs) -> Set[ChunkId]:
+        pass
+
+    @abstractmethod
+    def user_assigned_ids_to_chunk_ids(
+        self, user_assigned_ids: List[Union[str, int]]
+    ) -> List[ChunkId]:
         pass

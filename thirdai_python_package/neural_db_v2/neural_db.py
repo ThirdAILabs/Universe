@@ -1,5 +1,4 @@
 from typing import Union, Optional, Iterable, List
-from pathlib import Path
 
 from core.types import NewChunk
 from core.retriever import Retriever
