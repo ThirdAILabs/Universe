@@ -99,14 +99,22 @@ test_batches = load_dataset(
 for epoch in range(5):
     model.training()
     ts = time.perf_counter()
+
+    total_forward_backward, total_update = 0, 0
     for x, y in tqdm.tqdm(train_batches):
         optimizer.zero_grad()
 
+        fs = time.perf_counter()
         out = model(x, y)
-
         loss = smx.cross_entropy(out, y.tensor)
         loss.backward()
+        fe = time.perf_counter()
+        total_forward_backward += fe - fs
+
+        us = time.perf_counter()
         optimizer.step()
+        ue = time.perf_counter()
+        total_update += ue - us
 
     te = time.perf_counter()
 
@@ -125,4 +133,8 @@ for epoch in range(5):
 
     print(
         f"epoch {epoch} train_time={te-ts:.3f}s accuracy={correct / total} eval_time={ee - es}s"
+    )
+
+    print(
+        f"total_forward_backward={total_forward_backward} total_update={total_update}"
     )

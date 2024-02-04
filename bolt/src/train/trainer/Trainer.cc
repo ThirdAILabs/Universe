@@ -83,6 +83,9 @@ metrics::History Trainer::train(
 
     utils::Timer epoch_timer;
 
+    double train_time = 0;
+    double update_time = 0;
+
     for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
       bool is_update_interval_reached =
           ((batch_idx + 1) % _gradient_update_interval == 0);
@@ -99,6 +102,7 @@ metrics::History Trainer::train(
       std::string train_on_batch_log = formatFuncCallLogLine(
           "train_on_batch", batch_idx, train_on_batch_timer.milliseconds());
       logging::info(train_on_batch_log);
+      train_time += train_on_batch_timer.milliseconds();
 
       if (comm && is_update_interval_reached) {
         comm->communicate(_model);
@@ -112,6 +116,8 @@ metrics::History Trainer::train(
         std::string update_parameter_log = formatFuncCallLogLine(
             "update_parameter", batch_idx, update_param_timer.milliseconds());
         logging::info(update_parameter_log);
+        update_time += update_param_timer.milliseconds();
+
         train_metrics.recordBatch(inputs.at(0)->batchSize());
       }
 
@@ -142,6 +148,9 @@ metrics::History Trainer::train(
     }
 
     epoch_timer.stop();
+
+    std::cerr << "total train_on_batch_time: " << train_time << std::endl;
+    std::cerr << "update time: " << update_time << std::endl;
 
     std::vector<std::pair<std::string, float>> metrics_at_rank_0;
     if (comm && train_metrics.hasMetrics()) {

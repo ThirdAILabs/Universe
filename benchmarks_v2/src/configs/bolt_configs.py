@@ -43,7 +43,7 @@ class Amazon670kConfig(BoltBenchmarkConfig):
     rebuild_hash_tables = 6400
     reconstruct_hash_functions = 128000
 
-    batch_size = 256
+    batch_size = 1024
     learning_rate = 1e-4
     num_epochs = 5
 
