@@ -22,6 +22,8 @@
 #include <dataset/src/featurizers/llm/TextClassificationFeaturizer.h>
 #include <dataset/src/featurizers/llm/TextGenerationFeaturizer.h>
 #include <dataset/src/mach/MachIndex.h>
+#include <dataset/src/ranking/KeywordOverlapRanker.h>
+#include <dataset/src/ranking/QueryDocumentRanker.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
@@ -35,6 +37,7 @@
 #include <utils/Random.h>
 #include <chrono>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <type_traits>
@@ -121,35 +124,30 @@ void createDatasetSubmodule(py::module_& module) {
       .def("get_hash_to_entities", &mach::MachIndex::getEntities,
            py::arg("hash"))
       .def(
-          "decode_batch",
-          [](const mach::MachIndex& index, NumpyArray<float>& bucket_scores,
-             uint32_t top_k, uint32_t num_buckets_to_eval) {
-            if (bucket_scores.ndim() != 2) {
-              throw std::invalid_argument("Expected bucket scores to be 2d.");
-            }
-
-            if (bucket_scores.shape(1) != index.numBuckets()) {
+          "decode",
+          [](const mach::MachIndex& index, std::vector<uint32_t> indices,
+             std::vector<float> values, uint32_t top_k,
+             uint32_t num_buckets_to_eval) {
+            if (indices.size() != values.size()) {
               throw std::invalid_argument(
-                  "Expected bucket scores shape[1] to be equal to num hashes.");
+                  "Indices and values must have same length.");
             }
 
-            std::vector<std::vector<std::pair<uint32_t, double>>> output(
-                bucket_scores.shape(0));
-
-#pragma omp parallel for default(none) \
-    shared(bucket_scores, index, output, top_k, num_buckets_to_eval)
-            for (int64_t i = 0; i < bucket_scores.shape(0); i++) {
-              float* scores = bucket_scores.mutable_data(i);
-              BoltVector vec(
-                  /* an= */ nullptr, /* a= */ scores, /* g= */ nullptr,
-                  /* l= */ index.numBuckets());
-
-              output[i] = index.decode(vec, top_k, num_buckets_to_eval);
+            for (uint32_t i : indices) {
+              if (i >= index.numBuckets()) {
+                throw std::invalid_argument(
+                    "Cannot decode index " + std::to_string(i) +
+                    " using MachIndex with " +
+                    std::to_string(index.numBuckets()) + " buckets.");
+              }
             }
 
-            return output;
+            BoltVector scores(/*an=*/indices.data(), /*a=*/values.data(),
+                              /*g=*/nullptr, /*l=*/indices.size());
+
+            return index.decode(scores, top_k, num_buckets_to_eval);
           },
-          py::arg("bucket_scores"), py::arg("top_k"),
+          py::arg("indices"), py::arg("values"), py::arg("top_k"),
           py::arg("num_buckets_to_eval"))
 #endif
       .def("num_hashes", &mach::MachIndex::numHashes)
@@ -374,6 +372,13 @@ void createDatasetSubmodule(py::module_& module) {
       dataset_submodule, "FileDataSource")
       .def(py::init<const std::string&>(), py::arg("filename"));
 
+  py::class_<UnifiedDataSource, DataSource, std::shared_ptr<UnifiedDataSource>>(
+      dataset_submodule, "UnifiedDataSource")
+      .def(py::init<std::vector<DataSourcePtr>, const std::vector<double>&,
+                    uint32_t, uint32_t>(),
+           py::arg("data_sources"), py::arg("probabilities"),
+           py::arg("stop_data_source_id"), py::arg("seed") = 42);
+
   dataset_submodule.def("make_sparse_vector",
                         py::overload_cast<const std::vector<uint32_t>&,
                                           const std::vector<float>&>(
@@ -533,6 +538,17 @@ void createDatasetSubmodule(py::module_& module) {
       py::arg("dataset1"), py::arg("dataset2"),
       "Checks whether the given bolt datasets have the same values. "
       "For testing purposes only.");
+
+  py::class_<ranking::QueryDocumentRanker>(  // NOLINT
+      dataset_submodule, "QueryDocumentRanker");
+
+  py::class_<ranking::KeywordOverlapRanker, ranking::QueryDocumentRanker>(
+      dataset_submodule, "KeywordOverlapRanker")
+      .def(py::init<bool, bool, uint32_t, size_t>(),
+           py::arg("lowercase") = true, py::arg("replace_punct") = true,
+           py::arg("k_gram_length") = 4, py::arg("min_word_length") = 5)
+      .def("rank", &ranking::KeywordOverlapRanker::rank, py::arg("query"),
+           py::arg("documents"));
 }
 
 bool denseBoltDatasetMatchesDenseMatrix(

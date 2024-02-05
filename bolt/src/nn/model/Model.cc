@@ -32,6 +32,7 @@ Model::Model(ComputationList inputs, ComputationList outputs,
     : _inputs(std::move(inputs)),
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
+      _epochs(0),
       _train_steps(0),
       _model_uuid(
           utils::uuid::getRandomHexString(/* num_bytes_randomness= */ 16)),
@@ -268,6 +269,10 @@ size_t Model::numParams() const {
 
 uint32_t Model::trainSteps() const { return _train_steps; }
 
+uint32_t Model::epochs() const { return _epochs; }
+
+void Model::incrementEpochs() { _epochs++; }
+
 void Model::overrideTrainSteps(uint32_t train_steps) {
   _train_steps = train_steps;
 }
@@ -469,6 +474,19 @@ void Model::setSerializeOptimizer(bool should_save_optimizer) {
   for (auto& op : _ops) {
     op->setSerializeOptimizer(should_save_optimizer);
   }
+}
+
+std::unordered_map<std::string, double> Model::getNorms() const {
+  std::unordered_map<std::string, double> norms;
+
+  for (const auto& op : _ops) {
+    auto op_norms = op->parameterAndGradNorms();
+    for (const auto& [name, norm] : op_norms) {
+      norms[op->name() + "_" + name] = norm;
+    }
+  }
+
+  return norms;
 }
 
 std::shared_ptr<Model> Model::load(const std::string& filename) {

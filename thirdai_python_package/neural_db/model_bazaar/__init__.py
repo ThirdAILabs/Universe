@@ -1,1 +1,1 @@
-from .bazaar import Bazaar
+from .bazaar_client import ModelBazaar

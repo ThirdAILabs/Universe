@@ -4,7 +4,7 @@ import boto3
 import pytest
 from download_dataset_fixtures import download_census_income
 from model_test_utils import compute_evaluate_accuracy, get_udt_census_income_model
-from moto import mock_s3
+from moto import mock_aws
 from thirdai import bolt
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
@@ -26,7 +26,7 @@ def aws_credentials():
 
 @pytest.fixture(scope="function")
 def s3(aws_credentials):
-    with mock_s3():
+    with mock_aws():
         yield boto3.client("s3", region_name="us-east-1")
 
 
@@ -53,7 +53,7 @@ def train_and_evaluate(model_to_test, train_path, test_path, inference_samples):
     assert acc >= ACCURACY_THRESHOLD
 
 
-@mock_s3
+@mock_aws
 def test_udt_census_income_s3(download_census_income, s3):
     local_train_file, local_test_file, inference_samples = download_census_income
     s3_train_path, s3_test_path = setup_census_on_s3(

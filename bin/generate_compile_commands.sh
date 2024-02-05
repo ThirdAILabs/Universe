@@ -3,7 +3,7 @@
 BASEDIR=$(dirname "$0")
 
 # Command to generate the compilation database file.
-cmake -S $BASEDIR/../ -B $BASEDIR/../build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTHIRDAI_FEATURE_FLAGS="THIRDAI_CHECK_LICENSE THIRDAI_BUILD_LICENSE THIRDAI_EXPOSE_ALL"
+cmake -S $BASEDIR/../ -B $BASEDIR/../build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DPYTHON_EXECUTABLE=$(which python3) -DTHIRDAI_FEATURE_FLAGS="THIRDAI_CHECK_LICENSE THIRDAI_BUILD_LICENSE THIRDAI_EXPOSE_ALL"
 
 # Location of the compilation database file.
 outfile="$BASEDIR/../build/compile_commands.json"

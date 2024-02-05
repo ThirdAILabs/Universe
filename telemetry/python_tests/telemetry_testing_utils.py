@@ -89,6 +89,7 @@ def run_udt_telemetry_test(telemetry_start_method: Tuple[str, str]):
     eval_start = time.time()
     for _ in range(eval_count):
         udt_model.evaluate(TEST_FILE)
+        udt_model.reset_temporal_trackers()
     eval_duration = time.time() - eval_start
 
     explain_start = time.time()

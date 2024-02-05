@@ -60,8 +60,10 @@ void createBoltTrainSubmodule(py::module_& module) {
 }
 
 Trainer makeTrainer(ModelPtr model,
-                    std::optional<uint32_t> freeze_hash_tables_epoch) {
-  return Trainer(std::move(model), freeze_hash_tables_epoch, CtrlCCheck{});
+                    std::optional<uint32_t> freeze_hash_tables_epoch,
+                    uint32_t gradient_update_interval) {
+  return Trainer(std::move(model), freeze_hash_tables_epoch,
+                 gradient_update_interval, CtrlCCheck{});
 }
 
 void defineTrainer(py::module_& train) {
@@ -82,7 +84,8 @@ void defineTrainer(py::module_& train) {
    */
   py::class_<Trainer>(train, "Trainer")
       .def(py::init(&makeTrainer), py::arg("model"),
-           py::arg("freeze_hash_tables_epoch") = std::nullopt)
+           py::arg("freeze_hash_tables_epoch") = std::nullopt,
+           py::arg("gradient_update_interval") = 1)
 #if THIRDAI_EXPOSE_ALL
       /**
        * ==============================================================
@@ -234,14 +237,15 @@ void defineCallbacks(py::module_& train) {
              std::shared_ptr<callbacks::CosineAnnealingWarmRestart>,
              callbacks::LearningRateScheduler>(callbacks,
                                                "CosineAnnealingWarmRestart")
-      .def(py::init<uint32_t, uint32_t, float, bool>(),
-           py::arg("initial_restart_iter") = 4,
-           py::arg("iter_restart_multiplicative_factor") = 1,
-           py::arg("min_lr") = 0.0, py::arg("batch_per_step") = false,
+      .def(py::init<float, float, uint32_t, uint32_t, uint32_t, bool>(),
+           py::arg("min_lr"), py::arg("max_lr"), py::arg("steps_until_restart"),
+           py::arg("linear_warmup_steps") = 0,
+           py::arg("steps_until_restart_scaling_factor") = 1,
+           py::arg("batch_level_steps") = true,
            "The cosine annealing warm restart LR scheduler decays the learning "
-           "rate until the specified number of epochs (current_restart_iter) "
-           "following a cosine schedule and next restarts occurs after "
-           "current_restart_iter * iter_restart_multiplicative_factor");
+           "rate until the specified number of steps (steps_until_restart) "
+           "following a cosine schedule and the next restart occurs after "
+           "steps_until_restart * steps_until_restart_scaling_factor");
 }
 
 void defineDistributedTrainer(py::module_& train) {

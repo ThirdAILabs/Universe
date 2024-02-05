@@ -12,11 +12,15 @@ namespace thirdai::bolt::seismic {
 
 class SeismicEmbedding final : public SeismicBase {
  public:
-  static std::shared_ptr<SeismicEmbedding> make(size_t subcube_shape,
-                                                size_t patch_shape,
+  static std::shared_ptr<SeismicEmbedding> makeCube(
+      size_t subcube_shape, size_t patch_shape, size_t embedding_dim,
+      const std::string& model_size, std::optional<size_t> max_pool);
+
+  static std::shared_ptr<SeismicEmbedding> make(Shape subcube_shape,
+                                                Shape patch_shape,
                                                 size_t embedding_dim,
                                                 const std::string& model_size,
-                                                std::optional<size_t> max_pool);
+                                                std::optional<Shape> max_pool);
 
   SeismicEmbedding(InputShapeData input_shape_data, ModelPtr model);
 

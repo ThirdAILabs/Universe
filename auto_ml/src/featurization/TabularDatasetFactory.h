@@ -49,12 +49,7 @@ class TabularDatasetFactory {
       const dataset::DataSourcePtr& data_source);
 
   bolt::TensorList featurizeInput(const MapInput& input) {
-    for (const auto& [column_name, _] : input) {
-      if (!_data_types.count(column_name)) {
-        throw std::invalid_argument("Input column name '" + column_name +
-                                    "' not found in data_types.");
-      }
-    }
+    verifyValidColNames(input);
     dataset::MapSampleRef input_ref(input);
     return bolt::convertVectors(_inference_featurizer->featurize(input_ref),
                                 _inference_featurizer->getDimensions());
@@ -132,6 +127,8 @@ class TabularDatasetFactory {
   static std::shared_ptr<TabularDatasetFactory> load_stream(
       std::istream& input_stream);
 
+  const auto& featurizer() const { return _labeled_featurizer; }
+
  private:
   dataset::TabularFeaturizerPtr makeFeaturizer(
       const TemporalRelationships& temporal_relationships,
@@ -160,6 +157,21 @@ class TabularDatasetFactory {
         !_metadata_processors.count(col_name) ||
         !_vectors_map.count(col_name)) {
       throw std::invalid_argument("'" + col_name + "' is an invalid column.");
+    }
+  }
+
+  void verifyValidColNames(const MapInput& input) {
+    for (const auto& [column_name, _] : input) {
+      if (!_data_types.count(column_name)) {
+        throw std::invalid_argument("Input column name '" + column_name +
+                                    "' not found in data_types.");
+      }
+    }
+  }
+
+  void verifyValidColNames(const MapInputBatch& inputs) {
+    for (const auto& input : inputs) {
+      verifyValidColNames(input);
     }
   }
 

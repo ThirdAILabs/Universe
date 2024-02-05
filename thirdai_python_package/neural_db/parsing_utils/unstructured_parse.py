@@ -10,14 +10,21 @@ from langchain.document_loaders import (
     UnstructuredFileLoader,
     UnstructuredPowerPointLoader,
 )
-from unstructured.cleaners.core import (
-    clean_bullets,
-    clean_extra_whitespace,
-    clean_ligatures,
-    clean_non_ascii_chars,
-    replace_mime_encodings,
-    replace_unicode_quotes,
-)
+
+try:
+    from unstructured.cleaners.core import (
+        clean_bullets,
+        clean_extra_whitespace,
+        clean_ligatures,
+        clean_non_ascii_chars,
+        replace_mime_encodings,
+        replace_unicode_quotes,
+    )
+except Exception as e:
+    raise ModuleNotFoundError(
+        "To use NeuralDB with these document types please run: pip3 install unstructured[all-docs]"
+    )
+
 
 from .utils import (
     chunk_text,

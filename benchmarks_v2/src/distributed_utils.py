@@ -75,15 +75,10 @@ def test_ndb(db, df):
     scores = {"top_1": 0, "top_3": 0, "top_5": 0, "top_10": 0}
     total_count = len(df)
 
-    for _, row in tqdm.tqdm(df.iterrows(), desc="Progress", total=total_count):
+    for actual_id, row in tqdm.tqdm(df.iterrows(), desc="Progress", total=total_count):
         query = row["TITLE"]
-        actual_id = int(row["id"])
 
-        search_results = db.search(
-            query=query,
-            top_k=10,
-            on_error=lambda error_msg: print(f"Error! {error_msg}"),
-        )
+        search_results = db.search(query=query, top_k=10)
         all_retrieved_ids = [int(result.id) for result in search_results]
 
         for k in [1, 3, 5, 10]:

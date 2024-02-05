@@ -186,6 +186,72 @@ def test_dyadic_interval_augmentation_bidirectional():
 
 
 @pytest.mark.unit
+def test_dyadic_interval_with_context():
+    columns = data.ColumnMap(
+        {
+            "context": data.columns.TokenArrayColumn(
+                [[10, 11, 12], [14], [15, 16]],
+                dim=100,
+            ),
+            "text": data.columns.TokenArrayColumn(
+                [[0, 1, 2, 3, 4], [5, 6, 7], [8]],
+                dim=100,
+            ),
+        }
+    )
+
+    transform = data.transformations.DyadicInterval(
+        input_column="text",
+        context_column="context",
+        output_interval_prefix="interval_",
+        target_column="target",
+        n_intervals=3,
+        is_bidirectional=True,
+    )
+
+    columns = transform(columns)
+
+    interval_1 = [[10], [10], [2], [2], [14], [14], [14], [15]]
+    assert columns["interval_from_start_1"].data() == interval_1
+
+    interval_2 = [[10, 11], [10, 11], [2], [2, 3], [14], [14, 5], [14, 5], [15, 16]]
+    assert columns["interval_from_start_2"].data() == interval_2
+
+    interval_4 = [
+        [10, 11, 12],
+        [10, 11, 12, 0],
+        [2],
+        [2, 3],
+        [14],
+        [14, 5],
+        [14, 5, 6],
+        [15, 16],
+    ]
+    assert columns["interval_from_start_4"].data() == interval_4
+
+    end_interval_1 = [[12], [0], [2], [3], [14], [5], [6], [16]]
+    assert columns["interval_from_end_1"].data() == end_interval_1
+
+    end_interval_2 = [[11, 12], [12, 0], [2], [2, 3], [14], [14, 5], [5, 6], [15, 16]]
+    assert columns["interval_from_end_2"].data() == end_interval_2
+
+    end_interval_4 = [
+        [10, 11, 12],
+        [10, 11, 12, 0],
+        [2],
+        [2, 3],
+        [14],
+        [14, 5],
+        [14, 5, 6],
+        [15, 16],
+    ]
+    assert columns["interval_from_end_4"].data() == end_interval_4
+
+    target = [0, 1, 3, 4, 5, 6, 7, 8]
+    assert columns["target"].data() == target
+
+
+@pytest.mark.unit
 def test_dyadic_interval_inference_bidirectional():
     columns = data.ColumnMap(
         {

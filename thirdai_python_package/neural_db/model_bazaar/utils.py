@@ -1,8 +1,58 @@
 import hashlib
+import json
 import os
+import shutil
+import sys
+import time
+from functools import wraps
 from pathlib import Path
 
 import requests
+from IPython.display import clear_output
+from tqdm import tqdm
+
+
+def print_progress_dots(duration: int):
+    for _ in range(duration):
+        sys.stdout.write(".")
+        sys.stdout.flush()
+        time.sleep(1)
+    clear_output(wait=True)
+
+
+def create_model_identifier(model_name: str, author_username: str):
+    return author_username + "/" + model_name
+
+
+def create_deployment_identifier(
+    model_identifier: str, deployment_name: str, deployment_username: str
+):
+    return model_identifier + ":" + deployment_username + "/" + deployment_name
+
+
+def check_deployment_decorator(func):
+    """
+    A decorator function to check if deployment is complete before executing the decorated method.
+
+    Args:
+        func (callable): The function to be decorated.
+
+    Returns:
+        callable: The decorated function.
+    """
+
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except requests.RequestException as e:
+            print(f"Error during HTTP request: {str(e)}")
+            print(
+                "Deployment might not be complete yet. Call `list_deployments()` to check status of your deployment."
+            )
+            return None
+
+    return wrapper
 
 
 def chunks(path: Path):
@@ -38,11 +88,53 @@ def get_directory_size(directory: Path):
     return size
 
 
+def check_response(response):
+    if not (200 <= response.status_code < 300):
+        print(response.content)
+        raise requests.exceptions.HTTPError(
+            "Failed with status code:", response.status_code
+        )
+
+    content = json.loads(response.content)
+
+    status = content["status"]
+
+    if status != "success":
+        error = content["message"]
+        raise requests.exceptions.HTTPError(f"error: {error}")
+
+
 def http_get_with_error(*args, **kwargs):
     """Makes an HTTP GET request and raises an error if status code is not
-    200.
+    2XX.
     """
     response = requests.get(*args, **kwargs)
-    if response.status_code != 200:
-        raise FileNotFoundError(f"{response.status_code} error: {response.reason}")
+    check_response(response)
     return response
+
+
+def http_post_with_error(*args, **kwargs):
+    """Makes an HTTP POST request and raises an error if status code is not
+    2XX.
+    """
+    response = requests.post(*args, **kwargs)
+    check_response(response)
+    return response
+
+
+def zip_folder(folder_path):
+    shutil.make_archive(folder_path, "zip", folder_path)
+    return str(folder_path) + ".zip"
+
+
+def get_file_size(file_path, unit="B"):
+    file_size = os.path.getsize(file_path)
+    exponents_map = {"B": 0, "KB": 1, "MB": 2, "GB": 3}
+    if unit not in exponents_map:
+        raise ValueError(
+            "Must select from \
+        ['B', 'KB', 'MB', 'GB']"
+        )
+
+    size = file_size / 1024 ** exponents_map[unit]
+    return round(size, 3)
