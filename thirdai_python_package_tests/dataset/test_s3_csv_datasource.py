@@ -3,7 +3,7 @@ import os
 
 import boto3
 import pytest
-from moto import mock_s3
+from moto import mock_aws
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -28,11 +28,11 @@ def aws_credentials():
 
 @pytest.fixture(scope="function")
 def s3(aws_credentials):
-    with mock_s3():
+    with mock_aws():
         yield boto3.client("s3", region_name="us-east-1")
 
 
-def setup_mock_s3(s3):
+def setup_mock_aws(s3):
     s3.create_bucket(Bucket="test_bucket")
     s3.put_object(
         Bucket=bucket_name,
@@ -67,9 +67,9 @@ def load_all_lines(storage_path, batch_size):
     return lines
 
 
-@mock_s3
+@mock_aws
 def test_s3_data_source_by_batch(s3):
-    setup_mock_s3(s3)
+    setup_mock_aws(s3)
 
     batches = load_all_batches(
         storage_path=f"s3://{bucket_name}/find/numbers/ones", batch_size=batch_size
@@ -88,9 +88,9 @@ def test_s3_data_source_by_batch(s3):
 
 # This is similar to test_s3_data_source_by_batch, but additionally ensures
 # that the linewise loading is correct
-@mock_s3
+@mock_aws
 def test_s3_data_source_by_line(s3):
-    setup_mock_s3(s3)
+    setup_mock_aws(s3)
 
     lines = load_all_lines(
         storage_path=f"s3://{bucket_name}/find/numbers/ones", batch_size=batch_size

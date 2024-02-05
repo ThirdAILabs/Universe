@@ -127,10 +127,13 @@ class NeuralDbProgressTracker:
             - self._train_state.current_epoch_number
         )
 
-        args = self._train_state.__dict__
+        args = self._train_state.__dict__.copy()
 
+        args["freeze_after_epochs"] = freeze_after_epochs
         args["min_epochs"] = min_epochs
         args["max_epochs"] = max_epochs
+
+        args["variable_length"] = self.vlc_config
 
         return args
 

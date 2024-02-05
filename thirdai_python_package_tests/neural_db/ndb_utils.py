@@ -58,6 +58,7 @@ BASE_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "document_test_data"
 )
 CSV_FILE = os.path.join(BASE_DIR, "lorem_ipsum.csv")
+URL_LINK = "https://en.wikipedia.org/wiki/Rice_University"
 PDF_FILE = os.path.join(BASE_DIR, "mutual_nda.pdf")
 DOCX_FILE = os.path.join(BASE_DIR, "four_english_words.docx")
 PPTX_FILE = os.path.join(BASE_DIR, "quantum_mechanics.pptx")
@@ -212,11 +213,8 @@ all_local_doc_getters = [
     lambda: ndb.PDF(PDF_FILE),
     lambda: ndb.PDF(PDF_FILE, version="v2"),
     lambda: ndb.DOCX(DOCX_FILE),
-    lambda: ndb.URL("https://en.wikipedia.org/wiki/Rice_University"),
-    lambda: ndb.URL(
-        "https://en.wikipedia.org/wiki/Rice_University",
-        requests.get("https://en.wikipedia.org/wiki/Rice_University"),
-    ),
+    lambda: ndb.URL(URL_LINK),
+    lambda: ndb.URL(URL_LINK, requests.get(URL_LINK)),
     lambda: ndb.Unstructured(PPTX_FILE),
     lambda: ndb.Unstructured(TXT_FILE),
     lambda: ndb.Unstructured(EML_FILE),
@@ -224,8 +222,35 @@ all_local_doc_getters = [
     lambda: ndb.SentenceLevelDOCX(DOCX_FILE),
 ]
 
-# The two URL docs are different constructor invocationsfor the same thing.
-num_duplicate_docs = 1
+# The two URL docs are different constructor invocations for the same thing.
+num_duplicate_local_doc_getters = 1
+
+
+def on_diskable_doc_getters(on_disk):
+    return [
+        # Test both CSV constructors to make sure we capture all edge cases
+        # relating to how we process the id column.
+        lambda: ndb.CSV(
+            CSV_FILE,
+            id_column="category",
+            strong_columns=["text"],
+            weak_columns=["text"],
+            reference_columns=["text"],
+            on_disk=on_disk,
+        ),
+        lambda: ndb.CSV(CSV_FILE, on_disk=on_disk),
+        # For everything else, only test one constructor per document type.
+        lambda: ndb.PDF(PDF_FILE, on_disk=on_disk),
+        lambda: ndb.DOCX(DOCX_FILE, on_disk=on_disk),
+        lambda: ndb.URL(URL_LINK, on_disk=on_disk),
+        lambda: ndb.Unstructured(PPTX_FILE, on_disk=on_disk),
+        lambda: ndb.SentenceLevelPDF(PDF_FILE, on_disk=on_disk),
+        lambda: ndb.SentenceLevelDOCX(DOCX_FILE, on_disk=on_disk),
+    ]
+
+
+num_duplicate_on_diskable_doc_getters = 0
+
 
 all_doc_getters = all_local_doc_getters + [
     eq_doc.connector_doc for eq_doc in all_connector_doc_getters
@@ -244,10 +269,7 @@ def docs_with_meta():
         ),
         ndb.PDF(PDF_FILE, metadata=meta(PDF_META)),
         ndb.DOCX(DOCX_FILE, metadata=meta(DOCX_META)),
-        ndb.URL(
-            "https://en.wikipedia.org/wiki/Rice_University",
-            metadata=meta(URL_NO_RESPONSE_META),
-        ),
+        ndb.URL(URL_LINK, metadata=meta(URL_NO_RESPONSE_META)),
         ndb.Unstructured(PPTX_FILE, metadata=meta(PPTX_META)),
         ndb.Unstructured(TXT_FILE, metadata=meta(TXT_META)),
         ndb.Unstructured(EML_FILE, metadata=meta(EML_META)),
@@ -321,7 +343,7 @@ ARBITRARY_QUERY = "This is an arbitrary search query"
 # They are only written as separate functions to make it easier to read.
 
 
-def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document]):
+def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document], num_duplicate_docs):
     db.insert(docs, train=False)
     assert len(db.sources()) == len(docs) - num_duplicate_docs
 
@@ -388,12 +410,30 @@ def associate_works(db: ndb.NeuralDB):
 
 
 def save_load_works(db: ndb.NeuralDB):
+    search_results = [r.text for r in db.search(ARBITRARY_QUERY, top_k=5)]
+
     if os.path.exists("temp.ndb"):
         shutil.rmtree("temp.ndb")
     db.save("temp.ndb")
-    search_results = [r.text for r in db.search(ARBITRARY_QUERY, top_k=5)]
 
-    new_db = ndb.NeuralDB.from_checkpoint("temp.ndb")
+    # Change working directory to catch edge cases. E.g. if we don't properly
+    # save a sqlite database, this test may still pass if the original sqlite
+    # database is still in the current working directory.
+    if os.path.exists("new_dir"):
+        shutil.rmtree("new_dir")
+    os.mkdir("new_dir")
+    if os.path.exists("inner_new_dir"):
+        shutil.rmtree("inner_new_dir")
+    os.mkdir("inner_new_dir")
+    shutil.move("temp.ndb", "inner_new_dir/temp.ndb")
+    shutil.move("inner_new_dir", "new_dir/inner_new_dir")
+    os.chdir("new_dir")
+
+    # We new_dir/, and inner_new_dir/ inside of new_dir/ which contains
+    # temp.ndb. By only cd-ing into new_dir/ and loading from
+    # inner_new_dir/temp.ndb, we make sure that path changes are handled
+    # correctly.
+    new_db = ndb.NeuralDB.from_checkpoint("inner_new_dir/temp.ndb")
     new_search_results = [r.text for r in new_db.search(ARBITRARY_QUERY, top_k=5)]
 
     assert search_results == new_search_results
@@ -402,10 +442,38 @@ def save_load_works(db: ndb.NeuralDB):
         doc.name for doc in new_db.sources().values()
     ]
 
-    shutil.rmtree("temp.ndb")
+    # Save the loaded model and test the second saved model. Some metadata is
+    # updated during the loading process. If saving a loaded model and then
+    # loading it again works, we can induce that the metadata will not be
+    # corrupted if we save and load an arbitrary number of times.
+    new_db.save("temp_2.ndb")
+    new_new_db = ndb.NeuralDB.from_checkpoint("temp_2.ndb")
+    new_search_results = [r.text for r in new_new_db.search(ARBITRARY_QUERY, top_k=5)]
+
+    assert search_results == new_search_results
+    assert db.sources().keys() == new_db.sources().keys()
+    assert [doc.name for doc in db.sources().values()] == [
+        doc.name for doc in new_db.sources().values()
+    ]
+
+    os.chdir("..")
+    shutil.rmtree("new_dir")
 
 
 def clear_sources_works(db: ndb.NeuralDB):
     assert len(db.sources()) > 0
     db.clear_sources()
     assert len(db.sources()) == 0
+
+
+@pytest.fixture(scope="session")
+def empty_neural_db():
+    """Initializes an empty NeuralDB once per test session to speed up tests.
+    Best used for tests that don't assert accuracy.
+    """
+    db = ndb.NeuralDB()
+    # db.insert() initializes the mach model so this only happens once per
+    # test session. Clear the sources so it's back to being empty.
+    db.insert([ndb.CSV(CSV_FILE)], train=False)
+    db.clear_sources()
+    yield db
