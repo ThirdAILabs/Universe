@@ -25,7 +25,9 @@ float BinaryCrossEntropy::singleLoss(float activation, float label) const {
 }
 
 float BinaryCrossEntropy::singleGradient(float activation, float label,
+                                         float sum_labels,
                                          uint32_t batch_size) const {
+  (void)sum_labels;
   return (label - activation) / batch_size;
 }
 

@@ -50,7 +50,7 @@ class ComparativeLoss : public Loss {
    * This method takes in the activation and label for the ith neuron and should
    * return the loss gradient for that neuron.
    */
-  virtual float singleGradient(float activation, float label,
+  virtual float singleGradient(float activation, float label, float sum_labels,
                                uint32_t batch_size) const = 0;
 
   ComputationPtr _output;

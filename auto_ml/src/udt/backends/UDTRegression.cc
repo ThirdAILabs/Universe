@@ -46,13 +46,8 @@ UDTRegression::UDTRegression(
 
   auto label_transform = data::Pipeline::make({cast, _binning});
 
-  bool softmax_output = utils::hasSoftmaxOutput(_model);
-  data::ValueFillType value_fill = softmax_output
-                                       ? data::ValueFillType::SumToOne
-                                       : data::ValueFillType::Ones;
-
   data::OutputColumnsList bolt_labels = {
-      data::OutputColumns(FEATURIZED_LABELS, value_fill)};
+      data::OutputColumns(FEATURIZED_LABELS)};
 
   auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
       input_data_types, temporal_tracking_relationships,

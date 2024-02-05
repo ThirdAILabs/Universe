@@ -51,7 +51,7 @@ Dataset SeismicClassifier::makeLabelbatches(
                                       std::move(labels), labelDim())}});
 
   return data::toTensorBatches(
-      column, {data::OutputColumns("col", data::ValueFillType::SumToOne)},
+      column, {data::OutputColumns("col", data::ValueFillType::Ones)},
       batch_size);
 }
 

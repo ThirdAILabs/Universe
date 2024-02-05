@@ -61,13 +61,8 @@ UDTClassifier::UDTClassifier(
       input_data_types, temporal_tracking_relationships,
       tabular_options.lookahead);
 
-  bool softmax_output = utils::hasSoftmaxOutput(model());
-  data::ValueFillType value_fill = softmax_output
-                                       ? data::ValueFillType::SumToOne
-                                       : data::ValueFillType::Ones;
-
   data::OutputColumnsList bolt_labels = {
-      data::OutputColumns(FEATURIZED_LABELS, value_fill)};
+      data::OutputColumns(FEATURIZED_LABELS)};
 
   _featurizer = std::make_shared<Featurizer>(
       input_data_types, temporal_relationships, target_name, label_transform,

@@ -34,8 +34,9 @@ float CategoricalCrossEntropy::singleLoss(float activation, float label) const {
 }
 
 float CategoricalCrossEntropy::singleGradient(float activation, float label,
+                                              float sum_labels,
                                               uint32_t batch_size) const {
-  return (label - activation) / batch_size;
+  return (label - sum_labels * activation) / batch_size;
 }
 
 template void CategoricalCrossEntropy::serialize(cereal::BinaryInputArchive&);

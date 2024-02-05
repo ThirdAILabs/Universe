@@ -94,6 +94,11 @@ void ComparativeLoss::gradients(BoltVector& activations,
     assert(activations.len == labels.len);
   }
 
+  float sum_labels = 0;
+  for (uint32_t i = 0; i < labels.len; i++) {
+    sum_labels += labels.activations[i];
+  }
+
   /**
    * Loss gradients are only computed during training. If the label is sparse,
    * the neurons of the network's final layer that correspond to the label's
@@ -105,8 +110,8 @@ void ComparativeLoss::gradients(BoltVector& activations,
     uint32_t active_neuron = activations.activeNeuronAtIndex<ACT_DENSE>(i);
     float label_val =
         labels.findActiveNeuron<LABEL_DENSE>(active_neuron).activation;
-    activations.gradients[i] =
-        singleGradient(activations.activations[i], label_val, batch_size);
+    activations.gradients[i] = singleGradient(
+        activations.activations[i], label_val, sum_labels, batch_size);
   }
 }
 

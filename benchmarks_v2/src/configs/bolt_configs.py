@@ -28,7 +28,9 @@ class BoltBenchmarkConfig(ABC):
 
 def load_svm_dataset(filename, batch_size):
     data, labels = dataset.load_bolt_svm_dataset(
-        filename=filename, batch_size=batch_size
+        filename=filename,
+        batch_size=batch_size,
+        softmax_for_multiclass=False,
     )
     return data, labels
 

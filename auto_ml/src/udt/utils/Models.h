@@ -26,6 +26,4 @@ ModelPtr loadModel(const std::vector<uint32_t>& input_dims,
 
 void verifyCanSetModel(const ModelPtr& curr_model, const ModelPtr& new_model);
 
-bool hasSoftmaxOutput(const ModelPtr& model);
-
 }  // namespace thirdai::automl::udt::utils

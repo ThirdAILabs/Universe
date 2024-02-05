@@ -153,15 +153,4 @@ void verifyCanSetModel(const ModelPtr& curr_model, const ModelPtr& new_model) {
   }
 }
 
-bool hasSoftmaxOutput(const ModelPtr& model) {
-  auto outputs = model->outputs();
-  if (outputs.size() > 1) {
-    return false;  // TODO(Nicholas): Should this throw?
-  }
-
-  auto fc = bolt::FullyConnected::cast(outputs.at(0)->op());
-  return fc && (fc->kernel()->getActivationFunction() ==
-                bolt::ActivationFunction::Softmax);
-}
-
 }  // namespace thirdai::automl::udt::utils
