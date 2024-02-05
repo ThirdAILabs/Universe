@@ -836,5 +836,8 @@ def test_udt_softmax_activations(softmax):
 
     output = model.predict_activations_batch([{"text": "some text"}])[0]
 
-    sum_to_one = sum(output) == 1
+    sum_to_one = np.isclose(
+        sum(output.to_numpy()),
+        1,
+    )
     assert sum_to_one == softmax
