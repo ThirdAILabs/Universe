@@ -1054,7 +1054,9 @@ ar::ConstArchivePtr UDTMach::toArchive(bool with_optimizer) const {
   map->set("num_buckets_to_eval", ar::u64(_num_buckets_to_eval));
   map->set("mach_sampling_threshold", ar::f32(_mach_sampling_threshold));
 
-  // TODO(ARCHIVE) RLHF sampler, make sure this makes sense with new Mach design
+  if (_balancing_samples) {
+    map->set("balancing_samples", _balancing_samples->toArchive());
+  }
 
   return map;
 }
@@ -1069,7 +1071,11 @@ UDTMach::UDTMach(const ar::Archive& archive)
       _default_top_k_to_return(archive.u64("default_top_k_to_return")),
       _num_buckets_to_eval(archive.u64("num_buckets_to_eval")),
       _mach_sampling_threshold(
-          archive.getAs<ar::F32>("mach_sampling_threshold")) {}
+          archive.getAs<ar::F32>("mach_sampling_threshold")) {
+  if (archive.contains("balancing_samples")) {
+    _balancing_samples = BalancingSamples(*archive.get("balancing_samples"));
+  }
+}
 
 template void UDTMach::serialize(cereal::BinaryInputArchive&,
                                  const uint32_t version);

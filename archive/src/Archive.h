@@ -173,6 +173,8 @@ using VecU64 = std::vector<uint64_t>;
 using VecI64 = std::vector<int64_t>;
 using VecStr = std::vector<std::string>;
 using VecWStr = std::vector<std::wstring>;
+using VecVecU32 = std::vector<std::vector<uint32_t>>;
+using VecVecF32 = std::vector<std::vector<float>>;
 using MapU64VecU64 = std::unordered_map<uint64_t, std::vector<uint64_t>>;
 using MapU64VecF32 = std::unordered_map<uint64_t, std::vector<float>>;
 using MapStrU64 = std::unordered_map<std::string, uint64_t>;
@@ -200,6 +202,10 @@ ConstArchivePtr vecI64(std::vector<int64_t> val);
 ConstArchivePtr vecStr(std::vector<std::string> val);
 
 ConstArchivePtr vecWStr(std::vector<std::wstring> val);
+
+ConstArchivePtr vecVecU32(std::vector<std::vector<uint32_t>> val);
+
+ConstArchivePtr vecVecF32(std::vector<std::vector<float>> val);
 
 ConstArchivePtr mapU64VecU64(MapU64VecU64 val);
 

@@ -189,6 +189,14 @@ ConstArchivePtr vecWStr(std::vector<std::wstring> val) {
   return Value<std::vector<std::wstring>>::make(std::move(val));
 }
 
+ConstArchivePtr vecVecU32(std::vector<std::vector<uint32_t>> val) {
+  return Value<std::vector<std::vector<uint32_t>>>::make(std::move(val));
+}
+
+ConstArchivePtr vecVecF32(std::vector<std::vector<float>> val) {
+  return Value<std::vector<std::vector<float>>>::make(std::move(val));
+}
+
 ConstArchivePtr mapU64VecU64(MapU64VecU64 val) {
   return Value<MapU64VecU64>::make(std::move(val));
 }

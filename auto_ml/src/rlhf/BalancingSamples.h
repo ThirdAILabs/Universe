@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RLHFSampler.h"
+#include <archive/src/Archive.h>
 #include <data/src/ColumnMap.h>
 #include <cstddef>
 #include <iterator>
@@ -35,12 +36,13 @@ class BalancingSamples {
         _labels_col(std::move(labels_col)),
         _doc_ids_col(std::move(doc_ids_col)),
         _max_docs(max_docs),
-        _max_samples_per_doc(max_samples_per_doc),
-        _rng(RNG_SEED) {}
+        _max_samples_per_doc(max_samples_per_doc) {}
 
   BalancingSamples(std::string indices_col, std::string values_col,
                    std::string labels_col, std::string doc_ids_col,
                    const RLHFSampler& sampler);
+
+  explicit BalancingSamples(const ar::Archive& archive);
 
   data::ColumnMap balancingSamples(size_t num_samples);
 
@@ -55,6 +57,8 @@ class BalancingSamples {
     _samples_per_doc.erase(doc_id);
     _doc_ids.erase(doc_id);
   }
+
+  ar::ConstArchivePtr toArchive() const;
 
  private:
   void addSample(uint32_t doc_id, BalancingSample sample);

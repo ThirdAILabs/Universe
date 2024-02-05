@@ -66,6 +66,16 @@ std::string Value<std::vector<std::wstring>>::typeName() {
 }
 
 template <>
+std::string Value<std::vector<std::vector<uint32_t>>>::typeName() {
+  return "Value[std::vector<std::vector<uint32_t>>]";
+}
+
+template <>
+std::string Value<std::vector<std::vector<float>>>::typeName() {
+  return "Value[std::vector<std::vector<float>>]";
+}
+
+template <>
 std::string
 Value<std::unordered_map<uint64_t, std::vector<uint64_t>>>::typeName() {
   return "Value[std::unordered_map<uint64_t, std::vector<uint64_t>>]";
