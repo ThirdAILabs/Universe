@@ -148,6 +148,8 @@ ar::ConstArchivePtr BalancingSamples::toArchive() const {
   map->set("values_col", ar::str(_values_col));
   map->set("labels_col", ar::str(_labels_col));
   map->set("doc_ids_col", ar::str(_labels_col));
+  map->set("indices_dim", ar::u64(_indices_dim));
+  map->set("label_dim", ar::u64(_label_dim));
   map->set("max_docs", ar::u64(_max_docs));
   map->set("max_samples_per_doc", ar::u64(_max_samples_per_doc));
 
@@ -175,13 +177,6 @@ ar::ConstArchivePtr BalancingSamples::toArchive() const {
 
   map->set("balancing_samples", balancing_samples_list);
 
-  if (_indices_dim) {
-    map->set("indices_dim", ar::u64(*_indices_dim));
-  }
-  if (_labels_dim) {
-    map->set("labels_dim", ar::u64(*_labels_dim));
-  }
-
   return map;
 }
 
@@ -190,10 +185,10 @@ BalancingSamples::BalancingSamples(const ar::Archive& archive)
       _values_col(archive.str("values_col")),
       _labels_col(archive.str("labels_col")),
       _doc_ids_col(archive.str("doc_ids_col")),
+      _indices_dim(archive.u64("indices_dim")),
+      _label_dim(archive.u64("label_dim")),
       _max_docs(archive.u64("max_docs")),
-      _max_samples_per_doc(archive.u64("max_samples_per_doc")),
-      _indices_dim(archive.getOpt<ar::U64>("indices_dim")),
-      _labels_dim(archive.getOpt<ar::U64>("labels_dim")) {
+      _max_samples_per_doc(archive.u64("max_samples_per_doc")) {
   for (const auto& doc_samples : archive.get("balancing_samples")->list()) {
     uint64_t doc_id = doc_samples->u64("doc_id");
 
