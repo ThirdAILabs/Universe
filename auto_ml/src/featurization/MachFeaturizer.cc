@@ -25,7 +25,7 @@
 namespace thirdai::automl {
 
 static data::OutputColumnsList machLabelColumns(
-    data::ValueFillType value_fill = data::ValueFillType::Ones) {
+    data::ValueFillType value_fill) {
   return {data::OutputColumns(MACH_LABELS, value_fill),
           data::OutputColumns(MACH_DOC_IDS)};
 }
