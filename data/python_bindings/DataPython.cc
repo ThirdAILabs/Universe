@@ -112,16 +112,15 @@ void createDataSubmodule(py::module_& dataset_submodule) {
   dataset_submodule.def("to_tensors", &toTensorBatches, py::arg("column_map"),
                         py::arg("columns_to_convert"), py::arg("batch_size"));
 
-  dataset_submodule.def(
-      "stem",
-      py::overload_cast<const std::vector<std::string>&, bool>(
-          &text::porter_stemmer::stem),
-      py::arg("words"), py::arg("lowercase") = true);
+  dataset_submodule.def("stem",
+                        py::overload_cast<const std::vector<std::string>&>(
+                            &text::porter_stemmer::stem),
+                        py::arg("words"));
 
   dataset_submodule.def(
       "stem",
-      py::overload_cast<const std::string&, bool>(&text::porter_stemmer::stem),
-      py::arg("word"), py::arg("lowercase") = true);
+      py::overload_cast<const std::string&>(&text::porter_stemmer::stem),
+      py::arg("word"));
 }
 
 template <typename T>

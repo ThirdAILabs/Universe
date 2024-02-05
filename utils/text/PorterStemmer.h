@@ -12,9 +12,8 @@ namespace thirdai::text::porter_stemmer {
  *
  * Overview of algorithm: https://tartarus.org/martin/PorterStemmer/def.txt
  */
-std::string stem(const std::string& word, bool lowercase = true);
+std::string stem(const std::string& word);
 
-std::vector<std::string> stem(const std::vector<std::string>& words,
-                              bool lowercase = true);
+std::vector<std::string> stem(const std::vector<std::string>& words);
 
 }  // namespace thirdai::text::porter_stemmer
