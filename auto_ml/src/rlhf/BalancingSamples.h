@@ -30,16 +30,20 @@ class BalancingSamples {
 
   BalancingSamples(std::string indices_col, std::string values_col,
                    std::string labels_col, std::string doc_ids_col,
-                   size_t max_docs, size_t max_samples_per_doc)
+                   size_t indices_dim, size_t label_dim, size_t max_docs,
+                   size_t max_samples_per_doc)
       : _indices_col(std::move(indices_col)),
         _values_col(std::move(values_col)),
         _labels_col(std::move(labels_col)),
         _doc_ids_col(std::move(doc_ids_col)),
+        _indices_dim(indices_dim),
+        _label_dim(label_dim),
         _max_docs(max_docs),
         _max_samples_per_doc(max_samples_per_doc) {}
 
   BalancingSamples(std::string indices_col, std::string values_col,
                    std::string labels_col, std::string doc_ids_col,
+                   size_t indices_dim, size_t label_dim,
                    const RLHFSampler& sampler);
 
   explicit BalancingSamples(const ar::Archive& archive);
@@ -70,14 +74,14 @@ class BalancingSamples {
   std::string _labels_col;
   std::string _doc_ids_col;
 
+  size_t _indices_dim;
+  size_t _label_dim;
+
   size_t _max_docs;
   size_t _max_samples_per_doc;
 
   std::unordered_map<uint32_t, std::vector<BalancingSample>> _samples_per_doc;
   std::unordered_set<uint32_t> _doc_ids;
-
-  std::optional<size_t> _indices_dim;
-  std::optional<size_t> _labels_dim;
 
   std::mt19937 _rng{RNG_SEED};
 

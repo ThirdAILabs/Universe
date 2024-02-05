@@ -120,6 +120,7 @@ class Model:
         n_balancing_samples: int = 50,
         learning_rate: float = 0.001,
         epochs: int = 3,
+        **kwargs,
     ):
         raise NotImplementedError()
 
@@ -262,10 +263,8 @@ def unsupervised_train_on_docs(
     freeze_after_acc: float,
     cancel_state: CancelState,
     max_in_memory_batches: int,
-    variable_length: Optional[
-        data.transformations.VariableLengthConfig
-    ] = data.transformations.VariableLengthConfig(),
-    training_progress_callback: Optional[TrainingProgressCallback] = None,
+    variable_length: Optional[data.transformations.VariableLengthConfig],
+    training_progress_callback: Optional[TrainingProgressCallback],
     **kwargs,
 ):
     documents.restart()
@@ -616,6 +615,7 @@ class Mach(Model):
         n_balancing_samples: int = 50,
         learning_rate: float = 0.001,
         epochs: int = 3,
+        **kwargs,
     ):
         self.model.associate(
             source_target_samples=self._format_associate_samples(pairs),
@@ -624,6 +624,7 @@ class Mach(Model):
             n_balancing_samples=n_balancing_samples,
             learning_rate=learning_rate,
             epochs=epochs,
+            force_non_empty=kwargs.get("force_non_empty", True),
         )
 
     def upvote(
