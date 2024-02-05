@@ -117,6 +117,20 @@ class NeuralDBClient:
         print(json.loads(response.content)["message"])
 
     @check_deployment_decorator
+    def delete(self, source_ids: List[str]):
+        """
+        Deletes documents from the ndb model using source ids.
+
+        Args:
+            files (List[str]): A list of source ids to delete from the ndb model.
+        """
+        response = http_post_with_error(
+            urljoin(self.base_url, "delete"), json={source_ids: source_ids}
+        )
+
+        print(json.loads(response.content)["message"])
+
+    @check_deployment_decorator
     def associate(self, text_pairs: List[Dict[str, str]]):
         """
         Associates source and target string pairs in the ndb model.
@@ -323,9 +337,11 @@ class ModelBazaar(Bazaar):
 
         url = urljoin(self._base_url, f"jobs/{self._user_id}/train")
         files = [
-            ("files", open(file_path, "rb"))
-            if doc_type == "local"
-            else ("files", (file_path, "don't care"))
+            (
+                ("files", open(file_path, "rb"))
+                if doc_type == "local"
+                else ("files", (file_path, "don't care"))
+            )
             for file_path in docs
         ]
         if train_extra_options:

@@ -56,11 +56,10 @@ class UDTMachClassifier final : public UDTBackend {
                    TrainOptions options,
                    const bolt::DistributedCommPtr& comm) final;
 
-  py::object trainBatch(const MapInputBatch& batch, float learning_rate,
-                        const std::vector<std::string>& metrics) final;
+  py::object trainBatch(const MapInputBatch& batch, float learning_rate) final;
 
-  py::object trainWithHashes(const MapInputBatch& batch, float learning_rate,
-                             const std::vector<std::string>& metrics) final;
+  py::object trainWithHashes(const MapInputBatch& batch,
+                             float learning_rate) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
@@ -134,18 +133,20 @@ class UDTMachClassifier final : public UDTBackend {
                           const std::vector<std::string>& weak_column_names,
                           std::optional<uint32_t> num_buckets_to_sample,
                           uint32_t num_random_hashes, bool fast_approximation,
-                          bool verbose) final;
+                          bool verbose, bool sort_random_hashes) final;
 
   void introduceDocument(const MapInput& document,
                          const std::vector<std::string>& strong_column_names,
                          const std::vector<std::string>& weak_column_names,
                          const Label& new_label,
                          std::optional<uint32_t> num_buckets_to_sample,
-                         uint32_t num_random_hashes) final;
+                         uint32_t num_random_hashes,
+                         bool sort_random_hashes) final;
 
   void introduceLabel(const MapInputBatch& samples, const Label& new_label,
                       std::optional<uint32_t> num_buckets_to_sample,
-                      uint32_t num_random_hashes) final;
+                      uint32_t num_random_hashes,
+                      bool sort_random_hashes) final;
 
   void forget(const Label& label) final;
 
@@ -163,7 +164,7 @@ class UDTMachClassifier final : public UDTBackend {
                      source_target_samples,
                  uint32_t n_buckets, uint32_t n_association_samples,
                  uint32_t n_balancing_samples, float learning_rate,
-                 uint32_t epochs) final;
+                 uint32_t epochs, bool force_non_empty) final;
 
   void upvote(const std::vector<std::pair<std::string, uint32_t>>&
                   source_target_samples,
@@ -216,7 +217,8 @@ class UDTMachClassifier final : public UDTBackend {
              uint32_t epochs);
 
   std::vector<std::pair<MapInput, std::vector<uint32_t>>> getAssociateSamples(
-      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples);
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      bool force_non_empty = true);
 
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() const {
     return std::make_shared<cold_start::ColdStartMetaData>(
@@ -245,7 +247,8 @@ class UDTMachClassifier final : public UDTBackend {
 
   std::vector<uint32_t> topHashesForDoc(
       std::vector<TopKActivationsQueue>&& top_k_per_sample,
-      uint32_t num_buckets_to_sample, uint32_t num_random_hashes = 0) const;
+      uint32_t num_buckets_to_sample, uint32_t num_random_hashes = 0,
+      bool sort_random_hashes = false) const;
 
   InputMetrics getMetrics(const std::vector<std::string>& metric_names,
                           const std::string& prefix);

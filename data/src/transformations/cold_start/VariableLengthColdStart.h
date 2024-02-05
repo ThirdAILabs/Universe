@@ -73,6 +73,7 @@ struct VariableLengthConfig {
     std::stringstream ss;
     ss << "VariableLengthConfig(";
     ss << VARIABLE_TO_STRING(covering_min_length, ", ");
+    ss << VARIABLE_TO_STRING(covering_max_length, ", ");
     ss << VARIABLE_TO_STRING(max_covering_samples, ", ");
     ss << VARIABLE_TO_STRING(slice_min_length, ", ");
     ss << VARIABLE_TO_STRING(slice_max_length, ", ");

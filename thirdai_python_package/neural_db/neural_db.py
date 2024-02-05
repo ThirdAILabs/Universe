@@ -546,12 +546,12 @@ class NeuralDB:
 
         return ids
 
-    def delete(self, source_id: str):
-        """Deletes a document from the NeuralDB."""
-        deleted_entities = self._savable_state.documents.delete(source_id)
+    def delete(self, source_ids: List[str]):
+        """Deletes documents from the NeuralDB."""
+        deleted_entities = self._savable_state.documents.delete(source_ids)
         self._savable_state.model.delete_entities(deleted_entities)
         self._savable_state.logger.log(
-            session_id=self._user_id, action="delete", args={"source_id": source_id}
+            session_id=self._user_id, action="delete", args={"source_ids": source_ids}
         )
 
     def clear_sources(self) -> None:
@@ -776,7 +776,9 @@ class NeuralDB:
             query_id_para=query_id_para,
         )
 
-    def associate(self, source: str, target: str, strength: Strength = Strength.Strong):
+    def associate(
+        self, source: str, target: str, strength: Strength = Strength.Strong, **kwargs
+    ):
         """
         Teaches the underlying model in the NeuralDB that two different texts
         correspond to similar concepts or queries.
@@ -797,10 +799,14 @@ class NeuralDB:
             user_id=self._user_id,
             text_pairs=[(source, target)],
             top_k=top_k,
+            **kwargs,
         )
 
     def associate_batch(
-        self, text_pairs: List[Tuple[str, str]], strength: Strength = Strength.Strong
+        self,
+        text_pairs: List[Tuple[str, str]],
+        strength: Strength = Strength.Strong,
+        **kwargs,
     ):
         """Same as associate, but the process is applied to a batch of (source, target) pairs at once."""
         top_k = self._get_associate_top_k(strength)
@@ -810,6 +816,7 @@ class NeuralDB:
             user_id=self._user_id,
             text_pairs=text_pairs,
             top_k=top_k,
+            **kwargs,
         )
 
     def _get_associate_top_k(self, strength):

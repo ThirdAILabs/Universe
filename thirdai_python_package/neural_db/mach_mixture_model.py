@@ -280,16 +280,47 @@ class MachMixture(Model):
             results.append(sample_results[:n_results])
         return results
 
-    @requires_condition(
-        check_func=lambda x: False,
-        method_name="score",
-        method_class="MachMixture",
-        condition_unmet_string="when multiple models are initialized",
-    )
+    def _shard_label_constraints(
+        self, entities: List[List[int]]
+    ) -> List[List[List[int]]]:
+        shards = [[[] for _ in range(len(entities))] for _ in range(self.number_models)]
+        for i in range(len(entities)):
+            for label in entities[i]:
+                model_ids = self.label_to_segment_map.get(label)
+                if model_ids is None:
+                    raise Exception(f"The Label {label} is not a part of Label Index")
+                for model_id in model_ids:
+                    shards[model_id][i].append(label)
+        return shards
+
     def score(
         self, samples: InferSamples, entities: List[List[int]], n_results: int = None
     ) -> Predictions:
-        pass
+        sharded_entities = self._shard_label_constraints(entities=entities)
+
+        model_scores = [
+            model.score(samples=samples, entities=shard_entity, n_results=n_results)
+            for model, shard_entity in zip(self.models, sharded_entities)
+        ]
+
+        aggregated_scores = [defaultdict(int) for _ in range(len(samples))]
+
+        for i in range(len(samples)):
+            for score in model_scores:
+                for label, value in score[i]:
+                    aggregated_scores[i][label] += value
+
+        # Sort the aggregated scores and keep only the top k results
+        top_k_results = []
+        for i in range(len(samples)):
+            sorted_scores = sorted(
+                aggregated_scores[i].items(), key=lambda x: x[1], reverse=True
+            )
+            top_k_results.append(
+                sorted_scores[:n_results] if n_results else sorted_scores
+            )
+
+        return top_k_results
 
     @requires_condition(
         check_func=lambda x: False,
@@ -310,6 +341,7 @@ class MachMixture(Model):
         n_balancing_samples: int = 50,
         learning_rate: float = 0.001,
         epochs: int = 3,
+        **kwargs,
     ):
         for model in self.models:
             model.associate(
@@ -319,6 +351,7 @@ class MachMixture(Model):
                 n_balancing_samples=n_balancing_samples,
                 learning_rate=learning_rate,
                 epochs=epochs,
+                force_non_empty=kwargs.get("force_non_empty", True),
             )
 
     def _shard_upvote_pairs(
