@@ -879,8 +879,7 @@ void UDTMach::teach(const std::vector<RlhfSample>& rlhf_samples,
   columns = columns.concat(balancing_samples);
   columns.shuffle();
 
-  auto [data, labels] =
-      _featurizer->columnsToTensors(columns, batch_size);
+  auto [data, labels] = _featurizer->columnsToTensors(columns, batch_size);
 
   for (uint32_t e = 0; e < epochs; e++) {
     for (size_t i = 0; i < data.size(); i++) {
