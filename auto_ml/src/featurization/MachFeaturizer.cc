@@ -54,10 +54,10 @@ MachFeaturizer::MachFeaturizer(
     const std::shared_ptr<data::TextCompat>& text_transform,
     data::OutputColumnsList bolt_input_columns, const std::string& label_column,
     const dataset::mach::MachIndexPtr& mach_index, char csv_delimiter,
-    std::optional<char> label_delimiter)
+    std::optional<char> label_delimiter, data::ValueFillType value_fill)
     : Featurizer(text_transform, text_transform,
                  makeLabelTransformations(label_column, label_delimiter),
-                 std::move(bolt_input_columns), machLabelColumns(),
+                 std::move(bolt_input_columns), machLabelColumns(value_fill),
                  csv_delimiter, std::make_shared<data::State>(mach_index),
                  TextDatasetConfig(text_transform->inputColumn(), label_column,
                                    label_delimiter)) {
