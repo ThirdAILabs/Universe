@@ -814,3 +814,27 @@ def test_udt_mach_fast_approximation_handles_commas():
     )
 
     os.remove("temp.csv")
+
+
+@pytest.mark.parametrize("softmax", [True, False])
+def test_udt_softmax_activations(softmax):
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "text": bolt.types.text(contextual_encoding="local"),
+            "label": bolt.types.categorical(),
+        },
+        target="label",
+        n_target_classes=3,
+        integer_target=True,
+        options={
+            "extreme_classification": True,
+            "embedding_dimension": 100,
+            "extreme_output_dim": 100,
+            "softmax": softmax,
+        },
+    )
+
+    output = model.predict_activations_batch([{"text": "some text"}])[0]
+
+    sum_to_one = sum(output) == 1
+    assert sum_to_one == softmax

@@ -90,6 +90,11 @@ class UDT {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k);
 
+  py::object predictActivationsBatch(const MapInputBatch& samples,
+                                     bool sparse_inference) {
+    return _backend->predictActivationsBatch(samples, sparse_inference);
+  }
+
   /**
    * Performs inference on a batch of samples in parallel and returns the scores
    * for each of the provided output classes.
@@ -344,10 +349,10 @@ class UDT {
       const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
       uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
-      bool force_non_empty) {
+      bool force_non_empty, size_t batch_size) {
     _backend->associate(rlhf_samples, n_buckets, n_association_samples,
                         n_balancing_samples, learning_rate, epochs,
-                        force_non_empty);
+                        force_non_empty, batch_size);
   }
 
   /**
@@ -368,11 +373,11 @@ class UDT {
   void upvote(const std::vector<std::pair<std::string, uint32_t>>&
                   source_target_samples,
               uint32_t n_upvote_samples, uint32_t n_balancing_samples,
-              float learning_rate, uint32_t epochs) {
+              float learning_rate, uint32_t epochs, size_t batch_size) {
     licensing::entitlements().verifyFullAccess();
 
     _backend->upvote(source_target_samples, n_upvote_samples,
-                     n_balancing_samples, learning_rate, epochs);
+                     n_balancing_samples, learning_rate, epochs, batch_size);
   }
 
   py::object associateTrain(

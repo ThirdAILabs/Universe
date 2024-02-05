@@ -18,7 +18,8 @@ class MachFeaturizer final : public Featurizer {
                  const TemporalRelationships& temporal_relationship,
                  const std::string& label_column,
                  const dataset::mach::MachIndexPtr& mach_index,
-                 const TabularOptions& options);
+                 const TabularOptions& options,
+                 data::ValueFillType value_fill = data::ValueFillType::Ones);
 
   MachFeaturizer(const std::shared_ptr<data::TextCompat>& text_transform,
                  data::OutputColumnsList bolt_input_columns,
