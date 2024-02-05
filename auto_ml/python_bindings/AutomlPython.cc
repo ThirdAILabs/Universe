@@ -238,10 +238,16 @@ void defineAutomlInModule(py::module_& module) {
       .def("model_dims", &udt::UDT::modelDims)
       .def("text_dataset_config", &udt::UDT::textDatasetConfig)
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
-      .def("save", &udt::UDT::save, py::arg("filename"))
+      .def(
+          "save",
+          [](const std::shared_ptr<udt::UDT>& udt,
+             const std::string& filename) { udt->save(filename); },
+          py::arg("filename"))
       .def("checkpoint", &udt::UDT::checkpoint, py::arg("filename"))
-      .def_static("load", &udt::UDT::load, py::arg("filename"))
-      .def_static("old_load", &udt::UDT::oldLoad, py::arg("filename"))
+      .def_static(
+          "load",
+          [](const std::string& filename) { return udt::UDT::load(filename); },
+          py::arg("filename"))
       .def("get_parameters",
            [](udt::UDT& udt) {
              return thirdai::bolt::python::getParameters(udt.model());

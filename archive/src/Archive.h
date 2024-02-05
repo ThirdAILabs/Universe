@@ -144,6 +144,17 @@ void serialize(ConstArchivePtr archive, std::ostream& output);
 
 ConstArchivePtr deserialize(std::istream& input);
 
+// Saving/loading the base class (Archive) directly lead to the derived class's
+// serialization method not being invoked. Using this wrapper solved the issue.
+struct ArchiveWrapper {
+  ConstArchivePtr _archive;
+
+  template <class Ar>
+  void serialize(Ar& archive) {
+    archive(_archive);
+  }
+};
+
 /**
  * The following are helper methods for constructing Value's for the supported
  * types. This is to provide simpler and more readable code, so that a user can

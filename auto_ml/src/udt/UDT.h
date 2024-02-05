@@ -452,8 +452,6 @@ class UDT {
 
   static std::shared_ptr<UDT> load_stream(std::istream& input_stream);
 
-  static std::shared_ptr<UDT> oldLoad(const std::string& filename);
-
   bool isV1() const;
 
   static std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
@@ -478,9 +476,13 @@ class UDT {
   friend class cereal::access;
 
   template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
+  void save(Archive& archive, uint32_t version) const;
+
+  template <class Archive>
+  void load(Archive& archive, uint32_t version);
 
   std::unique_ptr<UDTBackend> _backend;
+  bool _save_optimizer = false;
 };
 
 }  // namespace thirdai::automl::udt

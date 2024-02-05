@@ -284,14 +284,19 @@ void UDT::save(const std::string& filename) const {
   save_stream(filestream);
 }
 
-void UDT::save_stream(std::ostream& output_stream) const {
-  ar::serialize(_backend->toArchive(/*with_optimizer=*/false), output_stream);
+void UDT::save_stream(std::ostream& output) const {
+  const_cast<UDT*>(this)->_save_optimizer = false;
+  cereal::BinaryOutputArchive oarchive(output);
+  oarchive(*this);
 }
 
 void UDT::checkpoint(const std::string& filename) const {
-  std::ofstream filestream =
+  std::ofstream output =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  ar::serialize(_backend->toArchive(/*with_optimizer=*/true), filestream);
+
+  const_cast<UDT*>(this)->_save_optimizer = true;
+  cereal::BinaryOutputArchive oarchive(output);
+  oarchive(*this);
 }
 
 std::shared_ptr<UDT> UDT::load(const std::string& filename) {
@@ -301,38 +306,7 @@ std::shared_ptr<UDT> UDT::load(const std::string& filename) {
 }
 
 std::shared_ptr<UDT> UDT::load_stream(std::istream& input) {
-  auto archive = ar::deserialize(input);
-
-  std::string type = archive->str("type");
-
-  auto udt = std::shared_ptr<UDT>(new UDT());
-
-  if (type == UDTClassifier::type()) {
-    udt->_backend = UDTClassifier::fromArchive(*archive);
-  } else if (type == UDTGraphClassifier::type()) {
-    udt->_backend = UDTGraphClassifier::fromArchive(*archive);
-  } else if (type == UDTMach::type()) {
-    udt->_backend = UDTMach::fromArchive(*archive);
-  } else if (type == UDTQueryReformulation::type()) {
-    udt->_backend = UDTQueryReformulation::fromArchive(*archive);
-  } else if (type == UDTRecurrentClassifier::type()) {
-    udt->_backend = UDTRecurrentClassifier::fromArchive(*archive);
-  } else if (type == UDTRegression::type()) {
-    udt->_backend = UDTRegression::fromArchive(*archive);
-  } else if (type == UDTSVMClassifier::type()) {
-    udt->_backend = UDTSVMClassifier::fromArchive(*archive);
-  } else {
-    throw std::invalid_argument("Invalid backend type '" + type + "'.");
-  }
-
-  return udt;
-}
-
-std::shared_ptr<UDT> UDT::oldLoad(const std::string& filename) {
-  std::ifstream filestream =
-      dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-
-  cereal::BinaryInputArchive iarchive(filestream);
+  cereal::BinaryInputArchive iarchive(input);
   std::shared_ptr<UDT> deserialize_into(new UDT());
   iarchive(*deserialize_into);
 
@@ -364,28 +338,66 @@ bool UDT::hasGraphInputs(const ColumnDataTypes& data_types) {
       std::to_string(node_id_col_count) + " node id data types.");
 }
 
-template void UDT::serialize(cereal::BinaryInputArchive&,
-                             const uint32_t version);
-template void UDT::serialize(cereal::BinaryOutputArchive&,
-                             const uint32_t version);
+std::unique_ptr<UDTBackend> backendFromArchive(const ar::Archive& archive) {
+  std::string type = archive.str("type");
+
+  if (type == UDTClassifier::type()) {
+    return UDTClassifier::fromArchive(archive);
+  }
+  if (type == UDTGraphClassifier::type()) {
+    return UDTGraphClassifier::fromArchive(archive);
+  }
+  if (type == UDTMach::type()) {
+    return UDTMach::fromArchive(archive);
+  }
+  if (type == UDTQueryReformulation::type()) {
+    return UDTQueryReformulation::fromArchive(archive);
+  }
+  if (type == UDTRecurrentClassifier::type()) {
+    return UDTRecurrentClassifier::fromArchive(archive);
+  }
+  if (type == UDTRegression::type()) {
+    return UDTRegression::fromArchive(archive);
+  }
+  if (type == UDTSVMClassifier::type()) {
+    return UDTSVMClassifier::fromArchive(archive);
+  }
+  throw std::invalid_argument("Invalid backend type '" + type + "'.");
+}
 
 template <class Archive>
-void UDT::serialize(Archive& archive, const uint32_t version) {
+void UDT::save(Archive& archive, const uint32_t version) const {
+  (void)version;
   std::string thirdai_version = thirdai::version();
   archive(thirdai_version);
-  std::string class_name = "UDT_BASE";
-  versions::checkVersion(version, versions::UDT_BASE_VERSION, thirdai_version,
-                         thirdai::version(), class_name);
 
-  // Increment thirdai::versions::UDT_BASE_VERSION after serialization changes
-  archive(_backend);
+  auto thirdai_archive = _backend->toArchive(_save_optimizer);
 
-  constexpr bool deserializing =
-      std::is_same_v<Archive, cereal::BinaryInputArchive>;
-  if constexpr (deserializing) {
+  ar::ArchiveWrapper wrapper{thirdai_archive};
+  archive(wrapper);
+}
+
+template <class Archive>
+void UDT::load(Archive& archive, const uint32_t version) {
+  std::string thirdai_version;
+  archive(thirdai_version);
+
+  if (version <= versions::UDT_LAST_OLD_SERIALIZATION_VERSION) {
+    std::string class_name = "UDT_BASE";
+    versions::checkVersion(version, versions::UDT_BASE_VERSION, thirdai_version,
+                           thirdai::version(), class_name);
+
+    // Increment thirdai::versions::UDT_BASE_VERSION after serialization changes
+    archive(_backend);
+
     if (auto* old_mach = dynamic_cast<UDTMachClassifier*>(_backend.get())) {
       _backend = std::make_unique<UDTMach>(old_mach->getMachInfo());
     }
+  } else {
+    ar::ArchiveWrapper wrapper;
+    archive(wrapper);
+
+    _backend = backendFromArchive(*wrapper._archive);
   }
 }
 

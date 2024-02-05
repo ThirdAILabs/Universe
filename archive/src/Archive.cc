@@ -129,17 +129,6 @@ void Archive::load(Ar& archive) {
   (void)archive;
 }
 
-// Saving/loading the base class (Archive) directly lead to the derived class's
-// serialization method not being invoked. Using this wrapper solved the issue.
-struct ArchiveWrapper {
-  ConstArchivePtr _archive;
-
-  template <class Ar>
-  void serialize(Ar& archive) {
-    archive(_archive);
-  }
-};
-
 void serialize(ConstArchivePtr archive, std::ostream& output) {
   cereal::BinaryOutputArchive oarchive(output);
 
