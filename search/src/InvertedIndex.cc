@@ -1,5 +1,4 @@
 #include "InvertedIndex.h"
-#include <utils/text/PorterStemmer.h>
 #include <algorithm>
 #include <cmath>
 #include <exception>
@@ -19,7 +18,7 @@ void InvertedIndex::index(
   for (size_t i = 0; i < documents.size(); i++) {
     const auto& tokens = documents[i].second;
     std::unordered_map<Token, uint32_t> freqs;
-    for (const auto& token : text::porter_stemmer::stem(tokens)) {
+    for (const auto& token : preprocessText(tokens)) {
       freqs[token]++;
     }
     document_freqs[i] = {documents[i].first, tokens.size(), std::move(freqs)};
@@ -92,7 +91,7 @@ std::vector<DocScore> InvertedIndex::query(const Tokens& query,
                                            uint32_t k) const {
   std::unordered_map<DocId, float> doc_scores;
 
-  for (const Token& token : text::porter_stemmer::stem(query)) {
+  for (const Token& token : preprocessText(query)) {
     if (!_token_to_idf.count(token)) {
       continue;
     }

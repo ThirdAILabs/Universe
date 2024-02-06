@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utils/text/PorterStemmer.h>
+#include <utils/text/StringManipulation.h>
 #include <cstdint>
 #include <string>
 #include <unordered_map>
@@ -23,8 +25,13 @@ class InvertedIndex {
   static constexpr float DEFAULT_B = 0.75;
 
   explicit InvertedIndex(float idf_cutoff_frac = DEFAULT_IDF_CUTOFF_FRAC,
-                         float k1 = DEFAULT_K1, float b = DEFAULT_B)
-      : _idf_cutoff_frac(idf_cutoff_frac), _k1(k1), _b(b) {}
+                         float k1 = DEFAULT_K1, float b = DEFAULT_B,
+                         bool stem = true, bool lowercase = true)
+      : _idf_cutoff_frac(idf_cutoff_frac),
+        _k1(k1),
+        _b(b),
+        _stem(stem),
+        _lowercase(lowercase) {}
 
   void index(const std::vector<std::pair<DocId, Tokens>>& documents);
 
@@ -40,6 +47,22 @@ class InvertedIndex {
     const float num = freq * (_k1 + 1);
     const float denom = freq + _k1 * (1 - _b + _b * doc_len / _avg_doc_length);
     return idf * num / denom;
+  }
+
+  inline Tokens preprocessText(const Tokens& tokens) const {
+    if (_stem) {
+      return text::porter_stemmer::stem(tokens, _lowercase);
+    }
+
+    if (_lowercase) {
+      Tokens lower_tokens;
+      lower_tokens.reserve(tokens.size());
+      for (const auto& token : tokens) {
+        lower_tokens.push_back(text::lower(token));
+      }
+    }
+
+    return tokens;
   }
 
   using FreqInfo = std::pair<DocId, uint32_t>;
@@ -61,6 +84,8 @@ class InvertedIndex {
 
   // Parameters for computing the BM25 score.
   float _k1, _b;
+
+  bool _stem, _lowercase;
 };
 
 }  // namespace thirdai::search
