@@ -5,6 +5,7 @@ from nltk.stem import PorterStemmer
 from thirdai import data
 
 
+@pytest.mark.unit
 def test_stemmer_different_suffixes():
     # These cases are from the examples mentioned in the paper to explain the
     # different types of stemming that can be applied.
