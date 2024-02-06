@@ -152,7 +152,7 @@ class UDTMach final : public UDTBackend {
       const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
       uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
-      bool force_non_empty) final;
+      bool force_non_empty, const bolt::DistributedCommPtr& comm) final;
 
   void upvote(const std::vector<std::pair<std::string, uint32_t>>& rlhf_samples,
               uint32_t n_upvote_samples, uint32_t n_balancing_samples,
@@ -207,7 +207,7 @@ class UDTMach final : public UDTBackend {
 
   void teach(const std::vector<RlhfSample>& rlhf_samples,
              uint32_t n_balancing_samples, float learning_rate,
-             uint32_t epochs);
+             uint32_t epochs, const bolt::DistributedCommPtr& comm);
 
   std::vector<RlhfSample> getAssociateSamples(
       const std::vector<std::pair<std::string, std::string>>& rlhf_samples,

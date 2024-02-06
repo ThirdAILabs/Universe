@@ -212,7 +212,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("n_buckets"), py::arg("n_association_samples") = 16,
            py::arg("n_balancing_samples") = 50,
            py::arg("learning_rate") = 0.001, py::arg("epochs") = 3,
-           py::arg("force_non_empty") = true)
+           py::arg("force_non_empty") = true, py::arg("comm") = nullptr)
       .def("upvote", &udt::UDT::upvote, py::arg("source_target_samples"),
            py::arg("n_upvote_samples") = 16,
            py::arg("n_balancing_samples") = 50,

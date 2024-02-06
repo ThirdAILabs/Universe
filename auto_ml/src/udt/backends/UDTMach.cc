@@ -828,12 +828,12 @@ void UDTMach::associate(
     const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
     uint32_t n_buckets, uint32_t n_association_samples,
     uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
-    bool force_non_empty) {
+    bool force_non_empty, const bolt::DistributedCommPtr& comm) {
   auto teaching_samples = getAssociateSamples(
       rlhf_samples, n_buckets, n_association_samples, force_non_empty);
 
   teach(teaching_samples, rlhf_samples.size() * n_balancing_samples,
-        learning_rate, epochs);
+        learning_rate, epochs, comm);
 }
 
 void UDTMach::upvote(
@@ -854,12 +854,12 @@ void UDTMach::upvote(
   }
 
   teach(teaching_samples, rlhf_samples.size() * n_balancing_samples,
-        learning_rate, epochs);
+        learning_rate, epochs, nullptr);
 }
 
 void UDTMach::teach(const std::vector<RlhfSample>& rlhf_samples,
                     uint32_t n_balancing_samples, float learning_rate,
-                    uint32_t epochs) {
+                    uint32_t epochs, const bolt::DistributedCommPtr& comm) {
   requireRLHFSampler();
 
   auto balancing_samples =
@@ -875,6 +875,9 @@ void UDTMach::teach(const std::vector<RlhfSample>& rlhf_samples,
   for (uint32_t e = 0; e < epochs; e++) {
     for (size_t i = 0; i < data.size(); i++) {
       _classifier->model()->trainOnBatch(data.at(i), labels.at(i));
+      if(comm){
+        comm->communicate(_classifier->model());
+      }
       _classifier->model()->updateParameters(learning_rate);
     }
   }
