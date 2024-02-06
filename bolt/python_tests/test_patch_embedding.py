@@ -4,7 +4,7 @@ from thirdai import bolt
 
 
 def build_model(patches, patch_emb):
-    loss = bolt.nn.losses.CategoricalCrossEntropy(
+    loss = bolt.nn.losses.BinaryCrossEntropy(
         patch_emb, labels=bolt.nn.Input(patch_emb.dim())
     )
 

@@ -34,8 +34,9 @@ class LossTracker final : public ComparativeLoss {
     return 0.0;
   }
 
-  float singleGradient(float activation, float label,
+  float singleGradient(float activation, float label, float sum_labels,
                        uint32_t batch_size) const override {
+    (void)sum_labels;
     (void)batch_size;
     const_cast<LossTracker*>(this)->_gradient_called_with.insert(
         {activation, label});
