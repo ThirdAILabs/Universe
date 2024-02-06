@@ -1,7 +1,7 @@
 import os
+import random
 import shutil
 from pathlib import Path
-import random
 from typing import List
 
 import numpy as np

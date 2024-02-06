@@ -445,3 +445,6 @@ class MachMixture(Model):
                 metrics=metrics,
                 callbacks=callbacks,
             )
+
+    def build_inverted_index(self, documents):
+        raise ValueError("This method is not supported on this type of model.")

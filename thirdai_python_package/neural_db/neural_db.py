@@ -971,3 +971,8 @@ class NeuralDB:
             learning_rate=learning_rate,
             epochs=epochs,
         )
+
+    def build_inverted_index(self):
+        self._savable_state.model.build_inverted_index(
+            self._savable_state.documents.get_data_source()
+        )

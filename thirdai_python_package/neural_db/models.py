@@ -747,3 +747,10 @@ class Mach(Model):
         )
         # Invalidate inverted index once supervised data is used.
         self.inverted_index = None
+
+    def build_inverted_index(self, documents):
+        if self.inverted_index:
+            return
+
+        self.inverted_index = InvertedIndex()
+        self.inverted_index.insert(documents)
