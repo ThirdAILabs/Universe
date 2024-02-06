@@ -331,19 +331,19 @@ def merge_results(results_a, results_b, k):
     min_len = min(len(results_a), len(results_b))
     for a, b in zip(results_a, results_b):
         if a[0] not in cache:
-            results.append(a)
+            results.append((a[0], None))
             cache.add(a[0])
         if b[0] not in cache:
-            results.append(b)
+            results.append((b[0], None))
             cache.add(b[0])
 
     if len(results) < k:
         for i in range(min_len, len(results_a)):
             if results_a[i][0] not in cache:
-                results.append(results_a[i])
+                results.append((results_a[i][0], None))
         for i in range(min_len, len(results_b)):
             if results_b[i][0] not in cache:
-                results.append(results_b[i])
+                results.append((results_b[i][0], None))
 
     return results[:k]
 
@@ -625,6 +625,7 @@ class Mach(Model):
         **kwargs,
     ) -> Predictions:
         infer_batch = self.infer_samples_to_infer_batch(samples)
+        print("KWARGS: ", kwargs.get("disable_inverted_index", False))
         if self.inverted_index and not kwargs.get("disable_inverted_index", False):
             k = min(self.n_ids, n_results)
             index_results = self.inverted_index.query(queries=samples, k=k)

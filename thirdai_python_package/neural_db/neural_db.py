@@ -722,7 +722,9 @@ class NeuralDB:
             )
         else:
             queries_result_ids = self._savable_state.model.infer_labels(
-                samples=queries, n_results=top_k_to_search
+                samples=queries,
+                n_results=top_k_to_search,
+                disable_inverted_index=rerank,
             )
 
         return [

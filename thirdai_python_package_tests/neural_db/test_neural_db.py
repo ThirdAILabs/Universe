@@ -70,8 +70,9 @@ def all_methods_work(
     clear_sources_works(db)
 
 
-def test_neural_db_all_methods_work_on_new_model(small_doc_set):
-    db = ndb.NeuralDB("user")
+@pytest.mark.parametrize("use_inverted_index", [True, False])
+def test_neural_db_all_methods_work_on_new_model(small_doc_set, use_inverted_index):
+    db = ndb.NeuralDB(use_inverted_index=use_inverted_index)
     all_methods_work(
         db,
         docs=small_doc_set,
@@ -444,7 +445,7 @@ def descending_order(seq):
 
 
 def test_neural_db_reranking(all_local_docs):
-    db = ndb.NeuralDB("user")
+    db = ndb.NeuralDB("user", use_inverted_index=False)
     db.insert(all_local_docs, train=True)
 
     query = "Lorem Ipsum"
@@ -485,7 +486,7 @@ def test_neural_db_reranking(all_local_docs):
 
 
 def test_neural_db_reranking_threshold(all_local_docs):
-    db = ndb.NeuralDB("user")
+    db = ndb.NeuralDB("user", use_inverted_index=False)
     db.insert(all_local_docs, train=True)
 
     query = "agreement"
