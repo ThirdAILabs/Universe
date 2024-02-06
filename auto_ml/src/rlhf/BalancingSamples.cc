@@ -147,7 +147,7 @@ ar::ConstArchivePtr BalancingSamples::toArchive() const {
   map->set("indices_col", ar::str(_indices_col));
   map->set("values_col", ar::str(_values_col));
   map->set("labels_col", ar::str(_labels_col));
-  map->set("doc_ids_col", ar::str(_labels_col));
+  map->set("doc_ids_col", ar::str(_doc_ids_col));
   map->set("indices_dim", ar::u64(_indices_dim));
   map->set("label_dim", ar::u64(_label_dim));
   map->set("max_docs", ar::u64(_max_docs));
@@ -156,7 +156,7 @@ ar::ConstArchivePtr BalancingSamples::toArchive() const {
   auto balancing_samples_list = ar::List::make();
   for (const auto& [doc_id, balancing_samples] : _samples_per_doc) {
     auto doc_samples = ar::Map::make();
-    map->set("doc_id", ar::u64(doc_id));
+    doc_samples->set("doc_id", ar::u64(doc_id));
 
     std::vector<std::vector<uint32_t>> indices;
     std::vector<std::vector<float>> values;

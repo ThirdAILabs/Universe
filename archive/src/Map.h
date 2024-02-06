@@ -25,7 +25,8 @@ class Map final : public Archive {
 
   void set(const std::string& key, ConstArchivePtr archive) {
     if (contains(key)) {
-      throw std::runtime_error("Found duplicate entry for key in Archive Map.");
+      throw std::runtime_error("Found duplicate entry for key '" + key +
+                               "' in Archive Map.");
     }
     _map[key] = std::move(archive);
   }
