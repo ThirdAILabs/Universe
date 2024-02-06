@@ -475,7 +475,7 @@ std::string stem(const std::string& word, bool lowercase) {
   stem = step5b(stem);
 
   return stem;
-}  // namespace thirdai::text::porter_stemmer
+}
 
 std::vector<std::string> stem(const std::vector<std::string>& words,
                               bool lowercase) {
