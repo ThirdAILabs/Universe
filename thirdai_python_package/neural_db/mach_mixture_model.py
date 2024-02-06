@@ -5,7 +5,7 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt, data
 
 from .documents import DocumentDataSource
-from .models import CancelState, Mach, Model
+from .models import CancelState, Mach, Model, merge_results
 from .sharded_documents import shard_data_source
 from .supervised_datasource import SupDataSource
 from .trainer.checkpoint_config import (
@@ -271,12 +271,26 @@ class MachMixture(Model):
             batch=[{self.query_col: clean_text(text)} for text in samples],
         )
 
+        index_results = []
+        for model in self.models:
+            if model.inverted_index:
+                k = min(model.n_ids, n_results)
+                index_results.append(model.inverted_index.query(queries=samples, k=k))
+
         results = []
-        for index in range(len(samples)):
-            sample_results = []
-            for y in per_model_results:
-                sample_results.extend(y[index])
-            sample_results.sort(key=lambda x: x[1], reverse=True)
+        for sample_id in range(len(samples)):
+            mach_sample_results = []
+            index_sample_results = []
+            for per_sample_per_mach_result, per_sample_per_index_result in zip(
+                per_model_results, index_results
+            ):
+                mach_sample_results.extend(per_sample_per_mach_result[sample_id])
+                index_sample_results.extend(per_sample_per_index_result[sample_id])
+
+            mach_sample_results.sort(key=lambda x: x[1], reverse=True)
+            index_sample_results.sort(key=lambda x: x[1], reverse=True)
+
+            sample_results = merge_results(mach_sample_results, index_sample_results, k)
             results.append(sample_results[:n_results])
         return results
 
