@@ -565,10 +565,7 @@ def test_inverted_index_improves_zero_shot():
 
     queries = df["text"].map(lambda t: " ".join(random.choices(t.split(" "), k=15)))
 
-    def compute_acc(use_inverted_index):
-        db = ndb.NeuralDB(use_inverted_index=use_inverted_index)
-        db.insert([ndb.CSV(docs, id_column="id", weak_columns=["text"])], train=False)
-
+    def compute_acc(db):
         correct = 0
         for label, q in enumerate(queries):
             results = [r.id for r in db.search(q, top_k=2)]
@@ -577,11 +574,23 @@ def test_inverted_index_improves_zero_shot():
 
         return correct / len(queries)
 
-    mach_only_acc = compute_acc(use_inverted_index=False)
-    combined_acc = compute_acc(use_inverted_index=True)
+    combined_db = ndb.NeuralDB(use_inverted_index=True)
+    combined_db.insert(
+        [ndb.CSV(docs, id_column="id", weak_columns=["text"])], train=False
+    )
 
-    assert mach_only_acc < 0.1
-    assert combined_acc > 0.9
+    assert compute_acc(combined_db) > 0.9
+
+    mach_only_db = ndb.NeuralDB(use_inverted_index=False)
+    mach_only_db.insert(
+        [ndb.CSV(docs, id_column="id", weak_columns=["text"])], train=False
+    )
+
+    assert compute_acc(mach_only_db) < 0.1
+
+    mach_only_db.build_inverted_index()
+
+    assert compute_acc(mach_only_db) > 0.9
 
 
 def test_result_merging():
