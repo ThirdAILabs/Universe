@@ -12,6 +12,8 @@
 #include <bolt/src/train/metrics/RecallAtK.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
@@ -37,6 +39,7 @@
 #include <algorithm>
 #include <exception>
 #include <limits>
+#include <numeric>
 #include <optional>
 #include <random>
 #include <unordered_map>
@@ -911,17 +914,12 @@ void UDTMach::teach(const data::ColumnMap& rlhf_samples,
   }
 }
 
-data::ColumnMap UDTMach::getAssociateSamples(
+data::ColumnMap UDTMach::getPositiveAssociateSamples(
     const std::vector<RlhfSample>& rlhf_samples, size_t n_buckets,
     size_t n_association_samples, bool force_non_empty) {
   std::string text_column = _featurizer->textDatasetConfig().textColumn();
 
-  std::vector<std::string> inputs;
-  inputs.reserve(rlhf_samples.size());
-  std::vector<std::vector<uint32_t>> label_indices;
-  label_indices.reserve(rlhf_samples.size());
-  std::vector<std::vector<float>> label_values;
-  label_values.reserve(rlhf_samples.size());
+  bool normalize_labels = utils::hasSoftmaxOutput(_classifier->model());
 
   MapInputBatch batch;
   for (const auto& [unused_s, target, unused_l] : rlhf_samples) {
@@ -935,10 +933,15 @@ data::ColumnMap UDTMach::getAssociateSamples(
 
   std::mt19937 rng(global_random::nextSeed());
 
-  bool has_negative_samples = false;
+  std::vector<std::string> inputs;
+  inputs.reserve(rlhf_samples.size());
+  std::vector<std::vector<uint32_t>> label_indices;
+  label_indices.reserve(rlhf_samples.size());
+  std::vector<std::vector<float>> label_values;
+  label_values.reserve(rlhf_samples.size());
+
   for (size_t i = 0; i < rlhf_samples.size(); i++) {
     const auto& [source, _, label_weight] = rlhf_samples[i];
-    has_negative_samples = has_negative_samples || (label_weight != 1.0);
 
     const std::vector<uint32_t>& all_buckets = all_predicted_hashes[i];
 
@@ -947,8 +950,10 @@ data::ColumnMap UDTMach::getAssociateSamples(
       std::sample(all_buckets.begin(), all_buckets.end(),
                   std::back_inserter(sampled_buckets), n_buckets, rng);
 
+      float label_val = normalize_labels ? 1.0 / sampled_buckets.size() : 1.0;
+
       inputs.push_back(source);
-      label_values.emplace_back(sampled_buckets.size(), label_weight);
+      label_values.emplace_back(sampled_buckets.size(), label_val);
       label_indices.emplace_back(std::move(sampled_buckets));
     }
   }
@@ -956,14 +961,120 @@ data::ColumnMap UDTMach::getAssociateSamples(
   data::ColumnMap columns(
       {{text_column, data::ValueColumn<std::string>::make(std::move(inputs))},
        {MACH_LABELS, data::ArrayColumn<uint32_t>::make(
-                         std::move(label_indices), getIndex()->numBuckets())}});
-
-  if (has_negative_samples) {
-    columns.setColumn(MACH_LABEL_WEIGHTS,
-                      data::ArrayColumn<float>::make(std::move(label_values)));
-  }
+                         std::move(label_indices), getIndex()->numBuckets())},
+       {MACH_LABEL_WEIGHTS,
+        data::ArrayColumn<float>::make(std::move(label_values))}});
 
   return columns;
+}
+
+data::ColumnMap UDTMach::getNegativeAssociateSamples(
+    const std::vector<RlhfSample>& rlhf_samples, size_t n_buckets,
+    size_t n_association_samples, bool force_non_empty) {
+  std::string text_column = _featurizer->textDatasetConfig().textColumn();
+
+  bool normalize_labels = utils::hasSoftmaxOutput(_classifier->model());
+
+  MapInputBatch source_batch;
+  MapInputBatch target_batch;
+  for (const auto& [source, target, unused_l] : rlhf_samples) {
+    source_batch.push_back({{text_column, source}});
+    target_batch.push_back({{text_column, target}});
+  }
+
+  auto target_hashes =
+      predictHashesImpl(target_batch, /* sparse_inference= */ false,
+                        /* force_non_empty= */ force_non_empty,
+                        /* num_hashes= */ n_buckets);
+
+  auto source_hashes =
+      predictHashesImpl(source_batch, /* sparse_inference= */ false,
+                        /* force_non_empty= */ force_non_empty,
+                        /* num_hashes= */ n_buckets);
+
+  std::mt19937 rng(global_random::nextSeed());
+
+  std::vector<std::string> inputs;
+  inputs.reserve(rlhf_samples.size());
+  std::vector<std::vector<uint32_t>> label_indices;
+  label_indices.reserve(rlhf_samples.size());
+  std::vector<std::vector<float>> label_values;
+  label_values.reserve(rlhf_samples.size());
+
+  for (size_t i = 0; i < rlhf_samples.size(); i++) {
+    const auto& [source, _, label_weight] = rlhf_samples[i];
+
+    const auto& source_h = source_hashes[i];
+    const auto& target_h = target_hashes[i];
+
+    std::unordered_set<uint32_t> target_h_set(target_h.begin(), target_h.end());
+
+    uint32_t positive_labels = 0;
+    std::vector<float> label_weights;
+    label_weights.reserve(source_h.size());
+    for (uint32_t hash : source_h) {
+      bool in_target_hashes = target_h_set.count(hash);
+      label_weights.push_back(in_target_hashes ? 0.0 : 1.0);
+      if (in_target_hashes) {
+        positive_labels++;
+      }
+    }
+
+    if (normalize_labels) {
+      if (positive_labels == 0) {
+        continue;  // Invalid sample, loss is 0.0;
+      }
+      for (float& x : label_weights) {
+        x /= positive_labels;
+      }
+    }
+
+    for (size_t j = 0; j < n_association_samples; j++) {
+      inputs.push_back(source);
+      label_indices.push_back(source_h);
+      label_values.push_back(label_weights);
+    }
+  }
+
+  data::ColumnMap columns(
+      {{text_column, data::ValueColumn<std::string>::make(std::move(inputs))},
+       {MACH_LABELS, data::ArrayColumn<uint32_t>::make(
+                         std::move(label_indices), getIndex()->numBuckets())},
+       {MACH_LABEL_WEIGHTS,
+        data::ArrayColumn<float>::make(std::move(label_values))}});
+
+  return columns;
+}
+
+data::ColumnMap UDTMach::getAssociateSamples(
+    const std::vector<RlhfSample>& rlhf_samples, size_t n_buckets,
+    size_t n_association_samples, bool force_non_empty) {
+  std::vector<RlhfSample> positive_samples;
+  std::vector<RlhfSample> negative_samples;
+
+  for (const auto& sample : rlhf_samples) {
+    if (std::get<2>(sample) > 0.0) {
+      positive_samples.push_back((sample));
+    } else {
+      negative_samples.push_back(sample);
+    }
+  }
+
+  if (positive_samples.empty()) {
+    return getNegativeAssociateSamples(negative_samples, n_buckets,
+                                       n_association_samples, force_non_empty);
+  }
+  if (negative_samples.empty()) {
+    return getPositiveAssociateSamples(positive_samples, n_buckets,
+                                       n_association_samples, force_non_empty);
+  }
+
+  auto positive = getPositiveAssociateSamples(
+      positive_samples, n_buckets, n_association_samples, force_non_empty);
+  auto negative = getNegativeAssociateSamples(
+      negative_samples, n_buckets, n_association_samples, force_non_empty);
+
+  return positive.concat(negative);
 }
 
 py::object UDTMach::associateTrain(
@@ -989,6 +1100,10 @@ py::object UDTMach::associateColdStart(
 
   auto featurized_data = _featurizer->featurizeDataset(
       balancing_data, strong_column_names, weak_column_names);
+  featurized_data.setColumn(
+      MACH_LABEL_WEIGHTS,
+      defaultLabelWeights(
+          featurized_data.getArrayColumn<uint32_t>(MACH_LABELS)));
 
   auto associate_samples = getAssociateSamples(source_target_samples, n_buckets,
                                                n_association_samples);

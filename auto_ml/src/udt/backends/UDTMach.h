@@ -210,6 +210,14 @@ class UDTMach final : public UDTBackend {
       const std::vector<RlhfSample>& rlhf_samples, size_t n_buckets,
       size_t n_association_samples, bool force_non_empty = true);
 
+  data::ColumnMap getPositiveAssociateSamples(
+      const std::vector<RlhfSample>& rlhf_samples, size_t n_buckets,
+      size_t n_association_samples, bool force_non_empty = true);
+
+  data::ColumnMap getNegativeAssociateSamples(
+      const std::vector<RlhfSample>& rlhf_samples, size_t n_buckets,
+      size_t n_association_samples, bool force_non_empty = true);
+
   void updateSamplingStrategy();
 
   void addBalancingSamples(
