@@ -406,6 +406,7 @@ class Mach(Model):
         fast_approximation: bool,
         num_buckets_to_sample: Optional[int],
         override_number_classes: int,
+        **kwargs,
     ):
         if intro_documents.id_column != self.id_col:
             raise ValueError(
@@ -416,7 +417,7 @@ class Mach(Model):
         if self.model is None:
             self.id_col = intro_documents.id_column
             self.model = self.model_from_scratch(
-                intro_documents, number_classes=override_number_classes
+                intro_documents, number_classes=override_number_classes, **kwargs
             )
         else:
             if intro_documents.size > 0:
@@ -445,6 +446,7 @@ class Mach(Model):
         training_progress_manager: TrainingProgressManager,
         on_progress: Callable = lambda **kwargs: None,
         cancel_state: CancelState = None,
+        **kwargs,
     ):
         intro_documents = training_progress_manager.intro_source
         train_documents = training_progress_manager.train_source
@@ -453,6 +455,7 @@ class Mach(Model):
             self.introduce_documents(
                 intro_documents=intro_documents,
                 **training_progress_manager.introduce_arguments(),
+                **kwargs,
             )
             training_progress_manager.insert_complete()
 
@@ -531,6 +534,7 @@ class Mach(Model):
             training_progress_manager=training_progress_manager,
             on_progress=on_progress,
             cancel_state=cancel_state,
+            **kwargs,
         )
 
     def add_balancing_samples(self, documents: DocumentDataSource):
@@ -544,7 +548,7 @@ class Mach(Model):
             self.get_model().forget(entity)
 
     def model_from_scratch(
-        self, documents: DocumentDataSource, number_classes: int = None
+        self, documents: DocumentDataSource, number_classes: int = None, **kwargs
     ):
         return bolt.UniversalDeepTransformer(
             data_types={
@@ -564,6 +568,7 @@ class Mach(Model):
                 "extreme_num_hashes": self.extreme_num_hashes,
                 "hidden_bias": self.hidden_bias,
                 "rlhf": True,
+                "softmax": kwargs.get("softmax",False)
             },
             model_config=self.model_config,
         )
