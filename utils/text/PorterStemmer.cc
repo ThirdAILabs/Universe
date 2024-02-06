@@ -450,8 +450,11 @@ const std::unordered_map<std::string, std::string> IRREGULAR_WORDS = {
     {"succeed", "succeed"},
 };
 
-std::string stem(const std::string& word) {
-  std::string stem = text::lower(word);
+std::string stem(const std::string& word, bool lowercase) {
+  // Note: if lowercase is false then if words have capitalization outside of
+  // the first letter then they won't match with the suffixes which are all
+  // lowercase. Also the IRREGUlAR words are all specified as lowercase.
+  std::string stem = lowercase ? text::lower(word) : word;
 
   // Special case for words that don't work well with algorithm.
   if (IRREGULAR_WORDS.count(stem)) {
@@ -474,12 +477,13 @@ std::string stem(const std::string& word) {
   return stem;
 }
 
-std::vector<std::string> stem(const std::vector<std::string>& words) {
+std::vector<std::string> stem(const std::vector<std::string>& words,
+                              bool lowercase) {
   std::vector<std::string> output;
   output.reserve(words.size());
 
   for (const auto& word : words) {
-    output.emplace_back(stem(word));
+    output.emplace_back(stem(word, lowercase));
   }
 
   return output;

@@ -5,7 +5,7 @@ from nltk.stem import PorterStemmer
 from thirdai import data
 
 
-def test_stemmer():
+def test_stemmer_different_suffixes():
     # These cases are from the examples mentioned in the paper to explain the
     # different types of stemming that can be applied.
     cases = (
@@ -26,6 +26,15 @@ def test_stemmer():
     stemmer = PorterStemmer()
     for word in cases.split():
         assert stemmer.stem(word) == data.stem(word)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("lowercase", [True, False])
+def test_stemmer_lowercase(lowercase):
+    stemmer = PorterStemmer()
+
+    for word in ["Running", "Glided", "Differently"]:
+        assert stemmer.stem(word, to_lowercase=True) == data.stem(word, lowercase=True)
 
 
 @pytest.mark.unit
