@@ -229,8 +229,8 @@ class UDTMach final : public UDTBackend {
 
   std::vector<uint32_t> topHashesForDoc(
       std::vector<TopKActivationsQueue>&& top_k_per_sample,
-      uint32_t num_buckets_to_sample, uint32_t num_random_hashes = 0,
-      bool sort_random_hashes = false) const;
+      uint32_t num_buckets_to_sample, uint32_t approx_num_hashes_per_bucket,
+      uint32_t num_random_hashes = 0, bool sort_random_hashes = false) const;
 
   InputMetrics getMetrics(const std::vector<std::string>& metric_names,
                           const std::string& prefix);

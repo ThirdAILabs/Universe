@@ -78,6 +78,11 @@ class MachIndex {
     return _buckets.at(bucket).size();
   }
 
+  uint32_t approxNumHashesPerBucket(uint32_t num_new_samples) const {
+    return ((num_new_samples + numEntities()) * numHashes()) / (numBuckets()) +
+           1;
+  }
+
   const auto& nonemptyBuckets() const { return _nonempty_buckets; }
 
   TopKActivationsQueue topKNonEmptyBuckets(const BoltVector& output,
