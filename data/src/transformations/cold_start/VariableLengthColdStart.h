@@ -21,7 +21,7 @@ struct VariableLengthConfig {
       std::optional<size_t> slice_max_length = std::nullopt,
       uint32_t num_slices = 7, bool add_whole_doc = true,
       bool prefilter_punctuation = true, uint32_t strong_sample_num_words = 3,
-      float stopword_removal_probability = 0,
+      uint32_t strong_to_weak_ratio = 1, float stopword_removal_probability = 0,
       float stopword_insertion_probability = 0,
       float word_removal_probability = 0,
       float word_perturbation_probability = 0,
@@ -37,6 +37,7 @@ struct VariableLengthConfig {
   bool add_whole_doc;
   bool prefilter_punctuation;
   uint32_t strong_sample_num_words;
+  uint32_t strong_to_weak_ratio;
   float stopword_removal_probability;
   float stopword_insertion_probability;
   float word_removal_probability;
@@ -50,10 +51,10 @@ struct VariableLengthConfig {
     archive(covering_min_length, covering_max_length, max_covering_samples,
             slice_min_length, slice_max_length, num_slices, add_whole_doc,
             prefilter_punctuation, strong_sample_num_words,
-            stopword_removal_probability, stopword_insertion_probability,
-            word_removal_probability, word_perturbation_probability,
-            chars_replace_with_space, chars_deleted, chars_duplicated,
-            chars_replace_with_adjacents);
+            strong_to_weak_ratio, stopword_removal_probability,
+            stopword_insertion_probability, word_removal_probability,
+            word_perturbation_probability, chars_replace_with_space,
+            chars_deleted, chars_duplicated, chars_replace_with_adjacents);
   }
 
   void save_stream(std::ostream& output_stream) const {
@@ -80,6 +81,7 @@ struct VariableLengthConfig {
     ss << VARIABLE_TO_STRING(add_whole_doc, ", ");
     ss << VARIABLE_TO_STRING(prefilter_punctuation, ", ");
     ss << VARIABLE_TO_STRING(strong_sample_num_words, ", ");
+    ss << VARIABLE_TO_STRING(strong_to_weak_ratio, ", ");
     ss << VARIABLE_TO_STRING(stopword_removal_probability, ", ");
     ss << VARIABLE_TO_STRING(stopword_insertion_probability, ", ");
     ss << VARIABLE_TO_STRING(word_removal_probability, ", ");
