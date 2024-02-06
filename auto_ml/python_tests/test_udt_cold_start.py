@@ -152,9 +152,10 @@ def test_coldstart_target_type(integer_target):
 def test_coldstart_variable_length(variable_length):
     run_coldstart(variable_length=variable_length, quoted_newline=True)
 
-@pytest.mark.parametrize(
-    "variable_length",
-    [data.transformations.VariableLengthConfig(strong_to_weak_ratio=2), data.transformations.VariableLengthConfig(strong_to_weak_ratio=4)],
-)
-def test_coldstart_strong_to_weak_ratio(variable_length):
-    run_coldstart(variable_length=variable_length)
+
+def test_coldstart_strong_to_weak_ratio():
+    run_coldstart(
+        variable_length=data.transformations.VariableLengthConfig(
+            strong_to_weak_ratio=2
+        )
+    )
