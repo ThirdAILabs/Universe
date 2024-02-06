@@ -122,3 +122,17 @@ def adds_distributed_to_bolt():
         return metrics
 
     bolt.GenerativeModel.train_distributed = generative_model_train_distributed
+
+    def udt_model_associate_distributed(self, *args, **kwargs):
+        self._get_model().disable_sparse_parameter_updates()
+
+        kwargs["comm"] = Communication()
+        metrics = self.associate(*args, **kwargs)
+
+        self._get_model().enable_sparse_parameter_updates()
+
+        return metrics
+
+    bolt.UniversalDeepTransformer.associate_distributed = (
+        udt_model_associate_distributed
+    )

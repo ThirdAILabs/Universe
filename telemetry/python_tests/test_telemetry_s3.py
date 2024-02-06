@@ -1,7 +1,7 @@
 import boto3
 import botocore
 import pytest
-from moto import mock_s3
+from moto import mock_aws
 from moto.server import ThreadedMotoServer
 from telemetry_testing_utils import THIRDAI_TEST_TELEMETRY_PORT, run_udt_telemetry_test
 from thirdai import telemetry
@@ -22,7 +22,7 @@ def moto_server_fixture():
     return server
 
 
-@mock_s3
+@mock_aws
 def test_udt_telemetry_s3():
     s3 = boto3.client("s3")
     s3.create_bucket(Bucket=THIRDAI_TEST_TELEMETRY_BUCKET)
@@ -34,7 +34,7 @@ def test_udt_telemetry_s3():
     run_udt_telemetry_test(telemetry_start_method=("s3", s3_path))
 
 
-@mock_s3
+@mock_aws
 def test_telemetry_bad_s3_file():
     with pytest.raises(
         botocore.exceptions.ClientError, match="The specified bucket does not exist"

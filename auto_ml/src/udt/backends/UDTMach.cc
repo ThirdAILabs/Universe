@@ -830,12 +830,12 @@ void UDTMach::enableRlhf(uint32_t num_balancing_docs,
 void UDTMach::associate(const std::vector<RlhfSample>& source_target_samples,
                         uint32_t n_buckets, uint32_t n_association_samples,
                         uint32_t n_balancing_samples, float learning_rate,
-                        uint32_t epochs) {
+                        uint32_t epochs, const bolt::DistributedCommPtr& comm) {
   auto teaching_samples = getAssociateSamples(source_target_samples, n_buckets,
                                               n_association_samples);
 
   teach(teaching_samples, source_target_samples.size() * n_balancing_samples,
-        learning_rate, epochs);
+        learning_rate, epochs, comm);
 }
 
 void UDTMach::upvote(
@@ -863,7 +863,7 @@ void UDTMach::upvote(
                          std::move(labels), mach_index->numBuckets())}});
 
   teach(teaching_samples, rlhf_samples.size() * n_balancing_samples,
-        learning_rate, epochs);
+        learning_rate, epochs, nullptr);
 }
 
 data::ColumnPtr defaultLabelWeights(
@@ -879,7 +879,7 @@ data::ColumnPtr defaultLabelWeights(
 
 void UDTMach::teach(const data::ColumnMap& rlhf_samples,
                     uint32_t n_balancing_samples, float learning_rate,
-                    uint32_t epochs) {
+                    uint32_t epochs, const bolt::DistributedCommPtr& comm) {
   requireRLHFSampler();
 
   auto rlhf_data = _featurizer->featurizeRlhfSamples(rlhf_samples);
@@ -905,6 +905,9 @@ void UDTMach::teach(const data::ColumnMap& rlhf_samples,
   for (uint32_t e = 0; e < epochs; e++) {
     for (size_t i = 0; i < data.size(); i++) {
       _classifier->model()->trainOnBatch(data.at(i), labels.at(i));
+      if (comm) {
+        comm->communicate(_classifier->model());
+      }
       _classifier->model()->updateParameters(learning_rate);
     }
   }

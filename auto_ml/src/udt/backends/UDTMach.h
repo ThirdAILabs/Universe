@@ -154,7 +154,8 @@ class UDTMach final : public UDTBackend {
   void associate(const std::vector<RlhfSample>& source_target_samples,
                  uint32_t n_buckets, uint32_t n_association_samples,
                  uint32_t n_balancing_samples, float learning_rate,
-                 uint32_t epochs) final;
+                 uint32_t epochs,
+                 const bolt::DistributedCommPtr& comm = nullptr) final;
 
   void upvote(const std::vector<std::pair<std::string, uint32_t>>& rlhf_samples,
               uint32_t n_upvote_samples, uint32_t n_balancing_samples,
@@ -205,7 +206,8 @@ class UDTMach final : public UDTBackend {
                             uint32_t num_random_hashes);
 
   void teach(const data::ColumnMap& rlhf_samples, uint32_t n_balancing_samples,
-             float learning_rate, uint32_t epochs);
+             float learning_rate, uint32_t epochs,
+             const bolt::DistributedCommPtr& comm);
 
   data::ColumnMap getAssociateSamples(
       const std::vector<RlhfSample>& rlhf_samples, size_t n_buckets,
