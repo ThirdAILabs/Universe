@@ -546,12 +546,12 @@ class NeuralDB:
 
         return ids
 
-    def delete(self, source_id: str):
-        """Deletes a document from the NeuralDB."""
-        deleted_entities = self._savable_state.documents.delete(source_id)
+    def delete(self, source_ids: List[str]):
+        """Deletes documents from the NeuralDB."""
+        deleted_entities = self._savable_state.documents.delete(source_ids)
         self._savable_state.model.delete_entities(deleted_entities)
         self._savable_state.logger.log(
-            session_id=self._user_id, action="delete", args={"source_id": source_id}
+            session_id=self._user_id, action="delete", args={"source_ids": source_ids}
         )
 
     def clear_sources(self) -> None:

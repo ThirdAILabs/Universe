@@ -165,7 +165,7 @@ std::string step1a(const std::string& word) {
 
   if (word.size() == 4 && endsWith(word, "ies")) {
     // This is an extra check so that shorter words like 'lies' -> 'lie' but
-    // 'skies' -> 'ski'.
+    // 'flies' -> 'fli'.
     return replaceSuffix(word, "ies", "ie");
   }
 
@@ -210,7 +210,7 @@ std::string step1b(const std::string& word) {
 
   if (endsWith(word, "ied")) {
     // This is an extra check so that shorter words like 'lied' -> 'lie' but
-    // 'skied' -> 'ski'.
+    // 'flied' -> 'fli'.
     if (word.size() == 4) {
       return replaceSuffix(word, "ied", "ie");
     }
@@ -265,7 +265,7 @@ std::string step1c(const std::string& word) {
     Step 1c (from the paper):
 
       (*c) Y -> I                    happy        ->  happi
-                                      sky          ->  sky
+                                      sky         ->  sky
 
     Note: the original paper uses (*v*) as the condition.
    */
@@ -442,15 +442,18 @@ std::string step5b(const std::string& word) {
 }
 
 const std::unordered_map<std::string, std::string> IRREGULAR_WORDS = {
-    {"skies", "sky"},      {"sky", "sky"},         {"dying", "die"},
-    {"lying", "lie"},      {"tying", "tie"},       {"news", "news"},
-    {"innings", "inning"}, {"inning", "inning"},   {"outings", "outing"},
-    {"outing", "outing"},  {"canings", "canning"}, {"canning", "canning"},
-    {"howe", "howe"},      {"proceed", "proceed"}, {"exceed", "exceed"},
-    {"exceed", "exceed"},  {"succeed", "succeed"},
+    {"skies", "sky"},       {"sky", "sky"},          {"dying", "die"},
+    {"lying", "lie"},       {"tying", "tie"},        {"news", "news"},
+    {"innings", "inning"},  {"inning", "inning"},    {"outings", "outing"},
+    {"outing", "outing"},   {"cannings", "canning"}, {"canning", "canning"},
+    {"howe", "howe"},       {"proceed", "proceed"},  {"exceed", "exceed"},
+    {"succeed", "succeed"},
 };
 
 std::string stem(const std::string& word, bool lowercase) {
+  // Note: if lowercase is false then if words have capitalization outside of
+  // the first letter then they won't match with the suffixes which are all
+  // lowercase. Also the IRREGUlAR words are all specified as lowercase.
   std::string stem = lowercase ? text::lower(word) : word;
 
   // Special case for words that don't work well with algorithm.
@@ -472,7 +475,7 @@ std::string stem(const std::string& word, bool lowercase) {
   stem = step5b(stem);
 
   return stem;
-}
+}  // namespace thirdai::text::porter_stemmer
 
 std::vector<std::string> stem(const std::vector<std::string>& words,
                               bool lowercase) {

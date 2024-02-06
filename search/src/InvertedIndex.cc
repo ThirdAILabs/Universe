@@ -30,7 +30,7 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
   for (size_t i = 0; i < docs.size(); i++) {
     const auto& tokens = docs[i];
     std::unordered_map<Token, uint32_t> freqs;
-    for (const auto& token : text::porter_stemmer::stem(tokens)) {
+    for (const auto& token : preprocessText(tokens)) {
       freqs[token]++;
     }
     doc_freqs[i] = {tokens.size(), std::move(freqs)};
@@ -111,7 +111,7 @@ std::vector<DocScore> InvertedIndex::query(const Tokens& query,
                                            uint32_t k) const {
   std::unordered_map<DocId, float> doc_scores;
 
-  for (const Token& token : text::porter_stemmer::stem(query)) {
+  for (const Token& token : preprocessText(query)) {
     if (!_token_to_idf.count(token)) {
       continue;
     }
@@ -200,7 +200,7 @@ std::shared_ptr<InvertedIndex> InvertedIndex::load_stream(
 template <class Archive>
 void InvertedIndex::serialize(Archive& archive) {
   archive(_token_to_docs, _token_to_idf, _doc_lengths, _idf_cutoff_frac,
-          _sum_doc_lens, _avg_doc_length, _k1, _b);
+          _sum_doc_lens, _avg_doc_length, _k1, _b, _stem, _lowercase);
 }
 
 }  // namespace thirdai::search
