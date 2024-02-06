@@ -206,8 +206,8 @@ class UDTMach final : public UDTBackend {
                             bool sort_random_hashes);
 
   void teach(const std::vector<RlhfSample>& rlhf_samples,
-             uint32_t n_balancing_samples, float learning_rate,
-             uint32_t epochs, const bolt::DistributedCommPtr& comm);
+             uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+             const bolt::DistributedCommPtr& comm);
 
   std::vector<RlhfSample> getAssociateSamples(
       const std::vector<std::pair<std::string, std::string>>& rlhf_samples,

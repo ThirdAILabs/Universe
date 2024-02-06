@@ -286,7 +286,6 @@ class UDTBackend {
     (void)comm;
     throw notSupported("associate");
   }
- 
 
   virtual void upvote(
       const std::vector<std::pair<std::string, uint32_t>>& rlhf_samples,

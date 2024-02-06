@@ -1009,7 +1009,8 @@ void UDTMachClassifier::teach(
     const std::vector<std::pair<MapInput, std::vector<uint32_t>>>&
         source_target_samples,
     uint32_t n_buckets, uint32_t n_teaching_samples,
-    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs, const bolt::DistributedCommPtr& comm) {
+    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+    const bolt::DistributedCommPtr& comm) {
   requireRLHFSampler();
 
   auto samples = _rlhf_sampler->balancingSamples(n_balancing_samples *
@@ -1058,7 +1059,7 @@ void UDTMachClassifier::teach(
   for (uint32_t i = 0; i < epochs; i++) {
     for (const auto& [x, y] : batches) {
       _classifier->model()->trainOnBatch(x, y);
-      if(comm){
+      if (comm) {
         comm->communicate(_classifier->model());
       }
       _classifier->model()->updateParameters(learning_rate);

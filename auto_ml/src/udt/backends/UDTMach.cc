@@ -875,7 +875,7 @@ void UDTMach::teach(const std::vector<RlhfSample>& rlhf_samples,
   for (uint32_t e = 0; e < epochs; e++) {
     for (size_t i = 0; i < data.size(); i++) {
       _classifier->model()->trainOnBatch(data.at(i), labels.at(i));
-      if(comm){
+      if (comm) {
         comm->communicate(_classifier->model());
       }
       _classifier->model()->updateParameters(learning_rate);
