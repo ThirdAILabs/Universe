@@ -117,14 +117,14 @@ PhraseCollection mergeStrongWithWeak(
                          downsampled_strong_phrases.size());
 
   for (const auto& weak_phrase : weak_phrases) {
-    output_phrases.emplace_back(std::move(weak_phrase));
+    output_phrases.emplace_back(weak_phrase);
   }
 
   for (const auto& str_phrase : downsampled_strong_phrases) {
-    output_phrases.emplace_back(std::move(str_phrase));
+    output_phrases.emplace_back(str_phrase);
   }
 
-  output_phrases.emplace_back(std::move(strong_phrase));
+  output_phrases.emplace_back(strong_phrase);
 
   return output_phrases;
 }
