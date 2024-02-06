@@ -155,7 +155,9 @@ std::vector<DocScore> InvertedIndex::query(const Tokens& query,
 void InvertedIndex::remove(const std::vector<DocId>& ids) {
   for (DocId id : ids) {
     if (!_doc_lengths.count(id)) {
-      continue;
+      throw std::runtime_error("Cannot remove element with id " +
+                               std::to_string(id) +
+                               ". No such element exists.");
     }
 
     _sum_doc_lens -= _doc_lengths.at(id);

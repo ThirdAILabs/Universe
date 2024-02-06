@@ -13,7 +13,7 @@ class InvertedIndex:
         docs = []
         for row in doc_data_source.row_iterator():
             ids.append(row.id)
-            docs.append(word_tokenize(row.strong + row.weak))
+            docs.append(word_tokenize(row.strong) + word_tokenize(row.weak))
 
         self.index.index(ids=ids, docs=docs)
 

@@ -625,16 +625,16 @@ class Mach(Model):
         **kwargs,
     ) -> Predictions:
         infer_batch = self.infer_samples_to_infer_batch(samples)
-        if self.inverted_index:
+        if self.inverted_index and not kwargs.get("disable_inverted_index", False):
             k = min(self.n_ids, n_results)
             index_results = self.inverted_index.query(queries=samples, k=k)
             self.model.set_decode_params(k, min(self.n_ids, 100))
             mach_results = self.model.predict_batch(infer_batch)
 
             return [
-                merge_results(mr, ir, k) for mr, ir in zip(mach_results, index_results)
+                merge_results(mach_res, index_res, k)
+                for mach_res, index_res in zip(mach_results, index_results)
             ]
-
         else:
             self.model.set_decode_params(
                 min(self.n_ids, n_results), min(self.n_ids, 100)

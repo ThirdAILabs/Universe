@@ -30,6 +30,7 @@ from ndb_utils import (
 )
 from thirdai import dataset
 from thirdai import neural_db as ndb
+from thirdai.neural_db.models import merge_results
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -361,6 +362,33 @@ def test_neural_db_delete_document(empty_neural_db):
     assert result.text == "text: ice cream"
 
 
+def test_neural_db_delete_document_with_inverted_index():
+    # The other delete test is only returning 1 entity, so it will only return
+    # the top result from mach, thus it doesn't test if the inverted index is
+    # returning the result.
+    db = ndb.NeuralDB()
+
+    texts = [
+        "apples are green",
+        "bananas are yellow",
+        "oranges are orange",
+        "spinach is green",
+        "apples are red",
+    ]
+
+    ids = db.insert(
+        [ndb.InMemoryText(name=str(i), texts=[text]) for i, text in enumerate(texts)]
+    )
+
+    results = db.search(texts[-1], top_k=4)
+    assert 4 in [result.id for result in results]
+
+    db.delete([ids[-1]])
+
+    results = db.search(texts[-1], top_k=4)
+    assert 4 not in [result.id for result in results]
+
+
 def test_neural_db_rerank_search(all_local_docs):
     def char4(sentence):
         return [sentence[i : i + 4] for i in range(len(sentence) - 3)]
@@ -554,3 +582,12 @@ def test_inverted_index_improves_zero_shot():
 
     assert mach_only_acc < 0.1
     assert combined_acc > 0.9
+
+
+def test_result_merging():
+    results_a = [(1, 5.0), (2, 4.0), (3, 3.0), (4, 2.0), (6, 1.0)]
+    results_b = [(2, 5.0), (7, 4.0), (3, 3.0), (5, 2.0), (4, 1.0)]
+
+    expected_output = [1, 2, 7, 3, 4, 5, 6]
+
+    assert [x[0] for x in merge_results(results_a, results_b, k=10)] == expected_output
