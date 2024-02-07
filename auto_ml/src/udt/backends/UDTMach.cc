@@ -1,6 +1,7 @@
 #include "UDTMach.h"
 #include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
+#include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/neuron_index/LshIndex.h>
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
@@ -240,7 +241,7 @@ py::object UDTMach::predictBatch(const MapInputBatch& samples,
 
 py::object UDTMach::predictActivationsBatch(const MapInputBatch& samples,
                                             bool sparse_inference) {
-  return py::cast(
+  return bolt::python::tensorToNumpy(
       _classifier->model()
           ->forward(_featurizer->featurizeInputBatch(samples), sparse_inference)
           .at(0));
