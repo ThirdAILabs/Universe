@@ -162,7 +162,8 @@ class UDTMachClassifier final : public UDTBackend {
   void associate(const std::vector<RlhfSample>& rlhf_samples,
                  uint32_t n_buckets, uint32_t n_association_samples,
                  uint32_t n_balancing_samples, float learning_rate,
-                 uint32_t epochs) final;
+                 uint32_t epochs,
+                 const bolt::DistributedCommPtr& comm = nullptr) final;
 
   void upvote(const std::vector<std::pair<std::string, uint32_t>>&
                   source_target_samples,
@@ -207,8 +208,8 @@ class UDTMachClassifier final : public UDTBackend {
   void teach(const std::vector<std::pair<MapInput, std::vector<uint32_t>>>&
                  source_target_samples,
              uint32_t n_buckets, uint32_t n_teaching_samples,
-             uint32_t n_balancing_samples, float learning_rate,
-             uint32_t epochs);
+             uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+             const bolt::DistributedCommPtr& comm);
 
   std::vector<std::pair<MapInput, std::vector<uint32_t>>> getAssociateSamples(
       const std::vector<std::pair<MapInput, MapInput>>& source_target_samples);

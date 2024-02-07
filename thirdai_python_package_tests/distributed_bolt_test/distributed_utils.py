@@ -163,3 +163,56 @@ def write_metrics_to_file(filename, metrics):
     # Write the metrics dictionary to the file in JSON format
     with open(filename, "w") as file:
         json.dump(metrics, file)
+
+
+SIMPLE_TEST_FILE = "mach_udt_test.csv"
+OUTPUT_DIM = 100
+NUM_HASHES = 7
+
+
+def make_simple_test_file(invalid_data=False):
+    with open(SIMPLE_TEST_FILE, "w") as f:
+        f.write("text,label\n")
+        f.write("haha one time,0\n")
+        f.write("haha two times,1\n")
+        f.write("haha thrice occurrences,2\n")
+        if invalid_data:
+            f.write("haha,3\n")
+
+
+def train_simple_mach_udt(
+    invalid_data=False,
+    embedding_dim=256,
+    use_bias=True,
+    rlhf_args={},
+    mach_sampling_threshold=0.2,
+    output_dim=OUTPUT_DIM,
+):
+    make_simple_test_file(invalid_data=invalid_data)
+
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "text": bolt.types.text(contextual_encoding="local"),
+            "label": bolt.types.categorical(),
+        },
+        target="label",
+        n_target_classes=3,
+        integer_target=True,
+        options={
+            "extreme_classification": True,
+            "embedding_dimension": embedding_dim,
+            "extreme_output_dim": output_dim,
+            "hidden_bias": use_bias,
+            "output_bias": use_bias,
+            **rlhf_args,
+            "mach_sampling_threshold": mach_sampling_threshold,
+        },
+    )
+
+    model.train(
+        SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001, shuffle_reservoir_size=32000
+    )
+
+    # os.remove(SIMPLE_TEST_FILE)
+
+    return model

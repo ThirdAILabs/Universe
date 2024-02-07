@@ -5,10 +5,12 @@ import ray
 import thirdai
 import thirdai.distributed_bolt as dist
 from distributed_utils import (
+    check_model_parameters_equal,
     copy_file_or_folder,
     get_udt_cold_start_model,
     setup_ray,
     split_into_2,
+    train_simple_mach_udt,
 )
 from ray import train
 from ray.train import ScalingConfig
@@ -422,5 +424,72 @@ def test_udt_licensed_fail():
     )
 
     trainer.fit()
+
+    ray.shutdown()
+
+
+@pytest.mark.distributed
+def test_udt_mach_associate_distributed(download_scifact_dataset):
+
+    def udt_mach_loop_per_worker(config):
+
+        udt_model = train_simple_mach_udt(
+            rlhf_args={
+                "rlhf": True,
+            }
+        )
+        udt_model = dist.prepare_model(udt_model)
+        rank = train.get_context().get_world_rank()
+        udt_model.save(f"{rank}_after_broadcast.associate_model")
+        udt_model = bolt.UniversalDeepTransformer.load(
+            f"{rank}_after_broadcast.associate_model"
+        )
+
+        target_sample = {"text": "red vegetable"}
+        source_sample = {"text": "tomato"}
+
+        udt_model.associate_distributed(
+            [(source_sample["text"], target_sample["text"], 1)], n_buckets=7
+        )
+
+        udt_model.save(f"{rank}.associate_model")
+        print(train.get_context().get_trial_dir())
+
+        train.report({"model_location": train.get_context().get_trial_dir()})
+
+    scaling_config = setup_ray()
+
+    # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
+    run_config = train.RunConfig(storage_path="~/ray_results")
+
+    trainer = dist.BoltTrainer(
+        train_loop_per_worker=udt_mach_loop_per_worker,
+        train_loop_config={},
+        scaling_config=scaling_config,
+        backend_config=TorchConfig(backend="gloo"),
+        run_config=run_config,
+    )
+
+    results = trainer.fit()
+
+    bolt_model_0 = bolt.UniversalDeepTransformer.load(
+        os.path.join(
+            results.metrics["model_location"], "0_after_broadcast.associate_model"
+        )
+    )._get_model()
+    bolt_model_1 = bolt.UniversalDeepTransformer.load(
+        os.path.join(
+            results.metrics["model_location"], "1_after_broadcast.associate_model"
+        )
+    )._get_model()
+    check_model_parameters_equal(bolt_model_0, bolt_model_1)
+
+    bolt_model_0 = bolt.UniversalDeepTransformer.load(
+        os.path.join(results.metrics["model_location"], "0.associate_model")
+    )._get_model()
+    bolt_model_1 = bolt.UniversalDeepTransformer.load(
+        os.path.join(results.metrics["model_location"], "1.associate_model")
+    )._get_model()
+    check_model_parameters_equal(bolt_model_0, bolt_model_1)
 
     ray.shutdown()

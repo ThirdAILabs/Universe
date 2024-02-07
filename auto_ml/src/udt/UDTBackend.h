@@ -283,13 +283,15 @@ class UDTBackend {
   virtual void associate(const std::vector<RlhfSample>& source_target_samples,
                          uint32_t n_buckets, uint32_t n_association_samples,
                          uint32_t n_balancing_samples, float learning_rate,
-                         uint32_t epochs) {
+                         uint32_t epochs,
+                         const bolt::DistributedCommPtr& comm) {
     (void)source_target_samples;
     (void)n_association_samples;
     (void)n_balancing_samples;
     (void)n_buckets;
     (void)learning_rate;
     (void)epochs;
+    (void)comm;
     throw notSupported("associate");
   }
 
