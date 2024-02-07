@@ -25,8 +25,8 @@
 namespace thirdai::automl {
 
 static data::OutputColumnsList machLabelColumns(
-    data::ValueFillType value_fill) {
-  return {data::OutputColumns(MACH_LABELS, value_fill),
+    data::ValueFillType label_value_fill) {
+  return {data::OutputColumns(MACH_LABELS, label_value_fill),
           data::OutputColumns(MACH_DOC_IDS)};
 }
 
@@ -35,12 +35,12 @@ MachFeaturizer::MachFeaturizer(
     const TemporalRelationships& temporal_relationship,
     const std::string& label_column,
     const dataset::mach::MachIndexPtr& mach_index,
-    const TabularOptions& options, data::ValueFillType value_fill)
+    const TabularOptions& options, data::ValueFillType label_value_fill)
     : Featurizer(data_types, temporal_relationship, label_column,
                  makeLabelTransformations(
                      label_column,
                      asCategorical(data_types.at(label_column))->delimiter),
-                 machLabelColumns(value_fill), options) {
+                 machLabelColumns(label_value_fill), options) {
   _state = std::make_shared<data::State>(mach_index);
 
   _prehashed_labels_transform = std::make_shared<data::StringToTokenArray>(
@@ -54,11 +54,12 @@ MachFeaturizer::MachFeaturizer(
     const std::shared_ptr<data::TextCompat>& text_transform,
     data::OutputColumnsList bolt_input_columns, const std::string& label_column,
     const dataset::mach::MachIndexPtr& mach_index, char csv_delimiter,
-    std::optional<char> label_delimiter, data::ValueFillType value_fill)
+    std::optional<char> label_delimiter, data::ValueFillType label_value_fill)
     : Featurizer(text_transform, text_transform,
                  makeLabelTransformations(label_column, label_delimiter),
-                 std::move(bolt_input_columns), machLabelColumns(value_fill),
-                 csv_delimiter, std::make_shared<data::State>(mach_index),
+                 std::move(bolt_input_columns),
+                 machLabelColumns(label_value_fill), csv_delimiter,
+                 std::make_shared<data::State>(mach_index),
                  TextDatasetConfig(text_transform->inputColumn(), label_column,
                                    label_delimiter)) {
   _prehashed_labels_transform = std::make_shared<data::StringToTokenArray>(
