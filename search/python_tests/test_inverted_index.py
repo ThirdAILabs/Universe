@@ -34,4 +34,4 @@ def test_inverted_index(download_scifact_dataset):
 
     acc = correct / len(query_df)
     print("accuracy=", acc)
-    assert acc >= 0.4
+    assert acc >= 0.52  # Should be 0.53 (should be deterministic)

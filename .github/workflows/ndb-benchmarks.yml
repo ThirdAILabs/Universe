@@ -1,4 +1,4 @@
-name: Run UDT Benchmarks 
+name: Run NeuralDB Benchmarks 
 
 # Kills old jobs from the same pr if we push a new commit
 # See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
@@ -9,9 +9,14 @@ concurrency:
 # Controls when the workflow will run
 on:
   schedule:
-      # Sets the workflow to run at 1600 UTC on Sundays and Wednesdays
+      # This is a good ~12 hours past the longest run of the udt benchmarks found.
+      # TODO(any): At some point we should either use separate machines for the 
+      # benchmarks if they get too long or maybe put the benchmarks into one 
+      # single action so if one goes too long then the other wont fail.  
+      #
+      # Sets the workflow to run at 1200 UTC on Mondays and Thursdays
       # Ref: https://jasonet.co/posts/scheduled-actions/
-      - cron: "0 16 * * 0,3" 
+      - cron: "0 12 * * 1,4" 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -40,12 +45,12 @@ jobs:
         env:
           USERNAME: ${{secrets.MLFLOW_TRACKING_USERNAME}}
           PASSWORD: ${{secrets.MLFLOW_TRACKING_PASSWORD}}
-          UDT_BENCHMARK_SLACK_WEBHOOK: ${{secrets.UDT_BENCHMARK_SLACK_WEBHOOK}}
-          BRANCH_UDT_BENCHMARK_SLACK_WEBHOOK: ${{secrets.BRANCH_UDT_BENCHMARK_SLACK_WEBHOOK}}
+          NDB_BENCHMARK_SLACK_WEBHOOK: ${{secrets.NDB_BENCHMARK_SLACK_WEBHOOK}}
+          BRANCH_NDB_BENCHMARK_SLACK_WEBHOOK: ${{secrets.BRANCH_NDB_BENCHMARK_SLACK_WEBHOOK}}
         run: >- 
           bin/docker-benchmarking-run.sh "export MLFLOW_TRACKING_USERNAME=$USERNAME && export MLFLOW_TRACKING_PASSWORD=$PASSWORD && 
-          python3 -m Universe.benchmarks_v2.src.main --runner udt query_reformulation temporal rlhf --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --official_slack_webhook $UDT_BENCHMARK_SLACK_WEBHOOK --branch_slack_webhook $BRANCH_UDT_BENCHMARK_SLACK_WEBHOOK --branch_name ${GITHUB_REF##*/} &&
-          python3 -m Universe.benchmarks_v2.src.slack_benchmark_results --runner udt query_reformulation temporal rlhf --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --official_slack_webhook $UDT_BENCHMARK_SLACK_WEBHOOK --branch_slack_webhook $BRANCH_UDT_BENCHMARK_SLACK_WEBHOOK --branch_name ${GITHUB_REF##*/}"
+          python3 -m Universe.benchmarks_v2.src.main --runner distributed_ndb neural_db --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --official_slack_webhook $NDB_BENCHMARK_SLACK_WEBHOOK --branch_slack_webhook $BRANCH_NDB_BENCHMARK_SLACK_WEBHOOK --branch_name ${GITHUB_REF##*/} &&
+          python3 -m Universe.benchmarks_v2.src.slack_benchmark_results --runner distributed_ndb neural_db --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --official_slack_webhook $NDB_BENCHMARK_SLACK_WEBHOOK --branch_slack_webhook $BRANCH_NDB_BENCHMARK_SLACK_WEBHOOK --branch_name ${GITHUB_REF##*/}"
       - name: Delete Container
         run: sudo docker system prune -a -f
 
@@ -55,7 +60,7 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         uses: voxmedia/github-action-slack-notify-build@v1
         with:
-          channel_id: daily_udt_benchmarks
+          channel_id: daily_ndb_benchmarks
           status: FAILED
           color: danger
 
@@ -65,6 +70,6 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         uses: voxmedia/github-action-slack-notify-build@v1
         with:
-          channel_id: branch_udt_benchmarks
+          channel_id: branch_ndb_benchmarks
           status: FAILED
           color: danger
