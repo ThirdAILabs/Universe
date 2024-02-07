@@ -155,13 +155,11 @@ class UDTMach final : public UDTBackend {
       const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
       uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
-      bool force_non_empty,
-      size_t batch_size = defaults::RLHF_BATCH_SIZE) final;
+      bool force_non_empty, size_t batch_size) final;
 
   void upvote(const std::vector<std::pair<std::string, uint32_t>>& rlhf_samples,
               uint32_t n_upvote_samples, uint32_t n_balancing_samples,
-              float learning_rate, uint32_t epochs,
-              size_t batch_size = defaults::RLHF_BATCH_SIZE) final;
+              float learning_rate, uint32_t epochs, size_t batch_size) final;
 
   py::object associateTrain(
       const dataset::DataSourcePtr& balancing_data,
