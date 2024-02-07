@@ -326,6 +326,10 @@ def make_balancing_samples(documents: DocumentDataSource):
 
 
 def normalize_scores(results):
+    if len(results) == 0:
+        return results
+    if len(results) == 1:
+        return [(results[0][0], 1.0)]
     ids, scores = zip(*results)
     scores = np.array(scores)
     scores -= np.min(scores)
@@ -636,7 +640,6 @@ class Mach(Model):
         **kwargs,
     ) -> Predictions:
         infer_batch = self.infer_samples_to_infer_batch(samples)
-        print("KWARGS: ", kwargs.get("disable_inverted_index", False))
         if self.inverted_index and not kwargs.get("disable_inverted_index", False):
             k = min(self.n_ids, n_results)
             index_results = self.inverted_index.query(queries=samples, k=k)
