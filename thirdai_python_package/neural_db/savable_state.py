@@ -1,24 +1,13 @@
 import datetime
 import os
-import pickle
-import shutil
 from pathlib import Path
-from typing import Callable
+from typing import Callable, List
 
 from .documents import DocumentManager
 from .loggers import Logger
 from .models import Model
-
-
-def pickle_to(obj: object, filepath: Path):
-    with open(filepath, "wb") as pkl:
-        pickle.dump(obj, pkl)
-
-
-def unpickle_from(filepath: Path):
-    with open(filepath, "rb") as pkl:
-        obj = pickle.load(pkl)
-    return obj
+from .trainer.checkpoint_config import CheckpointConfig
+from .utils import delete_folder, pickle_to, unpickle_from
 
 
 def default_checkpoint_name():
@@ -43,34 +32,40 @@ class State:
             and self.model.searchable
         )
 
+    @staticmethod
     def model_pkl_path(directory: Path) -> Path:
         return directory / "model.pkl"
 
+    @staticmethod
     def model_meta_path(directory: Path) -> Path:
         return directory / "model"
 
+    @staticmethod
     def logger_pkl_path(directory: Path) -> Path:
         return directory / "logger.pkl"
 
+    @staticmethod
     def logger_meta_path(directory: Path) -> Path:
         return directory / "logger"
 
+    @staticmethod
     def documents_pkl_path(directory: Path) -> Path:
         return directory / "documents.pkl"
 
+    @staticmethod
     def documents_meta_path(directory: Path) -> Path:
         return directory / "documents"
 
     def save(
         self,
         location=default_checkpoint_name(),
-        on_progress: Callable = lambda **kwargs: None,
+        on_progress: Callable = lambda *args, **kwargs: None,
     ) -> str:
         total_steps = 7
 
         # make directory
         directory = Path(location)
-        os.mkdir(directory)
+        os.makedirs(directory)
         on_progress(1 / total_steps)
 
         # pickle model
@@ -99,7 +94,8 @@ class State:
 
         return str(directory)
 
-    def load(location: Path, on_progress: Callable = lambda **kwargs: None):
+    @staticmethod
+    def load(location: Path, on_progress: Callable = lambda *args, **kwargs: None):
         total_steps = 6
 
         # load model
@@ -123,3 +119,36 @@ class State:
         on_progress(6 / total_steps)
 
         return state
+
+
+def load_checkpoint(checkpoint_config: CheckpointConfig):
+    try:
+        state = State.load(checkpoint_config.ndb_checkpoint_path)
+        ids, resource_name = unpickle_from(
+            checkpoint_config.pickled_ids_resource_name_path
+        )
+        return state, ids, resource_name
+    except:
+        raise Exception(
+            "Failed to load"
+            f" '{checkpoint_config.checkpoint_dir / 'checkpoint.ndb'}'."
+            " Please verify it's a valid checkpoint and the training is"
+            " incomplete."
+        )
+
+
+def make_preinsertion_checkpoint(
+    savable_state: State,
+    ids: List[str],
+    resource_name: str,
+    checkpoint_config: CheckpointConfig,
+):
+    delete_folder(checkpoint_config.ndb_checkpoint_path)
+    savable_state.save(checkpoint_config.ndb_checkpoint_path)
+    pickle_to((ids, resource_name), checkpoint_config.pickled_ids_resource_name_path)
+
+
+def make_training_checkpoint(savable_state: State, checkpoint_config: CheckpointConfig):
+    delete_folder(checkpoint_config.ndb_trained_path)
+    savable_state.save(location=checkpoint_config.ndb_trained_path)
+    delete_folder(checkpoint_config.ndb_checkpoint_path)

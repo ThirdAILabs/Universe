@@ -67,7 +67,7 @@ class Sup:
     ):
         if csv is not None and query_column is not None and id_column is not None:
             df = pd.read_csv(csv)
-            self.queries = df[query_column]
+            self.queries = df[query_column].fillna("")
             self.labels = df[id_column]
             for i, label in enumerate(self.labels):
                 if label == None or label == "":
@@ -128,6 +128,7 @@ class SupDataSource(PyDataSource):
         self.restart()
 
     def _csv_line(self, label: str, query: str):
+        query = '"' + query.replace('"', '""') + '"'
         return f"{label},{query}"
 
     def _source_for_sup(self, sup: Sup):
@@ -162,6 +163,8 @@ class SupDataSource(PyDataSource):
         # Then yield rows
         for sup in self.data:
             for query, labels in zip(sup.queries, self._labels(sup)):
+                if query == "":
+                    continue
                 if self.id_delimiter and concat_labels:
                     yield self._csv_line(
                         self.id_delimiter.join(labels),

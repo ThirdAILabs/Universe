@@ -4,10 +4,11 @@
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
-#include <auto_ml/src/featurization/TabularDatasetFactory.h>
+#include <auto_ml/src/featurization/Featurizer.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <auto_ml/src/udt/utils/Models.h>
+#include <data/src/transformations/Transformation.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
@@ -35,8 +36,7 @@ class UDTClassifier final : public UDTBackend {
                    TrainOptions options,
                    const bolt::DistributedCommPtr& comm) final;
 
-  py::object trainBatch(const MapInputBatch& batch, float learning_rate,
-                        const std::vector<std::string>& metrics) final;
+  py::object trainBatch(const MapInputBatch& batch, float learning_rate) final;
 
   /**
    * Modifies the sparsity of the output layer. If rebuild_hash_tables is true,
@@ -58,7 +58,7 @@ class UDTClassifier final : public UDTBackend {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
 
-  std::vector<dataset::Explanation> explain(
+  std::vector<std::pair<std::string, float>> explain(
       const MapInput& sample,
       const std::optional<std::variant<uint32_t, std::string>>& target_class)
       final;
@@ -80,12 +80,7 @@ class UDTClassifier final : public UDTBackend {
   py::object entityEmbedding(
       const std::variant<uint32_t, std::string>& label) final;
 
-  std::string className(uint32_t class_id) const final {
-    if (_class_name_to_neuron) {
-      return _class_name_to_neuron->getString(class_id);
-    }
-    return std::to_string(class_id);
-  }
+  std::string className(uint32_t class_id) const final;
 
   ModelPtr model() const final { return _classifier->model(); }
 
@@ -97,13 +92,7 @@ class UDTClassifier final : public UDTBackend {
     curr_model = model;
   }
 
-  TabularDatasetFactoryPtr tabularDatasetFactory() const final {
-    return _dataset_factory;
-  }
-
-  ColumnDataTypes dataTypes() const final {
-    return _dataset_factory->dataTypes();
-  }
+  FeaturizerPtr featurizer() const final { return _featurizer; }
 
   void verifyCanDistribute() const final {
     if (!integerTarget()) {
@@ -114,25 +103,24 @@ class UDTClassifier final : public UDTBackend {
           "setting.");
     }
 
-    _dataset_factory->verifyCanDistribute();
+    if (_featurizer->hasTemporalTransformations()) {
+      throw std::invalid_argument(
+          "UDT with temporal relationships cannot be trained in a distributed "
+          "setting.");
+    }
   }
 
-  cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
-    return std::make_shared<cold_start::ColdStartMetaData>(
-        _label_block->delimiter(), _label_block->columnName());
-  }
+  void saveCppClassifier(const std::string& save_path) const final;
 
  private:
-  dataset::CategoricalBlockPtr labelBlock(const std::string& target_name,
-                                          CategoricalDataTypePtr& target_config,
-                                          uint32_t n_target_classes,
-                                          bool integer_target,
-                                          bool normalize_target_categories);
+  data::TransformationPtr labelTransformation(
+      const std::string& target_name, CategoricalDataTypePtr& target_config,
+      uint32_t n_target_classes, bool integer_target) const;
 
   uint32_t labelToNeuronId(
       const std::variant<uint32_t, std::string>& label) const;
 
-  bool integerTarget() const { return !_class_name_to_neuron; }
+  bool integerTarget() const;
 
   UDTClassifier() {}
 
@@ -141,12 +129,11 @@ class UDTClassifier final : public UDTBackend {
   template <class Archive>
   void serialize(Archive& archive, uint32_t version);
 
-  dataset::ThreadSafeVocabularyPtr _class_name_to_neuron;
-  dataset::CategoricalBlockPtr _label_block;
-
   utils::ClassifierPtr _classifier;
 
-  TabularDatasetFactoryPtr _dataset_factory;
+  FeaturizerPtr _featurizer;
+
+  const std::string LABEL_VOCAB = "__label_vocab__";
 };
 
 }  // namespace thirdai::automl::udt

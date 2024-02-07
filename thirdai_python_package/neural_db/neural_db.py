@@ -1,21 +1,26 @@
 import copy
+import shutil
 from enum import Enum
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import thirdai
-import unidecode
 from thirdai._thirdai import bolt, data
-from thirdai.dataset.data_source import PyDataSource
 
 from . import loggers, teachers
 from .documents import CSV, Document, DocumentManager, Reference
 from .mach_mixture_model import MachMixture
 from .models import CancelState, Mach
-from .savable_state import State
+from .savable_state import (
+    State,
+    load_checkpoint,
+    make_preinsertion_checkpoint,
+    make_training_checkpoint,
+)
 from .supervised_datasource import Sup, SupDataSource
+from .trainer.checkpoint_config import CheckpointConfig
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
 
@@ -147,31 +152,13 @@ class NeuralDB:
         udt.enable_rlhf()
         udt.set_mach_sampling_threshold(0.01)
         fhr, emb_dim, out_dim = udt.model_dims()
-        data_types = udt.data_types()
 
-        if len(data_types) != 2:
-            raise ValueError(
-                "Incompatible UDT model. Expected two data types but found"
-                f" {len(data_types)}."
-            )
-        query_col = None
-        id_col = None
-        id_delimiter = None
-        for column, dtype in data_types.items():
-            if isinstance(dtype, bolt.types.text):
-                query_col = column
-            if isinstance(dtype, bolt.types.categorical):
-                id_col = column
-                id_delimiter = dtype.delimiter
-        if query_col is None:
-            raise ValueError(f"Incompatible UDT model. Cannot find a query column.")
-        if id_col is None:
-            raise ValueError(f"Incompatible UDT model. Cannot find an id column.")
+        text_dataset_config = udt.text_dataset_config()
 
         model = Mach(
-            id_col=id_col,
-            id_delimiter=id_delimiter,
-            query_col=query_col,
+            id_col=text_dataset_config.label_column,
+            id_delimiter=text_dataset_config.label_delimiter,
+            query_col=text_dataset_config.text_column,
             fhr=fhr,
             embedding_dimension=emb_dim,
             extreme_output_dim=out_dim,
@@ -404,8 +391,78 @@ class NeuralDB:
         """
         return self._savable_state.documents.sources()
 
-    def save(self, save_to: str, on_progress: Callable = no_op) -> str:
+    def save(self, save_to: Union[str, Path], on_progress: Callable = no_op) -> str:
         return self._savable_state.save(Path(save_to), on_progress)
+
+    def _resume(
+        self,
+        on_progress: Callable,
+        cancel_state: CancelState,
+        checkpoint_config: CheckpointConfig,
+    ):
+        state, ids, resource_name = load_checkpoint(checkpoint_config=checkpoint_config)
+        self._savable_state = state
+        self._savable_state.model.resume(
+            on_progress=on_progress,
+            cancel_state=cancel_state,
+            checkpoint_config=checkpoint_config.get_mach_config(),
+        )
+
+        return ids, resource_name
+
+    def _insert_from_start(
+        self,
+        sources: List[Document],
+        train: bool,
+        fast_approximation: bool,
+        num_buckets_to_sample: Optional[int],
+        on_progress: Callable,
+        on_error: Callable,
+        cancel_state: CancelState,
+        max_in_memory_batches: int,
+        variable_length: Optional[data.transformations.VariableLengthConfig],
+        checkpoint_config: CheckpointConfig,
+        **kwargs,
+    ):
+        documents_copy = copy.deepcopy(self._savable_state.documents)
+        try:
+            intro_and_train, ids = self._savable_state.documents.add(sources)
+        except Exception as e:
+            self._savable_state.documents = documents_copy
+            if on_error is not None:
+                on_error(error_msg=f"Failed to add files. {e.__str__()}")
+                return []
+            raise e
+
+        """
+        We need to store the model state so that our label_id -> reference mapping remains consistent on resuming.
+        """
+        if checkpoint_config:
+            # If a checkpoint config is passed, then we delete any past ndb checkpoints from the folder and save the current neural db object.
+            make_preinsertion_checkpoint(
+                savable_state=self._savable_state,
+                ids=ids,
+                resource_name=intro_and_train.intro.resource_name(),
+                checkpoint_config=checkpoint_config,
+            )
+
+        self._savable_state.model.index_from_start(
+            intro_documents=intro_and_train.intro,
+            train_documents=intro_and_train.train,
+            num_buckets_to_sample=num_buckets_to_sample,
+            fast_approximation=fast_approximation,
+            should_train=train,
+            on_progress=on_progress,
+            cancel_state=cancel_state,
+            max_in_memory_batches=max_in_memory_batches,
+            variable_length=variable_length,
+            checkpoint_config=(
+                checkpoint_config.get_mach_config() if checkpoint_config else None
+            ),
+            **kwargs,
+        )
+
+        return ids, intro_and_train.intro.resource_name()
 
     def insert(
         self,
@@ -421,6 +478,7 @@ class NeuralDB:
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
+        checkpoint_config: Optional[CheckpointConfig] = None,
         **kwargs,
     ) -> List[str]:
         """
@@ -446,47 +504,54 @@ class NeuralDB:
             max_in_memory_batches (int): Optional, default None. When supplied this limits
                 the maximum amount of data that is loaded into memory at once during training.
                 Useful for lower memory paradigms or with large datasets.
+            checkpoint_config (CheckpointConfig): Optional, default None. Configuration for checkpointing during insertion. No checkpoints are created if checkpoint_config is unspecified.
 
         Returns:
             A list of the ids assigned to the inserted documents.
         """
-        documents_copy = copy.deepcopy(self._savable_state.documents)
-        try:
-            intro_and_train, ids = self._savable_state.documents.add(sources)
-        except Exception as e:
-            self._savable_state.documents = documents_copy
-            if on_error is not None:
-                on_error(error_msg=f"Failed to add files. {e.__str__()}")
-                return []
-            raise e
+        if checkpoint_config and checkpoint_config.resume_from_checkpoint:
+            ids, resource_name = self._resume(
+                on_progress=on_progress,
+                cancel_state=cancel_state,
+                checkpoint_config=checkpoint_config,
+            )
+        else:
+            ids, resource_name = self._insert_from_start(
+                sources=sources,
+                train=train,
+                fast_approximation=fast_approximation,
+                num_buckets_to_sample=num_buckets_to_sample,
+                on_progress=on_progress,
+                on_error=on_error,
+                cancel_state=cancel_state,
+                max_in_memory_batches=max_in_memory_batches,
+                variable_length=variable_length,
+                checkpoint_config=checkpoint_config,
+                **kwargs,
+            )
 
-        self._savable_state.model.index_documents(
-            intro_documents=intro_and_train.intro,
-            train_documents=intro_and_train.train,
-            num_buckets_to_sample=num_buckets_to_sample,
-            fast_approximation=fast_approximation,
-            should_train=train,
-            on_progress=on_progress,
-            cancel_state=cancel_state,
-            max_in_memory_batches=max_in_memory_batches,
-            variable_length=variable_length,
-            **kwargs,
-        )
         self._savable_state.logger.log(
             session_id=self._user_id,
             action="Train",
-            args={"files": intro_and_train.intro.resource_name()},
+            args={"files": resource_name},
         )
 
+        if checkpoint_config:
+            # Once we have saved the model, we will delete the ndb checkpoint and save updated neural db with trained models.
+            make_training_checkpoint(
+                savable_state=self._savable_state, checkpoint_config=checkpoint_config
+            )
+
         on_success()
+
         return ids
 
-    def delete(self, source_id: str):
-        """Deletes a document from the NeuralDB."""
-        deleted_entities = self._savable_state.documents.delete(source_id)
+    def delete(self, source_ids: List[str]):
+        """Deletes documents from the NeuralDB."""
+        deleted_entities = self._savable_state.documents.delete(source_ids)
         self._savable_state.model.delete_entities(deleted_entities)
         self._savable_state.logger.log(
-            session_id=self._user_id, action="delete", args={"source_id": source_id}
+            session_id=self._user_id, action="delete", args={"source_ids": source_ids}
         )
 
     def clear_sources(self) -> None:
@@ -657,7 +722,9 @@ class NeuralDB:
             )
         else:
             queries_result_ids = self._savable_state.model.infer_labels(
-                samples=queries, n_results=top_k_to_search
+                samples=queries,
+                n_results=top_k_to_search,
+                disable_inverted_index=rerank,
             )
 
         return [
@@ -711,7 +778,9 @@ class NeuralDB:
             query_id_para=query_id_para,
         )
 
-    def associate(self, source: str, target: str, strength: Strength = Strength.Strong):
+    def associate(
+        self, source: str, target: str, strength: Strength = Strength.Strong, **kwargs
+    ):
         """
         Teaches the underlying model in the NeuralDB that two different texts
         correspond to similar concepts or queries.
@@ -732,10 +801,14 @@ class NeuralDB:
             user_id=self._user_id,
             text_pairs=[(source, target)],
             top_k=top_k,
+            **kwargs,
         )
 
     def associate_batch(
-        self, text_pairs: List[Tuple[str, str]], strength: Strength = Strength.Strong
+        self,
+        text_pairs: List[Tuple[str, str]],
+        strength: Strength = Strength.Strong,
+        **kwargs,
     ):
         """Same as associate, but the process is applied to a batch of (source, target) pairs at once."""
         top_k = self._get_associate_top_k(strength)
@@ -745,6 +818,7 @@ class NeuralDB:
             user_id=self._user_id,
             text_pairs=text_pairs,
             top_k=top_k,
+            **kwargs,
         )
 
     def _get_associate_top_k(self, strength):
@@ -898,4 +972,9 @@ class NeuralDB:
             n_buckets=self._get_associate_top_k(strength),
             learning_rate=learning_rate,
             epochs=epochs,
+        )
+
+    def build_inverted_index(self):
+        self._savable_state.model.build_inverted_index(
+            self._savable_state.documents.get_data_source()
         )

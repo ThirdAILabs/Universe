@@ -21,6 +21,10 @@ struct BlockList {
 
   auto operator[](uint32_t index) { return _blocks[index]; }
 
+  const auto& blocks() const { return _blocks; }
+
+  const auto& hashRange() const { return _hash_range; }
+
   /**
    * Dispatches the method each Block. See method definition in the
    * Block class for details.

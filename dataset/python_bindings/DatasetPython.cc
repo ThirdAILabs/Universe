@@ -37,7 +37,9 @@
 #include <utils/Random.h>
 #include <chrono>
 #include <limits>
+#include <memory>
 #include <optional>
+#include <stdexcept>
 #include <type_traits>
 #include <unordered_map>
 
@@ -121,6 +123,32 @@ void createDatasetSubmodule(py::module_& module) {
       .def("get_entity_hashes", &mach::MachIndex::getHashes, py::arg("entity"))
       .def("get_hash_to_entities", &mach::MachIndex::getEntities,
            py::arg("hash"))
+      .def(
+          "decode",
+          [](const mach::MachIndex& index, std::vector<uint32_t> indices,
+             std::vector<float> values, uint32_t top_k,
+             uint32_t num_buckets_to_eval) {
+            if (indices.size() != values.size()) {
+              throw std::invalid_argument(
+                  "Indices and values must have same length.");
+            }
+
+            for (uint32_t i : indices) {
+              if (i >= index.numBuckets()) {
+                throw std::invalid_argument(
+                    "Cannot decode index " + std::to_string(i) +
+                    " using MachIndex with " +
+                    std::to_string(index.numBuckets()) + " buckets.");
+              }
+            }
+
+            BoltVector scores(/*an=*/indices.data(), /*a=*/values.data(),
+                              /*g=*/nullptr, /*l=*/indices.size());
+
+            return index.decode(scores, top_k, num_buckets_to_eval);
+          },
+          py::arg("indices"), py::arg("values"), py::arg("top_k"),
+          py::arg("num_buckets_to_eval"))
 #endif
       .def("num_hashes", &mach::MachIndex::numHashes)
       .def("output_range", &mach::MachIndex::numBuckets)
@@ -343,6 +371,13 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<FileDataSource, DataSource, std::shared_ptr<FileDataSource>>(
       dataset_submodule, "FileDataSource")
       .def(py::init<const std::string&>(), py::arg("filename"));
+
+  py::class_<UnifiedDataSource, DataSource, std::shared_ptr<UnifiedDataSource>>(
+      dataset_submodule, "UnifiedDataSource")
+      .def(py::init<std::vector<DataSourcePtr>, const std::vector<double>&,
+                    uint32_t, uint32_t>(),
+           py::arg("data_sources"), py::arg("probabilities"),
+           py::arg("stop_data_source_id"), py::arg("seed") = 42);
 
   dataset_submodule.def("make_sparse_vector",
                         py::overload_cast<const std::vector<uint32_t>&,

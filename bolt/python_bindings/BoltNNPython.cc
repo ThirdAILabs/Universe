@@ -113,6 +113,7 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("override_train_steps", &Model::overrideTrainSteps,
            py::arg("train_steps"))
       .def("params", &modelParams)
+      .def("norms", &Model::getNorms)
       .def_static("from_params", &modelFromParams, py::arg("params"))
 #endif
       // The next three functions are used for distributed training.
@@ -225,7 +226,7 @@ void defineOps(py::module_& nn) {
       .def(py::init(&FullyConnected::make), py::arg("dim"),
            py::arg("input_dim"), py::arg("sparsity") = 1.0,
            py::arg("activation") = "relu", py::arg("sampling_config") = nullptr,
-           py::arg("use_bias") = true, py::arg("rebuild_hash_tables") = 10,
+           py::arg("use_bias") = true, py::arg("rebuild_hash_tables") = 4,
            py::arg("reconstruct_hash_functions") = 100)
       .def("__call__", &FullyConnected::apply)
       .def("dim", &FullyConnected::dim)
