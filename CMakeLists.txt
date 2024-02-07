@@ -373,6 +373,7 @@ set(THIRDAI_SOURCES
     search/src/MaxFlash.cc
     search/src/MaxFlashArray.cc
     search/src/Flash.cc
+    search/src/InvertedIndex.cc
     hashing/src/DensifiedMinHash.cc
     hashing/src/DWTA.cc
     hashing/src/FastSRP.cc
@@ -467,6 +468,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/cpp_classifier/CppClassifier.cc
     utils/src/SymSpellBackend/symspell.cc
     utils/src/SymSpellCpp/SymSpell.cc
+    utils/text/PorterStemmer.cc
     utils/Logging.cc
     utils/text/StringManipulation.cc
     utils/UUID.cc

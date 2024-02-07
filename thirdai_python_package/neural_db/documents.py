@@ -154,6 +154,7 @@ class Reference:
         self._metadata = metadata
         self._context_fn = lambda radius: document.context(element_id, radius)
         self._score = 0
+        self._document = document
 
     @property
     def id(self):
@@ -178,6 +179,10 @@ class Reference:
     @property
     def score(self):
         return self._score
+
+    @property
+    def document(self):
+        return self._document
 
     def context(self, radius: int):
         return self._context_fn(radius)
@@ -333,13 +338,22 @@ class DocumentManager:
             doc.hash for doc in documents
         ]
 
-    def delete(self, source_id):
+    def delete(self, source_ids):
         # TODO(Geordie): Error handling
-        doc, offset = self.registry[source_id]
-        deleted_entities = [offset + entity_id for entity_id in doc.all_entity_ids()]
-        del self.registry[source_id]
-        del self.source_id_prefix_trie[source_id]
-        self.constraint_matcher.delete((doc, offset), doc.matched_constraints)
+        all_sources_exist = all(source_id in self.registry for source_id in source_ids)
+        if not all_sources_exist:
+            raise KeyError("At least one source not found in document manager.")
+
+        deleted_entities = []
+        for source_id in source_ids:
+            doc, offset = self.registry[source_id]
+            deleted_entities += [
+                offset + entity_id for entity_id in doc.all_entity_ids()
+            ]
+            del self.registry[source_id]
+            del self.source_id_prefix_trie[source_id]
+            self.constraint_matcher.delete((doc, offset), doc.matched_constraints)
+
         return deleted_entities
 
     def entity_ids_by_constraints(self, constraints: Dict[str, Any]):
@@ -364,6 +378,7 @@ class DocumentManager:
     def clear(self):
         self.registry = OrderedDict()
         self.source_id_prefix_trie = StringTrie()
+        self.constraint_matcher = ConstraintMatcher[DocAndOffset]()
 
     def _get_doc_and_start_id(self, element_id: int):
         for doc, start_id in reversed(self.registry.values()):
@@ -427,6 +442,14 @@ def create_table(df, on_disk):
     return Table(df)
 
 
+def metadata_with_source(metadata, source: str):
+    if "source" in metadata:
+        raise ValueError(
+            "Document metadata cannot contain the key 'source'. 'source' is a reserved key."
+        )
+    return {**metadata, "source": source}
+
+
 class CSV(Document):
     """
     A document containing the rows of a csv file.
@@ -467,8 +490,7 @@ class CSV(Document):
         weak_columns: Optional[List[str]] = None,
         reference_columns: Optional[List[str]] = None,
         save_extra_info=True,
-        metadata={},
-        index_columns=[],
+        metadata=None,
         has_offset=False,
         on_disk=False,
     ) -> None:
@@ -527,9 +549,8 @@ class CSV(Document):
             col for col in reference_columns if col != self.id_column
         ]
         self._save_extra_info = save_extra_info
-        self.doc_metadata = metadata
+        self.doc_metadata = metadata_with_source(metadata or {}, Path(path).name)
         self.doc_metadata_keys = set(self.doc_metadata.keys())
-        self.indexed_columns = index_columns
         # Add column names to hash metadata so that CSVs with different
         # hyperparameters are treated as different documents. Otherwise, this
         # may break training.
@@ -540,7 +561,6 @@ class CSV(Document):
             + str(sorted(self.strong_columns))
             + str(sorted(self.weak_columns))
             + str(sorted(self.reference_columns))
-            + str(sorted(self.indexed_columns))
             + str(sorted(list(self.doc_metadata.items()))),
         )
 
@@ -568,7 +588,7 @@ class CSV(Document):
             key: ConstraintValue(value) for key, value in self.doc_metadata.items()
         }
         indexed_column_constraints = {
-            key: ConstraintValue(is_any=True) for key in self.indexed_columns
+            key: ConstraintValue(is_any=True) for key in self.table.columns
         }
         return {**metadata_constraints, **indexed_column_constraints}
 
@@ -688,8 +708,6 @@ class CSV(Document):
             self.doc_metadata = {}
         if not hasattr(self, "doc_metadata_keys"):
             self.doc_metadata_keys = set()
-        if not hasattr(self, "indexed_columns"):
-            self.indexed_columns = []
         if not hasattr(self, "orig_to_assigned_id"):
             self.orig_to_assigned_id = None
         if not hasattr(self, "has_offset"):
@@ -713,7 +731,7 @@ class Extracted(Document):
         self,
         path: str,
         save_extra_info=True,
-        metadata={},
+        metadata=None,
         strong_column=None,
         on_disk=False,
     ):
@@ -724,7 +742,7 @@ class Extracted(Document):
         self._save_extra_info = save_extra_info
 
         self.path = Path(path)
-        self.doc_metadata = metadata
+        self.doc_metadata = metadata_with_source(metadata or {}, Path(path).name)
         self.strong_column = strong_column
         if self.strong_column and self.strong_column not in self.table.columns:
             raise RuntimeError(
@@ -911,7 +929,7 @@ class PDF(Extracted):
         emphasize_first_words=0,
         ignore_header_footer=True,
         ignore_nonstandard_orientation=True,
-        metadata={},
+        metadata=None,
         on_disk=False,
     ):
         self.version = version
@@ -937,8 +955,8 @@ class PDF(Extracted):
         super().__init__(
             path=path,
             metadata={
-                **metadata,
-                "__version__": "v2",
+                **(metadata or {}),
+                "__version__": version,
                 "__chunk_size__": chunk_size,
                 "__stride__": stride,
             },
@@ -970,7 +988,7 @@ class PDF(Extracted):
 
 
 class DOCX(Extracted):
-    def __init__(self, path: str, metadata={}, on_disk=False):
+    def __init__(self, path: str, metadata=None, on_disk=False):
         super().__init__(path=path, metadata=metadata, on_disk=on_disk)
 
     def process_data(
@@ -985,7 +1003,7 @@ class Unstructured(Extracted):
         self,
         path: Union[str, Path],
         save_extra_info: bool = True,
-        metadata={},
+        metadata=None,
         on_disk=False,
     ):
         super().__init__(
@@ -1052,7 +1070,7 @@ class URL(Document):
         url_response: Response = None,
         save_extra_info: bool = True,
         title_is_strong: bool = False,
-        metadata={},
+        metadata=None,
         on_disk=False,
     ):
         self.url = url
@@ -1061,7 +1079,7 @@ class URL(Document):
         self.hash_val = hash_string(url + str(metadata))
         self._save_extra_info = save_extra_info
         self._strong_column = "title" if title_is_strong else "text"
-        self.doc_metadata = metadata
+        self.doc_metadata = metadata_with_source(metadata or {}, url)
 
     def process_data(self, url, url_response=None) -> pd.DataFrame:
         # Extract elements from each file
@@ -2058,7 +2076,7 @@ class SentenceLevelExtracted(Extracted):
     """
 
     def __init__(
-        self, path: str, save_extra_info: bool = True, metadata={}, on_disk=False
+        self, path: str, save_extra_info: bool = True, metadata=None, on_disk=False
     ):
         self.path = Path(path)
         self.hash_val = hash_file(
@@ -2069,7 +2087,7 @@ class SentenceLevelExtracted(Extracted):
         para_df = pd.DataFrame({"para": df["para"].unique()})
         self.para_table = create_table(para_df, on_disk)
         self._save_extra_info = save_extra_info
-        self.doc_metadata = metadata
+        self.doc_metadata = metadata_with_source(metadata or {}, Path(path).name)
 
     def not_just_punctuation(sentence: str):
         for character in sentence:
@@ -2218,7 +2236,7 @@ class SentenceLevelPDF(SentenceLevelExtracted):
             constrains to restrict results based on the metadata.
     """
 
-    def __init__(self, path: str, metadata={}, on_disk=False):
+    def __init__(self, path: str, metadata=None, on_disk=False):
         super().__init__(path=path, metadata=metadata, on_disk=on_disk)
 
     def process_data(
@@ -2243,7 +2261,7 @@ class SentenceLevelDOCX(SentenceLevelExtracted):
             constrains to restrict results based on the metadata.
     """
 
-    def __init__(self, path: str, metadata={}, on_disk=False):
+    def __init__(self, path: str, metadata=None, on_disk=False):
         super().__init__(path=path, metadata=metadata, on_disk=on_disk)
 
     def process_data(
