@@ -73,10 +73,11 @@ void createSearchSubmodule(py::module_& module) {
 
   py::class_<InvertedIndex, std::shared_ptr<InvertedIndex>>(search_submodule,
                                                             "InvertedIndex")
-      .def(py::init<float, float, float>(),
+      .def(py::init<float, float, float, bool, bool>(),
            py::arg("idf_cutoff_frac") = InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC,
            py::arg("k1") = InvertedIndex::DEFAULT_K1,
-           py::arg("b") = InvertedIndex::DEFAULT_B)
+           py::arg("b") = InvertedIndex::DEFAULT_B, py::arg("stem") = true,
+           py::arg("lowercase") = true)
       .def("index", &InvertedIndex::index, py::arg("documents"))
       .def("query", &InvertedIndex::queryBatch, py::arg("queries"),
            py::arg("k"))

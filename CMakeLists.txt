@@ -468,6 +468,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/cpp_classifier/CppClassifier.cc
     utils/src/SymSpellBackend/symspell.cc
     utils/src/SymSpellCpp/SymSpell.cc
+    utils/text/PorterStemmer.cc
     utils/Logging.cc
     utils/text/StringManipulation.cc
     utils/UUID.cc
