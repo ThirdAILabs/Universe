@@ -25,4 +25,23 @@ VariablePtr crossEntropy(const VariablePtr& logits, const TensorPtr& labels) {
   return Variable::make(loss, grad_func, {logits});
 }
 
+VariablePtr binaryCrossEntropy(const VariablePtr& logits,
+                               const TensorPtr& labels) {
+  auto tmp = sparseBinaryCrossEntropy(logits->tensor(), labels);
+  auto loss = std::move(tmp.first);  // Lambda captures don't like auto[...]
+  auto activations = std::move(tmp.second);
+
+  GradFunc grad_func = [activations, labels](
+                           const TensorPtr& grad,
+                           const std::vector<VariablePtr>& inputs) {
+    (void)grad;  // TODO(Nicholas) support weighted loss here
+
+    auto logit_grad = sparseBinaryCrossEntropyGrad(activations, labels);
+
+    inputs.at(0)->addGradient(logit_grad);
+  };
+
+  return Variable::make(loss, grad_func, {logits});
+}
+
 }  // namespace thirdai::smx

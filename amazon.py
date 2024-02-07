@@ -1,8 +1,9 @@
-from thirdai import smx, hashing
-import numpy as np
 import random
 import time
+
+import numpy as np
 import tqdm
+from thirdai import hashing, smx
 
 
 def load_dataset(path, batch_size, input_dim, n_classes, training):

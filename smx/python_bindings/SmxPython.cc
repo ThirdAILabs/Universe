@@ -189,6 +189,8 @@ void defineAutograd(py::module_& smx) {
           py::arg("x"));
 
   smx.def("cross_entropy", &crossEntropy, py::arg("logits"), py::arg("labels"));
+  smx.def("binary_cross_entropy", &binaryCrossEntropy, py::arg("logits"),
+          py::arg("labels"));
 }
 
 class PyModule : public Module {

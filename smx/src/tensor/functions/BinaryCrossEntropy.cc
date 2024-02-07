@@ -11,7 +11,19 @@
 
 namespace thirdai::smx {
 
-std::pair<DenseTensorPtr, DenseTensorPtr> sparseCrossEntropy(
+inline std::string invalidLabelError(uint32_t label, size_t dim) {
+  return "Invalid label " + std::to_string(label) +
+         " in binary_cross_entropy with output dim " + std::to_string(dim) +
+         ".";
+}
+
+inline void checkLabel(uint32_t label, size_t dim) {
+  if (label >= dim) {
+    throw std::invalid_argument(invalidLabelError(label, dim));
+  }
+}
+
+std::pair<DenseTensorPtr, DenseTensorPtr> sparseBinaryCrossEntropy(
     const DenseTensorPtr& logits, const DenseTensorPtr& labels) {
   CHECK(labels->dtype() == Dtype::u32, "Labels should have dtype u32.");
   CHECK(logits->dtype() == Dtype::f32, "Outputs should have dtype f32.");
@@ -26,28 +38,33 @@ std::pair<DenseTensorPtr, DenseTensorPtr> sparseCrossEntropy(
           "Labels should shape should match logits up to last dimension.");
   }
 
-  auto y = dense(softmax(logits));
+  auto y = dense(sigmoid(logits));
 
-  size_t dim = y->shape().last();
-  size_t n_rows = y->size() / dim;
+  const size_t dim = y->shape().last();
+  const size_t n_rows = y->size() / dim;
 
   const float* y_ptr = y->data<float>();
   const uint32_t* label_ptr = labels->data<uint32_t>();
 
   float loss = 0.0;
+
   for (size_t i = 0; i < n_rows; i++) {
-    uint32_t label = label_ptr[i];
-    CHECK(label < dim, "Invalid label " + std::to_string(label) +
-                           " in cross_entropy with output dim " +
-                           std::to_string(dim) + ".");
-    loss -= std::log(y_ptr[i * dim + label]);
+    const float* activations = y_ptr + i * dim;
+    for (size_t j = 0; j < dim; j++) {
+      loss -= std::log(1 - activations[j]);
+    }
+
+    const uint32_t label = label_ptr[i];
+    checkLabel(label, dim);
+
+    loss -= (std::log(activations[label]) - std::log(1 - activations[label]));
   }
   loss /= n_rows;
 
   return {scalar(loss), y};
 }
 
-std::pair<DenseTensorPtr, DenseTensorPtr> sparseCrossEntropy(
+std::pair<DenseTensorPtr, DenseTensorPtr> sparseBinaryCrossEntropy(
     const DenseTensorPtr& logits, const CsrTensorPtr& labels) {
   CHECK(labels->dtype() == Dtype::f32, "Labels should have dtype u32.");
   CHECK(logits->dtype() == Dtype::f32, "Outputs should have dtype f32.");
@@ -55,10 +72,10 @@ std::pair<DenseTensorPtr, DenseTensorPtr> sparseCrossEntropy(
   CHECK(logits->shape() == labels->shape(),
         "Labels should shape should match logits shape.");
 
-  auto y = dense(softmax(logits));
+  auto y = dense(sigmoid(logits));
 
-  size_t dim = y->shape().last();
-  size_t n_rows = y->size() / dim;
+  const size_t dim = y->shape().last();
+  const size_t n_rows = y->size() / dim;
 
   const float* y_ptr = y->data<float>();
   const uint32_t* label_offsets = labels->rowOffsets()->data<uint32_t>();
@@ -67,13 +84,23 @@ std::pair<DenseTensorPtr, DenseTensorPtr> sparseCrossEntropy(
 
   float loss = 0.0;
   for (size_t i = 0; i < n_rows; i++) {
-    size_t start = label_offsets[i], end = label_offsets[i + 1];
+    const float* activations = y_ptr + i * dim;
+    for (size_t j = 0; j < dim; j++) {
+      loss -= std::log(1 - activations[j]);
+    }
+
+    const size_t start = label_offsets[i], end = label_offsets[i + 1];
     for (size_t j = start; j < end; j++) {
-      uint32_t label = label_indices[j];
-      CHECK(label < dim, "Invalid label " + std::to_string(label) +
-                             " in cross_entropy with output dim " +
-                             std::to_string(dim) + ".");
-      loss -= label_values[j] * std::log(y_ptr[i * dim + label]);
+      const uint32_t label = label_indices[j];
+      checkLabel(label, dim);
+
+      const float label_act = activations[label];
+      const float label_val = label_values[j];
+
+      loss += std::log(1 - label_act);
+
+      loss -= label_val * std::log(label_act) +
+              (1 - label_val) * std::log(1 - label_act);
     }
   }
   loss /= n_rows;
@@ -81,7 +108,7 @@ std::pair<DenseTensorPtr, DenseTensorPtr> sparseCrossEntropy(
   return {scalar(loss), y};
 }
 
-std::pair<DenseTensorPtr, CsrTensorPtr> sparseCrossEntropy(
+std::pair<DenseTensorPtr, CsrTensorPtr> sparseBinaryCrossEntropy(
     const CsrTensorPtr& logits, const DenseTensorPtr& labels) {
   CHECK(labels->dtype() == Dtype::u32, "Labels should have dtype u32.");
   CHECK(logits->dtype() == Dtype::f32, "Outputs should have dtype f32.");
@@ -96,10 +123,10 @@ std::pair<DenseTensorPtr, CsrTensorPtr> sparseCrossEntropy(
           "Labels should shape should match logits up to last dimension.");
   }
 
-  auto y = csr(softmax(logits));
+  auto y = csr(sigmoid(logits));
 
-  size_t dim = y->nDenseCols();
-  size_t n_rows = y->nRows();
+  const size_t dim = y->nDenseCols();
+  const size_t n_rows = y->nRows();
 
   const uint32_t* y_offsets = y->rowOffsets()->data<uint32_t>();
   const uint32_t* y_indices = y->colIndices()->data<uint32_t>();
@@ -108,16 +135,17 @@ std::pair<DenseTensorPtr, CsrTensorPtr> sparseCrossEntropy(
 
   float loss = 0.0;
   for (size_t i = 0; i < n_rows; i++) {
-    uint32_t label = label_ptr[i];
-    CHECK(label < dim, "Invalid label " + std::to_string(label) +
-                           " in cross_entropy with output dim " +
-                           std::to_string(dim) + ".");
+    const uint32_t label = label_ptr[i];
+    checkLabel(label, dim);
+
     bool found = false;
-    size_t start = y_offsets[i], end = y_offsets[i + 1];
+    const size_t start = y_offsets[i], end = y_offsets[i + 1];
     for (size_t j = start; j < end; j++) {
       if (y_indices[j] == label) {
         loss -= std::log(y_values[j]);
         found = true;
+      } else {
+        loss -= std::log(1 - y_values[j]);
       }
     }
     if (!found) {
@@ -129,7 +157,7 @@ std::pair<DenseTensorPtr, CsrTensorPtr> sparseCrossEntropy(
   return {scalar(loss), y};
 }
 
-std::pair<DenseTensorPtr, CsrTensorPtr> sparseCrossEntropy(
+std::pair<DenseTensorPtr, CsrTensorPtr> sparseBinaryCrossEntropy(
     const CsrTensorPtr& logits, const CsrTensorPtr& labels) {
   CHECK(labels->dtype() == Dtype::f32, "Labels should have dtype u32.");
   CHECK(logits->dtype() == Dtype::f32, "Outputs should have dtype f32.");
@@ -137,10 +165,10 @@ std::pair<DenseTensorPtr, CsrTensorPtr> sparseCrossEntropy(
   CHECK(logits->shape() == labels->shape(),
         "Labels should shape should match logits shape.");
 
-  auto y = csr(softmax(logits));
+  auto y = csr(sigmoid(logits));
 
-  size_t dim = y->nDenseCols();
-  size_t n_rows = y->nRows();
+  const size_t dim = y->nDenseCols();
+  const size_t n_rows = y->nRows();
 
   const uint32_t* y_offsets = y->rowOffsets()->data<uint32_t>();
   const uint32_t* y_indices = y->colIndices()->data<uint32_t>();
@@ -151,20 +179,31 @@ std::pair<DenseTensorPtr, CsrTensorPtr> sparseCrossEntropy(
 
   float loss = 0.0;
   for (size_t i = 0; i < n_rows; i++) {
-    size_t label_start = label_offsets[i], label_end = label_offsets[i + 1];
-    size_t y_start = y_offsets[i], y_end = y_offsets[i + 1];
-    for (size_t j = label_start; j < label_end; j++) {
-      uint32_t label = label_indices[j];
-      CHECK(label < dim, "Invalid label " + std::to_string(label) +
-                             " in cross_entropy with output dim " +
-                             std::to_string(dim) + ".");
+    const size_t label_start = label_offsets[i],
+                 label_end = label_offsets[i + 1];
+    const size_t y_start = y_offsets[i], y_end = y_offsets[i + 1];
 
+    for (size_t j = y_start; j < y_end; j++) {
+      loss -= std::log(1 - y_values[j]);
+    }
+
+    for (size_t j = label_start; j < label_end; j++) {
+      const uint32_t label = label_indices[j];
+      checkLabel(label, dim);
       const uint32_t* loc =
           std::find(y_indices + y_start, y_indices + y_end, label);
+
+      const float label_val = label_values[j];
+
       if (loc != y_indices + y_end) {
-        loss -= label_values[j] * std::log(y_values[loc - y_indices]);
+        const float label_act = y_values[loc - y_indices];
+        loss += std::log(1 - label_act);
+
+        loss -= label_val * std::log(label_act) +
+                (1 - label_val) * std::log(1 - label_act);
       } else {
-        loss -= label_values[j] * std::log(1e-7);
+        loss -=
+            label_val * std::log(1e-7) + (1 - label_val) * std::log(1 - 1e-7);
       }
     }
   }
@@ -173,12 +212,12 @@ std::pair<DenseTensorPtr, CsrTensorPtr> sparseCrossEntropy(
   return {scalar(loss), y};
 }
 
-DenseTensorPtr sparseCrossEntropyGrad(const DenseTensorPtr& y,
-                                      const DenseTensorPtr& labels) {
+DenseTensorPtr sparseBinaryCrossEntropyGrad(const DenseTensorPtr& y,
+                                            const DenseTensorPtr& labels) {
   auto logits_grad = DenseTensor::make(y->shape(), y->dtype());
 
-  size_t dim = y->shape().last();
-  size_t n_rows = y->size() / dim;
+  const size_t dim = y->shape().last();
+  const size_t n_rows = y->size() / dim;
 
   const float* y_ptr = y->data<float>();
   const uint32_t* label_ptr = labels->data<uint32_t>();
@@ -201,20 +240,18 @@ DenseTensorPtr sparseCrossEntropyGrad(const DenseTensorPtr& y,
   }
 
   if (invalid_label) {
-    throw std::invalid_argument(
-        "Invalid label " + std::to_string(*invalid_label) +
-        " in cross_entropy with output dim " + std::to_string(dim) + ".");
+    throw std::invalid_argument(invalidLabelError(*invalid_label, dim));
   }
 
   return logits_grad;
 }
 
-DenseTensorPtr sparseCrossEntropyGrad(const DenseTensorPtr& y,
-                                      const CsrTensorPtr& labels) {
+DenseTensorPtr sparseBinaryCrossEntropyGrad(const DenseTensorPtr& y,
+                                            const CsrTensorPtr& labels) {
   auto logits_grad = DenseTensor::make(y->shape(), y->dtype());
 
-  size_t dim = y->shape().last();
-  size_t n_rows = y->size() / dim;
+  const size_t dim = y->shape().last();
+  const size_t n_rows = y->size() / dim;
 
   const float* y_ptr = y->data<float>();
   const uint32_t* label_offsets = labels->rowOffsets()->data<uint32_t>();
@@ -227,17 +264,14 @@ DenseTensorPtr sparseCrossEntropyGrad(const DenseTensorPtr& y,
     shared(n_rows, dim, label_offsets, label_indices, label_values, y_ptr, \
            logits_grad_ptr, invalid_label)
   for (size_t i = 0; i < n_rows; i++) {
-    size_t start = label_offsets[i], end = label_offsets[i + 1];
-
-    float total_label = std::reduce(label_values + start, label_values + end,
-                                    0.0, std::plus<>());
+    const size_t start = label_offsets[i], end = label_offsets[i + 1];
 
     for (size_t j = 0; j < dim; j++) {
-      logits_grad_ptr[i * dim + j] = -total_label * y_ptr[i * dim + j] / n_rows;
+      logits_grad_ptr[i * dim + j] = -y_ptr[i * dim + j] / n_rows;
     }
 
     for (size_t j = start; j < end; j++) {
-      uint32_t label = label_indices[j];
+      const uint32_t label = label_indices[j];
       if (label >= dim) {
 #pragma omp critical
         invalid_label = label;
@@ -248,18 +282,16 @@ DenseTensorPtr sparseCrossEntropyGrad(const DenseTensorPtr& y,
   }
 
   if (invalid_label) {
-    throw std::invalid_argument(
-        "Invalid label " + std::to_string(*invalid_label) +
-        " in cross_entropy with output dim " + std::to_string(dim) + ".");
+    throw std::invalid_argument(invalidLabelError(*invalid_label, dim));
   }
 
   return logits_grad;
 }
 
-CsrTensorPtr sparseCrossEntropyGrad(const CsrTensorPtr& y,
-                                    const DenseTensorPtr& labels) {
-  size_t dim = y->nDenseCols();
-  size_t n_rows = y->nRows();
+CsrTensorPtr sparseBinaryCrossEntropyGrad(const CsrTensorPtr& y,
+                                          const DenseTensorPtr& labels) {
+  const size_t dim = y->nDenseCols();
+  const size_t n_rows = y->nRows();
 
   const uint32_t* y_offsets = y->rowOffsets()->data<uint32_t>();
   const uint32_t* y_indices = y->colIndices()->data<uint32_t>();
@@ -274,32 +306,30 @@ CsrTensorPtr sparseCrossEntropyGrad(const CsrTensorPtr& y,
     shared(n_rows, dim, label_ptr, y_offsets, y_indices, y_values, \
            logits_grad_ptr, invalid_label)
   for (size_t i = 0; i < n_rows; i++) {
-    uint32_t label = label_ptr[i];
+    const uint32_t label = label_ptr[i];
     if (label >= dim) {
 #pragma omp critical
       invalid_label = label;
       continue;
     }
-    size_t start = y_offsets[i], end = y_offsets[i + 1];
+    const size_t start = y_offsets[i], end = y_offsets[i + 1];
     for (size_t j = start; j < end; j++) {
       logits_grad_ptr[j] = ((label == y_indices[j]) - y_values[j]) / n_rows;
     }
   }
 
   if (invalid_label) {
-    throw std::invalid_argument(
-        "Invalid label " + std::to_string(*invalid_label) +
-        " in cross_entropy with output dim " + std::to_string(dim) + ".");
+    throw std::invalid_argument(invalidLabelError(*invalid_label, dim));
   }
 
   return CsrTensor::make(y->rowOffsets(), y->colIndices(), logits_grad,
                          y->shape());
 }
 
-CsrTensorPtr sparseCrossEntropyGrad(const CsrTensorPtr& y,
-                                    const CsrTensorPtr& labels) {
-  size_t dim = y->nDenseCols();
-  size_t n_rows = y->nRows();
+CsrTensorPtr sparseBinaryCrossEntropyGrad(const CsrTensorPtr& y,
+                                          const CsrTensorPtr& labels) {
+  const size_t dim = y->nDenseCols();
+  const size_t n_rows = y->nRows();
 
   const uint32_t* y_offsets = y->rowOffsets()->data<uint32_t>();
   const uint32_t* y_indices = y->colIndices()->data<uint32_t>();
@@ -317,12 +347,9 @@ CsrTensorPtr sparseCrossEntropyGrad(const CsrTensorPtr& y,
     shared(n_rows, dim, label_offsets, label_indices, label_values, y_offsets, \
            y_indices, y_values, logits_grad_ptr, invalid_label)
   for (size_t i = 0; i < n_rows; i++) {
-    size_t y_start = y_offsets[i], y_end = y_offsets[i + 1];
-    size_t label_start = label_offsets[i], label_end = label_offsets[i + 1];
-
-    float total_label =
-        std::reduce(label_values + label_start, label_values + label_end, 0.0,
-                    std::plus<>());
+    const size_t y_start = y_offsets[i], y_end = y_offsets[i + 1];
+    const size_t label_start = label_offsets[i],
+                 label_end = label_offsets[i + 1];
 
     for (size_t j = y_start; j < y_end; j++) {
       const uint32_t* loc = std::find(label_indices + label_start,
@@ -331,45 +358,44 @@ CsrTensorPtr sparseCrossEntropyGrad(const CsrTensorPtr& y,
       float label = loc != label_indices + label_end
                         ? label_values[loc - label_indices]
                         : 0.0;
-      logits_grad_ptr[j] = (label - total_label * y_values[j]) / n_rows;
+      logits_grad_ptr[j] = (label - y_values[j]) / n_rows;
     }
   }
 
   if (invalid_label) {
-    throw std::invalid_argument(
-        "Invalid label " + std::to_string(*invalid_label) +
-        " in cross_entropy with output dim " + std::to_string(dim) + ".");
+    throw std::invalid_argument(invalidLabelError(*invalid_label, dim));
   }
 
   return CsrTensor::make(y->rowOffsets(), y->colIndices(), logits_grad,
                          y->shape());
 }
 
-std::pair<DenseTensorPtr, TensorPtr> sparseCrossEntropy(
+std::pair<DenseTensorPtr, TensorPtr> sparseBinaryCrossEntropy(
     const TensorPtr& logits, const TensorPtr& labels) {
   if (logits->isSparse()) {
     if (labels->isSparse()) {
-      return sparseCrossEntropy(csr(logits), csr(labels));
+      return sparseBinaryCrossEntropy(csr(logits), csr(labels));
     }
-    return sparseCrossEntropy(csr(logits), dense(labels));
+    return sparseBinaryCrossEntropy(csr(logits), dense(labels));
   }
   if (labels->isSparse()) {
-    return sparseCrossEntropy(dense(logits), csr(labels));
+    return sparseBinaryCrossEntropy(dense(logits), csr(labels));
   }
-  return sparseCrossEntropy(dense(logits), dense(labels));
+  return sparseBinaryCrossEntropy(dense(logits), dense(labels));
 }
 
-TensorPtr sparseCrossEntropyGrad(const TensorPtr& y, const TensorPtr& labels) {
+TensorPtr sparseBinaryCrossEntropyGrad(const TensorPtr& y,
+                                       const TensorPtr& labels) {
   if (y->isSparse()) {
     if (labels->isSparse()) {
-      return sparseCrossEntropyGrad(csr(y), csr(labels));
+      return sparseBinaryCrossEntropyGrad(csr(y), csr(labels));
     }
-    return sparseCrossEntropyGrad(csr(y), dense(labels));
+    return sparseBinaryCrossEntropyGrad(csr(y), dense(labels));
   }
   if (labels->isSparse()) {
-    return sparseCrossEntropyGrad(dense(y), csr(labels));
+    return sparseBinaryCrossEntropyGrad(dense(y), csr(labels));
   }
-  return sparseCrossEntropyGrad(dense(y), dense(labels));
+  return sparseBinaryCrossEntropyGrad(dense(y), dense(labels));
 }
 
 }  // namespace thirdai::smx

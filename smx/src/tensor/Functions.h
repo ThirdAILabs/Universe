@@ -74,4 +74,10 @@ std::pair<DenseTensorPtr, TensorPtr> sparseCrossEntropy(
 
 TensorPtr sparseCrossEntropyGrad(const TensorPtr& y, const TensorPtr& labels);
 
+std::pair<DenseTensorPtr, TensorPtr> sparseBinaryCrossEntropy(
+    const TensorPtr& logits, const TensorPtr& labels);
+
+TensorPtr sparseBinaryCrossEntropyGrad(const TensorPtr& y,
+                                       const TensorPtr& labels);
+
 }  // namespace thirdai::smx

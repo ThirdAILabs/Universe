@@ -1,5 +1,5 @@
-from thirdai import smx
 import pytest
+from thirdai import smx
 
 pytestmark = [pytest.mark.unit]
 

@@ -328,7 +328,8 @@ set(THIRDAI_SOURCES
     smx/src/tensor/functions/sparse/SparseLinear.cc
     smx/src/tensor/functions/sparse/NeuronIndex.cc
     smx/src/tensor/functions/NN.cc
-    smx/src/tensor/functions/Loss.cc
+    smx/src/tensor/functions/CategoricalCrossEntropy.cc
+    smx/src/tensor/functions/BinaryCrossEntropy.cc
     smx/src/tensor/Init.cc
     smx/src/autograd/Variable.cc
     smx/src/autograd/functions/Activations.cc
