@@ -19,19 +19,18 @@ void checkQuery(const InvertedIndex& index, const Tokens& query,
 TEST(InvertedIndexTests, BasicRetrieval) {
   InvertedIndex index(1.0);
 
-  index.index({
-      {1, {"a", "b", "c", "d", "e", "g"}},
-      {2, {"a", "b", "c", "d"}},
-      {3, {"1", "2", "3"}},
-      {4, {"x", "y", "z"}},
-      {5, {"2", "3"}},
-      {6, {"c", "f"}},
-      {7, {"f", "g", "d", "g"}},
-      {8, {"c", "d", "e", "f"}},
-      {9, {"t", "q", "v"}},
-      {10, {"m", "n", "o"}},
-      {11, {"f", "g", "h", "i"}},
-  });
+  index.index({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
+              {{"a", "b", "c", "d", "e", "g"},
+               {"a", "b", "c", "d"},
+               {"1", "2", "3"},
+               {"x", "y", "z"},
+               {"2", "3"},
+               {"c", "f"},
+               {"f", "g", "d", "g"},
+               {"c", "d", "e", "f"},
+               {"t", "q", "v"},
+               {"m", "n", "o"},
+               {"f", "g", "h", "i"}});
 
   // Docs 2 and 1 both contain the whole query, but doc 2 is shorter so it ranks
   // higher. Docs 6 and 8 both contain "c" but 6 is shorter so the query terms
@@ -48,15 +47,16 @@ TEST(InvertedIndexTests, BasicRetrieval) {
 TEST(InvertedIndexTests, LessFrequentTokensScoreHigher) {
   InvertedIndex index(1.0);
 
-  index.index({
-      {1, {"a", "b", "c", "d"}},  // 2 query tokens
-      {2, {"a", "c", "f", "d"}},  // 1 query token
-      {3, {"b", "f", "g", "k"}},  // 1 query token
-      {4, {"a", "d", "f", "h"}},  // 2 query tokens
-      {5, {"b", "e", "g", "e"}},  // 1 query token
-      {6, {"h", "j", "f", "e"}},  // 2 query tokens
-      {7, {"w", "k", "z", "m"}},  // 0 query token
-  });
+  index.index({1, 2, 3, 4, 5, 6, 7},
+              {
+                  {"a", "b", "c", "d"},  // 2 query tokens
+                  {"a", "c", "f", "d"},  // 1 query token
+                  {"b", "f", "g", "k"},  // 1 query token
+                  {"a", "d", "f", "h"},  // 2 query tokens
+                  {"b", "e", "g", "e"},  // 1 query token
+                  {"h", "j", "f", "e"},  // 2 query tokens
+                  {"w", "k", "z", "m"},  // 0 query token
+              });
 
   // "a" and "b" occur 4 times, "h" occurs twice, and "j" occurs once.
   // No doc contains more than 2 tokens of the query. Since doc 6 contains "h"
@@ -69,13 +69,11 @@ TEST(InvertedIndexTests, LessFrequentTokensScoreHigher) {
 TEST(InvertedIndexTests, RepeatedTokensInDocs) {
   InvertedIndex index(1.0);
 
-  index.index({
-      {1, {"c", "a", "z", "a"}},
-      {2, {"y", "r", "q", "z"}},
-      {3, {"e", "c", "c", "m"}},
-      {4, {"l", "b", "f", "h"}},
-      {5, {"a", "b", "q", "d"}},
-  });
+  index.index({1, 2, 3, 4, 5}, {{"c", "a", "z", "a"},
+                                {"y", "r", "q", "z"},
+                                {"e", "c", "c", "m"},
+                                {"l", "b", "f", "h"},
+                                {"a", "b", "q", "d"}});
 
   // All of the tokens in the query occur in 2 docs. Doc 1 contains 2 tokens
   // from the query but one occurs twice. Doc 5 contains 2 unique tokens from
@@ -90,13 +88,11 @@ TEST(InvertedIndexTests, RepeatedTokensInDocs) {
 TEST(InvertedIndexTests, RepeatedTokensInQuery) {
   InvertedIndex index(1.0);
 
-  index.index({
-      {1, {"y", "r", "q", "z"}},
-      {2, {"c", "a", "z", "m"}},
-      {3, {"e", "c", "c", "m"}},
-      {4, {"a", "b", "q", "d"}},
-      {5, {"l", "b", "f", "h"}},
-  });
+  index.index({1, 2, 3, 4, 5}, {{"y", "r", "q", "z"},
+                                {"c", "a", "z", "m"},
+                                {"e", "c", "c", "m"},
+                                {"a", "b", "q", "d"},
+                                {"l", "b", "f", "h"}});
 
   // All of the tokens in the query occur in 2 docs. Doc 4 has tokens "a" and
   // "q" from the query, doc 2 has tokens "a", "m" from the query. Doc 4 scores
@@ -107,20 +103,37 @@ TEST(InvertedIndexTests, RepeatedTokensInQuery) {
 TEST(InvertedIndexTests, ShorterDocsScoreHigherWithSameTokens) {
   InvertedIndex index(1.0);
 
-  index.index({
-      {1, {"x", "w", "z", "k"}},
-      {2, {"e", "c", "a"}},
-      {3, {"a", "b", "c", "d"}},
-      {4, {"l", "b", "f", "h"}},
-      {5, {"y", "r", "s"}},
-  });
+  index.index({1, 2, 3, 4, 5}, {{"x", "w", "z", "k"},
+                                {"e", "c", "a"},
+                                {"a", "b", "c", "d"},
+                                {"l", "b", "f", "h"},
+                                {"y", "r", "s"}});
 
   // Both docs 2 and 3 contain 2 query tokens, but they form a higher fraction
   // within 2 than 3.
   checkQuery(index, {"c", "a", "q"}, {2, 3});
 }
 
-std::pair<std::vector<std::pair<DocId, Tokens>>, std::vector<Tokens>>
+TEST(InvertedIndexTests, DocRemoval) {
+  InvertedIndex index(1.0);
+
+  index.index({1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, {{"a", "b", "c", "d", "e"},
+                                                {"a", "b", "c", "d"},
+                                                {"a", "b", "c"},
+                                                {"a", "b"},
+                                                {"a"},
+                                                {},
+                                                {},
+                                                {},
+                                                {},
+                                                {}});
+
+  checkQuery(index, {"a", "b", "c", "d", "e"}, {1, 2, 3, 4, 5});
+  index.remove({2, 4});
+  checkQuery(index, {"a", "b", "c", "d", "e"}, {1, 3, 5});
+}
+
+std::tuple<std::vector<DocId>, std::vector<Tokens>, std::vector<Tokens>>
 makeDocsAndQueries(size_t vocab_size, size_t n_docs) {
   std::uniform_int_distribution<> doc_length_dist(20, 70);
   std::uniform_int_distribution<> query_length_dist(5, 15);
@@ -132,14 +145,16 @@ makeDocsAndQueries(size_t vocab_size, size_t n_docs) {
 
   std::mt19937 rng(8248);
 
-  std::vector<std::pair<DocId, Tokens>> docs;
+  std::vector<DocId> ids;
+  std::vector<Tokens> docs;
   std::vector<Tokens> queries;
   for (size_t i = 0; i < n_docs; i++) {
     Tokens doc_tokens;
     std::sample(vocab.begin(), vocab.end(), std::back_inserter(doc_tokens),
                 doc_length_dist(rng), rng);
 
-    docs.emplace_back(i, doc_tokens);
+    ids.push_back(i);
+    docs.push_back(doc_tokens);
 
     Tokens query;
     std::sample(doc_tokens.begin(), doc_tokens.end(), std::back_inserter(query),
@@ -147,17 +162,17 @@ makeDocsAndQueries(size_t vocab_size, size_t n_docs) {
     queries.push_back(query);
   }
 
-  return {docs, queries};
+  return {ids, docs, queries};
 }
 
 TEST(InvertedIndexTests, SyntheticDataset) {
   size_t vocab_size = 10000;
   size_t n_docs = 1000;
 
-  auto [docs, queries] = makeDocsAndQueries(vocab_size, n_docs);
+  auto [ids, docs, queries] = makeDocsAndQueries(vocab_size, n_docs);
 
   InvertedIndex index;
-  index.index(docs);
+  index.index(ids, docs);
 
   auto results = index.queryBatch(queries, /*k=*/5);
 
@@ -173,13 +188,46 @@ TEST(InvertedIndexTests, SyntheticDataset) {
   size_t n_chunks = 10;
   size_t chunksize = n_docs / n_chunks;
   for (int i = 0; i < n_chunks; i++) {
-    incremental_index.index(
-        {docs.begin() + i * chunksize, docs.begin() + (i + 1) * chunksize});
+    size_t start = i * chunksize;
+    size_t end = start + chunksize;
+    incremental_index.index({ids.begin() + start, ids.begin() + end},
+                            {docs.begin() + start, docs.begin() + end});
   }
 
   auto incremental_results = incremental_index.queryBatch(queries, /*k=*/5);
 
   ASSERT_EQ(results, incremental_results);
+}
+
+TEST(InvertedIndexTests, SaveLoad) {
+  size_t vocab_size = 1000;
+  size_t n_docs = 100;
+
+  auto [ids, docs, queries] = makeDocsAndQueries(vocab_size, n_docs);
+
+  InvertedIndex index;
+  index.index({ids.begin(), ids.begin() + n_docs / 2},
+              {docs.begin(), docs.begin() + n_docs / 2});
+  auto original_partial_results = index.queryBatch(queries, /*k=*/5);
+
+  std::string save_path = "./test_partial_index";
+  index.save(save_path);
+
+  index.index({ids.begin() + n_docs / 2, ids.end()},
+              {docs.begin() + n_docs / 2, docs.end()});
+  auto original_full_results = index.queryBatch(queries, /*k=*/5);
+
+  auto loaded_index = InvertedIndex::load(save_path);
+
+  auto loaded_partial_results = loaded_index->queryBatch(queries, /*k=*/5);
+
+  ASSERT_EQ(original_partial_results, loaded_partial_results);
+
+  loaded_index->index({ids.begin() + n_docs / 2, ids.end()},
+                      {docs.begin() + n_docs / 2, docs.end()});
+  auto loaded_full_results = loaded_index->queryBatch(queries, /*k=*/5);
+
+  ASSERT_EQ(original_full_results, loaded_full_results);
 }
 
 }  // namespace thirdai::search::tests

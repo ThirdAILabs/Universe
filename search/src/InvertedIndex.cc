@@ -1,7 +1,15 @@
 #include "InvertedIndex.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/utility.hpp>
+#include <cereal/types/vector.hpp>
+#include <dataset/src/utils/SafeFileIO.h>
+#include <utils/text/PorterStemmer.h>
 #include <algorithm>
 #include <cmath>
 #include <exception>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -9,22 +17,30 @@
 
 namespace thirdai::search {
 
-void InvertedIndex::index(
-    const std::vector<std::pair<DocId, Tokens>>& documents) {
-  std::vector<std::tuple<DocId, size_t, std::unordered_map<Token, uint32_t>>>
-      document_freqs(documents.size());
+void InvertedIndex::index(const std::vector<DocId>& ids,
+                          const std::vector<Tokens>& docs) {
+  if (ids.size() != docs.size()) {
+    throw std::invalid_argument(
+        "Number of ids must match the number of docs in index.");
+  }
+  std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>> doc_freqs(
+      docs.size());
 
-#pragma omp parallel for default(none) shared(documents, document_freqs)
-  for (size_t i = 0; i < documents.size(); i++) {
-    const auto& tokens = documents[i].second;
+#pragma omp parallel for default(none) shared(docs, doc_freqs)
+  for (size_t i = 0; i < docs.size(); i++) {
+    const auto& tokens = docs[i];
     std::unordered_map<Token, uint32_t> freqs;
     for (const auto& token : preprocessText(tokens)) {
       freqs[token]++;
     }
-    document_freqs[i] = {documents[i].first, tokens.size(), std::move(freqs)};
+    doc_freqs[i] = {tokens.size(), std::move(freqs)};
   }
 
-  for (const auto& [doc_id, doc_len, freqs] : document_freqs) {
+  for (size_t i = 0; i < docs.size(); i++) {
+    const DocId doc_id = ids[i];
+    const size_t doc_len = doc_freqs[i].first;
+    const auto& freqs = doc_freqs[i].second;
+
     if (_doc_lengths.count(doc_id)) {
       throw std::runtime_error("Document with id " + std::to_string(doc_id) +
                                " is already in InvertedIndex.");
@@ -37,6 +53,10 @@ void InvertedIndex::index(
     _sum_doc_lens += doc_len;
   }
 
+  recomputeMetadata();
+}
+
+void InvertedIndex::recomputeMetadata() {
   computeIdfs();
   _avg_doc_length = static_cast<float>(_sum_doc_lens) / _doc_lengths.size();
 }
@@ -130,6 +150,59 @@ std::vector<DocScore> InvertedIndex::query(const Tokens& query,
   std::sort_heap(top_scores.begin(), top_scores.end(), cmp);
 
   return top_scores;
+}
+
+void InvertedIndex::remove(const std::vector<DocId>& ids) {
+  for (DocId id : ids) {
+    if (!_doc_lengths.count(id)) {
+      throw std::runtime_error("Cannot remove element with id " +
+                               std::to_string(id) +
+                               ". No such element exists.");
+    }
+
+    _sum_doc_lens -= _doc_lengths.at(id);
+    _doc_lengths.erase(id);
+
+    for (auto& [token, docs] : _token_to_docs) {
+      docs.erase(
+          std::remove_if(docs.begin(), docs.end(),
+                         [id](const auto& item) { return item.first == id; }),
+          docs.end());
+    }
+  }
+
+  recomputeMetadata();
+}
+
+void InvertedIndex::save(const std::string& filename) const {
+  auto ostream = dataset::SafeFileIO::ofstream(filename);
+  save_stream(ostream);
+}
+
+void InvertedIndex::save_stream(std::ostream& ostream) const {
+  cereal::BinaryOutputArchive oarchive(ostream);
+  oarchive(*this);
+}
+
+std::shared_ptr<InvertedIndex> InvertedIndex::load(
+    const std::string& filename) {
+  auto istream = dataset::SafeFileIO::ifstream(filename);
+  return load_stream(istream);
+}
+
+std::shared_ptr<InvertedIndex> InvertedIndex::load_stream(
+    std::istream& istream) {
+  cereal::BinaryInputArchive iarchive(istream);
+  auto index = std::make_shared<InvertedIndex>();
+  iarchive(*index);
+
+  return index;
+}
+
+template <class Archive>
+void InvertedIndex::serialize(Archive& archive) {
+  archive(_token_to_docs, _token_to_idf, _doc_lengths, _idf_cutoff_frac,
+          _sum_doc_lens, _avg_doc_length, _k1, _b, _stem, _lowercase);
 }
 
 }  // namespace thirdai::search
