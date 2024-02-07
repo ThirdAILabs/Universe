@@ -97,7 +97,7 @@ class SparseLinear final : public Module {
 
   VariablePtr forward(const VariablePtr& x,
                       const VariablePtr& labels = nullptr) {
-    if (_sparsity < 1.0) {
+    if (_sparsity < 1.0 && training()) {
       return linear(x, _weight, _bias, _sparsity, _neuron_index, labels);
     }
     return linear(x, _weight, _bias);

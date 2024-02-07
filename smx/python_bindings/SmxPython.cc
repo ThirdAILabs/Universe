@@ -221,7 +221,9 @@ void defineModules(py::module_& smx) {
       .def("register_parameter", &Module::registerParameter, py::arg("name"),
            py::arg("parameter"))
       .def("register_module", &Module::registerModule, py::arg("name"),
-           py::arg("module"));
+           py::arg("module"))
+      .def("train", &Module::train)
+      .def("eval", &Module::eval);
 
   py::class_<UnaryModule, std::shared_ptr<UnaryModule>, Module>(smx,
                                                                 "UnaryModule")

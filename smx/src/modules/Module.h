@@ -31,6 +31,12 @@ class Module {
   void registerModule(const std::string& name,
                       const std::shared_ptr<Module>& module);
 
+  void train() { _training = true; }
+
+  void eval() { _training = false; }
+
+  inline bool training() const { return _training; }
+
   virtual ~Module() = default;
 
  private:
@@ -38,6 +44,8 @@ class Module {
 
   std::unordered_map<std::string, VariablePtr> _parameters;
   std::unordered_map<std::string, std::shared_ptr<Module>> _modules;
+
+  bool _training;
 };
 
 class UnaryModule : public Module {
