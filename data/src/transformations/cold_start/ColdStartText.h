@@ -28,7 +28,7 @@ struct ColdStartConfig {
       uint32_t weak_sample_reps = 1,
       std::optional<uint32_t> strong_max_len = std::nullopt,
       std::optional<uint32_t> strong_sample_num_words = std::nullopt,
-      uint32_t strong_to_weak_ratio = 1)
+      std::optional<uint32_t> strong_to_weak_ratio = std::nullopt)
       : weak_min_len(weak_min_len),
         weak_max_len(weak_max_len),
         weak_chunk_len(weak_chunk_len),
@@ -45,7 +45,7 @@ struct ColdStartConfig {
                            /* weak_sample_reps= */ 1,
                            /* strong_max_len= */ std::nullopt,
                            /* strong_sample_num_words= */ 3,
-                           /* strong_to_weak_ratio= */ 1);
+                           /* strong_to_weak_ratio= */ std::nullopt);
   }
 
   std::optional<uint32_t> weak_min_len;
@@ -55,7 +55,7 @@ struct ColdStartConfig {
   uint32_t weak_sample_reps;
   std::optional<uint32_t> strong_max_len;
   std::optional<uint32_t> strong_sample_num_words;
-  uint32_t strong_to_weak_ratio;
+  std::optional<uint32_t> strong_to_weak_ratio;
 };
 
 /**
@@ -129,9 +129,9 @@ class ColdStartTextAugmentation final
          phrases shorter than strong_sample_num_words, we include all words and
          do not sub-sample.
      strong_to_weak_ratio: The ratio of strong phrases to weak phrases while
-     augmenting a single row. Instead of concatenating strong with weak phrases
-     earlier, we now segregate strong phrases from weak phrases and the no.
-     of strong phrases will be ( strong_to_weak_ratio x no. of weak phrases )
+     augmenting a single row. This segregate strong phrases from weak phrases
+  and the no. of strong phrases will be ( strong_to_weak_ratio x no. of weak
+  phrases )
 
      seed: Seed for the random number generator.
 
@@ -168,7 +168,7 @@ class ColdStartTextAugmentation final
   uint32_t _weak_sample_reps;
   std::optional<uint32_t> _strong_max_len;
   std::optional<uint32_t> _strong_sample_num_words;
-  uint32_t _strong_to_weak_ratio;
+  std::optional<uint32_t> _strong_to_weak_ratio;
 
   /**
    * Returns a single phrase that takes in the concatenated string of strong

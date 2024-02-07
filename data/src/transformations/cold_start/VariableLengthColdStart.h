@@ -21,7 +21,8 @@ struct VariableLengthConfig {
       std::optional<size_t> slice_max_length = std::nullopt,
       uint32_t num_slices = 7, bool add_whole_doc = true,
       bool prefilter_punctuation = true, uint32_t strong_sample_num_words = 3,
-      uint32_t strong_to_weak_ratio = 1, float stopword_removal_probability = 0,
+      std::optional<uint32_t> strong_to_weak_ratio = std::nullopt,
+      float stopword_removal_probability = 0,
       float stopword_insertion_probability = 0,
       float word_removal_probability = 0,
       float word_perturbation_probability = 0,
@@ -37,7 +38,7 @@ struct VariableLengthConfig {
   bool add_whole_doc;
   bool prefilter_punctuation;
   uint32_t strong_sample_num_words;
-  uint32_t strong_to_weak_ratio;
+  std::optional<uint32_t> strong_to_weak_ratio;
   float stopword_removal_probability;
   float stopword_insertion_probability;
   float word_removal_probability;

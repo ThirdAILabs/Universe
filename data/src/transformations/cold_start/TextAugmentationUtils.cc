@@ -96,7 +96,7 @@ ColumnMap TextAugmentationBase::apply(ColumnMap columns, State& state) const {
 PhraseCollection mergeStrongWithWeak(
     const PhraseCollection& weak_phrases, const Phrase& strong_phrase,
     std::optional<uint32_t> strong_sample_num_words,
-    uint32_t strong_to_weak_ratio, std::mt19937& rng) {
+    std::optional<uint32_t> strong_to_weak_ratio, std::mt19937& rng) {
   if (weak_phrases.empty()) {
     return {strong_phrase};
   }
@@ -106,26 +106,45 @@ PhraseCollection mergeStrongWithWeak(
   if (strong_sample_num_words) {
     // If we have to sample from the strong phrase, we create N independently
     // sampled sub-strings, where N is the number of weak phrases that we have.
+    uint32_t n_sampled_phrases =
+        strong_to_weak_ratio
+            ? weak_phrases.size() * strong_to_weak_ratio.value()
+            : weak_phrases.size();
     downsampled_strong_phrases = sampleFromPhrases(
         /* phrases= */ {strong_phrase},
         /* words_per_sampled_phrase= */ strong_sample_num_words.value(),
-        /* n_sampled_phrases= */ weak_phrases.size() * strong_to_weak_ratio,
-        rng);
+        /* n_sampled_phrases= */ n_sampled_phrases, rng);
   }
   PhraseCollection output_phrases;
-  output_phrases.reserve(1 + weak_phrases.size() +
-                         downsampled_strong_phrases.size());
 
-  for (const auto& weak_phrase : weak_phrases) {
-    output_phrases.emplace_back(weak_phrase);
+  if (strong_to_weak_ratio) {
+    output_phrases.reserve(1 + weak_phrases.size() +
+                           downsampled_strong_phrases.size());
+
+    for (const auto& weak_phrase : weak_phrases) {
+      output_phrases.emplace_back(weak_phrase);
+    }
+    for (const auto& str_phrase : downsampled_strong_phrases) {
+      output_phrases.emplace_back(str_phrase);
+    }
+
+    output_phrases.emplace_back(strong_phrase);
+  } else {
+    // returns to the older logic of concatenating weak and strong phrases
+    output_phrases.reserve(weak_phrases.size());
+    for (uint32_t i = 0; i < weak_phrases.size(); i++) {
+      Phrase concat_phrase;
+      if (downsampled_strong_phrases.size() > i) {
+        concat_phrase = downsampled_strong_phrases[i];
+      } else {
+        concat_phrase = strong_phrase;
+      }
+      concat_phrase.insert(concat_phrase.end(),
+                           std::make_move_iterator(weak_phrases[i].begin()),
+                           std::make_move_iterator(weak_phrases[i].end()));
+      output_phrases.emplace_back(std::move(concat_phrase));
+    }
   }
-
-  for (const auto& str_phrase : downsampled_strong_phrases) {
-    output_phrases.emplace_back(str_phrase);
-  }
-
-  output_phrases.emplace_back(strong_phrase);
-
   return output_phrases;
 }
 PhraseCollection sampleFromPhrases(const PhraseCollection& phrases,
