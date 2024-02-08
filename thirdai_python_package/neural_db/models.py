@@ -4,9 +4,11 @@ import random
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence, Tuple
 
+import numpy as np
 from thirdai import bolt, data
 
 from .documents import DocumentDataSource
+from .inverted_index import InvertedIndex
 from .mach_defaults import acc_to_stop, metric_to_track
 from .supervised_datasource import SupDataSource
 from .trainer.checkpoint_config import CheckpointConfig
@@ -323,6 +325,44 @@ def make_balancing_samples(documents: DocumentDataSource):
     return samples
 
 
+def normalize_scores(results):
+    if len(results) == 0:
+        return results
+    if len(results) == 1:
+        return [(results[0][0], 1.0)]
+    ids, scores = zip(*results)
+    scores = np.array(scores)
+    scores -= np.min(scores)
+    scores /= np.max(scores)
+    return list(zip(ids, scores))
+
+
+def merge_results(results_a, results_b, k):
+    results_a = normalize_scores(results_a)
+    results_b = normalize_scores(results_b)
+    results = []
+    cache = set()
+
+    min_len = min(len(results_a), len(results_b))
+    for a, b in zip(results_a, results_b):
+        if a[0] not in cache:
+            results.append(a)
+            cache.add(a[0])
+        if b[0] not in cache:
+            results.append(b)
+            cache.add(b[0])
+
+    if len(results) < k:
+        for i in range(min_len, len(results_a)):
+            if results_a[i][0] not in cache:
+                results.append(results_a[i])
+        for i in range(min_len, len(results_b)):
+            if results_b[i][0] not in cache:
+                results.append(results_b[i])
+
+    return results[:k]
+
+
 class Mach(Model):
     def __init__(
         self,
@@ -336,6 +376,7 @@ class Mach(Model):
         tokenizer="char-4",
         hidden_bias=False,
         model_config=None,
+        use_inverted_index=True,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -350,6 +391,7 @@ class Mach(Model):
         self.model = None
         self.balancing_samples = []
         self.model_config = model_config
+        self.inverted_index = InvertedIndex() if use_inverted_index else None
 
     def set_mach_sampling_threshold(self, threshold: float):
         if self.model is None:
@@ -373,6 +415,7 @@ class Mach(Model):
         self.model = new_model.model
         self.balancing_samples = new_model.balancing_samples
         self.model_config = new_model.model_config
+        self.inverted_index = new_model.inverted_index
 
     def save(self, path: Path):
         pickle_to(self, filepath=path)
@@ -439,6 +482,11 @@ class Mach(Model):
                     fast_approximation=fast_approximation,
                     num_buckets_to_sample=num_buckets_to_sample,
                 )
+
+        if self.inverted_index:
+            intro_documents.restart()
+            self.inverted_index.insert(intro_documents)
+
         self.n_ids += intro_documents.size
 
     def index_documents_impl(
@@ -544,6 +592,9 @@ class Mach(Model):
         for entity in entities:
             self.get_model().forget(entity)
 
+        if self.inverted_index:
+            self.inverted_index.forget(entities)
+
     def model_from_scratch(
         self, documents: DocumentDataSource, number_classes: int = None
     ):
@@ -575,6 +626,9 @@ class Mach(Model):
         self.n_ids = 0
         self.balancing_samples = []
 
+        if self.inverted_index:
+            self.inverted_index.clear()
+
     @property
     def searchable(self) -> bool:
         return self.n_ids != 0
@@ -586,8 +640,21 @@ class Mach(Model):
         **kwargs,
     ) -> Predictions:
         infer_batch = self.infer_samples_to_infer_batch(samples)
-        self.model.set_decode_params(min(self.n_ids, n_results), min(self.n_ids, 100))
-        return self.model.predict_batch(infer_batch)
+        if self.inverted_index and not kwargs.get("disable_inverted_index", False):
+            k = min(self.n_ids, n_results)
+            index_results = self.inverted_index.query(queries=samples, k=k)
+            self.model.set_decode_params(k, min(self.n_ids, 100))
+            mach_results = self.model.predict_batch(infer_batch)
+
+            return [
+                merge_results(mach_res, index_res, k)
+                for mach_res, index_res in zip(mach_results, index_results)
+            ]
+        else:
+            self.model.set_decode_params(
+                min(self.n_ids, n_results), min(self.n_ids, 100)
+            )
+            return self.model.predict_batch(infer_batch)
 
     def score(
         self, samples: InferSamples, entities: List[List[int]], n_results: int = None
@@ -670,6 +737,8 @@ class Mach(Model):
         if "model_config" not in state:
             # Add model_config field if an older model is being loaded.
             state["model_config"] = None
+        if "inverted_index" not in state:
+            state["inverted_index"] = None
         self.__dict__.update(state)
 
     def train_on_supervised_data_source(
@@ -691,3 +760,12 @@ class Mach(Model):
             metrics=metrics,
             callbacks=callbacks,
         )
+        # Invalidate inverted index once supervised data is used.
+        self.inverted_index = None
+
+    def build_inverted_index(self, documents):
+        if self.inverted_index:
+            return
+
+        self.inverted_index = InvertedIndex()
+        self.inverted_index.insert(documents)

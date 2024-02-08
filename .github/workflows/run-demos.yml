@@ -19,7 +19,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   run_demo_notebooks:
-    runs-on: self-hosted
+    runs-on: [self-hosted, Linux]
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps

@@ -68,6 +68,9 @@ class UDTMach final : public UDTBackend {
       const MapInputBatch& samples, bool sparse_inference,
       bool return_predicted_class, std::optional<uint32_t> top_k);
 
+  py::object predictActivationsBatch(const MapInputBatch& samples,
+                                     bool sparse_inference) final;
+
   py::object predictHashes(const MapInput& sample, bool sparse_inference,
                            bool force_non_empty,
                            std::optional<uint32_t> num_hashes) final;
@@ -152,11 +155,11 @@ class UDTMach final : public UDTBackend {
       const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
       uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
-      bool force_non_empty) final;
+      bool force_non_empty, size_t batch_size) final;
 
   void upvote(const std::vector<std::pair<std::string, uint32_t>>& rlhf_samples,
               uint32_t n_upvote_samples, uint32_t n_balancing_samples,
-              float learning_rate, uint32_t epochs) final;
+              float learning_rate, uint32_t epochs, size_t batch_size) final;
 
   py::object associateTrain(
       const dataset::DataSourcePtr& balancing_data,
@@ -206,8 +209,8 @@ class UDTMach final : public UDTBackend {
                             bool sort_random_hashes);
 
   void teach(const std::vector<RlhfSample>& rlhf_samples,
-             uint32_t n_balancing_samples, float learning_rate,
-             uint32_t epochs);
+             uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+             size_t batch_size);
 
   std::vector<RlhfSample> getAssociateSamples(
       const std::vector<std::pair<std::string, std::string>>& rlhf_samples,

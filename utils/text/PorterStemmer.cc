@@ -165,7 +165,7 @@ std::string step1a(const std::string& word) {
 
   if (word.size() == 4 && endsWith(word, "ies")) {
     // This is an extra check so that shorter words like 'lies' -> 'lie' but
-    // 'flied' -> 'fli'.
+    // 'flies' -> 'fli'.
     return replaceSuffix(word, "ies", "ie");
   }
 

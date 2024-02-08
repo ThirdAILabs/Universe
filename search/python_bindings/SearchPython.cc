@@ -1,5 +1,6 @@
 #include "BeamSearch.h"
 #include "DocSearchPython.h"
+#include <bolt/python_bindings/PybindUtils.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/stl.h>
 #include <search/src/InvertedIndex.h>
@@ -78,10 +79,14 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("k1") = InvertedIndex::DEFAULT_K1,
            py::arg("b") = InvertedIndex::DEFAULT_B, py::arg("stem") = true,
            py::arg("lowercase") = true)
-      .def("index", &InvertedIndex::index, py::arg("documents"))
+      .def("index", &InvertedIndex::index, py::arg("ids"), py::arg("docs"))
       .def("query", &InvertedIndex::queryBatch, py::arg("queries"),
            py::arg("k"))
-      .def("query", &InvertedIndex::query, py::arg("query"), py::arg("k"));
+      .def("query", &InvertedIndex::query, py::arg("query"), py::arg("k"))
+      .def("remove", &InvertedIndex::remove, py::arg("ids"))
+      .def("save", &InvertedIndex::save, py::arg("filename"))
+      .def_static("load", &InvertedIndex::load, py::arg("filename"))
+      .def(bolt::python::getPickleFunction<InvertedIndex>());
 }
 
 }  // namespace thirdai::search::python
