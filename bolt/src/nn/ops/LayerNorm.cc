@@ -177,12 +177,13 @@ ar::ConstArchivePtr LayerNorm::toArchive(bool with_optimizer) const {
   map->set("beta", ar::ParameterReference::make(_beta, shared_from_this()));
 
   if (with_optimizer) {
-    map->set("gamma_opt",
+    map->set("gamma_optimizer",
              optimizerToArchive(_gamma_optimizer, shared_from_this(),
                                 /*rows=*/1, dim()));
 
-    map->set("beta_opt", optimizerToArchive(_beta_optimizer, shared_from_this(),
-                                            /*rows=*/1, dim()));
+    map->set("beta_optimizer",
+             optimizerToArchive(_beta_optimizer, shared_from_this(),
+                                /*rows=*/1, dim()));
   }
 
   return map;
@@ -196,11 +197,11 @@ LayerNorm::LayerNorm(const ar::Archive& archive)
     : Op(archive.str("name")),
       _gamma(archive.get("gamma")->param().moveLoadedParameter()),
       _beta(archive.get("beta")->param().moveLoadedParameter()) {
-  if (archive.contains("gamma_opt")) {
-    _gamma_optimizer = optimizerFromArchive(*archive.get("gamma_opt"));
+  if (archive.contains("gamma_optimizer")) {
+    _gamma_optimizer = optimizerFromArchive(*archive.get("gamma_optimizer"));
   }
-  if (archive.contains("beta_opt")) {
-    _beta_optimizer = optimizerFromArchive(*archive.get("beta_opt"));
+  if (archive.contains("beta_optimizer")) {
+    _beta_optimizer = optimizerFromArchive(*archive.get("beta_optimizer"));
   }
 }
 

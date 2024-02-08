@@ -1,6 +1,7 @@
 #include "FullyConnectedLayer.h"
 #include <wrappers/src/EigenDenseWrapper.h>
 #include <bolt/src/layers/LayerUtils.h>
+#include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/neuron_index/LshIndex.h>
 #include <hashing/src/DWTA.h>
 #include <Eigen/src/Core/Map.h>
@@ -63,18 +64,25 @@ FullyConnectedLayer::FullyConnectedLayer(const ar::Archive& archive)
       _act_func(bolt::getActivationFunction(archive.str("activation"))),
       _weights(archive.get("weights")->param().moveLoadedParameter()),
       _biases(archive.get("biases")->param().moveLoadedParameter()),
+      _neuron_index(nullptr),
       _index_frozen(archive.boolean("index_frozen")),
       _disable_sparse_parameter_updates(
           archive.boolean("disable_sparse_parameter_updates")),
       _use_bias(archive.boolean("use_bias")) {
-  _neuron_index = neuronIndexFromArchive(*archive.get("neuron_index"), _dim,
-                                         _prev_dim, _sparsity);
-
-  if (archive.contains("weight_opt")) {
-    _weight_optimizer = optimizerFromArchive(*archive.get("weight_opt"));
+  if (archive.contains("neuron_index")) {
+    _neuron_index = NeuronIndex::fromArchive(*archive.get("neuron_index"));
   }
-  if (archive.contains("bias_opt")) {
-    _bias_optimizer = optimizerFromArchive(*archive.get("bias_opt"));
+  if (!_neuron_index && _sparsity < 1.0) {
+    _neuron_index = DWTASamplingConfig::autotune(
+                        _dim, _sparsity, /*experimental_autotune=*/false)
+                        ->getNeuronIndex(_dim, _prev_dim);
+  }
+
+  if (archive.contains("weight_optimizer")) {
+    _weight_optimizer = optimizerFromArchive(*archive.get("weight_optimizer"));
+  }
+  if (archive.contains("bias_optimizer")) {
+    _bias_optimizer = optimizerFromArchive(*archive.get("bias_optimizer"));
   }
 
   initActiveNeuronsTrackers();
@@ -750,45 +758,6 @@ void FullyConnectedLayer::buildSamplingSummary(std::ostream& summary) const {
   if (_neuron_index) {
     _neuron_index->summarize(summary);
   }
-}
-
-ar::ConstArchivePtr neuronIndexToArchive(const NeuronIndexPtr& neuron_index) {
-  if (!neuron_index) {
-    auto map = ar::Map::make();
-    map->set("type", ar::str("none"));
-    return map;
-  }
-  if (auto lsh_index = LshIndex::cast(neuron_index)) {
-    return lsh_index->toArchive();
-  }
-  if (auto random_sampler = RandomSampler::cast(neuron_index)) {
-    return random_sampler->toArchive();
-  }
-
-  auto map = ar::Map::make();
-  map->set("type", ar::str("none"));
-  return map;
-}
-
-NeuronIndexPtr neuronIndexFromArchive(const ar::Archive& archive, size_t dim,
-                                      size_t prev_dim, float sparsity) {
-  std::string type = archive.str("type");
-
-  if (type == LshIndex::type()) {
-    return LshIndex::fromArchive(archive);
-  }
-
-  if (type == RandomSampler::type()) {
-    return RandomSampler::fromArchive(archive);
-  }
-
-  if (sparsity < 1.0) {
-    return DWTASamplingConfig::autotune(dim, sparsity,
-                                        /* experimental_autotune= */ false)
-        ->getNeuronIndex(dim, prev_dim);
-  }
-
-  return nullptr;
 }
 
 }  // namespace thirdai::bolt

@@ -158,18 +158,20 @@ ar::ConstArchivePtr PatchEmbedding::toArchive(bool with_optimizer) const {
   map->set("biases",
            ar::ParameterReference::make(_kernel->_biases, shared_from_this()));
 
-  map->set("neuron_index", neuronIndexToArchive(_kernel->neuronIndex()));
+  if (auto neuron_index = _kernel->neuronIndex()) {
+    map->set("neuron_index", neuron_index->toArchive());
+  }
   map->set("index_frozen", ar::boolean(_kernel->_index_frozen));
   map->set("rebuild_hash_tables", ar::u64(_rebuild_hash_tables));
   map->set("reconstruct_hash_functions", ar::u64(_reconstruct_hash_functions));
 
   if (with_optimizer && _kernel->_weight_optimizer &&
       _kernel->_bias_optimizer) {
-    map->set("weight_opt",
+    map->set("weight_optimizer",
              optimizerToArchive(*_kernel->_weight_optimizer, shared_from_this(),
                                 patchEmbeddingDim(), patchDim()));
 
-    map->set("bias_opt",
+    map->set("bias_optimizer",
              optimizerToArchive(*_kernel->_bias_optimizer, shared_from_this(),
                                 /*rows=*/1, patchEmbeddingDim()));
   }

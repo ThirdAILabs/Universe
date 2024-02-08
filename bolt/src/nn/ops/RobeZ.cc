@@ -127,7 +127,7 @@ ar::ConstArchivePtr RobeZ::toArchive(bool with_optimizer) const {
                              *_kernel->_embedding_block, shared_from_this()));
 
   if (with_optimizer && _kernel->_optimizer) {
-    map->set("embedding_opt",
+    map->set("embedding_optimizer",
              optimizerToArchive(*_kernel->_optimizer, shared_from_this(),
                                 _kernel->_embedding_chunks_used.size(),
                                 _kernel->_update_chunk_size));

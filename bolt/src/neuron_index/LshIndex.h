@@ -39,7 +39,7 @@ class LshIndex final : public NeuronIndex {
 
   void insertLabelsIfNotFound() final { _insert_labels_when_not_found = true; }
 
-  ar::ConstArchivePtr toArchive() const;
+  ar::ConstArchivePtr toArchive() const final;
 
   static std::shared_ptr<LshIndex> fromArchive(const ar::Archive& archive);
 
