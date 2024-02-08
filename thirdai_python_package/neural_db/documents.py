@@ -146,7 +146,7 @@ class Reference:
         source: str,
         metadata: dict,
         upvote_ids: List[int] = None,
-        retriever: str = None
+        retriever: str = None,
     ):
         self._id = element_id
         self._upvote_ids = upvote_ids if upvote_ids is not None else [element_id]
@@ -185,7 +185,7 @@ class Reference:
     @property
     def document(self):
         return self._document
-    
+
     @property
     def retriever(self):
         return self._retriever

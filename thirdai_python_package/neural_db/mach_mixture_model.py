@@ -5,7 +5,7 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt, data
 
 from .documents import DocumentDataSource
-from .models import CancelState, Mach, Model, merge_results, add_retriever_tag
+from .models import CancelState, Mach, Model, add_retriever_tag, merge_results
 from .sharded_documents import shard_data_source
 from .supervised_datasource import SupDataSource
 from .trainer.checkpoint_config import (
