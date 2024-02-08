@@ -136,6 +136,9 @@ class Document:
         obj.load_meta(dirpath / "meta")
         return obj
 
+    def source_id_from_file(self) -> str:
+        raise NotImplementedError()
+
 
 class Reference:
     def __init__(
@@ -724,6 +727,9 @@ class CSV(Document):
         else:
             self.table.load_meta(directory)
 
+    def source_id_from_file(self):
+        return self._hash
+
 
 # Base class for PDF, DOCX and Unstructured classes because they share the same logic.
 class Extracted(Document):
@@ -868,6 +874,9 @@ class Extracted(Document):
             del self.df
         elif hasattr(self, "table"):
             self.table.load_meta(directory)
+
+    def source_id_from_file(self) -> str:
+        return self.hash_val
 
 
 def process_pdf(path: str) -> pd.DataFrame:
@@ -1155,6 +1164,9 @@ class URL(Document):
             del self.df
         elif hasattr(self, "table"):
             self.table.load_meta(directory)
+
+    def source_id_from_file(self) -> str:
+        return self.hash_val
 
 
 class DocumentConnector(Document):
@@ -2361,3 +2373,6 @@ class InMemoryText(Document):
 
     def load_meta(self, directory: Path):
         self.table.load_meta(directory)
+
+    def source_id_from_file(self) -> str:
+        return self.hash_val
