@@ -12,14 +12,11 @@ def test_inverted_index(download_scifact_dataset):
     doc_df = pd.read_csv(doc_file)
 
     doc_df["TEXT"] = doc_df["TITLE"] + " " + doc_df["TEXT"]
-    doc_df.drop("TITLE", inplace=True, axis=1)
     doc_df["TEXT"] = doc_df["TEXT"].map(word_tokenize)
-
-    docs = [(row["DOC_ID"], row["TEXT"]) for _, row in doc_df.iterrows()]
 
     index = search.InvertedIndex()
 
-    index.index(docs)
+    index.index(ids=doc_df["DOC_ID"].to_list(), docs=doc_df["TEXT"].to_list())
 
     query_df = pd.read_csv(query_file)
     query_df["QUERY"] = query_df["QUERY"].map(word_tokenize)

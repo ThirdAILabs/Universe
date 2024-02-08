@@ -5,7 +5,7 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt, data
 
 from .documents import DocumentDataSource
-from .models import CancelState, Mach, Model
+from .models import CancelState, Mach, Model, merge_results
 from .sharded_documents import shard_data_source
 from .supervised_datasource import SupDataSource
 from .trainer.checkpoint_config import (
@@ -271,13 +271,31 @@ class MachMixture(Model):
             batch=[{self.query_col: clean_text(text)} for text in samples],
         )
 
+        inverted_index_results = []
+        if not kwargs.get("disable_inverted_index", False):
+            for model in self.models:
+                if model.inverted_index:
+                    single_index_results = model.inverted_index.query(
+                        samples, k=min(n_results, model.n_ids)
+                    )
+                    inverted_index_results.append(single_index_results)
+
         results = []
         for index in range(len(samples)):
-            sample_results = []
+            mach_results = []
             for y in per_model_results:
-                sample_results.extend(y[index])
-            sample_results.sort(key=lambda x: x[1], reverse=True)
-            results.append(sample_results[:n_results])
+                mach_results.extend(y[index])
+            mach_results.sort(key=lambda x: x[1], reverse=True)
+
+            index_results = []
+            for res in inverted_index_results:
+                index_results.extend(res[index])
+
+            if len(index_results):
+                index_results.sort(key=lambda x: x[1], reverse=True)
+                results.append(merge_results(mach_results, index_results, n_results))
+            else:
+                results.append(mach_results[:n_results])
         return results
 
     def _shard_label_constraints(
@@ -445,3 +463,6 @@ class MachMixture(Model):
                 metrics=metrics,
                 callbacks=callbacks,
             )
+
+    def build_inverted_index(self, documents):
+        raise ValueError("This method is not supported on this type of model.")
