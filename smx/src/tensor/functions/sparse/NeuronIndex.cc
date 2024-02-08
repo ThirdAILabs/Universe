@@ -12,7 +12,8 @@ LshIndex::LshIndex(const hashing::HashFunctionPtr& hash_fn,
       _hash_table(hash_fn->numTables(), reservoir_size, hash_fn->range()),
       _updates_per_rebuild(updates_per_rebuild),
       _updates_per_new_hash_fn(updates_per_new_hash_fn),
-      _rand_neurons(weight->shape(0)) {
+      _rand_neurons(weight->shape(0)),
+      _frozen(false) {
   std::mt19937 rng(global_random::nextSeed());
   std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
   std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rng);
@@ -78,6 +79,10 @@ void LshIndex::query(const float* query, uint32_t* candidates,
 void LshIndex::onUpdate() {
   _updates_since_rebuild++;
   _updates_per_new_hash_fn++;
+
+  if (_frozen) {
+    return;
+  }
 
   if (_updates_since_new_hash_fn == _updates_per_new_hash_fn) {
     _updates_since_new_hash_fn = 0;

@@ -31,21 +31,28 @@ class Module {
   void registerModule(const std::string& name,
                       const std::shared_ptr<Module>& module);
 
-  void train() { _training = true; }
+  void train() { setTraining(true); }
 
-  void eval() { _training = false; }
+  void eval() { setTraining(false); }
 
   inline bool training() const { return _training; }
 
   virtual ~Module() = default;
 
  private:
+  void setTraining(bool value) {
+    _training = value;
+    for (auto& [_, mod] : _modules) {
+      mod->setTraining(value);
+    }
+  }
+
   std::unordered_set<Module*> modules() const;
 
   std::unordered_map<std::string, VariablePtr> _parameters;
   std::unordered_map<std::string, std::shared_ptr<Module>> _modules;
 
-  bool _training;
+  bool _training = true;
 };
 
 class UnaryModule : public Module {

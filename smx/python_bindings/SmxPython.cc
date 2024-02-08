@@ -223,7 +223,8 @@ void defineModules(py::module_& smx) {
       .def("register_module", &Module::registerModule, py::arg("name"),
            py::arg("module"))
       .def("train", &Module::train)
-      .def("eval", &Module::eval);
+      .def("eval", &Module::eval)
+      .def("training", &Module::training);
 
   py::class_<UnaryModule, std::shared_ptr<UnaryModule>, Module>(smx,
                                                                 "UnaryModule")
@@ -256,6 +257,9 @@ void defineModules(py::module_& smx) {
            py::arg("hash_fn"), py::arg("reservoir_size"),
            py::arg("updates_per_rebuild"), py::arg("updates_per_new_hash_fn"));
 
+  py::class_<NeuronIndex, NeuronIndexPtr>(smx, "NeuronIndex")
+      .def("freeze", &NeuronIndex::freeze);
+
   py::class_<SparseLinear, std::shared_ptr<SparseLinear>, Module>(
       smx, "SparseLinear")
       .def(py::init<size_t, size_t, float,
@@ -269,7 +273,8 @@ void defineModules(py::module_& smx) {
       .def_property("weight", &SparseLinear::weight, &SparseLinear::setWeight)
       .def_property("bias", &SparseLinear::bias, &SparseLinear::setBias)
       .def_property("sparsity", &SparseLinear::sparsity,
-                    &SparseLinear::setSparsity);
+                    &SparseLinear::setSparsity)
+      .def_property_readonly("neuron_index", &SparseLinear::neuronIndex);
 
   py::class_<Embedding, std::shared_ptr<Embedding>, UnaryModule>(smx,
                                                                  "Embedding")

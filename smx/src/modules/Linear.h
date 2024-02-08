@@ -142,6 +142,8 @@ class SparseLinear final : public Module {
 
   void setSparsity(float sparsity) { _sparsity = sparsity; }
 
+  const auto& neuronIndex() const { return _neuron_index; }
+
  private:
   VariablePtr _weight;
   VariablePtr _bias;

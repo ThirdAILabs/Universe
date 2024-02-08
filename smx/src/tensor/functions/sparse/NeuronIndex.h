@@ -14,6 +14,8 @@ class NeuronIndex {
                      size_t n_force_select) = 0;
 
   virtual void onUpdate() = 0;
+
+  virtual void freeze() {}
 };
 
 using NeuronIndexPtr = std::shared_ptr<NeuronIndex>;
@@ -44,6 +46,8 @@ class LshIndex final : public NeuronIndex {
 
   void onUpdate() final;
 
+  void freeze() final { _frozen = true; }
+
   void rebuild();
 
  private:
@@ -59,6 +63,8 @@ class LshIndex final : public NeuronIndex {
   size_t _updates_per_new_hash_fn;
 
   std::vector<uint32_t> _rand_neurons;
+
+  bool _frozen = false;
 };
 
 }  // namespace thirdai::smx
