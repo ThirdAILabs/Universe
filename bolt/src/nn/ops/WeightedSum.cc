@@ -128,10 +128,9 @@ ComputationPtr WeightedSum::applyToInputs(const ComputationList& inputs) {
 }
 
 ar::ConstArchivePtr WeightedSum::toArchive(bool with_optimizer) const {
-  auto map = ar::Map::make();
+  auto map = baseArchive();
 
   map->set("type", ar::str(type()));
-  map->set("name", ar::str(name()));
   map->set("n_chunks", ar::u64(_n_chunks));
   map->set("chunk_size", ar::u64(_chunk_size));
   map->set("weights",
@@ -155,6 +154,8 @@ WeightedSum::WeightedSum(const ar::Archive& archive)
       _n_chunks(archive.u64("n_chunks")),
       _chunk_size(archive.u64("chunk_size")),
       _weights(archive.get("weights")->param().moveLoadedParameter()) {
+  assertOpType(archive, type());
+
   if (archive.contains("optimizer")) {
     _optimizer = optimizerFromArchive(*archive.get("optimizer"));
   }

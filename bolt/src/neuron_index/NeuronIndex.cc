@@ -4,7 +4,7 @@
 
 namespace thirdai::bolt {
 
-NeuronIndexPtr neuronIndexFromArchive(const ar::Archive& archive) {
+NeuronIndexPtr NeuronIndex::fromArchive(const ar::Archive& archive) {
   std::string type = archive.str("type");
 
   if (type == LshIndex::type()) {

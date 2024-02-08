@@ -133,10 +133,9 @@ ComputationPtr QuantileMixing::applyToInputs(const ComputationList& inputs) {
 ar::ConstArchivePtr QuantileMixing::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::Map::make();
+  auto map = baseArchive();
 
   map->set("type", ar::str(type()));
-  map->set("name", ar::str(name()));
   map->set("output_dim", ar::u64(_output_dim));
   map->set("window_size", ar::u64(_window_size));
   map->set("frac", ar::f32(_frac));
@@ -153,7 +152,9 @@ QuantileMixing::QuantileMixing(const ar::Archive& archive)
     : Op(archive.str("name")),
       _output_dim(archive.u64("output_dim")),
       _window_size(archive.u64("window_size")),
-      _frac(archive.getAs<ar::F32>("frac")) {}
+      _frac(archive.getAs<ar::F32>("frac")) {
+  assertOpType(archive, type());
+}
 
 void QuantileMixing::summary(std::ostream& summary,
                              const ComputationList& inputs,

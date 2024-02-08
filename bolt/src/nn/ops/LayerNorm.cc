@@ -168,9 +168,7 @@ ComputationPtr LayerNorm::applyToInputs(const ComputationList& inputs) {
 }
 
 ar::ConstArchivePtr LayerNorm::toArchive(bool with_optimizer) const {
-  auto map = ar::Map::make();
-
-  map->set("name", ar::str(name()));
+  auto map = baseArchive();
   map->set("type", ar::str(type()));
 
   map->set("gamma", ar::ParameterReference::make(_gamma, shared_from_this()));
@@ -197,6 +195,8 @@ LayerNorm::LayerNorm(const ar::Archive& archive)
     : Op(archive.str("name")),
       _gamma(archive.get("gamma")->param().moveLoadedParameter()),
       _beta(archive.get("beta")->param().moveLoadedParameter()) {
+  assertOpType(archive, type());
+
   if (archive.contains("gamma_optimizer")) {
     _gamma_optimizer = optimizerFromArchive(*archive.get("gamma_optimizer"));
   }

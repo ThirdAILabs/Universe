@@ -42,6 +42,8 @@ ar::ConstArchivePtr BinaryCrossEntropy::toArchive() const {
 std::shared_ptr<BinaryCrossEntropy> BinaryCrossEntropy::fromArchive(
     const ar::Archive& archive,
     const std::unordered_map<std::string, ComputationPtr>& computations) {
+  assertLossType(archive, type());
+
   return BinaryCrossEntropy::make(computations.at(archive.str("output")),
                                   computations.at(archive.str("labels")));
 }

@@ -103,14 +103,15 @@ ComputationPtr DotProduct::applyToInputs(const ComputationList& inputs) {
 ar::ConstArchivePtr DotProduct::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::Map::make();
-  map->set("name", ar::str(name()));
+  auto map = baseArchive();
   map->set("type", ar::str(type()));
   return map;
 }
 
 std::shared_ptr<DotProduct> DotProduct::fromArchive(
     const ar::Archive& archive) {
+  assertOpType(archive, type());
+
   auto op = DotProduct::make();
   op->setName(archive.str("name"));
   return op;

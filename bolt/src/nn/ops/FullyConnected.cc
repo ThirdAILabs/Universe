@@ -142,8 +142,7 @@ ComputationPtr FullyConnected::applyToInputs(const ComputationList& inputs) {
 ar::ConstArchivePtr FullyConnected::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::Map::make();
-  map->set("name", ar::str(name()));
+  auto map = baseArchive();
   map->set("type", ar::str(type()));
 
   map->set("dim", ar::u64(dim()));
@@ -192,7 +191,9 @@ FullyConnected::FullyConnected(const ar::Archive& archive)
       _rebuild_hash_tables(archive.u64("rebuild_hash_tables")),
       _reconstruct_hash_functions(archive.u64("reconstruct_hash_functions")),
       _updates_since_rebuild_hash_tables(0),
-      _updates_since_reconstruct_hash_functions(0) {}
+      _updates_since_reconstruct_hash_functions(0) {
+  assertOpType(archive, type());
+}
 
 void FullyConnected::summary(std::ostream& summary,
                              const ComputationList& inputs,

@@ -142,8 +142,7 @@ ComputationPtr PatchEmbedding::applyToInputs(const ComputationList& inputs) {
 ar::ConstArchivePtr PatchEmbedding::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::Map::make();
-  map->set("name", ar::str(name()));
+  auto map = baseArchive();
   map->set("type", ar::str(type()));
 
   map->set("n_patches", ar::u64(_n_patches));
@@ -194,7 +193,9 @@ PatchEmbedding::PatchEmbedding(const ar::Archive& archive)
       _rebuild_hash_tables(archive.u64("rebuild_hash_tables")),
       _reconstruct_hash_functions(archive.u64("reconstruct_hash_functions")),
       _updates_since_rebuild_hash_tables(0),
-      _updates_since_reconstruct_hash_functions(0) {}
+      _updates_since_reconstruct_hash_functions(0) {
+  assertOpType(archive, type());
+}
 
 void PatchEmbedding::summary(std::ostream& summary,
                              const ComputationList& inputs,

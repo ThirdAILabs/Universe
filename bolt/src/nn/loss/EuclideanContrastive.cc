@@ -143,6 +143,8 @@ ar::ConstArchivePtr EuclideanContrastive::toArchive() const {
 std::shared_ptr<EuclideanContrastive> EuclideanContrastive::fromArchive(
     const ar::Archive& archive,
     const std::unordered_map<std::string, ComputationPtr>& computations) {
+  assertLossType(archive, type());
+
   return EuclideanContrastive::make(computations.at(archive.str("output_1")),
                                     computations.at(archive.str("output_2")),
                                     computations.at(archive.str("labels")),

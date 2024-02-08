@@ -211,8 +211,7 @@ ComputationPtr Embedding::applyToInputs(const ComputationList& inputs) {
 ar::ConstArchivePtr Embedding::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::Map::make();
-  map->set("name", ar::str(name()));
+  auto map = baseArchive();
   map->set("type", ar::str(type()));
   map->set("dim", ar::u64(_dim));
   map->set("input_dim", ar::u64(_input_dim));
@@ -254,6 +253,8 @@ Embedding::Embedding(const ar::Archive& archive)
       _disable_sparse_parameter_updates(
           archive.boolean("disable_sparse_parameter_updates")),
       _embeddings_used(archive.u64("input_dim"), false) {
+  assertOpType(archive, type());
+
   if (archive.contains("embedding_optimizer")) {
     _embedding_optimizer =
         optimizerFromArchive(*archive.get("embedding_optimizer"));

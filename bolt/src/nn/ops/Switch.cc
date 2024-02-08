@@ -128,9 +128,7 @@ ComputationPtr Switch::applyToInputs(const ComputationList& inputs) {
 ar::ConstArchivePtr Switch::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::Map::make();
-
-  map->set("name", ar::str(name()));
+  auto map = baseArchive();
   map->set("type", ar::str(type()));
 
   auto list = ar::List::make();
@@ -147,6 +145,8 @@ std::shared_ptr<Switch> Switch::fromArchive(const ar::Archive& archive) {
 }
 
 Switch::Switch(const ar::Archive& archive) : Op(archive.str("name")) {
+  assertOpType(archive, type());
+
   for (const auto& op_archive : archive.get("fc_ops")->list()) {
     _fc_ops.push_back(FullyConnected::fromArchive(*op_archive));
   }
