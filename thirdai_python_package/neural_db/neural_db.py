@@ -562,16 +562,17 @@ class NeuralDB:
     def _get_query_references(
         self,
         query: str,
-        result_ids: List[Tuple[int, float]],
+        result_ids: List[Tuple[int, float, str]],
         top_k: int,
         rerank: bool,
         rerank_threshold,
         top_k_threshold,
     ):
         references = []
-        for rid, score in result_ids:
+        for rid, score, retriever in result_ids:
             ref = self._savable_state.documents.reference(rid)
             ref._score = score
+            ref._retriever = retriever
             references.append(ref)
 
         if rerank:
@@ -642,6 +643,7 @@ class NeuralDB:
         top_k_rerank=100,
         rerank_threshold=1.5,
         top_k_threshold=None,
+        retriever=None,
     ) -> List[Reference]:
         """
         Searches the contents of the NeuralDB for documents relevant to the given query.
@@ -690,6 +692,7 @@ class NeuralDB:
             top_k_rerank=top_k_rerank,
             rerank_threshold=rerank_threshold,
             top_k_threshold=top_k_threshold,
+            retriever=retriever,
         )[0]
 
     def search_batch(
@@ -701,6 +704,7 @@ class NeuralDB:
         top_k_rerank=100,
         rerank_threshold=1.5,
         top_k_threshold=None,
+        retriever=None,
     ):
         """
         Runs search on a batch of queries for much faster throughput.
@@ -724,7 +728,7 @@ class NeuralDB:
             queries_result_ids = self._savable_state.model.infer_labels(
                 samples=queries,
                 n_results=top_k_to_search,
-                disable_inverted_index=rerank,
+                retriever="mach" if rerank else retriever,
             )
 
         return [

@@ -594,9 +594,52 @@ def test_inverted_index_improves_zero_shot():
     assert compute_acc(mach_only_db) > 0.9
 
 
+def test_neural_db_retriever_specification():
+    db = ndb.NeuralDB()
+
+    texts = [
+        "apples are green",
+        "bananas are yellow",
+        "oranges are orange",
+        "spinach is green",
+        "apples are red",
+        "grapes are purple",
+        "lemons are yellow",
+        "limes are green",
+        "carrots are orange",
+        "celery is green",
+    ]
+
+    db.insert(
+        [ndb.InMemoryText(name=str(i), texts=[text]) for i, text in enumerate(texts)]
+    )
+
+    mach_results = db.search("carrots bananas", top_k=10, retriever="mach")
+    assert len(mach_results) > 0
+    for res in mach_results:
+        assert res.retriever == "mach"
+
+    index_results = db.search("carrots bananas", top_k=10, retriever="inverted_index")
+    assert len(index_results) > 0
+    for res in index_results:
+        assert res.retriever == "inverted_index"
+
+
 def test_result_merging():
-    results_a = [(1, 5.0), (2, 4.0), (3, 3.0), (4, 2.0), (6, 1.0)]
-    results_b = [(2, 5.0), (7, 4.0), (3, 3.0), (5, 2.0), (4, 1.0)]
+    results_a = [
+        (1, 5.0, "a"),
+        (2, 4.0, "a"),
+        (3, 3.0, "a"),
+        (4, 2.0, "a"),
+        (6, 1.0, "a"),
+    ]
+    results_b = [
+        (2, 5.0, "b"),
+        (7, 4.0, "b"),
+        (3, 3.0, "b"),
+        (5, 2.0, "b"),
+        (4, 1.0, "b"),
+    ]
 
     expected_output = [1, 2, 7, 3, 4, 5, 6]
 
