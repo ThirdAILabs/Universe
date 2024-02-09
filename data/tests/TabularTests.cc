@@ -169,7 +169,7 @@ TEST(TabularTests, Serialization) {
 
   // We down cast to transformation because otherwise it was trying to call
   // the cereal "serialize" method. This can be removed once cereal is
-  // officially depreciated.
+  // officially deprecated.
   auto transform_copy = Transformation::deserialize(
       dynamic_cast<Transformation*>(&transform)->serialize());
 

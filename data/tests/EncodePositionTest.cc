@@ -129,7 +129,7 @@ void testEncodePositionSerialization(bool hashed_position) {
   auto new_transform = Transformation::deserialize(transform->serialize());
 
   auto new_output = new_transform->applyStateless(columns);
-  auto new_column = original_output.getArrayColumn<uint32_t>("encoded");
+  auto new_column = new_output.getArrayColumn<uint32_t>("encoded");
 
   ASSERT_EQ(original_output.numRows(), new_output.numRows());
 
