@@ -113,6 +113,8 @@ class Featurizer {
 
   static std::shared_ptr<Featurizer> fromArchive(const ar::Archive& archive);
 
+  virtual ~Featurizer() = default;
+
  protected:
   data::LoaderPtr getDataLoaderHelper(
       const dataset::DataSourcePtr& data_source, size_t batch_size,

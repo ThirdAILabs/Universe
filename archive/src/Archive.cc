@@ -130,7 +130,7 @@ void Archive::load(Ar& archive) {
   (void)archive;
 }
 
-void serialize(ConstArchivePtr archive, std::ostream& output) {
+void serialize(const ConstArchivePtr& archive, std::ostream& output) {
   cereal::BinaryOutputArchive oarchive(output);
   oarchive(archive);
 }

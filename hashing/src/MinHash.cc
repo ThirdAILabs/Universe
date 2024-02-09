@@ -78,9 +78,9 @@ std::shared_ptr<MinHash> MinHash::fromArchive(const ar::Archive& archive) {
 
 MinHash::MinHash(const ar::Archive& archive)
     : HashFunction(archive.u64("num_tables"), archive.u64("range")),
-      _hashes_per_table(archive.u64("hashes_per_table")) {
-  _total_num_hashes = _num_tables * _hashes_per_table;
-
+      _hashes_per_table(archive.u64("hashes_per_table")),
+      _total_num_hashes(archive.u64("num_tables") *
+                        archive.u64("hashes_per_table")) {
   for (const auto& hash_fn : archive.get("hash_functions")->list()) {
     _hash_functions.emplace_back(*hash_fn);
   }

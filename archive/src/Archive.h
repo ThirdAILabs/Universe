@@ -139,7 +139,7 @@ class Archive {
 /**
  * Methods for serializing and deserializing an archive to/from a stream.
  */
-void serialize(ConstArchivePtr archive, std::ostream& output);
+void serialize(const ConstArchivePtr& archive, std::ostream& output);
 
 ConstArchivePtr deserialize(std::istream& input);
 
