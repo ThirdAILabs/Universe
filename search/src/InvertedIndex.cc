@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include <exception>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -74,9 +75,11 @@ void InvertedIndex::computeIdfs() {
   // specified fraction of the documents. We know that any idf less than this
   // corresponds to a token that occurs in more than that fraction of docs. An
   // alternative idea would be to throw away the x% most common tokens (lowest
-  // idf).
+  // idf). However we only apply this threshold if there are a sufficient number
+  // of docs.
   const size_t max_docs_with_token = n_docs * _idf_cutoff_frac;
-  const float idf_cutoff = idf(n_docs, max_docs_with_token);
+  const float idf_cutoff = n_docs > 1000 ? idf(n_docs, max_docs_with_token)
+                                         : -std::numeric_limits<float>::max();
 
   _token_to_idf.clear();
   for (const auto& [token, docs] : _token_to_docs) {
