@@ -22,6 +22,12 @@ struct BalancingSample {
   void serialize(Archive& archive) {
     archive(indices, values, labels);
   }
+
+  friend bool operator==(const udt::BalancingSample& a,
+                         const udt::BalancingSample& b) {
+    return a.indices == b.indices && b.values == a.values &&
+           a.labels == b.labels;
+  }
 };
 
 class BalancingSamples {
@@ -63,6 +69,8 @@ class BalancingSamples {
   }
 
   ar::ConstArchivePtr toArchive() const;
+
+  const auto& samplesPerDoc() const { return _samples_per_doc; }
 
  private:
   void addSample(uint32_t doc_id, BalancingSample sample);
