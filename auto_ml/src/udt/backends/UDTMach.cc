@@ -1,6 +1,7 @@
 #include "UDTMach.h"
 #include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
+#include <bolt/python_bindings/NumpyConversions.h>
 #include <bolt/src/neuron_index/LshIndex.h>
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
@@ -84,16 +85,15 @@ UDTMach::UDTMach(
       "extreme_num_hashes", "integer",
       autotuneMachNumHashes(n_target_classes, num_buckets));
 
+  uint32_t softmax = user_args.get<bool>("softmax", "bool", false);
+
   _classifier = utils::Classifier::make(
       utils::buildModel(
           /* input_dim= */ input_dim, /* output_dim= */ num_buckets,
           /* args= */ user_args, /* model_config= */ model_config,
-          /* use_sigmoid_bce = */ true, /* mach= */ true),
+          /* use_sigmoid_bce = */ !softmax, /* mach= */ true),
       user_args.get<bool>("freeze_hash_tables", "boolean",
                           defaults::FREEZE_HASH_TABLES));
-
-  // TODO(david) should we freeze hash tables for mach? how does this work
-  // with coldstart?
 
   if (!integer_target) {
     throw std::invalid_argument(
@@ -109,9 +109,12 @@ UDTMach::UDTMach(
       input_data_types, temporal_tracking_relationships,
       tabular_options.lookahead);
 
+  data::ValueFillType value_fill =
+      softmax ? data::ValueFillType::SumToOne : data::ValueFillType::Ones;
+
   _featurizer = std::make_shared<MachFeaturizer>(
       input_data_types, temporal_relationships, target_name, mach_index,
-      tabular_options);
+      tabular_options, value_fill);
 
   _mach_sampling_threshold = user_args.get<float>(
       "mach_sampling_threshold", "float", defaults::MACH_SAMPLING_THRESHOLD);
@@ -234,6 +237,14 @@ py::object UDTMach::predictBatch(const MapInputBatch& samples,
                                  std::optional<uint32_t> top_k) {
   return py::cast(predictBatchImpl(samples, sparse_inference,
                                    return_predicted_class, top_k));
+}
+
+py::object UDTMach::predictActivationsBatch(const MapInputBatch& samples,
+                                            bool sparse_inference) {
+  return bolt::python::tensorToNumpy(
+      _classifier->model()
+          ->forward(_featurizer->featurizeInputBatch(samples), sparse_inference)
+          .at(0));
 }
 
 std::vector<std::vector<std::pair<uint32_t, double>>> UDTMach::predictBatchImpl(
@@ -828,18 +839,18 @@ void UDTMach::associate(
     const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
     uint32_t n_buckets, uint32_t n_association_samples,
     uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
-    bool force_non_empty) {
+    bool force_non_empty, size_t batch_size) {
   auto teaching_samples = getAssociateSamples(
       rlhf_samples, n_buckets, n_association_samples, force_non_empty);
 
   teach(teaching_samples, rlhf_samples.size() * n_balancing_samples,
-        learning_rate, epochs);
+        learning_rate, epochs, batch_size);
 }
 
 void UDTMach::upvote(
     const std::vector<std::pair<std::string, uint32_t>>& rlhf_samples,
     uint32_t n_upvote_samples, uint32_t n_balancing_samples,
-    float learning_rate, uint32_t epochs) {
+    float learning_rate, uint32_t epochs, size_t batch_size) {
   std::vector<RlhfSample> teaching_samples;
 
   const auto& mach_index = getIndex();
@@ -854,12 +865,12 @@ void UDTMach::upvote(
   }
 
   teach(teaching_samples, rlhf_samples.size() * n_balancing_samples,
-        learning_rate, epochs);
+        learning_rate, epochs, batch_size);
 }
 
 void UDTMach::teach(const std::vector<RlhfSample>& rlhf_samples,
                     uint32_t n_balancing_samples, float learning_rate,
-                    uint32_t epochs) {
+                    uint32_t epochs, size_t batch_size) {
   requireRLHFSampler();
 
   auto balancing_samples =
@@ -869,8 +880,7 @@ void UDTMach::teach(const std::vector<RlhfSample>& rlhf_samples,
   columns = columns.concat(balancing_samples);
   columns.shuffle();
 
-  auto [data, labels] =
-      _featurizer->columnsToTensors(columns, defaults::ASSOCIATE_BATCH_SIZE);
+  auto [data, labels] = _featurizer->columnsToTensors(columns, batch_size);
 
   for (uint32_t e = 0; e < epochs; e++) {
     for (size_t i = 0; i < data.size(); i++) {

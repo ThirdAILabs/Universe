@@ -1,9 +1,11 @@
 import os
+import random
 import shutil
 from pathlib import Path
 from typing import List
 
 import numpy as np
+import pandas as pd
 import pytest
 import thirdai
 from ndb_utils import (
@@ -28,6 +30,7 @@ from ndb_utils import (
 )
 from thirdai import dataset
 from thirdai import neural_db as ndb
+from thirdai.neural_db.models import merge_results
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -67,8 +70,9 @@ def all_methods_work(
     clear_sources_works(db)
 
 
-def test_neural_db_all_methods_work_on_new_model(small_doc_set):
-    db = ndb.NeuralDB("user")
+@pytest.mark.parametrize("use_inverted_index", [True, False])
+def test_neural_db_all_methods_work_on_new_model(small_doc_set, use_inverted_index):
+    db = ndb.NeuralDB(use_inverted_index=use_inverted_index)
     all_methods_work(
         db,
         docs=small_doc_set,
@@ -359,6 +363,33 @@ def test_neural_db_delete_document(empty_neural_db):
     assert result.text == "text: ice cream"
 
 
+def test_neural_db_delete_document_with_inverted_index():
+    # The other delete test is only returning 1 entity, so it will only return
+    # the top result from mach, thus it doesn't test if the inverted index is
+    # returning the result.
+    db = ndb.NeuralDB()
+
+    texts = [
+        "apples are green",
+        "bananas are yellow",
+        "oranges are orange",
+        "spinach is green",
+        "apples are red",
+    ]
+
+    ids = db.insert(
+        [ndb.InMemoryText(name=str(i), texts=[text]) for i, text in enumerate(texts)]
+    )
+
+    results = db.search(texts[-1], top_k=4)
+    assert 4 in [result.id for result in results]
+
+    db.delete([ids[-1]])
+
+    results = db.search(texts[-1], top_k=4)
+    assert 4 not in [result.id for result in results]
+
+
 def test_neural_db_rerank_search(all_local_docs):
     def char4(sentence):
         return [sentence[i : i + 4] for i in range(len(sentence) - 3)]
@@ -414,7 +445,7 @@ def descending_order(seq):
 
 
 def test_neural_db_reranking(all_local_docs):
-    db = ndb.NeuralDB("user")
+    db = ndb.NeuralDB("user", use_inverted_index=False)
     db.insert(all_local_docs, train=True)
 
     query = "Lorem Ipsum"
@@ -455,7 +486,7 @@ def test_neural_db_reranking(all_local_docs):
 
 
 def test_neural_db_reranking_threshold(all_local_docs):
-    db = ndb.NeuralDB("user")
+    db = ndb.NeuralDB("user", use_inverted_index=False)
     db.insert(all_local_docs, train=True)
 
     query = "agreement"
@@ -523,3 +554,50 @@ def test_custom_epoch(create_simple_dataset):
 
     # And number of batches in 'create_simple_dataset' is 1, so, number of epochs that the model got trained for will be number of batches.
     assert num_epochs == batch_count
+
+
+def test_inverted_index_improves_zero_shot():
+    docs = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "../../auto_ml/python_tests/texts.csv",
+    )
+
+    df = pd.read_csv(docs)
+
+    queries = df["text"].map(lambda t: " ".join(random.choices(t.split(" "), k=15)))
+
+    def compute_acc(db):
+        correct = 0
+        for label, q in enumerate(queries):
+            results = [r.id for r in db.search(q, top_k=2)]
+            if label in results:
+                correct += 1
+
+        return correct / len(queries)
+
+    combined_db = ndb.NeuralDB(use_inverted_index=True)
+    combined_db.insert(
+        [ndb.CSV(docs, id_column="id", weak_columns=["text"])], train=False
+    )
+
+    assert compute_acc(combined_db) > 0.9
+
+    mach_only_db = ndb.NeuralDB(use_inverted_index=False)
+    mach_only_db.insert(
+        [ndb.CSV(docs, id_column="id", weak_columns=["text"])], train=False
+    )
+
+    assert compute_acc(mach_only_db) < 0.1
+
+    mach_only_db.build_inverted_index()
+
+    assert compute_acc(mach_only_db) > 0.9
+
+
+def test_result_merging():
+    results_a = [(1, 5.0), (2, 4.0), (3, 3.0), (4, 2.0), (6, 1.0)]
+    results_b = [(2, 5.0), (7, 4.0), (3, 3.0), (5, 2.0), (4, 1.0)]
+
+    expected_output = [1, 2, 7, 3, 4, 5, 6]
+
+    assert [x[0] for x in merge_results(results_a, results_b, k=10)] == expected_output

@@ -18,13 +18,16 @@ class MachFeaturizer final : public Featurizer {
                  const TemporalRelationships& temporal_relationship,
                  const std::string& label_column,
                  const dataset::mach::MachIndexPtr& mach_index,
-                 const TabularOptions& options);
+                 const TabularOptions& options,
+                 data::ValueFillType label_value_fill);
 
-  MachFeaturizer(const std::shared_ptr<data::TextCompat>& text_transform,
-                 data::OutputColumnsList bolt_input_columns,
-                 const std::string& label_column,
-                 const dataset::mach::MachIndexPtr& mach_index,
-                 char csv_delimiter, std::optional<char> label_delimiter);
+  MachFeaturizer(
+      const std::shared_ptr<data::TextCompat>& text_transform,
+      data::OutputColumnsList bolt_input_columns,
+      const std::string& label_column,
+      const dataset::mach::MachIndexPtr& mach_index, char csv_delimiter,
+      std::optional<char> label_delimiter,
+      data::ValueFillType label_value_fill = data::ValueFillType::Ones);
 
   std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>
   featurizeForIntroduceDocuments(
