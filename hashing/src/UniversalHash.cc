@@ -1,5 +1,4 @@
 #include "UniversalHash.h"
-#include <_types/_uint64_t.h>
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <cstdio>

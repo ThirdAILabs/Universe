@@ -5,7 +5,6 @@
 #include <cereal/types/unordered_set.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/types/vector.hpp>
-#include <_types/_uint32_t.h>
 #include <archive/src/Archive.h>
 #include <archive/src/List.h>
 #include <archive/src/Map.h>

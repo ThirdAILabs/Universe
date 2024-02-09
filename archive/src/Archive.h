@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cereal/access.hpp>
-#include <sys/_types/_int64_t.h>
+
 #include <optional>
 #include <string>
 #include <unordered_map>
