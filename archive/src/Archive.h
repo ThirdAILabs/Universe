@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <sys/_types/_int64_t.h>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -158,6 +159,7 @@ ConstArchivePtr deserialize(std::istream& input);
  *    protection against overflow regardless of futture usecases.
  *  - std::vector<int64_t> is needed for timestamps.
  *  - std::vector<std::wstring> is used for storing the wordpiece tokenizer
+ *  - std::unordered_map<std::string, int64_t> is used for symspell.
  */
 
 using Boolean = bool;
@@ -167,12 +169,17 @@ using F32 = float;
 using Char = char;
 using Str = std::string;
 using VecU32 = std::vector<uint32_t>;
+using VecU64 = std::vector<uint64_t>;
 using VecI64 = std::vector<int64_t>;
 using VecStr = std::vector<std::string>;
 using VecWStr = std::vector<std::wstring>;
+using VecVecU32 = std::vector<std::vector<uint32_t>>;
+using VecVecF32 = std::vector<std::vector<float>>;
 using MapU64VecU64 = std::unordered_map<uint64_t, std::vector<uint64_t>>;
 using MapU64VecF32 = std::unordered_map<uint64_t, std::vector<float>>;
 using MapStrU64 = std::unordered_map<std::string, uint64_t>;
+using MapStrI64 = std::unordered_map<std::string, int64_t>;
+using MapI64VecStr = std::unordered_map<int64_t, std::vector<std::string>>;
 
 ConstArchivePtr boolean(bool val);
 
@@ -188,15 +195,26 @@ ConstArchivePtr str(std::string val);
 
 ConstArchivePtr vecU32(std::vector<uint32_t> val);
 
+ConstArchivePtr vecU64(std::vector<uint64_t> val);
+
 ConstArchivePtr vecI64(std::vector<int64_t> val);
 
 ConstArchivePtr vecStr(std::vector<std::string> val);
 
 ConstArchivePtr vecWStr(std::vector<std::wstring> val);
 
+ConstArchivePtr vecVecU32(std::vector<std::vector<uint32_t>> val);
+
+ConstArchivePtr vecVecF32(std::vector<std::vector<float>> val);
+
 ConstArchivePtr mapU64VecU64(MapU64VecU64 val);
 
 ConstArchivePtr mapU64VecF32(MapU64VecF32 val);
 
 ConstArchivePtr mapStrU64(std::unordered_map<std::string, uint64_t> val);
+
+ConstArchivePtr mapStrI64(std::unordered_map<std::string, int64_t> val);
+
+ConstArchivePtr mapI64VecStr(MapI64VecStr val);
+
 }  // namespace thirdai::ar

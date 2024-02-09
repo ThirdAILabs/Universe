@@ -46,6 +46,11 @@ std::string Value<std::vector<uint32_t>>::typeName() {
 }
 
 template <>
+std::string Value<std::vector<uint64_t>>::typeName() {
+  return "Value[std::vector<uint64_t>]";
+}
+
+template <>
 std::string Value<std::vector<int64_t>>::typeName() {
   return "Value[std::vector<int64_t>]";
 }
@@ -58,6 +63,16 @@ std::string Value<std::vector<std::string>>::typeName() {
 template <>
 std::string Value<std::vector<std::wstring>>::typeName() {
   return "Value[std::vector<std::wstring>]";
+}
+
+template <>
+std::string Value<std::vector<std::vector<uint32_t>>>::typeName() {
+  return "Value[std::vector<std::vector<uint32_t>>]";
+}
+
+template <>
+std::string Value<std::vector<std::vector<float>>>::typeName() {
+  return "Value[std::vector<std::vector<float>>]";
 }
 
 template <>
@@ -75,6 +90,17 @@ Value<std::unordered_map<uint64_t, std::vector<float>>>::typeName() {
 template <>
 std::string Value<std::unordered_map<std::string, uint64_t>>::typeName() {
   return "Value[std::unordered_map<std::string, uint64_t>]";
+}
+
+template <>
+std::string Value<std::unordered_map<std::string, int64_t>>::typeName() {
+  return "Value[std::unordered_map<std::string, int64_t>]";
+}
+
+template <>
+std::string
+Value<std::unordered_map<int64_t, std::vector<std::string>>>::typeName() {
+  return "Value[std::unordered_map<int64_t, std::vector<std::string>>]";
 }
 
 template <>

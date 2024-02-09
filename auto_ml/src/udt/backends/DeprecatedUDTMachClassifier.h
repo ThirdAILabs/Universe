@@ -204,6 +204,11 @@ class UDTMachClassifier final : public UDTBackend {
 
   void setMachSamplingThreshold(float threshold) final;
 
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final {
+    (void)with_optimizer;
+    throw std::invalid_argument("To archive is not supported for v1 mach.");
+  }
+
  private:
   std::vector<std::vector<uint32_t>> predictHashesImpl(
       const MapInputBatch& samples, bool sparse_inference,

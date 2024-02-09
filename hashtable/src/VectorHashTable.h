@@ -3,64 +3,51 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/vector.hpp>
 #include "HashTable.h"
+#include <archive/src/Archive.h>
 #include <utils/Random.h>
 #include <atomic>
+#include <optional>
 #include <random>
 #include <unordered_set>
 #include <vector>
 
 namespace thirdai::hashtable {
 
-template <typename LABEL_T, bool USE_RESERVOIR>
-class VectorHashTable final : public HashTable<LABEL_T> {
+class VectorHashTable final : public HashTable<uint32_t> {
  public:
-  // We use SFINAE to make the first constructor resolve when USE_RESERVOIR
-  // is false and the other constructor resolve when USE_RESERVOIR is true:
-  // https://stackoverflow.com/questions/59703327/overloading-based-on-bool-template-parameter
-  // This is a slight bit of magic, I honestly don't completely understand it
-  // but it does work quite nicely.
-  template <bool b = USE_RESERVOIR,
-            std::enable_if_t<!b>* = nullptr>  // when USE_RESERVOIR is false
-  VectorHashTable(uint32_t num_tables, uint64_t table_range)
-      : _num_tables(num_tables),
-        _table_range(table_range),
-        _buckets(num_tables * table_range),
-        _generated_rand_nums(0),
-        _num_elements_tried_insert_into_bucket(0),
-        _max_reservoir_size(0) {}
-
-  template <bool b = USE_RESERVOIR,
-            std::enable_if_t<b>* = nullptr>  // when USE_RESERVOIR is true
-  VectorHashTable(uint32_t num_tables, uint64_t max_reservoir_size,
-                  uint64_t table_range,
+  VectorHashTable(uint32_t num_tables, uint64_t table_range,
+                  std::optional<uint64_t> reservoir_size = std::nullopt,
                   uint64_t seed = global_random::nextSeed(),
-                  uint64_t max_rand = HashTable<LABEL_T>::DEFAULT_MAX_RAND)
+                  uint64_t max_rand = HashTable<uint32_t>::DEFAULT_MAX_RAND)
       : _num_tables(num_tables),
         _table_range(table_range),
+        _reservoir_size(reservoir_size),
         _buckets(num_tables * table_range),
-        _generated_rand_nums(max_rand),
-        _num_elements_tried_insert_into_bucket(num_tables * table_range),
-        _max_reservoir_size(max_reservoir_size) {
+        _insertions_per_bucket(num_tables * table_range, 0),
+        _total_insertions(0),
+        _gen_rand(max_rand) {
     std::mt19937 generator(seed);
     for (uint64_t i = 0; i < max_rand; i++) {
-      _generated_rand_nums[i] = generator();
+      _gen_rand[i] = generator();
     }
   }
 
-  void insert(uint64_t n, LABEL_T const* labels,
+  explicit VectorHashTable(const ar::Archive& archive);
+
+  void insert(uint64_t n, uint32_t const* labels,
               uint32_t const* hashes) override;
 
-  void insertSequential(uint64_t n, LABEL_T start,
+  void insertSequential(uint64_t n, uint32_t start,
                         uint32_t const* hashes) override;
 
   void queryBySet(uint32_t const* hashes,
-                  std::unordered_set<LABEL_T>& store) const override;
+                  std::unordered_set<uint32_t>& store) const override;
 
   void queryByCount(uint32_t const* hashes,
                     std::vector<uint32_t>& counts) const override;
 
   void queryByVector(uint32_t const* hashes,
-                     std::vector<LABEL_T>& results) const override;
+                     std::vector<uint32_t>& results) const override;
 
   void clearTables() override;
 
@@ -71,40 +58,44 @@ class VectorHashTable final : public HashTable<LABEL_T> {
   /** Sorts the contents of each bucket */
   void sortBuckets();
 
+  ar::ConstArchivePtr toArchive() const;
+
+  static std::shared_ptr<VectorHashTable> fromArchive(
+      const ar::Archive& archive);
+
  private:
   /** Insert a label into a hashtable, including reservoir sampling if enabled
    */
-  inline void insertIntoTable(LABEL_T label, uint32_t hash, uint32_t table);
+  inline void insertIntoTable(uint32_t label, uint32_t hash, uint32_t table);
 
-  constexpr uint64_t getBucketIndex(uint64_t table, uint64_t hash) const {
+  inline uint64_t getBucketIndex(uint64_t table, uint64_t hash) const {
     return table * tableRange() + hash;
   }
 
   uint32_t _num_tables;
   uint64_t _table_range;
-  std::vector<std::vector<LABEL_T>> _buckets;
+  std::optional<uint64_t> _reservoir_size;
+
+  std::vector<std::vector<uint32_t>> _buckets;
 
   // These will be 0 or length 0 if USE_RESERVOIR is false
-  std::vector<uint32_t> _generated_rand_nums;
-  std::vector<uint32_t> _num_elements_tried_insert_into_bucket;
-  uint64_t _max_reservoir_size;
-  std::atomic<uint32_t> counter = 0;
+  std::vector<uint32_t> _insertions_per_bucket;
+  std::atomic_uint64_t _total_insertions = 0;
+
+  std::vector<uint32_t> _gen_rand;
 
   // private constructor for cereal
-  VectorHashTable<LABEL_T, USE_RESERVOIR>() : counter(0) {}
+  VectorHashTable() {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<HashTable<LABEL_T>>(this), _num_tables,
-            _table_range, _buckets, _generated_rand_nums,
-            _num_elements_tried_insert_into_bucket, _max_reservoir_size);
+    archive(cereal::base_class<HashTable<uint32_t>>(this), _num_tables,
+            _table_range, _buckets, _reservoir_size, _buckets,
+            _insertions_per_bucket, _gen_rand);
   }
 };
 
 }  // namespace thirdai::hashtable
 
-CEREAL_REGISTER_TYPE(thirdai::hashtable::VectorHashTable<uint32_t, false>)
-CEREAL_REGISTER_TYPE(thirdai::hashtable::VectorHashTable<uint32_t, true>)
-CEREAL_REGISTER_TYPE(thirdai::hashtable::VectorHashTable<uint64_t, false>)
-CEREAL_REGISTER_TYPE(thirdai::hashtable::VectorHashTable<uint64_t, true>)
+CEREAL_REGISTER_TYPE(thirdai::hashtable::VectorHashTable)

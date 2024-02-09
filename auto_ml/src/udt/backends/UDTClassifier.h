@@ -27,6 +27,8 @@ class UDTClassifier final : public UDTBackend {
       const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
+  explicit UDTClassifier(const ar::Archive& archive);
+
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
                    const std::vector<std::string>& train_metrics,
@@ -109,6 +111,12 @@ class UDTClassifier final : public UDTBackend {
           "setting.");
     }
   }
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
+  static std::unique_ptr<UDTClassifier> fromArchive(const ar::Archive& archive);
+
+  static std::string type() { return "udt_classifier"; }
 
   void saveCppClassifier(const std::string& save_path) const final;
 

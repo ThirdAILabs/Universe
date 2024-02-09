@@ -5,6 +5,7 @@
 #include <archive/src/Map.h>
 #include <archive/src/ParameterReference.h>
 #include <archive/src/Value.h>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -129,30 +130,17 @@ void Archive::load(Ar& archive) {
   (void)archive;
 }
 
-// Saving/loading the base class (Archive) directly lead to the derived class's
-// serialization method not being invoked. Using this wrapper solved the issue.
-struct ArchiveWrapper {
-  ConstArchivePtr _archive;
-
-  template <class Ar>
-  void serialize(Ar& archive) {
-    archive(_archive);
-  }
-};
-
 void serialize(ConstArchivePtr archive, std::ostream& output) {
   cereal::BinaryOutputArchive oarchive(output);
-
-  ArchiveWrapper wrappper{std::move(archive)};
-  oarchive(wrappper);
+  oarchive(archive);
 }
 
 ConstArchivePtr deserialize(std::istream& input) {
   cereal::BinaryInputArchive iarchive(input);
 
-  ArchiveWrapper wrapper;
-  iarchive(wrapper);
-  return wrapper._archive;
+  ArchivePtr archive;
+  iarchive(archive);
+  return archive;
 }
 
 ConstArchivePtr boolean(bool val) { return Value<bool>::make(val); }
@@ -173,6 +161,10 @@ ConstArchivePtr vecU32(std::vector<uint32_t> val) {
   return Value<std::vector<uint32_t>>::make(std::move(val));
 }
 
+ConstArchivePtr vecU64(std::vector<uint64_t> val) {
+  return Value<std::vector<uint64_t>>::make(std::move(val));
+}
+
 ConstArchivePtr vecI64(std::vector<int64_t> val) {
   return Value<std::vector<int64_t>>::make(std::move(val));
 }
@@ -185,6 +177,14 @@ ConstArchivePtr vecWStr(std::vector<std::wstring> val) {
   return Value<std::vector<std::wstring>>::make(std::move(val));
 }
 
+ConstArchivePtr vecVecU32(std::vector<std::vector<uint32_t>> val) {
+  return Value<std::vector<std::vector<uint32_t>>>::make(std::move(val));
+}
+
+ConstArchivePtr vecVecF32(std::vector<std::vector<float>> val) {
+  return Value<std::vector<std::vector<float>>>::make(std::move(val));
+}
+
 ConstArchivePtr mapU64VecU64(MapU64VecU64 val) {
   return Value<MapU64VecU64>::make(std::move(val));
 }
@@ -195,6 +195,14 @@ ConstArchivePtr mapU64VecF32(MapU64VecF32 val) {
 
 ConstArchivePtr mapStrU64(std::unordered_map<std::string, uint64_t> val) {
   return Value<std::unordered_map<std::string, uint64_t>>::make(std::move(val));
+}
+
+ConstArchivePtr mapStrI64(std::unordered_map<std::string, int64_t> val) {
+  return Value<std::unordered_map<std::string, int64_t>>::make(std::move(val));
+}
+
+ConstArchivePtr mapI64VecStr(MapI64VecStr val) {
+  return Value<MapI64VecStr>::make(std::move(val));
 }
 
 }  // namespace thirdai::ar

@@ -1,4 +1,7 @@
 #include "UniversalHash.h"
+#include <_types/_uint64_t.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <cstdio>
 #include <cstdlib>
 #include <random>
@@ -34,5 +37,34 @@ uint64_t UniversalHash::gethash(uint64_t key) const {
 }
 
 uint32_t UniversalHash::seed() const { return _seed; }
+
+ar::ConstArchivePtr UniversalHash::toArchive() const {
+  auto map = ar::Map ::make();
+
+  map->set("seed", ar::u64(_seed));
+
+  std::vector<uint64_t> flat_table;
+  for (const auto& row : _table) {
+    flat_table.insert(flat_table.end(), row.begin(), row.end());
+  }
+
+  map->set("table", ar::vecU64(std::move(flat_table)));
+
+  return map;
+}
+
+UniversalHash::UniversalHash(const ar::Archive& archive)
+    : _seed(archive.u64("seed")) {
+  size_t rows = _table.size();
+  size_t cols = _table[0].size();
+
+  const auto& flat_table = archive.getAs<ar::VecU64>("table");
+
+  for (size_t i = 0; i < rows; i++) {
+    for (size_t j = 0; j < cols; j++) {
+      _table[i][j] = flat_table.at(i * cols + j);
+    }
+  }
+}
 
 }  // namespace thirdai::hashing
