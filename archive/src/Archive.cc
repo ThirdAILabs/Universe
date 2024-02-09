@@ -5,6 +5,7 @@
 #include <archive/src/Map.h>
 #include <archive/src/ParameterReference.h>
 #include <archive/src/Value.h>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -131,17 +132,15 @@ void Archive::load(Ar& archive) {
 
 void serialize(ConstArchivePtr archive, std::ostream& output) {
   cereal::BinaryOutputArchive oarchive(output);
-
-  ArchiveWrapper wrappper{std::move(archive)};
-  oarchive(wrappper);
+  oarchive(archive);
 }
 
 ConstArchivePtr deserialize(std::istream& input) {
   cereal::BinaryInputArchive iarchive(input);
 
-  ArchiveWrapper wrapper;
-  iarchive(wrapper);
-  return wrapper._archive;
+  ArchivePtr archive;
+  iarchive(archive);
+  return archive;
 }
 
 ConstArchivePtr boolean(bool val) { return Value<bool>::make(val); }

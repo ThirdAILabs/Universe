@@ -372,8 +372,7 @@ void UDT::save(Archive& archive, const uint32_t version) const {
 
   auto thirdai_archive = _backend->toArchive(_save_optimizer);
 
-  ar::ArchiveWrapper wrapper{thirdai_archive};
-  archive(wrapper);
+  archive(thirdai_archive);
 }
 
 template <class Archive>
@@ -393,10 +392,10 @@ void UDT::load(Archive& archive, const uint32_t version) {
       _backend = std::make_unique<UDTMach>(old_mach->getMachInfo());
     }
   } else {
-    ar::ArchiveWrapper wrapper;
-    archive(wrapper);
+    ar::ArchivePtr thirdai_archive;
+    archive(thirdai_archive);
 
-    _backend = backendFromArchive(*wrapper._archive);
+    _backend = backendFromArchive(*thirdai_archive);
   }
 }
 
