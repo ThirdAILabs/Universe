@@ -107,9 +107,7 @@ ComputationPtr RobeZ::applyToInputs(const ComputationList& inputs) {
 ar::ConstArchivePtr RobeZ::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::Map::make();
-
-  map->set("name", ar::str(name()));
+  auto map = baseArchive();
   map->set("type", ar::str(type()));
 
   map->set("num_lookups_per_token", ar::u64(_kernel->_num_lookups_per_token));
@@ -127,7 +125,7 @@ ar::ConstArchivePtr RobeZ::toArchive(bool with_optimizer) const {
                              *_kernel->_embedding_block, shared_from_this()));
 
   if (with_optimizer && _kernel->_optimizer) {
-    map->set("embedding_opt",
+    map->set("embedding_optimizer",
              optimizerToArchive(*_kernel->_optimizer, shared_from_this(),
                                 _kernel->_embedding_chunks_used.size(),
                                 _kernel->_update_chunk_size));
@@ -145,7 +143,9 @@ std::shared_ptr<RobeZ> RobeZ::fromArchive(const ar::Archive& archive) {
 
 RobeZ::RobeZ(const ar::Archive& archive)
     : Op(archive.str("name")),
-      _kernel(std::make_unique<EmbeddingLayer>(archive)) {}
+      _kernel(std::make_unique<EmbeddingLayer>(archive)) {
+  assertOpType(archive, type());
+}
 
 void RobeZ::summary(std::ostream& summary, const ComputationList& inputs,
                     const Computation* output) const {

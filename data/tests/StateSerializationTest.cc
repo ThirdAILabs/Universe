@@ -84,9 +84,9 @@ TEST(StateSerializationTest, StateIsMaintained) {
 
   auto new_state = State::fromArchive(*ar::deserialize(buffer));
 
-  ASSERT_EQ(new_state->machIndex()->numHashes(), 3);
-  ASSERT_EQ(new_state->machIndex()->numBuckets(), 10);
-  ASSERT_EQ(new_state->machIndex()->numEntities(), 3);
+  ASSERT_EQ(new_state->machIndex()->numHashes(), mach_index->numHashes());
+  ASSERT_EQ(new_state->machIndex()->numBuckets(), mach_index->numBuckets());
+  ASSERT_EQ(new_state->machIndex()->numEntities(), mach_index->numEntities());
   ASSERT_EQ(new_state->machIndex()->entityToHashes(), entity_to_hashes);
 
   compareVocab(vocab_a, 100, new_state->getVocab("vocab_a"));

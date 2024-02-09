@@ -118,14 +118,15 @@ ComputationPtr DlrmAttention::applyToInputs(const ComputationList& inputs) {
 ar::ConstArchivePtr DlrmAttention::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::Map::make();
-  map->set("name", ar::str(name()));
+  auto map = baseArchive();
   map->set("type", ar::str(type()));
   return map;
 }
 
 std::shared_ptr<DlrmAttention> DlrmAttention::fromArchive(
     const ar::Archive& archive) {
+  assertOpType(archive, type());
+
   auto op = DlrmAttention::make();
   op->setName(archive.str("name"));
   return op;

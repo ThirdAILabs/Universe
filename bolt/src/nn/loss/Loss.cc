@@ -31,4 +31,13 @@ std::shared_ptr<Loss> Loss::fromArchive(
   throw std::invalid_argument("Invalid loss type '" + type + "'.");
 }
 
+void assertLossType(const ar::Archive& archive,
+                    const std::string& expected_type) {
+  auto type = archive.str("type");
+  if (type != expected_type) {
+    throw std::invalid_argument("Expected loss type '" + expected_type +
+                                "' but received type '" + type + "'.");
+  }
+}
+
 }  // namespace thirdai::bolt

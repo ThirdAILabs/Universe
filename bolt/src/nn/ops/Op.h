@@ -4,6 +4,7 @@
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -174,6 +175,12 @@ class Op {
  protected:
   Op() : Op("unnamed-op") {}
 
+  std::shared_ptr<ar::Map> baseArchive() const {
+    auto map = ar::Map::make();
+    map->set("name", ar::str(name()));
+    return map;
+  }
+
   static std::tuple<double, double, double> norms(const float* data,
                                                   size_t len) {
     double l1_norm = 0;
@@ -214,6 +221,8 @@ ar::ConstArchivePtr optimizerToArchive(const AdamOptimizer& optimizer,
                                        size_t rows, size_t cols);
 
 AdamOptimizer optimizerFromArchive(const ar::Archive& archive);
+
+void assertOpType(const ar::Archive& archive, const std::string& expected_type);
 
 using OpPtr = std::shared_ptr<Op>;
 

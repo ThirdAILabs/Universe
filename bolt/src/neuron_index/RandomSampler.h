@@ -37,7 +37,7 @@ class RandomSampler final : public NeuronIndex {
 
   void summarize(std::ostream& summary) const final { summary << "random"; }
 
-  ar::ConstArchivePtr toArchive() const;
+  ar::ConstArchivePtr toArchive() const final;
 
   static std::shared_ptr<RandomSampler> fromArchive(const ar::Archive& archive);
 

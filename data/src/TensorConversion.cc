@@ -119,6 +119,9 @@ ar::ConstArchivePtr outputColumnsToArchive(
         case ValueFillType::SumToOne:
           map->set("value_fill_type", ar::str("sum_to_one"));
           break;
+        default:
+          throw std::runtime_error(
+              "Unsupported ValueFillType encountered in toArchive.");
       }
     }
 
@@ -140,6 +143,10 @@ OutputColumnsList outputColumnsFromArchive(const ar::Archive& archive) {
         value_fill_type = ValueFillType::Ones;
       } else if (fill_type_name == "sum_to_one") {
         value_fill_type = ValueFillType::SumToOne;
+      } else {
+        throw std::runtime_error("Unsupported ValueFillType '" +
+                                 fill_type_name +
+                                 "' encountered in fromArchive.");
       }
       output_columns.emplace_back(ar->str("indices"), value_fill_type);
     }

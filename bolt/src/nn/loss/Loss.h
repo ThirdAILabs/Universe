@@ -62,6 +62,9 @@ class Loss {
   }
 };
 
+void assertLossType(const ar::Archive& archive,
+                    const std::string& expected_type);
+
 using LossPtr = std::shared_ptr<Loss>;
 
 }  // namespace thirdai::bolt

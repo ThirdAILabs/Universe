@@ -211,8 +211,7 @@ ComputationPtr Embedding::applyToInputs(const ComputationList& inputs) {
 ar::ConstArchivePtr Embedding::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::Map::make();
-  map->set("name", ar::str(name()));
+  auto map = baseArchive();
   map->set("type", ar::str(type()));
   map->set("dim", ar::u64(_dim));
   map->set("input_dim", ar::u64(_input_dim));
@@ -224,11 +223,11 @@ ar::ConstArchivePtr Embedding::toArchive(bool with_optimizer) const {
   map->set("biases", ar::ParameterReference::make(_biases, shared_from_this()));
 
   if (with_optimizer && _embedding_optimizer && _bias_optimizer) {
-    map->set("embedding_opt",
+    map->set("embedding_optimizer",
              optimizerToArchive(*_embedding_optimizer, shared_from_this(),
                                 _input_dim, _dim));
 
-    map->set("bias_opt",
+    map->set("bias_optimizer",
              optimizerToArchive(*_bias_optimizer, shared_from_this(),
                                 /*rows=*/1, _dim));
   }
@@ -254,11 +253,14 @@ Embedding::Embedding(const ar::Archive& archive)
       _disable_sparse_parameter_updates(
           archive.boolean("disable_sparse_parameter_updates")),
       _embeddings_used(archive.u64("input_dim"), false) {
-  if (archive.contains("embedding_opt")) {
-    _embedding_optimizer = optimizerFromArchive(*archive.get("embedding_opt"));
+  assertOpType(archive, type());
+
+  if (archive.contains("embedding_optimizer")) {
+    _embedding_optimizer =
+        optimizerFromArchive(*archive.get("embedding_optimizer"));
   }
-  if (archive.contains("bias_opt")) {
-    _bias_optimizer = optimizerFromArchive(*archive.get("bias_opt"));
+  if (archive.contains("bias_optimizer")) {
+    _bias_optimizer = optimizerFromArchive(*archive.get("bias_optimizer"));
   }
 }
 
