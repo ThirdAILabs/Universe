@@ -200,6 +200,44 @@ std::pair<data::TransformationPtr, GraphInfoPtr> GraphFeaturizer::graphBuilder(
   return {data::Pipeline::make(transforms), graph_info};
 }
 
+ar::ConstArchivePtr GraphFeaturizer::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("input_transform", _input_transform->toArchive());
+  map->set("label_transform", _label_transform->toArchive());
+  map->set("graph_builder", _graph_builder->toArchive());
+
+  map->set("bolt_input_columns",
+           data::outputColumnsToArchive(_bolt_input_columns));
+  map->set("bolt_label_columns",
+           data::outputColumnsToArchive(_bolt_label_columns));
+
+  map->set("delimiter", ar::character(_delimiter));
+
+  map->set("state", _state->toArchive());
+
+  return map;
+}
+
+std::shared_ptr<GraphFeaturizer> GraphFeaturizer::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_shared<GraphFeaturizer>(archive);
+}
+
+GraphFeaturizer::GraphFeaturizer(const ar::Archive& archive)
+    : _input_transform(
+          data::Transformation::fromArchive(*archive.get("input_transform"))),
+      _label_transform(
+          data::Transformation::fromArchive(*archive.get("label_transform"))),
+      _graph_builder(
+          data::Transformation::fromArchive(*archive.get("graph_builder"))),
+      _bolt_input_columns(
+          data::outputColumnsFromArchive(*archive.get("bolt_input_columns"))),
+      _bolt_label_columns(
+          data::outputColumnsFromArchive(*archive.get("bolt_label_columns"))),
+      _delimiter(archive.getAs<ar::Char>("delimiter")),
+      _state(data::State::fromArchive(*archive.get("state"))) {}
+
 template void GraphFeaturizer::serialize(cereal::BinaryInputArchive&);
 template void GraphFeaturizer::serialize(cereal::BinaryOutputArchive&);
 

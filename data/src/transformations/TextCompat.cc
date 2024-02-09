@@ -70,6 +70,34 @@ ColumnMap TextCompat::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
+ar::ConstArchivePtr TextCompat::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("input_column", ar::str(_input_column));
+  map->set("output_indices", ar::str(_output_indices));
+  map->set("output_values", ar::str(_output_values));
+
+  map->set("tokenizer", _tokenizer->toArchive());
+  map->set("encoder", _encoder->toArchive());
+  map->set("lowercase", ar::boolean(_lowercase));
+  map->set("encoding_dim", ar::u64(_encoding_dim));
+  map->set("hash_range", ar::u64(_hash_range));
+
+  return map;
+}
+
+TextCompat::TextCompat(const ar::Archive& archive)
+    : _input_column(archive.str("input_column")),
+      _output_indices(archive.str("output_indices")),
+      _output_values(archive.str("output_values")),
+      _tokenizer(
+          dataset::TextTokenizer::fromArchive(*archive.get("tokenizer"))),
+      _encoder(dataset::TextEncoder::fromArchive(*archive.get("encoder"))),
+      _lowercase(archive.getAs<ar::Boolean>("lowercase")),
+      _encoding_dim(archive.u64("encoding_dim")),
+      _hash_range(archive.u64("hash_range")) {}
+
 template void TextCompat::serialize(cereal::BinaryInputArchive&);
 template void TextCompat::serialize(cereal::BinaryOutputArchive&);
 

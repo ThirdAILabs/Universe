@@ -17,6 +17,8 @@ class Pipeline final : public Transformation {
   explicit Pipeline(std::vector<TransformationPtr> transformations = {})
       : _transformations(std::move(transformations)) {}
 
+  explicit Pipeline(const ar::Archive& archive);
+
   static auto make(std::vector<TransformationPtr> transformations = {}) {
     return std::make_shared<Pipeline>(std::move(transformations));
   }
@@ -40,6 +42,8 @@ class Pipeline final : public Transformation {
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
+  ar::ConstArchivePtr toArchive() const final;
+
   const auto& transformations() const { return _transformations; }
 
   void save(const std::string& filename) const;
@@ -49,6 +53,8 @@ class Pipeline final : public Transformation {
   static PipelinePtr load(const std::string& filename);
 
   static PipelinePtr load_stream(std::istream& input_stream);
+
+  static std::string type() { return "pipeline"; }
 
  private:
   std::vector<TransformationPtr> _transformations;

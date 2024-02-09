@@ -4,6 +4,9 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/List.h>
+#include <archive/src/Map.h>
 #include <data/src/ColumnMap.h>
 
 namespace thirdai::data {
@@ -17,6 +20,27 @@ void Pipeline::buildExplanationMap(const ColumnMap& input, State& state,
     ColumnMap next_input = transformation->apply(last_input, state);
     transformation->buildExplanationMap(last_input, state, explanations);
     last_input = std::move(next_input);
+  }
+}
+
+ar::ConstArchivePtr Pipeline::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+
+  auto transformations = ar::List::make();
+  for (const auto& t : _transformations) {
+    transformations->append(t->toArchive());
+  }
+
+  map->set("transformations", transformations);
+
+  return map;
+}
+
+Pipeline::Pipeline(const ar::Archive& archive) {
+  for (const auto& t : archive.get("transformations")->list()) {
+    _transformations.push_back(Transformation::fromArchive(*t));
   }
 }
 

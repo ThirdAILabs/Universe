@@ -449,8 +449,6 @@ class UDT {
 
   void save(const std::string& filename) const;
 
-  void saveImpl(const std::string& filename) const;
-
   void checkpoint(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;
@@ -483,9 +481,13 @@ class UDT {
   friend class cereal::access;
 
   template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
+  void save(Archive& archive, uint32_t version) const;
+
+  template <class Archive>
+  void load(Archive& archive, uint32_t version);
 
   std::unique_ptr<UDTBackend> _backend;
+  bool _save_optimizer = false;
 };
 
 }  // namespace thirdai::automl::udt

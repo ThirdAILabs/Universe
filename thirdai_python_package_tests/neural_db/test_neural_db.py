@@ -92,6 +92,19 @@ def test_neuralb_db_all_methods_work_on_new_mach_mixture(small_doc_set):
     )
 
 
+def test_neural_db_compatability(small_doc_set):
+    checkpoint = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "compatability_test_ndb"
+    )
+    db = ndb.NeuralDB.from_checkpoint(checkpoint)
+    all_methods_work(
+        db,
+        docs=small_doc_set,
+        num_duplicate_docs=0,
+        assert_acc=False,
+    )
+
+
 def test_neural_db_constrained_search_with_single_constraint():
     db = ndb.NeuralDB()
     db.insert(docs_with_meta(), train=False)

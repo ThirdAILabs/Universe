@@ -5,10 +5,7 @@
 
 namespace thirdai::data::tests {
 
-TEST(RegressionBinningTest, CorrectLabels) {
-  RegressionBinning binning("input", "output", /* min= */ 10, /* max= */ 50,
-                            /* num_bins= */ 10, /* correct_label_radius= */ 3);
-
+void testRegressionBinning(const Transformation& binning) {
   ColumnMap columns(
       {{"input", ValueColumn<float>::make({2, 11, 13, 17, 31, 42, 99})}});
 
@@ -27,6 +24,26 @@ TEST(RegressionBinningTest, CorrectLabels) {
     auto row = bins->row(i);
     ASSERT_EQ(std::vector<uint32_t>(row.begin(), row.end()), expected_bins[i]);
   }
+}
+
+TEST(RegressionBinningTest, CorrectLabels) {
+  RegressionBinning binning("input", "output", /* min= */ 10, /* max= */ 50,
+                            /* num_bins= */ 10, /* correct_label_radius= */ 3);
+
+  testRegressionBinning(binning);
+}
+
+TEST(RegressionBinningTest, Serialization) {
+  RegressionBinning binning("input", "output", /* min= */ 10, /* max= */ 50,
+                            /* num_bins= */ 10, /* correct_label_radius= */ 3);
+
+  // We down cast to transformation because otherwise it was trying to call
+  // the cereal "serialize" method. This can be removed once cereal is
+  // officially depreciated.
+  auto transformation = Transformation::deserialize(
+      dynamic_cast<Transformation*>(&binning)->serialize());
+
+  testRegressionBinning(*transformation);
 }
 
 }  // namespace thirdai::data::tests

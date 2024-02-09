@@ -409,11 +409,14 @@ set(THIRDAI_SOURCES
     dataset/src/blocks/text/Text.cc
     dataset/src/blocks/TabularHashFeatures.cc
     dataset/src/blocks/text/WordpieceTokenizer.cc
+    dataset/src/blocks/text/TextTokenizer.cc
     dataset/src/mach/MachIndex.cc
     dataset/src/mach/MachBlock.cc
     dataset/src/ranking/KeywordOverlapRanker.cc
     dataset/src/utils/GraphInfo.cc
     telemetry/src/PrometheusClient.cc
+    data/src/transformations/Transformation.cc
+    data/src/transformations/State.cc
     data/src/transformations/Binning.cc
     data/src/transformations/StringHash.cc
     data/src/transformations/TextTokenizer.cc

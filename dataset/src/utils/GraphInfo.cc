@@ -2,6 +2,8 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <utility>
 
 namespace thirdai::automl {
@@ -39,6 +41,27 @@ void GraphInfo::clear() {
   _node_id_to_feature_vector.clear();
   _node_id_to_neighbors.clear();
 }
+
+ar::ConstArchivePtr GraphInfo::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("feature_dim", ar::u64(_feature_dim));
+  map->set("node_to_features", ar::mapU64VecF32(_node_id_to_feature_vector));
+  map->set("node_to_neighbors", ar::mapU64VecU64(_node_id_to_neighbors));
+
+  return map;
+}
+
+std::shared_ptr<GraphInfo> GraphInfo::fromArchive(const ar::Archive& archive) {
+  return std::make_shared<GraphInfo>(archive);
+}
+
+GraphInfo::GraphInfo(const ar::Archive& archive)
+    : _feature_dim(archive.u64("feature_dim")),
+      _node_id_to_feature_vector(
+          archive.getAs<ar::MapU64VecF32>("node_to_features")),
+      _node_id_to_neighbors(
+          archive.getAs<ar::MapU64VecU64>("node_to_neighbors")) {}
 
 template void GraphInfo::serialize(cereal::BinaryInputArchive&);
 template void GraphInfo::serialize(cereal::BinaryOutputArchive&);

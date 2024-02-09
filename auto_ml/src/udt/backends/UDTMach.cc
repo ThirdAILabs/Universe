@@ -303,8 +303,8 @@ py::object UDTMach::scoreBatch(const MapInputBatch& samples,
   }
 
   // sparse inference could become an issue here because maybe the entities
-  // we score wouldn't otherwise be in the top results, thus their buckets
-  // have lower similarity and don't get selected by LSH
+  // we score wouldn't otherwise be in the top results, thus their buckets have
+  // lower similarity and don't get selected by LSH
   auto outputs = _classifier->model()
                      ->forward(_featurizer->featurizeInputBatch(samples),
                                /* use_sparsity= */ false)
@@ -1004,8 +1004,7 @@ void UDTMach::setDecodeParams(uint32_t top_k_to_return,
 }
 
 void UDTMach::setIndex(const dataset::mach::MachIndexPtr& index) {
-  // block allows indexes with different number of hashes but not output
-  // ranges
+  // block allows indexes with different number of hashes but not output ranges
   _featurizer->state()->setMachIndex(index);
 
   updateSamplingStrategy();
@@ -1076,6 +1075,38 @@ void UDTMach::warnOnNonHashBasedMetrics(
 bolt::TensorPtr UDTMach::placeholderDocIds(uint32_t batch_size) {
   return bolt::Tensor::sparse(batch_size, std::numeric_limits<uint32_t>::max(),
                               /* nonzeros= */ 1);
+}
+
+ar::ConstArchivePtr UDTMach::toArchive(bool with_optimizer) const {
+  auto map = _classifier->toArchive(with_optimizer);
+  map->set("type", ar::str(type()));
+  map->set("featurizer", _featurizer->toArchive());
+
+  map->set("default_top_k_to_return", ar::u64(_default_top_k_to_return));
+  map->set("num_buckets_to_eval", ar::u64(_num_buckets_to_eval));
+  map->set("mach_sampling_threshold", ar::f32(_mach_sampling_threshold));
+
+  if (_balancing_samples) {
+    map->set("balancing_samples", _balancing_samples->toArchive());
+  }
+
+  return map;
+}
+
+std::unique_ptr<UDTMach> UDTMach::fromArchive(const ar::Archive& archive) {
+  return std::make_unique<UDTMach>(archive);
+}
+
+UDTMach::UDTMach(const ar::Archive& archive)
+    : _classifier(utils::Classifier::fromArchive(archive)),
+      _featurizer(MachFeaturizer::fromArchive(*archive.get("featurizer"))),
+      _default_top_k_to_return(archive.u64("default_top_k_to_return")),
+      _num_buckets_to_eval(archive.u64("num_buckets_to_eval")),
+      _mach_sampling_threshold(
+          archive.getAs<ar::F32>("mach_sampling_threshold")) {
+  if (archive.contains("balancing_samples")) {
+    _balancing_samples = BalancingSamples(*archive.get("balancing_samples"));
+  }
 }
 
 template void UDTMach::serialize(cereal::BinaryInputArchive&,

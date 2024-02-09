@@ -29,6 +29,8 @@ class MachFeaturizer final : public Featurizer {
       std::optional<char> label_delimiter,
       data::ValueFillType label_value_fill = data::ValueFillType::Ones);
 
+  explicit MachFeaturizer(const ar::Archive& archive);
+
   std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>
   featurizeForIntroduceDocuments(
       const dataset::DataSourcePtr& data_source,
@@ -57,6 +59,11 @@ class MachFeaturizer final : public Featurizer {
       size_t n_balancing_samples);
 
   const auto& machIndex() const { return _state->machIndex(); }
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::shared_ptr<MachFeaturizer> fromArchive(
+      const ar::Archive& archive);
 
  private:
   data::ColumnMap removeIntermediateColumns(const data::ColumnMap& columns);
