@@ -209,6 +209,7 @@ class DenseTensor final : public Tensor {
 using DenseTensorPtr = std::shared_ptr<DenseTensor>;
 
 inline DenseTensorPtr dense(const TensorPtr& tensor) {
+  CHECK(tensor, "Tensor should not be null.");
   if (auto ptr = std::dynamic_pointer_cast<DenseTensor>(tensor)) {
     return ptr;
   }

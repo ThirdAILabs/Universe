@@ -280,7 +280,7 @@ void defineModules(py::module_& smx) {
                                                                  "Embedding")
       .def(py::init<size_t, size_t, bool>(), py::arg("n_embs"),
            py::arg("emb_dim"), py::arg("reduce_mean") = true)
-      .def_property_readonly("emb", &Embedding::emb);
+      .def_property("emb", &Embedding::emb, &Embedding::setEmb);
 
   py::class_<Activation, std::shared_ptr<Activation>, UnaryModule>(smx,
                                                                    "Activation")

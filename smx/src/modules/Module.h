@@ -28,6 +28,8 @@ class Module {
 
   void registerParameter(const std::string& name, const VariablePtr& parameter);
 
+  void deregisterParameter(const std::string& name);
+
   void registerModule(const std::string& name,
                       const std::shared_ptr<Module>& module);
 

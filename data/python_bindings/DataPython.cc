@@ -112,7 +112,8 @@ void createDataSubmodule(py::module_& dataset_submodule) {
       .def("next_column_map", &Loader::nextColumnMap,
            py::arg("max_batches") = Loader::NO_LIMIT)
       .def("all", &Loader::all)
-      .def("all_smx", &Loader::allSmx);
+      .def("all_smx", &Loader::allSmx)
+      .def("restart", &Loader::restart);
 
   dataset_submodule.def("to_tensors", &toTensorBatches, py::arg("column_map"),
                         py::arg("columns_to_convert"), py::arg("batch_size"));

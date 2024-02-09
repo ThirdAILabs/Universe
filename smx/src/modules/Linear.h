@@ -35,7 +35,10 @@ class Linear final : public UnaryModule {
           "Shape must match in setWeight.");
     CHECK(w->tensor()->dtype() == _weight->tensor()->dtype(),
           "Dtype must match in setWeight.");
+
     _weight = std::move(w);
+    deregisterParameter("weight");
+    registerParameter("weight", _weight);
   }
 
   const auto& bias() const { return _bias; }
@@ -45,7 +48,10 @@ class Linear final : public UnaryModule {
           "Shape must match in setBias.");
     CHECK(b->tensor()->dtype() == _bias->tensor()->dtype(),
           "Dtype must match in setBias.");
+
     _bias = std::move(b);
+    deregisterParameter("bias");
+    registerParameter("bias", _bias);
   }
 
  private:
@@ -121,7 +127,10 @@ class SparseLinear final : public Module {
           "Shape must match in setWeight.");
     CHECK(w->tensor()->dtype() == _weight->tensor()->dtype(),
           "Dtype must match in setWeight.");
+
     _weight = std::move(w);
+    deregisterParameter("weight");
+    registerParameter("weight", _weight);
   }
 
   const auto& bias() const { return _bias; }
@@ -131,7 +140,10 @@ class SparseLinear final : public Module {
           "Shape must match in setBias.");
     CHECK(b->tensor()->dtype() == _bias->tensor()->dtype(),
           "Dtype must match in setBias.");
+
     _bias = std::move(b);
+    deregisterParameter("bias");
+    registerParameter("bias", _bias);
   }
 
   std::function<void()> onUpdateCallback() {

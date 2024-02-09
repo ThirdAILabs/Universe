@@ -44,6 +44,7 @@ class CsrTensor final : public Tensor {
 using CsrTensorPtr = std::shared_ptr<CsrTensor>;
 
 inline CsrTensorPtr csr(const TensorPtr& tensor) {
+  CHECK(tensor, "Tensor should not be null.");
   if (auto ptr = std::dynamic_pointer_cast<CsrTensor>(tensor)) {
     return ptr;
   }

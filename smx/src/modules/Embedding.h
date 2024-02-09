@@ -24,6 +24,17 @@ class Embedding final : public UnaryModule {
 
   const auto& emb() const { return _emb; }
 
+  void setEmb(VariablePtr emb) {
+    CHECK(emb->tensor()->shape() == _emb->tensor()->shape(),
+          "Shape must match in setEmb.");
+    CHECK(emb->tensor()->dtype() == _emb->tensor()->dtype(),
+          "Dtype must match in setEmb.");
+
+    _emb = std::move(emb);
+    deregisterParameter("emb");
+    registerParameter("emb", _emb);
+  }
+
  private:
   VariablePtr _emb;
   bool _reduce_mean;

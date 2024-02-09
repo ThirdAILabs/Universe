@@ -29,6 +29,14 @@ void Module::registerParameter(const std::string& name,
   _parameters[name] = parameter;
 }
 
+void Module::deregisterParameter(const std::string& name) {
+  if (!_parameters.count(name)) {
+    throw std::runtime_error("Cannot deregister parameter with name '" + name +
+                             "' as no parameter with that name exists.");
+  }
+  _parameters.erase(name);
+}
+
 void Module::registerModule(const std::string& name,
                             const std::shared_ptr<Module>& module) {
   if (_modules.count(name)) {
