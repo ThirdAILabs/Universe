@@ -17,6 +17,8 @@ class GraphFeaturizer {
                   const std::string& target_col, uint32_t n_target_classes,
                   const TabularOptions& options);
 
+  explicit GraphFeaturizer(const ar::Archive& archive);
+
   data::LoaderPtr indexAndGetDataLoader(
       const dataset::DataSourcePtr& data_source, size_t batch_size,
       bool shuffle, bool verbose,
@@ -30,6 +32,11 @@ class GraphFeaturizer {
   bolt::TensorList featurizeInputBatch(const MapInputBatch& samples);
 
   void clearGraph() { _state->graph()->clear(); }
+
+  ar::ConstArchivePtr toArchive() const;
+
+  static std::shared_ptr<GraphFeaturizer> fromArchive(
+      const ar::Archive& archive);
 
  private:
   static std::pair<data::TransformationPtr, std::string> nodeId(

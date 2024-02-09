@@ -1,4 +1,6 @@
 #include "Binning.h"
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/ValueColumns.h>
 #include <string>
 
@@ -59,5 +61,27 @@ void BinningTransformation::buildExplanationMap(
       _output_column_name, bin,
       explanations.explain(_input_column_name, /* feature_index= */ 0));
 }
+
+ar::ConstArchivePtr BinningTransformation::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("input_column", ar::str(_input_column_name));
+  map->set("output_column", ar::str(_output_column_name));
+  map->set("min", ar::f32(_inclusive_min_value));
+  map->set("max", ar::f32(_exclusive_max_value));
+  map->set("binsize", ar::f32(_binsize));
+  map->set("num_bins", ar::u64(_num_bins));
+
+  return map;
+}
+
+BinningTransformation::BinningTransformation(const ar::Archive& archive)
+    : _input_column_name(archive.str("input_column")),
+      _output_column_name(archive.str("output_column")),
+      _inclusive_min_value(archive.getAs<ar::F32>("min")),
+      _exclusive_max_value(archive.getAs<ar::F32>("max")),
+      _binsize(archive.getAs<ar::F32>("binsize")),
+      _num_bins(archive.u64("num_bins")) {}
 
 }  // namespace thirdai::data

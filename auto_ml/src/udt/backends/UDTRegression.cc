@@ -6,6 +6,7 @@
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Trainer.h>
+#include <archive/src/Map.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TemporalRelationshipsAutotuner.h>
 #include <auto_ml/src/udt/Defaults.h>
@@ -14,6 +15,7 @@
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <data/src/Loader.h>
 #include <data/src/transformations/Pipeline.h>
+#include <data/src/transformations/RegressionBinning.h>
 #include <data/src/transformations/StringCast.h>
 #include <pybind11/stl.h>
 #include <utils/Version.h>
@@ -158,6 +160,28 @@ float UDTRegression::unbinActivations(const BoltVector& output) const {
 
   return _binning->unbin(predicted_bin_index);
 }
+
+ar::ConstArchivePtr UDTRegression::toArchive(bool with_optimizer) const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("model", _model->toArchive(with_optimizer));
+  map->set("featurizer", _featurizer->toArchive());
+  map->set("regression_binning", _binning->toArchive());
+
+  return map;
+}
+
+std::unique_ptr<UDTRegression> UDTRegression::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_unique<UDTRegression>(archive);
+}
+
+UDTRegression::UDTRegression(const ar::Archive& archive)
+    : _model(bolt::Model::fromArchive(*archive.get("model"))),
+      _featurizer(Featurizer::fromArchive(*archive.get("featurizer"))),
+      _binning(std::make_shared<data::RegressionBinning>(
+          *archive.get("regression_binning"))) {}
 
 template void UDTRegression::serialize(cereal::BinaryInputArchive&,
                                        const uint32_t version);

@@ -86,6 +86,8 @@ class UDTBackend {
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k) = 0;
 
+  virtual ar::ConstArchivePtr toArchive(bool with_optimizer) const = 0;
+
   virtual py::object scoreBatch(const MapInputBatch& samples,
                                 const std::vector<std::vector<Label>>& classes,
                                 std::optional<uint32_t> top_k) {

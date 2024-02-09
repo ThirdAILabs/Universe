@@ -151,6 +151,8 @@ class ColdStartTextAugmentation final
                                             const std::string& weak_text,
                                             uint32_t row_id_salt) const final;
 
+  static std::string type() { return "cold_start"; }
+
  private:
   std::optional<uint32_t> _weak_min_len;
   std::optional<uint32_t> _weak_max_len;

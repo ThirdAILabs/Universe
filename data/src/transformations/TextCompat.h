@@ -24,9 +24,15 @@ class TextCompat final : public Transformation {
              dataset::TextEncoderPtr encoder, bool lowercase,
              size_t encoding_dim, size_t hash_range);
 
+  explicit TextCompat(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   const std::string& inputColumn() const { return _input_column; }
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "text_compat"; }
 
  private:
   inline uint32_t mimicHashedFeatureVector(uint32_t index) const {

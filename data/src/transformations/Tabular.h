@@ -1,5 +1,6 @@
 #pragma once
 
+#include <archive/src/Archive.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/utils/TokenEncoding.h>
 
@@ -16,11 +17,15 @@ struct NumericalColumn {
         _salt(dataset::token_encoding::seededMurmurHash(name.data(),
                                                         name.size())) {}
 
+  explicit NumericalColumn(const ar::Archive& archive);
+
   inline uint32_t encode(const std::string& val) const;
 
   std::string name;
 
   NumericalColumn() {}
+
+  ar::ConstArchivePtr toArchive() const;
 
  private:
   float _min;
@@ -42,11 +47,15 @@ struct CategoricalColumn {
         _salt(dataset::token_encoding::seededMurmurHash(name.data(),
                                                         name.size())) {}
 
+  explicit CategoricalColumn(const ar::Archive& archive);
+
   inline uint32_t encode(const std::string& val) const;
 
   std::string name;
 
   CategoricalColumn() {}
+
+  ar::ConstArchivePtr toArchive() const;
 
  private:
   uint32_t _salt;
@@ -64,7 +73,11 @@ class Tabular final : public Transformation {
           std::vector<CategoricalColumn> categorical_columns,
           std::string output_column, bool cross_column_pairgrams);
 
+  explicit Tabular(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  ar::ConstArchivePtr toArchive() const final;
 
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
@@ -72,6 +85,8 @@ class Tabular final : public Transformation {
   const auto& numericalColumns() const { return _numerical_columns; }
 
   const auto& categoricalColumns() const { return _categorical_columns; }
+
+  static std::string type() { return "tabular"; }
 
  private:
   std::vector<NumericalColumn> _numerical_columns;

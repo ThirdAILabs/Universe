@@ -2,6 +2,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/vector.hpp>
+#include <archive/src/Map.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
 #include <data/src/transformations/EncodePosition.h>
@@ -123,6 +124,44 @@ bolt::TensorList RecurrentFeaturizer::featurizeInputBatch(
 const data::ThreadSafeVocabularyPtr& RecurrentFeaturizer::vocab() const {
   return _state->getVocab(TARGET_VOCAB);
 }
+
+ar::ConstArchivePtr RecurrentFeaturizer::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("augmenting_transform", _augmenting_transform->toArchive());
+  map->set("non_augmenting_transform", _non_augmenting_transform->toArchive());
+  map->set("recurrence_augmentation", _recurrence_augmentation->toArchive());
+
+  map->set("bolt_input_columns",
+           data::outputColumnsToArchive(_bolt_input_columns));
+  map->set("bolt_label_columns",
+           data::outputColumnsToArchive(_bolt_label_columns));
+
+  map->set("delimiter", ar::character(_delimiter));
+
+  map->set("state", _state->toArchive());
+
+  return map;
+}
+
+std::shared_ptr<RecurrentFeaturizer> RecurrentFeaturizer::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_shared<RecurrentFeaturizer>(archive);
+}
+
+RecurrentFeaturizer::RecurrentFeaturizer(const ar::Archive& archive)
+    : _augmenting_transform(data::Transformation::fromArchive(
+          *archive.get("augmenting_transform"))),
+      _non_augmenting_transform(data::Transformation::fromArchive(
+          *archive.get("non_augmenting_transform"))),
+      _recurrence_augmentation(std::make_shared<data::Recurrence>(
+          *archive.get("recurrence_augmentation"))),
+      _bolt_input_columns(
+          data::outputColumnsFromArchive(*archive.get("bolt_input_columns"))),
+      _bolt_label_columns(
+          data::outputColumnsFromArchive(*archive.get("bolt_label_columns"))),
+      _delimiter(archive.getAs<ar::Char>("delimiter")),
+      _state(data::State::fromArchive(*archive.get("state"))) {}
 
 template void RecurrentFeaturizer::serialize(cereal::BinaryInputArchive&);
 template void RecurrentFeaturizer::serialize(cereal::BinaryOutputArchive&);

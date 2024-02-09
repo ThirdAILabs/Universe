@@ -138,7 +138,8 @@ def get_upvote_samples():
     return df["id"].to_list(), acronyms, upvotes
 
 
-def test_upvote():
+@pytest.mark.parametrize("serialize", [False, True])
+def test_upvote(serialize):
     # This test trains a mach model on a simple dataset of 100 articles from ag-news.
     # Then it creates "acronym" samples which are just the concatenation of the
     # first letter of each word of each article. It checks that originally the
@@ -146,6 +147,11 @@ def test_upvote():
     # the correct labels and checks that the accuracy improves.
 
     model = train_model()
+    if serialize:
+        # This is just a simple test that the balancing samples are serialized.
+        model.save("./test_model")
+        model = bolt.UniversalDeepTransformer.load("./test_model")
+        os.remove("./test_model")
 
     correct_labels, acronym_samples, upvotes = get_upvote_samples()
 

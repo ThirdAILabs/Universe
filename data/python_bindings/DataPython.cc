@@ -241,7 +241,13 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       transformations_submodule, "Transformation")
       .def("__call__", &Transformation::applyStateless, py::arg("columns"))
       .def("__call__", &Transformation::apply, py::arg("columns"),
-           py::arg("state"));
+           py::arg("state"))
+      .def("serialize", [](const TransformationPtr& transformation) {
+        return py::bytes(transformation->serialize());
+      });
+
+  transformations_submodule.def("deserialize", &Transformation::deserialize,
+                                py::arg("binary"));
 
   py::class_<Pipeline, Transformation, PipelinePtr>(transformations_submodule,
                                                     "Pipeline")
