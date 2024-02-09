@@ -121,9 +121,7 @@ ComputationPtr PatchSum::applyToInputs(const ComputationList& inputs) {
 ar::ConstArchivePtr PatchSum::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::Map::make();
-
-  map->set("name", ar::str(name()));
+  auto map = baseArchive();
   map->set("type", ar::str(type()));
 
   map->set("n_patches", ar::u64(_n_patches));
@@ -139,7 +137,9 @@ std::shared_ptr<PatchSum> PatchSum::fromArchive(const ar::Archive& archive) {
 PatchSum::PatchSum(const ar::Archive& archive)
     : Op(archive.str("name")),
       _n_patches(archive.u64("n_patches")),
-      _patch_dim(archive.u64("patch_dim")) {}
+      _patch_dim(archive.u64("patch_dim")) {
+  assertOpType(archive, type());
+}
 
 void PatchSum::disableSparseParameterUpdates() {}
 

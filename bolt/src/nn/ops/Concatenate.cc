@@ -115,14 +115,15 @@ ComputationPtr Concatenate::applyToInputs(const ComputationList& inputs) {
 ar::ConstArchivePtr Concatenate::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::Map::make();
-  map->set("name", ar::str(name()));
+  auto map = baseArchive();
   map->set("type", ar::str(type()));
   return map;
 }
 
 std::shared_ptr<Concatenate> Concatenate::fromArchive(
     const ar::Archive& archive) {
+  assertOpType(archive, type());
+
   auto op = Concatenate::make();
   op->setName(archive.str("name"));
   return op;

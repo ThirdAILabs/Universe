@@ -3,6 +3,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/nn/autograd/Computation.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <archive/src/Archive.h>
@@ -108,8 +109,7 @@ template <typename Impl>
 ar::ConstArchivePtr Activation<Impl>::toArchive(bool with_optimizer) const {
   (void)with_optimizer;
 
-  auto map = ar::Map::make();
-  map->set("name", ar::str(name()));
+  auto map = baseArchive();
   map->set("type", ar::str(type()));
   map->set("activation", ar::str(Impl::name()));
 
@@ -118,6 +118,8 @@ ar::ConstArchivePtr Activation<Impl>::toArchive(bool with_optimizer) const {
 
 OpPtr activationOpFromArchive(const ar::Archive& archive) {
   OpPtr op;
+
+  assertOpType(archive, Activation<ReluImpl>::type());
 
   if (archive.str("activation") == ReluImpl::name()) {
     op = Relu::make();

@@ -95,8 +95,8 @@ EmbeddingLayer::EmbeddingLayer(const ar::Archive& archive)
 
   _embedding_chunks_used.assign(n_emb_chunks, false);
 
-  if (archive.contains("embedding_opt")) {
-    _optimizer = optimizerFromArchive(*archive.get("embedding_opt"));
+  if (archive.contains("embedding_optimizer")) {
+    _optimizer = optimizerFromArchive(*archive.get("embedding_optimizer"));
   }
 }
 

@@ -108,4 +108,13 @@ AdamOptimizer optimizerFromArchive(const ar::Archive& archive) {
   return optimizer;
 }
 
+void assertOpType(const ar::Archive& archive,
+                  const std::string& expected_type) {
+  auto type = archive.str("type");
+  if (type != expected_type) {
+    throw std::invalid_argument("Expected op type '" + expected_type +
+                                "' but received type '" + type + "'.");
+  }
+}
+
 }  // namespace thirdai::bolt

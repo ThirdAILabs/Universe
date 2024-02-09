@@ -51,6 +51,8 @@ ar::ConstArchivePtr CategoricalCrossEntropy::toArchive() const {
 std::shared_ptr<CategoricalCrossEntropy> CategoricalCrossEntropy::fromArchive(
     const ar::Archive& archive,
     const std::unordered_map<std::string, ComputationPtr>& computations) {
+  assertLossType(archive, type());
+
   return CategoricalCrossEntropy::make(computations.at(archive.str("output")),
                                        computations.at(archive.str("labels")));
 }

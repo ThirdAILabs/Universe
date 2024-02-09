@@ -44,6 +44,7 @@ ar::ConstArchivePtr ExternalLoss::toArchive() const {
 std::shared_ptr<ExternalLoss> ExternalLoss::fromArchive(
     const ar::Archive& archive,
     const std::unordered_map<std::string, ComputationPtr>& computations) {
+  assertLossType(archive, type());
   return std::make_shared<ExternalLoss>(
       computations.at(archive.str("output")),
       computations.at(archive.str("external_gradients")));
