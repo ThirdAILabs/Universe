@@ -47,7 +47,7 @@ void Flash::addBatch(const BoltBatch& batch,
 
   std::vector<uint32_t> hashes = hashBatch(batch);
 
-  assert(hashes.size() == batch.getBatchSize() * _num_tables);
+  assert(hashes.size() == batch.getBatchSize() * _hash_function->numTables());
 
   _hashtable->insert(batch.getBatchSize(), labels.data(), hashes.data());
 }
