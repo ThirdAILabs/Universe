@@ -253,19 +253,20 @@ void defineModules(py::module_& smx) {
       .def_property("bias", &Linear::bias, &Linear::setBias);
 
   py::class_<LshIndexConfig>(smx, "LshIndex")
-      .def(py::init<hashing::HashFunctionPtr, size_t, size_t, size_t>(),
-           py::arg("hash_fn"), py::arg("reservoir_size"),
-           py::arg("updates_per_rebuild"), py::arg("updates_per_new_hash_fn"));
+      .def(py::init<hashing::HashFunctionPtr, size_t>(), py::arg("hash_fn"),
+           py::arg("reservoir_size"));
 
   py::class_<NeuronIndex, NeuronIndexPtr>(smx, "NeuronIndex")
       .def("freeze", &NeuronIndex::freeze);
 
   py::class_<SparseLinear, std::shared_ptr<SparseLinear>, Module>(
       smx, "SparseLinear")
-      .def(py::init<size_t, size_t, float,
-                    const std::optional<LshIndexConfig>&>(),
+      .def(py::init<size_t, size_t, float, const std::optional<LshIndexConfig>&,
+                    size_t, size_t>(),
            py::arg("dim"), py::arg("input_dim"), py::arg("sparsity"),
-           py::arg("lsh_index") = std::nullopt)
+           py::arg("lsh_index") = std::nullopt,
+           py::arg("updates_per_rebuild") = 4,
+           py::arg("updates_per_new_hash_fn") = 100)
       .def("__call__",
            py::overload_cast<const VariablePtr&, const VariablePtr&>(
                &SparseLinear::forward))
@@ -300,7 +301,7 @@ void defineOptimizers(py::module_& smx) {
       .def(py::init<const std::vector<VariablePtr>&, float, float, float,
                     float>(),
            py::arg("parameters"), py::arg("lr"), py::arg("beta_1") = 0.9,
-           py::arg("beta_2") = 0.999, py::arg("eps") = 1e-8);
+           py::arg("beta_2") = 0.999, py::arg("eps") = 1e-7);
 }
 
 void createSmxSubmodule(py::module_& mod) {

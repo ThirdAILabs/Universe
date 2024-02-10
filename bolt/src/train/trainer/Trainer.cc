@@ -151,8 +151,8 @@ metrics::History Trainer::train(
 
     epoch_timer.stop();
 
-    std::cerr << "total train_on_batch_time: " << train_time << std::endl;
-    std::cerr << "update time: " << update_time << std::endl;
+    // std::cerr << "total train_on_batch_time: " << train_time << std::endl;
+    // std::cerr << "update time: " << update_time << std::endl;
 
     std::vector<std::pair<std::string, float>> metrics_at_rank_0;
     if (comm && train_metrics.hasMetrics()) {

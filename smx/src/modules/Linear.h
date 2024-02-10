@@ -61,23 +61,19 @@ class Linear final : public UnaryModule {
 
 class LshIndexConfig {
  public:
-  LshIndexConfig(hashing::HashFunctionPtr hash_fn, size_t reservoir_size,
-                 size_t updates_per_rebuild, size_t updates_per_new_hash_fn)
-      : hash_fn(std::move(hash_fn)),
-        reservoir_size(reservoir_size),
-        updates_per_rebuild(updates_per_rebuild),
-        updates_per_new_hash_fn(updates_per_new_hash_fn) {}
+  LshIndexConfig(hashing::HashFunctionPtr hash_fn, size_t reservoir_size)
+      : hash_fn(std::move(hash_fn)), reservoir_size(reservoir_size) {}
 
   hashing::HashFunctionPtr hash_fn;
   size_t reservoir_size;
-  size_t updates_per_rebuild;
-  size_t updates_per_new_hash_fn;
 };
 
 class SparseLinear final : public Module {
  public:
   SparseLinear(size_t dim, size_t input_dim, float sparsity,
-               const std::optional<LshIndexConfig>& lsh_index)
+               const std::optional<LshIndexConfig>& lsh_index,
+               size_t updates_per_rebuild = 4,
+               size_t updates_per_new_hash_fn = 100)
       : _sparsity(sparsity) {
     _weight = Variable::make(
         smx::normal({dim, input_dim}, /*mean=*/0.0, /*stddev=*/0.01),
@@ -90,14 +86,14 @@ class SparseLinear final : public Module {
     registerParameter("bias", _bias);
 
     if (lsh_index) {
-      _neuron_index = LshIndex::make(
-          lsh_index->hash_fn, lsh_index->reservoir_size,
-          dense(_weight->tensor()), lsh_index->updates_per_rebuild,
-          lsh_index->updates_per_new_hash_fn);
+      _neuron_index =
+          LshIndex::make(lsh_index->hash_fn, lsh_index->reservoir_size,
+                         dense(_weight->tensor()), updates_per_rebuild,
+                         updates_per_new_hash_fn);
     } else {
       _neuron_index = LshIndex::autotune(
           dim, input_dim, sparsity, dense(_weight->tensor()),
-          /* updates_per_rebuild=*/6, /*updates_per_new_hash_fn=*/125);
+          /* updates_per_rebuild=*/2, /*updates_per_new_hash_fn=*/11);
     }
   }
 

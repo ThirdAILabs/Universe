@@ -63,10 +63,14 @@ class MachModel(smx.Module):
     def __init__(self, input_dim, emb_dim, output_dim, sparsity):
         super().__init__()
 
-        self.emb = smx.Embedding(emb_dim=emb_dim, n_embs=input_dim)
+        self.emb = smx.Embedding(emb_dim=emb_dim, n_embs=input_dim, reduce_mean=False)
 
         self.output = smx.SparseLinear(
-            input_dim=emb_dim, dim=output_dim, sparsity=sparsity
+            input_dim=emb_dim,
+            dim=output_dim,
+            sparsity=sparsity,
+            updates_per_rebuild=2,
+            updates_per_new_hash_fn=11,
         )
 
     def forward(self, x, y=None):
@@ -286,6 +290,7 @@ class BoltMach:
         label_delimiter=":",
     ):
         self.model = self.build_model(input_dim, emb_dim, n_buckets, output_sparsity)
+        self.model.disable_sparse_parameter_updates()
 
         self.index = dataset.MachIndex(
             output_range=n_buckets, num_hashes=n_hashes, num_elements=n_entities
@@ -302,13 +307,15 @@ class BoltMach:
 
     def build_model(self, input_dim, emb_dim, output_dim, output_sparsity):
         input_ = bolt.nn.Input(input_dim)
-        emb = bolt.nn.Embedding(input_dim=input_dim, dim=emb_dim, activation="relu")(
-            input_
-        )
+        emb = bolt.nn.Embedding(
+            input_dim=input_dim, dim=emb_dim, activation="relu", bias=False
+        )(input_)
         out = bolt.nn.FullyConnected(
             input_dim=emb_dim,
             dim=output_dim,
             sparsity=output_sparsity,
+            rebuild_hash_tables=2,
+            reconstruct_hash_functions=11,
             activation="sigmoid",
         )(emb)
 
@@ -405,7 +412,7 @@ class BoltMach:
             train_data=batches,
             learning_rate=self.lr,
             epochs=1,
-            autotune_rehash_rebuild=True,
+            autotune_rehash_rebuild=False,
         )
 
     def validate(self, filename, recall_at, precision_at, num_buckets_to_eval=25):
@@ -452,7 +459,7 @@ class BoltMach:
 
 
 def scifact():
-    model = BoltMach(
+    model = SmxMach(
         input_dim=100_000,
         emb_dim=1024,
         n_buckets=1_000,
@@ -470,8 +477,9 @@ def scifact():
             weak_cols=["TEXT"],
         )
 
-        if e == 0:
-            model.freeze_hash_tables()
+        # if e == 0:
+        #     # Need to add insert when not found option to smx.
+        #     model.freeze_hash_tables()
 
         model.validate(
             "/Users/nmeisburger/ThirdAI/data/scifact/tst_supervised.csv",
