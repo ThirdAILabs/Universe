@@ -267,6 +267,7 @@ void defineAutomlInModule(py::module_& module) {
              thirdai::bolt::python::setParameters(udt.model(), new_parameters);
            })
       .def("is_v1", &udt::UDT::isV1)
+      .def("migrate_to_v2", &udt::UDT::migrateToMachV2)
       .def(bolt::python::getPickleFunction<udt::UDT>())
       .def("save_cpp_classifier", &udt::UDT::saveCppClassifier,
            py::arg("save_path"))

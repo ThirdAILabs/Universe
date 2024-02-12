@@ -459,6 +459,13 @@ class UDT {
 
   bool isV1() const;
 
+  /**
+   * This method is just for testing so that we can create a v1 mach model and
+   * test that everything works once it is migrated. Models are automatically
+   * converted to v2 on load.
+   */
+  void migrateToMachV2();
+
   static std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
   parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
                     const MapInputBatch& batch, bool sparse_inference,

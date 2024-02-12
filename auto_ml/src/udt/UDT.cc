@@ -388,14 +388,18 @@ void UDT::load(Archive& archive, const uint32_t version) {
     // Increment thirdai::versions::UDT_BASE_VERSION after serialization changes
     archive(_backend);
 
-    if (auto* old_mach = dynamic_cast<UDTMachClassifier*>(_backend.get())) {
-      _backend = std::make_unique<UDTMach>(old_mach->getMachInfo());
-    }
+    migrateToMachV2();
   } else {
     ar::ArchivePtr thirdai_archive;
     archive(thirdai_archive);
 
     _backend = backendFromArchive(*thirdai_archive);
+  }
+}
+
+void UDT::migrateToMachV2() {
+  if (auto* old_mach = dynamic_cast<UDTMachClassifier*>(_backend.get())) {
+    _backend = std::make_unique<UDTMach>(old_mach->getMachInfo());
   }
 }
 
