@@ -40,7 +40,7 @@ def test_mach_compatability(download_clinc_dataset):
     assert original_metrics["val_precision@1"][-1] >= 0.8
 
     model.migrate_to_v2()
-    
+
     assert not model.is_v1()
 
     new_metrics = model.evaluate(eval_filename, metrics=["precision@1"])

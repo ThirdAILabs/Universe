@@ -1,6 +1,7 @@
 import os
-from thirdai import neural_db as ndb
+
 import pandas as pd
+from thirdai import neural_db as ndb
 
 
 def current_dir():
