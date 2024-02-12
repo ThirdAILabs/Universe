@@ -57,9 +57,9 @@ class FullyConnectedLayer final {
     _should_save_optimizer = should_save_optimizer;
   }
 
-  void switchToSgd() {
-    _weight_optimizer->switchToSgd();
-    _bias_optimizer->switchToSgd();
+  void switchToSgd(std::optional<float> grad_clip) {
+    _weight_optimizer->switchToSgd(grad_clip);
+    _bias_optimizer->switchToSgd(grad_clip);
   }
 
   BoltBatch createBatchState(const uint32_t batch_size,

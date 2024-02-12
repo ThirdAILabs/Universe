@@ -180,7 +180,7 @@ void EmbeddingLayer::updateParametersSparseAdam(float lr, uint32_t iter,
 
     for (uint64_t n = chunk_id * _update_chunk_size;
          n < (chunk_id + 1) * _update_chunk_size; n++) {
-      float grad = _optimizer->gradients[n];
+      float grad = _optimizer->clipGradSgd(_optimizer->gradients[n]);
       if (grad == 0.0) {
         // Because the chunk being updated may not have entirely been used we
         // check for this to avoid updating unused elements of the embedding

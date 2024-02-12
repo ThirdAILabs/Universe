@@ -38,9 +38,9 @@ class LayerNorm final : public Op,
 
   std::vector<std::vector<float>*> parameters() final;
 
-  void switchToSgd() final {
-    _gamma_optimizer.switchToSgd();
-    _beta_optimizer.switchToSgd();
+  void switchToSgd(std::optional<float> grad_clip) final {
+    _gamma_optimizer.switchToSgd(grad_clip);
+    _beta_optimizer.switchToSgd(grad_clip);
   }
 
   void summary(std::ostream& summary, const ComputationList& inputs,

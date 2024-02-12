@@ -143,7 +143,7 @@ class Op {
     (void)setSerializeOptimizer;
   }
 
-  virtual void switchToSgd() {}
+  virtual void switchToSgd(std::optional<float> grad_clip) { (void)grad_clip; }
 
   virtual void registerModel(const std::weak_ptr<Model>& model) { (void)model; }
 

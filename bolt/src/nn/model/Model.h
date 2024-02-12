@@ -247,7 +247,7 @@ class Model : public std::enable_shared_from_this<Model> {
 
   void enableSparseParameterUpdates();
 
-  void switchToSgd();
+  void switchToSgd(std::optional<float> grad_clip);
 
   /**
    * Helper function to save the model to a stream.

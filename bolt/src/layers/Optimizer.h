@@ -5,9 +5,11 @@
 #include <cereal/cereal.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -67,7 +69,8 @@ struct AdamOptimizer {
 
 #pragma omp parallel for default(none) shared(params, learning_rate)
     for (uint64_t n = 0; n < params.size(); n++) {
-      float grad = gradients[n];
+      float grad = clipGradSgd(gradients[n]);
+
       assert(!std::isnan(grad));
 
       params[n] += learning_rate * grad;
@@ -79,12 +82,22 @@ struct AdamOptimizer {
 
   bool isAdam() const { return !momentum.empty() && !velocity.empty(); }
 
-  void switchToSgd() {
+  void switchToSgd(std::optional<float> grad_clip) {
     momentum = {};
     velocity = {};
+    sgd_grad_clip = grad_clip;
+  }
+
+  inline float clipGradSgd(float grad) const {
+    if (sgd_grad_clip) {
+      return std::clamp(grad, -*sgd_grad_clip, *sgd_grad_clip);
+    }
+    return grad;
   }
 
  private:
+  std::optional<float> sgd_grad_clip = std::nullopt;
+
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
