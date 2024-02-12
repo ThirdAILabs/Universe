@@ -86,6 +86,13 @@ class UDTBackend {
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k) = 0;
 
+  virtual py::object predictActivationsBatch(const MapInputBatch& samples,
+                                             bool sparse_inference) {
+    (void)samples;
+    (void)sparse_inference;
+    throw notSupported("predict_activations_batch");
+  }
+
   virtual py::object scoreBatch(const MapInputBatch& samples,
                                 const std::vector<std::vector<Label>>& classes,
                                 std::optional<uint32_t> top_k) {
@@ -274,25 +281,29 @@ class UDTBackend {
   virtual void associate(
       const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
-      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
+      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+      bool force_non_empty, size_t batch_size) {
     (void)rlhf_samples;
     (void)n_association_samples;
     (void)n_balancing_samples;
     (void)n_buckets;
     (void)learning_rate;
     (void)epochs;
+    (void)force_non_empty;
+    (void)batch_size;
     throw notSupported("associate");
   }
 
   virtual void upvote(
       const std::vector<std::pair<std::string, uint32_t>>& rlhf_samples,
       uint32_t n_upvote_samples, uint32_t n_balancing_samples,
-      float learning_rate, uint32_t epochs) {
+      float learning_rate, uint32_t epochs, size_t batch_size) {
     (void)rlhf_samples;
     (void)n_upvote_samples;
     (void)n_balancing_samples;
     (void)learning_rate;
     (void)epochs;
+    (void)batch_size;
     throw notSupported("upvote");
   }
 

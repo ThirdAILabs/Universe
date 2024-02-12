@@ -1,18 +1,22 @@
 import os
+import random
 import shutil
 from pathlib import Path
 from typing import List
 
 import numpy as np
+import pandas as pd
 import pytest
 import thirdai
 from ndb_utils import (
+    CSV_FILE,
     PDF_FILE,
     all_local_doc_getters,
     associate_works,
     clear_sources_works,
     create_simple_dataset,
     docs_with_meta,
+    empty_neural_db,
     insert_works,
     metadata_constraints,
     num_duplicate_local_doc_getters,
@@ -26,8 +30,19 @@ from ndb_utils import (
 )
 from thirdai import dataset
 from thirdai import neural_db as ndb
+from thirdai.neural_db.models import merge_results
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
+
+
+@pytest.fixture(scope="session")
+def small_doc_set():
+    return [ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE, on_disk=True)]
+
+
+@pytest.fixture(scope="session")
+def all_local_docs():
+    return [get_doc() for get_doc in all_local_doc_getters]
 
 
 def test_neural_db_reference_scores(train_simple_neural_db):
@@ -55,36 +70,24 @@ def all_methods_work(
     clear_sources_works(db)
 
 
-def test_neural_db_all_methods_work_on_new_model():
-    db = ndb.NeuralDB("user")
-    all_docs = [get_doc() for get_doc in all_local_doc_getters]
+@pytest.mark.parametrize("use_inverted_index", [True, False])
+def test_neural_db_all_methods_work_on_new_model(small_doc_set, use_inverted_index):
+    db = ndb.NeuralDB(use_inverted_index=use_inverted_index)
     all_methods_work(
         db,
-        all_docs,
-        num_duplicate_docs=num_duplicate_local_doc_getters,
+        docs=small_doc_set,
+        num_duplicate_docs=0,
         assert_acc=False,
     )
 
 
-def test_neural_db_all_methods_work_on_new_model_with_on_disk_docs():
-    db = ndb.NeuralDB("user")
-    all_docs = [get_doc() for get_doc in on_diskable_doc_getters(on_disk=True)]
-    all_methods_work(
-        db,
-        all_docs,
-        num_duplicate_docs=num_duplicate_on_diskable_doc_getters,
-        assert_acc=False,
-    )
-
-
-def test_neuralb_db_all_methods_work_on_new_mach_mixture():
+def test_neuralb_db_all_methods_work_on_new_mach_mixture(small_doc_set):
     number_models = 2
     db = ndb.NeuralDB("user", number_models=number_models)
-    all_docs = [get_doc() for get_doc in all_local_doc_getters]
     all_methods_work(
         db,
-        all_docs,
-        num_duplicate_docs=num_duplicate_local_doc_getters,
+        docs=small_doc_set,
+        num_duplicate_docs=0,
         assert_acc=False,
     )
 
@@ -100,12 +103,13 @@ def test_neural_db_constrained_search_with_single_constraint():
         assert all([constraint == ref.metadata["meta"] for ref in references])
 
 
-def test_neural_db_constrained_search_with_multiple_constraints():
+def test_neural_db_constrained_search_with_multiple_constraints(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"language": "English", "county": "Harris"}),
         ndb.PDF(PDF_FILE, metadata={"language": "Spanish", "county": "Austin"}),
     ]
-    db = ndb.NeuralDB()
+    db = empty_neural_db
+    db.clear_sources()  # clear sources in case a different test added sources
     db.insert(documents, train=False)
     for constraints in [
         {"language": "English", "county": "Harris"},
@@ -123,12 +127,15 @@ def test_neural_db_constrained_search_with_multiple_constraints():
         )
 
 
-def test_neural_db_constrained_search_with_multiple_constraints_multiple_models():
+def test_neural_db_constrained_search_with_multiple_constraints_multiple_models(
+    empty_neural_db,
+):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"language": "English", "county": "Harris"}),
         ndb.PDF(PDF_FILE, metadata={"language": "Spanish", "county": "Austin"}),
     ]
-    db = ndb.NeuralDB(number_models=3)
+    db = empty_neural_db
+    db.clear_sources()  # clear sources in case a different test added sources
     db.insert(documents, train=False)
     for constraints in [
         {"language": "English", "county": "Harris"},
@@ -146,13 +153,14 @@ def test_neural_db_constrained_search_with_multiple_constraints_multiple_models(
         )
 
 
-def test_neural_db_constrained_search_with_set_constraint():
+def test_neural_db_constrained_search_with_set_constraint(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10"}),
         ndb.PDF(PDF_FILE, metadata={"date": "2022-10-10"}),
         ndb.PDF(PDF_FILE, metadata={"date": "2021-10-10"}),
     ]
-    db = ndb.NeuralDB()
+    db = empty_neural_db
+    db.clear_sources()  # clear sources in case a different test added sources
     db.insert(documents, train=False)
 
     references = db.search(
@@ -175,12 +183,13 @@ def test_neural_db_constrained_search_with_set_constraint():
     assert any([ref.metadata["date"] == "2021-10-10" for ref in references])
 
 
-def test_neural_db_constrained_search_with_range_constraint():
+def test_neural_db_constrained_search_with_range_constraint(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10", "score": 0.5}),
         ndb.PDF(PDF_FILE, metadata={"date": "2022-10-10", "score": 0.9}),
     ]
-    db = ndb.NeuralDB()
+    db = empty_neural_db
+    db.clear_sources()  # clear sources in case a different test added sources
     db.insert(documents, train=False)
 
     # Make sure that without constraints, we get results from both documents.
@@ -201,12 +210,13 @@ def test_neural_db_constrained_search_with_range_constraint():
     assert all([ref.metadata["score"] == 0.9 for ref in references])
 
 
-def test_neural_db_constrained_search_with_comparison_constraint():
+def test_neural_db_constrained_search_with_comparison_constraint(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10", "score": 0.5}),
         ndb.PDF(PDF_FILE, metadata={"date": "2022-10-10", "score": 0.9}),
     ]
-    db = ndb.NeuralDB()
+    db = empty_neural_db
+    db.clear_sources()  # clear sources in case a different test added sources
     db.insert(documents, train=False)
 
     # Make sure that without constraints, we get results from both documents.
@@ -225,11 +235,12 @@ def test_neural_db_constrained_search_with_comparison_constraint():
     assert all([ref.metadata["score"] == 0.5 for ref in references])
 
 
-def test_neural_db_constrained_search_no_matches():
+def test_neural_db_constrained_search_no_matches(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10", "score": 0.5}),
     ]
-    db = ndb.NeuralDB()
+    db = empty_neural_db
+    db.clear_sources()  # clear sources in case a different test added sources
     db.insert(documents, train=False)
 
     references = db.search(
@@ -238,7 +249,7 @@ def test_neural_db_constrained_search_no_matches():
     assert len(references) == 0
 
 
-def test_neural_db_constrained_search_row_level_constraints():
+def test_neural_db_constrained_search_row_level_constraints(empty_neural_db):
     csv_contents = [
         "id,text,date",
     ] + [f"{i},a reusable chunk of text,{1950 + i}-10-10" for i in range(100)]
@@ -256,7 +267,8 @@ def test_neural_db_constrained_search_row_level_constraints():
             reference_columns=["text"],
         )
     ]
-    db = ndb.NeuralDB()
+    db = empty_neural_db
+    db.clear_sources()  # clear sources in case a different test added sources
     db.insert(documents, train=True)
 
     references = db.search(
@@ -272,7 +284,7 @@ def test_neural_db_constrained_search_row_level_constraints():
     assert any([r.metadata["date"] > "2000-01-01" for r in references])
 
 
-def test_neural_db_delete_document():
+def test_neural_db_delete_document(empty_neural_db):
     with open("ice_cream.csv", "w") as f:
         f.write("text,id\n")
         f.write("ice cream,0\n")
@@ -281,7 +293,8 @@ def test_neural_db_delete_document():
         f.write("text,id\n")
         f.write("pizza,0\n")
 
-    db = ndb.NeuralDB()
+    db = empty_neural_db
+    db.clear_sources()  # clear sources in case a different test added sources
     docs = [
         ndb.CSV(
             "ice_cream.csv",
@@ -317,7 +330,7 @@ def test_neural_db_delete_document():
     result = db.search("ice cream", top_k=1, constraints={"about": "ice cream"})[0]
     assert result.text == "text: ice cream"
 
-    db.delete(ice_cream_source_id)
+    db.delete([ice_cream_source_id])
 
     results = db.search("ice cream", top_k=1)
     # pizza may not come up, so check if we got any result at all.
@@ -350,7 +363,34 @@ def test_neural_db_delete_document():
     assert result.text == "text: ice cream"
 
 
-def test_neural_db_rerank_search():
+def test_neural_db_delete_document_with_inverted_index():
+    # The other delete test is only returning 1 entity, so it will only return
+    # the top result from mach, thus it doesn't test if the inverted index is
+    # returning the result.
+    db = ndb.NeuralDB()
+
+    texts = [
+        "apples are green",
+        "bananas are yellow",
+        "oranges are orange",
+        "spinach is green",
+        "apples are red",
+    ]
+
+    ids = db.insert(
+        [ndb.InMemoryText(name=str(i), texts=[text]) for i, text in enumerate(texts)]
+    )
+
+    results = db.search(texts[-1], top_k=4)
+    assert 4 in [result.id for result in results]
+
+    db.delete([ids[-1]])
+
+    results = db.search(texts[-1], top_k=4)
+    assert 4 not in [result.id for result in results]
+
+
+def test_neural_db_rerank_search(all_local_docs):
     def char4(sentence):
         return [sentence[i : i + 4] for i in range(len(sentence) - 3)]
 
@@ -369,8 +409,7 @@ def test_neural_db_rerank_search():
         return len(query_tokens.intersection(docs_tokens))
 
     db = ndb.NeuralDB("user")
-    all_docs = [get_doc() for get_doc in all_local_doc_getters]
-    db.insert(all_docs, train=False)
+    db.insert(all_local_docs, train=False)
 
     query = (
         "The standard chunk of Lorem Ipsum used since the 1500s is reproduced below for"
@@ -405,10 +444,9 @@ def descending_order(seq):
     return all(seq[i] >= seq[i + 1] for i in range(len(seq) - 1))
 
 
-def test_neural_db_reranking():
-    db = ndb.NeuralDB("user")
-    all_docs = [get_doc() for get_doc in all_local_doc_getters]
-    db.insert(all_docs, train=True)
+def test_neural_db_reranking(all_local_docs):
+    db = ndb.NeuralDB("user", use_inverted_index=False)
+    db.insert(all_local_docs, train=True)
 
     query = "Lorem Ipsum"
 
@@ -447,10 +485,9 @@ def test_neural_db_reranking():
     assert reranked_results[-1].score >= base_results[-1].score
 
 
-def test_neural_db_reranking_threshold():
-    db = ndb.NeuralDB("user")
-    all_docs = [get_doc() for get_doc in all_local_doc_getters]
-    db.insert(all_docs, train=True)
+def test_neural_db_reranking_threshold(all_local_docs):
+    db = ndb.NeuralDB("user", use_inverted_index=False)
+    db.insert(all_local_docs, train=True)
 
     query = "agreement"
 
@@ -517,3 +554,98 @@ def test_custom_epoch(create_simple_dataset):
 
     # And number of batches in 'create_simple_dataset' is 1, so, number of epochs that the model got trained for will be number of batches.
     assert num_epochs == batch_count
+
+
+def test_inverted_index_improves_zero_shot():
+    docs = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "../../auto_ml/python_tests/texts.csv",
+    )
+
+    df = pd.read_csv(docs)
+
+    queries = df["text"].map(lambda t: " ".join(random.choices(t.split(" "), k=15)))
+
+    def compute_acc(db):
+        correct = 0
+        for label, q in enumerate(queries):
+            results = [r.id for r in db.search(q, top_k=2)]
+            if label in results:
+                correct += 1
+
+        return correct / len(queries)
+
+    combined_db = ndb.NeuralDB(use_inverted_index=True)
+    combined_db.insert(
+        [ndb.CSV(docs, id_column="id", weak_columns=["text"])], train=False
+    )
+
+    assert compute_acc(combined_db) > 0.9
+
+    mach_only_db = ndb.NeuralDB(use_inverted_index=False)
+    mach_only_db.insert(
+        [ndb.CSV(docs, id_column="id", weak_columns=["text"])], train=False
+    )
+
+    assert compute_acc(mach_only_db) < 0.1
+
+    mach_only_db.build_inverted_index()
+
+    assert compute_acc(mach_only_db) > 0.9
+
+
+def test_neural_db_retriever_specification():
+    db = ndb.NeuralDB()
+
+    texts = [
+        "apples are green",
+        "bananas are yellow",
+        "oranges are orange",
+        "spinach is green",
+        "apples are red",
+        "grapes are purple",
+        "lemons are yellow",
+        "limes are green",
+        "carrots are orange",
+        "celery is green",
+    ]
+
+    db.insert(
+        [ndb.InMemoryText(name=str(i), texts=[text]) for i, text in enumerate(texts)],
+        train=False,
+    )
+
+    combined = set(ref.retriever for ref in db.search("carrots bananas", top_k=10))
+    assert "mach" in combined
+    assert "inverted_index" in combined
+
+    mach_results = db.search("carrots bananas", top_k=10, retriever="mach")
+    assert len(mach_results) > 0
+    for res in mach_results:
+        assert res.retriever == "mach"
+
+    index_results = db.search("carrots bananas", top_k=10, retriever="inverted_index")
+    assert len(index_results) > 0
+    for res in index_results:
+        assert res.retriever == "inverted_index"
+
+
+def test_result_merging():
+    results_a = [
+        (1, 5.0, "a"),
+        (2, 4.0, "a"),
+        (3, 3.0, "a"),
+        (4, 2.0, "a"),
+        (6, 1.0, "a"),
+    ]
+    results_b = [
+        (2, 5.0, "b"),
+        (7, 4.0, "b"),
+        (3, 3.0, "b"),
+        (5, 2.0, "b"),
+        (4, 1.0, "b"),
+    ]
+
+    expected_output = [1, 2, 7, 3, 4, 5, 6]
+
+    assert [x[0] for x in merge_results(results_a, results_b, k=10)] == expected_output

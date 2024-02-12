@@ -546,12 +546,12 @@ class NeuralDB:
 
         return ids
 
-    def delete(self, source_id: str):
-        """Deletes a document from the NeuralDB."""
-        deleted_entities = self._savable_state.documents.delete(source_id)
+    def delete(self, source_ids: List[str]):
+        """Deletes documents from the NeuralDB."""
+        deleted_entities = self._savable_state.documents.delete(source_ids)
         self._savable_state.model.delete_entities(deleted_entities)
         self._savable_state.logger.log(
-            session_id=self._user_id, action="delete", args={"source_id": source_id}
+            session_id=self._user_id, action="delete", args={"source_ids": source_ids}
         )
 
     def clear_sources(self) -> None:
@@ -562,16 +562,17 @@ class NeuralDB:
     def _get_query_references(
         self,
         query: str,
-        result_ids: List[Tuple[int, float]],
+        result_ids: List[Tuple[int, float, str]],
         top_k: int,
         rerank: bool,
         rerank_threshold,
         top_k_threshold,
     ):
         references = []
-        for rid, score in result_ids:
+        for rid, score, retriever in result_ids:
             ref = self._savable_state.documents.reference(rid)
             ref._score = score
+            ref._retriever = retriever
             references.append(ref)
 
         if rerank:
@@ -642,6 +643,7 @@ class NeuralDB:
         top_k_rerank=100,
         rerank_threshold=1.5,
         top_k_threshold=None,
+        retriever=None,
     ) -> List[Reference]:
         """
         Searches the contents of the NeuralDB for documents relevant to the given query.
@@ -673,6 +675,10 @@ class NeuralDB:
                 example passing rerank_threshold=2 and top_k_threshold=4 means that
                 the scores of the top 4 elements are averaged, and all elements below
                 2x this average are reranked.
+            retriever (Optional[str]): Optional, default None. This arg controls which
+                retriever to use for search when a hybrid retrieval model is used. Passing
+                None means that NeuralDB will automatically decide which retrievers (or
+                combination of retrievers) to use.
 
         Returns:
             List[Reference]: A list of Reference objects. Each reference object contains text data matching
@@ -690,6 +696,7 @@ class NeuralDB:
             top_k_rerank=top_k_rerank,
             rerank_threshold=rerank_threshold,
             top_k_threshold=top_k_threshold,
+            retriever=retriever,
         )[0]
 
     def search_batch(
@@ -701,6 +708,7 @@ class NeuralDB:
         top_k_rerank=100,
         rerank_threshold=1.5,
         top_k_threshold=None,
+        retriever=None,
     ):
         """
         Runs search on a batch of queries for much faster throughput.
@@ -722,7 +730,9 @@ class NeuralDB:
             )
         else:
             queries_result_ids = self._savable_state.model.infer_labels(
-                samples=queries, n_results=top_k_to_search
+                samples=queries,
+                n_results=top_k_to_search,
+                retriever="mach" if rerank else retriever,
             )
 
         return [
@@ -776,7 +786,9 @@ class NeuralDB:
             query_id_para=query_id_para,
         )
 
-    def associate(self, source: str, target: str, strength: Strength = Strength.Strong):
+    def associate(
+        self, source: str, target: str, strength: Strength = Strength.Strong, **kwargs
+    ):
         """
         Teaches the underlying model in the NeuralDB that two different texts
         correspond to similar concepts or queries.
@@ -797,10 +809,14 @@ class NeuralDB:
             user_id=self._user_id,
             text_pairs=[(source, target)],
             top_k=top_k,
+            **kwargs,
         )
 
     def associate_batch(
-        self, text_pairs: List[Tuple[str, str]], strength: Strength = Strength.Strong
+        self,
+        text_pairs: List[Tuple[str, str]],
+        strength: Strength = Strength.Strong,
+        **kwargs,
     ):
         """Same as associate, but the process is applied to a batch of (source, target) pairs at once."""
         top_k = self._get_associate_top_k(strength)
@@ -810,6 +826,7 @@ class NeuralDB:
             user_id=self._user_id,
             text_pairs=text_pairs,
             top_k=top_k,
+            **kwargs,
         )
 
     def _get_associate_top_k(self, strength):
@@ -963,4 +980,9 @@ class NeuralDB:
             n_buckets=self._get_associate_top_k(strength),
             learning_rate=learning_rate,
             epochs=epochs,
+        )
+
+    def build_inverted_index(self):
+        self._savable_state.model.build_inverted_index(
+            self._savable_state.documents.get_data_source()
         )

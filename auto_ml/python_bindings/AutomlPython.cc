@@ -151,6 +151,8 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false,
            py::arg("top_k") = std::nullopt, docs::UDT_PREDICT_BATCH)
+      .def("predict_activations_batch", &udt::UDT::predictActivationsBatch,
+           py::arg("samples"), py::arg("sparse_inference") = false)
       .def("score_batch", &udt::UDT::scoreBatch, py::arg("samples"),
            py::arg("classes"), py::arg("top_k") = std::nullopt)
       .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
@@ -211,11 +213,14 @@ void defineAutomlInModule(py::module_& module) {
       .def("associate", &udt::UDT::associate, py::arg("source_target_samples"),
            py::arg("n_buckets"), py::arg("n_association_samples") = 16,
            py::arg("n_balancing_samples") = 50,
-           py::arg("learning_rate") = 0.001, py::arg("epochs") = 3)
+           py::arg("learning_rate") = 0.001, py::arg("epochs") = 3,
+           py::arg("force_non_empty") = true,
+           py::arg("batch_size") = udt::defaults::RLHF_BATCH_SIZE)
       .def("upvote", &udt::UDT::upvote, py::arg("source_target_samples"),
            py::arg("n_upvote_samples") = 16,
            py::arg("n_balancing_samples") = 50,
-           py::arg("learning_rate") = 0.001, py::arg("epochs") = 3)
+           py::arg("learning_rate") = 0.001, py::arg("epochs") = 3,
+           py::arg("batch_size") = udt::defaults::RLHF_BATCH_SIZE)
       .def("associate_train_data_source", &udt::UDT::associateTrain,
            py::arg("balancing_data"), py::arg("source_target_samples"),
            py::arg("n_buckets"), py::arg("n_association_samples"),

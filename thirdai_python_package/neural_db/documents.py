@@ -146,6 +146,7 @@ class Reference:
         source: str,
         metadata: dict,
         upvote_ids: List[int] = None,
+        retriever: str = None,
     ):
         self._id = element_id
         self._upvote_ids = upvote_ids if upvote_ids is not None else [element_id]
@@ -154,6 +155,8 @@ class Reference:
         self._metadata = metadata
         self._context_fn = lambda radius: document.context(element_id, radius)
         self._score = 0
+        self._document = document
+        self._retriever = retriever
 
     @property
     def id(self):
@@ -178,6 +181,14 @@ class Reference:
     @property
     def score(self):
         return self._score
+
+    @property
+    def document(self):
+        return self._document
+
+    @property
+    def retriever(self):
+        return self._retriever
 
     def context(self, radius: int):
         return self._context_fn(radius)
@@ -333,13 +344,22 @@ class DocumentManager:
             doc.hash for doc in documents
         ]
 
-    def delete(self, source_id):
+    def delete(self, source_ids):
         # TODO(Geordie): Error handling
-        doc, offset = self.registry[source_id]
-        deleted_entities = [offset + entity_id for entity_id in doc.all_entity_ids()]
-        del self.registry[source_id]
-        del self.source_id_prefix_trie[source_id]
-        self.constraint_matcher.delete((doc, offset), doc.matched_constraints)
+        all_sources_exist = all(source_id in self.registry for source_id in source_ids)
+        if not all_sources_exist:
+            raise KeyError("At least one source not found in document manager.")
+
+        deleted_entities = []
+        for source_id in source_ids:
+            doc, offset = self.registry[source_id]
+            deleted_entities += [
+                offset + entity_id for entity_id in doc.all_entity_ids()
+            ]
+            del self.registry[source_id]
+            del self.source_id_prefix_trie[source_id]
+            self.constraint_matcher.delete((doc, offset), doc.matched_constraints)
+
         return deleted_entities
 
     def entity_ids_by_constraints(self, constraints: Dict[str, Any]):
@@ -364,6 +384,7 @@ class DocumentManager:
     def clear(self):
         self.registry = OrderedDict()
         self.source_id_prefix_trie = StringTrie()
+        self.constraint_matcher = ConstraintMatcher[DocAndOffset]()
 
     def _get_doc_and_start_id(self, element_id: int):
         for doc, start_id in reversed(self.registry.values()):

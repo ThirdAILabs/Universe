@@ -39,6 +39,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <type_traits>
 #include <unordered_map>
 
@@ -122,6 +123,32 @@ void createDatasetSubmodule(py::module_& module) {
       .def("get_entity_hashes", &mach::MachIndex::getHashes, py::arg("entity"))
       .def("get_hash_to_entities", &mach::MachIndex::getEntities,
            py::arg("hash"))
+      .def(
+          "decode",
+          [](const mach::MachIndex& index, std::vector<uint32_t> indices,
+             std::vector<float> values, uint32_t top_k,
+             uint32_t num_buckets_to_eval) {
+            if (indices.size() != values.size()) {
+              throw std::invalid_argument(
+                  "Indices and values must have same length.");
+            }
+
+            for (uint32_t i : indices) {
+              if (i >= index.numBuckets()) {
+                throw std::invalid_argument(
+                    "Cannot decode index " + std::to_string(i) +
+                    " using MachIndex with " +
+                    std::to_string(index.numBuckets()) + " buckets.");
+              }
+            }
+
+            BoltVector scores(/*an=*/indices.data(), /*a=*/values.data(),
+                              /*g=*/nullptr, /*l=*/indices.size());
+
+            return index.decode(scores, top_k, num_buckets_to_eval);
+          },
+          py::arg("indices"), py::arg("values"), py::arg("top_k"),
+          py::arg("num_buckets_to_eval"))
 #endif
       .def("num_hashes", &mach::MachIndex::numHashes)
       .def("output_range", &mach::MachIndex::numBuckets)
