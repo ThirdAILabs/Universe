@@ -94,7 +94,7 @@ def test_neuralb_db_all_methods_work_on_new_mach_mixture(small_doc_set):
 
 def test_neural_db_compatability(small_doc_set):
     checkpoint = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "compatability_test_ndb"
+        os.path.dirname(os.path.abspath(__file__)), "saved_ndbs/empty_ndb"
     )
     db = ndb.NeuralDB.from_checkpoint(checkpoint)
     all_methods_work(
