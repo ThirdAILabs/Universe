@@ -1,3 +1,5 @@
+import re
+
 import unidecode
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from nltk.tokenize import sent_tokenize, word_tokenize
@@ -37,11 +39,11 @@ def split_large_chunk(chunk, max_len, text_splitter):
 def chunk_text(text: str):
     sentences = sent_tokenize(text)
     if len(sentences) == 1:
-        return [text]
+        return [text] if valid_chunk(text) else []
 
     words_per_sentence = [len(word_tokenize(sent)) for sent in sentences]
     if sum(words_per_sentence) < CHUNK_THRESHOLD:
-        return [text]
+        return [text] if valid_chunk(text) else []
 
     chunks = []
     cur_word_count = 0
@@ -77,3 +79,22 @@ def chunk_text(text: str):
     chunks = [chunk for chunk in chunks if valid_chunk(chunk)]
 
     return chunks
+
+
+def clean_text_and_remove_urls(text: str) -> str:
+    text = clean_text(text)
+    text = re.sub(r"http\S+", "", text, flags=re.MULTILINE)
+    return text
+
+
+def clean_text(text: str) -> str:
+    text = (
+        str(text)
+        .strip()
+        .replace("\r\n", " ")
+        .replace("\n", " ")
+        .replace("\t", " ")
+        .lower()
+    )
+
+    return text

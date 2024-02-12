@@ -106,6 +106,19 @@ void RobeZ::setSerializeOptimizer(bool should_serialize_optimizer) {
   _kernel->saveWithOptimizer(should_serialize_optimizer);
 }
 
+std::vector<std::pair<std::string, double>> RobeZ::parameterAndGradNorms()
+    const {
+  std::vector<std::pair<std::string, double>> all_norms;
+
+  computeNorms(_kernel->getRawEmbeddingBlock(), "embeddings", all_norms);
+  if (_kernel->hasOptimizer()) {
+    computeNorms(_kernel->getRawEmbeddingBlockGradient(), "embeddings_grad",
+                 all_norms);
+  }
+
+  return all_norms;
+}
+
 ComputationPtr RobeZ::apply(ComputationPtr input) {
   return Computation::make(shared_from_this(), {std::move(input)});
 }

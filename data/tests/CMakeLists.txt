@@ -12,7 +12,10 @@ set(DATA_TESTS
     GraphTests
     ExplanationTests
     RegressionBinningTest
-    DeduplicateTokensTest)
+    DeduplicateTokensTest
+    ColumnMapIteratorTests
+    TabularTests
+    TextCompatTest)
 
 foreach(DATA_TEST IN LISTS DATA_TESTS)
   add_executable(${DATA_TEST} ${DATA_TEST}.cc)

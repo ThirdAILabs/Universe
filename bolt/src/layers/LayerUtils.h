@@ -4,7 +4,7 @@
 #include <hashing/src/DWTA.h>
 #include <hashing/src/FastSRP.h>
 #include <hashing/src/SRP.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <cctype>
 #include <stdexcept>
 #include <string>

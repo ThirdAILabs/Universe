@@ -6,6 +6,7 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/Switch.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <licensing/src/CheckLicense.h>
@@ -15,6 +16,7 @@
 #include <algorithm>
 #include <chrono>
 #include <ctime>
+#include <exception>
 #include <memory>
 #include <numeric>
 #include <optional>
@@ -32,6 +34,7 @@ Model::Model(ComputationList inputs, ComputationList outputs,
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
       _optimizer_factory(std::move(optimizer)),
+      _epochs(0),
       _train_steps(0),
       _model_uuid(
           utils::uuid::getRandomHexString(/* num_bytes_randomness= */ 16)),
@@ -54,7 +57,6 @@ Model::Model(ComputationList inputs, ComputationList outputs,
   std::unordered_set<std::string> op_names;
   std::unordered_set<OpPtr> ops;
   for (const auto& comp : _computation_order) {
-    ops.insert(comp->op());
     std::string name = comp->op()->name();
 
     // Check if we have found a new op with the same name.
@@ -62,8 +64,9 @@ Model::Model(ComputationList inputs, ComputationList outputs,
       throw std::invalid_argument(
           "Found multiple Ops in model with the name '" + name +
           "'. All ops in a model must have unique names. The name of the op "
-          "can be updated with `op.name = 'op_name'`.");
+          "can be updated with `op.name = 'new_name'`.");
     }
+    ops.insert(comp->op());
     op_names.insert(comp->op()->name());
   }
   _ops.assign(ops.begin(), ops.end());
@@ -132,6 +135,39 @@ void Model::trainOnBatch(const TensorList& inputs, const TensorList& labels) {
   }
 }
 
+void Model::backpropagate(const TensorList& labels) {
+  requireOptimizer();
+
+  uint32_t batch_size = setLabels(labels);
+
+  _total_training_samples += batch_size;
+  licensing::entitlements().verifyAllowedNumberOfTrainingSamples(
+      _total_training_samples);
+
+  if (!_inputs.empty() && _inputs.at(0)->tensor()->batchSize() != batch_size) {
+    throw std::invalid_argument(
+        "Labels provided to backpropagate do not match batch size of last "
+        "batch.");
+  }
+
+  std::exception_ptr error;
+
+#pragma omp parallel for default(none) shared(batch_size, error)
+  for (uint32_t index_in_batch = 0; index_in_batch < batch_size;
+       index_in_batch++) {
+    try {
+      backpropagateVector(index_in_batch, batch_size);
+    } catch (...) {
+#pragma omp critical
+      error = std::current_exception();
+    }
+  }
+
+  if (error) {
+    std::rethrow_exception(error);
+  }
+}
+
 TensorList Model::forward(const TensorList& inputs, const TensorList& labels,
                           bool use_sparsity) {
   setLabels(labels);
@@ -143,7 +179,7 @@ void Model::updateParameters(float learning_rate) {
 
   ++_train_steps;
   for (auto& op : _ops) {
-    op->updateParameters(learning_rate, _train_steps);
+    op->updateTrainableParameters(learning_rate, _train_steps);
   }
 }
 
@@ -236,6 +272,10 @@ size_t Model::numParams() const {
 
 uint32_t Model::trainSteps() const { return _train_steps; }
 
+uint32_t Model::epochs() const { return _epochs; }
+
+void Model::incrementEpochs() { _epochs++; }
+
 void Model::overrideTrainSteps(uint32_t train_steps) {
   _train_steps = train_steps;
 }
@@ -324,6 +364,8 @@ void setValues(const std::vector<std::vector<float>*>& values,
 }
 
 std::pair<const float*, uint64_t> Model::getFlattenedGradients() {
+  requireOptimizer();
+
   return concatenateValues(gradients());
 }
 
@@ -333,6 +375,8 @@ std::pair<const float*, uint64_t> Model::getFlattenedParameters() const {
 
 void Model::setFlattenedGradients(const float* concatenated_values,
                                   uint64_t flattened_dim) {
+  requireOptimizer();
+
   setValues(gradients(), concatenated_values, flattened_dim);
 }
 
@@ -444,6 +488,19 @@ void Model::setSerializeOptimizer(bool should_save_optimizer) {
   }
 }
 
+std::unordered_map<std::string, double> Model::getNorms() const {
+  std::unordered_map<std::string, double> norms;
+
+  for (const auto& op : _ops) {
+    auto op_norms = op->parameterAndGradNorms();
+    for (const auto& [name, norm] : op_norms) {
+      norms[op->name() + "_" + name] = norm;
+    }
+  }
+
+  return norms;
+}
+
 std::shared_ptr<Model> Model::load(const std::string& filename) {
   auto input_stream = dataset::SafeFileIO::ifstream(filename, std::ios::binary);
   return load_stream(input_stream);
@@ -526,8 +583,9 @@ uint32_t Model::setLabels(const TensorList& label_batches) {
 void Model::matchOutputFullyConnectedLayersWithLabels() const {
   for (const auto& [output, label] : outputLabelPairs()) {
     auto fully_connected = FullyConnected::cast(output->op());
+    auto switch_op = Switch::cast(output->op());
 
-    if (fully_connected) {
+    if (fully_connected || switch_op) {
       output->addInput(label);
     }
   }

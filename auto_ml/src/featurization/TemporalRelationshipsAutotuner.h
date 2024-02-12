@@ -2,7 +2,7 @@
 
 #include "DataTypes.h"
 #include <dataset/src/utils/QuantityHistoryTracker.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <cstdint>
 #include <iterator>
@@ -11,7 +11,7 @@
 #include <optional>
 #include <string>
 
-namespace thirdai::automl::data {
+namespace thirdai::automl {
 
 class TemporalRelationshipsAutotuner {
  public:
@@ -95,4 +95,4 @@ class TemporalRelationshipsAutotuner {
   }
 };
 
-}  // namespace thirdai::automl::data
+}  // namespace thirdai::automl

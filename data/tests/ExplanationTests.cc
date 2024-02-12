@@ -7,12 +7,13 @@
 #include <data/src/transformations/Date.h>
 #include <data/src/transformations/EncodePosition.h>
 #include <data/src/transformations/FeatureHash.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/StringIDLookup.h>
+#include <data/src/transformations/Tabular.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
-#include <data/src/transformations/TransformationList.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <limits>
@@ -151,7 +152,7 @@ TEST(ExplanationTests, FeatureHash) {
 }
 
 TEST(ExplanationTests, StringCast) {
-  TransformationList casts({
+  Pipeline casts({
       std::make_shared<StringToToken>("a", "aa", /* dim= */ std::nullopt),
       std::make_shared<StringToDecimal>("b", "bb"),
       std::make_shared<StringToTimestamp>("c", "cc", /* format= */ "%Y-%m-%d"),
@@ -218,8 +219,50 @@ TEST(ExplanationTests, StringIDLookup) {
   ASSERT_EQ(explanations.explain("bbb", 2), "item 'z' from column 'aaa'");
 }
 
+void testTabularExplanations(bool pairgrams,
+                             const std::set<std::string>& expected) {
+  Tabular tabular({NumericalColumn("bb", 0, 2, 2)},
+                  {CategoricalColumn("aa"), CategoricalColumn("cc")}, "dd",
+                  /* cross_column_pairgrams= */ pairgrams);
+
+  ColumnMap columns({
+      {"aa", ValueColumn<std::string>::make({"apple"})},
+      {"bb", ValueColumn<std::string>::make({"1.7"})},
+      {"cc", ValueColumn<std::string>::make({"88"})},
+  });
+
+  State state;
+  auto explanations = tabular.explain(columns, state);
+
+  compareAllExplanations(explanations, "dd", expected);
+}
+
+TEST(ExplanationTests, TabularWithPairgrams) {
+  std::set<std::string> expected_msgs = {
+      "category 'apple' from column 'aa'",
+      "decimal 1.7 from column 'bb' and category 'apple' from column 'aa'",
+      "decimal 1.7 from column 'bb'",
+      "category 'apple' from column 'aa' and category '88' from column 'cc'",
+      "decimal 1.7 from column 'bb' and category '88' from column 'cc'",
+      "category '88' from column 'cc'",
+  };
+
+  testTabularExplanations(/* pairgrams= */ true, expected_msgs);
+}
+
+TEST(ExplanationTests, TabularWithoutPairgrams) {
+  std::set<std::string> expected_msgs = {
+      "category 'apple' from column 'aa'",
+      "decimal 1.7 from column 'bb'",
+      "category '88' from column 'cc'",
+  };
+
+  testTabularExplanations(/* pairgrams= */ false, expected_msgs);
+}
+
 TEST(ExplanationTests, TextTokenizer) {
-  TextTokenizer tokenizer("a", "b", dataset::NaiveSplitTokenizer::make(),
+  TextTokenizer tokenizer("a", "b", std::nullopt,
+                          dataset::NaiveSplitTokenizer::make(),
                           dataset::NGramEncoder::make(1));
 
   ColumnMap columns({{"a", ValueColumn<std::string>::make({"the tree grew"})}});
@@ -235,8 +278,8 @@ TEST(ExplanationTests, TextTokenizer) {
 }
 
 TEST(ExplanationTests, ComposedTransformations) {
-  TransformationList transformations({
-      std::make_shared<TextTokenizer>("a", "words",
+  Pipeline transformations({
+      std::make_shared<TextTokenizer>("a", "words", std::nullopt,
                                       dataset::NaiveSplitTokenizer::make(),
                                       dataset::NGramEncoder::make(1)),
       std::make_shared<StringToDecimal>("b", "b_cast"),

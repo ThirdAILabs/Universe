@@ -54,6 +54,11 @@ class TabularFeaturizer : public Featurizer {
   std::vector<std::vector<BoltVector>> featurize(
       const LineInputBatch& input_batch) final;
 
+  MapInputBatch convertToMapInputBatch(const LineInputBatch& input_batch,
+                                       const std::string& output_column_name,
+                                       const std::string& input_column_name,
+                                       const std::string& header) final;
+
   bool expectsHeader() const final { return _expects_header; }
 
   void processHeader(const std::string& header) final;
@@ -102,6 +107,8 @@ class TabularFeaturizer : public Featurizer {
                                                std::move(augmentation),
                                                has_header, delimiter, parallel);
   }
+
+  const auto& blockLists() const { return _block_lists; }
 
  private:
   std::vector<std::vector<BoltVector>> featurizeSampleInBatch(

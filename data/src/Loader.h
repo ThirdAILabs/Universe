@@ -19,14 +19,14 @@ class Loader {
   static constexpr size_t NO_LIMIT = std::numeric_limits<size_t>::max();
   static constexpr size_t DEFAULT_SHUFFLE_BUFFER_SIZE = 64000;
 
-  Loader(ColumnMapIterator data_iterator, TransformationPtr transformation,
+  Loader(ColumnMapIteratorPtr data_iterator, TransformationPtr transformation,
          StatePtr state, OutputColumnsList input_columns,
          OutputColumnsList label_columns, size_t batch_size, bool shuffle,
          bool verbose = true,
          size_t shuffle_buffer_size = DEFAULT_SHUFFLE_BUFFER_SIZE,
          uint32_t shuffle_seed = global_random::nextSeed());
 
-  static auto make(ColumnMapIterator data_iterator,
+  static auto make(ColumnMapIteratorPtr data_iterator,
                    TransformationPtr transformation, StatePtr state,
                    OutputColumnsList input_columns,
                    OutputColumnsList label_columns, size_t batch_size,
@@ -39,8 +39,26 @@ class Loader {
         verbose, shuffle_buffer_size, shuffle_seed);
   }
 
+  /**
+   * Returns the shuffled and featurized data for the next set of batches in as
+   * a ColumnMap. It is called in the next method, and the resulting data is
+   * converted to bolt::Tensors. It is also exposed in case a user wants to
+   * construct a different type of batch, then they can use this method so get
+   * the featurized data, and construct batches themselves.
+   */
+  std::optional<ColumnMap> nextColumnMap(size_t max_batches = NO_LIMIT);
+
+  /**
+   * Returns the shuffled and featurized data for the next set of batches as
+   * bolt::Tensors, with one tensor per batch foreach (indices, values) column
+   * pair.
+   */
   std::optional<bolt::LabeledDataset> next(size_t max_batches = NO_LIMIT);
 
+  /**
+   * Returns all of the data in the dataset, featurized and converted to batches
+   * of bolt::Tensors.
+   */
   bolt::LabeledDataset all();
 
   void restart();
@@ -59,7 +77,7 @@ class Loader {
 
   void logLoadEnd(size_t vectors, size_t batches, double time) const;
 
-  ColumnMapIterator _data_iterator;
+  ColumnMapIteratorPtr _data_iterator;
   TransformationPtr _transformation;
 
   OutputColumnsList _model_input_columns;

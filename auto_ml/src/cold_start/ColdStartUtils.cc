@@ -5,9 +5,9 @@
 #include <cereal/types/vector.hpp>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ValueColumns.h>
-#include <data/src/transformations/ColdStartText.h>
+#include <data/src/transformations/cold_start/ColdStartText.h>
 #include <dataset/src/DataSource.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 
 namespace thirdai::automl::cold_start {
 
@@ -41,9 +41,9 @@ void ColdStartMetaData::serialize(Archive& archive) {
   archive(_label_delimiter, _label_column_name);
 }
 
-void verifyDataTypes(data::TabularDatasetFactoryPtr& dataset_factory) {
+void verifyDataTypes(TabularDatasetFactoryPtr& dataset_factory) {
   if (dataset_factory->inputDataTypes().size() != 1 ||
-      !data::asText(dataset_factory->inputDataTypes().begin()->second)) {
+      !asText(dataset_factory->inputDataTypes().begin()->second)) {
     throw std::invalid_argument(
         "This function can only be used on datasets with a single "
         "text input column and target column. The current model is configured "
@@ -53,12 +53,30 @@ void verifyDataTypes(data::TabularDatasetFactoryPtr& dataset_factory) {
   }
 }
 
+data::TransformationPtr makeAugmentation(
+    std::optional<data::VariableLengthConfig> variable_length,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names,
+    const std::string& text_column_name) {
+  if (variable_length.has_value()) {
+    return std::make_shared<data::VariableLengthColdStart>(
+        /* strong_column_names= */ strong_column_names,
+        /* weak_column_names= */ weak_column_names,
+        /* output_column_name= */ text_column_name,
+        /* config= */ *variable_length);
+  }
+  return std::make_shared<data::ColdStartTextAugmentation>(
+      /* strong_column_names= */ strong_column_names,
+      /* weak_column_names= */ weak_column_names,
+      /* output_column_name= */ text_column_name);
+}
+
 dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
-    data::TabularDatasetFactoryPtr& dataset_factory,
-    ColdStartMetaDataPtr& metadata) {
+    TabularDatasetFactoryPtr& dataset_factory, ColdStartMetaDataPtr& metadata,
+    std::optional<data::VariableLengthConfig> variable_length) {
   verifyDataTypes(dataset_factory);
   std::string text_column_name =
       dataset_factory->inputDataTypes().begin()->first;
@@ -69,13 +87,13 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
   auto dataset = thirdai::data::ColumnMap::createStringColumnMapFromFile(
       csv_data_source, dataset_factory->delimiter());
 
-  thirdai::data::ColdStartTextAugmentation augmentation(
-      /* strong_column_names= */ strong_column_names,
-      /* weak_column_names= */ weak_column_names,
-      /* label_column_name= */ metadata->getLabelColumn(),
-      /* output_column_name= */ text_column_name);
+  data::TransformationPtr augmentation =
+      makeAugmentation(variable_length, strong_column_names, weak_column_names,
+                       text_column_name);
 
-  auto augmented_data = augmentation.applyStateless(dataset);
+  auto augmented_data = augmentation->applyStateless(dataset);
+
+  augmented_data.shuffle();
 
   auto data_source = thirdai::dataset::cold_start::ColdStartDataSource::make(
       /* column_map= */ augmented_data,
@@ -92,8 +110,7 @@ dataset::cold_start::ColdStartDataSourcePtr concatenatedDocumentDataSource(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
-    data::TabularDatasetFactoryPtr& dataset_factory,
-    ColdStartMetaDataPtr& metadata) {
+    TabularDatasetFactoryPtr& dataset_factory, ColdStartMetaDataPtr& metadata) {
   verifyDataTypes(dataset_factory);
 
   std::string text_column_name =
@@ -119,7 +136,8 @@ dataset::cold_start::ColdStartDataSourcePtr concatenatedDocumentDataSource(
       output_sample.append(column->value(row_id));
       output_sample.append(" ");
     }
-    text::replacePunctuationWithSpaces(output_sample);
+    output_sample = text::replacePunctuation(std::move(output_sample), ' ');
+    output_sample = text::replaceNewlines(std::move(output_sample), ' ');
     samples.push_back(std::move(output_sample));
   }
 

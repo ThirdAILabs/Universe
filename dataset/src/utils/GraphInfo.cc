@@ -4,7 +4,7 @@
 #include <cereal/types/vector.hpp>
 #include <utility>
 
-namespace thirdai::automl::data {
+namespace thirdai::automl {
 
 const std::vector<float>& GraphInfo::featureVector(uint64_t node_id) const {
   if (!_node_id_to_feature_vector.count(node_id)) {
@@ -48,4 +48,4 @@ void GraphInfo::serialize(Archive& archive) {
   archive(_feature_dim, _node_id_to_feature_vector, _node_id_to_neighbors);
 }
 
-}  // namespace thirdai::automl::data
+}  // namespace thirdai::automl

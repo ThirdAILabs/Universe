@@ -1,0 +1,211 @@
+#include "InvertedIndex.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/utility.hpp>
+#include <cereal/types/vector.hpp>
+#include <dataset/src/utils/SafeFileIO.h>
+#include <utils/text/PorterStemmer.h>
+#include <algorithm>
+#include <cmath>
+#include <exception>
+#include <limits>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+namespace thirdai::search {
+
+void InvertedIndex::index(const std::vector<DocId>& ids,
+                          const std::vector<Tokens>& docs) {
+  if (ids.size() != docs.size()) {
+    throw std::invalid_argument(
+        "Number of ids must match the number of docs in index.");
+  }
+  std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>> doc_freqs(
+      docs.size());
+
+#pragma omp parallel for default(none) shared(docs, doc_freqs)
+  for (size_t i = 0; i < docs.size(); i++) {
+    const auto& tokens = docs[i];
+    std::unordered_map<Token, uint32_t> freqs;
+    for (const auto& token : preprocessText(tokens)) {
+      freqs[token]++;
+    }
+    doc_freqs[i] = {tokens.size(), std::move(freqs)};
+  }
+
+  for (size_t i = 0; i < docs.size(); i++) {
+    const DocId doc_id = ids[i];
+    const size_t doc_len = doc_freqs[i].first;
+    const auto& freqs = doc_freqs[i].second;
+
+    if (_doc_lengths.count(doc_id)) {
+      throw std::runtime_error("Document with id " + std::to_string(doc_id) +
+                               " is already in InvertedIndex.");
+    }
+
+    for (const auto& [token, freq] : freqs) {
+      _token_to_docs[token].emplace_back(doc_id, freq);
+    }
+    _doc_lengths[doc_id] = doc_len;
+    _sum_doc_lens += doc_len;
+  }
+
+  recomputeMetadata();
+}
+
+void InvertedIndex::recomputeMetadata() {
+  computeIdfs();
+  _avg_doc_length = static_cast<float>(_sum_doc_lens) / _doc_lengths.size();
+}
+
+inline float idf(size_t n_docs, size_t docs_w_token) {
+  const float num = n_docs - docs_w_token + 0.5;
+  const float denom = docs_w_token + 0.5;
+  return std::log(num / denom);
+}
+
+void InvertedIndex::computeIdfs() {
+  const size_t n_docs = _doc_lengths.size();
+
+  // We can calculate the idf of a hypothetical token that occured in the
+  // specified fraction of the documents. We know that any idf less than this
+  // corresponds to a token that occurs in more than that fraction of docs. An
+  // alternative idea would be to throw away the x% most common tokens (lowest
+  // idf). However we only apply this threshold if there are a sufficient number
+  // of docs.
+  const size_t max_docs_with_token = n_docs * _idf_cutoff_frac;
+  const float idf_cutoff = n_docs > 1000 ? idf(n_docs, max_docs_with_token)
+                                         : -std::numeric_limits<float>::max();
+
+  _token_to_idf.clear();
+  for (const auto& [token, docs] : _token_to_docs) {
+    const size_t docs_w_token = docs.size();
+    const float idf_score = idf(n_docs, docs_w_token);
+    if (idf_score >= idf_cutoff) {
+      _token_to_idf[token] = idf_score;
+    }
+  }
+}
+
+std::vector<std::vector<DocScore>> InvertedIndex::queryBatch(
+    const std::vector<Tokens>& queries, uint32_t k) const {
+  std::vector<std::vector<DocScore>> scores(queries.size());
+
+#pragma omp parallel for default(none) \
+    shared(queries, scores, k) if (queries.size() > 1)
+  for (size_t i = 0; i < queries.size(); i++) {
+    scores[i] = query(queries[i], k);
+  }
+
+  return scores;
+}
+
+struct HighestScore {
+  bool operator()(const DocScore& a, const DocScore& b) const {
+    return a.second > b.second;
+  }
+};
+
+std::vector<DocScore> InvertedIndex::query(const Tokens& query,
+                                           uint32_t k) const {
+  std::unordered_map<DocId, float> doc_scores;
+
+  for (const Token& token : preprocessText(query)) {
+    if (!_token_to_idf.count(token)) {
+      continue;
+    }
+    const float token_idf = _token_to_idf.at(token);
+
+    for (const auto& [doc_id, token_freq] : _token_to_docs.at(token)) {
+      const uint64_t doc_len = _doc_lengths.at(doc_id);
+
+      // Note: This bm25 score could be precomputed for each (token, doc) pair.
+      // However it would mean that all scores would need to be recomputed when
+      // more docs are added since the idf and avg_doc_len will change. So if we
+      // do not need to support small incremental additions then it might make
+      // sense to precompute these values.
+      doc_scores[doc_id] += bm25(token_idf, token_freq, doc_len);
+    }
+  }
+
+  // Using a heap like this is O(N log(K)) where N is the number of docs.
+  // Sorting the entire list and taking the top K would be O(N log(N)).
+  std::vector<DocScore> top_scores;
+  top_scores.reserve(k + 1);
+  const HighestScore cmp;
+
+  for (const auto& [doc, score] : doc_scores) {
+    if (top_scores.size() < k || top_scores.front().second < score) {
+      top_scores.emplace_back(doc, score);
+      std::push_heap(top_scores.begin(), top_scores.end(), cmp);
+    }
+
+    if (top_scores.size() > k) {
+      std::pop_heap(top_scores.begin(), top_scores.end(), cmp);
+      top_scores.pop_back();
+    }
+  }
+
+  std::sort_heap(top_scores.begin(), top_scores.end(), cmp);
+
+  return top_scores;
+}
+
+void InvertedIndex::remove(const std::vector<DocId>& ids) {
+  for (DocId id : ids) {
+    if (!_doc_lengths.count(id)) {
+      throw std::runtime_error("Cannot remove element with id " +
+                               std::to_string(id) +
+                               ". No such element exists.");
+    }
+
+    _sum_doc_lens -= _doc_lengths.at(id);
+    _doc_lengths.erase(id);
+
+    for (auto& [token, docs] : _token_to_docs) {
+      docs.erase(
+          std::remove_if(docs.begin(), docs.end(),
+                         [id](const auto& item) { return item.first == id; }),
+          docs.end());
+    }
+  }
+
+  recomputeMetadata();
+}
+
+void InvertedIndex::save(const std::string& filename) const {
+  auto ostream = dataset::SafeFileIO::ofstream(filename);
+  save_stream(ostream);
+}
+
+void InvertedIndex::save_stream(std::ostream& ostream) const {
+  cereal::BinaryOutputArchive oarchive(ostream);
+  oarchive(*this);
+}
+
+std::shared_ptr<InvertedIndex> InvertedIndex::load(
+    const std::string& filename) {
+  auto istream = dataset::SafeFileIO::ifstream(filename);
+  return load_stream(istream);
+}
+
+std::shared_ptr<InvertedIndex> InvertedIndex::load_stream(
+    std::istream& istream) {
+  cereal::BinaryInputArchive iarchive(istream);
+  auto index = std::make_shared<InvertedIndex>();
+  iarchive(*index);
+
+  return index;
+}
+
+template <class Archive>
+void InvertedIndex::serialize(Archive& archive) {
+  archive(_token_to_docs, _token_to_idf, _doc_lengths, _idf_cutoff_frac,
+          _sum_doc_lens, _avg_doc_length, _k1, _b, _stem, _lowercase);
+}
+
+}  // namespace thirdai::search

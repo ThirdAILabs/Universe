@@ -61,6 +61,9 @@ class FullyConnected final
 
   void registerModel(const std::weak_ptr<Model>& new_model) final;
 
+  std::vector<std::pair<std::string, double>> parameterAndGradNorms()
+      const final;
+
   /**
    * Applies the op to an input tensor and yields a new output tensor. Used to
    * add the op to a computation graph.
@@ -160,3 +163,20 @@ class FullyConnected final
 using FullyConnectedPtr = std::shared_ptr<FullyConnected>;
 
 }  // namespace thirdai::bolt
+
+namespace cereal {
+
+/**
+ * This is because the Op base class only uses a serialize function, whereas
+ * this Op uses a load/save pair. This tells cereal to use the load save pair
+ * instead of the serialize method of the parent class. See docs here:
+ * https://uscilab.github.io/cereal/serialization_functions.html#inheritance
+ *
+ * This needs to be in the header file because the Switch op needs to know about
+ * it.
+ */
+template <class Archive>
+struct specialize<Archive, thirdai::bolt::FullyConnected,
+                  cereal::specialization::member_load_save> {};
+
+}  // namespace cereal

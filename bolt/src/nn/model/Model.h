@@ -11,6 +11,8 @@
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
 #include <utils/UUID.h>
 #include <memory>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -63,6 +65,13 @@ class Model : public std::enable_shared_from_this<Model> {
    * be selected by sparse fully connected layers which yield outputs.
    */
   void trainOnBatch(const TensorList& inputs, const TensorList& labels);
+
+  /**
+   * Performs backpropagation for the given labels. Assumes that the current
+   * activations stored in the model's computation graph are for the same batch
+   * that the provided labels are for.
+   */
+  void backpropagate(const TensorList& labels);
 
   /**
    * Performs the forward pass through the model on a given batch. Differs from
@@ -165,6 +174,14 @@ class Model : public std::enable_shared_from_this<Model> {
   uint32_t trainSteps() const;
 
   /**
+   * Returns how many epochs the model has taken. Resets to 0 on load. Used for
+   * logging in trainer.
+   */
+  uint32_t epochs() const;
+
+  void incrementEpochs();
+
+  /**
    * Overrides the number of train steps in the model. This is used when porting
    * parameters to new models to ensure that the training and parameter updates
    * are consistent since this is used in Adam to do bias correction.
@@ -244,6 +261,8 @@ class Model : public std::enable_shared_from_this<Model> {
    * Controls if the model will save the optimizer along with the parameters.
    */
   void setSerializeOptimizer(bool should_save_optimizer);
+
+  std::unordered_map<std::string, double> getNorms() const;
 
   /**
    * Loads the model and automatically initializes the optimizer state.
@@ -330,6 +349,7 @@ class Model : public std::enable_shared_from_this<Model> {
   OptimizerFactoryPtr _optimizer_factory;
   bool _optimizer_initialized = false;
 
+  uint32_t _epochs = 0;
   uint32_t _train_steps;
 
   std::string _model_uuid;

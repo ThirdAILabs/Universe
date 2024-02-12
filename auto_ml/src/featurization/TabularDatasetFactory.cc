@@ -21,7 +21,7 @@
 #include <utility>
 #include <vector>
 
-namespace thirdai::automl::data {
+namespace thirdai::automl {
 
 TabularDatasetFactory::TabularDatasetFactory(
     ColumnDataTypes data_types,
@@ -73,6 +73,8 @@ dataset::DatasetLoaderPtr TabularDatasetFactory::getUnLabeledDatasetLoader(
 
 bolt::TensorList TabularDatasetFactory::featurizeInputBatch(
     const MapInputBatch& inputs) {
+  verifyValidColNames(inputs);
+
   dataset::MapBatchRef inputs_ref(inputs);
 
   std::vector<BoltBatch> result;
@@ -86,6 +88,8 @@ bolt::TensorList TabularDatasetFactory::featurizeInputBatch(
 
 std::pair<bolt::TensorList, bolt::TensorList>
 TabularDatasetFactory::featurizeTrainingBatch(const MapInputBatch& batch) {
+  verifyValidColNames(batch);
+
   dataset::MapBatchRef inputs_ref(batch);
 
   auto featurized = _labeled_featurizer->featurize(inputs_ref);
@@ -266,4 +270,4 @@ void TabularDatasetFactory::serialize(Archive& archive) {
           _vectors_map, _temporal_context, _data_types, _label_col_names,
           _options);
 }
-}  // namespace thirdai::automl::data
+}  // namespace thirdai::automl

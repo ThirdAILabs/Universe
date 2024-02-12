@@ -21,7 +21,7 @@ def make_simple_test_file(invalid_data=False):
         f.write("text,label\n")
         f.write("haha one time,0\n")
         f.write("haha two times,1\n")
-        f.write("haha thrice occurances,2\n")
+        f.write("haha thrice occurrences,2\n")
         if invalid_data:
             f.write("haha,3\n")
 
@@ -519,7 +519,7 @@ def test_mach_manual_index_creation():
     samples = {
         0: "haha one time",
         1: "haha two times",
-        2: "haha thrice occurances",
+        2: "haha thrice occurrences",
     }
 
     entity_to_hashes = {
@@ -703,7 +703,7 @@ def test_associate():
     original_intersection = len(target_hashes.intersection(source_hashes))
 
     for _ in range(100):
-        model.associate([(source_sample, target_sample)], n_buckets=7)
+        model.associate([(source_sample["text"], target_sample["text"])], n_buckets=7)
 
     new_target_hashes = set(model.predict_hashes(target_sample))
     new_source_hashes = set(model.predict_hashes(source_sample))
@@ -713,39 +713,6 @@ def test_associate():
     assert new_intersection > original_intersection
 
 
-def test_upvote():
-    model = train_simple_mach_udt(
-        rlhf_args={
-            "rlhf": True,
-            "rlhf_balancing_docs": 100,
-            "rlhf_balancing_samples_per_doc": 10,
-        }
-    )
-
-    target_sample = {"text": "random sample text"}
-    model.introduce_label([target_sample], label=200)
-
-    source_sample = {"text": "tomato"}
-    model.introduce_label([source_sample], label=300)
-
-    predicted_label = model.predict(source_sample)[0][0]
-    for _ in range(10):
-        model.upvote([(source_sample, 300)], learning_rate=0.01)
-        predicted_label = model.predict(source_sample)[0][0]
-        if predicted_label != 200:
-            break
-
-    assert predicted_label != 200
-
-    for _ in range(10):
-        model.upvote([(source_sample, 200)], learning_rate=0.01)
-        predicted_label = model.predict(source_sample)[0][0]
-        if predicted_label == 200:
-            break
-
-    assert predicted_label == 200
-
-
 def test_enable_rlhf():
     model = train_simple_mach_udt()
 
@@ -753,7 +720,7 @@ def test_enable_rlhf():
         RuntimeError,
         match=r"This model was not configured to support rlhf. Please pass {'rlhf': True} in the model options or call enable_rlhf().",
     ):
-        model.associate([({"text": "text"}, {"text": "text"})], n_buckets=7)
+        model.associate([("text", "text")], n_buckets=7)
 
     model.enable_rlhf(num_balancing_docs=100, num_balancing_samples_per_doc=10)
 
@@ -763,7 +730,7 @@ def test_enable_rlhf():
         SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001, shuffle_reservoir_size=32000
     )
 
-    model.associate([({"text": "text"}, {"text": "text"})], n_buckets=7)
+    model.associate([("text", "text")], n_buckets=7)
 
 
 def regularized_introduce_helper(model, num_random_hashes):
@@ -847,3 +814,32 @@ def test_udt_mach_fast_approximation_handles_commas():
     )
 
     os.remove("temp.csv")
+
+
+@pytest.mark.parametrize("softmax", [True, False])
+def test_udt_softmax_activations(softmax):
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "text": bolt.types.text(contextual_encoding="local"),
+            "label": bolt.types.categorical(),
+        },
+        target="label",
+        n_target_classes=3,
+        integer_target=True,
+        options={
+            "extreme_classification": True,
+            "embedding_dimension": 100,
+            "extreme_output_dim": 100,
+            "softmax": softmax,
+        },
+    )
+
+    output = model.predict_activations_batch(
+        [{"text": "some text"}, {"text": "some text"}]
+    )[0]
+
+    sum_to_one = np.isclose(
+        sum(output),
+        1,
+    )
+    assert sum_to_one == softmax

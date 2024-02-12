@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/NeighboringCharacters.h>
+#include <utils/text/StringManipulation.h>
 
 namespace thirdai::text {
 
@@ -111,6 +112,78 @@ TEST(StringManipulationTest, TestTokenizeSentenceAccentedCharacters) {
   std::string sentence = "Soufflé";
   auto words = tokenizeSentence(sentence);
   assertEqualTokens(words, {"Soufflé"});
+}
+
+TEST(StringManipulationTest, CharKGramTest) {
+  std::string sentence = "Some words";
+  auto words = charKGrams(sentence, 4);
+  assertEqualTokens(words,
+                    {"Some", "ome ", "me w", "e wo", " wor", "word", "ords"});
+}
+
+TEST(StringManipulationTest, WordLevelCharKGramTest) {
+  std::string sentence = "Some words";
+  auto words = split(sentence, /* delimiter=*/' ');
+  auto char_words = wordLevelCharKGrams(words, 4);
+  assertEqualTokens(char_words, {"Some", "word", "ords"});
+
+  char_words = wordLevelCharKGrams(words, 4, /* min_word_length=*/5);
+  assertEqualTokens(char_words, {"word", "ords"});
+}
+
+TEST(StringManipulationTest, PerturbationReplaceWithSpace) {
+  std::string test_str = "Hello";
+  std::mt19937 rng;
+  std::string result = replaceRandomCharactersWithSpaces(test_str, 2, rng);
+  int space_count = std::count(result.begin(), result.end(), ' ');
+  ASSERT_EQ(space_count, 2);
+}
+
+TEST(StringManipulationTest, PerturbationDeleteCharacters) {
+  std::string test_str = "Hello";
+  std::mt19937 rng;
+  std::string result = deleteRandomCharacters(test_str, 2, rng);
+  ASSERT_EQ(result.size(), 3);
+}
+
+TEST(StringManipulationTest, PerturbationReplaceWithAdjacentCharacters) {
+  std::string test_str = "abcdef";
+  std::mt19937 rng;
+  std::string result =
+      replaceRandomCharactersWithKeyboardAdjacents(test_str, 6, rng);
+
+  bool all_replaced = true;
+  for (int i = 0; i < result.size(); ++i) {
+    const auto& neighbors = keyboard_char_neighbors.at(test_str[i]);
+    if (std::find(neighbors.begin(), neighbors.end(), result[i]) ==
+        neighbors.end()) {
+      all_replaced = false;
+      break;
+    }
+  }
+  ASSERT_TRUE(all_replaced);
+}
+
+TEST(StringManipulationTest, PerturbationDuplicateCharacters) {
+  std::string test_str = "ABCD";
+  std::mt19937 rng;
+  std::string result = duplicateRandomCharacters(test_str, 2, rng);
+  ASSERT_EQ(result.size(), test_str.size() + 2);
+
+  uint32_t num_duplicated_chars = 0;
+  for (auto c_test_str : test_str) {
+    size_t occurrences = 0;
+    for (auto c_result : result) {
+      if (c_result == c_test_str) {
+        occurrences++;
+      }
+    }
+    if (occurrences == 2) {
+      num_duplicated_chars++;
+    }
+  }
+
+  ASSERT_EQ(num_duplicated_chars, 2);
 }
 
 }  // namespace thirdai::text

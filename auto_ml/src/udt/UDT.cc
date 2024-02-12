@@ -4,15 +4,17 @@
 #include <bolt/src/utils/Timer.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <auto_ml/src/udt/backends/DeprecatedUDTMachClassifier.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
 #include <auto_ml/src/udt/backends/UDTGraphClassifier.h>
-#include <auto_ml/src/udt/backends/UDTMachClassifier.h>
+#include <auto_ml/src/udt/backends/UDTMach.h>
 #include <auto_ml/src/udt/backends/UDTQueryReformulation.h>
 #include <auto_ml/src/udt/backends/UDTRecurrentClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
 #include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/CheckLicense.h>
+#include <pybind11/pytypes.h>
 #include <telemetry/src/PrometheusClient.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
@@ -20,19 +22,19 @@
 #include <memory>
 #include <sstream>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 
 namespace thirdai::automl::udt {
 
-UDT::UDT(data::ColumnDataTypes data_types,
-         const data::UserProvidedTemporalRelationships&
-             temporal_tracking_relationships,
-         const std::string& target_col,
-         std::optional<uint32_t> n_target_classes, bool integer_target,
-         std::string time_granularity, uint32_t lookahead, char delimiter,
-         const std::optional<std::string>& model_config,
-         const config::ArgumentMap& user_args) {
-  data::TabularOptions tabular_options;
+UDT::UDT(
+    ColumnDataTypes data_types,
+    const UserProvidedTemporalRelationships& temporal_tracking_relationships,
+    const std::string& target_col, std::optional<uint32_t> n_target_classes,
+    bool integer_target, std::string time_granularity, uint32_t lookahead,
+    char delimiter, const std::optional<std::string>& model_config,
+    const config::ArgumentMap& user_args) {
+  TabularOptions tabular_options;
   tabular_options.contextual_columns = user_args.get<bool>(
       "contextual_columns", "boolean", defaults::CONTEXTUAL_COLUMNS);
   tabular_options.time_granularity = std::move(time_granularity);
@@ -55,9 +57,9 @@ UDT::UDT(data::ColumnDataTypes data_types,
   auto target = data_types.at(target_col);
 
   bool has_graph_inputs = hasGraphInputs(data_types);
-  auto as_categorical = data::asCategorical(target);
-  auto as_numerical = data::asNumerical(target);
-  auto as_sequence = data::asSequence(target);
+  auto as_categorical = asCategorical(target);
+  auto as_numerical = asNumerical(target);
+  auto as_sequence = asSequence(target);
 
   if (as_categorical || as_sequence) {
     if (!n_target_classes.has_value()) {
@@ -78,10 +80,17 @@ UDT::UDT(data::ColumnDataTypes data_types,
                             defaults::USE_MACH) ||
         user_args.get<bool>("neural_db", "boolean", defaults::USE_MACH);
     if (use_mach) {
-      _backend = std::make_unique<UDTMachClassifier>(
-          data_types, temporal_tracking_relationships, target_col,
-          as_categorical, n_target_classes.value(), integer_target,
-          tabular_options, model_config, user_args);
+      if (user_args.get<bool>("v1", "boolean", false)) {
+        _backend = std::make_unique<UDTMachClassifier>(
+            data_types, temporal_tracking_relationships, target_col,
+            as_categorical, n_target_classes.value(), integer_target,
+            tabular_options, model_config, user_args);
+      } else {
+        _backend = std::make_unique<UDTMach>(
+            data_types, temporal_tracking_relationships, target_col,
+            as_categorical, n_target_classes.value(), integer_target,
+            tabular_options, model_config, user_args);
+      }
     } else {
       _backend = std::make_unique<UDTClassifier>(
           data_types, temporal_tracking_relationships, target_col,
@@ -104,11 +113,12 @@ UDT::UDT(data::ColumnDataTypes data_types,
 
 UDT::UDT(std::optional<std::string> incorrect_column_name,
          std::string correct_column_name, const std::string& dataset_size,
-         char delimiter, const std::optional<std::string>& model_config,
+         bool use_spell_checker, char delimiter,
+         const std::optional<std::string>& model_config,
          const config::ArgumentMap& user_args) {
   _backend = std::make_unique<UDTQueryReformulation>(
       std::move(incorrect_column_name), std::move(correct_column_name),
-      dataset_size, delimiter, model_config, user_args);
+      dataset_size, use_spell_checker, delimiter, model_config, user_args);
 }
 
 UDT::UDT(const std::string& file_format, uint32_t n_target_classes,
@@ -145,13 +155,12 @@ py::object UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
   return output;
 }
 
-py::object UDT::trainBatch(const MapInputBatch& batch, float learning_rate,
-                           const std::vector<std::string>& metrics) {
+py::object UDT::trainBatch(const MapInputBatch& batch, float learning_rate) {
   licensing::entitlements().verifyFullAccess();
 
   bolt::utils::Timer timer;
 
-  auto output = _backend->trainBatch(batch, learning_rate, metrics);
+  auto output = _backend->trainBatch(batch, learning_rate);
 
   timer.stop();
 
@@ -211,7 +220,21 @@ py::object UDT::predictBatch(const MapInputBatch& sample, bool sparse_inference,
   return result;
 }
 
-std::vector<dataset::Explanation> UDT::explain(
+py::object UDT::scoreBatch(const MapInputBatch& samples,
+                           const std::vector<std::vector<Label>>& classes,
+                           std::optional<uint32_t> top_k) {
+  bolt::utils::Timer timer;
+
+  auto result = _backend->scoreBatch(samples, classes, top_k);
+
+  timer.stop();
+  telemetry::client.trackBatchPredictions(
+      /* inference_time_seconds= */ timer.seconds(), samples.size());
+
+  return result;
+}
+
+std::vector<std::pair<std::string, float>> UDT::explain(
     const MapInput& sample,
     const std::optional<std::variant<uint32_t, std::string>>& target_class) {
   bolt::utils::Timer timer;
@@ -225,21 +248,23 @@ std::vector<dataset::Explanation> UDT::explain(
   return result;
 }
 
-py::object UDT::coldstart(const dataset::DataSourcePtr& data,
-                          const std::vector<std::string>& strong_column_names,
-                          const std::vector<std::string>& weak_column_names,
-                          float learning_rate, uint32_t epochs,
-                          const std::vector<std::string>& train_metrics,
-                          const dataset::DataSourcePtr& val_data,
-                          const std::vector<std::string>& val_metrics,
-                          const std::vector<CallbackPtr>& callbacks,
-                          TrainOptions options,
-                          const bolt::DistributedCommPtr& comm) {
+py::object UDT::coldstart(
+    const dataset::DataSourcePtr& data,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names,
+    std::optional<data::VariableLengthConfig> variable_length,
+    float learning_rate, uint32_t epochs,
+    const std::vector<std::string>& train_metrics,
+    const dataset::DataSourcePtr& val_data,
+    const std::vector<std::string>& val_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    const bolt::DistributedCommPtr& comm) {
   licensing::entitlements().verifyDataSource(data);
 
   return _backend->coldstart(data, strong_column_names, weak_column_names,
-                             learning_rate, epochs, train_metrics, val_data,
-                             val_metrics, callbacks, options, comm);
+                             variable_length, learning_rate, epochs,
+                             train_metrics, val_data, val_metrics, callbacks,
+                             options, comm);
 }
 
 std::vector<uint32_t> UDT::modelDims() const {
@@ -300,7 +325,7 @@ std::shared_ptr<UDT> UDT::load_stream(std::istream& input_stream) {
   return deserialize_into;
 }
 
-bool UDT::hasGraphInputs(const data::ColumnDataTypes& data_types) {
+bool UDT::hasGraphInputs(const ColumnDataTypes& data_types) {
   uint64_t neighbor_col_count = 0;
   uint64_t node_id_col_count = 0;
   for (const auto& [col_name, data_type] : data_types) {
@@ -340,13 +365,20 @@ void UDT::serialize(Archive& archive, const uint32_t version) {
 
   // Increment thirdai::versions::UDT_BASE_VERSION after serialization changes
   archive(_backend);
+
+  constexpr bool deserializing =
+      std::is_same_v<Archive, cereal::BinaryInputArchive>;
+  if constexpr (deserializing) {
+    if (auto* old_mach = dynamic_cast<UDTMachClassifier*>(_backend.get())) {
+      _backend = std::make_unique<UDTMach>(old_mach->getMachInfo());
+    }
+  }
 }
 
 void UDT::throwUnsupportedUDTConfigurationError(
-    const data::CategoricalDataTypePtr& target_as_categorical,
-    const data::NumericalDataTypePtr& target_as_numerical,
-    const data::SequenceDataTypePtr& target_as_sequence,
-    bool has_graph_inputs) {
+    const CategoricalDataTypePtr& target_as_categorical,
+    const NumericalDataTypePtr& target_as_numerical,
+    const SequenceDataTypePtr& target_as_sequence, bool has_graph_inputs) {
   std::stringstream error_msg;
   error_msg << "Unsupported UDT configuration: ";
 
@@ -366,6 +398,41 @@ void UDT::throwUnsupportedUDTConfigurationError(
 
   error_msg << ".";
   throw std::invalid_argument(error_msg.str());
+}
+
+bool UDT::isV1() const {
+  return dynamic_cast<UDTMachClassifier*>(_backend.get());
+}
+
+std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
+UDT::parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
+                       const MapInputBatch& batch, bool sparse_inference,
+                       std::optional<uint32_t> top_k) {
+  std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>> outputs(
+      models.size());
+
+  bool non_mach = false;
+#pragma omp parallel for default(none) \
+    shared(models, batch, outputs, sparse_inference, top_k, non_mach)
+  for (size_t i = 0; i < models.size(); i++) {
+    if (auto* mach = dynamic_cast<UDTMach*>(models[i]->_backend.get())) {
+      outputs[i] = mach->predictBatchImpl(
+          batch, sparse_inference, /*return_predicted_class*/ false, top_k);
+    } else if (auto* mach = dynamic_cast<UDTMachClassifier*>(
+                   models[i]->_backend.get())) {
+      outputs[i] = mach->predictImpl(batch, sparse_inference, top_k);
+    } else {
+#pragma omp critical
+      non_mach = true;
+    }
+  }
+
+  if (non_mach) {
+    throw std::invalid_argument(
+        "Cannot perform parallel inference on non mach model.");
+  }
+
+  return outputs;
 }
 
 }  // namespace thirdai::automl::udt

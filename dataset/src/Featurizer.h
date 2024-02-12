@@ -2,8 +2,10 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include <bolt_vector/src/BoltVector.h>
+#include <dataset/src/blocks/InputTypes.h>
 #include <exceptions/src/Exceptions.h>
 #include <optional>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -22,6 +24,15 @@ class Featurizer {
    */
   virtual std::vector<std::vector<BoltVector>> featurize(
       const std::vector<std::string>& rows) = 0;
+
+  virtual MapInputBatch convertToMapInputBatch(
+      const LineInputBatch& input_batch, const std::string& output_column_name,
+      const std::string& input_column_name, const std::string& header) {
+    (void)input_batch;
+    (void)output_column_name, (void)input_column_name;
+    (void)header;
+    throw exceptions::NotImplemented("Cannot convert to MapInputBatch");
+  }
 
   virtual bool expectsHeader() const = 0;
 

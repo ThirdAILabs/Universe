@@ -1,11 +1,14 @@
 from .bolt_fc import BoltFullyConnectedRunner
 from .distributed import DistributedRunner
+from .distributed_ndb import DistributedNDBRunner
 from .dlrm import DLRMRunner
+from .mini_benchmark_runners.ndb import MiniBenchmarkNDBRunner
 from .mini_benchmark_runners.query_reformulation import (
     MiniBenchmarkQueryReformulationRunner,
 )
 from .mini_benchmark_runners.temporal import MiniBenchmarkTemporalRunner
 from .mini_benchmark_runners.udt import MiniBenchmarkUDTRunner
+from .ndb_runner import NDBRunner
 from .query_reformulation import QueryReformulationRunner
 from .rlhf import RlhfRunner
 from .temporal import TemporalRunner
@@ -17,9 +20,12 @@ runner_map = {
     "udt": UDTRunner,
     "query_reformulation": QueryReformulationRunner,
     "temporal": TemporalRunner,
+    "distributed": DistributedRunner,
+    "rlhf": RlhfRunner,
+    "distributed_ndb": DistributedNDBRunner,
+    "neural_db": NDBRunner,
     "mini_benchmark_udt": MiniBenchmarkUDTRunner,
     "mini_benchmark_query_reformulation": MiniBenchmarkQueryReformulationRunner,
     "mini_benchmark_temporal": MiniBenchmarkTemporalRunner,
-    "distributed": DistributedRunner,
-    "rlhf": RlhfRunner,
+    "mini_benchmark_ndb": MiniBenchmarkNDBRunner,
 }

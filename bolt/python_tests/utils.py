@@ -28,7 +28,7 @@ def gen_numpy_training_data(
     return examples, labels
 
 
-def build_simple_model_for_compression(n_classes):
+def build_simple_model(n_classes):
     input_layer = bolt.nn.Input(dim=n_classes)
 
     output_layer = bolt.nn.FullyConnected(
@@ -55,7 +55,7 @@ def compressed_training(
     epochs=30,
     batch_size=64,
 ):
-    model = build_simple_model_for_compression(n_classes)
+    model = build_simple_model(n_classes)
 
     train_data, train_labels = gen_numpy_training_data(
         n_classes=n_classes, n_samples=10000
