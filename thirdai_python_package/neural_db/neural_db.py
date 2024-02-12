@@ -675,6 +675,10 @@ class NeuralDB:
                 example passing rerank_threshold=2 and top_k_threshold=4 means that
                 the scores of the top 4 elements are averaged, and all elements below
                 2x this average are reranked.
+            retriever (Optional[str]): Optional, default None. This arg controls which
+                retriever to use for search when a hybrid retrieval model is used. Passing
+                None means that NeuralDB will automatically decide which retrievers (or
+                combination of retrievers) to use.
 
         Returns:
             List[Reference]: A list of Reference objects. Each reference object contains text data matching

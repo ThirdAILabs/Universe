@@ -94,6 +94,7 @@ class Model:
         self,
         samples: InferSamples,
         n_results: int,
+        retriever: Optional[str] = None,
         **kwargs,
     ) -> Predictions:
         raise NotImplementedError()
