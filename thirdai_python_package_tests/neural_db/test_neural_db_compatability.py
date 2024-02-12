@@ -2,6 +2,9 @@ import os
 
 import pandas as pd
 from thirdai import neural_db as ndb
+import pytest
+
+pytestmark = [pytest.mark.release]
 
 
 def current_dir():
