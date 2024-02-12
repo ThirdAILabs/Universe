@@ -1,8 +1,8 @@
 import os
 
 import pandas as pd
-from thirdai import neural_db as ndb
 import pytest
+from thirdai import neural_db as ndb
 
 pytestmark = [pytest.mark.release]
 
