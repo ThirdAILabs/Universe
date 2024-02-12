@@ -3,6 +3,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/optional.hpp>
 #include "TextAugmentationUtils.h"
+#include <archive/src/Archive.h>
 #include <data/src/transformations/Transformation.h>
 #include <memory>
 #include <random>
@@ -92,7 +93,7 @@ struct VariableLengthConfig {
   }
 };
 
-class VariableLengthColdStart : public cold_start::TextAugmentationBase {
+class VariableLengthColdStart final : public cold_start::TextAugmentationBase {
  public:
   VariableLengthColdStart(
       std::vector<std::string> strong_column_names,

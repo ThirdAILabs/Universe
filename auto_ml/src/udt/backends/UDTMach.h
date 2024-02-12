@@ -2,6 +2,7 @@
 
 #include <bolt/src/nn/model/Model.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Archive.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
@@ -34,6 +35,8 @@ class UDTMach final : public UDTBackend {
       const TabularOptions& tabular_options,
       const std::optional<std::string>& model_config,
       config::ArgumentMap user_args);
+
+  explicit UDTMach(const ar::Archive& archive);
 
   explicit UDTMach(const MachInfo& mach_info);
 
@@ -195,6 +198,12 @@ class UDTMach final : public UDTBackend {
   void setIndex(const dataset::mach::MachIndexPtr& index) final;
 
   void setMachSamplingThreshold(float threshold) final;
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
+  static std::unique_ptr<UDTMach> fromArchive(const ar::Archive& archive);
+
+  static std::string type() { return "udt_mach"; }
 
  private:
   std::vector<std::vector<uint32_t>> predictHashesImpl(

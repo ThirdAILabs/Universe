@@ -69,6 +69,22 @@ py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,
                                verbose);
 }
 
+ar::ConstArchivePtr UDTGraphClassifier::toArchive(bool with_optimizer) const {
+  auto map = _classifier->toArchive(with_optimizer);
+  map->set("type", ar::str(type()));
+  map->set("featurizer", _featurizer->toArchive());
+  return map;
+}
+
+std::unique_ptr<UDTGraphClassifier> UDTGraphClassifier::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_unique<UDTGraphClassifier>(archive);
+}
+
+UDTGraphClassifier::UDTGraphClassifier(const ar::Archive& archive)
+    : _classifier(utils::Classifier::fromArchive(archive)),
+      _featurizer(GraphFeaturizer::fromArchive(*archive.get("featurizer"))) {}
+
 template void UDTGraphClassifier::serialize(cereal::BinaryInputArchive&,
                                             const uint32_t version);
 template void UDTGraphClassifier::serialize(cereal::BinaryOutputArchive&,

@@ -15,6 +15,8 @@ class WeightedSum final : public Op,
  private:
   WeightedSum(size_t n_chunks, size_t chunk_size);
 
+  explicit WeightedSum(const ar::Archive& archive);
+
  public:
   static auto make(size_t n_chunks, size_t chunk_size) {
     return std::shared_ptr<WeightedSum>(new WeightedSum(n_chunks, chunk_size));
@@ -43,6 +45,12 @@ class WeightedSum final : public Op,
 
   std::vector<std::vector<float>*> parameters() final;
 
+  ComputationPtr applyToInputs(const ComputationList& inputs) final;
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
+  static std::shared_ptr<WeightedSum> fromArchive(const ar::Archive& archive);
+
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
@@ -52,6 +60,8 @@ class WeightedSum final : public Op,
       const final;
 
   ComputationPtr apply(ComputationPtr input);
+
+  static std::string type() { return "weighted_sum"; }
 
  private:
   size_t _n_chunks, _chunk_size;

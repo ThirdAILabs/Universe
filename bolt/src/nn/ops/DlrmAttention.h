@@ -56,10 +56,18 @@ class DlrmAttention final : public Op,
 
   std::vector<std::vector<float>*> parameters() final { return {}; }
 
+  ComputationPtr applyToInputs(const ComputationList& inputs) final;
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
+  static std::shared_ptr<DlrmAttention> fromArchive(const ar::Archive& archive);
+
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
   ComputationPtr apply(ComputationPtr fc_input, ComputationPtr emb_input);
+
+  static std::string type() { return "dlrm_attention"; }
 
  private:
   DlrmAttention() {}

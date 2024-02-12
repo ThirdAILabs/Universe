@@ -4,6 +4,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
+#include <archive/src/Archive.h>
 #include <archive/src/StringCipher.h>
 #include <unordered_map>
 
@@ -30,6 +31,11 @@ std::string Value<float>::typeName() {
 }
 
 template <>
+std::string Value<char>::typeName() {
+  return "Value[char]";
+}
+
+template <>
 std::string Value<std::string>::typeName() {
   return "Value[std::string]";
 }
@@ -37,6 +43,11 @@ std::string Value<std::string>::typeName() {
 template <>
 std::string Value<std::vector<uint32_t>>::typeName() {
   return "Value[std::vector<uint32_t>]";
+}
+
+template <>
+std::string Value<std::vector<uint64_t>>::typeName() {
+  return "Value[std::vector<uint64_t>]";
 }
 
 template <>
@@ -55,6 +66,16 @@ std::string Value<std::vector<std::wstring>>::typeName() {
 }
 
 template <>
+std::string Value<std::vector<std::vector<uint32_t>>>::typeName() {
+  return "Value[std::vector<std::vector<uint32_t>>]";
+}
+
+template <>
+std::string Value<std::vector<std::vector<float>>>::typeName() {
+  return "Value[std::vector<std::vector<float>>]";
+}
+
+template <>
 std::string
 Value<std::unordered_map<uint64_t, std::vector<uint64_t>>>::typeName() {
   return "Value[std::unordered_map<uint64_t, std::vector<uint64_t>>]";
@@ -64,6 +85,22 @@ template <>
 std::string
 Value<std::unordered_map<uint64_t, std::vector<float>>>::typeName() {
   return "Value[std::unordered_map<uint64_t, std::vector<float>>]";
+}
+
+template <>
+std::string Value<std::unordered_map<std::string, uint64_t>>::typeName() {
+  return "Value[std::unordered_map<std::string, uint64_t>]";
+}
+
+template <>
+std::string Value<std::unordered_map<std::string, int64_t>>::typeName() {
+  return "Value[std::unordered_map<std::string, int64_t>]";
+}
+
+template <>
+std::string
+Value<std::unordered_map<int64_t, std::vector<std::string>>>::typeName() {
+  return "Value[std::unordered_map<int64_t, std::vector<std::string>>]";
 }
 
 template <>

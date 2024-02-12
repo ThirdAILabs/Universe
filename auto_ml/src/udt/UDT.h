@@ -449,8 +449,6 @@ class UDT {
 
   void save(const std::string& filename) const;
 
-  void saveImpl(const std::string& filename) const;
-
   void checkpoint(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;
@@ -460,6 +458,13 @@ class UDT {
   static std::shared_ptr<UDT> load_stream(std::istream& input_stream);
 
   bool isV1() const;
+
+  /**
+   * This method is just for testing so that we can create a v1 mach model and
+   * test that everything works once it is migrated. Models are automatically
+   * converted to v2 on load.
+   */
+  void migrateToMachV2();
 
   static std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
   parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
@@ -483,9 +488,13 @@ class UDT {
   friend class cereal::access;
 
   template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
+  void save(Archive& archive, uint32_t version) const;
+
+  template <class Archive>
+  void load(Archive& archive, uint32_t version);
 
   std::unique_ptr<UDTBackend> _backend;
+  bool _save_optimizer = false;
 };
 
 }  // namespace thirdai::automl::udt

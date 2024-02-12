@@ -262,6 +262,28 @@ void MachFeaturizer::addDummyDocIds(data::ColumnMap& columns) {
   columns.setColumn(MACH_DOC_IDS, dummy_doc_ids);
 }
 
+ar::ConstArchivePtr MachFeaturizer::toArchive() const {
+  auto map = Featurizer::toArchiveMap();
+
+  map->set("doc_id_transform", _doc_id_transform->toArchive());
+  map->set("prehashed_label_transform",
+           _prehashed_labels_transform->toArchive());
+
+  return map;
+}
+
+std::shared_ptr<MachFeaturizer> MachFeaturizer::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_shared<MachFeaturizer>(archive);
+}
+
+MachFeaturizer::MachFeaturizer(const ar::Archive& archive)
+    : Featurizer(archive),
+      _doc_id_transform(
+          data::Transformation::fromArchive(*archive.get("doc_id_transform"))),
+      _prehashed_labels_transform(data::Transformation::fromArchive(
+          *archive.get("prehashed_label_transform"))) {}
+
 template void MachFeaturizer::serialize(cereal::BinaryInputArchive&);
 template void MachFeaturizer::serialize(cereal::BinaryOutputArchive&);
 

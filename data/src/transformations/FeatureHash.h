@@ -21,12 +21,18 @@ class FeatureHash final : public Transformation {
               std::string output_indices_column,
               std::string output_values_columns, size_t hash_range);
 
+  explicit FeatureHash(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
+  ar::ConstArchivePtr toArchive() const final;
+
   const auto& inputColumns() const { return _input_columns; }
+
+  static std::string type() { return "feature_hash"; }
 
  private:
   inline uint32_t hash(uint32_t index, uint32_t column_salt) const {

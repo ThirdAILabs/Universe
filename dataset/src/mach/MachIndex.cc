@@ -2,6 +2,8 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <utils/Random.h>
 #include <optional>
@@ -137,6 +139,39 @@ float MachIndex::sparsity() const {
            nonemptyBuckets().size());
 
   return guess;
+}
+
+ar::ConstArchivePtr MachIndex::toArchive() const {
+  auto map = ar::Map::make();
+
+  // Convert to uint64_t from uint32_t for more flexibility in the future.
+  ar::MapU64VecU64 entity_to_hashes;
+  entity_to_hashes.reserve(_entity_to_hashes.size());
+  for (const auto& [k, v] : _entity_to_hashes) {
+    entity_to_hashes[k] = {v.begin(), v.end()};
+  }
+
+  map->set("entity_to_hashes", ar::mapU64VecU64(std::move(entity_to_hashes)));
+  map->set("num_buckets", ar::u64(numBuckets()));
+  map->set("num_hashes", ar::u64(numHashes()));
+
+  return map;
+}
+
+std::shared_ptr<MachIndex> MachIndex::fromArchive(const ar::Archive& archive) {
+  const auto& ar_entity_to_hashes =
+      archive.getAs<ar::MapU64VecU64>("entity_to_hashes");
+
+  // Convert back to uint32_t from uint64_t.
+  std::unordered_map<uint32_t, std::vector<uint32_t>> entity_to_hashes;
+  entity_to_hashes.reserve(ar_entity_to_hashes.size());
+  for (const auto& [k, v] : ar_entity_to_hashes) {
+    entity_to_hashes[k] = {v.begin(), v.end()};
+  }
+
+  return std::make_shared<MachIndex>(std::move(entity_to_hashes),
+                                     archive.u64("num_buckets"),
+                                     archive.u64("num_hashes"));
 }
 
 TopKActivationsQueue MachIndex::topKNonEmptyBuckets(const BoltVector& output,
