@@ -93,6 +93,11 @@ def test_neuralb_db_all_methods_work_on_new_mach_mixture(small_doc_set):
 
 
 def test_neural_db_all_methods_work_on_old_model(small_doc_set):
+    """
+    This empty model was created with:
+    db = ndb.NeuralDB(embedding_dimension=512, extreme_output_dim=1000)
+    db.save(./saved_ndbs/empty_ndb)
+    """
     checkpoint = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "saved_ndbs/empty_ndb"
     )
