@@ -382,10 +382,13 @@ void UDT::load(Archive& archive, const uint32_t version) {
 
   if (version <= versions::UDT_LAST_OLD_SERIALIZATION_VERSION) {
     std::string class_name = "UDT_BASE";
-    versions::checkVersion(version, versions::UDT_BASE_VERSION, thirdai_version,
-                           thirdai::version(), class_name);
+    // We use the UDT_LAST_OLD_SERIALIZATION_VERSION as the current version
+    // becuase that's the version that we're using to load the model using the
+    // old cereal code.
+    versions::checkVersion(version,
+                           versions::UDT_LAST_OLD_SERIALIZATION_VERSION,
+                           thirdai_version, thirdai::version(), class_name);
 
-    // Increment thirdai::versions::UDT_BASE_VERSION after serialization changes
     archive(_backend);
 
     migrateToMachV2();

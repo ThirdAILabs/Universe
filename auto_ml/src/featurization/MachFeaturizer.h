@@ -60,7 +60,14 @@ class MachFeaturizer final : public Featurizer {
 
   const auto& machIndex() const { return _state->machIndex(); }
 
-  ar::ConstArchivePtr toArchive() const final;
+  // This is a redefinition of the Featurizer::toArchive method instead of an
+  // override because the original Featurizer class was not declared without any
+  // virtual methods, and adding a virtual method now messes up cereal when it
+  // tries to load this class. This is ok though becuase we only every interact
+  // with the MachFeaturizer directly, we never through a pointer to a
+  // featurizer, thus calling this method will invoke the
+  // MachFeaturizer::toArchive method, not the Featurizer::toArchive method.
+  ar::ConstArchivePtr toArchive() const;
 
   static std::shared_ptr<MachFeaturizer> fromArchive(
       const ar::Archive& archive);

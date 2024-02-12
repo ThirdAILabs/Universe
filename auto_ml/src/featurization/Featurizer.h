@@ -109,11 +109,9 @@ class Featurizer {
 
   void resetTemporalTrackers();
 
-  virtual ar::ConstArchivePtr toArchive() const;
+  ar::ConstArchivePtr toArchive() const;
 
   static std::shared_ptr<Featurizer> fromArchive(const ar::Archive& archive);
-
-  virtual ~Featurizer() = default;
 
  protected:
   data::LoaderPtr getDataLoaderHelper(
