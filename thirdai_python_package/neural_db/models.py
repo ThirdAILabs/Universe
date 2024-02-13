@@ -450,6 +450,7 @@ class Mach(Model):
         fast_approximation: bool,
         num_buckets_to_sample: Optional[int],
         override_number_classes: int,
+        sgd: Optional[bool] = None,
     ):
         if intro_documents.id_column != self.id_col:
             raise ValueError(
@@ -462,6 +463,8 @@ class Mach(Model):
             self.model = self.model_from_scratch(
                 intro_documents, number_classes=override_number_classes
             )
+            if sgd:
+                self.model._get_model().switch_to_sgd(grad_clip=1.0)
         else:
             if intro_documents.size > 0:
                 doc_id = intro_documents.id_column
@@ -492,6 +495,7 @@ class Mach(Model):
     def index_documents_impl(
         self,
         training_progress_manager: TrainingProgressManager,
+        sgd: Optional[bool] = None,
         on_progress: Callable = lambda **kwargs: None,
         cancel_state: CancelState = None,
     ):
@@ -502,6 +506,7 @@ class Mach(Model):
             self.introduce_documents(
                 intro_documents=intro_documents,
                 **training_progress_manager.introduce_arguments(),
+                sgd=sgd,
             )
             training_progress_manager.insert_complete()
 
@@ -578,6 +583,7 @@ class Mach(Model):
         training_progress_manager.make_preindexing_checkpoint()
         self.index_documents_impl(
             training_progress_manager=training_progress_manager,
+            sgd=kwargs.get("sgd", None),
             on_progress=on_progress,
             cancel_state=cancel_state,
         )
