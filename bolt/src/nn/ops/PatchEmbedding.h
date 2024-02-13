@@ -58,7 +58,9 @@ class PatchEmbedding final
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final;
 
-  void switchToSgd() final { _kernel->switchToSgd(); }
+  void switchToSgd(std::optional<float> grad_clip) final {
+    _kernel->switchToSgd(grad_clip);
+  }
 
   ComputationPtr apply(ComputationPtr input);
 

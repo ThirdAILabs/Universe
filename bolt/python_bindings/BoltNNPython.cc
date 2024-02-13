@@ -122,7 +122,8 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("get_gradients", &getGradients,
            py::return_value_policy::reference_internal)
       .def("set_gradients", &setGradients, py::arg("new_values"))
-      .def("switch_to_sgd", &Model::switchToSgd)
+      .def("switch_to_sgd", &Model::switchToSgd,
+           py::arg("grad_clip") = std::nullopt)
       .def("num_params", &Model::numParams)
       .def("thirdai_version", &Model::thirdaiVersion)
       .def("enable_sparse_parameter_updates",

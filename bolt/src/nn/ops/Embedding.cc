@@ -248,7 +248,8 @@ void Embedding::sparseEmbeddingUpdateSgd(float learning_rate) {
     _embeddings_used[n] = false;
     for (size_t i = 0; i < _dim; i++) {
       size_t index = n * _dim + i;
-      float grad = _embedding_optimizer->gradients[index];
+      float grad = _embedding_optimizer->clipGradSgd(
+          _embedding_optimizer->gradients[index]);
 
       _embeddings[index] += learning_rate * grad;
 

@@ -65,9 +65,9 @@ class Embedding final : public Op,
     _should_serialize_optimizer = should_serialize_optimizer;
   }
 
-  void switchToSgd() final {
-    _embedding_optimizer->switchToSgd();
-    _bias_optimizer->switchToSgd();
+  void switchToSgd(std::optional<float> grad_clip) final {
+    _embedding_optimizer->switchToSgd(grad_clip);
+    _bias_optimizer->switchToSgd(grad_clip);
   }
 
   std::vector<std::pair<std::string, double>> parameterAndGradNorms()

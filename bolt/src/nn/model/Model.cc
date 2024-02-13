@@ -402,9 +402,9 @@ void Model::enableSparseParameterUpdates() {
   }
 }
 
-void Model::switchToSgd() {
+void Model::switchToSgd(std::optional<float> grad_clip) {
   for (const auto& op : _ops) {
-    op->switchToSgd();
+    op->switchToSgd(grad_clip);
   }
 }
 

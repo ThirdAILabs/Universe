@@ -66,9 +66,9 @@ class Switch final : public Op, public std::enable_shared_from_this<Switch> {
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final;
 
-  void switchToSgd() final {
+  void switchToSgd(std::optional<float> grad_clip) final {
     for (const auto& layer : _fc_ops) {
-      layer->switchToSgd();
+      layer->switchToSgd(grad_clip);
     }
   }
 

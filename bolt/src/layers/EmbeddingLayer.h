@@ -56,7 +56,9 @@ class EmbeddingLayer {
     _disable_sparse_parameter_updates = false;
   };
 
-  void switchToSgd() { _optimizer->switchToSgd(); }
+  void switchToSgd(std::optional<float> grad_clip) {
+    _optimizer->switchToSgd(grad_clip);
+  }
 
   std::vector<float>& getRawEmbeddingBlock() { return *_embedding_block; }
   void saveWithOptimizer(bool should_save_optimizer) {
