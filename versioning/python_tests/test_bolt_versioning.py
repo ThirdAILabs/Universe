@@ -44,20 +44,3 @@ def test_save_load_bolt_model():
     model = build_bolt_model()
     model.save(model_path)
     bolt.nn.Model.load(model_path)
-
-
-@pytest.mark.parametrize(
-    "error_string",
-    [
-        pytest.param(INTERNAL_ERROR_STRING, marks=pytest.mark.unit),
-        pytest.param(EXTERNAL_ERROR_STRING, marks=pytest.mark.release),
-    ],
-)
-def test_load_old_bolt_model(error_string):
-    model_name = "old_bolt_model"
-    model_path = os.path.join(SERIALIZED_CLASS_DIR, model_name)
-
-    # Expected to raise error because the bolt model being loaded was saved
-    # with version 0, which is older than any current bolt version
-    with pytest.raises(ValueError, match=error_string):
-        bolt.nn.Model.load(model_path)

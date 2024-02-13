@@ -18,6 +18,7 @@
 #include <versioning/src/Versions.h>
 #include <optional>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 
 namespace thirdai::bolt::seismic {
@@ -128,7 +129,15 @@ void SeismicBase::serialize(Archive& archive, uint32_t version) {
   // Adding a version in case we need to add custom logic to ensure
   // compatability in the future.
   (void)version;
-  archive(_model, _emb, _input_shape_data);
+
+  if (std::is_same_v<Archive, cereal::BinaryInputArchive>) {
+    archive(_model->toArchive(/*with_optimizer=*/false), _emb,
+            _input_shape_data);
+  } else {
+    ar::ArchivePtr thirdai_archive;
+    archive(thirdai_archive, _emb, _input_shape_data);
+    _model = Model::fromArchive(*thirdai_archive);
+  }
 }
 
 }  // namespace thirdai::bolt::seismic
