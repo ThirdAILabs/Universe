@@ -3,6 +3,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/nn/optimizers/Optimizer.h>
+#include <archive/src/Archive.h>
 #include <cassert>
 #include <cmath>
 
@@ -11,6 +12,8 @@ namespace thirdai::bolt {
 class Adam final : public Optimizer {
  public:
   Adam(size_t rows, size_t cols);
+
+  explicit Adam(const ar::Archive& archive);
 
   void updateDense(std::vector<float>& params, std::vector<float>& grads,
                    float learning_rate, size_t train_steps) final;
@@ -29,12 +32,19 @@ class Adam final : public Optimizer {
                                const std::vector<bool>& cols_used,
                                float learning_rate, size_t train_steps) final;
 
+  ar::ConstArchivePtr toArchive(
+      const std::shared_ptr<const Op>& op) const final;
+
+  static std::unique_ptr<Adam> fromArchive(const ar::Archive& archive);
+
+  static std::string type() { return "adam"; }
+
  private:
-  static inline float momentum(float curr_momentum, float grad) {
+  inline float momentum(float curr_momentum, float grad) const {
     return _beta1 * curr_momentum + (1 - _beta1) * grad;
   }
 
-  static inline float velocity(float curr_velocity, float grad) {
+  inline float velocity(float curr_velocity, float grad) const {
     return _beta2 * curr_velocity + (1 - _beta2) * grad * grad;
   }
 
@@ -63,9 +73,9 @@ class Adam final : public Optimizer {
 
   size_t _rows, _cols;
 
-  constexpr static float _beta1 = 0.9;
-  constexpr static float _beta2 = 0.999;
-  constexpr static float _eps = 1e-7;
+  float _beta1 = 0.9;
+  float _beta2 = 0.999;
+  float _eps = 1e-7;
 
   Adam() : Adam(0, 0) {}
 

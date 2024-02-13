@@ -1,7 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/ops/Op.h>
-#include <bolt/src/nn/optimizers/Optimizer.h>
+#include <archive/src/Archive.h>
 #include <cmath>
 #include <memory>
 
@@ -52,10 +52,16 @@ class Activation final : public Op,
 
   std::vector<std::vector<float>*> parameters() final;
 
+  ComputationPtr applyToInputs(const ComputationList& inputs) final;
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
   ComputationPtr apply(ComputationPtr input);
+
+  static std::string type() { return "activation"; }
 
  private:
   Activation();
@@ -66,6 +72,8 @@ class Activation final : public Op,
 
   uint32_t _dim = 0;
 };
+
+OpPtr activationOpFromArchive(const ar::Archive& archive);
 
 using Relu = Activation<ReluImpl>;
 using ReluPtr = std::shared_ptr<Relu>;

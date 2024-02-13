@@ -21,10 +21,16 @@ class StringHash final : public Transformation {
         _delimiter(delimiter),
         _seed(seed) {}
 
+  explicit StringHash(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "string_hash"; }
 
  private:
   // Private constructor for cereal.

@@ -7,6 +7,9 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/utils/Timer.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
+#include <archive/src/ParameterReference.h>
 #include <algorithm>
 #include <chrono>
 #include <ios>
@@ -196,6 +199,66 @@ void Embedding::initOptimizer(const OptimizerFactoryPtr& optimizer_factory) {
   _embedding_gradients.assign(_embeddings.size(), 0.0);
   _bias_gradients.assign(_biases.size(), 0.0);
   _embeddings_used.assign(_input_dim, false);
+}
+
+ComputationPtr Embedding::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("Expected Embedding op to have one input.");
+  }
+  return apply(inputs.at(0));
+}
+
+ar::ConstArchivePtr Embedding::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = baseArchive();
+  map->set("type", ar::str(type()));
+  map->set("dim", ar::u64(_dim));
+  map->set("input_dim", ar::u64(_input_dim));
+  map->set("activation", ar::str(activationFunctionToStr(_act_func)));
+  map->set("use_bias", ar::boolean(_bias));
+
+  map->set("embeddings",
+           ar::ParameterReference::make(_embeddings, shared_from_this()));
+  map->set("biases", ar::ParameterReference::make(_biases, shared_from_this()));
+
+  if (with_optimizer && _embedding_optimizer && _bias_optimizer) {
+    map->set("embedding_optimizer",
+             _embedding_optimizer->toArchive(shared_from_this()));
+
+    map->set("bias_optimizer", _bias_optimizer->toArchive(shared_from_this()));
+  }
+
+  map->set("disable_sparse_parameter_updates",
+           ar::boolean(_disable_sparse_parameter_updates));
+
+  return map;
+}
+
+std::shared_ptr<Embedding> Embedding::fromArchive(const ar::Archive& archive) {
+  return std::shared_ptr<Embedding>(new Embedding(archive));
+}
+
+Embedding::Embedding(const ar::Archive& archive)
+    : Op(archive.str("name")),
+      _dim(archive.u64("dim")),
+      _input_dim(archive.u64("input_dim")),
+      _bias(archive.boolean("use_bias")),
+      _act_func(getActivationFunction(archive.str("activation"))),
+      _embeddings(archive.get("embeddings")->param().moveLoadedParameter()),
+      _biases(archive.get("biases")->param().moveLoadedParameter()),
+      _disable_sparse_parameter_updates(
+          archive.boolean("disable_sparse_parameter_updates")),
+      _embeddings_used(archive.u64("input_dim"), false) {
+  assertOpType(archive, type());
+
+  if (archive.contains("embedding_optimizer")) {
+    _embedding_optimizer =
+        Optimizer::fromArchive(*archive.get("embedding_optimizer"));
+  }
+  if (archive.contains("bias_optimizer")) {
+    _bias_optimizer = Optimizer::fromArchive(*archive.get("bias_optimizer"));
+  }
 }
 
 void Embedding::summary(std::ostream& summary, const ComputationList& inputs,

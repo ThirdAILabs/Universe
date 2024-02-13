@@ -1,9 +1,11 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/optimizers/Optimizer.h>
 #include <bolt/src/nn/tensor/Tensor.h>
-#include <cmath>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -130,6 +132,12 @@ class Op {
    */
   virtual std::vector<std::vector<float>*> parameters() = 0;
 
+  virtual ComputationPtr applyToInputs(const ComputationList& inputs) = 0;
+
+  virtual ar::ConstArchivePtr toArchive(bool with_optimizer) const = 0;
+
+  static std::shared_ptr<Op> fromArchive(const ar::Archive& archive);
+
   /**
    * Appends a line to the summary to describe the op when applied to the given
    * inputs and yielding the given output. Ideally this should be in the form:
@@ -169,6 +177,12 @@ class Op {
  protected:
   Op() : Op("unnamed-op") {}
 
+  std::shared_ptr<ar::Map> baseArchive() const {
+    auto map = ar::Map::make();
+    map->set("name", ar::str(name()));
+    return map;
+  }
+
   static std::tuple<double, double, double> norms(const float* data,
                                                   size_t len) {
     double l1_norm = 0;
@@ -203,6 +217,8 @@ class Op {
     archive(_name);
   }
 };
+
+void assertOpType(const ar::Archive& archive, const std::string& expected_type);
 
 using OpPtr = std::shared_ptr<Op>;
 

@@ -5,7 +5,8 @@ from thirdai import data
 pytestmark = [pytest.mark.unit]
 
 
-def test_binning_transformation():
+@pytest.mark.parametrize("serialize", [True, False])
+def test_binning_transformation(serialize):
     n_rows = 100
 
     column1_np = np.arange(n_rows, dtype=np.float32)
@@ -37,6 +38,9 @@ def test_binning_transformation():
             ),
         ]
     )
+
+    if serialize:
+        featurizer = data.transformations.deserialize(featurizer.serialize())
 
     columns = featurizer(columns)
 

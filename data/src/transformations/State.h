@@ -62,6 +62,11 @@ class State {
 
   explicit State(automl::GraphInfoPtr graph) : _graph(std::move(graph)) {}
 
+  State(MachIndexPtr mach_index, automl::GraphInfoPtr graph)
+      : _mach_index(std::move(mach_index)), _graph(std::move(graph)) {}
+
+  explicit State(const ar::Archive& archive);
+
   State() {}
 
   const auto& machIndex() const {
@@ -112,6 +117,10 @@ class State {
     }
     return _graph;
   }
+
+  ar::ConstArchivePtr toArchive() const;
+
+  static std::shared_ptr<State> fromArchive(const ar::Archive& archive);
 
  private:
   MachIndexPtr _mach_index = nullptr;

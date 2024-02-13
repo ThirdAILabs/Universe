@@ -7,6 +7,7 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/SampledHashTable.h>
+#include <archive/src/Archive.h>
 #include <limits>
 #include <memory>
 
@@ -53,6 +54,13 @@ class FullyConnected final
   std::vector<std::vector<float>*> gradients() final;
 
   std::vector<std::vector<float>*> parameters() final;
+
+  ComputationPtr applyToInputs(const ComputationList& inputs) final;
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
+  static std::shared_ptr<FullyConnected> fromArchive(
+      const ar::Archive& archive);
 
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
@@ -133,6 +141,8 @@ class FullyConnected final
     return _reconstruct_hash_functions;
   }
 
+  static std::string type() { return "fc"; }
+
  private:
   FullyConnected(
       uint32_t dim, uint32_t input_dim, float sparsity,
@@ -141,6 +151,8 @@ class FullyConnected final
       uint32_t rebuild_hash_tables = std::numeric_limits<uint32_t>::max(),
       uint32_t reconstruct_hash_functions =
           std::numeric_limits<uint32_t>::max());
+
+  explicit FullyConnected(const ar::Archive& archive);
 
   std::shared_ptr<FullyConnectedLayer> _kernel;
 

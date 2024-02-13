@@ -10,17 +10,23 @@
 #include <hashing/src/DWTA.h>
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/SampledHashTable.h>
+#include <archive/src/Archive.h>
 #include <cstdint>
 #include <optional>
 #include <random>
 
 namespace thirdai::bolt {
 
+class FullyConnected;
+class PatchEmbedding;
+
 namespace tests {
 class FullyConnectedLayerTestFixture;
 }  // namespace tests
 
 class FullyConnectedLayer final {
+  friend class PatchEmbedding;
+  friend class FullyConnected;
   friend class tests::FullyConnectedLayerTestFixture;
 
  public:
@@ -35,6 +41,8 @@ class FullyConnectedLayer final {
                       uint64_t prev_dim,
                       bool disable_sparse_parameter_updates = false,
                       bool use_bias = true);
+
+  explicit FullyConnectedLayer(const ar::Archive& archive);
 
   void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels);

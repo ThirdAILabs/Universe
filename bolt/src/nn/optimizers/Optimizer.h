@@ -1,9 +1,12 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <archive/src/Archive.h>
 #include <vector>
 
 namespace thirdai::bolt {
+
+class Op;
 
 class Optimizer {
  public:
@@ -35,6 +38,11 @@ class Optimizer {
                                        const std::vector<bool>& cols_used,
                                        float learning_rate,
                                        size_t train_steps) = 0;
+
+  virtual ar::ConstArchivePtr toArchive(
+      const std::shared_ptr<const Op>& op) const = 0;
+
+  static std::unique_ptr<Optimizer> fromArchive(const ar::Archive& archive);
 
   virtual ~Optimizer() = default;
 

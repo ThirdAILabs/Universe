@@ -92,6 +92,24 @@ def test_neuralb_db_all_methods_work_on_new_mach_mixture(small_doc_set):
     )
 
 
+def test_neural_db_all_methods_work_on_old_model(small_doc_set):
+    """
+    This empty model was created with:
+    db = ndb.NeuralDB(embedding_dimension=512, extreme_output_dim=1000)
+    db.save(./saved_ndbs/empty_ndb)
+    """
+    checkpoint = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "saved_ndbs/empty_ndb"
+    )
+    db = ndb.NeuralDB.from_checkpoint(checkpoint)
+    all_methods_work(
+        db,
+        docs=small_doc_set,
+        num_duplicate_docs=0,
+        assert_acc=False,
+    )
+
+
 def test_neural_db_constrained_search_with_single_constraint():
     db = ndb.NeuralDB()
     db.insert(docs_with_meta(), train=False)

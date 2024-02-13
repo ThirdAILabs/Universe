@@ -24,8 +24,8 @@
 #include <bolt/src/nn/ops/PatchSum.h>
 #include <bolt/src/nn/ops/QuantileMixing.h>
 #include <bolt/src/nn/ops/RobeZ.h>
-#include <bolt/src/nn/optimizers/SGD.h>
 #include <bolt/src/nn/ops/WeightedSum.h>
+#include <bolt/src/nn/optimizers/SGD.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
 #include <pybind11/cast.h>
@@ -104,7 +104,7 @@ void createBoltNNSubmodule(py::module_& module) {
        * ==============================================================
        */
       .def(py::init(&Model::make), py::arg("inputs"), py::arg("outputs"),
-           py::arg("losses"), py::arg("additional_labels") = ComputationList{},
+           py::arg("losses"), py::arg("expected_labels") = ComputationList{},
            py::arg("optimizer") = AdamFactory())
       .def("train_on_batch", &Model::trainOnBatch, py::arg("inputs"),
            py::arg("labels"))

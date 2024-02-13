@@ -3,7 +3,10 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
+#include <archive/src/Map.h>
+#include <archive/src/ParameterReference.h>
 #include <chrono>
+#include <memory>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -123,6 +126,36 @@ void Adam::updateSparseRowsAndCols(std::vector<float>& params,
       }
     }
   }
+}
+
+ar::ConstArchivePtr Adam::toArchive(const std::shared_ptr<const Op>& op) const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("momentum", ar::ParameterReference::make(_momentum, op));
+  map->set("velocity", ar::ParameterReference::make(_velocity, op));
+
+  map->set("rows", ar::u64(_rows));
+  map->set("cols", ar::u64(_cols));
+
+  map->set("beta1", ar::f32(_beta1));
+  map->set("beta2", ar::f32(_beta2));
+  map->set("eps", ar::f32(_eps));
+
+  return map;
+}
+
+Adam::Adam(const ar::Archive& archive)
+    : _momentum(archive.get("momentum")->param().moveLoadedParameter()),
+      _velocity(archive.get("velocity")->param().moveLoadedParameter()),
+      _rows(archive.u64("rows")),
+      _cols(archive.u64("cols")),
+      _beta1(archive.getAs<ar::F32>("beta1")),
+      _beta2(archive.getAs<ar::F32>("beta2")),
+      _eps(archive.getAs<ar::F32>("eps")) {}
+
+std::unique_ptr<Adam> Adam::fromArchive(const ar::Archive& archive) {
+  return std::make_unique<Adam>(archive);
 }
 
 template void Adam::save(cereal::BinaryOutputArchive&) const;

@@ -6,6 +6,7 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <archive/src/Map.h>
 #include <memory>
 #include <numeric>
 #include <stdexcept>
@@ -103,6 +104,27 @@ std::optional<uint32_t> Concatenate::nonzeros(const ComputationList& inputs,
   }
 
   return total_num_nonzeros;
+}
+
+ComputationPtr Concatenate::applyToInputs(const ComputationList& inputs) {
+  return apply(inputs);
+}
+
+ar::ConstArchivePtr Concatenate::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = baseArchive();
+  map->set("type", ar::str(type()));
+  return map;
+}
+
+std::shared_ptr<Concatenate> Concatenate::fromArchive(
+    const ar::Archive& archive) {
+  assertOpType(archive, type());
+
+  auto op = Concatenate::make();
+  op->setName(archive.str("name"));
+  return op;
 }
 
 void Concatenate::summary(std::ostream& summary, const ComputationList& inputs,

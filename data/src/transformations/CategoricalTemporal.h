@@ -14,10 +14,16 @@ class CategoricalTemporal final : public Transformation {
                       bool should_update_history, bool include_current_row,
                       int64_t time_lag);
 
+  explicit CategoricalTemporal(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "categorical_temporal"; }
 
  private:
   ArrayColumnBasePtr<uint32_t> getItemColumn(const ColumnMap& columns) const {

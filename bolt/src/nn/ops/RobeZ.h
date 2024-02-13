@@ -2,6 +2,7 @@
 
 #include <bolt/src/layers/EmbeddingLayer.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <archive/src/Archive.h>
 #include <utils/Random.h>
 #include <memory>
 
@@ -39,6 +40,12 @@ class RobeZ final : public Op, public std::enable_shared_from_this<RobeZ> {
 
   std::vector<std::vector<float>*> parameters() final;
 
+  ComputationPtr applyToInputs(const ComputationList& inputs) final;
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
+  static std::shared_ptr<RobeZ> fromArchive(const ar::Archive& archive);
+
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
@@ -55,11 +62,15 @@ class RobeZ final : public Op, public std::enable_shared_from_this<RobeZ> {
 
   const auto& kernel() const { return _kernel; }
 
+  static std::string type() { return "robez"; }
+
  private:
   RobeZ(uint64_t num_embedding_lookups, uint64_t lookup_size,
         uint64_t log_embedding_block_size, const std::string& reduction,
         std::optional<uint64_t> num_tokens_per_input,
         uint64_t update_chunk_size, uint32_t seed);
+
+  explicit RobeZ(const ar::Archive& archive);
 
   RobeZ(std::unique_ptr<EmbeddingLayer>&& kernel, const std::string& name)
       : Op(name), _kernel(std::move(kernel)) {}

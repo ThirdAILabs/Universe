@@ -1,5 +1,8 @@
 #include "SymSpell.h"
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <codecvt>
+#include <stdexcept>
 /// <summary>Maximum edit distance for dictionary precalculation.</summary>
 uint32_t SymSpell::MaxDictionaryEditDistance() {
   return this->maxDictionaryEditDistance;
@@ -611,6 +614,69 @@ vector<SuggestItem> SymSpell::Lookup(xstring input, Verbosity verbosity,
     suggestions.push_back(SuggestItem(input, maxEditDistance + 1, 0));
   return suggestions;
 }  // end if
+
+thirdai::ar::ConstArchivePtr SymSpell::toArchive() const {
+  auto map = thirdai::ar::Map::make();
+
+  map->set("initial_capacity", thirdai::ar::u64(initialCapacity));
+  map->set("max_dictionary_edit_distance",
+           thirdai::ar::u64(maxDictionaryEditDistance));
+  map->set("prefix_length", thirdai::ar::u64(prefixLength));
+  map->set("count_threshold", thirdai::ar::u64(countThreshold));
+  map->set("compact_mask", thirdai::ar::u64(compactMask));
+
+  switch (distanceAlgorithm) {
+    case DistanceAlgorithm::DamerauOSADistance:
+      map->set("distance_algorithm", thirdai::ar::str("DamerauOSADistance"));
+      break;
+    case DistanceAlgorithm::LevenshteinDistance:
+      map->set("distance_algorithm", thirdai::ar::str("LevenshteinDistance"));
+      break;
+  }
+
+  map->set("max_dictionary_word_length",
+           thirdai::ar::u64(maxDictionaryWordLength));
+
+  if (deletes) {
+    thirdai::ar::MapI64VecStr deletes_;
+    for (const auto& [k, v] : deletes_) {
+      deletes_[k] = v;
+    }
+    map->set("deletes", thirdai::ar::mapI64VecStr(std::move(deletes_)));
+  }
+  map->set("words", thirdai::ar::mapStrI64(words));
+  map->set("below_threshold_words",
+           thirdai::ar::mapStrI64(belowThresholdWords));
+
+  return map;
+}
+
+SymSpell::SymSpell(const thirdai::ar::Archive& archive)
+    : initialCapacity(archive.u64("initial_capacity")),
+      maxDictionaryEditDistance(archive.u64("max_dictionary_edit_distance")),
+      prefixLength(archive.u64("prefix_length")),
+      countThreshold(archive.u64("count_threshold")),
+      compactMask(archive.u64("compact_mask")),
+      maxDictionaryWordLength(archive.u64("max_dictionary_word_length")),
+      words(archive.getAs<thirdai::ar::MapStrI64>("words")),
+      belowThresholdWords(
+          archive.getAs<thirdai::ar::MapStrI64>("below_threshold_words")) {
+  if (archive.str("distance_algorithm") == "DamerauOSADistance") {
+    distanceAlgorithm = DistanceAlgorithm::DamerauOSADistance;
+  } else if (archive.str("distance_algorithm") == "LevenshteinDistance") {
+    distanceAlgorithm = DistanceAlgorithm::LevenshteinDistance;
+  } else {
+    throw std::invalid_argument("Invalid distance algorithm in spell checker.");
+  }
+
+  if (archive.contains("deletes")) {
+    deletes = std::make_shared<Dictionary<int, std::vector<xstring>>>();
+    for (const auto& [k, v] :
+         archive.getAs<thirdai::ar::MapI64VecStr>("deletes")) {
+      (*deletes)[k] = v;
+    }
+  }
+}
 
 // check whether all delete chars are present in the suggestion prefix in
 // correct order, otherwise this is just a hash collision

@@ -4,11 +4,15 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
+#include <archive/src/ParameterReference.h>
 #include <cstring>
 #include <memory>
 #include <stdexcept>
@@ -124,6 +128,72 @@ std::vector<std::vector<float>*> FullyConnected::gradients() {
 
 std::vector<std::vector<float>*> FullyConnected::parameters() {
   return {&_kernel->weights(), &_kernel->biases()};
+}
+
+ComputationPtr FullyConnected::applyToInputs(const ComputationList& inputs) {
+  // Can have a second input for labels if the output layer. This is only passed
+  // into the apply method when rebuilding the computation graph after
+  // deserialization. We can just ignore it here because the model will match
+  // the sparse output layer with the corresponding labels.
+  if (inputs.size() != 1 && inputs.size() != 2) {
+    throw std::invalid_argument(
+        "Expected FullyConnected op to have one or input.");
+  }
+  return apply(inputs.at(0));
+}
+
+ar::ConstArchivePtr FullyConnected::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = baseArchive();
+  map->set("type", ar::str(type()));
+
+  map->set("dim", ar::u64(dim()));
+  map->set("input_dim", ar::u64(inputDim()));
+  map->set("sparsity", ar::f32(_kernel->_sparsity));
+  map->set("activation", ar::str(activationFunctionToStr(_kernel->_act_func)));
+  map->set("use_bias", ar::boolean(_kernel->_use_bias));
+
+  map->set("weights",
+           ar::ParameterReference::make(_kernel->_weights, shared_from_this()));
+  map->set("biases",
+           ar::ParameterReference::make(_kernel->_biases, shared_from_this()));
+
+  if (auto neuron_index = _kernel->neuronIndex()) {
+    map->set("neuron_index", neuron_index->toArchive());
+  }
+  map->set("index_frozen", ar::boolean(_kernel->_index_frozen));
+  map->set("rebuild_hash_tables", ar::u64(_rebuild_hash_tables));
+  map->set("reconstruct_hash_functions", ar::u64(_reconstruct_hash_functions));
+
+  if (with_optimizer && _kernel->_weight_optimizer &&
+      _kernel->_bias_optimizer) {
+    map->set("wieght_optimizer",
+             _kernel->_weight_optimizer->toArchive(shared_from_this()));
+
+    map->set("bias_optimizer",
+             _kernel->_bias_optimizer->toArchive(shared_from_this()));
+  }
+
+  map->set("disable_sparse_parameter_updates",
+           ar::boolean(_kernel->_disable_sparse_parameter_updates));
+
+  return map;
+}
+
+std::shared_ptr<FullyConnected> FullyConnected::fromArchive(
+    const ar::Archive& archive) {
+  return std::shared_ptr<FullyConnected>(new FullyConnected(archive));
+}
+
+FullyConnected::FullyConnected(const ar::Archive& archive)
+    : Op(archive.str("name")),
+      _kernel(std::make_shared<FullyConnectedLayer>(archive)),
+      _rebuild_hash_tables(archive.u64("rebuild_hash_tables")),
+      _reconstruct_hash_functions(archive.u64("reconstruct_hash_functions")),
+      _updates_since_rebuild_hash_tables(0),
+      _updates_since_reconstruct_hash_functions(0) {
+  assertOpType(archive, type());
 }
 
 void FullyConnected::summary(std::ostream& summary,

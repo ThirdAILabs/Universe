@@ -3,6 +3,8 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
+#include <archive/src/Map.h>
+#include <archive/src/ParameterReference.h>
 #include <chrono>
 #include <vector>
 
@@ -104,6 +106,23 @@ void SGD::updateSparseRowsAndCols(std::vector<float>& params,
       }
     }
   }
+}
+
+ar::ConstArchivePtr SGD::toArchive(const std::shared_ptr<const Op>& op) const {
+  (void)op;
+
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+
+  map->set("rows", ar::u64(_rows));
+  map->set("cols", ar::u64(_cols));
+
+  return map;
+}
+
+std::unique_ptr<SGD> SGD::fromArchive(const ar::Archive& archive) {
+  return std::make_unique<SGD>(archive.u64("rows"), archive.u64("cols"));
 }
 
 template void SGD::save(cereal::BinaryOutputArchive&) const;

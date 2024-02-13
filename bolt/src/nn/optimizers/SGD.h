@@ -29,6 +29,13 @@ class SGD final : public Optimizer {
                                const std::vector<bool>& cols_used,
                                float learning_rate, size_t train_steps) final;
 
+  ar::ConstArchivePtr toArchive(
+      const std::shared_ptr<const Op>& op) const final;
+
+  static std::unique_ptr<SGD> fromArchive(const ar::Archive& archive);
+
+  static std::string type() { return "sgd"; }
+
  private:
   static inline float step(float gradient, float learning_rate) {
     return learning_rate * gradient;
