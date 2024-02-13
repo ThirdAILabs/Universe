@@ -105,7 +105,7 @@ void createBoltNNSubmodule(py::module_& module) {
        */
       .def(py::init(&Model::make), py::arg("inputs"), py::arg("outputs"),
            py::arg("losses"), py::arg("expected_labels") = ComputationList{},
-           py::arg("optimizer") = AdamFactory())
+           py::arg("optimizer") = AdamFactory::make())
       .def("train_on_batch", &Model::trainOnBatch, py::arg("inputs"),
            py::arg("labels"))
       .def("forward",
@@ -437,7 +437,8 @@ void defineOptimizers(py::module_& nn) {
 
   py::class_<AdamFactory, OptimizerFactory, std::shared_ptr<AdamFactory>>(
       optimizers, "Adam")
-      .def(py::init<>());
+      .def(py::init<float, float, float>(), py::arg("beta1") = 0.9,
+           py::arg("beta2") = 0.999, py::arg("eps") = 1e-7);
 
   py::class_<SGDFactory, OptimizerFactory, std::shared_ptr<SGDFactory>>(
       optimizers, "SGD")
