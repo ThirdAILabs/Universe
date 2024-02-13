@@ -253,16 +253,17 @@ template void LayerNorm::serialize(cereal::BinaryOutputArchive&);
 template <class Archive>
 void LayerNorm::serialize(Archive& archive) {
   // The optimizer is small so we can always serialize it.
-  AdamOptimizer gamma_optimizer, beta_optimizer;
+  std::optional<AdamOptimizer> gamma_optimizer;
+  std::optional<AdamOptimizer> beta_optimizer;
 
   archive(cereal::base_class<Op>(this), _gamma, _beta, _gamma_gradients,
           _beta_gradients, gamma_optimizer, beta_optimizer);
 
   _gamma_optimizer =
-      Adam::fromOldOptimizer(std::move(gamma_optimizer), 1, _gamma.size());
+      Adam::fromOldOptimizer(std::move(*gamma_optimizer), 1, _gamma.size());
 
   _beta_optimizer =
-      Adam::fromOldOptimizer(std::move(beta_optimizer), 1, _beta.size());
+      Adam::fromOldOptimizer(std::move(*beta_optimizer), 1, _beta.size());
 }
 
 }  // namespace thirdai::bolt

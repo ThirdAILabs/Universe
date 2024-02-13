@@ -166,11 +166,11 @@ class EmbeddingLayer {
 
     if (_should_serialize_optimizer &&
         std::is_same_v<Archive, cereal::BinaryInputArchive>) {
-      AdamOptimizer optimizer;
+      std::optional<AdamOptimizer> optimizer;
 
       archive(optimizer);
 
-      _optimizer = Adam::fromOldOptimizer(std::move(optimizer),
+      _optimizer = Adam::fromOldOptimizer(std::move(*optimizer),
                                           _embedding_chunks_used.size(),
                                           _update_chunk_size);
 

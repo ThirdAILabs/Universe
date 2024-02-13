@@ -838,8 +838,10 @@ void Model::serialize(Archive& archive, const uint32_t version) {
 
   // Increment thirdai::versions::BOLT_MODEL_VERSION after serialization changes
   archive(_inputs, _outputs, _labels, _losses, _ops, _computation_order,
-          _optimizer_factory, _allocation_manager, _train_steps, _model_uuid,
+          _allocation_manager, _train_steps, _model_uuid,
           _total_training_samples);
+
+  _optimizer_factory = AdamFactory::make();
 
   verifyAllowedOutputDim();
 

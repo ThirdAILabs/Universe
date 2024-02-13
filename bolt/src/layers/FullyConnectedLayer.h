@@ -248,21 +248,21 @@ class FullyConnectedLayer final {
   void serialize(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
             _biases, _neuron_index, _index_frozen,
-            _disable_sparse_parameter_updates, _use_bias,
-            _should_serialize_optimizer);
+            _disable_sparse_parameter_updates, _should_serialize_optimizer,
+            _use_bias);
 
     if (_should_serialize_optimizer &&
         std::is_same_v<Archive, cereal::BinaryInputArchive>) {
-      AdamOptimizer weight_optimizer;
-      AdamOptimizer bias_optimizer;
+      std::optional<AdamOptimizer> weight_optimizer;
+      std::optional<AdamOptimizer> bias_optimizer;
 
       archive(weight_optimizer, bias_optimizer);
 
       _weight_optimizer =
-          Adam::fromOldOptimizer(std::move(weight_optimizer), _dim, _prev_dim);
+          Adam::fromOldOptimizer(std::move(*weight_optimizer), _dim, _prev_dim);
 
       _bias_optimizer =
-          Adam::fromOldOptimizer(std::move(bias_optimizer), _dim, 1);
+          Adam::fromOldOptimizer(std::move(*bias_optimizer), _dim, 1);
 
       _weight_gradients.assign(_weights.size(), 0.0);
       _bias_gradients.assign(_biases.size(), 0.0);

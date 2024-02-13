@@ -85,12 +85,12 @@ class WeightedSum final : public Op,
 
     if (_should_serialize_optimizer &&
         std::is_same_v<Archive, cereal::BinaryInputArchive>) {
-      AdamOptimizer optimizer;
+      std::optional<AdamOptimizer> optimizer;
 
       archive(optimizer);
 
       _optimizer =
-          Adam::fromOldOptimizer(std::move(optimizer), 1, _weights.size());
+          Adam::fromOldOptimizer(std::move(*optimizer), 1, _weights.size());
 
       _gradients.assign(_weights.size(), 0.0);
     }
