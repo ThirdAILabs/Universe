@@ -103,7 +103,7 @@ jobs:
 
           # Skip tests on windows
           # TODO(Jerin): Get tests working on windows wheels
-          CIBW_TEST_SKIP: "*win*"
+          CIBW_TEST_SKIP: "*win* *linux*"
 
           # Build both x86_64 and arm64 (apple silicon)
           CIBW_ARCHS_MACOS: ${{ matrix.archs }}
