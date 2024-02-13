@@ -223,10 +223,13 @@ void Embedding::sparseEmbeddingUpdate(float learning_rate,
       assert(!std::isnan(_embedding_optimizer->momentum[index]));
       assert(!std::isnan(_embedding_optimizer->velocity[index]));
 
-      _embeddings[index] +=
-          adam(_embedding_optimizer->momentum[index],
-               _embedding_optimizer->velocity[index], learning_rate,
-               B1_bias_corrected, B2_bias_corrected);
+      // _embeddings[index] +=
+      //     adam(_embedding_optimizer->momentum[index],
+      //          _embedding_optimizer->velocity[index], learning_rate,
+      //          B1_bias_corrected, B2_bias_corrected);
+
+      _embedding[index] +=
+          learning_rate * _embedding_optimizer->gradients[index];
 
       assert(!std::isnan(_embeddings[index]));
 
