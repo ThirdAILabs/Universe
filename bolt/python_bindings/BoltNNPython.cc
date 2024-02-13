@@ -100,7 +100,6 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("backpropagate", &Model::backpropagate, py::arg("labels"))
       .def("update_parameters", &Model::updateParameters,
            py::arg("learning_rate"))
-      .def("switch_to_sgd", &Model::switchToSgd)
       .def("ops", &Model::opExecutionOrder)
       .def("__getitem__", &Model::getOp, py::arg("name"))
       .def("computation", &Model::getComputation, py::arg("name"))
@@ -123,6 +122,7 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("get_gradients", &getGradients,
            py::return_value_policy::reference_internal)
       .def("set_gradients", &setGradients, py::arg("new_values"))
+      .def("switch_to_sgd", &Model::switchToSgd)
       .def("num_params", &Model::numParams)
       .def("thirdai_version", &Model::thirdaiVersion)
       .def("enable_sparse_parameter_updates",
