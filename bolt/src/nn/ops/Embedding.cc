@@ -316,8 +316,9 @@ void Embedding::serialize(Archive& archive) {
   if (_should_serialize_optimizer) {
     std::optional<AdamOptimizer> embedding_optimizer;
     std::optional<AdamOptimizer> bias_optimizer;
+    std::vector<bool> embeddings_used;  // For compatability
 
-    archive(embedding_optimizer, bias_optimizer);
+    archive(embedding_optimizer, bias_optimizer, embeddings_used);
 
     _embedding_optimizer = Adam::fromOldOptimizer(
         std::move(*embedding_optimizer), _input_dim, _dim);
