@@ -448,9 +448,15 @@ ar::ConstArchivePtr Model::toArchive(bool with_optimizer) const {
   /**
    * Labels
    */
+  std::unordered_set<ComputationPtr> labels_seen;
   auto labels = ar::List::make();
   for (const auto& label : _labels) {
-    labels->append(placeholder(label->name(), label->dim()));
+    if (!labels_seen.count(label)) {
+      // Since multiple losses could reference the same label, a label could
+      // appear multiple times.
+      labels->append(placeholder(label->name(), label->dim()));
+      labels_seen.insert(label);
+    }
   }
   model->set("labels", labels);
 
