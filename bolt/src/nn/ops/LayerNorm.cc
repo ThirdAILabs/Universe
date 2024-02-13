@@ -252,6 +252,12 @@ template void LayerNorm::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void LayerNorm::serialize(Archive& archive) {
+  if (!std::is_same_v<Archive, cereal::BinaryInputArchive>) {
+    throw std::runtime_error(
+        "This serialize method should only be used for loading old models, "
+        "not saving new ones.");
+  }
+
   // The optimizer is small so we can always serialize it.
   std::optional<AdamOptimizer> gamma_optimizer;
   std::optional<AdamOptimizer> beta_optimizer;

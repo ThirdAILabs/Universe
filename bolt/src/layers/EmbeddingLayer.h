@@ -158,14 +158,19 @@ class EmbeddingLayer {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
+    if (!std::is_same_v<Archive, cereal::BinaryInputArchive>) {
+      throw std::runtime_error(
+          "This serialize method should only be used for loading old models, "
+          "not saving new ones.");
+    }
+
     archive(_num_lookups_per_token, _lookup_size, _total_embedding_dim,
             _log_embedding_block_size, _update_chunk_size, _reduction,
             _num_tokens_per_input, _embedding_block_size, _hash_fn,
             _embedding_block, _embedding_chunks_used,
             _disable_sparse_parameter_updates, _should_serialize_optimizer);
 
-    if (_should_serialize_optimizer &&
-        std::is_same_v<Archive, cereal::BinaryInputArchive>) {
+    if (_should_serialize_optimizer) {
       std::optional<AdamOptimizer> optimizer;
 
       archive(optimizer);

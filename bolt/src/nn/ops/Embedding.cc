@@ -303,12 +303,17 @@ template void Embedding::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void Embedding::serialize(Archive& archive) {
+  if (!std::is_same_v<Archive, cereal::BinaryInputArchive>) {
+    throw std::runtime_error(
+        "This serialize method should only be used for loading old models, "
+        "not saving new ones.");
+  }
+
   archive(cereal::base_class<Op>(this), _dim, _input_dim, _bias, _act_func,
           _embeddings, _biases, _disable_sparse_parameter_updates,
           _should_serialize_optimizer);
 
-  if (_should_serialize_optimizer &&
-      std::is_same_v<Archive, cereal::BinaryInputArchive>) {
+  if (_should_serialize_optimizer) {
     std::optional<AdamOptimizer> embedding_optimizer;
     std::optional<AdamOptimizer> bias_optimizer;
 

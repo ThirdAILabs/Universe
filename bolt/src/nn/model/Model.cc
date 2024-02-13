@@ -619,8 +619,6 @@ void Model::save(const std::string& filename, bool save_metadata) {
   auto output_stream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
 
-  setSerializeOptimizer(false);
-
   save_stream(output_stream);
 
   if (save_metadata) {
@@ -632,9 +630,9 @@ void Model::checkpoint(const std::string& filename, bool save_metadata) {
   auto output_stream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
 
-  setSerializeOptimizer(true);
-
-  save_stream(output_stream);
+  cereal::BinaryOutputArchive oarchive(output_stream);
+  auto archive = toArchive(/*with_optimizer=*/true);
+  oarchive(archive);
 
   if (save_metadata) {
     saveMetadata(filename);
@@ -643,7 +641,9 @@ void Model::checkpoint(const std::string& filename, bool save_metadata) {
 
 void Model::save_stream(std::ostream& output_stream) const {
   cereal::BinaryOutputArchive oarchive(output_stream);
-  oarchive(*this);
+
+  auto archive = toArchive(/*with_optimizer=*/false);
+  oarchive(archive);
 }
 
 void Model::setSerializeOptimizer(bool should_save_optimizer) {
@@ -672,10 +672,11 @@ std::shared_ptr<Model> Model::load(const std::string& filename) {
 
 std::shared_ptr<Model> Model::load_stream(std::istream& input_stream) {
   cereal::BinaryInputArchive iarchive(input_stream);
-  std::shared_ptr<Model> deserialize_into(new Model());
-  iarchive(*deserialize_into);
 
-  return deserialize_into;
+  ar::ArchivePtr archive;
+  iarchive(archive);
+
+  return fromArchive(*archive);
 }
 
 void Model::forwardVector(uint32_t index_in_batch, bool training) {

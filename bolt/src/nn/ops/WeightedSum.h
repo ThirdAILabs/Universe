@@ -80,11 +80,16 @@ class WeightedSum final : public Op,
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
+    if (!std::is_same_v<Archive, cereal::BinaryInputArchive>) {
+      throw std::runtime_error(
+          "This serialize method should only be used for loading old models, "
+          "not saving new ones.");
+    }
+
     archive(cereal::base_class<Op>(this), _n_chunks, _chunk_size, _weights,
             _should_serialize_optimizer);
 
-    if (_should_serialize_optimizer &&
-        std::is_same_v<Archive, cereal::BinaryInputArchive>) {
+    if (_should_serialize_optimizer) {
       std::optional<AdamOptimizer> optimizer;
 
       archive(optimizer);
