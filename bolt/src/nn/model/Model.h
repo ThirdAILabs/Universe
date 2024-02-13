@@ -364,11 +364,17 @@ class Model : public std::enable_shared_from_this<Model> {
   std::string _thirdai_version;
   uint64_t _total_training_samples = 0;
 
+  bool _serialize_with_optimizer = false;
+
   Model() : _allocation_manager() { licensing::checkLicense(); }
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
+  void save(Archive& archive, uint32_t version) const;
+
+  friend class cereal::access;
+  template <class Archive>
+  void load(Archive& archive, uint32_t version);
 };
 
 using ModelPtr = std::shared_ptr<Model>;

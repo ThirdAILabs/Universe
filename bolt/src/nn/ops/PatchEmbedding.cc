@@ -135,7 +135,7 @@ std::vector<std::vector<float>*> PatchEmbedding::parameters() {
 }
 
 ComputationPtr PatchEmbedding::applyToInputs(const ComputationList& inputs) {
-  if (inputs.size() != 2) {
+  if (inputs.size() != 1) {
     throw std::invalid_argument(
         "Expected PatchEmbedding op to have one input.");
   }

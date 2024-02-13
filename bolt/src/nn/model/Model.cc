@@ -640,6 +640,8 @@ void Model::save(const std::string& filename, bool save_metadata) {
   auto output_stream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
 
+  setSerializeOptimizer(false);
+
   save_stream(output_stream);
 
   if (save_metadata) {
@@ -651,9 +653,8 @@ void Model::checkpoint(const std::string& filename, bool save_metadata) {
   auto output_stream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
 
-  cereal::BinaryOutputArchive oarchive(output_stream);
-  auto archive = toArchive(/*with_optimizer=*/true);
-  oarchive(archive);
+  setSerializeOptimizer(true);
+  save_stream(output_stream);
 
   if (save_metadata) {
     saveMetadata(filename);
@@ -662,15 +663,14 @@ void Model::checkpoint(const std::string& filename, bool save_metadata) {
 
 void Model::save_stream(std::ostream& output_stream) const {
   cereal::BinaryOutputArchive oarchive(output_stream);
-
-  auto archive = toArchive(/*with_optimizer=*/false);
-  oarchive(archive);
+  oarchive(*this);
 }
 
 void Model::setSerializeOptimizer(bool should_save_optimizer) {
   for (auto& op : _ops) {
     op->setSerializeOptimizer(should_save_optimizer);
   }
+  _serialize_with_optimizer = should_save_optimizer;
 }
 
 std::unordered_map<std::string, double> Model::getNorms() const {
@@ -694,10 +694,10 @@ std::shared_ptr<Model> Model::load(const std::string& filename) {
 std::shared_ptr<Model> Model::load_stream(std::istream& input_stream) {
   cereal::BinaryInputArchive iarchive(input_stream);
 
-  ar::ArchivePtr archive;
-  iarchive(archive);
+  std::shared_ptr<Model> deserialize_into(new Model());
+  iarchive(*deserialize_into);
 
-  return fromArchive(*archive);
+  return deserialize_into;
 }
 
 void Model::forwardVector(uint32_t index_in_batch, bool training) {
@@ -842,31 +842,53 @@ void Model::verifyAllowedOutputDim() const {
   licensing::entitlements().verifyAllowedOutputDim(total_output_dim);
 }
 
-template void Model::serialize(cereal::BinaryInputArchive&,
-                               const uint32_t version);
-template void Model::serialize(cereal::BinaryOutputArchive&,
-                               const uint32_t version);
+template void Model::save(cereal::BinaryOutputArchive&,
+                          const uint32_t version) const;
+
+template void Model::load(cereal::BinaryInputArchive&, const uint32_t version);
 
 template <class Archive>
-void Model::serialize(Archive& archive, const uint32_t version) {
+void Model::save(Archive& archive, const uint32_t version) const {
+  (void)version;
+
+  licensing::entitlements().verifySaveLoad();
+
+  archive(_thirdai_version);
+
+  auto thirdai_archive = toArchive(_serialize_with_optimizer);
+
+  archive(thirdai_archive);
+}
+
+template <class Archive>
+void Model::load(Archive& archive, const uint32_t version) {
   licensing::entitlements().verifySaveLoad();
 
   _thirdai_version = thirdai::version();
   archive(_thirdai_version);
 
-  std::string class_name = "BOLT_MODEL";
-  versions::checkVersion(version, versions::BOLT_MODEL_VERSION,
-                         _thirdai_version, thirdai::version(), class_name);
+  if (version <= versions::BOLT_MODEL_LAST_OLD_SERIALIZATION_VERSION) {
+    std::string class_name = "BOLT_MODEL";
+    versions::checkVersion(version,
+                           versions::BOLT_MODEL_LAST_OLD_SERIALIZATION_VERSION,
+                           _thirdai_version, thirdai::version(), class_name);
 
-  // Increment thirdai::versions::BOLT_MODEL_VERSION after serialization changes
-  archive(_inputs, _outputs, _labels, _losses, _ops, _computation_order,
-          _allocation_manager, _train_steps, _model_uuid,
-          _total_training_samples);
+    // Increment thirdai::versions::BOLT_MODEL_VERSION after serialization
+    // changes
+    archive(_inputs, _outputs, _labels, _losses, _ops, _computation_order,
+            _allocation_manager, _train_steps, _model_uuid,
+            _total_training_samples);
 
-  _optimizer_factory = AdamFactory::make();
+    _optimizer_factory = AdamFactory::make();
+
+  } else {
+    ar::ArchivePtr thirdai_archive;
+    archive(thirdai_archive);
+
+    *this = *fromArchive(*thirdai_archive);
+  }
 
   verifyAllowedOutputDim();
-
   registerWithOps();
 }
 

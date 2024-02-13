@@ -144,11 +144,19 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("freeze_hash_tables", &Model::freezeHashTables,
            py::arg("insert_labels_if_not_found") = true)
       .def("unfreeze_hash_tables", &Model::unfreezeHashTables)
-      .def("save", &Model::save, py::arg("filename"),
-           py::arg("save_metadata") = true)
+      .def(
+          "save",
+          [](const ModelPtr& model, const std::string& filename,
+             bool save_metadata) {
+            return model->save(filename, save_metadata);
+          },
+          py::arg("filename"), py::arg("save_metadata") = true)
       .def("checkpoint", &Model::checkpoint, py::arg("filename"),
            py::arg("save_metadata") = true)
-      .def_static("load", &Model::load, py::arg("filename"))
+      .def_static(
+          "load",
+          [](const std::string& filename) { return Model::load(filename); },
+          py::arg("filename"))
       .def(thirdai::bolt::python::getPickleFunction<Model>());
 }
 

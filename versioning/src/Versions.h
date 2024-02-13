@@ -33,7 +33,8 @@ constexpr uint32_t UDT_SVM_CLASSIFIER_VERSION = 1;
 
 // BOLT VERSIONS
 
-constexpr uint32_t BOLT_MODEL_VERSION = 5;
+constexpr uint32_t BOLT_MODEL_VERSION = 6;
+constexpr uint32_t BOLT_MODEL_LAST_OLD_SERIALIZATION_VERSION = 5;
 
 // SEISMIC MODEL
 constexpr uint32_t SEISMIC_MODEL_VERSION = 1;
