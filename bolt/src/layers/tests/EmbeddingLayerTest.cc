@@ -24,7 +24,6 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
                                 reduction, NUM_TOKENS_PER_INPUT);
 
     auto layer = std::make_unique<EmbeddingLayer>(config, seed);
-    layer->initOptimizer();
 
     std::iota(layer->_embedding_block->begin(), layer->_embedding_block->end(),
               1.0);

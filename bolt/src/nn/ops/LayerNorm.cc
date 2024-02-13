@@ -186,7 +186,7 @@ ar::ConstArchivePtr LayerNorm::toArchive(bool with_optimizer) const {
   map->set("gamma", ar::ParameterReference::make(_gamma, shared_from_this()));
   map->set("beta", ar::ParameterReference::make(_beta, shared_from_this()));
 
-  if (with_optimizer) {
+  if (with_optimizer && _gamma_optimizer && _beta_optimizer) {
     map->set("gamma_optimizer",
              _gamma_optimizer->toArchive(shared_from_this()));
 

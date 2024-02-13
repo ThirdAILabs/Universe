@@ -67,8 +67,6 @@ class Noop final : public Op, public std::enable_shared_from_this<Noop> {
     return _dim;
   }
 
-  void initOptimizer() final {}
-
   void disableSparseParameterUpdates() final {}
 
   void enableSparseParameterUpdates() final {}
