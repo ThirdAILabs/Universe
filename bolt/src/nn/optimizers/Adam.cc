@@ -23,11 +23,11 @@ Adam::Adam(size_t rows, size_t cols, std::vector<float> momentum,
       _velocity(std::move(velocity)),
       _rows(rows),
       _cols(cols) {
-  if (momentum.size() != _rows * _cols) {
+  if (_momentum.size() != _rows * _cols) {
     throw std::invalid_argument(
         "Size of momentum doesn't match rows and cols.");
   }
-  if (momentum.size() != velocity.size()) {
+  if (_momentum.size() != _velocity.size()) {
     throw std::invalid_argument(
         "Size of momentum and velocity don't match in adam.");
   }
