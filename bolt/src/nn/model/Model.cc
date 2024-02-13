@@ -486,6 +486,11 @@ ar::ConstArchivePtr Model::toArchive(bool with_optimizer) const {
   model->set("outputs", ar::vecStr(output_names));
 
   /**
+   * Optimizer
+   */
+  model->set("optimizer", _optimizer_factory->toArchive());
+
+  /**
    * Metadata
    */
   auto metadata = ar::Map::make();
@@ -558,7 +563,17 @@ std::shared_ptr<Model> Model::fromArchive(const ar::Archive& archive) {
     outputs.push_back(computations.at(output));
   }
 
-  auto model = Model::make(inputs, outputs, losses, labels);
+  /**
+   * Optimizer
+   */
+  OptimizerFactoryPtr optimizer;
+  if (archive.contains("optimizer")) {
+    optimizer = OptimizerFactory::fromArchive(*archive.get("optimizer"));
+  } else {
+    optimizer = AdamFactory::make();
+  }
+
+  auto model = Model::make(inputs, outputs, losses, labels, optimizer);
 
   /**
    * Metadata

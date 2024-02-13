@@ -121,4 +121,19 @@ std::unique_ptr<SGD> SGD::fromArchive(const ar::Archive& archive) {
   return std::make_unique<SGD>(archive.u64("rows"), archive.u64("cols"));
 }
 
+ar::ConstArchivePtr SGDFactory::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(SGD::type()));
+
+  return map;
+}
+
+std::shared_ptr<SGDFactory> SGDFactory::fromArchive(
+    const ar::Archive& archive) {
+  (void)archive;
+
+  return std::make_shared<SGDFactory>();
+}
+
 }  // namespace thirdai::bolt

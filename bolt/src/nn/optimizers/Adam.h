@@ -85,12 +85,21 @@ class Adam final : public Optimizer {
 
 class AdamFactory final : public OptimizerFactory {
  public:
+  AdamFactory(float beta1, float beta2, float eps)
+      : _beta1(beta1), _beta2(beta2), _eps(eps) {}
+
   std::unique_ptr<Optimizer> makeOptimizer(size_t rows,
                                            size_t cols) const final {
     return std::make_unique<Adam>(rows, cols, _beta1, _beta2, _eps);
   }
 
-  static auto make() { return std::make_shared<AdamFactory>(); }
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::shared_ptr<AdamFactory> fromArchive(const ar::Archive& archive);
+
+  static auto make(float beta1 = 0.9, float beta2 = 0.999, float eps = 1e-7) {
+    return std::make_shared<AdamFactory>(beta1, beta2, eps);
+  }
 
  private:
   float _beta1 = 0.9;

@@ -180,4 +180,23 @@ std::unique_ptr<Adam> Adam::fromOldOptimizer(AdamOptimizer&& old_opt,
                                 std::move(old_opt.velocity));
 }
 
+ar::ConstArchivePtr AdamFactory::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(Adam::type()));
+
+  map->set("beta1", ar::f32(_beta1));
+  map->set("beta2", ar::f32(_beta2));
+  map->set("eps", ar::f32(_eps));
+
+  return map;
+}
+
+std::shared_ptr<AdamFactory> AdamFactory::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_shared<AdamFactory>(archive.getAs<ar::F32>("beta1"),
+                                       archive.getAs<ar::F32>("beta2"),
+                                       archive.getAs<ar::F32>("eps"));
+}
+
 }  // namespace thirdai::bolt

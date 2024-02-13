@@ -52,6 +52,11 @@ class OptimizerFactory {
  public:
   virtual OptimizerPtr makeOptimizer(size_t rows, size_t cols) const = 0;
 
+  virtual ar::ConstArchivePtr toArchive() const = 0;
+
+  static std::shared_ptr<OptimizerFactory> fromArchive(
+      const ar::Archive& archive);
+
   virtual ~OptimizerFactory() = default;
 };
 

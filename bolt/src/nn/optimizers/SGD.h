@@ -49,6 +49,10 @@ class SGDFactory final : public OptimizerFactory {
     return std::make_unique<SGD>(rows, cols);
   }
 
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::shared_ptr<SGDFactory> fromArchive(const ar::Archive& archive);
+
   static auto make() { return std::make_shared<SGDFactory>(); }
 };
 
