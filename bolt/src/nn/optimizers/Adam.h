@@ -1,7 +1,6 @@
 #pragma once
 
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/polymorphic.hpp>
+#include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/optimizers/Optimizer.h>
 #include <archive/src/Archive.h>
 #include <cassert>
@@ -11,7 +10,10 @@ namespace thirdai::bolt {
 
 class Adam final : public Optimizer {
  public:
-  Adam(size_t rows, size_t cols);
+  Adam(size_t rows, size_t cols, float beta1, float beta2, float eps);
+
+  Adam(size_t rows, size_t cols, std::vector<float> momentum,
+       std::vector<float> velocity);
 
   explicit Adam(const ar::Archive& archive);
 
@@ -36,6 +38,9 @@ class Adam final : public Optimizer {
       const std::shared_ptr<const Op>& op) const final;
 
   static std::unique_ptr<Adam> fromArchive(const ar::Archive& archive);
+
+  static std::unique_ptr<Adam> fromOldOptimizer(AdamOptimizer&& old_opt,
+                                                size_t rows, size_t cols);
 
   static std::string type() { return "adam"; }
 
@@ -76,35 +81,21 @@ class Adam final : public Optimizer {
   float _beta1 = 0.9;
   float _beta2 = 0.999;
   float _eps = 1e-7;
-
-  Adam() : Adam(0, 0) {}
-
-  friend class cereal::access;
-
-  template <class Archive>
-  void save(Archive& archive) const;
-
-  template <class Archive>
-  void load(Archive& archive);
 };
 
 class AdamFactory final : public OptimizerFactory {
  public:
   std::unique_ptr<Optimizer> makeOptimizer(size_t rows,
                                            size_t cols) const final {
-    return std::make_unique<Adam>(rows, cols);
+    return std::make_unique<Adam>(rows, cols, _beta1, _beta2, _eps);
   }
 
   static auto make() { return std::make_shared<AdamFactory>(); }
 
  private:
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<OptimizerFactory>(this));
-  }
+  float _beta1 = 0.9;
+  float _beta2 = 0.999;
+  float _eps = 1e-7;
 };
 
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::AdamFactory)

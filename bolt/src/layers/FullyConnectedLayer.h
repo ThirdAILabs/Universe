@@ -1,10 +1,12 @@
 #pragma once
 
+#include <cereal/archives/binary.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/vector.hpp>
 #include "LayerConfig.h"
 #include "LayerUtils.h"
 #include <bolt/src/neuron_index/NeuronIndex.h>
+#include <bolt/src/nn/optimizers/Adam.h>
 #include <bolt/src/nn/optimizers/Optimizer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/DWTA.h>
@@ -14,6 +16,7 @@
 #include <cstdint>
 #include <optional>
 #include <random>
+#include <type_traits>
 
 namespace thirdai::bolt {
 
@@ -248,8 +251,21 @@ class FullyConnectedLayer final {
             _disable_sparse_parameter_updates, _use_bias,
             _should_serialize_optimizer);
 
-    if (_should_serialize_optimizer) {
-      archive(_weight_optimizer, _bias_optimizer);
+    if (_should_serialize_optimizer &&
+        std::is_same_v<Archive, cereal::BinaryInputArchive>) {
+      AdamOptimizer weight_optimizer;
+      AdamOptimizer bias_optimizer;
+
+      archive(weight_optimizer, bias_optimizer);
+
+      _weight_optimizer =
+          Adam::fromOldOptimizer(std::move(weight_optimizer), _dim, _prev_dim);
+
+      _bias_optimizer =
+          Adam::fromOldOptimizer(std::move(bias_optimizer), _dim, 1);
+
+      _weight_gradients.assign(_weights.size(), 0.0);
+      _bias_gradients.assign(_biases.size(), 0.0);
     }
 
     initActiveNeuronsTrackers();

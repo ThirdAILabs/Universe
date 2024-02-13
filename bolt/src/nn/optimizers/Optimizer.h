@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cereal/access.hpp>
 #include <archive/src/Archive.h>
 #include <vector>
 
@@ -45,19 +44,6 @@ class Optimizer {
   static std::unique_ptr<Optimizer> fromArchive(const ar::Archive& archive);
 
   virtual ~Optimizer() = default;
-
- private:
-  friend class cereal::access;
-
-  template <class Archive>
-  void save(Archive& archive) const {
-    (void)archive;
-  }
-
-  template <class Archive>
-  void load(Archive& archive) {
-    (void)archive;
-  }
 };
 
 using OptimizerPtr = std::unique_ptr<Optimizer>;
@@ -67,13 +53,6 @@ class OptimizerFactory {
   virtual OptimizerPtr makeOptimizer(size_t rows, size_t cols) const = 0;
 
   virtual ~OptimizerFactory() = default;
-
- private:
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    (void)archive;
-  }
 };
 
 using OptimizerFactoryPtr = std::shared_ptr<OptimizerFactory>;

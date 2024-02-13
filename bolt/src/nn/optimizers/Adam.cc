@@ -1,21 +1,37 @@
 #include "Adam.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/polymorphic.hpp>
-#include <cereal/types/vector.hpp>
 #include <archive/src/Map.h>
 #include <archive/src/ParameterReference.h>
 #include <chrono>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
 namespace thirdai::bolt {
 
-Adam::Adam(size_t rows, size_t cols)
+Adam::Adam(size_t rows, size_t cols, float beta1, float beta2, float eps)
     : _momentum(rows * cols, 0.0),
       _velocity(rows * cols, 0.0),
       _rows(rows),
-      _cols(cols) {}
+      _cols(cols),
+      _beta1(beta1),
+      _beta2(beta2),
+      _eps(eps) {}
+
+Adam::Adam(size_t rows, size_t cols, std::vector<float> momentum,
+           std::vector<float> velocity)
+    : _momentum(std::move(momentum)),
+      _velocity(std::move(velocity)),
+      _rows(rows),
+      _cols(cols) {
+  if (momentum.size() != _rows * _cols) {
+    throw std::invalid_argument(
+        "Size of momentum doesn't match rows and cols.");
+  }
+  if (momentum.size() != velocity.size()) {
+    throw std::invalid_argument(
+        "Size of momentum and velocity don't match in adam.");
+  }
+}
 
 void Adam::updateDense(std::vector<float>& params, std::vector<float>& grads,
                        float learning_rate, size_t train_steps) {
@@ -158,22 +174,10 @@ std::unique_ptr<Adam> Adam::fromArchive(const ar::Archive& archive) {
   return std::make_unique<Adam>(archive);
 }
 
-template void Adam::save(cereal::BinaryOutputArchive&) const;
-
-template <class Archive>
-void Adam::save(Archive& archive) const {
-  archive(cereal::base_class<Optimizer>(this), _rows, _cols, _momentum,
-          _velocity);
-}
-
-template void Adam::load(cereal::BinaryInputArchive&);
-
-template <class Archive>
-void Adam::load(Archive& archive) {
-  archive(cereal::base_class<Optimizer>(this), _rows, _cols, _momentum,
-          _velocity);
+std::unique_ptr<Adam> Adam::fromOldOptimizer(AdamOptimizer&& old_opt,
+                                             size_t rows, size_t cols) {
+  return std::make_unique<Adam>(rows, cols, std::move(old_opt.momentum),
+                                std::move(old_opt.velocity));
 }
 
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::Adam)

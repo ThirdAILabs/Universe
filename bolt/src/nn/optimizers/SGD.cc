@@ -1,8 +1,4 @@
 #include "SGD.h"
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/polymorphic.hpp>
-#include <cereal/types/vector.hpp>
 #include <archive/src/Map.h>
 #include <archive/src/ParameterReference.h>
 #include <chrono>
@@ -125,20 +121,4 @@ std::unique_ptr<SGD> SGD::fromArchive(const ar::Archive& archive) {
   return std::make_unique<SGD>(archive.u64("rows"), archive.u64("cols"));
 }
 
-template void SGD::save(cereal::BinaryOutputArchive&) const;
-
-template <class Archive>
-void SGD::save(Archive& archive) const {
-  archive(cereal::base_class<Optimizer>(this), _rows, _cols);
-}
-
-template void SGD::load(cereal::BinaryInputArchive&);
-
-template <class Archive>
-void SGD::load(Archive& archive) {
-  archive(cereal::base_class<Optimizer>(this), _rows, _cols);
-}
-
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::SGD)

@@ -5,6 +5,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
 #include "LayerConfig.h"
+#include <bolt/src/nn/optimizers/Adam.h>
 #include <bolt/src/nn/optimizers/Optimizer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/UniversalHash.h>
@@ -163,8 +164,17 @@ class EmbeddingLayer {
             _embedding_block, _embedding_chunks_used,
             _disable_sparse_parameter_updates, _should_serialize_optimizer);
 
-    if (_should_serialize_optimizer) {
-      archive(_optimizer);
+    if (_should_serialize_optimizer &&
+        std::is_same_v<Archive, cereal::BinaryInputArchive>) {
+      AdamOptimizer optimizer;
+
+      archive(optimizer);
+
+      _optimizer = Adam::fromOldOptimizer(std::move(optimizer),
+                                          _embedding_chunks_used.size(),
+                                          _update_chunk_size);
+
+      _gradients.assign(_embedding_block->size(), 0.0);
     }
   }
 

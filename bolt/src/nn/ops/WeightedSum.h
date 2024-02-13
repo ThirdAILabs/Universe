@@ -6,8 +6,10 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/optimizers/Adam.h>
 #include <memory>
 #include <optional>
+#include <type_traits>
 
 namespace thirdai::bolt {
 
@@ -80,8 +82,17 @@ class WeightedSum final : public Op,
   void serialize(Archive& archive) {
     archive(cereal::base_class<Op>(this), _n_chunks, _chunk_size, _weights,
             _should_serialize_optimizer);
-    if (_should_serialize_optimizer) {
-      archive(_optimizer);
+
+    if (_should_serialize_optimizer &&
+        std::is_same_v<Archive, cereal::BinaryInputArchive>) {
+      AdamOptimizer optimizer;
+
+      archive(optimizer);
+
+      _optimizer =
+          Adam::fromOldOptimizer(std::move(optimizer), 1, _weights.size());
+
+      _gradients.assign(_weights.size(), 0.0);
     }
   }
 };

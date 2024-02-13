@@ -5,6 +5,7 @@
 #include <cereal/types/vector.hpp>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/nn/autograd/Computation.h>
+#include <bolt/src/nn/optimizers/Adam.h>
 #include <bolt/src/utils/Timer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <archive/src/Archive.h>
@@ -193,7 +194,7 @@ void Embedding::initOptimizer(const OptimizerFactoryPtr& optimizer_factory) {
 
   if (!_embedding_optimizer || !_bias_optimizer) {
     _embedding_optimizer = optimizer_factory->makeOptimizer(_input_dim, _dim);
-    _bias_optimizer = optimizer_factory->makeOptimizer(/* rows= */ 1, _dim);
+    _bias_optimizer = optimizer_factory->makeOptimizer(_dim, /*cols=*/1);
   }
 
   _embedding_gradients.assign(_embeddings.size(), 0.0);
@@ -306,9 +307,24 @@ void Embedding::serialize(Archive& archive) {
           _embeddings, _biases, _disable_sparse_parameter_updates,
           _should_serialize_optimizer);
 
-  if (_should_serialize_optimizer) {
-    archive(_embedding_optimizer, _bias_optimizer);
+  if (_should_serialize_optimizer &&
+      std::is_same_v<Archive, cereal::BinaryInputArchive>) {
+    AdamOptimizer embedding_optimizer;
+    AdamOptimizer bias_optimizer;
+
+    archive(embedding_optimizer, bias_optimizer);
+
+    _embedding_optimizer = Adam::fromOldOptimizer(
+        std::move(embedding_optimizer), _input_dim, _dim);
+
+    _bias_optimizer =
+        Adam::fromOldOptimizer(std::move(bias_optimizer), _dim, 1);
+
+    _embedding_gradients.assign(_embeddings.size(), 0.0);
+    _bias_gradients.assign(_biases.size(), 0.0);
   }
+
+  _embeddings_used.assign(_input_dim, false);
 }
 
 }  // namespace thirdai::bolt
