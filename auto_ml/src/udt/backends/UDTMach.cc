@@ -314,8 +314,9 @@ py::object UDTMach::scoreBatch(const MapInputBatch& samples,
   std::vector<std::vector<std::pair<uint32_t, double>>> scores(samples.size());
 
   const auto& index = getIndex();
-#pragma omp parallel for default(none) shared( \
-    entities, outputs, scores, top_k, batch_size, index) if (batch_size > 1)
+#pragma omp parallel for default(none)                   \
+    shared(entities, outputs, scores, top_k, batch_size, \
+               index) if (batch_size > 1)
   for (uint32_t i = 0; i < batch_size; i++) {
     const BoltVector& vector = outputs->getVector(i);
     scores[i] = index->scoreEntities(vector, entities[i], top_k);
@@ -564,12 +565,6 @@ void UDTMach::introduceDocuments(
       data, strong_column_names, weak_column_names, fast_approximation,
       defaults::BATCH_SIZE);
 
-  uint32_t approx_num_new_samples =
-      (data_and_doc_ids.size() * data_and_doc_ids[0].second.size());
-
-  uint32_t approx_num_hashes_per_bucket =
-      mach_index->approxNumHashesPerBucket(approx_num_new_samples);
-
   uint32_t num_buckets_to_sample =
       num_buckets_to_sample_opt.value_or(mach_index->numHashes());
 
@@ -593,6 +588,11 @@ void UDTMach::introduceDocuments(
 
     ctrl_c_check();
   }
+
+  uint32_t approx_num_new_samples = top_k_per_doc.size();
+
+  uint32_t approx_num_hashes_per_bucket =
+      mach_index->approxNumHashesPerBucket(approx_num_new_samples);
 
   for (auto& [doc, top_ks] : top_k_per_doc) {
     auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
@@ -752,12 +752,12 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
 
   if (!sort_random_hashes) {
     for (uint32_t i = 0; i < num_random_hashes; i++) {
-      uint32_t random_hash = int_dist(rand);
+      uint32_t random_hash;
 
-      while (mach_index->bucketSize(random_hash) >=
-             approx_num_hashes_per_bucket) {
+      do {
         random_hash = int_dist(rand);
-      }
+      } while (mach_index->bucketSize(random_hash) >=
+               approx_num_hashes_per_bucket);
 
       new_hashes.push_back(random_hash);
     }
