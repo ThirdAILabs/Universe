@@ -90,11 +90,13 @@ UDTMach::UDTMach(
       "extreme_num_hashes", "integer",
       autotuneMachNumHashes(n_target_classes, num_buckets));
 
+  uint32_t softmax = user_args.get<bool>("softmax", "bool", false);
+
   _classifier = utils::Classifier::make(
       utils::buildModel(
           /* input_dim= */ input_dim, /* output_dim= */ num_buckets,
           /* args= */ user_args, /* model_config= */ model_config,
-          /* use_sigmoid_bce = */ true, /* mach= */ true),
+          /* use_sigmoid_bce = */ !softmax, /* mach= */ true),
       user_args.get<bool>("freeze_hash_tables", "boolean",
                           defaults::FREEZE_HASH_TABLES));
 
@@ -115,9 +117,12 @@ UDTMach::UDTMach(
       input_data_types, temporal_tracking_relationships,
       tabular_options.lookahead);
 
+  data::ValueFillType value_fill =
+      softmax ? data::ValueFillType::SumToOne : data::ValueFillType::Ones;
+
   _featurizer = std::make_shared<MachFeaturizer>(
       input_data_types, temporal_relationships, target_name, mach_index,
-      tabular_options);
+      tabular_options, value_fill);
 
   _mach_sampling_threshold = user_args.get<float>(
       "mach_sampling_threshold", "float", defaults::MACH_SAMPLING_THRESHOLD);
@@ -284,6 +289,14 @@ std::vector<std::vector<std::pair<uint32_t, double>>> UDTMach::predictBatchImpl(
   }
 
   return predicted_entities;
+}
+
+py::object UDTMach::predictActivationsBatch(const MapInputBatch& samples,
+                                            bool sparse_inference) {
+  return py::cast(
+      _classifier->model()
+          ->forward(_featurizer->featurizeInputBatch(samples), sparse_inference)
+          .at(0));
 }
 
 py::object UDTMach::scoreBatch(const MapInputBatch& samples,
@@ -903,7 +916,7 @@ void UDTMach::teach(const data::ColumnMap& rlhf_samples,
   rlhf_data.shuffle();
 
   auto [data, labels] =
-      _featurizer->columnsToTensors(rlhf_data, defaults::ASSOCIATE_BATCH_SIZE);
+      _featurizer->columnsToTensors(rlhf_data, rlhf_data.numRows());
 
   for (uint32_t e = 0; e < epochs; e++) {
     for (size_t i = 0; i < data.size(); i++) {
@@ -927,7 +940,7 @@ data::ColumnMap UDTMach::getPositiveAssociateSamples(
 
   auto all_predicted_hashes = predictHashesImpl(
       batch, /* sparse_inference= */ false,
-      /* force_non_empty= */ force_non_empty,
+      /* force_non_empty= */ false,
       /* num_hashes= */ std::max<size_t>(n_buckets, getIndex()->numHashes()));
 
   std::mt19937 rng(global_random::nextSeed());
@@ -945,9 +958,9 @@ data::ColumnMap UDTMach::getPositiveAssociateSamples(
     const std::vector<uint32_t>& all_buckets = all_predicted_hashes[i];
 
     for (size_t j = 0; j < n_association_samples; j++) {
-      std::vector<uint32_t> sampled_buckets;
-      std::sample(all_buckets.begin(), all_buckets.end(),
-                  std::back_inserter(sampled_buckets), n_buckets, rng);
+      std::vector<uint32_t> sampled_buckets = all_buckets;
+      // std::sample(all_buckets.begin(), all_buckets.end(),
+      //             std::back_inserter(sampled_buckets), n_buckets, rng);
 
       float label_val = normalize_labels ? 1.0 / sampled_buckets.size() : 1.0;
 
