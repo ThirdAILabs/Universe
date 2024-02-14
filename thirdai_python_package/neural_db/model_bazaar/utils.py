@@ -9,6 +9,7 @@ from pathlib import Path
 
 import requests
 from IPython.display import clear_output
+from thirdai.neural_db.documents import CSV, DOCX, PDF
 from tqdm import tqdm
 
 
@@ -96,6 +97,7 @@ def check_response(response):
         )
 
     content = json.loads(response.content)
+    print(content)
 
     status = content["status"]
 
@@ -138,3 +140,27 @@ def get_file_size(file_path, unit="B"):
 
     size = file_size / 1024 ** exponents_map[unit]
     return round(size, 3)
+
+
+def convert_to_ndb_file(
+    file,
+    CSV_ID_COLUMN=None,
+    CSV_STRONG_COLUMNS=None,
+    CSV_WEAK_COLUMNS=None,
+    CSV_REFERENCE_COLUMNS=None,
+):
+    _, ext = os.path.splitext(file)
+    if ext == ".pdf":
+        return PDF(file)
+    elif ext == ".docx":
+        return DOCX(file)
+    elif ext == ".csv":
+        return CSV(
+            file,
+            id_column=CSV_ID_COLUMN,
+            strong_columns=CSV_STRONG_COLUMNS,
+            weak_columns=CSV_WEAK_COLUMNS,
+            reference_columns=CSV_REFERENCE_COLUMNS,
+        )
+    else:
+        raise TypeError(f"{ext} Document type isn't supported yet.")

@@ -8,6 +8,7 @@ from uuid import UUID
 from .bazaar_base import Bazaar, auth_header
 from .utils import (
     check_deployment_decorator,
+    convert_to_ndb_file,
     create_deployment_identifier,
     create_model_identifier,
     http_get_with_error,
@@ -310,7 +311,9 @@ class ModelBazaar(Bazaar):
     def train(
         self,
         model_name: str,
-        docs: List[str],
+        unsupervised_docs: List[str] = None,
+        supervised_docs: List[Tuple[str, str]] = None,
+        test_doc: str = None,
         doc_type: str = "local",
         sharded: bool = False,
         is_async: bool = False,
@@ -335,6 +338,29 @@ class ModelBazaar(Bazaar):
                 f"Invalid doc_type value. Supported doc_type are {self._doc_types}"
             )
 
+        if not unsupervised_docs and not supervised_docs:
+            raise ValueError("Bothe the unsupervised and supervised docs are empty.")
+
+        docs = unsupervised_docs
+        file_types = ["unsupervised"] * len(unsupervised_docs)
+        source_ids = []
+        if supervised_docs:
+            for sup_file, unsup_file in supervised_docs:
+                docs.append(sup_file)
+                file_types.append("supervised")
+                source_ids.append(
+                    convert_to_ndb_file(
+                        unsup_file,
+                        train_extra_options.get("csv_id_column", None),
+                        train_extra_options.get("csv_strong_columns", None),
+                        train_extra_options.get("csv_weak_columns", None),
+                        train_extra_options.get("csv_reference_columns", None),
+                    ).source_id_from_file()
+                )
+        if test_doc:
+            docs.append(test_doc)
+            file_types.append("test")
+
         url = urljoin(self._base_url, f"jobs/{self._user_id}/train")
         files = [
             (
@@ -356,6 +382,8 @@ class ModelBazaar(Bazaar):
             url,
             params={
                 "model_name": model_name,
+                "file_types": file_types,
+                "source_ids": source_ids,
                 "doc_type": doc_type,
                 "sharded": sharded,
                 "base_model_identifier": base_model_identifier,
@@ -363,6 +391,7 @@ class ModelBazaar(Bazaar):
             files=files,
             headers=auth_header(self._access_token),
         )
+        print(response.content)
         response_data = json.loads(response.content)["data"]
         model = Model(
             model_identifier=create_model_identifier(
