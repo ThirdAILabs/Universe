@@ -43,7 +43,8 @@ def test_save_load_udt_model():
 def create_udt_checkpoint():
     """
     This is the code used to generate the old udt checkpoint. It is not invoked
-    in the test, but it is included here for future reference.
+    in the test, but it is included here for future reference. The model used in
+    this test was created from commit 13c7c646eec95acec94062dd56107a5b4cfccfcd.
     """
     model = bolt.UniversalDeepTransformer(
         data_types={"text": bolt.types.text(), "id": bolt.types.categorical()},
@@ -54,8 +55,7 @@ def create_udt_checkpoint():
 
     model.train_batch([{"text": "some text", "id": "8"}])
 
-    model.checkpoint("./simple_udt_checkpoint")
-    model.save("./simple_udt_save")
+    model.checkpoint("./old_udt_checkpoint")
 
 
 @pytest.mark.unit

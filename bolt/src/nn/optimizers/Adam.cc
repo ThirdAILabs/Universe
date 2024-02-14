@@ -46,6 +46,8 @@ void Adam::updateDense(std::vector<float>& params, std::vector<float>& grads,
   for (size_t i = 0; i < params.size(); i++) {
     params[i] += step(i, grads[i], learning_rate, b1_corrected, b2_corrected);
 
+    assert(!std::isnan(params[i]));
+
     grads[i] = 0;
   }
 }
@@ -78,6 +80,8 @@ void Adam::updateSparseRows(std::vector<float>& params,
 
       params[i] += step(i, grads[i], learning_rate, b1_corrected, b2_corrected);
 
+      assert(!std::isnan(params[i]));
+
       grads[i] = 0;
     }
   }
@@ -103,6 +107,8 @@ void Adam::updateSparseCols(std::vector<float>& params,
 
         params[i] +=
             step(i, grads[i], learning_rate, b1_corrected, b2_corrected);
+
+        assert(!std::isnan(params[i]));
 
         grads[i] = 0;
       }
@@ -137,6 +143,8 @@ void Adam::updateSparseRowsAndCols(std::vector<float>& params,
 
         params[i] +=
             step(i, grads[i], learning_rate, b1_corrected, b2_corrected);
+
+        assert(!std::isnan(params[i]));
 
         grads[i] = 0;
       }

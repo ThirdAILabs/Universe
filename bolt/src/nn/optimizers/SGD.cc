@@ -17,6 +17,8 @@ void SGD::updateDense(std::vector<float>& params, std::vector<float>& grads,
   for (size_t i = 0; i < params.size(); i++) {
     params[i] += step(grads[i], learning_rate);
 
+    assert(!std::isnan(params[i]));
+
     grads[i] = 0;
   }
 }
@@ -46,6 +48,8 @@ void SGD::updateSparseRows(std::vector<float>& params,
 
       params[i] += step(grads[i], learning_rate);
 
+      assert(!std::isnan(params[i]));
+
       grads[i] = 0;
     }
   }
@@ -68,6 +72,8 @@ void SGD::updateSparseCols(std::vector<float>& params,
         size_t i = row * _cols + col;
 
         params[i] += step(grads[i], learning_rate);
+
+        assert(!std::isnan(params[i]));
 
         grads[i] = 0;
       }
@@ -97,6 +103,8 @@ void SGD::updateSparseRowsAndCols(std::vector<float>& params,
         size_t i = row * _cols + col;
 
         params[i] += step(grads[i], learning_rate);
+
+        assert(!std::isnan(params[i]));
 
         grads[i] = 0;
       }

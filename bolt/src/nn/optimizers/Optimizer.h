@@ -16,9 +16,10 @@ class Optimizer {
   /**
    * In this method rows_used is not a const reference because we want the
    * option to reset rows_used back to false as it is iterated over. This
-   * has a performance impact for embedding layers. For other methods are used
-   * in fully connected layers and where the layer resets which rows/cols are
-   * used after updating the bias parameters.
+   * has a performance impact for embedding layers. The other methods here are
+   * used in fully connected layers and the layer resets which rows/cols are
+   * used after updating the bias parameters, so this method does not need to
+   * reset the rows/cols_used args.
    */
   virtual void updateSparseRows(std::vector<float>& params,
                                 std::vector<float>& grads,
