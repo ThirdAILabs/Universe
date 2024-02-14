@@ -1034,7 +1034,7 @@ void UDTMachClassifier::teach(
 
   uint32_t input_dim = _classifier->model()->inputDims().at(0);
   uint32_t label_dim = _classifier->model()->labelDims().at(0);
-  uint32_t batch_size = defaults::ASSOCIATE_BATCH_SIZE;
+  uint32_t batch_size = source_target_samples.size();
 
   for (size_t i = 0; i < samples.size(); i += batch_size) {
     std::vector<BoltVector> inputs;
