@@ -843,3 +843,37 @@ def test_udt_softmax_activations(softmax):
         1,
     )
     assert sum_to_one == softmax
+
+
+def test_doc_no_found_until_training():
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "text": bolt.types.text(contextual_encoding="local"),
+            "label": bolt.types.categorical(),
+        },
+        target="label",
+        n_target_classes=10,
+        integer_target=True,
+        options={
+            "extreme_classification": True,
+            "fhr": 1000,
+            "embedding_dimension": 20,
+            "extreme_output_dim": 100,
+        },
+    )
+
+    make_simple_test_file()
+
+    model.train(SIMPLE_TEST_FILE, epochs=1)
+
+    os.remove(SIMPLE_TEST_FILE)
+
+    model.get_entity_embedding(1)
+
+    model.get_index().get_entity_hashes(2)
+
+    with pytest.raises(ValueError, match="Invalid entity in index: 7."):
+        model.get_entity_embedding(7)
+
+    with pytest.raises(ValueError, match="Invalid entity in index: 8."):
+        model.get_index().get_entity_hashes(8)

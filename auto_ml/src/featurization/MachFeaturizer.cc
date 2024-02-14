@@ -1,7 +1,6 @@
 #include "MachFeaturizer.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
-#include <_types/_uint32_t.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <data/src/ColumnMap.h>
