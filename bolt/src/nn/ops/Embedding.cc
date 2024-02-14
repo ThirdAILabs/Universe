@@ -228,8 +228,11 @@ void Embedding::sparseEmbeddingUpdate(float learning_rate,
       //          _embedding_optimizer->velocity[index], learning_rate,
       //          B1_bias_corrected, B2_bias_corrected);
 
-      _embedding[index] +=
+      _embeddings[index] +=
           learning_rate * _embedding_optimizer->gradients[index];
+
+      (void)B1_bias_corrected;
+      (void)B2_bias_corrected;
 
       assert(!std::isnan(_embeddings[index]));
 
