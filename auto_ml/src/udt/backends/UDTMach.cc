@@ -167,9 +167,9 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
                           const std::vector<CallbackPtr>& callbacks,
                           TrainOptions options,
                           const bolt::DistributedCommPtr& comm) {
-  addBalancingSamples(data);
-
   insertNewDocIds(data);
+
+  addBalancingSamples(data);
 
   auto train_data_loader =
       _featurizer->getDataLoader(data, options.batchSize(), /* shuffle= */ true,
@@ -434,10 +434,10 @@ py::object UDTMach::coldstart(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
+  insertNewDocIds(data);
+
   addBalancingSamples(data, strong_column_names, weak_column_names,
                       variable_length);
-
-  insertNewDocIds(data);
 
   data::LoaderPtr val_data_loader;
   if (val_data) {

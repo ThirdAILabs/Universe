@@ -89,6 +89,8 @@ class MachIndex {
 
   const auto& nonemptyBuckets() const { return _nonempty_buckets; }
 
+  const auto& buckets() const { return _buckets; }
+
   TopKActivationsQueue topKNonEmptyBuckets(const BoltVector& output,
                                            uint32_t k) const;
 

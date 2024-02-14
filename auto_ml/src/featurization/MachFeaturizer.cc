@@ -71,6 +71,7 @@ MachFeaturizer::MachFeaturizer(
 
 void MachFeaturizer::insertNewDocIds(
     const dataset::DataSourcePtr& data_source) {
+  data_source->restart();
   auto data_iter = data::CsvIterator::make(data_source, _delimiter);
 
   std::unordered_set<uint32_t> all_doc_ids;
