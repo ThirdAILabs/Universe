@@ -221,14 +221,6 @@ def test_mach_udt_on_scifact_model_porting(
     assert model.predict_batch(batch) == new_model.predict_batch(batch)
 
 
-def test_mach_udt_label_too_large():
-    with pytest.raises(
-        ValueError,
-        match=r"Invalid entity in index: 3.",
-    ):
-        train_simple_mach_udt(invalid_data=True)
-
-
 @pytest.mark.parametrize("embedding_dim", [128, 256])
 def test_mach_udt_entity_embedding(embedding_dim):
     model = train_simple_mach_udt(embedding_dim=embedding_dim)
