@@ -105,6 +105,8 @@ class Computation {
 
   void setName(const std::string& name);
 
+  std::vector<std::string> inputNames() const;
+
  private:
   OpPtr _op;
 

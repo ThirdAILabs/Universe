@@ -1,6 +1,10 @@
 #include "PatchEmbedding.h"
+#include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
+#include <archive/src/ParameterReference.h>
 #include <stdexcept>
 
 namespace thirdai::bolt {
@@ -125,6 +129,72 @@ std::vector<std::vector<float>*> PatchEmbedding::gradients() {
 
 std::vector<std::vector<float>*> PatchEmbedding::parameters() {
   return {&_kernel->weights(), &_kernel->biases()};
+}
+
+ComputationPtr PatchEmbedding::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument(
+        "Expected PatchEmbedding op to have one input.");
+  }
+  return apply(inputs.at(0));
+}
+
+ar::ConstArchivePtr PatchEmbedding::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = baseArchive();
+  map->set("type", ar::str(type()));
+
+  map->set("n_patches", ar::u64(_n_patches));
+  map->set("dim", ar::u64(patchEmbeddingDim()));
+  map->set("input_dim", ar::u64(patchDim()));
+  map->set("sparsity", ar::f32(_kernel->_sparsity));
+  map->set("activation", ar::str(activationFunctionToStr(_kernel->_act_func)));
+  map->set("use_bias", ar::boolean(_kernel->_use_bias));
+
+  map->set("weights",
+           ar::ParameterReference::make(_kernel->_weights, shared_from_this()));
+  map->set("biases",
+           ar::ParameterReference::make(_kernel->_biases, shared_from_this()));
+
+  if (auto neuron_index = _kernel->neuronIndex()) {
+    map->set("neuron_index", neuron_index->toArchive());
+  }
+  map->set("index_frozen", ar::boolean(_kernel->_index_frozen));
+  map->set("rebuild_hash_tables", ar::u64(_rebuild_hash_tables));
+  map->set("reconstruct_hash_functions", ar::u64(_reconstruct_hash_functions));
+
+  if (with_optimizer && _kernel->_weight_optimizer &&
+      _kernel->_bias_optimizer) {
+    map->set("weight_optimizer",
+             optimizerToArchive(*_kernel->_weight_optimizer, shared_from_this(),
+                                patchEmbeddingDim(), patchDim()));
+
+    map->set("bias_optimizer",
+             optimizerToArchive(*_kernel->_bias_optimizer, shared_from_this(),
+                                /*rows=*/1, patchEmbeddingDim()));
+  }
+
+  map->set("disable_sparse_parameter_updates",
+           ar::boolean(_kernel->_disable_sparse_parameter_updates));
+
+  return map;
+}
+
+std::shared_ptr<PatchEmbedding> PatchEmbedding::fromArchive(
+    const ar::Archive& archive) {
+  return std::shared_ptr<PatchEmbedding>(new PatchEmbedding(archive));
+}
+
+PatchEmbedding::PatchEmbedding(const ar::Archive& archive)
+    : Op(archive.str("name")),
+      _kernel(std::make_unique<FullyConnectedLayer>(archive)),
+      _n_patches(archive.u64("n_patches")),
+      _rebuild_hash_tables(archive.u64("rebuild_hash_tables")),
+      _reconstruct_hash_functions(archive.u64("reconstruct_hash_functions")),
+      _updates_since_rebuild_hash_tables(0),
+      _updates_since_reconstruct_hash_functions(0) {
+  assertOpType(archive, type());
 }
 
 void PatchEmbedding::summary(std::ostream& summary,

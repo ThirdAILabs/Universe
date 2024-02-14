@@ -5,6 +5,8 @@
 #include <cereal/types/polymorphic.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <bolt_vector/src/BoltVectorUtils.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <cmath>
 #include <stdexcept>
 #include <string>
@@ -125,6 +127,28 @@ float EuclideanContrastive::euclideanDistanceSquared(
         euclidean_distance_squared += diff * diff;
       });
   return euclidean_distance_squared;
+}
+
+ar::ConstArchivePtr EuclideanContrastive::toArchive() const {
+  auto map = ar::Map::make();
+  map->set("type", ar::str(type()));
+  map->set("output_1", ar::str(_output_1->name()));
+  map->set("output_2", ar::str(_output_2->name()));
+  map->set("labels", ar::str(_labels->name()));
+  map->set("cutoff", ar::f32(_dissimilar_cutoff_distance));
+
+  return map;
+}
+
+std::shared_ptr<EuclideanContrastive> EuclideanContrastive::fromArchive(
+    const ar::Archive& archive,
+    const std::unordered_map<std::string, ComputationPtr>& computations) {
+  assertLossType(archive, type());
+
+  return EuclideanContrastive::make(computations.at(archive.str("output_1")),
+                                    computations.at(archive.str("output_2")),
+                                    computations.at(archive.str("labels")),
+                                    archive.getAs<ar::F32>("cutoff"));
 }
 
 template <class Archive>

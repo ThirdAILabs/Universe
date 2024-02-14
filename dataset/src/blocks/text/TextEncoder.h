@@ -3,7 +3,10 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <dataset/src/utils/TokenEncoding.h>
+#include <stdexcept>
 #include <string>
 
 namespace thirdai::dataset {
@@ -21,6 +24,10 @@ class TextEncoder {
     throw std::invalid_argument(
         "Explanations are not supported for this type of encoding. ");
   }
+
+  virtual ar::ConstArchivePtr toArchive() const = 0;
+
+  static std::shared_ptr<TextEncoder> fromArchive(const ar::Archive& archive);
 
   virtual ~TextEncoder() = default;
 
@@ -64,7 +71,16 @@ class NGramEncoder : public TextEncoder {
     throw std::invalid_argument("Error in RCA");
   }
 
+  ar::ConstArchivePtr toArchive() const final {
+    auto map = ar::Map::make();
+    map->set("type", ar::str(type()));
+    map->set("n", ar::u64(_n));
+    return map;
+  }
+
   uint32_t n() const { return _n; }
+
+  static std::string type() { return "ngram"; }
 
  private:
   uint32_t _n;
@@ -88,6 +104,14 @@ class PairGramEncoder : public TextEncoder {
     return token_encoding::pairgrams(tokens);
   }
 
+  ar::ConstArchivePtr toArchive() const final {
+    auto map = ar::Map::make();
+    map->set("type", ar::str(type()));
+    return map;
+  }
+
+  static std::string type() { return "pairgram"; }
+
  private:
   friend class cereal::access;
   template <class Archive>
@@ -95,6 +119,19 @@ class PairGramEncoder : public TextEncoder {
     archive(cereal::base_class<TextEncoder>(this));
   }
 };
+
+inline TextEncoderPtr TextEncoder::fromArchive(const ar::Archive& archive) {
+  std::string type = archive.str("type");
+
+  if (type == NGramEncoder::type()) {
+    return NGramEncoder::make(archive.u64("n"));
+  }
+  if (type == PairGramEncoder::type()) {
+    return PairGramEncoder::make();
+  }
+
+  throw std::invalid_argument("Invalid encoder type '" + type + "'.");
+}
 
 }  // namespace thirdai::dataset
 

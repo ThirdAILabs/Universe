@@ -34,10 +34,18 @@ class DotProduct final : public Op,
 
   std::vector<std::vector<float>*> parameters() final { return {}; }
 
+  ComputationPtr applyToInputs(const ComputationList& inputs) final;
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
+  static std::shared_ptr<DotProduct> fromArchive(const ar::Archive& archive);
+
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
   ComputationPtr apply(ComputationPtr lhs, ComputationPtr rhs);
+
+  static std::string type() { return "dot_product"; }
 
  private:
   DotProduct() {}

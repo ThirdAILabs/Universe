@@ -1,7 +1,10 @@
 #include "QuantileMixing.h"
 #include <bolt/src/nn/autograd/Computation.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <algorithm>
 #include <cassert>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
@@ -119,6 +122,39 @@ void QuantileMixing::enableSparseParameterUpdates() {}
 std::vector<std::vector<float>*> QuantileMixing::gradients() { return {}; }
 
 std::vector<std::vector<float>*> QuantileMixing::parameters() { return {}; }
+
+ComputationPtr QuantileMixing::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("QuantileMixing op expects a single input.");
+  }
+  return apply(inputs.at(0));
+}
+
+ar::ConstArchivePtr QuantileMixing::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = baseArchive();
+
+  map->set("type", ar::str(type()));
+  map->set("output_dim", ar::u64(_output_dim));
+  map->set("window_size", ar::u64(_window_size));
+  map->set("frac", ar::f32(_frac));
+
+  return map;
+}
+
+std::shared_ptr<QuantileMixing> QuantileMixing::fromArchive(
+    const ar::Archive& archive) {
+  return std::shared_ptr<QuantileMixing>(new QuantileMixing(archive));
+}
+
+QuantileMixing::QuantileMixing(const ar::Archive& archive)
+    : Op(archive.str("name")),
+      _output_dim(archive.u64("output_dim")),
+      _window_size(archive.u64("window_size")),
+      _frac(archive.getAs<ar::F32>("frac")) {
+  assertOpType(archive, type());
+}
 
 void QuantileMixing::summary(std::ostream& summary,
                              const ComputationList& inputs,

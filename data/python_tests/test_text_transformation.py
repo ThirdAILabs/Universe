@@ -98,3 +98,47 @@ def test_token_deduplication():
 
     assert len(indices[-1]) == 0
     assert len(values[-1]) == 0
+
+
+def check_text_tokenizer_serialization(tokenizer, encoder, dedup_tokens):
+    transformation = data.transformations.Text(
+        input_column="input",
+        output_indices="tokens",
+        output_values="counts" if dedup_tokens else None,
+        tokenizer=tokenizer,
+        encoder=encoder,
+        dim=0xFFFFFFFF,
+    )
+
+    transformation_copy = data.transformations.deserialize(transformation.serialize())
+
+    columns = data.ColumnMap({"input": data.columns.StringColumn(TEXT_SAMPLES)})
+
+    output1 = transformation(columns)
+    output2 = transformation_copy(columns)
+
+    assert output1["tokens"].data() == output2["tokens"].data()
+    if dedup_tokens:
+        assert output1["counts"].data() == output2["counts"].data()
+
+
+def test_wordpiece_tokenizer_serialization(download_bert_base_uncased):
+    BERT_VOCAB_PATH = download_bert_base_uncased
+    tokenizer = dataset.WordpieceTokenizer(BERT_VOCAB_PATH)
+    encoder = dataset.NGramEncoder(n=1)
+
+    check_text_tokenizer_serialization(tokenizer, encoder, dedup_tokens=True)
+    check_text_tokenizer_serialization(tokenizer, encoder, dedup_tokens=False)
+
+
+@pytest.mark.parametrize(
+    "tokenizer, encoder",
+    [
+        (dataset.CharKGramTokenizer(k=3), dataset.NGramEncoder(n=1)),
+        (dataset.NaiveSplitTokenizer(delimiter=" "), dataset.NGramEncoder(n=2)),
+        (dataset.WordPunctTokenizer(), dataset.PairGramEncoder()),
+    ],
+)
+def test_text_tokenizer_serialization(tokenizer, encoder):
+    check_text_tokenizer_serialization(tokenizer, encoder, dedup_tokens=True)
+    check_text_tokenizer_serialization(tokenizer, encoder, dedup_tokens=False)

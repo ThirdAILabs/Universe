@@ -2,6 +2,8 @@
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Trainer.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
@@ -260,6 +262,39 @@ void UDTRecurrentClassifier::addPredictionToSample(
   }
   intermediate_column += prediction;
 }
+
+ar::ConstArchivePtr UDTRecurrentClassifier::toArchive(
+    bool with_optimizer) const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("model", _model->toArchive(with_optimizer));
+  map->set("featurizer", _featurizer->toArchive());
+
+  map->set("target_name", ar::str(_target_name));
+  map->set("target_delimiter", ar::character(_target->delimiter));
+  if (_target->max_length) {
+    map->set("max_length", ar::u64(*_target->max_length));
+  }
+
+  map->set("freeze_hash_tables", ar::boolean(_freeze_hash_tables));
+
+  return map;
+}
+
+std::unique_ptr<UDTRecurrentClassifier> UDTRecurrentClassifier::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_unique<UDTRecurrentClassifier>(archive);
+}
+
+UDTRecurrentClassifier::UDTRecurrentClassifier(const ar::Archive& archive)
+    : _target_name(archive.str("target_name")),
+      _target(std::make_shared<SequenceDataType>(
+          archive.getAs<ar::Char>("target_delimiter"),
+          archive.getOpt<ar::U64>("max_length"))),
+      _model(bolt::Model::fromArchive(*archive.get("model"))),
+      _featurizer(RecurrentFeaturizer::fromArchive(*archive.get("featurizer"))),
+      _freeze_hash_tables(archive.boolean("freeze_hash_tables")) {}
 
 template void UDTRecurrentClassifier::serialize(cereal::BinaryInputArchive&,
                                                 const uint32_t version);
