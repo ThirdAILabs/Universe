@@ -72,6 +72,29 @@ void MachIndex::insert(uint32_t entity, const std::vector<uint32_t>& hashes) {
   _entity_to_hashes[entity] = hashes;
 }
 
+void MachIndex::insertNewEntities(const std::unordered_set<uint32_t>& new_ids) {
+  std::mt19937 rng(341);
+  std::uniform_int_distribution<uint32_t> dist(0, numBuckets() - 1);
+
+  for (uint32_t entity : new_ids) {
+    if (_entity_to_hashes.count(entity)) {
+      continue;
+    }
+
+    std::vector<uint32_t> hashes(_num_hashes);
+    for (uint32_t i = 0; i < _num_hashes; i++) {
+      uint32_t hash;
+      do {
+        hash = dist(rng);
+      } while (std::find(hashes.begin(), hashes.end(), hash) != hashes.end());
+
+      hashes[i] = hash;
+    }
+
+    insert(entity, hashes);
+  }
+}
+
 std::vector<std::pair<uint32_t, double>> MachIndex::decode(
     const BoltVector& output, uint32_t top_k,
     uint32_t num_buckets_to_eval) const {

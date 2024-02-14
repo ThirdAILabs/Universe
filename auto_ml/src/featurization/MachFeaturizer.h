@@ -6,6 +6,7 @@
 #include <auto_ml/src/featurization/Featurizer.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/transformations/TextCompat.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/mach/MachIndex.h>
 
 namespace thirdai::automl {
@@ -30,6 +31,8 @@ class MachFeaturizer final : public Featurizer {
       data::ValueFillType label_value_fill = data::ValueFillType::Ones);
 
   explicit MachFeaturizer(const ar::Archive& archive);
+
+  void insertNewDocIds(const dataset::DataSourcePtr& data_source);
 
   std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>
   featurizeForIntroduceDocuments(

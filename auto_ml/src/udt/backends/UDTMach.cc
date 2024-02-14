@@ -102,8 +102,7 @@ UDTMach::UDTMach(
   }
 
   dataset::mach::MachIndexPtr mach_index = dataset::mach::MachIndex::make(
-      /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes,
-      /* num_elements = */ n_target_classes);
+      /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes);
 
   auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
       input_data_types, temporal_tracking_relationships,
@@ -169,6 +168,8 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
                           TrainOptions options,
                           const bolt::DistributedCommPtr& comm) {
   addBalancingSamples(data);
+
+  _featurizer->insertNewDocIds(data);
 
   auto train_data_loader =
       _featurizer->getDataLoader(data, options.batchSize(), /* shuffle= */ true,
@@ -435,6 +436,8 @@ py::object UDTMach::coldstart(
     const bolt::DistributedCommPtr& comm) {
   addBalancingSamples(data, strong_column_names, weak_column_names,
                       variable_length);
+
+  _featurizer->insertNewDocIds(data);
 
   data::LoaderPtr val_data_loader;
   if (val_data) {
