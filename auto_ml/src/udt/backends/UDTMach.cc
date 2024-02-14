@@ -169,7 +169,7 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
                           const bolt::DistributedCommPtr& comm) {
   addBalancingSamples(data);
 
-  _featurizer->insertNewDocIds(data);
+  insertNewDocIds(data);
 
   auto train_data_loader =
       _featurizer->getDataLoader(data, options.batchSize(), /* shuffle= */ true,
@@ -437,7 +437,7 @@ py::object UDTMach::coldstart(
   addBalancingSamples(data, strong_column_names, weak_column_names,
                       variable_length);
 
-  _featurizer->insertNewDocIds(data);
+  insertNewDocIds(data);
 
   data::LoaderPtr val_data_loader;
   if (val_data) {
@@ -549,6 +549,10 @@ void UDTMach::updateSamplingStrategy() {
       }
     }
   }
+}
+
+void UDTMach::insertNewDocIds(const dataset::DataSourcePtr& data) {
+  _featurizer->insertNewDocIds(data);
 }
 
 void UDTMach::introduceDocuments(
