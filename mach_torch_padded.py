@@ -1,28 +1,20 @@
-import torch
-import torch.nn as nn
-from thirdai import data, dataset
+import os
 import time
 
+import torch
+import torch.nn as nn
+import tqdm
+from thirdai import data, dataset
 
-def to_tokens_and_offsets(rows, batch_size):
+
+def to_padded_batches(rows, batch_size):
     batches = []
     for i in range(0, len(rows), batch_size):
-        tokens = []
-        offsets = []
-        for row in rows[i : i + batch_size]:
-            offsets.append(len(tokens))
-            tokens.extend(row)
-        batches.append((torch.tensor(tokens), torch.tensor(offsets)))
-
-    return batches
-
-
-def to_padded_batch(rows, batch_size):
-    batches = []
-    for i in range(0, len(rows), batch_size):
-        max_len = max(len(r) for r in rows[i : i + batch_size])
-        tokens = [row + [0] * (max_len - len(row)) for row in rows[i : i + batch_size]]
-        tokens = torch.tensor(tokens)
+        tokens = torch.nn.utils.rnn.pad_sequence(
+            sequences=[torch.tensor(row) for row in rows[i : i + batch_size]],
+            batch_first=True,
+            padding_value=0,
+        )
         batches.append(tokens)
     return batches
 
@@ -103,27 +95,30 @@ class Recall:
         return self.total_score / self.num_samples
 
 
-class MachModel(nn.Module):
+class QuantileMachModel(nn.Module):
     def __init__(self, input_dim, emb_dim, output_dim):
         super().__init__()
 
-        # self.emb = nn.EmbeddingBag(num_embeddings=input_dim, embedding_dim=emb_dim)
-        # self.emb_bias = nn.Parameter(torch.empty(emb_dim))
-        # nn.init.normal_(self.emb_bias, mean=0, std=0.01)
         self.emb = nn.Embedding(
-            num_embeddings=input_dim, embedding_dim=emb_dim, padding_idx=0
+            num_embeddings=input_dim,
+            embedding_dim=emb_dim,
+            padding_idx=0,
         )
-
-        self.dropout = nn.Dropout(p=0.1)
+        self.emb_bias = nn.Parameter(torch.empty(emb_dim))
+        nn.init.normal_(self.emb.weight, mean=0, std=0.01)
+        nn.init.normal_(self.emb_bias, mean=0, std=0.01)
 
         self.output = nn.Linear(in_features=emb_dim, out_features=output_dim)
+        nn.init.normal_(self.output.weight, mean=0, std=0.01)
+        nn.init.normal_(self.output.bias, mean=0, std=0.01)
 
     def forward(self, tokens):
         out = self.emb(input=tokens)
-        out = self.dropout(out)
         qs = torch.quantile(out, 0.9, dim=1, keepdims=True)
         out = torch.where(out >= qs, out, 0)
-        out = torch.mean(out, dim=1)
+        out = torch.sum(out, dim=1)
+        out += self.emb_bias
+        # out = torch.nn.functional.relu(out)
         out = self.output(out)
         return out
 
@@ -139,6 +134,7 @@ class Mach:
         emb_dim,
         n_buckets,
         n_entities,
+        softmax=True,
         lr=1e-3,
         n_hashes=7,
         text_col="QUERY",
@@ -147,14 +143,16 @@ class Mach:
         csv_delimiter=",",
         label_delimiter=":",
     ):
-        self.model = MachModel(
+        self.model = QuantileMachModel(
             input_dim=input_dim, emb_dim=emb_dim, output_dim=n_buckets
         )
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr, eps=1e-7)
 
         self.index = dataset.MachIndex(
             output_range=n_buckets, num_hashes=n_hashes, num_elements=n_entities
         )
+
+        self.softmax = softmax
 
         self.text_col = text_col
         self.label_col = label_col
@@ -196,7 +194,6 @@ class Mach:
                 data.transformations.ColdStartText(
                     strong_columns=strong_cols,
                     weak_columns=weak_cols,
-                    label_column=self.label_col,
                     output_column=self.text_col,
                 )
             )
@@ -223,11 +220,7 @@ class Mach:
         columns = pipeline(columns, state=state)
         columns.shuffle()
 
-        # inputs = to_tokens_and_offsets(
-        #     columns[self.token_col].data(),
-        #     batch_size=batch_size,
-        # )
-        inputs = to_padded_batch(
+        inputs = to_padded_batches(
             columns[self.token_col].data(),
             batch_size=batch_size,
         )
@@ -248,17 +241,22 @@ class Mach:
 
         batches = self._load_data(filename, pipeline, batch_size)
 
+        if self.softmax:
+            loss_fn = nn.CrossEntropyLoss()
+        else:
+            loss_fn = nn.BCEWithLogitsLoss()
+
         start = time.perf_counter()
-        for tokens, labels in batches:
+        for tokens, labels in tqdm.tqdm(batches):
             self.optimizer.zero_grad()
 
             out = self.model(tokens)
-            loss = nn.functional.cross_entropy(out, labels.to_dense())
+            loss = loss_fn(out, labels.to_dense())
             loss.backward()
 
-            nn.utils.clip_grad.clip_grad_norm_(
-                self.model.parameters(), max_norm=0.1, norm_type=2
-            )
+            # nn.utils.clip_grad.clip_grad_norm_(
+            #     self.model.parameters(), max_norm=0.1, norm_type=2
+            # )
 
             self.optimizer.step()
 
@@ -266,6 +264,24 @@ class Mach:
         print(
             f"epoch complete - train_loss={round(loss.item(), 4)} - time={round(end -start, 4)}"
         )
+
+        with torch.no_grad():
+            all_embs = self.model.emb(batches[0][0])
+            qs = torch.quantile(all_embs, 0.9, dim=1, keepdims=True)
+            masked = torch.where(all_embs >= qs, all_embs, 0)
+            q_emb = torch.sum(masked, dim=1)
+            reg_emb = torch.sum(all_embs, dim=1)
+
+            dots = torch.sum(torch.mul(q_emb, reg_emb), dim=1)
+            qmag = torch.norm(q_emb, p=2, dim=1)
+            rmag = torch.norm(reg_emb, p=2, dim=1)
+
+            cos_sims = dots / (qmag * rmag)
+
+            print("cos sim: ", torch.mean(cos_sims))
+            print("cos sim: ", torch.min(cos_sims))
+            print("cos sim: ", torch.max(cos_sims))
+            print("cos sim: ", torch.var(cos_sims))
 
     def validate(self, filename, recall_at=[], precision_at=[], num_buckets_to_eval=25):
         self.model.eval()
@@ -277,8 +293,7 @@ class Mach:
         columns = self._entity_parse_transform()(columns)
 
         batch_size = 10_000
-        inputs = to_padded_batch(columns[self.token_col].data(), batch_size)
-        # inputs = to_tokens_and_offsets(columns[self.token_col].data(), batch_size)
+        inputs = to_padded_batches(columns[self.token_col].data(), batch_size)
         label_batches = []
         for i in range(0, len(columns), batch_size):
             label_batches.append(columns[self.entity_col].data()[i : i + batch_size])
@@ -288,7 +303,10 @@ class Mach:
         metrics = [Recall(k) for k in recall_at] + [Precision(k) for k in precision_at]
 
         for tokens, labels in zip(inputs, label_batches):
-            out = nn.functional.softmax(self.model(tokens), dim=1)
+            if self.softmax:
+                out = nn.functional.softmax(self.model(tokens), dim=1)
+            else:
+                out = nn.functional.sigmoid(self.model(tokens))
 
             predictions = self.index.decode_batch(
                 out.detach().numpy(),
@@ -308,26 +326,30 @@ class Mach:
         return metric_vals
 
 
-def scifact():
+DATA_DIR = "/Users/nmeisburger/ThirdAI/data"
+
+
+def scifact(softmax=True):
     model = Mach(
         input_dim=100_000,
         emb_dim=1024,
         n_buckets=1_000,
         n_entities=5183,
         char_4_grams=False,
-        lr=0.01,
+        lr=0.005 if softmax else 0.01,
+        softmax=softmax,
     )
 
     for _ in range(5):
         print("\nCold Start")
         model.train(
-            "/Users/nmeisburger/ThirdAI/data/scifact/unsupervised.csv",
+            os.path.join(DATA_DIR, "scifact/unsupervised.csv"),
             strong_cols=["TITLE"],
             weak_cols=["TEXT"],
         )
 
         model.validate(
-            "/Users/nmeisburger/ThirdAI/data/scifact/tst_supervised.csv",
+            os.path.join(DATA_DIR, "scifact/tst_supervised.csv"),
             recall_at=[5],
             precision_at=[1],
         )
@@ -335,39 +357,42 @@ def scifact():
     for _ in range(10):
         print("\nSupervised")
         model.train(
-            "/Users/nmeisburger/ThirdAI/data/scifact/trn_supervised.csv",
+            os.path.join(DATA_DIR, "scifact/trn_supervised.csv"),
         )
         model.validate(
-            "/Users/nmeisburger/ThirdAI/data/scifact/tst_supervised.csv",
+            os.path.join(DATA_DIR, "scifact/tst_supervised.csv"),
             recall_at=[5],
             precision_at=[1],
         )
 
 
-def trec_covid():
+def wiki_5k():
     model = Mach(
         input_dim=100_000,
-        emb_dim=3_000,
-        n_buckets=20_000,
-        n_entities=171_332,
+        emb_dim=1000,
+        n_buckets=10_000,
+        n_entities=5000,
         char_4_grams=True,
-        lr=0.01,
+        lr=0.005,
+        softmax=True,
     )
 
     for _ in range(5):
         print("\nCold Start")
         model.train(
-            "/share/data/trec-covid/unsupervised.csv",
-            strong_cols=["TITLE"],
+            os.path.join(DATA_DIR, "neuraldb_wiki_benchmark/unsupervised.csv"),
+            strong_cols=[],
             weak_cols=["TEXT"],
         )
 
         model.validate(
-            "/share/data/trec-covid/tst_supervised.csv",
+            os.path.join(
+                DATA_DIR, "neuraldb_wiki_benchmark/tst_supervised_cleaned.csv"
+            ),
             precision_at=[1, 10],
         )
 
 
 if __name__ == "__main__":
-    # scifact()
-    trec_covid()
+    # scifact(True)
+    wiki_5k()

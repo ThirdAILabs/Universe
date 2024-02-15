@@ -122,6 +122,7 @@ class MachModel(nn.Module):
 
     def forward(self, tokens, offsets):
         out = self.emb(input=tokens, offsets=offsets) + self.emb_bias
+        out = torch.nn.functional.relu(out)
         out = self.output(out)
         return out
 
@@ -257,9 +258,11 @@ class Mach:
             loss = loss_fn(out, labels.to_dense())
             loss.backward()
 
-            nn.utils.clip_grad.clip_grad_norm_(
-                self.model.parameters(), max_norm=0.1, norm_type=2
-            )
+            # Using this and no hidden activation seemed to actually give slightly
+            # better numbers on scifact.
+            # nn.utils.clip_grad.clip_grad_norm_(
+            #     self.model.parameters(), max_norm=0.1, norm_type=2
+            # )
 
             self.optimizer.step()
 
@@ -321,7 +324,7 @@ def scifact(softmax=True):
         n_buckets=1_000,
         n_entities=5183,
         char_4_grams=False,
-        lr=0.001 if softmax else 0.01,
+        lr=0.001 if softmax else 0.008,
         softmax=softmax,
     )
 
@@ -376,6 +379,32 @@ def trec_covid():
         )
 
 
+def wiki_5k():
+    model = Mach(
+        input_dim=100_000,
+        emb_dim=1000,
+        n_buckets=10_000,
+        n_entities=5000,
+        char_4_grams=True,
+        lr=0.001,
+        softmax=True,
+    )
+
+    for _ in range(5):
+        print("\nCold Start")
+        model.train(
+            os.path.join(DATA_DIR, "neuraldb_wiki_benchmark/unsupervised.csv"),
+            strong_cols=[],
+            weak_cols=["TEXT"],
+        )
+
+        model.validate(
+            os.path.join(DATA_DIR, "neuraldb_wiki_benchmark/tst_supervised_cleaned.csv"),
+            precision_at=[1, 10],
+        )
+
+
 if __name__ == "__main__":
-    # scifact()
-    trec_covid()
+    scifact()
+    # wiki_5k()
+    # trec_covid()
