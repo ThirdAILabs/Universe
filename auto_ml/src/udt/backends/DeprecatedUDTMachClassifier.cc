@@ -651,8 +651,8 @@ void UDTMachClassifier::introduceDocuments(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, std::optional<bool> load_balancing,
-    bool fast_approximation, bool verbose, bool sort_random_hashes) {
+    uint32_t num_random_hashes, bool load_balancing, bool fast_approximation,
+    bool verbose, bool sort_random_hashes) {
   (void)load_balancing;
   auto metadata = getColdStartMetaData();
 
@@ -726,7 +726,7 @@ void UDTMachClassifier::introduceDocument(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
-    std::optional<bool> load_balancing, bool sort_random_hashes) {
+    bool load_balancing, bool sort_random_hashes) {
   (void)load_balancing;
   std::string text_column_name = textColumnForDocumentIntroduction();
 
@@ -869,8 +869,7 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
 void UDTMachClassifier::introduceLabel(
     const MapInputBatch& samples, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, std::optional<bool> load_balancing,
-    bool sort_random_hashes) {
+    uint32_t num_random_hashes, bool load_balancing, bool sort_random_hashes) {
   // Note: using sparse inference here could cause issues because the
   // mach index sampler will only return nonempty buckets, which could
   // cause new docs to only be mapped to buckets already containing

@@ -553,8 +553,8 @@ void UDTMach::introduceDocuments(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, std::optional<bool> load_balancing,
-    bool fast_approximation, bool verbose, bool sort_random_hashes) {
+    uint32_t num_random_hashes, bool load_balancing, bool fast_approximation,
+    bool verbose, bool sort_random_hashes) {
   (void)verbose;
   // TODO(Nicholas): add progress bar here.
 
@@ -581,15 +581,8 @@ void UDTMach::introduceDocuments(
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
       uint32_t label = doc_ids[i];
-      if (load_balancing && load_balancing.value()) {
-        std::vector<ValueIndexPair> top_k;
-        const auto& score_vec = scores->getVector(i);
-        for (uint32_t pos = 0; pos < scoreVec.len; pos++) {
-          uint32_t idx =
-              scoreVec.isDense() ? pos : scoreVec.active_neurons[pos];
-          top_k.push_back({scoreVec.activations[pos], idx});
-        }
-        top_k_per_doc[label].push_back(top_k);
+      if (load_balancing) {
+        top_k_per_doc[label].push_back(scores->getVector(i).indexValuePairs());
       } else {
         top_k_per_doc[label].push_back(
             priorityQueueToVector(scores->getVector(i).findKLargestActivations(
@@ -623,7 +616,7 @@ void UDTMach::introduceDocument(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
-    std::optional<bool> load_balancing, bool sort_random_hashes) {
+    bool load_balancing, bool sort_random_hashes) {
   auto samples = _featurizer->featurizeInputColdStart(
       document, strong_column_names, weak_column_names);
 
@@ -649,7 +642,7 @@ struct CompareBuckets {
 std::vector<uint32_t> UDTMach::topHashesForDoc(
     std::vector<std::vector<ValueIndexPair>>&& top_k_per_sample,
     uint32_t num_buckets_to_sample, uint32_t approx_num_hashes_per_bucket,
-    uint32_t num_random_hashes, std::optional<bool> load_balancing,
+    uint32_t num_random_hashes, bool load_balancing,
     bool sort_random_hashes) const {
   const auto& mach_index = getIndex();
 
@@ -669,14 +662,12 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
 
   std::unordered_map<uint32_t, BucketScore> hash_freq_and_scores;
   for (auto& top_k : top_k_per_sample) {
-    while (!top_k.empty()) {
-      for (const auto& [activation, active_neuron] : top_k) {
-        if (!hash_freq_and_scores.count(active_neuron)) {
-          hash_freq_and_scores[active_neuron] = BucketScore{1, activation};
-        } else {
-          hash_freq_and_scores[active_neuron].frequency += 1;
-          hash_freq_and_scores[active_neuron].score += activation;
-        }
+    for (const auto& [activation, active_neuron] : top_k) {
+      if (!hash_freq_and_scores.count(active_neuron)) {
+        hash_freq_and_scores[active_neuron] = BucketScore{1, activation};
+      } else {
+        hash_freq_and_scores[active_neuron].frequency += 1;
+        hash_freq_and_scores[active_neuron].score += activation;
       }
     }
   }
@@ -720,7 +711,7 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
                 // Give preference to emptier buckets. If buckets are
                 // equally empty, use one with the best score.
 
-                if (load_balancing && load_balancing.value()) {
+                if (load_balancing) {
                   if (lhs_size < approx_num_hashes_per_bucket &&
                       rhs_size >= approx_num_hashes_per_bucket) {
                     return true;
@@ -759,7 +750,7 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
 
   if (!sort_random_hashes) {
     for (uint32_t i = 0; i < num_random_hashes; i++) {
-      if (load_balancing && load_balancing.value()) {
+      if (load_balancing) {
         uint32_t random_hash;
 
         do {
@@ -781,8 +772,7 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
 void UDTMach::introduceLabel(const MapInputBatch& samples,
                              const Label& new_label,
                              std::optional<uint32_t> num_buckets_to_sample_opt,
-                             uint32_t num_random_hashes,
-                             std::optional<bool> load_balancing,
+                             uint32_t num_random_hashes, bool load_balancing,
                              bool sort_random_hashes) {
   introduceLabelHelper(_featurizer->featurizeInputBatch(samples), new_label,
                        num_buckets_to_sample_opt, num_random_hashes,
@@ -792,8 +782,7 @@ void UDTMach::introduceLabel(const MapInputBatch& samples,
 void UDTMach::introduceLabelHelper(
     const bolt::TensorList& samples, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, std::optional<bool> load_balancing,
-    bool sort_random_hashes) {
+    uint32_t num_random_hashes, bool load_balancing, bool sort_random_hashes) {
   // Note: using sparse inference here could cause issues because the
   // mach index sampler will only return nonempty buckets, which could
   // cause new docs to only be mapped to buckets already containing
@@ -808,15 +797,8 @@ void UDTMach::introduceLabelHelper(
 
   std::vector<std::vector<ValueIndexPair>> top_ks;
   for (uint32_t i = 0; i < output->batchSize(); i++) {
-    if (load_balancing && load_balancing.value()) {
-      std::vector<ValueIndexPair> top_k;
-      auto outputVec = output->getVector(i);
-      for (uint32_t pos = 0; pos < outputVec.len; pos++) {
-        uint32_t idx =
-            outputVec.isDense() ? pos : outputVec.active_neurons[pos];
-        top_k.push_back({outputVec.activations[pos], idx});
-      }
-      top_ks.push_back(top_k);
+    if (load_balancing) {
+      top_ks.push_back(output->getVector(i).indexValuePairs());
     } else {
       top_ks.push_back(priorityQueueToVector(
           output->getVector(i).findKLargestActivations(num_buckets_to_sample)));

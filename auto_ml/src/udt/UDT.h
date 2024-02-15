@@ -244,8 +244,7 @@ class UDT {
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
                           std::optional<uint32_t> num_buckets_to_sample,
-                          uint32_t num_random_hashes,
-                          std::optional<bool> load_balancing,
+                          uint32_t num_random_hashes, bool load_balancing,
                           bool fast_approximation, bool verbose,
                           bool sort_random_hashes) {
     licensing::entitlements().verifyDataSource(data);
@@ -265,8 +264,7 @@ class UDT {
                          const std::vector<std::string>& weak_column_names,
                          const std::variant<uint32_t, std::string>& new_label,
                          std::optional<uint32_t> num_buckets_to_sample,
-                         uint32_t num_random_hashes,
-                         std::optional<bool> load_balancing,
+                         uint32_t num_random_hashes, bool load_balancing,
                          bool sort_random_hashes) {
     licensing::entitlements().verifyFullAccess();
 
@@ -284,8 +282,7 @@ class UDT {
   void introduceLabel(const MapInputBatch& sample,
                       const std::variant<uint32_t, std::string>& new_label,
                       std::optional<uint32_t> num_buckets_to_sample,
-                      uint32_t num_random_hashes,
-                      std::optional<bool> load_balancing,
+                      uint32_t num_random_hashes, bool load_balancing,
                       bool sort_random_hashes) {
     licensing::entitlements().verifyFullAccess();
 

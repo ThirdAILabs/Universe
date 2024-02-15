@@ -151,6 +151,20 @@ BoltVector BoltVector::makeDenseVectorWithGradients(
   return vector;
 }
 
+std::vector<ValueIndexPair> BoltVector::indexValuePairs() const {
+  std::vector<ValueIndexPair> pairs;
+  if (isDense()) {
+    for (uint32_t i = 0; i < len; i++) {
+      pairs.emplace_back(i, activations[i]);
+    }
+  } else {
+    for (uint32_t i = 0; i < len; i++) {
+      pairs.emplace_back(active_neurons[i], activations[i]);
+    }
+  }
+  return pairs;
+}
+
 BoltVector BoltVector::copy() const {
   BoltVector vec;
   vec.len = this->len;
