@@ -15,6 +15,7 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <pybind11/pytypes.h>
@@ -204,6 +205,10 @@ class UDTMach final : public UDTBackend {
   static std::unique_ptr<UDTMach> fromArchive(const ar::Archive& archive);
 
   static std::string type() { return "udt_mach"; }
+
+  void setEncoder(const dataset::TextEncoderPtr& encoder) {
+    _featurizer->setEncoder(encoder);
+  }
 
  private:
   std::vector<std::vector<uint32_t>> predictHashesImpl(

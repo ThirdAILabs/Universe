@@ -28,6 +28,10 @@ class TextTokenizer final : public Transformation {
 
   static std::string type() { return "text_tokenizer"; }
 
+  void setEncoder(const dataset::TextEncoderPtr& encoder) {
+    _encoder = encoder;
+  }
+
  private:
   static std::pair<std::vector<uint32_t>, std::vector<float>>
   deduplicateIndices(std::vector<uint32_t>&& tokens);

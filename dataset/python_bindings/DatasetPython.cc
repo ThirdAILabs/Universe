@@ -15,6 +15,7 @@
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/blocks/text/Text.h>
+#include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/WordpieceTokenizer.h>
 #include <dataset/src/cold_start/ColdStartDataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
@@ -204,6 +205,16 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<PairGramEncoder, TextEncoder, std::shared_ptr<PairGramEncoder>>(
       dataset_submodule, "PairGramEncoder")
       .def(py::init<>());
+
+  py::class_<FixedDimEncoder, TextEncoder, std::shared_ptr<FixedDimEncoder>>(
+      dataset_submodule, "FixedDimEncoder")
+      .def(py::init<uint32_t>(), py::arg("max_tokens"));
+
+  py::class_<CompositeEncoder, TextEncoder, std::shared_ptr<CompositeEncoder>>(
+      dataset_submodule, "CompositeEncoder")
+      .def(py::init<uint32_t, const std::vector<TextEncoderPtr>, std::string>(),
+           py::arg("max_tokens"), py::arg("encoders"),
+           py::arg("sampling_strategy"));
 
   py::class_<TextBlock, Block, TextBlockPtr>(block_submodule, "TextBlock")
       .def(py::init<uint32_t, TextTokenizerPtr, TextEncoderPtr, bool,

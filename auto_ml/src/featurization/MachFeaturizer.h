@@ -6,7 +6,10 @@
 #include <auto_ml/src/featurization/Featurizer.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/transformations/TextCompat.h>
+#include <data/src/transformations/TextTokenizer.h>
+#include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/mach/MachIndex.h>
+#include <stdexcept>
 
 namespace thirdai::automl {
 
@@ -71,6 +74,30 @@ class MachFeaturizer final : public Featurizer {
 
   static std::shared_ptr<MachFeaturizer> fromArchive(
       const ar::Archive& archive);
+
+  void setEncoder(const dataset::TextEncoderPtr& encoder) {
+    // This functions updates the text encoder of the underlying text transform
+
+    bool exception_flag = true;
+    auto* text_tokenizer =
+        dynamic_cast<data::TextTokenizer*>(_input_transform.get());
+    if (text_tokenizer) {
+      text_tokenizer->setEncoder(encoder);
+      exception_flag = false;
+    }
+
+    auto* const_text_tokenizer =
+        dynamic_cast<data::TextTokenizer*>(_const_input_transform.get());
+    if (const_text_tokenizer) {
+      const_text_tokenizer->setEncoder(encoder);
+    }
+
+    if (exception_flag) {
+      throw std::logic_error(
+          "Cannot update encoder of a mach model that does not have input text "
+          "transformation");
+    }
+  }
 
  private:
   data::ColumnMap removeIntermediateColumns(const data::ColumnMap& columns);

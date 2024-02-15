@@ -457,6 +457,10 @@ class UDT {
 
   static std::shared_ptr<UDT> load_stream(std::istream& input_stream);
 
+  void setEncoder(const dataset::TextEncoderPtr& encoder) {
+    _backend->setEncoder(encoder);
+  }
+
   bool isV1() const;
 
   /**

@@ -1,6 +1,7 @@
 #include "DataTypes.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <dataset/src/blocks/text/TextEncoder.h>
 
 namespace thirdai::automl {
 
@@ -26,6 +27,7 @@ dataset::TextTokenizerPtr getTextTokenizerFromString(
 }
 
 dataset::TextEncoderPtr getTextEncoderFromString(const std::string& string) {
+  std::cout << "contextual_encoding_string: " << string << "\n";
   if (std::regex_match(string, std::regex("ngram-(0|[1-9]\\d*)"))) {
     uint32_t n = std::strtol(string.data() + 6, nullptr, 10);
     if (n == 0) {
@@ -33,6 +35,16 @@ dataset::TextEncoderPtr getTextEncoderFromString(const std::string& string) {
           "Specified 'ngram-N' option with N = 0. Please use N > 0.");
     }
     return dataset::NGramEncoder::make(/* n = */ n);
+  }
+
+  if (std::regex_match(string, std::regex("fixed_dim-(0|[1-9]\\d*)"))) {
+    uint32_t n = std::strtol(string.data() + 10, nullptr, 10);
+    if (n == 0) {
+      throw std::invalid_argument(
+          "Specified 'fixed_dim' option with N = 0. Please use N > 0.");
+    }
+    std::cout << "fixed dim :" << n << '\n';
+    return dataset::FixedDimEncoder::make(/* max_tokens = */ n);
   }
 
   std::unordered_map<std::string, dataset::TextEncoderPtr>

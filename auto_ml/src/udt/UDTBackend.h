@@ -373,6 +373,11 @@ class UDTBackend {
     throw notSupported("save_cpp_classifier");
   }
 
+  virtual void setEncoder(const dataset::TextEncoderPtr& encoder) {  // NOLINT
+    (void)encoder;
+    throw notSupported("setEncoder");
+  }
+
   virtual ~UDTBackend() = default;
 
  protected:
