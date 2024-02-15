@@ -2307,7 +2307,7 @@ class InMemoryText(Document):
             self.metadata_columns = metadata_df.columns
         self.table = create_table(df, on_disk)
         self.hash_val = hash_string(str(texts) + str(metadatas))
-        self.global_metadata = global_metadata or {}
+        self.global_metadata = metadata_with_source(global_metadata or {}, name)
 
     @property
     def hash(self) -> str:
