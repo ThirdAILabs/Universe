@@ -169,6 +169,8 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
                           const bolt::DistributedCommPtr& comm) {
   insertNewDocIds(data);
 
+  updateSamplingStrategy();
+
   addBalancingSamples(data);
 
   auto train_data_loader =
@@ -435,6 +437,8 @@ py::object UDTMach::coldstart(
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
   insertNewDocIds(data);
+
+  updateSamplingStrategy();
 
   addBalancingSamples(data, strong_column_names, weak_column_names,
                       variable_length);
