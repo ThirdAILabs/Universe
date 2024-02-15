@@ -1,7 +1,9 @@
+import os
+import time
+
 import torch
 import torch.nn as nn
 from thirdai import data, dataset
-import time
 
 
 def to_tokens_and_offsets(rows, batch_size):
@@ -135,6 +137,7 @@ class Mach:
         emb_dim,
         n_buckets,
         n_entities,
+        softmax=True,
         lr=1e-3,
         n_hashes=7,
         text_col="QUERY",
@@ -151,6 +154,8 @@ class Mach:
         self.index = dataset.MachIndex(
             output_range=n_buckets, num_hashes=n_hashes, num_elements=n_entities
         )
+
+        self.softmax = softmax
 
         self.text_col = text_col
         self.label_col = label_col
@@ -239,18 +244,22 @@ class Mach:
 
         batches = self._load_data(filename, pipeline, batch_size)
 
+        if self.softmax:
+            loss_fn = nn.CrossEntropyLoss()
+        else:
+            loss_fn = nn.BCEWithLogitsLoss()
+
         start = time.perf_counter()
         for (tokens, offsets), labels in batches:
             self.optimizer.zero_grad()
 
             out = self.model(tokens, offsets)
-            # loss = nn.functional.binary_cross_entropy_with_logits(out, labels.to_dense())
-            loss = nn.functional.cross_entropy(out, labels.to_dense())
+            loss = loss_fn(out, labels.to_dense())
             loss.backward()
 
-            # nn.utils.clip_grad.clip_grad_norm_(
-            #     self.model.parameters(), max_norm=0.1, norm_type=2
-            # )
+            nn.utils.clip_grad.clip_grad_norm_(
+                self.model.parameters(), max_norm=0.1, norm_type=2
+            )
 
             self.optimizer.step()
 
@@ -279,8 +288,10 @@ class Mach:
         metrics = [Recall(k) for k in recall_at] + [Precision(k) for k in precision_at]
 
         for (tokens, offsets), labels in zip(inputs, label_batches):
-            out = nn.functional.softmax(self.model(tokens, offsets), dim=1)
-            # out = nn.functional.sigmoid(self.model(tokens, offsets))
+            if self.softmax:
+                out = nn.functional.softmax(self.model(tokens, offsets), dim=1)
+            else:
+                out = nn.functional.sigmoid(self.model(tokens, offsets))
 
             predictions = self.index.decode_batch(
                 out.detach().numpy(),
@@ -300,26 +311,30 @@ class Mach:
         return metric_vals
 
 
-def scifact():
+DATA_DIR = "/Users/nmeisburger/ThirdAI/data"
+
+
+def scifact(softmax=True):
     model = Mach(
         input_dim=100_000,
         emb_dim=1024,
         n_buckets=1_000,
         n_entities=5183,
         char_4_grams=False,
-        lr=0.001,
+        lr=0.001 if softmax else 0.01,
+        softmax=softmax,
     )
 
     for _ in range(5):
         print("\nCold Start")
         model.train(
-            "/Users/nmeisburger/ThirdAI/data/scifact/unsupervised.csv",
+            os.path.join(DATA_DIR, "scifact/unsupervised.csv"),
             strong_cols=["TITLE"],
             weak_cols=["TEXT"],
         )
 
         model.validate(
-            "/Users/nmeisburger/ThirdAI/data/scifact/tst_supervised.csv",
+            os.path.join(DATA_DIR, "scifact/tst_supervised.csv"),
             recall_at=[5],
             precision_at=[1],
         )
@@ -327,10 +342,10 @@ def scifact():
     for _ in range(10):
         print("\nSupervised")
         model.train(
-            "/Users/nmeisburger/ThirdAI/data/scifact/trn_supervised.csv",
+            os.path.join(DATA_DIR, "scifact/trn_supervised.csv"),
         )
         model.validate(
-            "/Users/nmeisburger/ThirdAI/data/scifact/tst_supervised.csv",
+            os.path.join(DATA_DIR, "scifact/tst_supervised.csv"),
             recall_at=[5],
             precision_at=[1],
         )
@@ -343,23 +358,24 @@ def trec_covid():
         n_buckets=20_000,
         n_entities=171_332,
         char_4_grams=True,
-        lr=0.01,
+        lr=0.001,
+        softmax=True,
     )
 
     for _ in range(5):
         print("\nCold Start")
         model.train(
-            "/share/data/trec-covid/unsupervised.csv",
+            os.path.join(DATA_DIR, "trec-covid/unsupervised.csv"),
             strong_cols=["TITLE"],
             weak_cols=["TEXT"],
         )
 
         model.validate(
-            "/share/data/trec-covid/tst_supervised.csv",
+            os.path.join(DATA_DIR, "trec-covid/tst_supervised.csv"),
             precision_at=[1, 10],
         )
 
 
 if __name__ == "__main__":
-    scifact()
-    # trec_covid()
+    # scifact()
+    trec_covid()
