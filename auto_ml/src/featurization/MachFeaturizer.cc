@@ -74,20 +74,25 @@ void MachFeaturizer::insertNewDocIds(
   data_source->restart();
   auto data_iter = data::CsvIterator::make(data_source, _delimiter);
 
-  std::unordered_set<uint32_t> all_doc_ids;
   while (auto chunk = data_iter->next()) {
-    const auto columns = _doc_id_transform->applyStateless(*chunk);
+    insertNewDocIds(*chunk);
+  }
 
-    auto doc_ids = columns.getArrayColumn<uint32_t>(MACH_DOC_IDS);
-    for (size_t i = 0; i < doc_ids->numRows(); i++) {
-      auto row = doc_ids->row(i);
-      all_doc_ids.insert(row.begin(), row.end());
-    }
+  data_source->restart();
+}
+
+void MachFeaturizer::insertNewDocIds(const data::ColumnMap& data) {
+  std::unordered_set<uint32_t> all_doc_ids;
+
+  const auto columns = _doc_id_transform->applyStateless(data);
+
+  auto doc_ids = columns.getArrayColumn<uint32_t>(MACH_DOC_IDS);
+  for (size_t i = 0; i < doc_ids->numRows(); i++) {
+    auto row = doc_ids->row(i);
+    all_doc_ids.insert(row.begin(), row.end());
   }
 
   machIndex()->insertNewEntities(all_doc_ids);
-
-  data_source->restart();
 }
 
 std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>

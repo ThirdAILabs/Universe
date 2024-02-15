@@ -21,6 +21,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
+#include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/transformations/cold_start/ColdStartText.h>
 #include <dataset/src/DataSource.h>
@@ -190,6 +191,9 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
 py::object UDTMach::trainBatch(const MapInputBatch& batch,
                                float learning_rate) {
   auto& model = _classifier->model();
+
+  _featurizer->insertNewDocIds(data::ColumnMap::fromMapInputBatch(batch));
+  updateSamplingStrategy();
 
   auto [inputs, labels] = _featurizer->featurizeTrainingBatch(batch);
 
