@@ -314,9 +314,8 @@ py::object UDTMach::scoreBatch(const MapInputBatch& samples,
   std::vector<std::vector<std::pair<uint32_t, double>>> scores(samples.size());
 
   const auto& index = getIndex();
-#pragma omp parallel for default(none)                   \
-    shared(entities, outputs, scores, top_k, batch_size, \
-               index) if (batch_size > 1)
+#pragma omp parallel for default(none) shared( \
+    entities, outputs, scores, top_k, batch_size, index) if (batch_size > 1)
   for (uint32_t i = 0; i < batch_size; i++) {
     const BoltVector& vector = outputs->getVector(i);
     scores[i] = index->scoreEntities(vector, entities[i], top_k);
@@ -581,9 +580,13 @@ void UDTMach::introduceDocuments(
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
       uint32_t label = doc_ids[i];
-      top_k_per_doc[label].push_back(
-          scores->getVector(i).findKLargestActivations(
-              mach_index->numBuckets()));
+      TopKActivationsQueue top_k;
+      auto scoreVec = scores->getVector(i);
+      for (uint32_t pos = 0; pos < scoreVec.len; pos++) {
+        uint32_t idx = scoreVec.isDense() ? pos : scoreVec.active_neurons[pos];
+        top_k.push({scoreVec.activations[pos], idx});
+      }
+      top_k_per_doc[label].push_back(top_k);
     }
 
     ctrl_c_check();
@@ -702,12 +705,22 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
     // buckets based on size to load balance the index.
     std::sort(sorted_hashes.begin(),
               sorted_hashes.begin() + num_buckets_to_sample,
-              [&mach_index, &cmp](const auto& lhs, const auto& rhs) {
+              [&mach_index, &cmp, approx_num_hashes_per_bucket](
+                  const auto& lhs, const auto& rhs) {
                 size_t lhs_size = mach_index->bucketSize(lhs.first);
                 size_t rhs_size = mach_index->bucketSize(rhs.first);
 
                 // Give preference to emptier buckets. If buckets are
                 // equally empty, use one with the best score.
+
+                if (lhs_size < approx_num_hashes_per_bucket &&
+                    rhs_size >= approx_num_hashes_per_bucket) {
+                  return true;
+                }
+                if (rhs_size < approx_num_hashes_per_bucket &&
+                    lhs_size >= approx_num_hashes_per_bucket) {
+                  return false;
+                }
                 if (lhs_size == rhs_size) {
                   return cmp(lhs, rhs);
                 }
@@ -729,25 +742,10 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
   uint32_t num_informed_hashes =
       sort_random_hashes ? num_hashes : (num_hashes - num_random_hashes);
 
-  uint32_t required_hashes = 0, available_hashes = 0;
-  while (required_hashes < num_informed_hashes &&
-         available_hashes < sorted_hashes.size()) {
-    auto [hash, freq_score_pair] = sorted_hashes[available_hashes];
-    if (mach_index->bucketSize(hash) < approx_num_hashes_per_bucket) {
-      new_hashes.push_back(hash);
-      required_hashes++;
-      sorted_hashes.erase(sorted_hashes.begin() + available_hashes);
-    } else {
-      available_hashes++;
-    }
-  }
-
-  available_hashes = 0;
-  while (required_hashes < num_informed_hashes) {
+  for (uint32_t available_hashes = 0; available_hashes < num_informed_hashes;
+       available_hashes++) {
     auto [hash, freq_score_pair] = sorted_hashes[available_hashes];
     new_hashes.push_back(hash);
-    required_hashes++;
-    available_hashes++;
   }
 
   if (!sort_random_hashes) {
