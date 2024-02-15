@@ -583,7 +583,7 @@ void UDTMach::introduceDocuments(
       uint32_t label = doc_ids[i];
       if (load_balancing && load_balancing.value()) {
         std::vector<ValueIndexPair> top_k;
-        auto scoreVec = scores->getVector(i);
+        const auto& score_vec = scores->getVector(i);
         for (uint32_t pos = 0; pos < scoreVec.len; pos++) {
           uint32_t idx =
               scoreVec.isDense() ? pos : scoreVec.active_neurons[pos];
