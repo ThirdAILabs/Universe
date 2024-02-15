@@ -203,13 +203,14 @@ class UDTBackend {
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
-      bool fast_approximation, bool verbose, bool sort_random_hashes) {
+      std::optional<bool> load_balancing, bool fast_approximation, bool verbose,
+      bool sort_random_hashes) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
     (void)num_buckets_to_sample;
     (void)num_random_hashes;
-    (void)fast_approximation;
+    (void)load_balancing, (void)fast_approximation;
     (void)verbose;
     (void)sort_random_hashes;
     throw notSupported("introduce_documents");
@@ -221,13 +222,14 @@ class UDTBackend {
       const std::vector<std::string>& weak_column_names,
       const std::variant<uint32_t, std::string>& new_label,
       std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
-      bool sort_random_hashes) {
+      std::optional<bool> load_balancing, bool sort_random_hashes) {
     (void)document;
     (void)strong_column_names;
     (void)weak_column_names;
     (void)new_label;
     (void)num_buckets_to_sample;
     (void)num_random_hashes;
+    (void)load_balancing;
     (void)sort_random_hashes;
     throw notSupported("introduce_document");
   }
@@ -236,12 +238,12 @@ class UDTBackend {
       const MapInputBatch& sample,
       const std::variant<uint32_t, std::string>& new_label,
       std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
-      bool sort_random_hashes) {
+      std::optional<bool> load_balancing, bool sort_random_hashes) {
     (void)sample;
     (void)new_label;
     (void)num_buckets_to_sample;
     (void)num_random_hashes;
-    (void)sort_random_hashes;
+    (void)load_balancing, (void)sort_random_hashes;
     throw notSupported("introduce_label");
   }
 
