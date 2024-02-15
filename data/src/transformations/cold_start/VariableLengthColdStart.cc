@@ -87,9 +87,15 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
 
   Phrase strong_phrase = convertTextToPhrase(strong_text);
   PhraseCollection phrases = getWeakPhrases(weak_text, rng);
-  phrases = cold_start::mergeStrongWithWeak(phrases, strong_phrase,
-                                            _config.strong_sample_num_words,
-                                            _config.strong_to_weak_ratio, rng);
+
+  if (_config.strong_to_weak_ratio) {
+    phrases = cold_start::appendStrongAndWeak(
+        phrases, strong_phrase, _config.strong_sample_num_words,
+        _config.strong_to_weak_ratio.value(), rng);
+  } else {
+    phrases = cold_start::concatStrongWithWeak(
+        phrases, strong_phrase, _config.strong_sample_num_words, rng);
+  }
 
   std::vector<std::string> output_samples;
   for (const auto& phrase : phrases) {
