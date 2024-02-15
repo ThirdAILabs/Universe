@@ -169,8 +169,6 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
                           const bolt::DistributedCommPtr& comm) {
   insertNewDocIds(data);
 
-  updateSamplingStrategy();
-
   addBalancingSamples(data);
 
   auto train_data_loader =
@@ -438,8 +436,6 @@ py::object UDTMach::coldstart(
     const bolt::DistributedCommPtr& comm) {
   insertNewDocIds(data);
 
-  updateSamplingStrategy();
-
   addBalancingSamples(data, strong_column_names, weak_column_names,
                       variable_length);
 
@@ -557,6 +553,7 @@ void UDTMach::updateSamplingStrategy() {
 
 void UDTMach::insertNewDocIds(const dataset::DataSourcePtr& data) {
   _featurizer->insertNewDocIds(data);
+  updateSamplingStrategy();
 }
 
 void UDTMach::introduceDocuments(
@@ -952,6 +949,8 @@ py::object UDTMach::associateColdStart(
     uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
     TrainOptions options) {
+  insertNewDocIds(balancing_data);
+
   warnOnNonHashBasedMetrics(metrics);
 
   // TODO(nicholas): make sure max_in_memory_batches is none
