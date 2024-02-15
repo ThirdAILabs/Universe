@@ -12,6 +12,8 @@ class MinHash final : public HashFunction {
   MinHash(uint32_t hashes_per_table, uint32_t num_tables, uint32_t range,
           uint32_t seed = global_random::nextSeed());
 
+  explicit MinHash(const ar::Archive& archive);
+
   void hashSingleSparse(const uint32_t* indices, const float* values,
                         uint32_t length, uint32_t* output) const override;
 
@@ -26,6 +28,12 @@ class MinHash final : public HashFunction {
   }
 
   std::string getName() const final { return "Minhash"; }
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::shared_ptr<MinHash> fromArchive(const ar::Archive& archive);
+
+  static std::string type() { return "minhash"; }
 
  private:
   uint32_t _hashes_per_table;

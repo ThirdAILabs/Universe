@@ -90,15 +90,11 @@ class Model:
         query_col = self.get_query_col()
         return [{query_col: clean_text(text)} for text in samples]
 
-    def infer_buckets(
-        self, samples: InferSamples, n_results: int, **kwargs
-    ) -> Predictions:
-        raise NotImplementedError()
-
     def infer_labels(
         self,
         samples: InferSamples,
         n_results: int,
+        retriever: Optional[str] = None,
         **kwargs,
     ) -> Predictions:
         raise NotImplementedError()
@@ -329,12 +325,12 @@ def normalize_scores(results):
     if len(results) == 0:
         return results
     if len(results) == 1:
-        return [(results[0][0], 1.0)]
-    ids, scores = zip(*results)
+        return [(results[0][0], 1.0, results[0][2])]
+    ids, scores, retriever = zip(*results)
     scores = np.array(scores)
     scores -= np.min(scores)
     scores /= np.max(scores)
-    return list(zip(ids, scores))
+    return list(zip(ids, scores, retriever))
 
 
 def merge_results(results_a, results_b, k):
@@ -361,6 +357,10 @@ def merge_results(results_a, results_b, k):
                 results.append(results_b[i])
 
     return results[:k]
+
+
+def add_retriever_tag(results, tag):
+    return [[(id, score, tag) for id, score in result] for result in results]
 
 
 class Mach(Model):
@@ -633,43 +633,63 @@ class Mach(Model):
     def searchable(self) -> bool:
         return self.n_ids != 0
 
+    def query_mach(self, samples, n_results):
+        self.model.set_decode_params(min(self.n_ids, n_results), min(self.n_ids, 100))
+        infer_batch = self.infer_samples_to_infer_batch(samples)
+        return add_retriever_tag(
+            results=self.model.predict_batch(infer_batch), tag="mach"
+        )
+
+    def query_inverted_index(self, samples, n_results):
+        return add_retriever_tag(
+            results=self.inverted_index.query(
+                queries=samples, k=min(self.n_ids, n_results)
+            ),
+            tag="inverted_index",
+        )
+
     def infer_labels(
         self,
         samples: InferSamples,
         n_results: int,
+        retriever=None,
         **kwargs,
     ) -> Predictions:
-        infer_batch = self.infer_samples_to_infer_batch(samples)
-        if self.inverted_index and not kwargs.get("disable_inverted_index", False):
-            k = min(self.n_ids, n_results)
-            index_results = self.inverted_index.query(queries=samples, k=k)
-            self.model.set_decode_params(k, min(self.n_ids, 100))
-            mach_results = self.model.predict_batch(infer_batch)
+        if not retriever:
+            if not self.inverted_index:
+                retriever = "mach"
+            else:
+                mach_results = self.query_mach(samples=samples, n_results=n_results)
+                index_results = self.query_inverted_index(
+                    samples=samples, n_results=n_results
+                )
+                return [
+                    merge_results(mach_res, index_res, n_results)
+                    for mach_res, index_res in zip(mach_results, index_results)
+                ]
 
-            return [
-                merge_results(mach_res, index_res, k)
-                for mach_res, index_res in zip(mach_results, index_results)
-            ]
-        else:
-            self.model.set_decode_params(
-                min(self.n_ids, n_results), min(self.n_ids, 100)
-            )
-            return self.model.predict_batch(infer_batch)
+        if retriever == "mach":
+            return self.query_mach(samples=samples, n_results=n_results)
+
+        if retriever == "inverted_index":
+            if not self.inverted_index:
+                raise ValueError(
+                    "Cannot use retriever 'inverted_index' since the index is None. "
+                    "Call 'db.build_inverted_index()' to enable this method."
+                )
+            return self.query_inverted_index(samples=samples, n_results=n_results)
+
+        raise ValueError(
+            f"Invalid retriever '{retriever}'. Please use 'mach', 'inverted_index', "
+            "or pass None to allow the model to autotune which is used."
+        )
 
     def score(
         self, samples: InferSamples, entities: List[List[int]], n_results: int = None
     ) -> Predictions:
         infer_batch = self.infer_samples_to_infer_batch(samples)
-        return self.model.score_batch(infer_batch, classes=entities, top_k=n_results)
-
-    def infer_buckets(
-        self, samples: InferSamples, n_results: int, **kwargs
-    ) -> Predictions:
-        infer_batch = self.infer_samples_to_infer_batch(samples)
-        predictions = [
-            self.model.predict_hashes(sample)[:n_results] for sample in infer_batch
-        ]
-        return predictions
+        results = self.model.score_batch(infer_batch, classes=entities, top_k=n_results)
+        return add_retriever_tag(results=results, tag="mach")
 
     def _format_associate_samples(self, pairs: List[Tuple[str, str]]):
         return [(clean_text(source), clean_text(target)) for source, target in pairs]

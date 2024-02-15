@@ -4,6 +4,9 @@
 #include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
+#include <archive/src/Archive.h>
+#include <archive/src/List.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <data/src/transformations/Transformation.h>
@@ -137,6 +140,75 @@ void Tabular::buildExplanationMap(const ColumnMap& input, State& state,
     }
   }
 }
+
+ar::ConstArchivePtr Tabular::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+
+  auto numerical_columns = ar::List::make();
+  for (const auto& num_col : _numerical_columns) {
+    numerical_columns->append(num_col.toArchive());
+  }
+  map->set("numerical_columns", numerical_columns);
+
+  auto categorical_columns = ar::List::make();
+  for (const auto& cat_col : _categorical_columns) {
+    categorical_columns->append(cat_col.toArchive());
+  }
+  map->set("categorical_columns", categorical_columns);
+
+  map->set("output_column", ar::str(_output_column));
+  map->set("cross_column_pairgrams", ar::boolean(_cross_column_pairgrams));
+
+  return map;
+}
+
+Tabular::Tabular(const ar::Archive& archive)
+    : _output_column(archive.str("output_column")),
+      _cross_column_pairgrams(
+          archive.getAs<ar::Boolean>("cross_column_pairgrams")) {
+  for (const auto& num_col : archive.get("numerical_columns")->list()) {
+    _numerical_columns.push_back(NumericalColumn(*num_col));
+  }
+
+  for (const auto& cat_col : archive.get("categorical_columns")->list()) {
+    _categorical_columns.push_back(CategoricalColumn(*cat_col));
+  }
+}
+
+ar::ConstArchivePtr NumericalColumn::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("name", ar::str(name));
+  map->set("min", ar::f32(_min));
+  map->set("max", ar::f32(_max));
+  map->set("binsize", ar::f32(_binsize));
+  map->set("num_bins", ar::u64(_num_bins));
+  map->set("salt", ar::u64(_salt));
+
+  return map;
+}
+
+NumericalColumn::NumericalColumn(const ar::Archive& archive)
+    : name(archive.str("name")),
+      _min(archive.getAs<ar::F32>("min")),
+      _max(archive.getAs<ar::F32>("max")),
+      _binsize(archive.getAs<ar::F32>("binsize")),
+      _num_bins(archive.u64("num_bins")),
+      _salt(archive.u64("salt")) {}
+
+ar::ConstArchivePtr CategoricalColumn::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("name", ar::str(name));
+  map->set("salt", ar::u64(_salt));
+
+  return map;
+}
+
+CategoricalColumn::CategoricalColumn(const ar::Archive& archive)
+    : name(archive.str("name")), _salt(archive.u64("salt")) {}
 
 template <class Archive>
 void Tabular::serialize(Archive& archive) {

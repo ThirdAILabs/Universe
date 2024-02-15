@@ -5,6 +5,7 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace thirdai::bolt {
 
@@ -87,6 +88,14 @@ void Computation::setName(const std::string& name) {
         "should not be reused between models.");
   }
   _name = name;
+}
+
+std::vector<std::string> Computation::inputNames() const {
+  std::vector<std::string> input_names;
+  for (const auto& input : _inputs) {
+    input_names.push_back(input->name());
+  }
+  return input_names;
 }
 
 template void Computation::serialize(cereal::BinaryInputArchive&);

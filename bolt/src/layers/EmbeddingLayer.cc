@@ -1,10 +1,20 @@
 #include "EmbeddingLayer.h"
 #include <hashing/src/MurmurHash.h>
+#include <archive/src/Archive.h>
+#include <archive/src/ParameterReference.h>
 #include <algorithm>
 #include <random>
 #include <stdexcept>
 
 namespace thirdai::bolt {
+
+std::pair<uint64_t, uint64_t> computeBlockSizeAndNumChunks(
+    uint64_t log_block_size, uint64_t lookup_size, uint64_t chunk_size) {
+  uint64_t block_size = (1ULL << log_block_size) + lookup_size;
+  uint64_t n_chunks = (block_size + chunk_size - 1) / chunk_size;
+
+  return {n_chunks * chunk_size, n_chunks};
+}
 
 EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
                                uint32_t seed)
@@ -35,14 +45,15 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
   // We allocate the extra _lookup_size elements such that if a point hashes to
   // the end of 2^_embedding_block_size we don't have to worry about wrapping it
   // around.
-  _embedding_block_size = (1ULL << _log_embedding_block_size) + _lookup_size;
-  uint64_t n_chunks =
-      (_embedding_block_size + _update_chunk_size - 1) / _update_chunk_size;
-  _embedding_block_size = n_chunks * _update_chunk_size;
+  auto [emb_block_size, n_emb_chunks] = computeBlockSizeAndNumChunks(
+      _log_embedding_block_size, _lookup_size, _update_chunk_size);
+
+  _embedding_block_size = emb_block_size;
+
   _embedding_block =
       std::make_shared<std::vector<float>>(_embedding_block_size, 0);
 
-  _embedding_chunks_used = std::vector<bool>(n_chunks, false);
+  _embedding_chunks_used = std::vector<bool>(n_emb_chunks, false);
 
   std::mt19937 gen(seed);
   std::normal_distribution<float> dist(0.0, 0.01);
@@ -51,9 +62,47 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
                 [&]() { return dist(gen); });
 }
 
+EmbeddingLayer::EmbeddingLayer(const ar::Archive& archive)
+    : _num_lookups_per_token(archive.u64("num_lookups_per_token")),
+      _lookup_size(archive.u64("lookup_size")),
+      _total_embedding_dim(_num_lookups_per_token * _lookup_size),
+      _log_embedding_block_size(archive.u64("log_embedding_block_size")),
+      _update_chunk_size(archive.u64("update_chunk_size")),
+      _reduction(reductionFromString(archive.str("reduction"))),
+      _num_tokens_per_input(archive.getOpt<ar::U64>("num_tokens_per_input")),
+      _hash_fn(archive.u64("hash_seed")),
+      _embedding_block(archive.get("embeddings")->param().loadedParameter()),
+      _disable_sparse_parameter_updates(
+          archive.boolean("disable_sparse_parameter_updates")) {
+  if (_reduction == EmbeddingReductionType::CONCATENATION) {
+    if (!_num_tokens_per_input) {
+      throw std::invalid_argument(
+          "Must specify a number of tokens per input with a concatenation "
+          "reduction.");
+    }
+    _total_embedding_dim *= _num_tokens_per_input.value();
+  }
+
+  auto [emb_block_size, n_emb_chunks] = computeBlockSizeAndNumChunks(
+      _log_embedding_block_size, _lookup_size, _update_chunk_size);
+
+  _embedding_block_size = emb_block_size;
+
+  if (_embedding_block->size() != _embedding_block_size) {
+    throw std::runtime_error(
+        "Embedding block does not have expected size in fromArchive.");
+  }
+
+  _embedding_chunks_used.assign(n_emb_chunks, false);
+
+  if (archive.contains("embedding_optimizer")) {
+    _optimizer = optimizerFromArchive(*archive.get("embedding_optimizer"));
+  }
+}
+
 void EmbeddingLayer::forward(const BoltVector& tokens, BoltVector& output) {
   assert(output.len == _total_embedding_dim);
-  assert(_reduction == EmbeddingReductionType::SUM ||
+  assert(_reduction != EmbeddingReductionType::CONCATENATION ||
          _num_tokens_per_input.value() == tokens.len);
   assert(output.active_neurons == nullptr);
 

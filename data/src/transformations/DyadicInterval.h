@@ -13,13 +13,22 @@ class DyadicInterval final : public Transformation {
                  std::string output_interval_prefix, std::string target_column,
                  size_t n_intervals, bool is_bidirectional = false);
 
+  explicit DyadicInterval(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  ar::ConstArchivePtr toArchive() const final;
 
   ColumnMap inferenceFeaturization(ColumnMap columns) const;
 
+  static std::string type() { return "dyadic_interval"; }
+
   std::optional<std::string> getPromptColumn() { return _prompt_column; }
+
   std::optional<std::string> getContextColumn() { return _context_column; }
+
   std::string getTargetColumn() { return _target_column; }
+
   std::string getInputColumn() { return _input_column; }
 
  private:

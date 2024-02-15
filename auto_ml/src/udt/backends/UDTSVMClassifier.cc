@@ -81,6 +81,20 @@ py::object UDTSVMClassifier::predictBatch(const MapInputBatch& samples,
                               /* single= */ false, top_k);
 }
 
+ar::ConstArchivePtr UDTSVMClassifier::toArchive(bool with_optimizer) const {
+  auto map = _classifier->toArchive(with_optimizer);
+  map->set("type", ar::str(type()));
+  return map;
+}
+
+std::unique_ptr<UDTSVMClassifier> UDTSVMClassifier::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_unique<UDTSVMClassifier>(archive);
+}
+
+UDTSVMClassifier::UDTSVMClassifier(const ar::Archive& archive)
+    : _classifier(utils::Classifier::fromArchive(archive)) {}
+
 template void UDTSVMClassifier::serialize(cereal::BinaryInputArchive&,
                                           const uint32_t version);
 template void UDTSVMClassifier::serialize(cereal::BinaryOutputArchive&,
