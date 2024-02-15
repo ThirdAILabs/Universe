@@ -15,7 +15,10 @@ set(BOLT_NN_TESTS
     UpdateSparsityTests
     SaveLoadTests
     BeamSearchDecodingTests
-    SwitchOpTests)
+    SwitchOpTests
+    ArchiveSerializationTests
+    EmbFcInferenceTests
+    CosineLRScheduleTests)
 
 foreach(BOLT_NN_TEST IN LISTS BOLT_NN_TESTS)
   add_executable(${BOLT_NN_TEST} ${BOLT_NN_TEST}.cc)

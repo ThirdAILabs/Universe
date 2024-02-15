@@ -1,10 +1,14 @@
 #include "FullyConnectedLayer.h"
 #include <wrappers/src/EigenDenseWrapper.h>
 #include <bolt/src/layers/LayerUtils.h>
+#include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/neuron_index/LshIndex.h>
 #include <hashing/src/DWTA.h>
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/util/Constants.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
+#include <archive/src/ParameterReference.h>
 #include <utils/Random.h>
 #include <algorithm>
 #include <cassert>
@@ -47,6 +51,38 @@ FullyConnectedLayer::FullyConnectedLayer(
     _neuron_index = config.getSamplingConfig()->getNeuronIndex(_dim, _prev_dim);
 
     buildHashTables();
+  }
+
+  initActiveNeuronsTrackers();
+}
+
+FullyConnectedLayer::FullyConnectedLayer(const ar::Archive& archive)
+    : _dim(archive.u64("dim")),
+      _prev_dim(archive.u64("input_dim")),
+      _sparse_dim(archive.u64("dim") * archive.getAs<ar::F32>("sparsity")),
+      _sparsity(archive.getAs<ar::F32>("sparsity")),
+      _act_func(bolt::getActivationFunction(archive.str("activation"))),
+      _weights(archive.get("weights")->param().moveLoadedParameter()),
+      _biases(archive.get("biases")->param().moveLoadedParameter()),
+      _neuron_index(nullptr),
+      _index_frozen(archive.boolean("index_frozen")),
+      _disable_sparse_parameter_updates(
+          archive.boolean("disable_sparse_parameter_updates")),
+      _use_bias(archive.boolean("use_bias")) {
+  if (archive.contains("neuron_index")) {
+    _neuron_index = NeuronIndex::fromArchive(*archive.get("neuron_index"));
+  }
+  if (!_neuron_index && _sparsity < 1.0) {
+    _neuron_index = DWTASamplingConfig::autotune(
+                        _dim, _sparsity, /*experimental_autotune=*/false)
+                        ->getNeuronIndex(_dim, _prev_dim);
+  }
+
+  if (archive.contains("weight_optimizer")) {
+    _weight_optimizer = optimizerFromArchive(*archive.get("weight_optimizer"));
+  }
+  if (archive.contains("bias_optimizer")) {
+    _bias_optimizer = optimizerFromArchive(*archive.get("bias_optimizer"));
   }
 
   initActiveNeuronsTrackers();

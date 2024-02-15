@@ -7,6 +7,9 @@
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
+#include <archive/src/ParameterReference.h>
 #include <algorithm>
 #include <ios>
 #include <random>
@@ -51,21 +54,25 @@ void Embedding::forward(const ComputationList& inputs, TensorPtr& output,
   BoltVector& output_vec = output->getVector(index_in_batch);
   assert(output_vec.isDense());
 
+  forward(tokens, output_vec.activations);
+}
+
+void Embedding::forward(const BoltVector& tokens, float* output) const {
   if (_bias) {
-    std::copy(_biases.begin(), _biases.end(), output_vec.activations);
+    std::copy(_biases.begin(), _biases.end(), output);
   } else {
-    std::fill_n(output_vec.activations, output_vec.len, 0.F);
+    std::fill_n(output, _dim, 0.F);
   }
 
   for (size_t n = 0; n < tokens.len; n++) {
     float weight = tokens.activations[n];
     const float* emb = embedding(tokens.active_neurons[n]);
     for (size_t i = 0; i < _dim; i++) {
-      output_vec.activations[i] += weight * emb[i];
+      output[i] += weight * emb[i];
     }
   }
 
-  applyActivationFunction(output_vec.activations);
+  applyActivationFunction(output);
 }
 
 void Embedding::backpropagate(ComputationList& inputs, TensorPtr& output,
@@ -126,7 +133,7 @@ void softmax(float* activations, size_t dim) {
   }
 }
 
-void Embedding::applyActivationFunction(float* activations) {
+inline void Embedding::applyActivationFunction(float* activations) const {
   switch (_act_func) {
     case ActivationFunction::ReLU:
       for (size_t i = 0; i < _dim; i++) {
@@ -194,6 +201,69 @@ void Embedding::initOptimizer() {
   }
 }
 
+ComputationPtr Embedding::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("Expected Embedding op to have one input.");
+  }
+  return apply(inputs.at(0));
+}
+
+ar::ConstArchivePtr Embedding::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = baseArchive();
+  map->set("type", ar::str(type()));
+  map->set("dim", ar::u64(_dim));
+  map->set("input_dim", ar::u64(_input_dim));
+  map->set("activation", ar::str(activationFunctionToStr(_act_func)));
+  map->set("use_bias", ar::boolean(_bias));
+
+  map->set("embeddings",
+           ar::ParameterReference::make(_embeddings, shared_from_this()));
+  map->set("biases", ar::ParameterReference::make(_biases, shared_from_this()));
+
+  if (with_optimizer && _embedding_optimizer && _bias_optimizer) {
+    map->set("embedding_optimizer",
+             optimizerToArchive(*_embedding_optimizer, shared_from_this(),
+                                _input_dim, _dim));
+
+    map->set("bias_optimizer",
+             optimizerToArchive(*_bias_optimizer, shared_from_this(),
+                                /*rows=*/1, _dim));
+  }
+
+  map->set("disable_sparse_parameter_updates",
+           ar::boolean(_disable_sparse_parameter_updates));
+
+  return map;
+}
+
+std::shared_ptr<Embedding> Embedding::fromArchive(const ar::Archive& archive) {
+  return std::shared_ptr<Embedding>(new Embedding(archive));
+}
+
+Embedding::Embedding(const ar::Archive& archive)
+    : Op(archive.str("name")),
+      _dim(archive.u64("dim")),
+      _input_dim(archive.u64("input_dim")),
+      _bias(archive.boolean("use_bias")),
+      _act_func(getActivationFunction(archive.str("activation"))),
+      _embeddings(archive.get("embeddings")->param().moveLoadedParameter()),
+      _biases(archive.get("biases")->param().moveLoadedParameter()),
+      _disable_sparse_parameter_updates(
+          archive.boolean("disable_sparse_parameter_updates")),
+      _embeddings_used(archive.u64("input_dim"), false) {
+  assertOpType(archive, type());
+
+  if (archive.contains("embedding_optimizer")) {
+    _embedding_optimizer =
+        optimizerFromArchive(*archive.get("embedding_optimizer"));
+  }
+  if (archive.contains("bias_optimizer")) {
+    _bias_optimizer = optimizerFromArchive(*archive.get("bias_optimizer"));
+  }
+}
+
 void Embedding::sparseEmbeddingUpdate(float learning_rate,
                                       uint32_t train_steps) {
   float B1_bias_corrected = static_cast<float>(1 - pow(BETA1, train_steps));
@@ -237,6 +307,25 @@ void Embedding::summary(std::ostream& summary, const ComputationList& inputs,
           << output->name() << " [dim=" << _dim
           << ", activation=" << activationFunctionToStr(_act_func)
           << ", bias=" << std::boolalpha << _bias << "]";
+}
+
+std::vector<std::pair<std::string, double>> Embedding::parameterAndGradNorms()
+    const {
+  std::vector<std::pair<std::string, double>> all_norms;
+
+  computeNorms(_embeddings, "embeddings", all_norms);
+  if (_embedding_optimizer) {
+    computeNorms(_embedding_optimizer->gradients, "embeddings_grad", all_norms);
+  }
+
+  if (_bias) {
+    computeNorms(_biases, "bias", all_norms);
+    if (_bias_optimizer) {
+      computeNorms(_bias_optimizer->gradients, "bias_grad", all_norms);
+    }
+  }
+
+  return all_norms;
 }
 
 ComputationPtr Embedding::apply(ComputationPtr input) {

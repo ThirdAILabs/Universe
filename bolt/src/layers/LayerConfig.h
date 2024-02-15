@@ -2,7 +2,7 @@
 
 #include "LayerUtils.h"
 #include "SamplingConfig.h"
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <cmath>
 #include <exception>
 #include <iostream>
@@ -142,10 +142,11 @@ class EmbeddingLayerConfig {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive);
-
-  static EmbeddingReductionType getReductionType(
-      const std::string& reduction_name);
 };
+
+EmbeddingReductionType reductionFromString(const std::string& name);
+
+std::string reductionToString(EmbeddingReductionType reduction);
 
 class NormalizationLayerConfig {
  public:

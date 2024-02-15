@@ -7,6 +7,9 @@
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
+#include <archive/src/ParameterReference.h>
 #include <cmath>
 #include <stdexcept>
 
@@ -155,6 +158,51 @@ std::optional<uint32_t> LayerNorm::nonzeros(const ComputationList& inputs,
 void LayerNorm::initOptimizer() {
   // TODO(Nicholas): right now the optimizer is always saved in LayerNorm
   // because it is small.
+}
+
+ComputationPtr LayerNorm::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("Expected LayerNorm op to have one input.");
+  }
+  return apply(inputs.at(0));
+}
+
+ar::ConstArchivePtr LayerNorm::toArchive(bool with_optimizer) const {
+  auto map = baseArchive();
+  map->set("type", ar::str(type()));
+
+  map->set("gamma", ar::ParameterReference::make(_gamma, shared_from_this()));
+  map->set("beta", ar::ParameterReference::make(_beta, shared_from_this()));
+
+  if (with_optimizer) {
+    map->set("gamma_optimizer",
+             optimizerToArchive(_gamma_optimizer, shared_from_this(),
+                                /*rows=*/1, dim()));
+
+    map->set("beta_optimizer",
+             optimizerToArchive(_beta_optimizer, shared_from_this(),
+                                /*rows=*/1, dim()));
+  }
+
+  return map;
+}
+
+std::shared_ptr<LayerNorm> LayerNorm::fromArchive(const ar::Archive& archive) {
+  return std::shared_ptr<LayerNorm>(new LayerNorm(archive));
+}
+
+LayerNorm::LayerNorm(const ar::Archive& archive)
+    : Op(archive.str("name")),
+      _gamma(archive.get("gamma")->param().moveLoadedParameter()),
+      _beta(archive.get("beta")->param().moveLoadedParameter()) {
+  assertOpType(archive, type());
+
+  if (archive.contains("gamma_optimizer")) {
+    _gamma_optimizer = optimizerFromArchive(*archive.get("gamma_optimizer"));
+  }
+  if (archive.contains("beta_optimizer")) {
+    _beta_optimizer = optimizerFromArchive(*archive.get("beta_optimizer"));
+  }
 }
 
 void LayerNorm::disableSparseParameterUpdates() {}

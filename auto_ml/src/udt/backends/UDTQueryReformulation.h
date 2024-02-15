@@ -1,5 +1,6 @@
 #pragma once
 
+#include <archive/src/Archive.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -27,6 +28,8 @@ class UDTQueryReformulation final : public UDTBackend {
                         const std::optional<std::string>& model_config,
                         const config::ArgumentMap& user_args);
 
+  explicit UDTQueryReformulation(const ar::Archive& archive);
+
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
                    const std::vector<std::string>& train_metrics,
@@ -48,6 +51,13 @@ class UDTQueryReformulation final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
+  static std::unique_ptr<UDTQueryReformulation> fromArchive(
+      const ar::Archive& archive);
+
+  static std::string type() { return "udt_query_reformulation"; }
 
  private:
   bool containsColumn(const dataset::DataSourcePtr& data,
@@ -79,7 +89,7 @@ class UDTQueryReformulation final : public UDTBackend {
 
   // Returns the default flash instance to use for the given dataset size if no
   // model_config is specified.
-  static std::unique_ptr<search::Flash<uint32_t>> defaultFlashIndex(
+  static std::unique_ptr<search::Flash> defaultFlashIndex(
       const std::string& dataset_size);
 
   static dataset::BlockList ngramBlockList(
@@ -102,7 +112,7 @@ class UDTQueryReformulation final : public UDTBackend {
   template <class Archive>
   void serialize(Archive& archive);
 
-  std::unique_ptr<search::Flash<uint32_t>> _flash_index;
+  std::unique_ptr<search::Flash> _flash_index;
 
   dataset::TabularFeaturizerPtr _inference_featurizer;
 

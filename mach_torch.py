@@ -107,13 +107,16 @@ class MachModel(nn.Module):
     def __init__(self, input_dim, emb_dim, output_dim):
         super().__init__()
 
-        self.emb = nn.EmbeddingBag(num_embeddings=input_dim, embedding_dim=emb_dim)
+        self.emb = nn.EmbeddingBag(
+            num_embeddings=input_dim, embedding_dim=emb_dim, mode="sum"
+        )
         self.emb_bias = nn.Parameter(torch.empty(emb_dim))
+        nn.init.normal_(self.emb.weight, mean=0, std=0.01)
         nn.init.normal_(self.emb_bias, mean=0, std=0.01)
 
-        self.dropout = nn.Dropout(p=0.1)
-
         self.output = nn.Linear(in_features=emb_dim, out_features=output_dim)
+        nn.init.normal_(self.output.weight, mean=0, std=0.01)
+        nn.init.normal_(self.output.bias, mean=0, std=0.01)
 
     def forward(self, tokens, offsets):
         out = self.emb(input=tokens, offsets=offsets) + self.emb_bias
@@ -143,7 +146,7 @@ class Mach:
         self.model = MachModel(
             input_dim=input_dim, emb_dim=emb_dim, output_dim=n_buckets
         )
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr, eps=1e-7)
 
         self.index = dataset.MachIndex(
             output_range=n_buckets, num_hashes=n_hashes, num_elements=n_entities
@@ -189,7 +192,6 @@ class Mach:
                 data.transformations.ColdStartText(
                     strong_columns=strong_cols,
                     weak_columns=weak_cols,
-                    label_column=self.label_col,
                     output_column=self.text_col,
                 )
             )
@@ -242,12 +244,13 @@ class Mach:
             self.optimizer.zero_grad()
 
             out = self.model(tokens, offsets)
+            # loss = nn.functional.binary_cross_entropy_with_logits(out, labels.to_dense())
             loss = nn.functional.cross_entropy(out, labels.to_dense())
             loss.backward()
 
-            nn.utils.clip_grad.clip_grad_norm_(
-                self.model.parameters(), max_norm=0.1, norm_type=2
-            )
+            # nn.utils.clip_grad.clip_grad_norm_(
+            #     self.model.parameters(), max_norm=0.1, norm_type=2
+            # )
 
             self.optimizer.step()
 
@@ -277,6 +280,7 @@ class Mach:
 
         for (tokens, offsets), labels in zip(inputs, label_batches):
             out = nn.functional.softmax(self.model(tokens, offsets), dim=1)
+            # out = nn.functional.sigmoid(self.model(tokens, offsets))
 
             predictions = self.index.decode_batch(
                 out.detach().numpy(),
@@ -303,7 +307,7 @@ def scifact():
         n_buckets=1_000,
         n_entities=5183,
         char_4_grams=False,
-        lr=0.01,
+        lr=0.001,
     )
 
     for _ in range(5):

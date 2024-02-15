@@ -14,6 +14,8 @@ class Embedding final : public Op,
   Embedding(size_t dim, size_t input_dim, const std::string& activation,
             bool bias);
 
+  explicit Embedding(const ar::Archive& archive);
+
  public:
   static auto make(size_t dim, size_t input_dim, const std::string& activation,
                    bool bias = true) {
@@ -23,6 +25,8 @@ class Embedding final : public Op,
 
   void forward(const ComputationList& inputs, TensorPtr& output,
                uint32_t index_in_batch, bool training) final;
+
+  void forward(const BoltVector& tokens, float* output) const;
 
   void backpropagate(ComputationList& inputs, TensorPtr& output,
                      uint32_t index_in_batch) final;
@@ -56,12 +60,21 @@ class Embedding final : public Op,
     return {&_embeddings, &_biases};
   }
 
+  ComputationPtr applyToInputs(const ComputationList& inputs) final;
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
+  static std::shared_ptr<Embedding> fromArchive(const ar::Archive& archive);
+
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final {
     _should_serialize_optimizer = should_serialize_optimizer;
   }
+
+  std::vector<std::pair<std::string, double>> parameterAndGradNorms()
+      const final;
 
   ComputationPtr apply(ComputationPtr input);
 
@@ -87,12 +100,14 @@ class Embedding final : public Op,
     return std::dynamic_pointer_cast<Embedding>(op);
   }
 
+  static std::string type() { return "emb"; }
+
  private:
-  void applyActivationFunction(float* activations);
+  inline void applyActivationFunction(float* activations) const;
 
   void applyActivationFunctionGrad(const float* activations, float* gradients);
 
-  inline const float* embedding(size_t token) {
+  inline const float* embedding(size_t token) const {
     return _embeddings.data() + token * _dim;
   }
 

@@ -5,6 +5,7 @@
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt/src/train/trainer/DistributedComm.h>
+#include <data/src/Loader.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <functional>
@@ -28,6 +29,7 @@ class Trainer {
   explicit Trainer(
       ModelPtr model,
       std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt,
+      uint32_t gradient_update_interval = 1,
       InterruptCheck interrupt_check = std::nullopt);
 
   /**
@@ -87,6 +89,20 @@ class Trainer {
       std::optional<uint32_t> logging_interval = std::nullopt,
       const DistributedCommPtr& comm = nullptr);
 
+  metrics::History train_with_data_loader(
+      const data::LoaderPtr& train_data_loader, float learning_rate,
+      uint32_t epochs,
+      std::optional<size_t> max_in_memory_batches = std::nullopt,
+      const metrics::InputMetrics& train_metrics = {},
+      const data::LoaderPtr& validation_data_loader = nullptr,
+      const metrics::InputMetrics& validation_metrics = {},
+      std::optional<uint32_t> steps_per_validation = std::nullopt,
+      bool use_sparsity_in_validation = false,
+      const std::vector<callbacks::CallbackPtr>& callbacks = {},
+      bool autotune_rehash_rebuild = false, bool verbose = true,
+      std::optional<uint32_t> logging_interval = std::nullopt,
+      const DistributedCommPtr& comm = nullptr);
+
   /**
    * Performs evaluation on the model using the given validation data and
    * metrics.
@@ -104,11 +120,13 @@ class Trainer {
       const metrics::InputMetrics& metrics = {}, bool use_sparsity = false,
       bool verbose = true);
 
+  metrics::History validate_with_data_loader(
+      const data::LoaderPtr& data, const metrics::InputMetrics& metrics = {},
+      bool use_sparsity = false, bool verbose = true);
+
   ModelPtr getModel() { return _model; }
 
-  // Synchronizes the outer epoch count maintained by the distributed framework
-  // with the epoch count maintained within Bolt.
-  void incrementEpochCount() { _epoch++; }
+  metrics::History getHistory() { return *_history; }
 
  private:
   static void verifyNumBatchesMatch(const LabeledDataset& data);
@@ -163,8 +181,8 @@ class Trainer {
 
   std::shared_ptr<metrics::History> _history;
 
-  uint32_t _epoch;
   std::optional<uint32_t> _freeze_hash_tables_epoch;
+  uint32_t _gradient_update_interval;
 
   InterruptCheck _interrupt_check;
 };

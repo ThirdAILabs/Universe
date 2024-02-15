@@ -3,12 +3,14 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/utils/TimeUtils.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <exception>
 #include <stdexcept>
 #include <string>
@@ -20,6 +22,21 @@ std::exception_ptr formatParseError(const std::string& row,
                                     const std::string& column) {
   return std::make_exception_ptr(std::invalid_argument(
       "Invalid row '" + row + "' in column '" + column + "'."));
+}
+
+template <>
+std::string typeName<uint32_t>() {
+  return "u32";
+}
+
+template <>
+std::string typeName<float>() {
+  return "f32";
+}
+
+template <>
+std::string typeName<int64_t>() {
+  return "i64";
 }
 
 template <>
@@ -73,6 +90,33 @@ ColumnMap CastToValue<T>::apply(ColumnMap columns, State& state) const {
   columns.setColumn(_output_column_name, std::move(output_column));
 
   return columns;
+}
+
+template <typename T>
+ar::ConstArchivePtr CastToValue<T>::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("input_column", ar::str(_input_column_name));
+  map->set("output_column", ar::str(_output_column_name));
+  if (_dim) {
+    map->set("dim", ar::u64(*_dim));
+  }
+  if constexpr (std::is_same_v<T, int64_t>) {
+    map->set("format", ar::str(_format));
+  }
+
+  return map;
+}
+
+template <typename T>
+CastToValue<T>::CastToValue(const ar::Archive& archive)
+    : _input_column_name(archive.str("input_column")),
+      _output_column_name(archive.str("output_column")),
+      _dim(archive.getOpt<ar::U64>("dim")) {
+  if constexpr (std::is_same_v<T, int64_t>) {
+    _format = archive.str("format");
+  }
 }
 
 template <>
@@ -212,6 +256,28 @@ ColumnMap CastToArray<T>::apply(ColumnMap columns, State& state) const {
 
   return columns;
 }
+
+template <typename T>
+ar::ConstArchivePtr CastToArray<T>::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("input_column", ar::str(_input_column_name));
+  map->set("output_column", ar::str(_output_column_name));
+  map->set("delimiter", ar::character(_delimiter));
+  if (_dim) {
+    map->set("dim", ar::u64(*_dim));
+  }
+
+  return map;
+}
+
+template <typename T>
+CastToArray<T>::CastToArray(const ar::Archive& archive)
+    : _input_column_name(archive.str("input_column")),
+      _output_column_name(archive.str("output_column")),
+      _delimiter(archive.getAs<ar::Char>("delimiter")),
+      _dim(archive.getOpt<ar::U64>("dim")) {}
 
 template <>
 uint32_t CastToArray<uint32_t>::parse(const std::string& row) const {

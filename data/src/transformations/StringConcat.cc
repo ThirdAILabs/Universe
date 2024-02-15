@@ -1,4 +1,6 @@
 #include "StringConcat.h"
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
 #include <string>
@@ -21,7 +23,7 @@ ColumnMap StringConcat::apply(ColumnMap columns, State& state) const {
     std::string concat;
     for (size_t col_idx = 0; col_idx < input_columns.size(); col_idx++) {
       if (col_idx > 0) {
-        concat.append(_seperator);
+        concat.append(_separator);
       }
       concat.append(input_columns[col_idx]->value(i));
     }
@@ -33,5 +35,21 @@ ColumnMap StringConcat::apply(ColumnMap columns, State& state) const {
 
   return columns;
 }
+
+ar::ConstArchivePtr StringConcat::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("input_columns", ar::vecStr(_input_column_names));
+  map->set("output_column", ar::str(_output_column_name));
+  map->set("separator", ar::str(_separator));
+
+  return map;
+}
+
+StringConcat::StringConcat(const ar::Archive& archive)
+    : _input_column_names(archive.getAs<ar::VecStr>("input_columns")),
+      _output_column_name(archive.str("output_column")),
+      _separator(archive.str("separator")) {}
 
 }  // namespace thirdai::data

@@ -1,7 +1,9 @@
 #include "symspell.h"
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/udt/Defaults.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 namespace thirdai::automl::udt {
 
 SymPreTrainer::SymPreTrainer(uint32_t max_edit_distance, uint32_t prefix_length,
@@ -231,6 +233,23 @@ void SymPreTrainer::pretrain(std::vector<MapInputBatch>& parsed_data) {
 
   indexWords(frequency_map);
 }
+
+ar::ConstArchivePtr SymPreTrainer::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("backend", _backend.toArchive());
+  map->set("max_edit_distance", ar::u64(_max_edit_distance));
+  map->set("prefix_length", ar::u64(_prefix_length));
+  map->set("use_word_segmentation", ar::boolean(_use_word_segmentation));
+
+  return map;
+}
+
+SymPreTrainer::SymPreTrainer(const ar::Archive& archive)
+    : _backend(*archive.get("backend")),
+      _max_edit_distance(archive.u64("max_edit_distance")),
+      _prefix_length(archive.u64("prefix_length")),
+      _use_word_segmentation(archive.boolean("use_word_segmentation")) {}
 
 }  // namespace thirdai::automl::udt
 

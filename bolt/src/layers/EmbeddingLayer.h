@@ -8,6 +8,7 @@
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/UniversalHash.h>
+#include <archive/src/Archive.h>
 #include <utils/Random.h>
 #include <cmath>
 #include <ctime>
@@ -17,16 +18,21 @@
 
 namespace thirdai::bolt {
 
+class RobeZ;
+
 namespace tests {
 class EmbeddingLayerTestFixture;
 }  // namespace tests
 
 class EmbeddingLayer {
   friend class tests::EmbeddingLayerTestFixture;
+  friend class RobeZ;
 
  public:
   explicit EmbeddingLayer(const EmbeddingLayerConfig& config,
                           uint32_t seed = global_random::nextSeed());
+
+  explicit EmbeddingLayer(const ar::Archive& archive);
 
   void forward(const BoltVector& tokens, BoltVector& output);
 
@@ -95,6 +101,8 @@ class EmbeddingLayer {
   uint64_t updateChunkSize() const { return _update_chunk_size; }
 
   uint32_t hashSeed() const { return _hash_fn.seed(); }
+
+  bool hasOptimizer() const { return _optimizer.has_value(); }
 
   ~EmbeddingLayer() = default;
 

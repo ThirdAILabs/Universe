@@ -21,6 +21,8 @@ class Classifier {
  public:
   Classifier(bolt::ModelPtr model, bool freeze_hash_tables);
 
+  explicit Classifier(const ar::Archive& archive);
+
   static std::shared_ptr<Classifier> make(const bolt::ModelPtr& model,
                                           bool freeze_hash_tables) {
     return std::make_shared<Classifier>(model, freeze_hash_tables);
@@ -41,11 +43,34 @@ class Classifier {
                    const std::vector<CallbackPtr>& callbacks,
                    TrainOptions options, const bolt::DistributedCommPtr& comm);
 
+  py::object train(const data::LoaderPtr& dataset, float learning_rate,
+                   uint32_t epochs,
+                   const std::vector<std::string>& train_metrics,
+                   const data::LoaderPtr& val_dataset,
+                   const std::vector<std::string>& val_metrics,
+                   const std::vector<CallbackPtr>& callbacks,
+                   TrainOptions options, const bolt::DistributedCommPtr& comm);
+
+  py::object train(const data::LoaderPtr& data, float learning_rate,
+                   uint32_t epochs, const InputMetrics& train_metrics,
+                   const data::LoaderPtr& val_data,
+                   const InputMetrics& val_metrics,
+                   const std::vector<CallbackPtr>& callbacks,
+                   TrainOptions options, const bolt::DistributedCommPtr& comm);
+
   py::object evaluate(dataset::DatasetLoaderPtr& dataset,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool verbose);
 
   py::object evaluate(dataset::DatasetLoaderPtr& dataset,
+                      const InputMetrics& metrics, bool sparse_inference,
+                      bool verbose);
+
+  py::object evaluate(data::LoaderPtr& dataset,
+                      const std::vector<std::string>& metrics,
+                      bool sparse_inference, bool verbose);
+
+  py::object evaluate(const data::LoaderPtr& dataset,
                       const InputMetrics& metrics, bool sparse_inference,
                       bool verbose);
 
@@ -59,16 +84,24 @@ class Classifier {
 
   const auto& model() const { return _model; }
 
+  std::shared_ptr<ar::Map> toArchive(bool with_optimizer) const;
+
+  static std::shared_ptr<Classifier> fromArchive(const ar::Archive& archive);
+
+  const auto& binaryPredictionThreshold() const {
+    return _binary_prediction_threshold;
+  }
+
  private:
   uint32_t predictedClass(const BoltVector& output);
 
   py::object predictedClasses(const bolt::TensorPtr& output, bool single);
 
   std::vector<std::vector<float>> getBinaryClassificationScores(
-      const dataset::BoltDatasetList& dataset);
+      const std::vector<bolt::TensorList>& dataset);
 
   std::optional<float> tuneBinaryClassificationPredictionThreshold(
-      const dataset::DatasetLoaderPtr& dataset, const std::string& metric_name);
+      const data::LoaderPtr& dataset, const std::string& metric_name);
 
   Classifier() {}
 

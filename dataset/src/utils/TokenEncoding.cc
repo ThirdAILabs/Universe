@@ -2,7 +2,7 @@
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/TokenEncoding.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <functional>
 #include <type_traits>
 

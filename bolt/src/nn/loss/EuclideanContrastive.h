@@ -30,6 +30,14 @@ class EuclideanContrastive final : public Loss {
 
   ComputationList labels() const final;
 
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::shared_ptr<EuclideanContrastive> fromArchive(
+      const ar::Archive& archive,
+      const std::unordered_map<std::string, ComputationPtr>& computations);
+
+  static std::string type() { return "euclidean_contrastive"; }
+
  private:
   float euclideanDistanceSquared(uint32_t index_in_batch) const;
 
