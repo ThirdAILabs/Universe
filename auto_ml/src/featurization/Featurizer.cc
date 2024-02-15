@@ -3,6 +3,8 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
 #include <data/src/transformations/CategoricalTemporal.h>
@@ -230,6 +232,64 @@ void Featurizer::updateTemporalTrackersBatch(const MapInputBatch& samples) {
 }
 
 void Featurizer::resetTemporalTrackers() { _state->clearHistoryTrackers(); }
+
+ar::ConstArchivePtr Featurizer::toArchive() const { return toArchiveMap(); }
+
+std::shared_ptr<ar::Map> Featurizer::toArchiveMap() const {
+  auto map = ar::Map::make();
+
+  map->set("input_transform", _input_transform->toArchive());
+  map->set("const_input_transform", _const_input_transform->toArchive());
+  map->set("label_transform", _label_transform->toArchive());
+
+  map->set("bolt_input_columns",
+           data::outputColumnsToArchive(_bolt_input_columns));
+  map->set("bolt_label_columns",
+           data::outputColumnsToArchive(_bolt_label_columns));
+
+  map->set("delimiter", ar::character(_delimiter));
+
+  map->set("state", _state->toArchive());
+
+  if (_text_dataset) {
+    auto text_dataset = ar::Map::make();
+    text_dataset->set("text_column", ar::str(_text_dataset->textColumn()));
+    text_dataset->set("label_column", ar::str(_text_dataset->labelColumn()));
+    if (_text_dataset->labelDelimiter()) {
+      text_dataset->set("label_delimiter",
+                        ar::character(*_text_dataset->labelDelimiter()));
+    }
+    map->set("text_dataset", text_dataset);
+  }
+
+  return map;
+}
+
+std::shared_ptr<Featurizer> Featurizer::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_shared<Featurizer>(archive);
+}
+
+Featurizer::Featurizer(const ar::Archive& archive)
+    : _input_transform(
+          data::Transformation::fromArchive(*archive.get("input_transform"))),
+      _const_input_transform(data::Transformation::fromArchive(
+          *archive.get("const_input_transform"))),
+      _label_transform(
+          data::Transformation::fromArchive(*archive.get("label_transform"))),
+      _bolt_input_columns(
+          data::outputColumnsFromArchive(*archive.get("bolt_input_columns"))),
+      _bolt_label_columns(
+          data::outputColumnsFromArchive(*archive.get("bolt_label_columns"))),
+      _delimiter(archive.getAs<ar::Char>("delimiter")),
+      _state(data::State::fromArchive(*archive.get("state"))) {
+  if (archive.contains("text_dataset")) {
+    auto text_dataset = archive.get("text_dataset");
+    _text_dataset = TextDatasetConfig(
+        text_dataset->str("text_column"), text_dataset->str("label_column"),
+        text_dataset->getOpt<ar::Char>("label_delimiter"));
+  }
+}
 
 template void Featurizer::serialize(cereal::BinaryInputArchive&);
 template void Featurizer::serialize(cereal::BinaryOutputArchive&);

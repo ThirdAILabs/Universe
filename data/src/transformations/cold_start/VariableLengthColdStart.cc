@@ -1,4 +1,5 @@
 #include "VariableLengthColdStart.h"
+#include <archive/src/Archive.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/StringConcat.h>
 #include <dataset/src/utils/TokenEncoding.h>

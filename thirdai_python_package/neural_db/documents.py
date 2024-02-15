@@ -146,6 +146,7 @@ class Reference:
         source: str,
         metadata: dict,
         upvote_ids: List[int] = None,
+        retriever: str = None,
     ):
         self._id = element_id
         self._upvote_ids = upvote_ids if upvote_ids is not None else [element_id]
@@ -155,6 +156,7 @@ class Reference:
         self._context_fn = lambda radius: document.context(element_id, radius)
         self._score = 0
         self._document = document
+        self._retriever = retriever
 
     @property
     def id(self):
@@ -183,6 +185,10 @@ class Reference:
     @property
     def document(self):
         return self._document
+
+    @property
+    def retriever(self):
+        return self._retriever
 
     def context(self, radius: int):
         return self._context_fn(radius)

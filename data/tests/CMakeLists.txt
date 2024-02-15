@@ -15,6 +15,7 @@ set(DATA_TESTS
     DeduplicateTokensTest
     ColumnMapIteratorTests
     TabularTests
+    StateSerializationTest
     TextCompatTest)
 
 foreach(DATA_TEST IN LISTS DATA_TESTS)

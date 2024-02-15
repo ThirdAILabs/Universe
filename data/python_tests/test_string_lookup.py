@@ -74,7 +74,8 @@ def test_reusing_vocab():
         {"strings": data.columns.StringColumn(strings[ROWS // 2 :])}
     )
 
-    columns = transformation(columns, state)
+    new_transformation = data.transformations.deserialize(transformation.serialize())
+    columns = new_transformation(columns, state)
 
     new_ids = columns["ids"].data()
 

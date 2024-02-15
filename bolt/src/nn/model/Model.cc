@@ -5,9 +5,13 @@
 #include <bolt/src/nn/autograd/ComputationGraph.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/ops/Switch.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <archive/src/Archive.h>
+#include <archive/src/List.h>
+#include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <licensing/src/CheckLicense.h>
 #include <utils/UUID.h>
@@ -28,7 +32,8 @@
 namespace thirdai::bolt {
 
 Model::Model(ComputationList inputs, ComputationList outputs,
-             std::vector<LossPtr> losses, ComputationList additional_labels)
+             std::vector<LossPtr> losses,
+             const ComputationList& expected_labels)
     : _inputs(std::move(inputs)),
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
@@ -43,8 +48,11 @@ Model::Model(ComputationList inputs, ComputationList outputs,
     auto labels = loss->labels();
     _labels.insert(_labels.end(), labels.begin(), labels.end());
   }
-  _labels.insert(_labels.end(), additional_labels.begin(),
-                 additional_labels.end());
+  for (const auto& label : expected_labels) {
+    if (std::find(_labels.begin(), _labels.end(), label) == _labels.end()) {
+      _labels.push_back(label);
+    }
+  }
 
   _computation_order = getComputationOrder(_inputs, _outputs, _losses);
 
@@ -77,10 +85,10 @@ Model::Model(ComputationList inputs, ComputationList outputs,
 std::shared_ptr<Model> Model::make(ComputationList inputs,
                                    ComputationList outputs,
                                    std::vector<LossPtr> losses,
-                                   ComputationList additional_labels) {
-  auto model = std::shared_ptr<Model>(
-      new Model(std::move(inputs), std::move(outputs), std::move(losses),
-                std::move(additional_labels)));
+                                   const ComputationList& expected_labels) {
+  auto model =
+      std::shared_ptr<Model>(new Model(std::move(inputs), std::move(outputs),
+                                       std::move(losses), expected_labels));
 
   // This has to be done here because we need the model to be allocated using a
   // shared_ptr in order to use shared_from_this() to get a valid reference.
@@ -400,6 +408,162 @@ void Model::enableSparseParameterUpdates() {
   for (const auto& op : _ops) {
     op->enableSparseParameterUpdates();
   }
+}
+
+ar::ConstArchivePtr placeholder(const std::string& name, size_t dim) {
+  auto placeholder = ar::Map::make();
+  placeholder->set("name", ar::str(name));
+  placeholder->set("dim", ar::u64(dim));
+  return placeholder;
+}
+
+ar::ConstArchivePtr Model::toArchive(bool with_optimizer) const {
+  licensing::entitlements().verifySaveLoad();
+
+  auto model = ar::Map::make();
+
+  /**
+   * Ops
+   */
+  auto ops = ar::List::make();
+  for (const auto& op : _ops) {
+    ops->append(op->toArchive(with_optimizer));
+  }
+  model->set("ops", ops);
+
+  /**
+   * Inputs
+   */
+  auto inputs = ar::List::make();
+  for (const auto& input : _inputs) {
+    inputs->append(placeholder(input->name(), input->dim()));
+  }
+  model->set("inputs", inputs);
+
+  /**
+   * Labels
+   */
+  auto labels = ar::List::make();
+  for (const auto& label : _labels) {
+    labels->append(placeholder(label->name(), label->dim()));
+  }
+  model->set("labels", labels);
+
+  /**
+   * Computations
+   */
+  auto computations = ar::List::make();
+  for (const auto& comp : _computation_order) {
+    auto comp_ar = ar::Map::make();
+    comp_ar->set("name", ar::str(comp->name()));
+    comp_ar->set("op", ar::str(comp->op()->name()));
+    comp_ar->set("inputs", ar::vecStr(comp->inputNames()));
+    computations->append(comp_ar);
+  }
+  model->set("computations", computations);
+
+  /**
+   * Losses
+   */
+  auto losses = ar::List::make();
+  for (const auto& loss : _losses) {
+    losses->append(loss->toArchive());
+  }
+  model->set("losses", losses);
+
+  /**
+   * Outputs
+   */
+  std::vector<std::string> output_names;
+  for (const auto& output : _outputs) {
+    output_names.push_back(output->name());
+  }
+  model->set("outputs", ar::vecStr(output_names));
+
+  /**
+   * Metadata
+   */
+  auto metadata = ar::Map::make();
+  metadata->set("train_steps", ar::u64(_train_steps));
+  metadata->set("total_training_samples", ar::u64(_total_training_samples));
+  metadata->set("uuid", ar::str(_model_uuid));
+  model->set("metadata", metadata);
+
+  return model;
+}
+
+std::shared_ptr<Model> Model::fromArchive(const ar::Archive& archive) {
+  licensing::entitlements().verifySaveLoad();
+  /**
+   * Ops
+   */
+  std::unordered_map<std::string, OpPtr> ops;
+  for (const auto& op : archive.get("ops")->list()) {
+    ops[op->str("name")] = Op::fromArchive(*op);
+  }
+
+  std::unordered_map<std::string, ComputationPtr> computations;
+
+  /**
+   * Inputs
+   */
+  ComputationList inputs;
+  for (const auto& input_ar : archive.get("inputs")->list()) {
+    auto input = Input::make(input_ar->u64("dim"));
+    inputs.push_back(input);
+    computations[input_ar->str("name")] = input;
+  }
+
+  /**
+   * Labels
+   */
+  ComputationList labels;
+  for (const auto& label_ar : archive.get("labels")->list()) {
+    auto label = Input::make(label_ar->u64("dim"));
+    computations[label_ar->str("name")] = label;
+    labels.push_back(label);
+  }
+
+  /**
+   * Computations
+   */
+  for (const auto& comp : archive.get("computations")->list()) {
+    ComputationList inputs;
+    for (const auto& input : comp->getAs<ar::VecStr>("inputs")) {
+      inputs.push_back(computations.at(input));
+    }
+
+    auto& op = ops[comp->str("op")];
+    computations[comp->str("name")] = op->applyToInputs(inputs);
+  }
+
+  /**
+   * Losses
+   */
+  std::vector<LossPtr> losses;
+  for (const auto& loss : archive.get("losses")->list()) {
+    losses.push_back(Loss::fromArchive(*loss, computations));
+  }
+
+  /**
+   * Outputs
+   */
+  ComputationList outputs;
+  for (const auto& output : archive.getAs<ar::VecStr>("outputs")) {
+    outputs.push_back(computations.at(output));
+  }
+
+  auto model = Model::make(inputs, outputs, losses, labels);
+
+  /**
+   * Metadata
+   */
+  auto metadata = archive.get("metadata");
+  model->_model_uuid = metadata->str("uuid");
+  model->_train_steps = metadata->u64("train_steps");
+  model->_total_training_samples = metadata->u64("total_training_samples");
+
+  return model;
 }
 
 void Model::freezeHashTables(bool insert_labels_if_not_found) {

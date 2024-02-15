@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/UniversalHash.h>
+#include <archive/src/Archive.h>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -78,11 +79,15 @@ class MachIndex {
     return _buckets.at(bucket).size();
   }
 
+
   uint32_t approxNumHashesPerBucket(uint32_t num_new_samples) const {
     uint32_t totalHashes = ((num_new_samples + numEntities()) * numHashes());
 
     return totalHashes / numBuckets() + ((totalHashes % numBuckets()) != 0);
   }
+
+  const auto& entityToHashes() const { return _entity_to_hashes; }
+
 
   const auto& nonemptyBuckets() const { return _nonempty_buckets; }
 
@@ -90,6 +95,10 @@ class MachIndex {
                                            uint32_t k) const;
 
   float sparsity() const;
+
+  ar::ConstArchivePtr toArchive() const;
+
+  static std::shared_ptr<MachIndex> fromArchive(const ar::Archive& archive);
 
   void save(const std::string& filename) const;
 

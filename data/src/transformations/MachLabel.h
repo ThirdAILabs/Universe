@@ -12,7 +12,13 @@ class MachLabel final : public Transformation {
  public:
   MachLabel(std::string input_column_name, std::string output_column_name);
 
+  explicit MachLabel(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "mach_label"; }
 
  private:
   std::string _input_column_name;
