@@ -929,6 +929,7 @@ void UDTMach::teach(const data::ColumnMap& rlhf_samples,
 data::ColumnMap UDTMach::getPositiveAssociateSamples(
     const std::vector<RlhfSample>& rlhf_samples, size_t n_buckets,
     size_t n_association_samples, bool force_non_empty) {
+  (void)force_non_empty;
   std::string text_column = _featurizer->textDatasetConfig().textColumn();
 
   bool normalize_labels = utils::hasSoftmaxOutput(_classifier->model());
