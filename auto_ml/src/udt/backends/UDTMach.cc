@@ -115,8 +115,8 @@ UDTMach::UDTMach(
       input_data_types, temporal_tracking_relationships,
       tabular_options.lookahead);
 
-  data::ValueFillType value_fill =
-      softmax ? data::ValueFillType::SumToOne : data::ValueFillType::Ones;
+  data::ValueFillType value_fill = data::ValueFillType::Ones;
+  // softmax ? data::ValueFillType::SumToOne : data::ValueFillType::Ones;
 
   _featurizer = std::make_shared<MachFeaturizer>(
       input_data_types, temporal_relationships, target_name, mach_index,
@@ -929,6 +929,8 @@ data::ColumnMap UDTMach::getAssociateSamples(
     size_t n_association_samples, bool force_non_empty) {
   std::string text_column = _featurizer->textDatasetConfig().textColumn();
 
+  bool normalize_labels = utils::hasSoftmaxOutput(_classifier->model());
+
   std::vector<std::string> inputs;
   inputs.reserve(rlhf_samples.size());
   std::vector<std::vector<uint32_t>> label_indices;
@@ -960,8 +962,10 @@ data::ColumnMap UDTMach::getAssociateSamples(
       // std::sample(all_buckets.begin(), all_buckets.end(),
       //             std::back_inserter(sampled_buckets), n_buckets, rng);
 
+      float label_val = normalize_labels ? 1.0 / sampled_buckets.size() : 1.0;
+
       inputs.push_back(source);
-      label_values.emplace_back(sampled_buckets.size(), label_weight);
+      label_values.emplace_back(sampled_buckets.size(), label_val);
       label_indices.emplace_back(std::move(sampled_buckets));
     }
   }
