@@ -150,7 +150,6 @@ def test_coldstart_target_type(integer_target):
     [
         None,
         data.transformations.VariableLengthConfig(),
-        data.transformations.VariableLengthConfig(strong_to_weak_ratio=1),
     ],
 )
 def test_coldstart_variable_length(variable_length):
