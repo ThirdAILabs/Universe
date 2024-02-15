@@ -984,6 +984,7 @@ data::ColumnMap UDTMach::getPositiveAssociateSamples(
 data::ColumnMap UDTMach::getNegativeAssociateSamples(
     const std::vector<RlhfSample>& rlhf_samples, size_t n_buckets,
     size_t n_association_samples, bool force_non_empty) {
+  (void)force_non_empty;
   std::string text_column = _featurizer->textDatasetConfig().textColumn();
 
   bool normalize_labels = utils::hasSoftmaxOutput(_classifier->model());
@@ -997,13 +998,13 @@ data::ColumnMap UDTMach::getNegativeAssociateSamples(
 
   auto target_hashes =
       predictHashesImpl(target_batch, /* sparse_inference= */ false,
-                        /* force_non_empty= */ force_non_empty,
+                        /* force_non_empty= */ false,
                         /* num_hashes= */ n_buckets);
 
   auto source_hashes =
       predictHashesImpl(source_batch, /* sparse_inference= */ false,
-                        /* force_non_empty= */ force_non_empty,
-                        /* num_hashes= */ n_buckets);
+                        /* force_non_empty= */ false,
+                        /* num_hashes= */ n_buckets * 2);
 
   std::mt19937 rng(global_random::nextSeed());
 
