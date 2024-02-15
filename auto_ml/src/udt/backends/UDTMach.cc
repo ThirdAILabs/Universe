@@ -600,10 +600,8 @@ void UDTMach::introduceDocuments(
     ctrl_c_check();
   }
 
-  uint32_t approx_num_new_samples = top_k_per_doc.size();
-
   uint32_t approx_num_hashes_per_bucket =
-      mach_index->approxNumHashesPerBucket(approx_num_new_samples);
+      mach_index->approxNumHashesPerBucket(top_k_per_doc.size());
 
   for (auto& [doc, top_ks] : top_k_per_doc) {
     auto hashes = topHashesForDoc(
