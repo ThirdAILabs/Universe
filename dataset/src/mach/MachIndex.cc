@@ -2,6 +2,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
+#include <hashing/src/MurmurHash.h>
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
@@ -73,13 +74,15 @@ void MachIndex::insert(uint32_t entity, const std::vector<uint32_t>& hashes) {
 }
 
 void MachIndex::insertNewEntities(const std::unordered_set<uint32_t>& new_ids) {
-  std::mt19937 rng(341);
   std::uniform_int_distribution<uint32_t> dist(0, numBuckets() - 1);
 
   for (uint32_t entity : new_ids) {
     if (_entity_to_hashes.count(entity)) {
       continue;
     }
+
+    std::mt19937 rng(hashing::MurmurHash(reinterpret_cast<const char*>(&entity),
+                                         sizeof(entity), 341));
 
     std::vector<uint32_t> hashes(_num_hashes);
     for (uint32_t i = 0; i < _num_hashes; i++) {
