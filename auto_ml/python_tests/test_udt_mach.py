@@ -837,7 +837,7 @@ def test_udt_softmax_activations(softmax):
     assert sum_to_one == softmax
 
 
-def test_doc_no_found_until_training():
+def test_doc_not_found_unless_trained_on():
     model = bolt.UniversalDeepTransformer(
         data_types={
             "text": bolt.types.text(contextual_encoding="local"),
