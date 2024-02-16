@@ -68,7 +68,7 @@ struct BoltVector {
   static BoltVector makeDenseVectorWithGradients(
       const std::vector<float>& values);
 
-  std::vector<ValueIndexPair> indexValuePairs() const;
+  std::vector<ValueIndexPair> valueIndexPairs() const;
 
   BoltVector copy() const;
 

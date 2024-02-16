@@ -596,7 +596,7 @@ void UDTMach::introduceDocuments(
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
       uint32_t label = doc_ids[i];
       if (load_balancing) {
-        top_k_per_doc[label].push_back(scores->getVector(i).indexValuePairs());
+        top_k_per_doc[label].push_back(scores->getVector(i).valueIndexPairs());
       } else {
         top_k_per_doc[label].push_back(
             priorityQueueToVector(scores->getVector(i).findKLargestActivations(
@@ -717,7 +717,7 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
     // buckets based on size to load balance the index.
     std::sort(sorted_hashes.begin(),
               sorted_hashes.begin() + num_buckets_to_sample,
-              [&mach_index, &cmp, approx_num_hashes_per_bucket](
+              [&mach_index, &cmp, approx_num_hashes_per_bucket, load_balancing](
                   const auto& lhs, const auto& rhs) {
                 size_t lhs_size = mach_index->bucketSize(lhs.first);
                 size_t rhs_size = mach_index->bucketSize(rhs.first);
@@ -725,9 +725,13 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
                 // Give preference to emptier buckets. If buckets are
                 // equally empty, use one with the best score.
 
-                if ((lhs_size == rhs_size) ||
-                    (lhs_size < approx_num_hashes_per_bucket &&
-                     rhs_size < approx_num_hashes_per_bucket)) {
+                if (load_balancing) {
+                  if (lhs_size < approx_num_hashes_per_bucket &&
+                      rhs_size < approx_num_hashes_per_bucket) {
+                    return cmp(lhs, rhs);
+                  }
+                }
+                if (lhs_size == rhs_size) {
                   return cmp(lhs, rhs);
                 }
 
@@ -805,7 +809,7 @@ void UDTMach::introduceLabelHelper(
   std::vector<std::vector<ValueIndexPair>> top_ks;
   for (uint32_t i = 0; i < output->batchSize(); i++) {
     if (load_balancing) {
-      top_ks.push_back(output->getVector(i).indexValuePairs());
+      top_ks.push_back(output->getVector(i).valueIndexPairs());
     } else {
       top_ks.push_back(priorityQueueToVector(
           output->getVector(i).findKLargestActivations(num_buckets_to_sample)));
