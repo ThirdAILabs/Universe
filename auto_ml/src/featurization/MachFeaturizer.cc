@@ -21,6 +21,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace thirdai::automl {
 
@@ -66,6 +67,32 @@ MachFeaturizer::MachFeaturizer(
       label_column, MACH_LABELS, ' ', mach_index->numBuckets());
 
   _doc_id_transform = makeDocIdTransformation(label_column, label_delimiter);
+}
+
+void MachFeaturizer::insertNewDocIds(
+    const dataset::DataSourcePtr& data_source) {
+  data_source->restart();
+  auto data_iter = data::CsvIterator::make(data_source, _delimiter);
+
+  while (auto chunk = data_iter->next()) {
+    insertNewDocIds(*chunk);
+  }
+
+  data_source->restart();
+}
+
+void MachFeaturizer::insertNewDocIds(const data::ColumnMap& data) {
+  std::unordered_set<uint32_t> all_doc_ids;
+
+  const auto columns = _doc_id_transform->applyStateless(data);
+
+  auto doc_ids = columns.getArrayColumn<uint32_t>(MACH_DOC_IDS);
+  for (size_t i = 0; i < doc_ids->numRows(); i++) {
+    auto row = doc_ids->row(i);
+    all_doc_ids.insert(row.begin(), row.end());
+  }
+
+  machIndex()->insertNewEntities(all_doc_ids);
 }
 
 std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>
