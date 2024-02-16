@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
+#include <unordered_map>
 #include <vector>
 
 // There are issues including <cmath> to get M_PI on visual studio.
@@ -13,8 +14,10 @@
 #define _USE_MATH_DEFINES
 #include <math.h>  // NOLINT (clang-tidy wants <cmath>)
 
-namespace thirdai::bolt::callbacks {
+using state_value =
+    std::variant<uint32_t, float, bool, std::string, std::vector<uint32_t>>;
 
+namespace thirdai::bolt::callbacks {
 /**
  * @brief This callback is intended to schedule learning rate changes during
  * training.
@@ -25,8 +28,25 @@ class LearningRateScheduler : public Callback {
  public:
   explicit LearningRateScheduler(bool batch_level_steps)
       : _epoch(0), _batch_cnt(0), _batch_level_steps(batch_level_steps) {}
+  explicit LearningRateScheduler(
+      std::unordered_map<std::string, state_value>& state)
+      : _state(std::move(state)) {
+    try {
+      _epoch = std::get<uint32_t>(_state.at("_epoch"));
+      _batch_cnt = std::get<uint32_t>(_state.at("_batch_cnt"));
+      _batch_level_steps = std::get<bool>(_state.at("_batch_level_steps"));
+      if (_state.find("_learning_rate") != _state.end()) {
+        train_state->updateLearningRate(
+            std::get<float>(state.at("_learning_rate")));
+      }
+    } catch (const std::exception& e) {
+      std::cerr << e.what() << '\n';
+    }
+  }
 
   virtual float getNextLR(float current_learning_rate, uint32_t step) = 0;
+
+  virtual void _update_state() = 0;
 
   void onEpochBegin() final {
     // resetting the batch count
@@ -47,9 +67,20 @@ class LearningRateScheduler : public Callback {
     _batch_cnt++;
   }
 
- private:
+  virtual std::unordered_map<std::string, state_value> get_state() {
+    _state.emplace(std::make_pair("_epoch", _epoch));
+    _state.emplace(std::make_pair("_batch_cnt", _batch_cnt));
+    _state.emplace(std::make_pair("_batch_level_steps", _batch_level_steps));
+    _state.emplace(
+        std::make_pair("_learning_rate", train_state->learningRate()));
+    _update_state();
+    return _state;
+  }
+
+ protected:
   uint32_t _epoch, _batch_cnt;
   bool _batch_level_steps;
+  std::unordered_map<std::string, state_value> _state;
 };
 
 /**
@@ -70,6 +101,18 @@ class LinearSchedule final : public LearningRateScheduler {
         _start_factor(start_factor),
         _end_factor(end_factor),
         _total_iters(total_iters) {}
+  explicit LinearSchedule(std::unordered_map<std::string, state_value>& state)
+      : LearningRateScheduler(state) {
+    try {
+      _start_factor = std::get<float>(_state.at("_start_factor"));
+      _end_factor = std::get<float>(_state.at("_end_factor"));
+      _lr_change_per_step = std::get<float>(_state.at("_lr_change_per_step"));
+      _total_iters = std::get<uint32_t>(_state.at("_total_iters"));
+      _update_state();
+    } catch (const std::exception& e) {
+      std::cerr << e.what() << '\n';
+    }
+  }
 
   float getNextLR(float current_learning_rate, uint32_t step) final {
     if (step == 0) {
@@ -86,14 +129,21 @@ class LinearSchedule final : public LearningRateScheduler {
     return current_learning_rate + _lr_change_per_step;
   }
 
+  void _update_state() final {
+    _state.emplace(std::make_pair("_start_factor", _start_factor));
+    _state.emplace(std::make_pair("_end_factor", _end_factor));
+    _state.emplace(std::make_pair("_lr_change_per_step", _lr_change_per_step));
+    _state.emplace(std::make_pair("_total_iters", _total_iters));
+  }
+
  private:
   float _start_factor, _end_factor, _lr_change_per_step;
   uint32_t _total_iters;
 };
 
 /**
- * @brief Decays the learning rate by a factor of gamma once the number of steps
- * reaches one of the specified milestones.
+ * @brief Decays the learning rate by a factor of gamma once the number of
+ * steps reaches one of the specified milestones.
  * @param gamma: multiplicative factor
  * @param milestones: step milestones
  * @param batch_level_steps: If true then we'll adjust the learning rate using
@@ -102,18 +152,32 @@ class LinearSchedule final : public LearningRateScheduler {
 
 class MultiStepLR final : public LearningRateScheduler {
  public:
-  MultiStepLR(float gamma, std::vector<uint32_t> milestones,
+  MultiStepLR(float gamma, std::vector<uint32_t>& milestones,
               bool batch_level_steps = false)
       : LearningRateScheduler(batch_level_steps),
         _gamma(gamma),
         _milestones(std::move(milestones)) {}
-
+  explicit MultiStepLR(std::unordered_map<std::string, state_value>& state)
+      : LearningRateScheduler(state) {
+    try {
+      _gamma = std::get<float>(_state.at("_gamma"));
+      _milestones = std::get<std::vector<uint32_t>>(_state.at("_milestones"));
+      _update_state();
+    } catch (const std::exception& e) {
+      std::cerr << e.what() << '\n';
+    }
+  }
   float getNextLR(float current_learning_rate, uint32_t step) final {
     if (std::find(_milestones.begin(), _milestones.end(), step) !=
         _milestones.end()) {
       return current_learning_rate * _gamma;
     }
     return current_learning_rate;
+  }
+
+  void _update_state() final {
+    _state.emplace(std::make_pair("_gamma", _gamma));
+    _state.emplace(std::make_pair("_milestones", _milestones));
   }
 
  private:
@@ -152,9 +216,24 @@ class CosineAnnealingWarmRestart final : public LearningRateScheduler {
 
     if (_steps_until_restart == 0 || _steps_until_restart_scaling_factor == 0) {
       throw std::invalid_argument(
-          "steps_until_restart and steps_until_restart_scaling_factor must be "
+          "steps_until_restart and steps_until_restart_scaling_factor must "
+          "be "
           "nonzero.");
     }
+  }
+  explicit CosineAnnealingWarmRestart(
+      std::unordered_map<std::string, state_value>& state)
+      : LearningRateScheduler(state) {
+    _min_lr = std::get<float>(_state.at("_min_lr"));
+    _max_lr = std::get<float>(_state.at("_max_lr"));
+    _steps = std::get<uint32_t>(_state.at("_steps"));
+    _steps_until_restart =
+        std::get<uint32_t>(_state.at("_steps_until_restart"));
+    _steps_until_restart_scaling_factor =
+        std::get<uint32_t>(_state.at("_steps_until_restart_scaling_factor"));
+    _linear_warmup_steps =
+        std::get<uint32_t>(_state.at("_linear_warmup_steps"));
+    _update_state();
   }
 
   float getNextLR(float current_learning_rate, uint32_t step) final {
@@ -182,6 +261,18 @@ class CosineAnnealingWarmRestart final : public LearningRateScheduler {
     }
 
     return next_lr;
+  }
+
+  void _update_state() final {
+    _state.emplace(std::make_pair("_min_lr", _min_lr));
+    _state.emplace(std::make_pair("_max_lr", _max_lr));
+    _state.emplace(std::make_pair("_steps", _steps));
+    _state.emplace(
+        std::make_pair("_steps_until_restart", _steps_until_restart));
+    _state.emplace(std::make_pair("_steps_until_restart_scaling_factor",
+                                  _steps_until_restart_scaling_factor));
+    _state.emplace(
+        std::make_pair("_linear_warmup_steps", _linear_warmup_steps));
   }
 
  private:
