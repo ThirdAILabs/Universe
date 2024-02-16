@@ -198,6 +198,11 @@ class UDTBackend {
     throw notSupported("set_decode_params");
   }
 
+  virtual void insertNewDocIds(const dataset::DataSourcePtr& data) {
+    (void)data;
+    throw notSupported("insert_new_doc_ids");
+  }
+
   virtual void introduceDocuments(
       const dataset::DataSourcePtr& data,
       const std::vector<std::string>& strong_column_names,

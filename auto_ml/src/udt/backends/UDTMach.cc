@@ -21,6 +21,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
+#include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/transformations/cold_start/ColdStartText.h>
 #include <dataset/src/DataSource.h>
@@ -102,8 +103,7 @@ UDTMach::UDTMach(
   }
 
   dataset::mach::MachIndexPtr mach_index = dataset::mach::MachIndex::make(
-      /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes,
-      /* num_elements = */ n_target_classes);
+      /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes);
 
   auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
       input_data_types, temporal_tracking_relationships,
@@ -168,6 +168,8 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
                           const std::vector<CallbackPtr>& callbacks,
                           TrainOptions options,
                           const bolt::DistributedCommPtr& comm) {
+  insertNewDocIds(data);
+
   addBalancingSamples(data);
 
   auto train_data_loader =
@@ -189,6 +191,9 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
 py::object UDTMach::trainBatch(const MapInputBatch& batch,
                                float learning_rate) {
   auto& model = _classifier->model();
+
+  _featurizer->insertNewDocIds(data::ColumnMap::fromMapInputBatch(batch));
+  updateSamplingStrategy();
 
   auto [inputs, labels] = _featurizer->featurizeTrainingBatch(batch);
 
@@ -433,6 +438,8 @@ py::object UDTMach::coldstart(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
+  insertNewDocIds(data);
+
   addBalancingSamples(data, strong_column_names, weak_column_names,
                       variable_length);
 
@@ -546,6 +553,11 @@ void UDTMach::updateSamplingStrategy() {
       }
     }
   }
+}
+
+void UDTMach::insertNewDocIds(const dataset::DataSourcePtr& data) {
+  _featurizer->insertNewDocIds(data);
+  updateSamplingStrategy();
 }
 
 void UDTMach::introduceDocuments(
@@ -980,6 +992,8 @@ py::object UDTMach::associateColdStart(
     uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
     TrainOptions options) {
+  insertNewDocIds(balancing_data);
+
   warnOnNonHashBasedMetrics(metrics);
 
   // TODO(nicholas): make sure max_in_memory_batches is none
