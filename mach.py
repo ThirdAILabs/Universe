@@ -477,9 +477,8 @@ def scifact():
             weak_cols=["TEXT"],
         )
 
-        # if e == 0:
-        #     # Need to add insert when not found option to smx.
-        #     model.freeze_hash_tables()
+        if e == 0:
+            model.freeze_hash_tables()
 
         model.validate(
             "/Users/nmeisburger/ThirdAI/data/scifact/tst_supervised.csv",

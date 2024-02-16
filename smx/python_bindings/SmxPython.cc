@@ -257,7 +257,8 @@ void defineModules(py::module_& smx) {
            py::arg("reservoir_size"));
 
   py::class_<NeuronIndex, NeuronIndexPtr>(smx, "NeuronIndex")
-      .def("freeze", &NeuronIndex::freeze);
+      .def("freeze", &NeuronIndex::freeze,
+           py::arg("insert_missing_labels") = true);
 
   py::class_<SparseLinear, std::shared_ptr<SparseLinear>, Module>(
       smx, "SparseLinear")

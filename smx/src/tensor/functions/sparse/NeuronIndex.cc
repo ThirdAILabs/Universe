@@ -50,6 +50,13 @@ void LshIndex::query(const float* query, uint32_t* candidates,
 
   _hash_table.queryBySet(hashes.data(), selected_neurons);
 
+  if (_insert_missing_labels) {
+    _hash_table.queryAndInsertForInference(hashes.data(), selected_neurons,
+                                           n_candidates);
+  } else {
+    _hash_table.queryBySet(hashes.data(), selected_neurons);
+  }
+
   if (selected_neurons.size() < n_candidates) {
     // here we use hashes[0] as our random number because rand() is not thread
     // safe and we want to have deterministic sampling. We do the additional

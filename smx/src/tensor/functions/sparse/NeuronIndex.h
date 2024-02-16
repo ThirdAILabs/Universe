@@ -15,7 +15,9 @@ class NeuronIndex {
 
   virtual void onUpdate() = 0;
 
-  virtual void freeze() {}
+  virtual void freeze(bool insert_missing_labels) {
+    (void)insert_missing_labels;
+  }
 };
 
 using NeuronIndexPtr = std::shared_ptr<NeuronIndex>;
@@ -46,7 +48,10 @@ class LshIndex final : public NeuronIndex {
 
   void onUpdate() final;
 
-  void freeze() final { _frozen = true; }
+  void freeze(bool insert_missing_labels) final {
+    _frozen = true;
+    _insert_missing_labels = insert_missing_labels;
+  }
 
   void rebuild();
 
@@ -65,6 +70,7 @@ class LshIndex final : public NeuronIndex {
   std::vector<uint32_t> _rand_neurons;
 
   bool _frozen = false;
+  bool _insert_missing_labels = false;
 };
 
 }  // namespace thirdai::smx
