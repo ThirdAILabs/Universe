@@ -123,6 +123,8 @@ void createDatasetSubmodule(py::module_& module) {
       .def("get_entity_hashes", &mach::MachIndex::getHashes, py::arg("entity"))
       .def("get_hash_to_entities", &mach::MachIndex::getEntities,
            py::arg("hash"))
+      .def("buckets", &mach::MachIndex::buckets)
+      .def("entity_to_hashes", &mach::MachIndex::entityToHashes)
       .def(
           "decode",
           [](const mach::MachIndex& index, std::vector<uint32_t> indices,

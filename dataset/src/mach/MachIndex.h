@@ -29,7 +29,13 @@ class MachIndex {
     return std::make_shared<MachIndex>(num_buckets, num_hashes, num_elements);
   }
 
+  static auto make(uint32_t num_buckets, uint32_t num_hashes) {
+    return std::make_shared<MachIndex>(num_buckets, num_hashes);
+  }
+
   void insert(uint32_t entity, const std::vector<uint32_t>& hashes);
+
+  void insertNewEntities(const std::unordered_set<uint32_t>& new_ids);
 
   const std::vector<uint32_t>& getHashes(uint32_t entity) const {
     if (!_entity_to_hashes.count(entity)) {
@@ -88,6 +94,8 @@ class MachIndex {
   const auto& entityToHashes() const { return _entity_to_hashes; }
 
   const auto& nonemptyBuckets() const { return _nonempty_buckets; }
+
+  const auto& buckets() const { return _buckets; }
 
   TopKActivationsQueue topKNonEmptyBuckets(const BoltVector& output,
                                            uint32_t k) const;
