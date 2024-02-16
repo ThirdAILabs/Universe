@@ -960,8 +960,6 @@ data::ColumnMap UDTMach::getPositiveAssociateSamples(
 
     for (size_t j = 0; j < n_association_samples; j++) {
       std::vector<uint32_t> sampled_buckets = all_buckets;
-      // std::sample(all_buckets.begin(), all_buckets.end(),
-      //             std::back_inserter(sampled_buckets), n_buckets, rng);
 
       float label_val = normalize_labels ? 1.0 / sampled_buckets.size() : 1.0;
 
@@ -1001,12 +999,13 @@ data::ColumnMap UDTMach::getNegativeAssociateSamples(
                         /* force_non_empty= */ false,
                         /* num_hashes= */ n_buckets);
 
-  auto source_hashes =
-      predictHashesImpl(source_batch, /* sparse_inference= */ false,
-                        /* force_non_empty= */ false,
-                        /* num_hashes= */ n_buckets * 2);
+  // auto source_hashes =
+  //     predictHashesImpl(source_batch, /* sparse_inference= */ false,
+  //                       /* force_non_empty= */ false,
+  //                       /* num_hashes= */ n_buckets * 2);
 
   std::mt19937 rng(global_random::nextSeed());
+  std::uniform_int_distribution<uint32_t> dist(0, getIndex()->numBuckets() - 1);
 
   std::vector<std::string> inputs;
   inputs.reserve(rlhf_samples.size());
@@ -1018,20 +1017,33 @@ data::ColumnMap UDTMach::getNegativeAssociateSamples(
   for (size_t i = 0; i < rlhf_samples.size(); i++) {
     const auto& [source, _, label_weight] = rlhf_samples[i];
 
-    const auto& source_h = source_hashes[i];
     const auto& target_h = target_hashes[i];
+    std::vector<uint32_t> new_target_h;
+    std::sample(target_h.begin(), target_h.end(),
+                std::back_inserter(new_target_h), n_buckets, rng);
 
     std::unordered_set<uint32_t> target_h_set(target_h.begin(), target_h.end());
 
+    std::vector<uint32_t> source_h;
+
+    // add target hashes
     uint32_t positive_labels = 0;
     std::vector<float> label_weights;
-    label_weights.reserve(source_h.size());
-    for (uint32_t hash : source_h) {
+    for (uint32_t j = 0; j < n_buckets / 2; j++) {
+      uint32_t hash = new_target_h[j];
+      label_weights.push_back(0.0);
+      source_h.push_back(hash);
+    }
+
+    // add random hashes
+    for (uint32_t j = 0; j < n_buckets / 2; j++) {
+      uint32_t hash = dist(rng);
       bool in_target_hashes = target_h_set.count(hash);
       label_weights.push_back(in_target_hashes ? 0.0 : 1.0);
       if (in_target_hashes) {
         positive_labels++;
       }
+      source_h.push_back(hash);
     }
 
     if (normalize_labels) {
