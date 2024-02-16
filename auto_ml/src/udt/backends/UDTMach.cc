@@ -1029,14 +1029,14 @@ data::ColumnMap UDTMach::getNegativeAssociateSamples(
     // add target hashes
     uint32_t positive_labels = 0;
     std::vector<float> label_weights;
-    for (uint32_t j = 0; j < n_buckets / 2; j++) {
+    for (uint32_t j = 0; j < n_buckets; j++) {
       uint32_t hash = new_target_h[j];
       label_weights.push_back(0.0);
       source_h.push_back(hash);
     }
 
     // add random hashes
-    for (uint32_t j = 0; j < n_buckets / 2; j++) {
+    for (uint32_t j = 0; j < n_buckets; j++) {
       uint32_t hash = dist(rng);
       bool in_target_hashes = target_h_set.count(hash);
       label_weights.push_back(in_target_hashes ? 0.0 : 1.0);
