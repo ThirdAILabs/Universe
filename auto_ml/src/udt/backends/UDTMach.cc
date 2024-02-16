@@ -565,7 +565,9 @@ void UDTMach::introduceDocuments(
       defaults::BATCH_SIZE);
 
   uint32_t num_buckets_to_sample =
-      num_buckets_to_sample_opt.value_or(mach_index->numHashes());
+      load_balancing
+          ? mach_index->numBuckets()
+          : num_buckets_to_sample_opt.value_or(mach_index->numHashes());
 
   std::unordered_map<uint32_t, std::vector<std::vector<ValueIndexPair>>>
       top_k_per_doc;
@@ -703,7 +705,7 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
     // buckets based on size to load balance the index.
     std::sort(sorted_hashes.begin(),
               sorted_hashes.begin() + num_buckets_to_sample,
-              [&mach_index, &cmp, approx_num_hashes_per_bucket, load_balancing](
+              [&mach_index, &cmp, approx_num_hashes_per_bucket](
                   const auto& lhs, const auto& rhs) {
                 size_t lhs_size = mach_index->bucketSize(lhs.first);
                 size_t rhs_size = mach_index->bucketSize(rhs.first);
@@ -711,18 +713,9 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
                 // Give preference to emptier buckets. If buckets are
                 // equally empty, use one with the best score.
 
-                if (load_balancing) {
-                  if (lhs_size < approx_num_hashes_per_bucket &&
-                      rhs_size >= approx_num_hashes_per_bucket) {
-                    return true;
-                  }
-                  if (rhs_size < approx_num_hashes_per_bucket &&
-                      lhs_size >= approx_num_hashes_per_bucket) {
-                    return false;
-                  }
-                }
-
-                if (lhs_size == rhs_size) {
+                if ((lhs_size == rhs_size) ||
+                    (lhs_size < approx_num_hashes_per_bucket &&
+                     rhs_size < approx_num_hashes_per_bucket)) {
                   return cmp(lhs, rhs);
                 }
 
@@ -791,7 +784,9 @@ void UDTMach::introduceLabelHelper(
       _classifier->model()->forward(samples, /* use_sparsity = */ false).at(0);
 
   uint32_t num_buckets_to_sample =
-      num_buckets_to_sample_opt.value_or(getIndex()->numHashes());
+      load_balancing
+          ? getIndex()->numBuckets()
+          : num_buckets_to_sample_opt.value_or(getIndex()->numHashes());
 
   const auto& mach_index = getIndex();
 
