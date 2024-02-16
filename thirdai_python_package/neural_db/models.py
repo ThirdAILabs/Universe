@@ -297,18 +297,31 @@ def unsupervised_train_on_docs(
     if training_progress_callback:
         callbacks.append(training_progress_callback)
 
-    model.cold_start_on_data_source(
-        data_source=documents,
-        strong_column_names=[documents.strong_column],
-        weak_column_names=[documents.weak_column],
-        batch_size=batch_size,
-        learning_rate=learning_rate,
-        epochs=max_epochs,
-        metrics=[metric],
-        callbacks=callbacks,
-        max_in_memory_batches=max_in_memory_batches,
-        variable_length=variable_length,
-    )
+    if documents.size > 100:
+        model.cold_start_on_data_source(
+            data_source=documents,
+            strong_column_names=[documents.strong_column],
+            weak_column_names=[documents.weak_column],
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            epochs=max_epochs,
+            metrics=[metric],
+            callbacks=callbacks,
+            max_in_memory_batches=max_in_memory_batches,
+            variable_length=variable_length,
+        )
+    else:
+        model.cold_start_with_balancing_samples(
+            data=documents,
+            strong_column_names=[documents.strong_column],
+            weak_column_names=[documents.weak_column],
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            epochs=max_epochs,
+            train_metrics=[metric],
+            callbacks=callbacks,
+            variable_length=variable_length,
+        )
 
 
 def make_balancing_samples(documents: DocumentDataSource):

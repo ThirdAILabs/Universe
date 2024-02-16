@@ -155,12 +155,13 @@ MachFeaturizer::featurizeTrainWithHashesBatch(const MapInputBatch& samples) {
 data::ColumnMap MachFeaturizer::featurizeDataset(
     const dataset::DataSourcePtr& data_source,
     const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names) {
+    const std::vector<std::string>& weak_column_names,
+    const std::optional<data::VariableLengthConfig>& variable_length) {
   data::ColumnMap columns = data::CsvIterator::all(data_source, _delimiter);
 
   if (!strong_column_names.empty() || !weak_column_names.empty()) {
     columns = coldStartTransform(strong_column_names, weak_column_names,
-                                 /*variable_length=*/std::nullopt)
+                                 variable_length)
                   ->apply(columns, *_state);
   }
 
