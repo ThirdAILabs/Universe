@@ -691,7 +691,11 @@ def test_ndb_incremental_additions():
     ]
 
     for i, text in enumerate(original_texts + partially_duplicated_texts):
-        db.insert([ndb.InMemoryText(name=str(i), texts=[text])], train=True)
+        db.insert(
+            [ndb.InMemoryText(name=str(i), texts=[text])],
+            train=True,
+            balancing_samples=True,
+        )
 
     correct = 0
     for text in original_texts:

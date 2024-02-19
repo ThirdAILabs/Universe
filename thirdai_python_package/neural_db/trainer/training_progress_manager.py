@@ -152,6 +152,7 @@ class TrainingProgressManager:
         train_args["freeze_after_acc"] = kwargs.get(
             "freeze_after_acc", 0.80 if "freeze_after_epoch" not in kwargs else 1
         )
+        train_args["balancing_samples"] = kwargs.get("balancing_samples", False)
 
         train_state = TrainState(
             max_in_memory_batches=max_in_memory_batches,

@@ -17,6 +17,7 @@ class TrainState:
         batch_size: int,
         freeze_after_epoch: int,
         freeze_after_acc: float,
+        balancing_samples: bool,
         **kwargs,
     ):
         self.max_in_memory_batches = max_in_memory_batches
@@ -29,6 +30,7 @@ class TrainState:
         self.batch_size = batch_size
         self.freeze_after_epoch = freeze_after_epoch
         self.freeze_after_acc = freeze_after_acc
+        self.balancing_samples = balancing_samples
 
 
 class IntroState:
