@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
+#include <variant>
 #include <vector>
 
 // There are issues including <cmath> to get M_PI on visual studio.
@@ -13,8 +14,9 @@
 #define _USE_MATH_DEFINES
 #include <math.h>  // NOLINT (clang-tidy wants <cmath>)
 
-using state_type = std::unordered_map < std::string,
-      std::variant<uint32_t, float, bool, std::string, std::vector<uint32_t>>;
+using state_type = std::unordered_map<
+    std::string,
+    std::variant<uint32_t, float, bool, std::string, std::vector<uint32_t>>>;
 
 namespace thirdai::bolt::callbacks {
 /**
