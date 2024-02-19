@@ -38,17 +38,17 @@ FullyConnectedLayer::FullyConnectedLayer(
 
   std::generate(_weights.begin(), _weights.end(), [&]() { return dist(rng); });
 
-  float magnitude = 0.0;
-  for (float v : _weights) {
-    magnitude += v * v;
-  }
-  magnitude = std::sqrt(magnitude);
-
-  // Avoid division by zero
-  if (magnitude > 0.0) {
-    // Normalize the vector
-    std::transform(_weights.begin(), _weights.end(), _weights.begin(),
-                   [magnitude](float v) { return v / magnitude; });
+  std::vector<uint32_t> magnitudes;
+  for (uint32_t prev_neuron = 0; prev_neuron < prev_dim; prev_neuron++) {
+    float magnitude = 0.0;
+    for (uint32_t cur_neuron = 0; cur_neuron < prev_dim; cur_neuron++) {
+      float v = _weights[cur_neuron * _prev_dim + prev_neuron];
+      magnitude += v * v;
+    }
+    magnitude = std::sqrt(magnitude);
+    for (uint32_t cur_neuron = 0; cur_neuron < prev_dim; cur_neuron++) {
+      _weights[cur_neuron * _prev_dim + prev_neuron] /= magnitude;
+    }
   }
 
   if (_use_bias) {
