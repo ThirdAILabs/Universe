@@ -128,9 +128,10 @@ class GradientCallback(bolt.train.callbacks.Callback):
         self.step += 1
         
     
-initial_learning_rate = 0.1
+end_learning_rate = 0.1
+print(end_learning_rate)
 callbacks_to_track_sgd = [
-    get_linear_lr_callback(5, initial_learning_rate),
+    get_linear_lr_callback(5, end_learning_rate),
     # get_multistep_lr_callback(initial_learning_rate, 5),
     # cosine_lr(initial_learning_rate, 5),
 ]
@@ -184,7 +185,7 @@ class UDTRunner(Runner):
             model.cold_start(
                 cold_start_train_file,
                 epochs=config.cold_start_num_epochs,
-                learning_rate=initial_learning_rate,
+                learning_rate=5,
                 strong_column_names=config.strong_column_names,
                 weak_column_names=config.weak_column_names,
                 validation=validation,
@@ -195,7 +196,7 @@ class UDTRunner(Runner):
             model.train(
                 train_file,
                 epochs=config.num_epochs,
-                learning_rate=initial_learning_rate,
+                learning_rate=5,
                 validation=validation,
                 max_in_memory_batches=config.max_in_memory_batches,
                 callbacks=config.callbacks + ([mlflow_logger] if mlflow_logger else []),
