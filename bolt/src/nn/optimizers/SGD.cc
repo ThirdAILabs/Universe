@@ -1,4 +1,5 @@
 #include "SGD.h"
+#include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <archive/src/ParameterReference.h>
 #include <chrono>
@@ -6,7 +7,8 @@
 
 namespace thirdai::bolt {
 
-SGD::SGD(size_t rows, size_t cols) : _rows(rows), _cols(cols) {}
+SGD::SGD(size_t rows, size_t cols, std::optional<float> grad_clip)
+    : _rows(rows), _cols(cols), _grad_clip(grad_clip) {}
 
 void SGD::updateDense(std::vector<float>& params, std::vector<float>& grads,
                       float learning_rate, size_t train_steps) {
@@ -122,17 +124,25 @@ ar::ConstArchivePtr SGD::toArchive(const std::shared_ptr<const Op>& op) const {
   map->set("rows", ar::u64(_rows));
   map->set("cols", ar::u64(_cols));
 
+  if (_grad_clip) {
+    map->set("grad_clip", ar::f32(*_grad_clip));
+  }
+
   return map;
 }
 
 std::unique_ptr<SGD> SGD::fromArchive(const ar::Archive& archive) {
-  return std::make_unique<SGD>(archive.u64("rows"), archive.u64("cols"));
+  return std::make_unique<SGD>(archive.u64("rows"), archive.u64("cols"),
+                               archive.getOpt<ar::F32>("grad_clip"));
 }
 
 ar::ConstArchivePtr SGDFactory::toArchive() const {
   auto map = ar::Map::make();
 
   map->set("type", ar::str(SGD::type()));
+  if (_grad_clip) {
+    map->set("grad_clip", ar::f32(*_grad_clip));
+  }
 
   return map;
 }
@@ -141,7 +151,7 @@ std::shared_ptr<SGDFactory> SGDFactory::fromArchive(
     const ar::Archive& archive) {
   (void)archive;
 
-  return std::make_shared<SGDFactory>();
+  return std::make_shared<SGDFactory>(archive.getOpt<ar::F32>("grad_clip"));
 }
 
 }  // namespace thirdai::bolt

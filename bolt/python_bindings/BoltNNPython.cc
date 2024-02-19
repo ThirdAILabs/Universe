@@ -450,7 +450,8 @@ void defineOptimizers(py::module_& nn) {
 
   py::class_<SGDFactory, OptimizerFactory, std::shared_ptr<SGDFactory>>(
       optimizers, "SGD")
-      .def(py::init<>());
+      .def(py::init<std::optional<float>>(),
+           py::arg("grad_clip") = std::nullopt);
 }
 
 }  // namespace thirdai::bolt::python
