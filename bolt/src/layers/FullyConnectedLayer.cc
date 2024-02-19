@@ -38,6 +38,19 @@ FullyConnectedLayer::FullyConnectedLayer(
 
   std::generate(_weights.begin(), _weights.end(), [&]() { return dist(rng); });
 
+  float magnitude = 0.0;
+  for (float v : _weights) {
+    magnitude += v * v;
+  }
+  magnitude = std::sqrt(magnitude);
+
+  // Avoid division by zero
+  if (magnitude > 0.0) {
+    // Normalize the vector
+    std::transform(_weights.begin(), _weights.end(), _weights.begin(),
+                   [magnitude](float v) { return v / magnitude; });
+  }
+
   if (_use_bias) {
     std::generate(_biases.begin(), _biases.end(), [&]() { return dist(rng); });
   } else {
