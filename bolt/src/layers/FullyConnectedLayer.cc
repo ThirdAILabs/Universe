@@ -41,12 +41,12 @@ FullyConnectedLayer::FullyConnectedLayer(
   std::vector<uint32_t> magnitudes;
   for (uint32_t prev_neuron = 0; prev_neuron < prev_dim; prev_neuron++) {
     float magnitude = 0.0;
-    for (uint32_t cur_neuron = 0; cur_neuron < prev_dim; cur_neuron++) {
+    for (uint32_t cur_neuron = 0; cur_neuron < getDim(); cur_neuron++) {
       float v = _weights[cur_neuron * _prev_dim + prev_neuron];
       magnitude += v * v;
     }
     magnitude = std::sqrt(magnitude);
-    for (uint32_t cur_neuron = 0; cur_neuron < prev_dim; cur_neuron++) {
+    for (uint32_t cur_neuron = 0; cur_neuron < getDim(); cur_neuron++) {
       _weights[cur_neuron * _prev_dim + prev_neuron] /= magnitude;
     }
   }
