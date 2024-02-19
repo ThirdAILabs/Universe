@@ -102,10 +102,7 @@ def main(**kwargs):
             if args.mlflow_uri and args.run_name:
                 mlflow_logger = MlflowCallback(
                     tracking_uri=args.mlflow_uri,
-                    experiment_name=experiment_name(
-                        config.config_name,
-                        official_benchmark=args.branch_name == "main",
-                    ),
+                    experiment_name="SGD_benchmarks",
                     run_name=f"{args.run_name}_{str(date.today())}",
                     experiment_args={"dataset": config.dataset_name},
                 )
@@ -116,23 +113,23 @@ def main(**kwargs):
             else:
                 mlflow_logger = None
 
-            try:
-                runner.run_benchmark(
-                    config=config,
-                    path_prefix=args.path_prefix,
-                    mlflow_logger=mlflow_logger,
-                )
-            except Exception as error:
-                throw_exception = True
-                print(
-                    f"An error occurred running the {config.config_name} benchmark:",
-                    error,
-                )
-                payload = f"{config.config_name} benchmark failed on the {args.branch_name} branch!"
-                if slack_webhook:
-                    requests.post(slack_webhook, json.dumps({"text": payload}))
-                else:
-                    print(payload)
+            # try:
+            runner.run_benchmark(
+                config=config,
+                path_prefix=args.path_prefix,
+                mlflow_logger=mlflow_logger,
+            )
+            # except Exception as error:
+                # throw_exception = True
+                # print(
+                #     f"An error occurred running the {config.config_name} benchmark:",
+                #     error,
+                # )
+                # payload = f"{config.config_name} benchmark failed on the {args.branch_name} branch!"
+                # if slack_webhook:
+                #     requests.post(slack_webhook, json.dumps({"text": payload}))
+                # else:
+                #     print(payload)
 
             if mlflow_logger:
                 mlflow_logger.end_run()
