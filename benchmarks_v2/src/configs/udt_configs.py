@@ -59,7 +59,7 @@ class YelpPolarityUDTConfig(UDTBenchmarkConfig):
     delimiter = "\t"
 
     learning_rate = 0.01
-    num_epochs = 20
+    num_epochs = 10
 
     @staticmethod
     def get_data_types(path_prefix):
@@ -78,7 +78,7 @@ class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
     delimiter = "\t"
 
     learning_rate = 0.01
-    num_epochs = 20
+    num_epochs = 10
 
     @staticmethod
     def get_data_types(path_prefix):
@@ -96,7 +96,7 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
     n_target_classes = 2
 
     learning_rate = 0.01
-    num_epochs = 20
+    num_epochs = 10
 
     max_in_memory_batches = 5000
 
@@ -144,7 +144,7 @@ class InternetAdsUDTBenchmark(UDTBenchmarkConfig):
     n_target_classes = 2
 
     learning_rate = 0.001
-    num_epochs = 20
+    num_epochs = 10
 
     metrics = ["categorical_accuracy"]
     callbacks = [
@@ -183,7 +183,7 @@ class FraudDetectionUDTBenchmark(UDTBenchmarkConfig):
     n_target_classes = 2
 
     learning_rate = 0.001
-    num_epochs = 20
+    num_epochs = 10
 
     metrics = ["categorical_accuracy"]
     callbacks = [
@@ -261,7 +261,7 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
         }
 
     learning_rate = 0.001
-    num_epochs = 20
+    num_epochs = 10
     metrics = ["categorical_accuracy", "f_measure(0.95)"]
 
 
@@ -278,7 +278,7 @@ class ForestCoverTypeUDTBenchmark(UDTBenchmarkConfig):
     options = {"contextual_columns": True}
 
     learning_rate = 0.01
-    num_epochs = 20
+    num_epochs = 10
 
     @staticmethod
     def get_data_types(path_prefix):
@@ -299,7 +299,7 @@ class BlackFridayUDTBenchmark(UDTBenchmarkConfig):
     options = {"contextual_columns": True}
 
     learning_rate = 0.001
-    num_epochs = 20
+    num_epochs = 10
     metrics = []
     callbacks = [
         AdditionalMetricCallback(
@@ -340,7 +340,7 @@ class DiamondsUDTBenchmark(UDTBenchmarkConfig):
     delimiter = ","
 
     learning_rate = 0.001
-    num_epochs = 20
+    num_epochs = 10
     metrics = []
     callbacks = [
         AdditionalMetricCallback(
@@ -383,7 +383,7 @@ class MercedesBenzGreenerUDTBenchmark(UDTBenchmarkConfig):
     delimiter = ","
 
     learning_rate = 0.001
-    num_epochs = 20
+    num_epochs = 10
     metrics = []
     callbacks = [
         AdditionalMetricCallback(
@@ -423,7 +423,7 @@ class TranslitUDTBenchmark(UDTBenchmarkConfig):
     n_target_classes = 26
     delimiter = ","
 
-    num_epochs = 20
+    num_epochs = 10
     learning_rate = 0.001
     metrics = ["categorical_accuracy"]
 
