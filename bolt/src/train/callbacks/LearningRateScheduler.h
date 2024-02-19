@@ -6,7 +6,6 @@
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
-#include <unordered_map>
 #include <vector>
 
 // There are issues including <cmath> to get M_PI on visual studio.
@@ -14,8 +13,8 @@
 #define _USE_MATH_DEFINES
 #include <math.h>  // NOLINT (clang-tidy wants <cmath>)
 
-using state_value =
-    std::variant<uint32_t, float, bool, std::string, std::vector<uint32_t>>;
+using state_type = std::unordered_map < std::string,
+      std::variant<uint32_t, float, bool, std::string, std::vector<uint32_t>>;
 
 namespace thirdai::bolt::callbacks {
 /**
@@ -28,9 +27,7 @@ class LearningRateScheduler : public Callback {
  public:
   explicit LearningRateScheduler(bool batch_level_steps)
       : _epoch(0), _batch_cnt(0), _batch_level_steps(batch_level_steps) {}
-  explicit LearningRateScheduler(
-      std::unordered_map<std::string, state_value>& state)
-      : _state(std::move(state)) {
+  explicit LearningRateScheduler(state_type& state) : _state(std::move(state)) {
     try {
       _epoch = std::get<uint32_t>(_state.at("_epoch"));
       _batch_cnt = std::get<uint32_t>(_state.at("_batch_cnt"));
@@ -67,7 +64,8 @@ class LearningRateScheduler : public Callback {
     _batch_cnt++;
   }
 
-  virtual std::unordered_map<std::string, state_value> get_state() {
+  virtual state_type get_state() {
+    _state.clear();
     _state.emplace(std::make_pair("_epoch", _epoch));
     _state.emplace(std::make_pair("_batch_cnt", _batch_cnt));
     _state.emplace(std::make_pair("_batch_level_steps", _batch_level_steps));
@@ -80,7 +78,7 @@ class LearningRateScheduler : public Callback {
  protected:
   uint32_t _epoch, _batch_cnt;
   bool _batch_level_steps;
-  std::unordered_map<std::string, state_value> _state;
+  state_type _state;
 };
 
 /**
@@ -101,8 +99,7 @@ class LinearSchedule final : public LearningRateScheduler {
         _start_factor(start_factor),
         _end_factor(end_factor),
         _total_iters(total_iters) {}
-  explicit LinearSchedule(std::unordered_map<std::string, state_value>& state)
-      : LearningRateScheduler(state) {
+  explicit LinearSchedule(state_type& state) : LearningRateScheduler(state) {
     try {
       _start_factor = std::get<float>(_state.at("_start_factor"));
       _end_factor = std::get<float>(_state.at("_end_factor"));
@@ -157,8 +154,7 @@ class MultiStepLR final : public LearningRateScheduler {
       : LearningRateScheduler(batch_level_steps),
         _gamma(gamma),
         _milestones(std::move(milestones)) {}
-  explicit MultiStepLR(std::unordered_map<std::string, state_value>& state)
-      : LearningRateScheduler(state) {
+  explicit MultiStepLR(state_type& state) : LearningRateScheduler(state) {
     try {
       _gamma = std::get<float>(_state.at("_gamma"));
       _milestones = std::get<std::vector<uint32_t>>(_state.at("_milestones"));
@@ -221,8 +217,7 @@ class CosineAnnealingWarmRestart final : public LearningRateScheduler {
           "nonzero.");
     }
   }
-  explicit CosineAnnealingWarmRestart(
-      std::unordered_map<std::string, state_value>& state)
+  explicit CosineAnnealingWarmRestart(state_type& state)
       : LearningRateScheduler(state) {
     _min_lr = std::get<float>(_state.at("_min_lr"));
     _max_lr = std::get<float>(_state.at("_max_lr"));
