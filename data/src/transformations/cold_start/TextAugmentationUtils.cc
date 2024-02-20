@@ -93,7 +93,37 @@ ColumnMap TextAugmentationBase::apply(ColumnMap columns, State& state) const {
   return new_columns;
 }
 
-PhraseCollection mergeStrongWithWeak(
+PhraseCollection appendStrongAndWeak(
+    const PhraseCollection& weak_phrases, const Phrase& strong_phrase,
+    std::optional<uint32_t> strong_sample_num_words,
+    uint32_t strong_to_weak_ratio, std::mt19937& rng) {
+  if (weak_phrases.empty()) {
+    return {strong_phrase};
+  }
+
+  PhraseCollection downsampled_strong_phrases;
+
+  downsampled_strong_phrases = sampleFromPhrases(
+      /* phrases= */ {strong_phrase},
+      /* words_per_sampled_phrase= */ strong_sample_num_words.value(),
+      /* n_sampled_phrases= */ weak_phrases.size() * strong_to_weak_ratio, rng);
+  PhraseCollection output_phrases;
+
+  output_phrases.reserve(1 + weak_phrases.size() +
+                         downsampled_strong_phrases.size());
+
+  for (const auto& weak_phrase : weak_phrases) {
+    output_phrases.emplace_back(weak_phrase);
+  }
+  for (const auto& str_phrase : downsampled_strong_phrases) {
+    output_phrases.emplace_back(str_phrase);
+  }
+
+  output_phrases.emplace_back(strong_phrase);
+  return output_phrases;
+}
+
+PhraseCollection concatStrongWithWeak(
     const PhraseCollection& weak_phrases, const Phrase& strong_phrase,
     std::optional<uint32_t> strong_sample_num_words, std::mt19937& rng) {
   if (weak_phrases.empty()) {

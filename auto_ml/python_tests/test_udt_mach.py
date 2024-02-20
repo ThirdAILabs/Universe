@@ -589,7 +589,7 @@ def test_load_balancing():
     model.introduce_label(
         input_batch=[sample],
         label=label_with_load_balancing,
-        num_buckets_to_sample=num_hashes,
+        load_balancing=True,
     )
 
     hashes_with_load_balancing = model.get_index().get_entity_hashes(
@@ -605,6 +605,43 @@ def test_load_balancing():
     # Check that the buckets it inserts into with load balancing is different
     # than the buckets it inserts into without load balancing
     assert set(hashes_with_load_balancing) != set(hashes_without_load_balancing)
+
+
+def test_load_balancing_disjoint():
+    model = train_simple_mach_udt()
+
+    sample = {"text": "tomato"}
+
+    # # Insert an id for the same sample without load balancing to ensure that
+    # # it goes to different locations than with load balancing
+    label_without_load_balancing = 9999
+    model.introduce_label(
+        input_batch=[sample],
+        label=label_without_load_balancing,
+    )
+    label_with_load_balancing = 10000
+    model.introduce_label(
+        input_batch=[sample],
+        label=label_with_load_balancing,
+        load_balancing=True,
+    )
+
+    hashes_with_load_balancing = model.get_index().get_entity_hashes(
+        label_with_load_balancing
+    )
+    hashes_without_load_balancing = model.get_index().get_entity_hashes(
+        label_without_load_balancing
+    )
+
+    # # Check that the two sets of hashes obtained are disjoint
+    assert (
+        len(
+            set(hashes_without_load_balancing).intersection(
+                set(hashes_with_load_balancing)
+            )
+        )
+        == 0
+    )
 
 
 def test_mach_sparse_inference():
