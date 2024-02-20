@@ -727,7 +727,6 @@ void UDTMachClassifier::introduceDocument(
     const std::vector<std::string>& weak_column_names, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
     bool load_balancing, bool sort_random_hashes) {
-  (void)load_balancing;
   std::string text_column_name = textColumnForDocumentIntroduction();
 
   data::ColdStartTextAugmentation augmentation(
