@@ -141,26 +141,17 @@ def train_on_scifact(download_scifact_dataset, coldstart):
             weak_column_names=["TEXT"],
             learning_rate=0.001,
             epochs=5,
-            metrics=[
-                "precision@1",
-                "recall@10",
-            ],
+            metrics=["precision@1", "recall@10"],
         )
         assert metrics["train_precision@1"][-1] > 0.90
 
-    validation = bolt.Validation(
-        supervised_tst,
-        metrics=["precision@1"],
-    )
+    validation = bolt.Validation(supervised_tst, metrics=["precision@1"])
 
     metrics = model.train(
         filename=supervised_trn,
         learning_rate=0.001 if coldstart else 0.0005,
         epochs=10,
-        metrics=[
-            "precision@1",
-            "recall@10",
-        ],
+        metrics=["precision@1", "recall@10"],
         validation=validation,
     )
 
@@ -247,15 +238,11 @@ def test_mach_udt_embedding():
 def test_mach_udt_decode_params():
     model = train_simple_mach_udt()
 
-    with pytest.raises(
-        ValueError,
-        match=r"Params must not be 0.",
-    ):
+    with pytest.raises(ValueError, match=r"Params must not be 0."):
         model.set_decode_params(0, 0)
 
     with pytest.raises(
-        ValueError,
-        match=r"Cannot eval with num_buckets_to_eval greater than 100.",
+        ValueError, match=r"Cannot eval with num_buckets_to_eval greater than 100."
     ):
         model.set_decode_params(1, 1000)
 
@@ -312,10 +299,7 @@ def test_mach_udt_introduce_existing_class():
 def test_mach_udt_forget_non_existing_class():
     model = train_simple_mach_udt()
 
-    with pytest.raises(
-        ValueError,
-        match=r"Invalid entity in index: 1000.",
-    ):
+    with pytest.raises(ValueError, match=r"Invalid entity in index: 1000."):
         model.forget(1000)
 
 
@@ -460,8 +444,7 @@ def test_mach_output_correctness():
 
     # Suppose the label corresponding to the given text is 2.
     predicted_hashes = model.predict_hashes(
-        {"text": "testing output correctness"},
-        force_non_empty=True,
+        {"text": "testing output correctness"}, force_non_empty=True
     )
 
     mach_index = model.get_index()
@@ -508,11 +491,7 @@ def test_mach_manual_index_creation():
 
     model.set_decode_params(3, OUTPUT_DIM)
 
-    samples = {
-        0: "haha one time",
-        1: "haha two times",
-        2: "haha thrice occurrences",
-    }
+    samples = {0: "haha one time", 1: "haha two times", 2: "haha thrice occurrences"}
 
     entity_to_hashes = {
         0: [0, 1, 2, 3, 4, 5, 6],
@@ -521,9 +500,7 @@ def test_mach_manual_index_creation():
     }
 
     index = dataset.MachIndex(
-        entity_to_hashes=entity_to_hashes,
-        output_range=OUTPUT_DIM,
-        num_hashes=7,
+        entity_to_hashes=entity_to_hashes, output_range=OUTPUT_DIM, num_hashes=7
     )
 
     model.set_index(index)
@@ -552,22 +529,68 @@ def test_mach_without_bias():
 
 def test_load_balancing():
     model = train_simple_mach_udt()
+    num_hashes = 8
+    half_num_hashes = 4
+    sample = {"text": "tomato"}
+
+    # Set the index so that we know that the number of hashes is 8.
+    model.set_index(
+        dataset.MachIndex({}, output_range=OUTPUT_DIM, num_hashes=num_hashes)
+    )
+
+    # This gives the top 8 locations where the new sample will end up.
+    hash_locs = model.predict_hashes(sample, force_non_empty=False)
+
+    # Create a new index with 4 hashes, with elements to 4 of the 8 top locations
+    # for the new element.
+    new_index = dataset.MachIndex(
+        {i: [h] * half_num_hashes for i, h in enumerate(hash_locs[:half_num_hashes])},
+        output_range=OUTPUT_DIM,
+        num_hashes=half_num_hashes,
+    )
+    model.set_index(new_index)
+
+    # Insert an id for the same sample without load balancing to ensure that
+    # it goes to different locations than with load balancing
+    label_without_load_balancing = 9999
+    model.introduce_label(input_batch=[sample], label=label_without_load_balancing)
+
+    # We are sampling 8 locations, this should be the top 8 locations we determined
+    # earlier. However since we have inserted elements in the index in 4 of these
+    # top 8 locations it should insert the new element in the other 4 locations
+    # due to the load balancing constraint.
+    label_with_load_balancing = 10000
+    model.introduce_label(
+        input_batch=[sample], label=label_with_load_balancing, load_balancing=True
+    )
+
+    hashes_with_load_balancing = model.get_index().get_entity_hashes(
+        label_with_load_balancing
+    )
+    hashes_without_load_balancing = model.get_index().get_entity_hashes(
+        label_without_load_balancing
+    )
+
+    # Check that it inserts into the empty buckets without load balancing.
+    assert set(hashes_with_load_balancing) == set(hash_locs[half_num_hashes:])
+
+    # Check that the buckets it inserts into with load balancing is different
+    # than the buckets it inserts into without load balancing
+    assert set(hashes_with_load_balancing) != set(hashes_without_load_balancing)
+
+
+def test_load_balancing_disjoint():
+    model = train_simple_mach_udt()
 
     sample = {"text": "tomato"}
 
     # # Insert an id for the same sample without load balancing to ensure that
     # # it goes to different locations than with load balancing
     label_without_load_balancing = 9999
-    model.introduce_label(
-        input_batch=[sample],
-        label=label_without_load_balancing,
-        load_balancing=True,
-    )
+    model.introduce_label(input_batch=[sample], label=label_without_load_balancing)
     label_with_load_balancing = 10000
     model.introduce_label(
-        input_batch=[sample],
-        label=label_with_load_balancing,
-        load_balancing=True,
+        input_batch=[sample], label=label_with_load_balancing, load_balancing=True
     )
 
     hashes_with_load_balancing = model.get_index().get_entity_hashes(
@@ -578,7 +601,14 @@ def test_load_balancing():
     )
 
     # # Check that the two sets of hashes obtained are disjoint
-    assert set(hashes_without_load_balancing) != set(hashes_with_load_balancing)
+    assert (
+        len(
+            set(hashes_without_load_balancing).intersection(
+                set(hashes_with_load_balancing)
+            )
+        )
+        == 0
+    )
 
 
 def test_mach_sparse_inference():
@@ -607,9 +637,7 @@ def test_mach_sparse_inference():
 
     model.set_index(
         dataset.MachIndex(
-            {1: [10], 2: [20], 3: [30], 4: [40]},
-            output_range=OUTPUT_DIM,
-            num_hashes=1,
+            {1: [10], 2: [20], 3: [30], 4: [40]}, output_range=OUTPUT_DIM, num_hashes=1
         )
     )
 
@@ -797,10 +825,7 @@ def test_udt_softmax_activations(softmax):
         [{"text": "some text"}, {"text": "some text"}]
     )[0]
 
-    sum_to_one = np.isclose(
-        sum(output),
-        1,
-    )
+    sum_to_one = np.isclose(sum(output), 1)
     assert sum_to_one == softmax
 
 
