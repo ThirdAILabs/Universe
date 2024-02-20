@@ -30,6 +30,7 @@
 #include <pybind11/stl.h>
 #include <utils/Random.h>
 #include <utils/text/PorterStemmer.h>
+#include <utils/text/WordProcessor.h>
 #include <cstddef>
 #include <memory>
 #include <optional>
@@ -124,6 +125,35 @@ void createDataSubmodule(py::module_& dataset_submodule) {
       "stem",
       py::overload_cast<const std::string&, bool>(&text::porter_stemmer::stem),
       py::arg("word"), py::arg("lowercase") = true);
+
+  py::class_<text::word_processing::CollocationTracker>(dataset_submodule,
+                                                        "CollocationTracker")
+      .def(py::init<uint32_t, bool>(), py::arg("top_k_to_maintain"),
+           py::arg("use_stemmer"))
+      .def("index_sentence",
+           &text::word_processing::CollocationTracker::indexSentence,
+           py::arg("string"))
+      .def("index_sentences",
+           &text::word_processing::CollocationTracker::indexSentences,
+           py::arg("string"))
+      .def("get_neighbours_counter",
+           &text::word_processing::CollocationTracker::getNeighboursCounter,
+           py::arg("word"), py::return_value_policy::reference_internal)
+      .def("get_collocation_matrix",
+           &text::word_processing::CollocationTracker::getCollocationMatrix,
+           py::return_value_policy::reference_internal)
+      .def("get_words", &text::word_processing::CollocationTracker::getWords);
+  ;
+  py::class_<text::word_processing::NeighboursCounter>(dataset_submodule,
+                                                       "NeighboursCounter")
+      .def(py::init<std::string, uint32_t>(), py::arg("base_word"),
+           py::arg("top_k_to_maintain"))
+      .def("add_word", &text::word_processing::NeighboursCounter::addWord,
+           py::arg("word"), py::arg("frequency"))
+      .def("add_words", &text::word_processing::NeighboursCounter::addWords,
+           py::arg("freqeuncy_map"))
+      .def("get_closest_neighbours",
+           &text::word_processing::NeighboursCounter::getClosestNeighbours);
 }
 
 template <typename T>
