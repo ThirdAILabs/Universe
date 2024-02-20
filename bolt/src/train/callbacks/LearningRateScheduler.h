@@ -47,13 +47,6 @@ class LearningRateScheduler : public Callback {
     }
     _batch_cnt++;
   }
-
- protected:
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_epoch, _batch_cnt, _batch_level_steps);
-  }
-
   void save_stream(std::ostream& output_stream) const {
     cereal::BinaryOutputArchive oarchive(output_stream);
     oarchive(*this);
@@ -67,10 +60,16 @@ class LearningRateScheduler : public Callback {
     return config;
   }
 
+ protected:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_epoch, _batch_cnt, _batch_level_steps);
+  }
+
  private:
   uint32_t _epoch, _batch_cnt;
   bool _batch_level_steps;
-  friend class cereal::access;
 };
 
 /**
