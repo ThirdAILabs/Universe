@@ -1,5 +1,5 @@
 import time
-
+import torch
 import numpy as np
 from thirdai import smx
 
@@ -9,6 +9,7 @@ x = np.random.rand(N, K).astype(np.float32)
 w = np.random.rand(M, K).astype(np.float32)
 b = np.random.rand(M).astype(np.float32)
 
+y = np.matmul(x, w.T) + b
 
 linear = smx.Linear(M, K)
 linear.weight = smx.Variable(smx.from_numpy(w), requires_grad=True)
@@ -30,3 +31,22 @@ e = time.perf_counter()
 print(f"np : {(e-s):.3f}")
 
 assert np.allclose(Y.tensor.numpy(), y)
+
+tx = torch.from_numpy(x)
+tw = torch.from_numpy(w)
+tw.requires_grad = True
+tb = torch.from_numpy(b)
+tb.requires_grad = True
+
+torch_linear = torch.nn.Linear(M, K)
+torch_linear.weight = torch.nn.Parameter(tw)
+torch_linear.bias = torch.nn.Parameter(tb)
+
+s = time.perf_counter()
+# ty = torch.matmul(tx, torch.transpose(tw, 0, 1)) + tb
+ty = torch_linear(tx)
+e = time.perf_counter()
+
+print(f"torch: {(e-s):.3f}")
+
+assert np.allclose(Y.tensor.numpy(), ty.detach().numpy())

@@ -1,3 +1,4 @@
+#include "dnnl.h"
 #include <smx/src/tensor/CsrTensor.h>
 #include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Functions.h>
@@ -5,8 +6,11 @@
 #include <smx/src/tensor/Tensor.h>
 #include <algorithm>
 #include <cstddef>
-#include "dnnl.h"
 #include <stdexcept>
+
+#ifdef DNNL_LINEAR
+#include "dnnl.h"
+#endif
 
 namespace thirdai::smx {
 
@@ -49,13 +53,17 @@ DenseTensorPtr denseLinear(const DenseTensorPtr& x, const DenseTensorPtr& w,
 
   auto Y = out->eigenMatrix<float>();
 
+#ifdef DNNL_LINEAR
+  int64_t M = X.rows();
+  int64_t N = W.rows();
+  int64_t K = W.cols();
+
+  dnnl_sgemm(/*TransA=*/'N', /*TransB=*/'T', /*M=*/M, /*N=*/N,
+             /*K=*/K, /*alpha=*/1, /*a=*/X.data(), /*lda=*/K, /*b=*/W.data(),
+             /*ldb=*/K, /*beta=*/0.0, Y.data(), /*ldc=*/N);
+#else
   Y.noalias() = X * W.transpose();
-  // int M = X.rows();
-  // int N = W.rows();
-  // int K = W.cols();
-  // dnnl_sgemm(/*TransA=*/'N', /*TransB=*/'T', /*M=*/M, /*N=*/N,
-  //            /*K=*/K, /*alpha=*/1, /*a=*/X.data(), /*lda=*/K, /*b=*/W.data(),
-  //            /*ldb=*/K, /*beta=*/0.0, Y.data(), /*ldc=*/N);
+#endif
 
   Y.rowwise() += B;
 
@@ -75,13 +83,31 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> denseLinearGrad(
   auto W_grad = w_grad->eigenMatrix<float>();
   auto B_grad = b_grad->eigenMatrix<float>();
 
+#ifdef DNNL_LINEAR
+  int64_t M = X.rows();
+  int64_t N = W.rows();
+  int64_t K = W.cols();
+
+  dnnl_sgemm(/*TransA=*/'T', /*TransB=*/'N', /*M=*/N, /*N=*/K, /*K=*/M,
+             /*alpha=*/1, /*a=*/Y_grad.data(), /*lda=*/N, /*b=*/X.data(),
+             /*ldb=*/K, /*beta=*/0.0, W_grad.data(), /*ldc=*/K);
+#else
   W_grad = Y_grad.transpose() * X;
+#endif
+
   B_grad = Y_grad.colwise().sum();
 
   if (compute_x_grad) {
     auto x_grad = DenseTensor::make(x->shape(), Dtype::f32);
     auto X_grad = x_grad->eigenMatrix<float>();
+
+#ifdef DNNL_LINEAR
+    dnnl_sgemm(/*TransA=*/'N', /*TransB=*/'N', /*M=*/M, /*N=*/K, /*K=*/N,
+               /*alpha=*/1, /*a=*/Y_grad.data(), /*lda=*/N, /*b=*/W.data(),
+               /*ldb=*/K, /*beta=*/0.0, X_grad.data(), /*ldc=*/K);
+#else
     X_grad = Y_grad * W;
+#endif
 
     return {x_grad, w_grad, b_grad};
   }
