@@ -11,6 +11,7 @@
 #include <smx/src/autograd/functions/LinearAlgebra.h>
 #include <smx/src/autograd/functions/Loss.h>
 #include <smx/src/autograd/functions/NN.h>
+#include <smx/src/autograd/functions/TensorManipulation.h>
 #include <smx/src/modules/Activation.h>
 #include <smx/src/modules/Embedding.h>
 #include <smx/src/modules/Linear.h>
@@ -145,8 +146,14 @@ void defineTensor(py::module_& smx) {
       .def_property_readonly("n_rows", &CsrTensor::nRows)
       .def_property_readonly("n_dense_cols", &CsrTensor::nDenseCols);
 
-  smx.def("transpose", &transpose, py::arg("tensor"), py::arg("perm"));
-  smx.def("reshape", &reshape, py::arg("tensor"), py::arg("new_shape"));
+  smx.def("transpose",
+          py::overload_cast<const TensorPtr&, const std::vector<size_t>&>(
+              &transpose),
+          py::arg("tensor"), py::arg("perm"));
+
+  smx.def("reshape",
+          py::overload_cast<const TensorPtr&, const Shape&>(&reshape),
+          py::arg("tensor"), py::arg("new_shape"));
 
   smx.def("zeros", py::overload_cast<const Shape&>(&zeros), py::arg("shape"));
   smx.def("ones", py::overload_cast<const Shape&>(&ones), py::arg("shape"));
@@ -191,6 +198,15 @@ void defineAutograd(py::module_& smx) {
   smx.def("cross_entropy", &crossEntropy, py::arg("logits"), py::arg("labels"));
   smx.def("binary_cross_entropy", &binaryCrossEntropy, py::arg("logits"),
           py::arg("labels"));
+
+  smx.def("transpose",
+          py::overload_cast<const VariablePtr&, const std::vector<size_t>&>(
+              &transpose),
+          py::arg("input"), py::arg("perm"));
+
+  smx.def("reshape",
+          py::overload_cast<const VariablePtr&, const Shape&>(&reshape),
+          py::arg("input"), py::arg("new_shape"));
 }
 
 class PyModule : public Module {

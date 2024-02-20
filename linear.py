@@ -1,6 +1,7 @@
 import time
-import torch
+
 import numpy as np
+import torch
 from thirdai import smx
 
 N, M, K = 2000, 50000, 1000

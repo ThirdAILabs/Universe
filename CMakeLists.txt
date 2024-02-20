@@ -344,6 +344,7 @@ set(THIRDAI_SOURCES
     smx/src/autograd/functions/LinearAlgebra.cc
     smx/src/autograd/functions/NN.cc
     smx/src/autograd/functions/Loss.cc
+    smx/src/autograd/functions/TensorManipulation.cc
     smx/src/optimizers/Adam.cc
     smx/src/modules/Module.cc
     bolt_vector/src/BoltVector.cc

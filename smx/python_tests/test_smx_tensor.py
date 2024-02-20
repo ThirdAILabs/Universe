@@ -50,7 +50,7 @@ def test_to_numpy_u32():
     assert np.array_equal(x, tensor.numpy())
 
 
-def test_reshape():
+def test_reshape_tensor():
     x = np.random.randint(0, 10000, (2, 3, 4, 5, 6), dtype=np.uint32)
 
     tensor = smx.reshape(smx.from_numpy(x), new_shape=smx.Shape(6, 4, 30))
@@ -66,8 +66,23 @@ def test_reshape():
         smx.reshape(smx.from_numpy(x), smx.Shape(7, 4, 30))
 
 
+def test_reshape_autograd():
+    x_np = np.random.randint(0, 10000, (2, 3, 4, 5, 6), dtype=np.uint32)
+
+    x = smx.Variable(smx.from_numpy(x_np), requires_grad=True)
+    y = smx.reshape(x, new_shape=smx.Shape(6, 4, 30))
+
+    assert np.array_equal(x_np.reshape(6, 4, 30), y.tensor.numpy())
+
+    y_grad_np = np.random.randint(0, 10000, (6, 4, 30), dtype=np.uint32)
+
+    y.backward(smx.from_numpy(y_grad_np))
+
+    assert np.array_equal(y_grad_np.reshape(2, 3, 4, 5, 6), x.grad.numpy())
+
+
 @pytest.mark.parametrize("ndim", [2, 3, 4, 5, 6, 7, 8])
-def test_transpose(ndim):
+def test_transpose_tensor(ndim):
     shape = list(np.random.randint(3, 8, size=ndim))
 
     perm = list(range(ndim))
@@ -80,6 +95,30 @@ def test_transpose(ndim):
     tensor = smx.transpose(smx.from_numpy(x), perm)
 
     assert np.array_equal(np.transpose(x, perm), tensor.numpy())
+
+
+@pytest.mark.parametrize("ndim", [2, 3, 4, 5, 6, 7, 8])
+def test_transpose_autograd(ndim):
+    shape = list(np.random.randint(3, 8, size=ndim))
+
+    perm = list(range(ndim))
+    while perm == list(range(ndim)):
+        np.random.shuffle(perm)
+    assert not np.array_equal(perm, list(range(ndim)))
+
+    x_np = np.random.rand(*shape).astype(np.float32)
+
+    x = smx.Variable(smx.from_numpy(x_np), requires_grad=True)
+
+    y = smx.transpose(x, perm)
+
+    y_np = np.transpose(x_np, perm)
+
+    assert np.array_equal(y_np, y.tensor.numpy())
+
+    y.backward(smx.from_numpy(y_np))
+
+    assert np.array_equal(x_np, x.grad.numpy())
 
 
 def test_csr_tensor():
