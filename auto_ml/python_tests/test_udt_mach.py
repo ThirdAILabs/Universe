@@ -606,6 +606,7 @@ def test_load_balancing():
     # than the buckets it inserts into without load balancing
     assert set(hashes_with_load_balancing) != set(hashes_without_load_balancing)
 
+
 def test_load_balancing_disjoint():
     model = train_simple_mach_udt()
 
@@ -633,7 +634,14 @@ def test_load_balancing_disjoint():
     )
 
     # # Check that the two sets of hashes obtained are disjoint
-    assert len(set(hashes_without_load_balancing).intersection(set(hashes_with_load_balancing))) == 0
+    assert (
+        len(
+            set(hashes_without_load_balancing).intersection(
+                set(hashes_with_load_balancing)
+            )
+        )
+        == 0
+    )
 
 
 def test_mach_sparse_inference():
