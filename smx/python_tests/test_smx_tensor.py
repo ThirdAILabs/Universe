@@ -116,6 +116,7 @@ def test_transpose_autograd(ndim):
 
     assert np.array_equal(y_np, y.tensor.numpy())
 
+    # Applying transpose backward on the output should return to the input.
     y.backward(smx.from_numpy(y_np))
 
     assert np.array_equal(x_np, x.grad.numpy())
