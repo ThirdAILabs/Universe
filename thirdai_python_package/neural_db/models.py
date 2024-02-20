@@ -598,7 +598,7 @@ class Mach(Model):
     def model_from_scratch(
         self, documents: DocumentDataSource, number_classes: int = None
     ):
-        return bolt.UniversalDeepTransformer(
+        model = bolt.UniversalDeepTransformer(
             data_types={
                 self.query_col: bolt.types.text(tokenizer=self.tokenizer),
                 self.id_col: bolt.types.categorical(delimiter=self.id_delimiter),
@@ -619,6 +619,8 @@ class Mach(Model):
             },
             model_config=self.model_config,
         )
+        model.insert_new_doc_ids(documents)
+        return model
 
     def forget_documents(self) -> None:
         if self.model is not None:

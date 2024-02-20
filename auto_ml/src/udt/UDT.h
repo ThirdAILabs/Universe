@@ -212,6 +212,10 @@ class UDT {
     return _backend->textDatasetConfig();
   }
 
+  void insertNewDocIds(const dataset::DataSourcePtr& data) {
+    _backend->insertNewDocIds(data);
+  }
+
   /**
    * Used in UDTMachClassifier to introduce new documents to the model from a
    * data source. Used in conjunction with coldstart. At a high level, introduce
