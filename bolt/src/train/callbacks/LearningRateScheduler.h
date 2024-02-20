@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Callback.h"
+#include <archive/src/Archive.h>
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
@@ -14,10 +15,6 @@
 #define _USE_MATH_DEFINES
 #include <math.h>  // NOLINT (clang-tidy wants <cmath>)
 
-using state_type = std::unordered_map<
-    std::string,
-    std::variant<uint32_t, float, bool, std::string, std::vector<uint32_t>>>;
-
 namespace thirdai::bolt::callbacks {
 /**
  * @brief This callback is intended to schedule learning rate changes during
@@ -29,23 +26,8 @@ class LearningRateScheduler : public Callback {
  public:
   explicit LearningRateScheduler(bool batch_level_steps)
       : _epoch(0), _batch_cnt(0), _batch_level_steps(batch_level_steps) {}
-  explicit LearningRateScheduler(state_type& state) : _state(std::move(state)) {
-    try {
-      _epoch = std::get<uint32_t>(_state.at("_epoch"));
-      _batch_cnt = std::get<uint32_t>(_state.at("_batch_cnt"));
-      _batch_level_steps = std::get<bool>(_state.at("_batch_level_steps"));
-      if (_state.find("_learning_rate") != _state.end()) {
-        train_state->updateLearningRate(
-            std::get<float>(state.at("_learning_rate")));
-      }
-    } catch (const std::exception& e) {
-      std::cerr << e.what() << '\n';
-    }
-  }
 
   virtual float getNextLR(float current_learning_rate, uint32_t step) = 0;
-
-  virtual void _update_state() = 0;
 
   void onEpochBegin() final {
     // resetting the batch count
@@ -66,21 +48,29 @@ class LearningRateScheduler : public Callback {
     _batch_cnt++;
   }
 
-  virtual state_type get_state() {
-    _state.clear();
-    _state.emplace(std::make_pair("_epoch", _epoch));
-    _state.emplace(std::make_pair("_batch_cnt", _batch_cnt));
-    _state.emplace(std::make_pair("_batch_level_steps", _batch_level_steps));
-    _state.emplace(
-        std::make_pair("_learning_rate", train_state->learningRate()));
-    _update_state();
-    return _state;
+ protected:
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_epoch, _batch_cnt, _batch_level_steps);
   }
 
- protected:
+  void save_stream(std::ostream& output_stream) const {
+    cereal::BinaryOutputArchive oarchive(output_stream);
+    oarchive(*this);
+  }
+
+  static std::shared_ptr<LearningRateScheduler> load_stream(
+      std::istream& input_stream) {
+    cereal::BinaryInputArchive iarchive(input_stream);
+    auto config = std::make_shared<LearningRateScheduler>();
+    iarchive(*config);
+    return config;
+  }
+
+ private:
   uint32_t _epoch, _batch_cnt;
   bool _batch_level_steps;
-  state_type _state;
+  friend class cereal::access;
 };
 
 /**
@@ -101,17 +91,6 @@ class LinearSchedule final : public LearningRateScheduler {
         _start_factor(start_factor),
         _end_factor(end_factor),
         _total_iters(total_iters) {}
-  explicit LinearSchedule(state_type& state) : LearningRateScheduler(state) {
-    try {
-      _start_factor = std::get<float>(_state.at("_start_factor"));
-      _end_factor = std::get<float>(_state.at("_end_factor"));
-      _lr_change_per_step = std::get<float>(_state.at("_lr_change_per_step"));
-      _total_iters = std::get<uint32_t>(_state.at("_total_iters"));
-      _update_state();
-    } catch (const std::exception& e) {
-      std::cerr << e.what() << '\n';
-    }
-  }
 
   float getNextLR(float current_learning_rate, uint32_t step) final {
     if (step == 0) {
@@ -128,16 +107,16 @@ class LinearSchedule final : public LearningRateScheduler {
     return current_learning_rate + _lr_change_per_step;
   }
 
-  void _update_state() final {
-    _state.emplace(std::make_pair("_start_factor", _start_factor));
-    _state.emplace(std::make_pair("_end_factor", _end_factor));
-    _state.emplace(std::make_pair("_lr_change_per_step", _lr_change_per_step));
-    _state.emplace(std::make_pair("_total_iters", _total_iters));
-  }
-
  private:
   float _start_factor, _end_factor, _lr_change_per_step;
   uint32_t _total_iters;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<LearningRateScheduler>(this), _start_factor,
+            _end_factor, _lr_change_per_step, _total_iters);
+  }
 };
 
 /**
@@ -156,15 +135,7 @@ class MultiStepLR final : public LearningRateScheduler {
       : LearningRateScheduler(batch_level_steps),
         _gamma(gamma),
         _milestones(std::move(milestones)) {}
-  explicit MultiStepLR(state_type& state) : LearningRateScheduler(state) {
-    try {
-      _gamma = std::get<float>(_state.at("_gamma"));
-      _milestones = std::get<std::vector<uint32_t>>(_state.at("_milestones"));
-      _update_state();
-    } catch (const std::exception& e) {
-      std::cerr << e.what() << '\n';
-    }
-  }
+
   float getNextLR(float current_learning_rate, uint32_t step) final {
     if (std::find(_milestones.begin(), _milestones.end(), step) !=
         _milestones.end()) {
@@ -173,14 +144,16 @@ class MultiStepLR final : public LearningRateScheduler {
     return current_learning_rate;
   }
 
-  void _update_state() final {
-    _state.emplace(std::make_pair("_gamma", _gamma));
-    _state.emplace(std::make_pair("_milestones", _milestones));
-  }
-
  private:
   float _gamma;
   std::vector<uint32_t> _milestones;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<LearningRateScheduler>(this), _gamma,
+            _milestones);
+  }
 };
 
 /**
@@ -219,20 +192,6 @@ class CosineAnnealingWarmRestart final : public LearningRateScheduler {
           "nonzero.");
     }
   }
-  explicit CosineAnnealingWarmRestart(state_type& state)
-      : LearningRateScheduler(state) {
-    _min_lr = std::get<float>(_state.at("_min_lr"));
-    _max_lr = std::get<float>(_state.at("_max_lr"));
-    _steps = std::get<uint32_t>(_state.at("_steps"));
-    _steps_until_restart =
-        std::get<uint32_t>(_state.at("_steps_until_restart"));
-    _steps_until_restart_scaling_factor =
-        std::get<uint32_t>(_state.at("_steps_until_restart_scaling_factor"));
-    _linear_warmup_steps =
-        std::get<uint32_t>(_state.at("_linear_warmup_steps"));
-    _update_state();
-  }
-
   float getNextLR(float current_learning_rate, uint32_t step) final {
     (void)current_learning_rate, (void)step;
 
@@ -260,21 +219,17 @@ class CosineAnnealingWarmRestart final : public LearningRateScheduler {
     return next_lr;
   }
 
-  void _update_state() final {
-    _state.emplace(std::make_pair("_min_lr", _min_lr));
-    _state.emplace(std::make_pair("_max_lr", _max_lr));
-    _state.emplace(std::make_pair("_steps", _steps));
-    _state.emplace(
-        std::make_pair("_steps_until_restart", _steps_until_restart));
-    _state.emplace(std::make_pair("_steps_until_restart_scaling_factor",
-                                  _steps_until_restart_scaling_factor));
-    _state.emplace(
-        std::make_pair("_linear_warmup_steps", _linear_warmup_steps));
-  }
-
  private:
   float _min_lr, _max_lr;
   uint32_t _steps, _steps_until_restart, _steps_until_restart_scaling_factor,
       _linear_warmup_steps;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<LearningRateScheduler>(this), _min_lr, _max_lr,
+            _steps, _steps_until_restart, _steps_until_restart_scaling_factor,
+            _linear_warmup_steps);
+  }
 };
 }  // namespace thirdai::bolt::callbacks

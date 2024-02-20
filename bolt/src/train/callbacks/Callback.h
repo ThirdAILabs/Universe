@@ -3,6 +3,7 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/TrainState.h>
+#include <archive/src/Archive.h>
 #include <memory>
 
 namespace thirdai::bolt::callbacks {
@@ -70,13 +71,18 @@ class Callback {
 
  protected:
   /**
-   * The fields model, train_state, and history will be set with the model it is
-   * bound to, the current train state for the trainer, and the history of the
-   * trainer for that model respectively.
+   * The fields model, train_state, and history will be set with the model
+   * it is bound to, the current train state for the trainer, and the
+   * history of the trainer for that model respectively.
    */
   ModelPtr model;
   TrainStatePtr train_state;
   metrics::HistoryPtr history;
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 using CallbackPtr = std::shared_ptr<Callback>;
@@ -107,6 +113,12 @@ class CallbackList {
 
  private:
   std::vector<CallbackPtr> _callbacks;
+
+  CallbackList();
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::bolt::callbacks

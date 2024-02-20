@@ -1,4 +1,7 @@
 #include "Callback.h"
+#include <cereal/types/base_class.hpp>
+#include <archive/src/Archive.h>
+#include <memory>
 #include <stdexcept>
 
 namespace thirdai::bolt::callbacks {
@@ -16,6 +19,11 @@ void Callback::setTrainState(TrainStatePtr train_state) {
 
 void Callback::setHistory(metrics::HistoryPtr history) {
   this->history = std::move(history);
+}
+
+template <class Archive>
+void Callback::serialize(Archive& archive) {
+  (void)archive;
 }
 
 CallbackList::CallbackList(std::vector<CallbackPtr> callbacks, ModelPtr& model,
@@ -71,4 +79,8 @@ void CallbackList::beforeUpdate() {
   }
 }
 
+template <class Archive>
+void CallbackList::serialize(Archive& archive) {
+  (void)archive;
+}
 }  // namespace thirdai::bolt::callbacks
