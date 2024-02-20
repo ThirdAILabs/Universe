@@ -41,6 +41,12 @@ class NeighboursCounter {
     }
   }
 
+  void addWordVector(const std::vector<std::string>& words) {
+    for (const auto& word : words) {
+      addWord(word, 1);
+    }
+  }
+
   std::vector<WordFreqPair> getClosestNeighbours() {
     std::vector<WordFreqPair> top_pairs;
     top_pairs.reserve(_top_k_words.size());
@@ -145,13 +151,36 @@ class CollocationTracker {
       token_vecs[index] = preprocessSentence(sentences[index]);
     }
 
+    // TODO(shubh): OPTIMIZE THE TWO NESTED FOR LOOPS BELOW
+    std::unordered_map<std::string, std::vector<std::string>> word_to_tokens;
+
     for (const auto& token_vector : token_vecs) {
       for (const auto& token : token_vector) {
         if (!_collocation_matrix.count(token)) {
           _collocation_matrix[token] = NeighboursCounter(token, _top_k);
         }
+        for (const auto& token2 : token_vector) {
+          if (token2 == token) {
+            continue;
+          }
+          word_to_tokens[token].push_back(token2);
+        }
       }
-      indexTokens(token_vector);
+    }
+
+    // TODO(shubh): can we directly use a vector instead of an unordered map to
+    // avoid this conversion?
+    std::vector<std::pair<std::string, std::vector<std::string>>>
+        string_to_vecs;
+    string_to_vecs.reserve(word_to_tokens.size());
+    for (const auto& word_vec_pairs : word_to_tokens) {
+      string_to_vecs.emplace_back(word_vec_pairs);
+    }
+
+#pragma omp parallel for shared(string_to_vecs) default(none)
+    for (size_t index = 0; index < string_to_vecs.size(); index++) {
+      _collocation_matrix[string_to_vecs[index].first].addWordVector(
+          string_to_vecs[index].second);
     }
   }
 
