@@ -300,6 +300,14 @@ include(CTest)
 include_directories(".")
 include_directories(${CMAKE_BINARY_DIR})
 
+# include_directories("/Users/nmeisburger/ThirdAI/oneDNN/include/")
+# include_directories("/Users/nmeisburger/ThirdAI/oneDNN/include/oneapi")
+# include_directories("/Users/nmeisburger/ThirdAI/oneDNN/include/oneapi/dnnl")
+# https://stackoverflow.com/questions/29368026/how-can-i-add-a-prebuilt-static-library-in-a-project-using-cmake
+find_library(DNNL dnnl "/Users/nmeisburger/ThirdAI/oneDNN/build/src")
+
+message("DNNL LIB: ${DNNL}")
+
 # Our source directories
 add_subdirectory(auto_ml)
 add_subdirectory(bolt)
@@ -517,7 +525,7 @@ add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(
   thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
-                 prometheus-cpp::pull utf8proc)
+                 prometheus-cpp::pull utf8proc ${DNNL})
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto

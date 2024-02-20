@@ -5,6 +5,7 @@
 #include <smx/src/tensor/Tensor.h>
 #include <algorithm>
 #include <cstddef>
+#include "dnnl.h"
 #include <stdexcept>
 
 namespace thirdai::smx {
@@ -49,6 +50,13 @@ DenseTensorPtr denseLinear(const DenseTensorPtr& x, const DenseTensorPtr& w,
   auto Y = out->eigenMatrix<float>();
 
   Y.noalias() = X * W.transpose();
+  // int M = X.rows();
+  // int N = W.rows();
+  // int K = W.cols();
+  // dnnl_sgemm(/*TransA=*/'N', /*TransB=*/'T', /*M=*/M, /*N=*/N,
+  //            /*K=*/K, /*alpha=*/1, /*a=*/X.data(), /*lda=*/K, /*b=*/W.data(),
+  //            /*ldb=*/K, /*beta=*/0.0, Y.data(), /*ldc=*/N);
+
   Y.rowwise() += B;
 
   return out;
