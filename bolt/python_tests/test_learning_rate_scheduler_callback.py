@@ -1,8 +1,9 @@
 import math
+import pickle
 
 import pytest
 from thirdai import bolt
-import pickle
+
 from utils import gen_numpy_training_data
 
 pytestmark = [pytest.mark.unit]
