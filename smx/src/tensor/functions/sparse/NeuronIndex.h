@@ -18,6 +18,8 @@ class NeuronIndex {
   virtual void freeze(bool insert_missing_labels) {
     (void)insert_missing_labels;
   }
+
+  virtual void setWeight(const DenseTensorPtr& new_weight) { (void)new_weight; }
 };
 
 using NeuronIndexPtr = std::shared_ptr<NeuronIndex>;
@@ -52,6 +54,8 @@ class LshIndex final : public NeuronIndex {
     _frozen = true;
     _insert_missing_labels = insert_missing_labels;
   }
+
+  void setWeight(const DenseTensorPtr& new_weight) final;
 
   void rebuild();
 

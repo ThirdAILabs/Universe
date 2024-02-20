@@ -124,4 +124,12 @@ void LshIndex::rebuild() {
   _hash_table.insertSequential(dim, /*start=*/0, hashes.data());
 }
 
+void LshIndex::setWeight(const DenseTensorPtr& new_weight) {
+  CHECK(new_weight->shape() == _weight->shape(),
+        "Weight shape must match in LshIndex.");
+
+  _weight = new_weight;
+  rebuild();
+}
+
 }  // namespace thirdai::smx

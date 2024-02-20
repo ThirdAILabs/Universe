@@ -127,6 +127,7 @@ class SparseLinear final : public Module {
     _weight = std::move(w);
     deregisterParameter("weight");
     registerParameter("weight", _weight);
+    _neuron_index->setWeight(dense(_weight->tensor()));
   }
 
   const auto& bias() const { return _bias; }
