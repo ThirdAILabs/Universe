@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Callback.h"
+#include <archive/src/Archive.h>
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
@@ -26,6 +27,11 @@ class LearningRateScheduler : public Callback {
   explicit LearningRateScheduler(bool batch_level_steps)
       : _epoch(0), _batch_cnt(0), _batch_level_steps(batch_level_steps) {}
 
+  explicit LearningRateScheduler(const ar::Archive& archive)
+      : _epoch(archive.u64("epoch")),
+        _batch_cnt(archive.u64("batch_cnt")),
+        _batch_level_steps(archive.boolean("batch_level_steps")) {}
+
   virtual float getNextLR(float current_learning_rate, uint32_t step) = 0;
 
   void onEpochBegin() final {
@@ -45,6 +51,17 @@ class LearningRateScheduler : public Callback {
           getNextLR(train_state->learningRate(), _batch_cnt));
     }
     _batch_cnt++;
+  }
+
+ protected:
+  std::shared_ptr<ar::Map> lrScheduleBaseToArchive() const {
+    auto map = ar::Map::make();
+
+    map->set("epoch", ar::u64(_epoch));
+    map->set("batch_cnt", ar::u64(_batch_cnt));
+    map->set("batch_level_steps", ar::boolean(_batch_level_steps));
+
+    return map;
   }
 
  private:
@@ -71,6 +88,13 @@ class LinearSchedule final : public LearningRateScheduler {
         _end_factor(end_factor),
         _total_iters(total_iters) {}
 
+  explicit LinearSchedule(const ar::Archive& archive)
+      : LearningRateScheduler(archive),
+        _start_factor(archive.f32("start_factor")),
+        _end_factor(archive.f32("end_factor")),
+        _lr_change_per_step(archive.f32("lr_change_per_step")),
+        _total_iters(archive.u64("total_iters")) {}
+
   float getNextLR(float current_learning_rate, uint32_t step) final {
     if (step == 0) {
       // calculation of the lr change per step
@@ -85,6 +109,25 @@ class LinearSchedule final : public LearningRateScheduler {
 
     return current_learning_rate + _lr_change_per_step;
   }
+
+  ar::ConstArchivePtr toArchve() const final {
+    auto map = lrScheduleBaseToArchive();
+
+    map->set("type", ar::str(type()));
+    map->set("start_factor", ar::f32(_start_factor));
+    map->set("end_factor", ar::f32(_end_factor));
+    map->set("lr_change_per_step", ar::f32(_lr_change_per_step));
+    map->set("total_iters", ar::u64(_total_iters));
+
+    return map;
+  }
+
+  static std::shared_ptr<LinearSchedule> load_stream(std::istream& istream) {
+    auto archive = ar::deserialize(istream);
+    return std::make_shared<LinearSchedule>(*archive);
+  }
+
+  static std::string type() { return "linear_lr_schedule"; }
 
  private:
   float _start_factor, _end_factor, _lr_change_per_step;
@@ -108,6 +151,11 @@ class MultiStepLR final : public LearningRateScheduler {
         _gamma(gamma),
         _milestones(std::move(milestones)) {}
 
+  explicit MultiStepLR(const ar::Archive& archive)
+      : LearningRateScheduler(archive),
+        _gamma(archive.f32("gamma")),
+        _milestones(archive.getAs<ar::VecU32>("milestones")) {}
+
   float getNextLR(float current_learning_rate, uint32_t step) final {
     if (std::find(_milestones.begin(), _milestones.end(), step) !=
         _milestones.end()) {
@@ -115,6 +163,23 @@ class MultiStepLR final : public LearningRateScheduler {
     }
     return current_learning_rate;
   }
+
+  ar::ConstArchivePtr toArchve() const final {
+    auto map = lrScheduleBaseToArchive();
+
+    map->set("type", ar::str(type()));
+    map->set("gamma", ar::f32(_gamma));
+    map->set("milestones", ar::vecU32(_milestones));
+
+    return map;
+  }
+
+  static std::shared_ptr<MultiStepLR> load_stream(std::istream& istream) {
+    auto archive = ar::deserialize(istream);
+    return std::make_shared<MultiStepLR>(*archive);
+  }
+
+  static std::string type() { return "multi_step_lr_schedule"; }
 
  private:
   float _gamma;
@@ -157,6 +222,16 @@ class CosineAnnealingWarmRestart final : public LearningRateScheduler {
     }
   }
 
+  explicit CosineAnnealingWarmRestart(const ar::Archive& archive)
+      : LearningRateScheduler(archive),
+        _min_lr(archive.f32("min_lr")),
+        _max_lr(archive.f32("max_lr")),
+        _steps(archive.u64("steps")),
+        _steps_until_restart(archive.u64("steps_until_restart")),
+        _steps_until_restart_scaling_factor(
+            archive.u64("steps_until_restart_scaling_factor")),
+        _linear_warmup_steps(archive.u64("linear_warmup_steps")) {}
+
   float getNextLR(float current_learning_rate, uint32_t step) final {
     (void)current_learning_rate, (void)step;
 
@@ -182,6 +257,31 @@ class CosineAnnealingWarmRestart final : public LearningRateScheduler {
     }
 
     return next_lr;
+  }
+
+  ar::ConstArchivePtr toArchve() const final {
+    auto map = lrScheduleBaseToArchive();
+
+    map->set("type", ar::str(type()));
+    map->set("min_lr", ar::f32(_min_lr));
+    map->set("max_lr", ar::f32(_max_lr));
+    map->set("steps", ar::u64(_steps));
+    map->set("steps_until_restart", ar::u64(_steps_until_restart));
+    map->set("steps_until_restart_scaling_factor",
+             ar::u64(_steps_until_restart_scaling_factor));
+    map->set("linear_warmup_steps", ar::u64(_linear_warmup_steps));
+
+    return map;
+  }
+
+  static std::shared_ptr<CosineAnnealingWarmRestart> load_stream(
+      std::istream& istream) {
+    auto archive = ar::deserialize(istream);
+    return std::make_shared<CosineAnnealingWarmRestart>(*archive);
+  }
+
+  static std::string type() {
+    return "cosine_annealing_warm_restart_lr_schedule";
   }
 
  private:

@@ -223,7 +223,8 @@ void defineCallbacks(py::module_& train) {
            py::arg("total_iters") = 5, py::arg("batch_level_steps") = false,
            "LinearLR scheduler changes the learning rate linearly by a small "
            "multiplicative factor until the number of epochs reaches the total "
-           "iterations.\n");
+           "iterations.\n")
+      .def(getPickleFunction<callbacks::LinearSchedule>());
 
   py::class_<callbacks::MultiStepLR, std::shared_ptr<callbacks::MultiStepLR>,
              callbacks::LearningRateScheduler>(callbacks, "MultiStepLR")
@@ -231,7 +232,8 @@ void defineCallbacks(py::module_& train) {
            py::arg("milestones"), py::arg("batch_level_steps") = false,
            "The Multi-step learning rate scheduler changes"
            "the learning rate by a factor of gamma for every milestone"
-           "specified in the vector of milestones. \n");
+           "specified in the vector of milestones. \n")
+      .def(getPickleFunction<callbacks::MultiStepLR>());
 
   py::class_<callbacks::CosineAnnealingWarmRestart,
              std::shared_ptr<callbacks::CosineAnnealingWarmRestart>,
@@ -245,7 +247,8 @@ void defineCallbacks(py::module_& train) {
            "The cosine annealing warm restart LR scheduler decays the learning "
            "rate until the specified number of steps (steps_until_restart) "
            "following a cosine schedule and the next restart occurs after "
-           "steps_until_restart * steps_until_restart_scaling_factor");
+           "steps_until_restart * steps_until_restart_scaling_factor")
+      .def(getPickleFunction<callbacks::CosineAnnealingWarmRestart>());
 }
 
 void defineDistributedTrainer(py::module_& train) {

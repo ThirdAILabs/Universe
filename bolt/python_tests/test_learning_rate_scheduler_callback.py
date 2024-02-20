@@ -2,7 +2,7 @@ import math
 
 import pytest
 from thirdai import bolt
-
+import pickle
 from utils import gen_numpy_training_data
 
 pytestmark = [pytest.mark.unit]
@@ -76,3 +76,17 @@ def test_multi_step_lr():
     )
 
     assert math.isclose(ending_lr, 4e-05, rel_tol=1e-06)
+
+
+@pytest.mark.unit
+def test_lr_schedule_serialization():
+    lr_scheds = [
+        bolt.train.callbacks.LinearLR(),
+        bolt.train.callbacks.MultiStepLR(gamma=0.5, milestones=[1, 10]),
+        bolt.train.callbacks.CosineAnnealingWarmRestart(
+            min_lr=1, max_lr=2, steps_until_restart=10
+        ),
+    ]
+
+    out = pickle.dumps(lr_scheds)
+    pickle.loads(out)
