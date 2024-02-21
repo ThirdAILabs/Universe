@@ -10,7 +10,7 @@ constexpr uint32_t HIDDEN_DIM = 512;
 
 // Default batch size used for training when not provided. Also used for
 // inference and validation.
-constexpr uint32_t BATCH_SIZE = 2048;
+constexpr uint32_t BATCH_SIZE = 10000;
 
 // Whether to freeze hash tables after first epoch of training.
 constexpr bool FREEZE_HASH_TABLES = true;

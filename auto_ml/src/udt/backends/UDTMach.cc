@@ -581,9 +581,6 @@ void UDTMach::introduceDocuments(
           ? mach_index->numBuckets()
           : num_buckets_to_sample_opt.value_or(mach_index->numHashes());
 
-  std::unordered_map<uint32_t, std::vector<std::vector<ValueIndexPair>>>
-      top_k_per_doc;
-
   bolt::python::CtrlCCheck ctrl_c_check;
 
   for (const auto& [input, doc_ids] : data_and_doc_ids) {
@@ -591,6 +588,10 @@ void UDTMach::introduceDocuments(
     // mach index sampler will only return nonempty buckets, which could
     // cause new docs to only be mapped to buckets already containing
     // entities.
+
+    std::unordered_map<uint32_t, std::vector<std::vector<ValueIndexPair>>>
+      top_k_per_doc;
+
     auto scores = _classifier->model()->forward(input).at(0);
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
@@ -604,20 +605,22 @@ void UDTMach::introduceDocuments(
       }
     }
 
-    ctrl_c_check();
-  }
-
-  uint32_t approx_num_hashes_per_bucket =
+    uint32_t approx_num_hashes_per_bucket =
       mach_index->approxNumHashesPerBucket(top_k_per_doc.size());
+      
+    for (auto& [doc, top_ks] : top_k_per_doc) {
+      auto hashes = topHashesForDoc(
+          std::move(top_ks), num_buckets_to_sample, approx_num_hashes_per_bucket,
+          num_random_hashes, load_balancing, sort_random_hashes);
+      mach_index->insert(doc, hashes);
 
-  for (auto& [doc, top_ks] : top_k_per_doc) {
-    auto hashes = topHashesForDoc(
-        std::move(top_ks), num_buckets_to_sample, approx_num_hashes_per_bucket,
-        num_random_hashes, load_balancing, sort_random_hashes);
-    mach_index->insert(doc, hashes);
+      ctrl_c_check();
+    }
 
     ctrl_c_check();
   }
+
+  
 
   addBalancingSamples(data, strong_column_names, weak_column_names,
                       /*variable_length=*/std::nullopt);
