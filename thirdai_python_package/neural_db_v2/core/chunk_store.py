@@ -1,7 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import Iterable, List, Set, Union
 
-from core.types import Chunk, ChunkId, NewChunk
+from core.types import (
+    Chunk,
+    ChunkId,
+    NewChunk,
+    CustomIdSupervisedSample,
+    SupervisedSample,
+)
 
 
 # Calling this ChunkStore instead of DocumentStore because it stores chunks
@@ -24,7 +30,7 @@ class ChunkStore(ABC):
         pass
 
     @abstractmethod
-    def user_assigned_ids_to_chunk_ids(
-        self, user_assigned_ids: List[Union[str, int]]
-    ) -> List[ChunkId]:
+    def remap_custom_ids(
+        self, samples: Iterable[CustomIdSupervisedSample]
+    ) -> Iterable[SupervisedSample]:
         pass

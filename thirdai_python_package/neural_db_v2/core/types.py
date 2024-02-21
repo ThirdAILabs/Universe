@@ -10,7 +10,7 @@ class NewChunk:
     """A chunk that has not been assigned a unique ID."""
 
     # An optional identifier supplied by the user.
-    user_assigned_id: Union[str, int, None]
+    custom_id: Union[str, int, None]
 
     # The text content of the chunk, e.g. a paragraph.
     text: str
@@ -31,3 +31,15 @@ class Chunk(NewChunk):
 
     # A unique identifier assigned by a chunk store.
     chunk_id: ChunkId
+
+
+@dataclass
+class CustomIdSupervisedSample:
+    query: str
+    custom_id: Union[str, int]
+
+
+@dataclass
+class SupervisedSample:
+    query: str
+    chunk_id: int
