@@ -4,10 +4,12 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/featurization/Featurizer.h>
+#include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/transformations/TextCompat.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/mach/MachIndex.h>
 #include <stdexcept>
 
@@ -33,6 +35,10 @@ class MachFeaturizer final : public Featurizer {
       data::ValueFillType label_value_fill = data::ValueFillType::Ones);
 
   explicit MachFeaturizer(const ar::Archive& archive);
+
+  void insertNewDocIds(const dataset::DataSourcePtr& data_source);
+
+  void insertNewDocIds(const data::ColumnMap& data);
 
   std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>
   featurizeForIntroduceDocuments(
