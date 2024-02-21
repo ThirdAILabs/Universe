@@ -17,12 +17,11 @@ class CallbackTracker:
         self.callbacks = callbacks
 
     def save(self, path: Path):
-        path.mkdir(exist_ok=True, parents=True)
         pickle_to(self.callbacks, path)
 
     @staticmethod
     def load(path: Path):
-        return CallbackTracker(callbacks=unpickle_from(path), save_dir=path.parent)
+        return CallbackTracker(callbacks=unpickle_from(path))
 
     def names(self):
         return [

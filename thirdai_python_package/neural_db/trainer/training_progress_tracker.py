@@ -1,3 +1,4 @@
+import copy
 import json
 from pathlib import Path
 from typing import List
@@ -109,6 +110,7 @@ class NeuralDbProgressTracker:
         train_state_args = {
             "train_state": self._train_state.__dict__,
         }
+        train_state_args = copy.deepcopy(train_state_args)
         del train_state_args["train_state"]["callback_tracker"]
         train_state_args["train_state"][
             "callbacks"
