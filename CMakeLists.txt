@@ -57,6 +57,9 @@ set(LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
 list(FIND THIRDAI_FEATURE_FLAGS "THIRDAI_CHECK_LICENSE" _index)
 set(LICENSE_CHECK_FLAG_FOUND ${_index} GREATER -1)
 
+list(FIND THIRDAI_FEATURE_FLAGS "THIRDAI_DNNL_LINEAR" _index)
+set(THIRDAI_DNNL_LINEAR_FOUND ${_index} GREATER -1)
+
 if(${LICENSE_BUILD_FLAG_FOUND})
   # Use our own source, also don't build tests.
   set(CRYPTOPP_BUILD_TESTING OFF)
@@ -300,13 +303,13 @@ include(CTest)
 include_directories(".")
 include_directories(${CMAKE_BINARY_DIR})
 
-# include_directories("/Users/nmeisburger/ThirdAI/oneDNN/include/")
-# include_directories("/Users/nmeisburger/ThirdAI/oneDNN/include/oneapi")
-# include_directories("/Users/nmeisburger/ThirdAI/oneDNN/include/oneapi/dnnl")
 # https://stackoverflow.com/questions/29368026/how-can-i-add-a-prebuilt-static-library-in-a-project-using-cmake
-find_library(DNNL dnnl "/Users/nmeisburger/ThirdAI/oneDNN/build/src")
+if (${THIRDAI_DNNL_LINEAR_FOUND})
+  include_directories("${CMAKE_SOURCE_DIR}/deps/dnnl")
+  find_library(DNNL dnnl "${CMAKE_SOURCE_DIR}/deps/dnnl")
+  message("Using libdnnl: ${DNNL}")
+endif()
 
-message("DNNL LIB: ${DNNL}")
 
 # Our source directories
 add_subdirectory(auto_ml)
@@ -526,7 +529,11 @@ add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(
   thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
-                 prometheus-cpp::pull utf8proc ${DNNL})
+                 prometheus-cpp::pull utf8proc)
+
+if(${THIRDAI_DNNL_LINEAR_FOUND})
+  target_link_libraries(thirdai PUBLIC ${DNNL})
+endif()
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto

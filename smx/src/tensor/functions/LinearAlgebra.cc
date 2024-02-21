@@ -1,4 +1,3 @@
-#include "dnnl.h"
 #include <smx/src/tensor/CsrTensor.h>
 #include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Functions.h>
@@ -8,7 +7,7 @@
 #include <cstddef>
 #include <stdexcept>
 
-#ifdef DNNL_LINEAR
+#ifdef THIRDAI_DNNL_LINEAR
 #include "dnnl.h"
 #endif
 
@@ -53,7 +52,7 @@ DenseTensorPtr denseLinear(const DenseTensorPtr& x, const DenseTensorPtr& w,
 
   auto Y = out->eigenMatrix<float>();
 
-#ifdef DNNL_LINEAR
+#ifdef THIRDAI_DNNL_LINEAR
   int64_t M = X.rows();
   int64_t N = W.rows();
   int64_t K = W.cols();
@@ -83,7 +82,7 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> denseLinearGrad(
   auto W_grad = w_grad->eigenMatrix<float>();
   auto B_grad = b_grad->eigenMatrix<float>();
 
-#ifdef DNNL_LINEAR
+#ifdef THIRDAI_DNNL_LINEAR
   int64_t M = X.rows();
   int64_t N = W.rows();
   int64_t K = W.cols();
@@ -101,7 +100,7 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> denseLinearGrad(
     auto x_grad = DenseTensor::make(x->shape(), Dtype::f32);
     auto X_grad = x_grad->eigenMatrix<float>();
 
-#ifdef DNNL_LINEAR
+#ifdef THIRDAI_DNNL_LINEAR
     dnnl_sgemm(/*TransA=*/'N', /*TransB=*/'N', /*M=*/M, /*N=*/K, /*K=*/N,
                /*alpha=*/1, /*a=*/Y_grad.data(), /*lda=*/N, /*b=*/W.data(),
                /*ldb=*/K, /*beta=*/0.0, X_grad.data(), /*ldc=*/K);
