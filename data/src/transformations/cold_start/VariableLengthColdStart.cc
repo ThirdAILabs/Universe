@@ -14,11 +14,12 @@ VariableLengthConfig::VariableLengthConfig(
     std::optional<uint32_t> max_covering_samples, size_t slice_min_length,
     std::optional<size_t> slice_max_length, uint32_t num_slices,
     bool add_whole_doc, bool prefilter_punctuation,
-    uint32_t strong_sample_num_words, float stopword_removal_probability,
-    float stopword_insertion_probability, float word_removal_probability,
-    float word_perturbation_probability, size_t chars_replace_with_space,
-    size_t chars_deleted, size_t chars_duplicated,
-    size_t chars_replace_with_adjacents)
+    uint32_t strong_sample_num_words,
+    std::optional<uint32_t> strong_to_weak_ratio,
+    float stopword_removal_probability, float stopword_insertion_probability,
+    float word_removal_probability, float word_perturbation_probability,
+    size_t chars_replace_with_space, size_t chars_deleted,
+    size_t chars_duplicated, size_t chars_replace_with_adjacents)
     : covering_min_length(covering_min_length),
       covering_max_length(covering_max_length),
       max_covering_samples(max_covering_samples),
@@ -28,6 +29,7 @@ VariableLengthConfig::VariableLengthConfig(
       add_whole_doc(add_whole_doc),
       prefilter_punctuation(prefilter_punctuation),
       strong_sample_num_words(strong_sample_num_words),
+      strong_to_weak_ratio(strong_to_weak_ratio),
       stopword_removal_probability(stopword_removal_probability),
       stopword_insertion_probability(stopword_insertion_probability),
       word_removal_probability(word_removal_probability),
@@ -86,8 +88,15 @@ std::vector<std::string> VariableLengthColdStart::augmentSingleRow(
 
   Phrase strong_phrase = convertTextToPhrase(strong_text);
   PhraseCollection phrases = getWeakPhrases(weak_text, rng);
-  phrases = cold_start::mergeStrongWithWeak(
-      phrases, strong_phrase, _config.strong_sample_num_words, rng);
+
+  if (_config.strong_to_weak_ratio) {
+    phrases = cold_start::appendStrongAndWeak(
+        phrases, strong_phrase, _config.strong_sample_num_words,
+        _config.strong_to_weak_ratio.value(), rng);
+  } else {
+    phrases = cold_start::concatStrongWithWeak(
+        phrases, strong_phrase, _config.strong_sample_num_words, rng);
+  }
 
   std::vector<std::string> output_samples;
   for (const auto& phrase : phrases) {

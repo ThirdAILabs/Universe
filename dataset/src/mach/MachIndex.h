@@ -85,6 +85,12 @@ class MachIndex {
     return _buckets.at(bucket).size();
   }
 
+  uint32_t approxNumHashesPerBucket(uint32_t num_new_samples) const {
+    uint32_t total_hashes = ((num_new_samples + numEntities()) * numHashes());
+
+    return (total_hashes + numBuckets() - 1) / numBuckets();
+  }
+
   const auto& entityToHashes() const { return _entity_to_hashes; }
 
   const auto& nonemptyBuckets() const { return _nonempty_buckets; }
