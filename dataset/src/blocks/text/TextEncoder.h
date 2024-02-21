@@ -195,13 +195,10 @@ class CompositeEncoder : public TextEncoder {
 
     for (const auto& encoder : _encoders) {
       auto generated_encodings = encoder->encode(tokens);
-      std::cout << "generated encodings size: " << generated_encodings.size()
-                << "\n";
 
       std::copy(generated_encodings.begin(), generated_encodings.end(),
                 std::back_inserter(encodings));
 
-      std::cout << "current encoding size: " << encodings.size() << "\n";
       if (encodings.size() > _max_tokens) {
         break;
       }
