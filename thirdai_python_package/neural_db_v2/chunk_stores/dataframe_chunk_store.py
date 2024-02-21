@@ -11,14 +11,17 @@ class DataFrameChunkStore(ChunkStore):
         self.text_df = self.text_df.set_index("chunk_id")
         self.metadata_df = pd.DataFrame({"chunk_id": [], "key": [], "value": []})
         self.metadata_df = self.metadata_df.set_index("chunk_id")
+        self.last_id = 0
 
     def insert_batch(
         self,
         chunks: Iterable[NewChunk],
         **kwargs,
     ):
-        prev_max_id = self.text_df.index.max()
-        chunk_ids = [prev_max_id + i for i in range(len(chunks))]
+        new_last_id = self.last_id + len(chunks)
+        chunk_ids = range(self.last_id, new_last_id)
+        self.last_id = new_last_id
+
         text_df_delta = pd.DataFrame.from_records(
             [
                 {"chunk_id": chunk_id, "text": doc.text, "keywords": doc.keywords}
