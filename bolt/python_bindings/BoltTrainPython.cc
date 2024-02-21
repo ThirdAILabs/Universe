@@ -212,8 +212,8 @@ void defineCallbacks(py::module_& train) {
 
   py::class_<callbacks::LearningRateScheduler,
              std::shared_ptr<callbacks::LearningRateScheduler>,
-             callbacks::Callback>
-      LearningRateScheduler(callbacks, "LearningRateScheduler");
+             callbacks::Callback>(callbacks, "LearningRateScheduler")
+      .def("name", &callbacks::LearningRateScheduler::name);
 
   py::class_<callbacks::LinearSchedule,
              std::shared_ptr<callbacks::LinearSchedule>,

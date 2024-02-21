@@ -80,10 +80,10 @@ def move_between_directories(src, dest):
     import os
     import shutil
 
-    # gather all files
+    # gather all files and directories
     allfiles = os.listdir(src)
 
-    # iterate on all files to move them to destination folder
+    # iterate on all files and directories to move them to destination folder
     for f in allfiles:
         src_path = os.path.join(src, f)
         dst_path = os.path.join(dest, f)

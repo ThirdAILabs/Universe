@@ -30,9 +30,13 @@ class LearningRateScheduler : public Callback {
   explicit LearningRateScheduler(const ar::Archive& archive)
       : _epoch(archive.u64("epoch")),
         _batch_cnt(archive.u64("batch_cnt")),
-        _batch_level_steps(archive.boolean("batch_level_steps")) {}
+        _batch_level_steps(archive.boolean("batch_level_steps")) {
+    train_state->updateLearningRate(archive.f32("learning_rate"));
+  }
 
   virtual float getNextLR(float current_learning_rate, uint32_t step) = 0;
+
+  virtual std::string name() = 0;
 
   void onEpochBegin() final {
     // resetting the batch count
@@ -60,7 +64,7 @@ class LearningRateScheduler : public Callback {
     map->set("epoch", ar::u64(_epoch));
     map->set("batch_cnt", ar::u64(_batch_cnt));
     map->set("batch_level_steps", ar::boolean(_batch_level_steps));
-
+    map->set("learning_rate", ar::f32(train_state->learningRate()));
     return map;
   }
 
@@ -129,6 +133,8 @@ class LinearSchedule final : public LearningRateScheduler {
 
   static std::string type() { return "linear_lr_schedule"; }
 
+  std::string name() override { return "LinearLR"; }
+
  private:
   float _start_factor, _end_factor, _lr_change_per_step;
   uint32_t _total_iters;
@@ -180,6 +186,8 @@ class MultiStepLR final : public LearningRateScheduler {
   }
 
   static std::string type() { return "multi_step_lr_schedule"; }
+
+  std::string name() override { return "MultiStepLR"; }
 
  private:
   float _gamma;
@@ -283,6 +291,8 @@ class CosineAnnealingWarmRestart final : public LearningRateScheduler {
   static std::string type() {
     return "cosine_annealing_warm_restart_lr_schedule";
   }
+
+  std::string name() override { return "CosineAnnealingWarmRestartLR"; }
 
  private:
   float _min_lr, _max_lr;

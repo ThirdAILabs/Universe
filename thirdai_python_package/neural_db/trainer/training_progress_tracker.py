@@ -1,7 +1,9 @@
 import json
 from pathlib import Path
+from typing import List
 
 from ..utils import pickle_to, unpickle_from
+from .callback_tracker import CallbackTracker
 
 
 class TrainState:
@@ -17,6 +19,7 @@ class TrainState:
         batch_size: int,
         freeze_after_epoch: int,
         freeze_after_acc: float,
+        callback_tracker: CallbackTracker,
         **kwargs,
     ):
         self.max_in_memory_batches = max_in_memory_batches
@@ -29,6 +32,11 @@ class TrainState:
         self.batch_size = batch_size
         self.freeze_after_epoch = freeze_after_epoch
         self.freeze_after_acc = freeze_after_acc
+        self.callback_tracker = callback_tracker
+
+    @property
+    def user_callbacks(self):
+        return self.callback_tracker.callbacks
 
 
 class IntroState:
@@ -97,10 +105,16 @@ class NeuralDbProgressTracker:
             raise TypeError("Can set the property only with an int")
 
     def __dict__(self):
-        return {
-            "intro_state": self._intro_state.__dict__,
+        state_args = {"intro_state": self._intro_state.__dict__}
+        train_state_args = {
             "train_state": self._train_state.__dict__,
         }
+        del train_state_args["train_state"]["callback_tracker"]
+        train_state_args["train_state"][
+            "callbacks"
+        ] = self._train_state.callback_tracker.names()
+        state_args.update(train_state_args)
+        return state_args
 
     def insert_complete(self):
         if self.is_insert_completed:
@@ -149,6 +163,7 @@ class NeuralDbProgressTracker:
         with open(path / "tracker.json", "w") as f:
             json.dump(self.__dict__(), f, indent=4)
         pickle_to(self.vlc_config, path / "vlc.config")
+        self._train_state.callback_tracker.save(path=path / "callbacks.pkl")
 
     @staticmethod
     def load(path: Path):
@@ -156,7 +171,8 @@ class NeuralDbProgressTracker:
             args = json.load(f)
 
         vlc_config = unpickle_from(path / "vlc.config")
-
+        callback_tracker = CallbackTracker.load(path / "callbacks.pkl")
+        args["train_state"].callback_tracker = callback_tracker
         return NeuralDbProgressTracker(
             intro_state=IntroState(**args["intro_state"]),
             train_state=TrainState(**args["train_state"]),
