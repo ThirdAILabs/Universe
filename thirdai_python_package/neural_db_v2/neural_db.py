@@ -6,46 +6,37 @@ from core.retriever import Retriever
 from core.types import NewChunk
 from documents import document_by_name
 from retrievers import retriever_by_name
-from utils.kwarg_processing import extract_kwargs
 
 from thirdai_python_package.neural_db_v2.core.chunk_store import ChunkStore
 
 
 class NeuralDB:
-    @staticmethod
-    def _index_kwargs(kwargs):
-        return extract_kwargs(kwargs, prefix="index_")
-
-    @staticmethod
-    def _retriever_kwargs(kwargs):
-        return extract_kwargs(kwargs, prefix="retriever_")
-
     def __init__(
         self,
         chunk_store: Optional[Union[ChunkStore, str]] = "default",
         retriever: Optional[Union[Retriever, str]] = "default",
         **kwargs
     ):
-        self.index = (
+        self.chunk_store = (
             chunk_store
             if isinstance(chunk_store, ChunkStore)
-            else chunk_store_by_name(chunk_store, **NeuralDB._index_kwargs(kwargs))
+            else chunk_store_by_name(chunk_store, **kwargs)
         )
         self.retriever = (
             retriever
             if isinstance(retriever, Retriever)
-            else retriever_by_name(retriever, **NeuralDB._retriever_kwargs(kwargs))
+            else retriever_by_name(retriever, **kwargs)
         )
 
     def insert_chunks(self, chunks: Iterable[NewChunk], **kwargs):
-        stored_chunks = self.index.insert_batch(
+        stored_chunks = self.chunk_store.insert(
             chunks=chunks,
             assign_new_unique_ids=True,
-            **NeuralDB._index_kwargs(kwargs),
+            **kwargs,
         )
-        self.retriever.insert_batch(
+        self.retriever.insert(
             chunks=stored_chunks,
-            **NeuralDB._retriever_kwargs(kwargs),
+            **kwargs,
         )
 
     def insert(self, docs: List[Union[str, Document]], **kwargs):
@@ -56,10 +47,6 @@ class NeuralDB:
 
     def search(self, query: str, top_k: int, constraints: dict = None, **kwargs):
         if not constraints:
-            return self.retriever.search(
-                query, top_k, **NeuralDB._retriever_kwargs(kwargs)
-            )
-        choices = self.index.matching_chunk_ids(
-            constraints, **NeuralDB._index_kwargs(kwargs)
-        )
-        return self.retriever.rank(query, choices, **NeuralDB._retriever_kwargs(kwargs))
+            return self.retriever.search([query], top_k, **kwargs)
+        choices = self.chunk_store.filter_chunk_ids(constraints, **kwargs)
+        return self.retriever.rank([query], [choices], **kwargs)
