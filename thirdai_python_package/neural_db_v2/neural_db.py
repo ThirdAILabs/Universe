@@ -59,7 +59,7 @@ class NeuralDB:
             return self.retriever.search(
                 query, top_k, **NeuralDB._retriever_kwargs(kwargs)
             )
-        choices = self.index.matching_doc_ids(
+        choices = self.index.matching_chunk_ids(
             constraints, **NeuralDB._index_kwargs(kwargs)
         )
         return self.retriever.rank(query, choices, **NeuralDB._retriever_kwargs(kwargs))

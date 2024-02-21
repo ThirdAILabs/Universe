@@ -16,23 +16,23 @@ class ChunkStore(ABC):
         pass
 
     @abstractmethod
-    def delete(self, doc_id: ChunkId, **kwargs):
+    def delete(self, chunk_id: ChunkId, **kwargs):
         pass
 
     @abstractmethod
-    def delete_batch(self, doc_ids: List[ChunkId], **kwargs):
+    def delete_batch(self, chunk_ids: List[ChunkId], **kwargs):
         pass
 
     @abstractmethod
-    def get_chunk(self, doc_id: ChunkId, **kwargs) -> Chunk:
+    def get_chunk(self, chunk_id: ChunkId, **kwargs) -> Chunk:
         pass
 
     @abstractmethod
-    def get_chunk_batch(self, doc_ids: List[ChunkId], **kwargs) -> List[Chunk]:
+    def get_chunk_batch(self, chunk_ids: List[ChunkId], **kwargs) -> List[Chunk]:
         pass
 
     @abstractmethod
-    def matching_doc_ids(self, constraints: dict, **kwargs) -> Set[ChunkId]:
+    def matching_chunk_ids(self, constraints: dict, **kwargs) -> Set[ChunkId]:
         pass
 
     @abstractmethod

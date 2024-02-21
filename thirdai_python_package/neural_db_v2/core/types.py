@@ -15,4 +15,4 @@ class NewChunk:
 
 @dataclass
 class Chunk(NewChunk):
-    doc_id: ChunkId
+    chunk_id: ChunkId
