@@ -30,9 +30,7 @@ class LearningRateScheduler : public Callback {
   explicit LearningRateScheduler(const ar::Archive& archive)
       : _epoch(archive.u64("epoch")),
         _batch_cnt(archive.u64("batch_cnt")),
-        _batch_level_steps(archive.boolean("batch_level_steps")) {
-    train_state->updateLearningRate(archive.f32("learning_rate"));
-  }
+        _batch_level_steps(archive.boolean("batch_level_steps")) {}
 
   virtual float getNextLR(float current_learning_rate, uint32_t step) = 0;
 
@@ -64,7 +62,6 @@ class LearningRateScheduler : public Callback {
     map->set("epoch", ar::u64(_epoch));
     map->set("batch_cnt", ar::u64(_batch_cnt));
     map->set("batch_level_steps", ar::boolean(_batch_level_steps));
-    map->set("learning_rate", ar::f32(train_state->learningRate()));
     return map;
   }
 
