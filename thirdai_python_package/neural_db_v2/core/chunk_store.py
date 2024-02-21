@@ -8,31 +8,19 @@ from core.types import Chunk, ChunkId, NewChunk
 # instead of documents.
 class ChunkStore(ABC):
     @abstractmethod
-    def insert(self, chunk: NewChunk, **kwargs) -> Chunk:
+    def insert(self, chunks: Iterable[NewChunk], **kwargs) -> Iterable[Chunk]:
         pass
 
     @abstractmethod
-    def insert_batch(self, chunks: Iterable[NewChunk], **kwargs) -> Iterable[Chunk]:
+    def delete(self, chunk_ids: List[ChunkId], **kwargs):
         pass
 
     @abstractmethod
-    def delete(self, chunk_id: ChunkId, **kwargs):
+    def get_chunks(self, chunk_ids: List[ChunkId], **kwargs) -> List[Chunk]:
         pass
 
     @abstractmethod
-    def delete_batch(self, chunk_ids: List[ChunkId], **kwargs):
-        pass
-
-    @abstractmethod
-    def get_chunk(self, chunk_id: ChunkId, **kwargs) -> Chunk:
-        pass
-
-    @abstractmethod
-    def get_chunk_batch(self, chunk_ids: List[ChunkId], **kwargs) -> List[Chunk]:
-        pass
-
-    @abstractmethod
-    def matching_chunk_ids(self, constraints: dict, **kwargs) -> Set[ChunkId]:
+    def filter_chunk_ids(self, constraints: dict, **kwargs) -> Set[ChunkId]:
         pass
 
     @abstractmethod
