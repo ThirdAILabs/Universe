@@ -2,8 +2,7 @@ from typing import Iterable, List, Set
 
 import pandas as pd
 from core.types import ChunkId, NewChunk
-
-from thirdai_python_package.neural_db_v2.core.chunk_store import ChunkStore
+from core.chunk_store import ChunkStore
 
 
 class DataFrameChunkStore(ChunkStore):

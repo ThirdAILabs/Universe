@@ -1,32 +1,24 @@
 from typing import Iterable, List, Optional, Union
 
-from chunk_stores import chunk_store_by_name
 from core.documents import Document
 from core.retriever import Retriever
+from core.chunk_store import ChunkStore
 from core.types import NewChunk
 from documents import document_by_name
-from retrievers import retriever_by_name
 
-from thirdai_python_package.neural_db_v2.core.chunk_store import ChunkStore
+from chunk_stores.dataframe_chunk_store import DataFrameChunkStore
+from retrievers.mach_retriever import MachRetriever
 
 
 class NeuralDB:
     def __init__(
         self,
-        chunk_store: Optional[Union[ChunkStore, str]] = "default",
-        retriever: Optional[Union[Retriever, str]] = "default",
+        chunk_store: Optional[ChunkStore] = None,
+        retriever: Optional[Retriever] = None,
         **kwargs
     ):
-        self.chunk_store = (
-            chunk_store
-            if isinstance(chunk_store, ChunkStore)
-            else chunk_store_by_name(chunk_store, **kwargs)
-        )
-        self.retriever = (
-            retriever
-            if isinstance(retriever, Retriever)
-            else retriever_by_name(retriever, **kwargs)
-        )
+        self.chunk_store = chunk_store or DataFrameChunkStore(**kwargs)
+        self.retriever = retriever or MachRetriever(**kwargs)
 
     def insert_chunks(self, chunks: Iterable[NewChunk], **kwargs):
         stored_chunks = self.chunk_store.insert(
