@@ -51,7 +51,9 @@ class SGD final : public Optimizer {
 class SGDFactory final : public OptimizerFactory {
  public:
   explicit SGDFactory(std::optional<float> grad_clip = std::nullopt)
-      : _grad_clip(grad_clip) {}
+      : _grad_clip(grad_clip) {
+    std::cout << "SGD Optimizer Factory called";
+  }
 
   std::unique_ptr<Optimizer> makeOptimizer(size_t rows,
                                            size_t cols) const final {

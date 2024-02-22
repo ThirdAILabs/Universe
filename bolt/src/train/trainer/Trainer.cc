@@ -117,6 +117,7 @@ metrics::History Trainer::train(
         train_metrics.recordBatch(inputs.at(0)->batchSize());
       }
 
+      train_metrics.updateHistory(*_history);
       callbacks.onBatchEnd();
 
       if (bar) {
@@ -150,8 +151,6 @@ metrics::History Trainer::train(
       metrics_at_rank_0 =
           comm->broadcastMetrics(train_metrics.getFlattenedMetrics());
     }
-
-    train_metrics.updateHistory(*_history);
 
     if (comm && train_metrics.hasMetrics()) {
       train_metrics.setFlattenedMetrics(*_history, metrics_at_rank_0);
