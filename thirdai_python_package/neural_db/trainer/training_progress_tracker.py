@@ -35,11 +35,6 @@ class TrainState:
         self.freeze_after_acc = freeze_after_acc
         self.callback_tracker = callback_tracker
 
-    @property
-    def user_callbacks(self):
-        return self.callback_tracker.callbacks
-
-
 class IntroState:
     def __init__(
         self,
@@ -105,16 +100,21 @@ class NeuralDbProgressTracker:
         else:
             raise TypeError("Can set the property only with an int")
 
+    @property
+    def callbacks(self):
+        return self._train_state.callback_tracker.all_callbacks()
+
     def __dict__(self):
         state_args = {"intro_state": self._intro_state.__dict__}
         train_state_args = {
             "train_state": self._train_state.__dict__,
         }
+        self._train_state.learning_rate = self._train_state.callback_tracker.get_lr
         train_state_args = copy.deepcopy(train_state_args)
         del train_state_args["train_state"]["callback_tracker"]
         train_state_args["train_state"][
             "callbacks"
-        ] = self._train_state.callback_tracker.names()
+        ] = self._train_state.callback_tracker.user_callbacks_name()
         state_args.update(train_state_args)
         return state_args
 

@@ -154,7 +154,7 @@ class TrainingProgressManager:
             "freeze_after_acc", 0.80 if "freeze_after_epoch" not in kwargs else 1
         )
         train_args["callback_tracker"] = CallbackTracker(
-            callbacks=kwargs.get("callbacks", [])
+            user_callbacks=kwargs.get("callbacks", [])
         )
 
         train_state = TrainState(

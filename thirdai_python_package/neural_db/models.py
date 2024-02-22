@@ -297,7 +297,7 @@ def unsupervised_train_on_docs(
     if training_progress_callback:
         callbacks.append(training_progress_callback)
         callbacks.extend(
-            training_progress_callback.training_progress_manager.tracker._train_state.user_callbacks
+            training_progress_callback.training_progress_manager.tracker.callbacks
         )
 
     model.cold_start_on_data_source(
