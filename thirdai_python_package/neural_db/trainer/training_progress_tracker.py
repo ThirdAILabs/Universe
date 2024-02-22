@@ -35,6 +35,7 @@ class TrainState:
         self.freeze_after_acc = freeze_after_acc
         self.callback_tracker = callback_tracker
 
+
 class IntroState:
     def __init__(
         self,
@@ -106,10 +107,10 @@ class NeuralDbProgressTracker:
 
     def __dict__(self):
         state_args = {"intro_state": self._intro_state.__dict__}
+        self._train_state.learning_rate = self._train_state.callback_tracker.get_lr()
         train_state_args = {
             "train_state": self._train_state.__dict__,
         }
-        self._train_state.learning_rate = self._train_state.callback_tracker.get_lr
         train_state_args = copy.deepcopy(train_state_args)
         del train_state_args["train_state"]["callback_tracker"]
         train_state_args["train_state"][
