@@ -201,8 +201,9 @@ void Embedding::initOptimizer() {
 void Embedding::sparseEmbeddingUpdate(float learning_rate,
                                       uint32_t train_steps) {
   float B1_bias_corrected = static_cast<float>(1 - pow(BETA1, train_steps));
+  (void)B1_bias_corrected;
   float B2_bias_corrected = static_cast<float>(1 - pow(BETA2, train_steps));
-
+  (void)B2_bias_corrected;
 #pragma omp parallel for default(none) \
     shared(B1_bias_corrected, B2_bias_corrected, learning_rate)
   for (size_t n = 0; n < _input_dim; n++) {
