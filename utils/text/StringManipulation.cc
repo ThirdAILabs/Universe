@@ -56,6 +56,10 @@ std::vector<std::string> split(const std::string_view& string, char delimiter) {
 std::vector<std::string> tokenizeSentence(const std::string& sentence_in) {
   const std::wstring sentence = text::toUnicode(text::normalize(sentence_in));
 
+  // A-Za-zÀ-ÖØ-öø-ÿ0-9 : alphanumeric characters, including accents.
+  // \s : whitespace
+  // Together: match strings of at least one alphanumeric character or a single
+  // non-alphanumeric non-whitespace character
   std::wregex regex(LR"([A-Za-zÀ-ÖØ-öø-ÿ0-9]+|[^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s])");
 
   std::wcregex_iterator iter(sentence.data(), sentence.data() + sentence.size(),
