@@ -34,7 +34,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _prev_is_active(prev_dim, false),
       _is_active(config.getDim(), false) {
   std::mt19937 rng(global_random::nextSeed());
-  std::normal_distribution<float> dist(0.0, 0.01);
+  std::normal_distribution<float> dist(0.0, 0.1);
 
   std::generate(_weights.begin(), _weights.end(), [&]() { return dist(rng); });
 
