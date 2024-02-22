@@ -23,7 +23,7 @@ std::vector<std::string> split(const std::string_view& string, char delimiter);
  * To see more expected behaviors, see tests prefixed with
  * "TestTokenizeSentence" in StringManipulationTests.cc
  */
-std::vector<std::string> tokenizeSentence(const std::string_view& sentence);
+std::vector<std::string> tokenizeSentence(const std::string& sentence);
 
 std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k);
 

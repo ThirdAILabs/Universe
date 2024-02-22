@@ -10,6 +10,7 @@
 #include <regex>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utf8proc.h>
@@ -53,28 +54,50 @@ std::vector<std::string> split(const std::string_view& string, char delimiter) {
   return words;
 }
 
-std::vector<std::string> tokenizeSentence(const std::string_view& sentence) {
-  std::string sentence_str(sentence);
+std::vector<std::string> tokenizeSentence(const std::string& sentence_in) {
+  const std::wstring sentence = text::toUnicode(text::normalize(sentence_in));
 
-  // A-Za-zÀ-ÖØ-öø-ÿ0-9 : alphanumeric characters, including accents.
-  // \s : whitespace
-  // Together: match strings of at least one alphanumeric character or a single
-  // non-alphanumeric non-whitespace character
-  std::regex regex(R"([A-Za-zÀ-ÖØ-öø-ÿ0-9]+|[^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s])");
+  std::wregex regex(LR"([A-Za-zÀ-ÖØ-öø-ÿ0-9]+|[^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s])");
 
-  std::sregex_iterator iter(sentence_str.begin(), sentence_str.end(), regex);
-  std::sregex_iterator end;
+  std::wcregex_iterator iter(sentence.data(), sentence.data() + sentence.size(),
+                             regex);
+  std::wcregex_iterator end;
 
   std::vector<std::string> tokens;
 
   while (iter != end) {
-    std::smatch match = *iter;
-    tokens.push_back(sentence_str.substr(match.position(), match.length()));
+    std::wcmatch match = *iter;
+    std::wstring token = sentence.substr(match.position(), match.length());
+    tokens.push_back(text::fromUnicode(token));
     ++iter;
   }
 
   return tokens;
 }
+
+// std::vector<std::string> tokenizeSentence(const std::string_view& sentence) {
+//   std::string sentence_str(sentence);
+
+//   // A-Za-zÀ-ÖØ-öø-ÿ0-9 : alphanumeric characters, including accents.
+//   // \s : whitespace
+//   // Together: match strings of at least one alphanumeric character or a
+//   single
+//   // non-alphanumeric non-whitespace character
+//   std::regex regex(R"([A-Za-zÀ-ÖØ-öø-ÿ0-9]+|[^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s])");
+
+//   std::sregex_iterator iter(sentence_str.begin(), sentence_str.end(), regex);
+//   std::sregex_iterator end;
+
+//   std::vector<std::string> tokens;
+
+//   while (iter != end) {
+//     std::smatch match = *iter;
+//     tokens.push_back(sentence_str.substr(match.position(), match.length()));
+//     ++iter;
+//   }
+
+//   return tokens;
+// }
 
 std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
   utils::validateGreaterThanZero(k, "k for Char-k grams");
