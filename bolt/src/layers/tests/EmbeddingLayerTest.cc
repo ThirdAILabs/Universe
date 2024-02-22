@@ -1,5 +1,6 @@
 #include <bolt/src/layers/EmbeddingLayer.h>
 #include <bolt/src/layers/LayerConfig.h>
+#include <bolt/src/nn/optimizers/Adam.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/MurmurHash.h>
 #include <gtest/gtest.h>
@@ -23,10 +24,11 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
                                 reduction, NUM_TOKENS_PER_INPUT);
 
     auto layer = std::make_unique<EmbeddingLayer>(config, seed);
-    layer->initOptimizer();
 
     std::iota(layer->_embedding_block->begin(), layer->_embedding_block->end(),
               1.0);
+
+    layer->initOptimizer(AdamFactory::make());
 
     return layer;
   }
@@ -46,7 +48,7 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
   }
 
   static float* getEmbeddingGradients(std::unique_ptr<EmbeddingLayer>& layer) {
-    return layer->_optimizer->gradients.data();
+    return layer->_gradients.data();
   }
 
   static BoltBatch getEmbeddings(

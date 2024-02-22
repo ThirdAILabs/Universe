@@ -68,6 +68,12 @@ void Activation<Impl>::updateParameters(float learning_rate,
 }
 
 template <typename Impl>
+void Activation<Impl>::initOptimizer(
+    const OptimizerFactoryPtr& optimizer_factory) {
+  (void)optimizer_factory;
+}
+
+template <typename Impl>
 uint32_t Activation<Impl>::dim() const {
   return _dim;
 }
@@ -77,9 +83,6 @@ std::optional<uint32_t> Activation<Impl>::nonzeros(
     const ComputationList& inputs, bool use_sparsity) const {
   return inputs.at(0)->nonzeros(use_sparsity);
 }
-
-template <typename Impl>
-void Activation<Impl>::initOptimizer() {}
 
 template <typename Impl>
 void Activation<Impl>::disableSparseParameterUpdates() {}

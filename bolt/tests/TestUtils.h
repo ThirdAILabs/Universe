@@ -52,6 +52,10 @@ class Noop final : public Op, public std::enable_shared_from_this<Noop> {
     (void)t;
   }
 
+  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory) final {
+    (void)optimizer_factory;
+  }
+
   uint32_t dim() const final { return _dim; }
 
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
@@ -62,8 +66,6 @@ class Noop final : public Op, public std::enable_shared_from_this<Noop> {
     }
     return _dim;
   }
-
-  void initOptimizer() final {}
 
   void disableSparseParameterUpdates() final {}
 

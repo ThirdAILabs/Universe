@@ -90,7 +90,9 @@ std::optional<uint32_t> MaxPool1D::nonzeros(const ComputationList& inputs,
   return _output_dim;
 }
 
-void MaxPool1D::initOptimizer() {}
+void MaxPool1D::initOptimizer(const OptimizerFactoryPtr& optimizer_factory) {
+  (void)optimizer_factory;
+}
 
 void MaxPool1D::disableSparseParameterUpdates() {}
 

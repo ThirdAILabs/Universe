@@ -3,7 +3,6 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
-#include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <archive/src/Archive.h>
 #include <memory>
@@ -38,12 +37,12 @@ class QuantileMixing final
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
+  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory) final;
+
   uint32_t dim() const final;
 
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
-
-  void initOptimizer() final;
 
   void disableSparseParameterUpdates() final;
 

@@ -113,7 +113,10 @@ std::optional<uint32_t> QuantileMixing::nonzeros(const ComputationList& inputs,
   return _output_dim;
 }
 
-void QuantileMixing::initOptimizer() {}
+void QuantileMixing::initOptimizer(
+    const OptimizerFactoryPtr& optimizer_factory) {
+  (void)optimizer_factory;
+}
 
 void QuantileMixing::disableSparseParameterUpdates() {}
 

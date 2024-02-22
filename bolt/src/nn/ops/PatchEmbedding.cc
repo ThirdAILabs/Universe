@@ -88,7 +88,7 @@ void PatchEmbedding::backpropagate(ComputationList& inputs, TensorPtr& output,
 
 void PatchEmbedding::updateParameters(float learning_rate,
                                       uint32_t train_steps) {
-  _kernel->updateParameters(learning_rate, train_steps, BETA1, BETA2, EPS);
+  _kernel->updateParameters(learning_rate, train_steps);
 
   if (++_updates_since_reconstruct_hash_functions ==
       _reconstruct_hash_functions) {
@@ -113,7 +113,10 @@ std::optional<uint32_t> PatchEmbedding::nonzeros(const ComputationList& inputs,
   return patchNonzeros(use_sparsity) * _n_patches;
 }
 
-void PatchEmbedding::initOptimizer() { _kernel->initOptimizer(); }
+void PatchEmbedding::initOptimizer(
+    const OptimizerFactoryPtr& optimizer_factory) {
+  _kernel->initOptimizer(optimizer_factory);
+}
 
 void PatchEmbedding::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
@@ -132,7 +135,7 @@ std::vector<std::vector<float>*> PatchEmbedding::parameters() {
 }
 
 ComputationPtr PatchEmbedding::applyToInputs(const ComputationList& inputs) {
-  if (inputs.size() != 2) {
+  if (inputs.size() != 1) {
     throw std::invalid_argument(
         "Expected PatchEmbedding op to have one input.");
   }
@@ -167,12 +170,10 @@ ar::ConstArchivePtr PatchEmbedding::toArchive(bool with_optimizer) const {
   if (with_optimizer && _kernel->_weight_optimizer &&
       _kernel->_bias_optimizer) {
     map->set("weight_optimizer",
-             optimizerToArchive(*_kernel->_weight_optimizer, shared_from_this(),
-                                patchEmbeddingDim(), patchDim()));
+             _kernel->_weight_optimizer->toArchive(shared_from_this()));
 
     map->set("bias_optimizer",
-             optimizerToArchive(*_kernel->_bias_optimizer, shared_from_this(),
-                                /*rows=*/1, patchEmbeddingDim()));
+             _kernel->_bias_optimizer->toArchive(shared_from_this()));
   }
 
   map->set("disable_sparse_parameter_updates",

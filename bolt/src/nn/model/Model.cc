@@ -33,10 +33,12 @@ namespace thirdai::bolt {
 
 Model::Model(ComputationList inputs, ComputationList outputs,
              std::vector<LossPtr> losses,
-             const ComputationList& expected_labels)
+             const ComputationList& expected_labels,
+             OptimizerFactoryPtr optimizer)
     : _inputs(std::move(inputs)),
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
+      _optimizer_factory(std::move(optimizer)),
       _epochs(0),
       _train_steps(0),
       _model_uuid(
@@ -85,10 +87,11 @@ Model::Model(ComputationList inputs, ComputationList outputs,
 std::shared_ptr<Model> Model::make(ComputationList inputs,
                                    ComputationList outputs,
                                    std::vector<LossPtr> losses,
-                                   const ComputationList& expected_labels) {
-  auto model =
-      std::shared_ptr<Model>(new Model(std::move(inputs), std::move(outputs),
-                                       std::move(losses), expected_labels));
+                                   const ComputationList& expected_labels,
+                                   OptimizerFactoryPtr optimizer) {
+  auto model = std::shared_ptr<Model>(
+      new Model(std::move(inputs), std::move(outputs), std::move(losses),
+                expected_labels, std::move(optimizer)));
 
   // This has to be done here because we need the model to be allocated using a
   // shared_ptr in order to use shared_from_this() to get a valid reference.
@@ -301,7 +304,9 @@ std::vector<uint32_t> Model::labelDims() const {
   return dims;
 }
 
-std::vector<std::vector<float>*> Model::gradients() const {
+std::vector<std::vector<float>*> Model::gradients() {
+  requireOptimizer();
+
   std::vector<std::vector<float>*> grads;
 
   for (const auto& op : _ops) {
@@ -443,9 +448,15 @@ ar::ConstArchivePtr Model::toArchive(bool with_optimizer) const {
   /**
    * Labels
    */
+  std::unordered_set<ComputationPtr> labels_seen;
   auto labels = ar::List::make();
   for (const auto& label : _labels) {
-    labels->append(placeholder(label->name(), label->dim()));
+    if (!labels_seen.count(label)) {
+      // Since multiple losses could reference the same label, a label could
+      // appear multiple times.
+      labels->append(placeholder(label->name(), label->dim()));
+      labels_seen.insert(label);
+    }
   }
   model->set("labels", labels);
 
@@ -479,6 +490,11 @@ ar::ConstArchivePtr Model::toArchive(bool with_optimizer) const {
     output_names.push_back(output->name());
   }
   model->set("outputs", ar::vecStr(output_names));
+
+  /**
+   * Optimizer
+   */
+  model->set("optimizer", _optimizer_factory->toArchive());
 
   /**
    * Metadata
@@ -553,7 +569,17 @@ std::shared_ptr<Model> Model::fromArchive(const ar::Archive& archive) {
     outputs.push_back(computations.at(output));
   }
 
-  auto model = Model::make(inputs, outputs, losses, labels);
+  /**
+   * Optimizer
+   */
+  OptimizerFactoryPtr optimizer;
+  if (archive.contains("optimizer")) {
+    optimizer = OptimizerFactory::fromArchive(*archive.get("optimizer"));
+  } else {
+    optimizer = AdamFactory::make();
+  }
+
+  auto model = Model::make(inputs, outputs, losses, labels, optimizer);
 
   /**
    * Metadata
@@ -584,6 +610,13 @@ void Model::unfreezeHashTables() {
       fc->unfreezeHashTables();
     }
   }
+}
+
+void Model::changeOptimizer(OptimizerFactoryPtr optimizer) {
+  for (auto& op : _ops) {
+    op->initOptimizer(optimizer);
+  }
+  _optimizer_factory = std::move(optimizer);
 }
 
 std::vector<std::pair<ComputationPtr, ComputationPtr>> Model::outputLabelPairs()
@@ -621,7 +654,6 @@ void Model::checkpoint(const std::string& filename, bool save_metadata) {
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
 
   setSerializeOptimizer(true);
-
   save_stream(output_stream);
 
   if (save_metadata) {
@@ -638,6 +670,7 @@ void Model::setSerializeOptimizer(bool should_save_optimizer) {
   for (auto& op : _ops) {
     op->setSerializeOptimizer(should_save_optimizer);
   }
+  _serialize_with_optimizer = should_save_optimizer;
 }
 
 std::unordered_map<std::string, double> Model::getNorms() const {
@@ -660,6 +693,7 @@ std::shared_ptr<Model> Model::load(const std::string& filename) {
 
 std::shared_ptr<Model> Model::load_stream(std::istream& input_stream) {
   cereal::BinaryInputArchive iarchive(input_stream);
+
   std::shared_ptr<Model> deserialize_into(new Model());
   iarchive(*deserialize_into);
 
@@ -688,7 +722,7 @@ void Model::backpropagateVector(uint32_t index_in_batch, uint32_t batch_size) {
 void Model::requireOptimizer() {
   if (!_optimizer_initialized) {
     for (auto& op : _ops) {
-      op->initOptimizer();
+      op->initOptimizer(_optimizer_factory);
     }
     _optimizer_initialized = true;
   }
@@ -808,29 +842,51 @@ void Model::verifyAllowedOutputDim() const {
   licensing::entitlements().verifyAllowedOutputDim(total_output_dim);
 }
 
-template void Model::serialize(cereal::BinaryInputArchive&,
-                               const uint32_t version);
-template void Model::serialize(cereal::BinaryOutputArchive&,
-                               const uint32_t version);
+template void Model::save(cereal::BinaryOutputArchive&,
+                          const uint32_t version) const;
+
+template void Model::load(cereal::BinaryInputArchive&, const uint32_t version);
 
 template <class Archive>
-void Model::serialize(Archive& archive, const uint32_t version) {
+void Model::save(Archive& archive, const uint32_t version) const {
+  (void)version;
+
+  licensing::entitlements().verifySaveLoad();
+
+  archive(_thirdai_version);
+
+  auto thirdai_archive = toArchive(_serialize_with_optimizer);
+
+  archive(thirdai_archive);
+}
+
+template <class Archive>
+void Model::load(Archive& archive, const uint32_t version) {
   licensing::entitlements().verifySaveLoad();
 
   _thirdai_version = thirdai::version();
   archive(_thirdai_version);
 
-  std::string class_name = "BOLT_MODEL";
-  versions::checkVersion(version, versions::BOLT_MODEL_VERSION,
-                         _thirdai_version, thirdai::version(), class_name);
+  if (version <= versions::BOLT_MODEL_LAST_OLD_SERIALIZATION_VERSION) {
+    std::string class_name = "BOLT_MODEL";
+    versions::checkVersion(version,
+                           versions::BOLT_MODEL_LAST_OLD_SERIALIZATION_VERSION,
+                           _thirdai_version, thirdai::version(), class_name);
 
-  // Increment thirdai::versions::BOLT_MODEL_VERSION after serialization changes
-  archive(_inputs, _outputs, _labels, _losses, _ops, _computation_order,
-          _allocation_manager, _train_steps, _model_uuid,
-          _total_training_samples);
+    archive(_inputs, _outputs, _labels, _losses, _ops, _computation_order,
+            _allocation_manager, _train_steps, _model_uuid,
+            _total_training_samples);
+
+    _optimizer_factory = AdamFactory::make();
+
+  } else {
+    ar::ArchivePtr thirdai_archive;
+    archive(thirdai_archive);
+
+    *this = *fromArchive(*thirdai_archive);
+  }
 
   verifyAllowedOutputDim();
-
   registerWithOps();
 }
 
