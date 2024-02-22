@@ -16,6 +16,14 @@ class CallbackTracker:
         ), "All callback objects should be of type bolt.train.callbacks.Callback"
         self.callbacks = callbacks
 
+    def names(self):
+        ret = [
+            callback.name() if hasattr(callback, "name") else "unnamed callback"
+            for callback in self.callbacks
+        ]
+        print(ret)
+        return ret
+    
     def save(self, path: Path):
         pickle_to(self.callbacks, path)
 
@@ -23,8 +31,4 @@ class CallbackTracker:
     def load(path: Path):
         return CallbackTracker(callbacks=unpickle_from(path))
 
-    def names(self):
-        return [
-            callback.name if hasattr(callback, "name") else "unnamed callback"
-            for callback in self.callbacks
-        ]
+    
