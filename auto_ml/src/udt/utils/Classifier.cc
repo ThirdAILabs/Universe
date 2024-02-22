@@ -9,6 +9,7 @@
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <pybind11/stl.h>
+#include <memory>
 #include <optional>
 #include <utility>
 
@@ -367,6 +368,35 @@ std::optional<float> Classifier::tuneBinaryClassificationPredictionThreshold(
   }
 
   return best_threshold;
+}
+
+std::shared_ptr<ar::Map> Classifier::toArchive(bool with_optimizer) const {
+  auto map = ar::Map::make();
+
+  map->set("model", _model->toArchive(with_optimizer));
+  map->set("emb_name", ar::str(_emb->name()));
+
+  map->set("freeze_hash_tables", ar::boolean(_freeze_hash_tables));
+
+  if (_binary_prediction_threshold) {
+    map->set("binary_prediction_threshold",
+             ar::f32(*_binary_prediction_threshold));
+  }
+
+  return map;
+}
+
+std::shared_ptr<Classifier> Classifier::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_shared<Classifier>(archive);
+}
+
+Classifier::Classifier(const ar::Archive& archive)
+    : _model(bolt::Model::fromArchive(*archive.get("model"))),
+      _freeze_hash_tables(archive.boolean("freeze_hash_tables")),
+      _binary_prediction_threshold(
+          archive.getOpt<ar::F32>("binary_prediction_threshold")) {
+  _emb = _model->getComputation(archive.str("emb_name"));
 }
 
 template void Classifier::serialize(cereal::BinaryInputArchive&);

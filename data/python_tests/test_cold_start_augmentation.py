@@ -88,6 +88,7 @@ def test_duplicated_natural_separators():
         strong_columns=["strong"],
         weak_columns=["weak"],
         output_column="data",
+        config=data.transformations.ColdStartConfig(),
     )
 
     columns = create_test_column_map(
@@ -125,8 +126,10 @@ def test_long_input():
         strong_columns=["strong"],
         weak_columns=["weak"],
         output_column="data",
-        weak_max_len=3,
-        weak_min_len=3,
+        config=data.transformations.ColdStartConfig(
+            weak_max_len=3,
+            weak_min_len=3,
+        ),
     )
 
     columns = create_test_column_map(
@@ -151,9 +154,11 @@ def test_sample_strong_words():
         strong_columns=["strong"],
         weak_columns=["weak"],
         output_column="data",
-        weak_max_len=3,
-        weak_min_len=3,
-        strong_sample_num_words=2,
+        config=data.transformations.ColdStartConfig(
+            weak_max_len=3,
+            weak_min_len=3,
+            strong_sample_num_words=2,
+        ),
     )
 
     columns = create_test_column_map(
@@ -178,6 +183,7 @@ def test_shuffle_correct():
         strong_columns=["strong"],
         weak_columns=["weak"],
         output_column="data",
+        config=data.transformations.ColdStartConfig(),
     )
     # This will take all natural phrases: two 2-word phrases for the first
     # example, three 1-word phrases for the second, a 3-word phrase for the third
@@ -212,8 +218,10 @@ def test_sample_weak_words():
         strong_columns=["strong"],
         weak_columns=["weak"],
         output_column="data",
-        weak_sample_num_words=2,
-        weak_sample_reps=num_examples_per_phrase,
+        config=data.transformations.ColdStartConfig(
+            weak_sample_num_words=2,
+            weak_sample_reps=num_examples_per_phrase,
+        ),
     )
     # This will take all natural phrases, but downsample to just 2 tokens.
 
@@ -242,7 +250,9 @@ def test_long_strong_phrase():
         strong_columns=["strong"],
         weak_columns=["weak"],
         output_column="data",
-        strong_max_len=3,
+        config=data.transformations.ColdStartConfig(
+            strong_max_len=3,
+        ),
     )
 
     columns = create_test_column_map(
@@ -281,6 +291,7 @@ def test_multiple_weak_columns():
         strong_columns=["strong"],
         weak_columns=["weak_0", "weak_1", "weak_2"],
         output_column="data",
+        config=data.transformations.ColdStartConfig(),
     )
 
     columns = create_test_column_map(
@@ -315,7 +326,9 @@ def test_multiple_strong_columns():
         strong_columns=["strong_0", "strong_1", "strong_2"],
         weak_columns=["weak"],
         output_column="data",
-        weak_sample_num_words=1,
+        config=data.transformations.ColdStartConfig(
+            weak_sample_num_words=1,
+        ),
     )
 
     columns = create_test_column_map(
@@ -346,10 +359,12 @@ def test_real_input():
         strong_columns=["strong"],
         weak_columns=["weak"],
         output_column="data",
-        strong_sample_num_words=2,
-        weak_min_len=5,
-        weak_max_len=10,
-        weak_chunk_len=5,
+        config=data.transformations.ColdStartConfig(
+            strong_sample_num_words=2,
+            weak_min_len=5,
+            weak_max_len=10,
+            weak_chunk_len=5,
+        ),
     )
 
     expected_min_length = 5  # minimally, 0 from strong and 5 from smallest weak phrase.

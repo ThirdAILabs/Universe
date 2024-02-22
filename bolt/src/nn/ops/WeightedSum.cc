@@ -1,9 +1,12 @@
 #include "WeightedSum.h"
 #include <wrappers/src/EigenDenseWrapper.h>
-#include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/autograd/Computation.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <Eigen/src/Core/Array.h>
 #include <Eigen/src/Core/util/Constants.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
+#include <archive/src/ParameterReference.h>
 #include <utils/Random.h>
 #include <algorithm>
 #include <cassert>
@@ -72,8 +75,7 @@ void WeightedSum::backpropagate(ComputationList& inputs, TensorPtr& output,
 
   EigenVecArray sum_grad(sum_vec.gradients, _chunk_size);
 
-  EigenRowMajorArray weights_grad(_optimizer->gradients.data(), _n_chunks,
-                                  _chunk_size);
+  EigenRowMajorArray weights_grad(_gradients.data(), _n_chunks, _chunk_size);
   EigenRowMajorArray chunks(chunks_vec.activations, _n_chunks, _chunk_size);
   weights_grad += chunks.rowwise() * sum_grad;
 
@@ -88,7 +90,7 @@ void WeightedSum::backpropagate(ComputationList& inputs, TensorPtr& output,
 }
 
 void WeightedSum::updateParameters(float learning_rate, uint32_t train_steps) {
-  _optimizer->applyUpdate(_weights, learning_rate, train_steps);
+  _optimizer->updateDense(_weights, _gradients, learning_rate, train_steps);
 }
 
 uint32_t WeightedSum::dim() const { return _chunk_size; }
@@ -100,8 +102,9 @@ std::optional<uint32_t> WeightedSum::nonzeros(const ComputationList& inputs,
   return _chunk_size;
 }
 
-void WeightedSum::initOptimizer() {
-  _optimizer = AdamOptimizer(_weights.size());
+void WeightedSum::initOptimizer(const OptimizerFactoryPtr& optimizer_factory) {
+  _optimizer = optimizer_factory->makeOptimizer(1, _weights.size());
+  _gradients.assign(_weights.size(), 0.0);
 }
 
 void WeightedSum::disableSparseParameterUpdates() {}
@@ -109,11 +112,51 @@ void WeightedSum::disableSparseParameterUpdates() {}
 void WeightedSum::enableSparseParameterUpdates() {}
 
 std::vector<std::vector<float>*> WeightedSum::gradients() {
-  return {&_optimizer->gradients};
+  return {&_gradients};
 }
 
 std::vector<std::vector<float>*> WeightedSum::parameters() {
   return {&_weights};
+}
+
+ComputationPtr WeightedSum::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("QuantileMixing op expects a single input.");
+  }
+  return apply(inputs.at(0));
+}
+
+ar::ConstArchivePtr WeightedSum::toArchive(bool with_optimizer) const {
+  auto map = baseArchive();
+
+  map->set("type", ar::str(type()));
+  map->set("n_chunks", ar::u64(_n_chunks));
+  map->set("chunk_size", ar::u64(_chunk_size));
+  map->set("weights",
+           ar::ParameterReference::make(_weights, shared_from_this()));
+
+  if (with_optimizer && _optimizer) {
+    map->set("optimizer", _optimizer->toArchive(shared_from_this()));
+  }
+
+  return map;
+}
+
+std::shared_ptr<WeightedSum> WeightedSum::fromArchive(
+    const ar::Archive& archive) {
+  return std::shared_ptr<WeightedSum>(new WeightedSum(archive));
+}
+
+WeightedSum::WeightedSum(const ar::Archive& archive)
+    : Op(archive.str("name")),
+      _n_chunks(archive.u64("n_chunks")),
+      _chunk_size(archive.u64("chunk_size")),
+      _weights(archive.get("weights")->param().moveLoadedParameter()) {
+  assertOpType(archive, type());
+
+  if (archive.contains("optimizer")) {
+    _optimizer = Optimizer::fromArchive(*archive.get("optimizer"));
+  }
 }
 
 void WeightedSum::summary(std::ostream& summary, const ComputationList& inputs,
@@ -133,7 +176,7 @@ std::vector<std::pair<std::string, double>> WeightedSum::parameterAndGradNorms()
 
   computeNorms(_weights, "weights", all_norms);
   if (_optimizer) {
-    computeNorms(_optimizer->gradients, "embeddings_grad", all_norms);
+    computeNorms(_gradients, "embeddings_grad", all_norms);
   }
 
   return all_norms;

@@ -651,8 +651,9 @@ void UDTMachClassifier::introduceDocuments(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, bool fast_approximation, bool verbose,
-    bool sort_random_hashes) {
+    uint32_t num_random_hashes, bool load_balancing, bool fast_approximation,
+    bool verbose, bool sort_random_hashes) {
+  (void)load_balancing;
   auto metadata = getColdStartMetaData();
 
   dataset::cold_start::ColdStartDataSourcePtr cold_start_data;
@@ -725,7 +726,7 @@ void UDTMachClassifier::introduceDocument(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
-    bool sort_random_hashes) {
+    bool load_balancing, bool sort_random_hashes) {
   std::string text_column_name = textColumnForDocumentIntroduction();
 
   data::ColdStartTextAugmentation augmentation(
@@ -740,7 +741,7 @@ void UDTMachClassifier::introduceDocument(
   }
 
   introduceLabel(batch, new_label, num_buckets_to_sample, num_random_hashes,
-                 sort_random_hashes);
+                 load_balancing, sort_random_hashes);
 }
 
 struct BucketScore {
@@ -867,11 +868,12 @@ std::vector<uint32_t> UDTMachClassifier::topHashesForDoc(
 void UDTMachClassifier::introduceLabel(
     const MapInputBatch& samples, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, bool sort_random_hashes) {
+    uint32_t num_random_hashes, bool load_balancing, bool sort_random_hashes) {
   // Note: using sparse inference here could cause issues because the
   // mach index sampler will only return nonempty buckets, which could
   // cause new docs to only be mapped to buckets already containing
   // entities.
+  (void)load_balancing;
   auto output = _classifier->model()
                     ->forward(_dataset_factory->featurizeInputBatch(samples),
                               /* use_sparsity = */ false)
@@ -977,18 +979,21 @@ void UDTMachClassifier::associate(
     const std::vector<std::pair<std::string, std::string>>&
         source_target_samples,
     uint32_t n_buckets, uint32_t n_association_samples,
-    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
-  auto teaching_samples = getAssociateSamples(convertSamples(
-      textColumnForDocumentIntroduction(), source_target_samples));
+    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+    bool force_non_empty, size_t batch_size) {
+  auto teaching_samples =
+      getAssociateSamples(convertSamples(textColumnForDocumentIntroduction(),
+                                         source_target_samples),
+                          force_non_empty);
 
   teach(teaching_samples, n_buckets, n_association_samples, n_balancing_samples,
-        learning_rate, epochs);
+        learning_rate, epochs, batch_size);
 }
 
 void UDTMachClassifier::upvote(
     const std::vector<std::pair<std::string, uint32_t>>& source_target_samples,
     uint32_t n_upvote_samples, uint32_t n_balancing_samples,
-    float learning_rate, uint32_t epochs) {
+    float learning_rate, uint32_t epochs, size_t batch_size) {
   std::vector<std::pair<MapInput, std::vector<uint32_t>>> teaching_samples;
   teaching_samples.reserve(source_target_samples.size());
   std::string text_col = textColumnForDocumentIntroduction();
@@ -999,14 +1004,15 @@ void UDTMachClassifier::upvote(
   }
   uint32_t n_buckets = _mach_label_block->index()->numHashes();
   teach(teaching_samples, n_buckets, n_upvote_samples, n_balancing_samples,
-        learning_rate, epochs);
+        learning_rate, epochs, batch_size);
 }
 
 void UDTMachClassifier::teach(
     const std::vector<std::pair<MapInput, std::vector<uint32_t>>>&
         source_target_samples,
     uint32_t n_buckets, uint32_t n_teaching_samples,
-    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
+    uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+    size_t batch_size) {
   requireRLHFSampler();
 
   auto samples = _rlhf_sampler->balancingSamples(n_balancing_samples *
@@ -1029,7 +1035,6 @@ void UDTMachClassifier::teach(
 
   uint32_t input_dim = _classifier->model()->inputDims().at(0);
   uint32_t label_dim = _classifier->model()->labelDims().at(0);
-  uint32_t batch_size = defaults::ASSOCIATE_BATCH_SIZE;
 
   for (size_t i = 0; i < samples.size(); i += batch_size) {
     std::vector<BoltVector> inputs;
@@ -1062,14 +1067,16 @@ void UDTMachClassifier::teach(
 
 std::vector<std::pair<MapInput, std::vector<uint32_t>>>
 UDTMachClassifier::getAssociateSamples(
-    const std::vector<std::pair<MapInput, MapInput>>& source_target_samples) {
+    const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+    bool force_non_empty) {
   MapInputBatch batch;
   for (const auto& [_, target] : source_target_samples) {
     batch.emplace_back(target);
   }
 
-  auto all_predicted_hashes = predictHashesImpl(
-      batch, /* sparse_inference = */ false, /* force_non_empty = */ true);
+  auto all_predicted_hashes =
+      predictHashesImpl(batch, /* sparse_inference = */ false,
+                        /* force_non_empty = */ force_non_empty);
 
   std::vector<std::pair<MapInput, std::vector<uint32_t>>> associate_samples;
   associate_samples.reserve(source_target_samples.size());

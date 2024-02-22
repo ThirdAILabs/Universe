@@ -35,7 +35,7 @@ class DistributedNDBRunner(Runner):
         if not os.path.exists(ckpt_path):
             os.makedirs(ckpt_path, exist_ok=True)
         run_config = RunConfig(
-            name="testing_distributed_NDB_with_amazon-200K",
+            name=config.ray_config,
             storage_path=ckpt_path,
         )
 

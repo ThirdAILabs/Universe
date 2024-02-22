@@ -90,6 +90,11 @@ class UDT {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k);
 
+  py::object predictActivationsBatch(const MapInputBatch& samples,
+                                     bool sparse_inference) {
+    return _backend->predictActivationsBatch(samples, sparse_inference);
+  }
+
   /**
    * Performs inference on a batch of samples in parallel and returns the scores
    * for each of the provided output classes.
@@ -207,6 +212,10 @@ class UDT {
     return _backend->textDatasetConfig();
   }
 
+  void insertNewDocIds(const dataset::DataSourcePtr& data) {
+    _backend->insertNewDocIds(data);
+  }
+
   /**
    * Used in UDTMachClassifier to introduce new documents to the model from a
    * data source. Used in conjunction with coldstart. At a high level, introduce
@@ -239,13 +248,15 @@ class UDT {
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
                           std::optional<uint32_t> num_buckets_to_sample,
-                          uint32_t num_random_hashes, bool fast_approximation,
-                          bool verbose, bool sort_random_hashes) {
+                          uint32_t num_random_hashes, bool load_balancing,
+                          bool fast_approximation, bool verbose,
+                          bool sort_random_hashes) {
     licensing::entitlements().verifyDataSource(data);
 
-    _backend->introduceDocuments(
-        data, strong_column_names, weak_column_names, num_buckets_to_sample,
-        num_random_hashes, fast_approximation, verbose, sort_random_hashes);
+    _backend->introduceDocuments(data, strong_column_names, weak_column_names,
+                                 num_buckets_to_sample, num_random_hashes,
+                                 load_balancing, fast_approximation, verbose,
+                                 sort_random_hashes);
   }
 
   /**
@@ -257,12 +268,14 @@ class UDT {
                          const std::vector<std::string>& weak_column_names,
                          const std::variant<uint32_t, std::string>& new_label,
                          std::optional<uint32_t> num_buckets_to_sample,
-                         uint32_t num_random_hashes, bool sort_random_hashes) {
+                         uint32_t num_random_hashes, bool load_balancing,
+                         bool sort_random_hashes) {
     licensing::entitlements().verifyFullAccess();
 
-    _backend->introduceDocument(
-        document, strong_column_names, weak_column_names, new_label,
-        num_buckets_to_sample, num_random_hashes, sort_random_hashes);
+    _backend->introduceDocument(document, strong_column_names,
+                                weak_column_names, new_label,
+                                num_buckets_to_sample, num_random_hashes,
+                                load_balancing, sort_random_hashes);
   }
 
   /**
@@ -273,11 +286,13 @@ class UDT {
   void introduceLabel(const MapInputBatch& sample,
                       const std::variant<uint32_t, std::string>& new_label,
                       std::optional<uint32_t> num_buckets_to_sample,
-                      uint32_t num_random_hashes, bool sort_random_hashes) {
+                      uint32_t num_random_hashes, bool load_balancing,
+                      bool sort_random_hashes) {
     licensing::entitlements().verifyFullAccess();
 
     _backend->introduceLabel(sample, new_label, num_buckets_to_sample,
-                             num_random_hashes, sort_random_hashes);
+                             num_random_hashes, load_balancing,
+                             sort_random_hashes);
   }
 
   /**
@@ -343,9 +358,11 @@ class UDT {
   void associate(
       const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
-      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
+      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+      bool force_non_empty, size_t batch_size) {
     _backend->associate(rlhf_samples, n_buckets, n_association_samples,
-                        n_balancing_samples, learning_rate, epochs);
+                        n_balancing_samples, learning_rate, epochs,
+                        force_non_empty, batch_size);
   }
 
   /**
@@ -366,11 +383,11 @@ class UDT {
   void upvote(const std::vector<std::pair<std::string, uint32_t>>&
                   source_target_samples,
               uint32_t n_upvote_samples, uint32_t n_balancing_samples,
-              float learning_rate, uint32_t epochs) {
+              float learning_rate, uint32_t epochs, size_t batch_size) {
     licensing::entitlements().verifyFullAccess();
 
     _backend->upvote(source_target_samples, n_upvote_samples,
-                     n_balancing_samples, learning_rate, epochs);
+                     n_balancing_samples, learning_rate, epochs, batch_size);
   }
 
   py::object associateTrain(
@@ -442,8 +459,6 @@ class UDT {
 
   void save(const std::string& filename) const;
 
-  void saveImpl(const std::string& filename) const;
-
   void checkpoint(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;
@@ -453,6 +468,13 @@ class UDT {
   static std::shared_ptr<UDT> load_stream(std::istream& input_stream);
 
   bool isV1() const;
+
+  /**
+   * This method is just for testing so that we can create a v1 mach model and
+   * test that everything works once it is migrated. Models are automatically
+   * converted to v2 on load.
+   */
+  void migrateToMachV2();
 
   static std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
   parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
@@ -476,9 +498,13 @@ class UDT {
   friend class cereal::access;
 
   template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
+  void save(Archive& archive, uint32_t version) const;
+
+  template <class Archive>
+  void load(Archive& archive, uint32_t version);
 
   std::unique_ptr<UDTBackend> _backend;
+  bool _save_optimizer = false;
 };
 
 }  // namespace thirdai::automl::udt

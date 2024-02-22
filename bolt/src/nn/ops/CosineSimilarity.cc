@@ -5,6 +5,7 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Map.h>
 #include <cmath>
 #include <stdexcept>
 #include <unordered_map>
@@ -76,6 +77,11 @@ void CosineSimilarity::updateParameters(float learning_rate,
   (void)train_steps;
 }
 
+void CosineSimilarity::initOptimizer(
+    const OptimizerFactoryPtr& optimizer_factory) {
+  (void)optimizer_factory;
+}
+
 uint32_t CosineSimilarity::dim() const { return 1; }
 
 std::optional<uint32_t> CosineSimilarity::nonzeros(
@@ -86,7 +92,30 @@ std::optional<uint32_t> CosineSimilarity::nonzeros(
   return 1;
 }
 
-void CosineSimilarity::initOptimizer() {}
+ComputationPtr CosineSimilarity::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument(
+        "Expected CosineSimilarity op to have two inputs.");
+  }
+  return apply(inputs.at(0), inputs.at(1));
+}
+
+ar::ConstArchivePtr CosineSimilarity::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = baseArchive();
+  map->set("type", ar::str(type()));
+  return map;
+}
+
+std::shared_ptr<CosineSimilarity> CosineSimilarity::fromArchive(
+    const ar::Archive& archive) {
+  assertOpType(archive, type());
+
+  auto op = CosineSimilarity::make();
+  op->setName(archive.str("name"));
+  return op;
+}
 
 void CosineSimilarity::summary(std::ostream& summary,
                                const ComputationList& inputs,

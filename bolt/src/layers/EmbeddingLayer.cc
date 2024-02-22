@@ -1,10 +1,20 @@
 #include "EmbeddingLayer.h"
 #include <hashing/src/MurmurHash.h>
+#include <archive/src/Archive.h>
+#include <archive/src/ParameterReference.h>
 #include <algorithm>
 #include <random>
 #include <stdexcept>
 
 namespace thirdai::bolt {
+
+std::pair<uint64_t, uint64_t> computeBlockSizeAndNumChunks(
+    uint64_t log_block_size, uint64_t lookup_size, uint64_t chunk_size) {
+  uint64_t block_size = (1ULL << log_block_size) + lookup_size;
+  uint64_t n_chunks = (block_size + chunk_size - 1) / chunk_size;
+
+  return {n_chunks * chunk_size, n_chunks};
+}
 
 EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
                                uint32_t seed)
@@ -16,8 +26,8 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
       _reduction(config.reduction()),
       _num_tokens_per_input(config.numTokensPerInput()),
       _hash_fn(seed),
-      _disable_sparse_parameter_updates(false),
-      _should_save_optimizer(false) {
+      _should_serialize_optimizer(false),
+      _disable_sparse_parameter_updates(false) {
   switch (_reduction) {
     case EmbeddingReductionType::SUM:
     case EmbeddingReductionType::AVERAGE:
@@ -35,14 +45,15 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
   // We allocate the extra _lookup_size elements such that if a point hashes to
   // the end of 2^_embedding_block_size we don't have to worry about wrapping it
   // around.
-  _embedding_block_size = (1ULL << _log_embedding_block_size) + _lookup_size;
-  uint64_t n_chunks =
-      (_embedding_block_size + _update_chunk_size - 1) / _update_chunk_size;
-  _embedding_block_size = n_chunks * _update_chunk_size;
+  auto [emb_block_size, n_emb_chunks] = computeBlockSizeAndNumChunks(
+      _log_embedding_block_size, _lookup_size, _update_chunk_size);
+
+  _embedding_block_size = emb_block_size;
+
   _embedding_block =
       std::make_shared<std::vector<float>>(_embedding_block_size, 0);
 
-  _embedding_chunks_used = std::vector<bool>(n_chunks, false);
+  _embedding_chunks_used = std::vector<bool>(n_emb_chunks, false);
 
   std::mt19937 gen(seed);
   std::normal_distribution<float> dist(0.0, 0.01);
@@ -51,9 +62,47 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
                 [&]() { return dist(gen); });
 }
 
+EmbeddingLayer::EmbeddingLayer(const ar::Archive& archive)
+    : _num_lookups_per_token(archive.u64("num_lookups_per_token")),
+      _lookup_size(archive.u64("lookup_size")),
+      _total_embedding_dim(_num_lookups_per_token * _lookup_size),
+      _log_embedding_block_size(archive.u64("log_embedding_block_size")),
+      _update_chunk_size(archive.u64("update_chunk_size")),
+      _reduction(reductionFromString(archive.str("reduction"))),
+      _num_tokens_per_input(archive.getOpt<ar::U64>("num_tokens_per_input")),
+      _hash_fn(archive.u64("hash_seed")),
+      _embedding_block(archive.get("embeddings")->param().loadedParameter()),
+      _disable_sparse_parameter_updates(
+          archive.boolean("disable_sparse_parameter_updates")) {
+  if (_reduction == EmbeddingReductionType::CONCATENATION) {
+    if (!_num_tokens_per_input) {
+      throw std::invalid_argument(
+          "Must specify a number of tokens per input with a concatenation "
+          "reduction.");
+    }
+    _total_embedding_dim *= _num_tokens_per_input.value();
+  }
+
+  auto [emb_block_size, n_emb_chunks] = computeBlockSizeAndNumChunks(
+      _log_embedding_block_size, _lookup_size, _update_chunk_size);
+
+  _embedding_block_size = emb_block_size;
+
+  if (_embedding_block->size() != _embedding_block_size) {
+    throw std::runtime_error(
+        "Embedding block does not have expected size in fromArchive.");
+  }
+
+  _embedding_chunks_used.assign(n_emb_chunks, false);
+
+  if (archive.contains("embedding_optimizer")) {
+    _optimizer = Optimizer::fromArchive(*archive.get("embedding_optimizer"));
+  }
+}
+
 void EmbeddingLayer::forward(const BoltVector& tokens, BoltVector& output) {
   assert(output.len == _total_embedding_dim);
-  assert(_reduction == EmbeddingReductionType::SUM ||
+  assert(_reduction != EmbeddingReductionType::CONCATENATION ||
          _num_tokens_per_input.value() == tokens.len);
   assert(output.active_neurons == nullptr);
 
@@ -126,7 +175,7 @@ void EmbeddingLayer::backpropagate(const BoltVector& tokens,
 
       assert(embedding_block_offset < _embedding_block_size - _lookup_size);
 
-      float* update_loc = _optimizer->gradients.data() + embedding_block_offset;
+      float* update_loc = _gradients.data() + embedding_block_offset;
 
       if (_reduction == EmbeddingReductionType::AVERAGE) {
         for (uint32_t i = 0; i < _lookup_size; i++) {
@@ -147,58 +196,13 @@ void EmbeddingLayer::backpropagate(const BoltVector& tokens,
   }
 }
 
-void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
-                                      float B2, float eps) {
+void EmbeddingLayer::updateParameters(float lr, size_t train_steps) {
   if (_disable_sparse_parameter_updates) {
-    _optimizer->applyUpdate(*_embedding_block, lr, iter);
+    _optimizer->updateDense(*_embedding_block, _gradients, lr, train_steps);
   } else {
-    updateParametersSparse(lr, iter, B1, B2, eps);
-  }
-}
-
-void EmbeddingLayer::updateParametersSparse(float lr, uint32_t iter, float B1,
-                                            float B2, float eps) {
-  float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
-  float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
-
-  // Preform outer dereferencing once here to avoid repeating it later.
-  auto& embedding_block = *_embedding_block;
-
-#pragma omp parallel for default(none) shared( \
-    embedding_block, B1, B2, B1_bias_corrected, B2_bias_corrected, eps, lr)
-  for (uint64_t chunk_id = 0; chunk_id < _embedding_chunks_used.size();
-       chunk_id++) {
-    if (!_embedding_chunks_used[chunk_id]) {
-      continue;
-    }
-
-    _embedding_chunks_used[chunk_id] = false;
-
-    for (uint64_t n = chunk_id * _update_chunk_size;
-         n < (chunk_id + 1) * _update_chunk_size; n++) {
-      float grad = _optimizer->gradients[n];
-      if (grad == 0.0) {
-        // Because the chunk being updated may not have entirely been used we
-        // check for this to avoid updating unused elements of the embedding
-        // table. It is highly unlikely that the gradient would be zero if the
-        // section of the embedding table was used.
-        continue;
-      }
-      assert(!std::isnan(grad));
-
-      _optimizer->momentum[n] = B1 * _optimizer->momentum[n] + (1 - B1) * grad;
-      _optimizer->velocity[n] =
-          B2 * _optimizer->velocity[n] + (1 - B2) * grad * grad;
-      assert(!std::isnan(_optimizer->momentum[n]));
-      assert(!std::isnan(_optimizer->velocity[n]));
-
-      embedding_block[n] +=
-          lr * (_optimizer->momentum[n] / B1_bias_corrected) /
-          (std::sqrt(_optimizer->velocity[n] / B2_bias_corrected) + eps);
-      assert(!std::isnan(embedding_block[n]));
-
-      _optimizer->gradients[n] = 0;
-    }
+    _optimizer->updateSparseRows(*_embedding_block, _gradients,
+                                 _embedding_chunks_used, lr, train_steps,
+                                 /* reset_rows_used= */ true);
   }
 }
 

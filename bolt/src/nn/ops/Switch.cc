@@ -4,8 +4,11 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
+#include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <archive/src/List.h>
+#include <archive/src/Map.h>
 #include <memory>
 #include <optional>
 #include <sstream>
@@ -78,9 +81,9 @@ std::optional<uint32_t> Switch::nonzeros(const ComputationList& inputs,
   return _fc_ops.front()->nonzeros(inputs, use_sparsity);
 }
 
-void Switch::initOptimizer() {
+void Switch::initOptimizer(const OptimizerFactoryPtr& optimizer_factory) {
   for (auto& op : _fc_ops) {
-    op->initOptimizer();
+    op->initOptimizer(optimizer_factory);
   }
 }
 
@@ -113,6 +116,40 @@ std::vector<std::vector<float>*> Switch::parameters() {
                       op_parameters.end());
   }
   return parameters;
+}
+
+ComputationPtr Switch::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument("Expected Switch op to have two inputs.");
+  }
+  return apply(inputs.at(0), inputs.at(1));
+}
+
+ar::ConstArchivePtr Switch::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = baseArchive();
+  map->set("type", ar::str(type()));
+
+  auto list = ar::List::make();
+  for (const auto& op : _fc_ops) {
+    list->append(op->toArchive(with_optimizer));
+  }
+  map->set("fc_ops", list);
+
+  return map;
+}
+
+std::shared_ptr<Switch> Switch::fromArchive(const ar::Archive& archive) {
+  return std::shared_ptr<Switch>(new Switch(archive));
+}
+
+Switch::Switch(const ar::Archive& archive) : Op(archive.str("name")) {
+  assertOpType(archive, type());
+
+  for (const auto& op_archive : archive.get("fc_ops")->list()) {
+    _fc_ops.push_back(FullyConnected::fromArchive(*op_archive));
+  }
 }
 
 void Switch::summary(std::ostream& summary, const ComputationList& inputs,

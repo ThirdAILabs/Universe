@@ -5,6 +5,8 @@
 #include <cereal/types/string.hpp>
 #include <cereal/types/vector.hpp>
 #include <hashing/src/MurmurHash.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <dataset/src/utils/TokenEncoding.h>
 
@@ -98,6 +100,22 @@ void CrossColumnPairgrams::buildExplanationMap(
     }
   }
 }
+
+ar::ConstArchivePtr CrossColumnPairgrams::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("input_columns", ar::vecStr(_input_column_names));
+  map->set("output_column", ar::str(_output_column_name));
+  map->set("hash_range", ar::u64(_hash_range));
+
+  return map;
+}
+
+CrossColumnPairgrams::CrossColumnPairgrams(const ar::Archive& archive)
+    : _input_column_names(archive.getAs<ar::VecStr>("input_columns")),
+      _output_column_name(archive.str("output_column")),
+      _hash_range(archive.u64("hash_range")) {}
 
 template void CrossColumnPairgrams::serialize(cereal::BinaryInputArchive&);
 template void CrossColumnPairgrams::serialize(cereal::BinaryOutputArchive&);

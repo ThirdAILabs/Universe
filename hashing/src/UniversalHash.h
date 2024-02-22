@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/array.hpp>
+#include <archive/src/Archive.h>
 #include <array>
 #include <cstdint>
 #include <string>
@@ -14,6 +15,8 @@ namespace thirdai::hashing {
 class UniversalHash {
  public:
   explicit UniversalHash(uint32_t seed);
+
+  explicit UniversalHash(const ar::Archive& archive);
 
   /**
    * Hash string key.
@@ -32,6 +35,8 @@ class UniversalHash {
 
   // Constructor for cereal.
   UniversalHash() {}
+
+  ar::ConstArchivePtr toArchive() const;
 
  private:
   friend class cereal::access;

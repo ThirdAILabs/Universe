@@ -3,8 +3,8 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
-#include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/optimizers/Optimizer.h>
 #include <memory>
 #include <optional>
 
@@ -38,7 +38,7 @@ class MaxPool1D final : public Op,
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
-  void initOptimizer() final;
+  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory) final;
 
   void disableSparseParameterUpdates() final;
 
@@ -47,6 +47,10 @@ class MaxPool1D final : public Op,
   std::vector<std::vector<float>*> gradients() final;
 
   std::vector<std::vector<float>*> parameters() final;
+
+  ComputationPtr applyToInputs(const ComputationList& inputs) final;
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
 
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;

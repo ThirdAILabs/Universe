@@ -3,6 +3,7 @@
 #include <bolt/src/neuron_index/NeuronIndex.h>
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/SampledHashTable.h>
+#include <archive/src/Archive.h>
 #include <memory>
 #include <random>
 
@@ -12,6 +13,8 @@ class LshIndex final : public NeuronIndex {
  public:
   LshIndex(uint32_t layer_dim, hashing::HashFunctionPtr hash_fn,
            hashtable::SampledHashTablePtr hash_table);
+
+  explicit LshIndex(const ar::Archive& archive);
 
   static auto make(uint32_t layer_dim, hashing::HashFunctionPtr hash_fn,
                    hashtable::SampledHashTablePtr hash_table) {
@@ -36,9 +39,15 @@ class LshIndex final : public NeuronIndex {
 
   void insertLabelsIfNotFound() final { _insert_labels_when_not_found = true; }
 
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::shared_ptr<LshIndex> fromArchive(const ar::Archive& archive);
+
   static auto cast(const NeuronIndexPtr& index) {
     return std::dynamic_pointer_cast<LshIndex>(index);
   }
+
+  static std::string type() { return "lsh_index"; }
 
  private:
   hashing::HashFunctionPtr _hash_fn;

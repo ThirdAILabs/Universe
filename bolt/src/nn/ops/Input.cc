@@ -4,6 +4,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/nn/ops/Op.h>
+#include <archive/src/Archive.h>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -49,6 +50,11 @@ void Input::updateParameters(float learning_rate, uint32_t train_steps) {
       "UpdateParameters should not be called on input op.");
 }
 
+void Input::initOptimizer(const OptimizerFactoryPtr& optimizer_factory) {
+  (void)optimizer_factory;
+  throw std::runtime_error("InitOptimizer should not be called on input op.");
+}
+
 uint32_t Input::dim() const { return _dim; }
 
 std::optional<uint32_t> Input::nonzeros(const ComputationList& inputs,
@@ -58,7 +64,15 @@ std::optional<uint32_t> Input::nonzeros(const ComputationList& inputs,
   return _nonzeros;
 }
 
-void Input::initOptimizer() {}
+ComputationPtr Input::applyToInputs(const ComputationList& inputs) {
+  (void)inputs;
+  throw std::runtime_error("apply should not be called on Input.");
+}
+
+ar::ConstArchivePtr Input::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+  throw std::runtime_error("toArchive should not be called on Input.");
+}
 
 void Input::disableSparseParameterUpdates() {}
 
@@ -67,8 +81,7 @@ void Input::enableSparseParameterUpdates() {}
 void Input::summary(std::ostream& summary, const ComputationList& inputs,
                     const Computation* output) const {
   (void)inputs;
-  summary << "Input(" << name() << ") -> " << output->name()
-          << " [dim=" << dim() << "]";
+  summary << "Input -> " << output->name() << " [dim=" << dim() << "]";
 }
 
 template void Input::serialize(cereal::BinaryInputArchive&);

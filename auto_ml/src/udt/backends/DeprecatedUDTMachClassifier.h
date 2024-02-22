@@ -132,20 +132,21 @@ class UDTMachClassifier final : public UDTBackend {
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
                           std::optional<uint32_t> num_buckets_to_sample,
-                          uint32_t num_random_hashes, bool fast_approximation,
-                          bool verbose, bool sort_random_hashes) final;
+                          uint32_t num_random_hashes, bool load_balancing,
+                          bool fast_approximation, bool verbose,
+                          bool sort_random_hashes) final;
 
   void introduceDocument(const MapInput& document,
                          const std::vector<std::string>& strong_column_names,
                          const std::vector<std::string>& weak_column_names,
                          const Label& new_label,
                          std::optional<uint32_t> num_buckets_to_sample,
-                         uint32_t num_random_hashes,
+                         uint32_t num_random_hashes, bool load_balancing,
                          bool sort_random_hashes) final;
 
   void introduceLabel(const MapInputBatch& samples, const Label& new_label,
                       std::optional<uint32_t> num_buckets_to_sample,
-                      uint32_t num_random_hashes,
+                      uint32_t num_random_hashes, bool load_balancing,
                       bool sort_random_hashes) final;
 
   void forget(const Label& label) final;
@@ -164,12 +165,13 @@ class UDTMachClassifier final : public UDTBackend {
                      source_target_samples,
                  uint32_t n_buckets, uint32_t n_association_samples,
                  uint32_t n_balancing_samples, float learning_rate,
-                 uint32_t epochs) final;
+                 uint32_t epochs, bool force_non_empty,
+                 size_t batch_size) final;
 
   void upvote(const std::vector<std::pair<std::string, uint32_t>>&
                   source_target_samples,
               uint32_t n_upvote_samples, uint32_t n_balancing_samples,
-              float learning_rate, uint32_t epochs) final;
+              float learning_rate, uint32_t epochs, size_t batch_size) final;
 
   py::object associateTrain(
       const dataset::DataSourcePtr& balancing_data,
@@ -204,6 +206,11 @@ class UDTMachClassifier final : public UDTBackend {
 
   void setMachSamplingThreshold(float threshold) final;
 
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final {
+    (void)with_optimizer;
+    throw std::invalid_argument("To archive is not supported for v1 mach.");
+  }
+
  private:
   std::vector<std::vector<uint32_t>> predictHashesImpl(
       const MapInputBatch& samples, bool sparse_inference,
@@ -213,11 +220,12 @@ class UDTMachClassifier final : public UDTBackend {
   void teach(const std::vector<std::pair<MapInput, std::vector<uint32_t>>>&
                  source_target_samples,
              uint32_t n_buckets, uint32_t n_teaching_samples,
-             uint32_t n_balancing_samples, float learning_rate,
-             uint32_t epochs);
+             uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+             size_t batch_size);
 
   std::vector<std::pair<MapInput, std::vector<uint32_t>>> getAssociateSamples(
-      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples);
+      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      bool force_non_empty = true);
 
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() const {
     return std::make_shared<cold_start::ColdStartMetaData>(

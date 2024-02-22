@@ -36,9 +36,11 @@
 #include <sys/types.h>
 #include <utils/Random.h>
 #include <chrono>
+#include <exception>
 #include <limits>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <type_traits>
 #include <unordered_map>
 
@@ -122,6 +124,49 @@ void createDatasetSubmodule(py::module_& module) {
       .def("get_entity_hashes", &mach::MachIndex::getHashes, py::arg("entity"))
       .def("get_hash_to_entities", &mach::MachIndex::getEntities,
            py::arg("hash"))
+      .def("buckets", &mach::MachIndex::buckets)
+      .def("entity_to_hashes", &mach::MachIndex::entityToHashes)
+      .def(
+          "decode_batch",
+          [](const mach::MachIndex& index, NumpyArray<float>& bucket_scores,
+             uint32_t top_k, uint32_t num_buckets_to_eval) {
+            if (bucket_scores.ndim() != 2) {
+              throw std::invalid_argument("Expected bucket scores to be 2d.");
+            }
+
+            if (bucket_scores.shape(1) != index.numBuckets()) {
+              throw std::invalid_argument(
+                  "Expected bucket scores shape[1] to be equal to num hashes.");
+            }
+
+            std::vector<std::vector<std::pair<uint32_t, double>>> output(
+                bucket_scores.shape(0));
+
+            std::exception_ptr error;
+#pragma omp parallel for default(none) \
+    shared(bucket_scores, index, output, top_k, num_buckets_to_eval, error)
+            for (int64_t i = 0; i < bucket_scores.shape(0); i++) {
+              try {
+                float* scores = bucket_scores.mutable_data(i);
+                BoltVector vec(
+                    /* an= */ nullptr, /* a= */ scores, /* g= */ nullptr,
+                    /* l= */ index.numBuckets());
+
+                output[i] = index.decode(vec, top_k, num_buckets_to_eval);
+              } catch (...) {
+#pragma omp critical
+                error = std::current_exception();
+              }
+            }
+
+            if (error) {
+              std::rethrow_exception(error);
+            }
+
+            return output;
+          },
+          py::arg("bucket_scores"), py::arg("top_k"),
+          py::arg("num_buckets_to_eval"))
 #endif
       .def("num_hashes", &mach::MachIndex::numHashes)
       .def("output_range", &mach::MachIndex::numBuckets)

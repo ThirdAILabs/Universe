@@ -4,6 +4,8 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <utils/Random.h>
 #include <random>
 
@@ -56,6 +58,21 @@ void RandomSampler::query(const BoltVector& input, BoltVector& output,
                  /* copy_size= */ neurons_to_sample,
                  /* starting_offset= */ random_offset);
 }
+
+ar::ConstArchivePtr RandomSampler::toArchive() const {
+  auto map = ar::Map::make();
+  map->set("type", ar::str(type()));
+  map->set("rand_neurons", ar::vecU32(_rand_neurons));
+  return map;
+}
+
+std::shared_ptr<RandomSampler> RandomSampler::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_shared<RandomSampler>(archive);
+}
+
+RandomSampler::RandomSampler(const ar::Archive& archive)
+    : _rand_neurons(archive.getAs<ar::VecU32>("rand_neurons")) {}
 
 template void RandomSampler::serialize(cereal::BinaryInputArchive&);
 template void RandomSampler::serialize(cereal::BinaryOutputArchive&);

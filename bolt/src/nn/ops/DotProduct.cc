@@ -5,6 +5,7 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Map.h>
 #include <cmath>
 #include <stdexcept>
 #include <unordered_map>
@@ -80,6 +81,10 @@ void DotProduct::updateParameters(float learning_rate, uint32_t train_steps) {
   (void)train_steps;
 }
 
+void DotProduct::initOptimizer(const OptimizerFactoryPtr& optimizer_factory) {
+  (void)optimizer_factory;
+}
+
 uint32_t DotProduct::dim() const { return 1; }
 
 std::optional<uint32_t> DotProduct::nonzeros(const ComputationList& inputs,
@@ -90,7 +95,29 @@ std::optional<uint32_t> DotProduct::nonzeros(const ComputationList& inputs,
   return 1;
 }
 
-void DotProduct::initOptimizer() {}
+ComputationPtr DotProduct::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument("Expected DotProduct op to have two inputs.");
+  }
+  return apply(inputs.at(0), inputs.at(1));
+}
+
+ar::ConstArchivePtr DotProduct::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = baseArchive();
+  map->set("type", ar::str(type()));
+  return map;
+}
+
+std::shared_ptr<DotProduct> DotProduct::fromArchive(
+    const ar::Archive& archive) {
+  assertOpType(archive, type());
+
+  auto op = DotProduct::make();
+  op->setName(archive.str("name"));
+  return op;
+}
 
 void DotProduct::summary(std::ostream& summary, const ComputationList& inputs,
                          const Computation* output) const {

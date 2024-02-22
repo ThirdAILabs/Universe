@@ -1,8 +1,11 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <bolt/src/layers/Optimizer.h>
+#include <bolt/src/nn/optimizers/Optimizer.h>
 #include <bolt/src/nn/tensor/Tensor.h>
-#include <cmath>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -78,8 +81,14 @@ class Op {
   virtual void updateParameters(float learning_rate, uint32_t train_steps) = 0;
 
   /**
-   * Returns the output dimension of the op. Does not include batch size. For
-   * instance a fully connected layer op will return its number of neurons.
+   * Initializes the optimizer for the op.
+   */
+  virtual void initOptimizer(const OptimizerFactoryPtr& optimizer_factory) = 0;
+
+  /**
+   * Returns the output dimension of the op. Does not include batch size.
+   * For instance a fully connected layer op will return its number of
+   * neurons.
    */
   virtual uint32_t dim() const = 0;
 
@@ -97,11 +106,6 @@ class Op {
    */
   virtual std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                            bool use_sparsity) const = 0;
-
-  /**
-   * Initializes the optimizer for the op.
-   */
-  virtual void initOptimizer() = 0;
 
   /**
    * Disables sparse parameter updates for updateParameters in the op. This is
@@ -127,6 +131,12 @@ class Op {
    * training.
    */
   virtual std::vector<std::vector<float>*> parameters() = 0;
+
+  virtual ComputationPtr applyToInputs(const ComputationList& inputs) = 0;
+
+  virtual ar::ConstArchivePtr toArchive(bool with_optimizer) const = 0;
+
+  static std::shared_ptr<Op> fromArchive(const ar::Archive& archive);
 
   /**
    * Appends a line to the summary to describe the op when applied to the given
@@ -167,6 +177,12 @@ class Op {
  protected:
   Op() : Op("unnamed-op") {}
 
+  std::shared_ptr<ar::Map> baseArchive() const {
+    auto map = ar::Map::make();
+    map->set("name", ar::str(name()));
+    return map;
+  }
+
   static std::tuple<double, double, double> norms(const float* data,
                                                   size_t len) {
     double l1_norm = 0;
@@ -201,6 +217,8 @@ class Op {
     archive(_name);
   }
 };
+
+void assertOpType(const ar::Archive& archive, const std::string& expected_type);
 
 using OpPtr = std::shared_ptr<Op>;
 

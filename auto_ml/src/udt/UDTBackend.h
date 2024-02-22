@@ -86,6 +86,15 @@ class UDTBackend {
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k) = 0;
 
+  virtual ar::ConstArchivePtr toArchive(bool with_optimizer) const = 0;
+
+  virtual py::object predictActivationsBatch(const MapInputBatch& samples,
+                                             bool sparse_inference) {
+    (void)samples;
+    (void)sparse_inference;
+    throw notSupported("predict_activations_batch");
+  }
+
   virtual py::object scoreBatch(const MapInputBatch& samples,
                                 const std::vector<std::vector<Label>>& classes,
                                 std::optional<uint32_t> top_k) {
@@ -189,17 +198,24 @@ class UDTBackend {
     throw notSupported("set_decode_params");
   }
 
+  virtual void insertNewDocIds(const dataset::DataSourcePtr& data) {
+    (void)data;
+    throw notSupported("insert_new_doc_ids");
+  }
+
   virtual void introduceDocuments(
       const dataset::DataSourcePtr& data,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
-      bool fast_approximation, bool verbose, bool sort_random_hashes) {
+      bool load_balancing, bool fast_approximation, bool verbose,
+      bool sort_random_hashes) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
     (void)num_buckets_to_sample;
     (void)num_random_hashes;
+    (void)load_balancing;
     (void)fast_approximation;
     (void)verbose;
     (void)sort_random_hashes;
@@ -212,13 +228,14 @@ class UDTBackend {
       const std::vector<std::string>& weak_column_names,
       const std::variant<uint32_t, std::string>& new_label,
       std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
-      bool sort_random_hashes) {
+      bool load_balancing, bool sort_random_hashes) {
     (void)document;
     (void)strong_column_names;
     (void)weak_column_names;
     (void)new_label;
     (void)num_buckets_to_sample;
     (void)num_random_hashes;
+    (void)load_balancing;
     (void)sort_random_hashes;
     throw notSupported("introduce_document");
   }
@@ -227,11 +244,12 @@ class UDTBackend {
       const MapInputBatch& sample,
       const std::variant<uint32_t, std::string>& new_label,
       std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
-      bool sort_random_hashes) {
+      bool load_balancing, bool sort_random_hashes) {
     (void)sample;
     (void)new_label;
     (void)num_buckets_to_sample;
     (void)num_random_hashes;
+    (void)load_balancing;
     (void)sort_random_hashes;
     throw notSupported("introduce_label");
   }
@@ -274,25 +292,29 @@ class UDTBackend {
   virtual void associate(
       const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
-      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
+      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+      bool force_non_empty, size_t batch_size) {
     (void)rlhf_samples;
     (void)n_association_samples;
     (void)n_balancing_samples;
     (void)n_buckets;
     (void)learning_rate;
     (void)epochs;
+    (void)force_non_empty;
+    (void)batch_size;
     throw notSupported("associate");
   }
 
   virtual void upvote(
       const std::vector<std::pair<std::string, uint32_t>>& rlhf_samples,
       uint32_t n_upvote_samples, uint32_t n_balancing_samples,
-      float learning_rate, uint32_t epochs) {
+      float learning_rate, uint32_t epochs, size_t batch_size) {
     (void)rlhf_samples;
     (void)n_upvote_samples;
     (void)n_balancing_samples;
     (void)learning_rate;
     (void)epochs;
+    (void)batch_size;
     throw notSupported("upvote");
   }
 

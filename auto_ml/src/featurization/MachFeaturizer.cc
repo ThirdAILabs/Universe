@@ -21,11 +21,14 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace thirdai::automl {
 
-static data::OutputColumnsList machLabelColumns() {
-  return {data::OutputColumns(MACH_LABELS), data::OutputColumns(MACH_DOC_IDS)};
+static data::OutputColumnsList machLabelColumns(
+    data::ValueFillType label_value_fill) {
+  return {data::OutputColumns(MACH_LABELS, label_value_fill),
+          data::OutputColumns(MACH_DOC_IDS)};
 }
 
 MachFeaturizer::MachFeaturizer(
@@ -33,12 +36,12 @@ MachFeaturizer::MachFeaturizer(
     const TemporalRelationships& temporal_relationship,
     const std::string& label_column,
     const dataset::mach::MachIndexPtr& mach_index,
-    const TabularOptions& options)
+    const TabularOptions& options, data::ValueFillType label_value_fill)
     : Featurizer(data_types, temporal_relationship, label_column,
                  makeLabelTransformations(
                      label_column,
                      asCategorical(data_types.at(label_column))->delimiter),
-                 machLabelColumns(), options) {
+                 machLabelColumns(label_value_fill), options) {
   _state = std::make_shared<data::State>(mach_index);
 
   _prehashed_labels_transform = std::make_shared<data::StringToTokenArray>(
@@ -52,17 +55,44 @@ MachFeaturizer::MachFeaturizer(
     const std::shared_ptr<data::TextCompat>& text_transform,
     data::OutputColumnsList bolt_input_columns, const std::string& label_column,
     const dataset::mach::MachIndexPtr& mach_index, char csv_delimiter,
-    std::optional<char> label_delimiter)
+    std::optional<char> label_delimiter, data::ValueFillType label_value_fill)
     : Featurizer(text_transform, text_transform,
                  makeLabelTransformations(label_column, label_delimiter),
-                 std::move(bolt_input_columns), machLabelColumns(),
-                 csv_delimiter, std::make_shared<data::State>(mach_index),
+                 std::move(bolt_input_columns),
+                 machLabelColumns(label_value_fill), csv_delimiter,
+                 std::make_shared<data::State>(mach_index),
                  TextDatasetConfig(text_transform->inputColumn(), label_column,
                                    label_delimiter)) {
   _prehashed_labels_transform = std::make_shared<data::StringToTokenArray>(
       label_column, MACH_LABELS, ' ', mach_index->numBuckets());
 
   _doc_id_transform = makeDocIdTransformation(label_column, label_delimiter);
+}
+
+void MachFeaturizer::insertNewDocIds(
+    const dataset::DataSourcePtr& data_source) {
+  data_source->restart();
+  auto data_iter = data::CsvIterator::make(data_source, _delimiter);
+
+  while (auto chunk = data_iter->next()) {
+    insertNewDocIds(*chunk);
+  }
+
+  data_source->restart();
+}
+
+void MachFeaturizer::insertNewDocIds(const data::ColumnMap& data) {
+  std::unordered_set<uint32_t> all_doc_ids;
+
+  const auto columns = _doc_id_transform->applyStateless(data);
+
+  auto doc_ids = columns.getArrayColumn<uint32_t>(MACH_DOC_IDS);
+  for (size_t i = 0; i < doc_ids->numRows(); i++) {
+    auto row = doc_ids->row(i);
+    all_doc_ids.insert(row.begin(), row.end());
+  }
+
+  machIndex()->insertNewEntities(all_doc_ids);
 }
 
 std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>
@@ -258,6 +288,28 @@ void MachFeaturizer::addDummyDocIds(data::ColumnMap& columns) {
 
   columns.setColumn(MACH_DOC_IDS, dummy_doc_ids);
 }
+
+ar::ConstArchivePtr MachFeaturizer::toArchive() const {
+  auto map = Featurizer::toArchiveMap();
+
+  map->set("doc_id_transform", _doc_id_transform->toArchive());
+  map->set("prehashed_label_transform",
+           _prehashed_labels_transform->toArchive());
+
+  return map;
+}
+
+std::shared_ptr<MachFeaturizer> MachFeaturizer::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_shared<MachFeaturizer>(archive);
+}
+
+MachFeaturizer::MachFeaturizer(const ar::Archive& archive)
+    : Featurizer(archive),
+      _doc_id_transform(
+          data::Transformation::fromArchive(*archive.get("doc_id_transform"))),
+      _prehashed_labels_transform(data::Transformation::fromArchive(
+          *archive.get("prehashed_label_transform"))) {}
 
 template void MachFeaturizer::serialize(cereal::BinaryInputArchive&);
 template void MachFeaturizer::serialize(cereal::BinaryOutputArchive&);
