@@ -81,8 +81,10 @@ void DotProduct::updateParameters(float learning_rate, uint32_t train_steps) {
   (void)train_steps;
 }
 
-void DotProduct::initOptimizer(const OptimizerFactoryPtr& optimizer_factory) {
+void DotProduct::initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                               bool replace_existing_optimizer) {
   (void)optimizer_factory;
+  (void)replace_existing_optimizer;
 }
 
 uint32_t DotProduct::dim() const { return 1; }

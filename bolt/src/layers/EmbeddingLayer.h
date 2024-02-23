@@ -49,13 +49,14 @@ class EmbeddingLayer {
 
   void buildLayerSummary(std::ostream& summary) const;
 
-  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory) {
+  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                     bool replace_existing_optimizer) {
     // The optimizer may be saved (to preserve state in optimizers like Adam)
     // but the gradients are never saved. Thus we only initialize the optimizer
     // if it's not present, but always initialize the gradients, in case we are
     // initializing the optimizer for a loaded model.
 
-    if (!_optimizer) {
+    if (!_optimizer || replace_existing_optimizer) {
       _optimizer = optimizer_factory->makeOptimizer(
           _embedding_chunks_used.size(), _update_chunk_size);
     }

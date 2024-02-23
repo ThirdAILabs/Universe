@@ -69,8 +69,9 @@ void RobeZ::updateParameters(float learning_rate, uint32_t train_steps) {
   _kernel->updateParameters(learning_rate, train_steps);
 }
 
-void RobeZ::initOptimizer(const OptimizerFactoryPtr& optimizer_factory) {
-  _kernel->initOptimizer(optimizer_factory);
+void RobeZ::initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                          bool replace_existing_optimizer) {
+  _kernel->initOptimizer(optimizer_factory, replace_existing_optimizer);
 }
 
 uint32_t RobeZ::dim() const { return _kernel->getOutputDim(); }
