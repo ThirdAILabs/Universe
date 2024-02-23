@@ -377,6 +377,7 @@ class Mach(Model):
         hidden_bias=False,
         model_config=None,
         use_inverted_index=True,
+        **kwargs,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -392,6 +393,10 @@ class Mach(Model):
         self.balancing_samples = []
         self.model_config = model_config
         self.inverted_index = InvertedIndex() if use_inverted_index else None
+        self.optimizer_type = kwargs.get("optimizer", "adam")
+        if self.optimizer_type not in ["sgd", "adam"]:
+            raise AttributeError(f"Unsupported Optimizer: {self.optimizer_type}")
+        self.kwargs = kwargs
 
     def set_mach_sampling_threshold(self, threshold: float):
         if self.model is None:
@@ -619,6 +624,15 @@ class Mach(Model):
             },
             model_config=self.model_config,
         )
+        optimizer_params = {}
+        if "optimizer_params" in self.kwargs.keys():
+            optimizer_params = self.kwargs.get("optimizer_params")
+        if self.optimizer_type == "adam":
+            optimizer = bolt.nn.optimizers.Adam(**optimizer_params)
+        else:
+            optimizer = bolt.nn.optimizers.SGD(**optimizer_params)
+        print(f"using {self.optimizer_type} with params: {optimizer_params}")
+        model._get_model().change_optimizer(optimizer)
         model.insert_new_doc_ids(documents)
         return model
 
