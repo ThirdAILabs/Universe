@@ -53,7 +53,30 @@ std::vector<std::string> split(const std::string_view& string, char delimiter) {
   return words;
 }
 
-std::vector<std::string> tokenizeSentence(const std::string& sentence_in) {
+std::vector<std::string> tokenizeSentenceUnicodeUnsafe(
+    const std::string& sentence) {
+  // A-Za-zÀ-ÖØ-öø-ÿ0-9 : alphanumeric characters, including accents.
+  // \s : whitespace
+  // Together: match strings of at least one alphanumeric character or a single
+  // non-alphanumeric non-whitespace character
+  std::regex regex(R"([A-Za-zÀ-ÖØ-öø-ÿ0-9]+|[^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s])");
+
+  std::sregex_iterator iter(sentence.begin(), sentence.end(), regex);
+  std::sregex_iterator end;
+
+  std::vector<std::string> tokens;
+
+  while (iter != end) {
+    std::smatch match = *iter;
+    tokens.push_back(sentence.substr(match.position(), match.length()));
+    ++iter;
+  }
+
+  return tokens;
+}
+
+std::vector<std::string> tokenizeSentenceUnicodeSafe(
+    const std::string& sentence_in) {
   const std::wstring sentence = text::toUnicode(text::normalize(sentence_in));
 
   // A-Za-zÀ-ÖØ-öø-ÿ0-9 : alphanumeric characters, including accents.
@@ -76,6 +99,25 @@ std::vector<std::string> tokenizeSentence(const std::string& sentence_in) {
   }
 
   return tokens;
+}
+
+std::vector<std::string> tokenizeSentence(const std::string& sentence) {
+  /**
+   * The 'unsafe' tokenize function fails on unicode where a character spans
+   * multiple bytes. This causes an issue for certain special characters since
+   * these multiple bytes get split up by the tokenizer, causing an invalid
+   * utf-8 string. The 'safe' version converts the string into a wstring. This
+   * resolves the issue because each unicode char is representable as a single
+   * wchar_t, hence there are no issues with spliting up unicode characters when
+   * tokenizing. However windows brilliantly decided to make wchar_t 16 bits
+   * instead of 32 required for unicode. It is unclear what the effect of this
+   * is on converting to and from unicode on windows, so we just stick with the
+   * original unsafe version of the tokenizer.
+   */
+  if constexpr (sizeof(wchar_t) == sizeof(utf8proc_int32_t)) {
+    return tokenizeSentenceUnicodeSafe(sentence);
+  }
+  return tokenizeSentenceUnicodeUnsafe(sentence);
 }
 
 std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
