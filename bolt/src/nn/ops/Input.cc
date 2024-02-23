@@ -50,6 +50,13 @@ void Input::updateParameters(float learning_rate, uint32_t train_steps) {
       "UpdateParameters should not be called on input op.");
 }
 
+void Input::initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                          bool replace_existing_optimizer) {
+  (void)optimizer_factory;
+  (void)replace_existing_optimizer;
+  throw std::runtime_error("InitOptimizer should not be called on input op.");
+}
+
 uint32_t Input::dim() const { return _dim; }
 
 std::optional<uint32_t> Input::nonzeros(const ComputationList& inputs,
@@ -58,8 +65,6 @@ std::optional<uint32_t> Input::nonzeros(const ComputationList& inputs,
   (void)use_sparsity;
   return _nonzeros;
 }
-
-void Input::initOptimizer() {}
 
 ComputationPtr Input::applyToInputs(const ComputationList& inputs) {
   (void)inputs;
