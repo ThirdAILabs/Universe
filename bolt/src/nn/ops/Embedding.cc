@@ -32,7 +32,7 @@ Embedding::Embedding(size_t dim, size_t input_dim,
       _should_serialize_optimizer(false),
       _embeddings_used(input_dim, false) {
   std::mt19937 rng(global_random::nextSeed());
-  std::normal_distribution<float> dist(0.0, 0.1);
+  std::normal_distribution<float> dist(0.0, 0.01);
 
   auto gen = [&]() { return dist(rng); };
   std::generate(_embeddings.begin(), _embeddings.end(), gen);
