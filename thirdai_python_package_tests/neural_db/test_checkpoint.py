@@ -429,3 +429,4 @@ def test_training_progress_manager_gives_correct_arguments(setup_and_cleanup):
 
 def test_callback_state():
     pass
+    #TODO (Gautam): adds a lr callback check
