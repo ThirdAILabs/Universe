@@ -45,7 +45,7 @@ class CallbackTracker:
         ]
 
     def all_callbacks(self):
-        return [self.get_lr_callback] + self.user_callbacks
+        return self.user_callbacks + [self.get_lr_callback]
 
     def save(self, path: Path):
         pickle_to(self.user_callbacks, path)

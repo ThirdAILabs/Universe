@@ -425,3 +425,7 @@ def test_training_progress_manager_gives_correct_arguments(setup_and_cleanup):
     assert training_arguments["max_epochs"] == 10 - 3
     assert training_arguments["min_epochs"] == 5 - 3
     assert training_arguments["freeze_after_epochs"] == 7 - 3
+
+
+def test_callback_state():
+    pass
