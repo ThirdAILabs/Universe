@@ -632,6 +632,7 @@ class Mach(Model):
         else:
             optimizer = bolt.nn.optimizers.SGD(**optimizer_params)
         model._get_model().change_optimizer(optimizer)
+        model._get_model().save_optimizer(self.kwargs.get("save_optimizer", False))
         model.insert_new_doc_ids(documents)
         return model
 
