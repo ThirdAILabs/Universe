@@ -7,7 +7,7 @@ import pytest
 import requests
 from thirdai import neural_db as ndb
 
-from thirdai_python_package_tests.neural_db.base_connectors import base
+#from thirdai_python_package_tests.neural_db.base_connectors import base
 
 
 class Equivalent_doc:
