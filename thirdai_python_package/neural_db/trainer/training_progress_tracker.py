@@ -108,6 +108,7 @@ class NeuralDbProgressTracker:
     def __dict__(self):
         state_args = {"intro_state": self._intro_state.__dict__}
         self._train_state.learning_rate = self._train_state.callback_tracker.get_lr()
+        print(f"{self._train_state.learning_rate = }")
         train_state_args = {
             "train_state": self._train_state.__dict__,
         }
@@ -174,8 +175,8 @@ class NeuralDbProgressTracker:
             args = json.load(f)
 
         vlc_config = unpickle_from(path / "vlc.config")
-        callback_tracker = CallbackTracker.load(path / "callbacks.pkl")
-        args["train_state"].callback_tracker = callback_tracker
+        callback_tracker = CallbackTracker.load(path = path / "callbacks.pkl")
+        args["train_state"]["callback_tracker"] = callback_tracker
         return NeuralDbProgressTracker(
             intro_state=IntroState(**args["intro_state"]),
             train_state=TrainState(**args["train_state"]),
