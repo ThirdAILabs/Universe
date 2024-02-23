@@ -38,7 +38,7 @@ class MaxPool1D final : public Op,
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
-  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory) final;
+  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory, bool replace_existing_optimizer) final;
 
   void disableSparseParameterUpdates() final;
 

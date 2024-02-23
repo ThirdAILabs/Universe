@@ -78,8 +78,10 @@ void CosineSimilarity::updateParameters(float learning_rate,
 }
 
 void CosineSimilarity::initOptimizer(
-    const OptimizerFactoryPtr& optimizer_factory) {
+    const OptimizerFactoryPtr& optimizer_factory,
+    bool replace_existing_optimizer) {
   (void)optimizer_factory;
+  (void)replace_existing_optimizer;
 }
 
 uint32_t CosineSimilarity::dim() const { return 1; }
