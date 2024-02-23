@@ -77,7 +77,7 @@ std::vector<std::string> tokenizeSentenceUnicodeUnsafe(
 
 std::vector<std::string> tokenizeSentenceUnicodeSafe(
     const std::string& sentence_in) {
-  const std::wstring sentence = text::toUnicode(text::normalize(sentence_in));
+  const std::wstring sentence = text::toUnicode(sentence_in);
 
   // A-Za-zÀ-ÖØ-öø-ÿ0-9 : alphanumeric characters, including accents.
   // \s : whitespace
