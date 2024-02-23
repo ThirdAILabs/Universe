@@ -631,7 +631,6 @@ class Mach(Model):
             optimizer = bolt.nn.optimizers.Adam(**optimizer_params)
         else:
             optimizer = bolt.nn.optimizers.SGD(**optimizer_params)
-        print(f"using {self.optimizer_type} with params: {optimizer_params}")
         model._get_model().change_optimizer(optimizer)
         model.insert_new_doc_ids(documents)
         return model
