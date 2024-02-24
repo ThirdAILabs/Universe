@@ -219,6 +219,8 @@ class SmxMach:
 
             self.optimizer.step()
 
+        hash_precision = smx.metrics.precision(out.tensor, labels.tensor, k=5)
+        print(f"hash_precision@5 = {hash_precision}")
         end = time.perf_counter()
         print(
             f"epoch complete - train_loss={loss.tensor.scalar():.4f} - time={end-start:.4f}"

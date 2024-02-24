@@ -12,6 +12,7 @@
 #include <smx/src/autograd/functions/Loss.h>
 #include <smx/src/autograd/functions/NN.h>
 #include <smx/src/autograd/functions/TensorManipulation.h>
+#include <smx/src/metrics/Metrics.h>
 #include <smx/src/modules/Activation.h>
 #include <smx/src/modules/Embedding.h>
 #include <smx/src/modules/Linear.h>
@@ -321,6 +322,16 @@ void defineOptimizers(py::module_& smx) {
            py::arg("beta_2") = 0.999, py::arg("eps") = 1e-7);
 }
 
+void defineMetrics(py::module_& smx) {
+  auto metrics = smx.def_submodule("metrics");
+
+  metrics.def("precision", &precision, py::arg("scores"), py::arg("labels"),
+              py::arg("k"));
+
+  metrics.def("recall", &recall, py::arg("scores"), py::arg("labels"),
+              py::arg("k"));
+}
+
 void createSmxSubmodule(py::module_& mod) {
   auto smx = mod.def_submodule("smx");
 
@@ -331,6 +342,8 @@ void createSmxSubmodule(py::module_& mod) {
   defineModules(smx);
 
   defineOptimizers(smx);
+
+  defineMetrics(smx);
 }
 
 }  // namespace thirdai::smx::python

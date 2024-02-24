@@ -48,8 +48,6 @@ void LshIndex::query(const float* query, uint32_t* candidates,
   std::vector<uint32_t> hashes(_hash_fn->numTables());
   _hash_fn->hashSingleDense(query, _weight->shape(1), hashes.data());
 
-  _hash_table.queryBySet(hashes.data(), selected_neurons);
-
   if (_insert_missing_labels) {
     _hash_table.queryAndInsertForInference(hashes.data(), selected_neurons,
                                            n_candidates);
@@ -72,8 +70,11 @@ void LshIndex::query(const float* query, uint32_t* candidates,
 
   size_t selected_idx = 0;
   for (size_t i = 0; i < n_force_select && selected_idx < n_candidates; i++) {
-    candidates[selected_idx++] = force_select[i];
-    selected_neurons.erase(force_select[i]);
+    auto item = force_select[i];
+    candidates[selected_idx++] = item;
+    if (selected_neurons.count(item)) {
+      selected_neurons.erase(item);
+    }
   }
   for (auto x : selected_neurons) {
     if (selected_idx == n_candidates) {

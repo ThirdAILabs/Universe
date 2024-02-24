@@ -350,6 +350,7 @@ set(THIRDAI_SOURCES
     smx/src/autograd/functions/TensorManipulation.cc
     smx/src/optimizers/Adam.cc
     smx/src/modules/Module.cc
+    smx/src/metrics/Retrieval.cc
     bolt_vector/src/BoltVector.cc
     bolt/src/nn/autograd/Computation.cc
     bolt/src/nn/autograd/ComputationGraph.cc
