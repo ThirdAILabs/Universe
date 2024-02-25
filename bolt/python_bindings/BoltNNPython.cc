@@ -129,8 +129,6 @@ void createBoltNNSubmodule(py::module_& module) {
            py::arg("train_steps"))
       .def("params", &modelParams)
       .def("norms", &Model::getNorms)
-      .def("save_optimizer", &Model::setSerializeOptimizer,
-           py::arg("should_save_optimizer"))
       .def_static("from_params", &modelFromParams, py::arg("params"))
 #endif
       // The next three functions are used for distributed training.

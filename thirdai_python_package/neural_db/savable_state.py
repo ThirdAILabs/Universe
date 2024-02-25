@@ -59,8 +59,10 @@ class State:
     def save(
         self,
         location=default_checkpoint_name(),
+        with_optimizer: bool = False,
         on_progress: Callable = lambda *args, **kwargs: None,
     ) -> str:
+        self.model.model.save_optimizer(flag=with_optimizer)
         total_steps = 7
 
         # make directory
