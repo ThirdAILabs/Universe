@@ -284,7 +284,6 @@ void UDT::save(const std::string& filename) const {
 }
 
 void UDT::save_stream(std::ostream& output) const {
-  std::cout<<"save stream called\n";
   const_cast<UDT*>(this)->_save_optimizer = _save_optimizer;
   cereal::BinaryOutputArchive oarchive(output);
   oarchive(*this);
@@ -367,7 +366,6 @@ std::unique_ptr<UDTBackend> backendFromArchive(const ar::Archive& archive) {
 
 template <class Archive>
 void UDT::save(Archive& archive, const uint32_t version) const {
-  std::cout<<"called save in template during pickling\n";
   (void)version;
   std::string thirdai_version = thirdai::version();
   archive(thirdai_version);
