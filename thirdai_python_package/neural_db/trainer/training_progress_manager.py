@@ -7,7 +7,6 @@ from ..mach_defaults import (
     training_arguments_from_base,
     training_arguments_from_scratch,
 )
-from .callback_tracker import CallbackTracker
 from .checkpoint_config import CheckpointConfig
 from .training_data_manager import TrainingDataManager
 from .training_progress_tracker import IntroState, NeuralDbProgressTracker, TrainState
@@ -153,9 +152,6 @@ class TrainingProgressManager:
         train_args["freeze_after_acc"] = kwargs.get(
             "freeze_after_acc", 0.80 if "freeze_after_epoch" not in kwargs else 1
         )
-        train_args["callback_tracker"] = CallbackTracker(
-            user_callbacks=kwargs.get("callbacks", []),
-        )
 
         train_state = TrainState(
             max_in_memory_batches=max_in_memory_batches,
@@ -165,7 +161,10 @@ class TrainingProgressManager:
         )
 
         tracker = NeuralDbProgressTracker(
-            intro_state=intro_state, train_state=train_state, vlc_config=variable_length
+            intro_state=intro_state,
+            train_state=train_state,
+            vlc_config=variable_length,
+            callbacks=kwargs.get("callbacks", []),
         )
 
         save_load_manager = TrainingDataManager(

@@ -297,7 +297,7 @@ def unsupervised_train_on_docs(
     if training_progress_callback:
         # Don't change the order
         callbacks.extend(
-            training_progress_callback.training_progress_manager.tracker.callbacks
+            training_progress_callback.training_progress_manager.tracker.checkpointed_callbacks
         )
         callbacks.append(training_progress_callback)
 

@@ -3,8 +3,19 @@ import json
 from pathlib import Path
 from typing import List
 
+from thirdai import bolt
+
 from ..utils import pickle_to, unpickle_from
-from .callback_tracker import CallbackTracker
+
+
+class GetEndLearningRate(bolt.train.callbacks.Callback):
+    def __init__(self, base_lr: float):
+        self.current_learning_rate = base_lr
+        super().__init__()
+
+    def on_epoch_end(self):
+        self.current_learning_rate = self.train_state.learning_rate
+        print(f"{self.current_learning_rate = }")
 
 
 class TrainState:
@@ -20,7 +31,6 @@ class TrainState:
         batch_size: int,
         freeze_after_epoch: int,
         freeze_after_acc: float,
-        callback_tracker: CallbackTracker,
         **kwargs,
     ):
         self.max_in_memory_batches = max_in_memory_batches
@@ -33,7 +43,6 @@ class TrainState:
         self.batch_size = batch_size
         self.freeze_after_epoch = freeze_after_epoch
         self.freeze_after_acc = freeze_after_acc
-        self.callback_tracker = callback_tracker
 
 
 class IntroState:
@@ -60,13 +69,30 @@ class NeuralDbProgressTracker:
     Given the NeuralDbProgressTracker of the model and the data sources, we should be able to resume the training.
     """
 
-    def __init__(self, intro_state: IntroState, train_state: TrainState, vlc_config):
+    def __init__(
+        self,
+        intro_state: IntroState,
+        train_state: TrainState,
+        vlc_config,
+        callbacks: List[bolt.train.callbacks.Callback] = [],
+    ):
         # These are the introduce state arguments and updated once the introduce document is done
         self._intro_state = intro_state
 
         # These are training arguments and are updated while the training is in progress
         self._train_state = train_state
         self.vlc_config = vlc_config
+
+        self.lr_tracker = GetEndLearningRate(base_lr=self._train_state.learning_rate)
+
+        assert all(
+            [
+                isinstance(callback, bolt.train.callbacks.Callback)
+                for callback in callbacks
+            ]
+        ), "All callback objects should be of type bolt.train.callbacks.Callback"
+
+        self.callbacks = callbacks
 
     @property
     def is_insert_completed(self):
@@ -102,22 +128,17 @@ class NeuralDbProgressTracker:
             raise TypeError("Can set the property only with an int")
 
     @property
-    def callbacks(self):
-        return self._train_state.callback_tracker.all_callbacks()
+    def checkpointed_callbacks(self):
+        return self.callbacks + [self.lr_tracker]
 
     def __dict__(self):
-        state_args = {"intro_state": self._intro_state.__dict__}
-        self._train_state.learning_rate = self._train_state.callback_tracker.get_lr()
-        print(f"{self._train_state.learning_rate = }")
-        train_state_args = {
+        self._train_state.learning_rate = self.lr_tracker.current_learning_rate
+
+        state_args = {
+            "intro_state": self._intro_state.__dict__,
             "train_state": self._train_state.__dict__,
         }
-        train_state_args = copy.deepcopy(train_state_args)
-        del train_state_args["train_state"]["callback_tracker"]
-        train_state_args["train_state"][
-            "callbacks"
-        ] = self._train_state.callback_tracker.user_callbacks_name()
-        state_args.update(train_state_args)
+
         return state_args
 
     def insert_complete(self):
@@ -150,6 +171,7 @@ class NeuralDbProgressTracker:
         args["freeze_after_epochs"] = freeze_after_epochs
         args["min_epochs"] = min_epochs
         args["max_epochs"] = max_epochs
+        args["learning_rate"] = self.lr_tracker.current_learning_rate
 
         args["variable_length"] = self.vlc_config
 
@@ -167,7 +189,7 @@ class NeuralDbProgressTracker:
         with open(path / "tracker.json", "w") as f:
             json.dump(self.__dict__(), f, indent=4)
         pickle_to(self.vlc_config, path / "vlc.config")
-        self._train_state.callback_tracker.save(path=path / "callbacks.pkl")
+        pickle_to(self.callbacks, path / "callbacks.pkl")
 
     @staticmethod
     def load(path: Path):
@@ -175,10 +197,11 @@ class NeuralDbProgressTracker:
             args = json.load(f)
 
         vlc_config = unpickle_from(path / "vlc.config")
-        callback_tracker = CallbackTracker.load(path = path / "callbacks.pkl")
-        args["train_state"]["callback_tracker"] = callback_tracker
+        callbacks = unpickle_from(path / "callbacks.pkl")
+
         return NeuralDbProgressTracker(
             intro_state=IntroState(**args["intro_state"]),
             train_state=TrainState(**args["train_state"]),
             vlc_config=vlc_config,
+            callbacks=callbacks,
         )
