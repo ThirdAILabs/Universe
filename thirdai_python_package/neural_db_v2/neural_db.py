@@ -3,7 +3,7 @@ from typing import List, Optional, Union, Iterable
 from core.documents import Document
 from core.retriever import Retriever
 from core.chunk_store import ChunkStore
-from core.types import NewChunkBatch
+from core.types import NewChunkBatch, Chunk
 from documents import document_by_name
 
 from chunk_stores.dataframe_chunk_store import DataFrameChunkStore
@@ -37,8 +37,11 @@ class NeuralDB:
         ]
         self.insert_chunks([chunk for doc in docs for chunk in doc.chunks()], **kwargs)
 
-    def search(self, query: str, top_k: int, constraints: dict = None, **kwargs):
+    def search(
+        self, query: str, top_k: int, constraints: dict = None, **kwargs
+    ) -> List[Chunk]:
         if not constraints:
             return self.retriever.search([query], top_k, **kwargs)
         choices = self.chunk_store.filter_chunk_ids(constraints, **kwargs)
-        return self.retriever.rank([query], [choices], **kwargs)
+        chunk_ids = self.retriever.rank([query], [choices], **kwargs)
+        return self.chunk_store.get_chunks(chunk_ids, **kwargs)

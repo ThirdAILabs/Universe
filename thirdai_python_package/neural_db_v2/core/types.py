@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Union
 import pandas as pd
-import pandera.typing as pt
+from pandera import typing as pt
 
 # We typedef doc ID to anticipate switching over to string IDs
 ChunkId = int
