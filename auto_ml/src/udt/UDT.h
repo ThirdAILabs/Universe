@@ -485,9 +485,11 @@ class UDT {
     _backend->saveCppClassifier(save_path);
   }
 
-  void save_optimizer(bool flag){
-    _save_optimizer = flag;
-    }
+  void setOptimizerSavable(bool save_optimizer) {
+    _save_optimizer = save_optimizer;
+  }
+
+  bool isOptimizerSavable() const { return _save_optimizer; }
 
  private:
   UDT() {}

@@ -284,9 +284,9 @@ void UDT::save(const std::string& filename) const {
 }
 
 void UDT::save_stream(std::ostream& output) const {
-  const_cast<UDT*>(this)->_save_optimizer = _save_optimizer;
   cereal::BinaryOutputArchive oarchive(output);
   oarchive(*this);
+  const_cast<UDT*>(this)->setOptimizerSavable(false);
 }
 
 void UDT::checkpoint(const std::string& filename) const {
