@@ -25,7 +25,7 @@ def test_cross_entropy_dense_single_label():
 
     loss_np = np.sum(-np.log(y_np) * dense_labels) / (M * K)
 
-    loss = smx.cross_entropy(x, labels)
+    loss = smx.cross_entropy(x, smx.Variable(labels, requires_grad=False))
 
     assert np.isclose(loss.tensor.scalar(), loss_np)
 
@@ -53,7 +53,7 @@ def test_cross_entropy_sparse_single_label():
     labels = smx.from_numpy(np.array([4, 1, 6, 0], dtype=np.uint32))
 
     x = smx.Variable(x, requires_grad=True)
-    loss = smx.cross_entropy(x, labels)
+    loss = smx.cross_entropy(x, smx.Variable(labels, requires_grad=False))
 
     y1 = softmax_np(x1)
     y2 = softmax_np(x2)
@@ -98,7 +98,7 @@ def test_cross_entropy_dense_multi_label():
         [0, 3, 5, 8, 9], l1 + l2 + l3 + l4, l1_v + l2_v + l3_v + l4_v, smx.Shape(4, 10)
     )
 
-    loss = smx.cross_entropy(x, labels)
+    loss = smx.cross_entropy(x, smx.Variable(labels, requires_grad=False))
 
     assert np.isclose(loss.tensor.scalar(), np.sum(-l_dense * np.log(y_np)) / 4)
 
@@ -135,7 +135,7 @@ def test_cross_entropy_sparse_multi_label():
         smx.Shape(4, 10),
     )
 
-    loss = smx.cross_entropy(x, labels)
+    loss = smx.cross_entropy(x, smx.Variable(labels, requires_grad=False))
 
     full_acts = np.concatenate(
         [softmax_np(np.array(xi)) for xi in [x1_v, x2_v, x3_v, x4_v]]

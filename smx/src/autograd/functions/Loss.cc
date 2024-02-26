@@ -7,8 +7,8 @@
 
 namespace thirdai::smx {
 
-VariablePtr crossEntropy(const VariablePtr& logits, const TensorPtr& labels) {
-  auto tmp = sparseCrossEntropy(logits->tensor(), labels);
+VariablePtr crossEntropy(const VariablePtr& logits, const VariablePtr& labels) {
+  auto tmp = sparseCrossEntropy(logits->tensor(), labels->tensor());
   auto loss = std::move(tmp.first);  // Lambda captures don't like auto[...]
   auto activations = std::move(tmp.second);
 
@@ -17,7 +17,7 @@ VariablePtr crossEntropy(const VariablePtr& logits, const TensorPtr& labels) {
                            const std::vector<VariablePtr>& inputs) {
     (void)grad;  // TODO(Nicholas) support weighted loss here
 
-    auto logit_grad = sparseCrossEntropyGrad(activations, labels);
+    auto logit_grad = sparseCrossEntropyGrad(activations, labels->tensor());
 
     inputs.at(0)->addGradient(logit_grad);
   };
@@ -26,8 +26,8 @@ VariablePtr crossEntropy(const VariablePtr& logits, const TensorPtr& labels) {
 }
 
 VariablePtr binaryCrossEntropy(const VariablePtr& logits,
-                               const TensorPtr& labels) {
-  auto tmp = sparseBinaryCrossEntropy(logits->tensor(), labels);
+                               const VariablePtr& labels) {
+  auto tmp = sparseBinaryCrossEntropy(logits->tensor(), labels->tensor());
   auto loss = std::move(tmp.first);  // Lambda captures don't like auto[...]
   auto activations = std::move(tmp.second);
 
@@ -36,7 +36,8 @@ VariablePtr binaryCrossEntropy(const VariablePtr& logits,
                            const std::vector<VariablePtr>& inputs) {
     (void)grad;  // TODO(Nicholas) support weighted loss here
 
-    auto logit_grad = sparseBinaryCrossEntropyGrad(activations, labels);
+    auto logit_grad =
+        sparseBinaryCrossEntropyGrad(activations, labels->tensor());
 
     inputs.at(0)->addGradient(logit_grad);
   };

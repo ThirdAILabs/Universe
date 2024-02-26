@@ -44,8 +44,11 @@ def test_smx_mlp_mnist():
     for epoch in range(5):
         for x, y in train_loader:
             out = model(flatten(x))
+            y = smx.Variable(
+                smx.from_numpy(y.numpy().astype(np.uint32)), requires_grad=False
+            )
 
-            loss = smx.cross_entropy(out, smx.from_numpy(y.numpy().astype(np.uint32)))
+            loss = smx.cross_entropy(out, y)
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
@@ -71,13 +74,10 @@ class SparseModel(smx.Module):
         self.output = smx.Linear(dim=10, input_dim=20000)
 
     def forward(self, x):
-        out = self.hidden(x)[0]
+        out = self.hidden(x)
         out = smx.relu(out)
         out = self.output(out)
-        return [out]
-
-    def parameters(self):
-        return self.hidden.parameters() + self.output.parameters()
+        return out
 
 
 def test_smx_sparse_mlp_mnist():
@@ -94,9 +94,12 @@ def test_smx_sparse_mlp_mnist():
     for epoch in range(5):
         s = time.perf_counter()
         for x, y in train_loader:
-            out = model([flatten(x)])[0]
+            out = model(flatten(x))
+            y = smx.Variable(
+                smx.from_numpy(y.numpy().astype(np.uint32)), requires_grad=False
+            )
 
-            loss = smx.cross_entropy(out, smx.from_numpy(y.numpy().astype(np.uint32)))
+            loss = smx.cross_entropy(out, y)
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
@@ -105,7 +108,7 @@ def test_smx_sparse_mlp_mnist():
 
         correct, total = 0, 0
         for x, y in test_loader:
-            out = model([flatten(x)])[0].tensor.numpy()
+            out = model(flatten(x)).tensor.numpy()
 
             correct += np.sum(np.argmax(out, axis=1) == y.numpy())
             total += len(x)

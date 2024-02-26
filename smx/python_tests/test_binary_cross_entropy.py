@@ -30,7 +30,7 @@ def test_binary_cross_entropy_dense_single_label():
 
     loss_np = bce_loss(dense_labels=dense_labels, dense_y=y_np)
 
-    loss = smx.binary_cross_entropy(x, labels)
+    loss = smx.binary_cross_entropy(x, smx.Variable(labels, requires_grad=False))
 
     assert np.isclose(loss.tensor.scalar(), loss_np)
 
@@ -58,7 +58,7 @@ def test_binary_cross_entropy_sparse_single_label():
     labels = smx.from_numpy(np.array([4, 1, 6, 0], dtype=np.uint32))
 
     x = smx.Variable(x, requires_grad=True)
-    loss = smx.binary_cross_entropy(x, labels)
+    loss = smx.binary_cross_entropy(x, smx.Variable(labels, requires_grad=False))
 
     y1 = sigmoid_np(x1)
     y2 = sigmoid_np(x2)
@@ -109,7 +109,7 @@ def test_binary_cross_entropy_dense_multi_label():
         [0, 3, 5, 8, 9], l1 + l2 + l3 + l4, l1_v + l2_v + l3_v + l4_v, smx.Shape(4, 10)
     )
 
-    loss = smx.binary_cross_entropy(x, labels)
+    loss = smx.binary_cross_entropy(x, smx.Variable(labels, requires_grad=False))
 
     expected_loss = bce_loss(dense_labels=l_dense, dense_y=y_np)
     assert np.isclose(loss.tensor.scalar(), expected_loss)
@@ -145,7 +145,7 @@ def test_binary_cross_entropy_sparse_multi_label():
         smx.Shape(4, 10),
     )
 
-    loss = smx.binary_cross_entropy(x, labels)
+    loss = smx.binary_cross_entropy(x, smx.Variable(labels, requires_grad=False))
 
     full_acts = sigmoid_np(np.array(x1_v + x2_v + x3_v + x4_v))
 

@@ -214,7 +214,7 @@ class SmxMach:
             self.optimizer.zero_grad()
 
             out = self.model(tokens, labels)
-            loss = smx.binary_cross_entropy(out, labels.tensor)
+            loss = smx.binary_cross_entropy(out, labels)
             loss.backward()
 
             self.optimizer.step()

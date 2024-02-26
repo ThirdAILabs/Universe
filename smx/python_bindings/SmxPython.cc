@@ -287,7 +287,8 @@ void defineModules(py::module_& smx) {
            py::arg("updates_per_new_hash_fn") = 100)
       .def("__call__",
            py::overload_cast<const VariablePtr&, const VariablePtr&>(
-               &SparseLinear::forward))
+               &SparseLinear::forward),
+           py::arg("x"), py::arg("labels") = nullptr)
       .def("on_update_callback", &SparseLinear::onUpdateCallback)
       .def_property("weight", &SparseLinear::weight, &SparseLinear::setWeight)
       .def_property("bias", &SparseLinear::bias, &SparseLinear::setBias)

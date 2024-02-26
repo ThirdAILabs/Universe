@@ -5,9 +5,9 @@
 
 namespace thirdai::smx {
 
-VariablePtr crossEntropy(const VariablePtr& logits, const TensorPtr& labels);
+VariablePtr crossEntropy(const VariablePtr& logits, const VariablePtr& labels);
 
 VariablePtr binaryCrossEntropy(const VariablePtr& logits,
-                               const TensorPtr& labels);
+                               const VariablePtr& labels);
 
 }  // namespace thirdai::smx

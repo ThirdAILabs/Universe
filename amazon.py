@@ -107,7 +107,7 @@ for epoch in range(5):
 
         fs = time.perf_counter()
         out = model(x, y)
-        loss = smx.cross_entropy(out, y.tensor)
+        loss = smx.cross_entropy(out, y)
         loss.backward()
         fe = time.perf_counter()
         total_forward_backward += fe - fs

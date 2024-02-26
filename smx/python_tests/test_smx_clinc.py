@@ -56,7 +56,7 @@ def test_smx_clinc(download_clinc_dataset):
         for x, y in zip(train_x, train_y):
             out = model(x[0])
 
-            loss = smx.cross_entropy(out, y[0])
+            loss = smx.cross_entropy(out, smx.Variable(y[0], requires_grad=True))
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
