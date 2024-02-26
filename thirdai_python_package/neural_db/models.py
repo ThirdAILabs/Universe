@@ -158,7 +158,7 @@ class Model:
         raise NotImplementedError()
 
     @staticmethod
-    def supported_optimizers(self):
+    def supported_optimizers():
         return ["sgd", "adam"]
 
 
