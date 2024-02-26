@@ -63,17 +63,11 @@ def all_methods_work(
     assert_acc: bool,
 ):
     insert_works(db, docs, num_duplicate_docs)
-    print("insert done", flush=True)
     search_works(db, docs, assert_acc)
-    print("search done", flush=True)
     upvote_works(db)
-    print("upvote done", flush=True)
     associate_works(db)
-    print("associate done", flush=True)
     save_load_works(db)
-    print("save load done", flush=True)
     clear_sources_works(db)
-    print("clear done", flush=True)
 
 
 @pytest.mark.parametrize("use_inverted_index", [True, False])
@@ -86,12 +80,6 @@ def test_neural_db_all_methods_work_on_new_model(small_doc_set, use_inverted_ind
         assert_acc=False,
     )
 
-for i in range(100):
-    db = ndb.NeuralDB()
-    all_methods_work(
-        db=db, docs=[ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE, on_disk=True)], num_duplicate_docs=0, assert_acc=False
-    )
-    print(f"ITERATION {i} COMPLETE")
 
 def test_neuralb_db_all_methods_work_on_new_mach_mixture(small_doc_set):
     number_models = 2
