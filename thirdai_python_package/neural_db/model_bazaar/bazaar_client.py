@@ -396,8 +396,12 @@ class ModelBazaar(Bazaar):
                 print("\nTraining completed")
                 return
 
+            if response_data["status"] == "failed":
+                print("\nTraining Failed")
+                return
+
             print("Training: In progress", end="", flush=True)
-            print_progress_dots(duration=5)
+            print_progress_dots(duration=10)
 
     def deploy(self, model_identifier: str, deployment_name: str, is_async=False):
         """
