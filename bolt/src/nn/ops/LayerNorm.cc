@@ -6,7 +6,11 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/optimizers/Adam.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
+#include <archive/src/ParameterReference.h>
 #include <cmath>
 #include <stdexcept>
 
@@ -22,9 +26,7 @@ LayerNorm::LayerNorm() : Op(nextLayerNormOpName()) {}
 LayerNorm::LayerNorm(const float* gamma, const float* beta, size_t dim)
     : Op(nextLayerNormOpName()),
       _gamma(gamma, gamma + dim),
-      _beta(beta, beta + dim),
-      _gamma_optimizer(dim),
-      _beta_optimizer(dim) {}
+      _beta(beta, beta + dim) {}
 
 std::shared_ptr<LayerNorm> LayerNorm::make() {
   return std::shared_ptr<LayerNorm>(new LayerNorm());
@@ -117,9 +119,9 @@ void LayerNorm::backpropagate(BoltVector& input, const BoltVector& output) {
 
     input.gradients[i] += grad_x;
 
-    _gamma_optimizer.gradients[neuron] += output.gradients[i] * x_hat;
+    _gamma_gradients[neuron] += output.gradients[i] * x_hat;
 
-    _beta_optimizer.gradients[neuron] += output.gradients[i];
+    _beta_gradients[neuron] += output.gradients[i];
   }
 }
 
@@ -141,8 +143,28 @@ std::pair<float, float> LayerNorm::moments(const BoltVector& vector) {
 }
 
 void LayerNorm::updateParameters(float learning_rate, uint32_t train_steps) {
-  _gamma_optimizer.applyUpdate(_gamma, learning_rate, train_steps);
-  _beta_optimizer.applyUpdate(_beta, learning_rate, train_steps);
+  _gamma_optimizer->updateDense(_gamma, _gamma_gradients, learning_rate,
+                                train_steps);
+  _beta_optimizer->updateDense(_beta, _beta_gradients, learning_rate,
+                               train_steps);
+}
+
+void LayerNorm::initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                              bool replace_existing_optimizer) {
+  // The optimizer may be saved (to preserve state in optimizers like Adam)
+  // but the gradients are never saved. Thus we only initialize the optimizer
+  // if it's not present, but always initialize the gradients, in case we are
+  // initializing the optimizer for a loaded model.
+
+  if (!_gamma_optimizer || !_beta_optimizer || replace_existing_optimizer) {
+    _gamma_optimizer =
+        optimizer_factory->makeOptimizer(/* rows= */ 1, _gamma.size());
+    _beta_optimizer =
+        optimizer_factory->makeOptimizer(/* rows= */ 1, _beta.size());
+  }
+
+  _gamma_gradients.assign(_gamma.size(), 0.0);
+  _beta_gradients.assign(_beta.size(), 0.0);
 }
 
 uint32_t LayerNorm::dim() const { return _gamma.size(); }
@@ -152,9 +174,46 @@ std::optional<uint32_t> LayerNorm::nonzeros(const ComputationList& inputs,
   return inputs.at(0)->nonzeros(use_sparsity);
 }
 
-void LayerNorm::initOptimizer() {
-  // TODO(Nicholas): right now the optimizer is always saved in LayerNorm
-  // because it is small.
+ComputationPtr LayerNorm::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("Expected LayerNorm op to have one input.");
+  }
+  return apply(inputs.at(0));
+}
+
+ar::ConstArchivePtr LayerNorm::toArchive(bool with_optimizer) const {
+  auto map = baseArchive();
+  map->set("type", ar::str(type()));
+
+  map->set("gamma", ar::ParameterReference::make(_gamma, shared_from_this()));
+  map->set("beta", ar::ParameterReference::make(_beta, shared_from_this()));
+
+  if (with_optimizer && _gamma_optimizer && _beta_optimizer) {
+    map->set("gamma_optimizer",
+             _gamma_optimizer->toArchive(shared_from_this()));
+
+    map->set("beta_optimizer", _beta_optimizer->toArchive(shared_from_this()));
+  }
+
+  return map;
+}
+
+std::shared_ptr<LayerNorm> LayerNorm::fromArchive(const ar::Archive& archive) {
+  return std::shared_ptr<LayerNorm>(new LayerNorm(archive));
+}
+
+LayerNorm::LayerNorm(const ar::Archive& archive)
+    : Op(archive.str("name")),
+      _gamma(archive.get("gamma")->param().moveLoadedParameter()),
+      _beta(archive.get("beta")->param().moveLoadedParameter()) {
+  assertOpType(archive, type());
+
+  if (archive.contains("gamma_optimizer")) {
+    _gamma_optimizer = Optimizer::fromArchive(*archive.get("gamma_optimizer"));
+  }
+  if (archive.contains("beta_optimizer")) {
+    _beta_optimizer = Optimizer::fromArchive(*archive.get("beta_optimizer"));
+  }
 }
 
 void LayerNorm::disableSparseParameterUpdates() {}
@@ -162,7 +221,7 @@ void LayerNorm::disableSparseParameterUpdates() {}
 void LayerNorm::enableSparseParameterUpdates() {}
 
 std::vector<std::vector<float>*> LayerNorm::gradients() {
-  return {&_gamma_optimizer.gradients, &_beta_optimizer.gradients};
+  return {&_gamma_gradients, &_beta_gradients};
 }
 
 std::vector<std::vector<float>*> LayerNorm::parameters() {
@@ -179,8 +238,6 @@ ComputationPtr LayerNorm::apply(const ComputationPtr& input) {
   if (dim() == 0) {
     _gamma.assign(input->dim(), 1.0);
     _beta.assign(input->dim(), 0.0);
-    _gamma_optimizer = AdamOptimizer(input->dim());
-    _beta_optimizer = AdamOptimizer(input->dim());
   } else if (input->dim() != dim()) {
     throw std::invalid_argument(
         "Cannot apply LayerNorm op for input with dimension " +
@@ -196,9 +253,27 @@ template void LayerNorm::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void LayerNorm::serialize(Archive& archive) {
+  if (!std::is_same_v<Archive, cereal::BinaryInputArchive>) {
+    throw std::runtime_error(
+        "This serialize method should only be used for loading old models, "
+        "not saving new ones.");
+  }
+
   // The optimizer is small so we can always serialize it.
-  archive(cereal::base_class<Op>(this), _gamma, _beta, _gamma_optimizer,
-          _beta_optimizer);
+  std::optional<AdamOptimizer> gamma_optimizer;
+  std::optional<AdamOptimizer> beta_optimizer;
+
+  archive(cereal::base_class<Op>(this), _gamma, _beta, gamma_optimizer,
+          beta_optimizer);
+
+  _gamma_optimizer =
+      Adam::fromOldOptimizer(std::move(*gamma_optimizer), 1, _gamma.size());
+
+  _beta_optimizer =
+      Adam::fromOldOptimizer(std::move(*beta_optimizer), 1, _beta.size());
+
+  _gamma_gradients.assign(_gamma.size(), 0.0);
+  _beta_gradients.assign(_beta.size(), 0.0);
 }
 
 }  // namespace thirdai::bolt

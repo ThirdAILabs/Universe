@@ -1,6 +1,7 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
+#include <archive/src/Archive.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/Loader.h>
@@ -25,6 +26,7 @@
 #include <limits>
 #include <memory>
 #include <random>
+#include <sstream>
 
 namespace thirdai::data::tests {
 
@@ -35,9 +37,16 @@ IndicesAndValues applyTransformation(const dataset::TextTokenizerPtr& tokenizer,
                                      const dataset::TextEncoderPtr& encoder,
                                      size_t encoding_dim, size_t hash_range,
                                      bool lowercase,
-                                     std::vector<std::string> text) {
+                                     std::vector<std::string> text,
+                                     bool serialize = false) {
   TextCompat transform("txt", "indices", "values", tokenizer, encoder,
                        lowercase, encoding_dim, hash_range);
+
+  if (serialize) {
+    std::stringstream buffer;
+    ar::serialize(transform.toArchive(), buffer);
+    transform = TextCompat(*ar::deserialize(buffer));
+  }
 
   ColumnMap columns({{"txt", ValueColumn<std::string>::make(std::move(text))}});
 
@@ -79,7 +88,7 @@ IndicesAndValues applyBlock(const dataset::TextTokenizerPtr& tokenizer,
   return output;
 }
 
-std::vector<std::string> randomText() {
+std::vector<std::string> randomText(size_t n_lines) {
   std::mt19937 rng(2048);
 
   std::uniform_int_distribution<> sentence_len_dist(5, 20);
@@ -90,7 +99,7 @@ std::vector<std::string> randomText() {
   std::uniform_int_distribution<> char_dist(0, 52 + special_chars.size() - 1);
 
   std::vector<std::string> sentences;
-  for (size_t sent = 0; sent < 300; sent++) {
+  for (size_t sent = 0; sent < n_lines; sent++) {
     std::string sentence;
     int sent_len = sentence_len_dist(rng);
     for (int word = 0; word < sent_len; word++) {
@@ -134,7 +143,7 @@ std::vector<size_t> getEncodingDims() {
 std::vector<size_t> getHashRanges() { return {1000, 7000, 100000}; }
 
 TEST(TextCompatTest, OutputsMatch) {
-  std::vector<std::string> text = randomText();
+  std::vector<std::string> text = randomText(/*n_lines=*/300);
 
   for (const auto& tokenizer : getTokenizers()) {
     for (const auto& encoder : getEncoders()) {
@@ -270,6 +279,30 @@ TEST(TextCompatTest, FullPipeline) {
             ASSERT_EQ(inputs_1, inputs_2);
             ASSERT_EQ(labels_1, labels_2);
             ASSERT_EQ(mach_labels_1, mach_labels_2);
+          }
+        }
+      }
+    }
+  }
+}
+
+TEST(TextCompatTest, Serialization) {
+  std::vector<std::string> text = randomText(/*n_lines=*/10);
+
+  for (const auto& tokenizer : getTokenizers()) {
+    for (const auto& encoder : getEncoders()) {
+      for (auto encoding_dim : getEncodingDims()) {
+        for (auto hash_range : getHashRanges()) {
+          for (auto lowercase : {true, false}) {
+            auto [indices_1, values_1] = applyTransformation(
+                tokenizer, encoder, encoding_dim, hash_range, lowercase, text);
+
+            auto [indices_2, values_2] = applyTransformation(
+                tokenizer, encoder, encoding_dim, hash_range, lowercase, text,
+                /*serialize=*/true);
+
+            ASSERT_EQ(indices_1, indices_2);
+            ASSERT_EQ(values_1, values_2);
           }
         }
       }

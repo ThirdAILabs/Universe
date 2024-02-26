@@ -3,6 +3,8 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <hashing/src/HashUtils.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
@@ -57,6 +59,22 @@ void HashPositionTransform::buildExplanationMap(
                           explanations);
 }
 
+ar::ConstArchivePtr HashPositionTransform::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("input_column", ar::str(_input_column));
+  map->set("output_column", ar::str(_output_column));
+  map->set("dim", ar::u64(_dim));
+
+  return map;
+}
+
+HashPositionTransform::HashPositionTransform(const ar::Archive& archive)
+    : _input_column(archive.str("input_column")),
+      _output_column(archive.str("output_column")),
+      _dim(archive.u64("dim")) {}
+
 template void HashPositionTransform::serialize(cereal::BinaryInputArchive&);
 template void HashPositionTransform::serialize(cereal::BinaryOutputArchive&);
 
@@ -103,6 +121,22 @@ void OffsetPositionTransform::buildExplanationMap(
   explainEncodedPositions(input, output, _input_column, _output_column,
                           explanations);
 }
+
+ar::ConstArchivePtr OffsetPositionTransform::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("input_column", ar::str(_input_column));
+  map->set("output_column", ar::str(_output_column));
+  map->set("max_tokens", ar::u64(_max_num_tokens));
+
+  return map;
+}
+
+OffsetPositionTransform::OffsetPositionTransform(const ar::Archive& archive)
+    : _input_column(archive.str("input_column")),
+      _output_column(archive.str("output_column")),
+      _max_num_tokens(archive.u64("max_tokens")) {}
 
 template void OffsetPositionTransform::serialize(cereal::BinaryInputArchive&);
 template void OffsetPositionTransform::serialize(cereal::BinaryOutputArchive&);

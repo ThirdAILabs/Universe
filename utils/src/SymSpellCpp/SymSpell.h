@@ -4,6 +4,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <archive/src/Archive.h>
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
@@ -192,6 +193,8 @@ class SymSpell {
            int countThreshold = DEFAULT_COUNT_THRESHOLD,
            unsigned char compactLevel = DEFAULT_COMPACT_LEVEL);
 
+  explicit SymSpell(const thirdai::ar::Archive& archive);
+
   // ~SymSpell();
 
   /// <summary>Create/Update an entry in the dictionary.</summary>
@@ -319,6 +322,8 @@ class SymSpell {
   /// edit distance, and secondarily by count frequency.</returns>
   vector<SuggestItem> Lookup(xstring input, Verbosity verbosity,
                              uint32_t maxEditDistance, bool includeUnknown);
+
+  thirdai::ar::ConstArchivePtr toArchive() const;
 
  private:
   // check whether all delete chars are present in the suggestion prefix in

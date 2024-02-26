@@ -30,6 +30,8 @@ class DWTAHashFunction final : public HashFunction {
                    std::optional<uint32_t> permutations,
                    uint32_t seed = global_random::nextSeed());
 
+  explicit DWTAHashFunction(const ar::Archive& archive);
+
   void hashSingleSparse(const uint32_t* indices, const float* values,
                         uint32_t length, uint32_t* output) const override;
 
@@ -53,6 +55,11 @@ class DWTAHashFunction final : public HashFunction {
 
   uint32_t getHashesPerTable() const { return _hashes_per_table; }
 
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::shared_ptr<DWTAHashFunction> fromArchive(
+      const ar::Archive& archive);
+
   void save(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;
@@ -61,6 +68,8 @@ class DWTAHashFunction final : public HashFunction {
 
   static std::shared_ptr<DWTAHashFunction> load_stream(
       std::istream& input_stream);
+
+  static std::string type() { return "dwta"; }
 };
 
 }  // namespace thirdai::hashing

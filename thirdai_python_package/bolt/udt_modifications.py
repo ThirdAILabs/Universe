@@ -305,6 +305,7 @@ def modify_mach_udt():
         weak_column_names: List[str],
         num_buckets_to_sample: Optional[int] = None,
         num_random_hashes: int = 0,
+        load_balancing: bool = False,
         fast_approximation: bool = False,
         verbose: bool = True,
     ):
@@ -317,6 +318,7 @@ def modify_mach_udt():
             weak_column_names,
             num_buckets_to_sample,
             num_random_hashes,
+            load_balancing,
             fast_approximation,
             verbose,
         )

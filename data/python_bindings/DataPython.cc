@@ -255,7 +255,13 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       transformations_submodule, "Transformation")
       .def("__call__", &Transformation::applyStateless, py::arg("columns"))
       .def("__call__", &Transformation::apply, py::arg("columns"),
-           py::arg("state"));
+           py::arg("state"))
+      .def("serialize", [](const TransformationPtr& transformation) {
+        return py::bytes(transformation->serialize());
+      });
+
+  transformations_submodule.def("deserialize", &Transformation::deserialize,
+                                py::arg("binary"));
 
   py::class_<Pipeline, Transformation, PipelinePtr>(transformations_submodule,
                                                     "Pipeline")
@@ -372,14 +378,16 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   py::class_<ColdStartConfig>(transformations_submodule, "ColdStartConfig")
       .def(py::init<std::optional<uint32_t>, std::optional<uint32_t>,
                     std::optional<uint32_t>, std::optional<uint32_t>, uint32_t,
-                    std::optional<uint32_t>, std::optional<uint32_t>>(),
+                    std::optional<uint32_t>, std::optional<uint32_t>,
+                    std::optional<uint32_t>>(),
            py::arg("weak_min_len") = std::nullopt,
            py::arg("weak_max_len") = std::nullopt,
            py::arg("weak_chunk_len") = std::nullopt,
            py::arg("weak_sample_num_words") = std::nullopt,
            py::arg("weak_sample_reps") = 1,
            py::arg("strong_max_len") = std::nullopt,
-           py::arg("strong_sample_num_words") = std::nullopt);
+           py::arg("strong_sample_num_words") = std::nullopt,
+           py::arg("strong_to_weak_ratio") = std::nullopt);
 
   py::class_<ColdStartTextAugmentation, Transformation,
              std::shared_ptr<ColdStartTextAugmentation>>(
@@ -401,25 +409,26 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
              std::shared_ptr<VariableLengthConfig>>(  // NOLINT
       transformations_submodule, "VariableLengthConfig")
 #if THIRDAI_EXPOSE_ALL
-      .def(
-          py::init<size_t, size_t, std::optional<uint32_t>, size_t,
-                   std::optional<size_t>, uint32_t, bool, bool, uint32_t, float,
-                   float, float, float, size_t, size_t, size_t, size_t>(),
-          py::arg("covering_min_length") = 5,
-          py::arg("covering_max_length") = 40,
-          py::arg("max_covering_samples") = std::nullopt,
-          py::arg("slice_min_length") = 5,
-          py::arg("slice_max_length") = std::nullopt, py::arg("num_slices") = 7,
-          py::arg("add_whole_doc") = true,
-          py::arg("prefilter_punctuation") = true,
-          py::arg("strong_sample_num_words") = 3,
-          py::arg("stopword_removal_probability") = 0,
-          py::arg("stopword_insertion_probability") = 0,
-          py::arg("word_removal_probability") = 0,
-          py::arg("word_perturbation_probability") = 0,
-          py::arg("chars_replace_with_space") = 0, py::arg("chars_deleted") = 0,
-          py::arg("chars_duplicated") = 0,
-          py::arg("chars_replace_with_adjacents") = 0)
+      .def(py::init<size_t, size_t, std::optional<uint32_t>, size_t,
+                    std::optional<size_t>, uint32_t, bool, bool, uint32_t,
+                    std::optional<uint32_t>, float, float, float, float, size_t,
+                    size_t, size_t, size_t>(),
+           py::arg("covering_min_length") = 5,
+           py::arg("covering_max_length") = 40,
+           py::arg("max_covering_samples") = std::nullopt,
+           py::arg("slice_min_length") = 5,
+           py::arg("slice_max_length") = std::nullopt,
+           py::arg("num_slices") = 7, py::arg("add_whole_doc") = true,
+           py::arg("prefilter_punctuation") = true,
+           py::arg("strong_sample_num_words") = 3,
+           py::arg("strong_to_weak_ratio") = std::nullopt,
+           py::arg("stopword_removal_probability") = 0,
+           py::arg("stopword_insertion_probability") = 0,
+           py::arg("word_removal_probability") = 0,
+           py::arg("word_perturbation_probability") = 0,
+           py::arg("chars_replace_with_space") = 0,
+           py::arg("chars_deleted") = 0, py::arg("chars_duplicated") = 0,
+           py::arg("chars_replace_with_adjacents") = 0)
       .def("__str__", &VariableLengthConfig::to_string)
 #else
       .def(py::init<>())

@@ -19,6 +19,14 @@ class CategoricalCrossEntropy final : public ComparativeLoss {
   static std::shared_ptr<CategoricalCrossEntropy> make(ComputationPtr output,
                                                        ComputationPtr labels);
 
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::shared_ptr<CategoricalCrossEntropy> fromArchive(
+      const ar::Archive& archive,
+      const std::unordered_map<std::string, ComputationPtr>& computations);
+
+  static std::string type() { return "categorical_cross_entropy"; }
+
  private:
   float singleGradient(float activation, float label,
                        uint32_t batch_size) const final;

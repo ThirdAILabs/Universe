@@ -1,6 +1,8 @@
 #include "RegressionBinning.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <algorithm>
 #include <numeric>
@@ -58,6 +60,30 @@ uint32_t RegressionBinning::bin(float x) const {
 
   return bin;
 }
+
+ar::ConstArchivePtr RegressionBinning::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("input_column", ar::str(_input_column));
+  map->set("output_column", ar::str(_output_column));
+  map->set("min", ar::f32(_min));
+  map->set("max", ar::f32(_max));
+  map->set("binsize", ar::f32(_binsize));
+  map->set("num_bins", ar::u64(_num_bins));
+  map->set("correct_label_radius", ar::u64(_correct_label_radius));
+
+  return map;
+}
+
+RegressionBinning::RegressionBinning(const ar::Archive& archive)
+    : _input_column(archive.str("input_column")),
+      _output_column(archive.str("output_column")),
+      _min(archive.getAs<ar::F32>("min")),
+      _max(archive.getAs<ar::F32>("max")),
+      _binsize(archive.getAs<ar::F32>("binsize")),
+      _num_bins(archive.u64("num_bins")),
+      _correct_label_radius(archive.u64("correct_label_radius")) {}
 
 template void RegressionBinning::serialize(cereal::BinaryInputArchive&);
 template void RegressionBinning::serialize(cereal::BinaryOutputArchive&);

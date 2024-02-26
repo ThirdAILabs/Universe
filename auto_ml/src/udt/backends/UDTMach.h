@@ -2,6 +2,7 @@
 
 #include <bolt/src/nn/model/Model.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Archive.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
@@ -34,6 +35,8 @@ class UDTMach final : public UDTBackend {
       const TabularOptions& tabular_options,
       const std::optional<std::string>& model_config,
       config::ArgumentMap user_args);
+
+  explicit UDTMach(const ar::Archive& archive);
 
   explicit UDTMach(const MachInfo& mach_info);
 
@@ -119,24 +122,27 @@ class UDTMach final : public UDTBackend {
     return _featurizer->textDatasetConfig();
   }
 
+  void insertNewDocIds(const dataset::DataSourcePtr& data) final;
+
   void introduceDocuments(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
                           std::optional<uint32_t> num_buckets_to_sample,
-                          uint32_t num_random_hashes, bool fast_approximation,
-                          bool verbose, bool sort_random_hashes) final;
+                          uint32_t num_random_hashes, bool load_balancing,
+                          bool fast_approximation, bool verbose,
+                          bool sort_random_hashes) final;
 
   void introduceDocument(const MapInput& document,
                          const std::vector<std::string>& strong_column_names,
                          const std::vector<std::string>& weak_column_names,
                          const Label& new_label,
                          std::optional<uint32_t> num_buckets_to_sample,
-                         uint32_t num_random_hashes,
+                         uint32_t num_random_hashes, bool load_balancing,
                          bool sort_random_hashes) final;
 
   void introduceLabel(const MapInputBatch& samples, const Label& new_label,
                       std::optional<uint32_t> num_buckets_to_sample,
-                      uint32_t num_random_hashes,
+                      uint32_t num_random_hashes, bool load_balancing,
                       bool sort_random_hashes) final;
 
   void forget(const Label& label) final;
@@ -196,6 +202,12 @@ class UDTMach final : public UDTBackend {
 
   void setMachSamplingThreshold(float threshold) final;
 
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
+  static std::unique_ptr<UDTMach> fromArchive(const ar::Archive& archive);
+
+  static std::string type() { return "udt_mach"; }
+
  private:
   std::vector<std::vector<uint32_t>> predictHashesImpl(
       const MapInputBatch& samples, bool sparse_inference,
@@ -205,7 +217,7 @@ class UDTMach final : public UDTBackend {
   void introduceLabelHelper(const bolt::TensorList& samples,
                             const Label& new_label,
                             std::optional<uint32_t> num_buckets_to_sample_opt,
-                            uint32_t num_random_hashes,
+                            uint32_t num_random_hashes, bool load_balancing,
                             bool sort_random_hashes);
 
   void teach(const std::vector<RlhfSample>& rlhf_samples,
@@ -231,8 +243,9 @@ class UDTMach final : public UDTBackend {
                   uint32_t num_balancing_samples_per_doc) final;
 
   std::vector<uint32_t> topHashesForDoc(
-      std::vector<TopKActivationsQueue>&& top_k_per_sample,
-      uint32_t num_buckets_to_sample, uint32_t num_random_hashes = 0,
+      std::vector<std::vector<ValueIndexPair>>&& top_k_per_sample,
+      uint32_t num_buckets_to_sample, uint32_t approx_num_hashes_per_bucket,
+      uint32_t num_random_hashes = 0, bool load_balancing = false,
       bool sort_random_hashes = false) const;
 
   InputMetrics getMetrics(const std::vector<std::string>& metric_names,
@@ -240,6 +253,16 @@ class UDTMach final : public UDTBackend {
 
   static void warnOnNonHashBasedMetrics(
       const std::vector<std::string>& metrics);
+
+  static std::vector<ValueIndexPair> priorityQueueToVector(
+      TopKActivationsQueue pq) {
+    std::vector<ValueIndexPair> vec;
+    while (!pq.empty()) {
+      vec.push_back(pq.top());
+      pq.pop();
+    }
+    return vec;
+  }
 
   // Mach requires two sets of labels. The buckets for each doc/class for
   // computing losses when training, and also the original doc/class ids for

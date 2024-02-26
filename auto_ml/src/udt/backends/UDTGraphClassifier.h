@@ -13,6 +13,8 @@ class UDTGraphClassifier final : public UDTBackend {
                      const std::string& target_col, uint32_t n_target_classes,
                      bool integer_target, const TabularOptions& options);
 
+  explicit UDTGraphClassifier(const ar::Archive& archive);
+
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
                    const std::vector<std::string>& train_metrics,
@@ -50,6 +52,13 @@ class UDTGraphClassifier final : public UDTBackend {
   void clearGraph() final { _featurizer->clearGraph(); }
 
   ModelPtr model() const final { return _classifier->model(); }
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
+  static std::unique_ptr<UDTGraphClassifier> fromArchive(
+      const ar::Archive& archive);
+
+  static std::string type() { return "udt_graph"; }
 
  private:
   UDTGraphClassifier() {}

@@ -90,7 +90,11 @@ std::optional<uint32_t> MaxPool1D::nonzeros(const ComputationList& inputs,
   return _output_dim;
 }
 
-void MaxPool1D::initOptimizer() {}
+void MaxPool1D::initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                              bool replace_existing_optimizer) {
+  (void)optimizer_factory;
+  (void)replace_existing_optimizer;
+}
 
 void MaxPool1D::disableSparseParameterUpdates() {}
 
@@ -99,6 +103,18 @@ void MaxPool1D::enableSparseParameterUpdates() {}
 std::vector<std::vector<float>*> MaxPool1D::gradients() { return {}; }
 
 std::vector<std::vector<float>*> MaxPool1D::parameters() { return {}; }
+
+ComputationPtr MaxPool1D::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("MaxPool1D expects a single input.");
+  }
+  return apply(inputs.at(0));
+}
+
+ar::ConstArchivePtr MaxPool1D::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+  throw std::invalid_argument("MaxPool1D toArchive is not implemented.");
+}
 
 void MaxPool1D::summary(std::ostream& summary, const ComputationList& inputs,
                         const Computation* output) const {

@@ -21,6 +21,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Numpy.h>
+#include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/transformations/cold_start/ColdStartText.h>
 #include <dataset/src/DataSource.h>
@@ -102,8 +103,7 @@ UDTMach::UDTMach(
   }
 
   dataset::mach::MachIndexPtr mach_index = dataset::mach::MachIndex::make(
-      /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes,
-      /* num_elements = */ n_target_classes);
+      /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes);
 
   auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
       input_data_types, temporal_tracking_relationships,
@@ -168,6 +168,8 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
                           const std::vector<CallbackPtr>& callbacks,
                           TrainOptions options,
                           const bolt::DistributedCommPtr& comm) {
+  insertNewDocIds(data);
+
   addBalancingSamples(data);
 
   auto train_data_loader =
@@ -189,6 +191,9 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
 py::object UDTMach::trainBatch(const MapInputBatch& batch,
                                float learning_rate) {
   auto& model = _classifier->model();
+
+  _featurizer->insertNewDocIds(data::ColumnMap::fromMapInputBatch(batch));
+  updateSamplingStrategy();
 
   auto [inputs, labels] = _featurizer->featurizeTrainingBatch(batch);
 
@@ -303,8 +308,8 @@ py::object UDTMach::scoreBatch(const MapInputBatch& samples,
   }
 
   // sparse inference could become an issue here because maybe the entities
-  // we score wouldn't otherwise be in the top results, thus their buckets
-  // have lower similarity and don't get selected by LSH
+  // we score wouldn't otherwise be in the top results, thus their buckets have
+  // lower similarity and don't get selected by LSH
   auto outputs = _classifier->model()
                      ->forward(_featurizer->featurizeInputBatch(samples),
                                /* use_sparsity= */ false)
@@ -433,6 +438,8 @@ py::object UDTMach::coldstart(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
+  insertNewDocIds(data);
+
   addBalancingSamples(data, strong_column_names, weak_column_names,
                       variable_length);
 
@@ -548,13 +555,18 @@ void UDTMach::updateSamplingStrategy() {
   }
 }
 
+void UDTMach::insertNewDocIds(const dataset::DataSourcePtr& data) {
+  _featurizer->insertNewDocIds(data);
+  updateSamplingStrategy();
+}
+
 void UDTMach::introduceDocuments(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, bool fast_approximation, bool verbose,
-    bool sort_random_hashes) {
+    uint32_t num_random_hashes, bool load_balancing, bool fast_approximation,
+    bool verbose, bool sort_random_hashes) {
   (void)verbose;
   // TODO(Nicholas): add progress bar here.
 
@@ -565,9 +577,12 @@ void UDTMach::introduceDocuments(
       defaults::BATCH_SIZE);
 
   uint32_t num_buckets_to_sample =
-      num_buckets_to_sample_opt.value_or(mach_index->numHashes());
+      load_balancing
+          ? mach_index->numBuckets()
+          : num_buckets_to_sample_opt.value_or(mach_index->numHashes());
 
-  std::unordered_map<uint32_t, std::vector<TopKActivationsQueue>> top_k_per_doc;
+  std::unordered_map<uint32_t, std::vector<std::vector<ValueIndexPair>>>
+      top_k_per_doc;
 
   bolt::python::CtrlCCheck ctrl_c_check;
 
@@ -580,16 +595,25 @@ void UDTMach::introduceDocuments(
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
       uint32_t label = doc_ids[i];
-      top_k_per_doc[label].push_back(
-          scores->getVector(i).findKLargestActivations(num_buckets_to_sample));
+      if (load_balancing) {
+        top_k_per_doc[label].push_back(scores->getVector(i).valueIndexPairs());
+      } else {
+        top_k_per_doc[label].push_back(
+            priorityQueueToVector(scores->getVector(i).findKLargestActivations(
+                num_buckets_to_sample)));
+      }
     }
 
     ctrl_c_check();
   }
 
+  uint32_t approx_num_hashes_per_bucket =
+      mach_index->approxNumHashesPerBucket(top_k_per_doc.size());
+
   for (auto& [doc, top_ks] : top_k_per_doc) {
-    auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
-                                  num_random_hashes, sort_random_hashes);
+    auto hashes = topHashesForDoc(
+        std::move(top_ks), num_buckets_to_sample, approx_num_hashes_per_bucket,
+        num_random_hashes, load_balancing, sort_random_hashes);
     mach_index->insert(doc, hashes);
 
     ctrl_c_check();
@@ -606,12 +630,12 @@ void UDTMach::introduceDocument(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
-    bool sort_random_hashes) {
+    bool load_balancing, bool sort_random_hashes) {
   auto samples = _featurizer->featurizeInputColdStart(
       document, strong_column_names, weak_column_names);
 
   introduceLabelHelper(samples, new_label, num_buckets_to_sample,
-                       num_random_hashes, sort_random_hashes);
+                       num_random_hashes, load_balancing, sort_random_hashes);
 }
 
 struct BucketScore {
@@ -630,8 +654,9 @@ struct CompareBuckets {
 };
 
 std::vector<uint32_t> UDTMach::topHashesForDoc(
-    std::vector<TopKActivationsQueue>&& top_k_per_sample,
-    uint32_t num_buckets_to_sample, uint32_t num_random_hashes,
+    std::vector<std::vector<ValueIndexPair>>&& top_k_per_sample,
+    uint32_t num_buckets_to_sample, uint32_t approx_num_hashes_per_bucket,
+    uint32_t num_random_hashes, bool load_balancing,
     bool sort_random_hashes) const {
   const auto& mach_index = getIndex();
 
@@ -651,15 +676,13 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
 
   std::unordered_map<uint32_t, BucketScore> hash_freq_and_scores;
   for (auto& top_k : top_k_per_sample) {
-    while (!top_k.empty()) {
-      auto [activation, active_neuron] = top_k.top();
+    for (const auto& [activation, active_neuron] : top_k) {
       if (!hash_freq_and_scores.count(active_neuron)) {
         hash_freq_and_scores[active_neuron] = BucketScore{1, activation};
       } else {
         hash_freq_and_scores[active_neuron].frequency += 1;
         hash_freq_and_scores[active_neuron].score += activation;
       }
-      top_k.pop();
     }
   }
 
@@ -694,12 +717,20 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
     // buckets based on size to load balance the index.
     std::sort(sorted_hashes.begin(),
               sorted_hashes.begin() + num_buckets_to_sample,
-              [&mach_index, &cmp](const auto& lhs, const auto& rhs) {
+              [&mach_index, &cmp, approx_num_hashes_per_bucket, load_balancing](
+                  const auto& lhs, const auto& rhs) {
                 size_t lhs_size = mach_index->bucketSize(lhs.first);
                 size_t rhs_size = mach_index->bucketSize(rhs.first);
 
                 // Give preference to emptier buckets. If buckets are
                 // equally empty, use one with the best score.
+
+                if (load_balancing) {
+                  if (lhs_size < approx_num_hashes_per_bucket &&
+                      rhs_size < approx_num_hashes_per_bucket) {
+                    return cmp(lhs, rhs);
+                  }
+                }
                 if (lhs_size == rhs_size) {
                   return cmp(lhs, rhs);
                 }
@@ -728,7 +759,19 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
 
   if (!sort_random_hashes) {
     for (uint32_t i = 0; i < num_random_hashes; i++) {
-      new_hashes.push_back(int_dist(rand));
+      if (load_balancing) {
+        uint32_t random_hash;
+
+        do {
+          random_hash = int_dist(rand);
+        } while (mach_index->bucketSize(random_hash) >=
+                 approx_num_hashes_per_bucket);
+
+        new_hashes.push_back(random_hash);
+
+      } else {
+        new_hashes.push_back(int_dist(rand));
+      }
     }
   }
 
@@ -738,17 +781,17 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
 void UDTMach::introduceLabel(const MapInputBatch& samples,
                              const Label& new_label,
                              std::optional<uint32_t> num_buckets_to_sample_opt,
-                             uint32_t num_random_hashes,
+                             uint32_t num_random_hashes, bool load_balancing,
                              bool sort_random_hashes) {
   introduceLabelHelper(_featurizer->featurizeInputBatch(samples), new_label,
                        num_buckets_to_sample_opt, num_random_hashes,
-                       sort_random_hashes);
+                       load_balancing, sort_random_hashes);
 }
 
 void UDTMach::introduceLabelHelper(
     const bolt::TensorList& samples, const Label& new_label,
     std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, bool sort_random_hashes) {
+    uint32_t num_random_hashes, bool load_balancing, bool sort_random_hashes) {
   // Note: using sparse inference here could cause issues because the
   // mach index sampler will only return nonempty buckets, which could
   // cause new docs to only be mapped to buckets already containing
@@ -757,16 +800,28 @@ void UDTMach::introduceLabelHelper(
       _classifier->model()->forward(samples, /* use_sparsity = */ false).at(0);
 
   uint32_t num_buckets_to_sample =
-      num_buckets_to_sample_opt.value_or(getIndex()->numHashes());
+      load_balancing
+          ? getIndex()->numBuckets()
+          : num_buckets_to_sample_opt.value_or(getIndex()->numHashes());
 
-  std::vector<TopKActivationsQueue> top_ks;
+  const auto& mach_index = getIndex();
+
+  std::vector<std::vector<ValueIndexPair>> top_ks;
   for (uint32_t i = 0; i < output->batchSize(); i++) {
-    top_ks.push_back(
-        output->getVector(i).findKLargestActivations(num_buckets_to_sample));
+    if (load_balancing) {
+      top_ks.push_back(output->getVector(i).valueIndexPairs());
+    } else {
+      top_ks.push_back(priorityQueueToVector(
+          output->getVector(i).findKLargestActivations(num_buckets_to_sample)));
+    }
   }
 
+  uint32_t approx_num_hashes_per_bucket =
+      mach_index->approxNumHashesPerBucket(samples.size());
+
   auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
-                                num_random_hashes, sort_random_hashes);
+                                approx_num_hashes_per_bucket, num_random_hashes,
+                                load_balancing, sort_random_hashes);
 
   getIndex()->insert(expectInteger(new_label), hashes);
 
@@ -941,6 +996,8 @@ py::object UDTMach::associateColdStart(
     uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
     TrainOptions options) {
+  insertNewDocIds(balancing_data);
+
   warnOnNonHashBasedMetrics(metrics);
 
   // TODO(nicholas): make sure max_in_memory_batches is none
@@ -1004,8 +1061,7 @@ void UDTMach::setDecodeParams(uint32_t top_k_to_return,
 }
 
 void UDTMach::setIndex(const dataset::mach::MachIndexPtr& index) {
-  // block allows indexes with different number of hashes but not output
-  // ranges
+  // block allows indexes with different number of hashes but not output ranges
   _featurizer->state()->setMachIndex(index);
 
   updateSamplingStrategy();
@@ -1076,6 +1132,38 @@ void UDTMach::warnOnNonHashBasedMetrics(
 bolt::TensorPtr UDTMach::placeholderDocIds(uint32_t batch_size) {
   return bolt::Tensor::sparse(batch_size, std::numeric_limits<uint32_t>::max(),
                               /* nonzeros= */ 1);
+}
+
+ar::ConstArchivePtr UDTMach::toArchive(bool with_optimizer) const {
+  auto map = _classifier->toArchive(with_optimizer);
+  map->set("type", ar::str(type()));
+  map->set("featurizer", _featurizer->toArchive());
+
+  map->set("default_top_k_to_return", ar::u64(_default_top_k_to_return));
+  map->set("num_buckets_to_eval", ar::u64(_num_buckets_to_eval));
+  map->set("mach_sampling_threshold", ar::f32(_mach_sampling_threshold));
+
+  if (_balancing_samples) {
+    map->set("balancing_samples", _balancing_samples->toArchive());
+  }
+
+  return map;
+}
+
+std::unique_ptr<UDTMach> UDTMach::fromArchive(const ar::Archive& archive) {
+  return std::make_unique<UDTMach>(archive);
+}
+
+UDTMach::UDTMach(const ar::Archive& archive)
+    : _classifier(utils::Classifier::fromArchive(archive)),
+      _featurizer(MachFeaturizer::fromArchive(*archive.get("featurizer"))),
+      _default_top_k_to_return(archive.u64("default_top_k_to_return")),
+      _num_buckets_to_eval(archive.u64("num_buckets_to_eval")),
+      _mach_sampling_threshold(
+          archive.getAs<ar::F32>("mach_sampling_threshold")) {
+  if (archive.contains("balancing_samples")) {
+    _balancing_samples = BalancingSamples(*archive.get("balancing_samples"));
+  }
 }
 
 template void UDTMach::serialize(cereal::BinaryInputArchive&,
