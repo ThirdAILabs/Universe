@@ -5,6 +5,7 @@
 #include <smx/src/autograd/functions/LinearAlgebra.h>
 #include <smx/src/modules/Module.h>
 #include <smx/src/tensor/Init.h>
+#include <memory>
 #include <stdexcept>
 #include <vector>
 
@@ -152,6 +153,12 @@ class SparseLinear final : public Module {
   void setSparsity(float sparsity) { _sparsity = sparsity; }
 
   const auto& neuronIndex() const { return _neuron_index; }
+
+  void autotuneHashTableRebuild(size_t n_batches, size_t batch_size) {
+    if (auto lsh = std::dynamic_pointer_cast<LshIndex>(_neuron_index)) {
+      lsh->autotuneHashTableRebuild(n_batches, batch_size);
+    }
+  }
 
  private:
   VariablePtr _weight;

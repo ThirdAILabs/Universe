@@ -59,6 +59,16 @@ class LshIndex final : public NeuronIndex {
 
   void rebuild();
 
+  void autotuneHashTableRebuild(size_t n_batches, size_t batch_size) {
+    _updates_per_new_hash_fn = std::max(n_batches / 4, 1UL);
+
+    if (n_batches * batch_size >= 100000) {
+      _updates_per_rebuild = std::max(n_batches / 100, 1UL);
+    } else {
+      _updates_per_rebuild = std::max(n_batches / 20, 1UL);
+    }
+  }
+
  private:
   DenseTensorPtr _weight;
 
