@@ -628,7 +628,7 @@ class Mach(Model):
             },
             model_config=self.model_config,
         )
-        
+
         optimizer_params = self.kwargs.get("optimizer_params", {})
         if self.optimizer == "adam":
             model_optimizer = bolt.nn.optimizers.Adam(**optimizer_params)
