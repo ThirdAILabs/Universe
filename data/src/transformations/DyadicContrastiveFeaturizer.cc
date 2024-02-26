@@ -101,6 +101,28 @@ ColumnMap DyadicContrastiveFeaturizer::apply(ColumnMap columns,
   return ColumnMap(output_columns);
 }
 
+ar::ConstArchivePtr DyadicContrastiveFeaturizer::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+
+  if (_prompt_column) {
+    map->set("prompt_column", ar::str(*_prompt_column));
+  }
+  map->set("input_column_1", ar::str(_input_column_1));
+  map->set("input_column_2", ar::str(_input_column_2));
+  map->set("label_column", ar::str(_label_column));
+
+  map->set("n_classes", ar::u64(_n_classes));
+
+  map->set("output_interval_prefix", ar::str(_output_interval_prefix));
+
+  map->set("is_bidirectional", ar::boolean(_is_bidirectional));
+  map->set("n_intervals", ar::u64(_n_intervals));
+
+  return map;
+}
+
 ColumnMap DyadicContrastiveFeaturizer::inferenceFeaturization(
     ColumnMap columns) const {
   data::State state;

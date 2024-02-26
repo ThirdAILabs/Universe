@@ -9,6 +9,7 @@
 #include <data/src/transformations/CategoricalTemporal.h>
 #include <data/src/transformations/CrossColumnPairgrams.h>
 #include <data/src/transformations/Date.h>
+#include <data/src/transformations/DyadicContrastiveFeaturizer.h>
 #include <data/src/transformations/DyadicInterval.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
@@ -463,6 +464,19 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("output_interval_prefix"), py::arg("target_column"),
            py::arg("n_intervals"), py::arg("is_bidirectional") = false)
       .def("inference_featurization", &DyadicInterval::inferenceFeaturization,
+           py::arg("columns"));
+
+  py::class_<DyadicContrastiveFeaturizer, Transformation,
+             std::shared_ptr<DyadicContrastiveFeaturizer>>(
+      transformations_submodule, "DyadicContrastiveFeaturizer")
+      .def(py::init<std::string, std::string, std::optional<std::string>,
+                    std::string, std::string, size_t, uint32_t, bool>(),
+           py::arg("input_column_1"), py::arg("input_column_2"),
+           py::arg("prompt_column") = std::nullopt,py::arg("label_column"),
+           py::arg("output_interval_prefix"), py::arg("n_intervals"),
+           py::arg("n_classes"), py::arg("is_bidirectional") = false)
+      .def("inference_featurization",
+           &DyadicContrastiveFeaturizer::inferenceFeaturization,
            py::arg("columns"));
 #endif
 }

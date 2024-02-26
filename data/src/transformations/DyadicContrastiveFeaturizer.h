@@ -18,6 +18,10 @@ class DyadicContrastiveFeaturizer : public Transformation {
                               bool is_bidirectional = false);
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "dyadic_contrastive_featurizer"; }
+
   ColumnMap inferenceFeaturization(ColumnMap columns) const;
 
   std::pair<std::vector<std::vector<std::vector<uint32_t>>>,
