@@ -28,12 +28,13 @@ class PatchSum final : public Op,
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
+  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                     bool replace_existing_optimizer) final;
+
   uint32_t dim() const final;
 
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
-
-  void initOptimizer() final;
 
   void disableSparseParameterUpdates() final;
 

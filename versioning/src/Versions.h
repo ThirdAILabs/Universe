@@ -14,6 +14,10 @@ void checkVersion(uint32_t loaded_version, uint32_t current_version,
 
 // UDT BASE VERSION
 
+// UDT_LAST_OLD_SERIALIZATION_VERSION represents the last version before we
+// switched to the new serialization format. We shouldn't use these
+// versionsanymore, they are just kept so that we can detect when to use the old
+// serialization vs the new serialization.
 constexpr uint32_t UDT_BASE_VERSION = 3;
 constexpr uint32_t UDT_LAST_OLD_SERIALIZATION_VERSION = 2;
 
@@ -33,7 +37,12 @@ constexpr uint32_t UDT_SVM_CLASSIFIER_VERSION = 1;
 
 // BOLT VERSIONS
 
-constexpr uint32_t BOLT_MODEL_VERSION = 5;
+// BOLT_MODEL_LAST_OLD_SERIALIZATION_VERSION represents the last version before
+// we switched to the new serialization format. We shouldn't use these versions
+// anymore, they are just kept so that we can detect when to use the old
+// serialization vs the new serialization.
+constexpr uint32_t BOLT_MODEL_VERSION = 6;
+constexpr uint32_t BOLT_MODEL_LAST_OLD_SERIALIZATION_VERSION = 5;
 
 // SEISMIC MODEL
 constexpr uint32_t SEISMIC_MODEL_VERSION = 1;

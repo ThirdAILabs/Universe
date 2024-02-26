@@ -109,7 +109,11 @@ std::optional<uint32_t> PatchSum::nonzeros(const ComputationList& inputs,
   return _patch_dim;
 }
 
-void PatchSum::initOptimizer() {}
+void PatchSum::initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                             bool replace_existing_optimizer) {
+  (void)optimizer_factory;
+  (void)replace_existing_optimizer;
+}
 
 ComputationPtr PatchSum::applyToInputs(const ComputationList& inputs) {
   if (inputs.size() != 1) {
