@@ -125,7 +125,7 @@ class NeuralDBClient:
             files (List[str]): A list of source ids to delete from the ndb model.
         """
         response = http_post_with_error(
-            urljoin(self.base_url, "delete"), json={source_ids: source_ids}
+            urljoin(self.base_url, "delete"), json={"source_ids": source_ids}
         )
 
         print(json.loads(response.content)["message"])
