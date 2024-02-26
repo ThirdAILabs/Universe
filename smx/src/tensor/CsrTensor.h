@@ -48,7 +48,7 @@ inline CsrTensorPtr csr(const TensorPtr& tensor) {
   if (auto ptr = std::dynamic_pointer_cast<CsrTensor>(tensor)) {
     return ptr;
   }
-  throw std::invalid_argument("Cannot convert dense tensor to csr tensor.");
+  throw std::invalid_argument("Expected csr tensor.");
 }
 
 }  // namespace thirdai::smx

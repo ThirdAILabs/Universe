@@ -213,7 +213,7 @@ inline DenseTensorPtr dense(const TensorPtr& tensor) {
   if (auto ptr = std::dynamic_pointer_cast<DenseTensor>(tensor)) {
     return ptr;
   }
-  throw std::invalid_argument("Cannot convert sparse tensor to dense tensor.");
+  throw std::invalid_argument("Expected dense tensor.");
 }
 
 }  // namespace thirdai::smx
