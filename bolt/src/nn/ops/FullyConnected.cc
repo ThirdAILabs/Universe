@@ -82,7 +82,7 @@ void FullyConnected::backpropagate(ComputationList& inputs, TensorPtr& output,
 
 void FullyConnected::updateParameters(float learning_rate,
                                       uint32_t train_steps) {
-  _kernel->updateParameters(learning_rate, train_steps, BETA1, BETA2, EPS);
+  _kernel->updateParameters(learning_rate, train_steps);
 
   if (++_updates_since_reconstruct_hash_functions ==
       _reconstruct_hash_functions) {
@@ -94,6 +94,11 @@ void FullyConnected::updateParameters(float learning_rate,
     _kernel->buildHashTables();
     _updates_since_rebuild_hash_tables = 0;
   }
+}
+
+void FullyConnected::initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                                   bool replace_existing_optimizer) {
+  _kernel->initOptimizer(optimizer_factory, replace_existing_optimizer);
 }
 
 uint32_t FullyConnected::dim() const { return _kernel->getDim(); }
@@ -108,8 +113,6 @@ std::optional<uint32_t> FullyConnected::nonzeros(const ComputationList& inputs,
   }
   return _kernel->getDim();
 }
-
-void FullyConnected::initOptimizer() { _kernel->initOptimizer(); }
 
 void FullyConnected::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
@@ -166,12 +169,10 @@ ar::ConstArchivePtr FullyConnected::toArchive(bool with_optimizer) const {
   if (with_optimizer && _kernel->_weight_optimizer &&
       _kernel->_bias_optimizer) {
     map->set("wieght_optimizer",
-             optimizerToArchive(*_kernel->_weight_optimizer, shared_from_this(),
-                                dim(), inputDim()));
+             _kernel->_weight_optimizer->toArchive(shared_from_this()));
 
     map->set("bias_optimizer",
-             optimizerToArchive(*_kernel->_bias_optimizer, shared_from_this(),
-                                /*rows=*/1, dim()));
+             _kernel->_bias_optimizer->toArchive(shared_from_this()));
   }
 
   map->set("disable_sparse_parameter_updates",
@@ -341,19 +342,11 @@ void FullyConnected::setSparsity(float sparsity, bool rebuild_hash_tables,
   }
 }
 
-template void FullyConnected::save(cereal::BinaryOutputArchive&) const;
+template void FullyConnected::serialize(cereal::BinaryInputArchive&);
+template void FullyConnected::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
-void FullyConnected::save(Archive& archive) const {
-  archive(cereal::base_class<Op>(this), _kernel, _rebuild_hash_tables,
-          _reconstruct_hash_functions, _updates_since_rebuild_hash_tables,
-          _updates_since_reconstruct_hash_functions);
-}
-
-template void FullyConnected::load(cereal::BinaryInputArchive&);
-
-template <class Archive>
-void FullyConnected::load(Archive& archive) {
+void FullyConnected::serialize(Archive& archive) {
   archive(cereal::base_class<Op>(this), _kernel, _rebuild_hash_tables,
           _reconstruct_hash_functions, _updates_since_rebuild_hash_tables,
           _updates_since_reconstruct_hash_functions);

@@ -105,8 +105,6 @@ std::optional<uint32_t> DlrmAttention::nonzeros(const ComputationList& inputs,
   return dim();
 }
 
-void DlrmAttention::initOptimizer() {}
-
 ComputationPtr DlrmAttention::applyToInputs(const ComputationList& inputs) {
   if (inputs.size() != 2) {
     throw std::invalid_argument(

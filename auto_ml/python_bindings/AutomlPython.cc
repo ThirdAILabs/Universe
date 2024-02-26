@@ -181,22 +181,23 @@ void defineAutomlInModule(py::module_& module) {
       .def("clear_graph", &udt::UDT::clearGraph, docs::UDT_CLEAR_GRAPH)
       .def("set_decode_params", &udt::UDT::setDecodeParams,
            py::arg("top_k_to_return"), py::arg("num_buckets_to_eval"))
+      .def("insert_new_doc_ids", &udt::UDT::insertNewDocIds, py::arg("data"))
       .def("introduce_documents", &udt::UDT::introduceDocuments,
            py::arg("data_source"), py::arg("strong_column_names"),
            py::arg("weak_column_names"),
            py::arg("num_buckets_to_sample") = std::nullopt,
-           py::arg("num_random_hashes") = 0,
+           py::arg("num_random_hashes") = 0, py::arg("load_balancing") = false,
            py::arg("fast_approximation") = false, py::arg("verbose") = true,
            py::arg("sort_random_hashes") = false)
       .def("introduce_document", &udt::UDT::introduceDocument,
            py::arg("document"), py::arg("strong_column_names"),
            py::arg("weak_column_names"), py::arg("label"),
            py::arg("num_buckets_to_sample") = std::nullopt,
-           py::arg("num_random_hashes") = 0,
+           py::arg("num_random_hashes") = 0, py::arg("load_balancing") = false,
            py::arg("sort_random_hashes") = false)
       .def("introduce_label", &udt::UDT::introduceLabel, py::arg("input_batch"),
            py::arg("label"), py::arg("num_buckets_to_sample") = std::nullopt,
-           py::arg("num_random_hashes") = 0,
+           py::arg("num_random_hashes") = 0, py::arg("load_balancing") = false,
            py::arg("sort_random_hashes") = false)
       .def("forget", &udt::UDT::forget, py::arg("label"))
       .def("clear_index", &udt::UDT::clearIndex)

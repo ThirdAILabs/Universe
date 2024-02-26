@@ -106,8 +106,6 @@ std::optional<uint32_t> Concatenate::nonzeros(const ComputationList& inputs,
   return total_num_nonzeros;
 }
 
-void Concatenate::initOptimizer() {}
-
 ComputationPtr Concatenate::applyToInputs(const ComputationList& inputs) {
   return apply(inputs);
 }

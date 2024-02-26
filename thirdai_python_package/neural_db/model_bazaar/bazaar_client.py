@@ -125,7 +125,7 @@ class NeuralDBClient:
             files (List[str]): A list of source ids to delete from the ndb model.
         """
         response = http_post_with_error(
-            urljoin(self.base_url, "delete"), json={source_ids: source_ids}
+            urljoin(self.base_url, "delete"), json={"source_ids": source_ids}
         )
 
         print(json.loads(response.content)["message"])
@@ -420,8 +420,12 @@ class ModelBazaar(Bazaar):
                 print("\nTraining completed")
                 return
 
+            if response_data["status"] == "failed":
+                print("\nTraining Failed")
+                return
+
             print("Training: In progress", end="", flush=True)
-            print_progress_dots(duration=5)
+            print_progress_dots(duration=10)
 
     def deploy(self, model_identifier: str, deployment_name: str, is_async=False):
         """

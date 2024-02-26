@@ -4,6 +4,8 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/AllocationManager.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/optimizers/Adam.h>
+#include <bolt/src/nn/optimizers/Optimizer.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <archive/src/Archive.h>
 #include <licensing/src/CheckLicense.h>
@@ -41,12 +43,14 @@ class Model : public std::enable_shared_from_this<Model> {
    */
   Model(ComputationList inputs, ComputationList outputs,
         std::vector<LossPtr> losses,
-        const ComputationList& expected_labels = {});
+        const ComputationList& expected_labels = {},
+        OptimizerFactoryPtr optimizer = AdamFactory::make());
 
  public:
   static std::shared_ptr<Model> make(
       ComputationList inputs, ComputationList outputs,
-      std::vector<LossPtr> losses, const ComputationList& expected_labels = {});
+      std::vector<LossPtr> losses, const ComputationList& expected_labels = {},
+      OptimizerFactoryPtr optimizer = AdamFactory::make());
 
   /**
    * Computes the forward pass through the model for the given batch.
@@ -203,7 +207,7 @@ class Model : public std::enable_shared_from_this<Model> {
   /**
    * Returns a list of references to gradients of all parameters in the model.
    */
-  std::vector<std::vector<float>*> gradients() const;
+  std::vector<std::vector<float>*> gradients();
 
   std::vector<std::vector<float>*> parameters() const;
 
@@ -229,6 +233,8 @@ class Model : public std::enable_shared_from_this<Model> {
    * Unfreezes all hash tables in the model.
    */
   void unfreezeHashTables();
+
+  void changeOptimizer(OptimizerFactoryPtr optimizer);
 
   /**
    * Saves the model without optimizer state. Save metadata indicates if a
@@ -348,6 +354,7 @@ class Model : public std::enable_shared_from_this<Model> {
 
   AllocationManager _allocation_manager;
 
+  OptimizerFactoryPtr _optimizer_factory;
   bool _optimizer_initialized = false;
 
   uint32_t _epochs = 0;
@@ -357,11 +364,17 @@ class Model : public std::enable_shared_from_this<Model> {
   std::string _thirdai_version;
   uint64_t _total_training_samples = 0;
 
+  bool _serialize_with_optimizer = false;
+
   Model() : _allocation_manager() { licensing::checkLicense(); }
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
+  void save(Archive& archive, uint32_t version) const;
+
+  friend class cereal::access;
+  template <class Archive>
+  void load(Archive& archive, uint32_t version);
 };
 
 using ModelPtr = std::shared_ptr<Model>;

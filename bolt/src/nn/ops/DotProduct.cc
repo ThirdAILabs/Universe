@@ -81,6 +81,12 @@ void DotProduct::updateParameters(float learning_rate, uint32_t train_steps) {
   (void)train_steps;
 }
 
+void DotProduct::initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                               bool replace_existing_optimizer) {
+  (void)optimizer_factory;
+  (void)replace_existing_optimizer;
+}
+
 uint32_t DotProduct::dim() const { return 1; }
 
 std::optional<uint32_t> DotProduct::nonzeros(const ComputationList& inputs,
@@ -90,8 +96,6 @@ std::optional<uint32_t> DotProduct::nonzeros(const ComputationList& inputs,
 
   return 1;
 }
-
-void DotProduct::initOptimizer() {}
 
 ComputationPtr DotProduct::applyToInputs(const ComputationList& inputs) {
   if (inputs.size() != 2) {

@@ -66,7 +66,12 @@ void RobeZ::backpropagate(ComputationList& inputs, TensorPtr& output,
 }
 
 void RobeZ::updateParameters(float learning_rate, uint32_t train_steps) {
-  _kernel->updateParameters(learning_rate, train_steps, BETA1, BETA2, EPS);
+  _kernel->updateParameters(learning_rate, train_steps);
+}
+
+void RobeZ::initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                          bool replace_existing_optimizer) {
+  _kernel->initOptimizer(optimizer_factory, replace_existing_optimizer);
 }
 
 uint32_t RobeZ::dim() const { return _kernel->getOutputDim(); }
@@ -78,8 +83,6 @@ std::optional<uint32_t> RobeZ::nonzeros(const ComputationList& inputs,
 
   return dim();
 }
-
-void RobeZ::initOptimizer() { _kernel->initOptimizer(); }
 
 void RobeZ::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
@@ -126,9 +129,7 @@ ar::ConstArchivePtr RobeZ::toArchive(bool with_optimizer) const {
 
   if (with_optimizer && _kernel->_optimizer) {
     map->set("embedding_optimizer",
-             optimizerToArchive(*_kernel->_optimizer, shared_from_this(),
-                                _kernel->_embedding_chunks_used.size(),
-                                _kernel->_update_chunk_size));
+             _kernel->_optimizer->toArchive(shared_from_this()));
   }
 
   map->set("disable_sparse_parameter_updates",
@@ -176,17 +177,11 @@ ComputationPtr RobeZ::apply(ComputationPtr input) {
   return Computation::make(shared_from_this(), {std::move(input)});
 }
 
-template void RobeZ::save(cereal::BinaryOutputArchive&) const;
+template void RobeZ::serialize(cereal::BinaryInputArchive&);
+template void RobeZ::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
-void RobeZ::save(Archive& archive) const {
-  archive(cereal::base_class<Op>(this), _kernel);
-}
-
-template void RobeZ::load(cereal::BinaryInputArchive&);
-
-template <class Archive>
-void RobeZ::load(Archive& archive) {
+void RobeZ::serialize(Archive& archive) {
   archive(cereal::base_class<Op>(this), _kernel);
 }
 
@@ -201,20 +196,6 @@ std::shared_ptr<RobeZ> RobeZ::duplicateWithNewReduction(
 }
 
 }  // namespace thirdai::bolt
-
-namespace cereal {
-
-/**
- * This is because the Op base class only uses a serialize function, whereas
- * this Op uses a load/save pair. This tells cereal to use the load save pair
- * instead of the serialize method of the parent class. See docs here:
- * https://uscilab.github.io/cereal/serialization_functions.html#inheritance
- */
-template <class Archive>
-struct specialize<Archive, thirdai::bolt::RobeZ,
-                  cereal::specialization::member_load_save> {};
-
-}  // namespace cereal
 
 CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::RobeZ,
                                "thirdai::bolt::nn::ops::RobeZ")

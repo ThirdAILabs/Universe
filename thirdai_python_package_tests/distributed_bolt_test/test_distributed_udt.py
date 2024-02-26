@@ -13,7 +13,7 @@ from distributed_utils import (
 from ray import train
 from ray.train import ScalingConfig
 from ray.train.torch import TorchConfig
-from thirdai import bolt
+from thirdai import bolt, dataset
 from thirdai.demos import (
     download_amazon_kaggle_product_catalog_sampled as download_amazon_kaggle_product_catalog_sampled_wrapped,
 )
@@ -239,6 +239,8 @@ def test_udt_train_distributed():
 
 @pytest.mark.distributed
 def test_udt_mach_distributed(download_scifact_dataset):
+    all_docs, _, _, _ = download_scifact_dataset
+
     supervised_tst, n_target_classes = download_and_split_scifact_dataset(
         download_scifact_dataset
     )
@@ -246,8 +248,7 @@ def test_udt_mach_distributed(download_scifact_dataset):
     def udt_mach_loop_per_worker(config):
         thirdai.logging.setup(log_to_stderr=False, path="log.txt", level="info")
 
-        n_target_classes = config.get("n_target_classes")
-        udt_model = get_udt_scifact_mach_model(n_target_classes)
+        udt_model = ray.get(config["udt_model"])
 
         model = dist.prepare_model(udt_model)
 
@@ -304,12 +305,15 @@ def test_udt_mach_distributed(download_scifact_dataset):
     # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
     run_config = train.RunConfig(storage_path="~/ray_results")
 
+    udt_model = get_udt_scifact_mach_model(n_target_classes)
+    udt_model.insert_new_doc_ids(dataset.FileDataSource(all_docs))
+
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_mach_loop_per_worker,
         train_loop_config={
-            "n_target_classes": n_target_classes,
             "cur_dir": os.path.abspath(os.getcwd()),
             "supervised_tst": supervised_tst,
+            "udt_model": ray.put(udt_model),
         },
         scaling_config=scaling_config,
         backend_config=TorchConfig(backend="gloo"),
