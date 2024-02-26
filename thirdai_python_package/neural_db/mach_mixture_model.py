@@ -489,3 +489,7 @@ class MachMixture(Model):
 
     def build_inverted_index(self, documents):
         raise ValueError("This method is not supported on this type of model.")
+
+    def save_optimizer(self, with_optimizer: bool):
+        for model in self.models:
+            model.save_optimizer(with_optimizer)

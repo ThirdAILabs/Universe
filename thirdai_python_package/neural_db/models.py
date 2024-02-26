@@ -154,6 +154,9 @@ class Model:
     ):
         raise NotImplementedError()
 
+    def save_optimizer(self, with_optimizer: bool):
+        raise NotImplementedError()
+
 
 class EarlyStopWithMinEpochs(bolt.train.callbacks.Callback):
     def __init__(
@@ -625,9 +628,8 @@ class Mach(Model):
             },
             model_config=self.model_config,
         )
-        optimizer_params = {}
         if "optimizer_params" in self.kwargs.keys():
-            optimizer_params = self.kwargs.get("optimizer_params")
+            optimizer_params = self.kwargs.get("optimizer_params", {})
         if self.optimizer == "adam":
             model_optimizer = bolt.nn.optimizers.Adam(**optimizer_params)
         else:
@@ -644,6 +646,9 @@ class Mach(Model):
 
         if self.inverted_index:
             self.inverted_index.clear()
+
+    def save_optimizer(self, with_optimizer: bool):
+        self.model.save_optimizer = with_optimizer
 
     @property
     def searchable(self) -> bool:
