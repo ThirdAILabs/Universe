@@ -25,8 +25,8 @@ DyadicContrastiveFeaturizer::DyadicContrastiveFeaturizer(
 
 std::pair<std::vector<std::vector<std::vector<uint32_t>>>,
           std::vector<std::vector<std::vector<uint32_t>>>>
-DyadicContrastiveFeaturizer::featurizeColumnsDyadic(ArrayColumnBasePtr<uint32_t> &tokens) const {
-
+DyadicContrastiveFeaturizer::featurizeColumnsDyadic(
+    ArrayColumnBasePtr<uint32_t>& tokens) const {
   std::vector<std::vector<std::vector<uint32_t>>> intervals_from_end(
       _n_intervals);
   std::vector<std::vector<std::vector<uint32_t>>> intervals_from_start;
@@ -66,13 +66,15 @@ ColumnMap DyadicContrastiveFeaturizer::apply(ColumnMap columns,
   (void)state;
   auto tokens_1 = columns.getArrayColumn<uint32_t>(_input_column_1);
   auto tokens_2 = columns.getArrayColumn<uint32_t>(_input_column_2);
-  auto [interval_from_start_1, interval_from_end_1] = featurizeColumnsDyadic(tokens_1);
-  auto [interval_from_start_2, interval_from_end_2] = featurizeColumnsDyadic(tokens_2);
+  auto [interval_from_start_1, interval_from_end_1] =
+      featurizeColumnsDyadic(tokens_1);
+  auto [interval_from_start_2, interval_from_end_2] =
+      featurizeColumnsDyadic(tokens_2);
   std::unordered_map<std::string, ColumnPtr> output_columns;
 
   for (size_t interval = 0; interval < _n_intervals; interval++) {
     std::string name =
-        _output_interval_prefix + "from_end_" + std::to_string(1 << interval) ;
+        _output_interval_prefix + "from_end_" + std::to_string(1 << interval);
 
     output_columns[name + "_1"] = ArrayColumn<uint32_t>::make(
         std::move(interval_from_end_1[interval]), tokens_1->dim());
@@ -83,7 +85,7 @@ ColumnMap DyadicContrastiveFeaturizer::apply(ColumnMap columns,
   if (_is_bidirectional) {
     for (size_t interval = 0; interval < _n_intervals; interval++) {
       std::string name = _output_interval_prefix + "from_start_" +
-                         std::to_string(1 << interval) ;
+                         std::to_string(1 << interval);
 
       output_columns[name + "_1"] = ArrayColumn<uint32_t>::make(
           std::move(interval_from_start_1[interval]), tokens_1->dim());
@@ -91,16 +93,18 @@ ColumnMap DyadicContrastiveFeaturizer::apply(ColumnMap columns,
           std::move(interval_from_start_2[interval]), tokens_2->dim());
     }
   }
-  if(_prompt_column){
-    output_columns[*_prompt_column] = columns.getArrayColumn<uint32_t>(*_prompt_column);
+  if (_prompt_column) {
+    output_columns[*_prompt_column] =
+        columns.getArrayColumn<uint32_t>(*_prompt_column);
   }
 
   return ColumnMap(output_columns);
 }
 
-ColumnMap DyadicContrastiveFeaturizer::inferenceFeaturization(ColumnMap columns) const {
+ColumnMap DyadicContrastiveFeaturizer::inferenceFeaturization(
+    ColumnMap columns) const {
   data::State state;
-  return apply(std::move(columns),state);
+  return apply(std::move(columns), state);
 }
 
 }  // namespace thirdai::data

@@ -1,10 +1,9 @@
 #pragma once
 
-
 #include "DyadicInterval.h"
 #include <data/src/ColumnMap.h>
-#include <data/src/transformations/Transformation.h>
 #include <data/src/columns/ArrayColumns.h>
+#include <data/src/transformations/Transformation.h>
 
 namespace thirdai::data {
 
@@ -23,7 +22,7 @@ class DyadicContrastiveFeaturizer : public Transformation {
 
   std::pair<std::vector<std::vector<std::vector<uint32_t>>>,
             std::vector<std::vector<std::vector<uint32_t>>>>
-  featurizeColumnsDyadic(ArrayColumnBasePtr<uint32_t> &tokens) const;
+  featurizeColumnsDyadic(ArrayColumnBasePtr<uint32_t>& tokens) const;
 
  private:
   std::string _input_column_1;
