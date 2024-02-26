@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Iterable, List, Tuple
+from typing import List, Tuple, Iterable
 
-from core.types import Chunk, ChunkId, SupervisedSample
+from core.types import ChunkBatch, ChunkId, SupervisedBatch
 
 Score = float
 
@@ -45,11 +45,11 @@ class Retriever(ABC):
         pass
 
     @abstractmethod
-    def insert(self, chunks: Iterable[Chunk], **kwargs):
+    def insert(self, chunks: Iterable[ChunkBatch], **kwargs):
         pass
 
     @abstractmethod
-    def supervised_train(self, samples: Iterable[SupervisedSample], **kwargs):
+    def supervised_train(self, samples: Iterable[SupervisedBatch], **kwargs):
         pass
 
     @abstractmethod

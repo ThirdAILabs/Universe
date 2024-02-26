@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
-from typing import Iterable, List, Set, Union
+from typing import List, Set, Iterable
 
 from core.types import (
     Chunk,
     ChunkId,
-    NewChunk,
-    CustomIdSupervisedSample,
-    SupervisedSample,
+    NewChunkBatch,
+    ChunkBatch,
+    CustomIdSupervisedBatch,
+    SupervisedBatch,
 )
 
 
@@ -14,7 +15,7 @@ from core.types import (
 # instead of documents.
 class ChunkStore(ABC):
     @abstractmethod
-    def insert(self, chunks: Iterable[NewChunk], **kwargs) -> Iterable[Chunk]:
+    def insert(self, chunks: Iterable[NewChunkBatch], **kwargs) -> Iterable[ChunkBatch]:
         pass
 
     @abstractmethod
@@ -31,6 +32,6 @@ class ChunkStore(ABC):
 
     @abstractmethod
     def remap_custom_ids(
-        self, samples: Iterable[CustomIdSupervisedSample]
-    ) -> Iterable[SupervisedSample]:
+        self, samples: Iterable[CustomIdSupervisedBatch]
+    ) -> Iterable[SupervisedBatch]:
         pass

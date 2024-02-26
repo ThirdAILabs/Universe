@@ -1,7 +1,7 @@
-from typing import Iterable, List, Set
+from typing import List, Set, Iterable
 
 import pandas as pd
-from core.types import ChunkId, NewChunk
+from core.types import ChunkId, NewChunk, NewChunkBatch, ChunkBatch
 from core.chunk_store import ChunkStore
 
 
@@ -15,30 +15,41 @@ class DataFrameChunkStore(ChunkStore):
 
     def insert_batch(
         self,
-        chunks: Iterable[NewChunk],
+        chunks: Iterable[NewChunkBatch],
         **kwargs,
-    ):
-        new_last_id = self.last_id + len(chunks)
-        chunk_ids = range(self.last_id, new_last_id)
-        self.last_id = new_last_id
+    ) -> Iterable[ChunkBatch]:
+        for batch in chunks:
+            new_last_id = self.last_id + len(batch)
+            chunk_ids = pd.Series(range(self.last_id, new_last_id))
+            self.last_id = new_last_id
 
-        text_df_delta = pd.DataFrame.from_records(
-            [
-                {"chunk_id": chunk_id, "text": doc.text, "keywords": doc.keywords}
-                for chunk_id, doc in zip(chunk_ids, chunks)
-            ]
-        ).set_index("chunk_id")
+            text_df_delta = pd.DataFrame(
+                {
+                    "chunk_id": chunk_ids,
+                    "text": batch.text,
+                    "keywords": batch.keywords,
+                }
+            ).set_index("chunk_id")
 
-        metadata_df_delta = pd.DataFrame.from_records(
-            [
-                {"chunk_id": chunk_id, "key": key, "value": value}
-                for chunk_id, doc in zip(chunk_ids, chunks)
-                for key, value in doc.metadata.items()
-            ]
-        ).set_index("chunk_id")
+            metadata_df_delta = pd.DataFrame.from_records(
+                [
+                    {"chunk_id": chunk_id, "key": key, "value": value}
+                    for chunk_id, chunk in zip(chunk_ids, batch)
+                    for key, value in chunk.metadata.items()
+                ]
+            ).set_index("chunk_id")
 
-        self.text_df = pd.concat([self.text_df, text_df_delta])
-        self.metadata_df = pd.concat([self.metadata_df, metadata_df_delta])
+            yield ChunkBatch(
+                custom_id=batch.custom_id,
+                text=batch.text,
+                keywords=batch.keywords,
+                metadata=batch.metadata,
+                document=batch.document,
+                chunk_id=chunk_ids,
+            )
+
+            self.text_df = pd.concat([self.text_df, text_df_delta])
+            self.metadata_df = pd.concat([self.metadata_df, metadata_df_delta])
 
     def delete(self, chunk_id: ChunkId, **kwargs):
         self.text_df.drop([chunk_id])

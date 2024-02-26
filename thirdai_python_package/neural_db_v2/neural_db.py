@@ -1,9 +1,9 @@
-from typing import Iterable, List, Optional, Union
+from typing import List, Optional, Union, Iterable
 
 from core.documents import Document
 from core.retriever import Retriever
 from core.chunk_store import ChunkStore
-from core.types import NewChunk
+from core.types import NewChunkBatch
 from documents import document_by_name
 
 from chunk_stores.dataframe_chunk_store import DataFrameChunkStore
@@ -20,7 +20,7 @@ class NeuralDB:
         self.chunk_store = chunk_store or DataFrameChunkStore(**kwargs)
         self.retriever = retriever or MachRetriever(**kwargs)
 
-    def insert_chunks(self, chunks: Iterable[NewChunk], **kwargs):
+    def insert_chunks(self, chunks: Iterable[NewChunkBatch], **kwargs):
         stored_chunks = self.chunk_store.insert(
             chunks=chunks,
             assign_new_unique_ids=True,
