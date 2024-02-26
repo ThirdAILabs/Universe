@@ -63,7 +63,7 @@ class MachModel(smx.Module):
     def __init__(self, input_dim, emb_dim, output_dim, sparsity):
         super().__init__()
 
-        self.emb = smx.Embedding(emb_dim=emb_dim, n_embs=input_dim, reduce_mean=False)
+        self.emb = smx.Embedding(emb_dim=emb_dim, n_embs=input_dim)
 
         self.output = smx.SparseLinear(
             input_dim=emb_dim,

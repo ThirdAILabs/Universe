@@ -28,8 +28,10 @@ std::vector<Variable*> Variable::topologicalSort() {
       return;
     }
 
-    for (auto& input : curr->_inputs) {
-      traverse(input.get());
+    for (const auto& input : curr->_inputs) {
+      if (input) {
+        traverse(input.get());
+      }
     }
 
     visited.insert(curr);

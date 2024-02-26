@@ -43,7 +43,7 @@ def test_smx_clinc(download_clinc_dataset):
 
     model = smx.Sequential(
         [
-            smx.Embedding(n_embs=100000, emb_dim=512, reduce_mean=False),
+            smx.Embedding(n_embs=100000, emb_dim=512),
             smx.Activation("relu"),
             smx.Linear(dim=150, input_dim=512),
         ]

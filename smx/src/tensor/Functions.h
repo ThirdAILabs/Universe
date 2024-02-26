@@ -60,10 +60,11 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
  */
 
 DenseTensorPtr embedding(const CsrTensorPtr& indices,
-                         const DenseTensorPtr& embeddings, bool reduce_mean);
+                         const DenseTensorPtr& embeddings,
+                         const DenseTensorPtr& bias);
 
-DenseTensorPtr embeddingGrad(const CsrTensorPtr& indices,
-                             const DenseTensorPtr& out_grad, bool reduce_mean);
+std::pair<DenseTensorPtr, DenseTensorPtr> embeddingGrad(
+    const CsrTensorPtr& indices, const DenseTensorPtr& out_grad, bool bias);
 
 /**
  * Loss functions.

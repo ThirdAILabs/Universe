@@ -9,17 +9,23 @@ namespace thirdai::smx {
 
 class Embedding final : public UnaryModule {
  public:
-  Embedding(size_t n_embs, size_t emb_dim, bool reduce_mean = true)
-      : _reduce_mean(reduce_mean) {
+  Embedding(size_t n_embs, size_t emb_dim, bool bias = true) {
     _emb = Variable::make(
         smx::normal({n_embs, emb_dim}, /*mean=*/0.0, /*stddev=*/0.01),
         /*requires_grad=*/true);
 
     registerParameter("emb", _emb);
+
+    if (bias) {
+      _bias =
+          Variable::make(smx::normal({emb_dim}, /*mean=*/0.0, /*stddev=*/0.01),
+                         /*requires_grad=*/true);
+      registerParameter("bias", _bias);
+    }
   }
 
   VariablePtr forward(const VariablePtr& indices) final {
-    return embedding(indices, _emb, _reduce_mean);
+    return embedding(indices, _emb, _bias);
   }
 
   const auto& emb() const { return _emb; }
@@ -35,9 +41,22 @@ class Embedding final : public UnaryModule {
     registerParameter("emb", _emb);
   }
 
+  const auto& bias() const { return _bias; }
+
+  void setBias(VariablePtr b) {
+    CHECK(b->tensor()->shape() == _bias->tensor()->shape(),
+          "Shape must match in setBias.");
+    CHECK(b->tensor()->dtype() == _bias->tensor()->dtype(),
+          "Dtype must match in setBias.");
+
+    _bias = std::move(b);
+    deregisterParameter("bias");
+    registerParameter("bias", _bias);
+  }
+
  private:
   VariablePtr _emb;
-  bool _reduce_mean;
+  VariablePtr _bias;
 };
 
 }  // namespace thirdai::smx

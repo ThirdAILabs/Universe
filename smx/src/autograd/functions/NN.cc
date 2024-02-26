@@ -8,22 +8,27 @@
 namespace thirdai::smx {
 
 VariablePtr embedding(const VariablePtr& indices, const VariablePtr& embs,
-                      bool reduce_mean) {
-  auto output =
-      embedding(csr(indices->tensor()), dense(embs->tensor()), reduce_mean);
+                      const VariablePtr& bias) {
+  auto output = embedding(csr(indices->tensor()), dense(embs->tensor()),
+                          bias ? dense(bias->tensor()) : nullptr);
 
-  GradFunc grad_func = [reduce_mean](const TensorPtr& grad,
-                                     const std::vector<VariablePtr>& inputs) {
+  GradFunc grad_func = [](const TensorPtr& grad,
+                          const std::vector<VariablePtr>& inputs) {
     const auto& indices = csr(inputs.at(0)->tensor());
     const auto& embs = inputs.at(1);
+    const auto& bias = inputs.at(2);
 
     if (embs->requiresGrad()) {
-      auto emb_grad = embeddingGrad(indices, dense(grad), reduce_mean);
+      auto [emb_grad, bias_grad] =
+          embeddingGrad(indices, dense(grad), bias != nullptr);
       embs->addGradient(emb_grad);
+      if (bias) {
+        bias->addGradient(bias_grad);
+      }
     }
   };
 
-  return Variable::make(output, grad_func, {indices, embs});
+  return Variable::make(output, grad_func, {indices, embs, bias});
 }
 
 }  // namespace thirdai::smx

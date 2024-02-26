@@ -5,6 +5,6 @@
 namespace thirdai::smx {
 
 VariablePtr embedding(const VariablePtr& indices, const VariablePtr& embs,
-                      bool reduce_mean);
+                      const VariablePtr& bias);
 
 }  // namespace thirdai::smx

@@ -182,9 +182,9 @@ void defineAutograd(py::module_& smx) {
           py::arg("x"), py::arg("w"), py::arg("b"));
 
   smx.def("embedding",
-          py::overload_cast<const VariablePtr&, const VariablePtr&, bool>(
-              &embedding),
-          py::arg("indices"), py::arg("embs"), py::arg("reduce_mean") = true);
+          py::overload_cast<const VariablePtr&, const VariablePtr&,
+                            const VariablePtr&>(&embedding),
+          py::arg("indices"), py::arg("embs"), py::arg("bias"));
 
   smx.def("relu", py::overload_cast<const VariablePtr&>(&relu), py::arg("x"));
 
@@ -298,8 +298,9 @@ void defineModules(py::module_& smx) {
   py::class_<Embedding, std::shared_ptr<Embedding>, UnaryModule>(smx,
                                                                  "Embedding")
       .def(py::init<size_t, size_t, bool>(), py::arg("n_embs"),
-           py::arg("emb_dim"), py::arg("reduce_mean") = true)
-      .def_property("emb", &Embedding::emb, &Embedding::setEmb);
+           py::arg("emb_dim"), py::arg("bias") = true)
+      .def_property("emb", &Embedding::emb, &Embedding::setEmb)
+      .def_property("bias", &Embedding::bias, &Embedding::setBias);
 
   py::class_<Activation, std::shared_ptr<Activation>, UnaryModule>(smx,
                                                                    "Activation")
