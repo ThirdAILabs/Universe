@@ -35,6 +35,8 @@ class MachMixture(Model):
         model_config=None,
         label_to_segment_map: defaultdict = None,
         seed_for_sharding: int = 0,
+        optimizer="adam",
+        **kwargs,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -54,6 +56,10 @@ class MachMixture(Model):
             self.label_to_segment_map = label_to_segment_map
 
         self.seed_for_sharding = seed_for_sharding
+        if optimizer not in Model.supported_optimizers():
+            raise AttributeError(
+                f"Unsupported Optimizer: {optimizer}. Supported Optimizers: {Model.supported_optimizers()}"
+            )
 
         self.models: List[Mach] = [
             Mach(
@@ -65,6 +71,8 @@ class MachMixture(Model):
                 extreme_output_dim=self.extreme_output_dim,
                 extreme_num_hashes=self.extreme_num_hashes,
                 model_config=self.model_config,
+                optimizer=optimizer,
+                **kwargs,
             )
             for _ in range(self.number_models)
         ]

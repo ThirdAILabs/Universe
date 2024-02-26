@@ -157,6 +157,10 @@ class Model:
     def save_optimizer(self, with_optimizer: bool):
         raise NotImplementedError()
 
+    @staticmethod
+    def supported_optimizers(self):
+        return ["sgd", "adam"]
+
 
 class EarlyStopWithMinEpochs(bolt.train.callbacks.Callback):
     def __init__(
@@ -398,8 +402,10 @@ class Mach(Model):
         self.model_config = model_config
         self.inverted_index = InvertedIndex() if use_inverted_index else None
         self.optimizer = optimizer
-        if self.optimizer not in ["sgd", "adam"]:
-            raise AttributeError(f"Unsupported Optimizer: {self.optimizer}")
+        if self.optimizer not in Model.supported_optimizers():
+            raise AttributeError(
+                f"Unsupported Optimizer: {self.optimizer}. Supported Optimizers: {Model.supported_optimizers()}"
+            )
         self.kwargs = kwargs
 
     def set_mach_sampling_threshold(self, threshold: float):
