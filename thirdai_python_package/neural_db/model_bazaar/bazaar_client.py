@@ -8,7 +8,6 @@ from uuid import UUID
 from .bazaar_base import Bazaar, auth_header
 from .utils import (
     check_deployment_decorator,
-    convert_to_ndb_file,
     create_deployment_identifier,
     create_model_identifier,
     http_get_with_error,
@@ -319,6 +318,7 @@ class ModelBazaar(Bazaar):
         is_async: bool = False,
         base_model_identifier: str = None,
         train_extra_options: dict = {},
+        metadata: List[Dict[str, str]] = None,
     ):
         """
         Initiates training for a model and returns a Model instance.
@@ -345,17 +345,11 @@ class ModelBazaar(Bazaar):
         file_types = ["unsupervised"] * len(unsupervised_docs)
         source_ids = []
         if supervised_docs:
-            for sup_file, unsup_file in supervised_docs:
+            for sup_file, source_id in supervised_docs:
                 docs.append(sup_file)
                 file_types.append("supervised")
                 source_ids.append(
-                    convert_to_ndb_file(
-                        unsup_file,
-                        train_extra_options.get("csv_id_column", None),
-                        train_extra_options.get("csv_strong_columns", None),
-                        train_extra_options.get("csv_weak_columns", None),
-                        train_extra_options.get("csv_reference_columns", None),
-                    ).source_id_from_file()
+                    source_id
                 )
         if test_doc:
             docs.append(test_doc)
@@ -389,6 +383,7 @@ class ModelBazaar(Bazaar):
                 "base_model_identifier": base_model_identifier,
             },
             files=files,
+            json=metadata,
             headers=auth_header(self._access_token),
         )
         print(response.content)
