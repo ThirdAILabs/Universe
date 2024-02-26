@@ -23,7 +23,6 @@ class NeuralDB:
     def insert_chunks(self, chunks: Iterable[NewChunkBatch], **kwargs):
         stored_chunks = self.chunk_store.insert(
             chunks=chunks,
-            assign_new_unique_ids=True,
             **kwargs,
         )
         self.retriever.insert(
@@ -35,7 +34,12 @@ class NeuralDB:
         docs = [
             doc if isinstance(doc, Document) else document_by_name(doc) for doc in docs
         ]
-        self.insert_chunks([chunk for doc in docs for chunk in doc.chunks()], **kwargs)
+
+        def chunk_generator():
+            for doc in docs:
+                yield doc.chunks()
+
+        self.insert_chunks(chunk_generator(), **kwargs)
 
     def search(
         self, query: str, top_k: int, constraints: dict = None, **kwargs
