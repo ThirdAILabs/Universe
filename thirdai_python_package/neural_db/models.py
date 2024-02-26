@@ -653,9 +653,6 @@ class Mach(Model):
         if self.inverted_index:
             self.inverted_index.clear()
 
-    def save_optimizer(self, with_optimizer: bool):
-        self.model.save_optimizer = with_optimizer
-
     @property
     def searchable(self) -> bool:
         return self.n_ids != 0
@@ -816,3 +813,7 @@ class Mach(Model):
 
         self.inverted_index = InvertedIndex()
         self.inverted_index.insert(documents)
+
+    def save_optimizer(self, with_optimizer: bool):
+        if self.model:
+            self.model.save_optimizer = with_optimizer
