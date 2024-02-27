@@ -52,6 +52,7 @@ class NeuralDBClient:
     Attributes:
         deployment_identifier (str): The identifier for the deployment.
         base_url (str): The base URL for the deployed NeuralDB model.
+        bazaar (thirdai.neural_db.ModelBazaar): The bazaar object corresponding to a NeuralDB Enterprise installation
 
     Methods:
         __init__(self, deployment_identifier: str, base_url: str) -> None:
@@ -73,16 +74,26 @@ class NeuralDBClient:
             Downvotes a response in the ndb model.
     """
 
-    def __init__(self, deployment_identifier, base_url):
+    def __init__(self, deployment_identifier, base_url, bazaar):
         """
         Initializes a new instance of the NeuralDBClient.
 
         Args:
             deployment_identifier (str): The identifier for the deployment.
             base_url (str): The base URL for the deployed NeuralDB model.
+            bazaar (thirdai.neural_db.ModelBazaar): The bazaar object corresponding to a NeuralDB Enterprise installation
         """
         self.deployment_identifier = deployment_identifier
         self.base_url = base_url
+        self.bazaar = bazaar
+
+    def get_headers(self):
+        if self.bazaar.is_logged_in():
+            return {
+                "Authorization": f"Bearer {self.bazaar._login_instance._access_token}",
+            }
+        else:
+            return {}
 
     @check_deployment_decorator
     def search(self, query, top_k=10):
@@ -99,6 +110,7 @@ class NeuralDBClient:
         response = http_get_with_error(
             urljoin(self.base_url, "predict"),
             params={"query_text": query, "top_k": top_k},
+            headers=self.get_headers(),
         )
 
         return json.loads(response.content)["data"]
@@ -112,7 +124,9 @@ class NeuralDBClient:
             files (List[str]): A list of file paths to be inserted into the ndb model.
         """
         files = [("files", open(file_path, "rb")) for file_path in files]
-        response = http_post_with_error(urljoin(self.base_url, "insert"), files=files)
+        response = http_post_with_error(
+            urljoin(self.base_url, "insert"), files=files, headers=self.get_headers()
+        )
 
         print(json.loads(response.content)["message"])
 
@@ -125,7 +139,9 @@ class NeuralDBClient:
             files (List[str]): A list of source ids to delete from the ndb model.
         """
         response = http_post_with_error(
-            urljoin(self.base_url, "delete"), json={"source_ids": source_ids}
+            urljoin(self.base_url, "delete"),
+            json={"source_ids": source_ids},
+            headers=self.get_headers(),
         )
 
         print(json.loads(response.content)["message"])
@@ -141,6 +157,7 @@ class NeuralDBClient:
         response = http_post_with_error(
             urljoin(self.base_url, "associate"),
             json={"text_pairs": text_pairs},
+            headers=self.get_headers(),
         )
 
     @check_deployment_decorator
@@ -154,6 +171,7 @@ class NeuralDBClient:
         response = http_post_with_error(
             urljoin(self.base_url, "upvote"),
             json={"text_id_pairs": text_id_pairs},
+            headers=self.get_headers(),
         )
 
         print("Successfully upvoted the specified search result.")
@@ -169,6 +187,7 @@ class NeuralDBClient:
         response = http_post_with_error(
             urljoin(self.base_url, "downvote"),
             json={"text_id_pairs": text_id_pairs},
+            headers=self.get_headers(),
         )
 
         print("Successfully downvoted the specified search result.")
@@ -541,6 +560,7 @@ class ModelBazaar(Bazaar):
             return NeuralDBClient(
                 deployment_identifier=deployment_identifier,
                 base_url=response_data["endpoint"] + "/",
+                bazaar=self,
             )
 
         raise Exception("The model isn't deployed...")
