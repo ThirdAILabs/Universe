@@ -237,13 +237,13 @@ class DocumentDataSource(PyDataSource):
             for row in doc.row_iterator():
                 row.id = row.id + start_id
                 yield row
-                
+
     def indices(self):
         indices = []
         for doc, start_id in self.documents:
             for row in doc.row_iterator():
                 indices.append(row.id + start_id)
-                
+
         return indices
 
     @property
