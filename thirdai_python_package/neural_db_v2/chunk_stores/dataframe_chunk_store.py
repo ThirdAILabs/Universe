@@ -14,11 +14,12 @@ class DataFrameChunkStore(ChunkStore):
         self.custom_id_to_chunk_id = {}
         self.last_id = 0
 
-    def insert_batch(
+    def insert(
         self,
         chunks: Iterable[NewChunkBatch],
         **kwargs,
     ) -> Iterable[ChunkBatch]:
+        new_text_dfs = []
         for batch in chunks:
             new_last_id = self.last_id + len(batch)
             chunk_ids = pd.Series(range(self.last_id, new_last_id))
@@ -47,7 +48,9 @@ class DataFrameChunkStore(ChunkStore):
                 chunk_id=chunk_ids,
             )
 
-            self.text_df = pd.concat([self.text_df, text_df_delta])
+            new_text_dfs.append(text_df_delta)
+
+        self.text_df = pd.concat([self.text_df] + new_text_dfs)
 
     def delete(self, chunk_ids: List[ChunkId], **kwargs):
         self.text_df.drop(chunk_ids)
