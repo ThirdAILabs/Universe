@@ -5,6 +5,10 @@ import numpy as np
 import torch
 import torchvision
 from thirdai import smx
+import pytest
+
+
+pytestmark = [pytest.mark.unit]
 
 
 def load_datasets(download_dir):
