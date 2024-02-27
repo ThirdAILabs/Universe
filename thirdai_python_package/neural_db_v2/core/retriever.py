@@ -41,10 +41,6 @@ class Retriever(ABC):
         pass
 
     @abstractmethod
-    def dissociate(self, sources: List[str], targets: List[str], **kwargs):
-        pass
-
-    @abstractmethod
     def insert(self, chunks: Iterable[ChunkBatch], **kwargs):
         pass
 
