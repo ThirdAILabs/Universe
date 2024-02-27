@@ -247,8 +247,16 @@ class MachMixture(Model):
         )
 
     def delete_entities(self, entities) -> None:
-        for model in self.models:
-            model.delete_entities(entities)
+        segment_to_label_map = defaultdict(list)
+        for label in entities:
+            segments = self.label_to_segment_map.get(label, [])  # Get segments corresponding to the entity
+            for segment in segments:
+                segment_to_label_map[segment].append(label)
+    
+        # Delete entities for each segment
+        for i , model in enumerate(self.models):
+            model.delete_entities(segment_to_label_map[i])
+
 
     def forget_documents(self) -> None:
         for model in self.models:
