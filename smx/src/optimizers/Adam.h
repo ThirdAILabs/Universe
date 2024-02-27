@@ -9,9 +9,11 @@ namespace thirdai::smx {
 class Adam final : public Optimizer {
  public:
   Adam(const std::vector<VariablePtr>& parameters, float lr, float beta_1 = 0.9,
-       float beta_2 = 0.999, float eps = 1e-8);
+       float beta_2 = 0.999, float eps = 1e-7);
 
   void step(VariablePtr& parameter) final;
+
+  void updateLr(float lr) { _lr = lr; }
 
  private:
   struct AdamInfo {
