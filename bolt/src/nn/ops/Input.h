@@ -21,7 +21,8 @@ class Input final : public Op, public std::enable_shared_from_this<Input> {
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
-  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory) final;
+  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                     bool replace_existing_optimizer) final;
 
   uint32_t dim() const final;
 

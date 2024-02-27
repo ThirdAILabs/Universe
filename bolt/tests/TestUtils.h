@@ -52,8 +52,10 @@ class Noop final : public Op, public std::enable_shared_from_this<Noop> {
     (void)t;
   }
 
-  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory) final {
+  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                     bool replace_existing_optimizer) final {
     (void)optimizer_factory;
+    (void)replace_existing_optimizer;
   }
 
   uint32_t dim() const final { return _dim; }

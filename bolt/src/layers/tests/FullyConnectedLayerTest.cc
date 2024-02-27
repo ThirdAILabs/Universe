@@ -46,7 +46,7 @@ class FullyConnectedLayerTestFixture : public testing::Test {
                                              /* reservoir_size= */ 10,
                                              /* permutations=*/8)},
                INPUT_DIM) {
-    _layer.initOptimizer(AdamFactory::make());
+    _layer.initOptimizer(AdamFactory::make(), true);
   }
 
   void SetUp() override {

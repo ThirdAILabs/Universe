@@ -113,9 +113,9 @@ std::optional<uint32_t> PatchEmbedding::nonzeros(const ComputationList& inputs,
   return patchNonzeros(use_sparsity) * _n_patches;
 }
 
-void PatchEmbedding::initOptimizer(
-    const OptimizerFactoryPtr& optimizer_factory) {
-  _kernel->initOptimizer(optimizer_factory);
+void PatchEmbedding::initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                                   bool replace_existing_optimizer) {
+  _kernel->initOptimizer(optimizer_factory, replace_existing_optimizer);
 }
 
 void PatchEmbedding::disableSparseParameterUpdates() {

@@ -96,9 +96,9 @@ void FullyConnected::updateParameters(float learning_rate,
   }
 }
 
-void FullyConnected::initOptimizer(
-    const OptimizerFactoryPtr& optimizer_factory) {
-  _kernel->initOptimizer(optimizer_factory);
+void FullyConnected::initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                                   bool replace_existing_optimizer) {
+  _kernel->initOptimizer(optimizer_factory, replace_existing_optimizer);
 }
 
 uint32_t FullyConnected::dim() const { return _kernel->getDim(); }

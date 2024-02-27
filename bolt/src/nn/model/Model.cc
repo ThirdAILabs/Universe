@@ -614,7 +614,7 @@ void Model::unfreezeHashTables() {
 
 void Model::changeOptimizer(OptimizerFactoryPtr optimizer) {
   for (auto& op : _ops) {
-    op->initOptimizer(optimizer);
+    op->initOptimizer(optimizer, /*replace_existing_optimizer=*/true);
   }
   _optimizer_factory = std::move(optimizer);
 }
@@ -722,7 +722,8 @@ void Model::backpropagateVector(uint32_t index_in_batch, uint32_t batch_size) {
 void Model::requireOptimizer() {
   if (!_optimizer_initialized) {
     for (auto& op : _ops) {
-      op->initOptimizer(_optimizer_factory);
+      op->initOptimizer(_optimizer_factory,
+                        /*replace_existing_optimizer=*/false);
     }
     _optimizer_initialized = true;
   }

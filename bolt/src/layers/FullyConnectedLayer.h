@@ -153,7 +153,8 @@ class FullyConnectedLayer final {
 
   void buildSamplingSummary(std::ostream& summary) const;
 
-  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory);
+  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                     bool replace_existing_optimizer);
 
   ~FullyConnectedLayer() = default;
 

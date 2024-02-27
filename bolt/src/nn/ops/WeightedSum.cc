@@ -102,8 +102,11 @@ std::optional<uint32_t> WeightedSum::nonzeros(const ComputationList& inputs,
   return _chunk_size;
 }
 
-void WeightedSum::initOptimizer(const OptimizerFactoryPtr& optimizer_factory) {
-  _optimizer = optimizer_factory->makeOptimizer(1, _weights.size());
+void WeightedSum::initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                                bool replace_existing_optimizer) {
+  if (!_optimizer || replace_existing_optimizer) {
+    _optimizer = optimizer_factory->makeOptimizer(1, _weights.size());
+  }
   _gradients.assign(_weights.size(), 0.0);
 }
 
