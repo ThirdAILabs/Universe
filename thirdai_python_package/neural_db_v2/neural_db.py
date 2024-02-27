@@ -45,7 +45,8 @@ class NeuralDB:
         self, query: str, top_k: int, constraints: dict = None, **kwargs
     ) -> List[Chunk]:
         if not constraints:
-            return self.retriever.search([query], top_k, **kwargs)
-        choices = self.chunk_store.filter_chunk_ids(constraints, **kwargs)
-        chunk_ids = self.retriever.rank([query], [choices], **kwargs)
+            chunk_ids = self.retriever.search([query], top_k, **kwargs)
+        else:
+            choices = self.chunk_store.filter_chunk_ids(constraints, **kwargs)
+            chunk_ids = self.retriever.rank([query], [choices], **kwargs)
         return self.chunk_store.get_chunks(chunk_ids, **kwargs)
