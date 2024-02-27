@@ -341,16 +341,17 @@ class ModelBazaar(Bazaar):
         if not unsupervised_docs and not supervised_docs:
             raise ValueError("Bothe the unsupervised and supervised docs are empty.")
 
-        docs = unsupervised_docs
-        file_types = ["unsupervised"] * len(unsupervised_docs)
+        docs = []
+        file_types = []
+        if unsupervised_docs:
+            docs = unsupervised_docs
+            file_types = ["unsupervised"] * len(unsupervised_docs)
         source_ids = []
         if supervised_docs:
             for sup_file, source_id in supervised_docs:
                 docs.append(sup_file)
                 file_types.append("supervised")
-                source_ids.append(
-                    source_id
-                )
+                source_ids.append(source_id)
         if test_doc:
             docs.append(test_doc)
             file_types.append("test")
