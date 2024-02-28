@@ -130,6 +130,8 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("params", &modelParams)
       .def("norms", &Model::getNorms)
       .def_static("from_params", &modelFromParams, py::arg("params"))
+      .def("increment_epochs", &Model::incrementEpochs)
+      .def("deincrement_epochs", &Model::deincrementEpochs)
 #endif
       // The next three functions are used for distributed training.
       .def("disable_sparse_parameter_updates",

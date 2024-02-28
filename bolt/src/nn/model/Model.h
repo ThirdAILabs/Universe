@@ -184,6 +184,7 @@ class Model : public std::enable_shared_from_this<Model> {
   uint32_t epochs() const;
 
   void incrementEpochs();
+  void deincrementEpochs() { _epochs--; }
 
   /**
    * Overrides the number of train steps in the model. This is used when porting
