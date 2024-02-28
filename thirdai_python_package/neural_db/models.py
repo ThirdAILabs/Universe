@@ -377,6 +377,7 @@ class Mach(Model):
         hidden_bias=False,
         model_config=None,
         use_inverted_index=True,
+        softmax=False,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -389,6 +390,7 @@ class Mach(Model):
         self.hidden_bias = hidden_bias
         self.n_ids = 0
         self.model = None
+        self.softmax = softmax
         self.balancing_samples = []
         self.model_config = model_config
         self.inverted_index = InvertedIndex() if use_inverted_index else None
@@ -413,6 +415,7 @@ class Mach(Model):
         self.hidden_bias = new_model.hidden_bias
         self.n_ids = new_model.n_ids
         self.model = new_model.model
+        self.softmax = new_model.softmax
         self.balancing_samples = new_model.balancing_samples
         self.model_config = new_model.model_config
         self.inverted_index = new_model.inverted_index
@@ -616,6 +619,7 @@ class Mach(Model):
                 "extreme_num_hashes": self.extreme_num_hashes,
                 "hidden_bias": self.hidden_bias,
                 "rlhf": True,
+                "softmax": self.softmax,
             },
             model_config=self.model_config,
         )
