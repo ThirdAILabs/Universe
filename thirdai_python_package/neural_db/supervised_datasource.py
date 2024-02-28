@@ -177,6 +177,15 @@ class SupDataSource(PyDataSource):
                             query,
                         )
 
+    def indices(self):
+        indices = set()
+        for sup in self.data:
+            for _, labels in zip(sup.queries, self._labels(sup)):
+                for label in labels:
+                    indices.add(label)
+
+        return list(indices)
+
     def resource_name(self) -> str:
         return "Supervised training samples"
 
