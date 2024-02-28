@@ -376,6 +376,26 @@ class ModelBazaar(Bazaar):
         self.await_train(model)
         return model
 
+    def train_status(self, model: Model):
+        """
+        Checks for the status of the model training
+
+        Args:
+            model (Model): The Model instance.
+        """
+
+        url = urljoin(self._base_url, f"jobs/{self._user_id}/train-status")
+
+        response = http_get_with_error(
+            url,
+            params={"model_identifier": model.model_identifier},
+            headers=auth_header(self._access_token),
+        )
+
+        response_data = json.loads(response.content)["data"]
+
+        return response_data
+
     def await_train(self, model: Model):
         """
         Waits for the training of a model to complete.
@@ -383,14 +403,8 @@ class ModelBazaar(Bazaar):
         Args:
             model (Model): The Model instance.
         """
-        url = urljoin(self._base_url, f"jobs/{self._user_id}/train-status")
         while True:
-            response = http_get_with_error(
-                url,
-                params={"model_identifier": model.model_identifier},
-                headers=auth_header(self._access_token),
-            )
-            response_data = json.loads(response.content)["data"]
+            response_data = self.train_status(model)
 
             if response_data["status"] == "complete":
                 print("\nTraining completed")
