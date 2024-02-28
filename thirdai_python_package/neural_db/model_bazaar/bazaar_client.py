@@ -398,7 +398,7 @@ class ModelBazaar(Bazaar):
 
             if response_data["status"] == "failed":
                 print("\nTraining Failed")
-                return
+                raise ValueError(f"Training Failed for {model.model_identifier}")
 
             print("Training: In progress", end="", flush=True)
             print_progress_dots(duration=10)
