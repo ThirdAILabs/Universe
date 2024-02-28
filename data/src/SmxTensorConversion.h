@@ -11,4 +11,7 @@ SmxDataset toSmxTensorBatches(const ColumnMap& columns,
                               const OutputColumnsList& columns_to_convert,
                               size_t batch_size);
 
+std::vector<smx::TensorPtr> toSmxTensors(
+    const ColumnMap& columns, const OutputColumnsList& columns_to_convert);
+
 }  // namespace thirdai::data

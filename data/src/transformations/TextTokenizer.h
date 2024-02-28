@@ -22,6 +22,8 @@ class TextTokenizer final : public Transformation {
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
 
+  const std::string& inputColumn() const { return _input_column; }
+
  private:
   static std::pair<std::vector<uint32_t>, std::vector<float>>
   deduplicateIndices(std::vector<uint32_t>&& tokens);

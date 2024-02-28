@@ -12,7 +12,7 @@ class Optimizer {
   void step() {
     _n_steps++;
     for (auto& param : _parameters) {
-      step(param);
+      update(param);
     }
 
     if (_on_update_callback) {
@@ -36,7 +36,7 @@ class Optimizer {
   size_t _n_steps = 0;
 
  private:
-  virtual void step(VariablePtr& parameter) = 0;
+  virtual void update(VariablePtr& parameter) = 0;
 
   std::vector<VariablePtr> _parameters;
   std::function<void()> _on_update_callback;

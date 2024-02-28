@@ -312,7 +312,7 @@ void defineOptimizers(py::module_& smx) {
   auto optimizers = smx.def_submodule("optimizers");
 
   py::class_<Optimizer>(optimizers, "Optimizer")
-      .def("step", py::overload_cast<>(&Optimizer::step))
+      .def("step", &Optimizer::step)
       .def("zero_grad", &Optimizer::zeroGrad)
       .def("register_on_update_callback", &Optimizer::registerOnUpdateCallback,
            py::arg("callback"));

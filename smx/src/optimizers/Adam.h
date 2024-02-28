@@ -11,7 +11,7 @@ class Adam final : public Optimizer {
   Adam(const std::vector<VariablePtr>& parameters, float lr, float beta_1 = 0.9,
        float beta_2 = 0.999, float eps = 1e-7);
 
-  void step(VariablePtr& parameter) final;
+  void update(VariablePtr& parameter) final;
 
   void updateLr(float lr) { _lr = lr; }
 

@@ -19,7 +19,7 @@ Adam::Adam(const std::vector<VariablePtr>& parameters, float lr, float beta_1,
   }
 }
 
-void Adam::step(VariablePtr& parameter) {
+void Adam::update(VariablePtr& parameter) {
   float b1_corrected = 1 - pow(_beta_1, _n_steps);
   float b2_corrected = 1 - pow(_beta_2, _n_steps);
 

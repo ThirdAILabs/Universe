@@ -1,5 +1,6 @@
 #include "SmxTensorConversion.h"
 #include <smx/src/tensor/CsrTensor.h>
+#include <smx/src/tensor/Tensor.h>
 
 namespace thirdai::data {
 
@@ -109,6 +110,13 @@ SmxDataset toSmxTensorBatches(const ColumnMap& columns,
   }
 
   return tensors;
+}
+
+std::vector<smx::TensorPtr> toSmxTensors(
+    const ColumnMap& columns, const OutputColumnsList& columns_to_convert) {
+  return toSmxTensorBatches(columns, columns_to_convert,
+                            /* batch_size= */ columns.numRows())
+      .at(0);
 }
 
 }  // namespace thirdai::data
