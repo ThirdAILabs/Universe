@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 from collections import defaultdict
@@ -8,8 +9,9 @@ import pytest
 
 nltk.download("punkt")
 from ndb_utils import PDF_FILE, all_local_doc_getters, associate_works, upvote_works
-from thirdai import data
+from thirdai import bolt, data
 from thirdai import neural_db as ndb
+from thirdai.neural_db import utils
 from thirdai.neural_db.mach_mixture_model import MachMixture
 from thirdai.neural_db.models import Mach
 from thirdai.neural_db.trainer.training_data_manager import TrainingDataManager
@@ -138,7 +140,7 @@ def interrupted_training(number_models: int, interrupt_function):
         raise ex
 
 
-def make_db_and_training_manager(number_models=2, makes_checkpoint=True):
+def make_db_and_training_manager(number_models=2, makes_checkpoint=True, **kwargs):
     db = ndb.NeuralDB(number_models=number_models)
     checkpoint_dir = Path(CHECKPOINT_DIR) / str(0)
 
@@ -165,13 +167,14 @@ def make_db_and_training_manager(number_models=2, makes_checkpoint=True):
                 max_in_memory_batches=None,
                 current_epoch_number=0,
                 is_training_completed=False,
-                learning_rate=0.001,
+                learning_rate=kwargs.get("learning_rate", 0.001),
                 min_epochs=5,
                 max_epochs=10,
                 freeze_before_train=False,
                 batch_size=2048,
                 freeze_after_epoch=7,
                 freeze_after_acc=0.95,
+                callback_tracker=CallbackTracker(kwargs.get("callbacks", [])),
             ),
             vlc_config=data.transformations.VariableLengthConfig(),
         ),
@@ -181,7 +184,7 @@ def make_db_and_training_manager(number_models=2, makes_checkpoint=True):
         tracker=save_load_manager.tracker,
         save_load_manager=save_load_manager,
         makes_checkpoint=makes_checkpoint,
-        checkpoint_interval=3,
+        checkpoint_interval=kwargs.get("checkpoint_interval", 3),
     )
     return db, training_manager, checkpoint_dir
 
@@ -425,3 +428,96 @@ def test_training_progress_manager_gives_correct_arguments(setup_and_cleanup):
     assert training_arguments["max_epochs"] == 10 - 3
     assert training_arguments["min_epochs"] == 5 - 3
     assert training_arguments["freeze_after_epochs"] == 7 - 3
+
+
+class StopTraining(bolt.train.callbacks.Callback):
+    def __init__(self, stop_at_the_begin_of_epoch_interval: int):
+        super().__init__()
+        self.current_epoch = 0
+        self.stop_at_the_begin_of_epoch_interval = stop_at_the_begin_of_epoch_interval
+        self.stop_training_at_interval = True
+
+    def name(self):
+        return "stop training at begin of epoch interval"
+
+    def on_epoch_begin(self):
+        if (
+            self.stop_training_at_interval
+            and self.current_epoch % self.stop_at_the_begin_of_epoch_interval == 0
+        ):
+            self.train_state.stop_training()
+
+            # since the training is stopped now, the on_epoch_end() won't be executed
+            self.stop_training_at_interval = False
+
+            raise StopIteration
+
+    def on_epoch_end(self):
+        self.current_epoch += 1
+        self.stop_training_at_interval = True
+
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, state):
+        print(f"{state = }")
+        state.update(self.__dict__)
+
+
+def test_LRScheduler_callback():
+    epochs = 10
+    base_learning_rate = 0.01
+    gamma = 0.2
+    count_training_stopped = 0
+
+    # Stopping the training  at the begining of the epoch 2. Epoch count starts from 0
+    interval = 2
+    stop_training_callback = StopTraining(stop_at_the_begin_of_epoch_interval=interval)
+
+    db = ndb.NeuralDB(user_id="LrScheduler", number_models=1)
+
+    checkpoint_config = ndb.CheckpointConfig(
+        checkpoint_dir=Path(CHECKPOINT_DIR),
+        resume_from_checkpoint=False,
+        checkpoint_interval=interval,
+    )
+    while True:
+        try:
+            # Epochs, learning_rate, callbacks, etc parameters would be ignored once training is resumed and tracker file would be used to fetch training arguments
+            db.insert(
+                sources=DOCS_TO_INSERT,
+                epochs=epochs,
+                learning_rate=base_learning_rate,
+                checkpoint_config=checkpoint_config,
+                callbacks=[
+                    stop_training_callback,
+                    bolt.train.callbacks.MultiStepLR(
+                        gamma=gamma, milestones=list(range(0, epochs, interval))
+                    ),
+                ],
+            )
+            break
+        except StopIteration:
+            # At the begin of Epoch 'stop_at_the_begin_of_epoch_interval', the learning_rate in the tracker.json should be learning_rate * (gamma ** count_training_stoppped)
+            count_training_stopped += 1
+            ndb_progress_tracker = NeuralDbProgressTracker.load(
+                path=Path(CHECKPOINT_DIR) / "tracker"
+            )
+
+            assert (
+                ndb_progress_tracker._train_state.learning_rate
+                == base_learning_rate * (gamma ** (count_training_stopped - 1))
+            )
+            print("herer")
+            checkpoint_config.resume_from_checkpoint = True
+
+
+# def test_custom_lr_callback():
+#     # Custom LR callback
+#     class EpochWiseLR(bolt.train.callbacks.Callback):
+#         def __init__(self, epochs: int = 5):
+#             super().__init__()
+#             self.step = (1.0 - 0.01) / epochs                                 # (end - start) / epochs
+
+#         def on_epoch_begin(self):
+#             super().train_state.learning_rate += self.step

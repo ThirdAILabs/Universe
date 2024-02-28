@@ -161,7 +161,10 @@ class TrainingProgressManager:
         )
 
         tracker = NeuralDbProgressTracker(
-            intro_state=intro_state, train_state=train_state, vlc_config=variable_length
+            intro_state=intro_state,
+            train_state=train_state,
+            vlc_config=variable_length,
+            callbacks=kwargs.get("callbacks", []),
         )
 
         save_load_manager = TrainingDataManager(

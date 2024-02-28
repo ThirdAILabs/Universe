@@ -82,6 +82,8 @@ class Archive {
 
   uint64_t u64(const std::string& key) const { return getAs<uint64_t>(key); }
 
+  float f32(const std::string& key) const { return getAs<float>(key); }
+
   const std::string& str(const std::string& key) const {
     return getAs<std::string>(key);
   }

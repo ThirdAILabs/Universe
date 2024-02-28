@@ -1,4 +1,6 @@
 #include "Callback.h"
+#include <bolt/src/train/callbacks/LearningRateScheduler.h>
+#include <archive/src/Archive.h>
 #include <stdexcept>
 
 namespace thirdai::bolt::callbacks {
@@ -16,6 +18,31 @@ void Callback::setTrainState(TrainStatePtr train_state) {
 
 void Callback::setHistory(metrics::HistoryPtr history) {
   this->history = std::move(history);
+}
+
+ar::ConstArchivePtr Callback::toArchve() const {
+  throw std::runtime_error("This callback does not support serialization.");
+}
+
+std::shared_ptr<Callback> Callback::fromArchive(const ar::Archive& archive) {
+  std::string type = archive.str("type");
+
+  if (type == LinearSchedule::type()) {
+    return std::make_shared<LinearSchedule>(archive);
+  }
+  if (type == MultiStepLR::type()) {
+    return std::make_shared<MultiStepLR>(archive);
+  }
+  if (type == CosineAnnealingWarmRestart::type()) {
+    return std::make_shared<CosineAnnealingWarmRestart>(archive);
+  }
+
+  throw std::invalid_argument("Unrecognized callback type '" + type +
+                              "' in fromArchive.");
+}
+
+void Callback::save_stream(std::ostream& ostream) const {
+  ar::serialize(toArchve(), ostream);
 }
 
 CallbackList::CallbackList(std::vector<CallbackPtr> callbacks, ModelPtr& model,

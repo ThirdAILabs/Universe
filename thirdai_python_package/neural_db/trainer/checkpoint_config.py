@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from ..utils import convert_str_to_path
@@ -16,8 +16,8 @@ class CheckpointConfig:
     """
 
     checkpoint_dir: Path
-    resume_from_checkpoint: bool = False
-    checkpoint_interval: int = 1
+    resume_from_checkpoint: bool = field(default=False)
+    checkpoint_interval: int = field(default=1)
 
     def __post_init__(self):
         self.checkpoint_dir = convert_str_to_path(self.checkpoint_dir)

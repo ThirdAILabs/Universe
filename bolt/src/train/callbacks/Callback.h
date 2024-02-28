@@ -3,6 +3,7 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/TrainState.h>
+#include <archive/src/Archive.h>
 #include <memory>
 
 namespace thirdai::bolt::callbacks {
@@ -65,6 +66,12 @@ class Callback {
    * multiple histories for different trainers.
    */
   void setHistory(metrics::HistoryPtr history);
+
+  virtual ar::ConstArchivePtr toArchve() const;
+
+  static std::shared_ptr<Callback> fromArchive(const ar::Archive& archive);
+
+  void save_stream(std::ostream& ostream) const;
 
   virtual ~Callback() = default;
 
