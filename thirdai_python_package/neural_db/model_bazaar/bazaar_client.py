@@ -85,7 +85,7 @@ class NeuralDBClient:
         self.base_url = base_url
 
     @check_deployment_decorator
-    def search(self, query, top_k=10):
+    def search(self, query, top_k=10, constraints: Dict[str,str] = None):
         """
         Searches the ndb model for similar queries.
 
@@ -99,6 +99,7 @@ class NeuralDBClient:
         response = http_get_with_error(
             urljoin(self.base_url, "predict"),
             params={"query_text": query, "top_k": top_k},
+            json=constraints,
         )
 
         return json.loads(response.content)["data"]
