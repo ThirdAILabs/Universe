@@ -132,6 +132,7 @@ void createBoltNNSubmodule(py::module_& module) {
       .def_static("from_params", &modelFromParams, py::arg("params"))
       .def("increment_epochs", &Model::incrementEpochs)
       .def("deincrement_epochs", &Model::deincrementEpochs)
+      .def("get_opwise_gradients", &getOpWiseGradients)
 #endif
       // The next three functions are used for distributed training.
       .def("disable_sparse_parameter_updates",

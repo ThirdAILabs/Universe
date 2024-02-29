@@ -160,6 +160,11 @@ class Op {
     return {};
   }
 
+  virtual std::vector<std::pair<std::string, std::vector<float>>> grads()
+      const {
+    return {};
+  }
+
   /**
    * Returns the name of the op. All of the ops in a model must have a
    * unique name.

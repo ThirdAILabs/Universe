@@ -289,6 +289,16 @@ std::vector<std::pair<std::string, double>> Embedding::parameterAndGradNorms()
   return all_norms;
 }
 
+std::vector<std::pair<std::string, std::vector<float>>> Embedding::grads()
+    const {
+  std::vector<std::pair<std::string, std::vector<float>>> grads;
+  if (_embedding_optimizer) {
+    grads.emplace_back(std::pair("embeddings_grad", _embedding_gradients));
+    grads.emplace_back(std::pair("bias_grads", _bias_gradients));
+  }
+  return grads;
+}
+
 ComputationPtr Embedding::apply(ComputationPtr input) {
   if (input->dim() != _input_dim) {
     throw std::invalid_argument(

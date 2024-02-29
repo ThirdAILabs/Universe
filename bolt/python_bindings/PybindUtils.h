@@ -20,6 +20,9 @@ NumpyArray<float> getGradients(const ModelPtr& model);
 
 NumpyArray<float> getParameters(const ModelPtr& model);
 
+std::unordered_map<std::string, NumpyArray<float>> getOpWiseGradients(
+    const ModelPtr& model);
+
 void setGradients(const ModelPtr& model, NumpyArray<float>& new_values);
 
 void setParameters(const ModelPtr& model, NumpyArray<float>& new_values);

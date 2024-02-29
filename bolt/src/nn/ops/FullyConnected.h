@@ -53,6 +53,15 @@ class FullyConnected final
 
   std::vector<std::vector<float>*> gradients() final;
 
+  std::vector<std::pair<std::string, std::vector<float>>> grads() const final {
+    std::vector<std::pair<std::string, std::vector<float>>> grads;
+    if (_kernel->hasOptimizers()) {
+      grads.emplace_back(std::pair("weight_grads", _kernel->weightsGradient()));
+      grads.emplace_back(std::pair("bias_grads", _kernel->biasGradient()));
+    }
+    return grads;
+  }
+
   std::vector<std::vector<float>*> parameters() final;
 
   ComputationPtr applyToInputs(const ComputationList& inputs) final;

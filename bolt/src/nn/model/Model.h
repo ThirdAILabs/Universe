@@ -273,6 +273,18 @@ class Model : public std::enable_shared_from_this<Model> {
 
   std::unordered_map<std::string, double> getNorms() const;
 
+  std::unordered_map<std::string, std::vector<float>> getOpWiseGradients()
+      const {
+    std::unordered_map<std::string, std::vector<float>> gradients;
+    for (const auto& op : _ops) {
+      auto op_gradients = op->grads();
+      for (const auto& [name, grad] : op_gradients) {
+        gradients[op->name() + "_" + name] = grad;
+      }
+    }
+    return gradients;
+  }
+
   /**
    * Loads the model and automatically initializes the optimizer state.
    */

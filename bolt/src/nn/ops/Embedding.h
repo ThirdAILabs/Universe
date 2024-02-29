@@ -75,6 +75,8 @@ class Embedding final : public Op,
   std::vector<std::pair<std::string, double>> parameterAndGradNorms()
       const final;
 
+  std::vector<std::pair<std::string, std::vector<float>>> grads() const final;
+
   ComputationPtr apply(ComputationPtr input);
 
   uint32_t inputDim() const { return _input_dim; }

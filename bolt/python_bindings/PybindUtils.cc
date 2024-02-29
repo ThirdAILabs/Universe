@@ -1,4 +1,5 @@
 #include "PybindUtils.h"
+#include <unordered_map>
 
 namespace thirdai::bolt::python {
 
@@ -9,6 +10,16 @@ NumpyArray<float> getGradients(const ModelPtr& model) {
       grads, [](void* ptr) { delete static_cast<float*>(ptr); });
 
   return NumpyArray<float>(flattened_dim, grads, free_when_done);
+}
+
+std::unordered_map<std::string, NumpyArray<float>> getOpWiseGradients(
+    const ModelPtr& model) {
+  auto opwise_gradients = model->getOpWiseGradients();
+  std::unordered_map<std::string, NumpyArray<float>> grads;
+  for (const auto& [name, grad] : opwise_gradients) {
+    grads[name] = NumpyArray<float>(grad.size(), grad.data());
+  }
+  return grads;
 }
 
 NumpyArray<float> getParameters(const ModelPtr& model) {
