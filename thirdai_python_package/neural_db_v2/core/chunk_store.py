@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import List, Set, Iterable
+from typing import Iterable, List, Set
 
 from core.types import (
     Chunk,
-    ChunkId,
-    NewChunkBatch,
     ChunkBatch,
+    ChunkId,
     CustomIdSupervisedBatch,
+    NewChunkBatch,
     SupervisedBatch,
 )
 

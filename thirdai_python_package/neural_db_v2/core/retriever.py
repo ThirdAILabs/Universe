@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Iterable
+from typing import Iterable, List, Tuple
 
 from core.types import ChunkBatch, ChunkId, SupervisedBatch
 

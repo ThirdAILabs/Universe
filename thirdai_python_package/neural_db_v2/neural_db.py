@@ -1,12 +1,11 @@
-from typing import List, Optional, Union, Iterable
-
-from core.documents import Document
-from core.retriever import Retriever
-from core.chunk_store import ChunkStore
-from core.types import NewChunkBatch, Chunk
-from documents import document_by_name
+from typing import Iterable, List, Optional, Union
 
 from chunk_stores.sqlite_chunk_store import SQLiteChunkStore
+from core.chunk_store import ChunkStore
+from core.documents import Document
+from core.retriever import Retriever
+from core.types import Chunk, NewChunkBatch
+from documents import document_by_name
 from retrievers.mach_retriever import MachRetriever
 
 

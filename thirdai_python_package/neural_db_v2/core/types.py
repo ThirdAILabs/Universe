@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Union, List
+from typing import List, Union
+
 import pandas as pd
 from pandera import typing as pt
 
