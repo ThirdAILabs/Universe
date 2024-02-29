@@ -35,6 +35,12 @@ class MachMixture(Model):
         model_config=None,
         label_to_segment_map: defaultdict = None,
         seed_for_sharding: int = 0,
+        softmax=False,
+        use_tanh=True,
+        freeze_hash_tables=True,
+        tokenizer="char-4",
+        hidden_bias=False,
+        use_inverted_index=True,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -65,6 +71,12 @@ class MachMixture(Model):
                 extreme_output_dim=self.extreme_output_dim,
                 extreme_num_hashes=self.extreme_num_hashes,
                 model_config=self.model_config,
+                softmax=softmax,
+                use_tanh=use_tanh,
+                use_inverted_index=use_inverted_index,
+                freeze_hash_tables=freeze_hash_tables,
+                tokenizer=tokenizer,
+                hidden_bias=hidden_bias,
             )
             for _ in range(self.number_models)
         ]

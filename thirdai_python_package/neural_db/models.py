@@ -377,6 +377,9 @@ class Mach(Model):
         hidden_bias=False,
         model_config=None,
         use_inverted_index=True,
+        softmax=False,
+        use_tanh=True,
+        freeze_hash_tables=True,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -389,6 +392,9 @@ class Mach(Model):
         self.hidden_bias = hidden_bias
         self.n_ids = 0
         self.model = None
+        self.softmax = softmax
+        self.use_tanh = use_tanh
+        self.freeze_hash_tables = freeze_hash_tables
         self.balancing_samples = []
         self.model_config = model_config
         self.inverted_index = InvertedIndex() if use_inverted_index else None
@@ -413,6 +419,7 @@ class Mach(Model):
         self.hidden_bias = new_model.hidden_bias
         self.n_ids = new_model.n_ids
         self.model = new_model.model
+        self.softmax = new_model.softmax
         self.balancing_samples = new_model.balancing_samples
         self.model_config = new_model.model_config
         self.inverted_index = new_model.inverted_index
@@ -450,6 +457,7 @@ class Mach(Model):
         fast_approximation: bool,
         num_buckets_to_sample: Optional[int],
         override_number_classes: int,
+        load_balancing: bool = False,
     ):
         if intro_documents.id_column != self.id_col:
             raise ValueError(
@@ -481,6 +489,7 @@ class Mach(Model):
                     weak_column_names=[intro_documents.weak_column],
                     fast_approximation=fast_approximation,
                     num_buckets_to_sample=num_buckets_to_sample,
+                    load_balancing=load_balancing,
                 )
 
         if self.inverted_index:
@@ -616,6 +625,9 @@ class Mach(Model):
                 "extreme_num_hashes": self.extreme_num_hashes,
                 "hidden_bias": self.hidden_bias,
                 "rlhf": True,
+                "softmax": self.softmax,
+                "use_tanh": self.use_tanh,
+                "freeze_hash_tables": self.freeze_hash_tables,
             },
             model_config=self.model_config,
         )

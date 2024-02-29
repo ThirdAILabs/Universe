@@ -29,6 +29,7 @@ class TrainState:
         self.batch_size = batch_size
         self.freeze_after_epoch = freeze_after_epoch
         self.freeze_after_acc = freeze_after_acc
+        self.load_balancing = kwargs.get("load_balancing", False)
 
 
 class IntroState:
@@ -142,6 +143,7 @@ class NeuralDbProgressTracker:
             "num_buckets_to_sample": self._intro_state.num_buckets_to_sample,
             "fast_approximation": self._intro_state.fast_approximation,
             "override_number_classes": self._intro_state.override_number_classes,
+            "load_balancing": self._train_state.load_balancing,
         }
 
     def save(self, path: Path):
