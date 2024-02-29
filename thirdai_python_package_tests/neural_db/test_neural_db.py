@@ -667,3 +667,39 @@ def test_result_merging():
     expected_output = [1, 2, 7, 3, 4, 5, 6]
 
     assert [x[0] for x in merge_results(results_a, results_b, k=10)] == expected_output
+
+
+def test_ndb_incremental_additions():
+    db = ndb.NeuralDB()
+
+    original_texts = [
+        "apples are red",
+        "bananas are yellow",
+        "carrots are orange",
+        "spinach is green",
+    ]
+
+    partially_duplicated_texts = [
+        "raspberries are red",
+        "apples are green",
+        "lemons are yellow",
+        "bannas are green",
+        "mangos are orange",
+        "carrots are purple",
+        "lettuce is green",
+        "spinach is brown",
+    ]
+
+    for i, text in enumerate(original_texts + partially_duplicated_texts):
+        db.insert(
+            [ndb.InMemoryText(name=str(i), texts=[text])],
+            train=True,
+            balancing_samples=True,
+        )
+
+    correct = 0
+    for text in original_texts:
+        if text == db.search(text, top_k=1)[0].text:
+            correct += 1
+
+    assert correct >= 3
