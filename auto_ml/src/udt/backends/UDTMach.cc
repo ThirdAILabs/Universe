@@ -1014,7 +1014,7 @@ py::object UDTMach::coldStartWithBalancingSamples(
 
   if (options.max_in_memory_batches) {
     throw std::invalid_argument(
-        "Streaming is not supported for associate_train/associate_cold_start. "
+        "Streaming is not supported for cold_start_with_balancing_samples. "
         "Please pass max_in_memory_batches=None.");
   }
 
