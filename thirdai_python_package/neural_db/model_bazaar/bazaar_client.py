@@ -37,12 +37,19 @@ class Model:
                 str: The model identifier, or None if not set.
     """
 
-    def __init__(self, model_identifier) -> None:
+    def __init__(self, model_identifier, model_id=None) -> None:
         self._model_identifier = model_identifier
+        self._model_id = model_id
 
     @property
     def model_identifier(self):
         return self._model_identifier
+
+    @property
+    def model_id(self):
+        if self._model_id:
+            return self._model_id
+        raise ValueError("Model id is not yet set.")
 
 
 class NeuralDBClient:
@@ -85,7 +92,7 @@ class NeuralDBClient:
         self.base_url = base_url
 
     @check_deployment_decorator
-    def search(self, query, top_k=10, constraints: Dict[str,str] = None):
+    def search(self, query, top_k=10, constraints: Dict[str, str] = None):
         """
         Searches the ndb model for similar queries.
 
@@ -401,11 +408,15 @@ class ModelBazaar(Bazaar):
             headers=auth_header(self._access_token),
         )
         print(response.content)
-        response_data = json.loads(response.content)["data"]
+        response_content = json.loads(response.content)
+        if response_content["status"] != "success":
+            raise Exception(response_content["message"])
+
         model = Model(
             model_identifier=create_model_identifier(
                 model_name=model_name, author_username=self._username
             ),
+            model_id=response_content["data"]["model_id"],
         )
 
         if is_async:
@@ -413,6 +424,41 @@ class ModelBazaar(Bazaar):
 
         self.await_train(model)
         return model
+
+    def test(
+        self,
+        model_identifier: str,
+        test_doc: str,
+        doc_type: str = "local",
+        test_extra_options: dict = {},
+    ):
+        url = urljoin(self._base_url, f"jobs/{self._user_id}/test")
+
+        files = [
+            (
+                ("file", open(test_doc, "rb"))
+                if doc_type == "local"
+                else ("files", (test_doc, "don't care"))
+            )
+        ]
+        if test_extra_options:
+            files.append(
+                (
+                    "extra_options_form",
+                    (None, json.dumps(test_extra_options), "application/json"),
+                )
+            )
+
+        response = http_post_with_error(
+            url,
+            params={
+                "doc_type": doc_type,
+                "model_identifier": model_identifier,
+            },
+            files=files,
+            headers=auth_header(self._access_token),
+        )
+        print(response.content)
 
     def train_status(self, model: Model):
         """
