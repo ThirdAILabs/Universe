@@ -4,6 +4,8 @@
 #include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <cstddef>
@@ -127,6 +129,24 @@ void FeatureHash::buildExplanationMap(const ColumnMap& input, State& state,
     explanations.store(_output_indices_column, feature, explanation);
   }
 }
+
+ar::ConstArchivePtr FeatureHash::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("input_columns", ar::vecStr(_input_columns));
+  map->set("output_indices_column", ar::str(_output_indices_column));
+  map->set("output_values_column", ar::str(_output_values_column));
+  map->set("hash_range", ar::u64(_hash_range));
+
+  return map;
+}
+
+FeatureHash::FeatureHash(const ar::Archive& archive)
+    : _hash_range(archive.u64("hash_range")),
+      _input_columns(archive.getAs<ar::VecStr>("input_columns")),
+      _output_indices_column(archive.str("output_indices_column")),
+      _output_values_column(archive.str("output_values_column")) {}
 
 template void FeatureHash::serialize(cereal::BinaryInputArchive&);
 template void FeatureHash::serialize(cereal::BinaryOutputArchive&);

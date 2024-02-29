@@ -221,14 +221,6 @@ def test_mach_udt_on_scifact_model_porting(
     assert model.predict_batch(batch) == new_model.predict_batch(batch)
 
 
-def test_mach_udt_label_too_large():
-    with pytest.raises(
-        ValueError,
-        match=r"Invalid entity in index: 3.",
-    ):
-        train_simple_mach_udt(invalid_data=True)
-
-
 @pytest.mark.parametrize("embedding_dim", [128, 256])
 def test_mach_udt_entity_embedding(embedding_dim):
     model = train_simple_mach_udt(embedding_dim=embedding_dim)
@@ -597,7 +589,7 @@ def test_load_balancing():
     model.introduce_label(
         input_batch=[sample],
         label=label_with_load_balancing,
-        num_buckets_to_sample=num_hashes,
+        load_balancing=True,
     )
 
     hashes_with_load_balancing = model.get_index().get_entity_hashes(
@@ -613,6 +605,43 @@ def test_load_balancing():
     # Check that the buckets it inserts into with load balancing is different
     # than the buckets it inserts into without load balancing
     assert set(hashes_with_load_balancing) != set(hashes_without_load_balancing)
+
+
+def test_load_balancing_disjoint():
+    model = train_simple_mach_udt()
+
+    sample = {"text": "tomato"}
+
+    # # Insert an id for the same sample without load balancing to ensure that
+    # # it goes to different locations than with load balancing
+    label_without_load_balancing = 9999
+    model.introduce_label(
+        input_batch=[sample],
+        label=label_without_load_balancing,
+    )
+    label_with_load_balancing = 10000
+    model.introduce_label(
+        input_batch=[sample],
+        label=label_with_load_balancing,
+        load_balancing=True,
+    )
+
+    hashes_with_load_balancing = model.get_index().get_entity_hashes(
+        label_with_load_balancing
+    )
+    hashes_without_load_balancing = model.get_index().get_entity_hashes(
+        label_without_load_balancing
+    )
+
+    # # Check that the two sets of hashes obtained are disjoint
+    assert (
+        len(
+            set(hashes_without_load_balancing).intersection(
+                set(hashes_with_load_balancing)
+            )
+        )
+        == 0
+    )
 
 
 def test_mach_sparse_inference():
@@ -703,7 +732,7 @@ def test_associate():
     original_intersection = len(target_hashes.intersection(source_hashes))
 
     for _ in range(100):
-        model.associate([(source_sample, target_sample)], n_buckets=7)
+        model.associate([(source_sample["text"], target_sample["text"])], n_buckets=7)
 
     new_target_hashes = set(model.predict_hashes(target_sample))
     new_source_hashes = set(model.predict_hashes(source_sample))
@@ -720,7 +749,7 @@ def test_enable_rlhf():
         RuntimeError,
         match=r"This model was not configured to support rlhf. Please pass {'rlhf': True} in the model options or call enable_rlhf().",
     ):
-        model.associate([({"text": "text"}, {"text": "text"})], n_buckets=7)
+        model.associate([("text", "text")], n_buckets=7)
 
     model.enable_rlhf(num_balancing_docs=100, num_balancing_samples_per_doc=10)
 
@@ -730,7 +759,7 @@ def test_enable_rlhf():
         SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001, shuffle_reservoir_size=32000
     )
 
-    model.associate([({"text": "text"}, {"text": "text"})], n_buckets=7)
+    model.associate([("text", "text")], n_buckets=7)
 
 
 def regularized_introduce_helper(model, num_random_hashes):
@@ -814,3 +843,66 @@ def test_udt_mach_fast_approximation_handles_commas():
     )
 
     os.remove("temp.csv")
+
+
+@pytest.mark.parametrize("softmax", [True, False])
+def test_udt_softmax_activations(softmax):
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "text": bolt.types.text(contextual_encoding="local"),
+            "label": bolt.types.categorical(),
+        },
+        target="label",
+        n_target_classes=3,
+        integer_target=True,
+        options={
+            "extreme_classification": True,
+            "embedding_dimension": 100,
+            "extreme_output_dim": 100,
+            "softmax": softmax,
+        },
+    )
+
+    output = model.predict_activations_batch(
+        [{"text": "some text"}, {"text": "some text"}]
+    )[0]
+
+    sum_to_one = np.isclose(
+        sum(output),
+        1,
+    )
+    assert sum_to_one == softmax
+
+
+def test_doc_not_found_unless_trained_on():
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "text": bolt.types.text(contextual_encoding="local"),
+            "label": bolt.types.categorical(),
+        },
+        target="label",
+        n_target_classes=10,
+        integer_target=True,
+        options={
+            "extreme_classification": True,
+            "fhr": 1000,
+            "embedding_dimension": 20,
+            "extreme_output_dim": 100,
+        },
+    )
+
+    make_simple_test_file()
+
+    model.train(SIMPLE_TEST_FILE, epochs=1)
+
+    os.remove(SIMPLE_TEST_FILE)
+
+    model.get_entity_embedding(1)
+
+    model.get_index().get_entity_hashes(2)
+
+    with pytest.raises(ValueError, match="Invalid entity in index: 7."):
+        model.get_entity_embedding(7)
+
+    with pytest.raises(ValueError, match="Invalid entity in index: 8."):
+        model.get_index().get_entity_hashes(8)

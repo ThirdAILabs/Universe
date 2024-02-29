@@ -271,15 +271,27 @@ def modify_udt():
     delattr(bolt.UniversalDeepTransformer, "cold_start")
 
     bolt.UniversalDeepTransformer.train = wrapped_train
+    bolt.UniversalDeepTransformer.train.__doc__ = udt_train_doc
     bolt.UniversalDeepTransformer.evaluate = wrapped_evaluate
+    bolt.UniversalDeepTransformer.evaluate.__doc__ = udt_eval_doc
     bolt.UniversalDeepTransformer.cold_start = wrapped_cold_start
+    bolt.UniversalDeepTransformer.cold_start.__doc__ = udt_cold_start_doc
 
     bolt.UniversalDeepTransformer.train_on_data_source = wrapped_train_on_data_source
+    bolt.UniversalDeepTransformer.train_on_data_source.__doc__ = (
+        udt_train_on_datasource_doc
+    )
     bolt.UniversalDeepTransformer.evaluate_on_data_source = (
         wrapped_evaluate_on_data_source
     )
+    bolt.UniversalDeepTransformer.evaluate_on_data_source.__doc__ = (
+        udt_eval_on_data_source_doc
+    )
     bolt.UniversalDeepTransformer.cold_start_on_data_source = (
         wrapped_cold_start_on_data_source
+    )
+    bolt.UniversalDeepTransformer.cold_start_on_data_source.__doc__ = (
+        udt_cold_start_on_data_source_doc
     )
 
 
@@ -293,6 +305,7 @@ def modify_mach_udt():
         weak_column_names: List[str],
         num_buckets_to_sample: Optional[int] = None,
         num_random_hashes: int = 0,
+        load_balancing: bool = False,
         fast_approximation: bool = False,
         verbose: bool = True,
     ):
@@ -305,6 +318,7 @@ def modify_mach_udt():
             weak_column_names,
             num_buckets_to_sample,
             num_random_hashes,
+            load_balancing,
             fast_approximation,
             verbose,
         )
@@ -387,19 +401,9 @@ def modify_graph_udt():
     delattr(bolt.UniversalDeepTransformer, "index_nodes")
 
     bolt.UniversalDeepTransformer.index_nodes = wrapped_index_nodes
+    bolt.UniversalDeepTransformer.index_nodes.__doc__ = (
+        original_index_nodes_method.__doc__
+    )
     bolt.UniversalDeepTransformer.index_nodes_on_data_source = (
         original_index_nodes_method
     )
-
-
-def add_neural_index_aliases():
-    udt = bolt.UniversalDeepTransformer
-    udt.train_neural_db = udt.train
-    udt.pretrain_neural_db = udt.cold_start
-    udt.query = udt.predict
-    udt.save_neural_db = udt.save
-    udt.load_neural_db = udt.load
-    udt.insert_into_neural_db = udt.introduce_document
-    udt.insert_into_neural_db_batch = udt.introduce_documents
-    udt.reset_neural_db = udt.clear_index
-    udt.teach_concept_association = udt.associate

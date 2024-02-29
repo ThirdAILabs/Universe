@@ -46,7 +46,11 @@ class Recurrence final : public Transformation {
         _target_vocab_size(target_vocab_size),
         _max_seq_len(max_sequence_length) {}
 
+  explicit Recurrence(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  ar::ConstArchivePtr toArchive() const final;
 
   bool isEOS(uint32_t token) const;
 
@@ -54,6 +58,8 @@ class Recurrence final : public Transformation {
     // +1 for EOS.
     return _target_vocab_size + 1;
   }
+
+  static std::string type() { return "recurrence"; }
 
  private:
   size_t effectiveSize(const RowView<uint32_t>& row) const;

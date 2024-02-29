@@ -1,5 +1,6 @@
 #include "SeismicBase.h"
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/string.hpp>
 #include <cereal/types/tuple.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/python_bindings/NumpyConversions.h>
@@ -18,6 +19,7 @@
 #include <versioning/src/Versions.h>
 #include <optional>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 
 namespace thirdai::bolt::seismic {
@@ -128,7 +130,14 @@ void SeismicBase::serialize(Archive& archive, uint32_t version) {
   // Adding a version in case we need to add custom logic to ensure
   // compatability in the future.
   (void)version;
-  archive(_model, _emb, _input_shape_data);
+  if (std::is_same_v<Archive, cereal::BinaryOutputArchive>) {
+    std::string emb_name = _emb->name();
+    archive(_model, emb_name, _input_shape_data);
+  } else {
+    std::string emb_name;
+    archive(_model, emb_name, _input_shape_data);
+    _emb = _model->getComputation(emb_name);
+  }
 }
 
 }  // namespace thirdai::bolt::seismic

@@ -2,6 +2,7 @@
 
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/memory.hpp>
+#include <archive/src/Archive.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/DataSource.h>
@@ -97,6 +98,8 @@ class SymPreTrainer {
   SymPreTrainer(uint32_t max_edit_distance, uint32_t prefix_length,
                 bool use_word_segmentation);
 
+  explicit SymPreTrainer(const ar::Archive& archive);
+
   QueryCandidates generateCandidates(const MapInputBatch& samples);
 
   static std::pair<std::vector<uint32_t>, std::vector<float>> topKIdScorePairs(
@@ -107,6 +110,8 @@ class SymPreTrainer {
   getCorrectSpellingSingle(const std::string& word, uint32_t top_k);
 
   void pretrain(std::vector<MapInputBatch>& parsed_data);
+
+  ar::ConstArchivePtr toArchive() const;
 
  private:
   SymSpell _backend;

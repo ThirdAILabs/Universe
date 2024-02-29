@@ -5,9 +5,13 @@
 #include <bolt/src/nn/autograd/ComputationGraph.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/ops/Switch.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <archive/src/Archive.h>
+#include <archive/src/List.h>
+#include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <licensing/src/CheckLicense.h>
 #include <utils/UUID.h>
@@ -28,10 +32,13 @@
 namespace thirdai::bolt {
 
 Model::Model(ComputationList inputs, ComputationList outputs,
-             std::vector<LossPtr> losses, ComputationList additional_labels)
+             std::vector<LossPtr> losses,
+             const ComputationList& expected_labels,
+             OptimizerFactoryPtr optimizer)
     : _inputs(std::move(inputs)),
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
+      _optimizer_factory(std::move(optimizer)),
       _epochs(0),
       _train_steps(0),
       _model_uuid(
@@ -43,8 +50,11 @@ Model::Model(ComputationList inputs, ComputationList outputs,
     auto labels = loss->labels();
     _labels.insert(_labels.end(), labels.begin(), labels.end());
   }
-  _labels.insert(_labels.end(), additional_labels.begin(),
-                 additional_labels.end());
+  for (const auto& label : expected_labels) {
+    if (std::find(_labels.begin(), _labels.end(), label) == _labels.end()) {
+      _labels.push_back(label);
+    }
+  }
 
   _computation_order = getComputationOrder(_inputs, _outputs, _losses);
 
@@ -77,10 +87,11 @@ Model::Model(ComputationList inputs, ComputationList outputs,
 std::shared_ptr<Model> Model::make(ComputationList inputs,
                                    ComputationList outputs,
                                    std::vector<LossPtr> losses,
-                                   ComputationList additional_labels) {
+                                   const ComputationList& expected_labels,
+                                   OptimizerFactoryPtr optimizer) {
   auto model = std::shared_ptr<Model>(
       new Model(std::move(inputs), std::move(outputs), std::move(losses),
-                std::move(additional_labels)));
+                expected_labels, std::move(optimizer)));
 
   // This has to be done here because we need the model to be allocated using a
   // shared_ptr in order to use shared_from_this() to get a valid reference.
@@ -293,7 +304,9 @@ std::vector<uint32_t> Model::labelDims() const {
   return dims;
 }
 
-std::vector<std::vector<float>*> Model::gradients() const {
+std::vector<std::vector<float>*> Model::gradients() {
+  requireOptimizer();
+
   std::vector<std::vector<float>*> grads;
 
   for (const auto& op : _ops) {
@@ -402,6 +415,183 @@ void Model::enableSparseParameterUpdates() {
   }
 }
 
+ar::ConstArchivePtr placeholder(const std::string& name, size_t dim) {
+  auto placeholder = ar::Map::make();
+  placeholder->set("name", ar::str(name));
+  placeholder->set("dim", ar::u64(dim));
+  return placeholder;
+}
+
+ar::ConstArchivePtr Model::toArchive(bool with_optimizer) const {
+  licensing::entitlements().verifySaveLoad();
+
+  auto model = ar::Map::make();
+
+  /**
+   * Ops
+   */
+  auto ops = ar::List::make();
+  for (const auto& op : _ops) {
+    ops->append(op->toArchive(with_optimizer));
+  }
+  model->set("ops", ops);
+
+  /**
+   * Inputs
+   */
+  auto inputs = ar::List::make();
+  for (const auto& input : _inputs) {
+    inputs->append(placeholder(input->name(), input->dim()));
+  }
+  model->set("inputs", inputs);
+
+  /**
+   * Labels
+   */
+  std::unordered_set<ComputationPtr> labels_seen;
+  auto labels = ar::List::make();
+  for (const auto& label : _labels) {
+    if (!labels_seen.count(label)) {
+      // Since multiple losses could reference the same label, a label could
+      // appear multiple times.
+      labels->append(placeholder(label->name(), label->dim()));
+      labels_seen.insert(label);
+    }
+  }
+  model->set("labels", labels);
+
+  /**
+   * Computations
+   */
+  auto computations = ar::List::make();
+  for (const auto& comp : _computation_order) {
+    auto comp_ar = ar::Map::make();
+    comp_ar->set("name", ar::str(comp->name()));
+    comp_ar->set("op", ar::str(comp->op()->name()));
+    comp_ar->set("inputs", ar::vecStr(comp->inputNames()));
+    computations->append(comp_ar);
+  }
+  model->set("computations", computations);
+
+  /**
+   * Losses
+   */
+  auto losses = ar::List::make();
+  for (const auto& loss : _losses) {
+    losses->append(loss->toArchive());
+  }
+  model->set("losses", losses);
+
+  /**
+   * Outputs
+   */
+  std::vector<std::string> output_names;
+  for (const auto& output : _outputs) {
+    output_names.push_back(output->name());
+  }
+  model->set("outputs", ar::vecStr(output_names));
+
+  /**
+   * Optimizer
+   */
+  model->set("optimizer", _optimizer_factory->toArchive());
+
+  /**
+   * Metadata
+   */
+  auto metadata = ar::Map::make();
+  metadata->set("train_steps", ar::u64(_train_steps));
+  metadata->set("total_training_samples", ar::u64(_total_training_samples));
+  metadata->set("uuid", ar::str(_model_uuid));
+  model->set("metadata", metadata);
+
+  return model;
+}
+
+std::shared_ptr<Model> Model::fromArchive(const ar::Archive& archive) {
+  licensing::entitlements().verifySaveLoad();
+  /**
+   * Ops
+   */
+  std::unordered_map<std::string, OpPtr> ops;
+  for (const auto& op : archive.get("ops")->list()) {
+    ops[op->str("name")] = Op::fromArchive(*op);
+  }
+
+  std::unordered_map<std::string, ComputationPtr> computations;
+
+  /**
+   * Inputs
+   */
+  ComputationList inputs;
+  for (const auto& input_ar : archive.get("inputs")->list()) {
+    auto input = Input::make(input_ar->u64("dim"));
+    inputs.push_back(input);
+    computations[input_ar->str("name")] = input;
+  }
+
+  /**
+   * Labels
+   */
+  ComputationList labels;
+  for (const auto& label_ar : archive.get("labels")->list()) {
+    auto label = Input::make(label_ar->u64("dim"));
+    computations[label_ar->str("name")] = label;
+    labels.push_back(label);
+  }
+
+  /**
+   * Computations
+   */
+  for (const auto& comp : archive.get("computations")->list()) {
+    ComputationList inputs;
+    for (const auto& input : comp->getAs<ar::VecStr>("inputs")) {
+      inputs.push_back(computations.at(input));
+    }
+
+    auto& op = ops[comp->str("op")];
+    computations[comp->str("name")] = op->applyToInputs(inputs);
+  }
+
+  /**
+   * Losses
+   */
+  std::vector<LossPtr> losses;
+  for (const auto& loss : archive.get("losses")->list()) {
+    losses.push_back(Loss::fromArchive(*loss, computations));
+  }
+
+  /**
+   * Outputs
+   */
+  ComputationList outputs;
+  for (const auto& output : archive.getAs<ar::VecStr>("outputs")) {
+    outputs.push_back(computations.at(output));
+  }
+
+  /**
+   * Optimizer
+   */
+  OptimizerFactoryPtr optimizer;
+  if (archive.contains("optimizer")) {
+    optimizer = OptimizerFactory::fromArchive(*archive.get("optimizer"));
+  } else {
+    optimizer = AdamFactory::make();
+  }
+
+  auto model = Model::make(inputs, outputs, losses, labels, optimizer);
+
+  /**
+   * Metadata
+   */
+  auto metadata = archive.get("metadata");
+  model->_model_uuid = metadata->str("uuid");
+  model->_train_steps = metadata->u64("train_steps");
+  model->_total_training_samples = metadata->u64("total_training_samples");
+
+  return model;
+}
+
 void Model::freezeHashTables(bool insert_labels_if_not_found) {
   for (auto& op : _ops) {
     if (auto fc = std::dynamic_pointer_cast<FullyConnected>(op)) {
@@ -420,6 +610,13 @@ void Model::unfreezeHashTables() {
       fc->unfreezeHashTables();
     }
   }
+}
+
+void Model::changeOptimizer(OptimizerFactoryPtr optimizer) {
+  for (auto& op : _ops) {
+    op->initOptimizer(optimizer, /*replace_existing_optimizer=*/true);
+  }
+  _optimizer_factory = std::move(optimizer);
 }
 
 std::vector<std::pair<ComputationPtr, ComputationPtr>> Model::outputLabelPairs()
@@ -457,7 +654,6 @@ void Model::checkpoint(const std::string& filename, bool save_metadata) {
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
 
   setSerializeOptimizer(true);
-
   save_stream(output_stream);
 
   if (save_metadata) {
@@ -474,6 +670,20 @@ void Model::setSerializeOptimizer(bool should_save_optimizer) {
   for (auto& op : _ops) {
     op->setSerializeOptimizer(should_save_optimizer);
   }
+  _serialize_with_optimizer = should_save_optimizer;
+}
+
+std::unordered_map<std::string, double> Model::getNorms() const {
+  std::unordered_map<std::string, double> norms;
+
+  for (const auto& op : _ops) {
+    auto op_norms = op->parameterAndGradNorms();
+    for (const auto& [name, norm] : op_norms) {
+      norms[op->name() + "_" + name] = norm;
+    }
+  }
+
+  return norms;
 }
 
 std::shared_ptr<Model> Model::load(const std::string& filename) {
@@ -483,6 +693,7 @@ std::shared_ptr<Model> Model::load(const std::string& filename) {
 
 std::shared_ptr<Model> Model::load_stream(std::istream& input_stream) {
   cereal::BinaryInputArchive iarchive(input_stream);
+
   std::shared_ptr<Model> deserialize_into(new Model());
   iarchive(*deserialize_into);
 
@@ -511,7 +722,8 @@ void Model::backpropagateVector(uint32_t index_in_batch, uint32_t batch_size) {
 void Model::requireOptimizer() {
   if (!_optimizer_initialized) {
     for (auto& op : _ops) {
-      op->initOptimizer();
+      op->initOptimizer(_optimizer_factory,
+                        /*replace_existing_optimizer=*/false);
     }
     _optimizer_initialized = true;
   }
@@ -631,29 +843,51 @@ void Model::verifyAllowedOutputDim() const {
   licensing::entitlements().verifyAllowedOutputDim(total_output_dim);
 }
 
-template void Model::serialize(cereal::BinaryInputArchive&,
-                               const uint32_t version);
-template void Model::serialize(cereal::BinaryOutputArchive&,
-                               const uint32_t version);
+template void Model::save(cereal::BinaryOutputArchive&,
+                          const uint32_t version) const;
+
+template void Model::load(cereal::BinaryInputArchive&, const uint32_t version);
 
 template <class Archive>
-void Model::serialize(Archive& archive, const uint32_t version) {
+void Model::save(Archive& archive, const uint32_t version) const {
+  (void)version;
+
+  licensing::entitlements().verifySaveLoad();
+
+  archive(_thirdai_version);
+
+  auto thirdai_archive = toArchive(_serialize_with_optimizer);
+
+  archive(thirdai_archive);
+}
+
+template <class Archive>
+void Model::load(Archive& archive, const uint32_t version) {
   licensing::entitlements().verifySaveLoad();
 
   _thirdai_version = thirdai::version();
   archive(_thirdai_version);
 
-  std::string class_name = "BOLT_MODEL";
-  versions::checkVersion(version, versions::BOLT_MODEL_VERSION,
-                         _thirdai_version, thirdai::version(), class_name);
+  if (version <= versions::BOLT_MODEL_LAST_OLD_SERIALIZATION_VERSION) {
+    std::string class_name = "BOLT_MODEL";
+    versions::checkVersion(version,
+                           versions::BOLT_MODEL_LAST_OLD_SERIALIZATION_VERSION,
+                           _thirdai_version, thirdai::version(), class_name);
 
-  // Increment thirdai::versions::BOLT_MODEL_VERSION after serialization changes
-  archive(_inputs, _outputs, _labels, _losses, _ops, _computation_order,
-          _allocation_manager, _train_steps, _model_uuid,
-          _total_training_samples);
+    archive(_inputs, _outputs, _labels, _losses, _ops, _computation_order,
+            _allocation_manager, _train_steps, _model_uuid,
+            _total_training_samples);
+
+    _optimizer_factory = AdamFactory::make();
+
+  } else {
+    ar::ArchivePtr thirdai_archive;
+    archive(thirdai_archive);
+
+    *this = *fromArchive(*thirdai_archive);
+  }
 
   verifyAllowedOutputDim();
-
   registerWithOps();
 }
 

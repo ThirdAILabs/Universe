@@ -1,8 +1,13 @@
 #pragma once
 
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/optional.hpp>
 #include "TextAugmentationUtils.h"
+#include <archive/src/Archive.h>
 #include <data/src/transformations/Transformation.h>
+#include <memory>
 #include <random>
+#include <sstream>
 
 namespace thirdai::data {
 
@@ -17,6 +22,7 @@ struct VariableLengthConfig {
       std::optional<size_t> slice_max_length = std::nullopt,
       uint32_t num_slices = 7, bool add_whole_doc = true,
       bool prefilter_punctuation = true, uint32_t strong_sample_num_words = 3,
+      std::optional<uint32_t> strong_to_weak_ratio = std::nullopt,
       float stopword_removal_probability = 0,
       float stopword_insertion_probability = 0,
       float word_removal_probability = 0,
@@ -33,6 +39,7 @@ struct VariableLengthConfig {
   bool add_whole_doc;
   bool prefilter_punctuation;
   uint32_t strong_sample_num_words;
+  std::optional<uint32_t> strong_to_weak_ratio;
   float stopword_removal_probability;
   float stopword_insertion_probability;
   float word_removal_probability;
@@ -41,9 +48,55 @@ struct VariableLengthConfig {
   size_t chars_deleted;
   size_t chars_duplicated;
   size_t chars_replace_with_adjacents;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(covering_min_length, covering_max_length, max_covering_samples,
+            slice_min_length, slice_max_length, num_slices, add_whole_doc,
+            prefilter_punctuation, strong_sample_num_words,
+            strong_to_weak_ratio, stopword_removal_probability,
+            stopword_insertion_probability, word_removal_probability,
+            word_perturbation_probability, chars_replace_with_space,
+            chars_deleted, chars_duplicated, chars_replace_with_adjacents);
+  }
+
+  void save_stream(std::ostream& output_stream) const {
+    cereal::BinaryOutputArchive oarchive(output_stream);
+    oarchive(*this);
+  }
+
+  static std::shared_ptr<VariableLengthConfig> load_stream(
+      std::istream& input_stream) {
+    cereal::BinaryInputArchive iarchive(input_stream);
+    auto config = std::make_shared<VariableLengthConfig>();
+    iarchive(*config);
+    return config;
+  }
+  std::string to_string() const {
+    std::stringstream ss;
+    ss << "VariableLengthConfig(";
+    ss << VARIABLE_TO_STRING(covering_min_length, ", ");
+    ss << VARIABLE_TO_STRING(covering_max_length, ", ");
+    ss << VARIABLE_TO_STRING(max_covering_samples, ", ");
+    ss << VARIABLE_TO_STRING(slice_min_length, ", ");
+    ss << VARIABLE_TO_STRING(slice_max_length, ", ");
+    ss << VARIABLE_TO_STRING(num_slices, ", ");
+    ss << VARIABLE_TO_STRING(add_whole_doc, ", ");
+    ss << VARIABLE_TO_STRING(prefilter_punctuation, ", ");
+    ss << VARIABLE_TO_STRING(strong_sample_num_words, ", ");
+    ss << VARIABLE_TO_STRING(strong_to_weak_ratio, ", ");
+    ss << VARIABLE_TO_STRING(stopword_removal_probability, ", ");
+    ss << VARIABLE_TO_STRING(stopword_insertion_probability, ", ");
+    ss << VARIABLE_TO_STRING(word_removal_probability, ", ");
+    ss << VARIABLE_TO_STRING(word_perturbation_probability, ", ");
+    ss << VARIABLE_TO_STRING(chars_replace_with_space, ", ");
+    ss << VARIABLE_TO_STRING(chars_deleted, ", ");
+    ss << VARIABLE_TO_STRING(chars_duplicated, ", ");
+    ss << VARIABLE_TO_STRING(chars_replace_with_adjacents, ")");
+    return ss.str();
+  }
 };
 
-class VariableLengthColdStart : public cold_start::TextAugmentationBase {
+class VariableLengthColdStart final : public cold_start::TextAugmentationBase {
  public:
   VariableLengthColdStart(
       std::vector<std::string> strong_column_names,

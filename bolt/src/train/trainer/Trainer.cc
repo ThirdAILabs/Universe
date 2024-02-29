@@ -105,6 +105,8 @@ metrics::History Trainer::train(
       }
 
       if (is_update_interval_reached) {
+        callbacks.beforeUpdate();
+
         utils::Timer update_param_timer;
         _model->updateParameters(train_state->learningRate());
         update_param_timer.stop();
@@ -266,6 +268,54 @@ metrics::History Trainer::train_with_dataset_loader(
   return *_history;
 }
 
+metrics::History Trainer::train_with_data_loader(
+    const data::LoaderPtr& train_data_loader, float learning_rate,
+    uint32_t epochs, std::optional<size_t> max_in_memory_batches,
+    const metrics::InputMetrics& train_metrics,
+    const data::LoaderPtr& validation_data_loader,
+    const metrics::InputMetrics& validation_metrics,
+    std::optional<uint32_t> steps_per_validation,
+    bool use_sparsity_in_validation,
+    const std::vector<callbacks::CallbackPtr>& callbacks,
+    bool autotune_rehash_rebuild, bool verbose,
+    std::optional<uint32_t> logging_interval, const DistributedCommPtr& comm) {
+  if (!max_in_memory_batches) {
+    auto train_data = train_data_loader->all();
+
+    std::optional<LabeledDataset> validation_data = std::nullopt;
+    if (validation_data_loader) {
+      validation_data = validation_data_loader->all();
+    }
+
+    return train(train_data, learning_rate, epochs, train_metrics,
+                 validation_data, validation_metrics, steps_per_validation,
+                 use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
+                 verbose, logging_interval, comm);
+  }
+
+  // We have duplicate code here for loading validation data because for
+  // Temporal transformations loading the validation data after the training
+  // data is important. We do not do this for the streaming case because it
+  // would require doing a first pass over the training data before loading the
+  // validation data.
+  std::optional<LabeledDataset> validation_data = std::nullopt;
+  if (validation_data_loader) {
+    validation_data = validation_data_loader->all();
+  }
+
+  for (uint32_t e = 0; e < epochs; e++) {
+    while (auto train_chunk = train_data_loader->next(*max_in_memory_batches)) {
+      train(train_chunk.value(), learning_rate, /* epochs= */ 1, train_metrics,
+            validation_data, validation_metrics, steps_per_validation,
+            use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
+            verbose, logging_interval, comm);
+    }
+    train_data_loader->restart();
+  }
+
+  return *_history;
+}
+
 metrics::History Trainer::validate(const LabeledDataset& data,
                                    const metrics::InputMetrics& metrics_in,
                                    bool use_sparsity, bool verbose) {
@@ -327,6 +377,13 @@ metrics::History Trainer::validate_with_dataset_loader(
                                  verbose),
       /* metrics= */ metrics, /* use_sparsity= */ use_sparsity,
       /* verbose= */ verbose);
+}
+
+metrics::History Trainer::validate_with_data_loader(
+    const data::LoaderPtr& data, const metrics::InputMetrics& metrics,
+    bool use_sparsity, bool verbose) {
+  return validate(/* data= */ data->all(), /* metrics= */ metrics,
+                  /* use_sparsity= */ use_sparsity, /* verbose= */ verbose);
 }
 
 void Trainer::verifyNumBatchesMatch(const LabeledDataset& data) {

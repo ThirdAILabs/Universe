@@ -3,8 +3,13 @@
 #include <cereal/specialize.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
+#include <bolt/src/layers/EmbeddingLayer.h>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
+#include <archive/src/ParameterReference.h>
+#include <memory>
 
 namespace thirdai::bolt {
 
@@ -61,7 +66,12 @@ void RobeZ::backpropagate(ComputationList& inputs, TensorPtr& output,
 }
 
 void RobeZ::updateParameters(float learning_rate, uint32_t train_steps) {
-  _kernel->updateParameters(learning_rate, train_steps, BETA1, BETA2, EPS);
+  _kernel->updateParameters(learning_rate, train_steps);
+}
+
+void RobeZ::initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                          bool replace_existing_optimizer) {
+  _kernel->initOptimizer(optimizer_factory, replace_existing_optimizer);
 }
 
 uint32_t RobeZ::dim() const { return _kernel->getOutputDim(); }
@@ -73,8 +83,6 @@ std::optional<uint32_t> RobeZ::nonzeros(const ComputationList& inputs,
 
   return dim();
 }
-
-void RobeZ::initOptimizer() { _kernel->initOptimizer(); }
 
 void RobeZ::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
@@ -92,6 +100,54 @@ std::vector<std::vector<float>*> RobeZ::parameters() {
   return {&_kernel->getRawEmbeddingBlock()};
 }
 
+ComputationPtr RobeZ::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("Expected RobeZ op to have one input.");
+  }
+  return apply(inputs.at(0));
+}
+
+ar::ConstArchivePtr RobeZ::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = baseArchive();
+  map->set("type", ar::str(type()));
+
+  map->set("num_lookups_per_token", ar::u64(_kernel->_num_lookups_per_token));
+  map->set("lookup_size", ar::u64(_kernel->_lookup_size));
+  map->set("log_embedding_block_size",
+           ar::u64(_kernel->_log_embedding_block_size));
+  map->set("reduction", ar::str(reductionToString(_kernel->_reduction)));
+  if (_kernel->_num_tokens_per_input) {
+    map->set("num_tokens_per_input", ar::u64(*_kernel->_num_tokens_per_input));
+  }
+  map->set("update_chunk_size", ar::u64(_kernel->_update_chunk_size));
+  map->set("hash_seed", ar::u64(_kernel->_hash_fn.seed()));
+
+  map->set("embeddings", ar::ParameterReference::make(
+                             *_kernel->_embedding_block, shared_from_this()));
+
+  if (with_optimizer && _kernel->_optimizer) {
+    map->set("embedding_optimizer",
+             _kernel->_optimizer->toArchive(shared_from_this()));
+  }
+
+  map->set("disable_sparse_parameter_updates",
+           ar::boolean(_kernel->_disable_sparse_parameter_updates));
+
+  return map;
+}
+
+std::shared_ptr<RobeZ> RobeZ::fromArchive(const ar::Archive& archive) {
+  return std::shared_ptr<RobeZ>(new RobeZ(archive));
+}
+
+RobeZ::RobeZ(const ar::Archive& archive)
+    : Op(archive.str("name")),
+      _kernel(std::make_unique<EmbeddingLayer>(archive)) {
+  assertOpType(archive, type());
+}
+
 void RobeZ::summary(std::ostream& summary, const ComputationList& inputs,
                     const Computation* output) const {
   summary << "RobeZ(" << name() << "): " << inputs[0]->name() << " -> "
@@ -104,21 +160,28 @@ void RobeZ::setSerializeOptimizer(bool should_serialize_optimizer) {
   _kernel->saveWithOptimizer(should_serialize_optimizer);
 }
 
+std::vector<std::pair<std::string, double>> RobeZ::parameterAndGradNorms()
+    const {
+  std::vector<std::pair<std::string, double>> all_norms;
+
+  computeNorms(_kernel->getRawEmbeddingBlock(), "embeddings", all_norms);
+  if (_kernel->hasOptimizer()) {
+    computeNorms(_kernel->getRawEmbeddingBlockGradient(), "embeddings_grad",
+                 all_norms);
+  }
+
+  return all_norms;
+}
+
 ComputationPtr RobeZ::apply(ComputationPtr input) {
   return Computation::make(shared_from_this(), {std::move(input)});
 }
 
-template void RobeZ::save(cereal::BinaryOutputArchive&) const;
+template void RobeZ::serialize(cereal::BinaryInputArchive&);
+template void RobeZ::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
-void RobeZ::save(Archive& archive) const {
-  archive(cereal::base_class<Op>(this), _kernel);
-}
-
-template void RobeZ::load(cereal::BinaryInputArchive&);
-
-template <class Archive>
-void RobeZ::load(Archive& archive) {
+void RobeZ::serialize(Archive& archive) {
   archive(cereal::base_class<Op>(this), _kernel);
 }
 
@@ -133,20 +196,6 @@ std::shared_ptr<RobeZ> RobeZ::duplicateWithNewReduction(
 }
 
 }  // namespace thirdai::bolt
-
-namespace cereal {
-
-/**
- * This is because the Op base class only uses a serialize function, whereas
- * this Op uses a load/save pair. This tells cereal to use the load save pair
- * instead of the serialize method of the parent class. See docs here:
- * https://uscilab.github.io/cereal/serialization_functions.html#inheritance
- */
-template <class Archive>
-struct specialize<Archive, thirdai::bolt::RobeZ,
-                  cereal::specialization::member_load_save> {};
-
-}  // namespace cereal
 
 CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::RobeZ,
                                "thirdai::bolt::nn::ops::RobeZ")

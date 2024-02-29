@@ -40,6 +40,31 @@ def test_save_load_udt_model():
     bolt.UniversalDeepTransformer.load(model_path)
 
 
+def create_udt_checkpoint():
+    """
+    This is the code used to generate the old udt checkpoint. It is not invoked
+    in the test, but it is included here for future reference. The model used in
+    this test was created from commit 13c7c646eec95acec94062dd56107a5b4cfccfcd.
+    """
+    model = bolt.UniversalDeepTransformer(
+        data_types={"text": bolt.types.text(), "id": bolt.types.categorical()},
+        target="id",
+        n_target_classes=100,
+        options={"fhr": 1000, "embedding_dimension": 200},
+    )
+
+    model.train_batch([{"text": "some text", "id": "8"}])
+
+    model.checkpoint("./old_udt_checkpoint")
+
+
+@pytest.mark.unit
+def test_load_old_udt_checkpoint():
+    model_path = os.path.join(SERIALIZED_CLASS_DIR, "old_udt_checkpoint")
+
+    bolt.UniversalDeepTransformer.load(model_path)
+
+
 @pytest.mark.parametrize(
     "error_string",
     [

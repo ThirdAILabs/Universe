@@ -21,6 +21,7 @@ NeuralDB currently supports the following types of documents and resources.
 .. autoclass:: thirdai.neural_db.SharePoint
 .. autoclass:: thirdai.neural_db.SentenceLevelPDF
 .. autoclass:: thirdai.neural_db.SentenceLevelDOCX
+.. autoclass:: thirdai.neural_db.InMemoryText
   
 Constrained Search
 __________________

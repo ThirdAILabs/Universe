@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/optional.hpp>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <archive/src/Archive.h>
 #include <data/src/ColumnMap.h>
 
 namespace thirdai::data {
@@ -42,6 +43,11 @@ class OutputColumns {
 };
 
 using OutputColumnsList = std::vector<OutputColumns>;
+
+ar::ConstArchivePtr outputColumnsToArchive(
+    const OutputColumnsList& output_columns);
+
+OutputColumnsList outputColumnsFromArchive(const ar::Archive& archive);
 
 std::vector<bolt::TensorList> toTensorBatches(
     const ColumnMap& columns, const OutputColumnsList& columns_to_convert,

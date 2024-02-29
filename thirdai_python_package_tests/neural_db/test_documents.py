@@ -6,11 +6,21 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-from ndb_utils import create_simple_dataset
+from ndb_utils import (
+    CSV_FILE,
+    DOCX_FILE,
+    EML_FILE,
+    PDF_FILE,
+    PPTX_FILE,
+    TXT_FILE,
+    URL_LINK,
+    create_simple_dataset,
+    docs_with_meta,
+)
 from thirdai import bolt, demos, neural_db
 from thirdai.neural_db import documents
 from thirdai.neural_db.documents import DocumentDataSource
-from thirdai.neural_db.sharded_documents import DataLoadMultiplexer, ShardedDataSource
+from thirdai.neural_db.sharded_documents import DataLoadMultiplexer, shard_data_source
 
 # We don't have a test on just the Document interface since it is just an
 # interface.
@@ -60,7 +70,10 @@ def prepare_documents_test():
         def expected_context_for_id_and_radius(
             doc_id: str, element_id: int, radius: int
         ):
-            return f'"Context" from {doc_id}, with id {element_id} and radius {radius}, plus ""'
+            return (
+                f'"Context" from {doc_id}, with id {element_id} and radius {radius},'
+                ' plus ""'
+            )
 
         def check_id(self, element_id: int):
             if element_id >= self._size:
@@ -215,13 +228,12 @@ def test_sharded_data_source(prepare_documents_test):
 
     label_to_segment_map = defaultdict(list)
     number_shards = 3
-    sharder = ShardedDataSource(
-        document_data_source=data_source,
+    sharded_data_sources = shard_data_source(
+        data_source=data_source,
         number_shards=number_shards,
         label_to_segment_map=label_to_segment_map,
-        seed=0,
+        update_segment_map=True,
     )
-    sharded_data_sources = sharder.shard_data_source()
 
     assert len(sharded_data_sources) == number_shards
     assert sum(shard.size for shard in sharded_data_sources) == first_size + second_size
@@ -495,7 +507,7 @@ def test_data_load_multiplexer(create_simple_dataset):
         segment_objects,
         _,
     ) = data_multiplexer.create_segments_with_data_source(
-        document_data_source, defaultdict(list), is_index_empty=True
+        document_data_source, defaultdict(list), update_index=True
     )
     for i, filename in enumerate(segment_filenames):
         try:
@@ -508,3 +520,49 @@ def test_data_load_multiplexer(create_simple_dataset):
         except Exception as e:
             assert False, f"Error reading file: {e}"
         segment_objects[i].close()
+
+
+@pytest.mark.unit
+def test_document_has_source_metadata():
+    manager = neural_db.documents.DocumentManager(
+        id_column="id", strong_column="strong", weak_column="weak"
+    )
+    manager.add(docs_with_meta())
+
+    def count_matches(source):
+        return len(
+            manager.constraint_matcher.match({"source": neural_db.EqualTo(source)})
+        )
+
+    assert count_matches(Path(CSV_FILE).name) == 1
+    assert count_matches(Path(PDF_FILE).name) == 2
+    assert count_matches(Path(DOCX_FILE).name) == 2
+    assert count_matches(URL_LINK) == 1
+    assert count_matches(Path(PPTX_FILE).name) == 1
+    assert count_matches(Path(TXT_FILE).name) == 1
+    assert count_matches(Path(EML_FILE).name) == 1
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "doc_factory",
+    [
+        lambda: neural_db.CSV(CSV_FILE, metadata={"source": "something"}),
+        lambda: neural_db.PDF(PDF_FILE, metadata={"source": "something"}),
+        lambda: neural_db.DOCX(DOCX_FILE, metadata={"source": "something"}),
+        lambda: neural_db.URL(URL_LINK, metadata={"source": "something"}),
+        lambda: neural_db.Unstructured(PPTX_FILE, metadata={"source": "something"}),
+        lambda: neural_db.Unstructured(TXT_FILE, metadata={"source": "something"}),
+        lambda: neural_db.Unstructured(EML_FILE, metadata={"source": "something"}),
+        lambda: neural_db.SentenceLevelPDF(PDF_FILE, metadata={"source": "something"}),
+        lambda: neural_db.SentenceLevelDOCX(
+            DOCX_FILE, metadata={"source": "something"}
+        ),
+    ],
+)
+def test_document_throws_when_user_passes_source_metadata(doc_factory):
+    with pytest.raises(
+        ValueError,
+        match=r"Document metadata cannot contain the key 'source'. 'source' is a reserved key.",
+    ):
+        doc_factory()

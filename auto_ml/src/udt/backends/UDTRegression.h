@@ -2,9 +2,9 @@
 
 #include <bolt/src/nn/model/Model.h>
 #include <auto_ml/src/config/ArgumentMap.h>
-#include <auto_ml/src/featurization/TabularDatasetFactory.h>
+#include <auto_ml/src/featurization/Featurizer.h>
 #include <auto_ml/src/udt/UDTBackend.h>
-#include <dataset/src/blocks/Categorical.h>
+#include <data/src/transformations/RegressionBinning.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -18,6 +18,8 @@ class UDTRegression final : public UDTBackend {
       std::optional<uint32_t> num_bins, const TabularOptions& tabular_options,
       const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
+
+  explicit UDTRegression(const ar::Archive& archive);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
@@ -43,13 +45,11 @@ class UDTRegression final : public UDTBackend {
 
   ModelPtr model() const final { return _model; }
 
-  ColumnDataTypes dataTypes() const final {
-    return _dataset_factory->dataTypes();
-  }
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
 
-  TabularDatasetFactoryPtr tabularDatasetFactory() const final {
-    return _dataset_factory;
-  }
+  static std::unique_ptr<UDTRegression> fromArchive(const ar::Archive& archive);
+
+  static std::string type() { return "udt_regression"; }
 
  private:
   float unbinActivations(const BoltVector& output) const;
@@ -62,11 +62,10 @@ class UDTRegression final : public UDTBackend {
   void serialize(Archive& archive, uint32_t version);
 
   ModelPtr _model;
-  TabularDatasetFactoryPtr _dataset_factory;
 
-  dataset::RegressionBinningStrategy _binning;
+  FeaturizerPtr _featurizer;
 
-  bool _freeze_hash_tables;
+  std::shared_ptr<data::RegressionBinning> _binning;
 };
 
 }  // namespace thirdai::automl::udt
