@@ -6,7 +6,7 @@ from core.chunk_store import ChunkStore
 from core.types import NewChunkBatch, Chunk
 from documents import document_by_name
 
-from chunk_stores.dataframe_chunk_store import DataFrameChunkStore
+from chunk_stores.sqlite_chunk_store import SQLiteChunkStore
 from retrievers.mach_retriever import MachRetriever
 
 
@@ -17,7 +17,7 @@ class NeuralDB:
         retriever: Optional[Retriever] = None,
         **kwargs
     ):
-        self.chunk_store = chunk_store or DataFrameChunkStore(**kwargs)
+        self.chunk_store = chunk_store or SQLiteChunkStore(**kwargs)
         self.retriever = retriever or MachRetriever(**kwargs)
 
     def insert_chunks(self, chunks: Iterable[NewChunkBatch], **kwargs):
