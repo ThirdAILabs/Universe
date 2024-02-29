@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Union
+from typing import Union, List
 import pandas as pd
 from pandera import typing as pt
 
@@ -38,13 +38,13 @@ class Chunk(NewChunk):
 @dataclass
 class CustomIdSupervisedSample:
     query: str
-    custom_id: Union[str, int]
+    custom_id: Union[List[str], List[int]]
 
 
 @dataclass
 class SupervisedSample:
     query: str
-    chunk_id: int
+    chunk_id: List[int]
 
 
 """Design choices for batch objects:
@@ -79,6 +79,9 @@ class NewChunkBatch:
             document=self.document[i],
         )
 
+    def to_df(self):
+        return pd.DataFrame(self.__dict__)
+
 
 @dataclass
 class ChunkBatch(NewChunkBatch):
@@ -94,11 +97,14 @@ class ChunkBatch(NewChunkBatch):
             chunk_id=self.chunk_id[i],
         )
 
+    def to_df(self):
+        return pd.DataFrame(self.__dict__)
+
 
 @dataclass
 class CustomIdSupervisedBatch:
     query: pt.Series[str]
-    custom_id: Union[pt.Series[str], pt.Series[int]]
+    custom_id: Union[pt.Series[List[str]], pt.Series[List[int]]]
 
     def __getitem__(self, i: int):
         return CustomIdSupervisedSample(
@@ -106,14 +112,20 @@ class CustomIdSupervisedBatch:
             custom_id=self.custom_id[i],
         )
 
+    def to_df(self):
+        return pd.DataFrame(self.__dict__)
+
 
 @dataclass
 class SupervisedBatch:
     query: pt.Series[str]
-    chunk_id: pt.Series[int]
+    chunk_id: pt.Series[List[int]]
 
     def __getitem__(self, i: int):
         return SupervisedSample(
             query=self.query[i],
             custom_id=self.chunk_id[i],
         )
+
+    def to_df(self):
+        return pd.DataFrame(self.__dict__)
