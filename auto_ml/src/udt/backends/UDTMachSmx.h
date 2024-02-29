@@ -12,6 +12,7 @@
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/TextTokenizer.h>
+#include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/cold_start/ColdStartText.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
@@ -29,23 +30,7 @@ class UDTMachSmx final : public UDTBackend {
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
                    TrainOptions options,
-                   const bolt::DistributedCommPtr& comm) final {
-    CHECK(train_metrics.empty(), "Arg 'train_metrics' not supported.");
-    CHECK(!val_data, "Arg 'val_data' not supported");
-    CHECK(val_metrics.empty(), "Arg 'val_metrics' not supported");
-    CHECK(callbacks.empty(), "Arg 'callbacks' not supported");
-    CHECK(!options.max_in_memory_batches, "Arg 'max_in_memory' not supported");
-    CHECK(!comm, "Arg 'comm' not supported");
-
-    auto dataset = loadData(data, options.batchSize(), /*shuffle*/ true,
-                            options.shuffle_config);
-
-    for (uint32_t e = 0; e < epochs; e++) {
-      train(dataset, learning_rate);
-    }
-
-    return py::none();
-  }
+                   const bolt::DistributedCommPtr& comm) final;
 
   py::object coldstart(
       const dataset::DataSourcePtr& data,
@@ -57,24 +42,7 @@ class UDTMachSmx final : public UDTBackend {
       const dataset::DataSourcePtr& val_data,
       const std::vector<std::string>& val_metrics,
       const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-      const bolt::DistributedCommPtr& comm) final {
-    CHECK(train_metrics.empty(), "Arg 'train_metrics' not supported.");
-    CHECK(!val_data, "Arg 'val_data' not supported");
-    CHECK(val_metrics.empty(), "Arg 'val_metrics' not supported");
-    CHECK(callbacks.empty(), "Arg 'callbacks' not supported");
-    CHECK(!options.max_in_memory_batches, "Arg 'max_in_memory' not supported");
-    CHECK(!comm, "Arg 'comm' not supported");
-
-    for (uint32_t e = 0; e < epochs; e++) {
-      auto dataset = loadData(data, options.batchSize(), /*shuffle*/ true,
-                              options.shuffle_config, strong_column_names,
-                              weak_column_names, variable_length);
-
-      train(dataset, learning_rate);
-    }
-
-    return py::none();
-  }
+      const bolt::DistributedCommPtr& comm) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
@@ -83,43 +51,11 @@ class UDTMachSmx final : public UDTBackend {
 
   py::object predict(const MapInput& sample, bool sparse_inference,
                      bool return_predicted_class,
-                     std::optional<uint32_t> top_k) final {
-    CHECK(!sparse_inference, "Sparse inference is not yet supported.");
-    CHECK(!return_predicted_class, "return_predicted_class is not supported.");
-
-    auto input = featurizeInput(data::ColumnMap::fromMapInput(sample));
-    auto output = _model.forward(input);
-
-    float* data = dense(output->tensor())->data<float>();
-
-    return py::cast(decode(data, top_k.value_or(_default_topk)));
-  }
+                     std::optional<uint32_t> top_k) final;
 
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class,
-                          std::optional<uint32_t> top_k) final {
-    CHECK(!sparse_inference, "Sparse inference is not yet supported.");
-    CHECK(!return_predicted_class, "return_predicted_class is not supported.");
-
-    auto input = featurizeInput(data::ColumnMap::fromMapInputBatch(sample));
-    auto output = _model.forward(input);
-
-    auto tensor = dense(output->tensor());
-    float* data = tensor->data<float>();
-    size_t batch_size = tensor->shape(0);
-    size_t dim = tensor->shape(1);
-
-    uint32_t topk = top_k.value_or(_default_topk);
-
-    std::vector<std::vector<std::pair<uint32_t, double>>> predictions(
-        batch_size);
-
-    for (size_t i = 0; i < batch_size; i++) {
-      predictions[i] = decode(data + i * dim, topk);
-    }
-
-    return py::cast(predictions);
-  }
+                          std::optional<uint32_t> top_k) final;
 
   void introduceDocuments(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& strong_column_names,
@@ -133,78 +69,23 @@ class UDTMachSmx final : public UDTBackend {
       const std::vector<std::string>& strong_cols,
       const std::vector<std::string>& weak_cols,
       std::optional<data::VariableLengthConfig> variable_length,
-      bool fast_approximation) const {
-    if (fast_approximation) {
-      std::vector<std::string> all_columns = weak_cols;
-      all_columns.insert(all_columns.end(), strong_cols.begin(),
-                         strong_cols.end());
-      return std::make_shared<data::StringConcat>(
-          all_columns, _text_transform->inputColumn());
-    }
+      bool fast_approximation) const;
 
-    if (variable_length) {
-      return std::make_shared<data::VariableLengthColdStart>(
-          /* strong_column_names= */ strong_cols,
-          /* weak_column_names= */ weak_cols,
-          /* output_column_name= */ _text_transform->inputColumn(),
-          /* config= */ *variable_length);
-    }
+  using TrainingDataset =
+      std::vector<std::pair<smx::VariablePtr, smx::VariablePtr>>;
 
-    return std::make_shared<data::ColdStartTextAugmentation>(
-        /* strong_column_names= */ strong_cols,
-        /* weak_column_names= */ weak_cols,
-        /* output_column_name= */ _text_transform->inputColumn());
-  }
+  TrainingDataset loadTrainingData(
+      const dataset::DataSourcePtr& data_source, size_t batch_size,
+      dataset::DatasetShuffleConfig shuffle_config =
+          dataset::DatasetShuffleConfig(),
+      const data::TransformationPtr& cold_start = nullptr) const;
 
-  data::PipelinePtr buildPipeline(
-      const std::vector<std::string>& strong_cols,
-      const std::vector<std::string>& weak_cols,
-      std::optional<data::VariableLengthConfig> variable_length) const {
-    auto pipeline = data::Pipeline::make();
+  using EvalDataset = std::vector<
+      std::pair<smx::VariablePtr, std::vector<std::vector<uint32_t>>>>;
 
-    if (!strong_cols.empty() || !weak_cols.empty()) {
-      pipeline = pipeline->then(
-          coldStartTransform(strong_cols, weak_cols, variable_length,
-                             /*fast_approximation=*/false));
-    }
-
-    pipeline = pipeline->then(_text_transform)
-                   ->then(_entity_parse_transform)
-                   ->then(_mach_label_transform);
-
-    return pipeline;
-  }
-
-  using Dataset = std::vector<std::pair<smx::VariablePtr, smx::VariablePtr>>;
-
-  Dataset loadData(const dataset::DataSourcePtr& data_source, size_t batch_size,
-                   bool shuffle = true,
-                   dataset::DatasetShuffleConfig shuffle_config =
-                       dataset::DatasetShuffleConfig(),
-                   const std::vector<std::string>& strong_cols = {},
-                   const std::vector<std::string>& weak_cols = {},
-                   std::optional<data::VariableLengthConfig> variable_length =
-                       std::nullopt) const {
-    auto data_iter = data::CsvIterator::make(data_source, _delimiter);
-
-    auto pipeline = buildPipeline(strong_cols, weak_cols, variable_length);
-
-    data::Loader loader(
-        data_iter, pipeline, std::make_shared<data::State>(_mach_index),
-        _input_columns, _label_columns, batch_size, shuffle,
-        /*verbose=*/true, shuffle_config.min_buffer_size, shuffle_config.seed);
-
-    auto [inputs, labels] = loader.allSmx();
-
-    Dataset dataset;
-    for (size_t i = 0; i < inputs.size(); i++) {
-      dataset.emplace_back(
-          smx::Variable::make(inputs.at(i).at(0), /*requires_grad=*/false),
-          smx::Variable::make(labels.at(i).at(0), /*requires_grad=*/false));
-    }
-
-    return dataset;
-  }
+  EvalDataset loadEvalData(
+      const dataset::DataSourcePtr& data_source, size_t batch_size,
+      const data::TransformationPtr& cold_start = nullptr) const;
 
   smx::VariablePtr featurizeInput(data::ColumnMap&& columns) {
     columns = _text_transform->applyStateless(std::move(columns));
@@ -212,19 +93,7 @@ class UDTMachSmx final : public UDTBackend {
     return smx::Variable::make(tensors.at(0), false);
   }
 
-  void train(const Dataset& dataset, float learning_rate) {
-    _optimizer.updateLr(learning_rate);
-
-    for (const auto& [x, y] : dataset) {
-      _optimizer.zeroGrad();
-
-      auto out = _model.forward(x, y);
-      auto loss = smx::binaryCrossEntropy(out, y);
-      loss->backward();
-
-      _optimizer.step();
-    }
-  }
+  void train(const TrainingDataset& dataset, float learning_rate);
 
   std::vector<std::pair<uint32_t, double>> decode(float* scores,
                                                   uint32_t top_k) {
