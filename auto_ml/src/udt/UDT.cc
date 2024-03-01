@@ -355,6 +355,9 @@ std::unique_ptr<UDTBackend> backendFromArchive(const ar::Archive& archive) {
   if (type == UDTMach::type()) {
     return UDTMach::fromArchive(archive);
   }
+  if (type == UDTMultiMach::type()) {
+    return UDTMultiMach::fromArchive(archive);
+  }
   if (type == UDTQueryReformulation::type()) {
     return UDTQueryReformulation::fromArchive(archive);
   }

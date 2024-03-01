@@ -1,5 +1,6 @@
 #pragma once
 
+#include <archive/src/Archive.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/backends/UDTMach.h>
@@ -17,6 +18,8 @@ class UDTMultiMach final : public UDTBackend {
       const TabularOptions& tabular_options,
       const std::optional<std::string>& model_config,
       config::ArgumentMap user_args);
+
+  explicit UDTMultiMach(const ar::Archive& archive);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
@@ -64,16 +67,17 @@ class UDTMultiMach final : public UDTBackend {
     throw std::runtime_error("'predictBatch' not implemented for MultiMach.");
   }
 
-  ar::ConstArchivePtr toArchive(bool with_optimizer) const final {
-    (void)with_optimizer;
-    throw std::runtime_error("'toArchive' not implemented for MultiMach.");
-  }
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
+  static std::unique_ptr<UDTMultiMach> fromArchive(const ar::Archive& archive);
 
   void setDecodeParams(uint32_t top_k_to_return,
                        uint32_t num_buckets_to_eval) final {
     _top_k_to_return = top_k_to_return;
     _num_buckets_to_eval = num_buckets_to_eval;
   }
+
+  static std::string type() { return "udt_multi_mach"; }
 
  private:
   std::vector<UDTMach> _models;

@@ -1,6 +1,8 @@
 #include "UDTMultiMach.h"
 #include <bolt/src/train/metrics/Metric.h>
 #include <_types/_uint32_t.h>
+#include <archive/src/Archive.h>
+#include <archive/src/List.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <data/src/ColumnMapIterator.h>
@@ -220,6 +222,36 @@ py::object UDTMultiMach::evaluate(const dataset::DataSourcePtr& data,
             << std::endl;
   bolt::metrics::History output = {{"val_precision@1", {precision}}};
   return py::cast(output);
+}
+
+ar::ConstArchivePtr UDTMultiMach::toArchive(bool with_optimizer) const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("top_k_to_return", ar::u64(_top_k_to_return));
+  map->set("num_buckets_to_eval", ar::u64(_num_buckets_to_eval));
+
+  auto models = ar::List::make();
+  for (const auto& model : _models) {
+    models->append(model.toArchive(with_optimizer));
+  }
+
+  map->set("models", models);
+
+  return map;
+}
+
+UDTMultiMach::UDTMultiMach(const ar::Archive& archive)
+    : _top_k_to_return(archive.u64("top_k_to_return")),
+      _num_buckets_to_eval(archive.u64("num_buckets_to_eval")) {
+  for (const auto& model_archive : archive.get("models")->list()) {
+    _models.push_back(UDTMach(*model_archive));
+  }
+}
+
+std::unique_ptr<UDTMultiMach> UDTMultiMach::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_unique<UDTMultiMach>(archive);
 }
 
 }  // namespace thirdai::automl::udt
