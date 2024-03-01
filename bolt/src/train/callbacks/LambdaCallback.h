@@ -6,13 +6,14 @@
 
 namespace thirdai::bolt::callbacks {
 
+// Calls a given lambda function at specified intervals throughout training.
+// Defaults to calling on epoch end.
 class LambdaCallback : public Callback {
  public:
   explicit LambdaCallback(std::function<void()> lambda,
                           bool on_train_begin = false,
                           bool on_train_end = false,
-                          bool on_epoch_begin = false,
-                          bool on_epoch_end = false,
+                          bool on_epoch_begin = false, bool on_epoch_end = true,
                           bool on_batch_begin = false,
                           bool on_batch_end = false, bool before_update = false)
       : lambda(std::move(lambda)),
