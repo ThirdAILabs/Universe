@@ -78,9 +78,6 @@ py::object UDTMultiMach::train(const dataset::DataSourcePtr& data,
                                const std::vector<CallbackPtr>& callbacks,
                                TrainOptions options,
                                const bolt::DistributedCommPtr& comm) {
-  if (!callbacks.empty()) {
-    throw std::invalid_argument("Cannot pass 'callbacks' to MultiMach.");
-  }
   if (comm) {
     throw std::invalid_argument("Cannot pass 'comm' to MultiMach.");
   }
@@ -93,8 +90,14 @@ py::object UDTMultiMach::train(const dataset::DataSourcePtr& data,
   py::object metrics;
   uint32_t model_id = 0;
   for (auto& model : _models) {
+    std::vector<CallbackPtr> model_callbacks;
+    if (model_id == 0) {
+      model_callbacks = callbacks;
+    }
+    model_callbacks.push_back(logger(model_id++));
+
     metrics = model.train(data, learning_rate, epochs, train_metrics, nullptr,
-                          {}, {logger(model_id++)}, options, nullptr);
+                          {}, model_callbacks, options, nullptr);
     data->restart();
     std::cout << std::endl;
   }
@@ -113,9 +116,6 @@ py::object UDTMultiMach::coldstart(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
-  if (!callbacks.empty()) {
-    throw std::invalid_argument("Cannot pass 'callbacks' to MultiMach.");
-  }
   if (comm) {
     throw std::invalid_argument("Cannot pass 'comm' to MultiMach.");
   }
@@ -128,10 +128,16 @@ py::object UDTMultiMach::coldstart(
   py::object metrics;
   uint32_t model_id = 0;
   for (auto& model : _models) {
+    std::vector<CallbackPtr> model_callbacks;
+    if (model_id == 0) {
+      model_callbacks = callbacks;
+    }
+    model_callbacks.push_back(logger(model_id++));
+
     metrics =
         model.coldstart(data, strong_column_names, weak_column_names,
                         variable_length, learning_rate, epochs, train_metrics,
-                        nullptr, {}, {logger(model_id++)}, options, nullptr);
+                        nullptr, {}, model_callbacks, options, nullptr);
     data->restart();
     std::cout << std::endl;
   }
