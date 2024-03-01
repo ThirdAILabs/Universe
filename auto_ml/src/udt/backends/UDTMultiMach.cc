@@ -1,5 +1,6 @@
 #include "UDTMultiMach.h"
 #include <bolt/src/train/metrics/Metric.h>
+#include <_types/_uint32_t.h>
 #include <archive/src/Archive.h>
 #include <archive/src/List.h>
 #include <auto_ml/src/Aliases.h>
@@ -190,29 +191,17 @@ py::object UDTMultiMach::evaluate(const dataset::DataSourcePtr& data,
       input_batch[i] = {{text_col, text_data->value(i)}};
     }
 
-    std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>> scores;
-    for (auto& model : _models) {
-      auto preds = model.predictBatchImpl(input_batch, sparse_inference, false,
-                                          std::nullopt);
-      scores.push_back(preds);
+    std::vector<uint32_t> best_ids;
+    if (_fast_decode) {
+      best_ids = predictFastDecode(std::move(input_batch), sparse_inference);
+    } else {
+      best_ids = predictRegularDecode(std::move(input_batch));
     }
 
     for (size_t i = 0; i < batch_size; i++) {
-      uint32_t best_id;
-      double best_score = 0;
-      std::unordered_map<uint32_t, double> sample_scores;
-      for (const auto& model_scores : scores) {
-        for (const auto& [id, score] : model_scores.at(i)) {
-          sample_scores[id] += score;
-          if (sample_scores[id] > best_score) {
-            best_id = id;
-            best_score = sample_scores[id];
-          }
-        }
-      }
-
       auto labels = label_data->row(i);
-      if (std::find(labels.begin(), labels.end(), best_id) != labels.end()) {
+      if (std::find(labels.begin(), labels.end(), best_ids[i]) !=
+          labels.end()) {
         correct += 1;
       }
       total += 1;
@@ -227,6 +216,83 @@ py::object UDTMultiMach::evaluate(const dataset::DataSourcePtr& data,
             << std::endl;
   bolt::metrics::History output = {{"val_precision@1", {precision}}};
   return py::cast(output);
+}
+
+std::vector<uint32_t> UDTMultiMach::predictFastDecode(MapInputBatch&& input,
+                                                      bool sparse_inference) {
+  std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>> scores;
+  for (auto& model : _models) {
+    auto preds =
+        model.predictBatchImpl(input, sparse_inference, false, std::nullopt);
+    scores.push_back(preds);
+  }
+
+  std::vector<uint32_t> preds(input.size());
+
+#pragma omp parallel for default(none) shared(input, scores, preds)
+  for (size_t i = 0; i < input.size(); i++) {
+    uint32_t best_id = -1;
+    double best_score = 0;
+    std::unordered_map<uint32_t, double> sample_scores;
+    for (const auto& model_scores : scores) {
+      for (const auto& [id, score] : model_scores.at(i)) {
+        sample_scores[id] += score;
+        if (sample_scores[id] > best_score) {
+          best_id = id;
+          best_score = sample_scores[id];
+        }
+      }
+    }
+    preds[i] = best_id;
+  }
+
+  return preds;
+}
+
+std::vector<uint32_t> UDTMultiMach::predictRegularDecode(
+    MapInputBatch&& input) {
+  bolt::TensorList scores;
+  for (auto& model : _models) {
+    auto output = model.model()->forward(
+        model.featurizer()->featurizeInputBatch(input), false);
+    scores.push_back(output.at(0));
+  }
+
+  std::vector<uint32_t> preds(input.size());
+
+  for (size_t i = 0; i < input.size(); i++) {
+    std::unordered_map<uint32_t, float> candidate_scores;
+    for (size_t m = 0; m < _models.size(); m++) {
+      const auto& index = _models[m].getIndex();
+      auto top_model_candidates =
+          scores[m]->getVector(i).findKLargestActivations(_num_buckets_to_eval);
+
+      while (!top_model_candidates.empty()) {
+        uint32_t bucket = top_model_candidates.top().second;
+        for (uint32_t id : index->getEntities(bucket)) {
+          candidate_scores[id] = 0.0;
+        }
+        top_model_candidates.pop();
+      }
+    }
+    uint32_t best_id = -1;
+    double best_score = 0;
+
+    for (size_t m = 0; m < _models.size(); m++) {
+      const auto& index = _models[m].getIndex();
+      const float* activations = scores[m]->getVector(i).activations;
+      for (auto& [id, score] : candidate_scores) {
+        score += activations[index->getHashes(id)[0]];
+        if (score > best_score) {
+          best_id = id;
+          best_score = score;
+        }
+      }
+    }
+    preds[i] = best_id;
+  }
+
+  return preds;
 }
 
 ar::ConstArchivePtr UDTMultiMach::toArchive(bool with_optimizer) const {

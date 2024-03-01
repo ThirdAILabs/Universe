@@ -504,6 +504,10 @@ class UDT {
     _backend->saveCppClassifier(save_path);
   }
 
+  void enableFastDecode();
+
+  void disableFastDecode();
+
  private:
   UDT() {}
 

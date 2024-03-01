@@ -444,6 +444,18 @@ bool UDT::isV1() const {
   return dynamic_cast<UDTMachClassifier*>(_backend.get());
 }
 
+void UDT::enableFastDecode() {
+  if (auto* multi_mach = dynamic_cast<UDTMultiMach*>(_backend.get())) {
+    multi_mach->enableFastDecode();
+  }
+}
+
+void UDT::disableFastDecode() {
+  if (auto* multi_mach = dynamic_cast<UDTMultiMach*>(_backend.get())) {
+    multi_mach->disableFastDecode();
+  }
+}
+
 std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
 UDT::parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
                        const MapInputBatch& batch, bool sparse_inference,

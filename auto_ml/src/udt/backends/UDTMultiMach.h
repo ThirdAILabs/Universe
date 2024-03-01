@@ -1,6 +1,7 @@
 #pragma once
 
 #include <archive/src/Archive.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/backends/UDTMach.h>
@@ -79,11 +80,22 @@ class UDTMultiMach final : public UDTBackend {
 
   static std::string type() { return "udt_multi_mach"; }
 
+  void enableFastDecode() { _fast_decode = true; }
+
+  void disableFastDecode() { _fast_decode = false; }
+
  private:
+  std::vector<uint32_t> predictFastDecode(MapInputBatch&& input,
+                                          bool sparse_inference);
+
+  std::vector<uint32_t> predictRegularDecode(MapInputBatch&& input);
+
   std::vector<UDTMach> _models;
 
   uint32_t _top_k_to_return = defaults::MACH_TOP_K_TO_RETURN;
   uint32_t _num_buckets_to_eval = defaults::MACH_NUM_BUCKETS_TO_EVAL;
+
+  bool _fast_decode = false;
 };
 
 }  // namespace thirdai::automl::udt
