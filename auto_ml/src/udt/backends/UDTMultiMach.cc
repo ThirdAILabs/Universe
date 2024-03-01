@@ -1,5 +1,6 @@
 #include "UDTMultiMach.h"
 #include <bolt/src/train/metrics/Metric.h>
+#include <_types/_uint32_t.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <data/src/ColumnMapIterator.h>
@@ -8,6 +9,7 @@
 #include <dataset/src/blocks/InputTypes.h>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 
 namespace thirdai::automl::udt {
 
@@ -21,7 +23,12 @@ UDTMultiMach::UDTMultiMach(
     config::ArgumentMap user_args) {
   size_t n_models = user_args.get<uint32_t>("n_models", "integer");
 
+  uint32_t num_buckets =
+      user_args.get<uint32_t>("extreme_output_dim", "integer",
+                              UDTMach::autotuneMachOutputDim(n_target_classes));
+  user_args.insert<uint32_t>("extreme_output_dim", num_buckets / n_models);
   user_args.insert<uint32_t>("extreme_num_hashes", 1);
+  user_args.insert("softmax", true);
 
   for (size_t i = 0; i < n_models; i++) {
     _models.emplace_back(input_data_types, temporal_tracking_relationships,
@@ -100,6 +107,10 @@ py::object UDTMultiMach::evaluate(const dataset::DataSourcePtr& data,
   (void)sparse_inference;
   (void)verbose;
 
+  if (metrics.size() != 1 || metrics[0] != "precision@1") {
+    throw std::invalid_argument("Metrics must be 'precision@1' for MultiMach.");
+  }
+
   for (auto& model : _models) {
     model.setDecodeParams(_num_buckets_to_eval, _num_buckets_to_eval);
   }
@@ -120,6 +131,7 @@ py::object UDTMultiMach::evaluate(const dataset::DataSourcePtr& data,
   auto data_iter =
       data::CsvIterator::make(data, _models.at(0).featurizer()->delimiter());
 
+  uint32_t correct = 0, total = 0;
   while (auto batch = data_iter->next()) {
     size_t batch_size = batch->numRows();
 
@@ -140,9 +152,30 @@ py::object UDTMultiMach::evaluate(const dataset::DataSourcePtr& data,
     }
 
     for (size_t i = 0; i < batch_size; i++) {
-    
+      uint32_t best_id;
+      double best_score = 0;
+      std::unordered_map<uint32_t, double> sample_scores;
+      for (const auto& model_scores : scores) {
+        for (const auto& [id, score] : model_scores.at(i)) {
+          sample_scores[id] += score;
+          if (sample_scores[id] > best_score) {
+            best_id = id;
+            best_score = sample_scores[id];
+          }
+        }
+      }
+
+      auto labels = label_data->row(i);
+      if (std::find(labels.begin(), labels.end(), best_id) != labels.end()) {
+        correct += 1;
+      }
+      total += 1;
     }
   }
+
+  std::unordered_map<std::string, double> output = {
+      {"precision@1", static_cast<double>(correct) / total}};
+  return py::cast(output);
 }
 
 }  // namespace thirdai::automl::udt

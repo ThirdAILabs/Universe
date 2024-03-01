@@ -9,6 +9,7 @@
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
 #include <auto_ml/src/udt/backends/UDTGraphClassifier.h>
 #include <auto_ml/src/udt/backends/UDTMach.h>
+#include <auto_ml/src/udt/backends/UDTMultiMach.h>
 #include <auto_ml/src/udt/backends/UDTQueryReformulation.h>
 #include <auto_ml/src/udt/backends/UDTRecurrentClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
@@ -81,7 +82,12 @@ UDT::UDT(
                             defaults::USE_MACH) ||
         user_args.get<bool>("neural_db", "boolean", defaults::USE_MACH);
     if (use_mach) {
-      if (user_args.get<bool>("v1", "boolean", false)) {
+      if (user_args.get<uint32_t>("n_models", "integer", 1) > 1) {
+        _backend = std::make_unique<UDTMultiMach>(
+            data_types, temporal_tracking_relationships, target_col,
+            as_categorical, n_target_classes.value(), integer_target,
+            tabular_options, model_config, user_args);
+      } else if (user_args.get<bool>("v1", "boolean", false)) {
         _backend = std::make_unique<UDTMachClassifier>(
             data_types, temporal_tracking_relationships, target_col,
             as_categorical, n_target_classes.value(), integer_target,

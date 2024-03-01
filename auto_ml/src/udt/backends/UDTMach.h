@@ -217,6 +217,14 @@ class UDTMach final : public UDTBackend {
 
   static std::string type() { return "udt_mach"; }
 
+  static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
+    // TODO(david) update this
+    if (n_target_classes < defaults::MACH_MIN_TARGET_CLASSES) {
+      return n_target_classes;
+    }
+    return n_target_classes / defaults::MACH_DEFAULT_OUTPUT_RANGE_SCALEDOWN;
+  }
+
  private:
   std::vector<std::vector<uint32_t>> predictHashesImpl(
       const MapInputBatch& samples, bool sparse_inference,
@@ -279,14 +287,6 @@ class UDTMach final : public UDTBackend {
   // don't have/need the doc/class ids for metrics so we use this method to get
   // an empty placeholder to pass to the model.
   static bolt::TensorPtr placeholderDocIds(uint32_t batch_size);
-
-  static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
-    // TODO(david) update this
-    if (n_target_classes < defaults::MACH_MIN_TARGET_CLASSES) {
-      return n_target_classes;
-    }
-    return n_target_classes / defaults::MACH_DEFAULT_OUTPUT_RANGE_SCALEDOWN;
-  }
 
   static uint32_t autotuneMachNumHashes(uint32_t n_target_classes,
                                         uint32_t output_range) {
