@@ -9,6 +9,7 @@
 #include <dataset/src/blocks/InputTypes.h>
 #include <stdexcept>
 #include <string>
+#include <pybind11/stl.h>
 #include <unordered_map>
 
 namespace thirdai::automl::udt {
@@ -122,7 +123,7 @@ py::object UDTMultiMach::evaluate(const dataset::DataSourcePtr& data,
   data::TransformationPtr parse_labels;
   if (label_delim) {
     parse_labels = std::make_shared<data::StringToTokenArray>(
-        label_col, label_col, label_delim, std::nullopt);
+        label_col, label_col, label_delim.value(), std::nullopt);
   } else {
     parse_labels = std::make_shared<data::StringToToken>(label_col, label_col,
                                                          std::nullopt);
@@ -173,6 +174,8 @@ py::object UDTMultiMach::evaluate(const dataset::DataSourcePtr& data,
     }
   }
 
+  std::cerr << "precision@1 = " << (static_cast<double>(correct) / total)
+            << std::endl;
   std::unordered_map<std::string, double> output = {
       {"precision@1", static_cast<double>(correct) / total}};
   return py::cast(output);
