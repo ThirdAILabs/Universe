@@ -1,6 +1,5 @@
 #include "UDTMultiMach.h"
 #include <bolt/src/train/metrics/Metric.h>
-#include <_types/_uint32_t.h>
 #include <archive/src/Archive.h>
 #include <archive/src/List.h>
 #include <auto_ml/src/Aliases.h>
