@@ -142,8 +142,8 @@ def train_on_scifact(download_scifact_dataset, coldstart):
             learning_rate=0.001,
             epochs=5,
             metrics=[
-                "precision@1",
-                "recall@10",
+                # "precision@1",
+                # "recall@10",
             ],
         )
         assert metrics["train_precision@1"][-1] > 0.90
@@ -219,7 +219,7 @@ def test_multi_mach_udt_on_scifact(download_scifact_dataset):
         )
         metrics = model.evaluate(supervised_tst, metrics=["precision@1"])
 
-    assert metrics["precision@1"] > 0.5
+    assert metrics["val_precision@1"][-1] > 0.5
 
 
 def test_mach_udt_on_scifact_save_load(train_mach_on_scifact_with_cold_start):

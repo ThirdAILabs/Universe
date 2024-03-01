@@ -7,9 +7,10 @@
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/blocks/InputTypes.h>
+#include <pybind11/stl.h>
+#include <memory>
 #include <stdexcept>
 #include <string>
-#include <pybind11/stl.h>
 #include <unordered_map>
 
 namespace thirdai::automl::udt {
@@ -39,6 +40,35 @@ UDTMultiMach::UDTMultiMach(
   }
 }
 
+class MultiMachTrainLogger final : public bolt::callbacks::Callback {
+ public:
+  explicit MultiMachTrainLogger(uint32_t model_id) : _model_id(model_id) {}
+
+  void onEpochEnd() final {
+    uint32_t epoch = model->epochs();
+
+    std::cout << "Model " << _model_id << " | train | epoch " << epoch
+              << " | total_train_steps " << model->trainSteps();
+
+    if (history->size() > 1) {
+      std::cout << " |";
+    }
+    for (const auto& [name, values] : *history) {
+      if (name != "epoch_times") {
+        std::cout << " " << name << "=" << values.back();
+      }
+    }
+    std::cout << " | time " << history->at("epoch_times").back() << std::endl;
+  }
+
+ private:
+  uint32_t _model_id;
+};
+
+std::shared_ptr<MultiMachTrainLogger> logger(uint32_t model_id) {
+  return std::make_shared<MultiMachTrainLogger>(model_id);
+}
+
 py::object UDTMultiMach::train(const dataset::DataSourcePtr& data,
                                float learning_rate, uint32_t epochs,
                                const std::vector<std::string>& train_metrics,
@@ -53,15 +83,19 @@ py::object UDTMultiMach::train(const dataset::DataSourcePtr& data,
   if (comm) {
     throw std::invalid_argument("Cannot pass 'comm' to MultiMach.");
   }
+  if (val_data || !val_metrics.empty()) {
+    throw std::invalid_argument("Validation is not supported for MultiMach.");
+  }
+
+  options.verbose = false;
 
   py::object metrics;
+  uint32_t model_id = 0;
   for (auto& model : _models) {
-    metrics = model.train(data, learning_rate, epochs, train_metrics, val_data,
-                          val_metrics, {}, options, nullptr);
+    metrics = model.train(data, learning_rate, epochs, train_metrics, nullptr,
+                          {}, {logger(model_id++)}, options, nullptr);
     data->restart();
-    if (val_data) {
-      val_data->restart();
-    }
+    std::cout << std::endl;
   }
 
   return metrics;
@@ -84,17 +118,21 @@ py::object UDTMultiMach::coldstart(
   if (comm) {
     throw std::invalid_argument("Cannot pass 'comm' to MultiMach.");
   }
+  if (val_data || !val_metrics.empty()) {
+    throw std::invalid_argument("Validation is not supported for MultiMach.");
+  }
+
+  options.verbose = false;
 
   py::object metrics;
+  uint32_t model_id = 0;
   for (auto& model : _models) {
     metrics =
         model.coldstart(data, strong_column_names, weak_column_names,
                         variable_length, learning_rate, epochs, train_metrics,
-                        val_data, val_metrics, {}, options, nullptr);
+                        nullptr, {}, {logger(model_id++)}, options, nullptr);
     data->restart();
-    if (val_data) {
-      val_data->restart();
-    }
+    std::cout << std::endl;
   }
 
   return metrics;
@@ -174,10 +212,13 @@ py::object UDTMultiMach::evaluate(const dataset::DataSourcePtr& data,
     }
   }
 
-  std::cerr << "precision@1 = " << (static_cast<double>(correct) / total)
+  float precision = static_cast<float>(correct) / total;
+
+  std::cout << "validate | epoch " << _models[0].model()->epochs()
+            << " | total_train_steps " << _models[0].model()->trainSteps()
+            << " | val_precision@1=" << precision << "\n"
             << std::endl;
-  std::unordered_map<std::string, double> output = {
-      {"precision@1", static_cast<double>(correct) / total}};
+  bolt::metrics::History output = {{"val_precision@1", {precision}}};
   return py::cast(output);
 }
 
