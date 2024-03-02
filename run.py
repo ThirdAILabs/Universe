@@ -26,6 +26,8 @@ model = bolt.UniversalDeepTransformer(
     },
 )
 
+model = model.convert_from_multi()
+
 
 class Logger(bolt.train.callbacks.Callback):
     def __init__(self):
@@ -53,7 +55,7 @@ mlflow.set_tracking_uri(
     "http://thirdai:rwRp8GBNVplnLCIveMIz@ec2-184-73-150-35.compute-1.amazonaws.com"
 )
 mlflow.set_experiment("multi-mach")
-mlflow.start_run(run_name="1-hash-5-models-grad-tracking-tst")
+mlflow.start_run(run_name="1-hash-5-models-grad-tracking-converted")
 
 for _ in range(20):
     metrics = model.cold_start(
