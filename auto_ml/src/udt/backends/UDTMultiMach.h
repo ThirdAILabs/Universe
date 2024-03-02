@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bolt/src/nn/model/Model.h>
 #include <archive/src/Archive.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/udt/Defaults.h>
@@ -84,13 +85,19 @@ class UDTMultiMach final : public UDTBackend {
 
   void disableFastDecode() { _fast_decode = false; }
 
+  bolt::ModelPtr model() const final { return _models[0]->model(); }
+
+  std::unique_ptr<UDTMach> getBackend(uint32_t index) {
+    return std::move(_models.at(index));
+  }
+
  private:
   std::vector<uint32_t> predictFastDecode(MapInputBatch&& input,
                                           bool sparse_inference);
 
   std::vector<uint32_t> predictRegularDecode(MapInputBatch&& input);
 
-  std::vector<UDTMach> _models;
+  std::vector<std::unique_ptr<UDTMach>> _models;
 
   uint32_t _top_k_to_return = defaults::MACH_TOP_K_TO_RETURN;
   uint32_t _num_buckets_to_eval = defaults::MACH_NUM_BUCKETS_TO_EVAL;

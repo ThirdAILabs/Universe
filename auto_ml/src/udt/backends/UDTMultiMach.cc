@@ -34,10 +34,11 @@ UDTMultiMach::UDTMultiMach(
   user_args.insert("softmax", true);
 
   for (size_t i = 0; i < n_models; i++) {
-    _models.emplace_back(input_data_types, temporal_tracking_relationships,
-                         target_name, target, n_target_classes, integer_target,
-                         tabular_options, model_config, user_args);
-    _models.back().getIndex()->setSeed((i + 17) * 113);
+    _models.push_back(std::make_unique<UDTMach>(
+        input_data_types, temporal_tracking_relationships, target_name, target,
+        n_target_classes, integer_target, tabular_options, model_config,
+        user_args));
+    _models.back()->getIndex()->setSeed((i + 17) * 113);
   }
 }
 
@@ -96,8 +97,8 @@ py::object UDTMultiMach::train(const dataset::DataSourcePtr& data,
     }
     model_callbacks.push_back(logger(model_id++));
 
-    metrics = model.train(data, learning_rate, epochs, train_metrics, nullptr,
-                          {}, model_callbacks, options, nullptr);
+    metrics = model->train(data, learning_rate, epochs, train_metrics, nullptr,
+                           {}, model_callbacks, options, nullptr);
     data->restart();
     std::cout << std::endl;
   }
@@ -135,9 +136,9 @@ py::object UDTMultiMach::coldstart(
     model_callbacks.push_back(logger(model_id++));
 
     metrics =
-        model.coldstart(data, strong_column_names, weak_column_names,
-                        variable_length, learning_rate, epochs, train_metrics,
-                        nullptr, {}, model_callbacks, options, nullptr);
+        model->coldstart(data, strong_column_names, weak_column_names,
+                         variable_length, learning_rate, epochs, train_metrics,
+                         nullptr, {}, model_callbacks, options, nullptr);
     data->restart();
     std::cout << std::endl;
   }
@@ -158,12 +159,12 @@ py::object UDTMultiMach::evaluate(const dataset::DataSourcePtr& data,
   }
 
   for (auto& model : _models) {
-    model.setDecodeParams(_num_buckets_to_eval, _num_buckets_to_eval);
+    model->setDecodeParams(_num_buckets_to_eval, _num_buckets_to_eval);
   }
 
-  auto text_col = _models.at(0).textDatasetConfig().textColumn();
-  auto label_col = _models.at(0).textDatasetConfig().labelColumn();
-  auto label_delim = _models.at(0).textDatasetConfig().labelDelimiter();
+  auto text_col = _models.at(0)->textDatasetConfig().textColumn();
+  auto label_col = _models.at(0)->textDatasetConfig().labelColumn();
+  auto label_delim = _models.at(0)->textDatasetConfig().labelDelimiter();
 
   data::TransformationPtr parse_labels;
   if (label_delim) {
@@ -175,7 +176,7 @@ py::object UDTMultiMach::evaluate(const dataset::DataSourcePtr& data,
   }
 
   auto data_iter =
-      data::CsvIterator::make(data, _models.at(0).featurizer()->delimiter());
+      data::CsvIterator::make(data, _models.at(0)->featurizer()->delimiter());
 
   uint32_t correct = 0, total = 0;
   while (auto batch = data_iter->next()) {
@@ -209,8 +210,8 @@ py::object UDTMultiMach::evaluate(const dataset::DataSourcePtr& data,
 
   float precision = static_cast<float>(correct) / total;
 
-  std::cout << "validate | epoch " << _models[0].model()->epochs()
-            << " | total_train_steps " << _models[0].model()->trainSteps()
+  std::cout << "validate | epoch " << _models[0]->model()->epochs()
+            << " | total_train_steps " << _models[0]->model()->trainSteps()
             << " | val_precision@1=" << precision << "\n"
             << std::endl;
   bolt::metrics::History output = {{"val_precision@1", {precision}}};
@@ -222,7 +223,7 @@ std::vector<uint32_t> UDTMultiMach::predictFastDecode(MapInputBatch&& input,
   std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>> scores;
   for (auto& model : _models) {
     auto preds =
-        model.predictBatchImpl(input, sparse_inference, false, std::nullopt);
+        model->predictBatchImpl(input, sparse_inference, false, std::nullopt);
     scores.push_back(preds);
   }
 
@@ -252,8 +253,8 @@ std::vector<uint32_t> UDTMultiMach::predictRegularDecode(
     MapInputBatch&& input) {
   bolt::TensorList scores;
   for (auto& model : _models) {
-    auto output = model.model()->forward(
-        model.featurizer()->featurizeInputBatch(input), false);
+    auto output = model->model()->forward(
+        model->featurizer()->featurizeInputBatch(input), false);
     scores.push_back(output.at(0));
   }
 
@@ -262,7 +263,7 @@ std::vector<uint32_t> UDTMultiMach::predictRegularDecode(
   for (size_t i = 0; i < input.size(); i++) {
     std::unordered_map<uint32_t, float> candidate_scores;
     for (size_t m = 0; m < _models.size(); m++) {
-      const auto& index = _models[m].getIndex();
+      const auto& index = _models[m]->getIndex();
       auto top_model_candidates =
           scores[m]->getVector(i).findKLargestActivations(_num_buckets_to_eval);
 
@@ -278,7 +279,7 @@ std::vector<uint32_t> UDTMultiMach::predictRegularDecode(
     double best_score = 0;
 
     for (size_t m = 0; m < _models.size(); m++) {
-      const auto& index = _models[m].getIndex();
+      const auto& index = _models[m]->getIndex();
       const float* activations = scores[m]->getVector(i).activations;
       for (auto& [id, score] : candidate_scores) {
         score += activations[index->getHashes(id)[0]];
@@ -303,7 +304,7 @@ ar::ConstArchivePtr UDTMultiMach::toArchive(bool with_optimizer) const {
 
   auto models = ar::List::make();
   for (const auto& model : _models) {
-    models->append(model.toArchive(with_optimizer));
+    models->append(model->toArchive(with_optimizer));
   }
 
   map->set("models", models);
@@ -315,7 +316,7 @@ UDTMultiMach::UDTMultiMach(const ar::Archive& archive)
     : _top_k_to_return(archive.u64("top_k_to_return")),
       _num_buckets_to_eval(archive.u64("num_buckets_to_eval")) {
   for (const auto& model_archive : archive.get("models")->list()) {
-    _models.push_back(UDTMach(*model_archive));
+    _models.push_back(UDTMach::fromArchive(*model_archive));
   }
 }
 

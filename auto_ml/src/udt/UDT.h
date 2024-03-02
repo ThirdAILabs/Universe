@@ -495,6 +495,8 @@ class UDT {
    */
   void migrateToMachV2();
 
+  std::shared_ptr<UDT> convertFromMulti();
+
   static std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
   parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
                     const MapInputBatch& batch, bool sparse_inference,

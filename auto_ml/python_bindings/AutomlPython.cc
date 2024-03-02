@@ -279,6 +279,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("is_v1", &udt::UDT::isV1)
       .def("enable_fast_decode", &udt::UDT::enableFastDecode)
       .def("disable_fast_decode", &udt::UDT::disableFastDecode)
+      .def("convert_from_multi", &udt::UDT::convertFromMulti)
       .def("migrate_to_v2", &udt::UDT::migrateToMachV2)
       .def(bolt::python::getPickleFunction<udt::UDT>())
       .def("save_cpp_classifier", &udt::UDT::saveCppClassifier,
