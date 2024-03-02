@@ -6,71 +6,21 @@
 
 namespace thirdai::bolt::callbacks {
 
-// Calls a given lambda function at specified intervals throughout training.
-// Defaults to calling on epoch end.
-class LambdaCallback : public Callback {
+class LambdaOnStoppedCallback : public Callback {
  public:
-  explicit LambdaCallback(std::function<void()> lambda,
-                          bool on_train_begin = false,
-                          bool on_train_end = false,
-                          bool on_epoch_begin = false, bool on_epoch_end = true,
-                          bool on_batch_begin = false,
-                          bool on_batch_end = false, bool before_update = false)
-      : lambda(std::move(lambda)),
-        on_train_begin(on_train_begin),
-        on_train_end(on_train_end),
-        on_epoch_begin(on_epoch_begin),
-        on_epoch_end(on_epoch_end),
-        on_batch_begin(on_batch_begin),
-        on_batch_end(on_batch_end),
-        before_update(before_update) {}
-
-  void onTrainBegin() final {
-    if (on_train_begin) {
-      lambda();
-    }
-  }
-
-  void onTrainEnd() final {
-    if (on_train_end) {
-      lambda();
-    }
-  }
-
-  void onEpochBegin() final {
-    if (on_epoch_begin) {
-      lambda();
-    }
-  }
+  explicit LambdaOnStoppedCallback(std::function<void()> lambda)
+      : lambda(std::move(lambda)) {}
 
   void onEpochEnd() final {
-    if (on_epoch_end) {
-      lambda();
-    }
-  }
-
-  void onBatchBegin() final {
-    if (on_batch_begin) {
-      lambda();
-    }
-  }
-
-  void onBatchEnd() final {
-    if (on_batch_end) {
-      lambda();
-    }
-  }
-
-  void beforeUpdate() final {
-    if (before_update) {
+    std::cout << "ON EPOCH END" << std::endl;
+    if (getTrainState()->isTrainingStopped()) {
+      std::cout << "IN THE THING" << std::endl;
       lambda();
     }
   }
 
  private:
   std::function<void()> lambda;
-  bool on_train_begin, on_train_end, on_epoch_begin, on_epoch_end,
-      on_batch_begin, on_batch_end, before_update;
 };
 
 }  // namespace thirdai::bolt::callbacks

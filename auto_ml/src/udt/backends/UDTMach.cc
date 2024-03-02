@@ -442,6 +442,8 @@ py::object UDTMach::coldstart(
     const bolt::DistributedCommPtr& comm) {
   insertNewDocIds(data);
 
+  std::cout << "IN MACH COLDSTART" << std::endl;
+
   addBalancingSamples(data, strong_column_names, weak_column_names,
                       variable_length);
 
@@ -455,11 +457,14 @@ py::object UDTMach::coldstart(
   bool stopped = false;
 
   callbacks.push_back(std::make_shared<bolt::callbacks::Callback>(
-      bolt::callbacks::LambdaCallback([&stopped]() { stopped = true; })));
+      bolt::callbacks::LambdaOnStoppedCallback([&stopped]() {
+        stopped = true;
+        std::cout << "CALLING LAMBDA" << std::endl;
+      })));
 
   uint32_t epoch_step = variable_length.has_value() ? 1 : epochs;
   py::object history;
-  for (uint32_t e = 0; e < epochs and !stopped; e += epoch_step) {
+  for (uint32_t e = 0; e < epochs; e += epoch_step) {
     auto train_data_loader = _featurizer->getColdStartDataLoader(
         data, strong_column_names, weak_column_names,
         /* variable_length= */ variable_length, /* fast_approximation= */
@@ -474,6 +479,11 @@ py::object UDTMach::coldstart(
     data->restart();
     if (val_data_loader) {
       val_data_loader->restart();
+    }
+
+    if (stopped) {
+      std::cout << "STOPPING LMFAO" << std::endl;
+      break;
     }
   }
 

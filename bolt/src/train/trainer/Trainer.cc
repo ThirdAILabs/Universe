@@ -178,6 +178,7 @@ metrics::History Trainer::train(
       steps_since_validation = 0;
     }
 
+    std::cout << "TRAINER EPOCH END " << std::endl;
     callbacks.onEpochEnd();
 
     if (train_state->isTrainingStopped()) {
