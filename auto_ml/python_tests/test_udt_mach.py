@@ -142,8 +142,8 @@ def train_on_scifact(download_scifact_dataset, coldstart):
             learning_rate=0.001,
             epochs=5,
             metrics=[
-                # "precision@1",
-                # "recall@10",
+                "precision@1",
+                "recall@10",
             ],
         )
         assert metrics["train_precision@1"][-1] > 0.90
