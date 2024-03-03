@@ -135,10 +135,13 @@ py::object UDTMultiMach::coldstart(
     }
     model_callbacks.push_back(logger(model_id++));
 
-    metrics =
-        model->coldstart(data, strong_column_names, weak_column_names,
-                         variable_length, learning_rate, epochs, train_metrics,
-                         nullptr, {}, model_callbacks, options, nullptr);
+    metrics = model->coldstart(
+        /*data=*/data, /*strong_column_names=*/strong_column_names,
+        /*weak_column_names=*/weak_column_names,
+        /*variable_length=*/variable_length, /*learning_rate=*/learning_rate,
+        /*epochs=*/epochs, /*train_metrics=*/train_metrics,
+        /*val_data=*/nullptr, /*val_metrics=*/{}, /*callbacks=*/model_callbacks,
+        /*options=*/options, /*comm=*/nullptr);
     data->restart();
     std::cout << std::endl;
   }

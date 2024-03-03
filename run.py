@@ -26,8 +26,6 @@ model = bolt.UniversalDeepTransformer(
     },
 )
 
-model = model.convert_from_multi()
-
 
 class Logger(bolt.train.callbacks.Callback):
     def __init__(self):
@@ -59,7 +57,7 @@ mlflow.start_run(run_name="1-hash-5-models-grad-tracking-converted")
 
 for _ in range(20):
     metrics = model.cold_start(
-        "./data/wiki/unsupervised_large.csv",
+        "/share/data/semantic_benchmarks/wiki/unsupervised_large.csv",
         strong_column_names=[],
         weak_column_names=["TEXT"],
         learning_rate=1e-3,
@@ -71,7 +69,9 @@ for _ in range(20):
     mlflow.log_metric("train_loss", metrics["train_loss"][-1], step=logger.step)
 
     for file in ["len_5", "len_10", "len_15", "len_20"]:
-        metrics = model.evaluate(f"./data/wiki/{file}.csv", metrics=["precision@1"])
+        metrics = model.evaluate(
+            f"/share/data/semantic_benchmarks/wiki/{file}.csv", metrics=["precision@1"]
+        )
 
         mlflow.log_metric(
             f"{file}_prec_at_1", metrics["val_precision@1"][-1], step=logger.step

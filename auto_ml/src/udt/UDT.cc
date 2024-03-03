@@ -415,15 +415,6 @@ void UDT::migrateToMachV2() {
   }
 }
 
-std::shared_ptr<UDT> UDT::convertFromMulti() {
-  if (auto* multi = dynamic_cast<UDTMultiMach*>(_backend.get())) {
-    auto udt = std::shared_ptr<UDT>(new UDT());
-    udt->_backend = multi->getBackend(0);
-    return udt;
-  }
-  throw std::invalid_argument("NOT MULTI MODEL");
-}
-
 void UDT::throwUnsupportedUDTConfigurationError(
     const CategoricalDataTypePtr& target_as_categorical,
     const NumericalDataTypePtr& target_as_numerical,

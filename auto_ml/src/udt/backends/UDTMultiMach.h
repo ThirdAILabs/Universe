@@ -87,10 +87,6 @@ class UDTMultiMach final : public UDTBackend {
 
   bolt::ModelPtr model() const final { return _models[0]->model(); }
 
-  std::unique_ptr<UDTMach> getBackend(uint32_t index) {
-    return std::move(_models.at(index));
-  }
-
  private:
   std::vector<uint32_t> predictFastDecode(MapInputBatch&& input,
                                           bool sparse_inference);
