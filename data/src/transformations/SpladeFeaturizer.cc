@@ -1,4 +1,4 @@
-#include "SpladeFeaturization.h"
+#include "SpladeFeaturizer.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
 #include <archive/src/Archive.h>
