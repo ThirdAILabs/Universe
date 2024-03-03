@@ -398,7 +398,11 @@ class ModelBazaar(Bazaar):
         files.append(
             (
                 "file_details_list",
-                (None, json.dumps({"file_details": file_details_list}), "application/json"),
+                (
+                    None,
+                    json.dumps({"file_details": file_details_list}),
+                    "application/json",
+                ),
             )
         )
 
