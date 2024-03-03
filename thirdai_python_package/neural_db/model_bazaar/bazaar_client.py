@@ -411,7 +411,6 @@ class ModelBazaar(Bazaar):
                 "base_model_identifier": base_model_identifier,
             },
             files=files,
-            data=data,
             headers=auth_header(self._access_token),
         )
         print(response.content)
