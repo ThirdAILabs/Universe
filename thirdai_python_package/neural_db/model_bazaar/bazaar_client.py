@@ -353,30 +353,30 @@ class ModelBazaar(Bazaar):
             if len(metadata) != len(unsupervised_docs):
                 raise ValueError("Metadata is not provided for all unsupervised files.")
 
-        files_info = []
+        file_details_list = []
         docs = []
 
         if unsupervised_docs and metadata:
             for doc, meta in zip(unsupervised_docs, metadata):
                 docs.append(doc)
-                files_info.append(
+                file_details_list.append(
                     {"mode": "unsupervised", "location": doc_type, "metadata": meta}
                 )
         elif unsupervised_docs:
             for doc in unsupervised_docs:
                 docs.append(doc)
-                files_info.append({"mode": "unsupervised", "location": doc_type})
+                file_details_list.append({"mode": "unsupervised", "location": doc_type})
 
         if supervised_docs:
             for sup_file, source_id in supervised_docs:
                 docs.append(sup_file)
-                files_info.append(
+                file_details_list.append(
                     {"mode": "supervised", "location": doc_type, "source_id": source_id}
                 )
 
         if test_doc:
             docs.append(test_doc)
-            files_info.append({"mode": "test", "location": doc_type})
+            file_details_list.append({"mode": "test", "location": doc_type})
 
         url = urljoin(self._base_url, f"jobs/{self._user_id}/train")
         files = [
@@ -395,6 +395,17 @@ class ModelBazaar(Bazaar):
                 )
             )
 
+        files.append(
+            (
+                "file_details_list",
+                (
+                    None,
+                    json.dumps({"file_details": file_details_list}),
+                    "application/json",
+                ),
+            )
+        )
+
         response = http_post_with_error(
             url,
             params={
@@ -402,7 +413,6 @@ class ModelBazaar(Bazaar):
                 "doc_type": doc_type,
                 "sharded": sharded,
                 "base_model_identifier": base_model_identifier,
-                "files_info_str": json.dumps(files_info),
             },
             files=files,
             headers=auth_header(self._access_token),
