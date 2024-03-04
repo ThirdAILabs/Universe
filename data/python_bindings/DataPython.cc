@@ -10,10 +10,10 @@
 #include <data/src/transformations/CrossColumnPairgrams.h>
 #include <data/src/transformations/Date.h>
 #include <data/src/transformations/DyadicInterval.h>
-#include <data/src/transformations/SpladeFeaturizer.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/Pipeline.h>
+#include <data/src/transformations/SpladeFeaturizer.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/StringHash.h>
@@ -466,10 +466,10 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       .def("inference_featurization", &DyadicInterval::inferenceFeaturization,
            py::arg("columns"));
 
-  py::class_<SpladeFeaturizer, Transformation, std::shared_ptr<SpladeFeaturizer>>(
-      transformations_submodule, "SpladeFeaturizer")
-      .def(py::init<uint32_t, bool, std::string, 
-            uint32_t, std::string>(),
+  py::class_<SpladeFeaturizer, Transformation,
+             std::shared_ptr<SpladeFeaturizer>>(transformations_submodule,
+                                                "SpladeFeaturizer")
+      .def(py::init<uint32_t, bool, std::string, uint32_t, std::string>(),
            py::arg("context_length"), py::arg("fill_empty_contexts") = false,
            py::arg("source_column"), py::arg("partition_length"),
            py::arg("output_interval_prefix"));

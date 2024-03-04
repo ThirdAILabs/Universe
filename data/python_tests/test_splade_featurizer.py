@@ -26,13 +26,13 @@ def test_splade_featurization(serialize):
 
     columns = transform(columns)
     interval_1 = [[0, 1, 2, 3], [20, 21, 22, 23]]
-    assert columns["interval_1"].data() == interval_1
+    assert columns["output_1"].data() == interval_1
     interval_2 = [[4, 5, 6, 7], [24, 25]]
-    assert columns["interval_2"].data() == interval_2
+    assert columns["output_2"].data() == interval_2
     interval_3 = [[8, 9, 10, 11], []]
-    assert columns["interval_3"].data() == interval_3
+    assert columns["output_3"].data() == interval_3
     interval_4 = [[], []]
-    assert columns["interval_4"].data() == interval_4
+    assert columns["output_4"].data() == interval_4
 
 
 @pytest.mark.parametrize("serialize", [True, False])
@@ -59,18 +59,18 @@ def test_splade_featurization_with_fill_values(serialize):
 
     columns = transform(columns)
     interval_1 = [[0, 1, 2, 3], [20, 21, 22, 23]]
-    assert columns["interval_1"].data() == interval_1
+    assert columns["output_1"].data() == interval_1
     interval_2 = [[4, 5, 6, 7], [24, 25]]
-    assert columns["interval_2"].data() == interval_2
+    assert columns["output_2"].data() == interval_2
     interval_3 = [[8, 9, 10, 11], [20, 21, 22, 23]]
-    assert columns["interval_3"].data() == interval_3
+    assert columns["output_3"].data() == interval_3
     interval_4 = [[], [24, 25]]
-    assert columns["interval_4"].data() == interval_4
+    assert columns["output_4"].data() == interval_4
     interval_1 = [[0, 1, 2, 3], [20, 21, 22, 23]]
-    assert columns["interval_1"].data() == interval_1
+    assert columns["output_1"].data() == interval_1
     interval_2 = [[4, 5, 6, 7], [24, 25]]
-    assert columns["interval_2"].data() == interval_2
+    assert columns["output_2"].data() == interval_2
     interval_3 = [[8, 9, 10, 11], [20, 21, 22, 23]]
-    assert columns["interval_3"].data() == interval_3
+    assert columns["output_3"].data() == interval_3
     interval_4 = [[], [24, 25]]
-    assert columns["interval_4"].data() == interval_4
+    assert columns["output_4"].data() == interval_4

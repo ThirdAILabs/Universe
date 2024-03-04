@@ -14,6 +14,7 @@
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/Recurrence.h>
 #include <data/src/transformations/RegressionBinning.h>
+#include <data/src/transformations/SpladeFeaturizer.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/StringHash.h>
@@ -45,6 +46,7 @@ TransformationPtr Transformation::fromArchive(const ar::Archive& archive) {
   HANDLE_TYPE(Date)
   HANDLE_TYPE(DeduplicateTokens)
   HANDLE_TYPE(DyadicInterval)
+  HANDLE_TYPE(SpladeFeaturizer)
   HANDLE_TYPE(FeatureHash)
   HANDLE_TYPE(GraphBuilder)
   HANDLE_TYPE(NeighborIds)

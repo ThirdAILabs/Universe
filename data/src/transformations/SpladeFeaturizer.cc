@@ -7,12 +7,12 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Transformation.h>
+#include <algorithm>
 #include <cstdint>
 #include <exception>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
-#include <algorithm>
 #include <utility>
 
 namespace thirdai::data {
@@ -45,8 +45,8 @@ ColumnMap SpladeFeaturizer::apply(ColumnMap columns, State& state) const {
   }
 
   std::exception_ptr error;
-#pragma omp parallel for default(none) \
-    shared(texts, intervals, error, num_inputs)
+  // #pragma omp parallel for default(none)
+  //   shared(texts, intervals, error, num_inputs)
   for (size_t i = 0; i < texts->numRows(); i++) {
     try {
       auto input_tokens = texts->row(i);
@@ -54,29 +54,38 @@ ColumnMap SpladeFeaturizer::apply(ColumnMap columns, State& state) const {
       std::vector<uint32_t> tokens;
 
       tokens.insert(tokens.end(), input_tokens.begin(), input_tokens.end());
+      if (tokens.empty()) {
+        throw std::runtime_error(_source_column + " have empty value at id = " +
+                                 std::to_string(i) + ".");
+      }
       uint32_t tokens_size = tokens.size();
       uint32_t current_partition = 0;
-      for(uint32_t start =0; start < tokens_size; start += _partition_length){
+      for (uint32_t start = 0; start < tokens_size;
+           start += _partition_length) {
         intervals[current_partition][i] = {
-            tokens.begin() + start, tokens.begin() + std::min(tokens_size, start + _partition_length)
-        };
+            tokens.begin() + start,
+            tokens.begin() + std::min(tokens_size, start + _partition_length)};
         current_partition += 1;
       }
-        uint32_t num_buckets_filled = std::ceil(std::log2( tokens_size+ 1));
 
-        uint32_t num_input_tokens_to_fill = std::pow(2, num_buckets_filled);
+      uint32_t num_input_tokens_to_fill =
+          std::pow(2, std::ceil(std::log2(tokens_size)));
 
-      if(_fill_empty_contexts && num_input_tokens_to_fill < _context_length){
-        uint32_t set_of_buckets_filled = 1;
-        while(num_input_tokens_to_fill * set_of_buckets_filled < _context_length){
-            uint32_t current_partition = num_buckets_filled * set_of_buckets_filled;
-            for(uint32_t start =0; start < tokens_size; start += _partition_length){
-                intervals[current_partition][i] = {
-            tokens.begin() + start, tokens.begin() + std::min(tokens_size, start + _partition_length)
-                };
-                current_partition += 1;
-            }
-            set_of_buckets_filled += 1;
+      if (_fill_empty_contexts && num_input_tokens_to_fill < _context_length) {
+        uint32_t num_buckets_filled =
+            num_input_tokens_to_fill / _partition_length;
+        uint32_t num_set_to_fill = _context_length / num_input_tokens_to_fill;
+        for (uint32_t current_set_to_fill = 1;
+             current_set_to_fill < num_set_to_fill; current_set_to_fill += 1) {
+          uint32_t current_partition = num_buckets_filled * current_set_to_fill;
+          for (uint32_t start = 0; start < tokens_size;
+               start += _partition_length) {
+            intervals[current_partition][i] = {
+                tokens.begin() + start,
+                tokens.begin() +
+                    std::min(tokens_size, start + _partition_length)};
+            current_partition += 1;
+          }
         }
       }
 
@@ -92,7 +101,7 @@ ColumnMap SpladeFeaturizer::apply(ColumnMap columns, State& state) const {
 
   for (size_t interval = 0; interval < num_inputs; interval++) {
     std::string name =
-        _output_interval_prefix + "_" + std::to_string(interval+1);
+        _output_interval_prefix + "_" + std::to_string(interval + 1);
 
     output_columns[name] = ArrayColumn<uint32_t>::make(
         std::move(intervals[interval]), texts->dim());
@@ -108,13 +117,19 @@ ar::ConstArchivePtr SpladeFeaturizer::toArchive() const {
 
   map->set("fill_empty_contexts", ar::boolean(_fill_empty_contexts));
   map->set("context_length", ar::u64(_context_length));
+  map->set("source_column", ar::str(_source_column));
+  map->set("output_interval_prefix", ar::str(_output_interval_prefix));
+  map->set("partition_length", ar::u64(_partition_length));
 
   return map;
 }
 
 SpladeFeaturizer::SpladeFeaturizer(const ar::Archive& archive)
     : _context_length(archive.u64("context_length")),
-      _fill_empty_contexts(archive.getAs<ar::Boolean>("fill_empty_contexts")) {}
+      _fill_empty_contexts(archive.getAs<ar::Boolean>("fill_empty_contexts")),
+      _source_column(archive.str("source_column")),
+      _partition_length(archive.u64("partition_length")),
+      _output_interval_prefix(archive.str("output_interval_prefix")) {}
 
 template void SpladeFeaturizer::serialize(cereal::BinaryInputArchive&);
 template void SpladeFeaturizer::serialize(cereal::BinaryOutputArchive&);
@@ -122,7 +137,8 @@ template void SpladeFeaturizer::serialize(cereal::BinaryOutputArchive&);
 template <class Archive>
 void SpladeFeaturizer::serialize(Archive& archive) {
   archive(cereal::base_class<Transformation>(this), _context_length,
-          _fill_empty_contexts);
+          _fill_empty_contexts, _source_column, _partition_length,
+          _output_interval_prefix);
 }
 
 }  // namespace thirdai::data
