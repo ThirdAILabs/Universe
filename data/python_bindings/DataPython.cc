@@ -469,10 +469,10 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   py::class_<SpladeFeaturizer, Transformation,
              std::shared_ptr<SpladeFeaturizer>>(transformations_submodule,
                                                 "SpladeFeaturizer")
-      .def(py::init<uint32_t, bool, std::string, uint32_t, std::string>(),
+      .def(py::init<uint32_t, bool, std::string, uint32_t, std::string, std::optional<std::string>>(),
            py::arg("context_length"), py::arg("fill_empty_contexts") = false,
            py::arg("source_column"), py::arg("partition_length"),
-           py::arg("output_interval_prefix"));
+           py::arg("output_interval_prefix"), py::arg("target_column") = std::nullopt);
 #endif
 }
 

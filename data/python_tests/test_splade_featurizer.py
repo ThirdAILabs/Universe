@@ -10,7 +10,11 @@ def test_splade_featurization(serialize):
             "text": data.columns.TokenArrayColumn(
                 [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], [20, 21, 22, 23, 24, 25]],
                 dim=100,
-            )
+            ),
+            "target": data.columns.TokenArrayColumn(
+                [[2, 3], [5, 7, 9]],
+                dim=100,
+            ),
         }
     )
 
@@ -20,6 +24,7 @@ def test_splade_featurization(serialize):
         source_column="text",
         partition_length=4,
         output_interval_prefix="output",
+        target_column="target",
     )
     if serialize:
         transform = data.transformations.deserialize(transform.serialize())
@@ -33,6 +38,8 @@ def test_splade_featurization(serialize):
     assert columns["output_3"].data() == interval_3
     interval_4 = [[], []]
     assert columns["output_4"].data() == interval_4
+    interval_4 = [[2, 3], [5, 7, 9]]
+    assert columns["target"].data() == interval_4
 
 
 @pytest.mark.parametrize("serialize", [True, False])
