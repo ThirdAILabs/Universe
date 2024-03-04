@@ -45,8 +45,8 @@ ColumnMap SpladeFeaturizer::apply(ColumnMap columns, State& state) const {
   }
 
   std::exception_ptr error;
-  // #pragma omp parallel for default(none)
-  //   shared(texts, intervals, error, num_inputs)
+  #pragma omp parallel for default(none) \
+    shared(texts, intervals, error, num_inputs)
   for (size_t i = 0; i < texts->numRows(); i++) {
     try {
       auto input_tokens = texts->row(i);
