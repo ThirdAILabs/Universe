@@ -356,6 +356,25 @@ class UDTBackend {
     throw notSupported("associate_cold_start");
   }
 
+  virtual py::object coldStartWithBalancingSamples(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& train_metrics,
+      const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+      const std::optional<data::VariableLengthConfig>& variable_length) {
+    (void)data;
+    (void)strong_column_names;
+    (void)weak_column_names;
+    (void)learning_rate;
+    (void)epochs;
+    (void)train_metrics;
+    (void)callbacks;
+    (void)options;
+    (void)variable_length;
+    throw notSupported("cold_start_with_balancing_samples");
+  }
+
   virtual void enableRlhf(uint32_t num_balancing_docs,
                           uint32_t num_balancing_samples_per_doc) {
     (void)num_balancing_docs;

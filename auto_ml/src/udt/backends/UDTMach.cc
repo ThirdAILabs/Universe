@@ -37,6 +37,7 @@
 #include <limits>
 #include <optional>
 #include <random>
+#include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -1000,10 +1001,15 @@ py::object UDTMach::associateColdStart(
 
   warnOnNonHashBasedMetrics(metrics);
 
-  // TODO(nicholas): make sure max_in_memory_batches is none
+  if (options.max_in_memory_batches) {
+    throw std::invalid_argument(
+        "Streaming is not supported for associate_train/associate_cold_start. "
+        "Please pass max_in_memory_batches=None.");
+  }
 
   auto featurized_data = _featurizer->featurizeDataset(
-      balancing_data, strong_column_names, weak_column_names);
+      balancing_data, strong_column_names, weak_column_names,
+      /*variable_length=*/std::nullopt);
 
   auto associate_samples =
       getAssociateSamples(rlhf_samples, n_buckets, n_association_samples);
@@ -1027,6 +1033,61 @@ py::object UDTMach::associateColdStart(
                     /* steps_per_validation= */ {},
                     /* use_sparsity_in_validation= */ false,
                     /* callbacks= */ {},
+                    /* autotune_rehash_rebuild= */ true,
+                    /* verbose= */ options.verbose,
+                    /* logging_interval= */ options.logging_interval);
+
+  return py::cast(output_metrics);
+}
+
+py::object UDTMach::coldStartWithBalancingSamples(
+    const dataset::DataSourcePtr& data,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    const std::optional<data::VariableLengthConfig>& variable_length) {
+  insertNewDocIds(data);
+  requireRLHFSampler();
+
+  addBalancingSamples(data, strong_column_names, weak_column_names,
+                      variable_length);
+
+  warnOnNonHashBasedMetrics(train_metrics);
+
+  if (options.max_in_memory_batches) {
+    throw std::invalid_argument(
+        "Streaming is not supported for cold_start_with_balancing_samples. "
+        "Please pass max_in_memory_batches=None.");
+  }
+
+  auto featurized_data = _featurizer->featurizeDataset(
+      data, strong_column_names, weak_column_names, variable_length);
+
+  data::ColumnMap balancing_data({});
+  if (featurized_data.numRows() < _balancing_samples->totalBalancingSamples()) {
+    balancing_data =
+        _balancing_samples->balancingSamples(featurized_data.numRows());
+  } else {
+    balancing_data = _balancing_samples->allBalancingSamples();
+  }
+
+  auto columns = featurized_data.concat(balancing_data);
+  columns.shuffle();
+
+  auto dataset = _featurizer->columnsToTensors(columns, options.batchSize());
+
+  bolt::Trainer trainer(_classifier->model());
+
+  auto output_metrics =
+      trainer.train(/* train_data= */ dataset,
+                    /* learning_rate= */ learning_rate, /* epochs= */ epochs,
+                    /* train_metrics= */ getMetrics(train_metrics, "train_"),
+                    /* validation_data= */ {},
+                    /* validation_metrics= */ {},
+                    /* steps_per_validation= */ {},
+                    /* use_sparsity_in_validation= */ false,
+                    /* callbacks= */ callbacks,
                     /* autotune_rehash_rebuild= */ true,
                     /* verbose= */ options.verbose,
                     /* logging_interval= */ options.logging_interval);
