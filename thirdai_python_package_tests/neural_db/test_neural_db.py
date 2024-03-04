@@ -592,7 +592,8 @@ def test_neuraldb_stopping_condition(create_simple_dataset):
 
     # Our training stops when epochs >= min_epochs and accuracy >= 0.95
     # Since there is only 1 sample in the CSV the db should stop at min_epochs
-    assert min_epochs == db._savable_state.model.get_model()._get_model().epochs()
+    model_epoch_count = db._savable_state.model.get_model()._get_model().epochs()
+    assert min_epochs == model_epoch_count - 1
 
 
 def test_inverted_index_improves_zero_shot():

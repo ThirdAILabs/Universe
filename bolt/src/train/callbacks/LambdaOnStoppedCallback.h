@@ -12,9 +12,7 @@ class LambdaOnStoppedCallback : public Callback {
       : lambda(std::move(lambda)) {}
 
   void onEpochEnd() final {
-    std::cout << "ON EPOCH END" << std::endl;
     if (getTrainState()->isTrainingStopped()) {
-      std::cout << "IN THE THING" << std::endl;
       lambda();
     }
   }

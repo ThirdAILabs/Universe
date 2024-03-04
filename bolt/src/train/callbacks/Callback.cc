@@ -50,7 +50,6 @@ void CallbackList::onEpochBegin() {
 void CallbackList::onEpochEnd() {
   for (auto& callback : _callbacks) {
     callback->onEpochEnd();
-    std::cout << "ONEPOCHEND IN CALLBACKLIST" << std::endl;
   }
 }
 

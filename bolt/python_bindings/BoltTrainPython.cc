@@ -6,7 +6,6 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/train/callbacks/Callback.h>
-#include <bolt/src/train/callbacks/LambdaCallback.h>
 #include <bolt/src/train/callbacks/LearningRateScheduler.h>
 #include <bolt/src/train/callbacks/Overfitting.h>
 #include <bolt/src/train/callbacks/ReduceLROnPlateau.h>

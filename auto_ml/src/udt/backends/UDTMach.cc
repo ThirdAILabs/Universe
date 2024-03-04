@@ -6,7 +6,7 @@
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/tensor/Tensor.h>
-#include <bolt/src/train/callbacks/LambdaCallback.h>
+#include <bolt/src/train/callbacks/LambdaOnStoppedCallback.h>
 #include <bolt/src/train/metrics/LossMetric.h>
 #include <bolt/src/train/metrics/MachPrecision.h>
 #include <bolt/src/train/metrics/MachRecall.h>
@@ -442,8 +442,6 @@ py::object UDTMach::coldstart(
     const bolt::DistributedCommPtr& comm) {
   insertNewDocIds(data);
 
-  std::cout << "IN MACH COLDSTART" << std::endl;
-
   addBalancingSamples(data, strong_column_names, weak_column_names,
                       variable_length);
 
@@ -456,11 +454,10 @@ py::object UDTMach::coldstart(
 
   bool stopped = false;
 
-  callbacks.push_back(std::make_shared<bolt::callbacks::Callback>(
-      bolt::callbacks::LambdaOnStoppedCallback([&stopped]() {
-        stopped = true;
-        std::cout << "CALLING LAMBDA" << std::endl;
-      })));
+  callbacks.push_back(
+      std::make_shared<bolt::callbacks::LambdaOnStoppedCallback>(
+          bolt::callbacks::LambdaOnStoppedCallback(
+              [&stopped]() { stopped = true; })));
 
   uint32_t epoch_step = variable_length.has_value() ? 1 : epochs;
   py::object history;
@@ -482,7 +479,6 @@ py::object UDTMach::coldstart(
     }
 
     if (stopped) {
-      std::cout << "STOPPING LMFAO" << std::endl;
       break;
     }
   }
