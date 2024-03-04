@@ -43,12 +43,13 @@ std::vector<uint32_t> tokenIds(const std::string& line) {
   return tokens;
 }
 
-std::vector<uint32_t> hashTokens(const std::vector<std::string>& strings) {
+std::vector<uint32_t> hashTokens(const std::vector<std::string>& strings,
+                                 uint32_t seed) {
   std::vector<uint32_t> hashes;
   hashes.reserve(strings.size());
 
   for (const auto& string : strings) {
-    hashes.push_back(seededMurmurHash(string.data(), string.size()));
+    hashes.push_back(hashing::MurmurHash(string.data(), string.size(), seed));
   }
 
   return hashes;
@@ -93,8 +94,8 @@ void mod(std::vector<uint32_t>& tokens, uint32_t dim) {
 }
 
 std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
-    const std::vector<std::string>& words) {
-  auto tokens = hashTokens(words);
+    const std::vector<std::string>& words, uint32_t seed) {
+  auto tokens = hashTokens(words, seed);
 
   assert(words.size() == tokens.size());
   uint32_t length = words.size();

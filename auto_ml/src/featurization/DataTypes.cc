@@ -1,22 +1,26 @@
 #include "DataTypes.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <utils/Random.h>
 
 namespace thirdai::automl {
 
-dataset::TextTokenizerPtr getTextTokenizerFromString(
-    const std::string& string) {
+dataset::TextTokenizerPtr getTextTokenizerFromString(const std::string& string,
+                                                     uint32_t seed) {
   if (std::regex_match(string, std::regex("char-[1-9]\\d*"))) {
     uint32_t k = std::strtol(string.data() + 5, nullptr, 10);
-    return dataset::CharKGramTokenizer::make(/* k = */ k);
+    return dataset::CharKGramTokenizer::make(
+        /* k = */ k, /*seed=*/seed);
   }
 
   if (string == "words") {
-    return dataset::NaiveSplitTokenizer::make();
+    return dataset::NaiveSplitTokenizer::make(
+        /*delimiter=*/' ', /*seed=*/seed);
   }
 
   if (string == "words-punct") {
-    return dataset::WordPunctTokenizer::make();
+    return dataset::WordPunctTokenizer::make(
+        /*seed=*/seed);
   }
 
   throw std::invalid_argument(

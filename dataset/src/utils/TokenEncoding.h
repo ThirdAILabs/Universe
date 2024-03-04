@@ -25,7 +25,8 @@ std::vector<uint32_t> tokenIds(const std::string& line);
 /**
  * Hash each input word and return a list of tokens. Commonly called unigrams.
  */
-std::vector<uint32_t> hashTokens(const std::vector<std::string>& strings);
+std::vector<uint32_t> hashTokens(const std::vector<std::string>& strings,
+                                 uint32_t seed);
 
 /**
  * Takes in a list of hashed tokens and uses our combineHashes function to add
@@ -36,7 +37,8 @@ std::vector<uint32_t> ngrams(std::vector<uint32_t> tokens, uint32_t n);
 
 inline std::vector<uint32_t> ngrams(const std::string_view& sentence,
                                     uint32_t n, char delimiter = ' ') {
-  return ngrams(hashTokens(text::split(sentence, delimiter)), /* n= */ n);
+  return ngrams(hashTokens(text::split(sentence, delimiter), HASH_SEED),
+                /* n= */ n);
 }
 
 /**
@@ -71,7 +73,7 @@ void mod(std::vector<uint32_t>& tokens, uint32_t dim);
  * explainability.
  */
 std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
-    const std::vector<std::string>& words);
+    const std::vector<std::string>& words, uint32_t seed);
 
 /**
  * Given a vector of indices, sums repeated indices by multiplying the number of

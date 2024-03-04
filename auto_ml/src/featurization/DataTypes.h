@@ -73,15 +73,16 @@ struct CategoricalDataType final : public DataType {
 
 using CategoricalDataTypePtr = std::shared_ptr<CategoricalDataType>;
 
-dataset::TextTokenizerPtr getTextTokenizerFromString(const std::string& string);
+dataset::TextTokenizerPtr getTextTokenizerFromString(const std::string& string,
+                                                     uint32_t seed);
 
 dataset::TextEncoderPtr getTextEncoderFromString(const std::string& string);
 
 struct TextDataType final : public DataType {
   explicit TextDataType(const std::string& tokenizer = "words",
                         const std::string& contextual_encoding = "none",
-                        bool use_lowercase = true)
-      : tokenizer(getTextTokenizerFromString(tokenizer)),
+                        bool use_lowercase = true, uint32_t seed = 341)
+      : tokenizer(getTextTokenizerFromString(tokenizer, seed)),
         encoder(getTextEncoderFromString(contextual_encoding)),
         lowercase(use_lowercase) {}
 
