@@ -10,6 +10,8 @@
 
 namespace thirdai::automl::udt {
 
+using Scores = std::vector<std::pair<uint32_t, float>>;
+
 class UDTMultiMach final : public UDTBackend {
  public:
   UDTMultiMach(
@@ -51,23 +53,11 @@ class UDTMultiMach final : public UDTBackend {
 
   py::object predict(const MapInput& sample, bool sparse_inference,
                      bool return_predicted_class,
-                     std::optional<uint32_t> top_k) final {
-    (void)sample;
-    (void)sparse_inference;
-    (void)return_predicted_class;
-    (void)top_k;
-    throw std::runtime_error("'predict' not implemented for MultiMach.");
-  }
+                     std::optional<uint32_t> top_k) final;
 
   py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
                           bool return_predicted_class,
-                          std::optional<uint32_t> top_k) final {
-    (void)samples;
-    (void)sparse_inference;
-    (void)return_predicted_class;
-    (void)top_k;
-    throw std::runtime_error("'predictBatch' not implemented for MultiMach.");
-  }
+                          std::optional<uint32_t> top_k) final;
 
   ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
 
@@ -75,7 +65,7 @@ class UDTMultiMach final : public UDTBackend {
 
   void setDecodeParams(uint32_t top_k_to_return,
                        uint32_t num_buckets_to_eval) final {
-    _top_k_to_return = top_k_to_return;
+    _default_top_k_to_return = top_k_to_return;
     _num_buckets_to_eval = num_buckets_to_eval;
   }
 
@@ -88,14 +78,19 @@ class UDTMultiMach final : public UDTBackend {
   bolt::ModelPtr model() const final { return _models[0]->model(); }
 
  private:
-  std::vector<uint32_t> predictFastDecode(MapInputBatch&& input,
-                                          bool sparse_inference);
+  std::vector<Scores> predictImpl(const MapInputBatch& input,
+                                  bool sparse_inference, uint32_t top_k);
 
-  std::vector<uint32_t> predictRegularDecode(MapInputBatch&& input);
+  std::vector<Scores> predictFastDecode(const MapInputBatch& input,
+                                        bool sparse_inference, uint32_t top_k);
+
+  std::vector<Scores> predictRegularDecode(const MapInputBatch& input,
+                                           bool sparse_inference,
+                                           uint32_t top_k);
 
   std::vector<std::unique_ptr<UDTMach>> _models;
 
-  uint32_t _top_k_to_return = defaults::MACH_TOP_K_TO_RETURN;
+  uint32_t _default_top_k_to_return = defaults::MACH_TOP_K_TO_RETURN;
   uint32_t _num_buckets_to_eval = defaults::MACH_NUM_BUCKETS_TO_EVAL;
 
   bool _fast_decode = false;

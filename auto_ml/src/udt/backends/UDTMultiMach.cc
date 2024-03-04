@@ -1,15 +1,19 @@
 #include "UDTMultiMach.h"
 #include <bolt/src/train/metrics/Metric.h>
+#include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
 #include <archive/src/Archive.h>
 #include <archive/src/List.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <data/src/ColumnMapIterator.h>
+#include <data/src/columns/Column.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/blocks/InputTypes.h>
 #include <pybind11/stl.h>
 #include <memory>
+#include <regex>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -149,17 +153,100 @@ py::object UDTMultiMach::coldstart(
   return metrics;
 }
 
+class MultiMachMetric {
+ public:
+  static MultiMachMetric precision(size_t k) {
+    return MultiMachMetric(k, Type::Precision);
+  }
+
+  static MultiMachMetric recall(size_t k) {
+    return MultiMachMetric(k, Type::Recall);
+  }
+
+  void record(const std::vector<Scores>& scores,
+              const data::ArrayColumnBasePtr<uint32_t>& label_batch) {
+    for (size_t i = 0; i < scores.size(); i++) {
+      auto n_candidates = std::min(_k, scores[i].size());
+      auto labels = label_batch->row(i);
+      for (size_t j = 0; j < n_candidates; j++) {
+        if (std::find(labels.begin(), labels.end(), scores[i][j].first) !=
+            labels.end()) {
+          _true_positives++;
+        }
+      }
+
+      switch (_type) {
+        case Type::Precision:
+          _total += n_candidates;
+          break;
+        case Type::Recall:
+          _total += labels.size();
+          break;
+        default:
+          throw std::runtime_error("Unhandled metric type.");
+      }
+    }
+  }
+
+  float value() const { return static_cast<float>(_true_positives) / _total; }
+
+  std::string name() const {
+    switch (_type) {
+      case Type::Precision:
+        return "precision@" + std::to_string(_k);
+      case Type::Recall:
+        return "recall@" + std::to_string(_k);
+      default:
+        throw std::runtime_error("Unhandled metric type.");
+    }
+  }
+
+ private:
+  enum class Type { Precision, Recall };
+
+  MultiMachMetric(size_t k, Type type) : _k(k), _type(type) {}
+
+  size_t _true_positives = 0;
+  size_t _total = 0;
+
+  size_t _k;
+
+  Type _type;
+};
+
+uint32_t parseK(const std::string& metric_name) {
+  std::smatch k_match;
+  std::regex_search(metric_name, k_match, std::regex("[1-9]\\d*"));
+  return std::stoul(metric_name.substr(k_match.position(), k_match.length()));
+}
+
+std::pair<std::vector<MultiMachMetric>, uint32_t> getMetricTrackers(
+    const std::vector<std::string>& metrics) {
+  uint32_t top_k_for_metrics = 0;
+  std::vector<MultiMachMetric> metric_trackers;
+  for (const auto& metric : metrics) {
+    if (std::regex_match(metric, std::regex("precision@[1-9]\\d*"))) {
+      uint32_t k = parseK(metric);
+      metric_trackers.push_back(MultiMachMetric::precision(k));
+      top_k_for_metrics = std::max(top_k_for_metrics, k);
+    } else if (std::regex_match(metric, std::regex("recall@[1-9]\\d*"))) {
+      uint32_t k = parseK(metric);
+      metric_trackers.push_back(MultiMachMetric::recall(k));
+      top_k_for_metrics = std::max(top_k_for_metrics, k);
+    }
+  }
+
+  return {metric_trackers, top_k_for_metrics};
+}
+
 py::object UDTMultiMach::evaluate(const dataset::DataSourcePtr& data,
                                   const std::vector<std::string>& metrics,
                                   bool sparse_inference, bool verbose,
                                   std::optional<uint32_t> top_k) {
   (void)top_k;
-  (void)sparse_inference;
   (void)verbose;
 
-  if (metrics.size() != 1 || metrics[0] != "precision@1") {
-    throw std::invalid_argument("Metrics must be 'precision@1' for MultiMach.");
-  }
+  auto [metric_trackers, top_k_for_metrics] = getMetricTrackers(metrics);
 
   for (auto& model : _models) {
     model->setDecodeParams(_num_buckets_to_eval, _num_buckets_to_eval);
@@ -181,7 +268,6 @@ py::object UDTMultiMach::evaluate(const dataset::DataSourcePtr& data,
   auto data_iter =
       data::CsvIterator::make(data, _models.at(0)->featurizer()->delimiter());
 
-  uint32_t correct = 0, total = 0;
   while (auto batch = data_iter->next()) {
     size_t batch_size = batch->numRows();
 
@@ -194,35 +280,65 @@ py::object UDTMultiMach::evaluate(const dataset::DataSourcePtr& data,
       input_batch[i] = {{text_col, text_data->value(i)}};
     }
 
-    std::vector<uint32_t> best_ids;
-    if (_fast_decode) {
-      best_ids = predictFastDecode(std::move(input_batch), sparse_inference);
-    } else {
-      best_ids = predictRegularDecode(std::move(input_batch));
-    }
+    auto scores = predictImpl(input_batch, sparse_inference, top_k_for_metrics);
 
-    for (size_t i = 0; i < batch_size; i++) {
-      auto labels = label_data->row(i);
-      if (std::find(labels.begin(), labels.end(), best_ids[i]) !=
-          labels.end()) {
-        correct += 1;
-      }
-      total += 1;
+    for (auto& tracker : metric_trackers) {
+      tracker.record(scores, label_data);
     }
   }
 
-  float precision = static_cast<float>(correct) / total;
-
   std::cout << "validate | epoch " << _models[0]->model()->epochs()
             << " | total_train_steps " << _models[0]->model()->trainSteps()
-            << " | val_precision@1=" << precision << "\n"
-            << std::endl;
-  bolt::metrics::History output = {{"val_precision@1", {precision}}};
-  return py::cast(output);
+            << " | ";
+
+  bolt::metrics::History output_metrics;
+  for (const auto& tracker : metric_trackers) {
+    std::cout << tracker.name() << "=" << tracker.value() << " ";
+    output_metrics["val_" + tracker.name()].push_back(tracker.value());
+  }
+  std::cout << std::endl;
+
+  return py::cast(output_metrics);
 }
 
-std::vector<uint32_t> UDTMultiMach::predictFastDecode(MapInputBatch&& input,
-                                                      bool sparse_inference) {
+py::object UDTMultiMach::predict(const MapInput& sample, bool sparse_inference,
+                                 bool return_predicted_class,
+                                 std::optional<uint32_t> top_k) {
+  (void)return_predicted_class;
+
+  return py::cast(predictImpl({sample}, sparse_inference,
+                              top_k.value_or(_default_top_k_to_return))[0]);
+}
+
+py::object UDTMultiMach::predictBatch(const MapInputBatch& samples,
+                                      bool sparse_inference,
+                                      bool return_predicted_class,
+                                      std::optional<uint32_t> top_k) {
+  (void)return_predicted_class;
+
+  return py::cast(predictImpl(samples, sparse_inference,
+                              top_k.value_or(_default_top_k_to_return)));
+}
+
+struct BestScore {
+  bool operator()(const std::pair<uint32_t, float>& a,
+                  const std::pair<uint32_t, float>& b) {
+    return a.second > b.second;
+  }
+};
+
+std::vector<Scores> UDTMultiMach::predictImpl(const MapInputBatch& input,
+                                              bool sparse_inference,
+                                              uint32_t top_k) {
+  if (_fast_decode) {
+    return predictFastDecode(input, sparse_inference, top_k);
+  }
+  return predictRegularDecode(input, sparse_inference, top_k);
+}
+
+std::vector<Scores> UDTMultiMach::predictFastDecode(const MapInputBatch& input,
+                                                    bool sparse_inference,
+                                                    uint32_t top_k) {
   std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>> scores;
   for (auto& model : _models) {
     auto preds =
@@ -230,38 +346,38 @@ std::vector<uint32_t> UDTMultiMach::predictFastDecode(MapInputBatch&& input,
     scores.push_back(preds);
   }
 
-  std::vector<uint32_t> preds(input.size());
+  std::vector<Scores> output(input.size());
 
-#pragma omp parallel for default(none) shared(input, scores, preds)
+#pragma omp parallel for default(none) \
+    shared(input, scores, output, top_k) if (input.size() > 1)
   for (size_t i = 0; i < input.size(); i++) {
-    uint32_t best_id = -1;
-    double best_score = 0;
-    std::unordered_map<uint32_t, double> sample_scores;
+    std::unordered_map<uint32_t, float> sample_scores;
     for (const auto& model_scores : scores) {
       for (const auto& [id, score] : model_scores.at(i)) {
         sample_scores[id] += score;
-        if (sample_scores[id] > best_score) {
-          best_id = id;
-          best_score = sample_scores[id];
-        }
       }
     }
-    preds[i] = best_id;
+    Scores results(sample_scores.begin(), sample_scores.end());
+    std::sort(results.begin(), results.end(), BestScore{});
+    if (results.size() > top_k) {
+      results.resize(top_k);
+    }
+    output[i] = results;
   }
 
-  return preds;
+  return output;
 }
 
-std::vector<uint32_t> UDTMultiMach::predictRegularDecode(
-    MapInputBatch&& input) {
+std::vector<Scores> UDTMultiMach::predictRegularDecode(
+    const MapInputBatch& input, bool sparse_inference, uint32_t top_k) {
   bolt::TensorList scores;
   for (auto& model : _models) {
     auto output = model->model()->forward(
-        model->featurizer()->featurizeInputBatch(input), false);
+        model->featurizer()->featurizeInputBatch(input), sparse_inference);
     scores.push_back(output.at(0));
   }
 
-  std::vector<uint32_t> preds(input.size());
+  std::vector<Scores> output(input.size());
 
   for (size_t i = 0; i < input.size(); i++) {
     std::unordered_map<uint32_t, float> candidate_scores;
@@ -278,31 +394,45 @@ std::vector<uint32_t> UDTMultiMach::predictRegularDecode(
         top_model_candidates.pop();
       }
     }
-    uint32_t best_id = -1;
-    double best_score = 0;
 
     for (size_t m = 0; m < _models.size(); m++) {
       const auto& index = _models[m]->getIndex();
-      const float* activations = scores[m]->getVector(i).activations;
-      for (auto& [id, score] : candidate_scores) {
-        score += activations[index->getHashes(id)[0]];
-        if (score > best_score) {
-          best_id = id;
-          best_score = score;
+      const BoltVector& score_vec = scores[m]->getVector(i);
+      if (score_vec.isDense()) {
+        const float* activations = scores[m]->getVector(i).activations;
+        for (auto& [id, score] : candidate_scores) {
+          score += activations[index->getHashes(id)[0]];
+        }
+      } else {
+        std::unordered_map<uint32_t, float> score_map;
+        for (size_t j = 0; j < score_vec.len; j++) {
+          score_map[score_vec.active_neurons[j]] = score_vec.activations[j];
+        }
+        for (auto& [id, score] : candidate_scores) {
+          uint32_t hash = index->getHashes(id)[0];
+          if (score_map.count(hash)) {
+            score += score_map[hash];
+          }
         }
       }
     }
-    preds[i] = best_id;
+
+    Scores results(candidate_scores.begin(), candidate_scores.end());
+    std::sort(results.begin(), results.end(), BestScore{});
+    if (results.size() > top_k) {
+      results.resize(top_k);
+    }
+    output[i] = results;
   }
 
-  return preds;
+  return output;
 }
 
 ar::ConstArchivePtr UDTMultiMach::toArchive(bool with_optimizer) const {
   auto map = ar::Map::make();
 
   map->set("type", ar::str(type()));
-  map->set("top_k_to_return", ar::u64(_top_k_to_return));
+  map->set("default_top_k_to_return", ar::u64(_default_top_k_to_return));
   map->set("num_buckets_to_eval", ar::u64(_num_buckets_to_eval));
 
   auto models = ar::List::make();
@@ -316,7 +446,7 @@ ar::ConstArchivePtr UDTMultiMach::toArchive(bool with_optimizer) const {
 }
 
 UDTMultiMach::UDTMultiMach(const ar::Archive& archive)
-    : _top_k_to_return(archive.u64("top_k_to_return")),
+    : _default_top_k_to_return(archive.u64("default_top_k_to_return")),
       _num_buckets_to_eval(archive.u64("num_buckets_to_eval")) {
   for (const auto& model_archive : archive.get("models")->list()) {
     _models.push_back(UDTMach::fromArchive(*model_archive));

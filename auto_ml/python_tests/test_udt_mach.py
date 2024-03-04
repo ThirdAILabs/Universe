@@ -218,9 +218,9 @@ def test_multi_mach_udt_on_scifact(download_scifact_dataset):
             epochs=1,
         )
         model.enable_fast_decode()
-        metrics = model.evaluate(supervised_tst, metrics=["precision@1"])
+        metrics = model.evaluate(supervised_tst, metrics=["precision@1", "recall@5"])
         model.disable_fast_decode()
-        metrics = model.evaluate(supervised_tst, metrics=["precision@1"])
+        metrics = model.evaluate(supervised_tst, metrics=["precision@1", "recall@5"])
 
     assert metrics["val_precision@1"][-1] > 0.5
 
