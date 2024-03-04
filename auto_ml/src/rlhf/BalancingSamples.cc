@@ -96,6 +96,34 @@ data::ColumnMap BalancingSamples::balancingSamples(size_t num_samples) {
     labels[i] = std::move(samples[i].labels);
   }
 
+  return createColumnMap(std::move(indices), std::move(values),
+                         std::move(labels), std::move(doc_ids));
+}
+
+data::ColumnMap BalancingSamples::allBalancingSamples() {
+  std::vector<std::vector<uint32_t>> indices;
+  std::vector<std::vector<float>> values;
+  std::vector<std::vector<uint32_t>> labels;
+  std::vector<uint32_t> doc_ids;
+
+  for (const auto& [doc_id, samples] : _samples_per_doc) {
+    for (const auto& sample : samples) {
+      doc_ids.push_back(doc_id);
+      indices.push_back(sample.indices);
+      values.push_back(sample.values);
+      labels.push_back(sample.labels);
+    }
+  }
+
+  return createColumnMap(std::move(indices), std::move(values),
+                         std::move(labels), std::move(doc_ids));
+}
+
+data::ColumnMap BalancingSamples::createColumnMap(
+    std::vector<std::vector<uint32_t>>&& indices,
+    std::vector<std::vector<float>>&& values,
+    std::vector<std::vector<uint32_t>>&& labels,
+    std::vector<uint32_t>&& doc_ids) {
   return data::ColumnMap({
       {_indices_col,
        data::ArrayColumn<uint32_t>::make(std::move(indices), _indices_dim)},

@@ -50,7 +50,8 @@ class MachFeaturizer final : public Featurizer {
   data::ColumnMap featurizeDataset(
       const dataset::DataSourcePtr& data_source,
       const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names);
+      const std::vector<std::string>& weak_column_names,
+      const std::optional<data::VariableLengthConfig>& variable_length);
 
   data::ColumnMap featurizeRlhfSamples(const std::vector<RlhfSample>& samples);
 

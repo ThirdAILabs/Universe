@@ -168,6 +168,7 @@ void createDatasetSubmodule(py::module_& module) {
           py::arg("bucket_scores"), py::arg("top_k"),
           py::arg("num_buckets_to_eval"))
 #endif
+      .def("num_entities", &mach::MachIndex::numEntities)
       .def("num_hashes", &mach::MachIndex::numHashes)
       .def("output_range", &mach::MachIndex::numBuckets)
       .def("save", &mach::MachIndex::save, py::arg("filename"))
