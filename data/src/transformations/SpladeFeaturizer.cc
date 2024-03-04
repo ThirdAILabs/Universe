@@ -92,7 +92,7 @@ ColumnMap SpladeFeaturizer::apply(ColumnMap columns, State& state) const {
 
   for (size_t interval = 0; interval < num_inputs; interval++) {
     std::string name =
-        _output_interval_prefix + std::to_string(1 << interval);
+        _output_interval_prefix + "_" + std::to_string(interval+1);
 
     output_columns[name] = ArrayColumn<uint32_t>::make(
         std::move(intervals[interval]), texts->dim());
