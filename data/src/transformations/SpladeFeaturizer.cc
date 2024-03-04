@@ -42,36 +42,37 @@ ColumnMap SpladeFeaturizer::apply(ColumnMap columns, State& state) const {
   auto texts = columns.getArrayColumn<uint32_t>(_source_column);
   uint32_t num_inputs = _context_length / _partition_length;
   std::vector<std::vector<std::vector<uint32_t>>> intervals(num_inputs);
-  
+
   for (size_t i = 0; i < num_inputs; i++) {
     intervals.at(i).assign(texts->numRows(), {});
   }
   std::vector<std::vector<uint32_t>> targets;
   ArrayColumnBasePtr<uint32_t> target_column_data;
-  if(_target_column){
+  if (_target_column) {
     target_column_data = columns.getArrayColumn<uint32_t>(*_target_column);
     targets.assign(texts->numRows(), {});
   }
 
   std::exception_ptr error;
-  #pragma omp parallel for default(none) \
+#pragma omp parallel for default(none) \
     shared(texts, intervals, targets, error, num_inputs, target_column_data)
   for (size_t i = 0; i < texts->numRows(); i++) {
     try {
       auto input_tokens = texts->row(i);
-      
+
       std::vector<uint32_t> tokens;
-      
+
       tokens.insert(tokens.end(), input_tokens.begin(), input_tokens.end());
       if (tokens.empty()) {
         throw std::runtime_error(_source_column + " have empty value at id = " +
                                  std::to_string(i) + ".");
       }
 
-      if(_target_column){
+      if (_target_column) {
         auto target_tokens = target_column_data->row(i);
         std::vector<uint32_t> target_data;
-        target_data.insert(target_data.end(), target_tokens.begin(), target_tokens.end());
+        target_data.insert(target_data.end(), target_tokens.begin(),
+                           target_tokens.end());
         targets[i] = target_data;
       }
       uint32_t tokens_size = tokens.size();
@@ -122,10 +123,10 @@ ColumnMap SpladeFeaturizer::apply(ColumnMap columns, State& state) const {
     output_columns[name] = ArrayColumn<uint32_t>::make(
         std::move(intervals[interval]), texts->dim());
   }
-  if(_target_column) {
+  if (_target_column) {
     output_columns[*_target_column] = ArrayColumn<uint32_t>::make(
         std::move(targets), target_column_data->dim());
-}
+  }
 
   return ColumnMap(output_columns);
 }
@@ -140,9 +141,8 @@ ar::ConstArchivePtr SpladeFeaturizer::toArchive() const {
   map->set("source_column", ar::str(_source_column));
   map->set("output_interval_prefix", ar::str(_output_interval_prefix));
   map->set("partition_length", ar::u64(_partition_length));
-  if(_target_column){
-  map->set("target_column", ar::str(*_target_column));
-
+  if (_target_column) {
+    map->set("target_column", ar::str(*_target_column));
   }
 
   return map;

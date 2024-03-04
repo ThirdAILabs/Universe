@@ -9,7 +9,8 @@ class SpladeFeaturizer final : public Transformation {
  public:
   SpladeFeaturizer(uint32_t context_length, bool fill_empty_contexts,
                    std::string source_column, uint32_t partition_length,
-                   std::string output_interval_prefix, std::optional<std::string> target_column);
+                   std::string output_interval_prefix,
+                   std::optional<std::string> target_column);
 
   explicit SpladeFeaturizer(const ar::Archive& archive);
 
