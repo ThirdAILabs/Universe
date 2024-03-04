@@ -331,7 +331,7 @@ void createUDTTypesSubmodule(py::module_& module) {
   py::class_<TextDataType, DataType, TextDataTypePtr>(udt_types_submodule,
                                                       "text")
       // TODO(any): run benchmarks to improve the defaults
-      .def(py::init<std::string, std::string, bool>(),
+      .def(py::init<std::string, std::string, bool, uint32_t>(),
            py::arg("tokenizer") = "words",
            py::arg("contextual_encoding") = "none", py::arg("lowercase") = true,
            py::arg("seed") = 341, docs::UDT_TEXT_TYPE)
