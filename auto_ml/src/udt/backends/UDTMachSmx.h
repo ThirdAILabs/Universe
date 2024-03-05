@@ -1,6 +1,8 @@
 #pragma once
 
+#include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
+#include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/MachModel.h>
 #include <data/src/ColumnMapIterator.h>
@@ -18,11 +20,22 @@
 #include <dataset/src/DataSource.h>
 #include <smx/src/autograd/functions/Loss.h>
 #include <smx/src/optimizers/Adam.h>
+#include <smx/src/tensor/DenseTensor.h>
+#include <smx/src/tensor/Tensor.h>
 
 namespace thirdai::automl::udt {
 
 class UDTMachSmx final : public UDTBackend {
  public:
+  UDTMachSmx(
+      ColumnDataTypes input_data_types,
+      const UserProvidedTemporalRelationships& temporal_tracking_relationships,
+      const std::string& target_name, const CategoricalDataTypePtr& target,
+      uint32_t n_target_classes, bool integer_target,
+      const TabularOptions& tabular_options,
+      const std::optional<std::string>& model_config,
+      const config::ArgumentMap& args);
+
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
                    const std::vector<std::string>& train_metrics,
@@ -57,12 +70,14 @@ class UDTMachSmx final : public UDTBackend {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
 
-  void introduceDocuments(const dataset::DataSourcePtr& data,
-                          const std::vector<std::string>& strong_column_names,
-                          const std::vector<std::string>& weak_column_names,
-                          std::optional<uint32_t> num_buckets_to_sample,
-                          uint32_t num_random_hashes, bool fast_approximation,
-                          bool verbose, bool sort_random_hashes) final;
+  //   void introduceDocuments(const dataset::DataSourcePtr& data,
+  //                           const std::vector<std::string>&
+  //                           strong_column_names, const
+  //                           std::vector<std::string>& weak_column_names,
+  //                           std::optional<uint32_t> num_buckets_to_sample,
+  //                           uint32_t num_random_hashes, bool
+  //                           fast_approximation, bool verbose, bool
+  //                           sort_random_hashes) final;
 
  private:
   data::TransformationPtr coldStartTransform(
@@ -102,21 +117,30 @@ class UDTMachSmx final : public UDTBackend {
     return _mach_index->decode(vec, top_k, _default_num_buckets_to_eval);
   }
 
+  smx::DenseTensorPtr getScores(const smx::TensorPtr& out) const {
+    if (_softmax) {
+      return smx::dense(smx::softmax(out));
+    }
+    return smx::dense(smx::sigmoid(out));
+  }
+
   data::OutputColumnsList _input_columns = {
       data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)};
   data::OutputColumnsList _label_columns = {data::OutputColumns(MACH_LABELS)};
 
   std::shared_ptr<data::TextTokenizer> _text_transform;
-  std::shared_ptr<data::StringToTokenArray> _entity_parse_transform;
+  data::TransformationPtr _entity_parse_transform;
   std::shared_ptr<data::MachLabel> _mach_label_transform;
   data::MachIndexPtr _mach_index;
   char _delimiter;
 
-  MachModel _model;
-  smx::Adam _optimizer;
+  std::unique_ptr<MachModel> _model;
+  std::unique_ptr<smx::Adam> _optimizer;
+  bool _softmax;
 
-  uint32_t _default_topk;
-  uint32_t _default_num_buckets_to_eval;
+  bool _freeze_hash_tables;
+  uint32_t _default_topk = defaults::MACH_TOP_K_TO_RETURN;
+  uint32_t _default_num_buckets_to_eval = defaults::MACH_NUM_BUCKETS_TO_EVAL;
 };
 
 }  // namespace thirdai::automl::udt

@@ -24,7 +24,11 @@ namespace thirdai::automl::udt {
 
 using bolt::metrics::InputMetrics;
 
+class UDTMachSmx;
+
 class UDTMach final : public UDTBackend {
+  friend class UDTMachSmx;
+
  public:
   UDTMach(
       const ColumnDataTypes& input_data_types,
