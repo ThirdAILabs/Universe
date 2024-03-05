@@ -6,6 +6,7 @@
 #include <data/src/transformations/CrossColumnPairgrams.h>
 #include <data/src/transformations/Date.h>
 #include <data/src/transformations/DeduplicateTokens.h>
+#include <data/src/transformations/DyadicContrastiveFeaturizer.h>
 #include <data/src/transformations/DyadicInterval.h>
 #include <data/src/transformations/EncodePosition.h>
 #include <data/src/transformations/FeatureHash.h>
@@ -45,6 +46,7 @@ TransformationPtr Transformation::fromArchive(const ar::Archive& archive) {
   HANDLE_TYPE(Date)
   HANDLE_TYPE(DeduplicateTokens)
   HANDLE_TYPE(DyadicInterval)
+  HANDLE_TYPE(DyadicContrastiveFeaturizer)
   HANDLE_TYPE(FeatureHash)
   HANDLE_TYPE(GraphBuilder)
   HANDLE_TYPE(NeighborIds)

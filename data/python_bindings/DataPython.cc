@@ -472,7 +472,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       .def(py::init<std::string, std::string, std::optional<std::string>,
                     std::string, std::string, size_t, uint32_t, bool>(),
            py::arg("input_column_1"), py::arg("input_column_2"),
-           py::arg("prompt_column") = std::nullopt,py::arg("label_column"),
+           py::arg("prompt_column") = std::nullopt, py::arg("label_column"),
            py::arg("output_interval_prefix"), py::arg("n_intervals"),
            py::arg("n_classes"), py::arg("is_bidirectional") = false)
       .def("inference_featurization",

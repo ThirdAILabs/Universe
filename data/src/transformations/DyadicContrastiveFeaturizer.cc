@@ -66,6 +66,7 @@ ColumnMap DyadicContrastiveFeaturizer::apply(ColumnMap columns,
   (void)state;
   auto tokens_1 = columns.getArrayColumn<uint32_t>(_input_column_1);
   auto tokens_2 = columns.getArrayColumn<uint32_t>(_input_column_2);
+  auto targets = columns.getValueColumn<uint32_t>(_label_column);
   auto [interval_from_start_1, interval_from_end_1] =
       featurizeColumnsDyadic(tokens_1);
   auto [interval_from_start_2, interval_from_end_2] =
@@ -97,6 +98,7 @@ ColumnMap DyadicContrastiveFeaturizer::apply(ColumnMap columns,
     output_columns[*_prompt_column] =
         columns.getArrayColumn<uint32_t>(*_prompt_column);
   }
+  output_columns[_label_column] = targets;
 
   return ColumnMap(output_columns);
 }
@@ -127,6 +129,29 @@ ColumnMap DyadicContrastiveFeaturizer::inferenceFeaturization(
     ColumnMap columns) const {
   data::State state;
   return apply(std::move(columns), state);
+}
+
+DyadicContrastiveFeaturizer::DyadicContrastiveFeaturizer(
+    const ar::Archive& archive)
+    : _input_column_1(archive.str("input_column_1")),
+      _input_column_2(archive.str("input_column_2")),
+      _prompt_column(archive.getOpt<ar::Str>("prompt_column")),
+      _label_column(archive.str("label_column")),
+      _output_interval_prefix(archive.str("output_interval_prefix")),
+      _n_intervals(archive.u64("n_intervals")),
+      _n_classes(archive.u64("n_classes")),
+      _is_bidirectional(archive.getAs<ar::Boolean>("is_bidirectional")) {}
+
+template void DyadicContrastiveFeaturizer::serialize(
+    cereal::BinaryInputArchive&);
+template void DyadicContrastiveFeaturizer::serialize(
+    cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void DyadicContrastiveFeaturizer::serialize(Archive& archive) {
+  archive(cereal::base_class<Transformation>(this), _input_column_1,
+          _input_column_2, _prompt_column, _label_column,
+          _output_interval_prefix, _n_intervals, _n_classes, _is_bidirectional);
 }
 
 }  // namespace thirdai::data

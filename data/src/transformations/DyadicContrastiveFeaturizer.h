@@ -16,7 +16,10 @@ class DyadicContrastiveFeaturizer : public Transformation {
                               std::string output_interval_prefix,
                               size_t n_intervals, uint32_t n_classes,
                               bool is_bidirectional = false);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  explicit DyadicContrastiveFeaturizer(const ar::Archive& archive);
 
   ar::ConstArchivePtr toArchive() const final;
 
@@ -37,6 +40,12 @@ class DyadicContrastiveFeaturizer : public Transformation {
   size_t _n_intervals;
   uint32_t _n_classes;
   bool _is_bidirectional;
+
+  DyadicContrastiveFeaturizer() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data
