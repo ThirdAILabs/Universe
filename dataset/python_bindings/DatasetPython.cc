@@ -125,6 +125,7 @@ void createDatasetSubmodule(py::module_& module) {
       .def("get_hash_to_entities", &mach::MachIndex::getEntities,
            py::arg("hash"))
       .def("buckets", &mach::MachIndex::buckets)
+      .def("set_seed", &mach::MachIndex::setSeed, py::arg("seed") = 341)
       .def("entity_to_hashes", &mach::MachIndex::entityToHashes)
       .def(
           "decode_batch",
