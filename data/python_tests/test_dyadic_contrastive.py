@@ -18,10 +18,7 @@ def test_dyadic_contrastive_augmentation(serialize):
                 ],
                 dim=100,
             ),
-            "target": data.columns.TokenColumn(
-                [0, 1],
-                dim=2,
-            ),
+            "target": data.columns.StringColumn(["0", "1"]),
             "prompt": data.columns.TokenArrayColumn(
                 [
                     [15, 16, 17],
@@ -31,6 +28,13 @@ def test_dyadic_contrastive_augmentation(serialize):
             ),
         }
     )
+
+    transform = data.transformations.ToDecimals(
+        input_column="target",
+        output_column="target",
+    )
+
+    columns = transform(columns)
 
     transform = data.transformations.DyadicContrastiveFeaturizer(
         input_column_1="text_1",

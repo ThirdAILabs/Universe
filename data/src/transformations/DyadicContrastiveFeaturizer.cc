@@ -40,7 +40,6 @@ DyadicContrastiveFeaturizer::featurizeColumnsDyadic(
       intervals_from_start.at(i).assign(tokens->numRows(), {});
     }
   }
-  std::vector<std::vector<uint32_t>> prompt_inputs;
 
 #pragma omp parallel for default(none)   \
     shared(tokens, intervals_from_start, \
@@ -66,7 +65,6 @@ ColumnMap DyadicContrastiveFeaturizer::apply(ColumnMap columns,
   (void)state;
   auto tokens_1 = columns.getArrayColumn<uint32_t>(_input_column_1);
   auto tokens_2 = columns.getArrayColumn<uint32_t>(_input_column_2);
-  auto targets = columns.getValueColumn<uint32_t>(_label_column);
   auto [interval_from_start_1, interval_from_end_1] =
       featurizeColumnsDyadic(tokens_1);
   auto [interval_from_start_2, interval_from_end_2] =
@@ -94,13 +92,12 @@ ColumnMap DyadicContrastiveFeaturizer::apply(ColumnMap columns,
           std::move(interval_from_start_2[interval]), tokens_2->dim());
     }
   }
-  if (_prompt_column) {
-    output_columns[*_prompt_column] =
-        columns.getArrayColumn<uint32_t>(*_prompt_column);
+  auto output_column_map = ColumnMap(output_columns);
+  output_column_map.setColumn(_label_column, columns.getColumn(_label_column));
+  if(_prompt_column){
+  output_column_map.setColumn(*_prompt_column, columns.getColumn(*_prompt_column));
   }
-  output_columns[_label_column] = targets;
-
-  return ColumnMap(output_columns);
+  return output_column_map;
 }
 
 ar::ConstArchivePtr DyadicContrastiveFeaturizer::toArchive() const {
