@@ -419,11 +419,30 @@ class UDT {
         options);
   }
 
+  py::object coldStartWithBalancingSamples(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& train_metrics,
+      const std::vector<CallbackPtr>& callbacks,
+      std::optional<uint32_t> batch_size, bool verbose,
+      const std::optional<data::VariableLengthConfig>& variable_length) {
+    licensing::entitlements().verifyDataSource(data);
+
+    TrainOptions options;
+    options.batch_size = batch_size;
+    options.verbose = verbose;
+
+    return _backend->coldStartWithBalancingSamples(
+        data, strong_column_names, weak_column_names, learning_rate, epochs,
+        train_metrics, callbacks, options, variable_length);
+  }
+
   /**
-   * Tells the model to begin collecting balancing samples from train and cold
-   * start calls. Without this enabled the model won't allow RLHF calls (upvote
-   * and associate). This can also be specified in the constructor options with
-   * "rlhf": true.
+   * Tells the model to begin collecting balancing samples from train and
+   * cold start calls. Without this enabled the model won't allow RLHF calls
+   * (upvote and associate). This can also be specified in the constructor
+   * options with "rlhf": true.
    */
   void enableRlhf(uint32_t num_balancing_docs,
                   uint32_t num_balancing_samples_per_doc) {

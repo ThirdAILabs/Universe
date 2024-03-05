@@ -112,11 +112,13 @@ class DataLoadMultiplexer:
         self, data_source, label_to_segment_map, update_index
     ):
         if update_index:
-            indices = list(range(data_source.size))
+            indices = data_source.indices()
             random.seed(self.seed)
             random.shuffle(indices)
-            for index, randomised_index in enumerate(indices):
-                label_to_segment_map[index].append(randomised_index % self.num_segments)
+            for randomised_index in indices:
+                label_to_segment_map[randomised_index].append(
+                    randomised_index % self.num_segments
+                )
         else:
             if len(label_to_segment_map) == 0:
                 raise Exception("label_to_segment_map is empty")
