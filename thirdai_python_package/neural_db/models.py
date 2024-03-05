@@ -391,6 +391,7 @@ class Mach(Model):
         hidden_bias=False,
         model_config=None,
         use_inverted_index=True,
+        index_seed=341,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -406,6 +407,7 @@ class Mach(Model):
         self.balancing_samples = []
         self.model_config = model_config
         self.inverted_index = InvertedIndex() if use_inverted_index else None
+        self.index_seed = index_seed
 
     def set_mach_sampling_threshold(self, threshold: float):
         if self.model is None:
@@ -633,6 +635,7 @@ class Mach(Model):
             },
             model_config=self.model_config,
         )
+        model.get_index().set_seed(self.index_seed)
         model.insert_new_doc_ids(documents)
         return model
 
