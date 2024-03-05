@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 import json
 import time
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Union
 from urllib.parse import urljoin
-from uuid import UUID
 
 from .bazaar_base import Bazaar, auth_header
 from .utils import (
@@ -74,7 +75,7 @@ class NeuralDBClient:
             Downvotes a response in the ndb model.
     """
 
-    def __init__(self, deployment_identifier, base_url, bazaar):
+    def __init__(self, deployment_identifier: str, base_url: str, bazaar: ModelBazaar):
         """
         Initializes a new instance of the NeuralDBClient.
 
