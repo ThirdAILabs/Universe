@@ -354,6 +354,7 @@ std::vector<Scores> UDTMultiMach::predictFastDecode(const MapInputBatch& input,
 
   std::vector<Scores> output(input.size());
 
+#pragma omp parallel for default(none) shared(input, scores, top_k, output)
   for (size_t i = 0; i < input.size(); i++) {
     std::unordered_map<uint32_t, float> sample_scores;
     for (size_t m = 0; m < _models.size(); m++) {
@@ -390,6 +391,7 @@ std::vector<Scores> UDTMultiMach::predictRegularDecode(
 
   std::vector<Scores> output(input.size());
 
+#pragma omp parallel for default(none) shared(input, scores, top_k, output)
   for (size_t i = 0; i < input.size(); i++) {
     std::unordered_map<uint32_t, float> candidate_scores;
     for (size_t m = 0; m < _models.size(); m++) {
