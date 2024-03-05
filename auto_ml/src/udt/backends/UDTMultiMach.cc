@@ -1,7 +1,7 @@
 #include "UDTMultiMach.h"
 #include <bolt/src/train/metrics/Metric.h>
+#include <bolt/src/utils/Timer.h>
 #include <bolt_vector/src/BoltVector.h>
-#include <_types/_uint32_t.h>
 #include <archive/src/Archive.h>
 #include <archive/src/List.h>
 #include <auto_ml/src/Aliases.h>
@@ -268,6 +268,8 @@ py::object UDTMultiMach::evaluate(const dataset::DataSourcePtr& data,
   auto data_iter =
       data::CsvIterator::make(data, _models.at(0)->featurizer()->delimiter());
 
+  double total_val_time = 0;
+
   while (auto batch = data_iter->next()) {
     size_t batch_size = batch->numRows();
 
@@ -280,7 +282,10 @@ py::object UDTMultiMach::evaluate(const dataset::DataSourcePtr& data,
       input_batch[i] = {{text_col, text_data->value(i)}};
     }
 
+    bolt::utils::Timer timer;
     auto scores = predictImpl(input_batch, sparse_inference, top_k_for_metrics);
+    timer.stop();
+    total_val_time += timer.milliseconds();
 
     for (auto& tracker : metric_trackers) {
       tracker.record(scores, label_data);
@@ -296,7 +301,8 @@ py::object UDTMultiMach::evaluate(const dataset::DataSourcePtr& data,
     std::cout << tracker.name() << "=" << tracker.value() << " ";
     output_metrics["val_" + tracker.name()].push_back(tracker.value());
   }
-  std::cout << std::endl;
+  std::cout << "| val_time " << total_val_time << " ms" << std::endl;
+  output_metrics["val_times"].push_back(total_val_time);
 
   return py::cast(output_metrics);
 }
@@ -339,22 +345,27 @@ std::vector<Scores> UDTMultiMach::predictImpl(const MapInputBatch& input,
 std::vector<Scores> UDTMultiMach::predictFastDecode(const MapInputBatch& input,
                                                     bool sparse_inference,
                                                     uint32_t top_k) {
-  std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>> scores;
+  bolt::TensorList scores;
   for (auto& model : _models) {
-    auto preds =
-        model->predictBatchImpl(input, sparse_inference, false, std::nullopt);
-    scores.push_back(preds);
+    auto output = model->model()->forward(
+        model->featurizer()->featurizeInputBatch(input), sparse_inference);
+    scores.push_back(output.at(0));
   }
 
   std::vector<Scores> output(input.size());
 
-#pragma omp parallel for default(none) \
-    shared(input, scores, output, top_k) if (input.size() > 1)
   for (size_t i = 0; i < input.size(); i++) {
     std::unordered_map<uint32_t, float> sample_scores;
-    for (const auto& model_scores : scores) {
-      for (const auto& [id, score] : model_scores.at(i)) {
-        sample_scores[id] += score;
+    for (size_t m = 0; m < _models.size(); m++) {
+      auto index = _models[m]->getIndex();
+      auto topk_scores =
+          scores[m]->getVector(i).findKLargestActivations(_num_buckets_to_eval);
+      while (!topk_scores.empty()) {
+        auto [score, bucket] = topk_scores.top();
+        for (uint32_t id : index->getEntities(bucket)) {
+          sample_scores[id] += score;
+        }
+        topk_scores.pop();
       }
     }
     Scores results(sample_scores.begin(), sample_scores.end());
