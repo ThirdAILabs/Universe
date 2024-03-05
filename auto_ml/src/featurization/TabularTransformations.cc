@@ -316,8 +316,9 @@ inputTransformations(const ColumnDataTypes& data_types,
           name, FEATURIZED_INDICES, FEATURIZED_VALUES, text_type->tokenizer,
           text_type->encoder, text_type->lowercase, options.feature_hash_range);
 
-      return {transform,
-              {data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)}};
+      return {
+          transform,
+          {data::OutputColumns::sparse(FEATURIZED_INDICES, FEATURIZED_VALUES)}};
     }
   }
 
@@ -346,7 +347,7 @@ inputTransformations(const ColumnDataTypes& data_types,
   auto pipeline = data::Pipeline::make(transformations);
 
   return {pipeline,
-          {data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)}};
+          {data::OutputColumns::sparse(FEATURIZED_INDICES, FEATURIZED_VALUES)}};
 }
 
 MergedTransformSeries nonTemporalTransformations(

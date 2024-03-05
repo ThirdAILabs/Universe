@@ -69,7 +69,7 @@ UDTClassifier::UDTClassifier(
                                        : data::ValueFillType::Ones;
 
   data::OutputColumnsList bolt_labels = {
-      data::OutputColumns(FEATURIZED_LABELS, value_fill)};
+      data::OutputColumns::sparse(FEATURIZED_LABELS, value_fill)};
 
   _featurizer = std::make_shared<Featurizer>(
       input_data_types, temporal_relationships, target_name, label_transform,

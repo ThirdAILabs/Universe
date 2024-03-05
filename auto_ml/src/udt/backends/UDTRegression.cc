@@ -54,7 +54,7 @@ UDTRegression::UDTRegression(
                                        : data::ValueFillType::Ones;
 
   data::OutputColumnsList bolt_labels = {
-      data::OutputColumns(FEATURIZED_LABELS, value_fill)};
+      data::OutputColumns::sparse(FEATURIZED_LABELS, value_fill)};
 
   auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
       input_data_types, temporal_tracking_relationships,

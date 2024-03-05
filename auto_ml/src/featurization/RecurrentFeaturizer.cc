@@ -46,8 +46,8 @@ RecurrentFeaturizer::RecurrentFeaturizer(const ColumnDataTypes& data_types,
           .first;
 
   _bolt_input_columns = {
-      data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)};
-  _bolt_label_columns = {data::OutputColumns(FEATURIZED_LABELS)};
+      data::OutputColumns::sparse(FEATURIZED_INDICES, FEATURIZED_VALUES)};
+  _bolt_label_columns = {data::OutputColumns::sparse(FEATURIZED_LABELS)};
 }
 
 std::pair<data::TransformationPtr, std::shared_ptr<data::Recurrence>>

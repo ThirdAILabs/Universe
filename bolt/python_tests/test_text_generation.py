@@ -20,9 +20,9 @@ def create_dyadic_backend(with_prompt=False):
     )
 
     bolt_inputs = [
-        data.OutputColumns(f"interval_from_end_{1 << i}") for i in range(N_INTERVALS)
+        data.OutputColumns.sparse(f"interval_from_end_{1 << i}") for i in range(N_INTERVALS)
     ] + [
-        data.OutputColumns(f"interval_from_start_{1 << i}")
+        data.OutputColumns.sparse(f"interval_from_start_{1 << i}")
         for i in range(N_INTERVALS - 1)
     ]
 

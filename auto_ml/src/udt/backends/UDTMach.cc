@@ -147,7 +147,7 @@ UDTMach::UDTMach(const MachInfo& mach_info)
   _featurizer = std::make_shared<MachFeaturizer>(
       text_transform,
       data::OutputColumnsList{
-          data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)},
+          data::OutputColumns::sparse(FEATURIZED_INDICES, FEATURIZED_VALUES)},
       mach_info.label_column_name, mach_info.mach_index,
       mach_info.csv_delimiter, mach_info.label_delimiter);
 

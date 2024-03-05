@@ -43,13 +43,13 @@ GraphFeaturizer::GraphFeaturizer(const ColumnDataTypes& data_types,
   _input_transform = data::Pipeline::make(input_transforms);
 
   _bolt_input_columns = {
-      data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES),
-      data::OutputColumns(nbr_ids_output)};
+      data::OutputColumns::sparse(FEATURIZED_INDICES, FEATURIZED_VALUES),
+      data::OutputColumns::sparse(nbr_ids_output)};
 
   _label_transform = std::make_shared<data::StringToToken>(
       target_col, FEATURIZED_LABELS, n_target_classes);
 
-  _bolt_label_columns = {data::OutputColumns(FEATURIZED_LABELS)};
+  _bolt_label_columns = {data::OutputColumns::sparse(FEATURIZED_LABELS)};
 
   auto [graph_builder, graph_info] = graphBuilder(data_types);
   // clang-tidy things this can be done in the member initialization above.

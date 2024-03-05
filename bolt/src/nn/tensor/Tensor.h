@@ -23,7 +23,8 @@ class Tensor {
 
   Tensor(const BoltBatch& batch, size_t dim);
 
-  static std::shared_ptr<Tensor> dense(size_t batch_size, size_t dim);
+  static std::shared_ptr<Tensor> dense(size_t batch_size, size_t dim,
+                                       bool with_grad = true);
 
   static std::shared_ptr<Tensor> sparse(size_t batch_size, size_t dim,
                                         size_t nonzeros);

@@ -27,8 +27,8 @@ namespace thirdai::automl {
 
 static data::OutputColumnsList machLabelColumns(
     data::ValueFillType label_value_fill) {
-  return {data::OutputColumns(MACH_LABELS, label_value_fill),
-          data::OutputColumns(MACH_DOC_IDS)};
+  return {data::OutputColumns::sparse(MACH_LABELS, label_value_fill),
+          data::OutputColumns::sparse(MACH_DOC_IDS)};
 }
 
 MachFeaturizer::MachFeaturizer(
@@ -246,13 +246,17 @@ data::ColumnMap MachFeaturizer::removeIntermediateColumns(
     const data::ColumnMap& columns) {
   std::unordered_map<std::string, data::ColumnPtr> new_columns;
   for (const auto& column : _bolt_input_columns) {
-    new_columns[column.indices()] = columns.getColumn(column.indices());
+    if (column.indices()) {
+      new_columns[*column.indices()] = columns.getColumn(*column.indices());
+    }
     if (column.values()) {
       new_columns[*column.values()] = columns.getColumn(*column.values());
     }
   }
   for (const auto& column : _bolt_label_columns) {
-    new_columns[column.indices()] = columns.getColumn(column.indices());
+    if (column.indices()) {
+      new_columns[*column.indices()] = columns.getColumn(*column.indices());
+    }
     if (column.values()) {
       new_columns[*column.values()] = columns.getColumn(*column.values());
     }

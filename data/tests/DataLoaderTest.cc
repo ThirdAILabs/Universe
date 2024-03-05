@@ -72,7 +72,8 @@ TEST(DataLoaderTest, Streaming) {
 
   auto loader = Loader::make(
       data_iterator, transformations, std::make_shared<State>(),
-      {{"tokens_cast", "decimals_cast"}}, {{"token_cast", "decimal_cast"}},
+      {OutputColumns::sparse("tokens_cast", "decimals_cast")},
+      {OutputColumns::sparse("token_cast", "decimal_cast")},
       /* batch_size= */ batch_size, /* shuffle= */ true, /* verbose= */ true,
       /* shuffle_buffer_size= */ 50);
 
@@ -156,7 +157,7 @@ TEST(DataLoaderTest, NextColumnMap) {
 
   auto loader = Loader::make(
       data_iterator, transform, std::make_shared<State>(),
-      {data::OutputColumns("tokens_cast")}, {},
+      {data::OutputColumns::sparse("tokens_cast")}, {},
       /* batch_size= */ 2, /* shuffle= */ false, /* verbose= */ true);
 
   auto chunk_1 = loader->nextColumnMap(/* max_batches= */ 2);

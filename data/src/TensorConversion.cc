@@ -15,20 +15,31 @@ std::vector<bolt::TensorList> toTensorBatches(
   std::vector<bolt::TensorList> tensors(num_batches);
 
   for (const auto& column_info : columns_to_convert) {
-    auto indices = columns.getArrayColumn<uint32_t>(column_info.indices());
-
-    if (!indices->dim()) {
-      throw std::invalid_argument(
-          "No dimension found for column '" + column_info.indices() +
-          "'. Indices must have dimension to convert to tensor.");
+    ArrayColumnBasePtr<uint32_t> indices = nullptr;
+    if (column_info.indices()) {
+      indices = columns.getArrayColumn<uint32_t>(*column_info.indices());
+      if (!indices->dim()) {
+        throw std::invalid_argument(
+            "No dimension found for column '" + *column_info.indices() +
+            "'. Indices must have dimension to convert to tensor.");
+      }
     }
 
     ArrayColumnBasePtr<float> values = nullptr;
     ValueFillType value_fill_type = ValueFillType::Ones;
     if (column_info.values()) {
       values = columns.getArrayColumn<float>(*column_info.values());
+      if (!indices && !values->dim()) {
+        throw std::invalid_argument(
+            "No dimension found for column '" + *column_info.values() +
+            "'. Values must have dimension to convert to dense tensor.");
+      }
     } else {
       value_fill_type = column_info.valueFillType();
+    }
+
+    if (!indices && !values) {
+      throw std::runtime_error("Either indices or values must be specified.");
     }
 
     std::exception_ptr error;
@@ -39,53 +50,64 @@ std::vector<bolt::TensorList> toTensorBatches(
     for (size_t batch = 0; batch < num_batches; batch++) {
       size_t batch_start = batch * batch_size;
       size_t batch_end = std::min((batch + 1) * batch_size, columns.numRows());
-
-      size_t batch_nonzeros = 0;
-      for (size_t i = batch_start; i < batch_end; i++) {
-        batch_nonzeros += indices->row(i).size();
-      }
-
-      std::vector<uint32_t> batch_indices;
-      batch_indices.reserve(batch_nonzeros);
-      std::vector<float> batch_values;
-      batch_values.reserve(batch_nonzeros);
-      std::vector<size_t> batch_lens;
-      batch_lens.reserve(batch_end - batch_start);
-
-      for (size_t i = batch_start; i < batch_end; i++) {
-        auto indices_row = indices->row(i);
-
-        // Values are optional for converting sparse data. If not specified
-        // values are assumed to be 1.0.
-        if (values) {
-          auto values_row = values->row(i);
-          if (indices_row.size() != values_row.size()) {
-#pragma omp critical
-            error = std::make_exception_ptr(std::invalid_argument(
-                "Indices size does not batch values size in row " +
-                std::to_string(i) + "."));
-            break;
-          }
-          batch_values.insert(batch_values.end(), values_row.begin(),
-                              values_row.end());
-        } else {
-          float fill_value = (value_fill_type == ValueFillType::SumToOne)
-                                 ? 1.0 / indices_row.size()
-                                 : 1.0;
-
-          for (size_t j = 0; j < indices_row.size(); j++) {
-            batch_values.push_back(fill_value);
-          }
+      if (indices) {
+        size_t batch_nonzeros = 0;
+        for (size_t i = batch_start; i < batch_end; i++) {
+          batch_nonzeros += indices->row(i).size();
         }
 
-        batch_indices.insert(batch_indices.end(), indices_row.begin(),
-                             indices_row.end());
-        batch_lens.push_back(indices_row.size());
-      }
+        std::vector<uint32_t> batch_indices;
+        batch_indices.reserve(batch_nonzeros);
+        std::vector<float> batch_values;
+        batch_values.reserve(batch_nonzeros);
+        std::vector<size_t> batch_lens;
+        batch_lens.reserve(batch_end - batch_start);
 
-      tensors[batch].emplace_back(bolt::Tensor::sparse(
-          std::move(batch_indices), std::move(batch_values),
-          std::move(batch_lens), indices->dim().value()));
+        for (size_t i = batch_start; i < batch_end; i++) {
+          auto indices_row = indices->row(i);
+
+          // Values are optional for converting sparse data. If not specified
+          // values are assumed to be 1.0.
+          if (values) {
+            auto values_row = values->row(i);
+            if (indices_row.size() != values_row.size()) {
+#pragma omp critical
+              error = std::make_exception_ptr(std::invalid_argument(
+                  "Indices size does not batch values size in row " +
+                  std::to_string(i) + "."));
+              break;
+            }
+            batch_values.insert(batch_values.end(), values_row.begin(),
+                                values_row.end());
+          } else {
+            float fill_value = (value_fill_type == ValueFillType::SumToOne)
+                                   ? 1.0 / indices_row.size()
+                                   : 1.0;
+
+            for (size_t j = 0; j < indices_row.size(); j++) {
+              batch_values.push_back(fill_value);
+            }
+          }
+
+          batch_indices.insert(batch_indices.end(), indices_row.begin(),
+                               indices_row.end());
+          batch_lens.push_back(indices_row.size());
+        }
+
+        tensors[batch].emplace_back(bolt::Tensor::sparse(
+            std::move(batch_indices), std::move(batch_values),
+            std::move(batch_lens), indices->dim().value()));
+      } else {
+        auto dense_tensor = bolt::Tensor::dense(
+            batch_end - batch_start, *values->dim(), /*with_grad=*/false);
+
+        for (size_t i = batch_start; i < batch_end; i++) {
+          auto row = values->row(i);
+          std::copy(row.begin(), row.end(),
+                    dense_tensor->getVector(i - batch_start).activations);
+        }
+        tensors[batch].push_back(dense_tensor);
+      }
     }
 
     if (error) {
@@ -108,7 +130,9 @@ ar::ConstArchivePtr outputColumnsToArchive(
   auto list = ar::List::make();
   for (const auto& output_column : output_columns) {
     auto map = ar::Map::make();
-    map->set("indices", ar::str(output_column.indices()));
+    if (output_column.indices()) {
+      map->set("indices", ar::str(*output_column.indices()));
+    }
     if (output_column.values()) {
       map->set("values", ar::str(*output_column.values()));
     } else {
@@ -134,9 +158,12 @@ ar::ConstArchivePtr outputColumnsToArchive(
 OutputColumnsList outputColumnsFromArchive(const ar::Archive& archive) {
   OutputColumnsList output_columns;
   for (const auto& ar : archive.list()) {
-    if (ar->contains("values")) {
-      output_columns.emplace_back(ar->str("indices"), ar->str("values"));
-    } else {
+    auto indices = ar->getOpt<ar::Str>("indices");
+    auto values = ar->getOpt<ar::Str>("values");
+
+    if (indices && values) {
+      output_columns.push_back(OutputColumns::sparse(*indices, *values));
+    } else if (indices) {
       std::string fill_type_name = ar->str("value_fill_type");
       ValueFillType value_fill_type;
       if (fill_type_name == "ones") {
@@ -148,7 +175,10 @@ OutputColumnsList outputColumnsFromArchive(const ar::Archive& archive) {
                                  fill_type_name +
                                  "' encountered in fromArchive.");
       }
-      output_columns.emplace_back(ar->str("indices"), value_fill_type);
+      output_columns.push_back(
+          OutputColumns::sparse(*indices, value_fill_type));
+    } else {
+      output_columns.push_back(OutputColumns::dense(*values));
     }
   }
   return output_columns;
