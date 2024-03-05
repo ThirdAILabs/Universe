@@ -138,9 +138,11 @@ Tensor::Tensor(BoltBatch&& batch, size_t dim)
   }
 }
 
-std::shared_ptr<Tensor> Tensor::dense(size_t batch_size, size_t dim) {
+std::shared_ptr<Tensor> Tensor::dense(size_t batch_size, size_t dim,
+                                      bool with_grad) {
   return std::make_shared<Tensor>(/* batch_size= */ batch_size, /* dim= */ dim,
-                                  /* nonzeros= */ dim);
+                                  /* nonzeros= */ dim,
+                                  /* with_grad= */ with_grad);
 }
 
 std::shared_ptr<Tensor> Tensor::sparse(size_t batch_size, size_t dim,

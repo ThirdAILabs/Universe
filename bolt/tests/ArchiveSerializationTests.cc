@@ -61,12 +61,15 @@ LabeledDataset getDataset() {
   columns.shuffle(rng());
 
   auto data_batches = data::toTensorBatches(
-      columns, {data::OutputColumns("lhs"), data::OutputColumns("rhs")},
+      columns,
+      {data::OutputColumns::sparse("lhs"), data::OutputColumns::sparse("rhs")},
       BATCH_SIZE);
 
-  auto label_batches = data::toTensorBatches(
-      columns, {data::OutputColumns("labels"), data::OutputColumns("labels")},
-      BATCH_SIZE);
+  auto label_batches =
+      data::toTensorBatches(columns,
+                            {data::OutputColumns::sparse("labels"),
+                             data::OutputColumns::sparse("labels")},
+                            BATCH_SIZE);
 
   return {data_batches, label_batches};
 }

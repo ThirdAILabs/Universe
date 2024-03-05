@@ -115,7 +115,7 @@ data::Loader DyadicModel::getDataLoader(const dataset::DataSourcePtr& data,
   transform = transform->then(_dyadic_transform);
   return data::Loader(
       data_iter, transform, nullptr, _bolt_inputs,
-      {data::OutputColumns(_dyadic_transform->getTargetColumn())},
+      {data::OutputColumns::sparse(_dyadic_transform->getTargetColumn())},
       /* batch_size= */ batch_size,
       /* shuffle= */ shuffle, /* verbose= */ true,
       /* shuffle_buffer_size= */ 200000);

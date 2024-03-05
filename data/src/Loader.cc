@@ -109,7 +109,9 @@ void Loader::restart() { _data_iterator->restart(); }
 void Loader::recordReturnedColumns(
     const OutputColumnsList& index_value_columns) {
   for (const auto& column : index_value_columns) {
-    _columns_returned.insert(column.indices());
+    if (column.indices()) {
+      _columns_returned.insert(*column.indices());
+    }
     if (column.values()) {
       _columns_returned.insert(*column.values());
     }

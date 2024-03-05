@@ -40,8 +40,8 @@ void runConversionTest(bool specify_values, bool values_sum_to_one = true) {
   ValueFillType fill_type =
       values_sum_to_one ? ValueFillType::SumToOne : ValueFillType::Ones;
   OutputColumns to_convert = specify_values
-                                 ? OutputColumns("indices", "values")
-                                 : OutputColumns("indices", fill_type);
+                                 ? OutputColumns::sparse("indices", "values")
+                                 : OutputColumns::sparse("indices", fill_type);
 
   auto tensors = toTensorBatches(columns, {to_convert}, /* batch_size= */ 3);
 
@@ -108,10 +108,11 @@ TEST(TensorConversionTests, MultipleOutputTensorsPerRow) {
                      {"values_1", values_1},
                      {"indices_2", indices_2}});
 
-  auto tensors = toTensorBatches(
-      columns,
-      {OutputColumns("indices_1", "values_1"), OutputColumns("indices_2")},
-      /* batch_size= */ 2);
+  auto tensors =
+      toTensorBatches(columns,
+                      {OutputColumns::sparse("indices_1", "values_1"),
+                       OutputColumns::sparse("indices_2")},
+                      /* batch_size= */ 2);
 
   ASSERT_EQ(tensors.size(), 2);
   ASSERT_EQ(tensors.at(0).size(), 2);
@@ -141,6 +142,36 @@ TEST(TensorConversionTests, MultipleOutputTensorsPerRow) {
   BoltVectorTestUtils::assertBoltVectorsAreEqual(
       tensors.at(1).at(1)->getVector(0),
       BoltVector::makeSparseVector({50, 60}, {1.0, 1.0}));
+}
+
+TEST(TensorConversionTests, DenseOutput) {
+  auto values = ArrayColumn<float>::make(
+      {{0.25, 1.25, 2.25}, {3.25, 4.25, 5.25}, {6.25, 7.25, 8.25}},
+      /* dim= */ 3);
+
+  ColumnMap columns({{"values", values}});
+
+  auto tensors = toTensorBatches(columns, {OutputColumns::dense("values")},
+                                 /* batch_size= */ 2);
+
+  ASSERT_EQ(tensors.size(), 2);
+  ASSERT_EQ(tensors.at(0).size(), 1);
+  ASSERT_EQ(tensors.at(1).size(), 1);
+
+  ASSERT_EQ(tensors.at(0).at(0)->batchSize(), 2);
+  ASSERT_EQ(tensors.at(1).at(0)->batchSize(), 1);
+
+  BoltVectorTestUtils::assertBoltVectorsAreEqual(
+      tensors.at(0).at(0)->getVector(0),
+      BoltVector::makeDenseVector({0.25, 1.25, 2.25}));
+
+  BoltVectorTestUtils::assertBoltVectorsAreEqual(
+      tensors.at(0).at(0)->getVector(1),
+      BoltVector::makeDenseVector({3.25, 4.25, 5.25}));
+
+  BoltVectorTestUtils::assertBoltVectorsAreEqual(
+      tensors.at(1).at(0)->getVector(0),
+      BoltVector::makeDenseVector({6.25, 7.25, 8.25}));
 }
 
 }  // namespace thirdai::data::tests

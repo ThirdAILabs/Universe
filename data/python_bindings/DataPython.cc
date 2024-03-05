@@ -93,10 +93,15 @@ void createDataSubmodule(py::module_& dataset_submodule) {
       .export_values();
 
   py::class_<OutputColumns>(dataset_submodule, "OutputColumns")
-      .def(py::init<std::string, std::string>(), py::arg("indices"),
-           py::arg("values"))
-      .def(py::init<std::string, ValueFillType>(), py::arg("indices"),
-           py::arg("value_fill_type") = ValueFillType::Ones);
+      .def_static(
+          "sparse",
+          py::overload_cast<std::string, std::string>(&OutputColumns::sparse),
+          py::arg("indices"), py::arg("values"))
+      .def_static(
+          "sparse",
+          py::overload_cast<std::string, ValueFillType>(&OutputColumns::sparse),
+          py::arg("indices"), py::arg("value_fill_type") = ValueFillType::Ones)
+      .def_static("dense", &OutputColumns::dense, py::arg("values"));
 
   py::class_<Loader, LoaderPtr>(dataset_submodule, "Loader")
       .def(py::init(&Loader::make), py::arg("data_iterator"),

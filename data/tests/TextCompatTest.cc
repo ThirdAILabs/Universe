@@ -192,10 +192,12 @@ applyTransformations(const dataset::DataSourcePtr& data,
 
   auto state = std::make_shared<State>(mach_index);
 
-  Loader loader(CsvIterator::make(data, ','), pipeline, state,
-                {OutputColumns("indices", "values")},
-                {OutputColumns("labels"), OutputColumns("mach_labels")}, 1000,
-                /*shuffle=*/false, /*verbose=*/false);
+  Loader loader(
+      CsvIterator::make(data, ','), pipeline, state,
+      {OutputColumns::sparse("indices", "values")},
+      {OutputColumns::sparse("labels"), OutputColumns::sparse("mach_labels")},
+      1000,
+      /*shuffle=*/false, /*verbose=*/false);
 
   auto [inputs, labels] = loader.all();
 
