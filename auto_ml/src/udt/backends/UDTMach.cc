@@ -438,7 +438,7 @@ py::object UDTMach::coldstart(
     const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
-    std::vector<CallbackPtr>& callbacks_in, TrainOptions options,
+    const std::vector<CallbackPtr>& callbacks_in, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
   insertNewDocIds(data);
 
