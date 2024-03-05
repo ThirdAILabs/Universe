@@ -258,14 +258,14 @@ py::object UDT::coldstart(
     const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
-    std::vector<CallbackPtr> callbacks, TrainOptions options,
+    std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
   licensing::entitlements().verifyDataSource(data);
 
   return _backend->coldstart(data, strong_column_names, weak_column_names,
                              variable_length, learning_rate, epochs,
-                             train_metrics, val_data, val_metrics,
-                             std::move(callbacks), options, comm);
+                             train_metrics, val_data, val_metrics, callbacks,
+                             options, comm);
 }
 
 std::vector<uint32_t> UDT::modelDims() const {

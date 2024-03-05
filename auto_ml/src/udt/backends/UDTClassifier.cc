@@ -219,7 +219,7 @@ py::object UDTClassifier::coldstart(
     const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
-    std::vector<CallbackPtr> callbacks, TrainOptions options,
+    std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
   auto train_data_loader = _featurizer->getColdStartDataLoader(
       data, strong_column_names, weak_column_names, variable_length,

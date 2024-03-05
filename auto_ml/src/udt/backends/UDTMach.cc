@@ -438,7 +438,7 @@ py::object UDTMach::coldstart(
     const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
-    std::vector<CallbackPtr> callbacks, TrainOptions options,
+    std::vector<CallbackPtr>& callbacks_in, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
   insertNewDocIds(data);
 
@@ -454,6 +454,7 @@ py::object UDTMach::coldstart(
 
   bool stopped = false;
 
+  auto callbacks = callbacks_in;
   callbacks.push_back(
       std::make_shared<bolt::callbacks::LambdaOnStoppedCallback>(
           bolt::callbacks::LambdaOnStoppedCallback(

@@ -493,7 +493,7 @@ py::object UDTMachClassifier::coldstart(
     const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
-    std::vector<CallbackPtr> callbacks, TrainOptions options,
+    std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
   auto metadata = getColdStartMetaData();
 
