@@ -575,6 +575,7 @@ def test_custom_epoch(create_simple_dataset):
     assert num_epochs == batch_count
 
 
+@pytest.mark.unit
 def test_neuraldb_stopping_condition(create_simple_dataset):
     db = ndb.NeuralDB(user_id="user")
 
