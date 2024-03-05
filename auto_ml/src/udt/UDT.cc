@@ -456,6 +456,25 @@ void UDT::disableFastDecode() {
   }
 }
 
+std::shared_ptr<UDT> UDT::multiMachFromPretrained(
+    std::vector<std::shared_ptr<UDT>>&& models) {
+  std::vector<std::unique_ptr<UDTMach>> mach_models;
+  for (auto& model : models) {
+    if (dynamic_cast<UDTMach*>(model->_backend.get())) {
+      mach_models.emplace_back(
+          dynamic_cast<UDTMach*>(model->_backend.release()));
+    } else {
+      throw std::invalid_argument(
+          "Can only construct MultiMach from Mach models.");
+    }
+  }
+
+  std::shared_ptr<UDT> udt(new UDT());
+  udt->_backend = std::make_unique<UDTMultiMach>(std::move(mach_models));
+
+  return udt;
+}
+
 std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
 UDT::parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
                        const MapInputBatch& batch, bool sparse_inference,

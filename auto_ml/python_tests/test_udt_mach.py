@@ -215,12 +215,67 @@ def test_multi_mach_udt_on_scifact(download_scifact_dataset):
         model.train(
             filename=supervised_trn,
             learning_rate=0.001,
+            metrics=["hash_precision@1"],
             epochs=1,
         )
         model.enable_fast_decode()
         metrics = model.evaluate(supervised_tst, metrics=["precision@1", "recall@5"])
         model.disable_fast_decode()
         metrics = model.evaluate(supervised_tst, metrics=["precision@1", "recall@5"])
+
+    assert metrics["val_precision@1"][-1] > 0.5
+
+
+def test_pretrained_multi_mach_udt_on_scifact(download_scifact_dataset):
+    (
+        unsupervised_file,
+        supervised_trn,
+        supervised_tst,
+        n_target_classes,
+    ) = download_scifact_dataset
+
+    models = []
+    for i in range(5):
+        model = bolt.UniversalDeepTransformer(
+            data_types={
+                "QUERY": bolt.types.text(contextual_encoding="local"),
+                "DOC_ID": bolt.types.categorical(delimiter=":"),
+            },
+            target="DOC_ID",
+            n_target_classes=n_target_classes,
+            integer_target=True,
+            options={
+                "extreme_classification": True,
+                "embedding_dimension": 205,
+                "extreme_output_dim": 1000,
+                "extreme_num_hashes": 1,
+                "softmax": True,
+                "mach_seed": i,
+            },
+        )
+
+        model.cold_start(
+            filename=unsupervised_file,
+            strong_column_names=["TITLE"],
+            weak_column_names=["TEXT"],
+            learning_rate=0.001,
+            epochs=5,
+        )
+
+        model.train(
+            filename=supervised_trn,
+            learning_rate=0.001,
+            epochs=10,
+            metrics=["hash_precision@1"],
+        )
+        models.append(model)
+
+    model = bolt.UniversalDeepTransformer.multi_mach_from_pretrained(models)
+
+    model.enable_fast_decode()
+    metrics = model.evaluate(supervised_tst, metrics=["precision@1", "recall@5"])
+    model.disable_fast_decode()
+    metrics = model.evaluate(supervised_tst, metrics=["precision@1", "recall@5"])
 
     assert metrics["val_precision@1"][-1] > 0.5
 

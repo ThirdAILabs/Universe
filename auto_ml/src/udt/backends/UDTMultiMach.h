@@ -23,6 +23,8 @@ class UDTMultiMach final : public UDTBackend {
       const std::optional<std::string>& model_config,
       config::ArgumentMap user_args);
 
+  explicit UDTMultiMach(std::vector<std::unique_ptr<UDTMach>> models);
+
   explicit UDTMultiMach(const ar::Archive& archive);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,

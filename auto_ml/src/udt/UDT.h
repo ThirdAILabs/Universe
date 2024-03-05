@@ -508,6 +508,9 @@ class UDT {
 
   void disableFastDecode();
 
+  static std::shared_ptr<UDT> multiMachFromPretrained(
+      std::vector<std::shared_ptr<UDT>>&& models);
+
  private:
   UDT() {}
 

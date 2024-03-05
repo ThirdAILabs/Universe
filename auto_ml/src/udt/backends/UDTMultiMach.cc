@@ -46,6 +46,20 @@ UDTMultiMach::UDTMultiMach(
   }
 }
 
+UDTMultiMach::UDTMultiMach(std::vector<std::unique_ptr<UDTMach>> models)
+    : _models(std::move(models)) {
+  if (_models.empty()) {
+    throw std::invalid_argument("Must have at least 1 model for MultiMach.");
+  }
+  uint32_t n_buckets = _models.at(0)->getIndex()->numBuckets();
+  for (const auto& model : _models) {
+    if (model->getIndex()->numBuckets() != n_buckets) {
+      throw std::invalid_argument(
+          "All models must have the same number of buckets in MultiMach.");
+    }
+  }
+}
+
 class MultiMachTrainLogger final : public bolt::callbacks::Callback {
  public:
   explicit MultiMachTrainLogger(uint32_t model_id) : _model_id(model_id) {}
