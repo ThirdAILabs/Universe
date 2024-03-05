@@ -88,14 +88,6 @@ class NeuralDBClient:
         self.base_url = base_url
         self.bazaar = bazaar
 
-    def get_headers(self):
-        if self.bazaar.is_logged_in():
-            return {
-                "Authorization": f"Bearer {self.bazaar._login_instance._access_token}",
-            }
-        else:
-            return {}
-
     @check_deployment_decorator
     def search(self, query, top_k=10):
         """
@@ -111,7 +103,7 @@ class NeuralDBClient:
         response = http_get_with_error(
             urljoin(self.base_url, "predict"),
             params={"query_text": query, "top_k": top_k},
-            headers=self.get_headers(),
+            headers=auth_header(self.bazaar._access_token),
         )
 
         return json.loads(response.content)["data"]
@@ -126,7 +118,9 @@ class NeuralDBClient:
         """
         files = [("files", open(file_path, "rb")) for file_path in files]
         response = http_post_with_error(
-            urljoin(self.base_url, "insert"), files=files, headers=self.get_headers()
+            urljoin(self.base_url, "insert"),
+            files=files,
+            headers=auth_header(self.bazaar._access_token),
         )
 
         print(json.loads(response.content)["message"])
@@ -142,7 +136,7 @@ class NeuralDBClient:
         response = http_post_with_error(
             urljoin(self.base_url, "delete"),
             json={"source_ids": source_ids},
-            headers=self.get_headers(),
+            headers=auth_header(self.bazaar._access_token),
         )
 
         print(json.loads(response.content)["message"])
@@ -158,7 +152,7 @@ class NeuralDBClient:
         response = http_post_with_error(
             urljoin(self.base_url, "associate"),
             json={"text_pairs": text_pairs},
-            headers=self.get_headers(),
+            headers=auth_header(self.bazaar._access_token),
         )
 
     @check_deployment_decorator
@@ -172,7 +166,7 @@ class NeuralDBClient:
         response = http_post_with_error(
             urljoin(self.base_url, "upvote"),
             json={"text_id_pairs": text_id_pairs},
-            headers=self.get_headers(),
+            headers=auth_header(self.bazaar._access_token),
         )
 
         print("Successfully upvoted the specified search result.")
@@ -188,7 +182,7 @@ class NeuralDBClient:
         response = http_post_with_error(
             urljoin(self.base_url, "downvote"),
             json={"text_id_pairs": text_id_pairs},
-            headers=self.get_headers(),
+            headers=auth_header(self.bazaar._access_token),
         )
 
         print("Successfully downvoted the specified search result.")
