@@ -124,9 +124,8 @@ class UDTMachSmx final : public UDTBackend {
     return smx::dense(smx::sigmoid(out));
   }
 
-  data::OutputColumnsList _input_columns = {
-      data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)};
-  data::OutputColumnsList _label_columns = {data::OutputColumns(MACH_LABELS)};
+  data::OutputColumnsList _input_columns;
+  data::OutputColumnsList _label_columns;
 
   std::shared_ptr<data::TextTokenizer> _text_transform;
   data::TransformationPtr _entity_parse_transform;

@@ -7,6 +7,7 @@
 #include <auto_ml/src/udt/utils/Models.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/SmxTensorConversion.h>
+#include <data/src/TensorConversion.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/State.h>
@@ -81,6 +82,15 @@ UDTMachSmx::UDTMachSmx(
 
   _mach_label_transform =
       std::make_shared<data::MachLabel>(MACH_DOC_IDS, MACH_LABELS);
+
+  _input_columns = {data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)};
+  if (_softmax) {
+    _label_columns = {
+        data::OutputColumns(MACH_LABELS, data::ValueFillType::SumToOne)};
+  } else {
+    _label_columns = {
+        data::OutputColumns(MACH_LABELS, data::ValueFillType::Ones)};
+  }
 }
 
 py::object UDTMachSmx::train(const dataset::DataSourcePtr& data,
