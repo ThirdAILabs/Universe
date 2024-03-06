@@ -11,12 +11,12 @@ namespace thirdai::automl::udt {
 class MachModel final : public smx::Module {
  public:
   MachModel(size_t input_dim, size_t hidden_dim, size_t output_dim,
-            float output_sparsity) {
-    emb = std::make_shared<smx::Embedding>(input_dim, hidden_dim);
+            float output_sparsity, bool hidden_bias, bool output_bias) {
+    emb = std::make_shared<smx::Embedding>(input_dim, hidden_dim, hidden_bias);
     registerModule("emb", emb);
 
-    out = std::make_shared<smx::SparseLinear>(output_dim, hidden_dim,
-                                              output_sparsity);
+    out = std::make_shared<smx::SparseLinear>(
+        output_dim, hidden_dim, output_sparsity, std::nullopt, output_bias);
     registerModule("output", out);
   }
 

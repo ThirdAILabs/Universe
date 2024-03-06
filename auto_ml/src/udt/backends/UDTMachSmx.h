@@ -140,6 +140,8 @@ class UDTMachSmx final : public UDTBackend {
   bool _freeze_hash_tables;
   uint32_t _default_topk = defaults::MACH_TOP_K_TO_RETURN;
   uint32_t _default_num_buckets_to_eval = defaults::MACH_NUM_BUCKETS_TO_EVAL;
+
+  uint32_t _epoch = 0;
 };
 
 }  // namespace thirdai::automl::udt

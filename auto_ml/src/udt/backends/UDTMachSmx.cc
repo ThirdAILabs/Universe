@@ -13,7 +13,9 @@
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/TextTokenizer.h>
+#include <pybind11/stl.h>
 #include <smx/src/autograd/Variable.h>
+#include <smx/src/metrics/Metrics.h>
 #include <smx/src/optimizers/Adam.h>
 #include <smx/src/tensor/DenseTensor.h>
 #include <memory>
@@ -48,11 +50,17 @@ UDTMachSmx::UDTMachSmx(
       args.get<uint32_t>("extreme_output_dim", "integer",
                          UDTMach::autotuneMachOutputDim(n_target_classes));
 
+  bool hidden_bias =
+      args.get<bool>("hidden_bias", "bool", defaults::HIDDEN_BIAS);
+  bool output_bias =
+      args.get<bool>("output_bias", "bool", defaults::OUTPUT_BIAS);
+
   _model = std::make_unique<MachModel>(
       input_dim,
       args.get<uint32_t>("embedding_dimension", "integer",
                          defaults::HIDDEN_DIM),
-      num_buckets, utils::autotuneSparsity(num_buckets));
+      num_buckets, utils::autotuneSparsity(num_buckets), hidden_bias,
+      output_bias);
 
   _optimizer = std::make_unique<smx::Adam>(_model->parameters(), 1e-3);
   _optimizer->registerOnUpdateCallback(_model->out->onUpdateCallback());
@@ -74,10 +82,10 @@ UDTMachSmx::UDTMachSmx(
 
   if (target->delimiter) {
     _entity_parse_transform = std::make_shared<data::StringToTokenArray>(
-        target_name, MACH_DOC_IDS, target->delimiter);
+        target_name, MACH_DOC_IDS, *target->delimiter, std::nullopt);
   } else {
-    _entity_parse_transform =
-        std::make_shared<data::StringToToken>(target_name, MACH_DOC_IDS);
+    _entity_parse_transform = std::make_shared<data::StringToToken>(
+        target_name, MACH_DOC_IDS, std::nullopt);
   }
 
   _mach_label_transform =
@@ -112,14 +120,20 @@ py::object UDTMachSmx::train(const dataset::DataSourcePtr& data,
       loadTrainingData(data, options.batchSize(), options.shuffle_config);
 
   bolt::metrics::History metrics;
-  for (uint32_t e = 0; e < epochs; e++) {
-    if (e == 1) {
+  for (uint32_t end = _epoch + epochs; _epoch < end; _epoch++) {
+    if (_freeze_hash_tables && _epoch == 1) {
       _model->out->neuronIndex()->freeze(true);
     }
     bolt::utils::Timer timer;
     train(dataset, learning_rate);
     timer.stop();
+
     metrics["epoch_times"].push_back(timer.seconds());
+    if (options.verbose) {
+      std::cout << "train | epoch " << _epoch << " | steps " << dataset.size()
+                << " | time " << timer.seconds() << "s\n"
+                << std::endl;
+    }
   }
 
   return py::cast(metrics);
@@ -148,8 +162,8 @@ py::object UDTMachSmx::coldstart(
                          variable_length, /*fast_approximation=*/false);
 
   bolt::metrics::History metrics;
-  for (uint32_t e = 0; e < epochs; e++) {
-    if (e == 1) {
+  for (uint32_t end = _epoch + epochs; _epoch < end; _epoch++) {
+    if (_freeze_hash_tables && _epoch == 1) {
       _model->out->neuronIndex()->freeze(true);
     }
     auto dataset = loadTrainingData(data, options.batchSize(),
@@ -159,6 +173,12 @@ py::object UDTMachSmx::coldstart(
     train(dataset, learning_rate);
     timer.stop();
     metrics["epoch_times"].push_back(timer.seconds());
+
+    if (options.verbose) {
+      std::cout << "coldstart | epoch " << _epoch << " | steps "
+                << dataset.size() << " | time " << timer.seconds() << "s\n"
+                << std::endl;
+    }
   }
 
   return py::cast(metrics);
@@ -206,7 +226,7 @@ class MachMetric {
           total += topk_scores.size();
           break;
         case Type::Recall:
-          total += labels.size();
+          total += labels[i].size();
           break;
       }
     }
@@ -251,7 +271,6 @@ py::object UDTMachSmx::evaluate(const dataset::DataSourcePtr& data,
                                 bool sparse_inference, bool verbose,
                                 std::optional<uint32_t> top_k) {
   CHECK(!sparse_inference, "Sparse inference is not yet supported.");
-  (void)verbose;
   (void)top_k;
 
   std::vector<MachMetric> metric_trackers;
@@ -281,6 +300,14 @@ py::object UDTMachSmx::evaluate(const dataset::DataSourcePtr& data,
     output["val_" + metric.name()].push_back(metric.value());
   }
   output["val_times"].push_back(timer.seconds());
+
+  if (verbose) {
+    std::cout << "eval | eval_batches " << dataset.size() << " | ";
+  }
+  for (const auto& metric : metric_trackers) {
+    std::cout << metric.name() << "=" << metric.value() << " ";
+  }
+  std::cout << "| time " << timer.seconds() << "s\n" << std::endl;
 
   return py::cast(output);
 }
@@ -416,6 +443,7 @@ UDTMachSmx::EvalDataset UDTMachSmx::loadEvalData(
     for (size_t i = row_cnt; i < row_cnt + batch_size; i++) {
       batch_labels.push_back(labels->row(i).toVector());
     }
+    row_cnt += batch_size;
 
     dataset.emplace_back(smx::Variable::make(input[0], /*requires_grad=*/false),
                          batch_labels);
@@ -426,6 +454,8 @@ UDTMachSmx::EvalDataset UDTMachSmx::loadEvalData(
 
 void UDTMachSmx::train(const UDTMachSmx::TrainingDataset& dataset,
                        float learning_rate) {
+  _model->train();
+
   _optimizer->updateLr(learning_rate);
 
   if (!dataset.empty()) {
