@@ -41,12 +41,16 @@ class DlrmAttention final : public Op,
     (void)train_steps;
   }
 
+  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                     bool replace_existing_optimizer) final {
+    (void)optimizer_factory;
+    (void)replace_existing_optimizer;
+  }
+
   uint32_t dim() const final;
 
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
-
-  void initOptimizer() final;
 
   void disableSparseParameterUpdates() final {}
 

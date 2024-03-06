@@ -2,11 +2,14 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
-#include <bolt/src/layers/Optimizer.h>
+#include <cereal/types/vector.hpp>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/optimizers/Adam.h>
 #include <memory>
 #include <optional>
+#include <type_traits>
 
 namespace thirdai::bolt {
 
@@ -30,12 +33,13 @@ class WeightedSum final : public Op,
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
+  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                     bool replace_existing_optimizer) final;
+
   uint32_t dim() const final;
 
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
-
-  void initOptimizer() final;
 
   void disableSparseParameterUpdates() final;
 
@@ -67,8 +71,9 @@ class WeightedSum final : public Op,
   size_t _n_chunks, _chunk_size;
 
   std::vector<float> _weights;
+  std::vector<float> _gradients;
 
-  std::optional<AdamOptimizer> _optimizer;
+  OptimizerPtr _optimizer;
   bool _should_serialize_optimizer;
 
   WeightedSum() {}
@@ -76,10 +81,24 @@ class WeightedSum final : public Op,
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
+    if (!std::is_same_v<Archive, cereal::BinaryInputArchive>) {
+      throw std::runtime_error(
+          "This serialize method should only be used for loading old models, "
+          "not saving new ones.");
+    }
+
     archive(cereal::base_class<Op>(this), _n_chunks, _chunk_size, _weights,
             _should_serialize_optimizer);
+
     if (_should_serialize_optimizer) {
-      archive(_optimizer);
+      std::optional<AdamOptimizer> optimizer;
+
+      archive(optimizer);
+
+      _optimizer =
+          Adam::fromOldOptimizer(std::move(*optimizer), 1, _weights.size());
+
+      _gradients.assign(_weights.size(), 0.0);
     }
   }
 };

@@ -104,8 +104,9 @@ class DataFrameTable(Table):
         )
 
     def iter_rows_as_dicts(self) -> Generator[Tuple[int, dict], None, None]:
-        for row_id, row in self.df.iterrows():
-            row_dict = row.to_dict()
+        for row in self.df.itertuples(index=True):
+            row_id = row.Index
+            row_dict = row._asdict()
             row_dict[self.df.index.name] = row_id
             yield (row_id, row_dict)
 

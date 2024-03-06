@@ -26,8 +26,8 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
       _reduction(config.reduction()),
       _num_tokens_per_input(config.numTokensPerInput()),
       _hash_fn(seed),
-      _disable_sparse_parameter_updates(false),
-      _should_save_optimizer(false) {
+      _should_serialize_optimizer(false),
+      _disable_sparse_parameter_updates(false) {
   switch (_reduction) {
     case EmbeddingReductionType::SUM:
     case EmbeddingReductionType::AVERAGE:
@@ -96,7 +96,7 @@ EmbeddingLayer::EmbeddingLayer(const ar::Archive& archive)
   _embedding_chunks_used.assign(n_emb_chunks, false);
 
   if (archive.contains("embedding_optimizer")) {
-    _optimizer = optimizerFromArchive(*archive.get("embedding_optimizer"));
+    _optimizer = Optimizer::fromArchive(*archive.get("embedding_optimizer"));
   }
 }
 
@@ -175,7 +175,7 @@ void EmbeddingLayer::backpropagate(const BoltVector& tokens,
 
       assert(embedding_block_offset < _embedding_block_size - _lookup_size);
 
-      float* update_loc = _optimizer->gradients.data() + embedding_block_offset;
+      float* update_loc = _gradients.data() + embedding_block_offset;
 
       if (_reduction == EmbeddingReductionType::AVERAGE) {
         for (uint32_t i = 0; i < _lookup_size; i++) {
@@ -196,58 +196,13 @@ void EmbeddingLayer::backpropagate(const BoltVector& tokens,
   }
 }
 
-void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
-                                      float B2, float eps) {
+void EmbeddingLayer::updateParameters(float lr, size_t train_steps) {
   if (_disable_sparse_parameter_updates) {
-    _optimizer->applyUpdate(*_embedding_block, lr, iter);
+    _optimizer->updateDense(*_embedding_block, _gradients, lr, train_steps);
   } else {
-    updateParametersSparse(lr, iter, B1, B2, eps);
-  }
-}
-
-void EmbeddingLayer::updateParametersSparse(float lr, uint32_t iter, float B1,
-                                            float B2, float eps) {
-  float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
-  float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
-
-  // Preform outer dereferencing once here to avoid repeating it later.
-  auto& embedding_block = *_embedding_block;
-
-#pragma omp parallel for default(none) shared( \
-    embedding_block, B1, B2, B1_bias_corrected, B2_bias_corrected, eps, lr)
-  for (uint64_t chunk_id = 0; chunk_id < _embedding_chunks_used.size();
-       chunk_id++) {
-    if (!_embedding_chunks_used[chunk_id]) {
-      continue;
-    }
-
-    _embedding_chunks_used[chunk_id] = false;
-
-    for (uint64_t n = chunk_id * _update_chunk_size;
-         n < (chunk_id + 1) * _update_chunk_size; n++) {
-      float grad = _optimizer->gradients[n];
-      if (grad == 0.0) {
-        // Because the chunk being updated may not have entirely been used we
-        // check for this to avoid updating unused elements of the embedding
-        // table. It is highly unlikely that the gradient would be zero if the
-        // section of the embedding table was used.
-        continue;
-      }
-      assert(!std::isnan(grad));
-
-      _optimizer->momentum[n] = B1 * _optimizer->momentum[n] + (1 - B1) * grad;
-      _optimizer->velocity[n] =
-          B2 * _optimizer->velocity[n] + (1 - B2) * grad * grad;
-      assert(!std::isnan(_optimizer->momentum[n]));
-      assert(!std::isnan(_optimizer->velocity[n]));
-
-      embedding_block[n] +=
-          lr * (_optimizer->momentum[n] / B1_bias_corrected) /
-          (std::sqrt(_optimizer->velocity[n] / B2_bias_corrected) + eps);
-      assert(!std::isnan(embedding_block[n]));
-
-      _optimizer->gradients[n] = 0;
-    }
+    _optimizer->updateSparseRows(*_embedding_block, _gradients,
+                                 _embedding_chunks_used, lr, train_steps,
+                                 /* reset_rows_used= */ true);
   }
 }
 

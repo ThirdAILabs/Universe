@@ -77,6 +77,13 @@ void CosineSimilarity::updateParameters(float learning_rate,
   (void)train_steps;
 }
 
+void CosineSimilarity::initOptimizer(
+    const OptimizerFactoryPtr& optimizer_factory,
+    bool replace_existing_optimizer) {
+  (void)optimizer_factory;
+  (void)replace_existing_optimizer;
+}
+
 uint32_t CosineSimilarity::dim() const { return 1; }
 
 std::optional<uint32_t> CosineSimilarity::nonzeros(
@@ -86,8 +93,6 @@ std::optional<uint32_t> CosineSimilarity::nonzeros(
 
   return 1;
 }
-
-void CosineSimilarity::initOptimizer() {}
 
 ComputationPtr CosineSimilarity::applyToInputs(const ComputationList& inputs) {
   if (inputs.size() != 2) {

@@ -6,6 +6,7 @@
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDT.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/detail/common.h>
@@ -186,18 +187,18 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("data_source"), py::arg("strong_column_names"),
            py::arg("weak_column_names"),
            py::arg("num_buckets_to_sample") = std::nullopt,
-           py::arg("num_random_hashes") = 0,
+           py::arg("num_random_hashes") = 0, py::arg("load_balancing") = false,
            py::arg("fast_approximation") = false, py::arg("verbose") = true,
            py::arg("sort_random_hashes") = false)
       .def("introduce_document", &udt::UDT::introduceDocument,
            py::arg("document"), py::arg("strong_column_names"),
            py::arg("weak_column_names"), py::arg("label"),
            py::arg("num_buckets_to_sample") = std::nullopt,
-           py::arg("num_random_hashes") = 0,
+           py::arg("num_random_hashes") = 0, py::arg("load_balancing") = false,
            py::arg("sort_random_hashes") = false)
       .def("introduce_label", &udt::UDT::introduceLabel, py::arg("input_batch"),
            py::arg("label"), py::arg("num_buckets_to_sample") = std::nullopt,
-           py::arg("num_random_hashes") = 0,
+           py::arg("num_random_hashes") = 0, py::arg("load_balancing") = false,
            py::arg("sort_random_hashes") = false)
       .def("forget", &udt::UDT::forget, py::arg("label"))
       .def("clear_index", &udt::UDT::clearIndex)
@@ -233,6 +234,14 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("n_buckets"), py::arg("n_association_samples"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
            py::arg("options"))
+      .def("cold_start_with_balancing_samples",
+           &udt::UDT::coldStartWithBalancingSamples, py::arg("data"),
+           py::arg("strong_column_names"), py::arg("weak_column_names"),
+           py::arg("learning_rate"), py::arg("epochs"),
+           py::arg("train_metrics") = std::vector<std::string>{},
+           py::arg("callbacks") = std::vector<bolt::callbacks::CallbackPtr>{},
+           py::arg("batch_size") = std::nullopt, py::arg("verbose") = true,
+           py::arg("variable_length") = data::VariableLengthConfig())
       .def("enable_rlhf", &udt::UDT::enableRlhf,
            py::arg("num_balancing_docs") = udt::defaults::MAX_BALANCING_DOCS,
            py::arg("num_balancing_samples_per_doc") =

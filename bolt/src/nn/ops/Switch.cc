@@ -81,9 +81,10 @@ std::optional<uint32_t> Switch::nonzeros(const ComputationList& inputs,
   return _fc_ops.front()->nonzeros(inputs, use_sparsity);
 }
 
-void Switch::initOptimizer() {
+void Switch::initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                           bool replace_existing_optimizer) {
   for (auto& op : _fc_ops) {
-    op->initOptimizer();
+    op->initOptimizer(optimizer_factory, replace_existing_optimizer);
   }
 }
 
