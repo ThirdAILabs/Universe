@@ -103,7 +103,9 @@ def main(**kwargs):
         runner = runner_map[runner_name.lower()]
 
         configs = get_configs(
-            runner=runner, config_regex=args.config, config_type=args.config_type
+            runner=runner,
+            config_regex=args.config,
+            config_type=args.config_type if hasattr(args, "config_type") else None,
         )
 
         for config in configs:
