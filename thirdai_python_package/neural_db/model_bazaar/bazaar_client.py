@@ -363,12 +363,18 @@ class ModelBazaar(Bazaar):
             files=files,
             headers=auth_header(self._access_token),
         )
-        response_data = json.loads(response.content)["data"]
+
+        response_content = json.loads(response.content)
+        if response_content["status"] != "success":
+            raise Exception(response_content["message"])
+
         model = Model(
             model_identifier=create_model_identifier(
                 model_name=model_name, author_username=self._username
             ),
         )
+        model._model_id = response_content["data"]["model_id"]
+        model._user_id = response_content["data"]["user_id"]
 
         if is_async:
             return model
