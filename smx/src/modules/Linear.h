@@ -13,16 +13,17 @@ namespace thirdai::smx {
 
 class Linear final : public UnaryModule {
  public:
-  Linear(size_t dim, size_t input_dim) {
+  Linear(size_t dim, size_t input_dim, bool bias = true) {
     _weight = Variable::make(
         smx::normal({dim, input_dim}, /*mean=*/0.0, /*stddev=*/0.01),
         /*requires_grad=*/true);
-
-    _bias = Variable::make(smx::normal({dim}, /*mean=*/0.0, /*stddev=*/0.01),
-                           /*requires_grad=*/true);
-
     registerParameter("weight", _weight);
-    registerParameter("bias", _bias);
+
+    if (bias) {
+      _bias = Variable::make(smx::normal({dim}, /*mean=*/0.0, /*stddev=*/0.01),
+                             /*requires_grad=*/true);
+      registerParameter("bias", _bias);
+    }
   }
 
   VariablePtr forward(const VariablePtr& x) final {
@@ -45,14 +46,22 @@ class Linear final : public UnaryModule {
   const auto& bias() const { return _bias; }
 
   void setBias(VariablePtr b) {
-    CHECK(b->tensor()->shape() == _bias->tensor()->shape(),
-          "Shape must match in setBias.");
-    CHECK(b->tensor()->dtype() == _bias->tensor()->dtype(),
-          "Dtype must match in setBias.");
+    if (!b && _bias) {
+      deregisterParameter("bias");
+      _bias = nullptr;
+    } else if (b && !_bias) {
+      _bias = std::move(b);
+      registerParameter("bias", _bias);
+    } else if (b && _bias) {
+      CHECK(b->tensor()->shape() == _bias->tensor()->shape(),
+            "Shape must match in setBias.");
+      CHECK(b->tensor()->dtype() == _bias->tensor()->dtype(),
+            "Dtype must match in setBias.");
 
-    _bias = std::move(b);
-    deregisterParameter("bias");
-    registerParameter("bias", _bias);
+      _bias = std::move(b);
+      deregisterParameter("bias");
+      registerParameter("bias", _bias);
+    }
   }
 
  private:
@@ -72,19 +81,21 @@ class LshIndexConfig {
 class SparseLinear final : public Module {
  public:
   SparseLinear(size_t dim, size_t input_dim, float sparsity,
-               const std::optional<LshIndexConfig>& lsh_index,
+               const std::optional<LshIndexConfig>& lsh_index, bool bias = true,
                size_t updates_per_rebuild = 4,
                size_t updates_per_new_hash_fn = 100)
       : _sparsity(sparsity) {
     _weight = Variable::make(
         smx::normal({dim, input_dim}, /*mean=*/0.0, /*stddev=*/0.01),
         /*requires_grad=*/true);
-
-    _bias = Variable::make(smx::normal({dim}, /*mean=*/0.0, /*stddev=*/0.01),
-                           /*requires_grad=*/true);
-
     registerParameter("weight", _weight);
-    registerParameter("bias", _bias);
+
+    if (bias) {
+      _bias = Variable::make(smx::normal({dim}, /*mean=*/0.0, /*stddev=*/0.01),
+                             /*requires_grad=*/true);
+
+      registerParameter("bias", _bias);
+    }
 
     if (lsh_index) {
       _neuron_index =
@@ -134,14 +145,22 @@ class SparseLinear final : public Module {
   const auto& bias() const { return _bias; }
 
   void setBias(VariablePtr b) {
-    CHECK(b->tensor()->shape() == _bias->tensor()->shape(),
-          "Shape must match in setBias.");
-    CHECK(b->tensor()->dtype() == _bias->tensor()->dtype(),
-          "Dtype must match in setBias.");
+    if (!b && _bias) {
+      deregisterParameter("bias");
+      _bias = nullptr;
+    } else if (b && !_bias) {
+      _bias = std::move(b);
+      registerParameter("bias", _bias);
+    } else if (b && _bias) {
+      CHECK(b->tensor()->shape() == _bias->tensor()->shape(),
+            "Shape must match in setBias.");
+      CHECK(b->tensor()->dtype() == _bias->tensor()->dtype(),
+            "Dtype must match in setBias.");
 
-    _bias = std::move(b);
-    deregisterParameter("bias");
-    registerParameter("bias", _bias);
+      _bias = std::move(b);
+      deregisterParameter("bias");
+      registerParameter("bias", _bias);
+    }
   }
 
   std::function<void()> onUpdateCallback() {

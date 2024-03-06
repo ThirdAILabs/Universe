@@ -1,3 +1,4 @@
+#include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Functions.h>
 #include <smx/src/tensor/Init.h>
 
@@ -9,8 +10,7 @@ inline void sgemsv(const float* x, const float* w, const float* b,
   for (size_t n = 0; n < y_nonzeros; n++) {
     const float* w_n = w + y_indices[n] * input_dim;
 
-    float act = b[y_indices[n]];
-#pragma omp simd
+    float act = b ? b[y_indices[n]] : 0.0;
     for (size_t i = 0; i < input_dim; i++) {
       act += w_n[i] * x[i];
     }
@@ -34,7 +34,9 @@ inline void sgemsvGrad(const float* x, float* x_grad, const float* w,
       x_grad[i] += y_grad[n] * w_n[i];
     }
 
-    b_grad[neuron] += y_grad[n];
+    if (b_grad) {
+      b_grad[neuron] += y_grad[n];
+    }
   }
 }
 
@@ -44,19 +46,25 @@ CsrTensorPtr linear(const DenseTensorPtr& x, const DenseTensorPtr& w,
                     const TensorPtr& labels) {
   CHECK(x->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
   CHECK(w->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
-  CHECK(b->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
   CHECK(w->ndim() == 2, "Weight matrix must be 2D.");
-  CHECK(b->ndim() == 1, "Bias must be 1D.");
   CHECK(x->shape().last() == w->shape().last(), "Cols of x and w must match.");
-  CHECK(w->shape(0) == b->shape(0), "Rows of w and b must match.");
   CHECK(x->ndim() == 2, "Sparse linear is only supported for 2d inputs.");
 
   size_t dim = w->shape(0);
   size_t input_dim = w->shape(1);
   size_t nonzeros = sparsity * dim;
+
   const float* w_ptr = w->data<float>();
-  const float* b_ptr = b->data<float>();
   const float* x_ptr = x->data<float>();
+
+  const float* b_ptr = nullptr;
+  if (b) {
+    CHECK(b->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
+    CHECK(b->ndim() == 1, "Bias must be 1D.");
+    CHECK(w->shape(0) == b->shape(0), "Rows of w and b must match.");
+
+    b_ptr = b->data<float>();
+  }
 
   size_t batch_size = x->shape(0);
 
@@ -142,12 +150,17 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
   const float* x_ptr = x->data<float>();
 
   auto w_grad = zeros(w->shape());
-  auto b_grad = zeros(b->shape());
   auto x_grad = DenseTensor::make(x->shape(), x->dtype());
 
   float* w_grad_ptr = w_grad->data<float>();
-  float* b_grad_ptr = b_grad->data<float>();
   float* x_grad_ptr = x_grad->data<float>();
+
+  DenseTensorPtr b_grad = nullptr;
+  float* b_grad_ptr = nullptr;
+  if (b) {
+    b_grad = zeros(b->shape());
+    b_grad_ptr = b_grad->data<float>();
+  }
 
 #pragma omp parallel for default(none)                                  \
     shared(batch_size, input_dim, x_ptr, w_ptr, x_grad_ptr, w_grad_ptr, \

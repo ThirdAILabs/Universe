@@ -7,18 +7,20 @@ pytestmark = [pytest.mark.unit]
 BATCH_SIZE, DIM, INPUT_DIM, NONZEROS = 8, 80, 7, 10
 
 
-def run_sparse_linear_test(labels, indices_check, exact_param_grad_check):
+def run_sparse_linear_test(labels, indices_check, exact_param_grad_check, bias):
     x_np = np.random.rand(BATCH_SIZE, INPUT_DIM).astype(np.float32)
     w_np = np.random.rand(DIM, INPUT_DIM).astype(np.float32)
-    b_np = np.random.rand(DIM).astype(np.float32)
+    b_np = np.random.rand(DIM).astype(np.float32) if bias else None
 
     x = smx.Variable(smx.from_numpy(x_np), requires_grad=True)
     w = smx.Variable(smx.from_numpy(w_np), requires_grad=True)
-    b = smx.Variable(smx.from_numpy(b_np), requires_grad=True)
+    b = smx.Variable(smx.from_numpy(b_np), requires_grad=True) if bias else None
 
-    y_np = np.matmul(x_np, w_np.T) + b_np
+    y_np = np.matmul(x_np, w_np.T)
+    if bias:
+        y_np += b_np
 
-    sparse_linear = smx.SparseLinear(DIM, INPUT_DIM, NONZEROS / DIM)
+    sparse_linear = smx.SparseLinear(DIM, INPUT_DIM, NONZEROS / DIM, bias=bias)
     sparse_linear.weight = w
     sparse_linear.bias = b
 
@@ -70,19 +72,26 @@ def run_sparse_linear_test(labels, indices_check, exact_param_grad_check):
     # are disjoint, in which case the exact gradients can be checked entirely.
     if exact_param_grad_check:
         assert np.allclose(w.grad.numpy(), w_grad_np)
-        assert np.allclose(b.grad.numpy(), b_grad_np)
+        if bias:
+            assert np.allclose(b.grad.numpy(), b_grad_np)
     else:
         assert np.mean(np.isclose(w.grad.numpy(), w_grad_np)) >= 0.8
-        assert np.mean(np.isclose(b.grad.numpy(), b_grad_np)) >= 0.8
+        if bias:
+            assert np.mean(np.isclose(b.grad.numpy(), b_grad_np)) >= 0.8
 
 
-def test_sparse_linear_no_label():
+@pytest.mark.parametrize("bias", [True, False])
+def test_sparse_linear_no_label(bias):
     run_sparse_linear_test(
-        labels=None, indices_check=lambda a, b: None, exact_param_grad_check=False
+        labels=None,
+        indices_check=lambda a, b: None,
+        exact_param_grad_check=False,
+        bias=bias,
     )
 
 
-def test_sparse_linear_single_label():
+@pytest.mark.parametrize("bias", [True, False])
+def test_sparse_linear_single_label(bias):
     labels = np.random.randint(low=0, high=DIM, size=BATCH_SIZE, dtype=np.uint32)
 
     def indices_check(labels, indices):
@@ -92,10 +101,12 @@ def test_sparse_linear_single_label():
         labels=smx.Variable(smx.from_numpy(labels), requires_grad=False),
         indices_check=indices_check,
         exact_param_grad_check=False,
+        bias=bias,
     )
 
 
-def test_sparse_linear_multi_label():
+@pytest.mark.parametrize("bias", [True, False])
+def test_sparse_linear_multi_label(bias):
     label_offsets = np.array([0, 2, 3, 6, 7, 9, 10, 14, 16])
     labels = np.arange(DIM, dtype=np.uint32)
     np.random.shuffle(labels)
@@ -117,10 +128,12 @@ def test_sparse_linear_multi_label():
         ),
         indices_check=indices_check,
         exact_param_grad_check=False,
+        bias=bias,
     )
 
 
-def test_sparse_linear_disjoint_neurons():
+@pytest.mark.parametrize("bias", [True, False])
+def test_sparse_linear_disjoint_neurons(bias):
     label_offsets = np.arange(0, BATCH_SIZE * NONZEROS + 1, NONZEROS)
     labels = np.arange(DIM, dtype=np.uint32)
     np.random.shuffle(labels)
@@ -139,4 +152,5 @@ def test_sparse_linear_disjoint_neurons():
         ),
         indices_check=indices_check,
         exact_param_grad_check=True,
+        bias=bias,
     )

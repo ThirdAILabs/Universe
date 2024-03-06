@@ -265,7 +265,8 @@ void defineModules(py::module_& smx) {
       .def("__getitem__", &Sequential::operator[]);
 
   py::class_<Linear, std::shared_ptr<Linear>, UnaryModule>(smx, "Linear")
-      .def(py::init<size_t, size_t>(), py::arg("dim"), py::arg("input_dim"))
+      .def(py::init<size_t, size_t, bool>(), py::arg("dim"),
+           py::arg("input_dim"), py::arg("bias") = true)
       .def_property("weight", &Linear::weight, &Linear::setWeight)
       .def_property("bias", &Linear::bias, &Linear::setBias);
 
@@ -280,9 +281,9 @@ void defineModules(py::module_& smx) {
   py::class_<SparseLinear, std::shared_ptr<SparseLinear>, Module>(
       smx, "SparseLinear")
       .def(py::init<size_t, size_t, float, const std::optional<LshIndexConfig>&,
-                    size_t, size_t>(),
+                    bool, size_t, size_t>(),
            py::arg("dim"), py::arg("input_dim"), py::arg("sparsity"),
-           py::arg("lsh_index") = std::nullopt,
+           py::arg("lsh_index") = std::nullopt, py::arg("bias") = true,
            py::arg("updates_per_rebuild") = 4,
            py::arg("updates_per_new_hash_fn") = 100)
       .def("__call__",

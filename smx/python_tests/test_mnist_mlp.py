@@ -2,11 +2,10 @@ import os
 import time
 
 import numpy as np
+import pytest
 import torch
 import torchvision
 from thirdai import smx
-import pytest
-
 
 pytestmark = [pytest.mark.unit]
 

@@ -44,14 +44,22 @@ class Embedding final : public UnaryModule {
   const auto& bias() const { return _bias; }
 
   void setBias(VariablePtr b) {
-    CHECK(b->tensor()->shape() == _bias->tensor()->shape(),
-          "Shape must match in setBias.");
-    CHECK(b->tensor()->dtype() == _bias->tensor()->dtype(),
-          "Dtype must match in setBias.");
+    if (!b && _bias) {
+      deregisterParameter("bias");
+      _bias = nullptr;
+    } else if (b && !_bias) {
+      _bias = std::move(b);
+      registerParameter("bias", _bias);
+    } else if (b && _bias) {
+      CHECK(b->tensor()->shape() == _bias->tensor()->shape(),
+            "Shape must match in setBias.");
+      CHECK(b->tensor()->dtype() == _bias->tensor()->dtype(),
+            "Dtype must match in setBias.");
 
-    _bias = std::move(b);
-    deregisterParameter("bias");
-    registerParameter("bias", _bias);
+      _bias = std::move(b);
+      deregisterParameter("bias");
+      registerParameter("bias", _bias);
+    }
   }
 
  private:

@@ -37,6 +37,7 @@ def run_dense_linear_test(x_np, N, bias):
     if bias:
         assert np.allclose(b_grad_np, b.grad.numpy())
 
+
 @pytest.mark.parametrize("bias", [True, False])
 def test_dense_linear_2d(bias):
     M, K, N = 20, 10, 30
