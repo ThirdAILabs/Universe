@@ -106,6 +106,10 @@ UDTMach::UDTMach(
   dataset::mach::MachIndexPtr mach_index = dataset::mach::MachIndex::make(
       /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes);
 
+  if (user_args.contains("mach_seed")) {
+    mach_index->setSeed(user_args.get<uint32_t>("mach_seed", "integer"));
+  }
+
   auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
       input_data_types, temporal_tracking_relationships,
       tabular_options.lookahead);

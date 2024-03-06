@@ -110,6 +110,8 @@ class MachIndex {
 
   static std::shared_ptr<MachIndex> load(const std::string& filename);
 
+  void setSeed(uint32_t seed) { _seed = seed; }
+
  private:
   void verifyHash(uint32_t hash) const;
 
@@ -129,6 +131,8 @@ class MachIndex {
   uint32_t _num_hashes;
 
   std::unordered_set<uint32_t> _nonempty_buckets;
+
+  uint32_t _seed = 341;
 
   MachIndex() {}
 
