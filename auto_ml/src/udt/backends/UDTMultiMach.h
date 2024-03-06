@@ -12,6 +12,13 @@ namespace thirdai::automl::udt {
 
 using Scores = std::vector<std::pair<uint32_t, float>>;
 
+struct BestScore {
+  bool operator()(const std::pair<uint32_t, float>& a,
+                  const std::pair<uint32_t, float>& b) {
+    return a.second > b.second;
+  }
+};
+
 class UDTMultiMach final : public UDTBackend {
  public:
   UDTMultiMach(

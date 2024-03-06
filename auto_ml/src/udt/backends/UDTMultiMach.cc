@@ -1,7 +1,6 @@
 #include "UDTMultiMach.h"
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt_vector/src/BoltVector.h>
-#include <_types/_uint32_t.h>
 #include <archive/src/Archive.h>
 #include <archive/src/List.h>
 #include <auto_ml/src/Aliases.h>
@@ -319,13 +318,6 @@ py::object UDTMultiMach::predictBatch(const MapInputBatch& samples,
   return py::cast(predictImpl(samples, sparse_inference,
                               top_k.value_or(_default_top_k_to_return)));
 }
-
-struct BestScore {
-  bool operator()(const std::pair<uint32_t, float>& a,
-                  const std::pair<uint32_t, float>& b) {
-    return a.second > b.second;
-  }
-};
 
 std::vector<Scores> UDTMultiMach::predictImpl(const MapInputBatch& input,
                                               bool sparse_inference,

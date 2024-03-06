@@ -69,6 +69,14 @@ class MachMixture(Model):
             for _ in range(self.number_models)
         ]
 
+        self.shards_data = True
+
+    def disable_sharding(self):
+        self.shards_data = False
+
+    def enable_sharding(self):
+        self.shards_data = True
+
     @property
     def n_ids(self):
         # We assume that the label spaces of underlying models are disjoint (True as of now.)
@@ -189,21 +197,27 @@ class MachMixture(Model):
         # We need the original number of classes from the original data source so that we can initialize the Mach models this mixture will have
         number_classes = intro_documents.size
 
-        # Make a sharded data source with introduce documents. When we call shard_data_source, this will shard the introduce data source, return a list of data sources, and modify the label index to keep track of what label goes to what shard
-        introduce_data_sources = shard_data_source(
-            data_source=intro_documents,
-            label_to_segment_map=self.label_to_segment_map,
-            number_shards=self.number_models,
-            update_segment_map=True,
-        )
+        if self.shards_data:
 
-        # Once the introduce datasource has been sharded, we can use the update label index to shard the training data source ( We do not want training samples to go to a Mach model that does not contain their labels)
-        train_data_sources = shard_data_source(
-            train_documents,
-            label_to_segment_map=self.label_to_segment_map,
-            number_shards=self.number_models,
-            update_segment_map=False,
-        )
+            # Make a sharded data source with introduce documents. When we call shard_data_source, this will shard the introduce data source, return a list of data sources, and modify the label index to keep track of what label goes to what shard
+            introduce_data_sources = shard_data_source(
+                data_source=intro_documents,
+                label_to_segment_map=self.label_to_segment_map,
+                number_shards=self.number_models,
+                update_segment_map=True,
+            )
+
+            # Once the introduce datasource has been sharded, we can use the update label index to shard the training data source ( We do not want training samples to go to a Mach model that does not contain their labels)
+            train_data_sources = shard_data_source(
+                train_documents,
+                label_to_segment_map=self.label_to_segment_map,
+                number_shards=self.number_models,
+                update_segment_map=False,
+            )
+
+        else:
+            introduce_data_sources = [intro_documents] * 10
+            train_data_sources = [train_documents] * 10
 
         # Before we start training individual mach models, we need to save the label to segment map of the current mach mixture so that we can resume in case the training fails.
         if checkpoint_config:
@@ -292,6 +306,18 @@ class MachMixture(Model):
 
         return add_retriever_tag(self.aggregate_results(mach_results), tag="mach")
 
+    def query_mach_regular_decode(self, samples, n_results):
+        for model in self.models:
+            model.model.set_decode_params(
+                min(self.n_ids, n_results), min(self.n_ids, 100)
+            )
+
+        mach_results = bolt.UniversalDeepTransformer.regular_decode_mulitple_mach(
+            models=[model.model for model in self.models],
+            batch=[{self.query_col: clean_text(text)} for text in samples],
+        )
+        return add_retriever_tag(mach_results, tag="mach")
+
     def query_inverted_index(self, samples, n_results):
         inverted_index_results = []
         for model in self.models:
@@ -340,6 +366,10 @@ class MachMixture(Model):
             f"Invalid retriever '{retriever}'. Please use 'mach', 'inverted_index', "
             "or pass None to allow the model to autotune which is used."
         )
+
+    def infer_labels_fast_decode(self, samples: InferSamples, n_results: int, **kwargs):
+        results = self.query_mach_regular_decode(samples, n_results)
+        return results
 
     def _shard_label_constraints(
         self, entities: List[List[int]]

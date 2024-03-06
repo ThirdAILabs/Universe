@@ -225,6 +225,9 @@ class UDTMach final : public UDTBackend {
     return n_target_classes / defaults::MACH_DEFAULT_OUTPUT_RANGE_SCALEDOWN;
   }
 
+  uint32_t defaultTopKToReturn() const { return _default_top_k_to_return; }
+  uint32_t numBucketsToEval() const { return _num_buckets_to_eval; }
+
  private:
   std::vector<std::vector<uint32_t>> predictHashesImpl(
       const MapInputBatch& samples, bool sparse_inference,
