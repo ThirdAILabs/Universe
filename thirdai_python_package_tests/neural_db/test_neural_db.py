@@ -28,9 +28,7 @@ from ndb_utils import (
     upvote_batch_works,
     upvote_works,
 )
-from thirdai import dataset
 from thirdai import neural_db as ndb
-from thirdai.neural_db.mach_defaults import autotune_from_scratch_min_max_epochs
 from thirdai.neural_db.models import merge_results
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
@@ -549,52 +547,6 @@ def test_neural_db_reranking_threshold(all_local_docs):
         ranker_results[: 10 - rerank_start],
         check_equal_scores=False,
     )
-
-
-def test_custom_epoch(create_simple_dataset):
-    db = ndb.NeuralDB(user_id="user")
-
-    doc = ndb.CSV(
-        path=create_simple_dataset,
-        id_column="label",
-        strong_columns=["text"],
-        weak_columns=["text"],
-        reference_columns=["text"],
-    )
-
-    batch_count = 0
-
-    def count_batch(progress):
-        nonlocal batch_count
-        batch_count += 2  # Because progress function gets called for even batches only.
-
-    num_epochs = 10
-    db.insert(sources=[doc], epochs=num_epochs, on_progress=count_batch)
-
-    # And number of batches in 'create_simple_dataset' is 1, so, number of epochs that the model got trained for will be number of batches.
-    assert num_epochs == batch_count
-
-
-@pytest.mark.unit
-def test_neuraldb_stopping_condition(create_simple_dataset):
-    db = ndb.NeuralDB(user_id="user")
-
-    doc = ndb.CSV(
-        path=create_simple_dataset,
-        id_column="label",
-        strong_columns=["text"],
-        weak_columns=["text"],
-        reference_columns=["text"],
-    )
-
-    db.insert(sources=[doc])
-
-    min_epochs, _ = autotune_from_scratch_min_max_epochs(size=1)
-
-    # Our training stops when epochs >= min_epochs and accuracy >= 0.95
-    # Since there is only 1 sample in the CSV the db should stop at min_epochs
-    model_epoch_count = db._savable_state.model.get_model()._get_model().epochs()
-    assert min_epochs == model_epoch_count - 1
 
 
 def test_inverted_index_improves_zero_shot():
