@@ -1,6 +1,7 @@
 #include "UDT.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/memory.hpp>
+#include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/utils/Timer.h>
 #include <archive/src/Archive.h>
 #include <auto_ml/src/featurization/DataTypes.h>
@@ -465,6 +466,85 @@ UDT::parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
   }
 
   return outputs;
+}
+
+using Scores = std::vector<std::pair<uint32_t, float>>;
+std::vector<Scores> UDT::regularDecodeMultipleMach(
+    const std::vector<std::shared_ptr<UDT>>& models, const MapInputBatch& batch,
+    bool sparse_inference, std::optional<uint32_t> top_k) {
+  if (models.empty()) {
+    throw std::invalid_argument(
+        "Atleast 1 model should be passed for decoding");
+  }
+  bolt::TensorList scores;
+
+  std::vector<UDTMach*> dynamic_casted_mach_models;
+  for (const auto& model : models) {
+    if (auto* mach_model = dynamic_cast<UDTMach*>(model->_backend.get())) {
+      auto output = mach_model->model()->forward(
+          mach_model->featurizer()->featurizeInputBatch(batch),
+          sparse_inference);
+      dynamic_casted_mach_models.push_back(mach_model);
+      scores.push_back(output.at(0));
+    } else {
+      throw std::invalid_argument("Cannot perform decoding on non mach model.");
+    }
+  }
+
+  auto top_k_to_return =
+      top_k.value_or(dynamic_casted_mach_models[0]->defaultTopKToReturn());
+
+  std::vector<Scores> output(batch.size());
+
+#pragma omp parallel for default(none) \
+    shared(batch, scores, top_k_to_return, output, dynamic_casted_mach_models)
+  for (size_t i = 0; i < batch.size(); i++) {
+    std::unordered_map<uint32_t, float> candidate_scores;
+    for (size_t m = 0; m < dynamic_casted_mach_models.size(); m++) {
+      const auto& index = dynamic_casted_mach_models[m]->getIndex();
+      auto top_model_candidates =
+          scores[m]->getVector(i).findKLargestActivations(
+              dynamic_casted_mach_models[m]->numBucketsToEval());
+
+      while (!top_model_candidates.empty()) {
+        uint32_t bucket = top_model_candidates.top().second;
+        for (uint32_t id : index->getEntities(bucket)) {
+          candidate_scores[id] = 0.0;
+        }
+        top_model_candidates.pop();
+      }
+    }
+    for (size_t m = 0; m < dynamic_casted_mach_models.size(); m++) {
+      const auto& index = dynamic_casted_mach_models[m]->getIndex();
+      const BoltVector& score_vec = scores[m]->getVector(i);
+      if (score_vec.isDense()) {
+        const float* activations = scores[m]->getVector(i).activations;
+        for (auto& [id, score] : candidate_scores) {
+          score += activations[index->getHashes(id)[0]];
+        }
+      } else {
+        std::unordered_map<uint32_t, float> score_map;
+        for (size_t j = 0; j < score_vec.len; j++) {
+          score_map[score_vec.active_neurons[j]] = score_vec.activations[j];
+        }
+        for (auto& [id, score] : candidate_scores) {
+          uint32_t hash = index->getHashes(id)[0];
+          if (score_map.count(hash)) {
+            score += score_map[hash];
+          }
+        }
+      }
+    }
+
+    Scores results(candidate_scores.begin(), candidate_scores.end());
+    std::sort(results.begin(), results.end(), BestScore{});
+    if (results.size() > top_k_to_return) {
+      results.resize(top_k_to_return);
+    }
+    output[i] = results;
+  }
+
+  return output;
 }
 
 }  // namespace thirdai::automl::udt

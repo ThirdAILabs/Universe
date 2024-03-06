@@ -644,6 +644,7 @@ class NeuralDB:
         rerank_threshold=1.5,
         top_k_threshold=None,
         retriever=None,
+        regular_decoding=False,
     ) -> List[Reference]:
         """
         Searches the contents of the NeuralDB for documents relevant to the given query.
@@ -697,6 +698,7 @@ class NeuralDB:
             rerank_threshold=rerank_threshold,
             top_k_threshold=top_k_threshold,
             retriever=retriever,
+            regular_decoding=regular_decoding,
         )[0]
 
     def search_batch(
@@ -709,6 +711,7 @@ class NeuralDB:
         rerank_threshold=1.5,
         top_k_threshold=None,
         retriever=None,
+        regular_decoding=False,
     ):
         """
         Runs search on a batch of queries for much faster throughput.
@@ -729,11 +732,18 @@ class NeuralDB:
                 samples=queries, entities=[matching_entities], n_results=top_k_to_search
             )
         else:
-            queries_result_ids = self._savable_state.model.infer_labels(
-                samples=queries,
-                n_results=top_k_to_search,
-                retriever="mach" if rerank else retriever,
-            )
+            if regular_decoding and isinstance(self._savable_state.model, MachMixture):
+                queries_result_ids = (
+                    self._savable_state.model.infer_labels_regular_decode(
+                        samples=queries, n_results=top_k_to_search
+                    )
+                )
+            else:
+                queries_result_ids = self._savable_state.model.infer_labels(
+                    samples=queries,
+                    n_results=top_k_to_search,
+                    retriever="mach" if rerank else retriever,
+                )
 
         return [
             self._get_query_references(
