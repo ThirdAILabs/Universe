@@ -173,6 +173,7 @@ class TrainingProgressManager:
             intro_source=intro_documents,
             train_source=train_documents,
             tracker=tracker,
+            overwrite_last_model=False,
         )
 
         training_progress_manager = TrainingProgressManager(

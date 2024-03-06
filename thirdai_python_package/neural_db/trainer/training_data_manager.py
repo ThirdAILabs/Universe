@@ -21,12 +21,13 @@ class TrainingDataManager:
         intro_source: DocumentDataSource,
         train_source: DocumentDataSource,
         tracker: NeuralDbProgressTracker,
+        overwrite_last_model: bool = True,
     ):
         # Checkpoint dir here refers to model specific directory
         self.checkpoint_dir = checkpoint_dir
+        self.overwrite_last_model = overwrite_last_model
 
         if self.checkpoint_dir:
-            self.model_location = self.checkpoint_dir / "model.pkl"
             self.intro_source_folder = self.checkpoint_dir / "intro_source"
             self.train_source_folder = self.checkpoint_dir / "train_source"
             self.tracker_folder = self.checkpoint_dir / "tracker"
@@ -68,7 +69,12 @@ class TrainingDataManager:
 
     @staticmethod
     def load(checkpoint_dir: Path):
-        manager = TrainingDataManager(checkpoint_dir, None, None, None, None)
+        manager = TrainingDataManager(
+            checkpoint_dir, None, None, None, None, overwrite_last_model=False
+        )
+        manager.tracker = NeuralDbProgressTracker.load(path=manager.tracker_folder)
+        manager.intro_source = DocumentDataSource.load(path=manager.intro_source_folder)
+        manager.train_source = DocumentDataSource.load(path=manager.train_source_folder)
 
         try:
             manager.model = unpickle_from(manager.model_location)
@@ -78,14 +84,24 @@ class TrainingDataManager:
                 f" {manager.model_location}"
             )
 
-        manager.intro_source = DocumentDataSource.load(path=manager.intro_source_folder)
-        manager.train_source = DocumentDataSource.load(path=manager.train_source_folder)
-        manager.tracker = NeuralDbProgressTracker.load(path=manager.tracker_folder)
-
         return manager
 
     def delete_checkpoint(self):
         shutil.rmtree(path=self.checkpoint_dir, ignore_errors=True)
+
+    @property
+    def model_location(self):
+        if not self.checkpoint_dir:
+            raise Exception(
+                "Trying to access model_location property for a TrainingDataManager with None Checkpoint Config"
+            )
+        if not self.overwrite_last_model:
+            return (
+                self.checkpoint_dir
+                / f"model_epoch_{self.tracker.current_epoch_number}.pkl"
+            )
+        else:
+            return self.checkpoint_dir / "model.pkl"
 
     @staticmethod
     def update_model_and_tracker_from_backup(
@@ -96,7 +112,7 @@ class TrainingDataManager:
         assert_file_exists(path=backup_config.tracker_folder)
 
         shutil.move(
-            backup_config.model_location,
+            str(backup_config.model_location),
             target_config.model_location,
         )
 
