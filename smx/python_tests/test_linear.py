@@ -5,17 +5,19 @@ from thirdai import smx
 pytestmark = [pytest.mark.unit]
 
 
-def run_dense_linear_test(x_np, N):
+def run_dense_linear_test(x_np, N, bias):
     K = x_np.shape[-1]
 
     w_np = np.random.rand(N, K).astype(np.float32)
-    b_np = np.random.rand(N).astype(np.float32)
+    b_np = np.random.rand(N).astype(np.float32) if bias else None
 
-    y_np = np.matmul(x_np, w_np.T) + b_np
+    y_np = np.matmul(x_np, w_np.T)
+    if bias:
+        y_np += b_np
 
     x = smx.Variable(smx.from_numpy(x_np), requires_grad=True)
     w = smx.Variable(smx.from_numpy(w_np), requires_grad=True)
-    b = smx.Variable(smx.from_numpy(b_np), requires_grad=True)
+    b = smx.Variable(smx.from_numpy(b_np), requires_grad=True) if bias else None
 
     y = smx.linear(x, w, b)
 
@@ -32,23 +34,25 @@ def run_dense_linear_test(x_np, N):
 
     assert np.allclose(x_grad_np, x.grad.numpy())
     assert np.allclose(w_grad_np, w.grad.numpy())
-    assert np.allclose(b_grad_np, b.grad.numpy())
+    if bias:
+        assert np.allclose(b_grad_np, b.grad.numpy())
 
-
-def test_dense_linear_2d():
+@pytest.mark.parametrize("bias", [True, False])
+def test_dense_linear_2d(bias):
     M, K, N = 20, 10, 30
 
     x_np = np.random.rand(M, K).astype(np.float32)
 
-    run_dense_linear_test(x_np, N=N)
+    run_dense_linear_test(x_np, N=N, bias=bias)
 
 
-def test_dense_linear_4d():
+@pytest.mark.parametrize("bias", [True, False])
+def test_dense_linear_4d(bias):
     M_1, M_2, M_3, K, N = 4, 5, 6, 10, 30
 
     x_np = np.random.rand(M_1, M_2, M_3, K).astype(np.float32)
 
-    run_dense_linear_test(x_np, N=N)
+    run_dense_linear_test(x_np, N=N, bias=bias)
 
 
 def test_sparse_linear():

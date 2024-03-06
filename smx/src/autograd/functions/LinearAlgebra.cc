@@ -25,7 +25,8 @@ VariablePtr add(const VariablePtr& a, const VariablePtr& b) {
 
 VariablePtr linear(const VariablePtr& x, const VariablePtr& w,
                    const VariablePtr& b) {
-  auto out = linear(x->tensor(), dense(w->tensor()), dense(b->tensor()));
+  auto out =
+      linear(x->tensor(), dense(w->tensor()), b ? dense(b->tensor()) : nullptr);
 
   GradFunc grad_func = [](const TensorPtr& out_grad,
                           const std::vector<VariablePtr>& inputs) {
@@ -33,15 +34,17 @@ VariablePtr linear(const VariablePtr& x, const VariablePtr& w,
     const auto& w = inputs.at(1);
     const auto& b = inputs.at(2);
 
-    auto [x_grad, w_grad, b_grad] =
-        linearGrad(x->tensor(), dense(w->tensor()), dense(b->tensor()),
-                   dense(out_grad), x->requiresGrad());
+    auto [x_grad, w_grad, b_grad] = linearGrad(
+        x->tensor(), dense(w->tensor()), b ? dense(b->tensor()) : nullptr,
+        dense(out_grad), x->requiresGrad());
 
     if (x->requiresGrad()) {
       x->addGradient(x_grad);
     }
     w->addGradient(w_grad);
-    b->addGradient(b_grad);
+    if (b) {
+      b->addGradient(b_grad);
+    }
   };
 
   return Variable::make(out, grad_func, {x, w, b});

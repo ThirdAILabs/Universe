@@ -36,15 +36,11 @@ DenseTensorPtr denseLinear(const DenseTensorPtr& x, const DenseTensorPtr& w,
                            const DenseTensorPtr& b) {
   CHECK(x->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
   CHECK(w->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
-  CHECK(b->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
   CHECK(w->ndim() == 2, "Weight matrix must be 2D.");
-  CHECK(b->ndim() == 1, "Bias must be 1D.");
   CHECK(x->shape().last() == w->shape().last(), "Cols of x and w must match.");
-  CHECK(w->shape(0) == b->shape(0), "Rows of w and b must match.");
 
   auto X = x->eigenMatrix<float>();
   auto W = w->eigenMatrix<float>();
-  auto B = b->eigenVector<float>();
 
   auto out_shape = x->shape().vector();
   out_shape.back() = W.rows();
@@ -64,7 +60,14 @@ DenseTensorPtr denseLinear(const DenseTensorPtr& x, const DenseTensorPtr& w,
   Y.noalias() = X * W.transpose();
 #endif
 
-  Y.rowwise() += B;
+  if (b) {
+    CHECK(b->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
+    CHECK(b->ndim() == 1, "Bias must be 1D.");
+    CHECK(w->shape(0) == b->shape(0), "Rows of w and b must match.");
+
+    auto B = b->eigenVector<float>();
+    Y.rowwise() += B;
+  }
 
   return out;
 }
@@ -77,10 +80,7 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> denseLinearGrad(
   auto Y_grad = dense(y_grad)->eigenMatrix<float>();
 
   auto w_grad = DenseTensor::make(w->shape(), Dtype::f32);
-  auto b_grad = DenseTensor::make(b->shape(), Dtype::f32);
-
   auto W_grad = w_grad->eigenMatrix<float>();
-  auto B_grad = b_grad->eigenMatrix<float>();
 
 #ifdef THIRDAI_DNNL_LINEAR
   int64_t M = X.rows();
@@ -94,7 +94,12 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> denseLinearGrad(
   W_grad = Y_grad.transpose() * X;
 #endif
 
-  B_grad = Y_grad.colwise().sum();
+  DenseTensorPtr b_grad = nullptr;
+  if (b) {
+    b_grad = DenseTensor::make(b->shape(), Dtype::f32);
+    auto B_grad = b_grad->eigenMatrix<float>();
+    B_grad = Y_grad.colwise().sum();
+  }
 
   if (compute_x_grad) {
     auto x_grad = DenseTensor::make(x->shape(), Dtype::f32);
@@ -116,6 +121,15 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> denseLinearGrad(
 
 DenseTensorPtr sparseLinear(const CsrTensorPtr& x, const DenseTensorPtr& w,
                             const DenseTensorPtr& b) {
+  CHECK(b, "Sparse dense linear requires bias, use Embedding instead.");
+  CHECK(x->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
+  CHECK(w->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
+  CHECK(b->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
+  CHECK(w->ndim() == 2, "Weight matrix must be 2D.");
+  CHECK(b->ndim() == 1, "Bias must be 1D.");
+  CHECK(x->shape().last() == w->shape().last(), "Cols of x and w must match.");
+  CHECK(w->shape(0) == b->shape(0), "Rows of w and b must match.");
+
   size_t rows = x->nRows();
   size_t input_dim = w->shape(1);
   size_t dim = w->shape(0);
@@ -212,14 +226,6 @@ std::tuple<CsrTensorPtr, DenseTensorPtr, DenseTensorPtr> sparseLinearGrad(
 
 DenseTensorPtr linear(const TensorPtr& x, const DenseTensorPtr& w,
                       const DenseTensorPtr& b) {
-  CHECK(x->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
-  CHECK(w->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
-  CHECK(b->dtype() == Dtype::f32, "Linear only supports f32 tensors.");
-  CHECK(w->ndim() == 2, "Weight matrix must be 2D.");
-  CHECK(b->ndim() == 1, "Bias must be 1D.");
-  CHECK(x->shape().last() == w->shape().last(), "Cols of x and w must match.");
-  CHECK(w->shape(0) == b->shape(0), "Rows of w and b must match.");
-
   if (x->isSparse()) {
     return sparseLinear(csr(x), w, b);
   }
