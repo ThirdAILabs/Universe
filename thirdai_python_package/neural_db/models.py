@@ -591,7 +591,7 @@ class Mach(Model):
             **kwargs,
         )
 
-        training_progress_manager.make_preindexing_checkpoint()
+        # training_progress_manager.make_preindexing_checkpoint()
         self.index_documents_impl(
             training_progress_manager=training_progress_manager,
             on_progress=on_progress,

@@ -127,4 +127,5 @@ class TrainingDataManager:
             intro_source=self.intro_source,
             train_source=self.train_source,
             tracker=self.tracker,
+            overwrite_last_model=self.overwrite_last_model,
         )
