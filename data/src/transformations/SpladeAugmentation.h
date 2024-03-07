@@ -20,6 +20,10 @@ struct SpladeConfig {
   std::string tokenizer_vocab;
   size_t n_augmented_tokens;
   bool lowercase = true;
+
+  void save_stream(std::ostream& output_stream) const;
+
+  static std::shared_ptr<SpladeConfig> load_stream(std::istream& input_stream);
 };
 
 class SpladeAugmentation final : public Transformation {

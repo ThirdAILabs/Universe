@@ -2,6 +2,7 @@
 #include <bolt/src/utils/ProgressBar.h>
 #include <bolt/src/utils/Timer.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Archive.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/TextTokenizer.h>
@@ -112,6 +113,25 @@ std::string SpladeAugmentation::decodeTopTokens(const BoltVector& vec,
 ar::ConstArchivePtr SpladeAugmentation::toArchive() const {
   throw std::runtime_error(
       "toArchive is not supported for SpladeAugmentation.");
+}
+
+void SpladeConfig::save_stream(std::ostream& output_stream) const {
+  auto map = ar::Map::make();
+  map->set("model_checkpoint", ar::str(model_checkpoint));
+  map->set("tokenizer_vocab", ar::str(tokenizer_vocab));
+  map->set("n_augmented_tokens", ar::u64(n_augmented_tokens));
+  map->set("lowercase", ar::boolean(lowercase));
+
+  ar::serialize(map, output_stream);
+}
+
+std::shared_ptr<SpladeConfig> SpladeConfig::load_stream(
+    std::istream& input_stream) {
+  auto archive = ar::deserialize(input_stream);
+
+  return std::make_shared<SpladeConfig>(
+      archive->str("model_checkpoint"), archive->str("tokenizer_vocab"),
+      archive->u64("n_augmented_tokens"), archive->boolean("lowercase"));
 }
 
 }  // namespace thirdai::data
