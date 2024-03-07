@@ -6,6 +6,7 @@
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <bolt/src/train/callbacks/LambdaOnStoppedCallback.h>
 #include <bolt/src/train/metrics/LossMetric.h>
 #include <bolt/src/train/metrics/MachPrecision.h>
 #include <bolt/src/train/metrics/MachRecall.h>
@@ -437,7 +438,7 @@ py::object UDTMach::coldstart(
     uint32_t epochs, const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
-    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    const std::vector<CallbackPtr>& callbacks_in, TrainOptions options,
     const bolt::DistributedCommPtr& comm) {
   insertNewDocIds(data);
 
@@ -451,7 +452,17 @@ py::object UDTMach::coldstart(
                                    /* shuffle= */ false, options.verbose);
   }
 
+  bool stopped = false;
+
+  auto callbacks = callbacks_in;
+  callbacks.push_back(
+      std::make_shared<bolt::callbacks::LambdaOnStoppedCallback>(
+          bolt::callbacks::LambdaOnStoppedCallback(
+              [&stopped]() { stopped = true; })));
+
+  // Splade augmentation can be slow so we don't want it to run every epoch.
   uint32_t epoch_step = variable_length && !splade_config ? 1 : epochs;
+
   py::object history;
   for (uint32_t e = 0; e < epochs; e += epoch_step) {
     auto train_data_loader = _featurizer->getColdStartDataLoader(
@@ -469,6 +480,10 @@ py::object UDTMach::coldstart(
     data->restart();
     if (val_data_loader) {
       val_data_loader->restart();
+    }
+
+    if (stopped) {
+      break;
     }
   }
 
