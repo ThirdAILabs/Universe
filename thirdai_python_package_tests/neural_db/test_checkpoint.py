@@ -173,6 +173,7 @@ def make_db_and_training_manager(number_models=2, makes_checkpoint=True):
                 freeze_after_epoch=7,
                 freeze_after_acc=0.95,
                 balancing_samples=False,
+                splade_config=None,
             ),
             vlc_config=data.transformations.VariableLengthConfig(),
         ),
@@ -315,6 +316,7 @@ def test_tracker_save_load(setup_and_cleanup):
             freeze_after_epoch=7,
             freeze_after_acc=0.95,
             balancing_samples=False,
+            splade_config=None,
         ),
         vlc_config=data.transformations.VariableLengthConfig(),
     )
