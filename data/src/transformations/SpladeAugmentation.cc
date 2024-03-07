@@ -48,16 +48,6 @@ SpladeAugmentation::SpladeAugmentation(std::string input_column,
   }
 }
 
-std::vector<uint32_t> topk(const BoltVector& vec, size_t k) {
-  std::vector<uint32_t> topk_indices;
-  auto topk_activations = vec.findKLargestActivations(k);
-  while (!topk_activations.empty()) {
-    topk_indices.push_back(topk_activations.top().second);
-    topk_activations.pop();
-  }
-  return topk_indices;
-}
-
 ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
   (void)state;
 
@@ -85,8 +75,6 @@ ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
 #pragma omp parallel for default(none) \
     shared(input_text, augmented_text, output, row_index)
     for (size_t i = 0; i < output->batchSize(); i++) {
-      auto top_tokens = topk(output->getVector(i), _n_augmented_tokens);
-
       augmented_text[row_index + i] =
           input_text->value(row_index + i) +
           decodeTopTokens(output->getVector(i), _n_augmented_tokens);
