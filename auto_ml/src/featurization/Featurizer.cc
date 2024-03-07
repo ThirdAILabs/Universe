@@ -77,10 +77,20 @@ data::LoaderPtr Featurizer::getColdStartDataLoader(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<data::VariableLengthConfig> variable_length,
+    const std::optional<data::SpladeConfig>& splade_config,
     bool fast_approximation, size_t batch_size, bool shuffle, bool verbose,
     dataset::DatasetShuffleConfig shuffle_config) {
-  auto cold_start = coldStartTransform(strong_column_names, weak_column_names,
-                                       variable_length, fast_approximation);
+  data::TransformationPtr cold_start =
+      coldStartTransform(strong_column_names, weak_column_names,
+                         variable_length, fast_approximation);
+
+  if (splade_config) {
+    cold_start = data::Pipeline::make()
+                     ->then(cold_start)
+                     ->then(std::make_shared<data::SpladeAugmentation>(
+                         _text_dataset->textColumn(),
+                         _text_dataset->textColumn(), *splade_config));
+  }
 
   return getDataLoaderHelper(data_source, batch_size, shuffle, verbose,
                              shuffle_config, cold_start);

@@ -433,8 +433,8 @@ py::object UDTMach::coldstart(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<data::VariableLengthConfig> variable_length,
-    float learning_rate, uint32_t epochs,
-    const std::vector<std::string>& train_metrics,
+    const std::optional<data::SpladeConfig>& splade_config, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
@@ -451,13 +451,14 @@ py::object UDTMach::coldstart(
                                    /* shuffle= */ false, options.verbose);
   }
 
-  uint32_t epoch_step = variable_length.has_value() ? 1 : epochs;
+  uint32_t epoch_step = variable_length && !splade_config ? 1 : epochs;
   py::object history;
   for (uint32_t e = 0; e < epochs; e += epoch_step) {
     auto train_data_loader = _featurizer->getColdStartDataLoader(
         data, strong_column_names, weak_column_names,
-        /* variable_length= */ variable_length, /* fast_approximation= */
-        false, options.batchSize(), /* shuffle= */ true, options.verbose,
+        /* variable_length= */ variable_length,
+        /*splade_config=*/splade_config, /* fast_approximation= */ false,
+        options.batchSize(), /* shuffle= */ true, options.verbose,
         options.shuffle_config);
 
     history = _classifier->train(

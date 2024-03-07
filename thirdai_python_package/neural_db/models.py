@@ -264,6 +264,7 @@ def unsupervised_train_on_docs(
     variable_length: Optional[data.transformations.VariableLengthConfig],
     training_progress_callback: Optional[TrainingProgressCallback],
     balancing_samples=False,
+    splade_config=None,
     **kwargs,
 ):
     documents.restart()
@@ -322,6 +323,7 @@ def unsupervised_train_on_docs(
             callbacks=callbacks,
             max_in_memory_batches=max_in_memory_batches,
             variable_length=variable_length,
+            splade_config=splade_config,
         )
 
 

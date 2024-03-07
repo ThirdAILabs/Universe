@@ -185,6 +185,7 @@ def modify_udt():
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
+        splade_config=None,
         learning_rate: float = 0.001,
         epochs: int = 5,
         batch_size: int = None,
@@ -214,6 +215,7 @@ def modify_udt():
             strong_column_names=strong_column_names,
             weak_column_names=weak_column_names,
             variable_length=variable_length,
+            splade_config=splade_config,
             learning_rate=learning_rate,
             epochs=epochs,
             train_metrics=metrics,
@@ -232,6 +234,7 @@ def modify_udt():
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
+        splade_config=None,
         learning_rate: float = 0.001,
         epochs: int = 5,
         batch_size: int = None,
@@ -256,6 +259,7 @@ def modify_udt():
             strong_column_names=strong_column_names,
             weak_column_names=weak_column_names,
             variable_length=variable_length,
+            splade_config=splade_config,
             learning_rate=learning_rate,
             epochs=epochs,
             train_metrics=metrics,

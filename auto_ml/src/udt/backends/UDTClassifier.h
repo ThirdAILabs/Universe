@@ -70,6 +70,7 @@ class UDTClassifier final : public UDTBackend {
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       std::optional<data::VariableLengthConfig> variable_length,
+      const std::optional<data::SpladeConfig>& splade_config,
       float learning_rate, uint32_t epochs,
       const std::vector<std::string>& train_metrics,
       const dataset::DataSourcePtr& val_data,

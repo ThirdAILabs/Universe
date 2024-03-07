@@ -13,6 +13,7 @@
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/Pipeline.h>
+#include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/StringHash.h>
@@ -465,6 +466,11 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       .def("inference_featurization", &DyadicInterval::inferenceFeaturization,
            py::arg("columns"));
 #endif
+
+  py::class_<SpladeConfig>(transformations_submodule, "SpladeConfig")
+      .def(py::init<std::string, std::string, size_t, bool>(),
+           py::arg("model_checkpoint"), py::arg("tokenizer_vocab"),
+           py::arg("n_augmented_tokens") = 20, py::arg("lowercase") = true);
 }
 
 }  // namespace thirdai::data::python
