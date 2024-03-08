@@ -27,6 +27,12 @@ def parse_arguments():
         help="Regular expression indicating which configs to retrieve for the given runners.",  # Empty string returns all configs for the given runners.
     )
     parser.add_argument(
+        "--config_type",
+        type=str,
+        default=None,
+        help="If specified, will ensure that each config to be retrieve has a config_type field equal to this value.",
+    )
+    parser.add_argument(
         "--mlflow_uri",
         type=str,
         help="MLflow URI to read metrics from.",
@@ -157,7 +163,7 @@ if __name__ == "__main__":
     for runner_name in args.runner:
         runner = runner_map[runner_name.lower()]
 
-        configs = get_configs(runner=runner, config_regex=args.config)
+        configs = get_configs(runner=runner, config_regex=args.config, config_type=args.config_type)
 
         slack_payload_list = [""]
         slack_payload_idx = 0

@@ -31,6 +31,12 @@ def parse_arguments():
         help="Regular expression indicating which configs to run for the given runners.",  # Empty string returns all configs for the given runners.
     )
     parser.add_argument(
+        "--config_type",
+        type=str,
+        default=None,
+        help="If specified, will ensure that each config to retrieve has a config_type field equal to this value.",
+    )
+    parser.add_argument(
         "--path_prefix",
         type=str,
         default="/share/data/",
@@ -64,12 +70,7 @@ def parse_arguments():
         default="",
         help="Name of branch that benchmarks are being run on",
     )
-    parser.add_argument(
-        "--config_type",
-        type=str,
-        default=None,
-        help="If specified, will ensure that each config to be run has a config_type field equal to this value.",
-    )
+
     return parser.parse_args()
 
 
