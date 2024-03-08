@@ -90,12 +90,15 @@ def process_mlflow_dataframe(mlflow_runs, num_runs, client, run_name=""):
     mlflow_runs = mlflow_runs[mlflow_runs["status"] == "FINISHED"]
     mlflow_runs = mlflow_runs[:num_runs]
 
-    mlflow_runs["training_time"] = mlflow_runs.apply(
-        lambda x: sum(
-            [x.value for x in client.get_metric_history(x.run_id, "epoch_times")]
-        ),
-        axis=1,
-    )
+    display_columns = ["start_time"]
+    if "metrics.epoch_times" in mlflow_runs.columns:
+        mlflow_runs["training_time"] = mlflow_runs.apply(
+            lambda x: sum(
+                [x.value for x in client.get_metric_history(x.run_id, "epoch_times")]
+            ),
+            axis=1,
+        )
+        display_columns += ["training_time"]
 
     # Drop the epoch times column since it is no longer needed after calculating training time
     mlflow_runs.drop(columns=["metrics.epoch_times"], inplace=True, errors="ignore")
@@ -115,7 +118,7 @@ def process_mlflow_dataframe(mlflow_runs, num_runs, client, run_name=""):
     mlflow_runs["start_time"] = mlflow_runs.apply(lambda x: x.start_time.date(), axis=1)
 
     metric_columns = [col for col in mlflow_runs if col.startswith("metrics")]
-    display_columns = ["start_time", "training_time"] + metric_columns
+    display_columns += metric_columns
     df = mlflow_runs[display_columns]
     df = df.rename(
         columns={
@@ -133,10 +136,10 @@ def extract_mlflow_data(experiment_name, num_runs, run_name=""):
     exp = client.get_experiment_by_name(experiment_name)
     if exp is None:
         return pd.DataFrame()
-    exp_id = exp.experiment_id
+exp_id = exp.experiment_id
 
-    mlflow_runs = mlflow.search_runs(exp_id)
-    df = process_mlflow_dataframe(mlflow_runs, num_runs, client, run_name)
+mlflow_runs = mlflow.search_runs(exp_id)
+df = process_mlflow_dataframe(mlflow_runs, num_runs, client, run_name)
 
     return df
 
