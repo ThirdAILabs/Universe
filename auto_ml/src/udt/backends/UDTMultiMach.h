@@ -65,6 +65,10 @@ class UDTMultiMach final : public UDTBackend {
 
   static std::unique_ptr<UDTMultiMach> fromArchive(const ar::Archive& archive);
 
+  void upvote(const std::vector<std::pair<std::string, uint32_t>>& rlhf_samples,
+              uint32_t n_upvote_samples, uint32_t n_balancing_samples,
+              float learning_rate, uint32_t epochs, size_t batch_size) final;
+              
   void setDecodeParams(uint32_t top_k_to_return,
                        uint32_t num_buckets_to_eval) final {
     _default_top_k_to_return = top_k_to_return;

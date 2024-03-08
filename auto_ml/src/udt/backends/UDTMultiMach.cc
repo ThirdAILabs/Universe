@@ -394,6 +394,16 @@ std::vector<Scores> UDTMultiMach::predictFastDecode(const MapInputBatch& input,
   return output;
 }
 
+void UDTMultiMach::upvote(const std::vector<std::pair<std::string, uint32_t>>& rlhf_samples,
+          uint32_t n_upvote_samples, uint32_t n_balancing_samples,
+          float learning_rate, uint32_t epochs, size_t batch_size){
+            for (auto& model : _models) {
+              model->upvote(rlhf_samples, n_upvote_samples, 
+              n_balancing_samples, 
+              learning_rate, epochs, batch_size);
+            }
+          }
+              
 std::vector<Scores> UDTMultiMach::predictRegularDecode(
     const MapInputBatch& input, bool sparse_inference, uint32_t top_k) {
   bolt::TensorList scores;
