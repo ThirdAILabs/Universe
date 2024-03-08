@@ -571,7 +571,7 @@ bolt::metrics::InputMetrics MachRetriever::getMetrics(
 MachRetriever::MachRetriever(
     std::string text_column, const std::string& id_column, uint32_t num_hashes,
     uint32_t output_dim, uint32_t embedding_dim, uint32_t text_feature_dim,
-    uint32_t output_bias, uint32_t embedding_bias, bool normalize_embeddings,
+    bool output_bias, bool embedding_bias, bool normalize_embeddings,
     const std::string& output_act_func, const std::string& embedding_act_func,
     const std::string& tokenizer, const std::string& contextual_encoding,
     bool lowercase, float mach_sampling_threshold, uint32_t num_buckets_to_eval,
