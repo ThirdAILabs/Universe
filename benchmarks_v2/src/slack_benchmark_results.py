@@ -114,6 +114,8 @@ def process_mlflow_dataframe(mlflow_runs, num_runs, client, run_name=""):
     # Remove columns that contain only nan values, usually indicates deprecation of a metric
     mlflow_runs.dropna(axis=1, how="all", inplace=True)
 
+    print(mlflow_runs.apply(lambda x: x.start_time.date(), axis=1))
+
     # Convert the start time timestamp into a date to make it easier to read
     mlflow_runs["start_time"] = mlflow_runs.apply(lambda x: x.start_time.date(), axis=1)
 
