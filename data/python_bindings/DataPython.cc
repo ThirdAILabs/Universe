@@ -469,9 +469,12 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
 
   py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>>(
       transformations_submodule, "SpladeConfig")
-      .def(py::init<std::string, std::string, size_t, bool>(),
+      .def(py::init<std::string, std::string, std::optional<size_t>,
+                    std::optional<float>, size_t, bool>(),
            py::arg("model_checkpoint"), py::arg("tokenizer_vocab"),
-           py::arg("n_augmented_tokens") = 20, py::arg("lowercase") = true)
+           py::arg("n_augmented_tokens") = 20,
+           py::arg("augmentation_frac") = std::nullopt,
+           py::arg("batch_size") = 4096, py::arg("lowercase") = true)
       .def(bolt::python::getPickleFunction<SpladeConfig>());
 }
 

@@ -14,28 +14,31 @@ namespace thirdai::data {
 
 SpladeAugmentation::SpladeAugmentation(std::string input_column,
                                        std::string output_column,
-                                       const std::string& model_checkpoint,
-                                       const std::string& tokenizer_vocab,
-                                       size_t n_augmented_tokens,
-                                       bool lowercase)
+                                       const SpladeConfig& config)
     : SpladeAugmentation(/*input_column=*/std::move(input_column),
                          /*output_column=*/std::move(output_column),
-                         /*model=*/bolt::Model::load(model_checkpoint),
+                         /*model=*/bolt::Model::load(config.model_checkpoint),
                          /*tokenizer=*/
                          std::make_shared<dataset::WordpieceTokenizer>(
-                             tokenizer_vocab, lowercase),
-                         /*n_augmented_tokens=*/n_augmented_tokens) {}
+                             config.tokenizer_vocab, config.lowercase),
+                         /*n_augmented_tokens=*/config.n_augmented_tokens,
+                         /*augmentation_frac=*/config.augmentation_frac,
+                         /*batch_size=*/config.batch_size) {}
 
 SpladeAugmentation::SpladeAugmentation(std::string input_column,
                                        std::string output_column,
                                        bolt::ModelPtr model,
                                        dataset::WordpieceTokenizerPtr tokenizer,
-                                       size_t n_augmented_tokens)
+                                       std::optional<size_t> n_augmented_tokens,
+                                       std::optional<float> augmentation_frac,
+                                       size_t batch_size)
     : _input_column(std::move(input_column)),
       _output_column(std::move(output_column)),
       _model(std::move(model)),
       _tokenizer(std::move(tokenizer)),
-      _n_augmented_tokens(n_augmented_tokens) {
+      _n_augmented_tokens(n_augmented_tokens),
+      _augmentation_frac(augmentation_frac),
+      _batch_size(batch_size) {
   if (_model->inputs().size() != 1 || _model->outputs().size() != 1) {
     throw std::invalid_argument(
         "SpladeAugmentation model must have 1 input and output.");
@@ -46,6 +49,12 @@ SpladeAugmentation::SpladeAugmentation(std::string input_column,
     throw std::invalid_argument(
         "SpladeAugmentation model input and output dim should match tokenizer "
         "vocab size.");
+  }
+
+  if (_n_augmented_tokens.has_value() == _augmentation_frac.has_value()) {
+    throw std::invalid_argument(
+        "Must specified exactly one of n_augmented_tokens and "
+        "augmentation_frac.");
   }
 }
 
@@ -60,10 +69,12 @@ ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
 
   auto tokenized_columns = tokenizer.applyStateless(columns);
 
-  auto batches = data::toTensorBatches(tokenized_columns,
-                                       {OutputColumns(_input_column)}, 4096);
+  auto batches = data::toTensorBatches(
+      tokenized_columns, {OutputColumns(_input_column)}, _batch_size);
 
   auto input_text = columns.getValueColumn<std::string>(_input_column);
+  auto tokenized_text =
+      tokenized_columns.getArrayColumn<uint32_t>(_input_column);
 
   std::vector<std::string> augmented_text(input_text->numRows());
 
@@ -74,11 +85,13 @@ ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
     auto output = _model->forward(batch).at(0);
 
 #pragma omp parallel for default(none) \
-    shared(input_text, augmented_text, output, row_index)
+    shared(input_text, tokenized_text, augmented_text, output, row_index)
     for (size_t i = 0; i < output->batchSize(); i++) {
       augmented_text[row_index + i] =
           input_text->value(row_index + i) +
-          decodeTopTokens(output->getVector(i), _n_augmented_tokens);
+          decodeTopTokens(
+              output->getVector(i),
+              tokensToAdd(tokenized_text->row(row_index + i).size()));
     }
 
     row_index += output->batchSize();
@@ -119,7 +132,13 @@ void SpladeConfig::save_stream(std::ostream& output_stream) const {
   auto map = ar::Map::make();
   map->set("model_checkpoint", ar::str(model_checkpoint));
   map->set("tokenizer_vocab", ar::str(tokenizer_vocab));
-  map->set("n_augmented_tokens", ar::u64(n_augmented_tokens));
+  if (n_augmented_tokens) {
+    map->set("n_augmented_tokens", ar::u64(*n_augmented_tokens));
+  }
+  if (augmentation_frac) {
+    map->set("augmentation_frac", ar::f32(*augmentation_frac));
+  }
+  map->set("batch_size", ar::u64(batch_size));
   map->set("lowercase", ar::boolean(lowercase));
 
   ar::serialize(map, output_stream);
@@ -131,7 +150,9 @@ std::shared_ptr<SpladeConfig> SpladeConfig::load_stream(
 
   return std::make_shared<SpladeConfig>(
       archive->str("model_checkpoint"), archive->str("tokenizer_vocab"),
-      archive->u64("n_augmented_tokens"), archive->boolean("lowercase"));
+      archive->getOpt<ar::U64>("n_augmented_tokens"),
+      archive->getOpt<ar::F32>("augmentation_frac"), archive->u64("batch_size"),
+      archive->boolean("lowercase"));
 }
 
 }  // namespace thirdai::data
