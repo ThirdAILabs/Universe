@@ -271,7 +271,7 @@ class DocumentDataSource(PyDataSource):
         """
         path.mkdir(exist_ok=True, parents=True)
         number_lines_in_buffer = 0
-        with open(path / "source.csv", "w") as f:
+        with open(path / "source.csv", "w", encoding="utf-8") as f:
             for line in self._get_line_iterator():
                 f.write(line + "\n")
                 number_lines_in_buffer += 1
@@ -526,7 +526,8 @@ class CSV(Document):
             df[self.id_column] = range(df.shape[0])
             if orig_id_column:
                 self.orig_to_assigned_id = {
-                    row[orig_id_column]: row[self.id_column] for _, row in df.iterrows()
+                    getattr(row, orig_id_column): getattr(row, self.id_column)
+                    for row in df.itertuples(index=True)
                 }
 
         if strong_columns is None and weak_columns is None:
