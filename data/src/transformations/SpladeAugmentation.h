@@ -9,27 +9,30 @@
 namespace thirdai::data {
 
 struct SpladeConfig {
-  SpladeConfig(std::string model_checkpoint, std::string tokenizer_vocab,
+  SpladeConfig(const std::string& model_checkpoint,
+               const std::string& tokenizer_vocab,
                std::optional<size_t> n_augmented_tokens,
                std::optional<float> augmentation_frac, size_t batch_size = 4096,
-               bool lowercase = true)
-      : model_checkpoint(std::move(model_checkpoint)),
-        tokenizer_vocab(std::move(tokenizer_vocab)),
-        n_augmented_tokens(n_augmented_tokens),
-        augmentation_frac(augmentation_frac),
-        batch_size(batch_size),
-        lowercase(lowercase) {}
+               bool lowercase = true);
 
-  std::string model_checkpoint;
-  std::string tokenizer_vocab;
+  bolt::ModelPtr model;
+  dataset::WordpieceTokenizerPtr tokenizer;
   std::optional<size_t> n_augmented_tokens;
   std::optional<float> augmentation_frac;
   size_t batch_size = 4096;
-  bool lowercase = true;
 
   void save_stream(std::ostream& output_stream) const;
 
   static std::shared_ptr<SpladeConfig> load_stream(std::istream& input_stream);
+
+ private:
+  // Rather than saving the model and tokenizer, this object just stores the
+  // paths and recreates them on load, this is to avoid the cost of serializtion
+  // the model for NDB checkpointing, which is really the only case in which
+  // this should be serialized.
+  std::string _model_checkpoint;
+  std::string _tokenizer_vocab;
+  bool _lowercase = true;
 };
 
 class SpladeAugmentation final : public Transformation {

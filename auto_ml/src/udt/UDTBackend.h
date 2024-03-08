@@ -145,13 +145,12 @@ class UDTBackend {
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       std::optional<data::VariableLengthConfig> variable_length,
-      const std::optional<data::SpladeConfig>& splade_config,
       float learning_rate, uint32_t epochs,
       const std::vector<std::string>& train_metrics,
       const dataset::DataSourcePtr& val_data,
       const std::vector<std::string>& val_metrics,
       const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-      const bolt::DistributedCommPtr& comm) {
+      const bolt::DistributedCommPtr& comm, const py::kwargs& kwargs) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
@@ -164,7 +163,7 @@ class UDTBackend {
     (void)options;
     (void)comm;
     (void)variable_length;
-    (void)splade_config;
+    (void)kwargs;
     throw notSupported("cold_start");
   }
 

@@ -440,22 +440,26 @@ py::object UDTMach::coldstart(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<data::VariableLengthConfig> variable_length,
-    const std::optional<data::SpladeConfig>& splade_config, float learning_rate,
-    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    float learning_rate, uint32_t epochs,
+    const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks_in, TrainOptions options,
-    const bolt::DistributedCommPtr& comm) {
+    const bolt::DistributedCommPtr& comm, const py::kwargs& kwargs) {
   insertNewDocIds(data);
 
   addBalancingSamples(data, strong_column_names, weak_column_names,
                       variable_length);
 
+  auto splade_config = getSpladeConfig(kwargs);
+  auto splade_in_val = getSpladeValidationOption(kwargs);
+
   data::LoaderPtr val_data_loader;
   if (val_data) {
-    val_data_loader =
-        _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
-                                   /* shuffle= */ false, options.verbose);
+    val_data_loader = _featurizer->getDataLoader(
+        val_data, defaults::BATCH_SIZE,
+        /* shuffle= */ false, options.verbose,
+        /*splade_config=*/splade_in_val ? splade_config : std::nullopt);
   }
 
   bool stopped = false;

@@ -12,15 +12,28 @@
 
 namespace thirdai::data {
 
+SpladeConfig::SpladeConfig(const std::string& model_checkpoint,
+                           const std::string& tokenizer_vocab,
+                           std::optional<size_t> n_augmented_tokens,
+                           std::optional<float> augmentation_frac,
+                           size_t batch_size, bool lowercase)
+    : model(bolt::Model::load(model_checkpoint)),
+      tokenizer(std::make_shared<dataset::WordpieceTokenizer>(tokenizer_vocab,
+                                                              lowercase)),
+      n_augmented_tokens(n_augmented_tokens),
+      augmentation_frac(augmentation_frac),
+      batch_size(batch_size),
+      _model_checkpoint(model_checkpoint),
+      _tokenizer_vocab(tokenizer_vocab),
+      _lowercase(lowercase) {}
+
 SpladeAugmentation::SpladeAugmentation(std::string input_column,
                                        std::string output_column,
                                        const SpladeConfig& config)
     : SpladeAugmentation(/*input_column=*/std::move(input_column),
                          /*output_column=*/std::move(output_column),
-                         /*model=*/bolt::Model::load(config.model_checkpoint),
-                         /*tokenizer=*/
-                         std::make_shared<dataset::WordpieceTokenizer>(
-                             config.tokenizer_vocab, config.lowercase),
+                         /*model=*/config.model,
+                         /*tokenizer=*/config.tokenizer,
                          /*n_augmented_tokens=*/config.n_augmented_tokens,
                          /*augmentation_frac=*/config.augmentation_frac,
                          /*batch_size=*/config.batch_size) {}
@@ -132,8 +145,8 @@ ar::ConstArchivePtr SpladeAugmentation::toArchive() const {
 
 void SpladeConfig::save_stream(std::ostream& output_stream) const {
   auto map = ar::Map::make();
-  map->set("model_checkpoint", ar::str(model_checkpoint));
-  map->set("tokenizer_vocab", ar::str(tokenizer_vocab));
+  map->set("model_checkpoint", ar::str(_model_checkpoint));
+  map->set("tokenizer_vocab", ar::str(_tokenizer_vocab));
   if (n_augmented_tokens) {
     map->set("n_augmented_tokens", ar::u64(*n_augmented_tokens));
   }
@@ -141,7 +154,7 @@ void SpladeConfig::save_stream(std::ostream& output_stream) const {
     map->set("augmentation_frac", ar::f32(*augmentation_frac));
   }
   map->set("batch_size", ar::u64(batch_size));
-  map->set("lowercase", ar::boolean(lowercase));
+  map->set("lowercase", ar::boolean(_lowercase));
 
   ar::serialize(map, output_stream);
 }

@@ -476,6 +476,19 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("augmentation_frac") = std::nullopt,
            py::arg("batch_size") = 4096, py::arg("lowercase") = true)
       .def(bolt::python::getPickleFunction<SpladeConfig>());
+
+  py::class_<SpladeAugmentation, Transformation,
+             std::shared_ptr<SpladeAugmentation>>(transformations_submodule,
+                                                  "SpladeAugmentation")
+      .def(py::init<std::string, std::string, const SpladeConfig&>(),
+           py::arg("input_column"), py::arg("output_column"), py::arg("config"))
+      .def(py::init<std::string, std::string, bolt::ModelPtr,
+                    dataset::WordpieceTokenizerPtr, std::optional<size_t>,
+                    std::optional<float>, size_t>(),
+           py::arg("input_column"), py::arg("output_column"), py::arg("model"),
+           py::arg("tokenizer"), py::arg("n_augmented_tokens") = 20,
+           py::arg("augmentation_frac") = std::nullopt,
+           py::arg("batch_size") = 4096);
 }
 
 }  // namespace thirdai::data::python
