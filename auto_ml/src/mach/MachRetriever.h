@@ -12,6 +12,7 @@
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/DistributedComm.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Archive.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/ColumnMapIterator.h>
@@ -84,6 +85,8 @@ class MachRetriever {
                 float mach_sampling_threshold, uint32_t num_buckets_to_eval,
                 size_t memory_max_ids, size_t memory_max_samples_per_id);
 
+  explicit MachRetriever(const ar::Archive& archive);
+
   void introduce(const data::ColumnMapIteratorPtr& iter,
                  const std::vector<std::string>& strong_column_names,
                  const std::vector<std::string>& weak_column_names,
@@ -149,6 +152,10 @@ class MachRetriever {
                  uint32_t num_association_samples,
                  uint32_t num_balancing_samples, float learning_rate,
                  uint32_t epochs, bool force_non_empty, size_t batch_size);
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const;
+
+  static std::shared_ptr<MachRetriever> fromArchive(const ar::Archive& archive);
 
  private:
   bolt::TensorList inputTensors(const data::ColumnMap& columns) {

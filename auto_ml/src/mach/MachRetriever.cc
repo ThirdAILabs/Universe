@@ -11,12 +11,15 @@
 #include <bolt/src/train/metrics/RecallAtK.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Archive.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/Loader.h>
+#include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Pipeline.h>
+#include <data/src/transformations/Transformation.h>
 #include <cassert>
 #include <optional>
 #include <regex>
@@ -613,6 +616,7 @@ data::ValueFillType toValueFillType(const std::string& output_act_func) {
   throw std::invalid_argument("Invalid output_act_func \"" + output_act_func +
                               R"(". Choose one of "softmax" or "sigmoid".)");
 }
+
 bolt::ModelPtr defaultModel(uint32_t text_feature_dim, uint32_t embedding_dim,
                             uint32_t output_dim, bool embedding_bias,
                             bool output_bias, bool normalize_embeddings,
@@ -656,4 +660,55 @@ bolt::ModelPtr defaultModel(uint32_t text_feature_dim, uint32_t embedding_dim,
       // model.
       {bolt::Input::make(std::numeric_limits<uint32_t>::max())});
 }
+
+ar::ConstArchivePtr MachRetriever::toArchive(bool with_optimizer) const {
+  auto map = ar::Map::make();
+
+  map->set("state", _state->toArchive());
+  map->set("model", _model->toArchive(with_optimizer));
+
+  map->set("text_column", ar::str(_text_column));
+  map->set("id_column", ar::str(_id_column));
+
+  map->set("text_transformation", _text_transform->toArchive());
+  map->set("id_transformation", _id_transform->toArchive());
+  map->set("add_mach_memory_samples", _add_mach_memory_samples->toArchive());
+
+  map->set("bolt_input_columns",
+           data::outputColumnsToArchive(_bolt_input_columns));
+  map->set("bolt_label_columns",
+           data::outputColumnsToArchive(_bolt_label_columns));
+  map->set("all_bolt_columns", ar::vecStr(_all_bolt_columns));
+
+  map->set("mach_sampling_threshold", ar::f32(_mach_sampling_threshold));
+  map->set("num_buckets_to_eval", ar::u64(_num_buckets_to_eval));
+
+  return map;
+}
+
+MachRetriever::MachRetriever(const ar::Archive& archive)
+    : _state(data::State::fromArchive(*archive.get("state"))),
+      _model(bolt::Model::fromArchive(*archive.get("model"))),
+      _text_column(archive.str("text_column")),
+      _id_column(archive.str("id_column")),
+      _text_transform(
+          data::Transformation::fromArchive(*archive.get("text_transform"))),
+      _id_transform(
+          data::Transformation::fromArchive(*archive.get("id_transform"))),
+      _add_mach_memory_samples(data::Transformation::fromArchive(
+          *archive.get("add_mach_memory_samples"))),
+      _bolt_input_columns(
+          data::outputColumnsFromArchive(*archive.get("bolt_input_columns"))),
+      _bolt_label_columns(
+          data::outputColumnsFromArchive(*archive.get("bolt_label_columns"))),
+      _all_bolt_columns(archive.getAs<ar::VecStr>("all_bolt_columns")),
+      _mach_sampling_threshold(
+          archive.getAs<ar::F32>("mach_sampling_threshold")),
+      _num_buckets_to_eval(archive.u64("num_buckets_to_eval")) {}
+
+std::shared_ptr<MachRetriever> MachRetriever::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_shared<MachRetriever>(archive);
+}
+
 }  // namespace thirdai::automl::mach
