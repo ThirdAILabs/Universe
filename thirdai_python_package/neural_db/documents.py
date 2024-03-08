@@ -271,7 +271,7 @@ class DocumentDataSource(PyDataSource):
         """
         path.mkdir(exist_ok=True, parents=True)
         number_lines_in_buffer = 0
-        with open(path / "source.csv", "w") as f:
+        with open(path / "source.csv", "w", encoding="utf-8") as f:
             for line in self._get_line_iterator():
                 f.write(line + "\n")
                 number_lines_in_buffer += 1
