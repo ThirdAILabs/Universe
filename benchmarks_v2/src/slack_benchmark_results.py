@@ -163,7 +163,9 @@ if __name__ == "__main__":
     for runner_name in args.runner:
         runner = runner_map[runner_name.lower()]
 
-        configs = get_configs(runner=runner, config_regex=args.config, config_type=args.config_type)
+        configs = get_configs(
+            runner=runner, config_regex=args.config, config_type=args.config_type
+        )
 
         slack_payload_list = [""]
         slack_payload_idx = 0
