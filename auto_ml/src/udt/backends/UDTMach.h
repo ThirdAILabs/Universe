@@ -107,7 +107,7 @@ class UDTMach final : public UDTBackend {
       const std::vector<std::string>& train_metrics,
       const dataset::DataSourcePtr& val_data,
       const std::vector<std::string>& val_metrics,
-      const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+      const std::vector<CallbackPtr>& callbacks_in, TrainOptions options,
       const bolt::DistributedCommPtr& comm) final;
 
   py::object embedding(const MapInputBatch& sample) final;
