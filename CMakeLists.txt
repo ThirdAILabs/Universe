@@ -431,6 +431,8 @@ set(THIRDAI_SOURCES
     data/src/transformations/Tabular.cc
     data/src/transformations/Pipeline.cc
     data/src/transformations/MachLabel.cc
+    data/src/transformations/MachMemory.cc
+    data/src/transformations/AddMachMemorySamples.cc
     data/src/transformations/StringConcat.cc
     data/src/transformations/StringCast.cc
     data/src/transformations/StringIDLookup.cc
