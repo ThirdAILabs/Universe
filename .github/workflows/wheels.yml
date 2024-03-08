@@ -99,7 +99,8 @@ jobs:
             brew install openssl && 
             brew install llvm@17 && 
             brew install libomp &&
-            export CXX=$(brew --prefix llvm)/bin/clang++
+            export CXX="$(brew --prefix llvm)/bin/clang++" && 
+            echo $CXX
 
           # Online compile cpython wheels (pytorch does this too), no big 
           # advantage to JIT compilation of python since most of our processing
