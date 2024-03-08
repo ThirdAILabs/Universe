@@ -50,11 +50,11 @@ class SpladeAugmentation final : public Transformation {
  private:
   std::string decodeTopTokens(const BoltVector& vec, size_t k) const;
 
-  inline size_t tokensToAdd(size_t seq_len)const {
+  inline size_t tokensToAdd(size_t seq_len) const {
     if (_n_augmented_tokens) {
       return _n_augmented_tokens.value();
     }
-    return seq_len * (1 + _augmentation_frac.value());
+    return seq_len * _augmentation_frac.value();
   }
 
   std::string _input_column;

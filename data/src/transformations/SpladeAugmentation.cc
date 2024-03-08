@@ -61,6 +61,8 @@ SpladeAugmentation::SpladeAugmentation(std::string input_column,
 ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
   (void)state;
 
+  // Note: NGramEncoder with n=1 in this case is a no-op, it is just here to
+  // satisfy the encoder requirement.
   data::TextTokenizer tokenizer(
       /*input_column=*/_input_column, /*output_indices=*/_input_column,
       /*output_values=*/std::nullopt, /*tokenizer=*/_tokenizer,
