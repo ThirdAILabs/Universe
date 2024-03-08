@@ -65,6 +65,9 @@ class NeuralDBClient:
         insert(self, files: List[str]) -> None:
             Inserts documents into the ndb model.
 
+        delete(self, source_ids: List[str]) -> None:
+            Deletes documents from the ndb model
+
         associate(self, text_pairs (List[Dict[str, str]])) -> None:
             Associates source and target string pairs in the ndb model.
 
@@ -73,6 +76,9 @@ class NeuralDBClient:
 
         downvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]) -> None:
             Downvotes a response in the ndb model.
+
+        sources(self) -> List[Dict[str, str]]:
+            Gets the source names and ids of documents in the ndb model
     """
 
     def __init__(self, deployment_identifier: str, base_url: str, bazaar: ModelBazaar):
@@ -186,6 +192,19 @@ class NeuralDBClient:
         )
 
         print("Successfully downvoted the specified search result.")
+
+    @check_deployment_decorator
+    def sources(self) -> List[Dict[str, str]]:
+        """
+        Gets the source names and ids of documents in the ndb model
+
+        """
+        response = http_get_with_error(
+            urljoin(self.base_url, "sources"),
+            headers=auth_header(self.bazaar._access_token),
+        )
+
+        return response.json()["data"]
 
 
 class ModelBazaar(Bazaar):

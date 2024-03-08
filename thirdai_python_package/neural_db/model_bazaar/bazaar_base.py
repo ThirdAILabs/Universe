@@ -78,11 +78,21 @@ class BazaarEntry(BaseModel):
 class Login:
     def __init__(
         self,
-        email: str,
-        password: str,
         base_url: str,
+        username: Optional[str] = None,
+        user_id: Optional[str] = None,
+        access_token: Optional[str] = None,
     ):
         self._base_url = base_url
+        self._username = username
+        self._user_id = user_id
+        self._access_token = access_token
+
+    def email_login(
+        self,
+        email: str,
+        password: str,
+    ):
         # We are using HTTPBasic Auth in backend. update this when we change the Authentication in Backend.
         response = http_get_with_error(
             urljoin(self._base_url, "user/email-login"),
@@ -91,17 +101,20 @@ class Login:
 
         content = json.loads(response.content)
         self._access_token = content["data"]["access_token"]
-
         self._user_id = content["data"]["user"]["user_id"]
         self._username = content["data"]["user"]["username"]
 
     @property
-    def access_token(self):
-        return self._access_token
+    def username(self):
+        return self._username
 
     @property
     def user_id(self):
         return self._user_id
+
+    @property
+    def access_token(self):
+        return self._access_token
 
     @property
     def base_url(self):
@@ -146,7 +159,7 @@ class Bazaar:
             os.makedirs(cache_dir)
         self._cache_dir = cache_dir
         self._base_url = base_url
-        self._login_instance = None
+        self._login_instance = Login(base_url=base_url)
 
     def signup(self, email, password, username):
         json_data = {
@@ -166,12 +179,15 @@ class Bazaar:
 
     def login(self, email, password):
         # This will try to login, if there is any error it will be throwed by Login class.
-        login_instance = Login(email=email, password=password, base_url=self._base_url)
 
-        self._login_instance = login_instance
+        self._login_instance.email_login(email, password)
 
     def is_logged_in(self):
-        return self._login_instance != None
+        return (
+            self._login_instance.username is not None
+            and self._login_instance.user_id is not None
+            and self._login_instance.access_token is not None
+        )
 
     def fetch(
         self,
