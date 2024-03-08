@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Tuple, Union
 from urllib.parse import urljoin
 
 from .bazaar_base import Bazaar, auth_header
@@ -66,7 +66,7 @@ class NeuralDBClient:
         __init__(self, deployment_identifier: str, base_url: str) -> None:
             Initializes a new instance of the NeuralDBClient.
 
-        search(self, query: str, top_k: int = 10) -> List[dict]:
+        search(self, query: str, top_k: int = 10, constraints: Optional[Dict[str, str]] = None) -> List[dict]:
             Searches the ndb model for relevant search results.
 
         insert(self, files: List[str]) -> None:
@@ -96,13 +96,14 @@ class NeuralDBClient:
         self.bazaar = bazaar
 
     @check_deployment_decorator
-    def search(self, query, top_k=10, constraints: Dict[str, str] = None):
+    def search(self, query, top_k=10, constraints: Optional[Dict[str, str]] = None):
         """
         Searches the ndb model for similar queries.
 
         Args:
             query (str): The query to search for.
             top_k (int): The number of top results to retrieve (default is 10).
+            constraints (Optional[Dict[str, str]]): Constraints to filter the search by
 
         Returns:
             Dict: A dict of search results containing keys: `query_text` and `references`.
@@ -223,7 +224,18 @@ class ModelBazaar(Bazaar):
         list_models(self) -> List[dict]:
             Lists available models in the Model Bazaar.
 
-        train(self, model_name: str, docs: List[str], is_async: bool = False, base_model_identifier: str = None) -> Model:
+        train(self,
+            model_name: str,
+            unsupervised_docs: Optional[List[str]] = None,
+            supervised_docs: Optional[List[Tuple[str, str]]] = None,
+            test_doc: Optional[str] = None,
+            doc_type: str = "local",
+            sharded: bool = False,
+            is_async: bool = False,
+            base_model_identifier: str = None,
+            train_extra_options: Optional[dict] = None,
+            metadata: Optional[List[Dict[str, str]]] = None
+        ) -> Model:
             Initiates training for a model and returns a Model instance.
 
         await_train(self, model: Model) -> None:
@@ -332,25 +344,30 @@ class ModelBazaar(Bazaar):
     def train(
         self,
         model_name: str,
-        unsupervised_docs: List[str] = None,
-        supervised_docs: List[Tuple[str, str]] = None,
-        test_doc: str = None,
+        unsupervised_docs: Optional[List[str]] = None,
+        supervised_docs: Optional[List[Tuple[str, str]]] = None,
+        test_doc: Optional[str] = None,
         doc_type: str = "local",
         sharded: bool = False,
         is_async: bool = False,
-        base_model_identifier: str = None,
-        train_extra_options: dict = {},
-        metadata: List[Dict[str, str]] = None,
+        base_model_identifier: Optional[str] = None,
+        train_extra_options: Optional[dict] = None,
+        metadata: Optional[List[Dict[str, str]]] = None,
     ):
         """
         Initiates training for a model and returns a Model instance.
 
         Args:
             model_name (str): The name of the model.
-            docs (List[str]): A list of document paths for training.
+            unsupervised_docs (Optional[List[str]]): A list of document paths for unsupervised training.
+            supervised_docs (Optional[List[Tuple[str, str]]]): A list of document path and source id pairs.
+            test_doc (Optional[str]): A path to a test file for evaluating the trained NeuralDB.
             doc_type (str): Specifies document location type : "local"(default), "nfs" or "s3".
+            sharded (bool): Whether NeuralDB training will be distributed over NeuralDB shards.
             is_async (bool): Whether training should be asynchronous (default is False).
-            base_model_identifier (str): The identifier of the base model (optional).
+            train_extra_options: (Optional[dict])
+            base_model_identifier (Optional[str]): The identifier of the base model.
+            metadata (Optional[List[Dict[str, str]]]): A list metadata dicts. Each dict corresponds to an unsupervised file.
 
         Returns:
             Model: A Model instance.
