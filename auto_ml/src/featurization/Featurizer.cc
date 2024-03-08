@@ -67,9 +67,17 @@ Featurizer::Featurizer(data::TransformationPtr input_transform,
 
 data::LoaderPtr Featurizer::getDataLoader(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
-    bool verbose, dataset::DatasetShuffleConfig shuffle_config) {
+    bool verbose, const std::optional<data::SpladeConfig>& splade_config,
+    dataset::DatasetShuffleConfig shuffle_config) {
+  data::TransformationPtr preprocessor = nullptr;
+  if (splade_config) {
+    preprocessor = std::make_shared<data::SpladeAugmentation>(
+        textDatasetConfig().textColumn(), textDatasetConfig().textColumn(),
+        *splade_config);
+  }
+
   return getDataLoaderHelper(data_source, batch_size, shuffle, verbose,
-                             shuffle_config);
+                             shuffle_config, preprocessor);
 }
 
 data::LoaderPtr Featurizer::getColdStartDataLoader(
@@ -99,12 +107,12 @@ data::LoaderPtr Featurizer::getColdStartDataLoader(
 data::LoaderPtr Featurizer::getDataLoaderHelper(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
     bool verbose, dataset::DatasetShuffleConfig shuffle_config,
-    const data::TransformationPtr& cold_start_transform) {
+    const data::TransformationPtr& preprocesser) {
   auto data_iter = data::CsvIterator::make(data_source, _delimiter);
 
   std::vector<data::TransformationPtr> transformations;
-  if (cold_start_transform) {
-    transformations.push_back(cold_start_transform);
+  if (preprocesser) {
+    transformations.push_back(preprocesser);
   }
   transformations.push_back(_input_transform);
   transformations.push_back(_label_transform);

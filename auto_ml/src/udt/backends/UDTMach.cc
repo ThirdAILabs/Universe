@@ -169,19 +169,24 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& val_metrics,
                           const std::vector<CallbackPtr>& callbacks,
                           TrainOptions options,
-                          const bolt::DistributedCommPtr& comm) {
+                          const bolt::DistributedCommPtr& comm,
+                          py::kwargs kwargs) {
   insertNewDocIds(data);
 
   addBalancingSamples(data);
 
-  auto train_data_loader =
-      _featurizer->getDataLoader(data, options.batchSize(), /* shuffle= */ true,
-                                 options.verbose, options.shuffle_config);
+  auto splade_config = getSpladeConfig(kwargs);
+  bool splade_in_val = getSpladeValidationOption(kwargs);
+
+  auto train_data_loader = _featurizer->getDataLoader(
+      data, options.batchSize(), /* shuffle= */ true, options.verbose,
+      splade_config, options.shuffle_config);
 
   data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader = _featurizer->getDataLoader(
-        val_data, defaults::BATCH_SIZE, /* shuffle= */ false, options.verbose);
+        val_data, defaults::BATCH_SIZE, /* shuffle= */ false, options.verbose,
+        splade_in_val ? splade_config : std::nullopt);
   }
 
   return _classifier->train(train_data_loader, learning_rate, epochs,
@@ -220,11 +225,12 @@ py::object UDTMach::trainWithHashes(const MapInputBatch& batch,
 py::object UDTMach::evaluate(const dataset::DataSourcePtr& data,
                              const std::vector<std::string>& metrics,
                              bool sparse_inference, bool verbose,
-                             std::optional<uint32_t> top_k) {
-  (void)top_k;
+                             py::kwargs kwargs) {
+  auto splade_config = getSpladeConfig(kwargs);
 
-  auto data_loader = _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
-                                                /* shuffle= */ false, verbose);
+  auto data_loader =
+      _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
+                                 /* shuffle= */ false, verbose, splade_config);
 
   return _classifier->evaluate(data_loader, getMetrics(metrics, "val_"),
                                sparse_inference, verbose);
