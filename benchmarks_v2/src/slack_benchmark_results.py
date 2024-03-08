@@ -118,7 +118,9 @@ def process_mlflow_dataframe(mlflow_runs, num_runs, client, run_name=""):
 
     if "start_time" in mlflow_runs.columns:
         # Convert the start time timestamp into a date to make it easier to read
-        mlflow_runs["start_time"] = mlflow_runs.apply(lambda x: x.start_time.date(), axis=1)
+        mlflow_runs["start_time"] = mlflow_runs.apply(
+            lambda x: x.start_time.date(), axis=1
+        )
 
     metric_columns = [col for col in mlflow_runs if col.startswith("metrics")]
     display_columns += metric_columns
