@@ -136,10 +136,10 @@ def extract_mlflow_data(experiment_name, num_runs, run_name=""):
     exp = client.get_experiment_by_name(experiment_name)
     if exp is None:
         return pd.DataFrame()
-exp_id = exp.experiment_id
+    exp_id = exp.experiment_id
 
-mlflow_runs = mlflow.search_runs(exp_id)
-df = process_mlflow_dataframe(mlflow_runs, num_runs, client, run_name)
+    mlflow_runs = mlflow.search_runs(exp_id)
+    df = process_mlflow_dataframe(mlflow_runs, num_runs, client, run_name)
 
     return df
 
