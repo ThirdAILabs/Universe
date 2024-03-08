@@ -63,6 +63,10 @@ jobs:
           .\vcpkg upgrade --no-dry-run # In case there are new builds available after cache restoration
         shell: powershell
 
+      - name: Install different compiler for mac x86
+        if: ${{ startsWith(matrix.runs-on, 'macos-12')}}
+        run: brew install llvm@17 libomp
+
       - name: Build and test wheels
         uses: pypa/cibuildwheel@v2.9.0
         env:
@@ -90,17 +94,14 @@ jobs:
             OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
             OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
-            CXX=/usr/local/opt/llvm/bin/clang++
-            CC=/usr/local/opt/llvm/bin/clang
+            CXX="$(brew --prefix llvm)/bin/clang++"
+            CC="$(brew --prefix llvm)/bin/clang"
          
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
             yum install openssl11-devel -y &&
             yum install -y libxslt-devel libxml2-devel
-          CIBW_BEFORE_BUILD_MACOS: > 
-            brew install openssl && 
-            brew install llvm@17 && 
-            brew install libomp
+          CIBW_BEFORE_BUILD_MACOS: brew install openssl
 
           # Online compile cpython wheels (pytorch does this too), no big 
           # advantage to JIT compilation of python since most of our processing
