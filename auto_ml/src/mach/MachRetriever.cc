@@ -196,13 +196,13 @@ void MachRetriever::train(
 std::vector<IdScores> MachRetriever::search(data::ColumnMap queries,
                                             uint32_t top_k,
                                             bool sparse_inference) {
+  uint32_t num_queries = queries.numRows();
   auto in = inputTensors(_text_transform->apply(std::move(queries), *_state));
   auto out = _model->forward(in, sparse_inference).at(0);
 
-  uint32_t num_queries = queries.numRows();
   std::vector<IdScores> predictions(num_queries);
 #pragma omp parallel for default(none) \
-    shared(out, predictions, k, num_queries) if (num_queries > 1)
+    shared(out, predictions, top_k, num_queries) if (num_queries > 1)
   for (uint32_t i = 0; i < num_queries; i++) {
     const BoltVector& out_vec = out->getVector(i);
     predictions[i] = index()->decode(out_vec, top_k, _num_buckets_to_eval);
@@ -223,7 +223,7 @@ std::vector<IdScores> MachRetriever::rank(
   uint32_t num_queries = queries.numRows();
   std::vector<IdScores> predictions(num_queries);
 #pragma omp parallel for default(none) \
-    shared(out, predictions, k, num_queries) if (num_queries > 1)
+    shared(out, choices, predictions, top_k, num_queries) if (num_queries > 1)
   for (uint32_t i = 0; i < num_queries; i++) {
     const BoltVector& out_vec = out->getVector(i);
     predictions[i] = index()->scoreEntities(out_vec, choices[i], top_k);
