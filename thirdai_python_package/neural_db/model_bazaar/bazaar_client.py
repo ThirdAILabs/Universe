@@ -73,6 +73,12 @@ class NeuralDBClient:
 
         downvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]) -> None:
             Downvotes a response in the ndb model.
+
+        chat(self, user_input: str, session_id: str) -> Dict[str, str]:
+            Returns a reply given the user_input and the chat history associated with session_id
+
+        get_chat_history(self, session_id: str) -> Dict[List[Dict[str, str]]]:
+            Returns chat history associated with session_id
     """
 
     def __init__(self, deployment_identifier: str, base_url: str, bazaar: ModelBazaar):
@@ -186,6 +192,39 @@ class NeuralDBClient:
         )
 
         print("Successfully downvoted the specified search result.")
+
+    @check_deployment_decorator
+    def chat(self, user_input: str, session_id: str) -> Dict[str, str]:
+        """
+        Returns a reply given the user_input and the chat history associated with session_id
+
+        Args:
+            user_input (str): The user input for the chatbot to respond to
+            session_id (str): The session id corresponding to a specific chat session
+        """
+        response = http_post_with_error(
+            urljoin(self.base_url, "chat"),
+            json={"user_input": user_input, "session_id": session_id},
+            headers=auth_header(self.bazaar._access_token),
+        )
+
+        return response.json()["data"]
+
+    @check_deployment_decorator
+    def get_chat_history(self, session_id: str) -> Dict[List[Dict[str, str]]]:
+        """
+        Returns chat history associated with session_id
+
+        Args:
+            session_id (str): The session id corresponding to a specific chat session
+        """
+        response = http_post_with_error(
+            urljoin(self.base_url, "get-chat-hisory"),
+            json={"session_id": session_id},
+            headers=auth_header(self.bazaar._access_token),
+        )
+
+        return response.json()["data"]
 
 
 class ModelBazaar(Bazaar):
