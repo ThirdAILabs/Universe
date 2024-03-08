@@ -297,7 +297,7 @@ class ModelBazaar(Bazaar):
         self.login(email=email, password=password)
         self._user_id = self._login_instance.user_id
         self._access_token = self._login_instance.access_token
-        self._username = self._login_instance._username
+        self._username = self._login_instance.username
 
     def push_model(
         self, model_name: str, local_path: str, access_level: str = "public"
