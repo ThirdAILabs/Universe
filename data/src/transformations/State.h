@@ -4,10 +4,12 @@
 #include <cereal/types/deque.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/unordered_map.hpp>
+#include <data/src/transformations/MachMemory.h>
 #include <dataset/src/mach/MachIndex.h>
 #include <dataset/src/utils/GraphInfo.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <limits>
+#include <memory>
 #include <stdexcept>
 #include <unordered_map>
 
@@ -57,8 +59,14 @@ using ItemHistoryTracker =
  */
 class State {
  public:
-  explicit State(MachIndexPtr mach_index)
-      : _mach_index(std::move(mach_index)) {}
+  explicit State(MachIndexPtr mach_index, MachMemoryPtr mach_memory = nullptr)
+      : _mach_index(std::move(mach_index)),
+        _mach_memory(std::move(mach_memory)) {}
+
+  static auto make(MachIndexPtr mach_index, MachMemoryPtr mach_memory) {
+    return std::make_shared<State>(std::move(mach_index),
+                                   std::move(mach_memory));
+  }
 
   explicit State(automl::GraphInfoPtr graph) : _graph(std::move(graph)) {}
 
@@ -87,6 +95,25 @@ class State {
     }
 
     _mach_index = std::move(new_index);
+  }
+
+  bool hasMachMemory() { return !!_mach_memory; }
+
+  MachMemory& machMemory() {
+    if (!_mach_memory) {
+      throw std::invalid_argument(
+          "Transformation state does not contain MachMemory.");
+    }
+    return *_mach_memory;
+  }
+
+  void setMachMemory(MachMemoryPtr mach_memory) {
+    if (_mach_memory) {
+      std::cout << "Transformation state already contains MachMemory."
+                << std::endl;
+      return;
+    }
+    _mach_memory = std::move(mach_memory);
   }
 
   bool containsVocab(const std::string& key) const {
@@ -124,6 +151,8 @@ class State {
 
  private:
   MachIndexPtr _mach_index = nullptr;
+
+  MachMemoryPtr _mach_memory = nullptr;
 
   std::unordered_map<std::string, ThreadSafeVocabularyPtr> _vocabs;
 

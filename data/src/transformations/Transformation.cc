@@ -1,5 +1,6 @@
 #include "Transformation.h"
 #include <archive/src/Archive.h>
+#include <data/src/transformations/AddMachMemorySamples.h>
 #include <data/src/transformations/Binning.h>
 #include <data/src/transformations/CategoricalTemporal.h>
 #include <data/src/transformations/CountTokens.h>
@@ -65,6 +66,7 @@ TransformationPtr Transformation::fromArchive(const ar::Archive& archive) {
   HANDLE_TYPE(StringIDLookup)
   HANDLE_TYPE(Tabular)
   HANDLE_TYPE(TextTokenizer)
+  HANDLE_TYPE(AddMachMemorySamples)
 
   throw std::runtime_error("Invalid transformation type in fromProto.");
 }

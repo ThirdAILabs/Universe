@@ -130,6 +130,15 @@ std::vector<std::string> ColumnMap::columns() const {
   return columns;
 }
 
+ColumnMap ColumnMap::selectColumns(
+    const std::vector<std::string>& columns) const {
+  std::unordered_map<std::string, ColumnPtr> new_columns;
+  for (const auto& name : columns) {
+    new_columns[name] = getColumn(name);
+  }
+  return ColumnMap(std::move(new_columns));
+}
+
 void ColumnMap::shuffle(uint32_t seed) {
   std::vector<size_t> permutation(numRows());
   std::iota(permutation.begin(), permutation.end(), 0);

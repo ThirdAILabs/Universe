@@ -37,6 +37,8 @@ class MachIndex {
 
   void insertNewEntities(const std::unordered_set<uint32_t>& new_ids);
 
+  bool has(uint32_t entity) { return _entity_to_hashes.count(entity); }
+
   const std::vector<uint32_t>& getHashes(uint32_t entity) const {
     if (!_entity_to_hashes.count(entity)) {
       throw std::invalid_argument(
