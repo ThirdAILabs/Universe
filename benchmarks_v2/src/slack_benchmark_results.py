@@ -90,7 +90,7 @@ def process_mlflow_dataframe(mlflow_runs, num_runs, client, run_name=""):
     mlflow_runs = mlflow_runs[mlflow_runs["status"] == "FINISHED"]
     mlflow_runs = mlflow_runs[:num_runs]
 
-    display_columns = ["start_time"]
+    display_columns = []
     if "metrics.epoch_times" in mlflow_runs.columns:
         mlflow_runs["training_time"] = mlflow_runs.apply(
             lambda x: sum(
@@ -98,7 +98,7 @@ def process_mlflow_dataframe(mlflow_runs, num_runs, client, run_name=""):
             ),
             axis=1,
         )
-        display_columns += ["training_time"]
+        display_columns.append("training_time")
 
     # Drop the epoch times column since it is no longer needed after calculating training time
     mlflow_runs.drop(columns=["metrics.epoch_times"], inplace=True, errors="ignore")
@@ -116,8 +116,9 @@ def process_mlflow_dataframe(mlflow_runs, num_runs, client, run_name=""):
 
     print(mlflow_runs.apply(lambda x: x.start_time.date(), axis=1))
 
-    # Convert the start time timestamp into a date to make it easier to read
-    mlflow_runs["start_time"] = mlflow_runs.apply(lambda x: x.start_time.date(), axis=1)
+    if "start_time" in mlflow_runs.columns:
+        # Convert the start time timestamp into a date to make it easier to read
+        mlflow_runs["start_time"] = mlflow_runs.apply(lambda x: x.start_time.date(), axis=1)
 
     metric_columns = [col for col in mlflow_runs if col.startswith("metrics")]
     display_columns += metric_columns
