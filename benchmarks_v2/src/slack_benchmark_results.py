@@ -27,6 +27,12 @@ def parse_arguments():
         help="Regular expression indicating which configs to retrieve for the given runners.",  # Empty string returns all configs for the given runners.
     )
     parser.add_argument(
+        "--config_type",
+        type=str,
+        default=None,
+        help="If specified, will ensure that each config to be retrieve has a config_type field equal to this value.",
+    )
+    parser.add_argument(
         "--mlflow_uri",
         type=str,
         help="MLflow URI to read metrics from.",
@@ -84,12 +90,15 @@ def process_mlflow_dataframe(mlflow_runs, num_runs, client, run_name=""):
     mlflow_runs = mlflow_runs[mlflow_runs["status"] == "FINISHED"]
     mlflow_runs = mlflow_runs[:num_runs]
 
-    mlflow_runs["training_time"] = mlflow_runs.apply(
-        lambda x: sum(
-            [x.value for x in client.get_metric_history(x.run_id, "epoch_times")]
-        ),
-        axis=1,
-    )
+    display_columns = []
+    if "metrics.epoch_times" in mlflow_runs.columns:
+        mlflow_runs["training_time"] = mlflow_runs.apply(
+            lambda x: sum(
+                [x.value for x in client.get_metric_history(x.run_id, "epoch_times")]
+            ),
+            axis=1,
+        )
+        display_columns.append("training_time")
 
     # Drop the epoch times column since it is no longer needed after calculating training time
     mlflow_runs.drop(columns=["metrics.epoch_times"], inplace=True, errors="ignore")
@@ -105,11 +114,15 @@ def process_mlflow_dataframe(mlflow_runs, num_runs, client, run_name=""):
     # Remove columns that contain only nan values, usually indicates deprecation of a metric
     mlflow_runs.dropna(axis=1, how="all", inplace=True)
 
-    # Convert the start time timestamp into a date to make it easier to read
-    mlflow_runs["start_time"] = mlflow_runs.apply(lambda x: x.start_time.date(), axis=1)
+    if "start_time" in mlflow_runs.columns:
+        # Convert the start time timestamp into a date to make it easier to read
+        mlflow_runs["start_time"] = mlflow_runs.apply(
+            lambda x: x.start_time.date(), axis=1
+        )
+        display_columns.append("start_time")
 
     metric_columns = [col for col in mlflow_runs if col.startswith("metrics")]
-    display_columns = ["start_time", "training_time"] + metric_columns
+    display_columns.extend(metric_columns)
     df = mlflow_runs[display_columns]
     df = df.rename(
         columns={
@@ -157,7 +170,9 @@ if __name__ == "__main__":
     for runner_name in args.runner:
         runner = runner_map[runner_name.lower()]
 
-        configs = get_configs(runner=runner, config_regex=args.config)
+        configs = get_configs(
+            runner=runner, config_regex=args.config, config_type=args.config_type
+        )
 
         slack_payload_list = [""]
         slack_payload_idx = 0
