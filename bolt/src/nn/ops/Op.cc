@@ -11,8 +11,10 @@
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/PatchEmbedding.h>
 #include <bolt/src/nn/ops/PatchSum.h>
+#include <bolt/src/nn/ops/QuantileMixing.h>
 #include <bolt/src/nn/ops/RobeZ.h>
 #include <bolt/src/nn/ops/Switch.h>
+#include <bolt/src/nn/ops/WeightedSum.h>
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <archive/src/ParameterReference.h>
@@ -59,6 +61,12 @@ std::shared_ptr<Op> Op::fromArchive(const ar::Archive& archive) {
   }
   if (type == Switch::type()) {
     return Switch::fromArchive(archive);
+  }
+  if (type == WeightedSum::type()) {
+    return WeightedSum::fromArchive(archive);
+  }
+  if (type == QuantileMixing::type()) {
+    return QuantileMixing::fromArchive(archive);
   }
   throw std::invalid_argument("Invalid op type '" + type + "'.");
 }
