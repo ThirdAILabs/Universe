@@ -1,5 +1,6 @@
 #pragma once
 
+#include <archive/src/Archive.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/udt/Defaults.h>
@@ -22,6 +23,7 @@
 #include <smx/src/optimizers/Adam.h>
 #include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Tensor.h>
+#include <stdexcept>
 
 namespace thirdai::automl::udt {
 
@@ -78,6 +80,11 @@ class UDTMachSmx final : public UDTBackend {
   //                           uint32_t num_random_hashes, bool
   //                           fast_approximation, bool verbose, bool
   //                           sort_random_hashes) final;
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final {
+    (void)with_optimizer;
+    throw std::runtime_error("toArchive is not supported for smx mach.");
+  }
 
  private:
   data::TransformationPtr coldStartTransform(
