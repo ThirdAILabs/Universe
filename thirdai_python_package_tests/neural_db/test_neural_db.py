@@ -28,7 +28,6 @@ from ndb_utils import (
     upvote_batch_works,
     upvote_works,
 )
-from thirdai import dataset
 from thirdai import neural_db as ndb
 from thirdai.neural_db.models import merge_results
 
@@ -84,6 +83,24 @@ def test_neural_db_all_methods_work_on_new_model(small_doc_set, use_inverted_ind
 def test_neuralb_db_all_methods_work_on_new_mach_mixture(small_doc_set):
     number_models = 2
     db = ndb.NeuralDB("user", number_models=number_models)
+    all_methods_work(
+        db,
+        docs=small_doc_set,
+        num_duplicate_docs=0,
+        assert_acc=False,
+    )
+
+
+def test_neural_db_all_methods_work_on_old_model(small_doc_set):
+    """
+    This empty model was created with:
+    db = ndb.NeuralDB(embedding_dimension=512, extreme_output_dim=1000)
+    db.save(./saved_ndbs/empty_ndb)
+    """
+    checkpoint = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "saved_ndbs/empty_ndb"
+    )
+    db = ndb.NeuralDB.from_checkpoint(checkpoint)
     all_methods_work(
         db,
         docs=small_doc_set,
@@ -532,30 +549,6 @@ def test_neural_db_reranking_threshold(all_local_docs):
     )
 
 
-def test_custom_epoch(create_simple_dataset):
-    db = ndb.NeuralDB(user_id="user")
-
-    doc = ndb.CSV(
-        path=create_simple_dataset,
-        id_column="label",
-        strong_columns=["text"],
-        weak_columns=["text"],
-        reference_columns=["text"],
-    )
-
-    batch_count = 0
-
-    def count_batch(progress):
-        nonlocal batch_count
-        batch_count += 2  # Because progress function gets called for even batches only.
-
-    num_epochs = 10
-    db.insert(sources=[doc], epochs=num_epochs, on_progress=count_batch)
-
-    # And number of batches in 'create_simple_dataset' is 1, so, number of epochs that the model got trained for will be number of batches.
-    assert num_epochs == batch_count
-
-
 def test_inverted_index_improves_zero_shot():
     docs = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
@@ -594,10 +587,94 @@ def test_inverted_index_improves_zero_shot():
     assert compute_acc(mach_only_db) > 0.9
 
 
+def test_neural_db_retriever_specification():
+    db = ndb.NeuralDB()
+
+    texts = [
+        "apples are green",
+        "bananas are yellow",
+        "oranges are orange",
+        "spinach is green",
+        "apples are red",
+        "grapes are purple",
+        "lemons are yellow",
+        "limes are green",
+        "carrots are orange",
+        "celery is green",
+    ]
+
+    db.insert(
+        [ndb.InMemoryText(name=str(i), texts=[text]) for i, text in enumerate(texts)],
+        train=False,
+    )
+
+    combined = set(ref.retriever for ref in db.search("carrots bananas", top_k=10))
+    assert "mach" in combined
+    assert "inverted_index" in combined
+
+    mach_results = db.search("carrots bananas", top_k=10, retriever="mach")
+    assert len(mach_results) > 0
+    for res in mach_results:
+        assert res.retriever == "mach"
+
+    index_results = db.search("carrots bananas", top_k=10, retriever="inverted_index")
+    assert len(index_results) > 0
+    for res in index_results:
+        assert res.retriever == "inverted_index"
+
+
 def test_result_merging():
-    results_a = [(1, 5.0), (2, 4.0), (3, 3.0), (4, 2.0), (6, 1.0)]
-    results_b = [(2, 5.0), (7, 4.0), (3, 3.0), (5, 2.0), (4, 1.0)]
+    results_a = [
+        (1, 5.0, "a"),
+        (2, 4.0, "a"),
+        (3, 3.0, "a"),
+        (4, 2.0, "a"),
+        (6, 1.0, "a"),
+    ]
+    results_b = [
+        (2, 5.0, "b"),
+        (7, 4.0, "b"),
+        (3, 3.0, "b"),
+        (5, 2.0, "b"),
+        (4, 1.0, "b"),
+    ]
 
     expected_output = [1, 2, 7, 3, 4, 5, 6]
 
     assert [x[0] for x in merge_results(results_a, results_b, k=10)] == expected_output
+
+
+def test_ndb_incremental_additions():
+    db = ndb.NeuralDB()
+
+    original_texts = [
+        "apples are red",
+        "bananas are yellow",
+        "carrots are orange",
+        "spinach is green",
+    ]
+
+    partially_duplicated_texts = [
+        "raspberries are red",
+        "apples are green",
+        "lemons are yellow",
+        "bannas are green",
+        "mangos are orange",
+        "carrots are purple",
+        "lettuce is green",
+        "spinach is brown",
+    ]
+
+    for i, text in enumerate(original_texts + partially_duplicated_texts):
+        db.insert(
+            [ndb.InMemoryText(name=str(i), texts=[text])],
+            train=True,
+            balancing_samples=True,
+        )
+
+    correct = 0
+    for text in original_texts:
+        if text == db.search(text, top_k=1)[0].text:
+            correct += 1
+
+    assert correct >= 3

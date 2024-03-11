@@ -212,6 +212,10 @@ class UDT {
     return _backend->textDatasetConfig();
   }
 
+  void insertNewDocIds(const dataset::DataSourcePtr& data) {
+    _backend->insertNewDocIds(data);
+  }
+
   /**
    * Used in UDTMachClassifier to introduce new documents to the model from a
    * data source. Used in conjunction with coldstart. At a high level, introduce
@@ -244,13 +248,15 @@ class UDT {
                           const std::vector<std::string>& strong_column_names,
                           const std::vector<std::string>& weak_column_names,
                           std::optional<uint32_t> num_buckets_to_sample,
-                          uint32_t num_random_hashes, bool fast_approximation,
-                          bool verbose, bool sort_random_hashes) {
+                          uint32_t num_random_hashes, bool load_balancing,
+                          bool fast_approximation, bool verbose,
+                          bool sort_random_hashes) {
     licensing::entitlements().verifyDataSource(data);
 
-    _backend->introduceDocuments(
-        data, strong_column_names, weak_column_names, num_buckets_to_sample,
-        num_random_hashes, fast_approximation, verbose, sort_random_hashes);
+    _backend->introduceDocuments(data, strong_column_names, weak_column_names,
+                                 num_buckets_to_sample, num_random_hashes,
+                                 load_balancing, fast_approximation, verbose,
+                                 sort_random_hashes);
   }
 
   /**
@@ -262,12 +268,14 @@ class UDT {
                          const std::vector<std::string>& weak_column_names,
                          const std::variant<uint32_t, std::string>& new_label,
                          std::optional<uint32_t> num_buckets_to_sample,
-                         uint32_t num_random_hashes, bool sort_random_hashes) {
+                         uint32_t num_random_hashes, bool load_balancing,
+                         bool sort_random_hashes) {
     licensing::entitlements().verifyFullAccess();
 
-    _backend->introduceDocument(
-        document, strong_column_names, weak_column_names, new_label,
-        num_buckets_to_sample, num_random_hashes, sort_random_hashes);
+    _backend->introduceDocument(document, strong_column_names,
+                                weak_column_names, new_label,
+                                num_buckets_to_sample, num_random_hashes,
+                                load_balancing, sort_random_hashes);
   }
 
   /**
@@ -278,11 +286,13 @@ class UDT {
   void introduceLabel(const MapInputBatch& sample,
                       const std::variant<uint32_t, std::string>& new_label,
                       std::optional<uint32_t> num_buckets_to_sample,
-                      uint32_t num_random_hashes, bool sort_random_hashes) {
+                      uint32_t num_random_hashes, bool load_balancing,
+                      bool sort_random_hashes) {
     licensing::entitlements().verifyFullAccess();
 
     _backend->introduceLabel(sample, new_label, num_buckets_to_sample,
-                             num_random_hashes, sort_random_hashes);
+                             num_random_hashes, load_balancing,
+                             sort_random_hashes);
   }
 
   /**
@@ -409,11 +419,30 @@ class UDT {
         options);
   }
 
+  py::object coldStartWithBalancingSamples(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& train_metrics,
+      const std::vector<CallbackPtr>& callbacks,
+      std::optional<uint32_t> batch_size, bool verbose,
+      const std::optional<data::VariableLengthConfig>& variable_length) {
+    licensing::entitlements().verifyDataSource(data);
+
+    TrainOptions options;
+    options.batch_size = batch_size;
+    options.verbose = verbose;
+
+    return _backend->coldStartWithBalancingSamples(
+        data, strong_column_names, weak_column_names, learning_rate, epochs,
+        train_metrics, callbacks, options, variable_length);
+  }
+
   /**
-   * Tells the model to begin collecting balancing samples from train and cold
-   * start calls. Without this enabled the model won't allow RLHF calls (upvote
-   * and associate). This can also be specified in the constructor options with
-   * "rlhf": true.
+   * Tells the model to begin collecting balancing samples from train and
+   * cold start calls. Without this enabled the model won't allow RLHF calls
+   * (upvote and associate). This can also be specified in the constructor
+   * options with "rlhf": true.
    */
   void enableRlhf(uint32_t num_balancing_docs,
                   uint32_t num_balancing_samples_per_doc) {
@@ -449,8 +478,6 @@ class UDT {
 
   void save(const std::string& filename) const;
 
-  void saveImpl(const std::string& filename) const;
-
   void checkpoint(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;
@@ -460,6 +487,13 @@ class UDT {
   static std::shared_ptr<UDT> load_stream(std::istream& input_stream);
 
   bool isV1() const;
+
+  /**
+   * This method is just for testing so that we can create a v1 mach model and
+   * test that everything works once it is migrated. Models are automatically
+   * converted to v2 on load.
+   */
+  void migrateToMachV2();
 
   static std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
   parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
@@ -483,9 +517,13 @@ class UDT {
   friend class cereal::access;
 
   template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
+  void save(Archive& archive, uint32_t version) const;
+
+  template <class Archive>
+  void load(Archive& archive, uint32_t version);
 
   std::unique_ptr<UDTBackend> _backend;
+  bool _save_optimizer = false;
 };
 
 }  // namespace thirdai::automl::udt

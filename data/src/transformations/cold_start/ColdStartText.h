@@ -27,14 +27,16 @@ struct ColdStartConfig {
       std::optional<uint32_t> weak_sample_num_words = std::nullopt,
       uint32_t weak_sample_reps = 1,
       std::optional<uint32_t> strong_max_len = std::nullopt,
-      std::optional<uint32_t> strong_sample_num_words = std::nullopt)
+      std::optional<uint32_t> strong_sample_num_words = std::nullopt,
+      std::optional<uint32_t> strong_to_weak_ratio = std::nullopt)
       : weak_min_len(weak_min_len),
         weak_max_len(weak_max_len),
         weak_chunk_len(weak_chunk_len),
         weak_sample_num_words(weak_sample_num_words),
         weak_sample_reps(weak_sample_reps),
         strong_max_len(strong_max_len),
-        strong_sample_num_words(strong_sample_num_words) {}
+        strong_sample_num_words(strong_sample_num_words),
+        strong_to_weak_ratio(strong_to_weak_ratio) {}
 
   static ColdStartConfig longBothPhrases() {
     return ColdStartConfig(/* weak_min_len= */ 10, /* weak_max_len= */ 50,
@@ -42,7 +44,8 @@ struct ColdStartConfig {
                            /* weak_sample_num_words= */ std::nullopt,
                            /* weak_sample_reps= */ 1,
                            /* strong_max_len= */ std::nullopt,
-                           /* strong_sample_num_words= */ 3);
+                           /* strong_sample_num_words= */ 3,
+                           /* strong_to_weak_ratio= */ std::nullopt);
   }
 
   std::optional<uint32_t> weak_min_len;
@@ -52,6 +55,7 @@ struct ColdStartConfig {
   uint32_t weak_sample_reps;
   std::optional<uint32_t> strong_max_len;
   std::optional<uint32_t> strong_sample_num_words;
+  std::optional<uint32_t> strong_to_weak_ratio;
 };
 
 /**
@@ -124,6 +128,11 @@ class ColdStartTextAugmentation final
          phrase (if possible - short phrases may not contain enough words). For
          phrases shorter than strong_sample_num_words, we include all words and
          do not sub-sample.
+     strong_to_weak_ratio: The ratio of strong phrases to weak phrases while
+     augmenting a single row. This segregate strong phrases from weak phrases
+  and the no. of strong phrases will be ( strong_to_weak_ratio x no. of weak
+  phrases )
+
      seed: Seed for the random number generator.
 
   The motivation behind the default arguments below can be found in this doc:
@@ -151,6 +160,8 @@ class ColdStartTextAugmentation final
                                             const std::string& weak_text,
                                             uint32_t row_id_salt) const final;
 
+  static std::string type() { return "cold_start"; }
+
  private:
   std::optional<uint32_t> _weak_min_len;
   std::optional<uint32_t> _weak_max_len;
@@ -159,6 +170,7 @@ class ColdStartTextAugmentation final
   uint32_t _weak_sample_reps;
   std::optional<uint32_t> _strong_max_len;
   std::optional<uint32_t> _strong_sample_num_words;
+  std::optional<uint32_t> _strong_to_weak_ratio;
 
   /**
    * Returns a single phrase that takes in the concatenated string of strong

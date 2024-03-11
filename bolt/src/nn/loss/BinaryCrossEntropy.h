@@ -2,6 +2,9 @@
 
 #include <cereal/access.hpp>
 #include <bolt/src/nn/loss/ComparativeLoss.h>
+#include <bolt/src/nn/ops/Op.h>
+#include <string>
+#include <unordered_map>
 
 namespace thirdai::bolt {
 
@@ -15,6 +18,14 @@ class BinaryCrossEntropy final : public ComparativeLoss {
 
   static std::shared_ptr<BinaryCrossEntropy> make(ComputationPtr output,
                                                   ComputationPtr labels);
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::shared_ptr<BinaryCrossEntropy> fromArchive(
+      const ar::Archive& archive,
+      const std::unordered_map<std::string, ComputationPtr>& computations);
+
+  static std::string type() { return "binary_cross_entropy"; }
 
  private:
   float singleGradient(float activation, float label,

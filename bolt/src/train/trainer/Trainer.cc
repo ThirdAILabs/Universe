@@ -191,6 +191,7 @@ metrics::History Trainer::train(
 
     if (train_state->isTrainingStopped()) {
       // TODO(Nicholas): Print stuff and have more graceful termination
+      _model->incrementEpochs();
       return *_history;
     }
   }

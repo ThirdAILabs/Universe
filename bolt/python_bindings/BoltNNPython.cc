@@ -25,6 +25,7 @@
 #include <bolt/src/nn/ops/QuantileMixing.h>
 #include <bolt/src/nn/ops/RobeZ.h>
 #include <bolt/src/nn/ops/WeightedSum.h>
+#include <bolt/src/nn/optimizers/SGD.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/methods/file/License.h>
 #include <pybind11/cast.h>
@@ -78,8 +79,20 @@ void defineOps(py::module_& nn);
 
 void defineLosses(py::module_& nn);
 
+void defineOptimizers(py::module_& nn);
+
 void createBoltNNSubmodule(py::module_& module) {
   auto nn = module.def_submodule("nn");
+
+#if THIRDAI_EXPOSE_ALL
+  defineTensor(nn);
+
+  defineOps(nn);
+
+  defineLosses(nn);
+
+  defineOptimizers(nn);
+#endif
 
   py::class_<Model, ModelPtr>(nn, "Model")
 #if THIRDAI_EXPOSE_ALL
@@ -91,7 +104,8 @@ void createBoltNNSubmodule(py::module_& module) {
        * ==============================================================
        */
       .def(py::init(&Model::make), py::arg("inputs"), py::arg("outputs"),
-           py::arg("losses"), py::arg("additional_labels") = ComputationList{})
+           py::arg("losses"), py::arg("expected_labels") = ComputationList{},
+           py::arg("optimizer") = AdamFactory::make())
       .def("train_on_batch", &Model::trainOnBatch, py::arg("inputs"),
            py::arg("labels"))
       .def("forward",
@@ -105,11 +119,13 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("computation", &Model::getComputation, py::arg("name"))
       .def("outputs", &Model::outputs)
       .def("labels", &Model::labels)
+      .def("change_optimizer", &Model::changeOptimizer, py::arg("optimizer"))
       .def("summary", &Model::summary, py::arg("print") = true)
       .def("get_parameters", &getParameters,
            py::return_value_policy::reference_internal)
       .def("set_parameters", &setParameters, py::arg("new_values"))
       .def("train_steps", &Model::trainSteps)
+      .def("epochs", &Model::epochs)
       .def("override_train_steps", &Model::overrideTrainSteps,
            py::arg("train_steps"))
       .def("params", &modelParams)
@@ -129,20 +145,20 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("freeze_hash_tables", &Model::freezeHashTables,
            py::arg("insert_labels_if_not_found") = true)
       .def("unfreeze_hash_tables", &Model::unfreezeHashTables)
-      .def("save", &Model::save, py::arg("filename"),
-           py::arg("save_metadata") = true)
+      .def(
+          "save",
+          [](const ModelPtr& model, const std::string& filename,
+             bool save_metadata) {
+            return model->save(filename, save_metadata);
+          },
+          py::arg("filename"), py::arg("save_metadata") = true)
       .def("checkpoint", &Model::checkpoint, py::arg("filename"),
            py::arg("save_metadata") = true)
-      .def_static("load", &Model::load, py::arg("filename"))
+      .def_static(
+          "load",
+          [](const std::string& filename) { return Model::load(filename); },
+          py::arg("filename"))
       .def(thirdai::bolt::python::getPickleFunction<Model>());
-
-#if THIRDAI_EXPOSE_ALL
-  defineTensor(nn);
-
-  defineOps(nn);
-
-  defineLosses(nn);
-#endif
 }
 
 void defineTensor(py::module_& nn) {
@@ -420,6 +436,23 @@ void defineLosses(py::module_& nn) {
   py::class_<ExternalLoss, ExternalLossPtr, Loss>(loss, "ExternalLoss")
       .def(py::init<ComputationPtr, ComputationPtr>(), py::arg("output"),
            py::arg("external_gradients"));
+}
+
+void defineOptimizers(py::module_& nn) {
+  auto optimizers = nn.def_submodule("optimizers");
+
+  // NOLINTNEXTLINE
+  py::class_<OptimizerFactory, OptimizerFactoryPtr>(optimizers, "Optimizer");
+
+  py::class_<AdamFactory, OptimizerFactory, std::shared_ptr<AdamFactory>>(
+      optimizers, "Adam")
+      .def(py::init<float, float, float>(), py::arg("beta1") = 0.9,
+           py::arg("beta2") = 0.999, py::arg("eps") = 1e-7);
+
+  py::class_<SGDFactory, OptimizerFactory, std::shared_ptr<SGDFactory>>(
+      optimizers, "SGD")
+      .def(py::init<std::optional<float>>(),
+           py::arg("grad_clip") = std::nullopt);
 }
 
 }  // namespace thirdai::bolt::python

@@ -356,6 +356,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/autograd/ComputationGraph.cc
     bolt/src/nn/model/AllocationManager.cc
     bolt/src/nn/model/Model.cc
+    bolt/src/nn/ops/Op.cc
     bolt/src/nn/ops/FullyConnected.cc
     bolt/src/nn/ops/Embedding.cc
     bolt/src/nn/ops/RobeZ.cc
@@ -373,11 +374,16 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/MaxPool1D.cc
     bolt/src/nn/ops/QuantileMixing.cc
     bolt/src/nn/tensor/Tensor.cc
+    bolt/src/nn/loss/Loss.cc
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
     bolt/src/nn/loss/BinaryCrossEntropy.cc
     bolt/src/nn/loss/EuclideanContrastive.cc
     bolt/src/nn/loss/ExternalLoss.cc
+    bolt/src/nn/optimizers/Optimizer.cc
+    bolt/src/nn/optimizers/Adam.cc
+    bolt/src/nn/optimizers/SGD.cc
+    bolt/src/neuron_index/NeuronIndex.cc
     bolt/src/neuron_index/LshIndex.cc
     bolt/src/neuron_index/RandomSampler.cc
     bolt/src/neuron_index/MachNeuronIndex.cc
@@ -439,11 +445,14 @@ set(THIRDAI_SOURCES
     dataset/src/blocks/text/Text.cc
     dataset/src/blocks/TabularHashFeatures.cc
     dataset/src/blocks/text/WordpieceTokenizer.cc
+    dataset/src/blocks/text/TextTokenizer.cc
     dataset/src/mach/MachIndex.cc
     dataset/src/mach/MachBlock.cc
     dataset/src/ranking/KeywordOverlapRanker.cc
     dataset/src/utils/GraphInfo.cc
     telemetry/src/PrometheusClient.cc
+    data/src/transformations/Transformation.cc
+    data/src/transformations/State.cc
     data/src/transformations/Binning.cc
     data/src/transformations/StringHash.cc
     data/src/transformations/TextTokenizer.cc

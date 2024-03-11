@@ -18,6 +18,8 @@ class RecurrentFeaturizer {
                       uint32_t n_target_classes,
                       const TabularOptions& tabular_options);
 
+  explicit RecurrentFeaturizer(const ar::Archive& archive);
+
   data::LoaderPtr getDataLoader(const dataset::DataSourcePtr& data_source,
                                 size_t batch_size, bool shuffle, bool verbose,
                                 dataset::DatasetShuffleConfig shuffle_config =
@@ -36,6 +38,11 @@ class RecurrentFeaturizer {
   size_t vocabSize() const {
     return _recurrence_augmentation->totalVocabSize();
   }
+
+  ar::ConstArchivePtr toArchive() const;
+
+  static std::shared_ptr<RecurrentFeaturizer> fromArchive(
+      const ar::Archive& archive);
 
  private:
   std::pair<data::TransformationPtr, std::shared_ptr<data::Recurrence>>

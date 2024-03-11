@@ -5,6 +5,8 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <algorithm>
 #include <atomic>
 #include <limits>
@@ -65,12 +67,12 @@ class ThreadSafeVocabulary {
     // resize here so we can access 0 to map.size() - 1 uids with [] syntax
     _uid_to_string.resize(_string_to_uid.size());
     for (auto& [string, uid] : _string_to_uid) {
-      if (uid >= _max_vocab_size) {
+      if (uid >= _string_to_uid.size()) {
         throw std::invalid_argument(
             "[ThreadSafeVocabulary] The provided string_to_uid_map contains a "
             "uid out of the valid range. Provided uid: " +
             std::to_string(uid) + " but expected a uid in the range 0 to " +
-            std::to_string(*_max_vocab_size) + " - 1");
+            std::to_string(_string_to_uid.size()) + " - 1");
       }
       _uid_to_string[uid] = string;
     }
@@ -115,6 +117,33 @@ class ThreadSafeVocabulary {
       std::optional<uint32_t> max_vocab_size = std::nullopt) {
     return std::make_shared<ThreadSafeVocabulary>(std::move(string_to_uid_map),
                                                   max_vocab_size);
+  }
+
+  ar::ConstArchivePtr toArchive() const {
+    auto map = ar::Map::make();
+
+    // Convert to uint64_t from uint32_t for more flexibility in the future.
+    ar::MapStrU64 string_to_id;
+    for (const auto& [k, v] : _string_to_uid) {
+      string_to_id[k] = v;
+    }
+
+    map->set("string_to_id", ar::mapStrU64(string_to_id));
+    if (_max_vocab_size) {
+      map->set("max_vocab_size", ar::u64(*_max_vocab_size));
+    }
+
+    return map;
+  }
+
+  static auto fromArchive(const ar::Archive& archive) {
+    std::unordered_map<std::string, uint32_t> string_to_id;
+    for (const auto& [k, v] : archive.getAs<ar::MapStrU64>("string_to_id")) {
+      string_to_id[k] = v;
+    }
+
+    return make(std::move(string_to_id),
+                archive.getOpt<ar::U64>("max_vocab_size"));
   }
 
  private:

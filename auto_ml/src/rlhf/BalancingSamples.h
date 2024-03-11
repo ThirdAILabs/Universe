@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RLHFSampler.h"
+#include <archive/src/Archive.h>
 #include <data/src/ColumnMap.h>
 #include <cstddef>
 #include <iterator>
@@ -21,6 +22,12 @@ struct BalancingSample {
   void serialize(Archive& archive) {
     archive(indices, values, labels);
   }
+
+  friend bool operator==(const udt::BalancingSample& a,
+                         const udt::BalancingSample& b) {
+    return a.indices == b.indices && b.values == a.values &&
+           a.labels == b.labels;
+  }
 };
 
 class BalancingSamples {
@@ -38,15 +45,18 @@ class BalancingSamples {
         _indices_dim(indices_dim),
         _label_dim(label_dim),
         _max_docs(max_docs),
-        _max_samples_per_doc(max_samples_per_doc),
-        _rng(RNG_SEED) {}
+        _max_samples_per_doc(max_samples_per_doc) {}
 
   BalancingSamples(std::string indices_col, std::string values_col,
                    std::string labels_col, std::string doc_ids_col,
                    size_t indices_dim, size_t label_dim,
                    const RLHFSampler& sampler);
 
+  explicit BalancingSamples(const ar::Archive& archive);
+
   data::ColumnMap balancingSamples(size_t num_samples);
+
+  data::ColumnMap allBalancingSamples();
 
   void addSamples(const data::ColumnMap& data);
 
@@ -60,7 +70,24 @@ class BalancingSamples {
     _doc_ids.erase(doc_id);
   }
 
+  ar::ConstArchivePtr toArchive() const;
+
+  const auto& samplesPerDoc() const { return _samples_per_doc; }
+
+  size_t totalBalancingSamples() const {
+    size_t total_size = 0;
+    for (const auto& [_, samples] : _samples_per_doc) {
+      total_size += samples.size();
+    }
+    return total_size;
+  }
+
  private:
+  data::ColumnMap createColumnMap(std::vector<std::vector<uint32_t>>&& indices,
+                                  std::vector<std::vector<float>>&& values,
+                                  std::vector<std::vector<uint32_t>>&& labels,
+                                  std::vector<uint32_t>&& doc_ids);
+
   void addSample(uint32_t doc_id, BalancingSample sample);
 
   static constexpr uint32_t RNG_SEED = 7240924;

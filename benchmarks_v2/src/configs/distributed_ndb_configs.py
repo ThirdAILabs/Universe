@@ -3,6 +3,7 @@ from abc import ABC
 
 class DistributedNDBConfig(ABC):
     config_name = None
+    config_type = "ndb_small"
     dataset_name = None
     ray_checkpoint_storage = "ray_checkpoint/"
 

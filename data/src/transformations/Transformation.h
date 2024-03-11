@@ -1,5 +1,6 @@
 #pragma once
 
+#include <archive/src/Archive.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/rca/ExplanationMap.h>
 #include <data/src/transformations/State.h>
@@ -56,6 +57,15 @@ class Transformation {
 
     return explanations;
   }
+
+  virtual ar::ConstArchivePtr toArchive() const = 0;
+
+  static std::shared_ptr<Transformation> fromArchive(
+      const ar::Archive& archive);
+
+  std::string serialize() const;
+
+  static std::shared_ptr<Transformation> deserialize(const std::string& bytes);
 
  private:
   friend class cereal::access;

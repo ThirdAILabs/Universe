@@ -36,6 +36,7 @@
 #include <sys/types.h>
 #include <utils/Random.h>
 #include <chrono>
+#include <exception>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -123,6 +124,8 @@ void createDatasetSubmodule(py::module_& module) {
       .def("get_entity_hashes", &mach::MachIndex::getHashes, py::arg("entity"))
       .def("get_hash_to_entities", &mach::MachIndex::getEntities,
            py::arg("hash"))
+      .def("buckets", &mach::MachIndex::buckets)
+      .def("entity_to_hashes", &mach::MachIndex::entityToHashes)
       .def(
           "decode_batch",
           [](const mach::MachIndex& index, NumpyArray<float>& bucket_scores,
@@ -139,15 +142,25 @@ void createDatasetSubmodule(py::module_& module) {
             std::vector<std::vector<std::pair<uint32_t, double>>> output(
                 bucket_scores.shape(0));
 
+            std::exception_ptr error;
 #pragma omp parallel for default(none) \
-    shared(bucket_scores, index, output, top_k, num_buckets_to_eval)
+    shared(bucket_scores, index, output, top_k, num_buckets_to_eval, error)
             for (int64_t i = 0; i < bucket_scores.shape(0); i++) {
-              float* scores = bucket_scores.mutable_data(i);
-              BoltVector vec(
-                  /* an= */ nullptr, /* a= */ scores, /* g= */ nullptr,
-                  /* l= */ index.numBuckets());
+              try {
+                float* scores = bucket_scores.mutable_data(i);
+                BoltVector vec(
+                    /* an= */ nullptr, /* a= */ scores, /* g= */ nullptr,
+                    /* l= */ index.numBuckets());
 
-              output[i] = index.decode(vec, top_k, num_buckets_to_eval);
+                output[i] = index.decode(vec, top_k, num_buckets_to_eval);
+              } catch (...) {
+#pragma omp critical
+                error = std::current_exception();
+              }
+            }
+
+            if (error) {
+              std::rethrow_exception(error);
             }
 
             return output;
@@ -155,6 +168,7 @@ void createDatasetSubmodule(py::module_& module) {
           py::arg("bucket_scores"), py::arg("top_k"),
           py::arg("num_buckets_to_eval"))
 #endif
+      .def("num_entities", &mach::MachIndex::numEntities)
       .def("num_hashes", &mach::MachIndex::numHashes)
       .def("output_range", &mach::MachIndex::numBuckets)
       .def("save", &mach::MachIndex::save, py::arg("filename"))

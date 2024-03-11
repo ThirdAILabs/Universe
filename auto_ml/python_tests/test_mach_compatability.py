@@ -39,13 +39,8 @@ def test_mach_compatability(download_clinc_dataset):
 
     assert original_metrics["val_precision@1"][-1] >= 0.8
 
-    save_path = "./mach_v1_model"
+    model.migrate_to_v2()
 
-    model.save(save_path)
-
-    # Mach models are automatically converted from v1 to v2 on load, v1 will be
-    # deprecated in the future.
-    model = bolt.UniversalDeepTransformer.load(save_path)
     assert not model.is_v1()
 
     new_metrics = model.evaluate(eval_filename, metrics=["precision@1"])

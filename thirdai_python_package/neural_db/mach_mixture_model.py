@@ -5,7 +5,7 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt, data
 
 from .documents import DocumentDataSource
-from .models import CancelState, Mach, Model, merge_results
+from .models import CancelState, Mach, Model, add_retriever_tag, merge_results
 from .sharded_documents import shard_data_source
 from .supervised_datasource import SupDataSource
 from .trainer.checkpoint_config import (
@@ -247,8 +247,17 @@ class MachMixture(Model):
         )
 
     def delete_entities(self, entities) -> None:
-        for model in self.models:
-            model.delete_entities(entities)
+        segment_to_label_map = defaultdict(list)
+        for label in entities:
+            segments = self.label_to_segment_map.get(
+                label, []
+            )  # Get segments corresponding to the entity
+            for segment in segments:
+                segment_to_label_map[segment].append(label)
+
+        # Delete entities for each segment
+        for i, model in enumerate(self.models):
+            model.delete_entities(segment_to_label_map[i])
 
     def forget_documents(self) -> None:
         for model in self.models:
@@ -258,45 +267,79 @@ class MachMixture(Model):
     def searchable(self) -> bool:
         return self.n_ids != 0
 
-    def infer_labels(
-        self, samples: InferSamples, n_results: int, **kwargs
-    ) -> Predictions:
+    def aggregate_results(self, results):
+        joined_results = []
+        for i in range(len(results[0])):
+            joined_result = []
+            for result in results:
+                joined_result.extend(result[i])
+            joined_results.append(joined_result)
+
+            joined_result.sort(key=lambda x: x[1], reverse=True)
+
+        return joined_results
+
+    def query_mach(self, samples, n_results):
         for model in self.models:
             model.model.set_decode_params(
                 min(self.n_ids, n_results), min(self.n_ids, 100)
             )
 
-        per_model_results = bolt.UniversalDeepTransformer.parallel_inference(
+        mach_results = bolt.UniversalDeepTransformer.parallel_inference(
             models=[model.model for model in self.models],
             batch=[{self.query_col: clean_text(text)} for text in samples],
         )
 
+        return add_retriever_tag(self.aggregate_results(mach_results), tag="mach")
+
+    def query_inverted_index(self, samples, n_results):
         inverted_index_results = []
-        if not kwargs.get("disable_inverted_index", False):
-            for model in self.models:
-                if model.inverted_index:
-                    single_index_results = model.inverted_index.query(
-                        samples, k=min(n_results, model.n_ids)
-                    )
-                    inverted_index_results.append(single_index_results)
+        for model in self.models:
+            if model.inverted_index:
+                single_index_results = model.inverted_index.query(
+                    samples, k=min(n_results, model.n_ids)
+                )
+                inverted_index_results.append(single_index_results)
+        if not inverted_index_results:
+            return None
 
-        results = []
-        for index in range(len(samples)):
-            mach_results = []
-            for y in per_model_results:
-                mach_results.extend(y[index])
-            mach_results.sort(key=lambda x: x[1], reverse=True)
+        return add_retriever_tag(
+            self.aggregate_results(inverted_index_results), tag="inverted_index"
+        )
 
-            index_results = []
-            for res in inverted_index_results:
-                index_results.extend(res[index])
-
-            if len(index_results):
-                index_results.sort(key=lambda x: x[1], reverse=True)
-                results.append(merge_results(mach_results, index_results, n_results))
+    def infer_labels(
+        self,
+        samples: InferSamples,
+        n_results: int,
+        retriever=None,
+        **kwargs,
+    ) -> Predictions:
+        if not retriever:
+            index_results = self.query_inverted_index(samples, n_results=n_results)
+            if not index_results:
+                retriever = "mach"
             else:
-                results.append(mach_results[:n_results])
-        return results
+                mach_results = self.query_mach(samples, n_results=n_results)
+                return [
+                    merge_results(mach_res, index_res, n_results)
+                    for mach_res, index_res in zip(mach_results, index_results)
+                ]
+
+        if retriever == "mach":
+            return self.query_mach(samples=samples, n_results=n_results)
+
+        if retriever == "inverted_index":
+            results = self.query_inverted_index(samples=samples, n_results=n_results)
+            if not results:
+                raise ValueError(
+                    "Cannot use retriever 'inverted_index' since the index is None."
+                )
+            return results
+
+        raise ValueError(
+            f"Invalid retriever '{retriever}'. Please use 'mach', 'inverted_index', "
+            "or pass None to allow the model to autotune which is used."
+        )
 
     def _shard_label_constraints(
         self, entities: List[List[int]]
@@ -325,7 +368,7 @@ class MachMixture(Model):
 
         for i in range(len(samples)):
             for score in model_scores:
-                for label, value in score[i]:
+                for label, value, _ in score[i]:
                     aggregated_scores[i][label] += value
 
         # Sort the aggregated scores and keep only the top k results
@@ -339,17 +382,6 @@ class MachMixture(Model):
             )
 
         return top_k_results
-
-    @requires_condition(
-        check_func=lambda x: False,
-        method_name="score",
-        method_class="MachMixture",
-        condition_unmet_string="when multiple models are initialized",
-    )
-    def infer_buckets(
-        self, samples: InferSamples, n_results: int, **kwargs
-    ) -> Predictions:
-        pass
 
     def associate(
         self,

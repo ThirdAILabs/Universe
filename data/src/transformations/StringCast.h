@@ -8,6 +8,9 @@
 namespace thirdai::data {
 
 template <typename T>
+std::string typeName();
+
+template <typename T>
 class CastToValue final : public Transformation {
  public:
   CastToValue(std::string input_column_name, std::string output_column_name,
@@ -18,10 +21,16 @@ class CastToValue final : public Transformation {
   CastToValue(std::string input_column_name, std::string output_column_name,
               std::string format);
 
+  explicit CastToValue(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "cast_to_value_" + typeName<T>(); }
 
  private:
   T parse(const std::string& row) const;
@@ -48,10 +57,16 @@ class CastToArray final : public Transformation {
   CastToArray(std::string input_column_name, std::string output_column_name,
               char delimiter, std::optional<size_t> dim);
 
+  explicit CastToArray(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   void buildExplanationMap(const ColumnMap& input, State& state,
                            ExplanationMap& explanations) const final;
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "cast_to_array_" + typeName<T>(); }
 
  private:
   T parse(const std::string& item) const;

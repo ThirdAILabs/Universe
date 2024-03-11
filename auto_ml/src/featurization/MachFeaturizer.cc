@@ -21,6 +21,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace thirdai::automl {
 
@@ -66,6 +67,32 @@ MachFeaturizer::MachFeaturizer(
       label_column, MACH_LABELS, ' ', mach_index->numBuckets());
 
   _doc_id_transform = makeDocIdTransformation(label_column, label_delimiter);
+}
+
+void MachFeaturizer::insertNewDocIds(
+    const dataset::DataSourcePtr& data_source) {
+  data_source->restart();
+  auto data_iter = data::CsvIterator::make(data_source, _delimiter);
+
+  while (auto chunk = data_iter->next()) {
+    insertNewDocIds(*chunk);
+  }
+
+  data_source->restart();
+}
+
+void MachFeaturizer::insertNewDocIds(const data::ColumnMap& data) {
+  std::unordered_set<uint32_t> all_doc_ids;
+
+  const auto columns = _doc_id_transform->applyStateless(data);
+
+  auto doc_ids = columns.getArrayColumn<uint32_t>(MACH_DOC_IDS);
+  for (size_t i = 0; i < doc_ids->numRows(); i++) {
+    auto row = doc_ids->row(i);
+    all_doc_ids.insert(row.begin(), row.end());
+  }
+
+  machIndex()->insertNewEntities(all_doc_ids);
 }
 
 std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>
@@ -128,12 +155,13 @@ MachFeaturizer::featurizeTrainWithHashesBatch(const MapInputBatch& samples) {
 data::ColumnMap MachFeaturizer::featurizeDataset(
     const dataset::DataSourcePtr& data_source,
     const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names) {
+    const std::vector<std::string>& weak_column_names,
+    const std::optional<data::VariableLengthConfig>& variable_length) {
   data::ColumnMap columns = data::CsvIterator::all(data_source, _delimiter);
 
   if (!strong_column_names.empty() || !weak_column_names.empty()) {
     columns = coldStartTransform(strong_column_names, weak_column_names,
-                                 /*variable_length=*/std::nullopt)
+                                 variable_length)
                   ->apply(columns, *_state);
   }
 
@@ -261,6 +289,28 @@ void MachFeaturizer::addDummyDocIds(data::ColumnMap& columns) {
 
   columns.setColumn(MACH_DOC_IDS, dummy_doc_ids);
 }
+
+ar::ConstArchivePtr MachFeaturizer::toArchive() const {
+  auto map = Featurizer::toArchiveMap();
+
+  map->set("doc_id_transform", _doc_id_transform->toArchive());
+  map->set("prehashed_label_transform",
+           _prehashed_labels_transform->toArchive());
+
+  return map;
+}
+
+std::shared_ptr<MachFeaturizer> MachFeaturizer::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_shared<MachFeaturizer>(archive);
+}
+
+MachFeaturizer::MachFeaturizer(const ar::Archive& archive)
+    : Featurizer(archive),
+      _doc_id_transform(
+          data::Transformation::fromArchive(*archive.get("doc_id_transform"))),
+      _prehashed_labels_transform(data::Transformation::fromArchive(
+          *archive.get("prehashed_label_transform"))) {}
 
 template void MachFeaturizer::serialize(cereal::BinaryInputArchive&);
 template void MachFeaturizer::serialize(cereal::BinaryOutputArchive&);

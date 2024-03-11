@@ -4,8 +4,10 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/featurization/Featurizer.h>
+#include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/transformations/TextCompat.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/mach/MachIndex.h>
 
 namespace thirdai::automl {
@@ -29,6 +31,12 @@ class MachFeaturizer final : public Featurizer {
       std::optional<char> label_delimiter,
       data::ValueFillType label_value_fill = data::ValueFillType::Ones);
 
+  explicit MachFeaturizer(const ar::Archive& archive);
+
+  void insertNewDocIds(const dataset::DataSourcePtr& data_source);
+
+  void insertNewDocIds(const data::ColumnMap& data);
+
   std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>
   featurizeForIntroduceDocuments(
       const dataset::DataSourcePtr& data_source,
@@ -42,7 +50,8 @@ class MachFeaturizer final : public Featurizer {
   data::ColumnMap featurizeDataset(
       const dataset::DataSourcePtr& data_source,
       const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names);
+      const std::vector<std::string>& weak_column_names,
+      const std::optional<data::VariableLengthConfig>& variable_length);
 
   data::ColumnMap featurizeRlhfSamples(const std::vector<RlhfSample>& samples);
 
@@ -57,6 +66,18 @@ class MachFeaturizer final : public Featurizer {
       size_t n_balancing_samples);
 
   const auto& machIndex() const { return _state->machIndex(); }
+
+  // This is a redefinition of the Featurizer::toArchive method instead of an
+  // override because the original Featurizer class was not declared without any
+  // virtual methods, and adding a virtual method now messes up cereal when it
+  // tries to load this class. This is ok though becuase we only every interact
+  // with the MachFeaturizer directly, we never through a pointer to a
+  // featurizer, thus calling this method will invoke the
+  // MachFeaturizer::toArchive method, not the Featurizer::toArchive method.
+  ar::ConstArchivePtr toArchive() const;
+
+  static std::shared_ptr<MachFeaturizer> fromArchive(
+      const ar::Archive& archive);
 
  private:
   data::ColumnMap removeIntermediateColumns(const data::ColumnMap& columns);

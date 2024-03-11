@@ -22,12 +22,13 @@ class CosineSimilarity final
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
+  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                     bool replace_existing_optimizer) final;
+
   uint32_t dim() const final;
 
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
-
-  void initOptimizer() final;
 
   void disableSparseParameterUpdates() final {}
 
@@ -37,10 +38,19 @@ class CosineSimilarity final
 
   std::vector<std::vector<float>*> parameters() final { return {}; }
 
+  ComputationPtr applyToInputs(const ComputationList& inputs) final;
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
+  static std::shared_ptr<CosineSimilarity> fromArchive(
+      const ar::Archive& archive);
+
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
   ComputationPtr apply(ComputationPtr lhs, ComputationPtr rhs);
+
+  static std::string type() { return "cosine_sim"; }
 
  private:
   CosineSimilarity() {}
