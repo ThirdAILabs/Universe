@@ -18,6 +18,7 @@
 #include <smx/src/metrics/Metrics.h>
 #include <smx/src/optimizers/Adam.h>
 #include <smx/src/tensor/DenseTensor.h>
+#include <utils/Logging.h>
 #include <memory>
 #include <stdexcept>
 
@@ -463,9 +464,17 @@ void UDTMachSmx::train(const UDTMachSmx::TrainingDataset& dataset,
     _model->out->autotuneHashTableRebuild(dataset.size(), batch_size);
   }
 
+  size_t step = 0;
   for (const auto& [x, y] : dataset) {
+    bolt::utils::Timer zero_timer;
     _optimizer->zeroGrad();
 
+    zero_timer.stop();
+
+    logging::info(fmt::format("smx zero_grad | epoch {} | step {} | time {} ms",
+                              _epoch, step, zero_timer.milliseconds()));
+
+    bolt::utils::Timer forward_backward_timer;
     auto out = _model->forward(x, y);
     if (_softmax) {
       auto loss = smx::crossEntropy(out, y);
@@ -474,8 +483,22 @@ void UDTMachSmx::train(const UDTMachSmx::TrainingDataset& dataset,
       auto loss = smx::binaryCrossEntropy(out, y);
       loss->backward();
     }
+    forward_backward_timer.stop();
+
+    logging::info(
+        fmt::format("smx forward_backward | epoch {} | step {} | time {} ms",
+                    _epoch, step, forward_backward_timer.milliseconds()));
+
+    bolt::utils::Timer update_timer;
 
     _optimizer->step();
+
+    update_timer.stop();
+
+    logging::info(fmt::format("smx update | epoch {} | step {} | time {} ms",
+                              _epoch, step, update_timer.milliseconds()));
+
+    step++;
   }
 }
 
