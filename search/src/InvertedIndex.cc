@@ -24,37 +24,81 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
     throw std::invalid_argument(
         "Number of ids must match the number of docs in index.");
   }
-  std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>> doc_freqs(
-      docs.size());
 
-#pragma omp parallel for default(none) shared(docs, doc_freqs)
-  for (size_t i = 0; i < docs.size(); i++) {
-    const auto& tokens = docs[i];
-    std::unordered_map<Token, uint32_t> freqs;
-    for (const auto& token : preprocessText(tokens)) {
-      freqs[token]++;
-    }
-    doc_freqs[i] = {tokens.size(), std::move(freqs)};
-  }
+  auto doc_lens_and_occurences = countTokenOccurences(docs);
 
   for (size_t i = 0; i < docs.size(); i++) {
     const DocId doc_id = ids[i];
-    const size_t doc_len = doc_freqs[i].first;
-    const auto& freqs = doc_freqs[i].second;
+    const size_t doc_len = doc_lens_and_occurences[i].first;
+    const auto& occurences = doc_lens_and_occurences[i].second;
 
     if (_doc_lengths.count(doc_id)) {
       throw std::runtime_error("Document with id " + std::to_string(doc_id) +
                                " is already in InvertedIndex.");
     }
 
-    for (const auto& [token, freq] : freqs) {
-      _token_to_docs[token].emplace_back(doc_id, freq);
+    for (const auto& [token, cnt] : occurences) {
+      _token_to_docs[token].emplace_back(doc_id, cnt);
     }
     _doc_lengths[doc_id] = doc_len;
     _sum_doc_lens += doc_len;
   }
 
   recomputeMetadata();
+}
+
+void InvertedIndex::update(const std::vector<DocId>& ids,
+                           const std::vector<Tokens>& extra_tokens) {
+  if (ids.size() != extra_tokens.size()) {
+    throw std::invalid_argument(
+        "Number of ids must match the number of docs in index.");
+  }
+
+  auto doc_lens_and_occurences = countTokenOccurences(extra_tokens);
+
+  for (size_t i = 0; i < ids.size(); i++) {
+    const DocId doc_id = ids[i];
+    const size_t extra_len = doc_lens_and_occurences[i].first;
+    const auto& extra_occurences = doc_lens_and_occurences[i].second;
+
+    if (!_doc_lengths.count(doc_id)) {
+      throw std::runtime_error("Cannot update document with id " +
+                               std::to_string(doc_id) +
+                               " since it's not already in the index.");
+    }
+
+    for (const auto& [token, cnt] : extra_occurences) {
+      auto& docs_w_token = _token_to_docs[token];
+      auto it =
+          std::find_if(docs_w_token.begin(), docs_w_token.end(),
+                       [doc_id](const auto& a) { return a.first == doc_id; });
+      if (it != docs_w_token.end()) {
+        it->second += cnt;
+      } else {
+        docs_w_token.emplace_back(doc_id, cnt);
+      }
+    }
+    _doc_lengths[doc_id] += extra_len;
+    _sum_doc_lens += extra_len;
+  }
+}
+
+std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>>
+InvertedIndex::countTokenOccurences(const std::vector<Tokens>& docs) const {
+  std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>>
+      token_counts(docs.size());
+
+#pragma omp parallel for default(none) shared(docs, token_counts)
+  for (size_t i = 0; i < docs.size(); i++) {
+    const auto& tokens = docs[i];
+    std::unordered_map<Token, uint32_t> counts;
+    for (const auto& token : preprocessText(tokens)) {
+      counts[token]++;
+    }
+    token_counts[i] = {tokens.size(), std::move(counts)};
+  }
+
+  return token_counts;
 }
 
 void InvertedIndex::recomputeMetadata() {
@@ -120,7 +164,7 @@ std::vector<DocScore> InvertedIndex::query(const Tokens& query,
     }
     const float token_idf = _token_to_idf.at(token);
 
-    for (const auto& [doc_id, token_freq] : _token_to_docs.at(token)) {
+    for (const auto& [doc_id, cnt_in_doc] : _token_to_docs.at(token)) {
       const uint64_t doc_len = _doc_lengths.at(doc_id);
 
       // Note: This bm25 score could be precomputed for each (token, doc) pair.
@@ -128,7 +172,7 @@ std::vector<DocScore> InvertedIndex::query(const Tokens& query,
       // more docs are added since the idf and avg_doc_len will change. So if we
       // do not need to support small incremental additions then it might make
       // sense to precompute these values.
-      doc_scores[doc_id] += bm25(token_idf, token_freq, doc_len);
+      doc_scores[doc_id] += bm25(token_idf, cnt_in_doc, doc_len);
     }
   }
 

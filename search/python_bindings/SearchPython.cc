@@ -80,6 +80,8 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("b") = InvertedIndex::DEFAULT_B, py::arg("stem") = true,
            py::arg("lowercase") = true)
       .def("index", &InvertedIndex::index, py::arg("ids"), py::arg("docs"))
+      .def("update", &InvertedIndex::update, py::arg("ids"),
+           py::arg("extra_tokens"))
       .def("query", &InvertedIndex::queryBatch, py::arg("queries"),
            py::arg("k"))
       .def("query", &InvertedIndex::query, py::arg("query"), py::arg("k"))
