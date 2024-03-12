@@ -232,6 +232,7 @@ setup(
             "ray",
             "grpcio",
             "unstructured[all-docs]<=0.10.20",
+            "pandera",
         ]
         + neural_db_deps,
         "benchmark": [
