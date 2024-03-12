@@ -49,7 +49,7 @@ TEST(InvertedIndexTests, BasicRetrieval) {
   checkQuery(index, {"a", "b", "c"}, {2, 1, 6, 8});
   // These candidates are a subset of the original results, plus 12 which
   // usually would score lower and not be returned, but is returned when we
-  // restrict the candidates.
+  // restrict the candidates. Doc 3 is also added but scores 0.
   checkRank(index, {"a", "b", "c"}, {8, 12, 3, 1}, {1, 8, 12});
 
   // Docs 7 and 11 contain the whole query, but 7 contains "g" repeated so it
@@ -57,7 +57,8 @@ TEST(InvertedIndexTests, BasicRetrieval) {
   // "g" which occurs in fewer docs so it ranks higher. Between 6 and 8, 6 is
   // shorter so the query terms are more frequent within it.
   checkQuery(index, {"f", "g"}, {7, 11, 1, 6, 8});
-  // These candidates are a subset of the original results.
+  // These candidates are a subset of the original results plus docs 5 & 2 which
+  // score 0 are added to test they are not returned.
   checkRank(index, {"f", "g"}, {8, 5, 6, 2, 7}, {7, 6, 8});
 }
 
