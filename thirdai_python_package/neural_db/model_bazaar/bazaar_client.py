@@ -62,7 +62,7 @@ class NeuralDBClient:
         search(self, query: str, top_k: int = 10) -> List[dict]:
             Searches the ndb model for relevant search results.
 
-        insert(self, files: List[str]) -> None:
+        insert(self, files: List[str], urls: List[str]) -> None:
             Inserts documents into the ndb model.
 
         delete(self, source_ids: List[str]) -> None:
@@ -115,17 +115,19 @@ class NeuralDBClient:
         return json.loads(response.content)["data"]
 
     @check_deployment_decorator
-    def insert(self, files: List[str]):
+    def insert(self, files: List[str], urls: List[str] = None):
         """
         Inserts documents into the ndb model.
 
         Args:
             files (List[str]): A list of file paths to be inserted into the ndb model.
+            urls (List[str]): A list of URLs to be inserted into the ndb model.
         """
         files = [("files", open(file_path, "rb")) for file_path in files]
         response = http_post_with_error(
             urljoin(self.base_url, "insert"),
             files=files,
+            data={"urls": urls},
             headers=auth_header(self.bazaar._access_token),
         )
 
