@@ -173,8 +173,8 @@ class Bazaar:
     ):
         if self.is_logged_in():
             url = urljoin(
-                self._login_instance._base_url,
-                f"bazaar/{self._login_instance._user_id}/list",
+                self._login_instance.base_url,
+                f"bazaar/{self._login_instance.user_id}/list",
             )
             response = http_get_with_error(
                 url,
@@ -184,7 +184,7 @@ class Bazaar:
                     "username": username,
                     "access_level": access_level,
                 },
-                headers=auth_header(self._login_instance._access_token),
+                headers=auth_header(self._login_instance.access_token),
             )
         else:
             print("Fetching public models, login to fetch all accessible models.")
@@ -282,13 +282,13 @@ class Bazaar:
     ):
         if self.is_logged_in():
             url = urljoin(
-                self._login_instance._base_url,
-                f"bazaar/{self._login_instance._user_id}/model",
+                self._login_instance.base_url,
+                f"bazaar/{self._login_instance.user_id}/model",
             )
             response = http_get_with_error(
                 url,
                 params={"model_identifier": model_identifier},
-                headers=auth_header(self._login_instance._access_token),
+                headers=auth_header(self._login_instance.access_token),
             )
         else:
             url = urljoin(
@@ -377,13 +377,13 @@ class Bazaar:
     ):
         if self.is_logged_in():
             url = urljoin(
-                self._login_instance._base_url,
-                f"bazaar/{self._login_instance._user_id}/download",
+                self._login_instance.base_url,
+                f"bazaar/{self._login_instance.user_id}/download",
             )
             response = requests.get(
                 url,
                 params={"model_identifier": model_identifier},
-                headers=auth_header(self._login_instance._access_token),
+                headers=auth_header(self._login_instance.access_token),
                 stream=True,
             )
         else:
@@ -419,7 +419,7 @@ class Bazaar:
         files = {"chunk": chunk_data}
         response = requests.post(
             urljoin(
-                self._login_instance._base_url,
+                self._login_instance.base_url,
                 "bazaar/upload-chunk",
             ),
             files=files,
@@ -456,10 +456,10 @@ class Bazaar:
         # Generate upload token
         token_response = http_get_with_error(
             urljoin(
-                self._login_instance._base_url,
-                f"bazaar/{self._login_instance._user_id}/upload-token",
+                self._login_instance.base_url,
+                f"bazaar/{self._login_instance.user_id}/upload-token",
             ),
-            headers=auth_header(self._login_instance._access_token),
+            headers=auth_header(self._login_instance.access_token),
             params={
                 "model_name": name,
                 "size": int(get_file_size(zip_path, "MB")),
@@ -548,7 +548,7 @@ class Bazaar:
 
         response = http_post_with_error(
             urljoin(
-                self._login_instance._base_url,
+                self._login_instance.base_url,
                 "bazaar/upload-commit",
             ),
             params={"total_chunks": chunk_number},
@@ -565,10 +565,10 @@ class Bazaar:
     ):
         delete_response = http_post_with_error(
             urljoin(
-                self._login_instance._base_url,
-                f"bazaar/{self._login_instance._user_id}/request-delete",
+                self._login_instance.base_url,
+                f"bazaar/{self._login_instance.user_id}/request-delete",
             ),
-            headers=auth_header(self._login_instance._access_token),
+            headers=auth_header(self._login_instance.access_token),
             json={
                 "model_identifier": model_identifier,
             },
