@@ -60,9 +60,9 @@ class NDBRunner(Runner):
             num_queries = 20
             total_query_time = 0
             for i in range(num_queries):
-                start_query_time = time.perf_counter_ns()
+                start_query_time = time.time()
                 db.search(test_df[config.query_column][i % len(test_df)], top_k=5)
-                total_query_time += time.perf_counter_ns() - start_query_time
+                total_query_time += time.time() - start_query_time
             mlflow.log_metric("query time", total_query_time / num_queries)
 
     @classmethod
@@ -91,7 +91,8 @@ class NDBRunner(Runner):
     @classmethod
     def log_precision_metrics(cls, precisions_and_names, prefix):
         for precision, name in precisions_and_names:
-            mlflow.log_metric(f"{prefix} P at 1{name}", precision)
+            metric_name = f"{prefix} P at 1" if name == "" else f"{prefix} {name}"
+            mlflow.log_metric(metric_name, precision)
 
     @classmethod
     def get_precision(

@@ -4,6 +4,7 @@ import os
 import pickle
 import shutil
 import threading
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, List, Optional, Union
 from urllib.parse import urljoin
@@ -75,37 +76,30 @@ class BazaarEntry(BaseModel):
             return None
 
 
+@dataclass
 class Login:
-    def __init__(
-        self,
+    base_url: str
+    username: str
+    user_id: str
+    access_token: str
+
+    @staticmethod
+    def with_email(
+        base_url: str,
         email: str,
         password: str,
-        base_url: str,
     ):
-        self._base_url = base_url
         # We are using HTTPBasic Auth in backend. update this when we change the Authentication in Backend.
         response = http_get_with_error(
-            urljoin(self._base_url, "user/email-login"),
+            urljoin(base_url, "user/email-login"),
             auth=HTTPBasicAuth(email, password),
         )
 
         content = json.loads(response.content)
-        self._access_token = content["data"]["access_token"]
-
-        self._user_id = content["data"]["user"]["user_id"]
-        self._username = content["data"]["user"]["username"]
-
-    @property
-    def access_token(self):
-        return self._access_token
-
-    @property
-    def user_id(self):
-        return self._user_id
-
-    @property
-    def base_url(self):
-        return self._base_url
+        username = content["data"]["user"]["username"]
+        user_id = content["data"]["user"]["user_id"]
+        access_token = content["data"]["access_token"]
+        return Login(base_url, username, user_id, access_token)
 
 
 def auth_header(access_token):
@@ -165,13 +159,10 @@ class Bazaar:
         )
 
     def login(self, email, password):
-        # This will try to login, if there is any error it will be throwed by Login class.
-        login_instance = Login(email=email, password=password, base_url=self._base_url)
-
-        self._login_instance = login_instance
+        self._login_instance = Login.with_email(self._base_url, email, password)
 
     def is_logged_in(self):
-        return self._login_instance != None
+        return self._login_instance is not None
 
     def fetch(
         self,
