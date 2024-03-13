@@ -2,17 +2,20 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/memory.hpp>
 #include <bolt/src/utils/Timer.h>
+#include <archive/src/Archive.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <auto_ml/src/udt/backends/DeprecatedUDTMachClassifier.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
 #include <auto_ml/src/udt/backends/UDTGraphClassifier.h>
-#include <auto_ml/src/udt/backends/UDTMachClassifier.h>
+#include <auto_ml/src/udt/backends/UDTMach.h>
 #include <auto_ml/src/udt/backends/UDTQueryReformulation.h>
 #include <auto_ml/src/udt/backends/UDTRecurrentClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
 #include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/CheckLicense.h>
+#include <pybind11/pytypes.h>
 #include <telemetry/src/PrometheusClient.h>
 #include <utils/Version.h>
 #include <versioning/src/Versions.h>
@@ -20,6 +23,7 @@
 #include <memory>
 #include <sstream>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 
 namespace thirdai::automl::udt {
@@ -77,10 +81,17 @@ UDT::UDT(
                             defaults::USE_MACH) ||
         user_args.get<bool>("neural_db", "boolean", defaults::USE_MACH);
     if (use_mach) {
-      _backend = std::make_unique<UDTMachClassifier>(
-          data_types, temporal_tracking_relationships, target_col,
-          as_categorical, n_target_classes.value(), integer_target,
-          tabular_options, model_config, user_args);
+      if (user_args.get<bool>("v1", "boolean", false)) {
+        _backend = std::make_unique<UDTMachClassifier>(
+            data_types, temporal_tracking_relationships, target_col,
+            as_categorical, n_target_classes.value(), integer_target,
+            tabular_options, model_config, user_args);
+      } else {
+        _backend = std::make_unique<UDTMach>(
+            data_types, temporal_tracking_relationships, target_col,
+            as_categorical, n_target_classes.value(), integer_target,
+            tabular_options, model_config, user_args);
+      }
     } else {
       _backend = std::make_unique<UDTClassifier>(
           data_types, temporal_tracking_relationships, target_col,
@@ -145,13 +156,12 @@ py::object UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
   return output;
 }
 
-py::object UDT::trainBatch(const MapInputBatch& batch, float learning_rate,
-                           const std::vector<std::string>& metrics) {
+py::object UDT::trainBatch(const MapInputBatch& batch, float learning_rate) {
   licensing::entitlements().verifyFullAccess();
 
   bolt::utils::Timer timer;
 
-  auto output = _backend->trainBatch(batch, learning_rate, metrics);
+  auto output = _backend->trainBatch(batch, learning_rate);
 
   timer.stop();
 
@@ -225,7 +235,7 @@ py::object UDT::scoreBatch(const MapInputBatch& samples,
   return result;
 }
 
-std::vector<dataset::Explanation> UDT::explain(
+std::vector<std::pair<std::string, float>> UDT::explain(
     const MapInput& sample,
     const std::optional<std::variant<uint32_t, std::string>>& target_class) {
   bolt::utils::Timer timer;
@@ -267,38 +277,24 @@ std::vector<uint32_t> UDT::modelDims() const {
   return dims;
 }
 
-void UDT::saveImpl(const std::string& filename) const {
+void UDT::save(const std::string& filename) const {
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   save_stream(filestream);
 }
 
-void UDT::save(const std::string& filename) const {
-  /*
-   * setting `should_save_optimizer` to false prevents unnecessary checkpointing
-   * of the model. If we load the model from a checkpoint and intend to save it,
-   * by default `_should_save_optimizer` variable is set to true could result in
-   * redundant saving of the optimizer.
-   */
-  // Since UDTQueryReformulation doesn't defines model()
-  if (!dynamic_cast<UDTQueryReformulation*>(_backend.get())) {
-    _backend->model()->setSerializeOptimizer(
-        /* should_save_optimizer= */ false);
-  }
-  saveImpl(filename);
+void UDT::save_stream(std::ostream& output) const {
+  const_cast<UDT*>(this)->_save_optimizer = false;
+  cereal::BinaryOutputArchive oarchive(output);
+  oarchive(*this);
 }
 
 void UDT::checkpoint(const std::string& filename) const {
-  // Since UDTQueryReformulation doesn't defines model()
-  if (!dynamic_cast<UDTQueryReformulation*>(_backend.get())) {
-    _backend->model()->setSerializeOptimizer(
-        /* should_save_optimizer= */ true);
-  }
-  saveImpl(filename);
-}
+  std::ofstream output =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
 
-void UDT::save_stream(std::ostream& output_stream) const {
-  cereal::BinaryOutputArchive oarchive(output_stream);
+  const_cast<UDT*>(this)->_save_optimizer = true;
+  cereal::BinaryOutputArchive oarchive(output);
   oarchive(*this);
 }
 
@@ -308,8 +304,8 @@ std::shared_ptr<UDT> UDT::load(const std::string& filename) {
   return load_stream(filestream);
 }
 
-std::shared_ptr<UDT> UDT::load_stream(std::istream& input_stream) {
-  cereal::BinaryInputArchive iarchive(input_stream);
+std::shared_ptr<UDT> UDT::load_stream(std::istream& input) {
+  cereal::BinaryInputArchive iarchive(input);
   std::shared_ptr<UDT> deserialize_into(new UDT());
   iarchive(*deserialize_into);
 
@@ -341,21 +337,73 @@ bool UDT::hasGraphInputs(const ColumnDataTypes& data_types) {
       std::to_string(node_id_col_count) + " node id data types.");
 }
 
-template void UDT::serialize(cereal::BinaryInputArchive&,
-                             const uint32_t version);
-template void UDT::serialize(cereal::BinaryOutputArchive&,
-                             const uint32_t version);
+std::unique_ptr<UDTBackend> backendFromArchive(const ar::Archive& archive) {
+  std::string type = archive.str("type");
+
+  if (type == UDTClassifier::type()) {
+    return UDTClassifier::fromArchive(archive);
+  }
+  if (type == UDTGraphClassifier::type()) {
+    return UDTGraphClassifier::fromArchive(archive);
+  }
+  if (type == UDTMach::type()) {
+    return UDTMach::fromArchive(archive);
+  }
+  if (type == UDTQueryReformulation::type()) {
+    return UDTQueryReformulation::fromArchive(archive);
+  }
+  if (type == UDTRecurrentClassifier::type()) {
+    return UDTRecurrentClassifier::fromArchive(archive);
+  }
+  if (type == UDTRegression::type()) {
+    return UDTRegression::fromArchive(archive);
+  }
+  if (type == UDTSVMClassifier::type()) {
+    return UDTSVMClassifier::fromArchive(archive);
+  }
+  throw std::invalid_argument("Invalid backend type '" + type + "'.");
+}
 
 template <class Archive>
-void UDT::serialize(Archive& archive, const uint32_t version) {
+void UDT::save(Archive& archive, const uint32_t version) const {
+  (void)version;
   std::string thirdai_version = thirdai::version();
   archive(thirdai_version);
-  std::string class_name = "UDT_BASE";
-  versions::checkVersion(version, versions::UDT_BASE_VERSION, thirdai_version,
-                         thirdai::version(), class_name);
 
-  // Increment thirdai::versions::UDT_BASE_VERSION after serialization changes
-  archive(_backend);
+  auto thirdai_archive = _backend->toArchive(_save_optimizer);
+
+  archive(thirdai_archive);
+}
+
+template <class Archive>
+void UDT::load(Archive& archive, const uint32_t version) {
+  std::string thirdai_version;
+  archive(thirdai_version);
+
+  if (version <= versions::UDT_LAST_OLD_SERIALIZATION_VERSION) {
+    std::string class_name = "UDT_BASE";
+    // We use the UDT_LAST_OLD_SERIALIZATION_VERSION as the current version
+    // becuase that's the version that we're using to load the model using the
+    // old cereal code.
+    versions::checkVersion(version,
+                           versions::UDT_LAST_OLD_SERIALIZATION_VERSION,
+                           thirdai_version, thirdai::version(), class_name);
+
+    archive(_backend);
+
+    migrateToMachV2();
+  } else {
+    ar::ArchivePtr thirdai_archive;
+    archive(thirdai_archive);
+
+    _backend = backendFromArchive(*thirdai_archive);
+  }
+}
+
+void UDT::migrateToMachV2() {
+  if (auto* old_mach = dynamic_cast<UDTMachClassifier*>(_backend.get())) {
+    _backend = std::make_unique<UDTMach>(old_mach->getMachInfo());
+  }
 }
 
 void UDT::throwUnsupportedUDTConfigurationError(
@@ -381,6 +429,42 @@ void UDT::throwUnsupportedUDTConfigurationError(
 
   error_msg << ".";
   throw std::invalid_argument(error_msg.str());
+}
+
+bool UDT::isV1() const {
+  return dynamic_cast<UDTMachClassifier*>(_backend.get());
+}
+
+std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
+UDT::parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
+                       const MapInputBatch& batch, bool sparse_inference,
+                       std::optional<uint32_t> top_k) {
+  std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>> outputs(
+      models.size());
+
+  bool non_mach = false;
+#pragma omp parallel for default(none)                      \
+    shared(models, batch, outputs, sparse_inference, top_k, \
+           non_mach) if (batch.size() == 1)
+  for (size_t i = 0; i < models.size(); i++) {
+    if (auto* mach = dynamic_cast<UDTMach*>(models[i]->_backend.get())) {
+      outputs[i] = mach->predictBatchImpl(
+          batch, sparse_inference, /*return_predicted_class*/ false, top_k);
+    } else if (auto* mach = dynamic_cast<UDTMachClassifier*>(
+                   models[i]->_backend.get())) {
+      outputs[i] = mach->predictImpl(batch, sparse_inference, top_k);
+    } else {
+#pragma omp critical
+      non_mach = true;
+    }
+  }
+
+  if (non_mach) {
+    throw std::invalid_argument(
+        "Cannot perform parallel inference on non mach model.");
+  }
+
+  return outputs;
 }
 
 }  // namespace thirdai::automl::udt

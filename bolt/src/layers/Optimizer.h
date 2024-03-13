@@ -10,6 +10,11 @@
 #include <cstdint>
 #include <vector>
 
+/**
+ * THIS IS DEPRECATED, IT IS ONLY PRESENT FOR COMPATABILITY WITH LOADING OLD
+ * MODELS.
+ */
+
 namespace thirdai::bolt {
 
 constexpr float BETA1 = 0.9;

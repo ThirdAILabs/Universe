@@ -13,6 +13,8 @@ class PatchSum final : public Op,
  private:
   PatchSum(size_t n_patches, size_t patch_dim);
 
+  explicit PatchSum(const ar::Archive& archive);
+
  public:
   static auto make(size_t n_patches, size_t patch_dim) {
     return std::shared_ptr<PatchSum>(new PatchSum(n_patches, patch_dim));
@@ -26,12 +28,13 @@ class PatchSum final : public Op,
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
+  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                     bool replace_existing_optimizer) final;
+
   uint32_t dim() const final;
 
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
-
-  void initOptimizer() final;
 
   void disableSparseParameterUpdates() final;
 
@@ -41,12 +44,20 @@ class PatchSum final : public Op,
 
   std::vector<std::vector<float>*> parameters() final;
 
+  ComputationPtr applyToInputs(const ComputationList& inputs) final;
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
+  static std::shared_ptr<PatchSum> fromArchive(const ar::Archive& archive);
+
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
   void setSerializeOptimizer(bool should_serialize_optimizer) final;
 
   ComputationPtr apply(ComputationPtr input);
+
+  static std::string type() { return "patch_sum"; }
 
  private:
   size_t _n_patches, _patch_dim;

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <bolt/src/layers/LayerUtils.h>
-#include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <memory>
 #include <stdexcept>
@@ -13,6 +12,8 @@ class Embedding final : public Op,
  private:
   Embedding(size_t dim, size_t input_dim, const std::string& activation,
             bool bias);
+
+  explicit Embedding(const ar::Archive& archive);
 
  public:
   static auto make(size_t dim, size_t input_dim, const std::string& activation,
@@ -31,6 +32,9 @@ class Embedding final : public Op,
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
+  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                     bool replace_existing_optimizer) final;
+
   uint32_t dim() const final { return _dim; }
 
   std::optional<uint32_t> nonzeros(const ComputationList& inputs,
@@ -39,8 +43,6 @@ class Embedding final : public Op,
     (void)use_sparsity;
     return dim();
   }
-
-  void initOptimizer() final;
 
   void disableSparseParameterUpdates() final {
     _disable_sparse_parameter_updates = true;
@@ -51,12 +53,18 @@ class Embedding final : public Op,
   }
 
   std::vector<std::vector<float>*> gradients() final {
-    return {&_embedding_optimizer->gradients, &_bias_optimizer->gradients};
+    return {&_embedding_gradients, &_bias_gradients};
   }
 
   std::vector<std::vector<float>*> parameters() final {
     return {&_embeddings, &_biases};
   }
+
+  ComputationPtr applyToInputs(const ComputationList& inputs) final;
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
+  static std::shared_ptr<Embedding> fromArchive(const ar::Archive& archive);
 
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
@@ -64,6 +72,9 @@ class Embedding final : public Op,
   void setSerializeOptimizer(bool should_serialize_optimizer) final {
     _should_serialize_optimizer = should_serialize_optimizer;
   }
+
+  std::vector<std::pair<std::string, double>> parameterAndGradNorms()
+      const final;
 
   ComputationPtr apply(ComputationPtr input);
 
@@ -89,6 +100,8 @@ class Embedding final : public Op,
     return std::dynamic_pointer_cast<Embedding>(op);
   }
 
+  static std::string type() { return "emb"; }
+
  private:
   inline void applyActivationFunction(float* activations) const;
 
@@ -99,10 +112,8 @@ class Embedding final : public Op,
   }
 
   inline float* gradients(size_t token) {
-    return _embedding_optimizer->gradients.data() + token * _dim;
+    return _embedding_gradients.data() + token * _dim;
   }
-
-  void sparseEmbeddingUpdate(float learning_rate, uint32_t train_steps);
 
   size_t _dim, _input_dim;
   bool _bias;
@@ -112,21 +123,20 @@ class Embedding final : public Op,
   std::vector<float> _biases;
 
   bool _disable_sparse_parameter_updates;
+
+  std::vector<float> _embedding_gradients;
+  std::vector<float> _bias_gradients;
   bool _should_serialize_optimizer;
 
-  std::optional<AdamOptimizer> _embedding_optimizer = std::nullopt;
-  std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
+  OptimizerPtr _embedding_optimizer;
+  OptimizerPtr _bias_optimizer;
   std::vector<bool> _embeddings_used;
 
   Embedding() {}
 
   friend class cereal::access;
-
   template <class Archive>
-  void save(Archive& archive) const;
-
-  template <class Archive>
-  void load(Archive& archive);
+  void serialize(Archive& archive);
 };
 
 using EmbeddingPtr = std::shared_ptr<Embedding>;

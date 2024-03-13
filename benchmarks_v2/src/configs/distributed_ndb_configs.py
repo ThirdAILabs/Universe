@@ -3,6 +3,7 @@ from abc import ABC
 
 class DistributedNDBConfig(ABC):
     config_name = None
+    config_type = "ndb_small"
     dataset_name = None
     ray_checkpoint_storage = "ray_checkpoint/"
 
@@ -10,6 +11,7 @@ class DistributedNDBConfig(ABC):
 class Amazon200kConfig(DistributedNDBConfig):
     config_name = "amazon_200K_ndb"
     dataset_name = "amazon_200K"
+    ray_config_path = "testing_distributed_NDB_with_amazon-200K"
 
     learning_rate = 0.005
     epochs = 20

@@ -26,7 +26,8 @@ ColdStartTextAugmentation::ColdStartTextAugmentation(
       _weak_sample_num_words(config.weak_sample_num_words),
       _weak_sample_reps(config.weak_sample_reps),
       _strong_max_len(config.strong_max_len),
-      _strong_sample_num_words(config.strong_sample_num_words) {
+      _strong_sample_num_words(config.strong_sample_num_words),
+      _strong_to_weak_ratio(config.strong_to_weak_ratio) {
   // Validate input parameters.
   validateGreaterThanZero(_weak_min_len, "weak_min_len");
   validateGreaterThanZero(_weak_max_len, "weak_max_len");
@@ -34,6 +35,7 @@ ColdStartTextAugmentation::ColdStartTextAugmentation(
   validateGreaterThanZero(_weak_sample_num_words, "weak_sample_num_words");
   validateGreaterThanZero(_strong_max_len, "strong_max_len");
   validateGreaterThanZero(_strong_sample_num_words, "strong_sample_num_words");
+  validateGreaterThanZero(_strong_to_weak_ratio, "strong_to_weak_ratio");
 
   if (_weak_sample_reps <= 0) {
     throw std::invalid_argument(
@@ -91,8 +93,15 @@ std::vector<std::string> ColdStartTextAugmentation::augmentSingleRow(
   // phrase generation pipeline to self-supervised (label, phrase) pairs.
   Phrase strong_phrase = getStrongPhrase(strong_text, _strong_max_len);
   PhraseCollection phrases = getWeakPhrases(weak_text, rng);
-  phrases = cold_start::mergeStrongWithWeak(phrases, strong_phrase,
-                                            _strong_sample_num_words, rng);
+
+  if (_strong_to_weak_ratio) {
+    phrases = cold_start::appendStrongAndWeak(
+        phrases, strong_phrase, _strong_sample_num_words,
+        _strong_to_weak_ratio.value(), rng);
+  } else {
+    phrases = cold_start::concatStrongWithWeak(phrases, strong_phrase,
+                                               _strong_sample_num_words, rng);
+  }
 
   std::vector<std::string> output_samples;
   for (const auto& phrase : phrases) {

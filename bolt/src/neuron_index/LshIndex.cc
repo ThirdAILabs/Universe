@@ -5,9 +5,13 @@
 #include <cereal/types/vector.hpp>
 #include <bolt/src/layers/SamplingConfig.h>
 #include <hashing/src/HashUtils.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <utils/Random.h>
 #include <algorithm>
+#include <memory>
 #include <random>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -134,6 +138,39 @@ void LshIndex::summarize(std::ostream& summary) const {
             << "hashes_per_table= " << dwta_hasher->getHashesPerTable() << ", ";
   }
   _hash_table->summarize(summary);
+}
+
+ar::ConstArchivePtr LshIndex::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("hash_fn", _hash_fn->toArchive());
+  map->set("hash_table", _hash_table->toArchive());
+  map->set("rand_neurons", ar::vecU32(_rand_neurons));
+  map->set("insert_labels_when_not_found",
+           ar::boolean(_insert_labels_when_not_found));
+
+  return map;
+}
+
+std::shared_ptr<LshIndex> LshIndex::fromArchive(const ar::Archive& archive) {
+  return std::make_shared<LshIndex>(archive);
+}
+
+LshIndex::LshIndex(const ar::Archive& archive)
+    : _hash_table(
+          hashtable::SampledHashTable::fromArchive(*archive.get("hash_table"))),
+      _rand_neurons(archive.getAs<ar::VecU32>("rand_neurons")),
+      _insert_labels_when_not_found(
+          archive.boolean("insert_labels_when_not_found")) {
+  std::string hash_fn_type = archive.get("hash_fn")->str("type");
+
+  if (hash_fn_type == hashing::DWTAHashFunction::type()) {
+    _hash_fn = hashing::DWTAHashFunction::fromArchive(*archive.get("hash_fn"));
+  } else {
+    throw std::invalid_argument("Unsupported hash function type '" +
+                                hash_fn_type + "'.");
+  }
 }
 
 template void LshIndex::serialize(cereal::BinaryInputArchive&);

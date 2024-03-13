@@ -170,6 +170,8 @@ neural_db_deps = [
     "ipython",
 ]
 
+neural_db_v2_deps = ["pandas", "pandera"]
+
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
@@ -191,7 +193,7 @@ setup(
         "numpy",
         "typing_extensions",
         "requests",
-        "pandas>=2.0.0",
+        "pandas>=2.0.0, <=2.1.4",
     ],
     extras_require={
         # The cryptography requirement is necessary to avoid ssl errors
@@ -203,11 +205,12 @@ setup(
         # version of MLFLOW here. The version of protobuf that works with this
         # MLFLOW is also being fixed.
         "neural_db": neural_db_deps,
+        "neural_db_v2": neural_db_v2_deps,
         "test": [
             "pytest",
             "pytest-mock",
             "boto3",
-            "moto[server]",
+            "moto[s3, server]",
             "mlflow",
             "protobuf",
             "datasets",

@@ -1,4 +1,6 @@
 try:
+    import nltk
+
     from . import parsing_utils
     from .constraint_matcher import AnyOf, EqualTo, GreaterThan, InRange, LessThan
     from .documents import (
@@ -7,6 +9,7 @@ try:
         PDF,
         URL,
         Document,
+        InMemoryText,
         Reference,
         SalesForce,
         SentenceLevelDOCX,
@@ -15,9 +18,12 @@ try:
         SQLDatabase,
         Unstructured,
     )
-    from .model_bazaar import Bazaar, ModelBazaar
-    from .neural_db import CancelState, NeuralDB, Strength, Sup
+    from .model_bazaar import Login, ModelBazaar
+    from .neural_db import CancelState, CheckpointConfig, NeuralDB, Strength, Sup
+
+    nltk.download("punkt")
 except ImportError as error:
     raise ImportError(
-        "To use thirdai.neural_db, please install the additional dependencies by running 'pip install thirdai[neural_db]'"
+        "To use thirdai.neural_db, please install the additional dependencies by"
+        " running 'pip install thirdai[neural_db]'"
     )

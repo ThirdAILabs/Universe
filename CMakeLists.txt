@@ -150,51 +150,7 @@ if(MSVC)
   add_library(OpenMP::OpenMP_CXX ALIAS _thirdai_windows_llvm_openmp)
 else()
 
-  find_package(OpenMP)
-  if(NOT OpenMP_FOUND)
-
-    # In this case, we were not able to find OpenMP. We are choosing to build
-    # openmp from scratch here, using the LLVM standalone OpenMP source.
-    #
-    # In practice, this is intended for use for cross-compiling M1 (arm64)
-    # wheels on MacOS GitHub runners (x86_64), where the possibility to use the
-    # host's libomp is missing, and the library needs to be cross compiled for
-    # target.
-
-    # The following works with only newer CMake versions (Download), but we get
-    # here only after all else has failed, and only for purposes of CI.
-
-    # This block needs to happen before all the compile-options are added to
-    # escape -Wall and -Werror being enforced on OpenMP library.
-
-    set(LLVM_OPENMP_VERSION "13.0.1")
-    set(LLVM_OPENMP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/openmp")
-
-    if(NOT EXISTS ${LLVM_OPENMP_SOURCE_DIR})
-      message(
-        "Downloading openmp-${LLVM_OPENMP_VERSION} into ${LLVM_OPENMP_SOURCE_DIR}"
-      )
-      set(LLVM_OPENMP_DOWNLOAD_URL
-          "https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_OPENMP_VERSION}/openmp-${LLVM_OPENMP_VERSION}.src.tar.xz"
-      )
-      file(
-        DOWNLOAD
-        ${LLVM_OPENMP_DOWNLOAD_URL} # URL
-        "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.tar.bz2" # FILE
-      )
-      file(ARCHIVE_EXTRACT INPUT
-           "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.tar.bz2"
-           DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-      file(RENAME
-           "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.src"
-           "${LLVM_OPENMP_SOURCE_DIR}")
-    endif()
-
-    set(OPENMP_STANDALONE_BUILD ON)
-    add_subdirectory(${LLVM_OPENMP_SOURCE_DIR} EXCLUDE_FROM_ALL)
-    add_library(OpenMP::OpenMP_CXX ALIAS omp)
-
-  endif(NOT OpenMP_FOUND)
+  find_package(OpenMP REQUIRED)
 
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -323,6 +279,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/autograd/ComputationGraph.cc
     bolt/src/nn/model/AllocationManager.cc
     bolt/src/nn/model/Model.cc
+    bolt/src/nn/ops/Op.cc
     bolt/src/nn/ops/FullyConnected.cc
     bolt/src/nn/ops/Embedding.cc
     bolt/src/nn/ops/RobeZ.cc
@@ -340,11 +297,16 @@ set(THIRDAI_SOURCES
     bolt/src/nn/ops/MaxPool1D.cc
     bolt/src/nn/ops/QuantileMixing.cc
     bolt/src/nn/tensor/Tensor.cc
+    bolt/src/nn/loss/Loss.cc
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
     bolt/src/nn/loss/BinaryCrossEntropy.cc
     bolt/src/nn/loss/EuclideanContrastive.cc
     bolt/src/nn/loss/ExternalLoss.cc
+    bolt/src/nn/optimizers/Optimizer.cc
+    bolt/src/nn/optimizers/Adam.cc
+    bolt/src/nn/optimizers/SGD.cc
+    bolt/src/neuron_index/NeuronIndex.cc
     bolt/src/neuron_index/LshIndex.cc
     bolt/src/neuron_index/RandomSampler.cc
     bolt/src/neuron_index/MachNeuronIndex.cc
@@ -373,6 +335,7 @@ set(THIRDAI_SOURCES
     search/src/MaxFlash.cc
     search/src/MaxFlashArray.cc
     search/src/Flash.cc
+    search/src/InvertedIndex.cc
     hashing/src/DensifiedMinHash.cc
     hashing/src/DWTA.cc
     hashing/src/FastSRP.cc
@@ -403,12 +366,16 @@ set(THIRDAI_SOURCES
     dataset/src/blocks/RecurrenceAugmentation.cc
     dataset/src/blocks/Sequence.cc
     dataset/src/blocks/text/Text.cc
+    dataset/src/blocks/TabularHashFeatures.cc
     dataset/src/blocks/text/WordpieceTokenizer.cc
+    dataset/src/blocks/text/TextTokenizer.cc
     dataset/src/mach/MachIndex.cc
     dataset/src/mach/MachBlock.cc
     dataset/src/ranking/KeywordOverlapRanker.cc
     dataset/src/utils/GraphInfo.cc
     telemetry/src/PrometheusClient.cc
+    data/src/transformations/Transformation.cc
+    data/src/transformations/State.cc
     data/src/transformations/Binning.cc
     data/src/transformations/StringHash.cc
     data/src/transformations/TextTokenizer.cc
@@ -417,6 +384,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/cold_start/ColdStartText.cc
     data/src/transformations/cold_start/VariableLengthColdStart.cc
     data/src/transformations/FeatureHash.cc
+    data/src/transformations/Tabular.cc
     data/src/transformations/Pipeline.cc
     data/src/transformations/MachLabel.cc
     data/src/transformations/StringConcat.cc
@@ -448,19 +416,24 @@ set(THIRDAI_SOURCES
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/featurization/DataTypes.cc
-    auto_ml/src/featurization/TabularBlockComposer.cc
-    auto_ml/src/featurization/TabularDatasetFactory.cc
-    auto_ml/src/featurization/RecurrentDatasetFactory.cc
-    auto_ml/src/featurization/GraphDatasetManager.cc
     auto_ml/src/featurization/TabularTransformations.cc
+    auto_ml/src/featurization/Featurizer.cc
+    auto_ml/src/featurization/MachFeaturizer.cc
+    auto_ml/src/featurization/GraphFeaturizer.cc
+    auto_ml/src/featurization/RecurrentFeaturizer.cc
     auto_ml/src/featurization/ReservedColumns.cc
+    auto_ml/src/featurization/TabularBlockComposer.cc # Deprecate
+    auto_ml/src/featurization/TabularDatasetFactory.cc # Deprecate
+    auto_ml/src/cold_start/ColdStartUtils.cc # Deprecate
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
-    auto_ml/src/cold_start/ColdStartUtils.cc
-    auto_ml/src/rlhf/RLHFSampler.cc
+    auto_ml/src/rlhf/BalancingSamples.cc
+    auto_ml/src/rlhf/RLHFSampler.cc # Deprecate
+    auto_ml/src/cpp_classifier/CppClassifier.cc
     utils/src/SymSpellBackend/symspell.cc
     utils/src/SymSpellCpp/SymSpell.cc
+    utils/text/PorterStemmer.cc
     utils/Logging.cc
     utils/text/StringManipulation.cc
     utils/UUID.cc
@@ -497,6 +470,17 @@ endif()
 
 target_link_libraries(thirdai PUBLIC nlohmann_json::nlohmann_json)
 
+add_library(thirdai_core SHARED ${THIRDAI_SOURCES})
+target_link_libraries(
+  thirdai_core
+  PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal prometheus-cpp::pull
+         utf8proc nlohmann_json::nlohmann_json)
+
+if(${LICENSE_BUILD_FLAG_FOUND})
+  target_link_libraries(thirdai_core PUBLIC cryptopp::cryptopp OpenSSL::Crypto
+                                            OpenSSL::SSL)
+endif()
+
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
 # builds, but not our ASan builds. This means that for now we can't run ASan
 # from python, but honestly this is more trouble than it's worth so for now this
@@ -517,7 +501,6 @@ pybind11_add_module(
   bolt/src/seismic/SeismicClassifier.cc
   bolt/python_bindings/BoltSeismic.cc
   dataset/python_bindings/DatasetPython.cc
-  dataset/src/blocks/TabularHashFeatures.cc
   data/python_bindings/DataPython.cc
   search/python_bindings/SearchPython.cc
   search/python_bindings/BeamSearch.cc
@@ -527,7 +510,8 @@ pybind11_add_module(
   auto_ml/src/udt/utils/Models.cc
   auto_ml/src/udt/utils/Classifier.cc
   auto_ml/src/udt/backends/UDTClassifier.cc
-  auto_ml/src/udt/backends/UDTMachClassifier.cc
+  auto_ml/src/udt/backends/UDTMach.cc
+  auto_ml/src/udt/backends/DeprecatedUDTMachClassifier.cc # Deprecate
   auto_ml/src/udt/backends/UDTRecurrentClassifier.cc
   auto_ml/src/udt/backends/UDTRegression.cc
   auto_ml/src/udt/backends/UDTQueryReformulation.cc

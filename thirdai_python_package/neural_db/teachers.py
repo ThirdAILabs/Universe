@@ -10,23 +10,15 @@ from .loggers import Logger
 from .models import Model
 
 
-def association_training_samples(
-    model: Model, text_a: str, text_b: str, top_k: int, n_samples: int
-):
-    # Based on Yash's suggestion to chunk target phrase if it is long.
-    b_buckets = model.infer_buckets(sent_tokenize(text_b), n_results=top_k)
-    samples = [(text_a, buckets) for buckets in b_buckets]
-    return utils.random_sample(samples, k=n_samples)
-
-
 def associate(
     model: Model,
     logger: Logger,
     user_id: str,
     text_pairs: List[Tuple[str, str]],
     top_k: int,
+    **kwargs,
 ):
-    model.associate(text_pairs, top_k)
+    model.associate(text_pairs, n_buckets=top_k, **kwargs)
     logger.log(
         session_id=user_id,
         action="associate",

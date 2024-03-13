@@ -4,11 +4,16 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/AllocationManager.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/optimizers/Adam.h>
+#include <bolt/src/nn/optimizers/Optimizer.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <archive/src/Archive.h>
 #include <licensing/src/CheckLicense.h>
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
 #include <utils/UUID.h>
 #include <memory>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -26,22 +31,26 @@ namespace thirdai::bolt {
 class Model : public std::enable_shared_from_this<Model> {
  private:
   /**
-   * The additional_labels allow for passing in a placeholder for labels that
+   * The expected_labels allow for passing in a placeholder for labels that
    * are not used in any loss function. This is useful because there could be a
    * case (particularly in Mach) where metrics need to have access to labels
    * that are not used in the loss function. Adding those labels here ensures
-   * that they are part of the model and can be accessed by the metrics. Note
-   * that the model does not require any relationship between the number of
-   * outputs, loss functions, and labels so it is ok to add additonal labels.
+   * that they are part of the model and can be accessed by the metrics. Any
+   * labels that are specified in this arg that are also specified in a loss
+   * function are deduplicated. Note that the model does not require any
+   * relationship between the number of outputs, loss functions, and labels so
+   * it is ok to add additonal labels.
    */
   Model(ComputationList inputs, ComputationList outputs,
-        std::vector<LossPtr> losses, ComputationList additional_labels = {});
+        std::vector<LossPtr> losses,
+        const ComputationList& expected_labels = {},
+        OptimizerFactoryPtr optimizer = AdamFactory::make());
 
  public:
-  static std::shared_ptr<Model> make(ComputationList inputs,
-                                     ComputationList outputs,
-                                     std::vector<LossPtr> losses,
-                                     ComputationList additional_labels = {});
+  static std::shared_ptr<Model> make(
+      ComputationList inputs, ComputationList outputs,
+      std::vector<LossPtr> losses, const ComputationList& expected_labels = {},
+      OptimizerFactoryPtr optimizer = AdamFactory::make());
 
   /**
    * Computes the forward pass through the model for the given batch.
@@ -198,7 +207,7 @@ class Model : public std::enable_shared_from_this<Model> {
   /**
    * Returns a list of references to gradients of all parameters in the model.
    */
-  std::vector<std::vector<float>*> gradients() const;
+  std::vector<std::vector<float>*> gradients();
 
   std::vector<std::vector<float>*> parameters() const;
 
@@ -225,6 +234,8 @@ class Model : public std::enable_shared_from_this<Model> {
    */
   void unfreezeHashTables();
 
+  void changeOptimizer(OptimizerFactoryPtr optimizer);
+
   /**
    * Saves the model without optimizer state. Save metadata indicates if a
    * metadata file should also be created which gives the thirdai version, model
@@ -245,6 +256,10 @@ class Model : public std::enable_shared_from_this<Model> {
 
   void enableSparseParameterUpdates();
 
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const;
+
+  static std::shared_ptr<Model> fromArchive(const ar::Archive& archive);
+
   /**
    * Helper function to save the model to a stream.
    */
@@ -254,6 +269,8 @@ class Model : public std::enable_shared_from_this<Model> {
    * Controls if the model will save the optimizer along with the parameters.
    */
   void setSerializeOptimizer(bool should_save_optimizer);
+
+  std::unordered_map<std::string, double> getNorms() const;
 
   /**
    * Loads the model and automatically initializes the optimizer state.
@@ -337,6 +354,7 @@ class Model : public std::enable_shared_from_this<Model> {
 
   AllocationManager _allocation_manager;
 
+  OptimizerFactoryPtr _optimizer_factory;
   bool _optimizer_initialized = false;
 
   uint32_t _epochs = 0;
@@ -346,11 +364,17 @@ class Model : public std::enable_shared_from_this<Model> {
   std::string _thirdai_version;
   uint64_t _total_training_samples = 0;
 
+  bool _serialize_with_optimizer = false;
+
   Model() : _allocation_manager() { licensing::checkLicense(); }
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
+  void save(Archive& archive, uint32_t version) const;
+
+  friend class cereal::access;
+  template <class Archive>
+  void load(Archive& archive, uint32_t version);
 };
 
 using ModelPtr = std::shared_ptr<Model>;

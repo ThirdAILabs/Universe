@@ -4,9 +4,9 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/trainer/DistributedComm.h>
 #include <auto_ml/src/Aliases.h>
-#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/featurization/DataTypes.h>
-#include <auto_ml/src/featurization/TabularDatasetFactory.h>
+#include <auto_ml/src/featurization/Featurizer.h>
+#include <auto_ml/src/udt/Defaults.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -35,6 +35,8 @@ struct TrainOptions {
   std::optional<uint32_t> logging_interval = std::nullopt;
   dataset::DatasetShuffleConfig shuffle_config =
       dataset::DatasetShuffleConfig();
+
+  size_t batchSize() const { return batch_size.value_or(defaults::BATCH_SIZE); }
 };
 
 /**
@@ -57,11 +59,10 @@ class UDTBackend {
                            TrainOptions options,
                            const bolt::DistributedCommPtr& comm) = 0;
 
-  virtual py::object trainBatch(const MapInputBatch& batch, float learning_rate,
-                                const std::vector<std::string>& metrics) {
+  virtual py::object trainBatch(const MapInputBatch& batch,
+                                float learning_rate) {
     (void)batch;
     (void)learning_rate;
-    (void)metrics;
     throw notSupported("train_batch");
   }
 
@@ -84,6 +85,15 @@ class UDTBackend {
                                   bool sparse_inference,
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k) = 0;
+
+  virtual ar::ConstArchivePtr toArchive(bool with_optimizer) const = 0;
+
+  virtual py::object predictActivationsBatch(const MapInputBatch& samples,
+                                             bool sparse_inference) {
+    (void)samples;
+    (void)sparse_inference;
+    throw notSupported("predict_activations_batch");
+  }
 
   virtual py::object scoreBatch(const MapInputBatch& samples,
                                 const std::vector<std::vector<Label>>& classes,
@@ -114,11 +124,13 @@ class UDTBackend {
     throw notSupported("modifying underlying model");
   }
 
+  virtual FeaturizerPtr featurizer() const { return nullptr; }
+
   virtual void verifyCanDistribute() const {
     throw notSupported("train_distributed");
   }
 
-  virtual std::vector<dataset::Explanation> explain(
+  virtual std::vector<std::pair<std::string, float>> explain(
       const MapInput& sample,
       const std::optional<std::variant<uint32_t, std::string>>& target_class) {
     (void)sample;
@@ -168,16 +180,8 @@ class UDTBackend {
     throw notSupported("class_name");
   }
 
-  virtual TabularDatasetFactoryPtr tabularDatasetFactory() const {
-    return nullptr;
-  }
-
-  virtual ColumnDataTypes dataTypes() const {
-    throw notSupported("data_types");
-  }
-
-  virtual cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
-    throw notSupported("get_cold_start_meta_data");
+  virtual TextDatasetConfig textDatasetConfig() const {
+    throw notSupported("text_dataset_config");
   }
 
   virtual void indexNodes(const dataset::DataSourcePtr& source) {
@@ -194,19 +198,27 @@ class UDTBackend {
     throw notSupported("set_decode_params");
   }
 
+  virtual void insertNewDocIds(const dataset::DataSourcePtr& data) {
+    (void)data;
+    throw notSupported("insert_new_doc_ids");
+  }
+
   virtual void introduceDocuments(
       const dataset::DataSourcePtr& data,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
-      bool fast_approximation, bool verbose) {
+      bool load_balancing, bool fast_approximation, bool verbose,
+      bool sort_random_hashes) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
     (void)num_buckets_to_sample;
     (void)num_random_hashes;
+    (void)load_balancing;
     (void)fast_approximation;
     (void)verbose;
+    (void)sort_random_hashes;
     throw notSupported("introduce_documents");
   }
 
@@ -215,26 +227,30 @@ class UDTBackend {
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       const std::variant<uint32_t, std::string>& new_label,
-      std::optional<uint32_t> num_buckets_to_sample,
-      uint32_t num_random_hashes) {
+      std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
+      bool load_balancing, bool sort_random_hashes) {
     (void)document;
     (void)strong_column_names;
     (void)weak_column_names;
     (void)new_label;
     (void)num_buckets_to_sample;
     (void)num_random_hashes;
+    (void)load_balancing;
+    (void)sort_random_hashes;
     throw notSupported("introduce_document");
   }
 
   virtual void introduceLabel(
       const MapInputBatch& sample,
       const std::variant<uint32_t, std::string>& new_label,
-      std::optional<uint32_t> num_buckets_to_sample,
-      uint32_t num_random_hashes) {
+      std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
+      bool load_balancing, bool sort_random_hashes) {
     (void)sample;
     (void)new_label;
     (void)num_buckets_to_sample;
     (void)num_random_hashes;
+    (void)load_balancing;
+    (void)sort_random_hashes;
     throw notSupported("introduce_label");
   }
 
@@ -246,11 +262,9 @@ class UDTBackend {
   virtual void clearIndex() { throw notSupported("clear_index"); }
 
   virtual py::object trainWithHashes(const MapInputBatch& batch,
-                                     float learning_rate,
-                                     const std::vector<std::string>& metrics) {
+                                     float learning_rate) {
     (void)batch;
     (void)learning_rate;
-    (void)metrics;
     throw notSupported("train_with_hashes");
   }
 
@@ -276,38 +290,42 @@ class UDTBackend {
   }
 
   virtual void associate(
-      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples,
-      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs) {
-    (void)source_target_samples;
+      uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,
+      bool force_non_empty, size_t batch_size) {
+    (void)rlhf_samples;
     (void)n_association_samples;
     (void)n_balancing_samples;
     (void)n_buckets;
     (void)learning_rate;
     (void)epochs;
+    (void)force_non_empty;
+    (void)batch_size;
     throw notSupported("associate");
   }
 
   virtual void upvote(
-      const std::vector<std::pair<MapInput, uint32_t>>& source_target_samples,
+      const std::vector<std::pair<std::string, uint32_t>>& rlhf_samples,
       uint32_t n_upvote_samples, uint32_t n_balancing_samples,
-      float learning_rate, uint32_t epochs) {
-    (void)source_target_samples;
+      float learning_rate, uint32_t epochs, size_t batch_size) {
+    (void)rlhf_samples;
     (void)n_upvote_samples;
     (void)n_balancing_samples;
     (void)learning_rate;
     (void)epochs;
+    (void)batch_size;
     throw notSupported("upvote");
   }
 
   virtual py::object associateTrain(
       const dataset::DataSourcePtr& balancing_data,
-      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
       uint32_t epochs, const std::vector<std::string>& metrics,
       TrainOptions options) {
     (void)balancing_data;
-    (void)source_target_samples;
+    (void)rlhf_samples;
     (void)n_buckets;
     (void)n_association_samples;
     (void)learning_rate;
@@ -321,14 +339,14 @@ class UDTBackend {
       const dataset::DataSourcePtr& balancing_data,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
-      const std::vector<std::pair<MapInput, MapInput>>& source_target_samples,
+      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
       uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
       uint32_t epochs, const std::vector<std::string>& metrics,
       TrainOptions options) {
     (void)balancing_data;
     (void)strong_column_names;
     (void)weak_column_names;
-    (void)source_target_samples;
+    (void)rlhf_samples;
     (void)n_buckets;
     (void)n_association_samples;
     (void)learning_rate;
@@ -338,6 +356,25 @@ class UDTBackend {
     throw notSupported("associate_cold_start");
   }
 
+  virtual py::object coldStartWithBalancingSamples(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& train_metrics,
+      const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+      const std::optional<data::VariableLengthConfig>& variable_length) {
+    (void)data;
+    (void)strong_column_names;
+    (void)weak_column_names;
+    (void)learning_rate;
+    (void)epochs;
+    (void)train_metrics;
+    (void)callbacks;
+    (void)options;
+    (void)variable_length;
+    throw notSupported("cold_start_with_balancing_samples");
+  }
+
   virtual void enableRlhf(uint32_t num_balancing_docs,
                           uint32_t num_balancing_samples_per_doc) {
     (void)num_balancing_docs;
@@ -345,7 +382,7 @@ class UDTBackend {
     throw notSupported("enable_rlhf");
   }
 
-  virtual dataset::mach::MachIndexPtr getIndex() {
+  virtual dataset::mach::MachIndexPtr getIndex() const {
     throw notSupported("get_index");
   }
 
@@ -357,6 +394,11 @@ class UDTBackend {
   virtual void setMachSamplingThreshold(float threshold) {
     (void)threshold;
     throw notSupported("set_mach_sampling_threshold");
+  }
+
+  virtual void saveCppClassifier(const std::string& save_path) const {
+    (void)save_path;
+    throw notSupported("save_cpp_classifier");
   }
 
   virtual ~UDTBackend() = default;

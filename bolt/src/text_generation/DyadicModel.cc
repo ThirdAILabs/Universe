@@ -86,6 +86,7 @@ metrics::History DyadicModel::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     std::optional<size_t> max_in_memory_batches,
+    const std::vector<callbacks::CallbackPtr>& callbacks,
     const DistributedCommPtr& comm) {
   size_t batches_to_load =
       max_in_memory_batches.value_or(data::Loader::NO_LIMIT);
@@ -105,7 +106,7 @@ metrics::History DyadicModel::train(
         trainer.train_with_metric_names(
             *train_chunk, learning_rate, 1, train_metrics, val_dataset,
             val_metrics, /* steps_per_validation= */ std::nullopt,
-            /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
+            /* use_sparsity_in_validation= */ false, /* callbacks= */ callbacks,
             /* autotune_rehash_rebuild= */ false, /* verbose= */ true,
             /* logging_interval= */ std::nullopt, comm);
       }

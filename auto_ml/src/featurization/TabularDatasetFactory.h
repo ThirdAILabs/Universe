@@ -127,6 +127,8 @@ class TabularDatasetFactory {
   static std::shared_ptr<TabularDatasetFactory> load_stream(
       std::istream& input_stream);
 
+  const auto& featurizer() const { return _labeled_featurizer; }
+
  private:
   dataset::TabularFeaturizerPtr makeFeaturizer(
       const TemporalRelationships& temporal_relationships,

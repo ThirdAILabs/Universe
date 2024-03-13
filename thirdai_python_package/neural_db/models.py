@@ -1,13 +1,22 @@
-import math
+from __future__ import annotations
+
 import random
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence, Tuple
 
+import numpy as np
 from thirdai import bolt, data
 
 from .documents import DocumentDataSource
-from .sharded_documents import ShardedDataSource
-from .utils import clean_text, random_sample
+from .inverted_index import InvertedIndex
+from .mach_defaults import acc_to_stop, metric_to_track
+from .supervised_datasource import SupDataSource
+from .trainer.checkpoint_config import CheckpointConfig
+from .trainer.training_progress_manager import (
+    TrainingProgressCallback,
+    TrainingProgressManager,
+)
+from .utils import clean_text, pickle_to
 
 InferSamples = List
 Predictions = Sequence
@@ -50,6 +59,8 @@ class Model:
         variable_length: Optional[
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
+        checkpoint_config: CheckpointConfig = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError()
 
@@ -79,15 +90,11 @@ class Model:
         query_col = self.get_query_col()
         return [{query_col: clean_text(text)} for text in samples]
 
-    def infer_buckets(
-        self, samples: InferSamples, n_results: int, **kwargs
-    ) -> Predictions:
-        raise NotImplementedError()
-
     def infer_labels(
         self,
         samples: InferSamples,
         n_results: int,
+        retriever: Optional[str] = None,
         **kwargs,
     ) -> Predictions:
         raise NotImplementedError()
@@ -111,6 +118,7 @@ class Model:
         n_balancing_samples: int = 50,
         learning_rate: float = 0.001,
         epochs: int = 3,
+        **kwargs,
     ):
         raise NotImplementedError()
 
@@ -131,6 +139,18 @@ class Model:
         n_buckets: int,
         learning_rate: float,
         epochs: int,
+    ):
+        raise NotImplementedError()
+
+    def train_on_supervised_data_source(
+        self,
+        supervised_data_source: SupDataSource,
+        learning_rate: float,
+        epochs: int,
+        batch_size: Optional[int],
+        max_in_memory_batches: Optional[int],
+        metrics: List[str],
+        callbacks: List[bolt.train.callbacks.Callback],
     ):
         raise NotImplementedError()
 
@@ -174,7 +194,7 @@ class ProgressUpdate(bolt.train.callbacks.Callback):
     def on_batch_end(self):
         self.batch_count += 1
 
-        # We update progress every other epoch because otherwise the updates are
+        # We update progress every other batch because otherwise the updates are
         # too fast for frontend components to display these changes.
         if self.batch_count % 2:
             batch_progress = self.batch_count / self.train_state.batches_in_dataset()
@@ -184,6 +204,36 @@ class ProgressUpdate(bolt.train.callbacks.Callback):
             # This function (sqrt) increases faster at the beginning
             progress = progress ** (1.0 / 2)
             self.progress_callback_fn(progress)
+
+
+class FreezeHashTable(bolt.train.callbacks.Callback):
+    def __init__(
+        self,
+        freeze_before_train,
+        freeze_after_epoch,
+        tracked_metric,
+        metric_threshold,
+    ):
+        super().__init__()
+
+        self.epoch_count = 0
+        self.freeze_after_epoch = freeze_after_epoch
+        self.tracked_metric = tracked_metric
+        self.metric_threshold = metric_threshold
+        self.freeze_before_train = freeze_before_train
+
+    def on_train_start(self):
+        if self.freeze_before_train:
+            self.model.freeze_hash_tables()
+
+    def on_epoch_end(self):
+        self.epoch_count += 1
+        if self.freeze_before_train:
+            return
+        if (self.epoch_count == self.freeze_after_epoch) or (
+            self.history[f"train_{self.tracked_metric}"][-1] > self.metric_threshold
+        ):
+            self.model.freeze_hash_tables()
 
 
 class CancelTraining(bolt.train.callbacks.Callback):
@@ -203,18 +253,19 @@ def unsupervised_train_on_docs(
     max_epochs: int,
     metric: str,
     learning_rate: float,
+    batch_size: int,
     acc_to_stop: float,
     on_progress: Callable,
     freeze_before_train: bool,
+    freeze_after_epoch: int,
+    freeze_after_acc: float,
     cancel_state: CancelState,
     max_in_memory_batches: int,
-    variable_length: Optional[
-        data.transformations.VariableLengthConfig
-    ] = data.transformations.VariableLengthConfig(),
+    variable_length: Optional[data.transformations.VariableLengthConfig],
+    training_progress_callback: Optional[TrainingProgressCallback],
+    balancing_samples=False,
+    **kwargs,
 ):
-    if freeze_before_train:
-        model._get_model().freeze_hash_tables()
-
     documents.restart()
 
     early_stop_callback = EarlyStopWithMinEpochs(
@@ -230,17 +281,48 @@ def unsupervised_train_on_docs(
 
     cancel_training_callback = CancelTraining(cancel_state=cancel_state)
 
-    model.cold_start_on_data_source(
-        data_source=documents,
-        strong_column_names=[documents.strong_column],
-        weak_column_names=[documents.weak_column],
-        learning_rate=learning_rate,
-        epochs=max_epochs,
-        metrics=[metric],
-        callbacks=[early_stop_callback, progress_callback, cancel_training_callback],
-        max_in_memory_batches=max_in_memory_batches,
-        variable_length=variable_length,
+    freeze_hashtable_callback = FreezeHashTable(
+        freeze_before_train=freeze_before_train,
+        freeze_after_epoch=freeze_after_epoch,
+        tracked_metric=metric,
+        metric_threshold=freeze_after_acc,
     )
+
+    callbacks = [
+        early_stop_callback,
+        progress_callback,
+        cancel_training_callback,
+        freeze_hashtable_callback,
+    ]
+
+    if training_progress_callback:
+        callbacks.append(training_progress_callback)
+
+    if balancing_samples:
+        model.cold_start_with_balancing_samples(
+            data=documents,
+            strong_column_names=[documents.strong_column],
+            weak_column_names=[documents.weak_column],
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            epochs=max_epochs,
+            train_metrics=[metric],
+            callbacks=callbacks,
+            variable_length=variable_length,
+        )
+    else:
+        model.cold_start_on_data_source(
+            data_source=documents,
+            strong_column_names=[documents.strong_column],
+            weak_column_names=[documents.weak_column],
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            epochs=max_epochs,
+            metrics=[metric],
+            callbacks=callbacks,
+            max_in_memory_batches=max_in_memory_batches,
+            variable_length=variable_length,
+        )
 
 
 def make_balancing_samples(documents: DocumentDataSource):
@@ -253,24 +335,46 @@ def make_balancing_samples(documents: DocumentDataSource):
     return samples
 
 
-def autotune_from_scratch_min_max_epochs(size):
-    if size < 1000:
-        return 10, 15
-    if size < 10000:
-        return 8, 13
-    if size < 100000:
-        return 5, 10
-    if size < 1000000:
-        return 3, 8
-    return 1, 5
+def normalize_scores(results):
+    if len(results) == 0:
+        return results
+    if len(results) == 1:
+        return [(results[0][0], 1.0, results[0][2])]
+    ids, scores, retriever = zip(*results)
+    scores = np.array(scores)
+    scores -= np.min(scores)
+    scores /= np.max(scores)
+    return list(zip(ids, scores, retriever))
 
 
-def autotune_from_base_min_max_epochs(size):
-    if size < 100000:
-        return 5, 10
-    if size < 1000000:
-        return 3, 8
-    return 1, 5
+def merge_results(results_a, results_b, k):
+    results_a = normalize_scores(results_a)
+    results_b = normalize_scores(results_b)
+    results = []
+    cache = set()
+
+    min_len = min(len(results_a), len(results_b))
+    for a, b in zip(results_a, results_b):
+        if a[0] not in cache:
+            results.append(a)
+            cache.add(a[0])
+        if b[0] not in cache:
+            results.append(b)
+            cache.add(b[0])
+
+    if len(results) < k:
+        for i in range(min_len, len(results_a)):
+            if results_a[i][0] not in cache:
+                results.append(results_a[i])
+        for i in range(min_len, len(results_b)):
+            if results_b[i][0] not in cache:
+                results.append(results_b[i])
+
+    return results[:k]
+
+
+def add_retriever_tag(results, tag):
+    return [[(id, score, tag) for id, score in result] for result in results]
 
 
 class Mach(Model):
@@ -282,9 +386,11 @@ class Mach(Model):
         fhr=50_000,
         embedding_dimension=2048,
         extreme_output_dim=50_000,
+        extreme_num_hashes=8,
         tokenizer="char-4",
         hidden_bias=False,
         model_config=None,
+        use_inverted_index=True,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -293,11 +399,13 @@ class Mach(Model):
         self.fhr = fhr
         self.embedding_dimension = embedding_dimension
         self.extreme_output_dim = extreme_output_dim
+        self.extreme_num_hashes = extreme_num_hashes
         self.hidden_bias = hidden_bias
         self.n_ids = 0
         self.model = None
         self.balancing_samples = []
         self.model_config = model_config
+        self.inverted_index = InvertedIndex() if use_inverted_index else None
 
     def set_mach_sampling_threshold(self, threshold: float):
         if self.model is None:
@@ -306,6 +414,25 @@ class Mach(Model):
                 " initialized"
             )
         self.model.set_mach_sampling_threshold(threshold)
+
+    def reset_model(self, new_model: Mach):
+        self.id_col = new_model.id_col
+        self.id_delimiter = new_model.id_delimiter
+        self.tokenizer = new_model.tokenizer
+        self.query_col = new_model.query_col
+        self.fhr = new_model.fhr
+        self.embedding_dimension = new_model.embedding_dimension
+        self.extreme_output_dim = new_model.extreme_output_dim
+        self.extreme_num_hashes = new_model.extreme_num_hashes
+        self.hidden_bias = new_model.hidden_bias
+        self.n_ids = new_model.n_ids
+        self.model = new_model.model
+        self.balancing_samples = new_model.balancing_samples
+        self.model_config = new_model.model_config
+        self.inverted_index = new_model.inverted_index
+
+    def save(self, path: Path):
+        pickle_to(self, filepath=path)
 
     def get_model(self) -> bolt.UniversalDeepTransformer:
         return self.model
@@ -331,26 +458,13 @@ class Mach(Model):
     def get_id_delimiter(self) -> str:
         return self.id_delimiter
 
-    def index_documents(
+    def introduce_documents(
         self,
         intro_documents: DocumentDataSource,
-        train_documents: DocumentDataSource,
-        should_train: bool,
-        fast_approximation: bool = True,
-        num_buckets_to_sample: Optional[int] = None,
-        on_progress: Callable = lambda **kwargs: None,
-        cancel_state: CancelState = None,
-        max_in_memory_batches: int = None,
-        override_number_classes: int = None,
-        variable_length: Optional[
-            data.transformations.VariableLengthConfig
-        ] = data.transformations.VariableLengthConfig(),
-    ) -> None:
-        """
-        override_number_classes : The number of classes for the Mach model
-
-        Note: Given the datasources for introduction and training, we initialize a Mach model that has number_classes set to the size of introduce documents. But if we want to use this Mach model in our mixture of Models, this will not work because each Mach will be initialized with number of classes equal to the size of the datasource shard. Hence, we add override_number_classes parameters which if set, will initialize Mach Model with number of classes passed by the Mach Mixture.
-        """
+        fast_approximation: bool,
+        num_buckets_to_sample: Optional[int],
+        override_number_classes: int,
+    ):
         if intro_documents.id_column != self.id_col:
             raise ValueError(
                 f"Model configured to use id_col={self.id_col}, received document with"
@@ -361,11 +475,6 @@ class Mach(Model):
             self.id_col = intro_documents.id_column
             self.model = self.model_from_scratch(
                 intro_documents, number_classes=override_number_classes
-            )
-            learning_rate = 0.005
-            freeze_before_train = False
-            min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
-                train_documents.size
             )
         else:
             if intro_documents.size > 0:
@@ -387,34 +496,105 @@ class Mach(Model):
                     fast_approximation=fast_approximation,
                     num_buckets_to_sample=num_buckets_to_sample,
                 )
-            learning_rate = 0.001
-            # Freezing at the beginning prevents the model from forgetting
-            # things it learned from pretraining.
-            freeze_before_train = True
-            # Less epochs here since it converges faster when trained on a base
-            # model.
-            min_epochs, max_epochs = autotune_from_base_min_max_epochs(
-                train_documents.size
-            )
+
+        if self.inverted_index:
+            intro_documents.restart()
+            self.inverted_index.insert(intro_documents)
 
         self.n_ids += intro_documents.size
-        self.add_balancing_samples(intro_documents)
 
-        if should_train and train_documents.size > 0:
+    def index_documents_impl(
+        self,
+        training_progress_manager: TrainingProgressManager,
+        on_progress: Callable = lambda **kwargs: None,
+        cancel_state: CancelState = None,
+    ):
+        intro_documents = training_progress_manager.intro_source
+        train_documents = training_progress_manager.train_source
+
+        if not training_progress_manager.is_insert_completed:
+            self.introduce_documents(
+                intro_documents=intro_documents,
+                **training_progress_manager.introduce_arguments(),
+            )
+            training_progress_manager.insert_complete()
+
+        if not training_progress_manager.is_training_completed:
+            train_arguments = training_progress_manager.training_arguments()
             unsupervised_train_on_docs(
                 model=self.model,
                 documents=train_documents,
-                min_epochs=min_epochs,
-                max_epochs=max_epochs,
-                metric="hash_precision@5",
-                learning_rate=learning_rate,
-                acc_to_stop=0.95,
+                metric=metric_to_track,
+                acc_to_stop=acc_to_stop,
                 on_progress=on_progress,
-                freeze_before_train=freeze_before_train,
                 cancel_state=cancel_state,
-                max_in_memory_batches=max_in_memory_batches,
-                variable_length=variable_length,
+                training_progress_callback=TrainingProgressCallback(
+                    training_progress_manager=training_progress_manager
+                ),
+                **train_arguments,
             )
+            training_progress_manager.training_complete()
+
+    def resume(
+        self,
+        on_progress: Callable,
+        cancel_state: CancelState,
+        checkpoint_config: CheckpointConfig,
+    ):
+        # This will load the datasources, model, training config and upload the current model with the loaded one. This updates the underlying UDT MACH of the current model with the one from the checkpoint along with other class attributes.
+        training_progress_manager = TrainingProgressManager.from_checkpoint(
+            self, checkpoint_config=checkpoint_config
+        )
+
+        self.index_documents_impl(
+            training_progress_manager=training_progress_manager,
+            on_progress=on_progress,
+            cancel_state=cancel_state,
+        )
+
+    def index_from_start(
+        self,
+        intro_documents: DocumentDataSource,
+        train_documents: DocumentDataSource,
+        should_train: bool,
+        fast_approximation: bool = True,
+        num_buckets_to_sample: Optional[int] = None,
+        on_progress: Callable = lambda **kwargs: None,
+        cancel_state: CancelState = None,
+        max_in_memory_batches: int = None,
+        override_number_classes: int = None,
+        variable_length: Optional[
+            data.transformations.VariableLengthConfig
+        ] = data.transformations.VariableLengthConfig(),
+        checkpoint_config: CheckpointConfig = None,
+        **kwargs,
+    ):
+        """
+        override_number_classes : The number of classes for the Mach model
+
+        Note: Given the datasources for introduction and training, we initialize a Mach model that has number_classes set to the size of introduce documents. But if we want to use this Mach model in our mixture of Models, this will not work because each Mach will be initialized with number of classes equal to the size of the datasource shard. Hence, we add override_number_classes parameters which if set, will initialize Mach Model with number of classes passed by the Mach Mixture.
+        """
+
+        training_progress_manager = TrainingProgressManager.from_scratch(
+            model=self,
+            intro_documents=intro_documents,
+            train_documents=train_documents,
+            should_train=should_train,
+            fast_approximation=fast_approximation,
+            num_buckets_to_sample=num_buckets_to_sample,
+            max_in_memory_batches=max_in_memory_batches,
+            override_number_classes=override_number_classes,
+            variable_length=variable_length,
+            checkpoint_config=checkpoint_config,
+            **kwargs,
+        )
+
+        training_progress_manager.make_preindexing_checkpoint()
+        self.index_documents_impl(
+            training_progress_manager=training_progress_manager,
+            on_progress=on_progress,
+            cancel_state=cancel_state,
+        )
 
     def add_balancing_samples(self, documents: DocumentDataSource):
         samples = make_balancing_samples(documents)
@@ -426,10 +606,13 @@ class Mach(Model):
         for entity in entities:
             self.get_model().forget(entity)
 
+        if self.inverted_index:
+            self.inverted_index.forget(entities)
+
     def model_from_scratch(
         self, documents: DocumentDataSource, number_classes: int = None
     ):
-        return bolt.UniversalDeepTransformer(
+        model = bolt.UniversalDeepTransformer(
             data_types={
                 self.query_col: bolt.types.text(tokenizer=self.tokenizer),
                 self.id_col: bolt.types.categorical(delimiter=self.id_delimiter),
@@ -444,11 +627,14 @@ class Mach(Model):
                 "extreme_output_dim": self.extreme_output_dim,
                 "fhr": self.fhr,
                 "embedding_dimension": self.embedding_dimension,
+                "extreme_num_hashes": self.extreme_num_hashes,
                 "hidden_bias": self.hidden_bias,
                 "rlhf": True,
             },
             model_config=self.model_config,
         )
+        model.insert_new_doc_ids(documents)
+        return model
 
     def forget_documents(self) -> None:
         if self.model is not None:
@@ -456,42 +642,73 @@ class Mach(Model):
         self.n_ids = 0
         self.balancing_samples = []
 
+        if self.inverted_index:
+            self.inverted_index.clear()
+
     @property
     def searchable(self) -> bool:
         return self.n_ids != 0
+
+    def query_mach(self, samples, n_results):
+        self.model.set_decode_params(min(self.n_ids, n_results), min(self.n_ids, 100))
+        infer_batch = self.infer_samples_to_infer_batch(samples)
+        return add_retriever_tag(
+            results=self.model.predict_batch(infer_batch), tag="mach"
+        )
+
+    def query_inverted_index(self, samples, n_results):
+        return add_retriever_tag(
+            results=self.inverted_index.query(
+                queries=samples, k=min(self.n_ids, n_results)
+            ),
+            tag="inverted_index",
+        )
 
     def infer_labels(
         self,
         samples: InferSamples,
         n_results: int,
+        retriever=None,
         **kwargs,
     ) -> Predictions:
-        infer_batch = self.infer_samples_to_infer_batch(samples)
-        self.model.set_decode_params(min(self.n_ids, n_results), min(self.n_ids, 100))
-        return self.model.predict_batch(infer_batch)
+        if not retriever:
+            if not self.inverted_index:
+                retriever = "mach"
+            else:
+                mach_results = self.query_mach(samples=samples, n_results=n_results)
+                index_results = self.query_inverted_index(
+                    samples=samples, n_results=n_results
+                )
+                return [
+                    merge_results(mach_res, index_res, n_results)
+                    for mach_res, index_res in zip(mach_results, index_results)
+                ]
+
+        if retriever == "mach":
+            return self.query_mach(samples=samples, n_results=n_results)
+
+        if retriever == "inverted_index":
+            if not self.inverted_index:
+                raise ValueError(
+                    "Cannot use retriever 'inverted_index' since the index is None. "
+                    "Call 'db.build_inverted_index()' to enable this method."
+                )
+            return self.query_inverted_index(samples=samples, n_results=n_results)
+
+        raise ValueError(
+            f"Invalid retriever '{retriever}'. Please use 'mach', 'inverted_index', "
+            "or pass None to allow the model to autotune which is used."
+        )
 
     def score(
         self, samples: InferSamples, entities: List[List[int]], n_results: int = None
     ) -> Predictions:
         infer_batch = self.infer_samples_to_infer_batch(samples)
-        return self.model.score_batch(infer_batch, classes=entities, top_k=n_results)
-
-    def infer_buckets(
-        self, samples: InferSamples, n_results: int, **kwargs
-    ) -> Predictions:
-        infer_batch = self.infer_samples_to_infer_batch(samples)
-        predictions = [
-            self.model.predict_hashes(sample)[:n_results] for sample in infer_batch
-        ]
-        return predictions
+        results = self.model.score_batch(infer_batch, classes=entities, top_k=n_results)
+        return add_retriever_tag(results=results, tag="mach")
 
     def _format_associate_samples(self, pairs: List[Tuple[str, str]]):
-        query_col = self.get_query_col()
-
-        return [
-            ({query_col: clean_text(source)}, {query_col: clean_text(target)})
-            for source, target in pairs
-        ]
+        return [(clean_text(source), clean_text(target)) for source, target in pairs]
 
     def associate(
         self,
@@ -501,6 +718,7 @@ class Mach(Model):
         n_balancing_samples: int = 50,
         learning_rate: float = 0.001,
         epochs: int = 3,
+        **kwargs,
     ):
         self.model.associate(
             source_target_samples=self._format_associate_samples(pairs),
@@ -509,6 +727,7 @@ class Mach(Model):
             n_balancing_samples=n_balancing_samples,
             learning_rate=learning_rate,
             epochs=epochs,
+            force_non_empty=kwargs.get("force_non_empty", True),
         )
 
     def upvote(
@@ -519,9 +738,7 @@ class Mach(Model):
         learning_rate: float = 0.001,
         epochs: int = 3,
     ):
-        samples = [
-            ({self.get_query_col(): clean_text(text)}, label) for text, label in pairs
-        ]
+        samples = [(clean_text(text), label) for text, label in pairs]
 
         self.model.upvote(
             source_target_samples=samples,
@@ -556,4 +773,35 @@ class Mach(Model):
         if "model_config" not in state:
             # Add model_config field if an older model is being loaded.
             state["model_config"] = None
+        if "inverted_index" not in state:
+            state["inverted_index"] = None
         self.__dict__.update(state)
+
+    def train_on_supervised_data_source(
+        self,
+        supervised_data_source: SupDataSource,
+        learning_rate: float,
+        epochs: int,
+        batch_size: Optional[int],
+        max_in_memory_batches: Optional[int],
+        metrics: List[str],
+        callbacks: List[bolt.train.callbacks.Callback],
+    ):
+        self.model.train_on_data_source(
+            data_source=supervised_data_source,
+            learning_rate=learning_rate,
+            epochs=epochs,
+            batch_size=batch_size,
+            max_in_memory_batches=max_in_memory_batches,
+            metrics=metrics,
+            callbacks=callbacks,
+        )
+        # Invalidate inverted index once supervised data is used.
+        self.inverted_index = None
+
+    def build_inverted_index(self, documents):
+        if self.inverted_index:
+            return
+
+        self.inverted_index = InvertedIndex()
+        self.inverted_index.insert(documents)
