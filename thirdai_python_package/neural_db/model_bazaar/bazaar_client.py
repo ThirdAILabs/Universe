@@ -115,7 +115,7 @@ class NeuralDBClient:
         return json.loads(response.content)["data"]
 
     @check_deployment_decorator
-    def insert(self, files: List[str], urls: List[str] = None):
+    def insert(self, files: List[str] = None, urls: List[str] = None):
         """
         Inserts documents into the ndb model.
 
@@ -123,7 +123,10 @@ class NeuralDBClient:
             files (List[str]): A list of file paths to be inserted into the ndb model.
             urls (List[str]): A list of URLs to be inserted into the ndb model.
         """
-        files = [("files", open(file_path, "rb")) for file_path in files]
+        if not files and not urls:
+            raise ValueError("Files and urls cannot both be empty.")
+        if files is not None:
+            files = [("files", open(file_path, "rb")) for file_path in files]
         response = http_post_with_error(
             urljoin(self.base_url, "insert"),
             files=files,
