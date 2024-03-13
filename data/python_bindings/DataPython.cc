@@ -470,11 +470,12 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>>(
       transformations_submodule, "SpladeConfig")
       .def(py::init<std::string, std::string, std::optional<size_t>,
-                    std::optional<float>, size_t, bool>(),
+                    std::optional<float>, bool, size_t, bool>(),
            py::arg("model_checkpoint"), py::arg("tokenizer_vocab"),
            py::arg("n_augmented_tokens") = 20,
            py::arg("augmentation_frac") = std::nullopt,
-           py::arg("batch_size") = 4096, py::arg("lowercase") = true)
+           py::arg("filter_tokens") = true, py::arg("batch_size") = 4096,
+           py::arg("lowercase") = true)
       .def(bolt::python::getPickleFunction<SpladeConfig>());
 
   py::class_<SpladeAugmentation, Transformation,
@@ -484,11 +485,11 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("input_column"), py::arg("output_column"), py::arg("config"))
       .def(py::init<std::string, std::string, bolt::ModelPtr,
                     dataset::WordpieceTokenizerPtr, std::optional<size_t>,
-                    std::optional<float>, size_t>(),
+                    std::optional<float>, bool, size_t>(),
            py::arg("input_column"), py::arg("output_column"), py::arg("model"),
            py::arg("tokenizer"), py::arg("n_augmented_tokens") = 20,
            py::arg("augmentation_frac") = std::nullopt,
-           py::arg("batch_size") = 4096);
+           py::arg("filter_tokens") = true, py::arg("batch_size") = 4096);
 }
 
 }  // namespace thirdai::data::python

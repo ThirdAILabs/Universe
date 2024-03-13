@@ -7,6 +7,7 @@
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <optional>
+#include <regex>
 #include <stdexcept>
 #include <string>
 
@@ -16,12 +17,14 @@ SpladeConfig::SpladeConfig(const std::string& model_checkpoint,
                            const std::string& tokenizer_vocab,
                            std::optional<size_t> n_augmented_tokens,
                            std::optional<float> augmentation_frac,
-                           size_t batch_size, bool lowercase)
+                           bool filter_tokens, size_t batch_size,
+                           bool lowercase)
     : model(bolt::Model::load(model_checkpoint)),
       tokenizer(std::make_shared<dataset::WordpieceTokenizer>(tokenizer_vocab,
                                                               lowercase)),
       n_augmented_tokens(n_augmented_tokens),
       augmentation_frac(augmentation_frac),
+      filter_tokens(filter_tokens),
       batch_size(batch_size),
       _model_checkpoint(model_checkpoint),
       _tokenizer_vocab(tokenizer_vocab),
@@ -36,6 +39,7 @@ SpladeAugmentation::SpladeAugmentation(std::string input_column,
                          /*tokenizer=*/config.tokenizer,
                          /*n_augmented_tokens=*/config.n_augmented_tokens,
                          /*augmentation_frac=*/config.augmentation_frac,
+                         /*filter_tokens=*/config.filter_tokens,
                          /*batch_size=*/config.batch_size) {}
 
 SpladeAugmentation::SpladeAugmentation(std::string input_column,
@@ -44,13 +48,14 @@ SpladeAugmentation::SpladeAugmentation(std::string input_column,
                                        dataset::WordpieceTokenizerPtr tokenizer,
                                        std::optional<size_t> n_augmented_tokens,
                                        std::optional<float> augmentation_frac,
-                                       size_t batch_size)
+                                       bool filter_tokens, size_t batch_size)
     : _input_column(std::move(input_column)),
       _output_column(std::move(output_column)),
       _model(std::move(model)),
       _tokenizer(std::move(tokenizer)),
       _n_augmented_tokens(n_augmented_tokens),
       _augmentation_frac(augmentation_frac),
+      _filter_tokens(filter_tokens),
       _batch_size(batch_size) {
   if (_model->inputs().size() != 1 || _model->outputs().size() != 1) {
     throw std::invalid_argument(
@@ -87,11 +92,10 @@ ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
   auto batches = data::toTensorBatches(
       tokenized_columns, {OutputColumns(_input_column)}, _batch_size);
 
-  auto input_text = columns.getValueColumn<std::string>(_input_column);
   auto tokenized_text =
       tokenized_columns.getArrayColumn<uint32_t>(_input_column);
 
-  std::vector<std::string> augmented_text(input_text->numRows());
+  std::vector<std::string> augmented_text(tokenized_text->numRows());
 
   ProgressBar bar("augmenting data", batches.size());
   bolt::utils::Timer timer;
@@ -100,13 +104,11 @@ ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
     auto output = _model->forward(batch).at(0);
 
 #pragma omp parallel for default(none) \
-    shared(input_text, tokenized_text, augmented_text, output, row_index)
+    shared(tokenized_text, augmented_text, output, row_index)
     for (size_t i = 0; i < output->batchSize(); i++) {
-      augmented_text[row_index + i] =
-          input_text->value(row_index + i) +
-          decodeTopTokens(
-              output->getVector(i),
-              tokensToAdd(tokenized_text->row(row_index + i).size()));
+      augmented_text[row_index + i] = decodeTopTokens(
+          output->getVector(i),
+          tokensToAdd(tokenized_text->row(row_index + i).size()));
     }
 
     row_index += output->batchSize();
@@ -131,9 +133,15 @@ std::string SpladeAugmentation::decodeTopTokens(const BoltVector& vec,
   std::string decoded;
   auto topk = vec.findKLargestActivations(k);
   while (!topk.empty()) {
-    decoded.push_back(' ');
-    decoded.append(_tokenizer->token(topk.top().second));
+    auto token = _tokenizer->token(topk.top().second);
     topk.pop();
+
+    if (!_filter_tokens || std::regex_match(token, _allowed_tokens)) {
+      if (!decoded.empty()) {
+        decoded.push_back(' ');
+      }
+      decoded.append(token);
+    }
   }
   return decoded;
 }

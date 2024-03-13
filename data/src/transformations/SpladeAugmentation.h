@@ -5,6 +5,7 @@
 #include <archive/src/Archive.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/blocks/text/WordpieceTokenizer.h>
+#include <regex>
 
 namespace thirdai::data {
 
@@ -12,13 +13,15 @@ struct SpladeConfig {
   SpladeConfig(const std::string& model_checkpoint,
                const std::string& tokenizer_vocab,
                std::optional<size_t> n_augmented_tokens,
-               std::optional<float> augmentation_frac, size_t batch_size = 4096,
+               std::optional<float> augmentation_frac,
+               bool filter_tokens = true, size_t batch_size = 4096,
                bool lowercase = true);
 
   bolt::ModelPtr model;
   dataset::WordpieceTokenizerPtr tokenizer;
   std::optional<size_t> n_augmented_tokens;
   std::optional<float> augmentation_frac;
+  bool filter_tokens;
   size_t batch_size = 4096;
 
   void save_stream(std::ostream& output_stream) const;
@@ -44,7 +47,8 @@ class SpladeAugmentation final : public Transformation {
                      bolt::ModelPtr model,
                      dataset::WordpieceTokenizerPtr tokenizer,
                      std::optional<size_t> n_augmented_tokens,
-                     std::optional<float> augmentation_frac, size_t batch_size);
+                     std::optional<float> augmentation_frac, bool filter_tokens,
+                     size_t batch_size);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
@@ -68,7 +72,10 @@ class SpladeAugmentation final : public Transformation {
 
   std::optional<size_t> _n_augmented_tokens;
   std::optional<float> _augmentation_frac;
+  bool _filter_tokens;
   size_t _batch_size = 4096;
+
+  const std::regex _allowed_tokens = std::regex(R"([a-zA-Z]{3,})");
 };
 
 }  // namespace thirdai::data

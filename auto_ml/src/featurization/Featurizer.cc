@@ -6,6 +6,7 @@
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <auto_ml/src/featurization/DataTypes.h>
+#include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
 #include <data/src/transformations/CategoricalTemporal.h>
 #include <data/src/transformations/Pipeline.h>
@@ -88,16 +89,27 @@ data::LoaderPtr Featurizer::getColdStartDataLoader(
     const std::optional<data::SpladeConfig>& splade_config,
     bool fast_approximation, size_t batch_size, bool shuffle, bool verbose,
     dataset::DatasetShuffleConfig shuffle_config) {
-  data::TransformationPtr cold_start =
-      coldStartTransform(strong_column_names, weak_column_names,
-                         variable_length, fast_approximation);
+  data::TransformationPtr cold_start;
 
-  if (splade_config) {
-    cold_start = data::Pipeline::make()
-                     ->then(cold_start)
-                     ->then(std::make_shared<data::SpladeAugmentation>(
-                         _text_dataset->textColumn(),
-                         _text_dataset->textColumn(), *splade_config));
+  if (splade_config &&
+      (!strong_column_names.empty() || !weak_column_names.empty())) {
+    auto strong_columns_copy = strong_column_names;
+    strong_columns_copy.push_back(SPLADE_TOKENS);
+
+    auto all_columns = strong_column_names;
+    all_columns.insert(all_columns.end(), weak_column_names.begin(),
+                       weak_column_names.end());
+    cold_start =
+        data::Pipeline::make()
+            ->then(std::make_shared<data::StringConcat>(all_columns,
+                                                        SPLADE_TOKENS, " "))
+            ->then(std::make_shared<data::SpladeAugmentation>(
+                SPLADE_TOKENS, SPLADE_TOKENS, *splade_config))
+            ->then(coldStartTransform(strong_columns_copy, weak_column_names,
+                                      variable_length, fast_approximation));
+  } else {
+    cold_start = coldStartTransform(strong_column_names, weak_column_names,
+                                    variable_length, fast_approximation);
   }
 
   return getDataLoaderHelper(data_source, batch_size, shuffle, verbose,
