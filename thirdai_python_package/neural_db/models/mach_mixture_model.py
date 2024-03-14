@@ -135,7 +135,7 @@ class MachMixture(Model):
             training_progress_managers, self.ensembles
         ):
             ensemble.index_documents_impl(
-                training_progress_manager=progress_manager,
+                training_progress_managers=progress_manager,
                 on_progress=on_progress,
                 cancel_state=cancel_state,
             )
@@ -197,7 +197,7 @@ class MachMixture(Model):
         introduce_data_sources = shard_data_source(
             data_source=intro_documents,
             label_to_segment_map=self.label_to_segment_map,
-            number_shards=self.number_models,
+            number_shards=self.number_shards,
             update_segment_map=True,
         )
 
@@ -205,7 +205,7 @@ class MachMixture(Model):
         train_data_sources = shard_data_source(
             train_documents,
             label_to_segment_map=self.label_to_segment_map,
-            number_shards=self.number_models,
+            number_shards=self.number_shards,
             update_segment_map=False,
         )
 
@@ -335,21 +335,30 @@ class MachMixture(Model):
         )
 
     def infer_labels(
-        self, samples: InferSamples, n_results: int, retriever=None, **kwargs
+        self,
+        samples: InferSamples,
+        n_results: int,
+        retriever=None,
+        regular_decoding=True,
+        **kwargs,
     ) -> Predictions:
         if not retriever:
             index_results = self.query_inverted_index(samples, n_results=n_results)
             if not index_results:
                 retriever = "mach"
             else:
-                mach_results = self.query_mach(samples, n_results=n_results)
+                mach_results = self.query_mach(
+                    samples, n_results=n_results, regular_decoding=regular_decoding
+                )
                 return [
                     merge_results(mach_res, index_res, n_results)
                     for mach_res, index_res in zip(mach_results, index_results)
                 ]
 
         if retriever == "mach":
-            return self.query_mach(samples=samples, n_results=n_results)
+            return self.query_mach(
+                samples=samples, n_results=n_results, regular_decoding=regular_decoding
+            )
 
         if retriever == "inverted_index":
             results = self.query_inverted_index(samples=samples, n_results=n_results)
@@ -367,7 +376,7 @@ class MachMixture(Model):
     def _shard_label_constraints(
         self, entities: List[List[int]]
     ) -> List[List[List[int]]]:
-        shards = [[[] for _ in range(len(entities))] for _ in range(self.number_models)]
+        shards = [[[] for _ in range(len(entities))] for _ in range(self.number_shards)]
         for i in range(len(entities)):
             for label in entities[i]:
                 model_ids = self.label_to_segment_map.get(label)
@@ -430,7 +439,7 @@ class MachMixture(Model):
     def _shard_upvote_pairs(
         self, source_target_pairs: List[Tuple[str, int]]
     ) -> List[List[Tuple[str, int]]]:
-        shards = [[] for _ in range(self.number_models)]
+        shards = [[] for _ in range(self.number_shards)]
         for pair in source_target_pairs:
             model_ids = self.label_to_segment_map.get(pair[1])
             if model_ids is None:
@@ -470,7 +479,7 @@ class MachMixture(Model):
     ):
         balancing_data_shards = shard_data_source(
             data_source=balancing_data,
-            number_shards=self.number_models,
+            number_shards=self.number_shards,
             label_to_segment_map=self.label_to_segment_map,
             update_segment_map=False,
         )
@@ -501,7 +510,7 @@ class MachMixture(Model):
     ):
         supervised_data_source_shards = shard_data_source(
             data_source=supervised_data_source,
-            number_shards=self.number_models,
+            number_shards=self.number_shards,
             label_to_segment_map=self.label_to_segment_map,
             update_segment_map=False,
         )

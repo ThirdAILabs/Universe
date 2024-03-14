@@ -1,18 +1,13 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Callable, List, Optional, Sequence, Tuple
+from typing import Callable, List, Optional, Tuple
 
-from thirdai import bolt, data
+from thirdai import bolt
 from ..documents import DocumentDataSource
-from .models import CancelState, Mach, Model, add_retriever_tag, merge_results
-from ..sharded_documents import shard_data_source
+from .models import CancelState, Mach
 from ..supervised_datasource import SupDataSource
-from ..trainer.checkpoint_config import (
-    CheckpointConfig,
-    generate_modelwise_checkpoint_configs,
-)
 from ..trainer.training_progress_manager import TrainingProgressManager
-from ..utils import clean_text, pickle_to, requires_condition, unpickle_from
+from ..utils import clean_text
 
 
 def aggregate_results(results):
@@ -124,6 +119,10 @@ class MultiMach:
             model.model.set_decode_params(
                 min(self.n_ids, n_results), min(self.n_ids, 100)
             )
+        
+        # regular decoding works only when each model has a single hash
+        if self.models[0].extreme_num_hashes != 1:
+            regular_decoding = False
 
         if not regular_decoding:
             mach_results = bolt.UniversalDeepTransformer.parallel_inference(

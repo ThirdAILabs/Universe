@@ -41,7 +41,13 @@ class NeuralDB:
         >>> results = ndb.search("how to make chocolate chip cookies")
     """
 
-    def __init__(self, user_id: str = "user", number_models: int = 1, **kwargs) -> None:
+    def __init__(
+        self,
+        user_id: str = "user",
+        number_shards: int = 1,
+        number_models_per_shard: int = 1,
+        **kwargs,
+    ) -> None:
         """
         Constructs an empty NeuralDB.
 
@@ -59,15 +65,16 @@ class NeuralDB:
         # We read savable_state from kwargs so that it doesn't appear in the
         # arguments list and confuse users.
         if "savable_state" not in kwargs:
-            if number_models <= 0:
+            if number_shards <= 0:
                 raise Exception(
-                    f"Invalid Value Passed for number_models : {number_models}."
+                    f"Invalid Value Passed for number_shards : {number_shards}."
                     " NeuralDB can only be initialized with a positive number of"
                     " models."
                 )
-            if number_models > 1:
+            if number_shards > 1:
                 model = MachMixture(
-                    number_models=number_models,
+                    number_shards=number_shards,
+                    number_models_per_shard=number_models_per_shard,
                     id_col="id",
                     query_col="query",
                     **kwargs,
