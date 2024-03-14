@@ -239,6 +239,7 @@ class NeuralDBClient:
 
         return response.json()["data"]
 
+    @check_deployment_decorator
     def sources(self) -> List[Dict[str, str]]:
         """
         Gets the source names and ids of documents in the ndb model
