@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Optional
 from urllib.parse import urljoin
 
 from .bazaar_base import Bazaar, auth_header
@@ -115,7 +115,9 @@ class NeuralDBClient:
         return json.loads(response.content)["data"]
 
     @check_deployment_decorator
-    def insert(self, files: List[str] = None, urls: List[str] = None):
+    def insert(
+        self, files: Optional[List[str]] = None, urls: Optional[List[str]] = None
+    ):
         """
         Inserts documents into the ndb model.
 
