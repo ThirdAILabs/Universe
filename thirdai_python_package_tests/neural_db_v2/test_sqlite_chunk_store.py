@@ -2,8 +2,13 @@ from thirdai.neural_db_v2.chunk_stores.sqlite_chunk_store import SQLiteChunkStor
 from thirdai.neural_db_v2.core.types import NewChunkBatch, CustomIdSupervisedBatch
 import pytest
 import pandas as pd
+from thirdai.neural_db_v2.chunk_stores.constraints import (
+    EqualTo,
+    AnyOf,
+    GreaterThan,
+    LessThan,
+)
 
-from sqlalchemy import Integer
 
 pytestmark = [pytest.mark.release]
 
@@ -17,14 +22,18 @@ def get_simple_chunk_store():
             text=pd.Series(["0 1", "1 2"]),
             keywords=pd.Series(["00 01", "10 11"]),
             document=pd.Series(["doc0", "doc1"]),
-            metadata=None,
+            metadata=pd.DataFrame(
+                {"class": ["a", "b"], "number": [4, 9], "item": ["x", "y"]}
+            ),
         ),
         NewChunkBatch(
             custom_id=pd.Series([200, 300, 400]),
             text=pd.Series(["2 3", "3 4", "4 5"]),
             keywords=pd.Series(["20 21", "30 31", "40, 41"]),
             document=pd.Series(["doc2", "doc3", "doc4"]),
-            metadata=None,
+            metadata=pd.DataFrame(
+                {"class": ["c", "b", "a"], "number": [7, 2, 4], "time": [1.4, 2.6, 3.4]}
+            ),
         ),
     ]
 
@@ -95,6 +104,70 @@ def test_sqlite_chunk_store_custom_id_type_mismatch():
                 integer_label_batch,
             ]
         )
+
+
+def test_sqlite_chunk_store_constraints_equal_to():
+    store = get_simple_chunk_store()
+
+    chunk_ids = store.filter_chunk_ids({"class": EqualTo("b")})
+    assert chunk_ids == set([1, 3])
+
+
+def test_sqlite_chunk_store_constraints_any_of():
+    store = get_simple_chunk_store()
+
+    chunk_ids = store.filter_chunk_ids({"number": AnyOf([4, 2])})
+    assert chunk_ids == set([0, 3, 4])
+
+
+def test_sqlite_chunk_store_constraints_greater_than():
+    store = get_simple_chunk_store()
+
+    chunk_ids = store.filter_chunk_ids({"number": GreaterThan(7, inclusive=True)})
+    assert chunk_ids == set([1, 2])
+
+    chunk_ids = store.filter_chunk_ids({"number": GreaterThan(7, inclusive=False)})
+    assert chunk_ids == set([1])
+
+
+def test_sqlite_chunk_store_constraints_less_than():
+    store = get_simple_chunk_store()
+
+    chunk_ids = store.filter_chunk_ids({"number": LessThan(4, inclusive=True)})
+    assert chunk_ids == set([0, 3, 4])
+
+    chunk_ids = store.filter_chunk_ids({"number": LessThan(4, inclusive=False)})
+    assert chunk_ids == set([3])
+
+
+def test_sqlite_chunk_store_constraints_multiple_constraints():
+    store = get_simple_chunk_store()
+
+    chunk_ids = store.filter_chunk_ids(
+        {
+            "number": GreaterThan(6, inclusive=True),
+            "class": AnyOf(["b", "c"]),
+        }
+    )
+    assert chunk_ids == set([1, 2])
+
+    chunk_ids = store.filter_chunk_ids(
+        {
+            "number": GreaterThan(6, inclusive=True),
+            "class": AnyOf(["b", "c"]),
+            "time": LessThan(3),
+        }
+    )
+    assert chunk_ids == set([2])
+
+    chunk_ids = store.filter_chunk_ids(
+        {
+            "number": GreaterThan(6, inclusive=True),
+            "class": AnyOf(["b", "c"]),
+            "item": EqualTo("y"),
+        }
+    )
+    assert chunk_ids == set([1])
 
 
 @pytest.mark.parametrize("id_type", [int, str])

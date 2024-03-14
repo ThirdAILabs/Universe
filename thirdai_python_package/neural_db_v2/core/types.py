@@ -68,7 +68,7 @@ class NewChunkBatch:
     custom_id: Union[pt.Series[str], pt.Series[int], None]
     text: pt.Series[str]
     keywords: pt.Series[str]
-    metadata: Union[pt.Series[dict], None]
+    metadata: Union[pt.DataFrame, None]
     document: pt.Series[str]
 
     def __getitem__(self, i: int):
@@ -99,16 +99,6 @@ class ChunkBatch:
     chunk_id: pt.Series[ChunkId]
     text: pt.Series[str]
     keywords: pt.Series[str]
-
-    def __getitem__(self, i: int):
-        return Chunk(
-            custom_id=self.custom_id[i],
-            text=self.text[i],
-            keywords=self.keywords[i],
-            metadata=self.metadata[i],
-            document=self.document[i],
-            chunk_id=self.chunk_id[i],
-        )
 
     def to_df(self):
         return pd.DataFrame(self.__dict__)
