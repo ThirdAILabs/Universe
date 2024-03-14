@@ -46,12 +46,15 @@ def get_sql_columns(df: pd.DataFrame):
 
 
 class SQLiteChunkStore(ChunkStore):
-    def __init__(self, **kwargs):
+    def __init__(self, in_memory=True, **kwargs):
         super().__init__(**kwargs)
 
-        self.db_name = f"{uuid.uuid4()}.db"
+        if in_memory:
+            self.engine = create_engine(f"sqlite:///:memory:")
+        else:
+            self.db_name = f"{uuid.uuid4()}.db"
+            self.engine = create_engine(f"sqlite:///{self.db_name}")
 
-        self.engine = create_engine(f"sqlite:///:memory:{self.db_name}")
         self.metadata = MetaData()
 
         self.chunk_table = Table(

@@ -112,6 +112,9 @@ def test_sqlite_chunk_store_constraints_equal_to():
     assert chunk_ids == set([1, 3])
 
 
+test_sqlite_chunk_store_constraints_equal_to()
+
+
 def test_sqlite_chunk_store_constraints_any_of():
     store = get_simple_chunk_store()
 
