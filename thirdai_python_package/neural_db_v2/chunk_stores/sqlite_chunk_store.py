@@ -10,7 +10,7 @@ from ..core.types import (
 )
 from sqlalchemy import create_engine
 import uuid
-from sqlalchemy import Engine, Table, Column, Integer, String, MetaData, select, delete
+from sqlalchemy import Table, Column, Integer, String, MetaData, select, delete
 import pandas as pd
 import numpy as np
 
@@ -48,7 +48,7 @@ class SQLiteChunkStore(ChunkStore):
         )
         self.metadata.create_all(self.engine)
 
-    def _df_to_sql(self, df: pd.DataFrame, table: Table):
+    def _write_to_table(self, df: pd.DataFrame, table: Table):
         df.to_sql(
             table.name,
             con=self.engine,
@@ -68,17 +68,27 @@ class SQLiteChunkStore(ChunkStore):
             chunk_df["chunk_id"] = chunk_ids
 
             if batch.custom_id is not None:
-                if not self.custom_id_table:
+                batch_integer_custom_ids = batch.custom_id.dtype == int
+                if self.custom_id_table is None:
                     self.create_custom_id_table(
-                        integer_custom_ids=batch.custom_id.dtype == int
+                        integer_custom_ids=batch_integer_custom_ids
+                    )
+
+                table_integer_custom_ids = isinstance(
+                    self.custom_id_table.columns.custom_id.type, Integer
+                )
+
+                if table_integer_custom_ids != batch_integer_custom_ids:
+                    raise ValueError(
+                        "Custom ids must all have the same type. Found some custom ids with type int, and some with type str."
                     )
 
                 custom_id_df = pd.DataFrame(
                     {"custom_id": batch.custom_id, "chunk_id": chunk_ids}
                 )
-                self._df_to_sql(df=custom_id_df, table=self.custom_id_table)
+                self._write_to_table(df=custom_id_df, table=self.custom_id_table)
 
-            self._df_to_sql(df=chunk_df, table=self.chunk_table)
+            self._write_to_table(df=chunk_df, table=self.chunk_table)
 
             self.next_id += len(batch.text)
 
@@ -144,7 +154,7 @@ class SQLiteChunkStore(ChunkStore):
                         if result := conn.execute(stmt).first():
                             sample_ids.append(result.chunk_id)
                         else:
-                            raise ValueError(f"Could not find custom id {custom_id}")
+                            raise ValueError(f"Could not find custom id {custom_id}.")
                     chunk_ids.append(sample_ids)
 
             remapped_batches.append(
