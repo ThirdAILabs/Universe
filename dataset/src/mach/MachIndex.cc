@@ -25,7 +25,7 @@ MachIndex::MachIndex(uint32_t num_buckets, uint32_t num_hashes,
   if (num_hashes > num_buckets) {
     throw std::invalid_argument("Can't have more hashes than buckets");
   }
-  std::mt19937 mt(341);
+  std::mt19937 mt(_seed);
   std::uniform_int_distribution<uint32_t> dist(0, num_buckets - 1);
   for (uint32_t element = 0; element < num_elements; element++) {
     std::vector<uint32_t> hashes(num_hashes);
@@ -82,7 +82,7 @@ void MachIndex::insertNewEntities(const std::unordered_set<uint32_t>& new_ids) {
     }
 
     std::mt19937 rng(hashing::MurmurHash(reinterpret_cast<const char*>(&entity),
-                                         sizeof(entity), 341));
+                                         sizeof(entity), _seed));
 
     std::vector<uint32_t> hashes(_num_hashes);
     for (uint32_t i = 0; i < _num_hashes; i++) {

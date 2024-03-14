@@ -11,8 +11,8 @@ from thirdai._thirdai import bolt, data
 
 from . import loggers, teachers
 from .documents import CSV, Document, DocumentManager, Reference
-from .mach_mixture_model import MachMixture
-from .models import CancelState, Mach
+from .models.mach_mixture_model import MachMixture
+from .models.models import CancelState, Mach
 from .savable_state import (
     State,
     load_checkpoint,

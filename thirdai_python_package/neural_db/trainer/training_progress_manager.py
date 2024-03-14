@@ -3,7 +3,7 @@ from __future__ import annotations
 from thirdai import bolt
 
 from ..documents import DocumentDataSource
-from ..mach_defaults import (
+from ..models.mach_defaults import (
     training_arguments_from_base,
     training_arguments_from_scratch,
 )

@@ -7,16 +7,16 @@ from typing import Callable, List, Optional, Sequence, Tuple
 import numpy as np
 from thirdai import bolt, data
 
-from .documents import DocumentDataSource
-from .inverted_index import InvertedIndex
+from ..documents import DocumentDataSource
+from ..inverted_index import InvertedIndex
 from .mach_defaults import acc_to_stop, metric_to_track
-from .supervised_datasource import SupDataSource
-from .trainer.checkpoint_config import CheckpointConfig
-from .trainer.training_progress_manager import (
+from ..supervised_datasource import SupDataSource
+from ..trainer.checkpoint_config import CheckpointConfig
+from ..trainer.training_progress_manager import (
     TrainingProgressCallback,
     TrainingProgressManager,
 )
-from .utils import clean_text, pickle_to
+from ..utils import clean_text, pickle_to
 
 InferSamples = List
 Predictions = Sequence
@@ -156,12 +156,7 @@ class Model:
 
 
 class EarlyStopWithMinEpochs(bolt.train.callbacks.Callback):
-    def __init__(
-        self,
-        min_epochs,
-        tracked_metric,
-        metric_threshold,
-    ):
+    def __init__(self, min_epochs, tracked_metric, metric_threshold):
         super().__init__()
 
         self.epoch_count = 0
@@ -180,11 +175,7 @@ class EarlyStopWithMinEpochs(bolt.train.callbacks.Callback):
 
 
 class ProgressUpdate(bolt.train.callbacks.Callback):
-    def __init__(
-        self,
-        max_epochs,
-        progress_callback_fn,
-    ):
+    def __init__(self, max_epochs, progress_callback_fn):
         super().__init__()
 
         self.batch_count = 0
@@ -208,11 +199,7 @@ class ProgressUpdate(bolt.train.callbacks.Callback):
 
 class FreezeHashTable(bolt.train.callbacks.Callback):
     def __init__(
-        self,
-        freeze_before_train,
-        freeze_after_epoch,
-        tracked_metric,
-        metric_threshold,
+        self, freeze_before_train, freeze_after_epoch, tracked_metric, metric_threshold
     ):
         super().__init__()
 
@@ -269,14 +256,11 @@ def unsupervised_train_on_docs(
     documents.restart()
 
     early_stop_callback = EarlyStopWithMinEpochs(
-        min_epochs=min_epochs,
-        tracked_metric=metric,
-        metric_threshold=acc_to_stop,
+        min_epochs=min_epochs, tracked_metric=metric, metric_threshold=acc_to_stop
     )
 
     progress_callback = ProgressUpdate(
-        max_epochs=max_epochs,
-        progress_callback_fn=on_progress,
+        max_epochs=max_epochs, progress_callback_fn=on_progress
     )
 
     cancel_training_callback = CancelTraining(cancel_state=cancel_state)
@@ -391,6 +375,7 @@ class Mach(Model):
         hidden_bias=False,
         model_config=None,
         use_inverted_index=True,
+        mach_index_seed: int = 341,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -406,6 +391,7 @@ class Mach(Model):
         self.balancing_samples = []
         self.model_config = model_config
         self.inverted_index = InvertedIndex() if use_inverted_index else None
+        self.mach_index_seed = mach_index_seed
 
     def set_mach_sampling_threshold(self, threshold: float):
         if self.model is None:
@@ -630,6 +616,7 @@ class Mach(Model):
                 "extreme_num_hashes": self.extreme_num_hashes,
                 "hidden_bias": self.hidden_bias,
                 "rlhf": True,
+                "mach_index_seed": self.mach_index_seed,
             },
             model_config=self.model_config,
         )
@@ -665,11 +652,7 @@ class Mach(Model):
         )
 
     def infer_labels(
-        self,
-        samples: InferSamples,
-        n_results: int,
-        retriever=None,
-        **kwargs,
+        self, samples: InferSamples, n_results: int, retriever=None, **kwargs
     ) -> Predictions:
         if not retriever:
             if not self.inverted_index:

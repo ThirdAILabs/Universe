@@ -5,7 +5,7 @@ from typing import Callable, List
 
 from .documents import DocumentManager
 from .loggers import Logger
-from .models import Model
+from .models.models import Model
 from .trainer.checkpoint_config import CheckpointConfig
 from .utils import delete_folder, pickle_to, unpickle_from
 

@@ -284,6 +284,10 @@ void defineAutomlInModule(py::module_& module) {
       .def_static("parallel_inference", &udt::UDT::parallelInference,
                   py::arg("models"), py::arg("batch"),
                   py::arg("sparse_inference") = false,
+                  py::arg("top_k") = std::nullopt)
+      .def_static("regular_decode_mulitple_mach",
+                  &udt::UDT::regularDecodeMultipleMach, py::arg("models"),
+                  py::arg("batch"), py::arg("sparse_inference") = false,
                   py::arg("top_k") = std::nullopt);
 }
 

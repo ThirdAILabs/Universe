@@ -4,16 +4,17 @@ from typing import Callable, List, Optional, Sequence, Tuple
 
 from thirdai import bolt, data
 
-from .documents import DocumentDataSource
+from ..documents import DocumentDataSource
 from .models import CancelState, Mach, Model, add_retriever_tag, merge_results
-from .sharded_documents import shard_data_source
-from .supervised_datasource import SupDataSource
-from .trainer.checkpoint_config import (
+from .multi_mach import MultiMach
+from ..sharded_documents import shard_data_source
+from ..supervised_datasource import SupDataSource
+from ..trainer.checkpoint_config import (
     CheckpointConfig,
-    generate_modelwise_checkpoint_configs,
+    generate_checkpoint_configs_for_ensembles,
 )
-from .trainer.training_progress_manager import TrainingProgressManager
-from .utils import clean_text, pickle_to, requires_condition, unpickle_from
+from ..trainer.training_progress_manager import TrainingProgressManager
+from ..utils import clean_text, pickle_to, requires_condition, unpickle_from
 
 InferSamples = List
 Predictions = Sequence
@@ -24,7 +25,8 @@ TrainSamples = List
 class MachMixture(Model):
     def __init__(
         self,
-        number_models: int,
+        number_shards: int,
+        number_models_per_shard: int = 1,
         id_col: str = "DOC_ID",
         id_delimiter: str = " ",
         query_col: str = "QUERY",
@@ -32,21 +34,20 @@ class MachMixture(Model):
         embedding_dimension: int = 2048,
         extreme_output_dim: int = 10_000,  # for Mach Mixture, we use default dim of 10k
         extreme_num_hashes: int = 8,
+        tokenizer="char-4",
+        hidden_bias=False,
         model_config=None,
+        use_inverted_index=True,
         label_to_segment_map: defaultdict = None,
         seed_for_sharding: int = 0,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
         self.query_col = query_col
-        self.fhr = fhr
-        self.embedding_dimension = embedding_dimension
-        self.extreme_output_dim = extreme_output_dim
-        self.extreme_num_hashes = extreme_num_hashes
-        self.model_config = model_config
 
         # These parameters are specific to Mach Mixture
-        self.number_models = number_models
+        self.number_shards = number_shards
+        self.number_models_per_shard = number_models_per_shard
 
         if label_to_segment_map == None:
             self.label_to_segment_map = defaultdict(list)
@@ -55,51 +56,51 @@ class MachMixture(Model):
 
         self.seed_for_sharding = seed_for_sharding
 
-        self.models: List[Mach] = [
-            Mach(
-                id_col=self.id_col,
-                id_delimiter=self.id_delimiter,
-                query_col=self.query_col,
-                fhr=self.fhr,
-                embedding_dimension=self.embedding_dimension,
-                extreme_output_dim=self.extreme_output_dim,
-                extreme_num_hashes=self.extreme_num_hashes,
-                model_config=self.model_config,
+        self.ensembles: List[MultiMach] = [
+            MultiMach(
+                number_models=number_models_per_shard,
+                id_col=id_col,
+                id_delimiter=id_delimiter,
+                query_col=query_col,
+                fhr=fhr,
+                embedding_dimension=embedding_dimension,
+                extreme_output_dim=extreme_output_dim,
+                extreme_num_hashes=extreme_num_hashes,
+                tokenizer=tokenizer,
+                hidden_bias=hidden_bias,
+                use_inverted_index=use_inverted_index,
+                model_config=model_config,
+                mach_index_seed_offset=j * 341,
             )
-            for _ in range(self.number_models)
+            for j in range(self.number_models_per_shard)
         ]
 
     @property
     def n_ids(self):
-        # We assume that the label spaces of underlying models are disjoint (True as of now.)
+        # We assume that the label spaces of underlying ensembles are disjoint (True as of now.)
         n_ids = 0
-        for model in self.models:
-            n_ids += model.n_ids
+        for ensemble in self.ensembles:
+            n_ids += ensemble.n_ids
         return n_ids
 
     def set_mach_sampling_threshold(self, threshold: float):
-        if self.models is None:
-            raise Exception(
-                "Cannot set Sampling Threshold for a model that has not been"
-                " initialized"
-            )
 
-        for model in self.models:
-            model.set_mach_sampling_threshold(threshold)
+        for ensemble in self.ensembles:
+            ensemble.set_mach_sampling_threshold(threshold)
 
     def get_model(self) -> List[bolt.UniversalDeepTransformer]:
-        for model in self.models:
-            if not model.get_model():
+        for ensemble in self.ensembles:
+            if not ensemble.get_model():
                 return None
-        return self.models
+        return self.ensembles
 
-    def set_model(self, models):
-        self.models = models
+    def set_model(self, ensembles):
+        self.ensembles = ensembles
 
     def save_meta(self, directory: Path):
-        if self.models is not None:
-            for model in self.models:
-                model.save_meta(directory)
+        if self.ensembles is not None:
+            for ensemble in self.ensembles:
+                ensemble.save_meta(directory)
 
         pickle_to(
             [self.label_to_segment_map, self.seed_for_sharding],
@@ -107,9 +108,9 @@ class MachMixture(Model):
         )
 
     def load_meta(self, directory: Path):
-        if self.models is not None:
-            for model in self.models:
-                model.load_meta(directory)
+        if self.ensembles is not None:
+            for ensemble in self.ensembles:
+                ensemble.load_meta(directory)
         self.label_to_segment_map, self.seed_for_sharding = unpickle_from(
             directory / "segment_map_and_seed.pkl"
         )
@@ -130,8 +131,10 @@ class MachMixture(Model):
         cancel_state: CancelState,
     ):
         # This function is the entrypoint to underlying mach models in the mixture. The training progress manager becomes the absolute source of truth in this routine and holds all the data needed to index documents into a model irrespective of whether we are checkpointing or not.
-        for progress_manager, model in zip(training_progress_managers, self.models):
-            model.index_documents_impl(
+        for progress_manager, ensemble in zip(
+            training_progress_managers, self.ensembles
+        ):
+            ensemble.index_documents_impl(
                 training_progress_manager=progress_manager,
                 on_progress=on_progress,
                 cancel_state=cancel_state,
@@ -144,25 +147,26 @@ class MachMixture(Model):
         checkpoint_config: CheckpointConfig,
     ):
         # If checkpoint_dir in checkpoint_config is /john/doe and number of models is 2, the underlying mach models will make checkpoint at /john/doe/0 and /john/doe/1 depending on model ids.
-        modelwise_checkpoint_configs = generate_modelwise_checkpoint_configs(
-            config=checkpoint_config, number_models=self.number_models
+        ensemble_checkpoint_configs = generate_checkpoint_configs_for_ensembles(
+            config=checkpoint_config,
+            number_ensembles=self.number_shards,
+            number_models_per_ensemble=self.number_models_per_shard,
         )
 
         self.load_meta(checkpoint_config.checkpoint_dir)
 
         # The training manager corresponding to a model loads all the needed to complete the training such as model, document sources, tracker, etc.
         training_managers = []
-        for _, (model, config) in enumerate(
-            zip(
-                self.models,
-                modelwise_checkpoint_configs,
-            )
+        for _, (ensemble, config) in enumerate(
+            zip(self.ensembles, ensemble_checkpoint_configs)
         ):
-            modelwise_training_manager = TrainingProgressManager.from_checkpoint(
-                original_mach_model=model,
-                checkpoint_config=config,
-            )
-            training_managers.append(modelwise_training_manager)
+            ensemble_training_managers = []
+            for model_id, model in enumerate(ensemble.models):
+                modelwise_training_manager = TrainingProgressManager.from_checkpoint(
+                    original_mach_model=model, checkpoint_config=config[model_id]
+                )
+                ensemble_training_managers.append(modelwise_training_manager)
+            training_managers.append(ensemble_training_managers)
 
         self.index_documents_impl(
             training_progress_managers=training_managers,
@@ -209,36 +213,42 @@ class MachMixture(Model):
         if checkpoint_config:
             self.save_meta(checkpoint_config.checkpoint_dir)
 
-        modelwise_checkpoint_configs = generate_modelwise_checkpoint_configs(
-            config=checkpoint_config, number_models=self.number_models
+        ensemble_checkpoint_configs = generate_checkpoint_configs_for_ensembles(
+            config=checkpoint_config,
+            number_ensembles=self.number_shards,
+            number_models_per_ensemble=self.number_models_per_shard,
         )
 
         training_managers = []
-        for _, (intro_shard, train_shard, model, config) in enumerate(
+        for ensemble_id, (intro_shard, train_shard, ensemble, config) in enumerate(
             zip(
                 introduce_data_sources,
                 train_data_sources,
-                self.models,
-                modelwise_checkpoint_configs,
+                self.ensembles,
+                ensemble_checkpoint_configs,
             )
         ):
-            modelwise_training_manager = TrainingProgressManager.from_scratch(
-                model=model,
-                intro_documents=intro_shard,
-                train_documents=train_shard,
-                should_train=should_train,
-                fast_approximation=fast_approximation,
-                num_buckets_to_sample=num_buckets_to_sample,
-                max_in_memory_batches=max_in_memory_batches,
-                override_number_classes=number_classes,
-                variable_length=variable_length,
-                checkpoint_config=config,
-                **kwargs,
-            )
+            ensemble_training_managers = []
+            for model_id, model in enumerate(ensemble.models):
 
-            training_managers.append(modelwise_training_manager)
-            # When we want to start from scratch, we will have to checkpoint the intro, train sources, the model, tracker,etc. so that the training can be resumed from the checkpoint.
-            modelwise_training_manager.make_preindexing_checkpoint()  # no-op when checkpoint_config is None.
+                modelwise_training_manager = TrainingProgressManager.from_scratch(
+                    model=model,
+                    intro_documents=intro_shard,
+                    train_documents=train_shard,
+                    should_train=should_train,
+                    fast_approximation=fast_approximation,
+                    num_buckets_to_sample=num_buckets_to_sample,
+                    max_in_memory_batches=max_in_memory_batches,
+                    override_number_classes=number_classes,
+                    variable_length=variable_length,
+                    checkpoint_config=config[model_id],
+                    **kwargs,
+                )
+                ensemble_training_managers.append(modelwise_training_manager)
+                # When we want to start from scratch, we will have to checkpoint the intro, train sources, the model, tracker,etc. so that the training can be resumed from the checkpoint.
+                modelwise_training_manager.make_preindexing_checkpoint()  # no-op when checkpoint_config is None.
+
+            training_managers.append(ensemble_training_managers)
 
         self.index_documents_impl(
             training_progress_managers=training_managers,
@@ -256,12 +266,12 @@ class MachMixture(Model):
                 segment_to_label_map[segment].append(label)
 
         # Delete entities for each segment
-        for i, model in enumerate(self.models):
-            model.delete_entities(segment_to_label_map[i])
+        for i, ensemble in enumerate(self.ensembles):
+            ensemble.delete_entities(segment_to_label_map[i])
 
     def forget_documents(self) -> None:
-        for model in self.models:
-            model.forget_documents()
+        for ensemble in self.ensembles:
+            ensemble.forget_documents()
 
     @property
     def searchable(self) -> bool:
@@ -279,27 +289,44 @@ class MachMixture(Model):
 
         return joined_results
 
-    def query_mach(self, samples, n_results):
-        for model in self.models:
-            model.model.set_decode_params(
-                min(self.n_ids, n_results), min(self.n_ids, 100)
+    def query_mach(self, samples: List, n_results: int, regular_decoding: bool):
+
+        if not regular_decoding:
+            models = []
+            for ensemble in self.ensembles:
+                for model in ensemble.models:
+                    model.model.set_decode_params(
+                        min(self.n_ids, n_results), min(self.n_ids, 100)
+                    )
+                    models.append(model)
+
+            mach_results = bolt.UniversalDeepTransformer.parallel_inference(
+                models=models,
+                batch=[{self.query_col: clean_text(text)} for text in samples],
             )
 
-        mach_results = bolt.UniversalDeepTransformer.parallel_inference(
-            models=[model.model for model in self.models],
-            batch=[{self.query_col: clean_text(text)} for text in samples],
-        )
+            return add_retriever_tag(self.aggregate_results(mach_results), tag="mach")
 
-        return add_retriever_tag(self.aggregate_results(mach_results), tag="mach")
+        else:
+            ensemble_results = [
+                ensemble.query_mach(
+                    samples=samples,
+                    n_results=n_results,
+                    regular_decoding=regular_decoding,
+                )
+                for ensemble in self.ensembles
+            ]
+            return add_retriever_tag(
+                self.aggregate_results(ensemble_results), tag="mach"
+            )
 
     def query_inverted_index(self, samples, n_results):
         inverted_index_results = []
-        for model in self.models:
-            if model.inverted_index:
-                single_index_results = model.inverted_index.query(
-                    samples, k=min(n_results, model.n_ids)
-                )
-                inverted_index_results.append(single_index_results)
+        for ensemble in self.ensembles:
+            ensemble_result = ensemble.query_inverted_index(samples, n_results)
+            if ensemble_result:
+                inverted_index_results.append(ensemble_result)
+
         if not inverted_index_results:
             return None
 
@@ -308,11 +335,7 @@ class MachMixture(Model):
         )
 
     def infer_labels(
-        self,
-        samples: InferSamples,
-        n_results: int,
-        retriever=None,
-        **kwargs,
+        self, samples: InferSamples, n_results: int, retriever=None, **kwargs
     ) -> Predictions:
         if not retriever:
             index_results = self.query_inverted_index(samples, n_results=n_results)
@@ -360,8 +383,8 @@ class MachMixture(Model):
         sharded_entities = self._shard_label_constraints(entities=entities)
 
         model_scores = [
-            model.score(samples=samples, entities=shard_entity, n_results=n_results)
-            for model, shard_entity in zip(self.models, sharded_entities)
+            ensemble.score(samples=samples, entities=shard_entity, n_results=n_results)
+            for ensemble, shard_entity in zip(self.ensembles, sharded_entities)
         ]
 
         aggregated_scores = [defaultdict(int) for _ in range(len(samples))]
@@ -393,8 +416,8 @@ class MachMixture(Model):
         epochs: int = 3,
         **kwargs,
     ):
-        for model in self.models:
-            model.associate(
+        for ensemble in self.ensembles:
+            ensemble.associate(
                 pairs=pairs,
                 n_buckets=n_buckets,
                 n_association_samples=n_association_samples,
@@ -426,10 +449,10 @@ class MachMixture(Model):
     ):
         sharded_pairs = self._shard_upvote_pairs(pairs)
 
-        for model, shard in zip(self.models, sharded_pairs):
+        for ensemble, shard in zip(self.ensembles, sharded_pairs):
             if len(shard) == 0:
                 continue
-            model.upvote(
+            ensemble.upvote(
                 pairs=shard,
                 n_upvote_samples=n_upvote_samples,
                 n_balancing_samples=n_balancing_samples,
@@ -451,8 +474,8 @@ class MachMixture(Model):
             label_to_segment_map=self.label_to_segment_map,
             update_segment_map=False,
         )
-        for model, shard in zip(self.models, balancing_data_shards):
-            model.retrain(
+        for ensemble, shard in zip(self.ensembles, balancing_data_shards):
+            ensemble.retrain(
                 balancing_data=shard,
                 source_target_pairs=source_target_pairs,
                 n_buckets=n_buckets,
@@ -483,10 +506,10 @@ class MachMixture(Model):
             update_segment_map=False,
         )
 
-        for shard, model in zip(supervised_data_source_shards, self.models):
+        for shard, ensemble in zip(supervised_data_source_shards, self.ensembles):
             if shard.size == 0:
                 continue
-            model.train_on_supervised_data_source(
+            ensemble.train_on_supervised_data_source(
                 supervised_data_source=shard,
                 learning_rate=learning_rate,
                 epochs=epochs,
