@@ -82,7 +82,7 @@ class NeuralDBClient:
 
         get_chat_history(self, session_id: str) -> Dict[List[Dict[str, str]]]:
             Returns chat history associated with session_id
-            
+
         sources(self) -> List[Dict[str, str]]:
             Gets the source names and ids of documents in the ndb model
     """
@@ -238,7 +238,7 @@ class NeuralDBClient:
         )
 
         return response.json()["data"]
-    
+
     def sources(self) -> List[Dict[str, str]]:
         """
         Gets the source names and ids of documents in the ndb model
