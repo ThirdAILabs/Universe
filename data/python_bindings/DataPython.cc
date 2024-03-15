@@ -470,12 +470,13 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>>(
       transformations_submodule, "SpladeConfig")
       .def(py::init<std::string, std::string, std::optional<size_t>,
-                    std::optional<float>, bool, size_t, bool>(),
+                    std::optional<float>, bool, size_t, bool,
+                    std::optional<uint32_t>>(),
            py::arg("model_checkpoint"), py::arg("tokenizer_vocab"),
-           py::arg("n_augmented_tokens") = 20,
+           py::arg("n_augmented_tokens") = 100,
            py::arg("augmentation_frac") = std::nullopt,
            py::arg("filter_tokens") = true, py::arg("batch_size") = 4096,
-           py::arg("lowercase") = true)
+           py::arg("lowercase") = true, py::arg("strong_sample_override") = 7)
       .def(bolt::python::getPickleFunction<SpladeConfig>());
 
   py::class_<SpladeAugmentation, Transformation,
@@ -487,7 +488,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                     dataset::WordpieceTokenizerPtr, std::optional<size_t>,
                     std::optional<float>, bool, size_t>(),
            py::arg("input_column"), py::arg("output_column"), py::arg("model"),
-           py::arg("tokenizer"), py::arg("n_augmented_tokens") = 20,
+           py::arg("tokenizer"), py::arg("n_augmented_tokens") = 100,
            py::arg("augmentation_frac") = std::nullopt,
            py::arg("filter_tokens") = true, py::arg("batch_size") = 4096);
 }

@@ -15,7 +15,8 @@ struct SpladeConfig {
                std::optional<size_t> n_augmented_tokens,
                std::optional<float> augmentation_frac,
                bool filter_tokens = true, size_t batch_size = 4096,
-               bool lowercase = true);
+               bool lowercase = true,
+               std::optional<uint32_t> strong_sample_override = 7);
 
   bolt::ModelPtr model;
   dataset::WordpieceTokenizerPtr tokenizer;
@@ -23,6 +24,7 @@ struct SpladeConfig {
   std::optional<float> augmentation_frac;
   bool filter_tokens;
   size_t batch_size = 4096;
+  std::optional<uint32_t> strong_sample_override;
 
   void save_stream(std::ostream& output_stream) const;
 

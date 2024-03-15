@@ -1,9 +1,9 @@
 import os
 
 
-def bert_base_uncased():
+def bert_base_uncased(dirname="."):
     BERT_TAG = "bert-base-uncased"
-    BERT_VOCAB_PATH = f"{BERT_TAG}.vocab"
+    BERT_VOCAB_PATH = os.path.join(dirname, f"{BERT_TAG}.vocab")
     BERT_VOCAB_URL = f"https://huggingface.co/{BERT_TAG}/resolve/main/vocab.txt"
 
     if not os.path.exists(BERT_VOCAB_PATH):

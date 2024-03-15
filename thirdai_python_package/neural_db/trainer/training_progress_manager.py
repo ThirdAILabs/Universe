@@ -153,7 +153,10 @@ class TrainingProgressManager:
             "freeze_after_acc", 0.80 if "freeze_after_epoch" not in kwargs else 1
         )
         train_args["balancing_samples"] = kwargs.get("balancing_samples", False)
-        train_args["splade_config"] = kwargs.get("splade_config", None)
+        train_args["semantic_enhancement"] = kwargs.get("semantic_enhancement", False)
+        train_args["semantic_model_cache_dir"] = kwargs.get(
+            "semantic_model_cache_dir", ".cache/semantic_model"
+        )
 
         train_state = TrainState(
             max_in_memory_batches=max_in_memory_batches,

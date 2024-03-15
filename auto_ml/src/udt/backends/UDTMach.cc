@@ -471,7 +471,7 @@ py::object UDTMach::coldstart(
               [&stopped]() { stopped = true; })));
 
   // Splade augmentation can be slow so we don't want it to run every epoch.
-  uint32_t epoch_step = variable_length && !splade_config ? 1 : epochs;
+  uint32_t epoch_step = variable_length ? 1 : epochs;
 
   py::object history;
   for (uint32_t e = 0; e < epochs; e += epoch_step) {

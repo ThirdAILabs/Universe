@@ -18,7 +18,8 @@ SpladeConfig::SpladeConfig(const std::string& model_checkpoint,
                            std::optional<size_t> n_augmented_tokens,
                            std::optional<float> augmentation_frac,
                            bool filter_tokens, size_t batch_size,
-                           bool lowercase)
+                           bool lowercase,
+                           std::optional<uint32_t> strong_sample_override)
     : model(bolt::Model::load(model_checkpoint)),
       tokenizer(std::make_shared<dataset::WordpieceTokenizer>(tokenizer_vocab,
                                                               lowercase)),
@@ -26,6 +27,7 @@ SpladeConfig::SpladeConfig(const std::string& model_checkpoint,
       augmentation_frac(augmentation_frac),
       filter_tokens(filter_tokens),
       batch_size(batch_size),
+      strong_sample_override(strong_sample_override),
       _model_checkpoint(model_checkpoint),
       _tokenizer_vocab(tokenizer_vocab),
       _lowercase(lowercase) {}

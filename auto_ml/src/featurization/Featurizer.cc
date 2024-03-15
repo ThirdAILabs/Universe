@@ -93,6 +93,11 @@ data::LoaderPtr Featurizer::getColdStartDataLoader(
 
   if (splade_config &&
       (!strong_column_names.empty() || !weak_column_names.empty())) {
+    if (splade_config->strong_sample_override && variable_length) {
+      variable_length->overrideStrongSampleNumWords(
+          *splade_config->strong_sample_override);
+    }
+
     auto strong_columns_copy = strong_column_names;
     strong_columns_copy.push_back(SPLADE_TOKENS);
 
