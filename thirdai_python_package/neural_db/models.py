@@ -297,7 +297,7 @@ def unsupervised_train_on_docs(
     training_progress_callback: Optional[TrainingProgressCallback],
     balancing_samples=False,
     semantic_enhancement=False,
-    semantic_model_cache_dir=".cache/semantic_model",
+    semantic_model_cache_dir=".cache/neural_db_semantic_model",
     **kwargs,
 ):
     documents.restart()
