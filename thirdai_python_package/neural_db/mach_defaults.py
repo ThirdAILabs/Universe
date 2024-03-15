@@ -5,10 +5,8 @@ acc_to_stop = 0.95
 
 
 def autotune_from_scratch_min_max_epochs(size):
-    if size < 1000:
-        return 10, 15
     if size < 10000:
-        return 8, 13
+        return 10, 15
     if size < 100000:
         return 5, 10
     if size < 1000000:
