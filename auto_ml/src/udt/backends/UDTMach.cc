@@ -470,8 +470,9 @@ py::object UDTMach::coldstart(
           bolt::callbacks::LambdaOnStoppedCallback(
               [&stopped]() { stopped = true; })));
 
-  // Splade augmentation can be slow so we don't want it to run every epoch.
-  uint32_t epoch_step = variable_length ? 1 : epochs;
+  // TODO(Nicholas): make it so that the spade augmentation is only run once
+  // rather than for every epoch if variable length cold start is used.
+  uint32_t epoch_step = variable_length.has_value() ? 1 : epochs;
 
   py::object history;
   for (uint32_t e = 0; e < epochs; e += epoch_step) {
