@@ -1,4 +1,5 @@
 import copy
+import os
 import shutil
 from enum import Enum
 from pathlib import Path
@@ -6,8 +7,10 @@ from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
+import requests
 import thirdai
 from thirdai._thirdai import bolt, data
+from tqdm import tqdm
 
 from . import loggers, teachers
 from .documents import CSV, Document, DocumentManager, Reference
@@ -79,6 +82,14 @@ class NeuralDB:
             )
         else:
             self._savable_state = kwargs["savable_state"]
+
+        semantic_model_dir = Path(kwargs.get("semantic_model_path", "./model_cache"))
+        if not os.path.exists(semantic_model_dir):
+            os.makedirs(semantic_model_dir)
+
+        self._semantic_model_path = os.path.join(
+            semantic_model_dir, "semantic_model.bolt"
+        )
 
     @staticmethod
     def from_checkpoint(
@@ -445,6 +456,30 @@ class NeuralDB:
                 resource_name=intro_and_train.intro.resource_name(),
                 checkpoint_config=checkpoint_config,
             )
+
+        if kwargs.get("semantic_enhancement", False):
+            if not os.path.exists(self._semantic_model_path):
+                response = requests.get(
+                    "https://modelzoo-cdn.azureedge.net/test-models/bolt-splade-medium",
+                    stream=True,
+                )
+                total_size_in_bytes = int(response.headers.get("content-length", 0))
+                block_size = 4096  # 4 Kibibyte
+
+                progress_bar = tqdm(
+                    total=total_size_in_bytes, unit="iB", unit_scale=True
+                )
+                with open(self._semantic_model_path, "wb") as f:
+                    for data in response.iter_content(block_size):
+                        progress_bar.update(len(data))
+                        f.write(data)
+                progress_bar.close()
+            splade_config = data.transformations.SpladeConfig(
+                model_checkpoint=self._semantic_model_path,
+                tokenizer_vocab=kwargs.get("tokenizer_vocab", "words"),
+            )
+
+            kwargs["splade_config"] = splade_config
 
         self._savable_state.model.index_from_start(
             intro_documents=intro_and_train.intro,
