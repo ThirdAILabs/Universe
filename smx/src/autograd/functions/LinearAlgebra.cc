@@ -1,7 +1,9 @@
 #include "LinearAlgebra.h"
+#include <bolt/src/utils/Timer.h>
 #include <smx/src/autograd/Variable.h>
 #include <smx/src/tensor/Functions.h>
 #include <smx/src/tensor/Tensor.h>
+#include <utils/Logging.h>
 #include <vector>
 
 namespace thirdai::smx {
@@ -60,6 +62,8 @@ VariablePtr linear(const VariablePtr& x, const VariablePtr& w,
 
   GradFunc grad_func = [](const TensorPtr& out_grad,
                           const std::vector<VariablePtr>& inputs) {
+    bolt::utils::Timer lin_back_timer;
+
     const auto& x = inputs.at(0);
     const auto& w = inputs.at(1);
     const auto& b = inputs.at(2);
@@ -73,6 +77,10 @@ VariablePtr linear(const VariablePtr& x, const VariablePtr& w,
     if (b) {
       b->addGradient(b_grad);
     }
+
+    lin_back_timer.stop();
+    logging::info(fmt::format("smx linear backward | time {} ms",
+                              lin_back_timer.milliseconds()));
   };
 
   return Variable::make(out, grad_func, {x, w, b});
