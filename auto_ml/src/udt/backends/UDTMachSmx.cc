@@ -474,41 +474,22 @@ void UDTMachSmx::train(const UDTMachSmx::TrainingDataset& dataset,
     logging::info(fmt::format("smx zero_grad | epoch {} | step {} | time {} ms",
                               _epoch, step, zero_timer.milliseconds()));
 
-    bolt::utils::Timer forward_timer;
+    bolt::utils::Timer forward_backward_timer;
     auto out = _model->forward(x, y);
-    forward_timer.stop();
-    logging::info(
-        fmt::format("smx forward_backward | epoch {} | step {} | time {} ms",
-                    _epoch, step, forward_timer.milliseconds()));
 
     if (_softmax) {
-      bolt::utils::Timer loss_timer;
       auto loss = smx::crossEntropy(out, y);
-      loss_timer.stop();
-      logging::info(fmt::format("smx loss | epoch {} | step {} | time {} ms",
-                                _epoch, step, loss_timer.milliseconds()));
-
-      bolt::utils::Timer backward_timer;
       loss->backward();
-      backward_timer.stop();
-      logging::info(
-          fmt::format("smx backward | epoch {} | step {} | time {} ms", _epoch,
-                      step, backward_timer.milliseconds()));
 
     } else {
-      bolt::utils::Timer loss_timer;
       auto loss = smx::binaryCrossEntropy(out, y);
-      loss_timer.stop();
-      logging::info(fmt::format("smx loss | epoch {} | step {} | time {} ms",
-                                _epoch, step, loss_timer.milliseconds()));
-
-      bolt::utils::Timer backward_timer;
       loss->backward();
-      backward_timer.stop();
-      logging::info(
-          fmt::format("smx backward | epoch {} | step {} | time {} ms", _epoch,
-                      step, backward_timer.milliseconds()));
     }
+
+    forward_backward_timer.stop();
+    logging::info(
+        fmt::format("smx forward_backward | epoch {} | step {} | time {} ms",
+                    _epoch, step, forward_backward_timer.milliseconds()));
 
     bolt::utils::Timer update_timer;
     _optimizer->step();
