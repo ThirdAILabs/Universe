@@ -18,24 +18,40 @@ inline void sgemsv(const float* x, const float* w, const float* b,
   }
 }
 
-inline void sgemsvGrad(const float* x, float* x_grad, const float* w,
-                       float* w_grad, float* b_grad, size_t input_dim,
-                       const uint32_t* y_indices, const float* y_grad,
-                       size_t y_nonzeros) {
+// inline void sgemsvGrad(const float* x, float* x_grad, const float* w,
+//                        float* w_grad, float* b_grad, size_t input_dim,
+//                        const uint32_t* y_indices, const float* y_grad,
+//                        size_t y_nonzeros) {
+//   std::fill(x_grad, x_grad + input_dim, 0);
+
+//   for (size_t n = 0; n < y_nonzeros; n++) {
+//     size_t neuron = y_indices[n];
+//     const float* w_n = w + neuron * input_dim;
+//     float* w_g_n = w_grad + neuron * input_dim;
+
+//     for (size_t i = 0; i < input_dim; i++) {
+//       w_g_n[i] += y_grad[n] * x[i];
+//       x_grad[i] += y_grad[n] * w_n[i];
+//     }
+
+//     if (b_grad) {
+//       b_grad[neuron] += y_grad[n];
+//     }
+//   }
+// }
+
+inline void xGrad(float* x_grad, const float* w, size_t input_dim,
+                  const uint32_t* y_indices, const float* y_grad,
+                  size_t y_nonzeros) {
   std::fill(x_grad, x_grad + input_dim, 0);
 
   for (size_t n = 0; n < y_nonzeros; n++) {
     size_t neuron = y_indices[n];
     const float* w_n = w + neuron * input_dim;
-    float* w_g_n = w_grad + neuron * input_dim;
 
+#pragma omp simd
     for (size_t i = 0; i < input_dim; i++) {
-      w_g_n[i] += y_grad[n] * x[i];
       x_grad[i] += y_grad[n] * w_n[i];
-    }
-
-    if (b_grad) {
-      b_grad[neuron] += y_grad[n];
     }
   }
 }
@@ -143,6 +159,7 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
   const uint32_t* y_indices_ptr = y_grad->colIndices()->data<uint32_t>();
   const float* y_grad_ptr = y_grad->colValues()->data<float>();
 
+  size_t dim = w->shape(0);
   size_t input_dim = w->shape(1);
   size_t batch_size = x->shape(0);
 
@@ -162,19 +179,61 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
     b_grad_ptr = b_grad->data<float>();
   }
 
-#pragma omp parallel for default(none)                                  \
-    shared(batch_size, input_dim, x_ptr, w_ptr, x_grad_ptr, w_grad_ptr, \
-           b_grad_ptr, y_indices_ptr, y_grad_ptr, y_offsets_ptr)
+#pragma omp parallel for default(none)                                      \
+    shared(batch_size, input_dim, y_offsets_ptr, y_indices_ptr, y_grad_ptr, \
+           w_ptr, x_grad_ptr)
   for (size_t n = 0; n < batch_size; n++) {
-    size_t y_offset = y_offsets_ptr[n];
-
-    sgemsvGrad(/*x=*/x_ptr + n * input_dim,
-               /*x_grad=*/x_grad_ptr + n * input_dim, w_ptr,
-               /*w_grad=*/w_grad_ptr, /*b_grad=*/b_grad_ptr,
-               /*input_dim=*/input_dim, /* y_indices=*/y_indices_ptr + y_offset,
-               /*y_grad=*/y_grad_ptr + y_offset,
-               /*y_nonzeros=*/y_offsets_ptr[n + 1] - y_offset);
+    const size_t y_offset = y_offsets_ptr[n];
+    xGrad(/*x_grad=*/x_grad_ptr + n * input_dim, /*w=*/w_ptr,
+          /*input_dim=*/input_dim, /*y_indices=*/y_indices_ptr + y_offset,
+          /*y_grad=*/y_grad_ptr + y_offset,
+          /*y_nonzeros=*/y_offsets_ptr[n + 1] - y_offset);
   }
+
+  size_t shard_size = std::max(dim / 384, 1UL);
+
+#pragma omp parallel for default(none)                            \
+    shared(batch_size, dim, input_dim, shard_size, y_offsets_ptr, \
+           y_indices_ptr, y_grad_ptr, w_grad_ptr, b_grad_ptr, x_ptr)
+  for (size_t start = 0; start < dim; start += shard_size) {
+    const size_t end = start + shard_size;
+    for (size_t n = 0; n < batch_size; n++) {
+      const size_t y_start = y_offsets_ptr[n], y_end = y_offsets_ptr[n + 1];
+      for (size_t i = y_start; i < y_end; i++) {
+        const size_t neuron = y_indices_ptr[i];
+        if (start <= neuron && neuron < end) {
+          const float neuron_grad = y_grad_ptr[i];
+
+          float* neuron_w_grad = w_grad_ptr + neuron * input_dim;
+          const float* x_n = x_ptr + n * input_dim;
+
+#pragma omp simd
+          for (size_t j = 0; j < input_dim; j++) {
+            neuron_w_grad[j] += neuron_grad * x_n[j];
+          }
+
+          if (b_grad_ptr) {
+            b_grad_ptr[neuron] += neuron_grad;
+          }
+        }
+      }
+    }
+  }
+
+  // #pragma omp parallel for default(none)
+  //     shared(batch_size, input_dim, x_ptr, w_ptr, x_grad_ptr, w_grad_ptr,
+  //            b_grad_ptr, y_indices_ptr, y_grad_ptr, y_offsets_ptr)
+  //   for (size_t n = 0; n < batch_size; n++) {
+  //     size_t y_offset = y_offsets_ptr[n];
+
+  //     sgemsvGrad(/*x=*/x_ptr + n * input_dim,
+  //                /*x_grad=*/x_grad_ptr + n * input_dim, w_ptr,
+  //                /*w_grad=*/w_grad_ptr, /*b_grad=*/b_grad_ptr,
+  //                /*input_dim=*/input_dim, /* y_indices=*/y_indices_ptr +
+  //                y_offset,
+  //                /*y_grad=*/y_grad_ptr + y_offset,
+  //                /*y_nonzeros=*/y_offsets_ptr[n + 1] - y_offset);
+  //   }
 
   return {x_grad, w_grad, b_grad};
 }

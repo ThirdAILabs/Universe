@@ -87,20 +87,47 @@ std::pair<DenseTensorPtr, DenseTensorPtr> embeddingGrad(
   const float* out_grad_ptr = out_grad->data<float>();
 
   size_t batch_size = indices->nRows();
+  size_t n_embs = indices->nDenseCols();
   size_t emb_dim = out_grad->shape(1);
 
   auto emb_grad = zeros(Shape(indices->shape(1), emb_dim));
   float* emb_grad_ptr = emb_grad->data<float>();
 
-#pragma omp parallel for default(none)                                     \
-    shared(batch_size, row_offsets, col_indices, col_values, emb_grad_ptr, \
-           emb_dim, out_grad_ptr)
-  for (size_t i = 0; i < batch_size; i++) {
-    size_t offset = row_offsets[i];
-    embeddingGradScatter(col_indices + offset, col_values + offset,
-                         row_offsets[i + 1] - offset, emb_grad_ptr, emb_dim,
-                         out_grad_ptr + i * emb_dim);
+  size_t shard_size = std::max(n_embs / 384, 1UL);
+
+#pragma omp parallel for default(none)                                        \
+    shared(n_embs, emb_dim, batch_size, shard_size, row_offsets, col_indices, \
+           col_values, emb_grad_ptr, out_grad_ptr)
+  for (size_t start = 0; start < n_embs; start += shard_size) {
+    size_t end = start + shard_size;
+
+    for (size_t i = 0; i < batch_size; i++) {
+      size_t row_start = row_offsets[i], row_end = row_offsets[i + 1];
+      for (size_t j = row_start; j < row_end; j++) {
+        size_t token = col_indices[j];
+        if (start <= token && token < end) {
+          float token_weight = col_values[j];
+
+          float* token_grad = emb_grad_ptr + token * emb_dim;
+          const float* sample_grad = out_grad_ptr + i * emb_dim;
+
+#pragma omp simd
+          for (size_t k = 0; k < emb_dim; k++) {
+            token_grad[k] += token_weight * sample_grad[k];
+          }
+        }
+      }
+    }
   }
+
+  // #pragma omp parallel for default(none) shared(batch_size, row_offsets,
+  //        col_indices, col_values, emb_grad_ptr, emb_dim, out_grad_ptr)
+  // for (size_t i = 0; i < batch_size; i++) {
+  //   size_t offset = row_offsets[i];
+  //   embeddingGradScatter(col_indices + offset, col_values + offset,
+  //                        row_offsets[i + 1] - offset, emb_grad_ptr, emb_dim,
+  //                        out_grad_ptr + i * emb_dim);
+  // }
 
   DenseTensorPtr bias_grad = nullptr;
   if (bias) {

@@ -85,7 +85,7 @@ def test_sparse_linear_no_label(bias):
     run_sparse_linear_test(
         labels=None,
         indices_check=lambda a, b: None,
-        exact_param_grad_check=False,
+        exact_param_grad_check=True,
         bias=bias,
     )
 
@@ -100,7 +100,7 @@ def test_sparse_linear_single_label(bias):
     run_sparse_linear_test(
         labels=smx.Variable(smx.from_numpy(labels), requires_grad=False),
         indices_check=indices_check,
-        exact_param_grad_check=False,
+        exact_param_grad_check=True,
         bias=bias,
     )
 
@@ -127,7 +127,7 @@ def test_sparse_linear_multi_label(bias):
             requires_grad=False,
         ),
         indices_check=indices_check,
-        exact_param_grad_check=False,
+        exact_param_grad_check=True,
         bias=bias,
     )
 
