@@ -25,8 +25,8 @@ TrainSamples = List
 class MachMixture(Model):
     def __init__(
         self,
-        number_shards: int,
-        number_models_per_shard: int = 1,
+        num_shards: int,
+        num_models_per_shard: int = 1,
         id_col: str = "DOC_ID",
         id_delimiter: str = " ",
         query_col: str = "QUERY",
@@ -46,8 +46,8 @@ class MachMixture(Model):
         self.query_col = query_col
 
         # These parameters are specific to Mach Mixture
-        self.number_shards = number_shards
-        self.number_models_per_shard = number_models_per_shard
+        self.num_shards = num_shards
+        self.num_models_per_shard = num_models_per_shard
 
         if label_to_segment_map == None:
             self.label_to_segment_map = defaultdict(list)
@@ -58,7 +58,7 @@ class MachMixture(Model):
 
         self.ensembles: List[MultiMach] = [
             MultiMach(
-                number_models=number_models_per_shard,
+                number_models=num_models_per_shard,
                 id_col=id_col,
                 id_delimiter=id_delimiter,
                 query_col=query_col,
@@ -72,7 +72,7 @@ class MachMixture(Model):
                 model_config=model_config,
                 mach_index_seed_offset=j * 341,
             )
-            for j in range(self.number_models_per_shard)
+            for j in range(self.num_shards)
         ]
 
     @property
@@ -88,7 +88,7 @@ class MachMixture(Model):
         for ensemble in self.ensembles:
             ensemble.set_mach_sampling_threshold(threshold)
 
-    def get_model(self) -> List[bolt.UniversalDeepTransformer]:
+    def get_model(self) -> List[MultiMach]:
         for ensemble in self.ensembles:
             if not ensemble.get_model():
                 return None
@@ -149,17 +149,15 @@ class MachMixture(Model):
         # If checkpoint_dir in checkpoint_config is /john/doe and number of models is 2, the underlying mach models will make checkpoint at /john/doe/0 and /john/doe/1 depending on model ids.
         ensemble_checkpoint_configs = generate_checkpoint_configs_for_ensembles(
             config=checkpoint_config,
-            number_ensembles=self.number_shards,
-            number_models_per_ensemble=self.number_models_per_shard,
+            number_ensembles=self.num_shards,
+            number_models_per_ensemble=self.num_models_per_shard,
         )
 
         self.load_meta(checkpoint_config.checkpoint_dir)
 
         # The training manager corresponding to a model loads all the needed to complete the training such as model, document sources, tracker, etc.
         training_managers = []
-        for _, (ensemble, config) in enumerate(
-            zip(self.ensembles, ensemble_checkpoint_configs)
-        ):
+        for ensemble, config in zip(self.ensembles, ensemble_checkpoint_configs):
             ensemble_training_managers = []
             for model_id, model in enumerate(ensemble.models):
                 modelwise_training_manager = TrainingProgressManager.from_checkpoint(
@@ -197,7 +195,7 @@ class MachMixture(Model):
         introduce_data_sources = shard_data_source(
             data_source=intro_documents,
             label_to_segment_map=self.label_to_segment_map,
-            number_shards=self.number_shards,
+            number_shards=self.num_shards,
             update_segment_map=True,
         )
 
@@ -205,7 +203,7 @@ class MachMixture(Model):
         train_data_sources = shard_data_source(
             train_documents,
             label_to_segment_map=self.label_to_segment_map,
-            number_shards=self.number_shards,
+            number_shards=self.num_shards,
             update_segment_map=False,
         )
 
@@ -215,8 +213,8 @@ class MachMixture(Model):
 
         ensemble_checkpoint_configs = generate_checkpoint_configs_for_ensembles(
             config=checkpoint_config,
-            number_ensembles=self.number_shards,
-            number_models_per_ensemble=self.number_models_per_shard,
+            number_ensembles=self.num_shards,
+            number_models_per_ensemble=self.num_models_per_shard,
         )
 
         training_managers = []
@@ -289,9 +287,9 @@ class MachMixture(Model):
 
         return joined_results
 
-    def query_mach(self, samples: List, n_results: int, regular_decoding: bool):
+    def query_mach(self, samples: List, n_results: int, label_probing: bool):
 
-        if not regular_decoding:
+        if not label_probing:
             models = []
             for ensemble in self.ensembles:
                 for model in ensemble.models:
@@ -312,7 +310,7 @@ class MachMixture(Model):
                 ensemble.query_mach(
                     samples=samples,
                     n_results=n_results,
-                    regular_decoding=regular_decoding,
+                    label_probing=label_probing,
                 )
                 for ensemble in self.ensembles
             ]
@@ -339,7 +337,7 @@ class MachMixture(Model):
         samples: InferSamples,
         n_results: int,
         retriever=None,
-        regular_decoding=True,
+        label_probing=True,
         **kwargs,
     ) -> Predictions:
         if not retriever:
@@ -348,7 +346,7 @@ class MachMixture(Model):
                 retriever = "mach"
             else:
                 mach_results = self.query_mach(
-                    samples, n_results=n_results, regular_decoding=regular_decoding
+                    samples, n_results=n_results, label_probing=label_probing
                 )
                 return [
                     merge_results(mach_res, index_res, n_results)
@@ -357,7 +355,7 @@ class MachMixture(Model):
 
         if retriever == "mach":
             return self.query_mach(
-                samples=samples, n_results=n_results, regular_decoding=regular_decoding
+                samples=samples, n_results=n_results, label_probing=label_probing
             )
 
         if retriever == "inverted_index":
@@ -376,7 +374,7 @@ class MachMixture(Model):
     def _shard_label_constraints(
         self, entities: List[List[int]]
     ) -> List[List[List[int]]]:
-        shards = [[[] for _ in range(len(entities))] for _ in range(self.number_shards)]
+        shards = [[[] for _ in range(len(entities))] for _ in range(self.num_shards)]
         for i in range(len(entities)):
             for label in entities[i]:
                 model_ids = self.label_to_segment_map.get(label)
@@ -439,7 +437,7 @@ class MachMixture(Model):
     def _shard_upvote_pairs(
         self, source_target_pairs: List[Tuple[str, int]]
     ) -> List[List[Tuple[str, int]]]:
-        shards = [[] for _ in range(self.number_shards)]
+        shards = [[] for _ in range(self.num_shards)]
         for pair in source_target_pairs:
             model_ids = self.label_to_segment_map.get(pair[1])
             if model_ids is None:
@@ -479,7 +477,7 @@ class MachMixture(Model):
     ):
         balancing_data_shards = shard_data_source(
             data_source=balancing_data,
-            number_shards=self.number_shards,
+            number_shards=self.num_shards,
             label_to_segment_map=self.label_to_segment_map,
             update_segment_map=False,
         )
@@ -510,7 +508,7 @@ class MachMixture(Model):
     ):
         supervised_data_source_shards = shard_data_source(
             data_source=supervised_data_source,
-            number_shards=self.number_shards,
+            number_shards=self.num_shards,
             label_to_segment_map=self.label_to_segment_map,
             update_segment_map=False,
         )

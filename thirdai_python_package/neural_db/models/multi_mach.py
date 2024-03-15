@@ -10,17 +10,18 @@ from ..trainer.training_progress_manager import TrainingProgressManager
 from ..utils import clean_text
 
 
-def aggregate_results(results):
-    joined_results = []
+def aggregate_ensemble_results(results):
+    final_results = []
     for i in range(len(results[0])):
-        joined_result = []
-        for result in results:
-            joined_result.extend(result[i])
-        joined_results.append(joined_result)
+        sample_result = defaultdict(float)
+        for model_result in results:
+            for res in model_result[i]:
+                sample_result[res[0]] += res[1]
 
-        joined_result.sort(key=lambda x: x[1], reverse=True)
-
-    return joined_results
+        result = [(key, value) for key, value in sample_result.items()]
+        result.sort(key=lambda x: x[1], reverse=True)
+        final_results.append(result)
+    return final_results
 
 
 class MultiMach:
@@ -114,22 +115,22 @@ class MultiMach:
     def searchable(self) -> bool:
         return self.n_ids != 0
 
-    def query_mach(self, samples: List, n_results: int, regular_decoding: bool):
+    def query_mach(self, samples: List, n_results: int, label_probing: bool):
         for model in self.models:
             model.model.set_decode_params(
                 min(self.n_ids, n_results), min(self.n_ids, 100)
             )
-        
+
         # regular decoding works only when each model has a single hash
         if self.models[0].extreme_num_hashes != 1:
-            regular_decoding = False
+            label_probing = False
 
-        if not regular_decoding:
+        if not label_probing:
             mach_results = bolt.UniversalDeepTransformer.parallel_inference(
                 models=[model.model for model in self.models],
                 batch=[{self.query_col: clean_text(text)} for text in samples],
             )
-            return aggregate_results(mach_results)
+            return aggregate_ensemble_results(mach_results)
 
         else:
             mach_results = bolt.UniversalDeepTransformer.regular_decode_mulitple_mach(

@@ -44,8 +44,8 @@ class NeuralDB:
     def __init__(
         self,
         user_id: str = "user",
-        number_shards: int = 1,
-        number_models_per_shard: int = 1,
+        num_shards: int = 1,
+        num_models_per_shard: int = 1,
         **kwargs,
     ) -> None:
         """
@@ -65,16 +65,16 @@ class NeuralDB:
         # We read savable_state from kwargs so that it doesn't appear in the
         # arguments list and confuse users.
         if "savable_state" not in kwargs:
-            if number_shards <= 0:
+            if num_shards <= 0:
                 raise Exception(
-                    f"Invalid Value Passed for number_shards : {number_shards}."
+                    f"Invalid Value Passed for num_shards : {num_shards}."
                     " NeuralDB can only be initialized with a positive number of"
                     " models."
                 )
-            if number_shards > 1:
+            if num_shards > 1:
                 model = MachMixture(
-                    number_shards=number_shards,
-                    number_models_per_shard=number_models_per_shard,
+                    num_shards=num_shards,
+                    num_models_per_shard=num_models_per_shard,
                     id_col="id",
                     query_col="query",
                     **kwargs,
@@ -651,6 +651,7 @@ class NeuralDB:
         rerank_threshold=1.5,
         top_k_threshold=None,
         retriever=None,
+        label_probing=False,
     ) -> List[Reference]:
         """
         Searches the contents of the NeuralDB for documents relevant to the given query.
@@ -704,6 +705,7 @@ class NeuralDB:
             rerank_threshold=rerank_threshold,
             top_k_threshold=top_k_threshold,
             retriever=retriever,
+            label_probing=label_probing,
         )[0]
 
     def search_batch(
@@ -716,6 +718,7 @@ class NeuralDB:
         rerank_threshold=1.5,
         top_k_threshold=None,
         retriever=None,
+        label_probing=False,
     ):
         """
         Runs search on a batch of queries for much faster throughput.
@@ -736,11 +739,19 @@ class NeuralDB:
                 samples=queries, entities=[matching_entities], n_results=top_k_to_search
             )
         else:
-            queries_result_ids = self._savable_state.model.infer_labels(
-                samples=queries,
-                n_results=top_k_to_search,
-                retriever="mach" if rerank else retriever,
-            )
+            if isinstance(self._savable_state.model, MachMixture):
+                queries_result_ids = self._savable_state.model.infer_labels(
+                    samples=queries,
+                    n_results=top_k_to_search,
+                    retriever="mach" if rerank else retriever,
+                    label_probing=label_probing,
+                )
+            else:
+                queries_result_ids = self._savable_state.model.infer_labels(
+                    samples=queries,
+                    n_results=top_k_to_search,
+                    retriever="mach" if rerank else retriever,
+                )
 
         return [
             self._get_query_references(

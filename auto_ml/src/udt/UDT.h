@@ -28,12 +28,6 @@ namespace thirdai::automl::udt {
  * common point where we can implement common features, for instance telemetry,
  * that we want for all types of models.
  */
-struct BestScore {
-  bool operator()(const std::pair<uint32_t, float>& a,
-                  const std::pair<uint32_t, float>& b) {
-    return a.second > b.second;
-  }
-};
 class UDT {
  public:
   UDT(ColumnDataTypes data_types,
