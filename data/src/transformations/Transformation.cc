@@ -19,6 +19,7 @@
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/StringIDLookup.h>
 #include <data/src/transformations/Tabular.h>
+#include <data/src/transformations/TextCompat.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
 #include <memory>
@@ -65,8 +66,10 @@ TransformationPtr Transformation::fromArchive(const ar::Archive& archive) {
   HANDLE_TYPE(StringIDLookup)
   HANDLE_TYPE(Tabular)
   HANDLE_TYPE(TextTokenizer)
+  HANDLE_TYPE(TextCompat)
 
-  throw std::runtime_error("Invalid transformation type in fromProto.");
+  throw std::runtime_error("Invalid transformation type '" + type +
+                           "' in fromArchive.");
 }
 
 std::string Transformation::serialize() const {
