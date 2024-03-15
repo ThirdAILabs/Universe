@@ -26,7 +26,7 @@ def autotune_from_base_min_max_epochs(size):
 
 def training_arguments_from_scratch(size):
     min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(size)
-    learning_rate = 0.005
+    learning_rate = 0.005 if size < 1000 else 0.001
     freeze_before_train = False
 
     return {
