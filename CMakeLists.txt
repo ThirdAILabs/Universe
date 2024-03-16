@@ -210,7 +210,7 @@ set(THIRDAI_ASAN_COMPILE_OPTIONS $<$<CONFIG:RelWithAsan>:-fsanitize=address>
 # CMake command-line supply.
 
 set(THIRDAI_GTEST_DISCOVERY_TIMEOUT
-    100
+    1000
     CACHE STRING
           "Timeout for GoogleTest discovery, configurable from command-line.")
 
