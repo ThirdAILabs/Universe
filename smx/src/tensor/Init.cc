@@ -1,4 +1,6 @@
 #include "Init.h"
+#include <bolt/src/utils/Timer.h>
+#include <utils/Logging.h>
 #include <algorithm>
 #include <random>
 
@@ -9,8 +11,19 @@ DenseTensorPtr zeros(const Shape& shape) { return fill(shape, 0.F); }
 DenseTensorPtr ones(const Shape& shape) { return fill(shape, 1.F); }
 
 DenseTensorPtr fill(const Shape& shape, float value) {
+  bolt::utils::Timer alloc_timer;
   auto tensor = DenseTensor::make(shape, Dtype::f32);
+  alloc_timer.stop();
+  std::cerr << "fill alloc shape=" << shape.toString() << " time "
+            << alloc_timer.milliseconds() << " ms" << std::endl;
+
+  bolt::utils::Timer fill_timer;
+
   std::fill_n(tensor->data<float>(), tensor->size(), value);
+
+  fill_timer.stop();
+  std::cerr << "fill fill shape=" << shape.toString() << " time "
+            << fill_timer.milliseconds() << " ms" << std::endl;
   return tensor;
 }
 
