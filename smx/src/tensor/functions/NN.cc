@@ -1,9 +1,7 @@
-#include <bolt/src/utils/Timer.h>
 #include <smx/src/tensor/CsrTensor.h>
 #include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Functions.h>
 #include <smx/src/tensor/Init.h>
-#include <utils/Logging.h>
 #include <algorithm>
 #include <cstring>
 #include <iostream>
@@ -94,19 +92,12 @@ std::pair<DenseTensorPtr, DenseTensorPtr> embeddingGrad(
   size_t n_embs = indices->nDenseCols();
   size_t emb_dim = out_grad->shape(1);
 
-  bolt::utils::Timer alloc_timer;
   auto emb_grad =
       DenseTensor::make(Shape(indices->shape(1), emb_dim), Dtype::f32);
-
-  alloc_timer.stop();
-  logging::info(fmt::format("smx embedding grad alloc | time {} ms",
-                            alloc_timer.milliseconds()));
 
   float* emb_grad_ptr = emb_grad->data<float>();
 
   size_t shard_size = std::max(n_embs / 384, 1UL);
-
-  bolt::utils::Timer loop_timer;
 
 #pragma omp parallel for default(none)                                        \
     shared(n_embs, emb_dim, batch_size, shard_size, row_offsets, col_indices, \
@@ -120,13 +111,14 @@ std::pair<DenseTensorPtr, DenseTensorPtr> embeddingGrad(
     for (size_t i = 0; i < batch_size; i++) {
       size_t row_start = row_offsets[i], row_end = row_offsets[i + 1];
 
-      row_start = std::lower_bound(col_indices + row_start,
-                                   col_indices + row_end, start) -
-                  col_indices;
+      // row_start = std::lower_bound(col_indices + row_start,
+      //                              col_indices + row_end, start) -
+      //             col_indices;
 
       for (size_t j = row_start; j < row_end; j++) {
         size_t token = col_indices[j];
-        if (token < end) {
+        // if (token < end) {
+        if (start <= token && token < end) {
           float token_weight = col_values[j];
 
           float* token_grad = emb_grad_ptr + token * emb_dim;
@@ -136,16 +128,13 @@ std::pair<DenseTensorPtr, DenseTensorPtr> embeddingGrad(
           for (size_t k = 0; k < emb_dim; k++) {
             token_grad[k] += token_weight * sample_grad[k];
           }
-        } else {
-          break;
         }
+        //  else {
+        //   break;
+        // }
       }
     }
   }
-
-  loop_timer.stop();
-  logging::info(fmt::format("smx embedding backward loop | time {} ms",
-                            loop_timer.milliseconds()));
 
   // #pragma omp parallel for default(none) shared(batch_size, row_offsets,
   //        col_indices, col_values, emb_grad_ptr, emb_dim, out_grad_ptr)

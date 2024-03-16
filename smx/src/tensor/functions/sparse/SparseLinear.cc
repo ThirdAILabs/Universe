@@ -1,8 +1,6 @@
-#include <bolt/src/utils/Timer.h>
 #include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Functions.h>
 #include <smx/src/tensor/Init.h>
-#include <utils/Logging.h>
 
 namespace thirdai::smx {
 
@@ -168,14 +166,7 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
   const float* w_ptr = w->data<float>();
   const float* x_ptr = x->data<float>();
 
-  bolt::utils::Timer alloc_timer;
-
   auto w_grad = DenseTensor::make(w->shape(), w->dtype());
-
-  alloc_timer.stop();
-  logging::info(fmt::format("smx embedding grad alloc | time {} ms",
-                            alloc_timer.milliseconds()));
-
   auto x_grad = DenseTensor::make(x->shape(), x->dtype());
 
   float* w_grad_ptr = w_grad->data<float>();
@@ -188,8 +179,6 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
     b_grad_ptr = b_grad->data<float>();
   }
 
-  bolt::utils::Timer xgrad_timer;
-
 #pragma omp parallel for default(none)                                      \
     shared(batch_size, input_dim, y_offsets_ptr, y_indices_ptr, y_grad_ptr, \
            w_ptr, x_grad_ptr)
@@ -201,13 +190,7 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
           /*y_nonzeros=*/y_offsets_ptr[n + 1] - y_offset);
   }
 
-  xgrad_timer.stop();
-  logging::info(fmt::format("smx linear backward xgrad loop | time {} ms",
-                            xgrad_timer.milliseconds()));
-
   size_t shard_size = std::max(dim / 384, 1UL);
-
-  bolt::utils::Timer wgrad_timer;
 
 #pragma omp parallel for default(none)                            \
     shared(batch_size, dim, input_dim, shard_size, y_offsets_ptr, \
@@ -240,10 +223,6 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
       }
     }
   }
-
-  wgrad_timer.stop();
-  logging::info(fmt::format("smx linear backward wgrad loop | time {} ms",
-                            wgrad_timer.milliseconds()));
 
   // #pragma omp parallel for default(none)
   //     shared(batch_size, input_dim, x_ptr, w_ptr, x_grad_ptr, w_grad_ptr,
