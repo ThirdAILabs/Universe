@@ -5,6 +5,7 @@
 #include <smx/src/tensor/Init.h>
 #include <utils/Logging.h>
 #include <algorithm>
+#include <cstring>
 #include <iostream>
 
 namespace thirdai::smx {
@@ -94,7 +95,8 @@ std::pair<DenseTensorPtr, DenseTensorPtr> embeddingGrad(
   size_t emb_dim = out_grad->shape(1);
 
   bolt::utils::Timer alloc_timer;
-  auto emb_grad = zeros(Shape(indices->shape(1), emb_dim));
+  auto emb_grad =
+      DenseTensor::make(Shape(indices->shape(1), emb_dim), Dtype::f32);
 
   alloc_timer.stop();
   logging::info(fmt::format("smx embedding grad alloc | time {} ms",
@@ -110,7 +112,10 @@ std::pair<DenseTensorPtr, DenseTensorPtr> embeddingGrad(
     shared(n_embs, emb_dim, batch_size, shard_size, row_offsets, col_indices, \
            col_values, emb_grad_ptr, out_grad_ptr)
   for (size_t start = 0; start < n_embs; start += shard_size) {
-    size_t end = start + shard_size;
+    size_t end = std::min(start + shard_size, n_embs);
+
+    std::memset(emb_grad_ptr + start * emb_dim, 0,
+                (end - start) * emb_dim * sizeof(float));
 
     for (size_t i = 0; i < batch_size; i++) {
       size_t row_start = row_offsets[i], row_end = row_offsets[i + 1];

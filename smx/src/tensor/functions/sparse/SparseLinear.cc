@@ -170,7 +170,7 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
 
   bolt::utils::Timer alloc_timer;
 
-  auto w_grad = zeros(w->shape());
+  auto w_grad = DenseTensor::make(w->shape(), w->dtype());
 
   alloc_timer.stop();
   logging::info(fmt::format("smx embedding grad alloc | time {} ms",
@@ -213,7 +213,11 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
     shared(batch_size, dim, input_dim, shard_size, y_offsets_ptr, \
            y_indices_ptr, y_grad_ptr, w_grad_ptr, b_grad_ptr, x_ptr)
   for (size_t start = 0; start < dim; start += shard_size) {
-    const size_t end = start + shard_size;
+    const size_t end = std::min(start + shard_size, dim);
+
+    std::memset(w_grad_ptr + start * input_dim, 0,
+                (end - start) * input_dim * sizeof(float));
+
     for (size_t n = 0; n < batch_size; n++) {
       const size_t y_start = y_offsets_ptr[n], y_end = y_offsets_ptr[n + 1];
       for (size_t i = y_start; i < y_end; i++) {
