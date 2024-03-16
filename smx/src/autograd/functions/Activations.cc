@@ -1,14 +1,23 @@
 #include "Activations.h"
+#include <bolt/src/utils/Timer.h>
 #include <smx/src/tensor/Functions.h>
+#include <utils/Logging.h>
 #include <stdexcept>
 
 namespace thirdai::smx {
 
 VariablePtr relu(const VariablePtr& in) {
+  bolt::utils::Timer relu_for_timer;
   auto out = relu(in->tensor());
+  relu_for_timer.stop();
+
+  logging::info(fmt::format("smx relu forward | time {} ms",
+                            relu_for_timer.milliseconds()));
 
   GradFunc grad_func = [out](const TensorPtr& out_grad,
                              const std::vector<VariablePtr>& inputs) {
+    bolt::utils::Timer relu_backward_timer;
+
     if (!inputs.at(0)->requiresGrad()) {
       return;
     }
@@ -16,6 +25,11 @@ VariablePtr relu(const VariablePtr& in) {
     auto in_grad = reluGrad(out, out_grad);
 
     inputs.at(0)->addGradient(in_grad);
+
+    relu_backward_timer.stop();
+
+    logging::info(fmt::format("smx relu backward | time {} ms",
+                              relu_backward_timer.milliseconds()));
   };
 
   return Variable::make(out, grad_func, {in});

@@ -56,9 +56,14 @@ VariablePtr linear(const VariablePtr& x, const VariablePtr& w,
                    const VariablePtr& b, float sparsity,
                    const NeuronIndexPtr& neuron_index,
                    const VariablePtr& labels) {
+  bolt::utils::Timer lin_for_timer;
   auto out = linear(dense(x->tensor()), dense(w->tensor()),
                     b ? dense(b->tensor()) : nullptr, sparsity, neuron_index,
                     labels ? labels->tensor() : nullptr);
+
+  lin_for_timer.stop();
+  logging::info(fmt::format("smx linear forward | time {} ms",
+                            lin_for_timer.milliseconds()));
 
   GradFunc grad_func = [](const TensorPtr& out_grad,
                           const std::vector<VariablePtr>& inputs) {
