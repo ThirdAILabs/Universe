@@ -93,7 +93,13 @@ std::pair<DenseTensorPtr, DenseTensorPtr> embeddingGrad(
   size_t n_embs = indices->nDenseCols();
   size_t emb_dim = out_grad->shape(1);
 
+  bolt::utils::Timer alloc_timer;
   auto emb_grad = zeros(Shape(indices->shape(1), emb_dim));
+
+  alloc_timer.stop();
+  logging::info(fmt::format("smx embedding grad alloc | time {} ms",
+                            alloc_timer.milliseconds()));
+
   float* emb_grad_ptr = emb_grad->data<float>();
 
   size_t shard_size = std::max(n_embs / 384, 1UL);

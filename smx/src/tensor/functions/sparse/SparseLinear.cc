@@ -168,7 +168,14 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
   const float* w_ptr = w->data<float>();
   const float* x_ptr = x->data<float>();
 
+  bolt::utils::Timer alloc_timer;
+
   auto w_grad = zeros(w->shape());
+
+  alloc_timer.stop();
+  logging::info(fmt::format("smx embedding grad alloc | time {} ms",
+                            alloc_timer.milliseconds()));
+
   auto x_grad = DenseTensor::make(x->shape(), x->dtype());
 
   float* w_grad_ptr = w_grad->data<float>();
