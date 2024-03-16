@@ -14,8 +14,10 @@ def test_smx_embeddings(bias):
     bias_np = np.random.randint(0, 10000, size=(emb_dim)).astype(np.float32)
 
     offsets_np = np.array([0, 3, 7, 9, 13], dtype=np.uint32)
-    indices_np = np.array([5, 3, 4, 7, 11, 19, 15, 6, 1, 16, 18, 0, 8], dtype=np.uint32)
-    values_np = np.array([1, 2, 3, 1, 2, 3, 4, 1, 2, 1, 2, 3, 4])
+    # indices_np = np.array([5, 3, 4, 7, 11, 19, 15, 6, 1, 16, 18, 0, 8], dtype=np.uint32)
+    # values_np = np.array([1, 2, 3, 1, 2, 3, 4, 1, 2, 1, 2, 3, 4])
+    indices_np = np.array([3, 4, 5, 7, 11, 15, 19, 1, 6, 0, 8, 16, 18], dtype=np.uint32)
+    values_np = np.array([2, 3, 1, 1, 2, 4, 3, 2, 1, 3, 4, 1, 2])
 
     indices = smx.CsrTensor(
         row_offsets=smx.from_numpy(offsets_np),

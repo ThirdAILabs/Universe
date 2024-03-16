@@ -61,6 +61,7 @@ ColumnMap TextTokenizer::apply(ColumnMap columns, State& state) const {
       output_indices[i] = std::move(dedup_indices);
       output_values[i] = std::move(dedup_values);
     } else {
+      std::sort(indices.begin(), indices.end());
       output_indices[i] = std::move(indices);
     }
   }
