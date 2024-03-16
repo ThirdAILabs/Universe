@@ -44,8 +44,6 @@ jobs:
         with:           
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
       - name: Run all c++ tests
         run: |
           bin/build.py -t all -f THIRDAI_BUILD_LICENSE -m RelWithAsan
