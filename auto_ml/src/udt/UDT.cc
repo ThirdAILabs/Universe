@@ -497,7 +497,7 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
   std::vector<Scores> output(batch.size());
 
 #pragma omp parallel for default(none) \
-    shared(batch, scores, top_k_to_return, output, dynamic_casted_mach_models)
+    shared(batch, scores, top_k_to_return, output, dynamic_casted_mach_models) if(batch.size() > 1)
   for (size_t i = 0; i < batch.size(); i++) {
     std::unordered_map<uint32_t, float> candidate_scores;
     for (size_t m = 0; m < dynamic_casted_mach_models.size(); m++) {
