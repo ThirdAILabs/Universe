@@ -83,16 +83,21 @@ py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
                                 const std::vector<std::string>& val_metrics,
                                 const std::vector<CallbackPtr>& callbacks,
                                 TrainOptions options,
-                                const bolt::DistributedCommPtr& comm) {
-  auto train_data_loader =
-      _featurizer->getDataLoader(data, options.batchSize(), /* shuffle= */ true,
-                                 options.verbose, options.shuffle_config);
+                                const bolt::DistributedCommPtr& comm,
+                                py::kwargs kwargs) {
+  auto splade_config = getSpladeConfig(kwargs);
+  bool splade_in_val = getSpladeValidationOption(kwargs);
+
+  auto train_data_loader = _featurizer->getDataLoader(
+      data, options.batchSize(), /* shuffle= */ true, options.verbose,
+      splade_config, options.shuffle_config);
 
   data::LoaderPtr val_data_loader;
   if (val_data) {
-    val_data_loader =
-        _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
-                                   /* shuffle= */ false, options.verbose);
+    val_data_loader = _featurizer->getDataLoader(
+        val_data, defaults::BATCH_SIZE,
+        /* shuffle= */ false, options.verbose,
+        splade_in_val ? splade_config : std::nullopt);
   }
 
   return _classifier->train(train_data_loader, learning_rate, epochs,
@@ -142,11 +147,12 @@ void UDTClassifier::setOutputSparsity(float sparsity,
 py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
                                    const std::vector<std::string>& metrics,
                                    bool sparse_inference, bool verbose,
-                                   std::optional<uint32_t> top_k) {
-  (void)top_k;
+                                   py::kwargs kwargs) {
+  auto splade_config = getSpladeConfig(kwargs);
 
-  auto dataset = _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
-                                            /* shuffle= */ false, verbose);
+  auto dataset =
+      _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
+                                 /* shuffle= */ false, verbose, splade_config);
 
   return _classifier->evaluate(dataset, metrics, sparse_inference, verbose);
 }
@@ -220,17 +226,22 @@ py::object UDTClassifier::coldstart(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::DistributedCommPtr& comm) {
+    const bolt::DistributedCommPtr& comm, const py::kwargs& kwargs) {
+  auto splade_config = getSpladeConfig(kwargs);
+  auto splade_in_val = getSpladeValidationOption(kwargs);
+
   auto train_data_loader = _featurizer->getColdStartDataLoader(
       data, strong_column_names, weak_column_names, variable_length,
-      /* fast_approximation= */ false, options.batchSize(),
-      /* shuffle= */ true, options.verbose, options.shuffle_config);
+      /*splade_config=*/splade_config, /* fast_approximation= */ false,
+      options.batchSize(), /* shuffle= */ true, options.verbose,
+      options.shuffle_config);
 
   data::LoaderPtr val_data_loader;
   if (val_data) {
-    val_data_loader =
-        _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
-                                   /* shuffle= */ false, options.verbose);
+    val_data_loader = _featurizer->getDataLoader(
+        val_data, defaults::BATCH_SIZE,
+        /* shuffle= */ false, options.verbose,
+        splade_in_val ? splade_config : std::nullopt);
   }
 
   return _classifier->train(train_data_loader, learning_rate, epochs,
