@@ -533,6 +533,7 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
     std::vector<std::unordered_map<uint32_t, float>>
         individual_candidate_scores(dynamic_casted_mach_models.size());
     auto candidate_start = std::chrono::high_resolution_clock::now();
+    auto candidate_creation_start = std::chrono::high_resolution_clock::now();
     std::exception_ptr error;
 #pragma omp parallel for default(none) shared( \
     dynamic_casted_mach_models, individual_candidate_scores, scores, i, error)
@@ -555,43 +556,44 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
         error = std::current_exception();
       }
     }
+    auto candidate_creation_end = std::chrono::high_resolution_clock::now();
 
     if (error) {
       std::rethrow_exception(error);
     }
+
+    auto candidate_score_fill_start = std::chrono::high_resolution_clock::now();
     std::unordered_map<uint32_t, float> candidate_scores;
     for (const auto& scores_map : individual_candidate_scores) {
       // Insert each element from the current map into the combined map
       // This will overwrite the value if the key already exists
       candidate_scores.insert(scores_map.begin(), scores_map.end());
     }
-    for (uint32_t i = 0; i < individual_candidate_scores.size(); i += 1) {
-      individual_candidate_scores[i].insert(candidate_scores.begin(),
-                                            candidate_scores.end());
-    }
+    auto candidate_score_fill_end = std::chrono::high_resolution_clock::now();
 
     auto candidate_end = std::chrono::high_resolution_clock::now();
+    auto model_inference_start = std::chrono::high_resolution_clock::now();
 
-#pragma omp parallel for default(none) shared( \
-    dynamic_casted_mach_models, individual_candidate_scores, scores, i, error)
+#pragma omp parallel for default(none) \
+    shared(dynamic_casted_mach_models, candidate_scores, scores, i, error)
     for (size_t m = 0; m < dynamic_casted_mach_models.size(); m++) {
       try {
         const auto& index = dynamic_casted_mach_models[m]->getIndex();
         const BoltVector& score_vec = scores[m]->getVector(i);
         if (score_vec.isDense()) {
           const float* activations = scores[m]->getVector(i).activations;
-          for (auto& [id, score] : individual_candidate_scores[m]) {
-            score += activations[index->getHashes(id)[0]];
+          for (auto& [id, score] : candidate_scores) {
+            score += activations[index->getHashes(id)[0]]; 
           }
         } else {
           std::unordered_map<uint32_t, float> score_map;
           for (size_t j = 0; j < score_vec.len; j++) {
             score_map[score_vec.active_neurons[j]] = score_vec.activations[j];
           }
-          for (auto& [id, score] : individual_candidate_scores[m]) {
+          for (auto& [id, score] : candidate_scores) {
             uint32_t hash = index->getHashes(id)[0];
             if (score_map.count(hash)) {
-              score += score_map[hash];
+              score += score_map[hash]; 
             }
           }
         }
@@ -601,13 +603,9 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
       }
     }
 
+    auto model_inference_end = std::chrono::high_resolution_clock::now();
     if (error) {
       std::rethrow_exception(error);
-    }
-    for (auto& [id, score] : candidate_scores) {
-      for (auto& scores_map : individual_candidate_scores) {
-        score += scores_map[id];
-      }
     }
     auto batch_probing_end = std::chrono::high_resolution_clock::now();
     auto single_sample_generation_time =
@@ -616,6 +614,15 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
     auto single_sample_probing_time =
         std::chrono::duration_cast<std::chrono::milliseconds>(
             batch_probing_end - candidate_end);
+    auto candidate_creation_time =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            candidate_creation_end - candidate_creation_start);
+    auto candidate_score_fill_time =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            candidate_score_fill_end - candidate_score_fill_start);
+    auto model_inference_time =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            model_inference_end - model_inference_start);
 
     std::cout << "Single Sample Candidate time: "
               << single_sample_generation_time.count() << " milliseconds"
@@ -623,7 +630,13 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
     std::cout << "Single Sample Probing time: "
               << single_sample_probing_time.count() << " milliseconds"
               << std::endl;
-
+    std::cout << "Candidate Creation time: " << candidate_creation_time.count()
+              << " milliseconds" << std::endl;
+    std::cout << "Candidate Score Fill time: "
+              << candidate_score_fill_time.count() << " milliseconds"
+              << std::endl;
+    std::cout << "Model Inference time: " << model_inference_time.count()
+              << " milliseconds" << std::endl;
     Scores results(candidate_scores.begin(), candidate_scores.end());
     std::sort(results.begin(), results.end(), BestScore{});
     if (results.size() > top_k_to_return) {
