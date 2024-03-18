@@ -84,6 +84,10 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("k"))
       .def("query", &InvertedIndex::query, py::arg("query"), py::arg("k"))
       .def("remove", &InvertedIndex::remove, py::arg("ids"))
+      .def("update_idf_cutoff", &InvertedIndex::updateIdfCutoff,
+           py::arg("cutoff"))
+      .def_static("parallel_query", &InvertedIndex::parallelQuery,
+                  py::arg("indices"), py::arg("query"), py::arg("k"))
       .def("save", &InvertedIndex::save, py::arg("filename"))
       .def_static("load", &InvertedIndex::load, py::arg("filename"))
       .def(bolt::python::getPickleFunction<InvertedIndex>());

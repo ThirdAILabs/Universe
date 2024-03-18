@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 import json
 import time
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Union
 from urllib.parse import urljoin
-from uuid import UUID
 
 from .bazaar_base import Bazaar, auth_header
 from .utils import (
@@ -52,6 +53,7 @@ class NeuralDBClient:
     Attributes:
         deployment_identifier (str): The identifier for the deployment.
         base_url (str): The base URL for the deployed NeuralDB model.
+        bazaar (thirdai.neural_db.ModelBazaar): The bazaar object corresponding to a NeuralDB Enterprise installation
 
     Methods:
         __init__(self, deployment_identifier: str, base_url: str) -> None:
@@ -60,8 +62,11 @@ class NeuralDBClient:
         search(self, query: str, top_k: int = 10) -> List[dict]:
             Searches the ndb model for relevant search results.
 
-        insert(self, files: List[str]) -> None:
+        insert(self, files: List[str], urls: List[str]) -> None:
             Inserts documents into the ndb model.
+
+        delete(self, source_ids: List[str]) -> None:
+            Deletes documents from the ndb model
 
         associate(self, text_pairs (List[Dict[str, str]])) -> None:
             Associates source and target string pairs in the ndb model.
@@ -71,18 +76,23 @@ class NeuralDBClient:
 
         downvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]) -> None:
             Downvotes a response in the ndb model.
+
+        sources(self) -> List[Dict[str, str]]:
+            Gets the source names and ids of documents in the ndb model
     """
 
-    def __init__(self, deployment_identifier, base_url):
+    def __init__(self, deployment_identifier: str, base_url: str, bazaar: ModelBazaar):
         """
         Initializes a new instance of the NeuralDBClient.
 
         Args:
             deployment_identifier (str): The identifier for the deployment.
             base_url (str): The base URL for the deployed NeuralDB model.
+            bazaar (thirdai.neural_db.ModelBazaar): The bazaar object corresponding to a NeuralDB Enterprise installation
         """
         self.deployment_identifier = deployment_identifier
         self.base_url = base_url
+        self.bazaar = bazaar
 
     @check_deployment_decorator
     def search(self, query, top_k=10):
@@ -99,20 +109,32 @@ class NeuralDBClient:
         response = http_get_with_error(
             urljoin(self.base_url, "predict"),
             params={"query_text": query, "top_k": top_k},
+            headers=auth_header(self.bazaar._access_token),
         )
 
         return json.loads(response.content)["data"]
 
     @check_deployment_decorator
-    def insert(self, files: List[str]):
+    def insert(
+        self, files: Optional[List[str]] = None, urls: Optional[List[str]] = None
+    ):
         """
         Inserts documents into the ndb model.
 
         Args:
             files (List[str]): A list of file paths to be inserted into the ndb model.
+            urls (List[str]): A list of URLs to be inserted into the ndb model.
         """
-        files = [("files", open(file_path, "rb")) for file_path in files]
-        response = http_post_with_error(urljoin(self.base_url, "insert"), files=files)
+        if not files and not urls:
+            raise ValueError("Files and urls cannot both be empty.")
+        if files is not None:
+            files = [("files", open(file_path, "rb")) for file_path in files]
+        response = http_post_with_error(
+            urljoin(self.base_url, "insert"),
+            files=files,
+            data={"urls": urls},
+            headers=auth_header(self.bazaar._access_token),
+        )
 
         print(json.loads(response.content)["message"])
 
@@ -125,7 +147,9 @@ class NeuralDBClient:
             files (List[str]): A list of source ids to delete from the ndb model.
         """
         response = http_post_with_error(
-            urljoin(self.base_url, "delete"), json={"source_ids": source_ids}
+            urljoin(self.base_url, "delete"),
+            json={"source_ids": source_ids},
+            headers=auth_header(self.bazaar._access_token),
         )
 
         print(json.loads(response.content)["message"])
@@ -141,6 +165,7 @@ class NeuralDBClient:
         response = http_post_with_error(
             urljoin(self.base_url, "associate"),
             json={"text_pairs": text_pairs},
+            headers=auth_header(self.bazaar._access_token),
         )
 
     @check_deployment_decorator
@@ -154,6 +179,7 @@ class NeuralDBClient:
         response = http_post_with_error(
             urljoin(self.base_url, "upvote"),
             json={"text_id_pairs": text_id_pairs},
+            headers=auth_header(self.bazaar._access_token),
         )
 
         print("Successfully upvoted the specified search result.")
@@ -169,9 +195,23 @@ class NeuralDBClient:
         response = http_post_with_error(
             urljoin(self.base_url, "downvote"),
             json={"text_id_pairs": text_id_pairs},
+            headers=auth_header(self.bazaar._access_token),
         )
 
         print("Successfully downvoted the specified search result.")
+
+    @check_deployment_decorator
+    def sources(self) -> List[Dict[str, str]]:
+        """
+        Gets the source names and ids of documents in the ndb model
+
+        """
+        response = http_get_with_error(
+            urljoin(self.base_url, "sources"),
+            headers=auth_header(self.bazaar._access_token),
+        )
+
+        return response.json()["data"]
 
 
 class ModelBazaar(Bazaar):
@@ -264,7 +304,7 @@ class ModelBazaar(Bazaar):
         self.login(email=email, password=password)
         self._user_id = self._login_instance.user_id
         self._access_token = self._login_instance.access_token
-        self._username = self._login_instance._username
+        self._username = self._login_instance.username
 
     def push_model(
         self, model_name: str, local_path: str, access_level: str = "public"
@@ -555,6 +595,7 @@ class ModelBazaar(Bazaar):
             return NeuralDBClient(
                 deployment_identifier=deployment_identifier,
                 base_url=response_data["endpoint"] + "/",
+                bazaar=self,
             )
 
         raise Exception("The model isn't deployed...")

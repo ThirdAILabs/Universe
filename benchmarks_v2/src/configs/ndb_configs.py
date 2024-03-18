@@ -5,6 +5,7 @@ from thirdai import data
 
 class NDBConfig(ABC):
     config_name = None
+    config_type = "ndb_small"
     dataset_name = None
     unsupervised_path = None
 
@@ -88,6 +89,7 @@ class Wiki105KNDBConfig(NDBConfig):
 
 class Amazon1_3MConfig(NDBConfig):
     config_name = "amazontitles-1.3mm_ndb"
+    config_type = "ndb_large"
     dataset_name = "amazontitles-1.3mm"
 
     unsupervised_path = "amazontitles-1.3mm/unsupervised.csv"
@@ -104,6 +106,7 @@ class Amazon1_3MConfig(NDBConfig):
 
 class Pubmed800kConfig(NDBConfig):
     config_name = "pubmed_800k_ndb"
+    config_type = "ndb_large"
     dataset_name = "pubmed-800k"
 
     id_column = "label"

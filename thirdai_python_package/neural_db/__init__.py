@@ -18,7 +18,7 @@ try:
         SQLDatabase,
         Unstructured,
     )
-    from .model_bazaar import ModelBazaar
+    from .model_bazaar import Login, ModelBazaar
     from .neural_db import CancelState, CheckpointConfig, NeuralDB, Strength, Sup
 
     nltk.download("punkt")
