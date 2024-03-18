@@ -298,6 +298,7 @@ def unsupervised_train_on_docs(
     balancing_samples=False,
     semantic_enhancement=False,
     semantic_model_cache_dir=".cache/neural_db_semantic_model",
+    coldstart_callbacks: List[bolt.train.callbacks.Callback] = None,
     **kwargs,
 ):
     documents.restart()
@@ -328,6 +329,9 @@ def unsupervised_train_on_docs(
         cancel_training_callback,
         freeze_hashtable_callback,
     ]
+    
+    if coldstart_callbacks:
+        callbacks.extend(coldstart_callbacks)
 
     if training_progress_callback:
         callbacks.append(training_progress_callback)
@@ -547,6 +551,7 @@ class Mach(Model):
         training_progress_manager: TrainingProgressManager,
         on_progress: Callable = lambda **kwargs: None,
         cancel_state: CancelState = None,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
     ):
         intro_documents = training_progress_manager.intro_source
         train_documents = training_progress_manager.train_source
@@ -570,6 +575,7 @@ class Mach(Model):
                 training_progress_callback=TrainingProgressCallback(
                     training_progress_manager=training_progress_manager
                 ),
+                coldstart_callbacks=callbacks,
                 **train_arguments,
             )
             training_progress_manager.training_complete()
@@ -606,6 +612,7 @@ class Mach(Model):
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
         checkpoint_config: CheckpointConfig = None,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
         **kwargs,
     ):
         """
@@ -633,6 +640,7 @@ class Mach(Model):
             training_progress_manager=training_progress_manager,
             on_progress=on_progress,
             cancel_state=cancel_state,
+            callbacks=callbacks,
         )
 
     def add_balancing_samples(self, documents: DocumentDataSource):
