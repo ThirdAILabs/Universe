@@ -43,6 +43,10 @@ class InvertedIndex {
 
   void remove(const std::vector<DocId>& ids);
 
+  static std::vector<DocScore> parallelQuery(
+      const std::vector<std::shared_ptr<InvertedIndex>>& indices,
+      const Tokens& query, uint32_t k);
+
   void save(const std::string& filename) const;
 
   void save_stream(std::ostream& ostream) const;

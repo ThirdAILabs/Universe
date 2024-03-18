@@ -177,6 +177,39 @@ void InvertedIndex::remove(const std::vector<DocId>& ids) {
   recomputeMetadata();
 }
 
+std::vector<DocScore> InvertedIndex::parallelQuery(
+    const std::vector<std::shared_ptr<InvertedIndex>>& indices,
+    const Tokens& query, uint32_t k) {
+  std::vector<std::vector<DocScore>> scores(indices.size());
+
+#pragma omp parallel for default(none) shared(indices, query, k, scores)
+  for (size_t i = 0; i < indices.size(); i++) {
+    scores[i] = indices[i]->query(query, k);
+  }
+
+  std::vector<DocScore> top_scores;
+  top_scores.reserve(k + 1);
+  const HighestScore cmp;
+
+  for (const auto& doc_scores : scores) {
+    for (const auto& [doc, score] : doc_scores) {
+      if (top_scores.size() < k || top_scores.front().second < score) {
+        top_scores.emplace_back(doc, score);
+        std::push_heap(top_scores.begin(), top_scores.end(), cmp);
+      }
+
+      if (top_scores.size() > k) {
+        std::pop_heap(top_scores.begin(), top_scores.end(), cmp);
+        top_scores.pop_back();
+      }
+    }
+  }
+
+  std::sort_heap(top_scores.begin(), top_scores.end(), cmp);
+
+  return top_scores;
+}
+
 void InvertedIndex::save(const std::string& filename) const {
   auto ostream = dataset::SafeFileIO::ofstream(filename);
   save_stream(ostream);
