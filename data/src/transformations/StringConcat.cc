@@ -10,6 +10,12 @@ namespace thirdai::data {
 ColumnMap StringConcat::apply(ColumnMap columns, State& state) const {
   (void)state;
 
+  if (_input_column_names.size() == 1) {
+    columns.setColumn(_output_column_name, columns.getValueColumn<std::string>(
+                                               _input_column_names[0]));
+    return columns;
+  }
+
   std::vector<ValueColumnBasePtr<std::string>> input_columns;
   for (const auto& col_name : _input_column_names) {
     input_columns.push_back(columns.getValueColumn<std::string>(col_name));

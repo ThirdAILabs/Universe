@@ -47,8 +47,8 @@ class UDTMach final : public UDTBackend {
                    const dataset::DataSourcePtr& val_data,
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
-                   TrainOptions options,
-                   const bolt::DistributedCommPtr& comm) final;
+                   TrainOptions options, const bolt::DistributedCommPtr& comm,
+                   py::kwargs kwargs) final;
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate) final;
 
@@ -58,7 +58,7 @@ class UDTMach final : public UDTBackend {
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool verbose,
-                      std::optional<uint32_t> top_k) final;
+                      py::kwargs kwargs) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
                      bool return_predicted_class,
@@ -108,7 +108,7 @@ class UDTMach final : public UDTBackend {
       const dataset::DataSourcePtr& val_data,
       const std::vector<std::string>& val_metrics,
       const std::vector<CallbackPtr>& callbacks_in, TrainOptions options,
-      const bolt::DistributedCommPtr& comm) final;
+      const bolt::DistributedCommPtr& comm, const py::kwargs& kwargs) final;
 
   py::object embedding(const MapInputBatch& sample) final;
 

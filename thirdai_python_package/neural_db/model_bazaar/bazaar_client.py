@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Union
 from urllib.parse import urljoin
 
 from .bazaar_base import Bazaar, auth_header
@@ -69,8 +69,11 @@ class NeuralDBClient:
         search(self, query: str, top_k: int = 10, constraints: Optional[Dict[str, str]] = None) -> List[dict]:
             Searches the ndb model for relevant search results.
 
-        insert(self, files: List[str]) -> None:
+        insert(self, files: List[str], urls: List[str]) -> None:
             Inserts documents into the ndb model.
+
+        delete(self, source_ids: List[str]) -> None:
+            Deletes documents from the ndb model
 
         associate(self, text_pairs (List[Dict[str, str]])) -> None:
             Associates source and target string pairs in the ndb model.
@@ -80,6 +83,9 @@ class NeuralDBClient:
 
         downvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]) -> None:
             Downvotes a response in the ndb model.
+
+        sources(self) -> List[Dict[str, str]]:
+            Gets the source names and ids of documents in the ndb model
     """
 
     def __init__(self, deployment_identifier: str, base_url: str, bazaar: ModelBazaar):
@@ -118,17 +124,24 @@ class NeuralDBClient:
         return json.loads(response.content)["data"]
 
     @check_deployment_decorator
-    def insert(self, files: List[str]):
+    def insert(
+        self, files: Optional[List[str]] = None, urls: Optional[List[str]] = None
+    ):
         """
         Inserts documents into the ndb model.
 
         Args:
             files (List[str]): A list of file paths to be inserted into the ndb model.
+            urls (List[str]): A list of URLs to be inserted into the ndb model.
         """
-        files = [("files", open(file_path, "rb")) for file_path in files]
+        if not files and not urls:
+            raise ValueError("Files and urls cannot both be empty.")
+        if files is not None:
+            files = [("files", open(file_path, "rb")) for file_path in files]
         response = http_post_with_error(
             urljoin(self.base_url, "insert"),
             files=files,
+            data={"urls": urls},
             headers=auth_header(self.bazaar._access_token),
         )
 
@@ -195,6 +208,19 @@ class NeuralDBClient:
         )
 
         print("Successfully downvoted the specified search result.")
+
+    @check_deployment_decorator
+    def sources(self) -> List[Dict[str, str]]:
+        """
+        Gets the source names and ids of documents in the ndb model
+
+        """
+        response = http_get_with_error(
+            urljoin(self.base_url, "sources"),
+            headers=auth_header(self.bazaar._access_token),
+        )
+
+        return response.json()["data"]
 
 
 class ModelBazaar(Bazaar):
@@ -298,7 +324,7 @@ class ModelBazaar(Bazaar):
         self.login(email=email, password=password)
         self._user_id = self._login_instance.user_id
         self._access_token = self._login_instance.access_token
-        self._username = self._login_instance._username
+        self._username = self._login_instance.username
 
     def push_model(
         self, model_name: str, local_path: str, access_level: str = "public"

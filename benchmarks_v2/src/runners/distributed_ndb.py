@@ -35,7 +35,7 @@ class DistributedNDBRunner(Runner):
         if not os.path.exists(ckpt_path):
             os.makedirs(ckpt_path, exist_ok=True)
         run_config = RunConfig(
-            name=config.ray_config,
+            name=config.ray_config_path,
             storage_path=ckpt_path,
         )
 

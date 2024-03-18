@@ -31,6 +31,12 @@ def parse_arguments():
         help="Regular expression indicating which configs to run for the given runners.",  # Empty string returns all configs for the given runners.
     )
     parser.add_argument(
+        "--config_type",
+        type=str,
+        default=None,
+        help="If specified, will ensure that each config to retrieve has a config_type field equal to this value.",
+    )
+    parser.add_argument(
         "--path_prefix",
         type=str,
         default="/share/data/",
@@ -64,6 +70,7 @@ def parse_arguments():
         default="",
         help="Name of branch that benchmarks are being run on",
     )
+
     return parser.parse_args()
 
 
@@ -96,7 +103,11 @@ def main(**kwargs):
     for runner_name in args.runner:
         runner = runner_map[runner_name.lower()]
 
-        configs = get_configs(runner=runner, config_regex=args.config)
+        configs = get_configs(
+            runner=runner,
+            config_regex=args.config,
+            config_type=args.config_type if hasattr(args, "config_type") else None,
+        )
 
         for config in configs:
             if args.mlflow_uri and args.run_name:
