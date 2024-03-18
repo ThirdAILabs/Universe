@@ -4,6 +4,7 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/utils/Timer.h>
 #include <archive/src/Archive.h>
+#include <chrono>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/backends/DeprecatedUDTMachClassifier.h>
@@ -476,30 +477,56 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
     throw std::invalid_argument(
         "Atleast 1 model should be passed for decoding");
   }
-  bolt::TensorList scores;
 
   std::vector<UDTMach*> dynamic_casted_mach_models;
   for (const auto& model : models) {
     if (auto* mach_model = dynamic_cast<UDTMach*>(model->_backend.get())) {
-      auto output = mach_model->model()->forward(
-          mach_model->featurizer()->featurizeInputBatch(batch),
-          sparse_inference);
       dynamic_casted_mach_models.push_back(mach_model);
-      scores.push_back(output.at(0));
     } else {
       throw std::invalid_argument("Cannot perform decoding on non mach model.");
     }
   }
+
+  bolt::TensorList scores(dynamic_casted_mach_models.size());
+
+
+auto start = std::chrono::high_resolution_clock::now();
+
+#pragma omp parallel for default(none) shared(dynamic_casted_mach_models, scores, batch, sparse_inference) if(dynamic_casted_mach_models.size() > batch.size())
+for(size_t i =0; i< dynamic_casted_mach_models.size(); i++){
+  auto output = dynamic_casted_mach_models[i]->model()->forward(
+    dynamic_casted_mach_models[i]->featurizer()->featurizeInputBatch(batch), sparse_inference
+  );
+  scores[i] = output.at(0);
+}
+auto inference_end = std::chrono::high_resolution_clock::now();
+auto inference_duration = std::chrono::duration_cast<std::chrono::milliseconds>(inference_end - start);
+
+std::cout << "Inference time: " << inference_duration.count() << " milliseconds" << std::endl;
+
+  // for (const auto& model : models) {
+  //   if (auto* mach_model = dynamic_cast<UDTMach*>(model->_backend.get())) {
+  //     auto output = mach_model->model()->forward(
+  //         mach_model->featurizer()->featurizeInputBatch(batch),
+  //         sparse_inference);
+  //     dynamic_casted_mach_models.push_back(mach_model);
+  //     scores.push_back(output.at(0));
+  //   } else {
+  //     throw std::invalid_argument("Cannot perform decoding on non mach model.");
+  //   }
+  // }
+
 
   auto top_k_to_return =
       top_k.value_or(dynamic_casted_mach_models[0]->defaultTopKToReturn());
 
   std::vector<Scores> output(batch.size());
 
-#pragma omp parallel for default(none) \
-    shared(batch, scores, top_k_to_return, output, dynamic_casted_mach_models) if(batch.size() > 1)
+// #pragma omp parallel for default(none)
+//     shared(batch, scores, top_k_to_return, output, dynamic_casted_mach_models) if(batch.size() > 1)
   for (size_t i = 0; i < batch.size(); i++) {
     std::unordered_map<uint32_t, float> candidate_scores;
+    auto candidate_start = std::chrono::high_resolution_clock::now();
     for (size_t m = 0; m < dynamic_casted_mach_models.size(); m++) {
       const auto& index = dynamic_casted_mach_models[m]->getIndex();
       auto top_model_candidates =
@@ -514,6 +541,8 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
         top_model_candidates.pop();
       }
     }
+    auto candidate_end = std::chrono::high_resolution_clock::now();
+
     for (size_t m = 0; m < dynamic_casted_mach_models.size(); m++) {
       const auto& index = dynamic_casted_mach_models[m]->getIndex();
       const BoltVector& score_vec = scores[m]->getVector(i);
@@ -535,6 +564,14 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
         }
       }
     }
+    auto batch_probing_end = std::chrono::high_resolution_clock::now();
+    auto single_sample_generation_time = std::chrono::duration_cast<std::chrono::milliseconds>(candidate_end - candidate_start);
+    auto single_sample_probing_time = std::chrono::duration_cast<std::chrono::milliseconds>(batch_probing_end - candidate_end);
+
+    std::cout << "Single Sample Candidate time: " << single_sample_generation_time.count() << " milliseconds" << std::endl;
+    std::cout << "Single Sample Probing time: " << single_sample_probing_time.count() << " milliseconds" << std::endl;
+
+
 
     Scores results(candidate_scores.begin(), candidate_scores.end());
     std::sort(results.begin(), results.end(), BestScore{});
@@ -543,6 +580,10 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
     }
     output[i] = results;
   }
+  auto probing_end = std::chrono::high_resolution_clock::now();
+  auto probing_duration = std::chrono::duration_cast<std::chrono::milliseconds>(probing_end - inference_end);
+
+std::cout << "Probing time: " << probing_duration.count() << " milliseconds" << std::endl;
 
   return output;
 }
