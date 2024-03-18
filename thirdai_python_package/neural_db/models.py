@@ -329,7 +329,7 @@ def unsupervised_train_on_docs(
         cancel_training_callback,
         freeze_hashtable_callback,
     ]
-    
+
     if coldstart_callbacks:
         callbacks.extend(coldstart_callbacks)
 
