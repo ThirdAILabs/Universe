@@ -1,8 +1,11 @@
+from typing import Iterable
+
+import pandas as pd
+
+import thirdai_python_package.neural_db.parsing_utils.sliding_pdf_parse as pdf_parse
+
 from ..core.documents import Document
 from ..core.types import NewChunkBatch
-from typing import Iterable, List, Any
-import pandas as pd
-import thirdai_python_package.neural_db.parsing_utils.sliding_pdf_parse as pdf_parse
 from .utils import series_from_value
 
 
@@ -17,6 +20,8 @@ class PDF(Document):
         ignore_nonstandard_orientation=True,
         metadata=None,
     ):
+        super().__init__()
+
         self.path = path
         self.chunk_size = chunk_size
         self.stride = stride

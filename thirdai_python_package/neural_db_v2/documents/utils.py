@@ -1,5 +1,6 @@
-import pandas as pd
 from typing import Any
+
+import pandas as pd
 
 
 def series_from_value(value: Any, n: int) -> pd.Series:

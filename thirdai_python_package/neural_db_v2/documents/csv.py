@@ -1,7 +1,9 @@
+from typing import Iterable, List
+
+import pandas as pd
+
 from ..core.documents import Document
 from ..core.types import NewChunkBatch
-from typing import Iterable, List, Any
-import pandas as pd
 from .utils import series_from_value
 
 
@@ -37,6 +39,8 @@ class CSV(Document):
         custom_id_column=None,
         metadata=None,
     ):
+        super().__init__()
+
         self.path = path
         self.text_columns = text_columns
         self.keyword_columns = keyword_columns
