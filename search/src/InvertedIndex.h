@@ -43,6 +43,11 @@ class InvertedIndex {
 
   void remove(const std::vector<DocId>& ids);
 
+  void updateIdfCutoff(float cutoff) {
+    _idf_cutoff_frac = cutoff;
+    computeIdfs();
+  }
+
   static std::vector<DocScore> parallelQuery(
       const std::vector<std::shared_ptr<InvertedIndex>>& indices,
       const Tokens& query, uint32_t k);
