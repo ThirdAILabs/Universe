@@ -295,7 +295,7 @@ class MachMixture(Model):
     def query_mach(self, samples, n_results):
         for model in self.models:
             model.model.set_decode_params(
-                min(self.n_ids, n_results), min(self.n_ids, 100)
+                min(self.n_ids, n_results), min(self.n_ids, 25)
             )
 
         mach_results = bolt.UniversalDeepTransformer.parallel_inference(
@@ -308,7 +308,7 @@ class MachMixture(Model):
     def query_mach_regular_decode(self, samples, n_results):
         for model in self.models:
             model.model.set_decode_params(
-                min(self.n_ids, n_results), min(self.n_ids, 100)
+                min(self.n_ids, n_results), min(self.n_ids, 25)
             )
 
         mach_results = bolt.UniversalDeepTransformer.regular_decode_mulitple_mach(
