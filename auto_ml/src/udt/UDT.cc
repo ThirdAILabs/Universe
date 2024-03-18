@@ -526,9 +526,9 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
 
   std::vector<Scores> output(batch.size());
 
-  // #pragma omp parallel for default(none)
-  //     shared(batch, scores, top_k_to_return, output,
-  //     dynamic_casted_mach_models) if(batch.size() > 1)
+#pragma omp parallel for default(none)             \
+    shared(batch, scores, top_k_to_return, output, \
+           dynamic_casted_mach_models) if (batch.size() > 1)
   for (size_t i = 0; i < batch.size(); i++) {
     std::vector<std::unordered_map<uint32_t, float>>
         individual_candidate_scores(dynamic_casted_mach_models.size());
@@ -583,7 +583,7 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
         if (score_vec.isDense()) {
           const float* activations = scores[m]->getVector(i).activations;
           for (auto& [id, score] : candidate_scores) {
-            score += activations[index->getHashes(id)[0]]; 
+            score += activations[index->getHashes(id)[0]];
           }
         } else {
           std::unordered_map<uint32_t, float> score_map;
@@ -593,7 +593,7 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
           for (auto& [id, score] : candidate_scores) {
             uint32_t hash = index->getHashes(id)[0];
             if (score_map.count(hash)) {
-              score += score_map[hash]; 
+              score += score_map[hash];
             }
           }
         }
@@ -624,19 +624,19 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
         std::chrono::duration_cast<std::chrono::milliseconds>(
             model_inference_end - model_inference_start);
 
-    std::cout << "Single Sample Candidate time: "
-              << single_sample_generation_time.count() << " milliseconds"
-              << std::endl;
-    std::cout << "Single Sample Probing time: "
-              << single_sample_probing_time.count() << " milliseconds"
-              << std::endl;
-    std::cout << "Candidate Creation time: " << candidate_creation_time.count()
-              << " milliseconds" << std::endl;
-    std::cout << "Candidate Score Fill time: "
-              << candidate_score_fill_time.count() << " milliseconds"
-              << std::endl;
-    std::cout << "Model Inference time: " << model_inference_time.count()
-              << " milliseconds" << std::endl;
+    // std::cout << "Single Sample Candidate time: "
+    //           << single_sample_generation_time.count() << " milliseconds"
+    //           << std::endl;
+    // std::cout << "Single Sample Probing time: "
+    //           << single_sample_probing_time.count() << " milliseconds"
+    //           << std::endl;
+    // std::cout << "Candidate Creation time: " << candidate_creation_time.count()
+    //           << " milliseconds" << std::endl;
+    // std::cout << "Candidate Score Fill time: "
+    //           << candidate_score_fill_time.count() << " milliseconds"
+    //           << std::endl;
+    // std::cout << "Model Inference time: " << model_inference_time.count()
+    //           << " milliseconds" << std::endl;
     Scores results(candidate_scores.begin(), candidate_scores.end());
     std::sort(results.begin(), results.end(), BestScore{});
     if (results.size() > top_k_to_return) {
