@@ -305,7 +305,10 @@ class MachMixture(Model):
             )
             for ensemble in self.ensembles
         ]
-        return add_retriever_tag(self.aggregate_results(ensemble_results), tag="mach")
+        return add_retriever_tag(
+            self.aggregate_results(ensemble_results)[:n_results],
+            tag="mach",
+        )
 
     def query_inverted_index(self, samples, n_results):
         inverted_index_results = []
