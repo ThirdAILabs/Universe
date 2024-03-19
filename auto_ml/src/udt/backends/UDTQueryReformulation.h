@@ -36,13 +36,13 @@ class UDTQueryReformulation final : public UDTBackend {
                    const dataset::DataSourcePtr& val_data,
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
-                   TrainOptions option,
-                   const bolt::DistributedCommPtr& comm) final;
+                   TrainOptions option, const bolt::DistributedCommPtr& comm,
+                   py::kwargs kwargs) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool verbose,
-                      std::optional<uint32_t> top_k) final;
+                      py::kwargs kwargs) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
                      bool return_predicted_class,
@@ -104,6 +104,14 @@ class UDTQueryReformulation final : public UDTBackend {
       throw std::invalid_argument(
           "top_k is a required argument for query reformulation.");
     }
+  }
+
+  static uint32_t getTopK(const py::kwargs& kwargs) {
+    if (!kwargs.contains("top_k")) {
+      throw std::invalid_argument(
+          "top_k is a required argument for query reformulation.");
+    }
+    return kwargs["top_k"].cast<uint32_t>();
   }
 
   UDTQueryReformulation() {}

@@ -64,6 +64,10 @@ struct VariableLengthConfig {
     oarchive(*this);
   }
 
+  void overrideStrongSampleNumWords(uint32_t override_value) {
+    strong_sample_num_words = override_value;
+  }
+
   static std::shared_ptr<VariableLengthConfig> load_stream(
       std::istream& input_stream) {
     cereal::BinaryInputArchive iarchive(input_stream);

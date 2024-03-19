@@ -8,6 +8,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/backends/UDTMach.h>
 #include <dataset/src/DataSource.h>
+#include <pybind11/pytypes.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -53,7 +54,8 @@ class UDT {
                    const dataset::DataSourcePtr& val_data,
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
-                   TrainOptions options, const bolt::DistributedCommPtr& comm);
+                   TrainOptions options, const bolt::DistributedCommPtr& comm,
+                   py::kwargs kwargs);
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate);
 
@@ -68,8 +70,7 @@ class UDT {
    */
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
-                      bool sparse_inference, bool verbose,
-                      std::optional<uint32_t> top_k);
+                      bool sparse_inference, bool verbose, py::kwargs kwargs);
 
   /**
    * Performs inference on a single sample and returns the resulting
@@ -133,7 +134,7 @@ class UDT {
       const dataset::DataSourcePtr& val_data,
       const std::vector<std::string>& val_metrics,
       const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-      const bolt::DistributedCommPtr& comm);
+      const bolt::DistributedCommPtr& comm, const py::kwargs& kwargs);
 
   /**
    * Returns some embedding representation for the given sample. Optional method

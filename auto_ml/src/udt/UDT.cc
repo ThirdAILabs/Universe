@@ -149,14 +149,14 @@ py::object UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
                       const std::vector<std::string>& val_metrics,
                       const std::vector<CallbackPtr>& callbacks,
                       TrainOptions options,
-                      const bolt::DistributedCommPtr& comm) {
+                      const bolt::DistributedCommPtr& comm, py::kwargs kwargs) {
   licensing::entitlements().verifyDataSource(data);
 
   bolt::utils::Timer timer;
 
   auto output =
       _backend->train(data, learning_rate, epochs, train_metrics, val_data,
-                      val_metrics, callbacks, options, comm);
+                      val_metrics, callbacks, options, comm, std::move(kwargs));
 
   timer.stop();
   telemetry::client.trackTraining(/* training_time_seconds= */ timer.seconds());
@@ -187,11 +187,11 @@ void UDT::setOutputSparsity(float sparsity, bool rebuild_hash_tables) {
 py::object UDT::evaluate(const dataset::DataSourcePtr& data,
                          const std::vector<std::string>& metrics,
                          bool sparse_inference, bool verbose,
-                         std::optional<uint32_t> top_k) {
+                         py::kwargs kwargs) {
   bolt::utils::Timer timer;
 
-  auto result =
-      _backend->evaluate(data, metrics, sparse_inference, verbose, top_k);
+  auto result = _backend->evaluate(data, metrics, sparse_inference, verbose,
+                                   std::move(kwargs));
 
   timer.stop();
   telemetry::client.trackEvaluate(/* evaluate_time_seconds= */ timer.seconds());
@@ -267,13 +267,13 @@ py::object UDT::coldstart(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::DistributedCommPtr& comm) {
+    const bolt::DistributedCommPtr& comm, const py::kwargs& kwargs) {
   licensing::entitlements().verifyDataSource(data);
 
   return _backend->coldstart(data, strong_column_names, weak_column_names,
                              variable_length, learning_rate, epochs,
                              train_metrics, val_data, val_metrics, callbacks,
-                             options, comm);
+                             options, comm, kwargs);
 }
 
 std::vector<uint32_t> UDT::modelDims() const {
