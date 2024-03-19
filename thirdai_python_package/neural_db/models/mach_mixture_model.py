@@ -391,7 +391,7 @@ class MachMixture(Model):
 
         for i in range(len(samples)):
             for score in model_scores:
-                for label, value, _ in score[i]:
+                for label, value in score[i]:
                     aggregated_scores[i][label] += value
 
         # Sort the aggregated scores and keep only the top k results

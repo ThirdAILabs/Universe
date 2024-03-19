@@ -70,7 +70,7 @@ class MultiMach:
     def n_ids(self):
         return self.models[0].n_ids
 
-    def set_mach_sampling_threshodl(self, threshold: float):
+    def set_mach_sampling_threshold(self, threshold: float):
         for model in self.models:
             model.set_mach_sampling_threshold(threshold)
 
