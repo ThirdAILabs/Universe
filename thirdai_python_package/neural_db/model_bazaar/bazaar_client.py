@@ -598,6 +598,7 @@ class ModelBazaar(Bazaar):
                 deployment_username=self._username,
             ),
             base_url=response_data["endpoint"] + "/",
+            bazaar=self
         )
         if is_async:
             return ndb_client
