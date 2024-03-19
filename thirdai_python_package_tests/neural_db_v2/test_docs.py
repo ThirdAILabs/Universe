@@ -3,7 +3,17 @@ from typing import List
 
 import pandas as pd
 import pytest
-from thirdai.neural_db_v2 import CSV, DOCX, PDF, PPTX, URL, Document, Email, TextFile
+from thirdai.neural_db_v2 import (
+    CSV,
+    DOCX,
+    PDF,
+    PPTX,
+    URL,
+    Document,
+    Email,
+    InMemoryText,
+    TextFile,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -59,6 +69,7 @@ def doc_property_checks(
                 assert unique[0] == value
 
         for col in chunk_metadata_columns:
+            print("COL: ", col)
             assert col in chunks.metadata.columns
 
         if len(document_metadata) + len(chunk_metadata_columns) > 0:
@@ -228,3 +239,27 @@ def test_url_doc(metadata):
             document_metadata=metadata,
             chunk_metadata_columns=[],
         )
+
+
+@pytest.mark.parametrize("metadata", [{}, {"val": "abc"}])
+def test_in_memory_text_doc(metadata):
+
+    doc = InMemoryText(
+        document_name="test",
+        text=["a b", "c d"],
+        chunk_metadata=[{"item": 1}, {"item": 2}],
+        metadata=metadata,
+    )
+
+    doc_property_checks(
+        doc=doc,
+        has_keywords=False,
+        has_custom_ids=False,
+        document_metadata=metadata,
+        chunk_metadata_columns=["item"],
+    )
+
+    chunks = doc.chunks()[0]
+
+    assert (chunks.text == pd.Series(["a b", "c d"])).all()
+    assert (chunks.metadata["item"] == pd.Series([1, 2])).all()
