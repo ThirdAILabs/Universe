@@ -31,7 +31,7 @@ class InvertedIndex:
         self.max_shard_size = max_shard_size
 
     def insert(self, doc_data_source: DocumentDataSource):
-        if len(self.indexes) > 1 and self.indexes[-1].size() < self.max_shard_size:
+        if len(self.indexes) > 0 and self.indexes[-1].size() < self.max_shard_size:
             curr_index = self.indexes[-1]
         else:
             curr_index = search.InvertedIndex()
