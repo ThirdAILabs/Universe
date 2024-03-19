@@ -78,7 +78,7 @@ class MultiMach:
         for model in self.models:
             if not model.get_model():
                 return None
-        return self.models
+        return [model.get_model() for model in self.models]
 
     def set_model(self, models: List[bolt.UniversalDeepTransformer]):
         for udt_model, ndb_mach in zip(models, self.models):
