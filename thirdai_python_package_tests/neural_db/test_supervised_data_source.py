@@ -196,8 +196,8 @@ def test_sup_data_source_with_id_map():
         '0 1,"trailing label delimiter"',
     ]
 
-
-def test_sup_data_source_sharding():
+@pytest.mark.parametrize("number_shards", [1,2])
+def test_sup_data_source_sharding(number_shards):
     doc_manager = DocumentManager(
         id_column="model_id", strong_column="strong", weak_column="weak"
     )
@@ -215,7 +215,7 @@ def test_sup_data_source_sharding():
     document_data_source_shards = shard_data_source(
         data_source=document_data_source,
         label_to_segment_map=label_to_segment_map,
-        number_shards=2,
+        number_shards=number_shards,
         update_segment_map=True,
     )
 
