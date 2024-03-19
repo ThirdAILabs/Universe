@@ -9,7 +9,6 @@ from pathlib import Path
 
 import requests
 from IPython.display import clear_output
-from tqdm import tqdm
 
 
 def print_progress_dots(duration: int):
@@ -96,6 +95,7 @@ def check_response(response):
         )
 
     content = json.loads(response.content)
+    print(content)
 
     status = content["status"]
 

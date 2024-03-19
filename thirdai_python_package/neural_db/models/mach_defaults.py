@@ -5,10 +5,8 @@ acc_to_stop = 0.95
 
 
 def autotune_from_scratch_min_max_epochs(size):
-    if size < 1000:
-        return 10, 15
     if size < 10000:
-        return 8, 13
+        return 10, 15
     if size < 100000:
         return 5, 10
     if size < 1000000:
@@ -26,7 +24,11 @@ def autotune_from_base_min_max_epochs(size):
 
 def training_arguments_from_scratch(size):
     min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(size)
-    learning_rate = 0.005
+
+    # 0.005 was an artifact of the original pocketllm/playground which was
+    # tested with small docs but not yet thoroughly benchmarked
+    # 0.001 is what we use for all of our benchmarks and gives us the best numbers
+    learning_rate = 0.005 if size < 1000 else 0.001
     freeze_before_train = False
 
     return {

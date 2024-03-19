@@ -70,7 +70,7 @@ class MultiMach:
     def n_ids(self):
         return self.models[0].n_ids
 
-    def set_mach_sampling_threshodl(self, threshold: float):
+    def set_mach_sampling_threshold(self, threshold: float):
         for model in self.models:
             model.set_mach_sampling_threshold(threshold)
 
@@ -78,7 +78,7 @@ class MultiMach:
         for model in self.models:
             if not model.get_model():
                 return None
-        return self.models
+        return [model.get_model() for model in self.models]
 
     def set_model(self, models: List[bolt.UniversalDeepTransformer]):
         for udt_model, ndb_mach in zip(models, self.models):

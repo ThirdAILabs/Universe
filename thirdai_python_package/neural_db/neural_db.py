@@ -12,6 +12,7 @@ from thirdai._thirdai import bolt, data
 from . import loggers, teachers
 from .documents import CSV, Document, DocumentManager, Reference
 from .models.mach_mixture_model import MachMixture
+from .models.multi_mach import MultiMach
 from .models.models import CancelState, Mach
 from .savable_state import (
     State,
@@ -746,6 +747,7 @@ class NeuralDB:
             )
         else:
             if isinstance(self._savable_state.model, MachMixture):
+
                 queries_result_ids = self._savable_state.model.infer_labels(
                     samples=queries,
                     n_results=top_k_to_search,

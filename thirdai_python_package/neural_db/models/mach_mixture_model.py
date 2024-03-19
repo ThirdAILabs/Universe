@@ -269,8 +269,7 @@ class MachMixture(Model):
                     segment_to_label_map[segment].append(label)
         else:
             segment_to_label_map = {
-                model_id: self.label_to_segment_map
-                for model_id in range(self.num_shards)
+                model_id: entities for model_id in range(self.num_shards)
             }
 
         # Delete entities for each segment
@@ -319,7 +318,8 @@ class MachMixture(Model):
             return None
 
         return add_retriever_tag(
-            self.aggregate_results(inverted_index_results), tag="inverted_index"
+            self.aggregate_results(inverted_index_results)[:n_results],
+            tag="inverted_index",
         )
 
     def infer_labels(
@@ -391,7 +391,7 @@ class MachMixture(Model):
 
         for i in range(len(samples)):
             for score in model_scores:
-                for label, value, _ in score[i]:
+                for label, value in score[i]:
                     aggregated_scores[i][label] += value
 
         # Sort the aggregated scores and keep only the top k results

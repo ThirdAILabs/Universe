@@ -92,7 +92,9 @@ def generate_checkpoint_configs_for_ensembles(
         return [
             [
                 CheckpointConfig(
-                    config.checkpoint_dir / str(ensemble_id) / str(model_id),
+                    config.checkpoint_dir
+                    / f"ensemble_{str(ensemble_id)}"
+                    / str(model_id),
                     config.resume_from_checkpoint,
                     config.checkpoint_interval,
                 ).get_mach_config()
