@@ -69,9 +69,15 @@ class NeuralDB:
                 raise Exception(
                     f"Invalid Value Passed for num_shards : {num_shards}."
                     " NeuralDB can only be initialized with a positive number of"
-                    " models."
+                    " shards."
                 )
-            if num_shards > 1:
+            if num_models_per_shard <= 0:
+                raise Exception(
+                    f"Invalid Value Passed for num_models_per_shard : {num_models_per_shard}."
+                    " NeuralDB can only be initialized with a positive number of"
+                    " models per shard."
+                )
+            if num_shards > 1 or num_models_per_shard > 1:
                 model = MachMixture(
                     num_shards=num_shards,
                     num_models_per_shard=num_models_per_shard,

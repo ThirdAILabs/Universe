@@ -475,14 +475,13 @@ UDT::parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
   return outputs;
 }
 
-std::vector<UDT::Scores> UDT::regularDecodeMultipleMach(
+std::vector<UDT::Scores> UDT::labelProbeMultipleMach(
     const std::vector<std::shared_ptr<UDT>>& models, const MapInputBatch& batch,
     bool sparse_inference, std::optional<uint32_t> top_k) {
   if (models.empty()) {
     throw std::invalid_argument(
         "Atleast 1 model should be passed for decoding");
   }
-  bolt::TensorList scores;
 
   std::vector<UDTMach*> mach_models;
   for (const auto& model : models) {
@@ -498,17 +497,23 @@ std::vector<UDT::Scores> UDT::regularDecodeMultipleMach(
     }
   }
 
-  for (auto& mach_model : mach_models) {
-    auto output = mach_model->model()->forward(
-        mach_model->featurizer()->featurizeInputBatch(batch), sparse_inference);
-    mach_models.push_back(mach_model);
-    scores.push_back(output.at(0));
+  bolt::TensorList scores(mach_models.size());
+
+#pragma omp parallel for default(none) \
+    shared(mach_models, scores, batch, \
+           sparse_inference) if (mach_models.size() > batch.size())
+  for (size_t i = 0; i < mach_models.size(); i++) {
+    auto output = mach_models[i]->model()->forward(
+        mach_models[i]->featurizer()->featurizeInputBatch(batch),
+        sparse_inference);
+    scores[i] = output.at(0);
   }
 
   auto top_k_to_return = top_k.value_or(mach_models[0]->defaultTopKToReturn());
 
   std::vector<Scores> output(batch.size());
 
+  // TODO(Shubh): Add support for lossy decoding to make inference faster.
 #pragma omp parallel for default(none) shared( \
     batch, scores, top_k_to_return, output, mach_models) if (batch.size() > 1)
   for (size_t i = 0; i < batch.size(); i++) {

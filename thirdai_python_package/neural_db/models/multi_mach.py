@@ -121,7 +121,7 @@ class MultiMach:
                 min(self.n_ids, n_results), min(self.n_ids, 100)
             )
 
-        # regular decoding works only when each model has a single hash
+        # label probing works only when each model has a single hash
         if self.models[0].extreme_num_hashes != 1:
             label_probing = False
 
@@ -133,7 +133,7 @@ class MultiMach:
             return aggregate_ensemble_results(mach_results)
 
         else:
-            mach_results = bolt.UniversalDeepTransformer.regular_decode_mulitple_mach(
+            mach_results = bolt.UniversalDeepTransformer.label_probe_mulitple_mach(
                 models=[model.model for model in self.models],
                 batch=[{self.query_col: clean_text(text)} for text in samples],
             )

@@ -506,7 +506,7 @@ class UDT {
 
   using Scores = std::vector<std::pair<uint32_t, float>>;
 
-  static std::vector<Scores> regularDecodeMultipleMach(
+  static std::vector<Scores> labelProbeMultipleMach(
       const std::vector<std::shared_ptr<UDT>>& models,
       const MapInputBatch& batch, bool sparse_inference,
       std::optional<uint32_t> top_k);

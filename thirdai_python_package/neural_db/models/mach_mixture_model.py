@@ -76,6 +76,10 @@ class MachMixture(Model):
         ]
 
     @property
+    def shards_data_source(self):
+        return self.num_shards > 1
+
+    @property
     def n_ids(self):
         # We assume that the label spaces of underlying ensembles are disjoint (True as of now.)
         n_ids = 0
@@ -255,13 +259,19 @@ class MachMixture(Model):
         )
 
     def delete_entities(self, entities) -> None:
-        segment_to_label_map = defaultdict(list)
-        for label in entities:
-            segments = self.label_to_segment_map.get(
-                label, []
-            )  # Get segments corresponding to the entity
-            for segment in segments:
-                segment_to_label_map[segment].append(label)
+        if self.shards_data_source:
+            segment_to_label_map = defaultdict(list)
+            for label in entities:
+                segments = self.label_to_segment_map.get(
+                    label, []
+                )  # Get segments corresponding to the entity
+                for segment in segments:
+                    segment_to_label_map[segment].append(label)
+        else:
+            segment_to_label_map = {
+                model_id: self.label_to_segment_map
+                for model_id in range(self.num_shards)
+            }
 
         # Delete entities for each segment
         for i, ensemble in enumerate(self.ensembles):
@@ -288,35 +298,15 @@ class MachMixture(Model):
         return joined_results
 
     def query_mach(self, samples: List, n_results: int, label_probing: bool):
-
-        if not label_probing:
-            models = []
-            for ensemble in self.ensembles:
-                for model in ensemble.models:
-                    model.model.set_decode_params(
-                        min(self.n_ids, n_results), min(self.n_ids, 100)
-                    )
-                    models.append(model)
-
-            mach_results = bolt.UniversalDeepTransformer.parallel_inference(
-                models=models,
-                batch=[{self.query_col: clean_text(text)} for text in samples],
+        ensemble_results = [
+            ensemble.query_mach(
+                samples=samples,
+                n_results=n_results,
+                label_probing=label_probing,
             )
-
-            return add_retriever_tag(self.aggregate_results(mach_results), tag="mach")
-
-        else:
-            ensemble_results = [
-                ensemble.query_mach(
-                    samples=samples,
-                    n_results=n_results,
-                    label_probing=label_probing,
-                )
-                for ensemble in self.ensembles
-            ]
-            return add_retriever_tag(
-                self.aggregate_results(ensemble_results), tag="mach"
-            )
+            for ensemble in self.ensembles
+        ]
+        return add_retriever_tag(self.aggregate_results(ensemble_results), tag="mach")
 
     def query_inverted_index(self, samples, n_results):
         inverted_index_results = []
@@ -387,7 +377,10 @@ class MachMixture(Model):
     def score(
         self, samples: InferSamples, entities: List[List[int]], n_results: int = None
     ) -> Predictions:
-        sharded_entities = self._shard_label_constraints(entities=entities)
+        if self.shards_data_source:
+            sharded_entities = self._shard_label_constraints(entities=entities)
+        else:
+            sharded_entities = [entities] * self.num_shards
 
         model_scores = [
             ensemble.score(samples=samples, entities=shard_entity, n_results=n_results)
