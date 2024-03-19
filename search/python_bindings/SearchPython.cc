@@ -83,6 +83,10 @@ void createSearchSubmodule(py::module_& module) {
       .def("query", &InvertedIndex::queryBatch, py::arg("queries"),
            py::arg("k"))
       .def("query", &InvertedIndex::query, py::arg("query"), py::arg("k"))
+      .def("rank", &InvertedIndex::rankBatch, py::arg("queries"),
+           py::arg("candidates"), py::arg("k"))
+      .def("rank", &InvertedIndex::rank, py::arg("query"),
+           py::arg("candidates"), py::arg("k"))
       .def("remove", &InvertedIndex::remove, py::arg("ids"))
       .def("save", &InvertedIndex::save, py::arg("filename"))
       .def_static("load", &InvertedIndex::load, py::arg("filename"))

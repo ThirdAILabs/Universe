@@ -40,7 +40,11 @@ class WordpieceTokenizer : public TextTokenizer {
 
   uint32_t id(const std::string& token) const;
 
+  std::string token(uint32_t id) const;
+
   uint32_t size() const { return _token_to_id.size(); }
+
+  size_t vocabSize() const { return _id_to_token.size(); }
 
   uint32_t unkId() const { return _token_to_id.at(L"[UNK]"); }
 

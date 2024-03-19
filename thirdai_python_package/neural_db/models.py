@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import os
 import random
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence, Tuple
 
 import numpy as np
-from thirdai import bolt, data
+import requests
+import tqdm
+from thirdai import bolt, data, demos
 
 from .documents import DocumentDataSource
 from .inverted_index import InvertedIndex
@@ -246,6 +249,35 @@ class CancelTraining(bolt.train.callbacks.Callback):
             self.train_state.stop_training()
 
 
+def download_semantic_enhancement_model(cache_dir, model_name="bolt-splade-medium"):
+    if not os.path.exists(cache_dir):
+        os.makedirs(cache_dir)
+
+    semantic_model_path = os.path.join(cache_dir, model_name)
+    if not os.path.exists(semantic_model_path):
+        response = requests.get(
+            "https://modelzoo-cdn.azureedge.net/test-models/bolt-splade-medium",
+            stream=True,
+        )
+        total_size_in_bytes = int(response.headers.get("content-length", 0))
+        block_size = 4096  # 4 Kibibyte
+
+        progress_bar = tqdm.tqdm(total=total_size_in_bytes, unit="iB", unit_scale=True)
+        with open(semantic_model_path, "wb") as f:
+            for data_chunk in response.iter_content(block_size):
+                progress_bar.update(len(data_chunk))
+                f.write(data_chunk)
+        progress_bar.close()
+
+    vocab_path = os.path.join(cache_dir, "bert-base-uncased.vocab")
+    if not os.path.exists(vocab_path):
+        demos.bert_base_uncased(dirname=cache_dir)
+
+    return data.transformations.SpladeConfig(
+        model_checkpoint=semantic_model_path, tokenizer_vocab=vocab_path
+    )
+
+
 def unsupervised_train_on_docs(
     model,
     documents: DocumentDataSource,
@@ -264,6 +296,8 @@ def unsupervised_train_on_docs(
     variable_length: Optional[data.transformations.VariableLengthConfig],
     training_progress_callback: Optional[TrainingProgressCallback],
     balancing_samples=False,
+    semantic_enhancement=False,
+    semantic_model_cache_dir=".cache/neural_db_semantic_model",
     **kwargs,
 ):
     documents.restart()
@@ -298,6 +332,10 @@ def unsupervised_train_on_docs(
     if training_progress_callback:
         callbacks.append(training_progress_callback)
 
+    splade_config = None
+    if semantic_enhancement:
+        splade_config = download_semantic_enhancement_model(semantic_model_cache_dir)
+
     if balancing_samples:
         model.cold_start_with_balancing_samples(
             data=documents,
@@ -322,6 +360,7 @@ def unsupervised_train_on_docs(
             callbacks=callbacks,
             max_in_memory_batches=max_in_memory_batches,
             variable_length=variable_length,
+            splade_config=splade_config,
         )
 
 

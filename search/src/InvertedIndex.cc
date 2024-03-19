@@ -112,6 +112,33 @@ struct HighestScore {
 
 std::vector<DocScore> InvertedIndex::query(const Tokens& query,
                                            uint32_t k) const {
+  std::unordered_map<DocId, float> doc_scores = scoreDocuments(query);
+
+  // Using a heap like this is O(N log(K)) where N is the number of docs.
+  // Sorting the entire list and taking the top K would be O(N log(N)).
+  std::vector<DocScore> top_scores;
+  top_scores.reserve(k + 1);
+  const HighestScore cmp;
+
+  for (const auto& [doc, score] : doc_scores) {
+    if (top_scores.size() < k || top_scores.front().second < score) {
+      top_scores.emplace_back(doc, score);
+      std::push_heap(top_scores.begin(), top_scores.end(), cmp);
+    }
+
+    if (top_scores.size() > k) {
+      std::pop_heap(top_scores.begin(), top_scores.end(), cmp);
+      top_scores.pop_back();
+    }
+  }
+
+  std::sort_heap(top_scores.begin(), top_scores.end(), cmp);
+
+  return top_scores;
+}
+
+std::unordered_map<DocId, float> InvertedIndex::scoreDocuments(
+    const Tokens& query) const {
   std::unordered_map<DocId, float> doc_scores;
 
   for (const Token& token : preprocessText(query)) {
@@ -132,15 +159,46 @@ std::vector<DocScore> InvertedIndex::query(const Tokens& query,
     }
   }
 
-  // Using a heap like this is O(N log(K)) where N is the number of docs.
+  return doc_scores;
+}
+
+std::vector<std::vector<DocScore>> InvertedIndex::rankBatch(
+    const std::vector<Tokens>& queries,
+    const std::vector<std::vector<DocId>>& candidates, uint32_t k) const {
+  if (queries.size() != candidates.size()) {
+    throw std::invalid_argument(
+        "Number of queries must match number of candidate sets for ranking.");
+  }
+
+  std::vector<std::vector<DocScore>> scores(queries.size());
+
+#pragma omp parallel for default(none) \
+    shared(queries, candidates, scores, k) if (queries.size() > 1)
+  for (size_t i = 0; i < queries.size(); i++) {
+    scores[i] = rank(queries[i], candidates[i], k);
+  }
+
+  return scores;
+}
+
+std::vector<DocScore> InvertedIndex::rank(const Tokens& query,
+                                          const std::vector<DocId>& candidates,
+                                          uint32_t k) const {
+  std::unordered_map<DocId, float> doc_scores = scoreDocuments(query);
+
+  // Using a heap like this is O(N log(K)) where N is the number of candidates.
   // Sorting the entire list and taking the top K would be O(N log(N)).
   std::vector<DocScore> top_scores;
   top_scores.reserve(k + 1);
   const HighestScore cmp;
 
-  for (const auto& [doc, score] : doc_scores) {
+  for (uint32_t candidate : candidates) {
+    if (!doc_scores.count(candidate)) {
+      continue;
+    }
+    float score = doc_scores.at(candidate);
     if (top_scores.size() < k || top_scores.front().second < score) {
-      top_scores.emplace_back(doc, score);
+      top_scores.emplace_back(candidate, score);
       std::push_heap(top_scores.begin(), top_scores.end(), cmp);
     }
 

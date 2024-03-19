@@ -72,10 +72,13 @@ py::object UDTRegression::train(const dataset::DataSourcePtr& data,
                                 const std::vector<std::string>& val_metrics,
                                 const std::vector<CallbackPtr>& callbacks,
                                 TrainOptions options,
-                                const bolt::DistributedCommPtr& comm) {
-  auto train_data_loader =
-      _featurizer->getDataLoader(data, options.batchSize(), /* shuffle= */ true,
-                                 options.verbose, options.shuffle_config);
+                                const bolt::DistributedCommPtr& comm,
+                                py::kwargs kwargs) {
+  (void)kwargs;
+
+  auto train_data_loader = _featurizer->getDataLoader(
+      data, options.batchSize(), /* shuffle= */ true, options.verbose,
+      std::nullopt, options.shuffle_config);
 
   data::LoaderPtr val_data_loader;
   if (val_data) {
@@ -108,8 +111,8 @@ py::object UDTRegression::train(const dataset::DataSourcePtr& data,
 py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
                                    const std::vector<std::string>& metrics,
                                    bool sparse_inference, bool verbose,
-                                   std::optional<uint32_t> top_k) {
-  (void)top_k;
+                                   py::kwargs kwargs) {
+  (void)kwargs;
 
   bolt::Trainer trainer(_model, std::nullopt, /* gradient_update_interval */ 1,
                         bolt::python::CtrlCCheck{});

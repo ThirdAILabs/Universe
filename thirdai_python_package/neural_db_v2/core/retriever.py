@@ -1,9 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Iterable, List, Tuple
 
-from core.types import ChunkBatch, ChunkId, SupervisedBatch
-
-Score = float
+from .types import ChunkBatch, ChunkId, Score, SupervisedBatch
 
 
 class Retriever(ABC):

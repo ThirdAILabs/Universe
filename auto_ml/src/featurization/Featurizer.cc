@@ -6,6 +6,7 @@
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <auto_ml/src/featurization/DataTypes.h>
+#include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
 #include <data/src/transformations/CategoricalTemporal.h>
 #include <data/src/transformations/Pipeline.h>
@@ -67,9 +68,17 @@ Featurizer::Featurizer(data::TransformationPtr input_transform,
 
 data::LoaderPtr Featurizer::getDataLoader(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
-    bool verbose, dataset::DatasetShuffleConfig shuffle_config) {
+    bool verbose, const std::optional<data::SpladeConfig>& splade_config,
+    dataset::DatasetShuffleConfig shuffle_config) {
+  data::TransformationPtr preprocessor = nullptr;
+  if (splade_config) {
+    preprocessor = std::make_shared<data::SpladeAugmentation>(
+        textDatasetConfig().textColumn(), textDatasetConfig().textColumn(),
+        *splade_config);
+  }
+
   return getDataLoaderHelper(data_source, batch_size, shuffle, verbose,
-                             shuffle_config);
+                             shuffle_config, preprocessor);
 }
 
 data::LoaderPtr Featurizer::getColdStartDataLoader(
@@ -77,10 +86,38 @@ data::LoaderPtr Featurizer::getColdStartDataLoader(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<data::VariableLengthConfig> variable_length,
+    const std::optional<data::SpladeConfig>& splade_config,
     bool fast_approximation, size_t batch_size, bool shuffle, bool verbose,
     dataset::DatasetShuffleConfig shuffle_config) {
-  auto cold_start = coldStartTransform(strong_column_names, weak_column_names,
-                                       variable_length, fast_approximation);
+  data::TransformationPtr cold_start;
+
+  if (splade_config &&
+      (!strong_column_names.empty() || !weak_column_names.empty())) {
+    // TODO(Nicholas, David): Should we add an option to sample a certain number
+    // of times from a specific column, i.e. splade tokens.
+    if (splade_config->strong_sample_override && variable_length) {
+      variable_length->overrideStrongSampleNumWords(
+          *splade_config->strong_sample_override);
+    }
+
+    auto strong_columns_copy = strong_column_names;
+    strong_columns_copy.push_back(SPLADE_TOKENS);
+
+    auto all_columns = strong_column_names;
+    all_columns.insert(all_columns.end(), weak_column_names.begin(),
+                       weak_column_names.end());
+    cold_start =
+        data::Pipeline::make()
+            ->then(std::make_shared<data::StringConcat>(all_columns,
+                                                        SPLADE_TOKENS, " "))
+            ->then(std::make_shared<data::SpladeAugmentation>(
+                SPLADE_TOKENS, SPLADE_TOKENS, *splade_config))
+            ->then(coldStartTransform(strong_columns_copy, weak_column_names,
+                                      variable_length, fast_approximation));
+  } else {
+    cold_start = coldStartTransform(strong_column_names, weak_column_names,
+                                    variable_length, fast_approximation);
+  }
 
   return getDataLoaderHelper(data_source, batch_size, shuffle, verbose,
                              shuffle_config, cold_start);
@@ -89,12 +126,12 @@ data::LoaderPtr Featurizer::getColdStartDataLoader(
 data::LoaderPtr Featurizer::getDataLoaderHelper(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
     bool verbose, dataset::DatasetShuffleConfig shuffle_config,
-    const data::TransformationPtr& cold_start_transform) {
+    const data::TransformationPtr& preprocesser) {
   auto data_iter = data::CsvIterator::make(data_source, _delimiter);
 
   std::vector<data::TransformationPtr> transformations;
-  if (cold_start_transform) {
-    transformations.push_back(cold_start_transform);
+  if (preprocesser) {
+    transformations.push_back(preprocesser);
   }
   transformations.push_back(_input_transform);
   transformations.push_back(_label_transform);
