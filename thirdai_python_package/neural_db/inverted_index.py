@@ -66,3 +66,10 @@ class InvertedIndex:
 
     def clear(self):
         self.indexes = []
+
+    def __setstate__(self, state):
+        if "indexes" not in state:
+            state["indexes"] = [state["index"]]
+            state["max_shard_size"] = 8_000_000
+            del state["index"]
+        self.__dict__.update(state)
