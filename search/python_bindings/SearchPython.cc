@@ -86,6 +86,7 @@ void createSearchSubmodule(py::module_& module) {
       .def("remove", &InvertedIndex::remove, py::arg("ids"))
       .def("update_idf_cutoff", &InvertedIndex::updateIdfCutoff,
            py::arg("cutoff"))
+      .def("size", &InvertedIndex::size)
       .def_static("parallel_query", &InvertedIndex::parallelQuery,
                   py::arg("indices"), py::arg("query"), py::arg("k"))
       .def("save", &InvertedIndex::save, py::arg("filename"))

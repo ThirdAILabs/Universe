@@ -48,6 +48,8 @@ class InvertedIndex {
     computeIdfs();
   }
 
+  size_t size() const { return _doc_lengths.size(); }
+
   static std::vector<DocScore> parallelQuery(
       const std::vector<std::shared_ptr<InvertedIndex>>& indices,
       const Tokens& query, uint32_t k);
