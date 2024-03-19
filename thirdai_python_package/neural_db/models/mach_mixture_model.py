@@ -269,8 +269,7 @@ class MachMixture(Model):
                     segment_to_label_map[segment].append(label)
         else:
             segment_to_label_map = {
-                model_id: self.label_to_segment_map
-                for model_id in range(self.num_shards)
+                model_id: entities for model_id in range(self.num_shards)
             }
 
         # Delete entities for each segment
