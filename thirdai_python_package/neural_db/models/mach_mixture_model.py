@@ -318,7 +318,8 @@ class MachMixture(Model):
             return None
 
         return add_retriever_tag(
-            self.aggregate_results(inverted_index_results), tag="inverted_index"
+            self.aggregate_results(inverted_index_results)[:n_results],
+            tag="inverted_index",
         )
 
     def infer_labels(

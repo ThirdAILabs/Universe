@@ -492,6 +492,7 @@ std::vector<UDT::Scores> UDT::labelProbeMultipleMach(
             "Cannot perform label probing for a mach model with more than 1 "
             "hash");
       }
+      mach_models.push_back(mach_model);
     } else {
       throw std::invalid_argument("Cannot perform decoding on non mach model.");
     }

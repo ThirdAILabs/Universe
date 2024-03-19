@@ -746,6 +746,7 @@ class NeuralDB:
             )
         else:
             if isinstance(self._savable_state.model, MachMixture):
+
                 queries_result_ids = self._savable_state.model.infer_labels(
                     samples=queries,
                     n_results=top_k_to_search,
