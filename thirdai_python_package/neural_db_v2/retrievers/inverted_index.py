@@ -1,6 +1,5 @@
 from typing import Iterable, List, Tuple
 
-import pandas as pd
 from nltk.tokenize import word_tokenize
 from thirdai import search
 
@@ -51,8 +50,10 @@ class InvertedIndex(Retriever):
 
     def insert(self, chunks: Iterable[ChunkBatch], **kwargs):
         for batch in chunks:
-            texts = batch.keywords.reset_index(drop=True) + batch.text.reset_index(
-                drop=True
+            texts = (
+                batch.keywords.reset_index(drop=True)
+                + " "
+                + batch.text.reset_index(drop=True)
             )
             texts = texts.map(word_tokenize).to_list()
 
