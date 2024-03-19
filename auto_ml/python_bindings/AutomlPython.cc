@@ -143,7 +143,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("evaluate", &udt::UDT::evaluate, py::arg("data"),
            py::arg("metrics") = std::vector<std::string>{},
            py::arg("sparse_inference") = false, py::arg("verbose") = true,
-           py::arg("top_k") = std::nullopt, bolt::python::OutputRedirect())
+           bolt::python::OutputRedirect())
       .def("predict", &udt::UDT::predict, py::arg("sample"),
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false,
