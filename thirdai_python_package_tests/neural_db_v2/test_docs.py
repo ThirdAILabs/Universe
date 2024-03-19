@@ -1,0 +1,230 @@
+import os
+from typing import List
+
+import pandas as pd
+import pytest
+from thirdai.neural_db_v2 import CSV, DOCX, PDF, PPTX, URL, Document, Email, TextFile
+
+pytestmark = [pytest.mark.unit, pytest.mark.release]
+
+
+def all_empty_strings(series: pd.Series):
+    return series.map(lambda x: isinstance(x, str) and len(x) == 0).all()
+
+
+def all_strings(series: pd.Series):
+    return series.map(lambda x: isinstance(x, str)).any()
+
+
+def all_nonempty_strings(series: pd.Series):
+    return series.map(lambda x: isinstance(x, str) and len(x) > 0).all()
+
+
+def doc_property_checks(
+    doc: Document,
+    has_keywords: bool,
+    has_custom_ids: bool,
+    document_metadata: dict,
+    chunk_metadata_columns: List[str],
+    allow_empty_keywords: bool = False,
+):
+    has_chunks = False
+    for chunks in doc.chunks():
+        assert len(chunks.text) > 0
+        assert all_nonempty_strings(chunks.text)
+
+        if has_keywords:
+            if allow_empty_keywords:
+                assert all_strings(chunks.keywords)
+            else:
+                assert all_nonempty_strings(chunks.keywords)
+        else:
+            assert all_empty_strings(chunks.keywords)
+        assert len(chunks.keywords) == len(chunks.text)
+
+        if has_custom_ids:
+            assert len(chunks.custom_id) == len(chunks.text)
+        else:
+            assert chunks.custom_id is None
+
+        assert len(chunks.document) == len(chunks.text)
+        assert all_nonempty_strings(chunks.document)
+        assert chunks.document.nunique() == 1
+
+        if len(document_metadata) > 0:
+            for key, value in document_metadata.items():
+                assert key in chunks.metadata.columns
+                unique = chunks.metadata[key].unique()
+                assert len(unique) == 1
+                assert unique[0] == value
+
+        for col in chunk_metadata_columns:
+            assert col in chunks.metadata.columns
+
+        if len(document_metadata) + len(chunk_metadata_columns) > 0:
+            assert len(chunks.metadata) == len(chunks.text)
+            assert len(chunks.metadata.columns) == len(
+                set(chunk_metadata_columns).union(document_metadata.keys())
+            )
+        else:
+            assert chunks.metadata is None
+
+        has_chunks = True
+
+    assert has_chunks
+
+
+DOC_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "../neural_db/document_test_data"
+)
+
+
+def test_csv_doc_infered_columns():
+    path = os.path.join(DOC_DIR, "lorem_ipsum.csv")
+    df = pd.read_csv(path)
+
+    doc = CSV(path, custom_id_column="category")
+    doc_property_checks(
+        doc,
+        has_keywords=False,
+        has_custom_ids=True,
+        document_metadata={},
+        chunk_metadata_columns=[],
+    )
+    chunks = doc.chunks()[0]
+    assert (df["text"] == chunks.text).all()
+    assert (df["category"] == chunks.custom_id).all()
+
+
+def test_csv_doc_no_keywords():
+    path = os.path.join(DOC_DIR, "lorem_ipsum.csv")
+    df = pd.read_csv(path)
+
+    doc = CSV(path, text_columns=["text", "text"], metadata={"type": "csv"})
+    doc_property_checks(
+        doc,
+        has_keywords=False,
+        has_custom_ids=False,
+        document_metadata={"type": "csv"},
+        chunk_metadata_columns=["category"],
+    )
+    chunks = doc.chunks()[0]
+    assert ((df["text"] + " " + df["text"]) == chunks.text).all()
+    assert (df["category"] == chunks.metadata["category"]).all()
+    assert (chunks.metadata["type"] == "csv").all()
+
+
+def test_csv_doc_with_keywords():
+    path = os.path.join(DOC_DIR, "lorem_ipsum.csv")
+    df = pd.read_csv(path)
+
+    doc = CSV(
+        path,
+        custom_id_column="category",
+        text_columns=["text"],
+        keyword_columns=["text", "text"],
+        metadata={"type": "csv"},
+    )
+    doc_property_checks(
+        doc,
+        has_keywords=True,
+        has_custom_ids=True,
+        document_metadata={"type": "csv"},
+        chunk_metadata_columns=[],
+    )
+    chunks = doc.chunks()[0]
+    assert (df["text"] == chunks.text).all()
+    assert ((df["text"] + " " + df["text"]) == chunks.keywords).all()
+    assert (chunks.metadata["type"] == "csv").all()
+
+
+@pytest.mark.parametrize("metadata", [{}, {"val": "abc"}])
+def test_docx_doc(metadata):
+    path = os.path.join(DOC_DIR, "four_english_words.docx")
+
+    doc = DOCX(path, metadata=metadata)
+
+    doc_property_checks(
+        doc=doc,
+        has_keywords=False,
+        has_custom_ids=False,
+        document_metadata=metadata,
+        chunk_metadata_columns=[],
+    )
+
+
+@pytest.mark.parametrize("metadata", [{}, {"val": "abc"}])
+def test_pdf_doc(metadata):
+    path = os.path.join(DOC_DIR, "mutual_nda.pdf")
+
+    doc = PDF(path, metadata=metadata)
+
+    doc_property_checks(
+        doc=doc,
+        has_keywords=True,
+        has_custom_ids=False,
+        document_metadata=metadata,
+        chunk_metadata_columns=["chunk_boxes", "page"],
+        allow_empty_keywords=True,
+    )
+
+
+@pytest.mark.parametrize("metadata", [{}, {"val": "abc"}])
+def test_email_doc(metadata):
+    path = os.path.join(DOC_DIR, "Message.eml")
+
+    doc = Email(path, metadata=metadata)
+
+    doc_property_checks(
+        doc=doc,
+        has_keywords=False,
+        has_custom_ids=False,
+        document_metadata=metadata,
+        chunk_metadata_columns=["filetype", "subject", "sent_from", "sent_to"],
+    )
+
+
+@pytest.mark.parametrize("metadata", [{}, {"val": "abc"}])
+def test_pptx_doc(metadata):
+    path = os.path.join(DOC_DIR, "quantum_mechanics.pptx")
+
+    doc = PPTX(path, metadata=metadata)
+
+    doc_property_checks(
+        doc=doc,
+        has_keywords=False,
+        has_custom_ids=False,
+        document_metadata=metadata,
+        chunk_metadata_columns=["filetype", "page"],
+    )
+
+
+@pytest.mark.parametrize("metadata", [{}])
+def test_txt_doc(metadata):
+    path = os.path.join(DOC_DIR, "nature.txt")
+
+    doc = TextFile(path, metadata=metadata)
+
+    doc_property_checks(
+        doc=doc,
+        has_keywords=False,
+        has_custom_ids=False,
+        document_metadata=metadata,
+        chunk_metadata_columns=["filetype"],
+    )
+
+
+@pytest.mark.parametrize("metadata", [{}, {"val": "abc"}])
+def test_url_doc(metadata):
+    url = "https://en.wikipedia.org/wiki/Rice_University"
+
+    for title_is_strong in [True, False]:
+        doc = URL(url=url, title_is_strong=title_is_strong, metadata=metadata)
+
+        doc_property_checks(
+            doc=doc,
+            has_keywords=True,
+            has_custom_ids=False,
+            document_metadata=metadata,
+            chunk_metadata_columns=[],
+        )

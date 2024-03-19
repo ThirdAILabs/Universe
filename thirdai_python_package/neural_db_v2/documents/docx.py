@@ -27,7 +27,7 @@ class DOCX(Document):
         text = parsed_chunks["para"]
 
         metadata = None
-        if self.metadata is not None:
+        if self.metadata:
             metadata = pd.DataFrame.from_records([self.metadata] * len(text))
 
         return [

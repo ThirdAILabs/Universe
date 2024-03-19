@@ -25,7 +25,7 @@ def concat_str_columns(df: pd.DataFrame, columns: List[str]):
     output = df[columns[0]]
 
     for col in columns[1:]:
-        output += " " + df[col]
+        output = output + " " + df[col]
 
     return output
 
@@ -51,7 +51,8 @@ class CSV(Document):
         df = pd.read_csv(self.path)
 
         custom_id = df[self.custom_id_column] if self.custom_id_column else None
-        df.drop(self.custom_id_column, axis=1, inplace=True)
+        if self.custom_id_column:
+            df.drop(self.custom_id_column, axis=1, inplace=True)
 
         if len(self.text_columns) + len(self.keyword_columns) == 0:
             self.text_columns = infer_text_columns(df)
@@ -61,7 +62,7 @@ class CSV(Document):
 
         metadata = df.drop(self.text_columns + self.keyword_columns, axis=1)
 
-        if self.metadata is not None:
+        if self.metadata:
             metadata = pd.concat(
                 [metadata, pd.DataFrame.from_records([self.metadata] * len(text))],
                 axis=1,

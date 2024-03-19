@@ -30,7 +30,7 @@ class Unstructured(Document):
         self.metadata = metadata
 
     def chunks(self) -> Iterable[NewChunkBatch]:
-        parser = PptxParse(self.path)
+        parser = self.parser(self.path)
 
         elements, success = parser.process_elements()
 
@@ -42,7 +42,7 @@ class Unstructured(Document):
         text = contents["para"]
 
         metadata = contents[self.metadata_columns]
-        if self.metadata is not None:
+        if self.metadata:
             metadata = pd.concat(
                 [metadata, pd.DataFrame.from_records([self.metadata] * len(text))],
                 axis=1,
@@ -59,7 +59,7 @@ class Unstructured(Document):
         ]
 
 
-class Powerpoint(Unstructured):
+class PPTX(Unstructured):
     def __init__(self, path, metadata):
         super().__init__(
             path=path,
