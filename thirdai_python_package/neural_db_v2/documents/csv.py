@@ -61,7 +61,7 @@ class CSV(Document):
 
         metadata = df.drop(self.text_columns + self.keyword_columns, axis=1)
 
-        if self.metadata:
+        if self.metadata is not None:
             metadata = pd.concat(
                 [metadata, pd.DataFrame.from_records([self.metadata] * len(text))],
                 axis=1,

@@ -36,7 +36,7 @@ class URL(Document):
         keywords = content["title"] if self.title_is_strong else content["text"]
 
         metadata = None
-        if self.metadata:
+        if self.metadata is not None:
             metadata = pd.DataFrame.from_records([self.metadata] * len(text))
 
         return [

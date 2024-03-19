@@ -44,7 +44,7 @@ class PDF(Document):
         keywords = parsed_chunks["emphasis"]
 
         metadata = parsed_chunks[["chunk_boxes", "page"]]
-        if self.metadata:
+        if self.metadata is not None:
             metadata = pd.concat(
                 [metadata, pd.DataFrame.from_records([self.metadata] * len(text))],
                 axis=1,
