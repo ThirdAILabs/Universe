@@ -139,8 +139,8 @@ def interrupted_training(num_shards: int, num_models_per_shard: int, interrupt_f
         raise ex
 
 
-def make_db_and_training_manager(num_shards=2, makes_checkpoint=True):
-    db = ndb.NeuralDB(num_shards=num_shards)
+def make_db_and_training_manager(num_models_per_shard=2, makes_checkpoint=True):
+    db = ndb.NeuralDB(num_models_per_shard=num_models_per_shard)
     checkpoint_dir = Path(CHECKPOINT_DIR) / str(0)
 
     document_manager = db._savable_state.documents
@@ -149,8 +149,8 @@ def make_db_and_training_manager(num_shards=2, makes_checkpoint=True):
     save_load_manager = TrainingDataManager(
         checkpoint_dir=checkpoint_dir,
         model=(
-            db._savable_state.model.models[0]
-            if num_shards > 1
+            db._savable_state.model.ensembles[0].models[0]
+            if num_models_per_shard > 1
             else db._savable_state.model
         ),
         intro_source=document_manager.get_data_source(),
@@ -411,7 +411,7 @@ def test_training_progress_manager_with_resuming(setup_and_cleanup):
 
 def test_training_progress_manager_gives_correct_arguments(setup_and_cleanup):
     _, training_manager, _ = make_db_and_training_manager(
-        num_shards=1, makes_checkpoint=False
+        num_models_per_shard=1, makes_checkpoint=False
     )
 
     assert {
