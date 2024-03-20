@@ -28,6 +28,8 @@ CHECKPOINT_DIR = "/tmp/neural_db"
 NUMBER_DOCS = 3
 DOCS_TO_INSERT = [get_doc() for get_doc in all_local_doc_getters[:NUMBER_DOCS]]
 OUTPUT_DIM = 1000
+FHR = 10_000
+EMBEDDING_DIM = 512
 
 
 @pytest.fixture
@@ -64,6 +66,8 @@ def train_neural_db_with_checkpoint(num_shards: int, num_models_per_shard: int):
         num_shards=num_shards,
         num_models_per_shard=num_models_per_shard,
         extreme_output_dim=OUTPUT_DIM,
+        fhr=FHR,
+        embedding_dimension=EMBEDDING_DIM,
     )
     # only training for the first two documents
 
@@ -116,6 +120,8 @@ def interrupted_training(
         num_shards=num_shards,
         num_models_per_shard=num_models_per_shard,
         extreme_output_dim=OUTPUT_DIM,
+        fhr=FHR,
+        embedding_dimension=EMBEDDING_DIM,
     )
 
     checkpoint_config = ndb.CheckpointConfig(
