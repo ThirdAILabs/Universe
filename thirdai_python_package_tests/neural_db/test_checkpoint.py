@@ -7,18 +7,17 @@ import nltk
 import pytest
 
 nltk.download("punkt")
-from ndb_utils import PDF_FILE, all_local_doc_getters, associate_works, upvote_works
+from ndb_utils import (PDF_FILE, all_local_doc_getters, associate_works,
+                       upvote_works)
 from thirdai import data
 from thirdai import neural_db as ndb
 from thirdai.neural_db.models.mach_mixture_model import MachMixture
 from thirdai.neural_db.models.models import Mach
 from thirdai.neural_db.trainer.training_data_manager import TrainingDataManager
-from thirdai.neural_db.trainer.training_progress_manager import TrainingProgressManager
+from thirdai.neural_db.trainer.training_progress_manager import \
+    TrainingProgressManager
 from thirdai.neural_db.trainer.training_progress_tracker import (
-    IntroState,
-    NeuralDbProgressTracker,
-    TrainState,
-)
+    IntroState, NeuralDbProgressTracker, TrainState)
 from thirdai.neural_db.utils import pickle_to, unpickle_from
 
 pytestmark = [pytest.mark.unit]
@@ -404,13 +403,14 @@ def test_training_progress_manager_no_checkpointing(setup_and_cleanup):
     assert training_manager.tracker.is_training_completed
     assert_no_checkpoints(training_manager.save_load_manager)
 
+
 @pytest.mark.release
 def test_training_progress_manager_with_resuming_without_sources():
     db, training_manager, checkpoint_dir = make_db_and_training_manager(
         makes_checkpoint=True
     )
     training_manager.make_preindexing_checkpoint(save_intro_train_shards=False)
-    
+
     with pytest.raises(FileNotFoundError):
         TrainingProgressManager.from_checkpoint(
             original_mach_model=db._savable_state.model.ensembles[0].models[0],
@@ -420,7 +420,7 @@ def test_training_progress_manager_with_resuming_without_sources():
                 checkpoint_interval=1,
             ),
         )
-    
+
     resume_training_manager = TrainingProgressManager.from_checkpoint(
         original_mach_model=db._savable_state.model.ensembles[0].models[0],
         checkpoint_config=ndb.CheckpointConfig(
@@ -429,9 +429,9 @@ def test_training_progress_manager_with_resuming_without_sources():
             checkpoint_interval=1,
         ),
         intro_shard=training_manager.intro_source,
-        train_shard=training_manager.train_source
+        train_shard=training_manager.train_source,
     )
-    
+
     assert_same_data_sources(
         training_manager.intro_source, resume_training_manager.intro_source
     )
@@ -442,6 +442,7 @@ def test_training_progress_manager_with_resuming_without_sources():
         training_manager.save_load_manager.model,
         resume_training_manager.save_load_manager.model,
     )
+
 
 @pytest.mark.release
 def test_training_progress_manager_with_resuming(setup_and_cleanup):

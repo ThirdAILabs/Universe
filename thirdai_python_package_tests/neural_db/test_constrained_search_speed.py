@@ -6,11 +6,8 @@ from typing import List
 import pandas as pd
 import pytest
 from thirdai import neural_db as ndb
-from thirdai.neural_db.constraint_matcher import (
-    ConstraintMatcher,
-    ConstraintValue,
-    to_filters,
-)
+from thirdai.neural_db.constraint_matcher import (ConstraintMatcher,
+                                                  ConstraintValue, to_filters)
 from tqdm import tqdm
 
 random.seed(1)
