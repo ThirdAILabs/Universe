@@ -404,6 +404,44 @@ def test_training_progress_manager_no_checkpointing(setup_and_cleanup):
     assert training_manager.tracker.is_training_completed
     assert_no_checkpoints(training_manager.save_load_manager)
 
+@pytest.mark.release
+def test_training_progress_manager_with_resuming_without_sources():
+    db, training_manager, checkpoint_dir = make_db_and_training_manager(
+        makes_checkpoint=True
+    )
+    training_manager.make_preindexing_checkpoint(save_intro_train_shards=False)
+    
+    with pytest.raises(FileNotFoundError):
+        TrainingProgressManager.from_checkpoint(
+            original_mach_model=db._savable_state.model.ensembles[0].models[0],
+            checkpoint_config=ndb.CheckpointConfig(
+                checkpoint_dir=checkpoint_dir,
+                resume_from_checkpoint=True,
+                checkpoint_interval=1,
+            ),
+        )
+    
+    resume_training_manager = TrainingProgressManager.from_checkpoint(
+        original_mach_model=db._savable_state.model.ensembles[0].models[0],
+        checkpoint_config=ndb.CheckpointConfig(
+            checkpoint_dir=checkpoint_dir,
+            resume_from_checkpoint=True,
+            checkpoint_interval=1,
+        ),
+        intro_shard=training_manager.intro_source,
+        train_shard=training_manager.train_source
+    )
+    
+    assert_same_data_sources(
+        training_manager.intro_source, resume_training_manager.intro_source
+    )
+    assert_same_data_sources(
+        training_manager.train_source, resume_training_manager.train_source
+    )
+    assert_same_objects(
+        training_manager.save_load_manager.model,
+        resume_training_manager.save_load_manager.model,
+    )
 
 @pytest.mark.release
 def test_training_progress_manager_with_resuming(setup_and_cleanup):

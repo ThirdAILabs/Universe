@@ -472,11 +472,12 @@ def clear_sources_works(db: ndb.NeuralDB):
 
 
 @pytest.fixture(scope="session")
-def empty_neural_db():
+def empty_neural_db(request):
     """Initializes an empty NeuralDB once per test session to speed up tests.
     Best used for tests that don't assert accuracy.
     """
-    db = ndb.NeuralDB()
+    num_models_per_shard = request.param
+    db = ndb.NeuralDB(num_shards=1, num_models_per_shard=num_models_per_shard)
     # db.insert() initializes the mach model so this only happens once per
     # test session. Clear the sources so it's back to being empty.
     db.insert([ndb.CSV(CSV_FILE)], train=False)
