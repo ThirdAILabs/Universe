@@ -150,7 +150,6 @@ class MachMixture(Model):
         cancel_state: CancelState,
         checkpoint_config: CheckpointConfig,
     ):
-        print("CALLING RESUME")
         # If checkpoint_dir in checkpoint_config is /john/doe and number of models is 2, the underlying mach models will make checkpoint at /john/doe/0 and /john/doe/1 depending on model ids.
         ensemble_checkpoint_configs = generate_checkpoint_configs_for_ensembles(
             config=checkpoint_config,
