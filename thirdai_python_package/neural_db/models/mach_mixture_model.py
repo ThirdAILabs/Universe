@@ -394,14 +394,26 @@ class MachMixture(Model):
 
         for i in range(len(samples)):
             for score in model_scores:
-                for label, value in score[i]:
+                for label, value, tag in score[i]:
                     aggregated_scores[i][label] += value
+                    assert tag == "mach", (
+                        "We ignore the retriever tag returned by each ensemble. "
+                        "This was inconsequential at the time of writing since "
+                        "the MultiMach.score() always returns the 'mach' retriever "
+                        "tag. We assert this condition so we reevaluate this "
+                        "decision if the condition no longer holds."
+                    )
 
         # Sort the aggregated scores and keep only the top k results
         top_k_results = []
         for i in range(len(samples)):
             sorted_scores = sorted(
-                aggregated_scores[i].items(), key=lambda x: x[1], reverse=True
+                [
+                    (label, score, "mach")
+                    for label, score in aggregated_scores[i].items()
+                ],
+                key=lambda x: x[1],
+                reverse=True,
             )
             top_k_results.append(
                 sorted_scores[:n_results] if n_results else sorted_scores
