@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Union, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 from urllib.parse import urljoin
 
 from .bazaar_base import Bazaar, auth_header
@@ -568,7 +568,13 @@ class ModelBazaar(Bazaar):
             print("Training: In progress", end="", flush=True)
             print_progress_dots(duration=10)
 
-    def deploy(self, model_identifier: str, deployment_name: str, memory: Optional[int] = None, is_async=False):
+    def deploy(
+        self,
+        model_identifier: str,
+        deployment_name: str,
+        memory: Optional[int] = None,
+        is_async=False,
+    ):
         """
         Deploys a model and returns a NeuralDBClient instance.
 
@@ -585,7 +591,7 @@ class ModelBazaar(Bazaar):
             "user_id": self._user_id,
             "model_identifier": model_identifier,
             "deployment_name": deployment_name,
-            "memory": memory
+            "memory": memory,
         }
         response = http_post_with_error(
             url, params=params, headers=auth_header(self._access_token)
@@ -599,7 +605,7 @@ class ModelBazaar(Bazaar):
                 deployment_username=self._username,
             ),
             base_url=response_data["endpoint"] + "/",
-            bazaar=self
+            bazaar=self,
         )
         if is_async:
             return ndb_client
