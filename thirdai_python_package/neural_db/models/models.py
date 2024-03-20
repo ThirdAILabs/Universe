@@ -12,7 +12,6 @@ from thirdai import bolt, data, demos
 
 from ..documents import DocumentDataSource
 from ..inverted_index import InvertedIndex
-from .mach_defaults import acc_to_stop, metric_to_track
 from ..supervised_datasource import SupDataSource
 from ..trainer.checkpoint_config import CheckpointConfig
 from ..trainer.training_progress_manager import (
@@ -20,6 +19,7 @@ from ..trainer.training_progress_manager import (
     TrainingProgressManager,
 )
 from ..utils import clean_text, pickle_to
+from .mach_defaults import acc_to_stop, metric_to_track
 
 InferSamples = List
 Predictions = Sequence

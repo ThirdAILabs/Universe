@@ -3,11 +3,12 @@ from pathlib import Path
 from typing import Callable, List, Optional, Tuple
 
 from thirdai import bolt
+
 from ..documents import DocumentDataSource
-from .models import CancelState, Mach
 from ..supervised_datasource import SupDataSource
 from ..trainer.training_progress_manager import TrainingProgressManager
 from ..utils import clean_text
+from .models import CancelState, Mach
 
 
 def aggregate_ensemble_results(results):

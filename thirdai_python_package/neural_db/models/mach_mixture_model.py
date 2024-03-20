@@ -5,8 +5,6 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt, data
 
 from ..documents import DocumentDataSource
-from .models import CancelState, Mach, Model, add_retriever_tag, merge_results
-from .multi_mach import MultiMach
 from ..sharded_documents import shard_data_source
 from ..supervised_datasource import SupDataSource
 from ..trainer.checkpoint_config import (
@@ -15,6 +13,8 @@ from ..trainer.checkpoint_config import (
 )
 from ..trainer.training_progress_manager import TrainingProgressManager
 from ..utils import clean_text, pickle_to, requires_condition, unpickle_from
+from .models import CancelState, Mach, Model, add_retriever_tag, merge_results
+from .multi_mach import MultiMach
 
 InferSamples = List
 Predictions = Sequence

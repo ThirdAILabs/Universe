@@ -12,8 +12,7 @@ from urllib.parse import urljoin
 import requests
 from pydantic import BaseModel, ValidationError
 from requests.auth import HTTPBasicAuth
-from thirdai.neural_db.neural_db import CancelState
-from thirdai.neural_db.neural_db import NeuralDB
+from thirdai.neural_db.neural_db import CancelState, NeuralDB
 from tqdm import tqdm
 
 from .utils import (

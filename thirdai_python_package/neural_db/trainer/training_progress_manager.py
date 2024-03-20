@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from thirdai import bolt
 
 from ..documents import DocumentDataSource
@@ -10,8 +12,6 @@ from ..models.mach_defaults import (
 from .checkpoint_config import CheckpointConfig
 from .training_data_manager import TrainingDataManager
 from .training_progress_tracker import IntroState, NeuralDbProgressTracker, TrainState
-
-from typing import Optional
 
 
 class TrainingProgressCallback(bolt.train.callbacks.Callback):
