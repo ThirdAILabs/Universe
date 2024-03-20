@@ -16,10 +16,20 @@ void checkQuery(const InvertedIndex& index, const Tokens& query,
   }
 }
 
+void checkRank(const InvertedIndex& index, const Tokens& query,
+               const std::vector<DocId>& candidates,
+               const std::vector<DocId>& expected_ids) {
+  auto results = index.rank(query, candidates, expected_ids.size());
+  ASSERT_EQ(results.size(), expected_ids.size());
+  for (size_t i = 0; i < expected_ids.size(); i++) {
+    ASSERT_EQ(results.at(i).first, expected_ids.at(i));
+  }
+}
+
 TEST(InvertedIndexTests, BasicRetrieval) {
   InvertedIndex index(1.0);
 
-  index.index({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
+  index.index({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
               {{"a", "b", "c", "d", "e", "g"},
                {"a", "b", "c", "d"},
                {"1", "2", "3"},
@@ -30,18 +40,26 @@ TEST(InvertedIndexTests, BasicRetrieval) {
                {"c", "d", "e", "f"},
                {"t", "q", "v"},
                {"m", "n", "o"},
-               {"f", "g", "h", "i"}});
+               {"f", "g", "h", "i"},
+               {"c", "7", "8", "9", "10", "11"}});
 
   // Docs 2 and 1 both contain the whole query, but doc 2 is shorter so it ranks
   // higher. Docs 6 and 8 both contain "c" but 6 is shorter so the query terms
   // are more frequent within it.
   checkQuery(index, {"a", "b", "c"}, {2, 1, 6, 8});
+  // These candidates are a subset of the original results, plus 12 which
+  // usually would score lower and not be returned, but is returned when we
+  // restrict the candidates. Doc 3 is also added but scores 0.
+  checkRank(index, {"a", "b", "c"}, {8, 12, 3, 1}, {1, 8, 12});
 
   // Docs 7 and 11 contain the whole query, but 7 contains "g" repeated so it
   // scores higher. Docs 6, 8, 1 contain 1 term of the query. However 1 contains
   // "g" which occurs in fewer docs so it ranks higher. Between 6 and 8, 6 is
   // shorter so the query terms are more frequent within it.
   checkQuery(index, {"f", "g"}, {7, 11, 1, 6, 8});
+  // These candidates are a subset of the original results plus docs 5 & 2 which
+  // score 0 are added to test they are not returned.
+  checkRank(index, {"f", "g"}, {8, 5, 6, 2, 7}, {7, 6, 8});
 }
 
 TEST(InvertedIndexTests, LessFrequentTokensScoreHigher) {
