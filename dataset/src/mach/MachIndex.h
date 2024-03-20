@@ -13,13 +13,16 @@
 
 namespace thirdai::dataset::mach {
 
+static constexpr uint32_t DEFAULT_SEED = 341;
+
 class MachIndex {
  public:
   MachIndex(uint32_t num_buckets, uint32_t num_hashes, uint32_t num_elements);
 
   MachIndex(const std::unordered_map<uint32_t, std::vector<uint32_t>>&
                 entity_to_hashes,
-            uint32_t num_buckets, uint32_t num_hashes);
+            uint32_t num_buckets, uint32_t num_hashes,
+            uint32_t seed = DEFAULT_SEED);
 
   MachIndex(uint32_t num_buckets, uint32_t num_hashes)
       : _buckets(num_buckets), _num_hashes(num_hashes) {}
@@ -131,7 +134,7 @@ class MachIndex {
   uint32_t _num_hashes;
 
   std::unordered_set<uint32_t> _nonempty_buckets;
-  uint32_t _seed = 341;
+  uint32_t _seed = DEFAULT_SEED;
 
   MachIndex() {}
 

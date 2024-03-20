@@ -746,20 +746,12 @@ class NeuralDB:
                 samples=queries, entities=[matching_entities], n_results=top_k_to_search
             )
         else:
-            if isinstance(self._savable_state.model, MachMixture):
-
-                queries_result_ids = self._savable_state.model.infer_labels(
-                    samples=queries,
-                    n_results=top_k_to_search,
-                    retriever="mach" if rerank else retriever,
-                    label_probing=label_probing,
-                )
-            else:
-                queries_result_ids = self._savable_state.model.infer_labels(
-                    samples=queries,
-                    n_results=top_k_to_search,
-                    retriever="mach" if rerank else retriever,
-                )
+            queries_result_ids = self._savable_state.model.infer_labels(
+                samples=queries,
+                n_results=top_k_to_search,
+                retriever="mach" if rerank else retriever,
+                label_probing=label_probing,
+            )
 
         return [
             self._get_query_references(

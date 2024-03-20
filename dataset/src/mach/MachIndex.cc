@@ -42,8 +42,8 @@ MachIndex::MachIndex(uint32_t num_buckets, uint32_t num_hashes,
 
 MachIndex::MachIndex(
     const std::unordered_map<uint32_t, std::vector<uint32_t>>& entity_to_hashes,
-    uint32_t num_buckets, uint32_t num_hashes)
-    : _buckets(num_buckets), _num_hashes(num_hashes) {
+    uint32_t num_buckets, uint32_t num_hashes, uint32_t seed)
+    : _buckets(num_buckets), _num_hashes(num_hashes), _seed(seed) {
   for (auto [entity, hashes] : entity_to_hashes) {
     insert(entity, hashes);
   }
@@ -180,6 +180,7 @@ ar::ConstArchivePtr MachIndex::toArchive() const {
   map->set("entity_to_hashes", ar::mapU64VecU64(std::move(entity_to_hashes)));
   map->set("num_buckets", ar::u64(numBuckets()));
   map->set("num_hashes", ar::u64(numHashes()));
+  map->set("seed", ar::u64(_seed));
 
   return map;
 }
@@ -195,9 +196,9 @@ std::shared_ptr<MachIndex> MachIndex::fromArchive(const ar::Archive& archive) {
     entity_to_hashes[k] = {v.begin(), v.end()};
   }
 
-  return std::make_shared<MachIndex>(std::move(entity_to_hashes),
-                                     archive.u64("num_buckets"),
-                                     archive.u64("num_hashes"));
+  return std::make_shared<MachIndex>(
+      std::move(entity_to_hashes), archive.u64("num_buckets"),
+      archive.u64("num_hashes"), archive.getOr<uint64_t>("seed", DEFAULT_SEED));
 }
 
 TopKActivationsQueue MachIndex::topKNonEmptyBuckets(const BoltVector& output,

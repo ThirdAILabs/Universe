@@ -130,7 +130,7 @@ class MachMixture(Model):
 
     def index_documents_impl(
         self,
-        training_progress_managers: List[TrainingProgressManager],
+        training_progress_managers: List[List[TrainingProgressManager]],
         on_progress: Callable,
         cancel_state: CancelState,
     ):
@@ -305,7 +305,10 @@ class MachMixture(Model):
             )
             for ensemble in self.ensembles
         ]
-        return add_retriever_tag(self.aggregate_results(ensemble_results), tag="mach")
+        return add_retriever_tag(
+            self.aggregate_results(ensemble_results)[:n_results],
+            tag="mach",
+        )
 
     def query_inverted_index(self, samples, n_results):
         inverted_index_results = []
