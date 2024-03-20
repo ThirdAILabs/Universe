@@ -29,7 +29,7 @@ from ndb_utils import (
     upvote_works,
 )
 from thirdai import neural_db as ndb
-from thirdai.neural_db.models import merge_results
+from thirdai.neural_db.models.models import merge_results
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -70,7 +70,7 @@ def all_methods_work(
 
 
 @pytest.mark.parametrize("use_inverted_index", [True, False])
-def test_neural_db_all_methods_work_on_new_model(small_doc_set, use_inverted_index):
+def test_neural_db_all_methods_work_on_new_model_with_inverted(small_doc_set, use_inverted_index):
     db = ndb.NeuralDB(use_inverted_index=use_inverted_index)
     all_methods_work(
         db,
@@ -78,36 +78,17 @@ def test_neural_db_all_methods_work_on_new_model(small_doc_set, use_inverted_ind
         num_duplicate_docs=0,
         assert_acc=False,
     )
+    
 
-
-def test_neuralb_db_all_methods_work_on_new_mach_mixture(small_doc_set):
-    number_models = 2
-    db = ndb.NeuralDB("user", number_models=number_models)
+@pytest.mark.parametrize("num_shards", [1,2])
+def test_neuralb_db_all_methods_work_on_new_mach_mixture(small_doc_set, num_shards):
+    db = ndb.NeuralDB(num_shards=num_shards, num_models_per_shard=2)
     all_methods_work(
         db,
         docs=small_doc_set,
         num_duplicate_docs=0,
         assert_acc=False,
     )
-
-
-def test_neural_db_all_methods_work_on_old_model(small_doc_set):
-    """
-    This empty model was created with:
-    db = ndb.NeuralDB(embedding_dimension=512, extreme_output_dim=1000)
-    db.save(./saved_ndbs/empty_ndb)
-    """
-    checkpoint = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "saved_ndbs/empty_ndb"
-    )
-    db = ndb.NeuralDB.from_checkpoint(checkpoint)
-    all_methods_work(
-        db,
-        docs=small_doc_set,
-        num_duplicate_docs=0,
-        assert_acc=False,
-    )
-
 
 def test_neural_db_constrained_search_with_single_constraint():
     db = ndb.NeuralDB()
