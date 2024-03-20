@@ -317,8 +317,8 @@ class MachMixture(Model):
             for result in results:
                 joined_result.extend(result[i])
 
-            joined_result = joined_result[:n_results]
             joined_result.sort(key=lambda x: x[1], reverse=True)
+            joined_result = joined_result[:n_results]
 
             joined_results.append(joined_result)
         return joined_results
