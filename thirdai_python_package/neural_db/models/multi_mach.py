@@ -3,11 +3,12 @@ from pathlib import Path
 from typing import Callable, List, Optional, Tuple
 
 from thirdai import bolt
+
 from ..documents import DocumentDataSource
-from .models import CancelState, Mach
 from ..supervised_datasource import SupDataSource
 from ..trainer.training_progress_manager import TrainingProgressManager
 from ..utils import clean_text
+from .models import CancelState, Mach
 
 
 def aggregate_ensemble_results(results):
@@ -159,14 +160,26 @@ class MultiMach:
 
         for i in range(len(samples)):
             for score in model_scores:
-                for label, value, _ in score[i]:
+                for label, value, tag in score[i]:
                     aggregated_scores[i][label] += value
+                    assert tag == "mach", (
+                        "We ignore the retriever tag returned by each ensemble. "
+                        "This was inconsequential at the time of writing since "
+                        "the Mach.score() always returns the 'mach' retriever "
+                        "tag. We assert this condition so we reevaluate this "
+                        "decision if the condition no longer holds."
+                    )
 
         # Sort the aggregated scores and keep only the top k results
         top_k_results = []
         for i in range(len(samples)):
             sorted_scores = sorted(
-                aggregated_scores[i].items(), key=lambda x: x[1], reverse=True
+                [
+                    (label, score, "mach")
+                    for label, score in aggregated_scores[i].items()
+                ],
+                key=lambda x: x[1],
+                reverse=True,
             )
             top_k_results.append(
                 sorted_scores[:n_results] if n_results else sorted_scores
@@ -238,6 +251,7 @@ class MultiMach:
         max_in_memory_batches: Optional[int],
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
+        disable_inverted_index: bool,
     ):
         for model in self.models:
             model.train_on_supervised_data_source(
@@ -248,4 +262,5 @@ class MultiMach:
                 max_in_memory_batches=max_in_memory_batches,
                 metrics=metrics,
                 callbacks=callbacks,
+                disable_inverted_index=disable_inverted_index,
             )

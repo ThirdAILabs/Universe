@@ -5,8 +5,6 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from thirdai import bolt, data
 
 from ..documents import DocumentDataSource
-from .models import CancelState, Mach, Model, add_retriever_tag, merge_results
-from .multi_mach import MultiMach
 from ..sharded_documents import shard_data_source
 from ..supervised_datasource import SupDataSource
 from ..trainer.checkpoint_config import (
@@ -15,6 +13,8 @@ from ..trainer.checkpoint_config import (
 )
 from ..trainer.training_progress_manager import TrainingProgressManager
 from ..utils import clean_text, pickle_to, requires_condition, unpickle_from
+from .models import CancelState, Mach, Model, add_retriever_tag, merge_results
+from .multi_mach import MultiMach
 
 InferSamples = List
 Predictions = Sequence
@@ -164,9 +164,32 @@ class MachMixture(Model):
         for ensemble, config in zip(self.ensembles, ensemble_checkpoint_configs):
             ensemble_training_managers = []
             for model_id, model in enumerate(ensemble.models):
-                modelwise_training_manager = TrainingProgressManager.from_checkpoint(
-                    original_mach_model=model, checkpoint_config=config[model_id]
-                )
+                # the intro/train shards are only saved for the first model in each ensemble
+                if model_id == 0:
+                    modelwise_training_manager = (
+                        TrainingProgressManager.from_checkpoint(
+                            original_mach_model=model,
+                            checkpoint_config=config[model_id],
+                        )
+                    )
+                else:
+                    # for every model other than the first in the ensemble,
+                    # manually pass in the loaded intro and train source from
+                    # the first model
+                    intro_shard = ensemble_training_managers[
+                        0
+                    ].save_load_manager.intro_source
+                    train_shard = ensemble_training_managers[
+                        0
+                    ].save_load_manager.train_source
+                    modelwise_training_manager = (
+                        TrainingProgressManager.from_checkpoint(
+                            original_mach_model=model,
+                            checkpoint_config=config[model_id],
+                            intro_shard=intro_shard,
+                            train_shard=train_shard,
+                        )
+                    )
                 ensemble_training_managers.append(modelwise_training_manager)
             training_managers.append(ensemble_training_managers)
 
@@ -248,7 +271,10 @@ class MachMixture(Model):
                 )
                 ensemble_training_managers.append(modelwise_training_manager)
                 # When we want to start from scratch, we will have to checkpoint the intro, train sources, the model, tracker,etc. so that the training can be resumed from the checkpoint.
-                modelwise_training_manager.make_preindexing_checkpoint()  # no-op when checkpoint_config is None.
+                # only save the intro and train shards for the first model to avoid data duplication. When loading we will load the first and set the intro and train shards for other models in the multimach
+                modelwise_training_manager.make_preindexing_checkpoint(
+                    save_intro_train_shards=model_id == 0
+                )  # no-op when checkpoint_config is None.
 
             training_managers.append(ensemble_training_managers)
 
@@ -284,16 +310,17 @@ class MachMixture(Model):
     def searchable(self) -> bool:
         return self.n_ids != 0
 
-    def aggregate_results(self, results):
+    def aggregate_results(self, results, n_results):
         joined_results = []
         for i in range(len(results[0])):
             joined_result = []
             for result in results:
                 joined_result.extend(result[i])
-            joined_results.append(joined_result)
 
             joined_result.sort(key=lambda x: x[1], reverse=True)
+            joined_result = joined_result[:n_results]
 
+            joined_results.append(joined_result)
         return joined_results
 
     def query_mach(self, samples: List, n_results: int, label_probing: bool):
@@ -306,7 +333,7 @@ class MachMixture(Model):
             for ensemble in self.ensembles
         ]
         return add_retriever_tag(
-            self.aggregate_results(ensemble_results)[:n_results],
+            self.aggregate_results(ensemble_results, n_results),
             tag="mach",
         )
 
@@ -321,7 +348,7 @@ class MachMixture(Model):
             return None
 
         return add_retriever_tag(
-            self.aggregate_results(inverted_index_results)[:n_results],
+            self.aggregate_results(inverted_index_results, n_results),
             tag="inverted_index",
         )
 
@@ -394,14 +421,26 @@ class MachMixture(Model):
 
         for i in range(len(samples)):
             for score in model_scores:
-                for label, value in score[i]:
+                for label, value, tag in score[i]:
                     aggregated_scores[i][label] += value
+                    assert tag == "mach", (
+                        "We ignore the retriever tag returned by each ensemble. "
+                        "This was inconsequential at the time of writing since "
+                        "the MultiMach.score() always returns the 'mach' retriever "
+                        "tag. We assert this condition so we reevaluate this "
+                        "decision if the condition no longer holds."
+                    )
 
         # Sort the aggregated scores and keep only the top k results
         top_k_results = []
         for i in range(len(samples)):
             sorted_scores = sorted(
-                aggregated_scores[i].items(), key=lambda x: x[1], reverse=True
+                [
+                    (label, score, "mach")
+                    for label, score in aggregated_scores[i].items()
+                ],
+                key=lambda x: x[1],
+                reverse=True,
             )
             top_k_results.append(
                 sorted_scores[:n_results] if n_results else sorted_scores
@@ -501,6 +540,7 @@ class MachMixture(Model):
         max_in_memory_batches: Optional[int],
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
+        disable_inverted_index: bool,
     ):
         supervised_data_source_shards = shard_data_source(
             data_source=supervised_data_source,
@@ -520,6 +560,7 @@ class MachMixture(Model):
                 max_in_memory_batches=max_in_memory_batches,
                 metrics=metrics,
                 callbacks=callbacks,
+                disable_inverted_index=disable_inverted_index,
             )
 
     def build_inverted_index(self, documents):

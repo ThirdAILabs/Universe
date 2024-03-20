@@ -12,8 +12,8 @@ from thirdai._thirdai import bolt, data
 from . import loggers, teachers
 from .documents import CSV, Document, DocumentManager, Reference
 from .models.mach_mixture_model import MachMixture
-from .models.multi_mach import MultiMach
 from .models.models import CancelState, Mach
+from .models.multi_mach import MultiMach
 from .savable_state import (
     State,
     load_checkpoint,
@@ -866,6 +866,7 @@ class NeuralDB:
         max_in_memory_batches: Optional[int] = None,
         metrics: List[str] = [],
         callbacks: List[bolt.train.callbacks.Callback] = [],
+        disable_inverted_index: bool = True,
     ):
         """
         Train on supervised datasets that correspond to specific sources.
@@ -894,6 +895,7 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
+            disable_inverted_index=disable_inverted_index,
         )
 
     def supervised_train_with_ref_ids(
@@ -910,6 +912,7 @@ class NeuralDB:
         max_in_memory_batches: Optional[int] = None,
         metrics: List[str] = [],
         callbacks: List[bolt.train.callbacks.Callback] = [],
+        disable_inverted_index: bool = True,
     ):
         """Train on supervised datasets that correspond to specific sources.
         Suppose you inserted a "sports" product catalog and a "furniture"
@@ -944,6 +947,7 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
+            disable_inverted_index=disable_inverted_index,
         )
 
     def get_associate_samples(self):

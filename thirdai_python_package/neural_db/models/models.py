@@ -12,7 +12,6 @@ from thirdai import bolt, data, demos
 
 from ..documents import DocumentDataSource
 from ..inverted_index import InvertedIndex
-from .mach_defaults import acc_to_stop, metric_to_track
 from ..supervised_datasource import SupDataSource
 from ..trainer.checkpoint_config import CheckpointConfig
 from ..trainer.training_progress_manager import (
@@ -20,6 +19,7 @@ from ..trainer.training_progress_manager import (
     TrainingProgressManager,
 )
 from ..utils import clean_text, pickle_to
+from .mach_defaults import acc_to_stop, metric_to_track
 
 InferSamples = List
 Predictions = Sequence
@@ -154,6 +154,7 @@ class Model:
         max_in_memory_batches: Optional[int],
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
+        disable_inverted_index: bool,
     ):
         raise NotImplementedError()
 
@@ -415,6 +416,7 @@ class Mach(Model):
         model_config=None,
         use_inverted_index=True,
         mach_index_seed: int = 341,
+        index_max_shard_size=8_000_000,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -429,8 +431,12 @@ class Mach(Model):
         self.model = None
         self.balancing_samples = []
         self.model_config = model_config
-        self.inverted_index = InvertedIndex() if use_inverted_index else None
         self.mach_index_seed = mach_index_seed
+        self.inverted_index = (
+            InvertedIndex(max_shard_size=index_max_shard_size)
+            if use_inverted_index
+            else None
+        )
 
     def set_mach_sampling_threshold(self, threshold: float):
         if self.model is None:
@@ -808,6 +814,7 @@ class Mach(Model):
         max_in_memory_batches: Optional[int],
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
+        disable_inverted_index: bool,
     ):
         self.model.train_on_data_source(
             data_source=supervised_data_source,
@@ -818,8 +825,9 @@ class Mach(Model):
             metrics=metrics,
             callbacks=callbacks,
         )
-        # Invalidate inverted index once supervised data is used.
-        self.inverted_index = None
+        if disable_inverted_index:
+            # Invalidate inverted index once supervised data is used.
+            self.inverted_index = None
 
     def build_inverted_index(self, documents):
         if self.inverted_index:
