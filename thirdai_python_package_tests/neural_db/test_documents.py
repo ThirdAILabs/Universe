@@ -202,7 +202,7 @@ def test_document_data_source(prepare_documents_test):
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("number_shards", [1,3])
+@pytest.mark.parametrize("number_shards", [1, 3])
 def test_sharded_data_source(prepare_documents_test, number_shards):
     (
         _,
@@ -238,9 +238,11 @@ def test_sharded_data_source(prepare_documents_test, number_shards):
     assert len(sharded_data_sources) == number_shards
     assert sum(shard.size for shard in sharded_data_sources) == first_size + second_size
     assert all(shard.size > 0 for shard in sharded_data_sources)
-    assert set(value[0] for value in label_to_segment_map.values()) == set(range(number_shards))
+    assert set(value[0] for value in label_to_segment_map.values()) == set(
+        range(number_shards)
+    )
     assert sorted(data_source.indices()) == sorted(label_to_segment_map.keys())
-    
+
     df = pd.concat([data_source_to_df(shard) for shard in sharded_data_sources])
     df = df.sort_values(id_column)
 

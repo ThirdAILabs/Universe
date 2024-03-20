@@ -60,7 +60,10 @@ def interrupt_at_end(percent_training_completed):
 
 def train_neural_db_with_checkpoint(num_shards: int, num_models_per_shard: int):
     db = ndb.NeuralDB(
-        "user", num_shards=num_shards, num_models_per_shard=num_models_per_shard, extreme_output_dim=OUTPUT_DIM
+        "user",
+        num_shards=num_shards,
+        num_models_per_shard=num_models_per_shard,
+        extreme_output_dim=OUTPUT_DIM,
     )
     # only training for the first two documents
 
@@ -104,10 +107,15 @@ def assert_same_objects(object1, object2):
         assert object1.__getattribute__(attr) == object1.__getattribute__(attr)
 
 
-def interrupted_training(num_shards: int, num_models_per_shard: int, interrupt_function):
+def interrupted_training(
+    num_shards: int, num_models_per_shard: int, interrupt_function
+):
     # This test first interrupts the training and then resumes it.
     db = ndb.NeuralDB(
-        "user", num_shards=num_shards, num_models_per_shard=num_models_per_shard, extreme_output_dim=OUTPUT_DIM
+        "user",
+        num_shards=num_shards,
+        num_models_per_shard=num_models_per_shard,
+        extreme_output_dim=OUTPUT_DIM,
     )
 
     checkpoint_config = ndb.CheckpointConfig(
@@ -202,7 +210,7 @@ def test_neural_db_checkpoint_on_single_mach(setup_and_cleanup):
 
 
 @pytest.mark.release
-@pytest.mark.parametrize('num_shards', [1,2])
+@pytest.mark.parametrize("num_shards", [1, 2])
 def test_neural_db_checkpoint_on_mach_mixture(setup_and_cleanup, num_shards):
     db = train_neural_db_with_checkpoint(num_shards=num_shards, num_models_per_shard=2)
     loaded_db = ndb.NeuralDB.from_checkpoint(
@@ -213,16 +221,28 @@ def test_neural_db_checkpoint_on_mach_mixture(setup_and_cleanup, num_shards):
 
 @pytest.mark.release
 def test_interrupted_training_single_mach():
-    interrupted_training(num_shards=1, num_models_per_shard=1, interrupt_function=interrupt_immediately)
-    interrupted_training(num_shards=1, num_models_per_shard=1, interrupt_function=interrupt_midway)
-    interrupted_training(num_shards=1, num_models_per_shard=1, interrupt_function=interrupt_at_end)
+    interrupted_training(
+        num_shards=1, num_models_per_shard=1, interrupt_function=interrupt_immediately
+    )
+    interrupted_training(
+        num_shards=1, num_models_per_shard=1, interrupt_function=interrupt_midway
+    )
+    interrupted_training(
+        num_shards=1, num_models_per_shard=1, interrupt_function=interrupt_at_end
+    )
 
 
 @pytest.mark.release
 def test_interrupted_training_mach_mixture():
-    interrupted_training(num_shards=2, num_models_per_shard=2, interrupt_function=interrupt_immediately)
-    interrupted_training(num_shards=2, num_models_per_shard=2, interrupt_function=interrupt_midway)
-    interrupted_training(num_shards=2, num_models_per_shard=2, interrupt_function=interrupt_at_end)
+    interrupted_training(
+        num_shards=2, num_models_per_shard=2, interrupt_function=interrupt_immediately
+    )
+    interrupted_training(
+        num_shards=2, num_models_per_shard=2, interrupt_function=interrupt_midway
+    )
+    interrupted_training(
+        num_shards=2, num_models_per_shard=2, interrupt_function=interrupt_at_end
+    )
 
 
 @pytest.mark.release

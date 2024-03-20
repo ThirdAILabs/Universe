@@ -70,7 +70,9 @@ def all_methods_work(
 
 
 @pytest.mark.parametrize("use_inverted_index", [True, False])
-def test_neural_db_all_methods_work_on_new_model_with_inverted(small_doc_set, use_inverted_index):
+def test_neural_db_all_methods_work_on_new_model_with_inverted(
+    small_doc_set, use_inverted_index
+):
     db = ndb.NeuralDB(use_inverted_index=use_inverted_index)
     all_methods_work(
         db,
@@ -78,9 +80,9 @@ def test_neural_db_all_methods_work_on_new_model_with_inverted(small_doc_set, us
         num_duplicate_docs=0,
         assert_acc=False,
     )
-    
 
-@pytest.mark.parametrize("num_shards", [1,2])
+
+@pytest.mark.parametrize("num_shards", [1, 2])
 def test_neuralb_db_all_methods_work_on_new_mach_mixture(small_doc_set, num_shards):
     db = ndb.NeuralDB(num_shards=num_shards, num_models_per_shard=2)
     all_methods_work(
@@ -89,6 +91,7 @@ def test_neuralb_db_all_methods_work_on_new_mach_mixture(small_doc_set, num_shar
         num_duplicate_docs=0,
         assert_acc=False,
     )
+
 
 def test_neural_db_constrained_search_with_single_constraint():
     db = ndb.NeuralDB()
