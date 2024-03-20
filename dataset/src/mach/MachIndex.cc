@@ -17,8 +17,8 @@
 namespace thirdai::dataset::mach {
 
 MachIndex::MachIndex(uint32_t num_buckets, uint32_t num_hashes,
-                     uint32_t num_elements, uint32_t seed)
-    : _buckets(num_buckets), _num_hashes(num_hashes), _seed(seed) {
+                     uint32_t num_elements)
+    : _buckets(num_buckets), _num_hashes(num_hashes) {
   if (num_hashes == 0) {
     throw std::invalid_argument("Cannot have num_hashes=0.");
   }
