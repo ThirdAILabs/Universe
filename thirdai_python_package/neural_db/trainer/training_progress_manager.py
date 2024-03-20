@@ -13,6 +13,7 @@ from .training_progress_tracker import IntroState, NeuralDbProgressTracker, Trai
 
 from typing import Optional
 
+
 class TrainingProgressCallback(bolt.train.callbacks.Callback):
     def __init__(self, training_progress_manager: TrainingProgressManager):
         super().__init__()

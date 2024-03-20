@@ -83,8 +83,16 @@ class TrainingDataManager:
                 f" {manager.model_location}"
             )
 
-        manager.intro_source = intro_shard if intro_shard else DocumentDataSource.load(path=manager.intro_source_folder)
-        manager.train_source = train_shard if train_shard else DocumentDataSource.load(path=manager.train_source_folder)
+        manager.intro_source = (
+            intro_shard
+            if intro_shard
+            else DocumentDataSource.load(path=manager.intro_source_folder)
+        )
+        manager.train_source = (
+            train_shard
+            if train_shard
+            else DocumentDataSource.load(path=manager.train_source_folder)
+        )
         manager.tracker = NeuralDbProgressTracker.load(path=manager.tracker_folder)
 
         return manager
