@@ -1,8 +1,7 @@
 import pytest
 from ndb_utils import create_simple_dataset
 from thirdai import neural_db as ndb
-from thirdai.neural_db.models.mach_defaults import \
-    autotune_from_scratch_min_max_epochs
+from thirdai.neural_db.models.mach_defaults import autotune_from_scratch_min_max_epochs
 
 pytestmark = [pytest.mark.unit]
 

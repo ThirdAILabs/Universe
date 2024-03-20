@@ -7,17 +7,18 @@ import nltk
 import pytest
 
 nltk.download("punkt")
-from ndb_utils import (PDF_FILE, all_local_doc_getters, associate_works,
-                       upvote_works)
+from ndb_utils import PDF_FILE, all_local_doc_getters, associate_works, upvote_works
 from thirdai import data
 from thirdai import neural_db as ndb
 from thirdai.neural_db.models.mach_mixture_model import MachMixture
 from thirdai.neural_db.models.models import Mach
 from thirdai.neural_db.trainer.training_data_manager import TrainingDataManager
-from thirdai.neural_db.trainer.training_progress_manager import \
-    TrainingProgressManager
+from thirdai.neural_db.trainer.training_progress_manager import TrainingProgressManager
 from thirdai.neural_db.trainer.training_progress_tracker import (
-    IntroState, NeuralDbProgressTracker, TrainState)
+    IntroState,
+    NeuralDbProgressTracker,
+    TrainState,
+)
 from thirdai.neural_db.utils import pickle_to, unpickle_from
 
 pytestmark = [pytest.mark.unit]

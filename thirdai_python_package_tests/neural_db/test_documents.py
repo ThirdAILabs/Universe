@@ -6,14 +6,21 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-from ndb_utils import (CSV_FILE, DOCX_FILE, EML_FILE, PDF_FILE, PPTX_FILE,
-                       TXT_FILE, URL_LINK, create_simple_dataset,
-                       docs_with_meta)
+from ndb_utils import (
+    CSV_FILE,
+    DOCX_FILE,
+    EML_FILE,
+    PDF_FILE,
+    PPTX_FILE,
+    TXT_FILE,
+    URL_LINK,
+    create_simple_dataset,
+    docs_with_meta,
+)
 from thirdai import bolt, demos, neural_db
 from thirdai.neural_db import documents
 from thirdai.neural_db.documents import DocumentDataSource
-from thirdai.neural_db.sharded_documents import (DataLoadMultiplexer,
-                                                 shard_data_source)
+from thirdai.neural_db.sharded_documents import DataLoadMultiplexer, shard_data_source
 
 # We don't have a test on just the Document interface since it is just an
 # interface.
