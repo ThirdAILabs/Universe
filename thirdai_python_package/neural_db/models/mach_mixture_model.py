@@ -130,7 +130,7 @@ class MachMixture(Model):
 
     def index_documents_impl(
         self,
-        training_progress_managers: List[TrainingProgressManager],
+        training_progress_managers: List[List[TrainingProgressManager]],
         on_progress: Callable,
         cancel_state: CancelState,
     ):
