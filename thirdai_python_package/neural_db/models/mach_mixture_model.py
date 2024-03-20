@@ -150,6 +150,7 @@ class MachMixture(Model):
         cancel_state: CancelState,
         checkpoint_config: CheckpointConfig,
     ):
+        print("CALLING RESUME")
         # If checkpoint_dir in checkpoint_config is /john/doe and number of models is 2, the underlying mach models will make checkpoint at /john/doe/0 and /john/doe/1 depending on model ids.
         ensemble_checkpoint_configs = generate_checkpoint_configs_for_ensembles(
             config=checkpoint_config,
@@ -164,9 +165,22 @@ class MachMixture(Model):
         for ensemble, config in zip(self.ensembles, ensemble_checkpoint_configs):
             ensemble_training_managers = []
             for model_id, model in enumerate(ensemble.models):
-                modelwise_training_manager = TrainingProgressManager.from_checkpoint(
-                    original_mach_model=model, checkpoint_config=config[model_id]
-                )
+                # the intro/train shards are only saved for the first model in each ensemble
+                if model_id == 0:
+                    modelwise_training_manager = TrainingProgressManager.from_checkpoint(
+                        original_mach_model=model, checkpoint_config=config[model_id]
+                    )
+                else:
+                    # for every model other than the first in the ensemble, 
+                    # manually pass in the loaded intro and train source from
+                    # the first model
+                    intro_shard = ensemble_training_managers[0].save_load_manager.intro_source
+                    train_shard = ensemble_training_managers[0].save_load_manager.train_source
+                    modelwise_training_manager = TrainingProgressManager.from_checkpoint(
+                        original_mach_model=model, checkpoint_config=config[model_id],
+                        intro_shard=intro_shard,
+                        train_shard=train_shard,
+                    )
                 ensemble_training_managers.append(modelwise_training_manager)
             training_managers.append(ensemble_training_managers)
 
@@ -248,7 +262,8 @@ class MachMixture(Model):
                 )
                 ensemble_training_managers.append(modelwise_training_manager)
                 # When we want to start from scratch, we will have to checkpoint the intro, train sources, the model, tracker,etc. so that the training can be resumed from the checkpoint.
-                modelwise_training_manager.make_preindexing_checkpoint()  # no-op when checkpoint_config is None.
+                # only save the intro and train shards for the first model to avoid data duplication. When loading we will load the first and set the intro and train shards for other models in the multimach 
+                modelwise_training_manager.make_preindexing_checkpoint(save_intro_train_shards=model_id == 0)  # no-op when checkpoint_config is None.
 
             training_managers.append(ensemble_training_managers)
 
