@@ -394,7 +394,7 @@ def test_training_progress_manager_with_resuming(setup_and_cleanup):
     training_manager.make_preindexing_checkpoint()
 
     resume_training_manager = TrainingProgressManager.from_checkpoint(
-        original_mach_model=db._savable_state.model.models[0],
+        original_mach_model=db._savable_state.model.ensembles[0].models[0],
         checkpoint_config=ndb.CheckpointConfig(
             checkpoint_dir=checkpoint_dir,
             resume_from_checkpoint=True,
