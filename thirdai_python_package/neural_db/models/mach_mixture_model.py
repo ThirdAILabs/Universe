@@ -310,7 +310,7 @@ class MachMixture(Model):
     def searchable(self) -> bool:
         return self.n_ids != 0
 
-    def aggregate_results(self, results):
+    def aggregate_results(self, results, n_results):
         joined_results = []
         for i in range(len(results[0])):
             joined_result = []
@@ -319,6 +319,7 @@ class MachMixture(Model):
             joined_results.append(joined_result)
 
             joined_result.sort(key=lambda x: x[1], reverse=True)
+            joined_result = joined_result[:n_results]
 
         return joined_results
 
@@ -332,7 +333,7 @@ class MachMixture(Model):
             for ensemble in self.ensembles
         ]
         return add_retriever_tag(
-            self.aggregate_results(ensemble_results)[:n_results],
+            self.aggregate_results(ensemble_results, n_results),
             tag="mach",
         )
 
@@ -347,7 +348,7 @@ class MachMixture(Model):
             return None
 
         return add_retriever_tag(
-            self.aggregate_results(inverted_index_results)[:n_results],
+            self.aggregate_results(inverted_index_results, n_results),
             tag="inverted_index",
         )
 
