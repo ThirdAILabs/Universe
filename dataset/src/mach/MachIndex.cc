@@ -198,7 +198,7 @@ std::shared_ptr<MachIndex> MachIndex::fromArchive(const ar::Archive& archive) {
 
   return std::make_shared<MachIndex>(
       std::move(entity_to_hashes), archive.u64("num_buckets"),
-      archive.u64("num_hashes"), archive.getOr("seed", DEFAULT_SEED));
+      archive.u64("num_hashes"), archive.getOr<uint64_t>("seed", DEFAULT_SEED));
 }
 
 TopKActivationsQueue MachIndex::topKNonEmptyBuckets(const BoltVector& output,
