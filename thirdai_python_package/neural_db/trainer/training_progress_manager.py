@@ -11,6 +11,7 @@ from .checkpoint_config import CheckpointConfig
 from .training_data_manager import TrainingDataManager
 from .training_progress_tracker import IntroState, NeuralDbProgressTracker, TrainState
 
+from typing import Optional
 
 class TrainingProgressCallback(bolt.train.callbacks.Callback):
     def __init__(self, training_progress_manager: TrainingProgressManager):
@@ -63,12 +64,12 @@ class TrainingProgressManager:
     def train_source(self) -> DocumentDataSource:
         return self.save_load_manager.train_source
 
-    def make_preindexing_checkpoint(self):
+    def make_preindexing_checkpoint(self, save_intro_train_shards=True):
         # Before starting indexing, we need to save all the resources (intro source, train source, model, tracker)
         # to be able to resume.
         if not self.makes_checkpoint:
             return
-        self.save_load_manager.save()
+        self.save_load_manager.save(save_intro_train_shards=save_intro_train_shards)
 
     def training_complete(self):
         # Updates the tracker state by marking training as completed and saves the resources (tracker and model)
@@ -197,6 +198,8 @@ class TrainingProgressManager:
     def from_checkpoint(
         original_mach_model,
         checkpoint_config: CheckpointConfig,
+        intro_shard: Optional[DocumentDataSource] = None,
+        train_shard: Optional[DocumentDataSource] = None,
     ) -> TrainingProgressManager:
         """
         Given a checkpoint, we will make a save load manager that will load the model, data sources, tracker.
@@ -204,7 +207,9 @@ class TrainingProgressManager:
         assert checkpoint_config.checkpoint_dir != None
 
         save_load_manager = TrainingDataManager.load(
-            checkpoint_dir=checkpoint_config.checkpoint_dir
+            checkpoint_dir=checkpoint_config.checkpoint_dir,
+            intro_shard=intro_shard,
+            train_shard=train_shard,
         )
         # We need to update the passed model with the state of the loaded model. Since, we need a model reference in the save_load_manager as well, we update the model reference there too.
         original_mach_model.reset_model(save_load_manager.model)

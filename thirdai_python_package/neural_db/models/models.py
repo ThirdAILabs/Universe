@@ -415,6 +415,7 @@ class Mach(Model):
         model_config=None,
         use_inverted_index=True,
         mach_index_seed: int = 341,
+        index_max_shard_size=8_000_000,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -429,8 +430,12 @@ class Mach(Model):
         self.model = None
         self.balancing_samples = []
         self.model_config = model_config
-        self.inverted_index = InvertedIndex() if use_inverted_index else None
         self.mach_index_seed = mach_index_seed
+        self.inverted_index = (
+            InvertedIndex(max_shard_size=index_max_shard_size)
+            if use_inverted_index
+            else None
+        )
 
     def set_mach_sampling_threshold(self, threshold: float):
         if self.model is None:
