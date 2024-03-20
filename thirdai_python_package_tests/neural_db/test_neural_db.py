@@ -100,7 +100,7 @@ def test_neural_db_constrained_search_with_single_constraint():
         assert len(references) > 0
         assert all([constraint == ref.metadata["meta"] for ref in references])
 
-
+@pytest.mark.parametrize("empty_neural_db", ([1,2]), indirect=True)
 def test_neural_db_constrained_search_with_multiple_constraints(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"language": "English", "county": "Harris"}),
@@ -124,7 +124,7 @@ def test_neural_db_constrained_search_with_multiple_constraints(empty_neural_db)
             ]
         )
 
-
+@pytest.mark.parametrize("empty_neural_db", ([1,2]), indirect=True)
 def test_neural_db_constrained_search_with_multiple_constraints_multiple_models(
     empty_neural_db,
 ):
@@ -150,7 +150,7 @@ def test_neural_db_constrained_search_with_multiple_constraints_multiple_models(
             ]
         )
 
-
+@pytest.mark.parametrize("empty_neural_db", ([1,2]), indirect=True)
 def test_neural_db_constrained_search_with_set_constraint(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10"}),
@@ -180,7 +180,7 @@ def test_neural_db_constrained_search_with_set_constraint(empty_neural_db):
     references = db.search("hello", top_k=20)
     assert any([ref.metadata["date"] == "2021-10-10" for ref in references])
 
-
+@pytest.mark.parametrize("empty_neural_db", ([1,2]), indirect=True)
 def test_neural_db_constrained_search_with_range_constraint(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10", "score": 0.5}),
@@ -207,7 +207,7 @@ def test_neural_db_constrained_search_with_range_constraint(empty_neural_db):
     assert len(references) > 0
     assert all([ref.metadata["score"] == 0.9 for ref in references])
 
-
+@pytest.mark.parametrize("empty_neural_db", ([1,2]), indirect=True)
 def test_neural_db_constrained_search_with_comparison_constraint(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10", "score": 0.5}),
@@ -232,7 +232,7 @@ def test_neural_db_constrained_search_with_comparison_constraint(empty_neural_db
     assert len(references) > 0
     assert all([ref.metadata["score"] == 0.5 for ref in references])
 
-
+@pytest.mark.parametrize("empty_neural_db", ([1,2]), indirect=True)
 def test_neural_db_constrained_search_no_matches(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10", "score": 0.5}),
@@ -246,7 +246,7 @@ def test_neural_db_constrained_search_no_matches(empty_neural_db):
     )
     assert len(references) == 0
 
-
+@pytest.mark.parametrize("empty_neural_db", ([1,2]), indirect=True)
 def test_neural_db_constrained_search_row_level_constraints(empty_neural_db):
     csv_contents = [
         "id,text,date",
@@ -281,7 +281,7 @@ def test_neural_db_constrained_search_row_level_constraints(empty_neural_db):
     assert any([r.metadata["date"] < "2000-01-01" for r in references])
     assert any([r.metadata["date"] > "2000-01-01" for r in references])
 
-
+@pytest.mark.parametrize("empty_neural_db", ([1,2]), indirect=True)
 def test_neural_db_delete_document(empty_neural_db):
     with open("ice_cream.csv", "w") as f:
         f.write("text,id\n")
