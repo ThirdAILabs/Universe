@@ -505,6 +505,7 @@ class MachMixture(Model):
         max_in_memory_batches: Optional[int],
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
+        disable_inverted_index: bool,
     ):
         supervised_data_source_shards = shard_data_source(
             data_source=supervised_data_source,
@@ -524,6 +525,7 @@ class MachMixture(Model):
                 max_in_memory_batches=max_in_memory_batches,
                 metrics=metrics,
                 callbacks=callbacks,
+                disable_inverted_index=disable_inverted_index,
             )
 
     def build_inverted_index(self, documents):

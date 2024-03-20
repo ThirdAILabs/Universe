@@ -238,6 +238,7 @@ class MultiMach:
         max_in_memory_batches: Optional[int],
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
+        disable_inverted_index: bool,
     ):
         for model in self.models:
             model.train_on_supervised_data_source(
@@ -248,4 +249,5 @@ class MultiMach:
                 max_in_memory_batches=max_in_memory_batches,
                 metrics=metrics,
                 callbacks=callbacks,
+                disable_inverted_index=disable_inverted_index,
             )

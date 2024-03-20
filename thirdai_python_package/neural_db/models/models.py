@@ -151,6 +151,7 @@ class Model:
         max_in_memory_batches: Optional[int],
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
+        disable_inverted_index: bool,
     ):
         raise NotImplementedError()
 
@@ -769,6 +770,7 @@ class Mach(Model):
         max_in_memory_batches: Optional[int],
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
+        disable_inverted_index: bool,
     ):
         self.model.train_on_data_source(
             data_source=supervised_data_source,
@@ -779,8 +781,9 @@ class Mach(Model):
             metrics=metrics,
             callbacks=callbacks,
         )
-        # Invalidate inverted index once supervised data is used.
-        self.inverted_index = None
+        if disable_inverted_index:
+            # Invalidate inverted index once supervised data is used.
+            self.inverted_index = None
 
     def build_inverted_index(self, documents):
         if self.inverted_index:
