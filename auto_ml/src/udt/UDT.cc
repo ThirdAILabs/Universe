@@ -471,6 +471,23 @@ UDT::parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
 
 using bolt::utils::Timer;
 
+
+std::vector<std::vector<UDT::Scores>> UDT::regularDecodeMultipleShards(
+    const std::vector<std::vector<std::shared_ptr<UDT>>>& shards,
+    const MapInputBatch& batch, bool sparse_inference,
+    std::optional<uint32_t> top_k) {
+  std::vector<std::vector<UDT::Scores>> shard_scores(shards.size());
+
+#pragma omp parallel for default(none)                    \
+    shared(shard_scores, shards, batch, sparse_inference, \
+           top_k) if (batch.size() == 1)
+  for (size_t shard_id = 0; shard_id < shards.size(); shard_id++) {
+    shard_scores[shard_id] = regularDecodeMultipleMach(shards[shard_id], batch,
+                                                    sparse_inference, top_k);
+  }
+  return shard_scores;
+}
+
 using Scores = std::vector<std::pair<uint32_t, float>>;
 std::vector<Scores> UDT::regularDecodeMultipleMach(
     const std::vector<std::shared_ptr<UDT>>& models, const MapInputBatch& batch,
@@ -505,8 +522,8 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
 
   forward_timer.stop();
 
-  std::cerr << "forward time: " << forward_timer.milliseconds() << " ms"
-            << std::endl;
+  // std::cerr << "forward time: " << forward_timer.milliseconds() << " ms"
+            // << std::endl;
 
   auto top_k_to_return = top_k.value_or(mach_models[0]->defaultTopKToReturn());
 
@@ -543,10 +560,10 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
     }
 
     candidate_gen_timer.stop();
-    if (batch.size()==1){
-      std::cerr << "candiate generation time: "
-              << candidate_gen_timer.milliseconds() << " ms" << std::endl;
-    }
+    // if (batch.size()==1){
+    //   std::cerr << "candiate generation time: "
+    //           << candidate_gen_timer.milliseconds() << " ms" << std::endl;
+    // }
 
     if (error) {
       std::rethrow_exception(error);
@@ -607,10 +624,10 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
     }
 
     candidate_scoring_timer.stop();
-    if (batch.size()==1){
-      std::cerr << "candidate scoring time: "
-              << candidate_scoring_timer.milliseconds() << " ms" << std::endl;
-    }
+    // if (batch.size()==1){
+    //   std::cerr << "candidate scoring time: "
+    //           << candidate_scoring_timer.milliseconds() << " ms" << std::endl;
+    // }
 
     if (error) {
       std::rethrow_exception(error);
@@ -626,10 +643,10 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
 
     candidate_sorting_timer.stop();
 
-    if (batch.size()==1){
-      std::cerr << "candidate sorting time: "
-              << candidate_sorting_timer.milliseconds() << " ms" << std::endl;
-    }
+    // if (batch.size()==1){
+    //   std::cerr << "candidate sorting time: "
+    //           << candidate_sorting_timer.milliseconds() << " ms" << std::endl;
+    // }
     output[i] = std::move(global_candidate_scores);
   }
 

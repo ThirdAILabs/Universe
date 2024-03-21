@@ -510,6 +510,11 @@ class UDT {
 
   using Scores = std::vector<std::pair<uint32_t, float>>;
 
+  static std::vector<std::vector<UDT::Scores>> regularDecodeMultipleShards(
+      const std::vector<std::vector<std::shared_ptr<UDT>>>& shards,
+      const MapInputBatch& batch, bool sparse_inference,
+      std::optional<uint32_t> top_k);
+
   static std::vector<Scores> regularDecodeMultipleMach(
       const std::vector<std::shared_ptr<UDT>>& models,
       const MapInputBatch& batch, bool sparse_inference,
