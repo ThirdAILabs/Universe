@@ -146,7 +146,6 @@ def interrupted_training(
         )
 
         assert_same_dbs(db, new_db)
-        upvote_works(db)
         associate_works(db)
 
     except Exception as ex:
