@@ -14,7 +14,7 @@ from ..trainer.checkpoint_config import (
 from ..trainer.training_progress_manager import TrainingProgressManager
 from ..utils import clean_text, pickle_to, requires_condition, unpickle_from
 from .models import CancelState, Mach, Model, add_retriever_tag, merge_results
-from .multi_mach import MultiMach
+from .multi_mach import MultiMach, aggregate_ensemble_results
 
 InferSamples = List
 Predictions = Sequence
@@ -324,14 +324,32 @@ class MachMixture(Model):
         return joined_results
 
     def query_mach(self, samples: List, n_results: int, label_probing: bool):
-        ensemble_results = [
-            ensemble.query_mach(
-                samples=samples,
-                n_results=n_results,
-                label_probing=label_probing,
+        for ensemble in self.ensembles:
+            for model in ensemble.models:
+                model.model.set_decode_params(
+                    min(self.n_ids, n_results), min(self.n_ids, 100)
+                )
+
+        if not label_probing or self.ensembles[0].models[0].extreme_num_hashes != 1:
+            ensemble_results = []
+            for ensemble in self.ensembles:
+                mach_results = bolt.UniversalDeepTransformer.parallel_inference(
+                    models=[model.model for model in ensemble.models],
+                    batch=[{self.query_col: clean_text(text)} for text in samples],
+                )
+                ensemble_results.append(aggregate_ensemble_results(mach_results))
+
+        else:
+            ensemble_results = (
+                bolt.UniversalDeepTransformer.label_probe_multiple_shards(
+                    shards=[
+                        [model.model for model in ensemble.models]
+                        for ensemble in self.ensembles
+                    ],
+                    batch=[{self.query_col: clean_text(text)} for text in samples],
+                )
             )
-            for ensemble in self.ensembles
-        ]
+
         return add_retriever_tag(
             self.aggregate_results(ensemble_results, n_results),
             tag="mach",

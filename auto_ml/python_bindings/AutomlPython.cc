@@ -285,11 +285,11 @@ void defineAutomlInModule(py::module_& module) {
                   py::arg("models"), py::arg("batch"),
                   py::arg("sparse_inference") = false,
                   py::arg("top_k") = std::nullopt)
-      .def_static("label_probe_mulitple_shards",
+      .def_static("label_probe_multiple_shards",
                   &udt::UDT::labelProbeMultipleShards, py::arg("shards"),
                   py::arg("batch"), py::arg("sparse_inference") = false,
                   py::arg("top_k") = std::nullopt)
-      .def_static("label_probe_mulitple_mach",
+      .def_static("label_probe_multiple_mach",
                   &udt::UDT::labelProbeMultipleMach, py::arg("models"),
                   py::arg("batch"), py::arg("sparse_inference") = false,
                   py::arg("top_k") = std::nullopt);

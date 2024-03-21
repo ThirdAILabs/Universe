@@ -483,8 +483,9 @@ std::vector<std::vector<UDT::Scores>> UDT::labelProbeMultipleShards(
     std::optional<uint32_t> top_k) {
   std::vector<std::vector<UDT::Scores>> shard_scores(shards.size());
 
-#pragma omp parallel for default(none) \
-    shared(shard_scores, shards, batch, sparse_inference, top_k)
+#pragma omp parallel for default(none)                    \
+    shared(shard_scores, shards, batch, sparse_inference, \
+           top_k) if (batch.size() == 1)
   for (size_t shard_id = 0; shard_id < shards.size(); shard_id++) {
     shard_scores[shard_id] = labelProbeMultipleMach(shards[shard_id], batch,
                                                     sparse_inference, top_k);

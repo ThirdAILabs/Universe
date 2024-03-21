@@ -116,30 +116,6 @@ class MultiMach:
     def searchable(self) -> bool:
         return self.n_ids != 0
 
-    def query_mach(self, samples: List, n_results: int, label_probing: bool):
-        for model in self.models:
-            model.model.set_decode_params(
-                min(self.n_ids, n_results), min(self.n_ids, 100)
-            )
-
-        # label probing works only when each model has a single hash
-        if self.models[0].extreme_num_hashes != 1:
-            label_probing = False
-
-        if not label_probing:
-            mach_results = bolt.UniversalDeepTransformer.parallel_inference(
-                models=[model.model for model in self.models],
-                batch=[{self.query_col: clean_text(text)} for text in samples],
-            )
-            return aggregate_ensemble_results(mach_results)
-
-        else:
-            mach_results = bolt.UniversalDeepTransformer.label_probe_mulitple_mach(
-                models=[model.model for model in self.models],
-                batch=[{self.query_col: clean_text(text)} for text in samples],
-            )
-            return mach_results
-
     def query_inverted_index(self, samples, n_results):
         # only the first model in the ensemble can have inverted index
         model = self.models[0]
