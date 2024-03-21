@@ -650,6 +650,7 @@ def test_insert_callback(small_doc_set):
 
     class EpochCheck(bolt.train.callbacks.Callback):
         def __init__(self):
+            super().__init__()
             self.epochs_completed = 0
 
         def on_epoch_end(self):
@@ -658,10 +659,6 @@ def test_insert_callback(small_doc_set):
     epoch_count_callback = EpochCheck()
 
     epochs = 6
-    db.insert(
-        small_doc_set,
-        epochs=epochs,
-        callbacks = [epoch_count_callback]
-    )
+    db.insert(small_doc_set, epochs=epochs, callbacks=[epoch_count_callback])
 
     assert epoch_count_callback.epochs_completed == epochs
