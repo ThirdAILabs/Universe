@@ -144,6 +144,7 @@ class MachMixture(Model):
         on_progress: Callable,
         cancel_state: CancelState,
         checkpoint_config: CheckpointConfig,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
     ):
         # If checkpoint_dir in checkpoint_config is /john/doe and number of models is 2, the underlying mach models will make checkpoint at /john/doe/0 and /john/doe/1 depending on model ids.
         modelwise_checkpoint_configs = generate_modelwise_checkpoint_configs(
@@ -170,6 +171,7 @@ class MachMixture(Model):
             training_progress_managers=training_managers,
             on_progress=on_progress,
             cancel_state=cancel_state,
+            callbacks=callbacks,
         )
 
     def index_from_start(
