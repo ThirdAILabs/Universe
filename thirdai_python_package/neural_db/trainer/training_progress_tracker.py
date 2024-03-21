@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+from thirdai import data
+
 from ..utils import pickle_to, unpickle_from
 
 
@@ -18,6 +20,8 @@ class TrainState:
         freeze_after_epoch: int,
         freeze_after_acc: float,
         balancing_samples: bool,
+        semantic_enhancement: bool,
+        semantic_model_cache_dir: str,
         **kwargs,
     ):
         self.max_in_memory_batches = max_in_memory_batches
@@ -31,6 +35,8 @@ class TrainState:
         self.freeze_after_epoch = freeze_after_epoch
         self.freeze_after_acc = freeze_after_acc
         self.balancing_samples = balancing_samples
+        self.semantic_enhancement = semantic_enhancement
+        self.semantic_model_cache_dir = semantic_model_cache_dir
 
 
 class IntroState:

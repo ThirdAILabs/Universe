@@ -21,6 +21,7 @@
 #include <data/src/transformations/AddMachMemorySamples.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/MachMemory.h>
+#include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/TextTokenizer.h>
@@ -48,14 +49,15 @@ namespace thirdai::automl::mach {
 using IdScores = std::vector<std::pair<uint32_t, double>>;
 
 struct TrainOptions {
-  uint32_t batch_size;
-  std::optional<uint32_t> max_in_memory_batches;
-  std::optional<uint32_t> steps_per_validation;
-  std::optional<uint32_t> logging_interval;
-  bool sparse_validation;
-  bool verbose;
-  bool freeze_hash_tables;
-  dataset::DatasetShuffleConfig shuffle_config;
+  size_t batch_size = 2048;
+  std::optional<size_t> max_in_memory_batches = std::nullopt;
+  bool verbose = true;
+};
+
+struct ColdStartOptions : public TrainOptions {
+  std::optional<data::VariableLengthConfig> variable_length =
+      data::VariableLengthConfig();
+  std::optional<data::SpladeConfig> splade_config;
 };
 
 static constexpr const char* bucket_column = "__buckets__";
@@ -109,7 +111,7 @@ class MachRetriever {
     for (uint32_t id : ids) {
       index()->erase(id);
     }
-  };
+  }
 
   void coldstart(data::ColumnMapIteratorPtr iter,
                  const std::vector<std::string>& strong_column_names,
@@ -117,19 +119,18 @@ class MachRetriever {
                  std::optional<data::VariableLengthConfig> variable_length,
                  float learning_rate, uint32_t epochs,
                  const std::vector<std::string>& train_metrics,
-                 data::ColumnMapIteratorPtr val_iter,
-                 const std::vector<std::string>& val_metrics,
                  const TrainOptions& options,
                  const std::vector<bolt::callbacks::CallbackPtr>& callbacks,
                  const bolt::DistributedCommPtr& comm);
 
-  void train(data::ColumnMapIteratorPtr iter, float learning_rate,
-             uint32_t epochs, const std::vector<std::string>& train_metrics,
-             data::ColumnMapIteratorPtr val_iter,
-             const std::vector<std::string>& val_metrics,
-             const TrainOptions& options,
+  void train(data::ColumnMapIteratorPtr data, float learning_rate,
+             uint32_t epochs, const std::vector<std::string>& metrics,
              const std::vector<bolt::callbacks::CallbackPtr>& callbacks,
-             const bolt::DistributedCommPtr& comm);
+             const TrainOptions& options = TrainOptions{});
+
+  bolt::metrics::History evaluate(data::ColumnMapIteratorPtr val_iter,
+                                  const std::vector<std::string>& val_metrics,
+                                  bool verbose);
 
   std::vector<IdScores> search(data::ColumnMap queries, uint32_t top_k,
                                bool sparse_inference);
@@ -198,13 +199,15 @@ class MachRetriever {
       uint32_t num_buckets_to_sample, uint32_t approx_num_hashes_per_bucket,
       uint32_t num_random_hashes, bool load_balancing,
       bool sort_random_hashes) const;
+
   void updateSamplingStrategy();
+
   void assertUniqueIds(const data::ColumnMap& columns) {
     std::unordered_set<uint32_t> seen;
     auto ids = columns.getValueColumn<uint32_t>(_id_column);
     for (uint32_t i = 0; i < ids->numRows(); i++) {
       uint32_t id = ids->value(i);
-      if (seen.count(id) || index()->has(id)) {
+      if (seen.count(id) || index()->contains(id)) {
         throw std::invalid_argument("Found duplicate ID " + std::to_string(id));
       }
       seen.insert(id);
@@ -213,6 +216,7 @@ class MachRetriever {
 
   bolt::metrics::InputMetrics getMetrics(
       const std::vector<std::string>& metric_names, const std::string& prefix);
+
   void teach(data::ColumnMap feedback, float learning_rate,
              uint32_t feedback_repetitions, uint32_t num_balancers,
              uint32_t epochs, size_t batch_size);

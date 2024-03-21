@@ -150,51 +150,7 @@ if(MSVC)
   add_library(OpenMP::OpenMP_CXX ALIAS _thirdai_windows_llvm_openmp)
 else()
 
-  find_package(OpenMP)
-  if(NOT OpenMP_FOUND)
-
-    # In this case, we were not able to find OpenMP. We are choosing to build
-    # openmp from scratch here, using the LLVM standalone OpenMP source.
-    #
-    # In practice, this is intended for use for cross-compiling M1 (arm64)
-    # wheels on MacOS GitHub runners (x86_64), where the possibility to use the
-    # host's libomp is missing, and the library needs to be cross compiled for
-    # target.
-
-    # The following works with only newer CMake versions (Download), but we get
-    # here only after all else has failed, and only for purposes of CI.
-
-    # This block needs to happen before all the compile-options are added to
-    # escape -Wall and -Werror being enforced on OpenMP library.
-
-    set(LLVM_OPENMP_VERSION "13.0.1")
-    set(LLVM_OPENMP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/openmp")
-
-    if(NOT EXISTS ${LLVM_OPENMP_SOURCE_DIR})
-      message(
-        "Downloading openmp-${LLVM_OPENMP_VERSION} into ${LLVM_OPENMP_SOURCE_DIR}"
-      )
-      set(LLVM_OPENMP_DOWNLOAD_URL
-          "https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_OPENMP_VERSION}/openmp-${LLVM_OPENMP_VERSION}.src.tar.xz"
-      )
-      file(
-        DOWNLOAD
-        ${LLVM_OPENMP_DOWNLOAD_URL} # URL
-        "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.tar.bz2" # FILE
-      )
-      file(ARCHIVE_EXTRACT INPUT
-           "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.tar.bz2"
-           DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-      file(RENAME
-           "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.src"
-           "${LLVM_OPENMP_SOURCE_DIR}")
-    endif()
-
-    set(OPENMP_STANDALONE_BUILD ON)
-    add_subdirectory(${LLVM_OPENMP_SOURCE_DIR} EXCLUDE_FROM_ALL)
-    add_library(OpenMP::OpenMP_CXX ALIAS omp)
-
-  endif(NOT OpenMP_FOUND)
+  find_package(OpenMP REQUIRED)
 
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -447,6 +403,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/Graph.cc
     data/src/transformations/RegressionBinning.cc
     data/src/transformations/DyadicInterval.cc
+    data/src/transformations/SpladeAugmentation.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
