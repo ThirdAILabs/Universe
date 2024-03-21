@@ -533,11 +533,9 @@ std::vector<UDT::Scores> UDT::labelProbeMultipleMach(
   std::vector<Scores> output(batch.size());
 
   // TODO(Shubh): Add support for lossy decoding to make inference faster.
-#pragma omp parallel for default(none)                          \
-    shared(batch, scores, top_k_to_return, output, mach_models, \
-           std::cerr) if (batch.size() > 1)
+#pragma omp parallel for default(none) shared( \
+    batch, scores, top_k_to_return, output, mach_models) if (batch.size() > 1)
   for (size_t i = 0; i < batch.size(); i++) {
-    Timer candidate_gen_timer;
     std::vector<std::unordered_set<uint32_t>> individual_candidates(
         mach_models.size());
     std::exception_ptr error;
@@ -564,17 +562,9 @@ std::vector<UDT::Scores> UDT::labelProbeMultipleMach(
       }
     }
 
-    candidate_gen_timer.stop();
-    if (batch.size() == 1) {
-      std::cerr << "candiate generation time: "
-                << candidate_gen_timer.milliseconds() << " ms" << std::endl;
-    }
-
     if (error) {
       std::rethrow_exception(error);
     }
-
-    Timer candidate_scoring_timer;
 
     std::unordered_set<uint32_t> global_candidates;
     for (const auto& candidate_set : individual_candidates) {
@@ -628,17 +618,9 @@ std::vector<UDT::Scores> UDT::labelProbeMultipleMach(
       }
     }
 
-    candidate_scoring_timer.stop();
-    if (batch.size() == 1) {
-      std::cerr << "candidate scoring time: "
-                << candidate_scoring_timer.milliseconds() << " ms" << std::endl;
-    }
-
     if (error) {
       std::rethrow_exception(error);
     }
-
-    Timer candidate_sorting_timer;
 
     std::sort(global_candidate_scores.begin(), global_candidate_scores.end(),
               BestScore{});
@@ -646,12 +628,6 @@ std::vector<UDT::Scores> UDT::labelProbeMultipleMach(
       global_candidate_scores.resize(top_k_to_return);
     }
 
-    candidate_sorting_timer.stop();
-
-    if (batch.size() == 1) {
-      std::cerr << "candidate sorting time: "
-                << candidate_sorting_timer.milliseconds() << " ms" << std::endl;
-    }
     output[i] = std::move(global_candidate_scores);
   }
 
