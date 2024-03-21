@@ -84,48 +84,47 @@ ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
   // Note: NGramEncoder with n=1 in this case is a no-op, it is just here to
   // satisfy the encoder requirement.
   data::TextTokenizer tokenizer(
-      /*input_column=*/_input_column, /*output_indices=*/_input_column,
+      /*input_column=*/_input_column, /*output_indices=*/_output_column,
       /*output_values=*/std::nullopt, /*tokenizer=*/_tokenizer,
       /*encoder=*/dataset::NGramEncoder::make(1), /*lowercase=*/false,
       /*dim=*/_tokenizer->vocabSize());
 
-  auto tokenized_columns = tokenizer.applyStateless(columns);
+  auto output = tokenizer.applyStateless(columns);
 
-  auto batches = data::toTensorBatches(
-      tokenized_columns, {OutputColumns(_input_column)}, _batch_size);
+//   auto batches = data::toTensorBatches(
+//       tokenized_columns, {OutputColumns(_input_column)}, _batch_size);
 
-  auto tokenized_text =
-      tokenized_columns.getArrayColumn<uint32_t>(_input_column);
+//   auto tokenized_text =
+//       tokenized_columns.getArrayColumn<uint32_t>(_input_column);
 
-  std::vector<std::string> augmented_text(tokenized_text->numRows());
+//   std::vector<std::string> augmented_text(tokenized_text->numRows());
 
-  ProgressBar bar("augmenting data", batches.size());
-  bolt::utils::Timer timer;
-  size_t row_index = 0;
-  for (const auto& batch : batches) {
-    auto output = _model->forward(batch).at(0);
+//   ProgressBar bar("augmenting data", batches.size());
+//   bolt::utils::Timer timer;
+//   size_t row_index = 0;
+//   for (const auto& batch : batches) {
+//     auto output = _model->forward(batch).at(0);
 
-#pragma omp parallel for default(none) \
-    shared(tokenized_text, augmented_text, output, row_index)
-    for (size_t i = 0; i < output->batchSize(); i++) {
-      augmented_text[row_index + i] = decodeTopTokens(
-          output->getVector(i),
-          tokensToAdd(tokenized_text->row(row_index + i).size()));
-    }
+// #pragma omp parallel for default(none) \
+//     shared(tokenized_text, augmented_text, output, row_index)
+//     for (size_t i = 0; i < output->batchSize(); i++) {
+//       augmented_text[row_index + i] = decodeTopTokens(
+//           output->getVector(i),
+//           tokensToAdd(tokenized_text->row(row_index + i).size()));
+//     }
 
-    row_index += output->batchSize();
+//     row_index += output->batchSize();
 
-    bar.increment();
-  }
-  timer.stop();
+//     bar.increment();
+//   }
+//   timer.stop();
 
-  bar.close("data augmentation completed in " +
-            std::to_string(timer.seconds()) + "s.");
+//   bar.close("data augmentation completed in " +
+//             std::to_string(timer.seconds()) + "s.");
 
-  ColumnMap output = columns;
+  // ColumnMap output = columns;
   output.dropColumn(_input_column);
-  output.setColumn(_output_column,
-                   ValueColumn<std::string>::make(std::move(augmented_text)));
+  // output.setColumn(_output_column, tokenized_columns);
 
   return output;
 }

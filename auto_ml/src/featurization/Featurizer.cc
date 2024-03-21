@@ -48,6 +48,7 @@ Featurizer::Featurizer(ColumnDataTypes data_types,
                                         cat_label->delimiter);
     }
   }
+  _bolt_input_columns.push_back(SPLADE_TOKENS);
 }
 
 Featurizer::Featurizer(data::TransformationPtr input_transform,
@@ -64,7 +65,7 @@ Featurizer::Featurizer(data::TransformationPtr input_transform,
       _bolt_label_columns(std::move(bolt_label_columns)),
       _delimiter(delimiter),
       _state(std::move(state)),
-      _text_dataset(std::move(text_dataset)) {}
+      _text_dataset(std::move(text_dataset)) { }
 
 data::LoaderPtr Featurizer::getDataLoader(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
@@ -100,8 +101,8 @@ data::LoaderPtr Featurizer::getColdStartDataLoader(
           *splade_config->strong_sample_override);
     }
 
-    auto strong_columns_copy = strong_column_names;
-    strong_columns_copy.push_back(SPLADE_TOKENS);
+    // auto strong_columns_copy = strong_column_names;
+    // strong_columns_copy.push_back(SPLADE_TOKENS);
 
     auto all_columns = strong_column_names;
     all_columns.insert(all_columns.end(), weak_column_names.begin(),
@@ -112,7 +113,7 @@ data::LoaderPtr Featurizer::getColdStartDataLoader(
                                                         SPLADE_TOKENS, " "))
             ->then(std::make_shared<data::SpladeAugmentation>(
                 SPLADE_TOKENS, SPLADE_TOKENS, *splade_config))
-            ->then(coldStartTransform(strong_columns_copy, weak_column_names,
+            ->then(coldStartTransform(strong_column_names, weak_column_names,
                                       variable_length, fast_approximation));
   } else {
     cold_start = coldStartTransform(strong_column_names, weak_column_names,
@@ -133,6 +134,7 @@ data::LoaderPtr Featurizer::getDataLoaderHelper(
   if (preprocesser) {
     transformations.push_back(preprocesser);
   }
+
   transformations.push_back(_input_transform);
   transformations.push_back(_label_transform);
 

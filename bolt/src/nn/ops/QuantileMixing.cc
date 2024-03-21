@@ -51,7 +51,7 @@ void QuantileMixing::forward(const ComputationList& inputs, TensorPtr& output,
 
     for (size_t i = 0; i < _window_size; i++) {
       if (input_ptr[i] >= threshold) {
-        output_ptr[i] = input_ptr[i];
+        output_ptr[i] = 1;
       } else {
         output_ptr[i] = 0;
       }

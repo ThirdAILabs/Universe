@@ -340,6 +340,7 @@ inputTransformations(const ColumnDataTypes& data_types,
       /* output_indices_column= */ FEATURIZED_INDICES,
       /* output_values_column= */ FEATURIZED_VALUES,
       /* hash_range= */ options.feature_hash_range);
+  
 
   transformations.push_back(feature_hash);
 
