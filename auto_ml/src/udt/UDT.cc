@@ -472,7 +472,7 @@ UDT::parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
 using bolt::utils::Timer;
 
 using Scores = std::vector<std::pair<uint32_t, float>>;
-std::vector<Scores> UDT::labelProbeMultipleMach(
+std::vector<Scores> UDT::regularDecodeMultipleMach(
     const std::vector<std::shared_ptr<UDT>>& models, const MapInputBatch& batch,
     bool sparse_inference, std::optional<uint32_t> top_k) {
   Timer full_inference_timer;
@@ -513,13 +513,15 @@ std::vector<Scores> UDT::labelProbeMultipleMach(
   std::vector<Scores> output(batch.size());
 
   // TODO(Shubh): Add support for lossy decoding to make inference faster.
+#pragma omp parallel for default(none) shared( \
+    batch, scores, top_k_to_return, output, mach_models, std::cerr) if (batch.size() > 1)
   for (size_t i = 0; i < batch.size(); i++) {
     Timer candidate_gen_timer;
     std::vector<std::unordered_set<uint32_t>> individual_candidates(
         mach_models.size());
     std::exception_ptr error;
 #pragma omp parallel for default(none) \
-    shared(mach_models, individual_candidates, scores, i, error)
+    shared(mach_models, individual_candidates, scores, i, error) if(batch.size()==1)
     for (size_t m = 0; m < mach_models.size(); m++) {
       try {
         const auto& index = mach_models[m]->getIndex();
@@ -541,8 +543,10 @@ std::vector<Scores> UDT::labelProbeMultipleMach(
     }
 
     candidate_gen_timer.stop();
-    std::cerr << "candiate generation time: "
+    if (batch.size()==1){
+      std::cerr << "candiate generation time: "
               << candidate_gen_timer.milliseconds() << " ms" << std::endl;
+    }
 
     if (error) {
       std::rethrow_exception(error);
@@ -566,7 +570,7 @@ std::vector<Scores> UDT::labelProbeMultipleMach(
 
 #pragma omp parallel for default(none)                                        \
     shared(mach_models, individual_candidate_scores, global_candidate_scores, \
-           scores, i, error)
+           scores, i, error) if(batch.size()==1)
     for (size_t m = 0; m < mach_models.size(); m++) {
       individual_candidate_scores[m] = global_candidate_scores;
 
@@ -603,8 +607,10 @@ std::vector<Scores> UDT::labelProbeMultipleMach(
     }
 
     candidate_scoring_timer.stop();
-    std::cerr << "candidate scoring time: "
+    if (batch.size()==1){
+      std::cerr << "candidate scoring time: "
               << candidate_scoring_timer.milliseconds() << " ms" << std::endl;
+    }
 
     if (error) {
       std::rethrow_exception(error);
@@ -620,8 +626,10 @@ std::vector<Scores> UDT::labelProbeMultipleMach(
 
     candidate_sorting_timer.stop();
 
-    std::cerr << "candidate sorting time: "
+    if (batch.size()==1){
+      std::cerr << "candidate sorting time: "
               << candidate_sorting_timer.milliseconds() << " ms" << std::endl;
+    }
     output[i] = std::move(global_candidate_scores);
   }
 
