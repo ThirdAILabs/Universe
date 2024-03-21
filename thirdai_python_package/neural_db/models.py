@@ -329,7 +329,7 @@ def unsupervised_train_on_docs(
         cancel_training_callback,
         freeze_hashtable_callback,
     ]
-    
+
     if coldstart_callbacks:
         callbacks.extend(coldstart_callbacks)
 
@@ -585,6 +585,7 @@ class Mach(Model):
         on_progress: Callable,
         cancel_state: CancelState,
         checkpoint_config: CheckpointConfig,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
     ):
         # This will load the datasources, model, training config and upload the current model with the loaded one. This updates the underlying UDT MACH of the current model with the one from the checkpoint along with other class attributes.
         training_progress_manager = TrainingProgressManager.from_checkpoint(
@@ -595,6 +596,7 @@ class Mach(Model):
             training_progress_manager=training_progress_manager,
             on_progress=on_progress,
             cancel_state=cancel_state,
+            callbacks=callbacks,
         )
 
     def index_from_start(
