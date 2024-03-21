@@ -411,6 +411,8 @@ set(THIRDAI_SOURCES
     data/src/Loader.cc
     data/src/ColumnMapIterator.cc
     data/src/rca/ExplanationMap.cc
+    auto_ml/src/mach/MachRetriever.cc
+    auto_ml/src/mach/MachConfig.cc
     archive/src/Archive.cc
     archive/src/Map.cc
     archive/src/List.cc
@@ -514,7 +516,7 @@ pybind11_add_module(
   auto_ml/src/udt/utils/Classifier.cc
   auto_ml/src/udt/backends/UDTClassifier.cc
   auto_ml/src/udt/backends/UDTMach.cc
-  auto_ml/src/mach/MachRetriever.cc
+  auto_ml/python_bindings/MachPython.cc
   auto_ml/src/udt/backends/DeprecatedUDTMachClassifier.cc # Deprecate
   auto_ml/src/udt/backends/UDTRecurrentClassifier.cc
   auto_ml/src/udt/backends/UDTRegression.cc
