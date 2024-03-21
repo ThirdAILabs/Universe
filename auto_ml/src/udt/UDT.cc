@@ -29,6 +29,8 @@
 
 namespace thirdai::automl::udt {
 
+using bolt::utils::Timer;
+
 struct BestScore {
   bool operator()(const std::pair<uint32_t, float>& a,
                   const std::pair<uint32_t, float>& b) {
@@ -475,6 +477,21 @@ UDT::parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
   return outputs;
 }
 
+std::vector<std::vector<UDT::Scores>> UDT::labelProbeMultipleShards(
+    const std::vector<std::vector<std::shared_ptr<UDT>>>& shards,
+    const MapInputBatch& batch, bool sparse_inference,
+    std::optional<uint32_t> top_k) {
+  std::vector<std::vector<UDT::Scores>> shard_scores(shards.size());
+
+#pragma omp parallel for default(none) \
+    shared(shard_scores, shards, batch, sparse_inference, top_k)
+  for (size_t shard_id = 0; shard_id < shards.size(); shard_id++) {
+    shard_scores[shard_id] = labelProbeMultipleMach(shards[shard_id], batch,
+                                                    sparse_inference, top_k);
+  }
+  return shard_scores;
+}
+
 std::vector<UDT::Scores> UDT::labelProbeMultipleMach(
     const std::vector<std::shared_ptr<UDT>>& models, const MapInputBatch& batch,
     bool sparse_inference, std::optional<uint32_t> top_k) {
@@ -515,52 +532,126 @@ std::vector<UDT::Scores> UDT::labelProbeMultipleMach(
   std::vector<Scores> output(batch.size());
 
   // TODO(Shubh): Add support for lossy decoding to make inference faster.
-#pragma omp parallel for default(none) shared( \
-    batch, scores, top_k_to_return, output, mach_models) if (batch.size() > 1)
+#pragma omp parallel for default(none)                          \
+    shared(batch, scores, top_k_to_return, output, mach_models, \
+           std::cerr) if (batch.size() > 1)
   for (size_t i = 0; i < batch.size(); i++) {
-    std::unordered_map<uint32_t, float> candidate_scores;
+    Timer candidate_gen_timer;
+    std::vector<std::unordered_set<uint32_t>> individual_candidates(
+        mach_models.size());
+    std::exception_ptr error;
+#pragma omp parallel for default(none)                    \
+    shared(mach_models, individual_candidates, scores, i, \
+           error) if (batch.size() == 1)
     for (size_t m = 0; m < mach_models.size(); m++) {
-      const auto& index = mach_models[m]->getIndex();
-      auto top_model_candidates =
-          scores[m]->getVector(i).findKLargestActivations(
-              mach_models[m]->numBucketsToEval());
+      try {
+        const auto& index = mach_models[m]->getIndex();
+        auto top_model_candidates =
+            scores[m]->getVector(i).findKLargestActivations(
+                mach_models[m]->numBucketsToEval());
 
-      while (!top_model_candidates.empty()) {
-        uint32_t bucket = top_model_candidates.top().second;
-        for (uint32_t id : index->getEntities(bucket)) {
-          candidate_scores[id] = 0.0;
+        while (!top_model_candidates.empty()) {
+          uint32_t bucket = top_model_candidates.top().second;
+          for (uint32_t id : index->getEntities(bucket)) {
+            individual_candidates[m].insert(id);
+          }
+          top_model_candidates.pop();
         }
-        top_model_candidates.pop();
+      } catch (...) {
+#pragma omp critical
+        error = std::current_exception();
       }
     }
+
+    candidate_gen_timer.stop();
+    if (batch.size() == 1) {
+      std::cerr << "candiate generation time: "
+                << candidate_gen_timer.milliseconds() << " ms" << std::endl;
+    }
+
+    if (error) {
+      std::rethrow_exception(error);
+    }
+
+    Timer candidate_scoring_timer;
+
+    std::unordered_set<uint32_t> global_candidates;
+    for (const auto& candidate_set : individual_candidates) {
+      global_candidates.insert(candidate_set.begin(), candidate_set.end());
+    }
+
+    std::vector<std::pair<uint32_t, float>> global_candidate_scores;
+    global_candidate_scores.reserve(global_candidates.size());
+    for (uint32_t candidate : global_candidates) {
+      global_candidate_scores.emplace_back(candidate, 0);
+    }
+
+    std::vector<std::vector<std::pair<uint32_t, float>>>
+        individual_candidate_scores(mach_models.size());
+
+#pragma omp parallel for default(none)                                        \
+    shared(mach_models, individual_candidate_scores, global_candidate_scores, \
+           scores, i, error) if (batch.size() == 1)
     for (size_t m = 0; m < mach_models.size(); m++) {
-      const auto& index = mach_models[m]->getIndex();
-      const BoltVector& score_vec = scores[m]->getVector(i);
-      if (score_vec.isDense()) {
-        const float* activations = scores[m]->getVector(i).activations;
-        for (auto& [id, score] : candidate_scores) {
-          score += activations[index->getHashes(id)[0]];
-        }
-      } else {
-        std::unordered_map<uint32_t, float> score_map;
-        for (size_t j = 0; j < score_vec.len; j++) {
-          score_map[score_vec.active_neurons[j]] = score_vec.activations[j];
-        }
-        for (auto& [id, score] : candidate_scores) {
-          uint32_t hash = index->getHashes(id)[0];
-          if (score_map.count(hash)) {
-            score += score_map[hash];
+      individual_candidate_scores[m] = global_candidate_scores;
+
+      try {
+        const auto& index = mach_models[m]->getIndex();
+        const BoltVector& score_vec = scores[m]->getVector(i);
+        if (score_vec.isDense()) {
+          const float* activations = scores[m]->getVector(i).activations;
+          for (auto& [id, score] : individual_candidate_scores[m]) {
+            score += activations[index->getHashes(id)[0]];
+          }
+        } else {
+          std::unordered_map<uint32_t, float> score_map;
+          for (size_t j = 0; j < score_vec.len; j++) {
+            score_map[score_vec.active_neurons[j]] = score_vec.activations[j];
+          }
+          for (auto& [id, score] : individual_candidate_scores[m]) {
+            uint32_t hash = index->getHashes(id)[0];
+            if (score_map.count(hash)) {
+              score += score_map[hash];
+            }
           }
         }
+      } catch (...) {
+#pragma omp critical
+        error = std::current_exception();
       }
     }
 
-    Scores results(candidate_scores.begin(), candidate_scores.end());
-    std::sort(results.begin(), results.end(), BestScore{});
-    if (results.size() > top_k_to_return) {
-      results.resize(top_k_to_return);
+    for (const auto& scores : individual_candidate_scores) {
+      for (size_t i = 0; i < global_candidate_scores.size(); i++) {
+        global_candidate_scores[i].second += scores[i].second;
+      }
     }
-    output[i] = results;
+
+    candidate_scoring_timer.stop();
+    if (batch.size() == 1) {
+      std::cerr << "candidate scoring time: "
+                << candidate_scoring_timer.milliseconds() << " ms" << std::endl;
+    }
+
+    if (error) {
+      std::rethrow_exception(error);
+    }
+
+    Timer candidate_sorting_timer;
+
+    std::sort(global_candidate_scores.begin(), global_candidate_scores.end(),
+              BestScore{});
+    if (global_candidate_scores.size() > top_k_to_return) {
+      global_candidate_scores.resize(top_k_to_return);
+    }
+
+    candidate_sorting_timer.stop();
+
+    if (batch.size() == 1) {
+      std::cerr << "candidate sorting time: "
+                << candidate_sorting_timer.milliseconds() << " ms" << std::endl;
+    }
+    output[i] = std::move(global_candidate_scores);
   }
 
   return output;
