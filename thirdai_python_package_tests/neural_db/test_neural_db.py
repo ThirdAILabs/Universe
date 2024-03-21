@@ -28,6 +28,7 @@ from ndb_utils import (
     upvote_batch_works,
     upvote_works,
 )
+from thirdai import bolt
 from thirdai import neural_db as ndb
 from thirdai.neural_db.models import merge_results
 
@@ -642,3 +643,22 @@ def test_result_merging():
     expected_output = [1, 2, 7, 3, 4, 5, 6]
 
     assert [x[0] for x in merge_results(results_a, results_b, k=10)] == expected_output
+
+
+def test_insert_callback(small_doc_set):
+    db = ndb.NeuralDB(user_id="test_coldstart_callback")
+
+    class EpochCheck(bolt.train.callbacks.Callback):
+        def __init__(self):
+            super().__init__()
+            self.epochs_completed = 0
+
+        def on_epoch_end(self):
+            self.epochs_completed += 1
+
+    epoch_count_callback = EpochCheck()
+
+    epochs = 6
+    db.insert(small_doc_set, epochs=epochs, callbacks=[epoch_count_callback])
+
+    assert epoch_count_callback.epochs_completed == epochs
