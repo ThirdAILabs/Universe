@@ -229,7 +229,7 @@ setup(
             "scikit-learn",
             "beir",
             "pyOpenSSL>22.1.0",
-            "ray<2.10.0",
+            "ray",
             "grpcio",
             "unstructured[all-docs]<=0.10.20",
         ]
