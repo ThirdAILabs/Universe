@@ -469,85 +469,68 @@ UDT::parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
   return outputs;
 }
 
+using bolt::utils::Timer;
+
 using Scores = std::vector<std::pair<uint32_t, float>>;
-std::vector<Scores> UDT::regularDecodeMultipleMach(
+std::vector<Scores> UDT::labelProbeMultipleMach(
     const std::vector<std::shared_ptr<UDT>>& models, const MapInputBatch& batch,
     bool sparse_inference, std::optional<uint32_t> top_k) {
+  Timer full_inference_timer;
   if (models.empty()) {
     throw std::invalid_argument(
         "Atleast 1 model should be passed for decoding");
   }
 
-  std::vector<UDTMach*> dynamic_casted_mach_models;
+  std::vector<UDTMach*> mach_models;
   for (const auto& model : models) {
     if (auto* mach_model = dynamic_cast<UDTMach*>(model->_backend.get())) {
-      dynamic_casted_mach_models.push_back(mach_model);
+      mach_models.push_back(mach_model);
     } else {
       throw std::invalid_argument("Cannot perform decoding on non mach model.");
     }
   }
 
-  bolt::TensorList scores(dynamic_casted_mach_models.size());
+  bolt::TensorList scores(mach_models.size());
 
-  auto start = std::chrono::high_resolution_clock::now();
+  Timer forward_timer;
 
 #pragma omp parallel for default(none) shared( \
-    dynamic_casted_mach_models, scores, batch, \
-    sparse_inference) if (dynamic_casted_mach_models.size() > batch.size())
-  for (size_t i = 0; i < dynamic_casted_mach_models.size(); i++) {
-    auto output = dynamic_casted_mach_models[i]->model()->forward(
-        dynamic_casted_mach_models[i]->featurizer()->featurizeInputBatch(batch),
+    mach_models, scores, batch, sparse_inference) if (batch.size() == 1)
+  for (size_t i = 0; i < mach_models.size(); i++) {
+    auto output = mach_models[i]->model()->forward(
+        mach_models[i]->featurizer()->featurizeInputBatch(batch),
         sparse_inference);
     scores[i] = output.at(0);
   }
-  auto inference_end = std::chrono::high_resolution_clock::now();
-  auto inference_duration =
-      std::chrono::duration_cast<std::chrono::milliseconds>(inference_end -
-                                                            start);
 
-  std::cout << "Inference time: " << inference_duration.count()
-            << " milliseconds" << std::endl;
+  forward_timer.stop();
 
-  // for (const auto& model : models) {
-  //   if (auto* mach_model = dynamic_cast<UDTMach*>(model->_backend.get())) {
-  //     auto output = mach_model->model()->forward(
-  //         mach_model->featurizer()->featurizeInputBatch(batch),
-  //         sparse_inference);
-  //     dynamic_casted_mach_models.push_back(mach_model);
-  //     scores.push_back(output.at(0));
-  //   } else {
-  //     throw std::invalid_argument("Cannot perform decoding on non mach
-  //     model.");
-  //   }
-  // }
+  std::cerr << "forward time: " << forward_timer.milliseconds() << " ms"
+            << std::endl;
 
-  auto top_k_to_return =
-      top_k.value_or(dynamic_casted_mach_models[0]->defaultTopKToReturn());
+  auto top_k_to_return = top_k.value_or(mach_models[0]->defaultTopKToReturn());
 
   std::vector<Scores> output(batch.size());
 
-#pragma omp parallel for default(none)             \
-    shared(batch, scores, top_k_to_return, output, \
-           dynamic_casted_mach_models) if (batch.size() > 1)
+  // TODO(Shubh): Add support for lossy decoding to make inference faster.
   for (size_t i = 0; i < batch.size(); i++) {
-    std::vector<std::unordered_map<uint32_t, float>>
-        individual_candidate_scores(dynamic_casted_mach_models.size());
-    auto candidate_start = std::chrono::high_resolution_clock::now();
-    auto candidate_creation_start = std::chrono::high_resolution_clock::now();
+    Timer candidate_gen_timer;
+    std::vector<std::unordered_set<uint32_t>> individual_candidates(
+        mach_models.size());
     std::exception_ptr error;
-#pragma omp parallel for default(none) shared( \
-    dynamic_casted_mach_models, individual_candidate_scores, scores, i, error)
-    for (size_t m = 0; m < dynamic_casted_mach_models.size(); m++) {
+#pragma omp parallel for default(none) \
+    shared(mach_models, individual_candidates, scores, i, error)
+    for (size_t m = 0; m < mach_models.size(); m++) {
       try {
-        const auto& index = dynamic_casted_mach_models[m]->getIndex();
+        const auto& index = mach_models[m]->getIndex();
         auto top_model_candidates =
             scores[m]->getVector(i).findKLargestActivations(
-                dynamic_casted_mach_models[m]->numBucketsToEval());
+                mach_models[m]->numBucketsToEval());
 
         while (!top_model_candidates.empty()) {
           uint32_t bucket = top_model_candidates.top().second;
           for (uint32_t id : index->getEntities(bucket)) {
-            individual_candidate_scores[m][id] = 0.0;
+            individual_candidates[m].insert(id);
           }
           top_model_candidates.pop();
         }
@@ -556,33 +539,43 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
         error = std::current_exception();
       }
     }
-    auto candidate_creation_end = std::chrono::high_resolution_clock::now();
+
+    candidate_gen_timer.stop();
+    std::cerr << "candiate generation time: "
+              << candidate_gen_timer.milliseconds() << " ms" << std::endl;
 
     if (error) {
       std::rethrow_exception(error);
     }
 
-    auto candidate_score_fill_start = std::chrono::high_resolution_clock::now();
-    std::unordered_map<uint32_t, float> candidate_scores;
-    for (const auto& scores_map : individual_candidate_scores) {
-      // Insert each element from the current map into the combined map
-      // This will overwrite the value if the key already exists
-      candidate_scores.insert(scores_map.begin(), scores_map.end());
+    Timer candidate_scoring_timer;
+
+    std::unordered_set<uint32_t> global_candidates;
+    for (const auto& candidate_set : individual_candidates) {
+      global_candidates.insert(candidate_set.begin(), candidate_set.end());
     }
-    auto candidate_score_fill_end = std::chrono::high_resolution_clock::now();
 
-    auto candidate_end = std::chrono::high_resolution_clock::now();
-    auto model_inference_start = std::chrono::high_resolution_clock::now();
+    std::vector<std::pair<uint32_t, float>> global_candidate_scores;
+    global_candidate_scores.reserve(global_candidates.size());
+    for (uint32_t candidate : global_candidates) {
+      global_candidate_scores.emplace_back(candidate, 0);
+    }
 
-#pragma omp parallel for default(none) \
-    shared(dynamic_casted_mach_models, candidate_scores, scores, i, error)
-    for (size_t m = 0; m < dynamic_casted_mach_models.size(); m++) {
+    std::vector<std::vector<std::pair<uint32_t, float>>>
+        individual_candidate_scores(mach_models.size());
+
+#pragma omp parallel for default(none)                                        \
+    shared(mach_models, individual_candidate_scores, global_candidate_scores, \
+           scores, i, error)
+    for (size_t m = 0; m < mach_models.size(); m++) {
+      individual_candidate_scores[m] = global_candidate_scores;
+
       try {
-        const auto& index = dynamic_casted_mach_models[m]->getIndex();
+        const auto& index = mach_models[m]->getIndex();
         const BoltVector& score_vec = scores[m]->getVector(i);
         if (score_vec.isDense()) {
           const float* activations = scores[m]->getVector(i).activations;
-          for (auto& [id, score] : candidate_scores) {
+          for (auto& [id, score] : individual_candidate_scores[m]) {
             score += activations[index->getHashes(id)[0]];
           }
         } else {
@@ -590,7 +583,7 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
           for (size_t j = 0; j < score_vec.len; j++) {
             score_map[score_vec.active_neurons[j]] = score_vec.activations[j];
           }
-          for (auto& [id, score] : candidate_scores) {
+          for (auto& [id, score] : individual_candidate_scores[m]) {
             uint32_t hash = index->getHashes(id)[0];
             if (score_map.count(hash)) {
               score += score_map[hash];
@@ -603,56 +596,38 @@ std::vector<Scores> UDT::regularDecodeMultipleMach(
       }
     }
 
-    auto model_inference_end = std::chrono::high_resolution_clock::now();
+    for (const auto& scores : individual_candidate_scores) {
+      for (size_t i = 0; i < global_candidate_scores.size(); i++) {
+        global_candidate_scores[i].second += scores[i].second;
+      }
+    }
+
+    candidate_scoring_timer.stop();
+    std::cerr << "candidate scoring time: "
+              << candidate_scoring_timer.milliseconds() << " ms" << std::endl;
+
     if (error) {
       std::rethrow_exception(error);
     }
-    auto batch_probing_end = std::chrono::high_resolution_clock::now();
-    auto single_sample_generation_time =
-        std::chrono::duration_cast<std::chrono::milliseconds>(candidate_end -
-                                                              candidate_start);
-    auto single_sample_probing_time =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            batch_probing_end - candidate_end);
-    auto candidate_creation_time =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            candidate_creation_end - candidate_creation_start);
-    auto candidate_score_fill_time =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            candidate_score_fill_end - candidate_score_fill_start);
-    auto model_inference_time =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            model_inference_end - model_inference_start);
 
-    // std::cout << "Single Sample Candidate time: "
-    //           << single_sample_generation_time.count() << " milliseconds"
-    //           << std::endl;
-    // std::cout << "Single Sample Probing time: "
-    //           << single_sample_probing_time.count() << " milliseconds"
-    //           << std::endl;
-    // std::cout << "Candidate Creation time: " << candidate_creation_time.count()
-    //           << " milliseconds" << std::endl;
-    // std::cout << "Candidate Score Fill time: "
-    //           << candidate_score_fill_time.count() << " milliseconds"
-    //           << std::endl;
-    // std::cout << "Model Inference time: " << model_inference_time.count()
-    //           << " milliseconds" << std::endl;
-    Scores results(candidate_scores.begin(), candidate_scores.end());
-    std::sort(results.begin(), results.end(), BestScore{});
-    if (results.size() > top_k_to_return) {
-      results.resize(top_k_to_return);
+    Timer candidate_sorting_timer;
+
+    std::sort(global_candidate_scores.begin(), global_candidate_scores.end(),
+              BestScore{});
+    if (global_candidate_scores.size() > top_k_to_return) {
+      global_candidate_scores.resize(top_k_to_return);
     }
-    output[i] = results;
-  }
-  auto probing_end = std::chrono::high_resolution_clock::now();
-  auto probing_duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-      probing_end - inference_end);
 
-  std::cout << "Probing time: " << probing_duration.count() << " milliseconds"
-            << std::endl;
+    candidate_sorting_timer.stop();
+
+    std::cerr << "candidate sorting time: "
+              << candidate_sorting_timer.milliseconds() << " ms" << std::endl;
+    output[i] = std::move(global_candidate_scores);
+  }
 
   return output;
 }
+
 
 }  // namespace thirdai::automl::udt
 
