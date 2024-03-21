@@ -329,7 +329,7 @@ def unsupervised_train_on_docs(
             batch_size=batch_size,
             learning_rate=learning_rate,
             epochs=max_epochs,
-            train_metrics=[metric],
+            train_metrics=[metric, "loss", "hash_precision@1"],
             callbacks=callbacks,
             variable_length=variable_length,
         )
@@ -341,7 +341,7 @@ def unsupervised_train_on_docs(
             batch_size=batch_size,
             learning_rate=learning_rate,
             epochs=max_epochs,
-            metrics=[metric],
+            metrics=[metric, "loss", "hash_precision@1"],
             callbacks=callbacks,
             max_in_memory_batches=max_in_memory_batches,
             variable_length=variable_length,
