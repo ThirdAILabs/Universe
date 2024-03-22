@@ -12,6 +12,7 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <iterator>
+#include <limits>
 #include <optional>
 #include <stdexcept>
 #include <unordered_set>
@@ -65,8 +66,8 @@ std::optional<data::ColumnMap> MachMemory::getSamples(size_t num_samples) {
                                    std::move(indices), _input_indices_dim)},
        {_input_values_column,
         data::ArrayColumn<float>::make(std::move(values))},
-       {_id_column,
-        data::ValueColumn<uint32_t>::make(std::move(ids), std::nullopt)},
+       {_id_column, data::ValueColumn<uint32_t>::make(
+                        std::move(ids), std::numeric_limits<uint32_t>::max())},
        {_mach_buckets_column, data::ArrayColumn<uint32_t>::make(
                                   std::move(buckets), _num_mach_buckets)}});
 

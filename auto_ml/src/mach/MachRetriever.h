@@ -52,16 +52,16 @@ class MachRetriever {
                  const std::vector<std::string>& strong_column_names,
                  const std::vector<std::string>& weak_column_names,
                  bool text_augmentation,
-                 std::optional<uint32_t> num_buckets_to_sample_opt,
-                 uint32_t num_random_hashes, bool load_balancing,
+                 std::optional<uint32_t> n_buckets_to_sample_opt,
+                 uint32_t n_random_hashes, bool load_balancing,
                  bool sort_random_hashes);
 
   void introduce(data::ColumnMap data,
                  const std::vector<std::string>& strong_column_names,
                  const std::vector<std::string>& weak_column_names,
                  bool text_augmentation,
-                 std::optional<uint32_t> num_buckets_to_sample_opt,
-                 uint32_t num_random_hashes, bool load_balancing,
+                 std::optional<uint32_t> n_buckets_to_sample_opt,
+                 uint32_t n_random_hashes, bool load_balancing,
                  bool sort_random_hashes);
 
   bolt::metrics::History coldstart(
@@ -94,14 +94,13 @@ class MachRetriever {
       const data::ColumnMap& columns, bool sparse_inference,
       std::optional<uint32_t> top_k, bool force_non_empty);
 
-  void upvote(data::ColumnMap upvotes, uint32_t num_upvote_samples,
-              uint32_t num_balancing_samples, float learning_rate,
+  void upvote(data::ColumnMap upvotes, uint32_t n_upvote_samples,
+              uint32_t n_balancing_samples, float learning_rate,
               uint32_t epochs, size_t batch_size);
 
-  void associate(data::ColumnMap from_columns,
-                 const data::ColumnMap& to_columns, uint32_t num_buckets,
-                 uint32_t num_association_samples,
-                 uint32_t num_balancing_samples, float learning_rate,
+  void associate(data::ColumnMap sources, const data::ColumnMap& targets,
+                 uint32_t n_buckets, uint32_t n_association_samples,
+                 uint32_t n_balancing_samples, float learning_rate,
                  uint32_t epochs, bool force_non_empty, size_t batch_size);
 
   dataset::mach::MachIndexPtr index() { return _state->machIndex(); }
@@ -111,6 +110,8 @@ class MachRetriever {
       index()->erase(id);
     }
   }
+
+  bolt::ModelPtr model() const { return _model; }
 
   ar::ConstArchivePtr toArchive(bool with_optimizer) const;
 
@@ -158,8 +159,8 @@ class MachRetriever {
 
   std::vector<uint32_t> topHashesForDoc(
       std::vector<std::vector<ValueIndexPair>>&& top_k_per_sample,
-      uint32_t num_buckets_to_sample, uint32_t approx_num_hashes_per_bucket,
-      uint32_t num_random_hashes, bool load_balancing,
+      uint32_t n_buckets_to_sample, uint32_t approx_n_hashes_per_bucket,
+      uint32_t n_random_hashes, bool load_balancing,
       bool sort_random_hashes) const;
 
   void updateSamplingStrategy();
@@ -180,7 +181,7 @@ class MachRetriever {
       const std::vector<std::string>& metric_names, const std::string& prefix);
 
   void teach(data::ColumnMap feedback, float learning_rate,
-             uint32_t feedback_repetitions, uint32_t num_balancers,
+             uint32_t feedback_repetitions, uint32_t n_balancers,
              uint32_t epochs, size_t batch_size);
 
   void insertNewIds(const data::ColumnMapIteratorPtr& data);

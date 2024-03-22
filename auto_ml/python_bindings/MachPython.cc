@@ -87,6 +87,9 @@ void defineMach(py::module_& module) {
            py::arg("epoch"));
 
   py::class_<MachRetriever, MachRetrieverPtr>(module, "MachRetriever")
+#if THIRDAI_EXPOSE_ALL
+      .def_property_readonly("model", &MachRetriever::model)
+#endif
       .def("train", &wrappedTrain, py::arg("data"), py::arg("learning_rate"),
            py::arg("epochs"), py::arg("metrics") = std::vector<std::string>{},
            py::arg("callbacks") = std::vector<bolt::callbacks::CallbackPtr>{})
@@ -97,7 +100,19 @@ void defineMach(py::module_& module) {
            py::arg("callbacks") = std::vector<bolt::callbacks::CallbackPtr>{})
       .def("evaluate", &MachRetriever::evaluate, py::arg("data"),
            py::arg("metrics") = std::vector<std::string>{},
-           py::arg("verbose") = true);
+           py::arg("verbose") = true)
+      .def("search", &MachRetriever::search, py::arg("queries"),
+           py::arg("top_k"), py::arg("sparse_inference") = false)
+      .def("upvote", &MachRetriever::upvote, py::arg("upvotes"),
+           py::arg("n_upvote_samples") = 16,
+           py::arg("n_balancing_samples") = 50, py::arg("learning_rate") = 1e-3,
+           py::arg("epochs") = 3, py::arg("batch_size") = 200)
+      .def("associate", &MachRetriever::associate, py::arg("sources"),
+           py::arg("targets"), py::arg("n_buckets"),
+           py::arg("n_association_samples") = 16,
+           py::arg("n_balancing_samples") = 50, py::arg("learning_rate") = 1e-3,
+           py::arg("epochs") = 3, py::arg("force_non_empty") = true,
+           py::arg("batch_size") = 200);
 }
 
 }  // namespace thirdai::automl::mach::python

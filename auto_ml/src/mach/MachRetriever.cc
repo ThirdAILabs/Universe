@@ -72,11 +72,11 @@ void MachRetriever::introduce(
     const data::ColumnMapIteratorPtr& data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, bool text_augmentation,
-    std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, bool load_balancing, bool sort_random_hashes) {
+    std::optional<uint32_t> n_buckets_to_sample_opt, uint32_t n_random_hashes,
+    bool load_balancing, bool sort_random_hashes) {
   while (auto columns = data->next()) {
     introduce(std::move(*columns), strong_column_names, weak_column_names,
-              text_augmentation, num_buckets_to_sample_opt, num_random_hashes,
+              text_augmentation, n_buckets_to_sample_opt, n_random_hashes,
               load_balancing, sort_random_hashes);
   }
 }
@@ -84,8 +84,8 @@ void MachRetriever::introduce(
 void MachRetriever::introduce(
     data::ColumnMap data, const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, bool text_augmentation,
-    std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, bool load_balancing, bool sort_random_hashes) {
+    std::optional<uint32_t> n_buckets_to_sample_opt, uint32_t n_random_hashes,
+    bool load_balancing, bool sort_random_hashes) {
   assertUniqueIds(data);
 
   if (text_augmentation) {
@@ -108,9 +108,9 @@ void MachRetriever::introduce(
 
   auto scores = _model->forward(input_tensors).at(0);
 
-  uint32_t num_buckets_to_sample =
+  uint32_t n_buckets_to_sample =
       load_balancing ? index()->numBuckets()
-                     : num_buckets_to_sample_opt.value_or(index()->numHashes());
+                     : n_buckets_to_sample_opt.value_or(index()->numHashes());
 
   auto bucket_scores_by_doc = groupScoresByLabel(
       /* scores= */ *scores,
@@ -118,14 +118,13 @@ void MachRetriever::introduce(
       /* only_keep_top_k= */
       load_balancing ? std::nullopt : std::make_optional(load_balancing));
 
-  uint32_t approx_num_hashes_per_bucket = index()->approxNumHashesPerBucket(
+  uint32_t approx_n_hashes_per_bucket = index()->approxNumHashesPerBucket(
       /* num_new_samples= */ bucket_scores_by_doc.size());
 
   for (auto& [doc, bucket_scores] : bucket_scores_by_doc) {
-    auto hashes =
-        topHashesForDoc(std::move(bucket_scores), num_buckets_to_sample,
-                        approx_num_hashes_per_bucket, num_random_hashes,
-                        load_balancing, sort_random_hashes);
+    auto hashes = topHashesForDoc(std::move(bucket_scores), n_buckets_to_sample,
+                                  approx_n_hashes_per_bucket, n_random_hashes,
+                                  load_balancing, sort_random_hashes);
     index()->insert(doc, hashes);
   }
 
@@ -200,14 +199,14 @@ bolt::metrics::History MachRetriever::evaluate(
 std::vector<IdScores> MachRetriever::search(data::ColumnMap queries,
                                             uint32_t top_k,
                                             bool sparse_inference) {
-  uint32_t num_queries = queries.numRows();
+  uint32_t n_queries = queries.numRows();
   auto in = inputTensors(_text_transform->apply(std::move(queries), *_state));
   auto out = _model->forward(in, sparse_inference).at(0);
 
-  std::vector<IdScores> predictions(num_queries);
+  std::vector<IdScores> predictions(n_queries);
 #pragma omp parallel for default(none) \
-    shared(out, predictions, top_k, num_queries) if (num_queries > 1)
-  for (uint32_t i = 0; i < num_queries; i++) {
+    shared(out, predictions, top_k, n_queries) if (n_queries > 1)
+  for (uint32_t i = 0; i < n_queries; i++) {
     const BoltVector& out_vec = out->getVector(i);
     predictions[i] = index()->decode(out_vec, top_k, _n_buckets_to_eval);
   }
@@ -224,11 +223,11 @@ std::vector<IdScores> MachRetriever::rank(
   auto in = inputTensors(_text_transform->apply(std::move(queries), *_state));
   auto out = _model->forward(in, sparse_inference).at(0);
 
-  uint32_t num_queries = queries.numRows();
-  std::vector<IdScores> predictions(num_queries);
-#pragma omp parallel for default(none) shared( \
-    out, candidates, predictions, top_k, num_queries) if (num_queries > 1)
-  for (uint32_t i = 0; i < num_queries; i++) {
+  uint32_t n_queries = queries.numRows();
+  std::vector<IdScores> predictions(n_queries);
+#pragma omp parallel for default(none) \
+    shared(out, candidates, predictions, top_k, n_queries) if (n_queries > 1)
+  for (uint32_t i = 0; i < n_queries; i++) {
     const BoltVector& out_vec = out->getVector(i);
     predictions[i] = index()->scoreEntities(out_vec, candidates[i], top_k);
   }
@@ -239,7 +238,8 @@ std::vector<IdScores> MachRetriever::rank(
 std::vector<std::vector<uint32_t>> MachRetriever::predictBuckets(
     const data::ColumnMap& columns, bool sparse_inference,
     std::optional<uint32_t> top_k, bool force_non_empty) {
-  auto outputs = _model->forward(inputTensors(columns), sparse_inference).at(0);
+  auto inputs = inputTensors(_text_transform->applyStateless(columns));
+  auto outputs = _model->forward(inputs, sparse_inference).at(0);
 
   uint32_t k = top_k.value_or(_state->machIndex()->numHashes());
 
@@ -279,43 +279,45 @@ auto repeatRows(data::ColumnMap&& columns, uint32_t repetitions) {
   return columns.permute(permutation);
 }
 
-void MachRetriever::upvote(data::ColumnMap upvotes, uint32_t num_upvote_samples,
-                           uint32_t num_balancing_samples, float learning_rate,
+void MachRetriever::upvote(data::ColumnMap upvotes, uint32_t n_upvote_samples,
+                           uint32_t n_balancing_samples, float learning_rate,
                            uint32_t epochs, size_t batch_size) {
   upvotes = data::Pipeline({_text_transform, _map_to_buckets})
                 .apply(std::move(upvotes), *_state);
-  teach(upvotes, learning_rate, num_upvote_samples, num_balancing_samples,
-        epochs, batch_size);
+  teach(upvotes, learning_rate, n_upvote_samples, n_balancing_samples, epochs,
+        batch_size);
 }
 
-void MachRetriever::associate(data::ColumnMap from_columns,
-                              const data::ColumnMap& to_columns,
-                              uint32_t num_buckets,
-                              uint32_t num_association_samples,
-                              uint32_t num_balancing_samples,
-                              float learning_rate, uint32_t epochs,
-                              bool force_non_empty, size_t batch_size) {
+void MachRetriever::associate(data::ColumnMap sources,
+                              const data::ColumnMap& targets,
+                              uint32_t n_buckets,
+                              uint32_t n_association_samples,
+                              uint32_t n_balancing_samples, float learning_rate,
+                              uint32_t epochs, bool force_non_empty,
+                              size_t batch_size) {
   auto mach_labels = thirdai::data::ArrayColumn<uint32_t>::make(
-      predictBuckets(to_columns, /* sparse_inference= */ false, num_buckets,
+      predictBuckets(targets, /* sparse_inference= */ false, n_buckets,
                      force_non_empty),
       index()->numBuckets());
-  from_columns.setColumn(bucket_column, mach_labels);
+
+  sources = _text_transform->applyStateless(sources);
+  sources.setColumn(bucket_column, mach_labels);
 
   // Add dummy IDs since associations do not have IDs.
   auto doc_ids = thirdai::data::ValueColumn<uint32_t>::make(
-      std::vector<uint32_t>(from_columns.numRows(), 0),
+      std::vector<uint32_t>(targets.numRows(), 0),
       std::numeric_limits<uint32_t>::max());
-  from_columns.setColumn(_id_column, doc_ids);
+  sources.setColumn(_id_column, doc_ids);
 
-  teach(from_columns, learning_rate, num_association_samples,
-        num_balancing_samples, epochs, batch_size);
+  teach(sources, learning_rate, n_association_samples, n_balancing_samples,
+        epochs, batch_size);
 }
 
 void MachRetriever::teach(data::ColumnMap feedback, float learning_rate,
-                          uint32_t feedback_repetitions, uint32_t num_balancers,
+                          uint32_t feedback_repetitions, uint32_t n_balancers,
                           uint32_t epochs, size_t batch_size) {
   auto balancers =
-      _state->machMemory().getSamples(num_balancers * feedback.numRows());
+      _state->machMemory().getSamples(n_balancers * feedback.numRows());
 
   feedback = repeatRows(std::move(feedback), feedback_repetitions);
   feedback = feedback.selectColumns(_all_bolt_columns);
@@ -356,21 +358,21 @@ struct CompareBuckets {
 
 std::vector<uint32_t> MachRetriever::topHashesForDoc(
     std::vector<std::vector<ValueIndexPair>>&& top_k_per_sample,
-    uint32_t num_buckets_to_sample, uint32_t approx_num_hashes_per_bucket,
-    uint32_t num_random_hashes, bool load_balancing,
+    uint32_t n_buckets_to_sample, uint32_t approx_n_hashes_per_bucket,
+    uint32_t n_random_hashes, bool load_balancing,
     bool sort_random_hashes) const {
   const auto& mach_index = _state->machIndex();
 
-  uint32_t num_hashes = mach_index->numHashes();
+  uint32_t n_hashes = mach_index->numHashes();
 
-  if (num_buckets_to_sample < mach_index->numHashes()) {
+  if (n_buckets_to_sample < mach_index->numHashes()) {
     throw std::invalid_argument(
-        "Sampling from fewer buckets than num_hashes is not supported. If "
+        "Sampling from fewer buckets than n_hashes is not supported. If "
         "you'd like to introduce using fewer hashes, please reset the number "
         "of hashes for the index.");
   }
 
-  if (num_buckets_to_sample > mach_index->numBuckets()) {
+  if (n_buckets_to_sample > mach_index->numBuckets()) {
     throw std::invalid_argument(
         "Cannot sample more buckets than there are in the index.");
   }
@@ -387,12 +389,12 @@ std::vector<uint32_t> MachRetriever::topHashesForDoc(
     }
   }
 
-  uint32_t num_buckets = mach_index->numBuckets();
-  std::uniform_int_distribution<uint32_t> int_dist(0, num_buckets - 1);
+  uint32_t n_buckets = mach_index->numBuckets();
+  std::uniform_int_distribution<uint32_t> int_dist(0, n_buckets - 1);
   std::mt19937 rand(global_random::nextSeed());
 
   if (sort_random_hashes) {
-    for (uint32_t i = 0; i < num_random_hashes; i++) {
+    for (uint32_t i = 0; i < n_random_hashes; i++) {
       uint32_t active_neuron = int_dist(rand);
       if (!hash_freq_and_scores.count(active_neuron)) {
         hash_freq_and_scores[active_neuron] = BucketScore{1, 0};
@@ -413,12 +415,12 @@ std::vector<uint32_t> MachRetriever::topHashesForDoc(
   CompareBuckets cmp;
   std::sort(sorted_hashes.begin(), sorted_hashes.end(), cmp);
 
-  if (num_buckets_to_sample > num_hashes) {
+  if (n_buckets_to_sample > n_hashes) {
     // If we are sampling more buckets then we end up using we rerank the
     // buckets based on size to load balance the index.
     std::sort(sorted_hashes.begin(),
-              sorted_hashes.begin() + num_buckets_to_sample,
-              [&mach_index, &cmp, approx_num_hashes_per_bucket, load_balancing](
+              sorted_hashes.begin() + n_buckets_to_sample,
+              [&mach_index, &cmp, approx_n_hashes_per_bucket, load_balancing](
                   const auto& lhs, const auto& rhs) {
                 size_t lhs_size = mach_index->bucketSize(lhs.first);
                 size_t rhs_size = mach_index->bucketSize(rhs.first);
@@ -427,8 +429,8 @@ std::vector<uint32_t> MachRetriever::topHashesForDoc(
                 // equally empty, use one with the best score.
 
                 if (load_balancing) {
-                  if (lhs_size < approx_num_hashes_per_bucket &&
-                      rhs_size < approx_num_hashes_per_bucket) {
+                  if (lhs_size < approx_n_hashes_per_bucket &&
+                      rhs_size < approx_n_hashes_per_bucket) {
                     return cmp(lhs, rhs);
                   }
                 }
@@ -445,28 +447,28 @@ std::vector<uint32_t> MachRetriever::topHashesForDoc(
   // We can optionally specify the number of hashes we'd like to be
   // random for a new document. This is to encourage an even distribution
   // among buckets.
-  if (num_random_hashes > num_hashes) {
+  if (n_random_hashes > n_hashes) {
     throw std::invalid_argument(
-        "num_random_hashes cannot be greater than num hashes.");
+        "n_random_hashes cannot be greater than num hashes.");
   }
 
-  uint32_t num_informed_hashes =
-      sort_random_hashes ? num_hashes : (num_hashes - num_random_hashes);
+  uint32_t n_informed_hashes =
+      sort_random_hashes ? n_hashes : (n_hashes - n_random_hashes);
 
-  for (uint32_t i = 0; i < num_informed_hashes; i++) {
+  for (uint32_t i = 0; i < n_informed_hashes; i++) {
     auto [hash, freq_score_pair] = sorted_hashes[i];
     new_hashes.push_back(hash);
   }
 
   if (!sort_random_hashes) {
-    for (uint32_t i = 0; i < num_random_hashes; i++) {
+    for (uint32_t i = 0; i < n_random_hashes; i++) {
       if (load_balancing) {
         uint32_t random_hash;
 
         do {
           random_hash = int_dist(rand);
         } while (mach_index->bucketSize(random_hash) >=
-                 approx_num_hashes_per_bucket);
+                 approx_n_hashes_per_bucket);
 
         new_hashes.push_back(random_hash);
 

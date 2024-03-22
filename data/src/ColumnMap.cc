@@ -173,6 +173,11 @@ ColumnMap ColumnMap::concat(ColumnMap& other) {
   std::unordered_map<std::string, ColumnPtr> new_columns;
 
   for (auto& [name, column] : _columns) {
+    if (column->dim() != other.getColumn(name)->dim()) {
+      throw std::invalid_argument(
+          "Cannot concatenate column '" + name +
+          "'. The dimensions don't match between column maps.");
+    }
     new_columns[name] = column->concat(other.getColumn(name));
   }
 
