@@ -518,9 +518,8 @@ std::vector<UDT::Scores> UDT::labelProbeMultipleMach(
 
   bolt::TensorList scores(mach_models.size());
 
-#pragma omp parallel for default(none) \
-    shared(mach_models, scores, batch, \
-           sparse_inference) if (mach_models.size() > batch.size())
+#pragma omp parallel for default(none) shared( \
+    mach_models, scores, batch, sparse_inference) if (batch.size() == 1)
   for (size_t i = 0; i < mach_models.size(); i++) {
     auto output = mach_models[i]->model()->forward(
         mach_models[i]->featurizer()->featurizeInputBatch(batch),

@@ -96,12 +96,14 @@ class MultiMach:
         training_progress_managers: List[TrainingProgressManager],
         on_progress: Callable,
         cancel_state: CancelState,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
     ):
         for progress_manager, model in zip(training_progress_managers, self.models):
             model.index_documents_impl(
                 training_progress_manager=progress_manager,
                 on_progress=on_progress,
                 cancel_state=cancel_state,
+                callbacks=callbacks,
             )
 
     def delete_entities(self, entities) -> None:
