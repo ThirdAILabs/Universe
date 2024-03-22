@@ -29,8 +29,6 @@
 
 namespace thirdai::automl::udt {
 
-using bolt::utils::Timer;
-
 struct BestScore {
   bool operator()(const std::pair<uint32_t, float>& a,
                   const std::pair<uint32_t, float>& b) {
