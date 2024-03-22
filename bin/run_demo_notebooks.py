@@ -37,7 +37,7 @@ def main():
     successes, failures = [], []
     for notebook_path in relative_notebook_paths:
         retcode = os.system(
-            f'docker run -e "OPENAI_API_KEY=$OPENAI_API_KEY" -e "THIRDAI_KEY=$THIRDAI_KEY" thirdai/run_demos_build bash -c "python3 run_single_demo_notebook.py {notebook_path}"'
+            f'docker run -e "OPENAI_API_KEY=$OPENAI_API_KEY" -e "THIRDAI_KEY=$THIRDAI_KEY" thirdai/run_demos_build bash -c "python3 run_single_demo_notebook.py \'{notebook_path}\'"'
         )
         if retcode == 0:
             successes.append(notebook_path)
@@ -45,9 +45,9 @@ def main():
             failures.append(notebook_path)
 
     print("\nThe following notebooks have passed:")
-    map(lambda x: print(f"\t - {x}", successes))
+    map(lambda x: print(f"\t - {x}"), successes)
     print("\nThe following notebooks have failed:")
-    map(lambda x: print(f"\t - {x}", successes))
+    map(lambda x: print(f"\t - {x}"), failures)
 
     if failures:
         sys.exit(1)
