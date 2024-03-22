@@ -33,10 +33,18 @@ def get_relative_notebook_paths(temp_dir):
 def main():
     temp_dir = tempfile.mkdtemp()
     relative_notebook_paths = get_relative_notebook_paths(temp_dir)
+    successes, failures = [], []
     for notebook_path in relative_notebook_paths:
-        os.system(
-            f'docker run -e "OPENAI_API_KEY=$OPENAI_API_KEY" -e "THIRDAI_KEY=$THIRDAI_KEY" thirdai/run_demos_build bash -c "python3 run_single_demo_notebook.py {notebook_path}"'
+        retcode = os.system(
+            f'docker run -e "OPENAI_API_KEY=$OPENAI_API_KEY" -e "THIRDAI_KEY=$THIRDAI_KEY" thirdai/run_demos_build bash -c "python3 run_single_demo_notebook.py" {notebook_path}'
         )
+        if retcode == 0:
+            successes.append(notebook_path)
+        else:
+            failures.append(notebook_path)
+
+    print("The following notebooks have passed:\n" + "\n".join(successes))
+    print("The following notebooks have failed:\n" + "\n".join(failures))
 
 
 if __name__ == "__main__":
