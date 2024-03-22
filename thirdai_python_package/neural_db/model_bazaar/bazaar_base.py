@@ -4,6 +4,7 @@ import os
 import pickle
 import shutil
 import threading
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, List, Optional, Union
 from urllib.parse import urljoin
@@ -75,37 +76,30 @@ class BazaarEntry(BaseModel):
             return None
 
 
+@dataclass
 class Login:
-    def __init__(
-        self,
+    base_url: str
+    username: str
+    user_id: str
+    access_token: str
+
+    @staticmethod
+    def with_email(
+        base_url: str,
         email: str,
         password: str,
-        base_url: str,
     ):
-        self._base_url = base_url
         # We are using HTTPBasic Auth in backend. update this when we change the Authentication in Backend.
         response = http_get_with_error(
-            urljoin(self._base_url, "user/email-login"),
+            urljoin(base_url, "user/email-login"),
             auth=HTTPBasicAuth(email, password),
         )
 
         content = json.loads(response.content)
-        self._access_token = content["data"]["access_token"]
-
-        self._user_id = content["data"]["user"]["user_id"]
-        self._username = content["data"]["user"]["username"]
-
-    @property
-    def access_token(self):
-        return self._access_token
-
-    @property
-    def user_id(self):
-        return self._user_id
-
-    @property
-    def base_url(self):
-        return self._base_url
+        username = content["data"]["user"]["username"]
+        user_id = content["data"]["user"]["user_id"]
+        access_token = content["data"]["access_token"]
+        return Login(base_url, username, user_id, access_token)
 
 
 def auth_header(access_token):
@@ -165,13 +159,10 @@ class Bazaar:
         )
 
     def login(self, email, password):
-        # This will try to login, if there is any error it will be throwed by Login class.
-        login_instance = Login(email=email, password=password, base_url=self._base_url)
-
-        self._login_instance = login_instance
+        self._login_instance = Login.with_email(self._base_url, email, password)
 
     def is_logged_in(self):
-        return self._login_instance != None
+        return self._login_instance is not None
 
     def fetch(
         self,
@@ -182,8 +173,8 @@ class Bazaar:
     ):
         if self.is_logged_in():
             url = urljoin(
-                self._login_instance._base_url,
-                f"bazaar/{self._login_instance._user_id}/list",
+                self._login_instance.base_url,
+                f"bazaar/{self._login_instance.user_id}/list",
             )
             response = http_get_with_error(
                 url,
@@ -193,7 +184,7 @@ class Bazaar:
                     "username": username,
                     "access_level": access_level,
                 },
-                headers=auth_header(self._login_instance._access_token),
+                headers=auth_header(self._login_instance.access_token),
             )
         else:
             print("Fetching public models, login to fetch all accessible models.")
@@ -291,13 +282,13 @@ class Bazaar:
     ):
         if self.is_logged_in():
             url = urljoin(
-                self._login_instance._base_url,
-                f"bazaar/{self._login_instance._user_id}/model",
+                self._login_instance.base_url,
+                f"bazaar/{self._login_instance.user_id}/model",
             )
             response = http_get_with_error(
                 url,
                 params={"model_identifier": model_identifier},
-                headers=auth_header(self._login_instance._access_token),
+                headers=auth_header(self._login_instance.access_token),
             )
         else:
             url = urljoin(
@@ -386,13 +377,13 @@ class Bazaar:
     ):
         if self.is_logged_in():
             url = urljoin(
-                self._login_instance._base_url,
-                f"bazaar/{self._login_instance._user_id}/download",
+                self._login_instance.base_url,
+                f"bazaar/{self._login_instance.user_id}/download",
             )
             response = requests.get(
                 url,
                 params={"model_identifier": model_identifier},
-                headers=auth_header(self._login_instance._access_token),
+                headers=auth_header(self._login_instance.access_token),
                 stream=True,
             )
         else:
@@ -401,7 +392,7 @@ class Bazaar:
                 f"bazaar/public-download",
             )
             response = requests.get(
-                url, params={"model_identifer": model_identifier}, stream=True
+                url, params={"model_identifier": model_identifier}, stream=True
             )
         try:
             shutil.rmtree(self._cached_checkpoint_dir(model_identifier))
@@ -428,7 +419,7 @@ class Bazaar:
         files = {"chunk": chunk_data}
         response = requests.post(
             urljoin(
-                self._login_instance._base_url,
+                self._login_instance.base_url,
                 "bazaar/upload-chunk",
             ),
             files=files,
@@ -465,10 +456,10 @@ class Bazaar:
         # Generate upload token
         token_response = http_get_with_error(
             urljoin(
-                self._login_instance._base_url,
-                f"bazaar/{self._login_instance._user_id}/upload-token",
+                self._login_instance.base_url,
+                f"bazaar/{self._login_instance.user_id}/upload-token",
             ),
-            headers=auth_header(self._login_instance._access_token),
+            headers=auth_header(self._login_instance.access_token),
             params={
                 "model_name": name,
                 "size": int(get_file_size(zip_path, "MB")),
@@ -557,7 +548,7 @@ class Bazaar:
 
         response = http_post_with_error(
             urljoin(
-                self._login_instance._base_url,
+                self._login_instance.base_url,
                 "bazaar/upload-commit",
             ),
             params={"total_chunks": chunk_number},
@@ -574,10 +565,10 @@ class Bazaar:
     ):
         delete_response = http_post_with_error(
             urljoin(
-                self._login_instance._base_url,
-                f"bazaar/{self._login_instance._user_id}/request-delete",
+                self._login_instance.base_url,
+                f"bazaar/{self._login_instance.user_id}/request-delete",
             ),
-            headers=auth_header(self._login_instance._access_token),
+            headers=auth_header(self._login_instance.access_token),
             json={
                 "model_identifier": model_identifier,
             },

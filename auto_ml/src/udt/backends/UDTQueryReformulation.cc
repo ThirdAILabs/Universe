@@ -80,7 +80,7 @@ py::object UDTQueryReformulation::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::DistributedCommPtr& comm) {
+    const bolt::DistributedCommPtr& comm, py::kwargs kwargs) {
   (void)learning_rate;
   (void)epochs;
   (void)train_metrics;
@@ -89,6 +89,7 @@ py::object UDTQueryReformulation::train(
   (void)callbacks;
   (void)options;
   (void)comm;
+  (void)kwargs;
 
   const licensing::TrainPermissionsToken token(data);
 
@@ -161,11 +162,11 @@ py::object UDTQueryReformulation::train(
 
 py::object UDTQueryReformulation::evaluate(
     const dataset::DataSourcePtr& data, const std::vector<std::string>& metrics,
-    bool sparse_inference, bool verbose, std::optional<uint32_t> top_k) {
+    bool sparse_inference, bool verbose, py::kwargs kwargs) {
   (void)metrics;
   (void)sparse_inference;
 
-  requireTopK(top_k);
+  auto top_k = getTopK(kwargs);
 
   if (!_incorrect_column_name ||
       !containsColumn(data, *_incorrect_column_name) ||
@@ -218,8 +219,8 @@ py::object UDTQueryReformulation::evaluate(
     }
   } else {
     for (uint32_t batch_id = 0; batch_id < inputs->numBatches(); batch_id++) {
-      auto [phrase_ids, phrase_scores] = _flash_index->queryBatch(
-          inputs->at(batch_id), /* top_k= */ top_k.value());
+      auto [phrase_ids, phrase_scores] =
+          _flash_index->queryBatch(inputs->at(batch_id), /* top_k= */ top_k);
 
       if (bar.has_value()) {
         bar->increment();

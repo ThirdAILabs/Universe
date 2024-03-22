@@ -7,6 +7,8 @@ from pandera import typing as pt
 # We typedef doc ID to anticipate switching over to string IDs
 ChunkId = int
 
+Score = float
+
 
 @dataclass
 class NewChunk:

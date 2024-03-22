@@ -125,6 +125,7 @@ void createBoltNNSubmodule(py::module_& module) {
            py::return_value_policy::reference_internal)
       .def("set_parameters", &setParameters, py::arg("new_values"))
       .def("train_steps", &Model::trainSteps)
+      .def("epochs", &Model::epochs)
       .def("override_train_steps", &Model::overrideTrainSteps,
            py::arg("train_steps"))
       .def("params", &modelParams)

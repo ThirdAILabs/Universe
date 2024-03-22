@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import os
 import random
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence, Tuple
 
 import numpy as np
-from thirdai import bolt, data
+import requests
+import tqdm
+from thirdai import bolt, data, demos
 
 from .documents import DocumentDataSource
 from .inverted_index import InvertedIndex
@@ -246,6 +249,35 @@ class CancelTraining(bolt.train.callbacks.Callback):
             self.train_state.stop_training()
 
 
+def download_semantic_enhancement_model(cache_dir, model_name="bolt-splade-medium"):
+    if not os.path.exists(cache_dir):
+        os.makedirs(cache_dir)
+
+    semantic_model_path = os.path.join(cache_dir, model_name)
+    if not os.path.exists(semantic_model_path):
+        response = requests.get(
+            "https://modelzoo-cdn.azureedge.net/test-models/bolt-splade-medium",
+            stream=True,
+        )
+        total_size_in_bytes = int(response.headers.get("content-length", 0))
+        block_size = 4096  # 4 Kibibyte
+
+        progress_bar = tqdm.tqdm(total=total_size_in_bytes, unit="iB", unit_scale=True)
+        with open(semantic_model_path, "wb") as f:
+            for data_chunk in response.iter_content(block_size):
+                progress_bar.update(len(data_chunk))
+                f.write(data_chunk)
+        progress_bar.close()
+
+    vocab_path = os.path.join(cache_dir, "bert-base-uncased.vocab")
+    if not os.path.exists(vocab_path):
+        demos.bert_base_uncased(dirname=cache_dir)
+
+    return data.transformations.SpladeConfig(
+        model_checkpoint=semantic_model_path, tokenizer_vocab=vocab_path
+    )
+
+
 def unsupervised_train_on_docs(
     model,
     documents: DocumentDataSource,
@@ -264,6 +296,9 @@ def unsupervised_train_on_docs(
     variable_length: Optional[data.transformations.VariableLengthConfig],
     training_progress_callback: Optional[TrainingProgressCallback],
     balancing_samples=False,
+    semantic_enhancement=False,
+    semantic_model_cache_dir=".cache/neural_db_semantic_model",
+    coldstart_callbacks: List[bolt.train.callbacks.Callback] = None,
     **kwargs,
 ):
     documents.restart()
@@ -295,8 +330,15 @@ def unsupervised_train_on_docs(
         freeze_hashtable_callback,
     ]
 
+    if coldstart_callbacks:
+        callbacks.extend(coldstart_callbacks)
+
     if training_progress_callback:
         callbacks.append(training_progress_callback)
+
+    splade_config = None
+    if semantic_enhancement:
+        splade_config = download_semantic_enhancement_model(semantic_model_cache_dir)
 
     if balancing_samples:
         model.cold_start_with_balancing_samples(
@@ -322,6 +364,7 @@ def unsupervised_train_on_docs(
             callbacks=callbacks,
             max_in_memory_batches=max_in_memory_batches,
             variable_length=variable_length,
+            splade_config=splade_config,
         )
 
 
@@ -391,6 +434,7 @@ class Mach(Model):
         hidden_bias=False,
         model_config=None,
         use_inverted_index=True,
+        index_max_shard_size=8_000_000,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -405,7 +449,11 @@ class Mach(Model):
         self.model = None
         self.balancing_samples = []
         self.model_config = model_config
-        self.inverted_index = InvertedIndex() if use_inverted_index else None
+        self.inverted_index = (
+            InvertedIndex(max_shard_size=index_max_shard_size)
+            if use_inverted_index
+            else None
+        )
 
     def set_mach_sampling_threshold(self, threshold: float):
         if self.model is None:
@@ -508,6 +556,7 @@ class Mach(Model):
         training_progress_manager: TrainingProgressManager,
         on_progress: Callable = lambda **kwargs: None,
         cancel_state: CancelState = None,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
     ):
         intro_documents = training_progress_manager.intro_source
         train_documents = training_progress_manager.train_source
@@ -531,6 +580,7 @@ class Mach(Model):
                 training_progress_callback=TrainingProgressCallback(
                     training_progress_manager=training_progress_manager
                 ),
+                coldstart_callbacks=callbacks,
                 **train_arguments,
             )
             training_progress_manager.training_complete()
@@ -540,6 +590,7 @@ class Mach(Model):
         on_progress: Callable,
         cancel_state: CancelState,
         checkpoint_config: CheckpointConfig,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
     ):
         # This will load the datasources, model, training config and upload the current model with the loaded one. This updates the underlying UDT MACH of the current model with the one from the checkpoint along with other class attributes.
         training_progress_manager = TrainingProgressManager.from_checkpoint(
@@ -550,6 +601,7 @@ class Mach(Model):
             training_progress_manager=training_progress_manager,
             on_progress=on_progress,
             cancel_state=cancel_state,
+            callbacks=callbacks,
         )
 
     def index_from_start(
@@ -567,6 +619,7 @@ class Mach(Model):
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
         checkpoint_config: CheckpointConfig = None,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
         **kwargs,
     ):
         """
@@ -594,6 +647,7 @@ class Mach(Model):
             training_progress_manager=training_progress_manager,
             on_progress=on_progress,
             cancel_state=cancel_state,
+            callbacks=callbacks,
         )
 
     def add_balancing_samples(self, documents: DocumentDataSource):
