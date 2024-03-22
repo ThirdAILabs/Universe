@@ -40,13 +40,13 @@ MachRetriever::MachRetriever(const MachConfig& config)
       _add_mach_memory_samples(std::make_shared<data::AddMachMemorySamples>()),
       _bolt_input_columns({{input_indices_column, input_values_column}}),
       _bolt_label_columns(
-          {data::OutputColumns(label_indices_column,
+          {data::OutputColumns(bucket_column,
                                config.usesSoftmax()
                                    ? data::ValueFillType::SumToOne
                                    : data::ValueFillType::Ones),
            data::OutputColumns(config.getIdCol())}),
       _all_bolt_columns({input_indices_column, input_values_column,
-                         label_indices_column, config.getIdCol()}),
+                         bucket_column, config.getIdCol()}),
       _mach_sampling_threshold(config.getMachSamplingThreshold()),
       _n_buckets_to_eval(config.getNBucketsToEval()),
       _freeze_tables_epoch(config.getFeezeHashTablesEpoch()) {}
@@ -154,6 +154,8 @@ bolt::metrics::History MachRetriever::train(
     uint32_t epochs, const std::vector<std::string>& metrics,
     const std::vector<bolt::callbacks::CallbackPtr>& callbacks,
     const TrainOptions& options) {
+  insertNewIds(data);
+
   auto train_transform = data::Pipeline::make(
       {_text_transform, _map_to_buckets, _add_mach_memory_samples});
 
@@ -552,6 +554,24 @@ bolt::metrics::InputMetrics MachRetriever::getMetrics(
   }
 
   return metrics;
+}
+
+void MachRetriever::insertNewIds(const data::ColumnMapIteratorPtr& data) {
+  data->restart();
+
+  while (auto chunk = data->next()) {
+    std::unordered_set<uint32_t> all_ids;
+
+    auto ids = chunk->getArrayColumn<uint32_t>(_id_column);
+    for (size_t i = 0; i < ids->numRows(); i++) {
+      auto row = ids->row(i);
+      all_ids.insert(row.begin(), row.end());
+    }
+
+    index()->insertNewEntities(all_ids);
+  }
+
+  data->restart();
 }
 
 ar::ConstArchivePtr MachRetriever::toArchive(bool with_optimizer) const {

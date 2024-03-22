@@ -1,5 +1,6 @@
 #include "MachPython.h"
 #include <bolt/python_bindings/CtrlCCheck.h>
+#include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <auto_ml/src/mach/MachConfig.h>
 #include <auto_ml/src/mach/MachRetriever.h>
@@ -85,15 +86,18 @@ void defineMach(py::module_& module) {
       .def("freeze_hash_tables_epoch", &MachConfig::freezeHashTablesEpoch,
            py::arg("epoch"));
 
-  py::class_<MachRetriever>(module, "MachRetriever")
+  py::class_<MachRetriever, MachRetrieverPtr>(module, "MachRetriever")
       .def("train", &wrappedTrain, py::arg("data"), py::arg("learning_rate"),
-           py::arg("epochs"), py::arg("metrics"), py::arg("callbacks"))
+           py::arg("epochs"), py::arg("metrics") = std::vector<std::string>{},
+           py::arg("callbacks") = std::vector<bolt::callbacks::CallbackPtr>{})
       .def("coldstart", &wrappedColdStart, py::arg("data"),
            py::arg("strong_cols"), py::arg("weak_cols"),
-           py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
-           py::arg("callbacks"))
+           py::arg("learning_rate"), py::arg("epochs"),
+           py::arg("metrics") = std::vector<std::string>{},
+           py::arg("callbacks") = std::vector<bolt::callbacks::CallbackPtr>{})
       .def("evaluate", &MachRetriever::evaluate, py::arg("data"),
-           py::arg("metrics"), py::arg("verbose") = true);
+           py::arg("metrics") = std::vector<std::string>{},
+           py::arg("verbose") = true);
 }
 
 }  // namespace thirdai::automl::mach::python

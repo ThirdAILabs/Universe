@@ -25,6 +25,9 @@ using ColumnMapIteratorPtr = std::shared_ptr<ColumnMapIterator>;
 
 class CsvIterator final : public ColumnMapIterator {
  public:
+  CsvIterator(const std::string& filename, char delimiter,
+              size_t rows_per_load = DEFAULT_ROWS_PER_LOAD);
+
   CsvIterator(DataSourcePtr data_source, char delimiter,
               size_t rows_per_load = DEFAULT_ROWS_PER_LOAD);
 

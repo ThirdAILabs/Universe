@@ -183,6 +183,8 @@ class MachRetriever {
              uint32_t feedback_repetitions, uint32_t num_balancers,
              uint32_t epochs, size_t batch_size);
 
+  void insertNewIds(const data::ColumnMapIteratorPtr& data);
+
   data::StatePtr _state;
   bolt::ModelPtr _model;
 

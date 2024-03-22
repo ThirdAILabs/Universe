@@ -160,8 +160,6 @@ class MachConfig {
 static constexpr const char* bucket_column = "__buckets__";
 static constexpr const char* input_indices_column = "__input_indices__";
 static constexpr const char* input_values_column = "__input_values__";
-static constexpr const char* label_indices_column = "__label_indices__";
-static constexpr const char* label_values_column = "__label_values__";
 
 float autotuneSparsity(size_t dim);
 
