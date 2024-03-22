@@ -2,6 +2,7 @@ import glob
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 
 DEMO_URL = "https://github.com/ThirdAILabs/Demos.git"
@@ -43,11 +44,13 @@ def main():
         else:
             failures.append(notebook_path)
 
-    print("\nThe following notebooks have passed:\n" + "\n".join(successes))
-    print("\nThe following notebooks have failed:\n" + "\n".join(failures))
+    print("\nThe following notebooks have passed:")
+    map(lambda x: print(f"\t - {x}", successes))
+    print("\nThe following notebooks have failed:")
+    map(lambda x: print(f"\t - {x}", successes))
 
     if failures:
-        raise ValueError("The following notebooks failed: " + " ".join(failures))
+        sys.exit(1)
 
 
 if __name__ == "__main__":
