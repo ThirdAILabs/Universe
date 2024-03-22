@@ -654,3 +654,20 @@ def test_insert_callback(small_doc_set):
     db.insert(small_doc_set, epochs=epochs, callbacks=[epoch_count_callback])
 
     assert epoch_count_callback.epochs_completed == epochs
+
+
+def test_different_hashes_mixture(small_doc_set):
+    db = ndb.NeuralDB(num_shards=2, num_models_per_shard=2, extreme_num_hashes=1)
+
+    # insert so that model and their mach indices are initialized
+    db.insert(small_doc_set, train=False)
+
+    hashes = set(int)
+
+    for ensemble in db._savable_state.model.ensembles:
+        for model in ensemble.models:
+            hash_for_0 = model.model.get_index().get_entity_hashes(0)
+
+            assert hash_for_0 not in hashes
+
+            hashes.add(hash_for_0)
