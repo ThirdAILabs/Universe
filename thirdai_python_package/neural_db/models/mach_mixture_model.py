@@ -133,6 +133,7 @@ class MachMixture(Model):
         training_progress_managers: List[List[TrainingProgressManager]],
         on_progress: Callable,
         cancel_state: CancelState,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
     ):
         # This function is the entrypoint to underlying mach models in the mixture. The training progress manager becomes the absolute source of truth in this routine and holds all the data needed to index documents into a model irrespective of whether we are checkpointing or not.
         for progress_manager, ensemble in zip(
@@ -142,6 +143,7 @@ class MachMixture(Model):
                 training_progress_managers=progress_manager,
                 on_progress=on_progress,
                 cancel_state=cancel_state,
+                callbacks=callbacks,
             )
 
     def resume(
@@ -149,6 +151,7 @@ class MachMixture(Model):
         on_progress: Callable,
         cancel_state: CancelState,
         checkpoint_config: CheckpointConfig,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
     ):
         # If checkpoint_dir in checkpoint_config is /john/doe and number of models is 2, the underlying mach models will make checkpoint at /john/doe/0 and /john/doe/1 depending on model ids.
         ensemble_checkpoint_configs = generate_checkpoint_configs_for_ensembles(
@@ -197,6 +200,7 @@ class MachMixture(Model):
             training_progress_managers=training_managers,
             on_progress=on_progress,
             cancel_state=cancel_state,
+            callbacks=callbacks,
         )
 
     def index_from_start(
@@ -213,6 +217,7 @@ class MachMixture(Model):
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
         checkpoint_config: CheckpointConfig = None,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
         **kwargs,
     ) -> None:
         # We need the original number of classes from the original data source so that we can initialize the Mach models this mixture will have
@@ -282,6 +287,7 @@ class MachMixture(Model):
             training_progress_managers=training_managers,
             on_progress=on_progress,
             cancel_state=cancel_state,
+            callbacks=callbacks,
         )
 
     def delete_entities(self, entities) -> None:
