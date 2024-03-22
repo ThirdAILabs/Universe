@@ -54,6 +54,23 @@ class NeuralDB:
         """
         self._user_id: str = user_id
 
+        # "low_memory" is just a hacky way of only using the inverted index.
+        # It will be changed in NDBv2. Normally we'd just create a separate inverted
+        # index retriever but the flag is much easier to do in this version of NDB.
+        # This way we can keep the same model training logs that users are used to
+        # while we work on NDBv2
+        self.low_memory = False
+        if "low_memory" in kwargs:
+            self.low_memory = True
+            if "embedding_dimension" not in kwargs:
+                kwargs["embedding_dimension"] = 200
+            if "fhr" not in kwargs:
+                kwargs["fhr"] = 25000
+            print(
+                "INFO: You are using low_memory mode which is optimized for low "
+                "resource environments. Results may vary compared to traditional settings."
+            )
+
         # The savable_state kwarg is only used in static constructor methods
         # and should not be used by an external user.
         # We read savable_state from kwargs so that it doesn't appear in the
@@ -695,6 +712,8 @@ class NeuralDB:
             >>> ndb.search("what is ...", top_k=5)
             >>> ndb.search("what is ...", top_k=5, constraints={"file_type": "pdf", "file_created", GreaterThan(10)})
         """
+        if self.low_memory:
+            retriever = "inverted_index"
         return self.search_batch(
             queries=[query],
             top_k=top_k,
@@ -726,6 +745,9 @@ class NeuralDB:
         Returns:
             List[List[Reference]]: Combines each result of db.search into a list.
         """
+        if self.low_memory:
+            retriever = "inverted_index"
+
         matching_entities = None
         top_k_to_search = top_k_rerank if rerank else top_k
         if constraints:

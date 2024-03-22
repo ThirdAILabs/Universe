@@ -662,3 +662,13 @@ def test_insert_callback(small_doc_set):
     db.insert(small_doc_set, epochs=epochs, callbacks=[epoch_count_callback])
 
     assert epoch_count_callback.epochs_completed == epochs
+
+
+def test_neural_db_low_memory(small_doc_set):
+    db = ndb.NeuralDB(low_memory=True)
+    all_methods_work(
+        db,
+        docs=small_doc_set,
+        num_duplicate_docs=0,
+        assert_acc=False,
+    )
