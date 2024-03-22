@@ -181,7 +181,7 @@ class MachRetriever {
       const std::vector<std::string>& metric_names, const std::string& prefix);
 
   void teach(data::ColumnMap feedback, float learning_rate,
-             uint32_t feedback_repetitions, uint32_t n_balancers,
+             uint32_t feedback_repetitions, uint32_t total_balancers,
              uint32_t epochs, size_t batch_size);
 
   void insertNewIds(const data::ColumnMapIteratorPtr& data);

@@ -23,6 +23,7 @@
 #include <cassert>
 #include <optional>
 #include <regex>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -284,8 +285,8 @@ void MachRetriever::upvote(data::ColumnMap upvotes, uint32_t n_upvote_samples,
                            uint32_t epochs, size_t batch_size) {
   upvotes = data::Pipeline({_text_transform, _map_to_buckets})
                 .apply(std::move(upvotes), *_state);
-  teach(upvotes, learning_rate, n_upvote_samples, n_balancing_samples, epochs,
-        batch_size);
+  teach(upvotes, learning_rate, n_upvote_samples,
+        n_balancing_samples * upvotes.numRows(), epochs, batch_size);
 }
 
 void MachRetriever::associate(data::ColumnMap sources,
@@ -295,29 +296,48 @@ void MachRetriever::associate(data::ColumnMap sources,
                               uint32_t n_balancing_samples, float learning_rate,
                               uint32_t epochs, bool force_non_empty,
                               size_t batch_size) {
-  auto mach_labels = thirdai::data::ArrayColumn<uint32_t>::make(
-      predictBuckets(targets, /* sparse_inference= */ false, n_buckets,
-                     force_non_empty),
-      index()->numBuckets());
+  auto buckets = predictBuckets(targets, /* sparse_inference= */ false,
+                                std::max(index()->numBuckets(), n_buckets),
+                                force_non_empty);
+
+  auto texts = sources.getValueColumn<std::string>(_text_column);
+  std::vector<std::string> source_samples;
+  std::vector<std::vector<uint32_t>> mach_labels;
+  std::mt19937 rng(global_random::nextSeed());
+  for (size_t i = 0; i < buckets.size(); i++) {
+    for (size_t j = 0; j < n_association_samples; j++) {
+      std::vector<uint32_t> sampled_buckets;
+      std::sample(buckets[i].begin(), buckets[i].end(),
+                  std::back_inserter(sampled_buckets), n_buckets, rng);
+      mach_labels.push_back(sampled_buckets);
+      source_samples.push_back(texts->value(i));
+    }
+  }
+
+  sources = data::ColumnMap(
+      {{_text_column,
+        data::ValueColumn<std::string>::make(std::move(source_samples))}});
 
   sources = _text_transform->applyStateless(sources);
-  sources.setColumn(bucket_column, mach_labels);
+  sources.setColumn(bucket_column,
+                    data::ArrayColumn<uint32_t>::make(std::move(mach_labels),
+                                                      index()->numBuckets()));
 
   // Add dummy IDs since associations do not have IDs.
   auto doc_ids = thirdai::data::ValueColumn<uint32_t>::make(
-      std::vector<uint32_t>(targets.numRows(), 0),
+      std::vector<uint32_t>(sources.numRows(), 0),
       std::numeric_limits<uint32_t>::max());
   sources.setColumn(_id_column, doc_ids);
 
-  teach(sources, learning_rate, n_association_samples, n_balancing_samples,
+  teach(sources, learning_rate, 1, n_balancing_samples * targets.numRows(),
         epochs, batch_size);
 }
 
 void MachRetriever::teach(data::ColumnMap feedback, float learning_rate,
-                          uint32_t feedback_repetitions, uint32_t n_balancers,
-                          uint32_t epochs, size_t batch_size) {
-  auto balancers =
-      _state->machMemory().getSamples(n_balancers * feedback.numRows());
+                          uint32_t feedback_repetitions,
+                          uint32_t total_balancers, uint32_t epochs,
+                          size_t batch_size) {
+  auto balancers = _state->machMemory().getSamples(total_balancers);
 
   feedback = repeatRows(std::move(feedback), feedback_repetitions);
   feedback = feedback.selectColumns(_all_bolt_columns);
