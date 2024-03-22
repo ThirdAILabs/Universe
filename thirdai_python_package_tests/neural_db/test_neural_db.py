@@ -662,12 +662,10 @@ def test_different_hashes_mixture(small_doc_set):
     # insert so that model and their mach indices are initialized
     db.insert(small_doc_set, train=False)
 
-    hashes = set(int)
+    hashes = set()
+    for model in db._savable_state.model.ensembles[0].models:
+        hash_for_0 = model.model.get_index().get_entity_hashes(0)[0]
 
-    for ensemble in db._savable_state.model.ensembles:
-        for model in ensemble.models:
-            hash_for_0 = model.model.get_index().get_entity_hashes(0)
+        assert hash_for_0 not in hashes
 
-            assert hash_for_0 not in hashes
-
-            hashes.add(hash_for_0)
+        hashes.add(hash_for_0)
