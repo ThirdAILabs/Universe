@@ -43,8 +43,11 @@ def main():
         else:
             failures.append(notebook_path)
 
-    print("The following notebooks have passed:\n" + "\n".join(successes))
-    print("The following notebooks have failed:\n" + "\n".join(failures))
+    print("\nThe following notebooks have passed:\n" + "\n".join(successes))
+    print("\nThe following notebooks have failed:\n" + "\n".join(failures))
+
+    if failures:
+        raise ValueError("The following notebooks failed: " + " ".join(failures))
 
 
 if __name__ == "__main__":
