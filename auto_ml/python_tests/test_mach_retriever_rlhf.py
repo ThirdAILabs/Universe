@@ -3,44 +3,10 @@ import random
 
 import pandas as pd
 import pytest
-from thirdai import bolt, data
-
-QUERY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "texts.csv")
+from thirdai import data
+from mach_retriever_utils import train_simple_mach_retriever, QUERY_FILE
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
-
-
-def train_model_for_rlhf():
-    def get_iterator(path):
-        return data.TransformedIterator(
-            data.CsvIterator(path),
-            data.transformations.ToTokens("id", "id", 0xFFFFFFFF),
-        )
-
-    model = (
-        bolt.Mach()
-        .text_col("text")
-        .id_col("id")
-        .tokenizer("words")
-        .contextual_encoding("none")
-        .emb_dim(512)
-        .n_buckets(10000)
-        .emb_bias()
-        .output_bias()
-        .output_activation("sigmoid")
-        .build()
-    )
-
-    model.train(
-        get_iterator(QUERY_FILE),
-        learning_rate=1e-3,
-        epochs=5,
-        metrics=["precision@1"],
-    )
-
-    model.evaluate(get_iterator(QUERY_FILE), metrics=["precision@1"])
-
-    return model
 
 
 def get_upvote_samples():
@@ -114,7 +80,7 @@ def accuracy(model, correct_labels, samples):
 
 
 def test_mach_retriever_upvote():
-    model = train_model_for_rlhf()
+    model = train_simple_mach_retriever()
 
     correct_labels, acronym_samples, upvotes = get_upvote_samples()
 
@@ -130,7 +96,7 @@ def test_mach_retriever_upvote():
 
 
 def test_mach_retriever_associate():
-    model = train_model_for_rlhf()
+    model = train_simple_mach_retriever()
 
     correct_labels, acronym_samples, sources, targets = get_association_samples()
 

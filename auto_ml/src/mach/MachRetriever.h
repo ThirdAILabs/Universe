@@ -42,23 +42,28 @@ struct ColdStartOptions : public TrainOptions {
   std::optional<data::SpladeConfig> splade_config = std::nullopt;
 };
 
+struct EvaluateOptions {
+  bool verbose = true;
+  bool use_sparsity = false;
+};
+
 class MachRetriever {
  public:
   explicit MachRetriever(const MachConfig& config);
 
   explicit MachRetriever(const ar::Archive& archive);
 
-  void introduce(const data::ColumnMapIteratorPtr& data,
-                 const std::vector<std::string>& strong_column_names,
-                 const std::vector<std::string>& weak_column_names,
-                 bool text_augmentation,
-                 std::optional<uint32_t> n_buckets_to_sample_opt,
-                 uint32_t n_random_hashes, bool load_balancing,
-                 bool sort_random_hashes);
+  void introduceIterator(const data::ColumnMapIteratorPtr& data,
+                         const std::vector<std::string>& strong_cols,
+                         const std::vector<std::string>& weak_cols,
+                         bool text_augmentation,
+                         std::optional<uint32_t> n_buckets_to_sample_opt,
+                         uint32_t n_random_hashes, bool load_balancing,
+                         bool sort_random_hashes);
 
   void introduce(data::ColumnMap data,
-                 const std::vector<std::string>& strong_column_names,
-                 const std::vector<std::string>& weak_column_names,
+                 const std::vector<std::string>& strong_cols,
+                 const std::vector<std::string>& weak_cols,
                  bool text_augmentation,
                  std::optional<uint32_t> n_buckets_to_sample_opt,
                  uint32_t n_random_hashes, bool load_balancing,
@@ -78,9 +83,22 @@ class MachRetriever {
       const std::vector<bolt::callbacks::CallbackPtr>& callbacks,
       const TrainOptions& options = TrainOptions());
 
-  bolt::metrics::History evaluate(const data::ColumnMapIteratorPtr& data,
-                                  const std::vector<std::string>& metrics,
-                                  bool verbose);
+  bolt::metrics::History evaluate(
+      const data::ColumnMapIteratorPtr& data,
+      const std::vector<std::string>& metrics,
+      const EvaluateOptions& options = EvaluateOptions());
+
+  IdScores searchSingle(const std::string& query, uint32_t top_k,
+                        bool sparse_inference) {
+    return searchBatch({query}, top_k, sparse_inference)[0];
+  }
+
+  std::vector<IdScores> searchBatch(std::vector<std::string> queries,
+                                    uint32_t top_k, bool sparse_inference) {
+    data::ColumnMap data({{_text_column, data::ValueColumn<std::string>::make(
+                                             std::move(queries))}});
+    return search(data, top_k, sparse_inference);
+  }
 
   std::vector<IdScores> search(data::ColumnMap queries, uint32_t top_k,
                                bool sparse_inference);
@@ -111,11 +129,15 @@ class MachRetriever {
     }
   }
 
+  void clear() { index()->clear(); }
+
   bolt::ModelPtr model() const { return _model; }
 
   ar::ConstArchivePtr toArchive(bool with_optimizer) const;
 
   static std::shared_ptr<MachRetriever> fromArchive(const ar::Archive& archive);
+
+  std::string idCol() const { return _id_column; }
 
  private:
   bolt::TensorList inputTensors(const data::ColumnMap& columns) {
@@ -127,26 +149,15 @@ class MachRetriever {
   }
 
   data::TransformationPtr textAugmentation(
+      const std::vector<std::string>& strong_cols,
+      const std::vector<std::string>& weak_cols,
+      std::optional<data::VariableLengthConfig> variable_length,
+      const std::optional<data::SpladeConfig>& splade_config);
+
+  data::TransformationPtr coldStartTextAugmentation(
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
-      std::optional<data::VariableLengthConfig> variable_length,
-      const std::optional<data::SpladeConfig>& splade_config) {
-    if (splade_config) {
-      throw std::invalid_argument("Splade is not yet implemented.");
-    }
-    if (variable_length) {
-      return std::make_shared<data::VariableLengthColdStart>(
-          /* strong_column_names= */ strong_column_names,
-          /* weak_column_names= */ weak_column_names,
-          /* output_column_name= */ _text_column,
-          /* config= */ *variable_length);
-    }
-
-    return std::make_shared<data::ColdStartTextAugmentation>(
-        /* strong_column_names= */ strong_column_names,
-        /* weak_column_names= */ weak_column_names,
-        /* output_column_name= */ _text_column);
-  }
+      std::optional<data::VariableLengthConfig> variable_length);
 
   data::TransformationPtr textConcat(
       const std::vector<std::string>& strong_column_names,

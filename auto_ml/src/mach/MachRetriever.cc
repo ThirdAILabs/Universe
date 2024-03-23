@@ -69,33 +69,33 @@ std::unordered_map<uint32_t, std::vector<BucketScores>> groupScoresByLabel(
   return grouped;
 }
 
-void MachRetriever::introduce(
+void MachRetriever::introduceIterator(
     const data::ColumnMapIteratorPtr& data,
-    const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names, bool text_augmentation,
+    const std::vector<std::string>& strong_cols,
+    const std::vector<std::string>& weak_cols, bool text_augmentation,
     std::optional<uint32_t> n_buckets_to_sample_opt, uint32_t n_random_hashes,
     bool load_balancing, bool sort_random_hashes) {
   while (auto columns = data->next()) {
-    introduce(std::move(*columns), strong_column_names, weak_column_names,
-              text_augmentation, n_buckets_to_sample_opt, n_random_hashes,
-              load_balancing, sort_random_hashes);
+    introduce(std::move(*columns), strong_cols, weak_cols, text_augmentation,
+              n_buckets_to_sample_opt, n_random_hashes, load_balancing,
+              sort_random_hashes);
   }
 }
 
-void MachRetriever::introduce(
-    data::ColumnMap data, const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names, bool text_augmentation,
-    std::optional<uint32_t> n_buckets_to_sample_opt, uint32_t n_random_hashes,
-    bool load_balancing, bool sort_random_hashes) {
+void MachRetriever::introduce(data::ColumnMap data,
+                              const std::vector<std::string>& strong_cols,
+                              const std::vector<std::string>& weak_cols,
+                              bool text_augmentation,
+                              std::optional<uint32_t> n_buckets_to_sample_opt,
+                              uint32_t n_random_hashes, bool load_balancing,
+                              bool sort_random_hashes) {
   assertUniqueIds(data);
 
   if (text_augmentation) {
-    textAugmentation(strong_column_names, weak_column_names, std::nullopt,
-                     std::nullopt)
-        ->apply(std::move(data), *_state);
+    data = coldStartTextAugmentation(strong_cols, weak_cols, std::nullopt)
+               ->apply(std::move(data), *_state);
   } else {
-    textConcat(strong_column_names, weak_column_names)
-        ->apply(std::move(data), *_state);
+    data = textConcat(strong_cols, weak_cols)->apply(std::move(data), *_state);
   }
   data = _text_transform->apply(std::move(data), *_state);
   auto input_tensors = inputTensors(data);
@@ -117,7 +117,7 @@ void MachRetriever::introduce(
       /* scores= */ *scores,
       /* labels= */ *data.getValueColumn<uint32_t>(_id_column),
       /* only_keep_top_k= */
-      load_balancing ? std::nullopt : std::make_optional(load_balancing));
+      load_balancing ? std::nullopt : std::make_optional(n_buckets_to_sample));
 
   uint32_t approx_n_hashes_per_bucket = index()->approxNumHashesPerBucket(
       /* num_new_samples= */ bucket_scores_by_doc.size());
@@ -182,7 +182,7 @@ bolt::metrics::History MachRetriever::train(
 
 bolt::metrics::History MachRetriever::evaluate(
     const data::ColumnMapIteratorPtr& data,
-    const std::vector<std::string>& metrics, bool verbose) {
+    const std::vector<std::string>& metrics, const EvaluateOptions& options) {
   bolt::Trainer trainer(_model, _freeze_tables_epoch,
                         /* gradient_update_interval */ 1);
 
@@ -190,11 +190,11 @@ bolt::metrics::History MachRetriever::evaluate(
 
   auto eval_data_loader = data::Loader::make(
       data, transform, _state, _bolt_input_columns, _bolt_label_columns, 2048,
-      /* shuffle= */ false, verbose);
+      /* shuffle= */ false, options.verbose);
 
   return trainer.validate_with_data_loader(
       eval_data_loader, getMetrics(metrics, "val_"),
-      /*use_sparsity=*/false, /*verbose=*/verbose);
+      /*use_sparsity=*/options.use_sparsity, /*verbose=*/options.verbose);
 }
 
 std::vector<IdScores> MachRetriever::search(data::ColumnMap queries,
@@ -499,6 +499,56 @@ std::vector<uint32_t> MachRetriever::topHashesForDoc(
   }
 
   return new_hashes;
+}
+
+data::TransformationPtr MachRetriever::textAugmentation(
+    const std::vector<std::string>& strong_cols,
+    const std::vector<std::string>& weak_cols,
+    std::optional<data::VariableLengthConfig> variable_length,
+    const std::optional<data::SpladeConfig>& splade_config) {
+  if (splade_config && (!strong_cols.empty() || !weak_cols.empty())) {
+    // TODO(Nicholas, David): Should we add an option to sample a certain
+    // number of times from a specific column, i.e. splade tokens.
+    if (splade_config->strong_sample_override && variable_length) {
+      variable_length->overrideStrongSampleNumWords(
+          *splade_config->strong_sample_override);
+    }
+
+    std::vector<std::string> all_cols;
+    all_cols.insert(all_cols.end(), strong_cols.begin(), strong_cols.end());
+    all_cols.insert(all_cols.end(), weak_cols.begin(), weak_cols.end());
+
+    const std::string splade_col = "__splade_tokens__";
+    std::vector<std::string> strong_cols_w_splade = strong_cols;
+    strong_cols_w_splade.push_back(splade_col);
+
+    return data::Pipeline::make()
+        ->then(std::make_shared<data::StringConcat>(all_cols, splade_col, " "))
+        ->then(std::make_shared<data::SpladeAugmentation>(
+            splade_col, splade_col, *splade_config))
+        ->then(coldStartTextAugmentation(strong_cols_w_splade, weak_cols,
+                                         variable_length));
+  }
+
+  return coldStartTextAugmentation(strong_cols, weak_cols, variable_length);
+}
+
+data::TransformationPtr MachRetriever::coldStartTextAugmentation(
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names,
+    std::optional<data::VariableLengthConfig> variable_length) {
+  if (variable_length) {
+    return std::make_shared<data::VariableLengthColdStart>(
+        /* strong_column_names= */ strong_column_names,
+        /* weak_column_names= */ weak_column_names,
+        /* output_column_name= */ _text_column,
+        /* config= */ *variable_length);
+  }
+
+  return std::make_shared<data::ColdStartTextAugmentation>(
+      /* strong_column_names= */ strong_column_names,
+      /* weak_column_names= */ weak_column_names,
+      /* output_column_name= */ _text_column);
 }
 
 void MachRetriever::updateSamplingStrategy() {
