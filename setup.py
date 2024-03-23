@@ -153,7 +153,7 @@ with open("thirdai.version") as version_file:
 
 neural_db_deps = [
     "PyTrie",
-    "PyMuPDF==1.22.5",
+    "PyMuPDF==1.23.26",
     "langchain",
     "bs4",
     "trafilatura",
@@ -233,7 +233,8 @@ setup(
             "grpcio",
             "unstructured[all-docs]<=0.10.20",
         ]
-        + neural_db_deps,
+        + neural_db_deps
+        + neural_db_v2_deps,
         "benchmark": [
             "toml",
             "psutil",

@@ -399,6 +399,7 @@ class NeuralDB:
         on_progress: Callable,
         cancel_state: CancelState,
         checkpoint_config: CheckpointConfig,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
     ):
         state, ids, resource_name = load_checkpoint(checkpoint_config=checkpoint_config)
         self._savable_state = state
@@ -406,6 +407,7 @@ class NeuralDB:
             on_progress=on_progress,
             cancel_state=cancel_state,
             checkpoint_config=checkpoint_config.get_mach_config(),
+            callbacks=callbacks,
         )
 
         return ids, resource_name
@@ -422,6 +424,7 @@ class NeuralDB:
         max_in_memory_batches: int,
         variable_length: Optional[data.transformations.VariableLengthConfig],
         checkpoint_config: CheckpointConfig,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
         **kwargs,
     ):
         documents_copy = copy.deepcopy(self._savable_state.documents)
@@ -459,6 +462,7 @@ class NeuralDB:
             checkpoint_config=(
                 checkpoint_config.get_mach_config() if checkpoint_config else None
             ),
+            callbacks=callbacks,
             **kwargs,
         )
 
@@ -479,6 +483,7 @@ class NeuralDB:
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
         checkpoint_config: Optional[CheckpointConfig] = None,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
         **kwargs,
     ) -> List[str]:
         """
@@ -514,6 +519,7 @@ class NeuralDB:
                 on_progress=on_progress,
                 cancel_state=cancel_state,
                 checkpoint_config=checkpoint_config,
+                callbacks=callbacks,
             )
         else:
             ids, resource_name = self._insert_from_start(
@@ -527,6 +533,7 @@ class NeuralDB:
                 max_in_memory_batches=max_in_memory_batches,
                 variable_length=variable_length,
                 checkpoint_config=checkpoint_config,
+                callbacks=callbacks,
                 **kwargs,
             )
 

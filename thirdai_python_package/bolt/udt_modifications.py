@@ -82,6 +82,7 @@ def modify_udt():
         logging_interval: Optional[int] = None,
         shuffle_reservoir_size: int = 64000,
         comm=None,
+        **kwargs
     ):
         data_source = _create_data_source(filename)
 
@@ -105,6 +106,7 @@ def modify_udt():
             callbacks=callbacks,
             options=train_options,
             comm=comm,
+            **kwargs
         )
 
     def wrapped_train_on_data_source(
@@ -119,6 +121,7 @@ def modify_udt():
         metrics: List[str] = [],
         logging_interval: Optional[int] = None,
         comm=None,
+        **kwargs
     ):
         val_data, val_metrics, train_options = _process_validation_and_options(
             validation=None,
@@ -139,6 +142,7 @@ def modify_udt():
             callbacks=callbacks,
             options=train_options,
             comm=comm,
+            **kwargs
         )
 
     def wrapped_evaluate(
@@ -147,7 +151,7 @@ def modify_udt():
         metrics: List[str] = [],
         use_sparse_inference: bool = False,
         verbose: bool = True,
-        top_k: int = None,
+        **kwargs
     ):
         data_source = _create_data_source(filename)
 
@@ -157,7 +161,7 @@ def modify_udt():
             metrics=metrics,
             sparse_inference=use_sparse_inference,
             verbose=verbose,
-            top_k=top_k,
+            **kwargs
         )
 
     def wrapped_evaluate_on_data_source(
@@ -166,7 +170,7 @@ def modify_udt():
         metrics: List[str] = [],
         use_sparse_inference: bool = False,
         verbose: bool = True,
-        top_k: int = None,
+        **kwargs
     ):
         return original_evaluate(
             self,
@@ -174,7 +178,7 @@ def modify_udt():
             metrics=metrics,
             sparse_inference=use_sparse_inference,
             verbose=verbose,
-            top_k=top_k,
+            **kwargs
         )
 
     def wrapped_cold_start(
@@ -196,6 +200,7 @@ def modify_udt():
         logging_interval: Optional[int] = None,
         comm=None,
         shuffle_reservoir_size: int = 64000,
+        **kwargs
     ):
         data_source = _create_data_source(filename)
 
@@ -222,6 +227,7 @@ def modify_udt():
             callbacks=callbacks,
             options=train_options,
             comm=comm,
+            **kwargs
         )
 
     def wrapped_cold_start_on_data_source(
@@ -241,6 +247,7 @@ def modify_udt():
         verbose: bool = True,
         logging_interval: Optional[int] = None,
         comm=None,
+        **kwargs
     ):
         val_data, val_metrics, train_options = _process_validation_and_options(
             validation=None,
@@ -264,6 +271,7 @@ def modify_udt():
             callbacks=callbacks,
             options=train_options,
             comm=comm,
+            **kwargs
         )
 
     delattr(bolt.UniversalDeepTransformer, "train")

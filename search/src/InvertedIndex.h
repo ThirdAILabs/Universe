@@ -44,7 +44,26 @@ class InvertedIndex {
 
   std::vector<DocScore> query(const Tokens& query, uint32_t k) const;
 
+  std::vector<std::vector<DocScore>> rankBatch(
+      const std::vector<Tokens>& queries,
+      const std::vector<std::vector<DocId>>& candidates, uint32_t k) const;
+
+  std::vector<DocScore> rank(const Tokens& query,
+                             const std::vector<DocId>& candidates,
+                             uint32_t k) const;
+
   void remove(const std::vector<DocId>& ids);
+
+  void updateIdfCutoff(float cutoff) {
+    _idf_cutoff_frac = cutoff;
+    computeIdfs();
+  }
+
+  size_t size() const { return _doc_lengths.size(); }
+
+  static std::vector<DocScore> parallelQuery(
+      const std::vector<std::shared_ptr<InvertedIndex>>& indices,
+      const Tokens& query, uint32_t k);
 
   void save(const std::string& filename) const;
 
@@ -84,6 +103,8 @@ class InvertedIndex {
 
     return tokens;
   }
+
+  std::unordered_map<DocId, float> scoreDocuments(const Tokens& query) const;
 
   using TokenCountInfo = std::pair<DocId, uint32_t>;
 

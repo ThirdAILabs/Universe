@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 from urllib.parse import urljoin
 
 from .bazaar_base import Bazaar, auth_header
@@ -38,12 +38,19 @@ class Model:
                 str: The model identifier, or None if not set.
     """
 
-    def __init__(self, model_identifier) -> None:
+    def __init__(self, model_identifier, model_id=None) -> None:
         self._model_identifier = model_identifier
+        self._model_id = model_id
 
     @property
     def model_identifier(self):
         return self._model_identifier
+
+    @property
+    def model_id(self):
+        if self._model_id:
+            return self._model_id
+        raise ValueError("Model id is not yet set.")
 
 
 class NeuralDBClient:
@@ -59,11 +66,14 @@ class NeuralDBClient:
         __init__(self, deployment_identifier: str, base_url: str) -> None:
             Initializes a new instance of the NeuralDBClient.
 
-        search(self, query: str, top_k: int = 10) -> List[dict]:
+        search(self, query: str, top_k: int = 10, constraints: Optional[Dict[str, str]] = None) -> List[dict]:
             Searches the ndb model for relevant search results.
 
-        insert(self, files: List[str]) -> None:
+        insert(self, files: List[str], urls: List[str]) -> None:
             Inserts documents into the ndb model.
+
+        delete(self, source_ids: List[str]) -> None:
+            Deletes documents from the ndb model
 
         associate(self, text_pairs (List[Dict[str, str]])) -> None:
             Associates source and target string pairs in the ndb model.
@@ -73,6 +83,9 @@ class NeuralDBClient:
 
         downvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]) -> None:
             Downvotes a response in the ndb model.
+
+        sources(self) -> List[Dict[str, str]]:
+            Gets the source names and ids of documents in the ndb model
     """
 
     def __init__(self, deployment_identifier: str, base_url: str, bazaar: ModelBazaar):
@@ -89,13 +102,14 @@ class NeuralDBClient:
         self.bazaar = bazaar
 
     @check_deployment_decorator
-    def search(self, query, top_k=10):
+    def search(self, query, top_k=10, constraints: Optional[Dict[str, str]] = None):
         """
         Searches the ndb model for similar queries.
 
         Args:
             query (str): The query to search for.
             top_k (int): The number of top results to retrieve (default is 10).
+            constraints (Optional[Dict[str, str]]): Constraints to filter the search by
 
         Returns:
             Dict: A dict of search results containing keys: `query_text` and `references`.
@@ -103,23 +117,31 @@ class NeuralDBClient:
         response = http_get_with_error(
             urljoin(self.base_url, "predict"),
             params={"query_text": query, "top_k": top_k},
+            json=constraints,
             headers=auth_header(self.bazaar._access_token),
         )
 
         return json.loads(response.content)["data"]
 
     @check_deployment_decorator
-    def insert(self, files: List[str]):
+    def insert(
+        self, files: Optional[List[str]] = None, urls: Optional[List[str]] = None
+    ):
         """
         Inserts documents into the ndb model.
 
         Args:
             files (List[str]): A list of file paths to be inserted into the ndb model.
+            urls (List[str]): A list of URLs to be inserted into the ndb model.
         """
-        files = [("files", open(file_path, "rb")) for file_path in files]
+        if not files and not urls:
+            raise ValueError("Files and urls cannot both be empty.")
+        if files is not None:
+            files = [("files", open(file_path, "rb")) for file_path in files]
         response = http_post_with_error(
             urljoin(self.base_url, "insert"),
             files=files,
+            data={"urls": urls},
             headers=auth_header(self.bazaar._access_token),
         )
 
@@ -187,6 +209,19 @@ class NeuralDBClient:
 
         print("Successfully downvoted the specified search result.")
 
+    @check_deployment_decorator
+    def sources(self) -> List[Dict[str, str]]:
+        """
+        Gets the source names and ids of documents in the ndb model
+
+        """
+        response = http_get_with_error(
+            urljoin(self.base_url, "sources"),
+            headers=auth_header(self.bazaar._access_token),
+        )
+
+        return response.json()["data"]
+
 
 class ModelBazaar(Bazaar):
     """
@@ -206,7 +241,7 @@ class ModelBazaar(Bazaar):
         log_in(self, email: str, password: str) -> None:
             Logs in a user and sets user-related attributes for the ModelBazaar instance.
 
-        push_model(self, model_name: str, local_path: str, access_level: str = "public") -> None:
+        push_model(self, model_name: str, local_path: str, access_level: str = "private") -> None:
             Pushes a model to the Model Bazaar.
 
         pull_model(self, model_identifier: str) -> NeuralDBClient:
@@ -215,7 +250,18 @@ class ModelBazaar(Bazaar):
         list_models(self) -> List[dict]:
             Lists available models in the Model Bazaar.
 
-        train(self, model_name: str, docs: List[str], is_async: bool = False, base_model_identifier: str = None) -> Model:
+        train(self,
+            model_name: str,
+            unsupervised_docs: Optional[List[str]] = None,
+            supervised_docs: Optional[List[Tuple[str, str]]] = None,
+            test_doc: Optional[str] = None,
+            doc_type: str = "local",
+            sharded: bool = False,
+            is_async: bool = False,
+            base_model_identifier: str = None,
+            train_extra_options: Optional[dict] = None,
+            metadata: Optional[List[Dict[str, str]]] = None
+        ) -> Model:
             Initiates training for a model and returns a Model instance.
 
         await_train(self, model: Model) -> None:
@@ -278,10 +324,10 @@ class ModelBazaar(Bazaar):
         self.login(email=email, password=password)
         self._user_id = self._login_instance.user_id
         self._access_token = self._login_instance.access_token
-        self._username = self._login_instance._username
+        self._username = self._login_instance.username
 
     def push_model(
-        self, model_name: str, local_path: str, access_level: str = "public"
+        self, model_name: str, local_path: str, access_level: str = "private"
     ):
         """
         Pushes a model to the Model Bazaar.
@@ -289,7 +335,7 @@ class ModelBazaar(Bazaar):
         Args:
             model_name (str): The name of the model.
             local_path (str): The local path of the model.
-            access_level (str): The access level for the model (default is "public").
+            access_level (str): The access level for the model (default is "private").
         """
         self.push(
             name=model_name,
@@ -324,22 +370,30 @@ class ModelBazaar(Bazaar):
     def train(
         self,
         model_name: str,
-        docs: List[str],
+        unsupervised_docs: Optional[List[str]] = None,
+        supervised_docs: Optional[List[Tuple[str, str]]] = None,
+        test_doc: Optional[str] = None,
         doc_type: str = "local",
         sharded: bool = False,
         is_async: bool = False,
-        base_model_identifier: str = None,
-        train_extra_options: dict = {},
+        base_model_identifier: Optional[str] = None,
+        train_extra_options: Optional[dict] = None,
+        metadata: Optional[List[Dict[str, str]]] = None,
     ):
         """
         Initiates training for a model and returns a Model instance.
 
         Args:
             model_name (str): The name of the model.
-            docs (List[str]): A list of document paths for training.
+            unsupervised_docs (Optional[List[str]]): A list of document paths for unsupervised training.
+            supervised_docs (Optional[List[Tuple[str, str]]]): A list of document path and source id pairs.
+            test_doc (Optional[str]): A path to a test file for evaluating the trained NeuralDB.
             doc_type (str): Specifies document location type : "local"(default), "nfs" or "s3".
+            sharded (bool): Whether NeuralDB training will be distributed over NeuralDB shards.
             is_async (bool): Whether training should be asynchronous (default is False).
-            base_model_identifier (str): The identifier of the base model (optional).
+            train_extra_options: (Optional[dict])
+            base_model_identifier (Optional[str]): The identifier of the base model.
+            metadata (Optional[List[Dict[str, str]]]): A list metadata dicts. Each dict corresponds to an unsupervised file.
 
         Returns:
             Model: A Model instance.
@@ -348,6 +402,38 @@ class ModelBazaar(Bazaar):
             raise ValueError(
                 f"Invalid doc_type value. Supported doc_type are {self._doc_types}"
             )
+
+        if not unsupervised_docs and not supervised_docs:
+            raise ValueError("Both the unsupervised and supervised docs are empty.")
+
+        if metadata and unsupervised_docs:
+            if len(metadata) != len(unsupervised_docs):
+                raise ValueError("Metadata is not provided for all unsupervised files.")
+
+        file_details_list = []
+        docs = []
+
+        if unsupervised_docs and metadata:
+            for doc, meta in zip(unsupervised_docs, metadata):
+                docs.append(doc)
+                file_details_list.append(
+                    {"mode": "unsupervised", "location": doc_type, "metadata": meta}
+                )
+        elif unsupervised_docs:
+            for doc in unsupervised_docs:
+                docs.append(doc)
+                file_details_list.append({"mode": "unsupervised", "location": doc_type})
+
+        if supervised_docs:
+            for sup_file, source_id in supervised_docs:
+                docs.append(sup_file)
+                file_details_list.append(
+                    {"mode": "supervised", "location": doc_type, "source_id": source_id}
+                )
+
+        if test_doc:
+            docs.append(test_doc)
+            file_details_list.append({"mode": "test", "location": doc_type})
 
         url = urljoin(self._base_url, f"jobs/{self._user_id}/train")
         files = [
@@ -366,6 +452,17 @@ class ModelBazaar(Bazaar):
                 )
             )
 
+        files.append(
+            (
+                "file_details_list",
+                (
+                    None,
+                    json.dumps({"file_details": file_details_list}),
+                    "application/json",
+                ),
+            )
+        )
+
         response = http_post_with_error(
             url,
             params={
@@ -377,11 +474,16 @@ class ModelBazaar(Bazaar):
             files=files,
             headers=auth_header(self._access_token),
         )
-        response_data = json.loads(response.content)["data"]
+        print(response.content)
+        response_content = json.loads(response.content)
+        if response_content["status"] != "success":
+            raise Exception(response_content["message"])
+
         model = Model(
             model_identifier=create_model_identifier(
                 model_name=model_name, author_username=self._username
             ),
+            model_id=response_content["data"]["model_id"],
         )
 
         if is_async:
@@ -389,6 +491,41 @@ class ModelBazaar(Bazaar):
 
         self.await_train(model)
         return model
+
+    def test(
+        self,
+        model_identifier: str,
+        test_doc: str,
+        doc_type: str = "local",
+        test_extra_options: dict = {},
+    ):
+        url = urljoin(self._base_url, f"jobs/{self._user_id}/test")
+
+        files = [
+            (
+                ("file", open(test_doc, "rb"))
+                if doc_type == "local"
+                else ("files", (test_doc, "don't care"))
+            )
+        ]
+        if test_extra_options:
+            files.append(
+                (
+                    "extra_options_form",
+                    (None, json.dumps(test_extra_options), "application/json"),
+                )
+            )
+
+        response = http_post_with_error(
+            url,
+            params={
+                "doc_type": doc_type,
+                "model_identifier": model_identifier,
+            },
+            files=files,
+            headers=auth_header(self._access_token),
+        )
+        print(response.content)
 
     def train_status(self, model: Model):
         """
@@ -461,6 +598,7 @@ class ModelBazaar(Bazaar):
                 deployment_username=self._username,
             ),
             base_url=response_data["endpoint"] + "/",
+            bazaar=self,
         )
         if is_async:
             return ndb_client

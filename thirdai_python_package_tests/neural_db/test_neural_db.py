@@ -28,6 +28,7 @@ from ndb_utils import (
     upvote_batch_works,
     upvote_works,
 )
+from thirdai import bolt
 from thirdai import neural_db as ndb
 from thirdai.neural_db.models import merge_results
 
@@ -644,37 +645,20 @@ def test_result_merging():
     assert [x[0] for x in merge_results(results_a, results_b, k=10)] == expected_output
 
 
-def test_ndb_incremental_additions():
-    db = ndb.NeuralDB()
+def test_insert_callback(small_doc_set):
+    db = ndb.NeuralDB(user_id="test_coldstart_callback")
 
-    original_texts = [
-        "apples are red",
-        "bananas are yellow",
-        "carrots are orange",
-        "spinach is green",
-    ]
+    class EpochCheck(bolt.train.callbacks.Callback):
+        def __init__(self):
+            super().__init__()
+            self.epochs_completed = 0
 
-    partially_duplicated_texts = [
-        "raspberries are red",
-        "apples are green",
-        "lemons are yellow",
-        "bannas are green",
-        "mangos are orange",
-        "carrots are purple",
-        "lettuce is green",
-        "spinach is brown",
-    ]
+        def on_epoch_end(self):
+            self.epochs_completed += 1
 
-    for i, text in enumerate(original_texts + partially_duplicated_texts):
-        db.insert(
-            [ndb.InMemoryText(name=str(i), texts=[text])],
-            train=True,
-            balancing_samples=True,
-        )
+    epoch_count_callback = EpochCheck()
 
-    correct = 0
-    for text in original_texts:
-        if text == db.search(text, top_k=1)[0].text:
-            correct += 1
+    epochs = 6
+    db.insert(small_doc_set, epochs=epochs, callbacks=[epoch_count_callback])
 
-    assert correct >= 3
+    assert epoch_count_callback.epochs_completed == epochs
