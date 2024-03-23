@@ -49,12 +49,12 @@ def training_loop_per_worker(config):
         # Use `with_optimizers=False` to save model without optimizer states
         checkpoint = dist.BoltCheckPoint.from_model(model, with_optimizers=False)
 
+    save_path = f"artifact-rank={rank}-trained.model"
+    trainer.model.save(save_path)
     train.report(
-        {"model_location": train.get_context().get_trial_dir()},
+        {"model_location": os.path.dirname(os.path.abspath(save_path))},
         checkpoint=checkpoint,
     )
-
-    trainer.model.save(f"artifact-rank={rank}-trained.model")
 
 
 @pytest.mark.distributed

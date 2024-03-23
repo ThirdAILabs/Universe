@@ -392,7 +392,7 @@ class Bazaar:
                 f"bazaar/public-download",
             )
             response = requests.get(
-                url, params={"model_identifer": model_identifier}, stream=True
+                url, params={"model_identifier": model_identifier}, stream=True
             )
         try:
             shutil.rmtree(self._cached_checkpoint_dir(model_identifier))
