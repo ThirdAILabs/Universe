@@ -20,9 +20,11 @@
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/Transformation.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <cassert>
 #include <optional>
 #include <regex>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -219,7 +221,10 @@ std::vector<IdScores> MachRetriever::rank(
     data::ColumnMap queries,
     const std::vector<std::unordered_set<uint32_t>>& candidates,
     std::optional<uint32_t> top_k, bool sparse_inference) {
-  assert(queries.numRows() == choices.size());
+  if (queries.numRows() != candidates.size()) {
+    throw std::invalid_argument(
+        "Number of queries must match number of candidate sets.");
+  }
 
   auto in = inputTensors(_text_transform->apply(std::move(queries), *_state));
   auto out = _model->forward(in, sparse_inference).at(0);
@@ -655,7 +660,7 @@ ar::ConstArchivePtr MachRetriever::toArchive(bool with_optimizer) const {
   map->set("text_column", ar::str(_text_column));
   map->set("id_column", ar::str(_id_column));
 
-  map->set("text_transformation", _text_transform->toArchive());
+  map->set("text_transform", _text_transform->toArchive());
   map->set("map_to_buckets", _map_to_buckets->toArchive());
   map->set("add_mach_memory_samples", _add_mach_memory_samples->toArchive());
 
@@ -694,6 +699,20 @@ MachRetriever::MachRetriever(const ar::Archive& archive)
 std::shared_ptr<MachRetriever> MachRetriever::fromArchive(
     const ar::Archive& archive) {
   return std::make_shared<MachRetriever>(archive);
+}
+
+void MachRetriever::save(const std::string& filename,
+                         bool with_optimizer) const {
+  auto archive = toArchive(with_optimizer);
+  auto output = dataset::SafeFileIO::ofstream(filename);
+  ar::serialize(archive, output);
+}
+
+std::shared_ptr<MachRetriever> MachRetriever::load(
+    const std::string& filename) {
+  auto input = dataset::SafeFileIO::ifstream(filename);
+  auto archive = ar::deserialize(input);
+  return fromArchive(*archive);
 }
 
 }  // namespace thirdai::automl::mach

@@ -209,6 +209,15 @@ void defineMach(py::module_& module) {
            py::arg("top_k"), py::arg("sparse_inference") = false)
       .def("search", &MachRetriever::searchBatch, py::arg("queries"),
            py::arg("top_k"), py::arg("sparse_inference") = false)
+      .def("rank", &MachRetriever::rank, py::arg("queries"),
+           py::arg("candidate"), py::arg("top_k"),
+           py::arg("sparse_inference") = false)
+      .def("rank", &MachRetriever::rankSingle, py::arg("query"),
+           py::arg("candidate"), py::arg("top_k"),
+           py::arg("sparse_inference") = false)
+      .def("rank", &MachRetriever::rankBatch, py::arg("queries"),
+           py::arg("candidate"), py::arg("top_k"),
+           py::arg("sparse_inference") = false)
       .def("introduce", &MachRetriever::introduceIterator, py::arg("data"),
            py::arg("strong_cols"), py::arg("weak_cols"),
            py::arg("text_augmentation") = true,
@@ -226,7 +235,10 @@ void defineMach(py::module_& module) {
            py::arg("n_association_samples") = 16,
            py::arg("n_balancing_samples") = 50, py::arg("learning_rate") = 1e-3,
            py::arg("epochs") = 3, py::arg("force_non_empty") = true,
-           py::arg("batch_size") = 200);
+           py::arg("batch_size") = 200)
+      .def("save", &MachRetriever::save, py::arg("filename"),
+           py::arg("with_optimizer") = false)
+      .def_static("load", &MachRetriever::load, py::arg("filename"));
 }
 
 }  // namespace thirdai::automl::mach::python

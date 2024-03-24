@@ -23,6 +23,7 @@
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/mach/MachIndex.h>
 #include <memory>
+#include <unordered_set>
 #include <utility>
 
 namespace thirdai::automl::mach {
@@ -103,6 +104,21 @@ class MachRetriever {
   std::vector<IdScores> search(data::ColumnMap queries, uint32_t top_k,
                                bool sparse_inference);
 
+  IdScores rankSingle(const std::string& query,
+                      const std::unordered_set<uint32_t>& candidates,
+                      uint32_t top_k, bool sparse_inference) {
+    return rankBatch({query}, {candidates}, top_k, sparse_inference)[0];
+  }
+
+  std::vector<IdScores> rankBatch(
+      std::vector<std::string> queries,
+      const std::vector<std::unordered_set<uint32_t>>& candidates,
+      uint32_t top_k, bool sparse_inference) {
+    data::ColumnMap data({{_text_column, data::ValueColumn<std::string>::make(
+                                             std::move(queries))}});
+    return rank(data, candidates, top_k, sparse_inference);
+  }
+
   std::vector<IdScores> rank(
       data::ColumnMap queries,
       const std::vector<std::unordered_set<uint32_t>>& candidates,
@@ -138,6 +154,10 @@ class MachRetriever {
   static std::shared_ptr<MachRetriever> fromArchive(const ar::Archive& archive);
 
   std::string idCol() const { return _id_column; }
+
+  void save(const std::string& filename, bool with_optimizer = false) const;
+
+  static std::shared_ptr<MachRetriever> load(const std::string& filename);
 
  private:
   bolt::TensorList inputTensors(const data::ColumnMap& columns) {
