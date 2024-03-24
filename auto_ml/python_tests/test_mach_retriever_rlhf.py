@@ -3,7 +3,7 @@ import random
 
 import pandas as pd
 import pytest
-from thirdai import data
+from thirdai import bolt, data
 from mach_retriever_utils import train_simple_mach_retriever, QUERY_FILE
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
@@ -79,8 +79,17 @@ def accuracy(model, correct_labels, samples):
     return correct / len(correct_labels)
 
 
-def test_mach_retriever_upvote():
+@pytest.mark.parametrize("serialize", [True, False])
+def test_mach_retriever_upvote(serialize):
     model = train_simple_mach_retriever()
+
+    if serialize:
+        # This is just a simple addition to ensure that balancing samples and related
+        # state are saved correctly, and that a loaded model can be associated/upvoted.
+        path = "./test-mach-retriever-rlhf-model"
+        model.save(path)
+        model = bolt.MachRetriever.load(path)
+        os.remove(path)
 
     correct_labels, acronym_samples, upvotes = get_upvote_samples()
 
@@ -95,8 +104,17 @@ def test_mach_retriever_upvote():
     assert acc_after_upvote >= 0.9  # Should be close to 0.99
 
 
-def test_mach_retriever_associate():
+@pytest.mark.parametrize("serialize", [True, False])
+def test_mach_retriever_associate(serialize):
     model = train_simple_mach_retriever()
+
+    if serialize:
+        # This is just a simple addition to ensure that balancing samples and related
+        # state are saved correctly, and that a loaded model can be associated/upvoted.
+        path = "./test-mach-retriever-rlhf-model"
+        model.save(path)
+        model = bolt.MachRetriever.load(path)
+        os.remove(path)
 
     correct_labels, acronym_samples, sources, targets = get_association_samples()
 
