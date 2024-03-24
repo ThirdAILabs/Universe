@@ -45,9 +45,9 @@ def main():
             failures.append(notebook_path)
 
     print("\nThe following notebooks have passed:")
-    map(lambda x: print(f"\t - {x}"), successes)
+    print("\n".join(map(lambda x: f"\t- {x}", successes)))
     print("\nThe following notebooks have failed:")
-    map(lambda x: print(f"\t - {x}"), failures)
+    print("\n".join(map(lambda x: f"\t- {x}", failures)))
 
     if failures:
         sys.exit(1)
