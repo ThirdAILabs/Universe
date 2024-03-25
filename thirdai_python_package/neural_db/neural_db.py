@@ -883,6 +883,7 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
+            disable_inverted_index=True,
         )
 
     def supervised_train_with_ref_ids(
@@ -933,6 +934,7 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
+            disable_inverted_index=True,
         )
 
     def get_associate_samples(self):
