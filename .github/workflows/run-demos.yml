@@ -36,7 +36,7 @@ jobs:
       - name: Build docker
         run: docker build -t thirdai/run_demos_build -f docker/demos/Dockerfile .
 
-      - name: Build Package and Run Benchmark
+      - name: Run Demos
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           THIRDAI_KEY: ${{ secrets.SECRET_DEMO_LICENSE }}
