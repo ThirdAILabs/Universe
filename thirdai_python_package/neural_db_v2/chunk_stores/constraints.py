@@ -1,11 +1,16 @@
 from abc import ABC, abstractmethod
 
 from sqlalchemy import Table
+import pandas as pd
 
 
 class Constraint(ABC):
     @abstractmethod
     def sql_condition(self, column_name: str, table: Table):
+        pass
+
+    @abstractmethod
+    def pd_filter(self, column_name: str, df: pd.DataFrame):
         pass
 
 
@@ -17,6 +22,9 @@ class EqualTo(Constraint):
     def sql_condition(self, column_name: str, table: Table):
         return table.c[column_name] == self.value
 
+    def pd_filter(self, column_name: str, df: pd.DataFrame):
+        return df[column_name] == self.value
+
 
 class AnyOf(Constraint):
     def __init__(self, values):
@@ -25,6 +33,9 @@ class AnyOf(Constraint):
 
     def sql_condition(self, column_name: str, table: Table):
         return table.c[column_name].in_(self.values)
+
+    def pd_filter(self, column_name: str, df: pd.DataFrame):
+        return df[column_name].isin(self.values)
 
 
 class GreaterThan(Constraint):
@@ -38,6 +49,11 @@ class GreaterThan(Constraint):
             return table.c[column_name] >= self.value
         return table.c[column_name] > self.value
 
+    def pd_filter(self, column_name: str, df: pd.DataFrame):
+        if self.inclusive:
+            return df[column_name] >= self.value
+        return df[column_name] > self.value
+
 
 class LessThan(Constraint):
     def __init__(self, value, inclusive=True):
@@ -49,3 +65,8 @@ class LessThan(Constraint):
         if self.inclusive:
             return table.c[column_name] <= self.value
         return table.c[column_name] < self.value
+
+    def pd_filter(self, column_name: str, df: pd.DataFrame):
+        if self.inclusive:
+            return df[column_name] <= self.value
+        return df[column_name] < self.value

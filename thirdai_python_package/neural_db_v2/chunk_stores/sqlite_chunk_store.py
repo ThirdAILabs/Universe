@@ -61,6 +61,7 @@ class SQLiteChunkStore(ChunkStore):
             "neural_db_chunks",
             self.metadata,
             Column("chunk_id", Integer, primary_key=True),
+            Column("custom_id", Integer),
             Column("text", String),
             Column("keywords", String),
             Column("document", String),
@@ -156,8 +157,9 @@ class SQLiteChunkStore(ChunkStore):
             chunk_ids = pd.Series(
                 np.arange(self.next_id, self.next_id + len(batch.text), dtype=np.int64)
             )
+            self.next_id += len(batch.text)
 
-            chunk_df = batch.to_df(with_custom_id=False, with_metadata=False)
+            chunk_df = batch.to_df(with_metadata=False)
             chunk_df["chunk_id"] = chunk_ids
 
             if batch.custom_id is not None:
@@ -167,8 +169,6 @@ class SQLiteChunkStore(ChunkStore):
                 self._store_metadata(batch.metadata, chunk_ids=chunk_ids)
 
             self._write_to_table(df=chunk_df, table=self.chunk_table)
-
-            self.next_id += len(batch.text)
 
             inserted_batches.append(
                 ChunkBatch(
@@ -181,28 +181,40 @@ class SQLiteChunkStore(ChunkStore):
         return inserted_batches
 
     def delete(self, chunk_ids: List[ChunkId], **kwargs):
-        stmt = delete(self.chunk_table).where(
+        delete_chunks = delete(self.chunk_table).where(
             self.chunk_table.c.chunk_id.in_(chunk_ids)
+        )
+        delete_metadata = delete(self.metadata_table).where(
+            self.metadata_table.c.chunk_id.in_(chunk_ids)
         )
         with self.engine.begin() as conn:
-            conn.execute(stmt)
+            conn.execute(delete_chunks)
+            conn.execute(delete_metadata)
 
     def get_chunks(self, chunk_ids: List[ChunkId], **kwargs) -> List[Chunk]:
-        stmt = select(self.chunk_table).where(
-            self.chunk_table.c.chunk_id.in_(chunk_ids)
-        )
 
         id_to_chunk = {}
+
+        chunk_stmt = select(self.chunk_table).where(
+            self.chunk_table.c.chunk_id.in_(chunk_ids)
+        )
+        metadata_stmt = select(self.metadata_table).where(
+            self.metadata_table.c.chunk_id.in_(chunk_ids)
+        )
         with self.engine.connect() as conn:
-            for row in conn.execute(stmt):
+            for row in conn.execute(chunk_stmt):
                 id_to_chunk[row.chunk_id] = Chunk(
-                    custom_id=None,
+                    custom_id=row.custom_id,
                     text=row.text,
                     keywords=row.keywords,
                     document=row.document,
                     chunk_id=row.chunk_id,
                     metadata=None,
                 )
+            for row in conn.execute(metadata_stmt):
+                metadata = row._asdict()
+                del metadata["chunk_id"]
+                id_to_chunk[row.chunk_id].metadata = metadata
 
         chunks = []
         for chunk_id in chunk_ids:
@@ -251,7 +263,9 @@ class SQLiteChunkStore(ChunkStore):
                         if result := conn.execute(stmt).first():
                             sample_ids.append(result.chunk_id)
                         else:
-                            raise ValueError(f"Could not find custom id {custom_id}.")
+                            raise ValueError(
+                                f"Could not find chunk with custom id {custom_id}."
+                            )
                     chunk_ids.append(sample_ids)
 
             remapped_batches.append(
