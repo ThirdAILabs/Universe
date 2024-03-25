@@ -54,11 +54,9 @@ class NeuralDB:
         """
         self._user_id: str = user_id
 
-        # "low_memory" is just a hacky way of only using the inverted index.
-        # It will be changed in NDBv2. Normally we'd just create a separate inverted
-        # index retriever but the flag is much easier to do in this version of NDB.
-        # This way we can keep the same model training logs that users are used to
-        # while we work on NDBv2
+        # "low_memory" means just use the inverted index. We create a small model 
+        # just to preserve the training logs so the user doesn't see different 
+        # behavior than they are used to. 
         self.low_memory = False
         if "low_memory" in kwargs:
             self.low_memory = True
@@ -905,6 +903,7 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
+            disable_inverted_index=True,
         )
 
     def supervised_train_with_ref_ids(
@@ -955,6 +954,7 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
+            disable_inverted_index=True,
         )
 
     def get_associate_samples(self):
