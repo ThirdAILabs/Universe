@@ -1,10 +1,9 @@
 import pandas as pd
 import pytest
 from download_dataset_fixtures import download_scifact_dataset
-from thirdai.neural_db.documents import CSV, DocumentDataSource
+from thirdai.neural_db.documents import CSV, DocumentDataSource, DocumentManager
 from thirdai.neural_db.inverted_index import InvertedIndex
 from thirdai.neural_db.supervised_datasource import Sup, SupDataSource
-from thirdai.neural_db.documents import DocumentManager
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
