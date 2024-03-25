@@ -351,3 +351,36 @@ def test_neural_db_supervised_train_with_comma():
     )
 
     db.supervised_train([sup_doc], learning_rate=0.1, epochs=1)
+
+
+def test_neural_db_supervised_train_invalid_int_ids():
+    """This test checks that supervised training works when the unsupervised
+    dataset has integer IDs that are not within the 0 to n-1 range.
+    We previously had type-casting related bugs related to this.
+    """
+    db = ndb.NeuralDB()
+    with open("mock_unsup.csv", "w") as f:
+        f.write("id,strong\n")
+        f.write("10,first\n")
+        f.write("1,second\n")
+
+    source_ids = db.insert(
+        [ndb.CSV("mock_unsup.csv", id_column="id", strong_columns=["strong"])]
+    )
+
+    with open("mock_sup.csv", "w") as f:
+        f.write("id,query\n")
+        f.write("10,third\n")
+        f.write("1,fourth\n")
+        # Make sure that duplicate IDs work too.
+        f.write("10,fifth\n")
+        f.write("1,sixth\n")
+
+    sup_doc = ndb.Sup(
+        "mock_sup.csv",
+        query_column="query",
+        id_column="id",
+        source_id=source_ids[0],
+    )
+
+    db.supervised_train([sup_doc], learning_rate=0.1, epochs=1)
