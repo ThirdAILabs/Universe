@@ -48,7 +48,8 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
 }
 
 void InvertedIndex::update(const std::vector<DocId>& ids,
-                           const std::vector<Tokens>& extra_tokens) {
+                           const std::vector<Tokens>& extra_tokens,
+                           bool ignore_missing_ids) {
   if (ids.size() != extra_tokens.size()) {
     throw std::invalid_argument(
         "Number of ids must match the number of docs in index.");
@@ -62,6 +63,9 @@ void InvertedIndex::update(const std::vector<DocId>& ids,
     const auto& extra_occurences = doc_lens_and_occurences[i].second;
 
     if (!_doc_lengths.count(doc_id)) {
+      if (ignore_missing_ids) {
+        continue;
+      }
       throw std::runtime_error("Cannot update document with id " +
                                std::to_string(doc_id) +
                                " since it's not already in the index.");

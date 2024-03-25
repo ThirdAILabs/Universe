@@ -37,7 +37,8 @@ class InvertedIndex {
   void index(const std::vector<DocId>& ids, const std::vector<Tokens>& docs);
 
   void update(const std::vector<DocId>& ids,
-              const std::vector<Tokens>& extra_tokens);
+              const std::vector<Tokens>& extra_tokens,
+              bool ignore_missing_ids = true);
 
   std::vector<std::vector<DocScore>> queryBatch(
       const std::vector<Tokens>& queries, uint32_t k) const;

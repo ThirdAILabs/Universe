@@ -81,7 +81,7 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("lowercase") = true)
       .def("index", &InvertedIndex::index, py::arg("ids"), py::arg("docs"))
       .def("update", &InvertedIndex::update, py::arg("ids"),
-           py::arg("extra_tokens"))
+           py::arg("extra_tokens"), py::arg("ignore_missing_ids") = true)
       .def("query", &InvertedIndex::queryBatch, py::arg("queries"),
            py::arg("k"))
       .def("query", &InvertedIndex::query, py::arg("query"), py::arg("k"))
