@@ -1,12 +1,35 @@
 import json
 from pathlib import Path
+from typing import List, Union
 
 from thirdai import data
 
 from ..utils import pickle_to, unpickle_from
 
 
-class TrainState:
+class SupervisedTrainState:
+    def __init__(
+        self,
+        is_training_completed: bool,
+        current_epoch_number: int,
+        learning_rate: int,
+        epochs: int,
+        batch_size: int,
+        max_in_memory_batches: int,
+        metrics: List[str],
+        disable_inverted_index: bool,
+    ):
+        self.is_training_completed = is_training_completed
+        self.current_epoch_number = current_epoch_number
+        self.learning_rate = learning_rate
+        self.epochs = epochs
+        self.batch_size = batch_size
+        self.max_in_memory_batches = max_in_memory_batches
+        self.metrics = metrics
+        self.disable_inverted_index = disable_inverted_index
+
+
+class UnsupervisedTrainState:
     def __init__(
         self,
         max_in_memory_batches: int,
@@ -63,24 +86,33 @@ class NeuralDbProgressTracker:
     Given the NeuralDbProgressTracker of the model and the data sources, we should be able to resume the training.
     """
 
-    def __init__(self, intro_state: IntroState, train_state: TrainState, vlc_config):
-        # These are the introduce state arguments and updated once the introduce document is done
-        self._intro_state = intro_state
-
+    def __init__(
+        self, train_state: Union[SupervisedTrainState, UnsupervisedTrainState]
+    ):
         # These are training arguments and are updated while the training is in progress
         self._train_state = train_state
-        self.vlc_config = vlc_config
 
     @property
     def is_insert_completed(self):
-        return self._intro_state.is_insert_completed
+        raise NotImplementedError(
+            "Method 'is_insert_completed' not implemented for class NeuralDBProgressTracker."
+        )
 
     @is_insert_completed.setter
     def is_insert_completed(self, is_insert_completed: bool):
-        if isinstance(is_insert_completed, bool):
-            self._intro_state.is_insert_completed = is_insert_completed
-        else:
-            raise TypeError("Can set the property only with a bool")
+        raise NotImplementedError(
+            "Setter Method 'is_insert_completed' not implemented for class NeuralDBProgressTracker."
+        )
+
+    def insert_complete(self):
+        raise NotImplementedError(
+            "Method 'insert_complete' not implemented for class NeuralDBProgressTracker."
+        )
+
+    def introduce_arguments(self):
+        raise NotImplementedError(
+            "Method 'introduce_arguments' not implemented for class NeuralDBProgressTracker."
+        )
 
     @property
     def is_training_completed(self):
@@ -104,17 +136,6 @@ class NeuralDbProgressTracker:
         else:
             raise TypeError("Can set the property only with an int")
 
-    def __dict__(self):
-        return {
-            "intro_state": self._intro_state.__dict__,
-            "train_state": self._train_state.__dict__,
-        }
-
-    def insert_complete(self):
-        if self.is_insert_completed:
-            raise Exception("Insert has already been finished.")
-        self.is_insert_completed = True
-
     def epoch_complete(self):
         self.current_epoch_number += 1
 
@@ -122,6 +143,43 @@ class NeuralDbProgressTracker:
         if self.is_training_completed:
             raise Exception("Training has already been finished.")
         self.is_training_completed = True
+
+
+class InsertProgressTracker(NeuralDbProgressTracker):
+    def __init__(
+        self, intro_state: IntroState, train_state: UnsupervisedTrainState, vlc_config
+    ):
+        super().__init__(train_state=train_state)
+
+        # These are the introduce state arguments and updated once the introduce document is done
+        self._intro_state = intro_state
+
+        # These are training arguments and are updated while the training is in progress
+        self._train_state = train_state
+        self.vlc_config = vlc_config
+
+    @property
+    def is_insert_completed(self):
+        return self._intro_state.is_insert_completed
+
+    @is_insert_completed.setter
+    def is_insert_completed(self, is_insert_completed: bool):
+        if isinstance(is_insert_completed, bool):
+            self._intro_state.is_insert_completed = is_insert_completed
+        else:
+            raise TypeError("Can set the property only with a bool")
+
+    def insert_complete(self):
+        if self.is_insert_completed:
+            raise Exception("Insert has already been finished.")
+        self.is_insert_completed = True
+
+    def introduce_arguments(self):
+        return {
+            "num_buckets_to_sample": self._intro_state.num_buckets_to_sample,
+            "fast_approximation": self._intro_state.fast_approximation,
+            "override_number_classes": self._intro_state.override_number_classes,
+        }
 
     def training_arguments(self):
         min_epochs = (
@@ -145,17 +203,17 @@ class NeuralDbProgressTracker:
 
         return args
 
-    def introduce_arguments(self):
-        return {
-            "num_buckets_to_sample": self._intro_state.num_buckets_to_sample,
-            "fast_approximation": self._intro_state.fast_approximation,
-            "override_number_classes": self._intro_state.override_number_classes,
-        }
-
     def save(self, path: Path):
         path.mkdir(exist_ok=True, parents=True)
         with open(path / "tracker.json", "w") as f:
-            json.dump(self.__dict__(), f, indent=4)
+            json.dump(
+                {
+                    "intro_state": self._intro_state.__dict__,
+                    "train_state": self._train_state.__dict__,
+                },
+                f,
+                indent=4,
+            )
         pickle_to(self.vlc_config, path / "vlc.config")
 
     @staticmethod
@@ -165,8 +223,40 @@ class NeuralDbProgressTracker:
 
         vlc_config = unpickle_from(path / "vlc.config")
 
-        return NeuralDbProgressTracker(
+        return InsertProgressTracker(
             intro_state=IntroState(**args["intro_state"]),
-            train_state=TrainState(**args["train_state"]),
+            train_state=UnsupervisedTrainState(**args["train_state"]),
             vlc_config=vlc_config,
         )
+
+
+class SupervisedProgressTracker(NeuralDbProgressTracker):
+    def __init__(self, train_state: SupervisedTrainState):
+        super().__init__(train_state=train_state)
+        self._train_state = train_state
+
+    def training_arguments(self):
+        epochs = self._train_state.epochs - self.current_epoch_number
+        args = {}
+        args["learning_rate"] = self._train_state.learning_rate
+        args["epochs"] = epochs
+        args["batch_size"] = self._train_state.batch_size
+        args["max_in_memory_batches"] = self._train_state.max_in_memory_batches
+        args["metrics"] = self._train_state.metrics
+        return args
+
+    def save(self, path: Path):
+        path.mkdir(exist_ok=True, parents=True)
+        with open(path / "tracker.json", "w") as f:
+            json.dump(
+                self._train_state.__dict__,
+                f,
+                indent=4,
+            )
+
+    @staticmethod
+    def load(path: Path):
+        with open(path / "tracker.json", "r") as f:
+            args = json.load(f)
+
+        return SupervisedProgressTracker(train_state=SupervisedTrainState(**args))

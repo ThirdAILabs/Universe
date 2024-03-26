@@ -580,7 +580,7 @@ class Mach(Model):
         callbacks: List[bolt.train.callbacks.Callback] = None,
     ):
         # This will load the datasources, model, training config and upload the current model with the loaded one. This updates the underlying UDT MACH of the current model with the one from the checkpoint along with other class attributes.
-        training_progress_manager = TrainingProgressManager.from_checkpoint(
+        training_progress_manager = InsertProgressManager.from_checkpoint(
             self, checkpoint_config=checkpoint_config
         )
 
@@ -615,7 +615,7 @@ class Mach(Model):
         Note: Given the datasources for introduction and training, we initialize a Mach model that has number_classes set to the size of introduce documents. But if we want to use this Mach model in our mixture of Models, this will not work because each Mach will be initialized with number of classes equal to the size of the datasource shard. Hence, we add override_number_classes parameters which if set, will initialize Mach Model with number of classes passed by the Mach Mixture.
         """
 
-        training_progress_manager = TrainingProgressManager.from_scratch(
+        training_progress_manager = InsertProgressManager.from_scratch(
             model=self,
             intro_documents=intro_documents,
             train_documents=train_documents,
@@ -815,6 +815,28 @@ class Mach(Model):
             state["inverted_index"] = None
         self.__dict__.update(state)
 
+    def supervised_training_impl(
+        self,
+        supervised_progress_manager: SupervisedProgressManager,
+        callbacks: List[bolt.train.callbacks.Callback],
+    ):
+        train_args = supervised_progress_manager.training_arguments()
+
+        if not supervised_progress_manager.is_training_completed:
+            self.model.train_on_data_source(
+                data_source=supervised_progress_manager.train_source,
+                callbacks=callbacks
+                + [
+                    TrainingProgressCallback(
+                        training_progress_manager=supervised_progress_manager
+                    )
+                ],
+                **train_args,
+            )
+
+            if supervised_progress_manager.tracker._train_state.disable_inverted_index:
+                self.inverted_index = None
+
     def train_on_supervised_data_source(
         self,
         supervised_data_source: SupDataSource,
@@ -825,19 +847,30 @@ class Mach(Model):
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
         disable_inverted_index: bool,
+        checkpoint_config: Optional[CheckpointConfig] = None,
     ):
-        self.model.train_on_data_source(
-            data_source=supervised_data_source,
-            learning_rate=learning_rate,
-            epochs=epochs,
-            batch_size=batch_size,
-            max_in_memory_batches=max_in_memory_batches,
-            metrics=metrics,
-            callbacks=callbacks,
-        )
-        if disable_inverted_index:
-            # Invalidate inverted index once supervised data is used.
-            self.inverted_index = None
+        if (
+            checkpoint_config is None
+            or checkpoint_config.resume_from_checkpoint is False
+        ):
+            training_manager = SupervisedProgressManager.from_scratch(
+                model=self,
+                supervised_datasource=supervised_data_source,
+                learning_rate=learning_rate,
+                epochs=epochs,
+                batch_size=batch_size,
+                max_in_memory_batches=max_in_memory_batches,
+                metrics=metrics,
+                disable_inverted_index=disable_inverted_index,
+                checkpoint_config=checkpoint_config,
+            )
+            training_manager.make_preindexing_checkpoint(save_datasource=True)
+        else:
+            training_manager = SupervisedProgressManager.from_checkpoint(
+                self, checkpoint_config, supervised_datasource=None
+            )
+
+        self.supervised_training_impl(training_manager, callbacks=callbacks)
 
     def build_inverted_index(self, documents):
         if self.inverted_index:

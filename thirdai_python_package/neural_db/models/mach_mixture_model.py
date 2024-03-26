@@ -11,7 +11,10 @@ from ..trainer.checkpoint_config import (
     CheckpointConfig,
     generate_checkpoint_configs_for_ensembles,
 )
-from ..trainer.training_progress_manager import TrainingProgressManager
+from ..trainer.training_progress_manager import (
+    SupervisedProgressManager,
+    InsertProgressManager,
+)
 from ..utils import clean_text, pickle_to, requires_condition, unpickle_from
 from .models import CancelState, Mach, Model, add_retriever_tag, merge_results
 from .multi_mach import MultiMach, aggregate_ensemble_results
@@ -130,7 +133,7 @@ class MachMixture(Model):
 
     def index_documents_impl(
         self,
-        training_progress_managers: List[List[TrainingProgressManager]],
+        training_progress_managers: List[List[InsertProgressManager]],
         on_progress: Callable,
         cancel_state: CancelState,
         callbacks: List[bolt.train.callbacks.Callback] = None,
@@ -169,11 +172,9 @@ class MachMixture(Model):
             for model_id, model in enumerate(ensemble.models):
                 # the intro/train shards are only saved for the first model in each ensemble
                 if model_id == 0:
-                    modelwise_training_manager = (
-                        TrainingProgressManager.from_checkpoint(
-                            original_mach_model=model,
-                            checkpoint_config=config[model_id],
-                        )
+                    modelwise_training_manager = InsertProgressManager.from_checkpoint(
+                        original_mach_model=model,
+                        checkpoint_config=config[model_id],
                     )
                 else:
                     # for every model other than the first in the ensemble,
@@ -185,13 +186,11 @@ class MachMixture(Model):
                     train_shard = ensemble_training_managers[
                         0
                     ].save_load_manager.train_source
-                    modelwise_training_manager = (
-                        TrainingProgressManager.from_checkpoint(
-                            original_mach_model=model,
-                            checkpoint_config=config[model_id],
-                            intro_shard=intro_shard,
-                            train_shard=train_shard,
-                        )
+                    modelwise_training_manager = InsertProgressManager.from_checkpoint(
+                        original_mach_model=model,
+                        checkpoint_config=config[model_id],
+                        intro_shard=intro_shard,
+                        train_shard=train_shard,
                     )
                 ensemble_training_managers.append(modelwise_training_manager)
             training_managers.append(ensemble_training_managers)
@@ -261,7 +260,7 @@ class MachMixture(Model):
             ensemble_training_managers = []
             for model_id, model in enumerate(ensemble.models):
 
-                modelwise_training_manager = TrainingProgressManager.from_scratch(
+                modelwise_training_manager = InsertProgressManager.from_scratch(
                     model=model,
                     intro_documents=intro_shard,
                     train_documents=train_shard,
@@ -554,6 +553,45 @@ class MachMixture(Model):
             # Add model_config field if an older model is being loaded.
             state["model_config"] = None
         self.__dict__.update(state)
+        
+    
+    def _resume_supervised(
+        self, checkpoint_config : Optional[CheckpointConfig], callbacks :  List[bolt.train.callbacks.Callback]
+    ):
+        ensemble_checkpoint_configs = generate_checkpoint_configs_for_ensembles(
+            config=checkpoint_config,
+            number_ensembles=self.num_shards,
+            number_models_per_ensemble=self.num_models_per_shard,
+        )
+        
+        training_managers = []
+        
+        for ensemble, config in zip(self.ensembles, ensemble_checkpoint_configs):
+            ensemble_training_managers: List[SupervisedProgressManager] = []
+            for model_id, model in enumerate(ensemble.models):
+                if model_id == 0:
+                    modelwise_training_manager = (
+                        SupervisedProgressManager.from_checkpoint(
+                            original_mach_model=model,
+                            checkpoint_config=config[model_id],
+                        )
+                    )
+                else:
+                    supervised_source = ensemble_training_managers[
+                        0
+                    ].save_load_manager.datasource_manager.supervised_source
+                    modelwise_training_manager = (
+                        SupervisedProgressManager.from_checkpoint(
+                            original_mach_model=model,
+                            checkpoint_config=checkpoint_config,
+                            supervised_datasource=supervised_source,
+                        )
+                    )
+                ensemble_training_managers.append(modelwise_training_manager)
+            training_managers.append(ensemble_training_managers)
+        
+        for ensemble, managers in zip(self.ensembles, training_managers):
+            ensemble.supervised_training_impl(managers, callbacks = callbacks)
 
     def train_on_supervised_data_source(
         self,
@@ -565,6 +603,7 @@ class MachMixture(Model):
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
         disable_inverted_index: bool,
+        checkpoint_config: Optional[CheckpointConfig] = None,
     ):
         supervised_data_source_shards = shard_data_source(
             data_source=supervised_data_source,
@@ -573,9 +612,45 @@ class MachMixture(Model):
             update_segment_map=False,
         )
 
+        ensemble_checkpoint_configs = generate_checkpoint_configs_for_ensembles(
+            config=checkpoint_config,
+            number_ensembles=self.num_shards,
+            number_models_per_ensemble=self.num_models_per_shard,
+        )
+        training_managers = []
+
+        for ensemble, config in zip(self.ensembles, ensemble_checkpoint_configs):
+            ensemble_training_managers: List[SupervisedProgressManager] = []
+            for model_id, model in enumerate(ensemble.models):
+
+                if (
+                    checkpoint_config is None
+                    or checkpoint_config.resume_from_checkpoint is False
+                ):
+                    if model_id == 0:
+                        modelwise_training_manager = (
+                            SupervisedProgressManager.from_checkpoint(
+                                original_mach_model=model,
+                                checkpoint_config=config[model_id],
+                            )
+                        )
+                    else:
+                        supervised_source = ensemble_training_managers[
+                            0
+                        ].save_load_manager.datasource_manager.supervised_source
+                        modelwise_training_manager = (
+                            SupervisedProgressManager.from_checkpoint(
+                                original_mach_model=model,
+                                checkpoint_config=checkpoint_config,
+                                supervised_datasource=supervised_source,
+                            )
+                        )
+                    ensemble_training_managers.append(modelwise_training_manager)
+
         for shard, ensemble in zip(supervised_data_source_shards, self.ensembles):
             if shard.size == 0:
                 continue
+
             ensemble.train_on_supervised_data_source(
                 supervised_data_source=shard,
                 learning_rate=learning_rate,

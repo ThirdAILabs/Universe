@@ -874,6 +874,7 @@ class NeuralDB:
         metrics: List[str] = [],
         callbacks: List[bolt.train.callbacks.Callback] = [],
         disable_inverted_index: bool = True,
+        checkpoint_config: Optional[CheckpointConfig] = None,
     ):
         """
         Train on supervised datasets that correspond to specific sources.
@@ -920,6 +921,7 @@ class NeuralDB:
         metrics: List[str] = [],
         callbacks: List[bolt.train.callbacks.Callback] = [],
         disable_inverted_index: bool = True,
+        checkpoint_config: Optional[CheckpointConfig] = None,
     ):
         """Train on supervised datasets that correspond to specific sources.
         Suppose you inserted a "sports" product catalog and a "furniture"
