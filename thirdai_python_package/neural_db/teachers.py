@@ -7,7 +7,7 @@ from nltk.tokenize import sent_tokenize
 
 from . import utils
 from .loggers import Logger
-from .models import Model
+from .models.models import Model
 
 
 def associate(
