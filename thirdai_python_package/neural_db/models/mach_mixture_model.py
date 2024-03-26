@@ -88,7 +88,6 @@ class MachMixture(Model):
         return n_ids
 
     def set_mach_sampling_threshold(self, threshold: float):
-
         for ensemble in self.ensembles:
             ensemble.set_mach_sampling_threshold(threshold)
 
@@ -260,7 +259,6 @@ class MachMixture(Model):
         ):
             ensemble_training_managers = []
             for model_id, model in enumerate(ensemble.models):
-
                 modelwise_training_manager = TrainingProgressManager.from_scratch(
                     model=model,
                     intro_documents=intro_shard,

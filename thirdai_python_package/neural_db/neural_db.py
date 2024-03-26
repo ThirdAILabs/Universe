@@ -61,9 +61,9 @@ class NeuralDB:
         """
         self._user_id: str = user_id
 
-        # "low_memory" means just use the inverted index. We create a small model 
-        # just to preserve the training logs so the user doesn't see different 
-        # behavior than they are used to. 
+        # "low_memory" means just use the inverted index. We create a small model
+        # just to preserve the training logs so the user doesn't see different
+        # behavior than they are used to.
         self.low_memory = False
         if "low_memory" in kwargs:
             self.low_memory = True
@@ -909,6 +909,12 @@ class NeuralDB:
         """
         doc_manager = self._savable_state.documents
         query_col = self._savable_state.model.get_query_col()
+
+        # low memory only finetunes and displays results from inverted index
+        disable_inverted_index = (
+            False if self.low_memory else kwargs.get("disable_inverted_index", True)
+        )
+
         self._savable_state.model.train_on_supervised_data_source(
             supervised_data_source=SupDataSource(
                 doc_manager=doc_manager,
@@ -922,7 +928,7 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
-            disable_inverted_index=kwargs.get("disable_inverted_index", True),
+            disable_inverted_index=disable_inverted_index,
         )
 
     def supervised_train_with_ref_ids(
@@ -951,6 +957,12 @@ class NeuralDB:
         """
         doc_manager = self._savable_state.documents
         model_query_col = self._savable_state.model.get_query_col()
+
+        # low memory only finetunes and displays results from inverted index
+        disable_inverted_index = (
+            False if self.low_memory else kwargs.get("disable_inverted_index", True)
+        )
+
         self._savable_state.model.train_on_supervised_data_source(
             supervised_data_source=SupDataSource(
                 doc_manager=doc_manager,
@@ -974,7 +986,7 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
-            disable_inverted_index=kwargs.get("disable_inverted_index", True),
+            disable_inverted_index=disable_inverted_index,
         )
 
     def get_associate_samples(self):
