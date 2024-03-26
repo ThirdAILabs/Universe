@@ -58,6 +58,10 @@ class TrainState {
     return _batches_in_dataset;
   }
 
+  void updateBatchesInDataset(uint32_t batches_in_dataset) {
+    _batches_in_dataset = batches_in_dataset;
+  }
+
  private:
   float _learning_rate;
   std::optional<uint32_t> _batches_in_dataset;

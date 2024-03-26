@@ -287,6 +287,7 @@ metrics::History Trainer::train_with_dataset_loader(
     while (auto train_chunk =
                loadSomeWrapper(train_data_loader, batch_size,
                                *max_in_memory_batches, verbose)) {
+      train_state->updateBatchesInDataset(train_chunk.value().first.size());
       trainOnBatches(train_chunk.value(), train_state, train_metrics, callbacks,
                      validation_data, validation_metrics, steps_per_validation,
                      use_sparsity_in_validation, autotune_rehash_rebuild,
@@ -368,6 +369,7 @@ metrics::History Trainer::train_with_data_loader(
     callbacks.onEpochBegin();
     utils::Timer epoch_timer;
     while (auto train_chunk = train_data_loader->next(*max_in_memory_batches)) {
+      train_state->updateBatchesInDataset(train_chunk.value().first.size());
       trainOnBatches(train_chunk.value(), train_state, train_metrics, callbacks,
                      validation_data, validation_metrics, steps_per_validation,
                      use_sparsity_in_validation, autotune_rehash_rebuild,
