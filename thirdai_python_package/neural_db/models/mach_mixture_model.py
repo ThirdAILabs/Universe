@@ -11,10 +11,8 @@ from ..trainer.checkpoint_config import (
     CheckpointConfig,
     generate_checkpoint_configs_for_ensembles,
 )
-from ..trainer.training_progress_manager import (
-    SupervisedProgressManager,
-    InsertProgressManager,
-)
+from ..trainer.training_data_manager import InsertDataManager, SupervisedDataManager
+from ..trainer.training_progress_manager import TrainingProgressManager
 from ..utils import clean_text, pickle_to, requires_condition, unpickle_from
 from .models import CancelState, Mach, Model, add_retriever_tag, merge_results
 from .multi_mach import MultiMach, aggregate_ensemble_results
@@ -133,7 +131,7 @@ class MachMixture(Model):
 
     def index_documents_impl(
         self,
-        training_progress_managers: List[List[InsertProgressManager]],
+        training_progress_managers: List[List[TrainingProgressManager]],
         on_progress: Callable,
         cancel_state: CancelState,
         callbacks: List[bolt.train.callbacks.Callback] = None,
@@ -172,9 +170,11 @@ class MachMixture(Model):
             for model_id, model in enumerate(ensemble.models):
                 # the intro/train shards are only saved for the first model in each ensemble
                 if model_id == 0:
-                    modelwise_training_manager = InsertProgressManager.from_checkpoint(
-                        original_mach_model=model,
-                        checkpoint_config=config[model_id],
+                    modelwise_training_manager = (
+                        TrainingProgressManager.from_checkpoint(
+                            original_mach_model=model,
+                            checkpoint_config=config[model_id],
+                        )
                     )
                 else:
                     # for every model other than the first in the ensemble,
@@ -186,11 +186,16 @@ class MachMixture(Model):
                     train_shard = ensemble_training_managers[
                         0
                     ].save_load_manager.train_source
-                    modelwise_training_manager = InsertProgressManager.from_checkpoint(
-                        original_mach_model=model,
-                        checkpoint_config=config[model_id],
-                        intro_shard=intro_shard,
-                        train_shard=train_shard,
+                    modelwise_training_manager = (
+                        TrainingProgressManager.from_checkpoint(
+                            original_mach_model=model,
+                            checkpoint_config=config[model_id],
+                            datasource_manager=InsertDataManager.load(
+                                checkpoint_dir=config[model_id].checkpoint_dir,
+                                intro_shard=intro_shard,
+                                train_shard=train_shard,
+                            ),
+                        )
                     )
                 ensemble_training_managers.append(modelwise_training_manager)
             training_managers.append(ensemble_training_managers)
@@ -260,18 +265,20 @@ class MachMixture(Model):
             ensemble_training_managers = []
             for model_id, model in enumerate(ensemble.models):
 
-                modelwise_training_manager = InsertProgressManager.from_scratch(
-                    model=model,
-                    intro_documents=intro_shard,
-                    train_documents=train_shard,
-                    should_train=should_train,
-                    fast_approximation=fast_approximation,
-                    num_buckets_to_sample=num_buckets_to_sample,
-                    max_in_memory_batches=max_in_memory_batches,
-                    override_number_classes=number_classes,
-                    variable_length=variable_length,
-                    checkpoint_config=config[model_id],
-                    **kwargs,
+                modelwise_training_manager = (
+                    TrainingProgressManager.from_scratch_for_unsupervised(
+                        model=model,
+                        intro_documents=intro_shard,
+                        train_documents=train_shard,
+                        should_train=should_train,
+                        fast_approximation=fast_approximation,
+                        num_buckets_to_sample=num_buckets_to_sample,
+                        max_in_memory_batches=max_in_memory_batches,
+                        override_number_classes=number_classes,
+                        variable_length=variable_length,
+                        checkpoint_config=config[model_id],
+                        **kwargs,
+                    )
                 )
                 ensemble_training_managers.append(modelwise_training_manager)
                 # When we want to start from scratch, we will have to checkpoint the intro, train sources, the model, tracker,etc. so that the training can be resumed from the checkpoint.
@@ -553,58 +560,61 @@ class MachMixture(Model):
             # Add model_config field if an older model is being loaded.
             state["model_config"] = None
         self.__dict__.update(state)
-        
-    
+
     def _resume_supervised(
-        self, checkpoint_config : Optional[CheckpointConfig], callbacks :  List[bolt.train.callbacks.Callback]
+        self,
+        checkpoint_config: Optional[CheckpointConfig],
+        callbacks: List[bolt.train.callbacks.Callback],
     ):
         ensemble_checkpoint_configs = generate_checkpoint_configs_for_ensembles(
             config=checkpoint_config,
             number_ensembles=self.num_shards,
             number_models_per_ensemble=self.num_models_per_shard,
         )
-        
+
         training_managers = []
-        
+
         for ensemble, config in zip(self.ensembles, ensemble_checkpoint_configs):
-            ensemble_training_managers: List[SupervisedProgressManager] = []
+            ensemble_training_managers: List[TrainingProgressManager] = []
             for model_id, model in enumerate(ensemble.models):
                 if model_id == 0:
                     modelwise_training_manager = (
-                        SupervisedProgressManager.from_checkpoint(
+                        TrainingProgressManager.from_checkpoint(
                             original_mach_model=model,
                             checkpoint_config=config[model_id],
                         )
                     )
                 else:
-                    supervised_source = ensemble_training_managers[
-                        0
-                    ].save_load_manager.datasource_manager.supervised_source
+                    supervised_source = ensemble_training_managers[0].train_source
                     modelwise_training_manager = (
-                        SupervisedProgressManager.from_checkpoint(
+                        TrainingProgressManager.from_checkpoint(
                             original_mach_model=model,
-                            checkpoint_config=checkpoint_config,
-                            supervised_datasource=supervised_source,
+                            checkpoint_config=config[model_id],
+                            datasource_manager=SupervisedDataManager.load(
+                                config[model_id].checkpoint_dir,
+                                train_source=supervised_source,
+                            ),
                         )
                     )
                 ensemble_training_managers.append(modelwise_training_manager)
             training_managers.append(ensemble_training_managers)
-        
-        for ensemble, managers in zip(self.ensembles, training_managers):
-            ensemble.supervised_training_impl(managers, callbacks = callbacks)
 
-    def train_on_supervised_data_source(
+        for ensemble, managers in zip(self.ensembles, training_managers):
+            ensemble.supervised_training_impl(managers, callbacks=callbacks)
+
+    def _supervised_from_start(
         self,
-        supervised_data_source: SupDataSource,
-        learning_rate: float,
-        epochs: int,
-        batch_size: Optional[int],
-        max_in_memory_batches: Optional[int],
-        metrics: List[str],
-        callbacks: List[bolt.train.callbacks.Callback],
-        disable_inverted_index: bool,
-        checkpoint_config: Optional[CheckpointConfig] = None,
+        supervised_data_source,
+        learning_rate,
+        epochs,
+        batch_size,
+        max_in_memory_batches,
+        metrics,
+        callbacks,
+        disable_inverted_index,
+        checkpoint_config,
     ):
+
         supervised_data_source_shards = shard_data_source(
             data_source=supervised_data_source,
             number_shards=self.num_shards,
@@ -619,48 +629,64 @@ class MachMixture(Model):
         )
         training_managers = []
 
-        for ensemble, config in zip(self.ensembles, ensemble_checkpoint_configs):
-            ensemble_training_managers: List[SupervisedProgressManager] = []
+        for ensemble, config, supervised_shard in zip(
+            self.ensembles, ensemble_checkpoint_configs, supervised_data_source_shards
+        ):
+            ensemble_training_managers: List[TrainingProgressManager] = []
             for model_id, model in enumerate(ensemble.models):
+                modelwise_training_manager = (
+                    TrainingProgressManager.from_scratch_for_supervised(
+                        model=model,
+                        supervised_datasource=supervised_shard,
+                        learning_rate=learning_rate,
+                        epochs=epochs,
+                        batch_size=batch_size,
+                        max_in_memory_batches=max_in_memory_batches,
+                        metrics=metrics,
+                        disable_inverted_index=disable_inverted_index,
+                        checkpoint_config=config[model_id],
+                    )
+                )
+                ensemble_training_managers.append(modelwise_training_manager)
+                modelwise_training_manager.make_preindexing_checkpoint(
+                    save_intro_train_shards=model_id == 0
+                )
+            training_managers.append(ensemble_training_managers)
+            
+        for ensemble, managers in zip(self.ensembles, training_managers):
+            ensemble.supervised_training_impl(managers, callbacks=callbacks)
 
-                if (
-                    checkpoint_config is None
-                    or checkpoint_config.resume_from_checkpoint is False
-                ):
-                    if model_id == 0:
-                        modelwise_training_manager = (
-                            SupervisedProgressManager.from_checkpoint(
-                                original_mach_model=model,
-                                checkpoint_config=config[model_id],
-                            )
-                        )
-                    else:
-                        supervised_source = ensemble_training_managers[
-                            0
-                        ].save_load_manager.datasource_manager.supervised_source
-                        modelwise_training_manager = (
-                            SupervisedProgressManager.from_checkpoint(
-                                original_mach_model=model,
-                                checkpoint_config=checkpoint_config,
-                                supervised_datasource=supervised_source,
-                            )
-                        )
-                    ensemble_training_managers.append(modelwise_training_manager)
-
-        for shard, ensemble in zip(supervised_data_source_shards, self.ensembles):
-            if shard.size == 0:
-                continue
-
-            ensemble.train_on_supervised_data_source(
-                supervised_data_source=shard,
+    def train_on_supervised_data_source(
+        self,
+        supervised_data_source: SupDataSource,
+        learning_rate: float,
+        epochs: int,
+        batch_size: Optional[int],
+        max_in_memory_batches: Optional[int],
+        metrics: List[str],
+        callbacks: List[bolt.train.callbacks.Callback],
+        disable_inverted_index: bool,
+        checkpoint_config: Optional[CheckpointConfig] = None,
+    ):
+        if checkpoint_config is None or checkpoint_config.resume_from_checkpoint is False:
+            self._supervised_from_start(
+                supervised_data_source=supervised_data_source,
                 learning_rate=learning_rate,
                 epochs=epochs,
                 batch_size=batch_size,
                 max_in_memory_batches=max_in_memory_batches,
                 metrics=metrics,
                 callbacks=callbacks,
-                disable_inverted_index=disable_inverted_index,
+                disable_inverted_index = disable_inverted_index,
+                checkpoint_config = checkpoint_config
             )
+        else:
+            self._resume_supervised(
+                checkpoint_config=checkpoint_config,
+                callbacks = callbacks
+            )
+
+        
 
     def build_inverted_index(self, documents):
         raise ValueError("This method is not supported on this type of model.")

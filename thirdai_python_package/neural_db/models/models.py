@@ -580,7 +580,7 @@ class Mach(Model):
         callbacks: List[bolt.train.callbacks.Callback] = None,
     ):
         # This will load the datasources, model, training config and upload the current model with the loaded one. This updates the underlying UDT MACH of the current model with the one from the checkpoint along with other class attributes.
-        training_progress_manager = InsertProgressManager.from_checkpoint(
+        training_progress_manager = TrainingProgressManager.from_checkpoint(
             self, checkpoint_config=checkpoint_config
         )
 
@@ -615,18 +615,20 @@ class Mach(Model):
         Note: Given the datasources for introduction and training, we initialize a Mach model that has number_classes set to the size of introduce documents. But if we want to use this Mach model in our mixture of Models, this will not work because each Mach will be initialized with number of classes equal to the size of the datasource shard. Hence, we add override_number_classes parameters which if set, will initialize Mach Model with number of classes passed by the Mach Mixture.
         """
 
-        training_progress_manager = InsertProgressManager.from_scratch(
-            model=self,
-            intro_documents=intro_documents,
-            train_documents=train_documents,
-            should_train=should_train,
-            fast_approximation=fast_approximation,
-            num_buckets_to_sample=num_buckets_to_sample,
-            max_in_memory_batches=max_in_memory_batches,
-            override_number_classes=override_number_classes,
-            variable_length=variable_length,
-            checkpoint_config=checkpoint_config,
-            **kwargs,
+        training_progress_manager = (
+            TrainingProgressManager.from_scratch_for_unsupervised(
+                model=self,
+                intro_documents=intro_documents,
+                train_documents=train_documents,
+                should_train=should_train,
+                fast_approximation=fast_approximation,
+                num_buckets_to_sample=num_buckets_to_sample,
+                max_in_memory_batches=max_in_memory_batches,
+                override_number_classes=override_number_classes,
+                variable_length=variable_length,
+                checkpoint_config=checkpoint_config,
+                **kwargs,
+            )
         )
 
         training_progress_manager.make_preindexing_checkpoint()
@@ -817,7 +819,7 @@ class Mach(Model):
 
     def supervised_training_impl(
         self,
-        supervised_progress_manager: SupervisedProgressManager,
+        supervised_progress_manager: TrainingProgressManager,
         callbacks: List[bolt.train.callbacks.Callback],
     ):
         train_args = supervised_progress_manager.training_arguments()
@@ -853,7 +855,7 @@ class Mach(Model):
             checkpoint_config is None
             or checkpoint_config.resume_from_checkpoint is False
         ):
-            training_manager = SupervisedProgressManager.from_scratch(
+            training_manager = TrainingProgressManager.from_scratch_for_supervised(
                 model=self,
                 supervised_datasource=supervised_data_source,
                 learning_rate=learning_rate,
@@ -866,7 +868,7 @@ class Mach(Model):
             )
             training_manager.make_preindexing_checkpoint(save_datasource=True)
         else:
-            training_manager = SupervisedProgressManager.from_checkpoint(
+            training_manager = TrainingProgressManager.from_checkpoint(
                 self, checkpoint_config, supervised_datasource=None
             )
 

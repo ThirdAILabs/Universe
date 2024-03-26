@@ -7,8 +7,7 @@ from thirdai import bolt
 from ..documents import DocumentDataSource
 from ..supervised_datasource import SupDataSource
 from ..trainer.training_progress_manager import (
-    InsertProgressManager,
-    SupervisedDataManager,
+    TrainingProgressManager,
 )
 from ..utils import clean_text
 from .models import CancelState, Mach
@@ -96,7 +95,7 @@ class MultiMach:
 
     def index_documents_impl(
         self,
-        training_progress_managers: List[InsertProgressManager],
+        training_progress_managers: List[TrainingProgressManager],
         on_progress: Callable,
         cancel_state: CancelState,
         callbacks: List[bolt.train.callbacks.Callback] = None,
@@ -225,7 +224,7 @@ class MultiMach:
 
     def supervised_training_impl(
         self,
-        supervised_progress_managers,
+        supervised_progress_managers: List[TrainingProgressManager],
         callbacks: List[bolt.train.callbacks.Callback],
     ):
         for manager, model in zip(supervised_progress_managers, self.models):
