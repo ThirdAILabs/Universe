@@ -11,8 +11,9 @@ from thirdai._thirdai import bolt, data
 
 from . import loggers, teachers
 from .documents import CSV, Document, DocumentManager, Reference
-from .mach_mixture_model import MachMixture
-from .models import CancelState, Mach
+from .models.mach_mixture_model import MachMixture
+from .models.models import CancelState, Mach
+from .models.multi_mach import MultiMach
 from .savable_state import (
     State,
     load_checkpoint,
@@ -41,7 +42,13 @@ class NeuralDB:
         >>> results = ndb.search("how to make chocolate chip cookies")
     """
 
-    def __init__(self, user_id: str = "user", number_models: int = 1, **kwargs) -> None:
+    def __init__(
+        self,
+        user_id: str = "user",
+        num_shards: int = 1,
+        num_models_per_shard: int = 1,
+        **kwargs,
+    ) -> None:
         """
         Constructs an empty NeuralDB.
 
@@ -59,15 +66,22 @@ class NeuralDB:
         # We read savable_state from kwargs so that it doesn't appear in the
         # arguments list and confuse users.
         if "savable_state" not in kwargs:
-            if number_models <= 0:
+            if num_shards <= 0:
                 raise Exception(
-                    f"Invalid Value Passed for number_models : {number_models}."
+                    f"Invalid Value Passed for num_shards : {num_shards}."
                     " NeuralDB can only be initialized with a positive number of"
-                    " models."
+                    " shards."
                 )
-            if number_models > 1:
+            if num_models_per_shard <= 0:
+                raise Exception(
+                    f"Invalid Value Passed for num_models_per_shard : {num_models_per_shard}."
+                    " NeuralDB can only be initialized with a positive number of"
+                    " models per shard."
+                )
+            if num_shards > 1 or num_models_per_shard > 1:
                 model = MachMixture(
-                    number_models=number_models,
+                    num_shards=num_shards,
+                    num_models_per_shard=num_models_per_shard,
                     id_col="id",
                     query_col="query",
                     **kwargs,
@@ -651,6 +665,7 @@ class NeuralDB:
         rerank_threshold=1.5,
         top_k_threshold=None,
         retriever=None,
+        label_probing=False,
     ) -> List[Reference]:
         """
         Searches the contents of the NeuralDB for documents relevant to the given query.
@@ -704,6 +719,7 @@ class NeuralDB:
             rerank_threshold=rerank_threshold,
             top_k_threshold=top_k_threshold,
             retriever=retriever,
+            label_probing=label_probing,
         )[0]
 
     def search_batch(
@@ -716,6 +732,7 @@ class NeuralDB:
         rerank_threshold=1.5,
         top_k_threshold=None,
         retriever=None,
+        label_probing=False,
     ):
         """
         Runs search on a batch of queries for much faster throughput.
@@ -740,6 +757,7 @@ class NeuralDB:
                 samples=queries,
                 n_results=top_k_to_search,
                 retriever="mach" if rerank else retriever,
+                label_probing=label_probing,
             )
 
         return [
@@ -855,6 +873,7 @@ class NeuralDB:
         max_in_memory_batches: Optional[int] = None,
         metrics: List[str] = [],
         callbacks: List[bolt.train.callbacks.Callback] = [],
+        disable_inverted_index: bool = True,
     ):
         """
         Train on supervised datasets that correspond to specific sources.
@@ -883,6 +902,7 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
+            disable_inverted_index=disable_inverted_index,
         )
 
     def supervised_train_with_ref_ids(
@@ -899,6 +919,7 @@ class NeuralDB:
         max_in_memory_batches: Optional[int] = None,
         metrics: List[str] = [],
         callbacks: List[bolt.train.callbacks.Callback] = [],
+        disable_inverted_index: bool = True,
     ):
         """Train on supervised datasets that correspond to specific sources.
         Suppose you inserted a "sports" product catalog and a "furniture"
@@ -933,6 +954,7 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
+            disable_inverted_index=disable_inverted_index,
         )
 
     def get_associate_samples(self):

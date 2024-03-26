@@ -37,9 +37,16 @@ def get_label_from_same_shard(db: ndb.NeuralDB, original_label: int, number_labe
     return random.sample(filtered_labels, number_labels)
 
 
-def train_model_for_supervised_training_test(model_id_delimiter, number_models=1):
+def train_model_for_supervised_training_test(
+    model_id_delimiter, num_shards=1, num_models_per_shard=1
+):
     db = ndb.NeuralDB(
-        "user", id_delimiter=model_id_delimiter, number_models=number_models
+        "user",
+        id_delimiter=model_id_delimiter,
+        num_shards=num_shards,
+        num_models_per_shard=num_models_per_shard,
+        fhr=20_000,
+        extreme_output_dim=2_000,
     )
 
     with open("mock_unsup_1.csv", "w") as out:
@@ -99,10 +106,12 @@ def expect_top_2_results(db, query, expected_results):
 
 
 @pytest.mark.parametrize("model_id_delimiter", [" ", None])
-def test_neural_db_supervised_training_mixture(model_id_delimiter):
-    number_models = 2
+@pytest.mark.parametrize("num_shards", [1, 2])
+def test_neural_db_supervised_training_mixture(model_id_delimiter, num_shards):
     db, _ = train_model_for_supervised_training_test(
-        model_id_delimiter=model_id_delimiter, number_models=number_models
+        model_id_delimiter=model_id_delimiter,
+        num_shards=num_shards,
+        num_models_per_shard=2,
     )
     queries = ["first", "sixth"]
     new_labels = [
