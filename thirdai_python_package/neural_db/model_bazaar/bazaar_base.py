@@ -12,8 +12,7 @@ from urllib.parse import urljoin
 import requests
 from pydantic import BaseModel, ValidationError
 from requests.auth import HTTPBasicAuth
-from thirdai.neural_db.models import CancelState
-from thirdai.neural_db.neural_db import NeuralDB
+from thirdai.neural_db.neural_db import CancelState, NeuralDB
 from tqdm import tqdm
 
 from .utils import (
@@ -392,7 +391,7 @@ class Bazaar:
                 f"bazaar/public-download",
             )
             response = requests.get(
-                url, params={"model_identifer": model_identifier}, stream=True
+                url, params={"model_identifier": model_identifier}, stream=True
             )
         try:
             shutil.rmtree(self._cached_checkpoint_dir(model_identifier))

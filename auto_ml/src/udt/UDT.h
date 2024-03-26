@@ -505,6 +505,18 @@ class UDT {
     _backend->saveCppClassifier(save_path);
   }
 
+  using Scores = std::vector<std::pair<uint32_t, float>>;
+
+  static std::vector<std::vector<UDT::Scores>> labelProbeMultipleShards(
+      const std::vector<std::vector<std::shared_ptr<UDT>>>& shards,
+      const MapInputBatch& batch, bool sparse_inference,
+      std::optional<uint32_t> top_k);
+
+  static std::vector<Scores> labelProbeMultipleMach(
+      const std::vector<std::shared_ptr<UDT>>& models,
+      const MapInputBatch& batch, bool sparse_inference,
+      std::optional<uint32_t> top_k);
+
  private:
   UDT() {}
 

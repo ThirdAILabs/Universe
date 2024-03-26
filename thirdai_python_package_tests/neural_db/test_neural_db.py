@@ -28,8 +28,9 @@ from ndb_utils import (
     upvote_batch_works,
     upvote_works,
 )
+from thirdai import bolt
 from thirdai import neural_db as ndb
-from thirdai.neural_db.models import merge_results
+from thirdai.neural_db.models.models import merge_results
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -70,7 +71,9 @@ def all_methods_work(
 
 
 @pytest.mark.parametrize("use_inverted_index", [True, False])
-def test_neural_db_all_methods_work_on_new_model(small_doc_set, use_inverted_index):
+def test_neural_db_all_methods_work_on_new_model_with_inverted(
+    small_doc_set, use_inverted_index
+):
     db = ndb.NeuralDB(use_inverted_index=use_inverted_index)
     all_methods_work(
         db,
@@ -80,27 +83,14 @@ def test_neural_db_all_methods_work_on_new_model(small_doc_set, use_inverted_ind
     )
 
 
-def test_neuralb_db_all_methods_work_on_new_mach_mixture(small_doc_set):
-    number_models = 2
-    db = ndb.NeuralDB("user", number_models=number_models)
-    all_methods_work(
-        db,
-        docs=small_doc_set,
-        num_duplicate_docs=0,
-        assert_acc=False,
+@pytest.mark.parametrize("num_shards", [1, 2])
+def test_neuralb_db_all_methods_work_on_new_mach_mixture(small_doc_set, num_shards):
+    db = ndb.NeuralDB(
+        num_shards=num_shards,
+        num_models_per_shard=2,
+        fhr=20_000,
+        extreme_output_dim=2_000,
     )
-
-
-def test_neural_db_all_methods_work_on_old_model(small_doc_set):
-    """
-    This empty model was created with:
-    db = ndb.NeuralDB(embedding_dimension=512, extreme_output_dim=1000)
-    db.save(./saved_ndbs/empty_ndb)
-    """
-    checkpoint = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "saved_ndbs/empty_ndb"
-    )
-    db = ndb.NeuralDB.from_checkpoint(checkpoint)
     all_methods_work(
         db,
         docs=small_doc_set,
@@ -120,6 +110,7 @@ def test_neural_db_constrained_search_with_single_constraint():
         assert all([constraint == ref.metadata["meta"] for ref in references])
 
 
+@pytest.mark.parametrize("empty_neural_db", ([1, 2]), indirect=True)
 def test_neural_db_constrained_search_with_multiple_constraints(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"language": "English", "county": "Harris"}),
@@ -144,6 +135,7 @@ def test_neural_db_constrained_search_with_multiple_constraints(empty_neural_db)
         )
 
 
+@pytest.mark.parametrize("empty_neural_db", ([1, 2]), indirect=True)
 def test_neural_db_constrained_search_with_multiple_constraints_multiple_models(
     empty_neural_db,
 ):
@@ -170,6 +162,7 @@ def test_neural_db_constrained_search_with_multiple_constraints_multiple_models(
         )
 
 
+@pytest.mark.parametrize("empty_neural_db", ([1, 2]), indirect=True)
 def test_neural_db_constrained_search_with_set_constraint(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10"}),
@@ -200,6 +193,7 @@ def test_neural_db_constrained_search_with_set_constraint(empty_neural_db):
     assert any([ref.metadata["date"] == "2021-10-10" for ref in references])
 
 
+@pytest.mark.parametrize("empty_neural_db", ([1, 2]), indirect=True)
 def test_neural_db_constrained_search_with_range_constraint(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10", "score": 0.5}),
@@ -227,6 +221,7 @@ def test_neural_db_constrained_search_with_range_constraint(empty_neural_db):
     assert all([ref.metadata["score"] == 0.9 for ref in references])
 
 
+@pytest.mark.parametrize("empty_neural_db", ([1, 2]), indirect=True)
 def test_neural_db_constrained_search_with_comparison_constraint(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10", "score": 0.5}),
@@ -252,6 +247,7 @@ def test_neural_db_constrained_search_with_comparison_constraint(empty_neural_db
     assert all([ref.metadata["score"] == 0.5 for ref in references])
 
 
+@pytest.mark.parametrize("empty_neural_db", ([1, 2]), indirect=True)
 def test_neural_db_constrained_search_no_matches(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"date": "2023-10-10", "score": 0.5}),
@@ -266,6 +262,7 @@ def test_neural_db_constrained_search_no_matches(empty_neural_db):
     assert len(references) == 0
 
 
+@pytest.mark.parametrize("empty_neural_db", ([1, 2]), indirect=True)
 def test_neural_db_constrained_search_row_level_constraints(empty_neural_db):
     csv_contents = [
         "id,text,date",
@@ -301,6 +298,7 @@ def test_neural_db_constrained_search_row_level_constraints(empty_neural_db):
     assert any([r.metadata["date"] > "2000-01-01" for r in references])
 
 
+@pytest.mark.parametrize("empty_neural_db", ([1, 2]), indirect=True)
 def test_neural_db_delete_document(empty_neural_db):
     with open("ice_cream.csv", "w") as f:
         f.write("text,id\n")
@@ -642,3 +640,22 @@ def test_result_merging():
     expected_output = [1, 2, 7, 3, 4, 5, 6]
 
     assert [x[0] for x in merge_results(results_a, results_b, k=10)] == expected_output
+
+
+def test_insert_callback(small_doc_set):
+    db = ndb.NeuralDB(user_id="test_coldstart_callback")
+
+    class EpochCheck(bolt.train.callbacks.Callback):
+        def __init__(self):
+            super().__init__()
+            self.epochs_completed = 0
+
+        def on_epoch_end(self):
+            self.epochs_completed += 1
+
+    epoch_count_callback = EpochCheck()
+
+    epochs = 6
+    db.insert(small_doc_set, epochs=epochs, callbacks=[epoch_count_callback])
+
+    assert epoch_count_callback.epochs_completed == epochs

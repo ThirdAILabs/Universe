@@ -10,16 +10,16 @@ import requests
 import tqdm
 from thirdai import bolt, data, demos
 
-from .documents import DocumentDataSource
-from .inverted_index import InvertedIndex
-from .mach_defaults import acc_to_stop, metric_to_track
-from .supervised_datasource import SupDataSource
-from .trainer.checkpoint_config import CheckpointConfig
-from .trainer.training_progress_manager import (
+from ..documents import DocumentDataSource
+from ..inverted_index import InvertedIndex
+from ..supervised_datasource import SupDataSource
+from ..trainer.checkpoint_config import CheckpointConfig
+from ..trainer.training_progress_manager import (
     TrainingProgressCallback,
     TrainingProgressManager,
 )
-from .utils import clean_text, pickle_to
+from ..utils import clean_text, pickle_to
+from .mach_defaults import acc_to_stop, metric_to_track
 
 InferSamples = List
 Predictions = Sequence
@@ -154,17 +154,13 @@ class Model:
         max_in_memory_batches: Optional[int],
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
+        disable_inverted_index: bool,
     ):
         raise NotImplementedError()
 
 
 class EarlyStopWithMinEpochs(bolt.train.callbacks.Callback):
-    def __init__(
-        self,
-        min_epochs,
-        tracked_metric,
-        metric_threshold,
-    ):
+    def __init__(self, min_epochs, tracked_metric, metric_threshold):
         super().__init__()
 
         self.epoch_count = 0
@@ -183,11 +179,7 @@ class EarlyStopWithMinEpochs(bolt.train.callbacks.Callback):
 
 
 class ProgressUpdate(bolt.train.callbacks.Callback):
-    def __init__(
-        self,
-        max_epochs,
-        progress_callback_fn,
-    ):
+    def __init__(self, max_epochs, progress_callback_fn):
         super().__init__()
 
         self.batch_count = 0
@@ -211,11 +203,7 @@ class ProgressUpdate(bolt.train.callbacks.Callback):
 
 class FreezeHashTable(bolt.train.callbacks.Callback):
     def __init__(
-        self,
-        freeze_before_train,
-        freeze_after_epoch,
-        tracked_metric,
-        metric_threshold,
+        self, freeze_before_train, freeze_after_epoch, tracked_metric, metric_threshold
     ):
         super().__init__()
 
@@ -298,19 +286,17 @@ def unsupervised_train_on_docs(
     balancing_samples=False,
     semantic_enhancement=False,
     semantic_model_cache_dir=".cache/neural_db_semantic_model",
+    coldstart_callbacks: List[bolt.train.callbacks.Callback] = None,
     **kwargs,
 ):
     documents.restart()
 
     early_stop_callback = EarlyStopWithMinEpochs(
-        min_epochs=min_epochs,
-        tracked_metric=metric,
-        metric_threshold=acc_to_stop,
+        min_epochs=min_epochs, tracked_metric=metric, metric_threshold=acc_to_stop
     )
 
     progress_callback = ProgressUpdate(
-        max_epochs=max_epochs,
-        progress_callback_fn=on_progress,
+        max_epochs=max_epochs, progress_callback_fn=on_progress
     )
 
     cancel_training_callback = CancelTraining(cancel_state=cancel_state)
@@ -328,6 +314,9 @@ def unsupervised_train_on_docs(
         cancel_training_callback,
         freeze_hashtable_callback,
     ]
+
+    if coldstart_callbacks:
+        callbacks.extend(coldstart_callbacks)
 
     if training_progress_callback:
         callbacks.append(training_progress_callback)
@@ -430,6 +419,8 @@ class Mach(Model):
         hidden_bias=False,
         model_config=None,
         use_inverted_index=True,
+        mach_index_seed: int = 341,
+        index_max_shard_size=8_000_000,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -444,7 +435,12 @@ class Mach(Model):
         self.model = None
         self.balancing_samples = []
         self.model_config = model_config
-        self.inverted_index = InvertedIndex() if use_inverted_index else None
+        self.mach_index_seed = mach_index_seed
+        self.inverted_index = (
+            InvertedIndex(max_shard_size=index_max_shard_size)
+            if use_inverted_index
+            else None
+        )
 
     def set_mach_sampling_threshold(self, threshold: float):
         if self.model is None:
@@ -547,6 +543,7 @@ class Mach(Model):
         training_progress_manager: TrainingProgressManager,
         on_progress: Callable = lambda **kwargs: None,
         cancel_state: CancelState = None,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
     ):
         intro_documents = training_progress_manager.intro_source
         train_documents = training_progress_manager.train_source
@@ -570,6 +567,7 @@ class Mach(Model):
                 training_progress_callback=TrainingProgressCallback(
                     training_progress_manager=training_progress_manager
                 ),
+                coldstart_callbacks=callbacks,
                 **train_arguments,
             )
             training_progress_manager.training_complete()
@@ -579,6 +577,7 @@ class Mach(Model):
         on_progress: Callable,
         cancel_state: CancelState,
         checkpoint_config: CheckpointConfig,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
     ):
         # This will load the datasources, model, training config and upload the current model with the loaded one. This updates the underlying UDT MACH of the current model with the one from the checkpoint along with other class attributes.
         training_progress_manager = TrainingProgressManager.from_checkpoint(
@@ -589,6 +588,7 @@ class Mach(Model):
             training_progress_manager=training_progress_manager,
             on_progress=on_progress,
             cancel_state=cancel_state,
+            callbacks=callbacks,
         )
 
     def index_from_start(
@@ -606,6 +606,7 @@ class Mach(Model):
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
         checkpoint_config: CheckpointConfig = None,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
         **kwargs,
     ):
         """
@@ -633,6 +634,7 @@ class Mach(Model):
             training_progress_manager=training_progress_manager,
             on_progress=on_progress,
             cancel_state=cancel_state,
+            callbacks=callbacks,
         )
 
     def add_balancing_samples(self, documents: DocumentDataSource):
@@ -669,6 +671,7 @@ class Mach(Model):
                 "extreme_num_hashes": self.extreme_num_hashes,
                 "hidden_bias": self.hidden_bias,
                 "rlhf": True,
+                "mach_index_seed": self.mach_index_seed,
             },
             model_config=self.model_config,
         )
@@ -704,11 +707,7 @@ class Mach(Model):
         )
 
     def infer_labels(
-        self,
-        samples: InferSamples,
-        n_results: int,
-        retriever=None,
-        **kwargs,
+        self, samples: InferSamples, n_results: int, retriever=None, **kwargs
     ) -> Predictions:
         if not retriever:
             if not self.inverted_index:
@@ -769,6 +768,9 @@ class Mach(Model):
             force_non_empty=kwargs.get("force_non_empty", True),
         )
 
+        if self.inverted_index:
+            self.inverted_index.associate(pairs)
+
     def upvote(
         self,
         pairs: List[Tuple[str, int]],
@@ -786,6 +788,9 @@ class Mach(Model):
             learning_rate=learning_rate,
             epochs=epochs,
         )
+
+        if self.inverted_index:
+            self.inverted_index.upvote(pairs)
 
     def retrain(
         self,
@@ -825,6 +830,7 @@ class Mach(Model):
         max_in_memory_batches: Optional[int],
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
+        disable_inverted_index: bool,
     ):
         self.model.train_on_data_source(
             data_source=supervised_data_source,
@@ -835,8 +841,12 @@ class Mach(Model):
             metrics=metrics,
             callbacks=callbacks,
         )
-        # Invalidate inverted index once supervised data is used.
-        self.inverted_index = None
+        if disable_inverted_index:
+            # Invalidate inverted index once supervised data is used.
+            self.inverted_index = None
+        elif self.inverted_index:
+            supervised_data_source.restart()
+            self.inverted_index.supervised_train(supervised_data_source)
 
     def build_inverted_index(self, documents):
         if self.inverted_index:

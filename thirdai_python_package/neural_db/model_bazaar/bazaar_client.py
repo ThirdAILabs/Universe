@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 from urllib.parse import urljoin
 
 from .bazaar_base import Bazaar, auth_header
@@ -241,7 +241,7 @@ class ModelBazaar(Bazaar):
         log_in(self, email: str, password: str) -> None:
             Logs in a user and sets user-related attributes for the ModelBazaar instance.
 
-        push_model(self, model_name: str, local_path: str, access_level: str = "public") -> None:
+        push_model(self, model_name: str, local_path: str, access_level: str = "private") -> None:
             Pushes a model to the Model Bazaar.
 
         pull_model(self, model_identifier: str) -> NeuralDBClient:
@@ -327,7 +327,7 @@ class ModelBazaar(Bazaar):
         self._username = self._login_instance.username
 
     def push_model(
-        self, model_name: str, local_path: str, access_level: str = "public"
+        self, model_name: str, local_path: str, access_level: str = "private"
     ):
         """
         Pushes a model to the Model Bazaar.
@@ -335,7 +335,7 @@ class ModelBazaar(Bazaar):
         Args:
             model_name (str): The name of the model.
             local_path (str): The local path of the model.
-            access_level (str): The access level for the model (default is "public").
+            access_level (str): The access level for the model (default is "private").
         """
         self.push(
             name=model_name,
@@ -568,7 +568,13 @@ class ModelBazaar(Bazaar):
             print("Training: In progress", end="", flush=True)
             print_progress_dots(duration=10)
 
-    def deploy(self, model_identifier: str, deployment_name: str, is_async=False):
+    def deploy(
+        self,
+        model_identifier: str,
+        deployment_name: str,
+        memory: Optional[int] = None,
+        is_async=False,
+    ):
         """
         Deploys a model and returns a NeuralDBClient instance.
 
@@ -585,6 +591,7 @@ class ModelBazaar(Bazaar):
             "user_id": self._user_id,
             "model_identifier": model_identifier,
             "deployment_name": deployment_name,
+            "memory": memory,
         }
         response = http_post_with_error(
             url, params=params, headers=auth_header(self._access_token)
@@ -598,6 +605,7 @@ class ModelBazaar(Bazaar):
                 deployment_username=self._username,
             ),
             base_url=response_data["endpoint"] + "/",
+            bazaar=self,
         )
         if is_async:
             return ndb_client
