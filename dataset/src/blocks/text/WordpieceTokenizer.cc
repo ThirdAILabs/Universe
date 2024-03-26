@@ -77,6 +77,14 @@ uint32_t WordpieceTokenizer::id(const std::string& token) const {
   return unkId();
 }
 
+std::string WordpieceTokenizer::token(uint32_t id) const {
+  if (id >= _id_to_token.size()) {
+    throw std::invalid_argument(
+        "Attempting to decode invalid token: " + std::to_string(id) + ".");
+  }
+  return text::fromUnicode(_id_to_token.at(id));
+}
+
 std::vector<std::wstring> WordpieceTokenizer::tokenizeToStrings(
     const std::string& sentence) const {
   std::vector<std::wstring> subwords;

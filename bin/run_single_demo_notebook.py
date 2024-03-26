@@ -19,7 +19,6 @@ def get_notebook_path(temp_dir, relative_notebook_path):
 
 
 def run_demo_notebook(notebook_path):
-    errors = []
     with open(notebook_path) as notebook_file:
         # Ref: https://nbformat.readthedocs.io/en/latest/format_description.html
         nb_in = nbformat.read(notebook_file, nbformat.NO_CONVERT)
@@ -28,31 +27,27 @@ def run_demo_notebook(notebook_path):
         # to ensure that paths work correctly to configs (or anything else).
         working_dir = str(Path(notebook_path).parent)
         try:
+            print(f"Running notebook: {notebook_path}")
             ep = ExecutePreprocessor(
                 timeout=None,
                 kernel_name="python3",
                 resources={"metadata": {"path": working_dir}},
             )
             nb_out = ep.preprocess(nb_in)
+            print(f"Successfully ran the notebook: {notebook_path}")
+            return 0
         except Exception as error:
-            notebook_name = Path(notebook_path).stem
-            errors.append((notebook_name, error))
-
-    if errors:
-        for failed_notebook, error in errors:
-            print(f"Failure in notebook: {failed_notebook}: \n {error}")
-        sys.exit(1)
-    else:
-        print("Successfully ran the following notebooks:")
-        print(f"\t{Path(notebook_path).stem}")
+            print(f"Failure in notebook: {notebook_path}:\n{error}")
+            return 1
 
 
 def main():
     temp_dir = tempfile.mkdtemp()
     relative_notebook_path = sys.argv[1]
     notebook_path = get_notebook_path(temp_dir, relative_notebook_path)
-    run_demo_notebook(notebook_path)
+    exit_code = run_demo_notebook(notebook_path)
     shutil.rmtree(temp_dir)  # Clean up the files used for the test
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":

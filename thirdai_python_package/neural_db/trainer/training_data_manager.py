@@ -40,12 +40,13 @@ class TrainingDataManager:
         self.train_source = train_source
         self.tracker = tracker
 
-    def save(self):
+    def save(self, save_intro_train_shards=True):
         if self.checkpoint_dir:
             self.model.save(path=self.model_location)
-            self.intro_source.save(path=self.intro_source_folder)
-            self.train_source.save(path=self.train_source_folder)
             self.tracker.save(path=self.tracker_folder)
+            if save_intro_train_shards:
+                self.intro_source.save(path=self.intro_source_folder)
+                self.train_source.save(path=self.train_source_folder)
         else:
             raise Exception(
                 "Invalid method call: 'save' operation for TrainingDataManager cannot"
@@ -67,7 +68,11 @@ class TrainingDataManager:
             )
 
     @staticmethod
-    def load(checkpoint_dir: Path):
+    def load(
+        checkpoint_dir: Path,
+        intro_shard: Optional[DocumentDataSource] = None,
+        train_shard: Optional[DocumentDataSource] = None,
+    ):
         manager = TrainingDataManager(checkpoint_dir, None, None, None, None)
 
         try:
@@ -78,8 +83,16 @@ class TrainingDataManager:
                 f" {manager.model_location}"
             )
 
-        manager.intro_source = DocumentDataSource.load(path=manager.intro_source_folder)
-        manager.train_source = DocumentDataSource.load(path=manager.train_source_folder)
+        manager.intro_source = (
+            intro_shard
+            if intro_shard
+            else DocumentDataSource.load(path=manager.intro_source_folder)
+        )
+        manager.train_source = (
+            train_shard
+            if train_shard
+            else DocumentDataSource.load(path=manager.train_source_folder)
+        )
         manager.tracker = NeuralDbProgressTracker.load(path=manager.tracker_folder)
 
         return manager

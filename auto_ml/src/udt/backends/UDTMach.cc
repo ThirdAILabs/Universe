@@ -107,6 +107,10 @@ UDTMach::UDTMach(
   dataset::mach::MachIndexPtr mach_index = dataset::mach::MachIndex::make(
       /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes);
 
+  if (user_args.contains("mach_index_seed")) {
+    mach_index->setSeed(user_args.get<uint32_t>("mach_index_seed", "integer"));
+  }
+
   auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
       input_data_types, temporal_tracking_relationships,
       tabular_options.lookahead);
@@ -169,19 +173,24 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& val_metrics,
                           const std::vector<CallbackPtr>& callbacks,
                           TrainOptions options,
-                          const bolt::DistributedCommPtr& comm) {
+                          const bolt::DistributedCommPtr& comm,
+                          py::kwargs kwargs) {
   insertNewDocIds(data);
 
   addBalancingSamples(data);
 
-  auto train_data_loader =
-      _featurizer->getDataLoader(data, options.batchSize(), /* shuffle= */ true,
-                                 options.verbose, options.shuffle_config);
+  auto splade_config = getSpladeConfig(kwargs);
+  bool splade_in_val = getSpladeValidationOption(kwargs);
+
+  auto train_data_loader = _featurizer->getDataLoader(
+      data, options.batchSize(), /* shuffle= */ true, options.verbose,
+      splade_config, options.shuffle_config);
 
   data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader = _featurizer->getDataLoader(
-        val_data, defaults::BATCH_SIZE, /* shuffle= */ false, options.verbose);
+        val_data, defaults::BATCH_SIZE, /* shuffle= */ false, options.verbose,
+        splade_in_val ? splade_config : std::nullopt);
   }
 
   return _classifier->train(train_data_loader, learning_rate, epochs,
@@ -220,11 +229,12 @@ py::object UDTMach::trainWithHashes(const MapInputBatch& batch,
 py::object UDTMach::evaluate(const dataset::DataSourcePtr& data,
                              const std::vector<std::string>& metrics,
                              bool sparse_inference, bool verbose,
-                             std::optional<uint32_t> top_k) {
-  (void)top_k;
+                             py::kwargs kwargs) {
+  auto splade_config = getSpladeConfig(kwargs);
 
-  auto data_loader = _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
-                                                /* shuffle= */ false, verbose);
+  auto data_loader =
+      _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
+                                 /* shuffle= */ false, verbose, splade_config);
 
   return _classifier->evaluate(data_loader, getMetrics(metrics, "val_"),
                                sparse_inference, verbose);
@@ -439,17 +449,21 @@ py::object UDTMach::coldstart(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks_in, TrainOptions options,
-    const bolt::DistributedCommPtr& comm) {
+    const bolt::DistributedCommPtr& comm, const py::kwargs& kwargs) {
   insertNewDocIds(data);
 
   addBalancingSamples(data, strong_column_names, weak_column_names,
                       variable_length);
 
+  auto splade_config = getSpladeConfig(kwargs);
+  auto splade_in_val = getSpladeValidationOption(kwargs);
+
   data::LoaderPtr val_data_loader;
   if (val_data) {
-    val_data_loader =
-        _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
-                                   /* shuffle= */ false, options.verbose);
+    val_data_loader = _featurizer->getDataLoader(
+        val_data, defaults::BATCH_SIZE,
+        /* shuffle= */ false, options.verbose,
+        /*splade_config=*/splade_in_val ? splade_config : std::nullopt);
   }
 
   bool stopped = false;
@@ -460,13 +474,17 @@ py::object UDTMach::coldstart(
           bolt::callbacks::LambdaOnStoppedCallback(
               [&stopped]() { stopped = true; })));
 
+  // TODO(Nicholas): make it so that the spade augmentation is only run once
+  // rather than for every epoch if variable length cold start is used.
   uint32_t epoch_step = variable_length.has_value() ? 1 : epochs;
+
   py::object history;
   for (uint32_t e = 0; e < epochs; e += epoch_step) {
     auto train_data_loader = _featurizer->getColdStartDataLoader(
         data, strong_column_names, weak_column_names,
-        /* variable_length= */ variable_length, /* fast_approximation= */
-        false, options.batchSize(), /* shuffle= */ true, options.verbose,
+        /* variable_length= */ variable_length,
+        /*splade_config=*/splade_config, /* fast_approximation= */ false,
+        options.batchSize(), /* shuffle= */ true, options.verbose,
         options.shuffle_config);
 
     history = _classifier->train(
