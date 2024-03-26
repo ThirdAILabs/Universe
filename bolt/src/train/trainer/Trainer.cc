@@ -29,6 +29,7 @@ Trainer::Trainer(ModelPtr model,
 
 metrics::History Trainer::train(
     const LabeledDataset& train_data, float learning_rate, uint32_t epochs,
+    std::optional<uint32_t> train_flag, std::optional<uint32_t> epoch_flag,
     const metrics::InputMetrics& train_metrics_in,
     const std::optional<LabeledDataset>& validation_data,
     const metrics::InputMetrics& validation_metrics,
@@ -54,7 +55,9 @@ metrics::History Trainer::train(
   callbacks::CallbackList callbacks(callbacks_in, _model, train_state,
                                     _history);
 
+  if (train_flag && train_flag == 0) {
   callbacks.onTrainBegin();
+  }
 
   uint32_t steps_since_validation = 0;
 
@@ -65,7 +68,9 @@ metrics::History Trainer::train(
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
     }
 
+    if (epoch_flag && epoch_flag == 0) {
     callbacks.onEpochBegin();
+    }
 
     uint32_t num_batches = train_data.first.size();
     if (comm) {
@@ -178,7 +183,9 @@ metrics::History Trainer::train(
       steps_since_validation = 0;
     }
 
+    if(epoch_flag && epoch_flag == 1) {
     callbacks.onEpochEnd();
+    }
 
     if (train_state->isTrainingStopped()) {
       // TODO(Nicholas): Print stuff and have more graceful termination
@@ -187,7 +194,9 @@ metrics::History Trainer::train(
     }
   }
 
+  if(train_flag && train_flag == 1) {
   callbacks.onTrainEnd();
+  }
 
   return *_history;  // Copies the history in case users modify it.
 }
@@ -253,8 +262,9 @@ metrics::History Trainer::train_with_dataset_loader(
     validation_data =
         loadAllWrapper(validation_data_loader, batch_size, verbose);
   }
-
+  uint32_t train_flag = 0;
   for (uint32_t e = 0; e < epochs; e++) {
+    uint32_t epoch_flag = 0;
     while (auto train_chunk =
                loadSomeWrapper(train_data_loader, batch_size,
                                *max_in_memory_batches, verbose)) {
@@ -262,6 +272,9 @@ metrics::History Trainer::train_with_dataset_loader(
             validation_data, validation_metrics, steps_per_validation,
             use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
             verbose, logging_interval, comm);
+      
+      train_flag = 2;
+      epoch_flag = 2;
     }
     train_data_loader->restart();
   }

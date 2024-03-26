@@ -53,6 +53,7 @@ class Trainer {
    */
   metrics::History train(
       const LabeledDataset& train_data, float learning_rate, uint32_t epochs,
+      std::optional<uint32_t> train_flag = std::nullopt, std::optional<uint32_t> epoch_flag = std::nullopt,
       const metrics::InputMetrics& train_metrics = {},
       const std::optional<LabeledDataset>& validation_data = std::nullopt,
       const metrics::InputMetrics& validation_metrics = {},
