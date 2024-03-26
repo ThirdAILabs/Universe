@@ -85,7 +85,7 @@ def test_neural_db_all_methods_work_on_new_model_with_inverted(
 
 @pytest.mark.parametrize("num_shards", [1, 2])
 def test_neuralb_db_all_methods_work_on_new_mach_mixture(small_doc_set, num_shards):
-    db = ndb.NeuralDB(num_shards=num_shards, num_models_per_shard=2)
+    db = ndb.NeuralDB(num_shards=num_shards, num_models_per_shard=2, fhr=25_000)
     all_methods_work(
         db,
         docs=small_doc_set,
