@@ -159,7 +159,7 @@ class SQLiteChunkStore(ChunkStore):
             )
             self.next_id += len(batch.text)
 
-            chunk_df = batch.to_df(with_metadata=False)
+            chunk_df = batch.to_df()
             chunk_df["chunk_id"] = chunk_ids
 
             if batch.custom_id is not None:
@@ -227,6 +227,8 @@ class SQLiteChunkStore(ChunkStore):
     def filter_chunk_ids(
         self, constraints: Dict[str, Constraint], **kwargs
     ) -> Set[ChunkId]:
+        if not len(constraints):
+            raise ValueError("Cannot call filter_chunk_ids with empty constraints.")
         condition = None
         for column, constraint in constraints.items():
             curr_condition = constraint.sql_condition(

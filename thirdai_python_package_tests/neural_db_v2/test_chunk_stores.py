@@ -6,8 +6,8 @@ from thirdai.neural_db_v2.chunk_stores.constraints import (
     GreaterThan,
     LessThan,
 )
-from thirdai.neural_db_v2.chunk_stores.sqlite_chunk_store import SQLiteChunkStore
 from thirdai.neural_db_v2.chunk_stores.pandas_chunk_store import PandasChunkStore
+from thirdai.neural_db_v2.chunk_stores.sqlite_chunk_store import SQLiteChunkStore
 from thirdai.neural_db_v2.core.types import CustomIdSupervisedBatch, NewChunkBatch
 
 pytestmark = [pytest.mark.release]
@@ -20,7 +20,7 @@ def get_simple_chunk_store(chunk_store_type, custom_id_type=int):
         NewChunkBatch(
             custom_id=None,
             text=pd.Series(["0 1", "1 2"]),
-            keywords=pd.Series(["00 01", "10 11"]),
+            keywords=pd.Series(["00 11", "11 22"]),
             document=pd.Series(["doc0", "doc1"]),
             metadata=pd.DataFrame(
                 {"class": ["a", "b"], "number": [4, 9], "item": ["x", "y"]}
@@ -31,7 +31,7 @@ def get_simple_chunk_store(chunk_store_type, custom_id_type=int):
                 [custom_id_type(200), custom_id_type(300), custom_id_type(400)]
             ),
             text=pd.Series(["2 3", "3 4", "4 5"]),
-            keywords=pd.Series(["20 21", "30 31", "40, 41"]),
+            keywords=pd.Series(["22 33", "33 44", "44, 55"]),
             document=pd.Series(["doc2", "doc3", "doc4"]),
             metadata=pd.DataFrame(
                 {"class": ["c", "b", "a"], "number": [7, 2, 4], "time": [1.4, 2.6, 3.4]}
@@ -51,15 +51,37 @@ def get_simple_chunk_store(chunk_store_type, custom_id_type=int):
 
 @pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])
 def test_chunk_store_basic_operations(chunk_store):
+    def check_chunk_contents(chunk, chunk_id, value, custom_id=None, metadata=None):
+        assert chunk.chunk_id == chunk_id
+        assert chunk.text == f"{value} {value+1}"
+        assert chunk.keywords == f"{value}{value} {value+1}{value+1}"
+        assert chunk.document == f"doc{value}"
+        assert chunk.custom_id == custom_id
+        assert chunk.metadata == metadata
+
     store = get_simple_chunk_store(chunk_store)
 
     chunks = store.get_chunks([1, 3, 0])
     assert len(chunks) == 3
-    for chunk, i in zip(chunks, [1, 3, 0]):
-        assert chunk.chunk_id == i
-        assert chunk.text == f"{i} {i+1}"
-        assert chunk.keywords == f"{i}{0} {i}{1}"
-        assert chunk.document == f"doc{i}"
+    check_chunk_contents(
+        chunks[0],
+        chunk_id=1,
+        value=1,
+        metadata={"class": "b", "number": 9, "item": "y", "time": None},
+    )
+    check_chunk_contents(
+        chunks[1],
+        chunk_id=3,
+        value=3,
+        custom_id=300,
+        metadata={"class": "b", "number": 2, "time": 2.6, "item": None},
+    )
+    check_chunk_contents(
+        chunks[2],
+        chunk_id=0,
+        value=0,
+        metadata={"class": "a", "number": 4, "item": "x", "time": None},
+    )
 
     store.delete([1, 2])
 
@@ -68,11 +90,56 @@ def test_chunk_store_basic_operations(chunk_store):
 
     chunks = store.get_chunks([3, 0])
     assert len(chunks) == 2
-    for chunk, i in zip(chunks, [3, 0]):
-        assert chunk.chunk_id == i
-        assert chunk.text == f"{i} {i+1}"
-        assert chunk.keywords == f"{i}{0} {i}{1}"
-        assert chunk.document == f"doc{i}"
+    check_chunk_contents(
+        chunks[0],
+        chunk_id=3,
+        value=3,
+        custom_id=300,
+        metadata={"class": "b", "number": 2, "time": 2.6, "item": None},
+    )
+    check_chunk_contents(
+        chunks[1],
+        chunk_id=0,
+        value=0,
+        metadata={"class": "a", "number": 4, "item": "x", "time": None},
+    )
+
+    new_batches = [
+        NewChunkBatch(
+            custom_id=pd.Series([1000, 2000]),
+            text=pd.Series(["7 8", "1 2"]),
+            keywords=pd.Series(["77 88", "11 22"]),
+            document=pd.Series(["doc7", "doc1"]),
+            metadata=pd.DataFrame(
+                {"class": ["c", "d"], "time": [7.2, 8.1], "item": ["y", "z"]}
+            ),
+        ),
+    ]
+
+    inserted_batches = store.insert(new_batches)
+    assert (inserted_batches[0].chunk_id == pd.Series([5, 6])).all()
+
+    chunks = store.get_chunks([6, 0, 5])
+    check_chunk_contents(
+        chunks[0],
+        chunk_id=6,
+        value=1,
+        custom_id=2000,
+        metadata={"class": "d", "number": None, "time": 8.1, "item": "z"},
+    )
+    check_chunk_contents(
+        chunks[1],
+        chunk_id=0,
+        value=0,
+        metadata={"class": "a", "number": 4, "item": "x", "time": None},
+    )
+    check_chunk_contents(
+        chunks[2],
+        chunk_id=5,
+        value=7,
+        custom_id=1000,
+        metadata={"class": "c", "number": None, "time": 7.2, "item": "y"},
+    )
 
 
 def test_sqlite_chunk_store_custom_id_type_mismatch():
@@ -184,6 +251,19 @@ def test_chunk_store_constraints_multiple_constraints(chunk_store):
         }
     )
     assert chunk_ids == set([1])
+
+
+@pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])
+def test_chunk_store_constraints_return_valid_ids(chunk_store):
+    store = get_simple_chunk_store(chunk_store)
+
+    chunk_ids = store.filter_chunk_ids({"number": LessThan(4, inclusive=True)})
+    assert chunk_ids == set([0, 3, 4])
+
+    store.delete([3])
+
+    chunk_ids = store.filter_chunk_ids({"number": LessThan(4, inclusive=True)})
+    assert chunk_ids == set([0, 4])
 
 
 @pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])

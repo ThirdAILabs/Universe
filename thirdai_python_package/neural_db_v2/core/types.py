@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Union
 
+import numpy as np
 import pandas as pd
 from pandera import typing as pt
 
@@ -80,16 +81,16 @@ class NewChunkBatch:
             document=self.document[i],
         )
 
-    def to_df(self, with_custom_id: bool = True, with_metadata: bool = True):
+    def to_df(self):
         columns = {
             "text": self.text,
             "keywords": self.keywords,
             "document": self.document,
         }
-        if self.custom_id is not None and with_custom_id:
+        if self.custom_id is not None:
             columns["custom_id"] = self.custom_id
-        if self.metadata is not None and with_metadata:
-            columns["metadata"] = self.metadata
+        else:
+            columns["custom_id"] = pd.Series(np.full(len(self.text), None))
 
         return pd.DataFrame(columns)
 

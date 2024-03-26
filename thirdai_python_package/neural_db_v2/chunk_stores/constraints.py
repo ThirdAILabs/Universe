@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-from sqlalchemy import Table
 import pandas as pd
+from sqlalchemy import Table
 
 
 class Constraint(ABC):

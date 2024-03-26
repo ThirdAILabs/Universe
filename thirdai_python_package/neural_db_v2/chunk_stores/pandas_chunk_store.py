@@ -1,3 +1,6 @@
+from typing import Dict, Iterable, List, Set, Union
+
+import numpy as np
 import pandas as pd
 
 from ..core.chunk_store import ChunkStore
@@ -10,8 +13,6 @@ from ..core.types import (
     SupervisedBatch,
 )
 from .constraints import Constraint
-from typing import Dict, Iterable, List, Set, Union
-import numpy as np
 
 
 class PandasChunkStore(ChunkStore):
@@ -36,7 +37,7 @@ class PandasChunkStore(ChunkStore):
             )
             self.next_id += len(batch.text)
 
-            chunk_df = batch.to_df(with_metadata=False)
+            chunk_df = batch.to_df()
             chunk_df["chunk_id"] = chunk_ids
 
             all_chunks.append(chunk_df)
@@ -55,10 +56,11 @@ class PandasChunkStore(ChunkStore):
             )
 
         self.chunk_df = pd.concat(all_chunks)
-        self.chunk_df.index = self.chunk_df["chunk_id"]
+        self.chunk_df.set_index("chunk_id", inplace=True, drop=False)
+
         self.metadata_df = pd.concat(all_metadata)
-        if len(self.metadata_df):
-            self.metadata_df.index = self.metadata_df["chunk_id"]
+        self.metadata_df.replace(to_replace=np.nan, value=None, inplace=True)
+        self.metadata_df.set_index("chunk_id", inplace=True, drop=False)
 
         return output_batches
 
@@ -93,6 +95,8 @@ class PandasChunkStore(ChunkStore):
     def filter_chunk_ids(
         self, constraints: Dict[str, Constraint], **kwargs
     ) -> Set[ChunkId]:
+        if not len(constraints):
+            raise ValueError("Cannot call filter_chunk_ids with empty constraints.")
         condition = None
         for column, constraint in constraints.items():
             curr_condition = constraint.pd_filter(
