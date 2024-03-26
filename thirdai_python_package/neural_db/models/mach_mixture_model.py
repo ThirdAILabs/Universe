@@ -180,12 +180,8 @@ class MachMixture(Model):
                     # for every model other than the first in the ensemble,
                     # manually pass in the loaded intro and train source from
                     # the first model
-                    intro_shard = ensemble_training_managers[
-                        0
-                    ].save_load_manager.intro_source
-                    train_shard = ensemble_training_managers[
-                        0
-                    ].save_load_manager.train_source
+                    intro_shard = ensemble_training_managers[0].intro_source
+                    train_shard = ensemble_training_managers[0].train_source
                     modelwise_training_manager = (
                         TrainingProgressManager.from_checkpoint(
                             original_mach_model=model,
@@ -652,7 +648,7 @@ class MachMixture(Model):
                     save_intro_train_shards=model_id == 0
                 )
             training_managers.append(ensemble_training_managers)
-            
+
         for ensemble, managers in zip(self.ensembles, training_managers):
             ensemble.supervised_training_impl(managers, callbacks=callbacks)
 
@@ -668,7 +664,10 @@ class MachMixture(Model):
         disable_inverted_index: bool,
         checkpoint_config: Optional[CheckpointConfig] = None,
     ):
-        if checkpoint_config is None or checkpoint_config.resume_from_checkpoint is False:
+        if (
+            checkpoint_config is None
+            or checkpoint_config.resume_from_checkpoint is False
+        ):
             self._supervised_from_start(
                 supervised_data_source=supervised_data_source,
                 learning_rate=learning_rate,
@@ -677,16 +676,13 @@ class MachMixture(Model):
                 max_in_memory_batches=max_in_memory_batches,
                 metrics=metrics,
                 callbacks=callbacks,
-                disable_inverted_index = disable_inverted_index,
-                checkpoint_config = checkpoint_config
+                disable_inverted_index=disable_inverted_index,
+                checkpoint_config=checkpoint_config,
             )
         else:
             self._resume_supervised(
-                checkpoint_config=checkpoint_config,
-                callbacks = callbacks
+                checkpoint_config=checkpoint_config, callbacks=callbacks
             )
-
-        
 
     def build_inverted_index(self, documents):
         raise ValueError("This method is not supported on this type of model.")

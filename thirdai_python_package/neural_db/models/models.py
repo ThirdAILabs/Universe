@@ -869,7 +869,7 @@ class Mach(Model):
             training_manager.make_preindexing_checkpoint(save_datasource=True)
         else:
             training_manager = TrainingProgressManager.from_checkpoint(
-                self, checkpoint_config, supervised_datasource=None
+                self, checkpoint_config
             )
 
         self.supervised_training_impl(training_manager, callbacks=callbacks)

@@ -904,6 +904,7 @@ class NeuralDB:
             metrics=metrics,
             callbacks=callbacks,
             disable_inverted_index=disable_inverted_index,
+            checkpoint_config=checkpoint_config,
         )
 
     def supervised_train_with_ref_ids(
@@ -957,6 +958,7 @@ class NeuralDB:
             metrics=metrics,
             callbacks=callbacks,
             disable_inverted_index=disable_inverted_index,
+            checkpoint_config=checkpoint_config,
         )
 
     def get_associate_samples(self):

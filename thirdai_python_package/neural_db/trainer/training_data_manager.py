@@ -17,6 +17,7 @@ class SupervisedDataManager:
 
         if self.checkpoint_dir:
             self.train_source_folder = self.checkpoint_dir / "sup_source"
+            self.train_source_folder.mkdir(exist_ok=True, parents=True)
 
     def save(self):
         if self.checkpoint_dir:
@@ -107,7 +108,7 @@ class TrainingDataManager:
         if self.checkpoint_dir:
             self.model_location = self.checkpoint_dir / "model.pkl"
             self.tracker_folder = self.checkpoint_dir / "tracker"
-            self.tracker_folder.mkdir(exist_ok=True)
+            self.tracker_folder.mkdir(exist_ok=True, parents=True)
 
         self.model = model
         self.datasource_manager = datasource_manager
@@ -159,7 +160,7 @@ class TrainingDataManager:
         checkpoint_dir: Path,
         data_manager: Union[SupervisedDataManager, InsertDataManager],
     ):
-        manager = TrainingDataManager(checkpoint_dir, None, None, None, None)
+        manager = TrainingDataManager(checkpoint_dir, None, None, None)
 
         try:
             manager.model = unpickle_from(manager.model_location)

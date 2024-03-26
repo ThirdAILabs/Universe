@@ -274,7 +274,7 @@ class TrainingProgressManager:
             model=model,
             datasource_manager=SupervisedDataManager(
                 checkpoint_config.checkpoint_dir if checkpoint_config else None,
-                supervised_source=supervised_datasource,
+                train_source=supervised_datasource,
             ),
             tracker=tracker,
         )
