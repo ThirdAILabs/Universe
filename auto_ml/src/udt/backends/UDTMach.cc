@@ -446,14 +446,15 @@ py::object UDTMach::coldstart(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks_in, TrainOptions options,
     const bolt::DistributedCommPtr& comm, const py::kwargs& kwargs) {
+  std::cout << "cold_start" << std::endl;
   insertNewDocIds(data);
 
-  addBalancingSamples(data, strong_column_names, weak_column_names,
-                      variable_length);
+  // addBalancingSamples(data, strong_column_names, weak_column_names,
+                      // variable_length);
 
   auto splade_config = getSpladeConfig(kwargs);
   auto splade_in_val = getSpladeValidationOption(kwargs);
-
+  std::cout << "Splade Config: " << splade_config.has_value() << std::endl;
   data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader = _featurizer->getDataLoader(

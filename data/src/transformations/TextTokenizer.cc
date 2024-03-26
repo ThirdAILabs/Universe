@@ -31,6 +31,12 @@ ColumnMap TextTokenizer::apply(ColumnMap columns, State& state) const {
   (void)state;
 
   auto text_col = columns.getValueColumn<std::string>(_input_column);
+  auto col_names = columns.columns();
+  std::cout << "Text Tokenizer ";
+  for(auto col_name : col_names){
+    std::cout << col_name << " ";
+  }
+  std::cout << std::endl;
 
   std::vector<std::vector<uint32_t>> output_indices(text_col->numRows());
 

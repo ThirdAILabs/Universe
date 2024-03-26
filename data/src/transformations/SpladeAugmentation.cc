@@ -3,9 +3,11 @@
 #include <bolt/src/utils/Timer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <archive/src/Archive.h>
+#include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/TextTokenizer.h>
+#include <memory>
 #include <optional>
 #include <regex>
 #include <stdexcept>
@@ -80,7 +82,12 @@ SpladeAugmentation::SpladeAugmentation(std::string input_column,
 
 ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
   (void)state;
-
+  auto col_names = columns.columns();
+  std::cout << "Splade Augmentation ";
+  for(auto col_name : col_names){
+    std::cout << col_name << " ";
+  }
+  std::cout << std::endl;
   // Note: NGramEncoder with n=1 in this case is a no-op, it is just here to
   // satisfy the encoder requirement.
   data::TextTokenizer tokenizer(
@@ -89,7 +96,7 @@ ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
       /*encoder=*/dataset::NGramEncoder::make(1), /*lowercase=*/false,
       /*dim=*/_tokenizer->vocabSize());
 
-  auto output = tokenizer.applyStateless(columns);
+  auto input_tokenized = tokenizer.applyStateless(columns);
 
 //   auto batches = data::toTensorBatches(
 //       tokenized_columns, {OutputColumns(_input_column)}, _batch_size);
@@ -105,7 +112,7 @@ ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
 //   for (const auto& batch : batches) {
 //     auto output = _model->forward(batch).at(0);
 
-// #pragma omp parallel for default(none) \
+// #pragma omp parallel for default(none) 
 //     shared(tokenized_text, augmented_text, output, row_index)
 //     for (size_t i = 0; i < output->batchSize(); i++) {
 //       augmented_text[row_index + i] = decodeTopTokens(
@@ -122,9 +129,9 @@ ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
 //   bar.close("data augmentation completed in " +
 //             std::to_string(timer.seconds()) + "s.");
 
-  // ColumnMap output = columns;
-  output.dropColumn(_input_column);
-  // output.setColumn(_output_column, tokenized_columns);
+  ColumnMap output = columns;
+  // output.dropColumn(_input_column);
+  output.setColumn(_output_column, input_tokenized.getColumn(_output_column));
 
   return output;
 }

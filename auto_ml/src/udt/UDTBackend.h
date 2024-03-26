@@ -428,7 +428,7 @@ class UDTBackend {
         !kwargs["use_splade_in_validation"].is_none()) {
       return kwargs["use_splade_in_validation"].cast<bool>();
     }
-    return false;
+    return true;
   }
 
  private:

@@ -48,7 +48,7 @@ Featurizer::Featurizer(ColumnDataTypes data_types,
                                         cat_label->delimiter);
     }
   }
-  _bolt_input_columns.push_back(SPLADE_TOKENS);
+  _bolt_input_columns.push_back(data::OutputColumns(SPLADE_TOKENS));
 }
 
 Featurizer::Featurizer(data::TransformationPtr input_transform,
@@ -71,10 +71,11 @@ data::LoaderPtr Featurizer::getDataLoader(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
     bool verbose, const std::optional<data::SpladeConfig>& splade_config,
     dataset::DatasetShuffleConfig shuffle_config) {
+  std::cout << "getDatasetLoader" << std::endl;
   data::TransformationPtr preprocessor = nullptr;
   if (splade_config) {
     preprocessor = std::make_shared<data::SpladeAugmentation>(
-        textDatasetConfig().textColumn(), textDatasetConfig().textColumn(),
+        textDatasetConfig().textColumn(), SPLADE_TOKENS,
         *splade_config);
   }
 
@@ -90,10 +91,13 @@ data::LoaderPtr Featurizer::getColdStartDataLoader(
     const std::optional<data::SpladeConfig>& splade_config,
     bool fast_approximation, size_t batch_size, bool shuffle, bool verbose,
     dataset::DatasetShuffleConfig shuffle_config) {
+  std::cout << "coldstartgetDatasetLoader" << std::endl;
+  std::cout << "Called" << std::endl;
   data::TransformationPtr cold_start;
 
   if (splade_config &&
       (!strong_column_names.empty() || !weak_column_names.empty())) {
+    std::cout << "Splade Config Passed!" << std::endl;
     // TODO(Nicholas, David): Should we add an option to sample a certain number
     // of times from a specific column, i.e. splade tokens.
     if (splade_config->strong_sample_override && variable_length) {
@@ -109,13 +113,13 @@ data::LoaderPtr Featurizer::getColdStartDataLoader(
                        weak_column_names.end());
     cold_start =
         data::Pipeline::make()
-            ->then(std::make_shared<data::StringConcat>(all_columns,
-                                                        SPLADE_TOKENS, " "))
-            ->then(std::make_shared<data::SpladeAugmentation>(
-                SPLADE_TOKENS, SPLADE_TOKENS, *splade_config))
             ->then(coldStartTransform(strong_column_names, weak_column_names,
-                                      variable_length, fast_approximation));
+                                      variable_length, fast_approximation))
+            ->then(std::make_shared<data::SpladeAugmentation>(
+                _text_dataset->textColumn(), SPLADE_TOKENS, *splade_config));
   } else {
+    std::cout << "Splade Config not Passed!" << std::endl;
+    
     cold_start = coldStartTransform(strong_column_names, weak_column_names,
                                     variable_length, fast_approximation);
   }

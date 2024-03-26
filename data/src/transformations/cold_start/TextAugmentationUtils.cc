@@ -18,6 +18,12 @@ TextAugmentationBase::TextAugmentationBase(
 
 ColumnMap TextAugmentationBase::apply(ColumnMap columns, State& state) const {
   (void)state;
+  auto col_names = columns.columns();
+  std::cout << "Text Augmentation Base ";
+  for(auto col_name : col_names){
+    std::cout << col_name << " ";
+  }
+  std::cout << std::endl;
 
   // Note: The original cold start implementation used a simple concatenation
   // function that appended an extra delimiter at the end. The StringConcat

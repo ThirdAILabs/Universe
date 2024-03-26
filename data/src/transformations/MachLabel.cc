@@ -15,6 +15,12 @@ MachLabel::MachLabel(std::string input_column_name,
 
 ColumnMap MachLabel::apply(ColumnMap columns, State& state) const {
   auto entities_column = columns.getArrayColumn<uint32_t>(_input_column_name);
+  auto col_names = columns.columns();
+  std::cout << "Mach Label ";
+  for(auto col_name : col_names){
+    std::cout << col_name << " ";
+  }
+  std::cout << std::endl;
 
   std::vector<std::vector<uint32_t>> hashes(entities_column->numRows());
 
