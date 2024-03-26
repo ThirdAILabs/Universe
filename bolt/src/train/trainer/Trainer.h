@@ -129,6 +129,17 @@ class Trainer {
   metrics::History getHistory() { return *_history; }
 
  private:
+  void trainOnBatches(
+      const LabeledDataset& train_data, const TrainStatePtr& train_state,
+      metrics::MetricCollection& train_metrics,
+      callbacks::CallbackList& callbacks,
+      const std::optional<LabeledDataset>& validation_data = std::nullopt,
+      const metrics::InputMetrics& validation_metrics = {},
+      const std::optional<uint32_t>& steps_per_validation = std::nullopt,
+      bool use_sparsity_in_validation = false,
+      bool autotune_rehash_rebuild = false,
+      const std::optional<uint32_t>& logging_interval = std::nullopt,
+      bool verbose = true, const DistributedCommPtr& comm = nullptr);
   static void verifyNumBatchesMatch(const LabeledDataset& data);
 
   /**
