@@ -421,8 +421,20 @@ class Mach(Model):
         use_inverted_index=True,
         mach_index_seed: int = 341,
         index_max_shard_size=8_000_000,
-        **kwargs,
+        low_memory=False,
     ):
+        # "low_memory" basically means just use the inverted index. We create a 
+        # small model just to preserve the training logs so the user doesn't see 
+        # different behavior than they are used to.
+        self.low_memory = low_memory
+        if self.low_memory:
+            embedding_dimension = 200
+            fhr = 25000
+            print(
+                "INFO: You are using low_memory mode which is optimized for low "
+                "resource environments. Results may vary compared to traditional settings."
+            )
+
         self.id_col = id_col
         self.id_delimiter = id_delimiter
         self.tokenizer = tokenizer
@@ -466,6 +478,7 @@ class Mach(Model):
         self.balancing_samples = new_model.balancing_samples
         self.model_config = new_model.model_config
         self.inverted_index = new_model.inverted_index
+        self.low_memory = new_model.low_memory
 
     def save(self, path: Path):
         pickle_to(self, filepath=path)
@@ -710,6 +723,10 @@ class Mach(Model):
     def infer_labels(
         self, samples: InferSamples, n_results: int, retriever=None, **kwargs
     ) -> Predictions:
+        # low memory only finetunes and displays results from inverted index
+        if self.low_memory:
+            retriever = "inverted_index"
+
         if not retriever:
             if not self.inverted_index:
                 retriever = "mach"
@@ -833,6 +850,10 @@ class Mach(Model):
         callbacks: List[bolt.train.callbacks.Callback],
         disable_inverted_index: bool,
     ):
+        # low memory only finetunes and displays results from inverted index
+        if self.low_memory:
+            disable_inverted_index = False
+
         self.model.train_on_data_source(
             data_source=supervised_data_source,
             learning_rate=learning_rate,

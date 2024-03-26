@@ -61,21 +61,6 @@ class NeuralDB:
         """
         self._user_id: str = user_id
 
-        # "low_memory" means just use the inverted index. We create a small model
-        # just to preserve the training logs so the user doesn't see different
-        # behavior than they are used to.
-        self.low_memory = False
-        if "low_memory" in kwargs:
-            self.low_memory = True
-            if "embedding_dimension" not in kwargs:
-                kwargs["embedding_dimension"] = 200
-            if "fhr" not in kwargs:
-                kwargs["fhr"] = 25000
-            print(
-                "INFO: You are using low_memory mode which is optimized for low "
-                "resource environments. Results may vary compared to traditional settings."
-            )
-
         # The savable_state kwarg is only used in static constructor methods
         # and should not be used by an external user.
         # We read savable_state from kwargs so that it doesn't appear in the
@@ -725,8 +710,6 @@ class NeuralDB:
             >>> ndb.search("what is ...", top_k=5)
             >>> ndb.search("what is ...", top_k=5, constraints={"file_type": "pdf", "file_created", GreaterThan(10)})
         """
-        if self.low_memory:
-            retriever = "inverted_index"
         return self.search_batch(
             queries=[query],
             top_k=top_k,
@@ -760,9 +743,6 @@ class NeuralDB:
         Returns:
             List[List[Reference]]: Combines each result of db.search into a list.
         """
-        if self.low_memory:
-            retriever = "inverted_index"
-
         matching_entities = None
         top_k_to_search = top_k_rerank if rerank else top_k
         if constraints:
@@ -910,11 +890,6 @@ class NeuralDB:
         doc_manager = self._savable_state.documents
         query_col = self._savable_state.model.get_query_col()
 
-        # low memory only finetunes and displays results from inverted index
-        disable_inverted_index = (
-            False if self.low_memory else kwargs.get("disable_inverted_index", True)
-        )
-
         self._savable_state.model.train_on_supervised_data_source(
             supervised_data_source=SupDataSource(
                 doc_manager=doc_manager,
@@ -928,7 +903,7 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
-            disable_inverted_index=disable_inverted_index,
+            disable_inverted_index=kwargs.get("disable_inverted_index", True),
         )
 
     def supervised_train_with_ref_ids(
@@ -958,11 +933,6 @@ class NeuralDB:
         doc_manager = self._savable_state.documents
         model_query_col = self._savable_state.model.get_query_col()
 
-        # low memory only finetunes and displays results from inverted index
-        disable_inverted_index = (
-            False if self.low_memory else kwargs.get("disable_inverted_index", True)
-        )
-
         self._savable_state.model.train_on_supervised_data_source(
             supervised_data_source=SupDataSource(
                 doc_manager=doc_manager,
@@ -986,7 +956,7 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
-            disable_inverted_index=disable_inverted_index,
+            disable_inverted_index=kwargs.get("disable_inverted_index", True),
         )
 
     def get_associate_samples(self):

@@ -42,6 +42,10 @@ class MachMixture(Model):
         seed_for_sharding: int = 0,
         **kwargs,
     ):
+        low_memory = kwargs.get("low_memory", False)
+        if low_memory:
+            raise ValueError("low_memory not supported with sharded models.")
+
         self.id_col = id_col
         self.id_delimiter = id_delimiter
         self.query_col = query_col

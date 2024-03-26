@@ -313,8 +313,9 @@ def search_works(db: ndb.NeuralDB, docs: List[ndb.Document], assert_acc: bool):
             correct_result += int(query in [r.text for r in results])
             correct_source += int(source in [r.source for r in results])
 
+            totally_random_query = "eajlk reakhl eakjglr eakjhwe"
             batch_results = db.search_batch(
-                [query, query, "SOME TOTAL RANDOM QUERY"], top_k
+                [query, query, totally_random_query], top_k
             )
 
             assert len(batch_results) == 3
