@@ -423,8 +423,8 @@ class Mach(Model):
         index_max_shard_size=8_000_000,
         low_memory=False,
     ):
-        # "low_memory" basically means just use the inverted index. We create a 
-        # small model just to preserve the training logs so the user doesn't see 
+        # "low_memory" basically means just use the inverted index. We create a
+        # small model just to preserve the training logs so the user doesn't see
         # different behavior than they are used to.
         self.low_memory = low_memory
         if self.low_memory:

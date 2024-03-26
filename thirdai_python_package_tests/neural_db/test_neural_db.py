@@ -669,3 +669,19 @@ def test_neural_db_low_memory(small_doc_set):
         num_duplicate_docs=0,
         assert_acc=False,
     )
+    db.insert(small_doc_set, train=True)
+
+    regular_db = ndb.NeuralDB(low_memory=False)
+    regular_db.insert(small_doc_set, train=True)
+
+    query = "this is a sample query with a couple words"
+    low_mem_results = db.search(query, top_k=10)
+    regular_results = regular_db.search(query, top_k=10)
+
+    assert low_mem_results != regular_results
+
+    regular_results_just_elastic = regular_db.search(
+        query, top_k=10, retriever="inverted_index"
+    )
+
+    assert low_mem_results == regular_results_just_elastic

@@ -889,7 +889,6 @@ class NeuralDB:
         """
         doc_manager = self._savable_state.documents
         query_col = self._savable_state.model.get_query_col()
-
         self._savable_state.model.train_on_supervised_data_source(
             supervised_data_source=SupDataSource(
                 doc_manager=doc_manager,
@@ -932,7 +931,6 @@ class NeuralDB:
         """
         doc_manager = self._savable_state.documents
         model_query_col = self._savable_state.model.get_query_col()
-
         self._savable_state.model.train_on_supervised_data_source(
             supervised_data_source=SupDataSource(
                 doc_manager=doc_manager,
