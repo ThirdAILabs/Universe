@@ -112,8 +112,6 @@ def test_neural_db_supervised_training_mixture(model_id_delimiter, num_shards):
         model_id_delimiter=model_id_delimiter,
         num_shards=num_shards,
         num_models_per_shard=2,
-        fhr=20_000,
-        extreme_output_dim=2_000,
     )
     queries = ["first", "sixth"]
     new_labels = [
