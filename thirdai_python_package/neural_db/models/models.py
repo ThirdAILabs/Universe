@@ -421,6 +421,7 @@ class Mach(Model):
         use_inverted_index=True,
         mach_index_seed: int = 341,
         index_max_shard_size=8_000_000,
+        **kwargs,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
