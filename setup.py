@@ -194,7 +194,7 @@ setup(
         "typing_extensions",
         "requests",
         "pandas>=2.0.0, <=2.1.4",
-    ],
+    ] + neural_db_deps,
     extras_require={
         # The cryptography requirement is necessary to avoid ssl errors
         # The tokenizers requirement ensures that all of the [test] depedencies are
@@ -204,7 +204,6 @@ setup(
         # MLFLOW and server MLFLOW should be the same. Hence, we are fixing the
         # version of MLFLOW here. The version of protobuf that works with this
         # MLFLOW is also being fixed.
-        "neural_db": neural_db_deps,
         "neural_db_v2": neural_db_v2_deps,
         "test": [
             "pytest",
