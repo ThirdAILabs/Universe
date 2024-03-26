@@ -855,6 +855,7 @@ class NeuralDB:
         max_in_memory_batches: Optional[int] = None,
         metrics: List[str] = [],
         callbacks: List[bolt.train.callbacks.Callback] = [],
+        **kwargs,
     ):
         """
         Train on supervised datasets that correspond to specific sources.
@@ -883,6 +884,7 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
+            disable_inverted_index=kwargs.get("disable_inverted_index", True),
         )
 
     def supervised_train_with_ref_ids(
@@ -899,6 +901,7 @@ class NeuralDB:
         max_in_memory_batches: Optional[int] = None,
         metrics: List[str] = [],
         callbacks: List[bolt.train.callbacks.Callback] = [],
+        **kwargs,
     ):
         """Train on supervised datasets that correspond to specific sources.
         Suppose you inserted a "sports" product catalog and a "furniture"
@@ -933,6 +936,7 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
+            disable_inverted_index=kwargs.get("disable_inverted_index", True),
         )
 
     def get_associate_samples(self):

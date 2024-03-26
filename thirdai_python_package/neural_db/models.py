@@ -154,6 +154,7 @@ class Model:
         max_in_memory_batches: Optional[int],
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
+        disable_inverted_index: bool,
     ):
         raise NotImplementedError()
 
@@ -784,6 +785,9 @@ class Mach(Model):
             force_non_empty=kwargs.get("force_non_empty", True),
         )
 
+        if self.inverted_index:
+            self.inverted_index.associate(pairs)
+
     def upvote(
         self,
         pairs: List[Tuple[str, int]],
@@ -801,6 +805,9 @@ class Mach(Model):
             learning_rate=learning_rate,
             epochs=epochs,
         )
+
+        if self.inverted_index:
+            self.inverted_index.upvote(pairs)
 
     def retrain(
         self,
@@ -840,6 +847,7 @@ class Mach(Model):
         max_in_memory_batches: Optional[int],
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
+        disable_inverted_index: bool,
     ):
         self.model.train_on_data_source(
             data_source=supervised_data_source,
@@ -850,8 +858,12 @@ class Mach(Model):
             metrics=metrics,
             callbacks=callbacks,
         )
-        # Invalidate inverted index once supervised data is used.
-        self.inverted_index = None
+        if disable_inverted_index:
+            # Invalidate inverted index once supervised data is used.
+            self.inverted_index = None
+        elif self.inverted_index:
+            supervised_data_source.restart()
+            self.inverted_index.supervised_train(supervised_data_source)
 
     def build_inverted_index(self, documents):
         if self.inverted_index:
