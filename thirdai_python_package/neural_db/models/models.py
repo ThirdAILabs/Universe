@@ -493,7 +493,8 @@ class Mach(Model):
         pass
 
     def load_meta(self, directory: Path):
-        pass
+        if not hasattr(self, "low_memory"):
+            self.low_memory = False
 
     def set_n_ids(self, n_ids: int):
         self.n_ids = n_ids
