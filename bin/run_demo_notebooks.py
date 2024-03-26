@@ -2,6 +2,7 @@ import glob
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 
 DEMO_URL = "https://github.com/ThirdAILabs/Demos.git"
@@ -33,10 +34,23 @@ def get_relative_notebook_paths(temp_dir):
 def main():
     temp_dir = tempfile.mkdtemp()
     relative_notebook_paths = get_relative_notebook_paths(temp_dir)
+    successes, failures = [], []
     for notebook_path in relative_notebook_paths:
-        os.system(
-            f'docker run -e "OPENAI_API_KEY=$OPENAI_API_KEY" -e "THIRDAI_KEY=$THIRDAI_KEY" thirdai/run_demos_build bash -c "python3 run_single_demo_notebook.py" {notebook_path}'
+        retcode = os.system(
+            f'docker run -e "OPENAI_API_KEY=$OPENAI_API_KEY" -e "THIRDAI_KEY=$THIRDAI_KEY" thirdai/run_demos_build bash -c "python3 run_single_demo_notebook.py \'{notebook_path}\'"'
         )
+        if retcode == 0:
+            successes.append(notebook_path)
+        else:
+            failures.append(notebook_path)
+
+    print("\nThe following notebooks have passed:")
+    print("\n".join(map(lambda x: f"\t- {x}", successes)))
+    print("\nThe following notebooks have failed:")
+    print("\n".join(map(lambda x: f"\t- {x}", failures)))
+
+    if failures:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

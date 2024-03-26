@@ -82,18 +82,25 @@ class CheckpointConfig:
         return config
 
 
-def generate_modelwise_checkpoint_configs(config: CheckpointConfig, number_models):
+def generate_checkpoint_configs_for_ensembles(
+    config: CheckpointConfig, number_ensembles: int, number_models_per_ensemble: int
+):
     """
     We maintain a checkpoint config for each Mach model in the Mixture while training. This is designed so that Mach models can maintain their training state independent of their Mixture which is necessary for distributed training.
     """
     if config:
         return [
-            CheckpointConfig(
-                config.checkpoint_dir / str(model_id),
-                config.resume_from_checkpoint,
-                config.checkpoint_interval,
-            ).get_mach_config()
-            for model_id in range(number_models)
+            [
+                CheckpointConfig(
+                    config.checkpoint_dir
+                    / f"ensemble_{str(ensemble_id)}"
+                    / str(model_id),
+                    config.resume_from_checkpoint,
+                    config.checkpoint_interval,
+                ).get_mach_config()
+                for model_id in range(number_models_per_ensemble)
+            ]
+            for ensemble_id in range(number_ensembles)
         ]
     else:
-        return [None] * number_models
+        return [[None] * number_models_per_ensemble] * number_ensembles

@@ -526,7 +526,8 @@ class CSV(Document):
             df[self.id_column] = range(df.shape[0])
             if orig_id_column:
                 self.orig_to_assigned_id = {
-                    row[orig_id_column]: row[self.id_column] for _, row in df.iterrows()
+                    str(row[orig_id_column]): row[self.id_column]
+                    for _, row in df.iterrows()
                 }
 
         if strong_columns is None and weak_columns is None:
