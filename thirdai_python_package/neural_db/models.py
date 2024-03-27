@@ -20,6 +20,7 @@ from .trainer.training_progress_manager import (
     TrainingProgressManager,
 )
 from .utils import clean_text, pickle_to
+import math
 
 InferSamples = List
 Predictions = Sequence
@@ -187,12 +188,14 @@ class ProgressUpdate(bolt.train.callbacks.Callback):
         self,
         max_epochs,
         progress_callback_fn,
+        total_num_batches,
     ):
         super().__init__()
 
         self.batch_count = 0
         self.max_epochs = max_epochs
         self.progress_callback_fn = progress_callback_fn
+        self.total_num_batches = total_num_batches
 
     def on_batch_end(self):
         self.batch_count += 1
@@ -200,7 +203,7 @@ class ProgressUpdate(bolt.train.callbacks.Callback):
         # We update progress every other batch because otherwise the updates are
         # too fast for frontend components to display these changes.
         if self.batch_count % 2:
-            batch_progress = self.batch_count / self.train_state.batches_in_dataset()
+            batch_progress = self.batch_count / self.total_num_batches
             progress = batch_progress / self.max_epochs
 
             # TODO revisit this progress bar update
@@ -312,6 +315,7 @@ def unsupervised_train_on_docs(
     progress_callback = ProgressUpdate(
         max_epochs=max_epochs,
         progress_callback_fn=on_progress,
+        total_num_batches=math.ceil(documents.size / batch_size),
     )
 
     cancel_training_callback = CancelTraining(cancel_state=cancel_state)

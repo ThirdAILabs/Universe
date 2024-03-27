@@ -51,12 +51,12 @@ void Trainer::trainOnBatches(
     num_batches = comm->minNumBatches(num_batches);
   }
   if (_gradient_update_interval > num_batches) {
-    std::string errorMessage = fmt::format(
+    std::string error_message = fmt::format(
         "Error: gradient_update_interval ({}) exceeds num_batches ({}). "
         "Model parameters will not be updated under this condition.",
         _gradient_update_interval, num_batches);
 
-    throw std::runtime_error(errorMessage);
+    throw std::runtime_error(error_message);
   }
   auto bar = ProgressBar::makeOptional(verbose, "train", num_batches);
 
@@ -99,12 +99,12 @@ void Trainer::trainOnBatches(
       bar->increment();
     }
 
-    train_state->increment_steps_since_val();
+    train_state->incrementStepsSinceVal();
     if (steps_per_validation &&
-        train_state->compare_steps_since_val(*steps_per_validation)) {
+        train_state->compareStepsSinceVal(*steps_per_validation)) {
       validate(*validation_data, validation_metrics,
                use_sparsity_in_validation);
-      train_state->reset_steps_since_val();
+      train_state->resetStepsSinceVal();
     }
 
     if (logging_interval && (_model->trainSteps() % *logging_interval) == 0) {
@@ -150,7 +150,7 @@ metrics::History Trainer::train(
     const std::vector<callbacks::CallbackPtr>& callbacks_in,
     bool autotune_rehash_rebuild, bool verbose,
     std::optional<uint32_t> logging_interval, const DistributedCommPtr& comm) {
-  auto train_state = TrainState::make(learning_rate, train_data.first.size());
+  auto train_state = TrainState::make(learning_rate);
 
   metrics::MetricCollection train_metrics(train_metrics_in);
 
@@ -184,10 +184,10 @@ metrics::History Trainer::train(
     // This condition ensures that if steps_per_validation coincides with the
     // end of the epoch that we don't validate twice: once above when we reach
     // the validation interval and once when we reach the end of the epoch.
-    if (validation_data && !train_state->compare_steps_since_val(0)) {
+    if (validation_data && !train_state->compareStepsSinceVal(0)) {
       validate(*validation_data, validation_metrics,
                use_sparsity_in_validation);
-      train_state->reset_steps_since_val();
+      train_state->resetStepsSinceVal();
     }
 
     callbacks.onEpochEnd();
@@ -266,7 +266,7 @@ metrics::History Trainer::train_with_dataset_loader(
         loadAllWrapper(validation_data_loader, batch_size, verbose);
   }
 
-  auto train_state = TrainState::make(learning_rate, std::nullopt);
+  auto train_state = TrainState::make(learning_rate);
 
   metrics::MetricCollection train_metrics(train_metrics_in);
 
@@ -287,7 +287,6 @@ metrics::History Trainer::train_with_dataset_loader(
     while (auto train_chunk =
                loadSomeWrapper(train_data_loader, batch_size,
                                *max_in_memory_batches, verbose)) {
-      train_state->updateBatchesInDataset(train_chunk.value().first.size());
       trainOnBatches(train_chunk.value(), train_state, train_metrics, callbacks,
                      validation_data, validation_metrics, steps_per_validation,
                      use_sparsity_in_validation, autotune_rehash_rebuild,
@@ -298,10 +297,10 @@ metrics::History Trainer::train_with_dataset_loader(
 
     train_metrics.reset();
     callbacks.onEpochEnd();
-    if (validation_data && !train_state->compare_steps_since_val(0)) {
+    if (validation_data && !train_state->compareStepsSinceVal(0)) {
       validate(*validation_data, validation_metrics,
                use_sparsity_in_validation);
-      train_state->reset_steps_since_val();
+      train_state->resetStepsSinceVal();
     }
 
     if (train_state->isTrainingStopped()) {
@@ -350,7 +349,7 @@ metrics::History Trainer::train_with_data_loader(
     validation_data = validation_data_loader->all();
   }
 
-  auto train_state = TrainState::make(learning_rate, std::nullopt);
+  auto train_state = TrainState::make(learning_rate);
 
   metrics::MetricCollection train_metrics(train_metrics_in);
 
@@ -369,7 +368,6 @@ metrics::History Trainer::train_with_data_loader(
     callbacks.onEpochBegin();
     utils::Timer epoch_timer;
     while (auto train_chunk = train_data_loader->next(*max_in_memory_batches)) {
-      train_state->updateBatchesInDataset(train_chunk.value().first.size());
       trainOnBatches(train_chunk.value(), train_state, train_metrics, callbacks,
                      validation_data, validation_metrics, steps_per_validation,
                      use_sparsity_in_validation, autotune_rehash_rebuild,
@@ -380,10 +378,10 @@ metrics::History Trainer::train_with_data_loader(
 
     train_metrics.reset();
     callbacks.onEpochEnd();
-    if (validation_data && !train_state->compare_steps_since_val(0)) {
+    if (validation_data && !train_state->compareStepsSinceVal(0)) {
       validate(*validation_data, validation_metrics,
                use_sparsity_in_validation);
-      train_state->reset_steps_since_val();
+      train_state->resetStepsSinceVal();
     }
 
     if (train_state->isTrainingStopped()) {

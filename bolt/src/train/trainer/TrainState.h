@@ -12,16 +12,14 @@ namespace thirdai::bolt {
  */
 class TrainState {
  public:
-  explicit TrainState(float learning_rate,
-                      std::optional<uint32_t> batches_in_dataset)
+  explicit TrainState(float learning_rate)
       : _learning_rate(learning_rate),
-        _batches_in_dataset(batches_in_dataset),
         _stop_training(false),
         _steps_since_validation(0) {}
 
   static std::shared_ptr<TrainState> make(
-      float learning_rate, std::optional<uint32_t> batches_in_dataset) {
-    return std::make_shared<TrainState>(learning_rate, batches_in_dataset);
+      float learning_rate) {
+    return std::make_shared<TrainState>(learning_rate);
   }
 
   /**
@@ -36,10 +34,11 @@ class TrainState {
     _learning_rate = new_learning_rate;
   }
 
-  void increment_steps_since_val() { _steps_since_validation++; }
+  void incrementStepsSinceVal() { _steps_since_validation++; }
 
-  void reset_steps_since_val() { _steps_since_validation = 0; }
-  bool compare_steps_since_val(uint32_t validation_steps) const {
+  void resetStepsSinceVal() { _steps_since_validation = 0; }
+  
+  bool compareStepsSinceVal(uint32_t validation_steps) const {
     return _steps_since_validation == validation_steps;
   }
 
@@ -54,17 +53,8 @@ class TrainState {
    */
   void stopTraining() { _stop_training = true; }
 
-  std::optional<uint32_t> batchesInDataset() const {
-    return _batches_in_dataset;
-  }
-
-  void updateBatchesInDataset(uint32_t batches_in_dataset) {
-    _batches_in_dataset = batches_in_dataset;
-  }
-
  private:
   float _learning_rate;
-  std::optional<uint32_t> _batches_in_dataset;
   bool _stop_training;
   uint32_t _steps_since_validation;
 };
