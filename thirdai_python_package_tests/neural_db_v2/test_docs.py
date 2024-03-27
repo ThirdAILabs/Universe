@@ -69,7 +69,6 @@ def doc_property_checks(
                 assert unique[0] == value
 
         for col in chunk_metadata_columns:
-            print("COL: ", col)
             assert col in chunks.metadata.columns
 
         if len(document_metadata) + len(chunk_metadata_columns) > 0:
@@ -102,7 +101,7 @@ def test_csv_doc_infered_columns():
         document_metadata={},
         chunk_metadata_columns=[],
     )
-    chunks = doc.chunks()[0]
+    chunks = list(doc.chunks())[0]
     assert (df["text"] == chunks.text).all()
     assert (df["category"] == chunks.custom_id).all()
 
@@ -111,7 +110,7 @@ def test_csv_doc_no_keywords():
     path = os.path.join(DOC_DIR, "lorem_ipsum.csv")
     df = pd.read_csv(path)
 
-    doc = CSV(path, text_columns=["text", "text"], metadata={"type": "csv"})
+    doc = CSV(path, text_columns=["text", "text"], doc_metadata={"type": "csv"})
     doc_property_checks(
         doc,
         has_keywords=False,
@@ -119,7 +118,7 @@ def test_csv_doc_no_keywords():
         document_metadata={"type": "csv"},
         chunk_metadata_columns=["category"],
     )
-    chunks = doc.chunks()[0]
+    chunks = list(doc.chunks())[0]
     assert ((df["text"] + " " + df["text"]) == chunks.text).all()
     assert (df["category"] == chunks.metadata["category"]).all()
     assert (chunks.metadata["type"] == "csv").all()
@@ -134,7 +133,7 @@ def test_csv_doc_with_keywords():
         custom_id_column="category",
         text_columns=["text"],
         keyword_columns=["text", "text"],
-        metadata={"type": "csv"},
+        doc_metadata={"type": "csv"},
     )
     doc_property_checks(
         doc,
@@ -143,17 +142,51 @@ def test_csv_doc_with_keywords():
         document_metadata={"type": "csv"},
         chunk_metadata_columns=[],
     )
-    chunks = doc.chunks()[0]
+    chunks = list(doc.chunks())[0]
     assert (df["text"] == chunks.text).all()
     assert ((df["text"] + " " + df["text"]) == chunks.keywords).all()
     assert (chunks.metadata["type"] == "csv").all()
+
+
+def test_csv_doc_streaming():
+    path = os.path.join(DOC_DIR, "lorem_ipsum.csv")
+    df = pd.read_csv(path)
+
+    doc = CSV(
+        path,
+        custom_id_column="category",
+        text_columns=["text"],
+        keyword_columns=["text", "text"],
+        doc_metadata={"type": "csv"},
+        max_rows=3,
+    )
+    doc_property_checks(
+        doc,
+        has_keywords=True,
+        has_custom_ids=True,
+        document_metadata={"type": "csv"},
+        chunk_metadata_columns=[],
+    )
+
+    part1, part2 = list(doc.chunks())
+
+    all_custom_ids = pd.concat([part1.custom_id, part2.custom_id]).to_list()
+    assert df["category"].to_list() == all_custom_ids
+
+    all_texts = pd.concat([part1.text, part2.text]).to_list()
+    assert df["text"].to_list() == all_texts
+
+    all_keywords = pd.concat([part1.keywords, part2.keywords]).to_list()
+    assert (df["text"] + " " + df["text"]).to_list() == all_keywords
+
+    assert (pd.concat([part1.metadata, part2.metadata])["type"] == "csv").all()
 
 
 @pytest.mark.parametrize("metadata", [{}, {"val": "abc"}])
 def test_docx_doc(metadata):
     path = os.path.join(DOC_DIR, "four_english_words.docx")
 
-    doc = DOCX(path, metadata=metadata)
+    doc = DOCX(path, doc_metadata=metadata)
 
     doc_property_checks(
         doc=doc,
@@ -168,7 +201,7 @@ def test_docx_doc(metadata):
 def test_pdf_doc(metadata):
     path = os.path.join(DOC_DIR, "mutual_nda.pdf")
 
-    doc = PDF(path, metadata=metadata)
+    doc = PDF(path, doc_metadata=metadata)
 
     doc_property_checks(
         doc=doc,
@@ -184,7 +217,7 @@ def test_pdf_doc(metadata):
 def test_email_doc(metadata):
     path = os.path.join(DOC_DIR, "Message.eml")
 
-    doc = Email(path, metadata=metadata)
+    doc = Email(path, doc_metadata=metadata)
 
     doc_property_checks(
         doc=doc,
@@ -199,7 +232,7 @@ def test_email_doc(metadata):
 def test_pptx_doc(metadata):
     path = os.path.join(DOC_DIR, "quantum_mechanics.pptx")
 
-    doc = PPTX(path, metadata=metadata)
+    doc = PPTX(path, doc_metadata=metadata)
 
     doc_property_checks(
         doc=doc,
@@ -214,7 +247,7 @@ def test_pptx_doc(metadata):
 def test_txt_doc(metadata):
     path = os.path.join(DOC_DIR, "nature.txt")
 
-    doc = TextFile(path, metadata=metadata)
+    doc = TextFile(path, doc_metadata=metadata)
 
     doc_property_checks(
         doc=doc,
@@ -230,7 +263,7 @@ def test_url_doc(metadata):
     url = "https://en.wikipedia.org/wiki/Rice_University"
 
     for title_is_strong in [True, False]:
-        doc = URL(url=url, title_is_strong=title_is_strong, metadata=metadata)
+        doc = URL(url=url, title_is_strong=title_is_strong, doc_metadata=metadata)
 
         doc_property_checks(
             doc=doc,
@@ -248,7 +281,7 @@ def test_in_memory_text_doc(metadata):
         document_name="test",
         text=["a b", "c d"],
         chunk_metadata=[{"item": 1}, {"item": 2}],
-        metadata=metadata,
+        doc_metadata=metadata,
     )
 
     doc_property_checks(
