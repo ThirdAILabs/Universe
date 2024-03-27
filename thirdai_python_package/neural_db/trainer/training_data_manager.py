@@ -7,7 +7,11 @@ from typing import Optional, Union
 from ..documents import DocumentDataSource
 from ..supervised_datasource import SupDataSource
 from ..utils import assert_file_exists, move_between_directories, unpickle_from
-from .training_progress_tracker import NeuralDbProgressTracker
+from .training_progress_tracker import (
+    NeuralDbProgressTracker,
+    SupervisedProgressTracker,
+    InsertProgressTracker,
+)
 
 
 class SupervisedDataManager:
@@ -36,7 +40,7 @@ class SupervisedDataManager:
         manager.train_source = (
             train_source
             if train_source
-            else SupDataSource.load(path=manager.intro_source_folder)
+            else SupDataSource.load(path=manager.train_source_folder)
         )
         return manager
 
@@ -158,7 +162,8 @@ class TrainingDataManager:
     @staticmethod
     def load(
         checkpoint_dir: Path,
-        data_manager: Union[SupervisedDataManager, InsertDataManager],
+        for_supervised: bool,
+        data_manager: Optional[Union[SupervisedDataManager, InsertDataManager]] = None,
     ):
         manager = TrainingDataManager(checkpoint_dir, None, None, None)
 
@@ -170,8 +175,17 @@ class TrainingDataManager:
                 f" {manager.model_location}"
             )
 
+        if for_supervised:
+            tracker = SupervisedProgressTracker.load(manager.tracker_folder)
+            if not data_manager:
+                data_manager = SupervisedDataManager.load(checkpoint_dir)
+        else:
+            tracker = InsertProgressTracker.load(manager.tracker_folder)
+            if not data_manager:
+                data_manager = InsertDataManager.load(checkpoint_dir)
+
         manager.datasource_manager = data_manager
-        manager.tracker = NeuralDbProgressTracker.load(path=manager.tracker_folder)
+        manager.tracker = tracker
 
         return manager
 

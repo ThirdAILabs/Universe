@@ -245,7 +245,7 @@ class SupDataSource(PyDataSource):
             uses_db_id=True,
         )
         data_source = SupDataSource(
-            query_column=args["query_column"],
+            query_col=args["query_column"],
             data=[sup_data],
             id_delimiter=args["id_delimiter"],
             id_column=args["id_column"],

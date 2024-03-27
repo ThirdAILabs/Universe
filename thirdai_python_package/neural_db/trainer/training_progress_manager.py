@@ -215,6 +215,7 @@ class TrainingProgressManager:
     def from_checkpoint(
         original_mach_model,
         checkpoint_config: CheckpointConfig,
+        for_supervised: bool,
         datasource_manager: Optional[
             Union[InsertDataManager, SupervisedDataManager]
         ] = None,
@@ -226,6 +227,7 @@ class TrainingProgressManager:
 
         save_load_manager = TrainingDataManager.load(
             checkpoint_dir=checkpoint_config.checkpoint_dir,
+            for_supervised=for_supervised,
             data_manager=datasource_manager,
         )
 

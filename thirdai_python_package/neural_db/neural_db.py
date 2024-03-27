@@ -907,6 +907,12 @@ class NeuralDB:
             checkpoint_config=checkpoint_config,
         )
 
+        if checkpoint_config:
+            # Once we have saved the model, we will delete the ndb checkpoint and save updated neural db with trained models.
+            make_training_checkpoint(
+                savable_state=self._savable_state, checkpoint_config=checkpoint_config
+            )
+
     def supervised_train_with_ref_ids(
         self,
         csv: str = None,
@@ -960,6 +966,12 @@ class NeuralDB:
             disable_inverted_index=disable_inverted_index,
             checkpoint_config=checkpoint_config,
         )
+
+        if checkpoint_config:
+            # Once we have saved the model, we will delete the ndb checkpoint and save updated neural db with trained models.
+            make_training_checkpoint(
+                savable_state=self._savable_state, checkpoint_config=checkpoint_config
+            )
 
     def get_associate_samples(self):
         """Get past associate() and associate_batch() samples from NeuralDB logs."""

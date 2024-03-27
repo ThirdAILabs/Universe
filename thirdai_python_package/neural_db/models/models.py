@@ -581,7 +581,7 @@ class Mach(Model):
     ):
         # This will load the datasources, model, training config and upload the current model with the loaded one. This updates the underlying UDT MACH of the current model with the one from the checkpoint along with other class attributes.
         training_progress_manager = TrainingProgressManager.from_checkpoint(
-            self, checkpoint_config=checkpoint_config
+            self, checkpoint_config=checkpoint_config, for_supervised=False
         )
 
         self.index_documents_impl(
@@ -839,6 +839,8 @@ class Mach(Model):
             if supervised_progress_manager.tracker._train_state.disable_inverted_index:
                 self.inverted_index = None
 
+            supervised_progress_manager.training_complete()
+
     def train_on_supervised_data_source(
         self,
         supervised_data_source: SupDataSource,
@@ -869,7 +871,7 @@ class Mach(Model):
             training_manager.make_preindexing_checkpoint(save_datasource=True)
         else:
             training_manager = TrainingProgressManager.from_checkpoint(
-                self, checkpoint_config
+                self, checkpoint_config, for_supervised=True
             )
 
         self.supervised_training_impl(training_manager, callbacks=callbacks)
