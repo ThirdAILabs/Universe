@@ -10,16 +10,16 @@ import requests
 import tqdm
 from thirdai import bolt, data, demos
 
-from .documents import DocumentDataSource
-from .inverted_index import InvertedIndex
-from .mach_defaults import acc_to_stop, metric_to_track
-from .supervised_datasource import SupDataSource
-from .trainer.checkpoint_config import CheckpointConfig
-from .trainer.training_progress_manager import (
+from ..documents import DocumentDataSource
+from ..inverted_index import InvertedIndex
+from ..supervised_datasource import SupDataSource
+from ..trainer.checkpoint_config import CheckpointConfig
+from ..trainer.training_progress_manager import (
     TrainingProgressCallback,
     TrainingProgressManager,
 )
-from .utils import clean_text, pickle_to
+from ..utils import clean_text, pickle_to
+from .mach_defaults import acc_to_stop, metric_to_track
 import math
 
 InferSamples = List
@@ -155,17 +155,13 @@ class Model:
         max_in_memory_batches: Optional[int],
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
+        disable_inverted_index: bool,
     ):
         raise NotImplementedError()
 
 
 class EarlyStopWithMinEpochs(bolt.train.callbacks.Callback):
-    def __init__(
-        self,
-        min_epochs,
-        tracked_metric,
-        metric_threshold,
-    ):
+    def __init__(self, min_epochs, tracked_metric, metric_threshold):
         super().__init__()
 
         self.epoch_count = 0
@@ -214,11 +210,7 @@ class ProgressUpdate(bolt.train.callbacks.Callback):
 
 class FreezeHashTable(bolt.train.callbacks.Callback):
     def __init__(
-        self,
-        freeze_before_train,
-        freeze_after_epoch,
-        tracked_metric,
-        metric_threshold,
+        self, freeze_before_train, freeze_after_epoch, tracked_metric, metric_threshold
     ):
         super().__init__()
 
@@ -307,9 +299,7 @@ def unsupervised_train_on_docs(
     documents.restart()
 
     early_stop_callback = EarlyStopWithMinEpochs(
-        min_epochs=min_epochs,
-        tracked_metric=metric,
-        metric_threshold=acc_to_stop,
+        min_epochs=min_epochs, tracked_metric=metric, metric_threshold=acc_to_stop
     )
 
     progress_callback = ProgressUpdate(
@@ -438,6 +428,7 @@ class Mach(Model):
         hidden_bias=False,
         model_config=None,
         use_inverted_index=True,
+        mach_index_seed: int = 341,
         index_max_shard_size=8_000_000,
     ):
         self.id_col = id_col
@@ -453,6 +444,7 @@ class Mach(Model):
         self.model = None
         self.balancing_samples = []
         self.model_config = model_config
+        self.mach_index_seed = mach_index_seed
         self.inverted_index = (
             InvertedIndex(max_shard_size=index_max_shard_size)
             if use_inverted_index
@@ -688,6 +680,7 @@ class Mach(Model):
                 "extreme_num_hashes": self.extreme_num_hashes,
                 "hidden_bias": self.hidden_bias,
                 "rlhf": True,
+                "mach_index_seed": self.mach_index_seed,
             },
             model_config=self.model_config,
         )
@@ -723,11 +716,7 @@ class Mach(Model):
         )
 
     def infer_labels(
-        self,
-        samples: InferSamples,
-        n_results: int,
-        retriever=None,
-        **kwargs,
+        self, samples: InferSamples, n_results: int, retriever=None, **kwargs
     ) -> Predictions:
         if not retriever:
             if not self.inverted_index:
@@ -788,6 +777,9 @@ class Mach(Model):
             force_non_empty=kwargs.get("force_non_empty", True),
         )
 
+        if self.inverted_index:
+            self.inverted_index.associate(pairs)
+
     def upvote(
         self,
         pairs: List[Tuple[str, int]],
@@ -805,6 +797,9 @@ class Mach(Model):
             learning_rate=learning_rate,
             epochs=epochs,
         )
+
+        if self.inverted_index:
+            self.inverted_index.upvote(pairs)
 
     def retrain(
         self,
@@ -844,6 +839,7 @@ class Mach(Model):
         max_in_memory_batches: Optional[int],
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
+        disable_inverted_index: bool,
     ):
         self.model.train_on_data_source(
             data_source=supervised_data_source,
@@ -854,8 +850,12 @@ class Mach(Model):
             metrics=metrics,
             callbacks=callbacks,
         )
-        # Invalidate inverted index once supervised data is used.
-        self.inverted_index = None
+        if disable_inverted_index:
+            # Invalidate inverted index once supervised data is used.
+            self.inverted_index = None
+        elif self.inverted_index:
+            supervised_data_source.restart()
+            self.inverted_index.supervised_train(supervised_data_source)
 
     def build_inverted_index(self, documents):
         if self.inverted_index:

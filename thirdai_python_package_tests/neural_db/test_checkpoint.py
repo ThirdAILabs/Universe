@@ -10,8 +10,8 @@ nltk.download("punkt")
 from ndb_utils import PDF_FILE, all_local_doc_getters, associate_works, upvote_works
 from thirdai import data
 from thirdai import neural_db as ndb
-from thirdai.neural_db.mach_mixture_model import MachMixture
-from thirdai.neural_db.models import Mach
+from thirdai.neural_db.models.mach_mixture_model import MachMixture
+from thirdai.neural_db.models.models import Mach
 from thirdai.neural_db.trainer.training_data_manager import TrainingDataManager
 from thirdai.neural_db.trainer.training_progress_manager import TrainingProgressManager
 from thirdai.neural_db.trainer.training_progress_tracker import (
@@ -28,6 +28,8 @@ CHECKPOINT_DIR = "/tmp/neural_db"
 NUMBER_DOCS = 3
 DOCS_TO_INSERT = [get_doc() for get_doc in all_local_doc_getters[:NUMBER_DOCS]]
 OUTPUT_DIM = 1000
+FHR = 10_000
+EMBEDDING_DIM = 512
 
 
 @pytest.fixture
@@ -58,9 +60,14 @@ def interrupt_at_end(percent_training_completed):
         raise StopIteration("Terminating training at the end")
 
 
-def train_neural_db_with_checkpoint(number_models: int):
+def train_neural_db_with_checkpoint(num_shards: int, num_models_per_shard: int):
     db = ndb.NeuralDB(
-        "user", number_models=number_models, extreme_output_dim=OUTPUT_DIM
+        "user",
+        num_shards=num_shards,
+        num_models_per_shard=num_models_per_shard,
+        extreme_output_dim=OUTPUT_DIM,
+        fhr=FHR,
+        embedding_dimension=EMBEDDING_DIM,
     )
     # only training for the first two documents
 
@@ -104,16 +111,23 @@ def assert_same_objects(object1, object2):
         assert object1.__getattribute__(attr) == object1.__getattribute__(attr)
 
 
-def interrupted_training(number_models: int, interrupt_function):
+def interrupted_training(
+    num_shards: int, num_models_per_shard: int, interrupt_function
+):
     # This test first interrupts the training and then resumes it.
     db = ndb.NeuralDB(
-        "user", number_models=number_models, extreme_output_dim=OUTPUT_DIM
+        "user",
+        num_shards=num_shards,
+        num_models_per_shard=num_models_per_shard,
+        extreme_output_dim=OUTPUT_DIM,
+        fhr=FHR,
+        embedding_dimension=EMBEDDING_DIM,
     )
 
     checkpoint_config = ndb.CheckpointConfig(
         checkpoint_dir=Path(CHECKPOINT_DIR),
         resume_from_checkpoint=False,
-        checkpoint_interval=5,
+        checkpoint_interval=1,
     )
 
     try:
@@ -121,6 +135,7 @@ def interrupted_training(number_models: int, interrupt_function):
             DOCS_TO_INSERT,
             checkpoint_config=checkpoint_config,
             on_progress=interrupt_function,
+            epochs=2,
         )
     except StopIteration:
         checkpoint_config.resume_from_checkpoint = True
@@ -131,15 +146,14 @@ def interrupted_training(number_models: int, interrupt_function):
         )
 
         assert_same_dbs(db, new_db)
-        upvote_works(db)
         associate_works(db)
 
     except Exception as ex:
         raise ex
 
 
-def make_db_and_training_manager(number_models=2, makes_checkpoint=True):
-    db = ndb.NeuralDB(number_models=number_models)
+def make_db_and_training_manager(num_models_per_shard=2, makes_checkpoint=True):
+    db = ndb.NeuralDB(num_models_per_shard=num_models_per_shard)
     checkpoint_dir = Path(CHECKPOINT_DIR) / str(0)
 
     document_manager = db._savable_state.documents
@@ -148,8 +162,8 @@ def make_db_and_training_manager(number_models=2, makes_checkpoint=True):
     save_load_manager = TrainingDataManager(
         checkpoint_dir=checkpoint_dir,
         model=(
-            db._savable_state.model.models[0]
-            if number_models > 1
+            db._savable_state.model.ensembles[0].models[0]
+            if num_models_per_shard > 1
             else db._savable_state.model
         ),
         intro_source=document_manager.get_data_source(),
@@ -192,7 +206,7 @@ def make_db_and_training_manager(number_models=2, makes_checkpoint=True):
 # Asserts that the final checkpoint created is the same as the db whose reference is held rn.
 @pytest.mark.release
 def test_neural_db_checkpoint_on_single_mach(setup_and_cleanup):
-    db = train_neural_db_with_checkpoint(number_models=1)
+    db = train_neural_db_with_checkpoint(num_shards=1, num_models_per_shard=1)
     loaded_db = ndb.NeuralDB.from_checkpoint(
         os.path.join(CHECKPOINT_DIR, "trained.ndb")
     )
@@ -201,8 +215,9 @@ def test_neural_db_checkpoint_on_single_mach(setup_and_cleanup):
 
 
 @pytest.mark.release
-def test_neural_db_checkpoint_on_mach_mixture(setup_and_cleanup):
-    db = train_neural_db_with_checkpoint(number_models=2)
+@pytest.mark.parametrize("num_shards", [1, 2])
+def test_neural_db_checkpoint_on_mach_mixture(setup_and_cleanup, num_shards):
+    db = train_neural_db_with_checkpoint(num_shards=num_shards, num_models_per_shard=2)
     loaded_db = ndb.NeuralDB.from_checkpoint(
         os.path.join(CHECKPOINT_DIR, "trained.ndb")
     )
@@ -211,16 +226,28 @@ def test_neural_db_checkpoint_on_mach_mixture(setup_and_cleanup):
 
 @pytest.mark.release
 def test_interrupted_training_single_mach():
-    interrupted_training(number_models=1, interrupt_function=interrupt_immediately)
-    interrupted_training(number_models=1, interrupt_function=interrupt_midway)
-    interrupted_training(number_models=1, interrupt_function=interrupt_at_end)
+    interrupted_training(
+        num_shards=1, num_models_per_shard=1, interrupt_function=interrupt_immediately
+    )
+    interrupted_training(
+        num_shards=1, num_models_per_shard=1, interrupt_function=interrupt_midway
+    )
+    interrupted_training(
+        num_shards=1, num_models_per_shard=1, interrupt_function=interrupt_at_end
+    )
 
 
 @pytest.mark.release
 def test_interrupted_training_mach_mixture():
-    interrupted_training(number_models=2, interrupt_function=interrupt_immediately)
-    interrupted_training(number_models=2, interrupt_function=interrupt_midway)
-    interrupted_training(number_models=2, interrupt_function=interrupt_at_end)
+    interrupted_training(
+        num_shards=2, num_models_per_shard=2, interrupt_function=interrupt_immediately
+    )
+    interrupted_training(
+        num_shards=2, num_models_per_shard=2, interrupt_function=interrupt_midway
+    )
+    interrupted_training(
+        num_shards=2, num_models_per_shard=2, interrupt_function=interrupt_at_end
+    )
 
 
 @pytest.mark.release
@@ -252,7 +279,8 @@ def test_meta_save_load_for_mach_mixture(setup_and_cleanup):
     # This test asserts that the label to segment map is saved and loaded correctly.
 
     model1 = MachMixture(
-        number_models=3,
+        num_shards=3,
+        num_models_per_shard=3,
         id_col="id",
         id_delimiter=",",
         query_col="query",
@@ -267,7 +295,8 @@ def test_meta_save_load_for_mach_mixture(setup_and_cleanup):
     label_to_segment_map[2] = [3, 4]
 
     model2 = MachMixture(
-        number_models=3,
+        num_shards=3,
+        num_models_per_shard=3,
         id_col="id",
         id_delimiter=",",
         query_col="query",
@@ -382,6 +411,46 @@ def test_training_progress_manager_no_checkpointing(setup_and_cleanup):
 
 
 @pytest.mark.release
+def test_training_progress_manager_with_resuming_without_sources():
+    db, training_manager, checkpoint_dir = make_db_and_training_manager(
+        makes_checkpoint=True
+    )
+    training_manager.make_preindexing_checkpoint(save_intro_train_shards=False)
+
+    with pytest.raises(FileNotFoundError):
+        TrainingProgressManager.from_checkpoint(
+            original_mach_model=db._savable_state.model.ensembles[0].models[0],
+            checkpoint_config=ndb.CheckpointConfig(
+                checkpoint_dir=checkpoint_dir,
+                resume_from_checkpoint=True,
+                checkpoint_interval=1,
+            ),
+        )
+
+    resume_training_manager = TrainingProgressManager.from_checkpoint(
+        original_mach_model=db._savable_state.model.ensembles[0].models[0],
+        checkpoint_config=ndb.CheckpointConfig(
+            checkpoint_dir=checkpoint_dir,
+            resume_from_checkpoint=True,
+            checkpoint_interval=1,
+        ),
+        intro_shard=training_manager.intro_source,
+        train_shard=training_manager.train_source,
+    )
+
+    assert_same_data_sources(
+        training_manager.intro_source, resume_training_manager.intro_source
+    )
+    assert_same_data_sources(
+        training_manager.train_source, resume_training_manager.train_source
+    )
+    assert_same_objects(
+        training_manager.save_load_manager.model,
+        resume_training_manager.save_load_manager.model,
+    )
+
+
+@pytest.mark.release
 def test_training_progress_manager_with_resuming(setup_and_cleanup):
     db, training_manager, checkpoint_dir = make_db_and_training_manager(
         makes_checkpoint=True
@@ -390,7 +459,7 @@ def test_training_progress_manager_with_resuming(setup_and_cleanup):
     training_manager.make_preindexing_checkpoint()
 
     resume_training_manager = TrainingProgressManager.from_checkpoint(
-        original_mach_model=db._savable_state.model.models[0],
+        original_mach_model=db._savable_state.model.ensembles[0].models[0],
         checkpoint_config=ndb.CheckpointConfig(
             checkpoint_dir=checkpoint_dir,
             resume_from_checkpoint=True,
@@ -412,7 +481,7 @@ def test_training_progress_manager_with_resuming(setup_and_cleanup):
 
 def test_training_progress_manager_gives_correct_arguments(setup_and_cleanup):
     _, training_manager, _ = make_db_and_training_manager(
-        number_models=1, makes_checkpoint=False
+        num_models_per_shard=1, makes_checkpoint=False
     )
 
     assert {
