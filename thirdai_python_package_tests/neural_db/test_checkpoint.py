@@ -12,12 +12,17 @@ from thirdai import data
 from thirdai import neural_db as ndb
 from thirdai.neural_db.models.mach_mixture_model import MachMixture
 from thirdai.neural_db.models.models import Mach
-from thirdai.neural_db.trainer.training_data_manager import TrainingDataManager
+from thirdai.neural_db.trainer.training_data_manager import (
+    TrainingDataManager,
+    InsertDataManager,
+)
 from thirdai.neural_db.trainer.training_progress_manager import TrainingProgressManager
 from thirdai.neural_db.trainer.training_progress_tracker import (
     IntroState,
-    NeuralDbProgressTracker,
-    TrainState,
+    UnsupervisedTrainState,
+    SupervisedTrainState,
+    InsertProgressTracker,
+    SupervisedProgressTracker,
 )
 from thirdai.neural_db.utils import pickle_to, unpickle_from
 
@@ -168,14 +173,14 @@ def make_db_and_training_manager(num_models_per_shard=2, makes_checkpoint=True):
         ),
         intro_source=document_manager.get_data_source(),
         train_source=document_manager.get_data_source(),
-        tracker=NeuralDbProgressTracker(
+        tracker=InsertProgressTracker(
             IntroState(
                 num_buckets_to_sample=8,
                 fast_approximation=False,
                 override_number_classes=None,
                 is_insert_completed=False,
             ),
-            train_state=TrainState(
+            train_state=UnsupervisedTrainState(
                 max_in_memory_batches=None,
                 current_epoch_number=0,
                 is_training_completed=False,
@@ -327,14 +332,14 @@ def test_vlc_save_load(setup_and_cleanup):
 
 
 def test_tracker_save_load(setup_and_cleanup):
-    tracker = NeuralDbProgressTracker(
+    tracker = InsertProgressTracker(
         IntroState(
             num_buckets_to_sample=8,
             fast_approximation=False,
             override_number_classes=None,
             is_insert_completed=False,
         ),
-        train_state=TrainState(
+        train_state=UnsupervisedTrainState(
             max_in_memory_batches=None,
             current_epoch_number=0,
             is_training_completed=False,
@@ -354,7 +359,7 @@ def test_tracker_save_load(setup_and_cleanup):
     )
 
     tracker.save(Path(CHECKPOINT_DIR) / "tracker")
-    new_tracker = NeuralDbProgressTracker.load(Path(CHECKPOINT_DIR) / "tracker")
+    new_tracker = InsertProgressTracker.load(Path(CHECKPOINT_DIR) / "tracker")
 
     assert_same_objects(tracker._intro_state, new_tracker._intro_state)
     assert_same_objects(tracker._train_state, tracker._train_state)
@@ -415,7 +420,7 @@ def test_training_progress_manager_with_resuming_without_sources():
     db, training_manager, checkpoint_dir = make_db_and_training_manager(
         makes_checkpoint=True
     )
-    training_manager.make_preindexing_checkpoint(save_intro_train_shards=False)
+    training_manager.make_preindexing_checkpoint(save_datasource=False)
 
     with pytest.raises(FileNotFoundError):
         TrainingProgressManager.from_checkpoint(
@@ -425,8 +430,14 @@ def test_training_progress_manager_with_resuming_without_sources():
                 resume_from_checkpoint=True,
                 checkpoint_interval=1,
             ),
+            for_supervised=False,
         )
 
+    datasource_manager = InsertDataManager(
+        checkpoint_dir,
+        intro_source=training_manager.intro_source,
+        train_source=training_manager.train_source,
+    )
     resume_training_manager = TrainingProgressManager.from_checkpoint(
         original_mach_model=db._savable_state.model.ensembles[0].models[0],
         checkpoint_config=ndb.CheckpointConfig(
@@ -434,8 +445,8 @@ def test_training_progress_manager_with_resuming_without_sources():
             resume_from_checkpoint=True,
             checkpoint_interval=1,
         ),
-        intro_shard=training_manager.intro_source,
-        train_shard=training_manager.train_source,
+        for_supervised=False,
+        datasource_manager=datasource_manager,
     )
 
     assert_same_data_sources(
@@ -465,6 +476,7 @@ def test_training_progress_manager_with_resuming(setup_and_cleanup):
             resume_from_checkpoint=True,
             checkpoint_interval=1,
         ),
+        for_supervised=False,
     )
 
     assert_same_data_sources(
