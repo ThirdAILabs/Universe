@@ -770,6 +770,9 @@ class Mach(Model):
             force_non_empty=kwargs.get("force_non_empty", True),
         )
 
+        if self.inverted_index:
+            self.inverted_index.associate(pairs)
+
     def upvote(
         self,
         pairs: List[Tuple[str, int]],
@@ -787,6 +790,9 @@ class Mach(Model):
             learning_rate=learning_rate,
             epochs=epochs,
         )
+
+        if self.inverted_index:
+            self.inverted_index.upvote(pairs)
 
     def retrain(
         self,
@@ -838,6 +844,11 @@ class Mach(Model):
 
             if supervised_progress_manager.tracker._train_state.disable_inverted_index:
                 self.inverted_index = None
+            elif self.inverted_index:
+                supervised_progress_manager.train_source.restart()
+                self.inverted_index.supervised_train(
+                    supervised_progress_manager.train_source
+                )
 
             supervised_progress_manager.training_complete()
 

@@ -873,8 +873,8 @@ class NeuralDB:
         max_in_memory_batches: Optional[int] = None,
         metrics: List[str] = [],
         callbacks: List[bolt.train.callbacks.Callback] = [],
-        disable_inverted_index: bool = True,
         checkpoint_config: Optional[CheckpointConfig] = None,
+        **kwargs,
     ):
         """
         Train on supervised datasets that correspond to specific sources.
@@ -903,10 +903,9 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
-            disable_inverted_index=disable_inverted_index,
+            disable_inverted_index=kwargs.get("disable_inverted_index", True),
             checkpoint_config=checkpoint_config,
         )
-
         if checkpoint_config:
             # Once we have saved the model, we will delete the ndb checkpoint and save updated neural db with trained models.
             make_training_checkpoint(
@@ -927,8 +926,8 @@ class NeuralDB:
         max_in_memory_batches: Optional[int] = None,
         metrics: List[str] = [],
         callbacks: List[bolt.train.callbacks.Callback] = [],
-        disable_inverted_index: bool = True,
         checkpoint_config: Optional[CheckpointConfig] = None,
+        **kwargs,
     ):
         """Train on supervised datasets that correspond to specific sources.
         Suppose you inserted a "sports" product catalog and a "furniture"
@@ -963,10 +962,9 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
-            disable_inverted_index=disable_inverted_index,
+            disable_inverted_index=kwargs.get("disable_inverted_index", True),
             checkpoint_config=checkpoint_config,
         )
-
         if checkpoint_config:
             # Once we have saved the model, we will delete the ndb checkpoint and save updated neural db with trained models.
             make_training_checkpoint(
