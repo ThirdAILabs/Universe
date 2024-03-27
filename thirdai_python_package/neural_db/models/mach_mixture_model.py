@@ -11,7 +11,6 @@ from ..trainer.checkpoint_config import (
     CheckpointConfig,
     generate_checkpoint_configs_for_ensembles,
 )
-from ..trainer.training_data_manager import InsertDataManager, SupervisedDataManager
 from ..trainer.training_progress_manager import TrainingProgressManager
 from ..utils import clean_text, pickle_to, requires_condition, unpickle_from
 from .models import CancelState, Mach, Model, add_retriever_tag, merge_results
@@ -165,7 +164,7 @@ class MachMixture(Model):
         # The training manager corresponding to a model loads all the needed to complete the training such as model, document sources, tracker, etc.
         training_managers = []
         for ensemble, config in zip(self.ensembles, ensemble_checkpoint_configs):
-            ensemble_training_managers = []
+            ensemble_training_managers: List[TrainingProgressManager] = []
             for model_id, model in enumerate(ensemble.models):
                 # the intro/train shards are only saved for the first model in each ensemble
                 if model_id == 0:
@@ -180,18 +179,14 @@ class MachMixture(Model):
                     # for every model other than the first in the ensemble,
                     # manually pass in the loaded intro and train source from
                     # the first model
-                    intro_shard = ensemble_training_managers[0].intro_source
-                    train_shard = ensemble_training_managers[0].train_source
                     modelwise_training_manager = (
                         TrainingProgressManager.from_checkpoint(
                             original_mach_model=model,
                             checkpoint_config=config[model_id],
                             for_supervised=False,
-                            datasource_manager=InsertDataManager.load(
-                                checkpoint_dir=config[model_id].checkpoint_dir,
-                                intro_shard=intro_shard,
-                                train_shard=train_shard,
-                            ),
+                            datasource_manager=ensemble_training_managers[
+                                0
+                            ].datasource_manager,
                         )
                     )
                 ensemble_training_managers.append(modelwise_training_manager)
@@ -582,16 +577,14 @@ class MachMixture(Model):
                         )
                     )
                 else:
-                    supervised_source = ensemble_training_managers[0].train_source
                     modelwise_training_manager = (
                         TrainingProgressManager.from_checkpoint(
                             original_mach_model=model,
                             checkpoint_config=config[model_id],
                             for_supervised=True,
-                            datasource_manager=SupervisedDataManager.load(
-                                config[model_id].checkpoint_dir,
-                                train_source=supervised_source,
-                            ),
+                            datasource_manager=ensemble_training_managers[
+                                0
+                            ].datasource_manager,
                         )
                     )
                 ensemble_training_managers.append(modelwise_training_manager)

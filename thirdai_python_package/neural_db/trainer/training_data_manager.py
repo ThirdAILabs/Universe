@@ -35,17 +35,17 @@ class SupervisedDataManager:
             )
 
     @staticmethod
-    def load(checkpoint_dir: Path, train_source: Optional[SupDataSource] = None):
+    def load(checkpoint_dir: Path):
         manager = SupervisedDataManager(checkpoint_dir, None)
-        manager.train_source = (
-            train_source
-            if train_source
-            else SupDataSource.load(path=manager.train_source_folder)
-        )
+        manager.train_source = SupDataSource.load(path=manager.train_source_folder)
         return manager
 
 
 class InsertDataManager:
+    """
+    This class is used for saving and loading the intro and the train sources for the insert method.
+    """
+
     def __init__(
         self,
         checkpoint_dir: Optional[Path],
@@ -77,20 +77,10 @@ class InsertDataManager:
     @staticmethod
     def load(
         checkpoint_dir: Path,
-        intro_shard: Optional[DocumentDataSource] = None,
-        train_shard: Optional[DocumentDataSource] = None,
     ):
         manager = InsertDataManager(checkpoint_dir, None, None)
-        manager.intro_source = (
-            intro_shard
-            if intro_shard
-            else DocumentDataSource.load(path=manager.intro_source_folder)
-        )
-        manager.train_source = (
-            train_shard
-            if train_shard
-            else DocumentDataSource.load(path=manager.train_source_folder)
-        )
+        manager.intro_source = DocumentDataSource.load(path=manager.intro_source_folder)
+        manager.train_source = DocumentDataSource.load(path=manager.train_source_folder)
         return manager
 
 
@@ -118,13 +108,10 @@ class TrainingDataManager:
         self.datasource_manager = datasource_manager
         self.tracker = tracker
 
-    def save(self, save_datasource=True):
+    def save(self):
         if self.checkpoint_dir:
             self.model.save(path=self.model_location)
             self.tracker.save(path=self.tracker_folder)
-            if save_datasource:
-                self.datasource_manager.save()
-
         else:
             raise Exception(
                 "Invalid method call: 'save' operation for TrainingDataManager cannot"
@@ -148,6 +135,7 @@ class TrainingDataManager:
         return self.datasource_manager.train_source
 
     def save_without_sources(self):
+        # Checkpoints the model and the tracker without the datasources
         if self.checkpoint_dir:
             self.model.save(path=self.model_location)
             self.tracker.save(path=self.tracker_folder)
@@ -210,6 +198,8 @@ class TrainingDataManager:
         )
 
     def copy_with_new_dir(self, new_directory):
+        # Returns a new TrainingDataManager with the same model, tracker and data source but with a different
+        # checkpoint directory. Used for backing up data.
         return TrainingDataManager(
             checkpoint_dir=new_directory,
             model=self.model,

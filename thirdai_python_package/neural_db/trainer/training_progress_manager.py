@@ -18,10 +18,9 @@ from .training_data_manager import (
 )
 from .training_progress_tracker import (
     InsertProgressTracker,
-    IntroState,
-    NeuralDbProgressTracker,
     SupervisedProgressTracker,
     SupervisedTrainState,
+    IntroState,
     UnsupervisedTrainState,
 )
 
@@ -46,7 +45,7 @@ class TrainingProgressManager:
 
     def __init__(
         self,
-        tracker: NeuralDbProgressTracker,
+        tracker: Union[SupervisedProgressTracker, InsertProgressTracker],
         save_load_manager: TrainingDataManager,
         makes_checkpoint: bool,
         checkpoint_interval: int = 1,
@@ -68,8 +67,12 @@ class TrainingProgressManager:
         return self.save_load_manager.intro_source
 
     @property
-    def train_source(self) -> DocumentDataSource:
+    def train_source(self) -> Union[DocumentDataSource, SupDataSource]:
         return self.save_load_manager.train_source
+
+    @property
+    def datasource_manager(self) -> Union[InsertDataManager, SupervisedDataManager]:
+        return self.save_load_manager.datasource_manager
 
     @property
     def is_insert_completed(self):
@@ -86,18 +89,18 @@ class TrainingProgressManager:
             return
         self.checkpoint_without_sources()
 
+    @property
+    def is_training_completed(self):
+        return self.tracker.is_training_completed
+
+    def training_arguments(self):
+        return self.tracker.training_arguments()
+
     def complete_epoch(self):
         self.tracker.current_epoch_number += 1
         if self.tracker.current_epoch_number % self.checkpoint_interval == 0:
             if self.makes_checkpoint:
                 self.checkpoint_without_sources()
-
-    def make_preindexing_checkpoint(self, save_datasource=True):
-        # Before starting indexing, we need to save all the resources (datasource, model, tracker)
-        # to be able to resume.
-        if not self.makes_checkpoint:
-            return
-        self.save_load_manager.save(save_datasource=save_datasource)
 
     def training_complete(self):
         # Updates the tracker state by marking training as completed and saves the resources (tracker and model)
@@ -108,24 +111,27 @@ class TrainingProgressManager:
         self.checkpoint_without_sources()
         self.backup_config.delete_checkpoint()
 
+    def make_preindexing_checkpoint(self, save_datasource=True):
+        # Before starting indexing, save all the resources (datasource, model, tracker) to be able to resume.
+        if not self.makes_checkpoint:
+            return
+        if save_datasource:
+            self.save_load_manager.save()
+        else:
+            self.save_load_manager.save_without_sources()
+
     def checkpoint_without_sources(self):
         # First save the model in the backup directory. Once the resources have been successfully saved,
         # we can move them to their intended checkpoint location. We only need to maintain backups of the
         # model and the tracker because other resources (intro and train source) are never modified.
         self.backup_config.save_without_sources()
+
+        # This is used to "hot-swap" the model from backup to original checkpoint location. Saving a model takes longer
+        # than moving it across dir. Hence, if the program terminates while checkpointing, only the backup gets corrupted leaving the
+        # model in the original location in a valid state.
         TrainingDataManager.update_model_and_tracker_from_backup(
             backup_config=self.backup_config, target_config=self.save_load_manager
         )
-
-    def delete_backup(self):
-        self.backup_config.delete_checkpoint()
-
-    @property
-    def is_training_completed(self):
-        return self.tracker.is_training_completed
-
-    def training_arguments(self):
-        return self.tracker.training_arguments()
 
     @staticmethod
     def from_scratch_for_unsupervised(
@@ -211,37 +217,6 @@ class TrainingProgressManager:
         return training_progress_manager
 
     @staticmethod
-    def from_checkpoint(
-        original_mach_model,
-        checkpoint_config: CheckpointConfig,
-        for_supervised: bool,
-        datasource_manager: Optional[
-            Union[InsertDataManager, SupervisedDataManager]
-        ] = None,
-    ) -> TrainingProgressManager:
-        """
-        Given a checkpoint, we will make a save load manager that will load the model, data sources, tracker.
-        """
-        assert checkpoint_config.checkpoint_dir != None
-
-        save_load_manager = TrainingDataManager.load(
-            checkpoint_dir=checkpoint_config.checkpoint_dir,
-            for_supervised=for_supervised,
-            data_manager=datasource_manager,
-        )
-
-        # We need to update the passed model with the state of the loaded model. Since, we need a model reference in the save_load_manager as well, we update the model reference there too.
-        original_mach_model.reset_model(save_load_manager.model)
-        save_load_manager.model = original_mach_model
-        training_progress_manager = TrainingProgressManager(
-            tracker=save_load_manager.tracker,
-            save_load_manager=save_load_manager,
-            makes_checkpoint=True,
-            checkpoint_interval=checkpoint_config.checkpoint_interval,
-        )
-        return training_progress_manager
-
-    @staticmethod
     def from_scratch_for_supervised(
         model,
         supervised_datasource,
@@ -289,4 +264,35 @@ class TrainingProgressManager:
             ),
         )
 
+        return training_progress_manager
+
+    @staticmethod
+    def from_checkpoint(
+        original_mach_model,
+        checkpoint_config: CheckpointConfig,
+        for_supervised: bool,
+        datasource_manager: Optional[
+            Union[InsertDataManager, SupervisedDataManager]
+        ] = None,
+    ) -> TrainingProgressManager:
+        """
+        Given a checkpoint, we will make a save load manager that will load the model, data sources, tracker.
+        """
+        assert checkpoint_config.checkpoint_dir != None
+
+        save_load_manager = TrainingDataManager.load(
+            checkpoint_dir=checkpoint_config.checkpoint_dir,
+            for_supervised=for_supervised,
+            data_manager=datasource_manager,
+        )
+
+        # We need to update the passed model with the state of the loaded model. Since, we need a model reference in the save_load_manager as well, we update the model reference there too.
+        original_mach_model.reset_model(save_load_manager.model)
+        save_load_manager.model = original_mach_model
+        training_progress_manager = TrainingProgressManager(
+            tracker=save_load_manager.tracker,
+            save_load_manager=save_load_manager,
+            makes_checkpoint=True,
+            checkpoint_interval=checkpoint_config.checkpoint_interval,
+        )
         return training_progress_manager

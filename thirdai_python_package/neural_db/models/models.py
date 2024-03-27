@@ -828,9 +828,8 @@ class Mach(Model):
         supervised_progress_manager: TrainingProgressManager,
         callbacks: List[bolt.train.callbacks.Callback],
     ):
-        train_args = supervised_progress_manager.training_arguments()
-
         if not supervised_progress_manager.is_training_completed:
+            train_args = supervised_progress_manager.training_arguments()
             self.model.train_on_data_source(
                 data_source=supervised_progress_manager.train_source,
                 callbacks=callbacks
