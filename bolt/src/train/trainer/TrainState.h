@@ -17,8 +17,7 @@ class TrainState {
         _stop_training(false),
         _steps_since_validation(0) {}
 
-  static std::shared_ptr<TrainState> make(
-      float learning_rate) {
+  static std::shared_ptr<TrainState> make(float learning_rate) {
     return std::make_shared<TrainState>(learning_rate);
   }
 
@@ -37,7 +36,7 @@ class TrainState {
   void incrementStepsSinceVal() { _steps_since_validation++; }
 
   void resetStepsSinceVal() { _steps_since_validation = 0; }
-  
+
   bool compareStepsSinceVal(uint32_t validation_steps) const {
     return _steps_since_validation == validation_steps;
   }

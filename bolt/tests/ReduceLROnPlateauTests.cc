@@ -7,8 +7,7 @@ namespace thirdai::bolt::tests {
 
 void runLRScheduleTest(float threshold, bool relative_threshold) {
   auto history = std::make_shared<metrics::History>();
-  auto train_state =
-      TrainState::make(/* learning_rate= */ 10);
+  auto train_state = TrainState::make(/* learning_rate= */ 10);
 
   callbacks::ReduceLROnPlateau callback(
       /* metric= */ "acc", /* patience= */ 2, /* cooldown= */ 1,
