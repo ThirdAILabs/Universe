@@ -42,10 +42,13 @@ struct SpladeConfig {
 
 class SpladeAugmentation final : public Transformation {
  public:
-  SpladeAugmentation(std::string input_column, std::string output_column,
-                     const SpladeConfig& config);
+  SpladeAugmentation(std::string input_column,
+                    std::string output_indices_column,
+                    std::string output_values_column,
+                    const SpladeConfig& config);
 
-  SpladeAugmentation(std::string input_column, std::string output_column,
+  SpladeAugmentation(std::string input_column, std::string output_indices_column,
+                     std::string output_values_column,
                      bolt::ModelPtr model,
                      dataset::WordpieceTokenizerPtr tokenizer,
                      std::optional<size_t> n_augmented_tokens,
@@ -57,7 +60,7 @@ class SpladeAugmentation final : public Transformation {
   ar::ConstArchivePtr toArchive() const final;
 
  private:
-  std::string decodeTopTokens(const BoltVector& vec, size_t k) const;
+  std::pair<std::vector<size_t>, std::vector<float>> decodeTopTokens(const BoltVector& vec, size_t k) const;
 
   inline size_t tokensToAdd(size_t seq_len) const {
     if (_n_augmented_tokens) {
@@ -67,7 +70,8 @@ class SpladeAugmentation final : public Transformation {
   }
 
   std::string _input_column;
-  std::string _output_column;
+  std::string _output_indices_column;
+  std::string _output_values_column;
 
   bolt::ModelPtr _model;
   dataset::WordpieceTokenizerPtr _tokenizer;

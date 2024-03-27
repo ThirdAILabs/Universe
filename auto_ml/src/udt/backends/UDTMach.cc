@@ -182,6 +182,12 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
       data, options.batchSize(), /* shuffle= */ true, options.verbose,
       splade_config, options.shuffle_config);
 
+  if(splade_config){
+    if(_classifier->model()->inputDims().size() != 2){
+      throw std::invalid_argument("Input dim must be 2 for this splade augmentation.");
+    }
+  }
+
   data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader = _featurizer->getDataLoader(

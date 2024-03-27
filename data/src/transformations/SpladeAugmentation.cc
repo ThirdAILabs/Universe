@@ -4,6 +4,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <archive/src/Archive.h>
 #include <data/src/TensorConversion.h>
+#include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <optional>
@@ -33,10 +34,12 @@ SpladeConfig::SpladeConfig(const std::string& model_checkpoint,
       _lowercase(lowercase) {}
 
 SpladeAugmentation::SpladeAugmentation(std::string input_column,
-                                       std::string output_column,
+                                       std::string output_indices_column,
+                                       std::string output_values_column,
                                        const SpladeConfig& config)
     : SpladeAugmentation(/*input_column=*/std::move(input_column),
-                         /*output_column=*/std::move(output_column),
+                         /*output_indices_column=*/std::move(output_indices_column),
+                         /*output_values_column=*/std::move(output_values_column),
                          /*model=*/config.model,
                          /*tokenizer=*/config.tokenizer,
                          /*n_augmented_tokens=*/config.n_augmented_tokens,
@@ -45,14 +48,16 @@ SpladeAugmentation::SpladeAugmentation(std::string input_column,
                          /*batch_size=*/config.batch_size) {}
 
 SpladeAugmentation::SpladeAugmentation(std::string input_column,
-                                       std::string output_column,
+                                       std::string output_indices_column,
+                                       std::string output_values_column,
                                        bolt::ModelPtr model,
                                        dataset::WordpieceTokenizerPtr tokenizer,
                                        std::optional<size_t> n_augmented_tokens,
                                        std::optional<float> augmentation_frac,
                                        bool filter_tokens, size_t batch_size)
     : _input_column(std::move(input_column)),
-      _output_column(std::move(output_column)),
+      _output_indices_column(std::move(output_indices_column)),
+      _output_values_column(std::move(output_values_column)),
       _model(std::move(model)),
       _tokenizer(std::move(tokenizer)),
       _n_augmented_tokens(n_augmented_tokens),
@@ -97,7 +102,8 @@ ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
   auto tokenized_text =
       tokenized_columns.getArrayColumn<uint32_t>(_input_column);
 
-  std::vector<std::string> augmented_text(tokenized_text->numRows());
+  std::vector<std::vector<size_t>> augmented_indices(tokenized_text->numRows());
+  std::vector<std::vector<float>> augmented_values(tokenized_text->numRows());
 
   ProgressBar bar("augmenting data", batches.size());
   bolt::utils::Timer timer;
@@ -106,11 +112,13 @@ ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
     auto output = _model->forward(batch).at(0);
 
 #pragma omp parallel for default(none) \
-    shared(tokenized_text, augmented_text, output, row_index)
+    shared(tokenized_text, augmented_indices, augmented_values, output, row_index)
     for (size_t i = 0; i < output->batchSize(); i++) {
-      augmented_text[row_index + i] = decodeTopTokens(
+      auto [indices, values] = decodeTopTokens(
           output->getVector(i),
           tokensToAdd(tokenized_text->row(row_index + i).size()));
+      augmented_indices[i] = indices;
+      augmented_values[i] = values;
     }
 
     row_index += output->batchSize();
@@ -123,29 +131,34 @@ ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
             std::to_string(timer.seconds()) + "s.");
 
   ColumnMap output = columns;
-  output.dropColumn(_input_column);
-  output.setColumn(_output_column,
-                   ValueColumn<std::string>::make(std::move(augmented_text)));
+  //  We cannot drop the already cold-start query column, since it would be used by the first layer.
+  // output.dropColumn(_input_column);
+  output.setColumn(_output_indices_column,
+                   ArrayColumn<size_t>::make(std::move(augmented_indices), 30522));
+  output.setColumn(_output_values_column,
+                   ArrayColumn<float>::make(std::move(augmented_values)));
 
   return output;
 }
 
-std::string SpladeAugmentation::decodeTopTokens(const BoltVector& vec,
+std::pair<std::vector<size_t>, std::vector<float>> SpladeAugmentation::decodeTopTokens(const BoltVector& vec,
                                                 size_t k) const {
-  std::string decoded;
+  std::vector<size_t> indices;
+  std::vector<float> values;
   auto topk = vec.findKLargestActivations(k);
   while (!topk.empty()) {
     auto token = _tokenizer->token(topk.top().second);
+    auto index = topk.top().second;
+    auto activation = topk.top().first;
     topk.pop();
 
-    if (!_filter_tokens || std::regex_match(token, _allowed_tokens)) {
-      if (!decoded.empty()) {
-        decoded.push_back(' ');
-      }
-      decoded.append(token);
-    }
+    // No fitering of tokens, since we have a different input for splade now.
+    // if (!_filter_tokens || std::regex_match(token, _allowed_tokens)) {
+    indices.push_back(index);
+    values.push_back(activation);
+    // }
   }
-  return decoded;
+  return std::make_pair(indices, values);
 }
 
 ar::ConstArchivePtr SpladeAugmentation::toArchive() const {

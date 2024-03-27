@@ -48,6 +48,9 @@ Featurizer::Featurizer(ColumnDataTypes data_types,
                                         cat_label->delimiter);
     }
   }
+  // Hardcoding for now
+  _bolt_input_columns.push_back(data::OutputColumns(SPLADE_INDICES, SPLADE_VALUES));
+    
 }
 
 Featurizer::Featurizer(data::TransformationPtr input_transform,
@@ -73,7 +76,7 @@ data::LoaderPtr Featurizer::getDataLoader(
   data::TransformationPtr preprocessor = nullptr;
   if (splade_config) {
     preprocessor = std::make_shared<data::SpladeAugmentation>(
-        textDatasetConfig().textColumn(), textDatasetConfig().textColumn(),
+        textDatasetConfig().textColumn(), SPLADE_INDICES, SPLADE_VALUES,
         *splade_config);
   }
 
@@ -100,20 +103,18 @@ data::LoaderPtr Featurizer::getColdStartDataLoader(
           *splade_config->strong_sample_override);
     }
 
-    auto strong_columns_copy = strong_column_names;
-    strong_columns_copy.push_back(SPLADE_TOKENS);
+    // auto strong_columns_copy = strong_column_names;
+    // strong_columns_copy.push_back(SPLADE_TOKENS);
 
-    auto all_columns = strong_column_names;
-    all_columns.insert(all_columns.end(), weak_column_names.begin(),
-                       weak_column_names.end());
+    // auto all_columns = strong_column_names;
+    // all_columns.insert(all_columns.end(), weak_column_names.begin(),
+    //                    weak_column_names.end());
     cold_start =
         data::Pipeline::make()
-            ->then(std::make_shared<data::StringConcat>(all_columns,
-                                                        SPLADE_TOKENS, " "))
+            ->then(coldStartTransform(strong_column_names, weak_column_names,
+                                      variable_length, fast_approximation))
             ->then(std::make_shared<data::SpladeAugmentation>(
-                SPLADE_TOKENS, SPLADE_TOKENS, *splade_config))
-            ->then(coldStartTransform(strong_columns_copy, weak_column_names,
-                                      variable_length, fast_approximation));
+                _text_dataset->textColumn(), SPLADE_INDICES, SPLADE_VALUES, *splade_config));
   } else {
     cold_start = coldStartTransform(strong_column_names, weak_column_names,
                                     variable_length, fast_approximation);
