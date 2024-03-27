@@ -873,6 +873,7 @@ class NeuralDB:
         max_in_memory_batches: Optional[int] = None,
         metrics: List[str] = [],
         callbacks: List[bolt.train.callbacks.Callback] = [],
+        checkpoint_config: Optional[CheckpointConfig] = None,
         **kwargs,
     ):
         """
@@ -903,7 +904,13 @@ class NeuralDB:
             metrics=metrics,
             callbacks=callbacks,
             disable_inverted_index=kwargs.get("disable_inverted_index", True),
+            checkpoint_config=checkpoint_config,
         )
+        if checkpoint_config:
+            # Once we have saved the model, we will delete the ndb checkpoint and save updated neural db with trained models.
+            make_training_checkpoint(
+                savable_state=self._savable_state, checkpoint_config=checkpoint_config
+            )
 
     def supervised_train_with_ref_ids(
         self,
@@ -919,6 +926,7 @@ class NeuralDB:
         max_in_memory_batches: Optional[int] = None,
         metrics: List[str] = [],
         callbacks: List[bolt.train.callbacks.Callback] = [],
+        checkpoint_config: Optional[CheckpointConfig] = None,
         **kwargs,
     ):
         """Train on supervised datasets that correspond to specific sources.
@@ -955,7 +963,13 @@ class NeuralDB:
             metrics=metrics,
             callbacks=callbacks,
             disable_inverted_index=kwargs.get("disable_inverted_index", True),
+            checkpoint_config=checkpoint_config,
         )
+        if checkpoint_config:
+            # Once we have saved the model, we will delete the ndb checkpoint and save updated neural db with trained models.
+            make_training_checkpoint(
+                savable_state=self._savable_state, checkpoint_config=checkpoint_config
+            )
 
     def get_associate_samples(self):
         """Get past associate() and associate_batch() samples from NeuralDB logs."""
