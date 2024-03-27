@@ -173,7 +173,7 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
                           py::kwargs kwargs) {
   insertNewDocIds(data);
 
-  addBalancingSamples(data);
+  // addBalancingSamples(data);
 
   auto splade_config = getSpladeConfig(kwargs);
   bool splade_in_val = getSpladeValidationOption(kwargs);
@@ -454,8 +454,8 @@ py::object UDTMach::coldstart(
     const bolt::DistributedCommPtr& comm, const py::kwargs& kwargs) {
   insertNewDocIds(data);
 
-  addBalancingSamples(data, strong_column_names, weak_column_names,
-                      variable_length);
+  // addBalancingSamples(data, strong_column_names, weak_column_names,
+  //                     variable_length);
 
   auto splade_config = getSpladeConfig(kwargs);
   auto splade_in_val = getSpladeValidationOption(kwargs);
@@ -653,8 +653,8 @@ void UDTMach::introduceDocuments(
     ctrl_c_check();
   }
 
-  addBalancingSamples(data, strong_column_names, weak_column_names,
-                      /*variable_length=*/std::nullopt);
+  // addBalancingSamples(data, strong_column_names, weak_column_names,
+  //                     /*variable_length=*/std::nullopt);
 
   updateSamplingStrategy();
 }
@@ -1083,8 +1083,8 @@ py::object UDTMach::coldStartWithBalancingSamples(
   insertNewDocIds(data);
   requireRLHFSampler();
 
-  addBalancingSamples(data, strong_column_names, weak_column_names,
-                      variable_length);
+  // addBalancingSamples(data, strong_column_names, weak_column_names,
+  //                     variable_length);
 
   warnOnNonHashBasedMetrics(train_metrics);
 

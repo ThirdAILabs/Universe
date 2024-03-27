@@ -473,7 +473,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                     std::optional<float>, bool, size_t, bool,
                     std::optional<uint32_t>>(),
            py::arg("model_checkpoint"), py::arg("tokenizer_vocab"),
-           py::arg("n_augmented_tokens") = 100,
+           py::arg("n_augmented_tokens") = 150,
            py::arg("augmentation_frac") = std::nullopt,
            py::arg("filter_tokens") = true, py::arg("batch_size") = 4096,
            py::arg("lowercase") = true, py::arg("strong_sample_override") = 7)

@@ -102,7 +102,7 @@ ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
   auto tokenized_text =
       tokenized_columns.getArrayColumn<uint32_t>(_input_column);
 
-  std::vector<std::vector<size_t>> augmented_indices(tokenized_text->numRows());
+  std::vector<std::vector<uint32_t>> augmented_indices(tokenized_text->numRows());
   std::vector<std::vector<float>> augmented_values(tokenized_text->numRows());
 
   ProgressBar bar("augmenting data", batches.size());
@@ -134,16 +134,16 @@ ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
   //  We cannot drop the already cold-start query column, since it would be used by the first layer.
   // output.dropColumn(_input_column);
   output.setColumn(_output_indices_column,
-                   ArrayColumn<size_t>::make(std::move(augmented_indices), 30522));
+                   ArrayColumn<uint32_t>::make(std::move(augmented_indices), 30522));
   output.setColumn(_output_values_column,
-                   ArrayColumn<float>::make(std::move(augmented_values)));
+                   ArrayColumn<float>::make(std::move(augmented_values), std::nullopt));
 
   return output;
 }
 
-std::pair<std::vector<size_t>, std::vector<float>> SpladeAugmentation::decodeTopTokens(const BoltVector& vec,
+std::pair<std::vector<uint32_t>, std::vector<float>> SpladeAugmentation::decodeTopTokens(const BoltVector& vec,
                                                 size_t k) const {
-  std::vector<size_t> indices;
+  std::vector<uint32_t> indices;
   std::vector<float> values;
   auto topk = vec.findKLargestActivations(k);
   while (!topk.empty()) {

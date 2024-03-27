@@ -60,7 +60,7 @@ class SpladeAugmentation final : public Transformation {
   ar::ConstArchivePtr toArchive() const final;
 
  private:
-  std::pair<std::vector<size_t>, std::vector<float>> decodeTopTokens(const BoltVector& vec, size_t k) const;
+  std::pair<std::vector<uint32_t>, std::vector<float>> decodeTopTokens(const BoltVector& vec, size_t k) const;
 
   inline size_t tokensToAdd(size_t seq_len) const {
     if (_n_augmented_tokens) {
