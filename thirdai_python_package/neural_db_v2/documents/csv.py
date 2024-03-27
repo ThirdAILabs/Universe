@@ -4,7 +4,7 @@ import pandas as pd
 
 from ..core.documents import Document
 from ..core.types import NewChunkBatch
-from .utils import series_from_value
+from .utils import join_metadata, series_from_value
 
 
 def is_text_column(column: pd.Series):
@@ -22,10 +22,10 @@ def concat_str_columns(df: pd.DataFrame, columns: List[str]):
     if len(columns) == 0:
         return series_from_value(value="", n=len(df))
 
-    output = df[columns[0]]
+    output = df[columns[0]].fillna("")
 
     for col in columns[1:]:
-        output = output + " " + df[col]
+        output = output + " " + df[col].fillna("")
 
     return output
 
@@ -37,7 +37,7 @@ class CSV(Document):
         text_columns=[],
         keyword_columns=[],
         custom_id_column=None,
-        metadata=None,
+        doc_metadata=None,
     ):
         super().__init__()
 
@@ -45,7 +45,7 @@ class CSV(Document):
         self.text_columns = text_columns
         self.keyword_columns = keyword_columns
         self.custom_id_column = custom_id_column
-        self.metadata = metadata
+        self.doc_metadata = doc_metadata
 
     def chunks(self) -> Iterable[NewChunkBatch]:
         df = pd.read_csv(self.path)
@@ -60,15 +60,12 @@ class CSV(Document):
         text = concat_str_columns(df, self.text_columns)
         keywords = concat_str_columns(df, self.keyword_columns)
 
-        metadata = df.drop(self.text_columns + self.keyword_columns, axis=1)
-
-        if self.metadata:
-            metadata = pd.concat(
-                [metadata, pd.DataFrame.from_records([self.metadata] * len(text))],
-                axis=1,
-            )
-
-        metadata = metadata if len(metadata.columns) > 0 else None
+        chunk_metadata = df.drop(self.text_columns + self.keyword_columns, axis=1)
+        metadata = join_metadata(
+            n_rows=len(text),
+            chunk_metadata=chunk_metadata,
+            doc_metadata=self.doc_metadata,
+        )
 
         return [
             NewChunkBatch(

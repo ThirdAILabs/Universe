@@ -7,6 +7,7 @@ import thirdai_python_package.neural_db.parsing_utils.url_parse as url_parse
 
 from ..core.documents import Document
 from ..core.types import NewChunkBatch
+from .utils import join_metadata
 
 
 class URL(Document):
@@ -15,14 +16,14 @@ class URL(Document):
         url: str,
         response: Response = None,
         title_is_strong: bool = False,
-        metadata=None,
+        doc_metadata=None,
     ):
         super().__init__()
 
         self.url = url
         self.response = response
         self.title_is_strong = title_is_strong
-        self.metadata = metadata
+        self.doc_metadata = doc_metadata
 
     def chunks(self) -> Iterable[NewChunkBatch]:
         elements, success = url_parse.process_url(self.url, self.response)
@@ -35,10 +36,9 @@ class URL(Document):
         text = content["text"]
         keywords = content["title"] if self.title_is_strong else content["text"]
 
-        metadata = None
-        if self.metadata:
-            metadata = pd.DataFrame.from_records([self.metadata] * len(text))
-
+        metadata = join_metadata(
+            n_rows=len(text), chunk_metadata=None, doc_metadata=self.doc_metadata
+        )
         return [
             NewChunkBatch(
                 custom_id=None,

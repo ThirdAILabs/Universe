@@ -6,15 +6,15 @@ import thirdai_python_package.neural_db.parsing_utils.doc_parse as doc_parse
 
 from ..core.documents import Document
 from ..core.types import NewChunkBatch
-from .utils import series_from_value
+from .utils import join_metadata, series_from_value
 
 
 class DOCX(Document):
-    def __init__(self, path, metadata=None):
+    def __init__(self, path, doc_metadata=None):
         super().__init__()
 
         self.path = path
-        self.metadata = metadata
+        self.doc_metadata = doc_metadata
 
     def chunks(self) -> Iterable[NewChunkBatch]:
         elements, success = doc_parse.get_elements(self.path)
@@ -26,9 +26,9 @@ class DOCX(Document):
 
         text = parsed_chunks["para"]
 
-        metadata = None
-        if self.metadata:
-            metadata = pd.DataFrame.from_records([self.metadata] * len(text))
+        metadata = join_metadata(
+            n_rows=len(text), chunk_metadata=None, doc_metadata=self.doc_metadata
+        )
 
         return [
             NewChunkBatch(

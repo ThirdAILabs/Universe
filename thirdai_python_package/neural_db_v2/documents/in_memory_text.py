@@ -4,7 +4,7 @@ import pandas as pd
 
 from ..core.documents import Document
 from ..core.types import NewChunkBatch
-from .utils import series_from_value
+from .utils import join_metadata, series_from_value
 
 
 class InMemoryText(Document):
@@ -13,7 +13,7 @@ class InMemoryText(Document):
         document_name,
         text=[],
         chunk_metadata=None,
-        metadata=None,
+        doc_metadata=None,
     ):
         super().__init__()
 
@@ -22,19 +22,14 @@ class InMemoryText(Document):
         self.chunk_metadata = (
             pd.DataFrame.from_records(chunk_metadata) if chunk_metadata else None
         )
-        self.metadata = (
-            pd.DataFrame.from_records([metadata] * len(self.text)) if metadata else None
-        )
+        self.doc_metadata = doc_metadata
 
     def chunks(self) -> Iterable[NewChunkBatch]:
-        if self.metadata is not None and self.chunk_metadata is not None:
-            metadata = pd.concat([self.metadata, self.chunk_metadata], axis=1)
-        elif self.metadata is not None:
-            metadata = self.metadata
-        elif self.chunk_metadata is not None:
-            metadata = self.chunk_metadata
-        else:
-            metadata = None
+        metadata = join_metadata(
+            n_rows=len(self.text),
+            chunk_metadata=self.chunk_metadata,
+            doc_metadata=self.doc_metadata,
+        )
 
         return [
             NewChunkBatch(

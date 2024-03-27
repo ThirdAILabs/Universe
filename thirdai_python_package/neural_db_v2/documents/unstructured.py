@@ -11,7 +11,7 @@ from thirdai_python_package.neural_db.parsing_utils.unstructured_parse import (
 
 from ..core.documents import Document
 from ..core.types import NewChunkBatch
-from .utils import series_from_value
+from .utils import join_metadata, series_from_value
 
 
 class Unstructured(Document):
@@ -19,15 +19,15 @@ class Unstructured(Document):
         self,
         path: str,
         parser: UnstructuredParse,
-        metadata_columns: List[str],
-        metadata: dict = None,
+        chunk_metadata_columns: List[str],
+        doc_metadata: dict = None,
     ):
         super().__init__()
 
         self.path = path
         self.parser = parser
-        self.metadata_columns = metadata_columns
-        self.metadata = metadata
+        self.chunk_metadata_columns = chunk_metadata_columns
+        self.doc_metadata = doc_metadata
 
     def chunks(self) -> Iterable[NewChunkBatch]:
         parser = self.parser(self.path)
@@ -41,12 +41,11 @@ class Unstructured(Document):
 
         text = contents["para"]
 
-        metadata = contents[self.metadata_columns]
-        if self.metadata:
-            metadata = pd.concat(
-                [metadata, pd.DataFrame.from_records([self.metadata] * len(text))],
-                axis=1,
-            )
+        metadata = join_metadata(
+            n_rows=len(text),
+            chunk_metadata=contents[self.chunk_metadata_columns],
+            doc_metadata=self.doc_metadata,
+        )
 
         return [
             NewChunkBatch(
@@ -60,30 +59,30 @@ class Unstructured(Document):
 
 
 class PPTX(Unstructured):
-    def __init__(self, path, metadata):
+    def __init__(self, path, doc_metadata):
         super().__init__(
             path=path,
             parser=PptxParse,
-            metadata_columns=["filetype", "page"],
-            metadata=metadata,
+            chunk_metadata_columns=["filetype", "page"],
+            doc_metadata=doc_metadata,
         )
 
 
 class TextFile(Unstructured):
-    def __init__(self, path, metadata):
+    def __init__(self, path, doc_metadata):
         super().__init__(
             path=path,
             parser=TxtParse,
-            metadata_columns=["filetype"],
-            metadata=metadata,
+            chunk_metadata_columns=["filetype"],
+            doc_metadata=doc_metadata,
         )
 
 
 class Email(Unstructured):
-    def __init__(self, path, metadata):
+    def __init__(self, path, doc_metadata):
         super().__init__(
             path=path,
             parser=EmlParse,
-            metadata_columns=["filetype", "subject", "sent_from", "sent_to"],
-            metadata=metadata,
+            chunk_metadata_columns=["filetype", "subject", "sent_from", "sent_to"],
+            doc_metadata=doc_metadata,
         )
