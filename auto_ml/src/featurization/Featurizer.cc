@@ -49,8 +49,8 @@ Featurizer::Featurizer(ColumnDataTypes data_types,
     }
   }
   // Hardcoding for now
-  _bolt_input_columns.push_back(data::OutputColumns(SPLADE_INDICES, SPLADE_VALUES));
-    
+  _bolt_input_columns.push_back(
+      data::OutputColumns(SPLADE_INDICES, SPLADE_VALUES));
 }
 
 Featurizer::Featurizer(data::TransformationPtr input_transform,
@@ -114,7 +114,8 @@ data::LoaderPtr Featurizer::getColdStartDataLoader(
             ->then(coldStartTransform(strong_column_names, weak_column_names,
                                       variable_length, fast_approximation))
             ->then(std::make_shared<data::SpladeAugmentation>(
-                _text_dataset->textColumn(), SPLADE_INDICES, SPLADE_VALUES, *splade_config));
+                _text_dataset->textColumn(), SPLADE_INDICES, SPLADE_VALUES,
+                *splade_config));
   } else {
     cold_start = coldStartTransform(strong_column_names, weak_column_names,
                                     variable_length, fast_approximation);

@@ -482,12 +482,15 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   py::class_<SpladeAugmentation, Transformation,
              std::shared_ptr<SpladeAugmentation>>(transformations_submodule,
                                                   "SpladeAugmentation")
-      .def(py::init<std::string, std::string, std::string, const SpladeConfig&>(),
-           py::arg("input_column"), py::arg("output_indices_column"), py::arg("output_values_column"), py::arg("config"))
+      .def(py::init<std::string, std::string, std::string,
+                    const SpladeConfig&>(),
+           py::arg("input_column"), py::arg("output_indices_column"),
+           py::arg("output_values_column"), py::arg("config"))
       .def(py::init<std::string, std::string, std::string, bolt::ModelPtr,
                     dataset::WordpieceTokenizerPtr, std::optional<size_t>,
                     std::optional<float>, bool, size_t>(),
-           py::arg("input_column"), py::arg("output_indices_column"), py::arg("output_values_column"), py::arg("model"),
+           py::arg("input_column"), py::arg("output_indices_column"),
+           py::arg("output_values_column"), py::arg("model"),
            py::arg("tokenizer"), py::arg("n_augmented_tokens") = 100,
            py::arg("augmentation_frac") = std::nullopt,
            py::arg("filter_tokens") = true, py::arg("batch_size") = 4096);

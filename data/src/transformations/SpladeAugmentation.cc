@@ -37,15 +37,16 @@ SpladeAugmentation::SpladeAugmentation(std::string input_column,
                                        std::string output_indices_column,
                                        std::string output_values_column,
                                        const SpladeConfig& config)
-    : SpladeAugmentation(/*input_column=*/std::move(input_column),
-                         /*output_indices_column=*/std::move(output_indices_column),
-                         /*output_values_column=*/std::move(output_values_column),
-                         /*model=*/config.model,
-                         /*tokenizer=*/config.tokenizer,
-                         /*n_augmented_tokens=*/config.n_augmented_tokens,
-                         /*augmentation_frac=*/config.augmentation_frac,
-                         /*filter_tokens=*/config.filter_tokens,
-                         /*batch_size=*/config.batch_size) {}
+    : SpladeAugmentation(
+          /*input_column=*/std::move(input_column),
+          /*output_indices_column=*/std::move(output_indices_column),
+          /*output_values_column=*/std::move(output_values_column),
+          /*model=*/config.model,
+          /*tokenizer=*/config.tokenizer,
+          /*n_augmented_tokens=*/config.n_augmented_tokens,
+          /*augmentation_frac=*/config.augmentation_frac,
+          /*filter_tokens=*/config.filter_tokens,
+          /*batch_size=*/config.batch_size) {}
 
 SpladeAugmentation::SpladeAugmentation(std::string input_column,
                                        std::string output_indices_column,
@@ -102,7 +103,8 @@ ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
   auto tokenized_text =
       tokenized_columns.getArrayColumn<uint32_t>(_input_column);
 
-  std::vector<std::vector<uint32_t>> augmented_indices(tokenized_text->numRows());
+  std::vector<std::vector<uint32_t>> augmented_indices(
+      tokenized_text->numRows());
   std::vector<std::vector<float>> augmented_values(tokenized_text->numRows());
 
   ProgressBar bar("augmenting data", batches.size());
@@ -111,8 +113,8 @@ ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
   for (const auto& batch : batches) {
     auto output = _model->forward(batch).at(0);
 
-#pragma omp parallel for default(none) \
-    shared(tokenized_text, augmented_indices, augmented_values, output, row_index)
+#pragma omp parallel for default(none) shared( \
+    tokenized_text, augmented_indices, augmented_values, output, row_index)
     for (size_t i = 0; i < output->batchSize(); i++) {
       auto [indices, values] = decodeTopTokens(
           output->getVector(i),
@@ -131,18 +133,21 @@ ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
             std::to_string(timer.seconds()) + "s.");
 
   ColumnMap output = columns;
-  //  We cannot drop the already cold-start query column, since it would be used by the first layer.
+  //  We cannot drop the already cold-start query column, since it would be used
+  //  by the first layer.
   // output.dropColumn(_input_column);
-  output.setColumn(_output_indices_column,
-                   ArrayColumn<uint32_t>::make(std::move(augmented_indices), 30522));
-  output.setColumn(_output_values_column,
-                   ArrayColumn<float>::make(std::move(augmented_values), std::nullopt));
+  output.setColumn(
+      _output_indices_column,
+      ArrayColumn<uint32_t>::make(std::move(augmented_indices), 30522));
+  output.setColumn(
+      _output_values_column,
+      ArrayColumn<float>::make(std::move(augmented_values), std::nullopt));
 
   return output;
 }
 
-std::pair<std::vector<uint32_t>, std::vector<float>> SpladeAugmentation::decodeTopTokens(const BoltVector& vec,
-                                                size_t k) const {
+std::pair<std::vector<uint32_t>, std::vector<float>>
+SpladeAugmentation::decodeTopTokens(const BoltVector& vec, size_t k) const {
   std::vector<uint32_t> indices;
   std::vector<float> values;
   auto topk = vec.findKLargestActivations(k);
