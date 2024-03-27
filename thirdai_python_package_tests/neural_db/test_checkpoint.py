@@ -13,16 +13,16 @@ from thirdai import neural_db as ndb
 from thirdai.neural_db.models.mach_mixture_model import MachMixture
 from thirdai.neural_db.models.models import Mach
 from thirdai.neural_db.trainer.training_data_manager import (
-    TrainingDataManager,
     InsertDataManager,
+    TrainingDataManager,
 )
 from thirdai.neural_db.trainer.training_progress_manager import TrainingProgressManager
 from thirdai.neural_db.trainer.training_progress_tracker import (
-    IntroState,
-    UnsupervisedTrainState,
-    SupervisedTrainState,
     InsertProgressTracker,
+    IntroState,
     SupervisedProgressTracker,
+    SupervisedTrainState,
+    UnsupervisedTrainState,
 )
 from thirdai.neural_db.utils import pickle_to, unpickle_from
 
