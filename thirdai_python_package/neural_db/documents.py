@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
+import dask.dataframe as dd
 from nltk.tokenize import sent_tokenize
 from office365.sharepoint.client_context import (
     ClientContext,
@@ -508,7 +509,9 @@ class CSV(Document):
         has_offset=False,
         on_disk=False,
     ) -> None:
-        df = pd.read_csv(path)
+        # df = pd.read_csv(path)
+        print("using dask")
+        df = dd.read_csv(path)
 
         # This variable is used to check whether the id's in the CSV are supposed to start with 0 or with some custom offset. We need the latter when we shard the datasource.
         self.has_offset = has_offset
