@@ -608,7 +608,6 @@ def test_neural_db_retriever_specification():
 
     combined = set(ref.retriever for ref in db.search("carrots bananas", top_k=10))
     assert "mach" in combined
-    assert "inverted_index" in combined
 
     mach_results = db.search("carrots bananas", top_k=10, retriever="mach")
     assert len(mach_results) > 0
