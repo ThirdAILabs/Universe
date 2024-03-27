@@ -112,6 +112,7 @@ class TrainingDataManager:
         if self.checkpoint_dir:
             self.model.save(path=self.model_location)
             self.tracker.save(path=self.tracker_folder)
+            self.datasource_manager.save()
         else:
             raise Exception(
                 "Invalid method call: 'save' operation for TrainingDataManager cannot"
