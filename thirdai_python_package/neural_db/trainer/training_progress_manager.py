@@ -18,9 +18,9 @@ from .training_data_manager import (
 )
 from .training_progress_tracker import (
     InsertProgressTracker,
+    IntroState,
     SupervisedProgressTracker,
     SupervisedTrainState,
-    IntroState,
     UnsupervisedTrainState,
 )
 
