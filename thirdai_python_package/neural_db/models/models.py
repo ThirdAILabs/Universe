@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import os
 import random
 from pathlib import Path
@@ -20,7 +21,6 @@ from ..trainer.training_progress_manager import (
 )
 from ..utils import clean_text, pickle_to
 from .mach_defaults import acc_to_stop, metric_to_track
-import math
 
 InferSamples = List
 Predictions = Sequence
