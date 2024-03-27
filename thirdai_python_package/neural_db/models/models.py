@@ -305,7 +305,11 @@ def unsupervised_train_on_docs(
     progress_callback = ProgressUpdate(
         max_epochs=max_epochs,
         progress_callback_fn=on_progress,
-        total_num_batches=math.ceil(documents.size / batch_size),
+        total_num_batches=(
+            math.ceil(documents.size / batch_size)
+            if batch_size
+            else math.ceil(documents.size / 2048)  # default batch size we use in UDT.
+        ),
     )
 
     cancel_training_callback = CancelTraining(cancel_state=cancel_state)
