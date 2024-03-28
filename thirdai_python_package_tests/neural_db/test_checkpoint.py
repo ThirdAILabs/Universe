@@ -182,7 +182,7 @@ def interrupted_supervised_training(db, interrupt_function):
             checkpoint_config=checkpoint_config,
             epochs=3,
             callbacks=[
-                ProgressUpdate(max_epochs=2, progress_callback_fn=interrupt_function)
+                ProgressUpdate(max_epochs=2, progress_callback_fn=interrupt_function, total_num_batches = 1)
             ],
         )
     except StopIteration:
