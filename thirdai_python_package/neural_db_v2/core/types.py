@@ -70,7 +70,7 @@ class NewChunkBatch:
     custom_id: Union[pt.Series[str], pt.Series[int], None]
     text: pt.Series[str]
     keywords: pt.Series[str]
-    metadata: pt.Series[dict]
+    metadata: pt.DataFrame
     document: pt.Series[str]
 
     def __getitem__(self, i: int):
@@ -81,9 +81,6 @@ class NewChunkBatch:
             metadata=self.metadata[i],
             document=self.document[i],
         )
-
-    def to_df(self):
-        return pd.DataFrame(self.__dict__)
 
 
 @dataclass
