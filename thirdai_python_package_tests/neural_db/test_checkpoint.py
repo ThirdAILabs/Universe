@@ -182,7 +182,11 @@ def interrupted_supervised_training(db, interrupt_function):
             checkpoint_config=checkpoint_config,
             epochs=3,
             callbacks=[
-                ProgressUpdate(max_epochs=2, progress_callback_fn=interrupt_function, total_num_batches = 1)
+                ProgressUpdate(
+                    max_epochs=2,
+                    progress_callback_fn=interrupt_function,
+                    total_num_batches=1,
+                )
             ],
         )
     except StopIteration:
@@ -427,7 +431,9 @@ def test_save_load_training_data_manager(setup_and_cleanup):
 
     save_load_manager.save()
 
-    new_manager = TrainingDataManager.load(Path(CHECKPOINT_DIR) / str(0))
+    new_manager = TrainingDataManager.load(
+        Path(CHECKPOINT_DIR) / str(0), for_supervised=False
+    )
 
     assert_same_objects(save_load_manager.model, new_manager.model)
     assert_same_objects(
@@ -447,9 +453,15 @@ def test_training_progress_manager_no_checkpointing(setup_and_cleanup):
         makes_checkpoint=False
     )
 
-    def assert_no_checkpoints(save_load_manager):
-        assert len(os.listdir(save_load_manager.intro_source_folder)) < 1
-        assert len(os.listdir(save_load_manager.train_source_folder)) < 1
+    def assert_no_checkpoints(save_load_manager: TrainingDataManager):
+        assert (
+            len(os.listdir(save_load_manager.datasource_manager.intro_source_folder))
+            < 1
+        )
+        assert (
+            len(os.listdir(save_load_manager.datasource_manager.train_source_folder))
+            < 1
+        )
         assert len(os.listdir(save_load_manager.tracker_folder)) < 1
 
     training_manager.make_preindexing_checkpoint()
