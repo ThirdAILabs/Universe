@@ -11,7 +11,7 @@ from ndb_utils import PDF_FILE, all_local_doc_getters, associate_works, upvote_w
 from thirdai import data
 from thirdai import neural_db as ndb
 from thirdai.neural_db.models.mach_mixture_model import MachMixture
-from thirdai.neural_db.models.models import Mach
+from thirdai.neural_db.models.models import Mach, ProgressUpdate
 from thirdai.neural_db.trainer.training_data_manager import (
     InsertDataManager,
     TrainingDataManager,
@@ -20,8 +20,6 @@ from thirdai.neural_db.trainer.training_progress_manager import TrainingProgress
 from thirdai.neural_db.trainer.training_progress_tracker import (
     InsertProgressTracker,
     IntroState,
-    SupervisedProgressTracker,
-    SupervisedTrainState,
     UnsupervisedTrainState,
 )
 from thirdai.neural_db.utils import pickle_to, unpickle_from
@@ -116,9 +114,20 @@ def assert_same_objects(object1, object2):
         assert object1.__getattribute__(attr) == object1.__getattribute__(attr)
 
 
-def interrupted_training(
-    num_shards: int, num_models_per_shard: int, interrupt_function
-):
+def get_supervised_datasource_from_manager(db):
+    db._savable_state.documents.get_data_source().save(
+        Path(CHECKPOINT_DIR) / "sup_data_source"
+    )
+    sup = ndb.Sup(
+        csv=Path(CHECKPOINT_DIR) / "sup_data_source" / "source.csv",
+        query_column=db._savable_state.documents.strong_column,
+        id_column=db._savable_state.documents.id_column,
+        uses_db_id=True,
+    )
+    return sup
+
+
+def interrupted_insert(num_shards: int, num_models_per_shard: int, interrupt_function):
     # This test first interrupts the training and then resumes it.
     db = ndb.NeuralDB(
         "user",
@@ -130,11 +139,12 @@ def interrupted_training(
     )
 
     checkpoint_config = ndb.CheckpointConfig(
-        checkpoint_dir=Path(CHECKPOINT_DIR),
+        checkpoint_dir=Path(CHECKPOINT_DIR) / "insert_checkpoints",
         resume_from_checkpoint=False,
         checkpoint_interval=1,
     )
 
+    # testing checkpointing while insert
     try:
         db.insert(
             DOCS_TO_INSERT,
@@ -147,7 +157,40 @@ def interrupted_training(
         db.insert(DOCS_TO_INSERT, checkpoint_config=checkpoint_config)
 
         new_db = ndb.NeuralDB.from_checkpoint(
-            os.path.join(CHECKPOINT_DIR, "trained.ndb")
+            os.path.join(checkpoint_config.checkpoint_dir, "trained.ndb")
+        )
+
+        assert_same_dbs(db, new_db)
+        associate_works(db)
+
+    except Exception as ex:
+        raise ex
+
+    return db
+
+
+def interrupted_supervised_training(db, interrupt_function):
+    sup_data = get_supervised_datasource_from_manager(db)
+    checkpoint_config = ndb.CheckpointConfig(
+        checkpoint_dir=Path(CHECKPOINT_DIR) / "supervised_checkpoints",
+        resume_from_checkpoint=False,
+        checkpoint_interval=1,
+    )
+    try:
+        db.supervised_train(
+            [sup_data],
+            checkpoint_config=checkpoint_config,
+            epochs=3,
+            callbacks=[
+                ProgressUpdate(max_epochs=2, progress_callback_fn=interrupt_function)
+            ],
+        )
+    except StopIteration:
+        checkpoint_config.resume_from_checkpoint = True
+        db.supervised_train([], checkpoint_config=checkpoint_config)
+
+        new_db = ndb.NeuralDB.from_checkpoint(
+            os.path.join(checkpoint_config.checkpoint_dir, "trained.ndb")
         )
 
         assert_same_dbs(db, new_db)
@@ -157,12 +200,23 @@ def interrupted_training(
         raise ex
 
 
+def interrupted_training(num_shards, num_models_per_shard, interrupt_function):
+    db = interrupted_insert(num_shards, num_models_per_shard, interrupt_function)
+    interrupted_supervised_training(db, interrupt_function)
+
+
 def make_db_and_training_manager(num_models_per_shard=2, makes_checkpoint=True):
     db = ndb.NeuralDB(num_models_per_shard=num_models_per_shard)
     checkpoint_dir = Path(CHECKPOINT_DIR) / str(0)
 
     document_manager = db._savable_state.documents
     document_manager.add(DOCS_TO_INSERT)
+
+    datasource_manager = InsertDataManager(
+        checkpoint_dir=checkpoint_dir,
+        intro_source=document_manager.get_data_source(),
+        train_source=document_manager.get_data_source(),
+    )
 
     save_load_manager = TrainingDataManager(
         checkpoint_dir=checkpoint_dir,
@@ -171,8 +225,7 @@ def make_db_and_training_manager(num_models_per_shard=2, makes_checkpoint=True):
             if num_models_per_shard > 1
             else db._savable_state.model
         ),
-        intro_source=document_manager.get_data_source(),
-        train_source=document_manager.get_data_source(),
+        datasource_manager=datasource_manager,
         tracker=InsertProgressTracker(
             IntroState(
                 num_buckets_to_sample=8,
@@ -230,7 +283,7 @@ def test_neural_db_checkpoint_on_mach_mixture(setup_and_cleanup, num_shards):
 
 
 @pytest.mark.release
-def test_interrupted_training_single_mach():
+def test_interrupted_training_single_mach(setup_and_cleanup):
     interrupted_training(
         num_shards=1, num_models_per_shard=1, interrupt_function=interrupt_immediately
     )
@@ -243,7 +296,7 @@ def test_interrupted_training_single_mach():
 
 
 @pytest.mark.release
-def test_interrupted_training_mach_mixture():
+def test_interrupted_training_mach_mixture(setup_and_cleanup):
     interrupted_training(
         num_shards=2, num_models_per_shard=2, interrupt_function=interrupt_immediately
     )

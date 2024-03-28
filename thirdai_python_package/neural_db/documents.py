@@ -676,9 +676,6 @@ class CSV(Document):
     def __getstate__(self):
         state = self.__dict__.copy()
 
-        # Remove the path attribute because it is not cross platform compatible
-        del state["path"]
-
         # Save the filename so we can load it with the same name
         state["doc_name"] = self.name
 
@@ -839,9 +836,6 @@ class Extracted(Document):
 
         if "df" in state:
             state["df"] = state["df"].applymap(path_to_str)
-
-        # Remove the path attribute because it is not cross platform compatible
-        del state["path"]
 
         # Save the filename so we can load it with the same name
         state["doc_name"] = self.name

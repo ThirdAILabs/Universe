@@ -415,8 +415,10 @@ class NeuralDB:
         checkpoint_config: CheckpointConfig,
         callbacks: List[bolt.train.callbacks.Callback] = None,
     ):
-        state, ids, resource_name = load_checkpoint(checkpoint_config=checkpoint_config)
-        self._savable_state = state
+        documents, ids, resource_name = load_checkpoint(
+            checkpoint_config=checkpoint_config
+        )
+        self._savable_state.documents = documents
         self._savable_state.model.resume(
             on_progress=on_progress,
             cancel_state=cancel_state,
@@ -451,11 +453,10 @@ class NeuralDB:
                 return []
             raise e
 
-        """
-        We need to store the model state so that our label_id -> reference mapping remains consistent on resuming.
-        """
         if checkpoint_config:
-            # If a checkpoint config is passed, then we delete any past ndb checkpoints from the folder and save the current neural db object.
+            """
+            We need to store the document manager state so that our label_id -> reference mapping remains consistent on resuming.
+            """
             make_preinsertion_checkpoint(
                 savable_state=self._savable_state,
                 ids=ids,
@@ -907,6 +908,9 @@ class NeuralDB:
             checkpoint_config=checkpoint_config,
         )
 
+        if checkpoint_config:
+            make_training_checkpoint(self._savable_state, checkpoint_config)
+
     def supervised_train_with_ref_ids(
         self,
         csv: str = None,
@@ -960,6 +964,8 @@ class NeuralDB:
             disable_inverted_index=kwargs.get("disable_inverted_index", True),
             checkpoint_config=checkpoint_config,
         )
+        if checkpoint_config:
+            make_training_checkpoint(self._savable_state, checkpoint_config)
 
     def get_associate_samples(self):
         """Get past associate() and associate_batch() samples from NeuralDB logs."""
