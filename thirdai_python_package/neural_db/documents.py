@@ -496,6 +496,12 @@ class CSV(Document):
             and (column.max() == len(column) - 1)
         )
 
+    def remove_spaces(column_name):
+        return column_name.replace(" ", "_")
+
+    def remove_spaces_from_list(column_name_list):
+        return [CSV.remove_spaces(col) for col in column_name_list]
+
     def __init__(
         self,
         path: str,
@@ -509,6 +515,43 @@ class CSV(Document):
         on_disk=False,
     ) -> None:
         df = pd.read_csv(path)
+
+        # Convert spaces in column names to underscores because df.itertuples
+        # does not work when there are spaces
+        # https://stackoverflow.com/questions/45307376/pandas-df-itertuples-renaming-dataframe-columns-when-printing
+        # While it's possible that saved models contain column names that have
+        # spaces. We don't convert these columns during deserialization because
+        # df.itertuples is only called during CSV construction and during
+        # insertion, which would have completed before serialization.
+        # Additionally, this document's hash takes column names into account.
+        # Consider this scenario:
+        # 1. User inserts CSV with spaced column names into an older version of NDB
+        # 2. User saves the NDB model
+        # 3. User upgrades the ThirdAI package
+        # 4. User loads the saved NDB model
+        # 5. User inserts the same CSV into the loaded model
+        # Here, NeuralDB will actually treat the CSV as a new, unseen document,
+        # so it will not invoke df.itertuples on a dataframe that has spaced
+        # column names.
+        cols_with_spaces = [col for col in df.columns if " " in col]
+        if cols_with_spaces:
+            print(
+                "Warning: Found CSV columns with spaces. Converting spaces to underscores. "
+                "When querying with a constraint on a CSV column, make sure to use "
+                "the converted column name (with underscores instead of spaces)."
+            )
+            print("Affected columns:")
+            for col in cols_with_spaces:
+                print(f"'{col}' -> '{CSV.remove_spaces(col)}'")
+            df.columns = CSV.remove_spaces_from_list(df.columns)
+            if id_column:
+                id_column = CSV.remove_spaces(id_column)
+            if strong_columns:
+                strong_columns = CSV.remove_spaces_from_list(strong_columns)
+            if weak_columns:
+                weak_columns = CSV.remove_spaces_from_list(weak_columns)
+            if reference_columns:
+                reference_columns = CSV.remove_spaces_from_list(reference_columns)
 
         # This variable is used to check whether the id's in the CSV are supposed to start with 0 or with some custom offset. We need the latter when we shard the datasource.
         self.has_offset = has_offset
@@ -526,8 +569,8 @@ class CSV(Document):
             df[self.id_column] = range(df.shape[0])
             if orig_id_column:
                 self.orig_to_assigned_id = {
-                    str(row[orig_id_column]): row[self.id_column]
-                    for _, row in df.iterrows()
+                    str(getattr(row, orig_id_column)): getattr(row, self.id_column)
+                    for row in df.itertuples(index=True)
                 }
 
         if strong_columns is None and weak_columns is None:
@@ -536,7 +579,7 @@ class CSV(Document):
             try:
                 for col_name, udt_col_type in get_udt_col_types(path).items():
                     if type(udt_col_type) == type(bolt.types.text()):
-                        text_col_names.append(col_name)
+                        text_col_names.append(CSV.remove_spaces(col_name))
             except:
                 text_col_names = list(df.columns)
                 text_col_names.remove(id_column)
@@ -576,7 +619,8 @@ class CSV(Document):
             + str(sorted(self.strong_columns))
             + str(sorted(self.weak_columns))
             + str(sorted(self.reference_columns))
-            + str(sorted(list(self.doc_metadata.items()))),
+            + str(sorted(list(self.doc_metadata.items())))
+            + str(sorted(self.table.columns)),
         )
 
     @property
