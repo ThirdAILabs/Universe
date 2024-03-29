@@ -153,5 +153,5 @@ def make_preinsertion_checkpoint(
 def make_training_checkpoint(savable_state: State, checkpoint_config: CheckpointConfig):
     # removing last trained ndb
     delete_folder(checkpoint_config.ndb_trained_path)
-    delete_file(checkpoint_config.pickled_documents_ids_resource_name_path)
     savable_state.save(location=checkpoint_config.ndb_trained_path)
+    delete_file(checkpoint_config.pickled_documents_ids_resource_name_path)
