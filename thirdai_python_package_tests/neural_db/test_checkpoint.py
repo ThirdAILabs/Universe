@@ -19,8 +19,8 @@ from thirdai.neural_db.trainer.training_data_manager import (
 from thirdai.neural_db.trainer.training_progress_manager import TrainingProgressManager
 from thirdai.neural_db.trainer.training_progress_tracker import (
     InsertProgressTracker,
-    IntroState,
     InsertTrainState,
+    IntroState,
 )
 from thirdai.neural_db.utils import pickle_to, unpickle_from
 

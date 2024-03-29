@@ -1,7 +1,7 @@
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Union
-from dataclasses import dataclass
 
 from thirdai import data
 
@@ -121,7 +121,10 @@ class NeuralDbProgressTracker:
 
 class InsertProgressTracker(NeuralDbProgressTracker):
     def __init__(
-        self, intro_state: IntroState, train_state: InsertTrainState, vlc_config : data.transformations.VariableLengthConfig
+        self,
+        intro_state: IntroState,
+        train_state: InsertTrainState,
+        vlc_config: data.transformations.VariableLengthConfig,
     ):
         super().__init__(train_state=train_state)
 
