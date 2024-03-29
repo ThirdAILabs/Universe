@@ -408,7 +408,6 @@ def test_tracker_save_load(setup_and_cleanup):
             freeze_after_epoch=7,
             freeze_after_acc=0.95,
             balancing_samples=False,
-            splade_config=None,
             semantic_enhancement=False,
             semantic_model_cache_dir="",
         ),
