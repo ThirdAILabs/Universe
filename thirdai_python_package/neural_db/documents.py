@@ -845,6 +845,8 @@ class Extracted(Document):
         # Save the filename so we can load it with the same name
         state["doc_name"] = self.name
 
+        state["path"] = str(self.path)
+
         return state
 
     def __setstate__(self, state):
@@ -853,6 +855,9 @@ class Extracted(Document):
             state["_save_extra_info"] = True
         if "filename" in state:
             state["path"] = state["filename"]
+
+        if "path" in state:
+            state["path"] = Path(state["path"])
 
         self.__dict__.update(state)
 
