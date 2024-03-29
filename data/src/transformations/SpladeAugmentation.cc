@@ -137,13 +137,13 @@ std::string SpladeAugmentation::decodeTopTokens(const BoltVector& vec,
     auto token = _tokenizer->token(topk.top().second);
     topk.pop();
 
-    if (!_filter_tokens || std::regex_match(token, _allowed_tokens)) {
+    // if (!_filter_tokens || std::regex_match(token, _allowed_tokens)) {
       if (!decoded.empty()) {
         decoded.push_back(' ');
       }
       decoded.append(token);
     }
-  }
+  // }
   return decoded;
 }
 
