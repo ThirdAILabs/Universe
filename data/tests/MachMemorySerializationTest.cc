@@ -33,7 +33,8 @@ TEST(MachMemorySerializationTest, BasicSerialization) {
 
   auto new_subset = new_samples->getSamples(10);
 
-  ASSERT_EQ(new_subset->numRows(), original_subset->numRows());
+  ASSERT_EQ(original_subset->numRows(), 10);
+  ASSERT_EQ(new_subset->numRows(), 10);
 }
 
 }  // namespace thirdai::data::tests

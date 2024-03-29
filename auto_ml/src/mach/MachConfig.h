@@ -114,7 +114,7 @@ class MachConfig {
 
   data::TextTokenizerPtr textTransformation() const;
 
-  data::MachLabelPtr mapToBucketsTransform() const;
+  data::MachLabelPtr idToBucketsTransform() const;
 
   bool usesSoftmax() const { return text::lower(_output_act) == "softmax"; }
 

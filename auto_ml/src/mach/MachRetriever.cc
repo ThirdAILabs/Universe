@@ -39,7 +39,7 @@ MachRetriever::MachRetriever(const MachConfig& config)
       _text_column(config.getTextCol()),
       _id_column(config.getIdCol()),
       _text_transform(config.textTransformation()),
-      _map_to_buckets(config.mapToBucketsTransform()),
+      _id_to_buckets(config.idToBucketsTransform()),
       _add_mach_memory_samples(std::make_shared<data::AddMachMemorySamples>()),
       _bolt_input_columns({{input_indices_column, input_values_column}}),
       _bolt_label_columns(
@@ -159,7 +159,7 @@ bolt::metrics::History MachRetriever::train(
   insertNewIds(data);
 
   auto train_transform = data::Pipeline::make(
-      {_text_transform, _map_to_buckets, _add_mach_memory_samples});
+      {_text_transform, _id_to_buckets, _add_mach_memory_samples});
 
   auto train_data_loader = data::Loader::make(
       data, train_transform, _state, _bolt_input_columns, _bolt_label_columns,
@@ -188,7 +188,7 @@ bolt::metrics::History MachRetriever::evaluate(
   bolt::Trainer trainer(_model, _freeze_tables_epoch,
                         /* gradient_update_interval */ 1);
 
-  auto transform = data::Pipeline::make({_text_transform, _map_to_buckets});
+  auto transform = data::Pipeline::make({_text_transform, _id_to_buckets});
 
   auto eval_data_loader = data::Loader::make(
       data, transform, _state, _bolt_input_columns, _bolt_label_columns, 2048,
@@ -288,7 +288,7 @@ auto repeatRows(data::ColumnMap&& columns, uint32_t repetitions) {
 void MachRetriever::upvote(data::ColumnMap upvotes, uint32_t n_upvote_samples,
                            uint32_t n_balancing_samples, float learning_rate,
                            uint32_t epochs, size_t batch_size) {
-  upvotes = data::Pipeline({_text_transform, _map_to_buckets})
+  upvotes = data::Pipeline({_text_transform, _id_to_buckets})
                 .apply(std::move(upvotes), *_state);
   teach(upvotes, learning_rate, n_upvote_samples,
         n_balancing_samples * upvotes.numRows(), epochs, batch_size);
@@ -661,7 +661,7 @@ ar::ConstArchivePtr MachRetriever::toArchive(bool with_optimizer) const {
   map->set("id_column", ar::str(_id_column));
 
   map->set("text_transform", _text_transform->toArchive());
-  map->set("map_to_buckets", _map_to_buckets->toArchive());
+  map->set("id_to_buckets", _id_to_buckets->toArchive());
   map->set("add_mach_memory_samples", _add_mach_memory_samples->toArchive());
 
   map->set("bolt_input_columns",
@@ -683,8 +683,8 @@ MachRetriever::MachRetriever(const ar::Archive& archive)
       _id_column(archive.str("id_column")),
       _text_transform(
           data::Transformation::fromArchive(*archive.get("text_transform"))),
-      _map_to_buckets(
-          data::Transformation::fromArchive(*archive.get("map_to_buckets"))),
+      _id_to_buckets(
+          data::Transformation::fromArchive(*archive.get("id_to_buckets"))),
       _add_mach_memory_samples(data::Transformation::fromArchive(
           *archive.get("add_mach_memory_samples"))),
       _bolt_input_columns(

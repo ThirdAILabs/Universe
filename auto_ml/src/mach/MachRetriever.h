@@ -225,7 +225,7 @@ class MachRetriever {
 
   // TODO(Geordie): Rename things
   data::TransformationPtr _text_transform;
-  data::TransformationPtr _map_to_buckets;
+  data::TransformationPtr _id_to_buckets;
   data::TransformationPtr _add_mach_memory_samples;
 
   data::OutputColumnsList _bolt_input_columns;

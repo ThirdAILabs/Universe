@@ -80,7 +80,7 @@ data::TextTokenizerPtr MachConfig::textTransformation() const {
       /* dim= */ _text_feature_dim);
 }
 
-data::MachLabelPtr MachConfig::mapToBucketsTransform() const {
+data::MachLabelPtr MachConfig::idToBucketsTransform() const {
   return std::make_shared<data::MachLabel>(_id_col, bucket_column);
 }
 

@@ -150,7 +150,7 @@ bolt::metrics::History wrappedEvaluateOnCsv(
 }
 
 void defineMach(py::module_& module) {
-  py::class_<MachConfig>(module, "Mach")
+  py::class_<MachConfig>(module, "MachConfig")
       .def(py::init<>())
       .def("build", &MachConfig::build)
       .def("text_col", &MachConfig::textCol, py::arg("col"))

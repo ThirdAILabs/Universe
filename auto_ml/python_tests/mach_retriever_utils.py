@@ -7,7 +7,7 @@ QUERY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "texts.csv
 
 def train_simple_mach_retriever():
     model = (
-        bolt.Mach()
+        bolt.MachConfig()
         .text_col("text")
         .id_col("id")
         .tokenizer("words")

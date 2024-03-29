@@ -3,8 +3,8 @@ import random
 
 import pandas as pd
 import pytest
+from mach_retriever_utils import QUERY_FILE, train_simple_mach_retriever
 from thirdai import bolt, data
-from mach_retriever_utils import train_simple_mach_retriever, QUERY_FILE
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 

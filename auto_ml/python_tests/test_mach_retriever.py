@@ -1,14 +1,15 @@
-from download_dataset_fixtures import download_scifact_dataset
-from thirdai import bolt, data
-import pandas as pd
 import os
-from mach_retriever_utils import train_simple_mach_retriever, QUERY_FILE
+
+import pandas as pd
 import pytest
+from download_dataset_fixtures import download_scifact_dataset
+from mach_retriever_utils import QUERY_FILE, train_simple_mach_retriever
+from thirdai import bolt, data
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 
-def check_search_accuracy(model, supervised_tst):
+def check_search_accuracy(model, supervised_tst, expected_accuracy):
     df = pd.read_csv(supervised_tst)
     correct = 0
     for _, row in df.iterrows():
@@ -18,14 +19,14 @@ def check_search_accuracy(model, supervised_tst):
         if preds[0][0] in labels:
             correct += 1
 
-    assert correct / len(df) >= 0.55
+    assert correct / len(df) >= expected_accuracy
 
 
 def test_mach_retriever_scifact(download_scifact_dataset):
     unsupervised_file, supervised_trn, supervised_tst, _ = download_scifact_dataset
 
     model = (
-        bolt.Mach()
+        bolt.MachConfig()
         .tokenizer("words")
         .emb_dim(1024)
         .n_buckets(1000)
@@ -58,15 +59,16 @@ def test_mach_retriever_scifact(download_scifact_dataset):
 
     assert metrics["val_precision@1"][-1] >= 0.58
 
-    check_search_accuracy(model, supervised_tst)
+    check_search_accuracy(model, supervised_tst, expected_accuracy=0.58)
 
     save_path = "./mach_retriever"
     model.save(save_path)
     model = bolt.MachRetriever.load(save_path)
     os.remove(save_path)
 
-    check_search_accuracy(model, supervised_tst)
+    check_search_accuracy(model, supervised_tst, expected_accuracy=0.58)
 
+    # To check that training still works after saving.
     model.train(
         supervised_trn,
         learning_rate=1e-3,
