@@ -11,7 +11,8 @@ import pandas as pd
 
 # Local
 from .constraint_matcher import TableFilter
-from .sql_helpers import df_to_sql, select_as_df
+from .sql_helpers import df_to_sql, select_as_df, remove_spaces_from_column_names
+from .utils import remove_spaces, remove_spaces_from_list
 
 
 def df_with_index_name(df):
@@ -28,6 +29,10 @@ class Table(ABC):
     @property
     @abstractmethod
     def columns(self) -> List[str]:
+        pass
+
+    @abstractmethod
+    def remove_column_spaces(self) -> None:
         pass
 
     @property
@@ -80,6 +85,10 @@ class DataFrameTable(Table):
         # Excludes ID column
         return self.df.columns
 
+    def remove_column_spaces(self) -> None:
+        self.df.index.name = remove_spaces(self.df.index.name)
+        self.df.columns = remove_spaces_from_list(self.df.columns)
+
     @property
     def size(self) -> int:
         return len(self.df)
@@ -104,8 +113,9 @@ class DataFrameTable(Table):
         )
 
     def iter_rows_as_dicts(self) -> Generator[Tuple[int, dict], None, None]:
-        for row_id, row in self.df.iterrows():
-            row_dict = row.to_dict()
+        for row in self.df.itertuples(index=True):
+            row_id = row.Index
+            row_dict = row._asdict()
             row_dict[self.df.index.name] = row_id
             yield (row_id, row_dict)
 
@@ -133,6 +143,12 @@ class SQLiteTable(Table):
     def columns(self) -> List[str]:
         # Excludes ID column
         return self.db_columns
+
+    def remove_column_spaces(self) -> None:
+        self.db_columns = remove_spaces_from_list(self.db_columns)
+        self.id_column = remove_spaces(self.id_column)
+        remove_spaces_from_column_names(self.db_path)
+        self.sql_table.col
 
     @property
     def size(self) -> int:

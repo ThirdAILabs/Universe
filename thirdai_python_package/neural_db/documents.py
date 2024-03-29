@@ -35,7 +35,13 @@ from .constraint_matcher import (
 )
 from .parsing_utils import doc_parse, pdf_parse, sliding_pdf_parse, url_parse
 from .table import DataFrameTable, SQLiteTable
-from .utils import hash_file, hash_string, requires_condition
+from .utils import (
+    hash_file,
+    hash_string,
+    requires_condition,
+    remove_spaces,
+    remove_spaces_from_list,
+)
 
 
 class Reference:
@@ -66,6 +72,9 @@ class Document:
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
         raise NotImplementedError()
+
+    # @property
+    # def
 
     def all_entity_ids(self) -> List[int]:
         raise NotImplementedError()
@@ -435,10 +444,12 @@ class DocumentManager:
             subdir = directory / str(i)
             doc.load_meta(subdir)
 
-        if not hasattr(self, "doc_constraints"):
-            self.constraint_matcher = ConstraintMatcher[DocAndOffset]()
-            for item in self.registry.values():
-                self.constraint_matcher.index(item, item[0].matched_constraints)
+        # Always rebuild constraint matcher after loading to ensure that
+        # constraints are up-to-date. This is important in case the package
+        # version is updated between saving and loading.
+        self.constraint_matcher = ConstraintMatcher[DocAndOffset]()
+        for item in self.registry.values():
+            self.constraint_matcher.index(item, item[0].matched_constraints)
 
 
 def safe_has_offset(this):
@@ -508,7 +519,12 @@ class CSV(Document):
         has_offset=False,
         on_disk=False,
     ) -> None:
+        id_column = remove_spaces(id_column)
+        strong_columns = remove_spaces_from_list(strong_columns)
+        weak_columns = remove_spaces_from_list(weak_columns)
+        reference_columns = remove_spaces_from_list(reference_columns)
         df = pd.read_csv(path)
+        df.columns = remove_spaces_from_list(df.columns)
 
         # This variable is used to check whether the id's in the CSV are supposed to start with 0 or with some custom offset. We need the latter when we shard the datasource.
         self.has_offset = has_offset
@@ -526,8 +542,8 @@ class CSV(Document):
             df[self.id_column] = range(df.shape[0])
             if orig_id_column:
                 self.orig_to_assigned_id = {
-                    str(row[orig_id_column]): row[self.id_column]
-                    for _, row in df.iterrows()
+                    str(getattr(row, orig_id_column)): getattr(row, self.id_column)
+                    for row in df.itertuples(index=True)
                 }
 
         if strong_columns is None and weak_columns is None:
@@ -738,6 +754,13 @@ class CSV(Document):
             del self.df
         else:
             self.table.load_meta(directory)
+
+        # remove spaces so itertuples doesn't break
+        self.id_column = remove_spaces(self.id_column)
+        self.strong_columns = remove_spaces_from_list(self.strong_columns)
+        self.weak_columns = remove_spaces_from_list(self.weak_columns)
+        self.reference_columns = remove_spaces_from_list(self.reference_columns)
+        self.table.remove_column_spaces()
 
 
 # Base class for PDF, DOCX and Unstructured classes because they share the same logic.

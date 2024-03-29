@@ -6,6 +6,7 @@ import random
 import shutil
 from functools import wraps
 from pathlib import Path
+from typing import List
 
 DIRECTORY_CONNECTOR_SUPPORTED_EXT = ["pdf", "docx", "pptx", "txt", "eml"]
 SUPPORTED_EXT = ["csv"] + DIRECTORY_CONNECTOR_SUPPORTED_EXT
@@ -131,3 +132,11 @@ def requires_condition(
         return wrapper
 
     return decorator
+
+
+def remove_spaces(column_name: str):
+    return column_name.replace(" ", "_")
+
+
+def remove_spaces_from_list(column_name_list: List[str]):
+    return [remove_spaces(col) for col in column_name_list]

@@ -203,6 +203,12 @@ class ConstraintMatcher(Generic[ItemT]):
         self._item_constraints = {}
 
     def match(self, filters: Dict[str, Filter]) -> Set[ItemT]:
+        for key in filters:
+            if " " in key:
+                print(
+                    f"Warning: Found a space in '{key}'. If this is a CSV column name, spaces shave been converted into underscores."
+                )
+
         matches = self._all_items
 
         for key, filterer in filters.items():

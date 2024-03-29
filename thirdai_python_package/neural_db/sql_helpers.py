@@ -13,6 +13,7 @@ from sqlalchemy import (
     create_engine,
     select,
 )
+from .utils import remove_spaces
 
 
 def get_engine(db_path: str):
@@ -72,3 +73,17 @@ def select_as_df(db_path: str, table: Table, constraints: List[Any] = None):
         selection,
         engine.connect(),
     )
+
+
+def remove_spaces_from_column_names(db_path: str, table: Table):
+    engine = get_engine(db_path)
+    with engine.connect() as conn:
+        for col in table.columns:
+            conn.execute(
+                f"""
+            ALTER TABLE {table.name}
+            RENAME COLUMN "{col}" TO {remove_spaces(col)}
+            """
+            )
+        conn.commit()
+    table.metadata.reflect(bind=engine)
