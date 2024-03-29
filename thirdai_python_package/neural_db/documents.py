@@ -679,6 +679,8 @@ class CSV(Document):
         # Save the filename so we can load it with the same name
         state["doc_name"] = self.name
 
+        state["path"] = str(self.path)
+
         # End pickling functionality here to support old directory checkpoint save
         return state
 
@@ -686,6 +688,9 @@ class CSV(Document):
         # Add new attributes to state for older document object version backward compatibility
         if "_save_extra_info" not in state:
             state["_save_extra_info"] = True
+
+        if "path" in state:
+            state["path"] = Path(state["path"])
 
         self.__dict__.update(state)
 
