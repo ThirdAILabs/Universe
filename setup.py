@@ -163,7 +163,7 @@ neural_db_deps = [
     "unidecode",
     "pydantic<2.5",
     "sortedcontainers",
-    "SQLAlchemy",
+    "SQLAlchemy>=2.0.0",
     "scikit-learn",
     "Office365-REST-Python-Client==2.5.1",
     "simple-salesforce==1.12.5",
