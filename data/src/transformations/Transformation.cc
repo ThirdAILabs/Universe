@@ -11,6 +11,7 @@
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/Graph.h>
 #include <data/src/transformations/MachLabel.h>
+#include <data/src/transformations/NextWordPrediction.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/Recurrence.h>
 #include <data/src/transformations/RegressionBinning.h>
@@ -53,6 +54,7 @@ TransformationPtr Transformation::fromArchive(const ar::Archive& archive) {
   HANDLE_TYPE(HashPositionTransform)
   HANDLE_TYPE(OffsetPositionTransform)
   HANDLE_TYPE(MachLabel)
+  HANDLE_TYPE(NextWordPrediction)
   HANDLE_TYPE(Pipeline)
   HANDLE_TYPE(Recurrence)
   HANDLE_TYPE(RegressionBinning)
