@@ -20,7 +20,7 @@ from thirdai.neural_db.trainer.training_progress_manager import TrainingProgress
 from thirdai.neural_db.trainer.training_progress_tracker import (
     InsertProgressTracker,
     IntroState,
-    UnsupervisedTrainState,
+    InsertTrainState,
 )
 from thirdai.neural_db.utils import pickle_to, unpickle_from
 
@@ -237,7 +237,7 @@ def make_db_and_training_manager(num_models_per_shard=2, makes_checkpoint=True):
                 override_number_classes=None,
                 is_insert_completed=False,
             ),
-            train_state=UnsupervisedTrainState(
+            train_state=InsertTrainState(
                 max_in_memory_batches=None,
                 current_epoch_number=0,
                 is_training_completed=False,
@@ -396,7 +396,7 @@ def test_tracker_save_load(setup_and_cleanup):
             override_number_classes=None,
             is_insert_completed=False,
         ),
-        train_state=UnsupervisedTrainState(
+        train_state=InsertTrainState(
             max_in_memory_batches=None,
             current_epoch_number=0,
             is_training_completed=False,

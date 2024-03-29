@@ -21,7 +21,7 @@ from .training_progress_tracker import (
     IntroState,
     SupervisedProgressTracker,
     SupervisedTrainState,
-    UnsupervisedTrainState,
+    InsertTrainState,
 )
 
 
@@ -178,7 +178,7 @@ class TrainingProgressManager:
             "semantic_model_cache_dir", ".cache/neural_db_semantic_model"
         )
 
-        train_state = UnsupervisedTrainState(
+        train_state = InsertTrainState(
             max_in_memory_batches=max_in_memory_batches,
             current_epoch_number=0,
             is_training_completed=not should_train,

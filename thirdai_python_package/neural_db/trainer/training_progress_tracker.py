@@ -1,65 +1,41 @@
 import json
 from pathlib import Path
 from typing import List, Union
+from dataclasses import dataclass
 
 from thirdai import data
 
 from ..utils import pickle_to, unpickle_from
 
 
+@dataclass
 class SupervisedTrainState:
-    def __init__(
-        self,
-        is_training_completed: bool,
-        current_epoch_number: int,
-        learning_rate: int,
-        epochs: int,
-        batch_size: int,
-        max_in_memory_batches: int,
-        metrics: List[str],
-        disable_inverted_index: bool,
-    ):
-        self.is_training_completed = is_training_completed
-        self.current_epoch_number = current_epoch_number
-        self.learning_rate = learning_rate
-        self.epochs = epochs
-        self.batch_size = batch_size
-        self.max_in_memory_batches = max_in_memory_batches
-        self.metrics = metrics
-        self.disable_inverted_index = disable_inverted_index
+
+    is_training_completed: bool
+    current_epoch_number: int
+    learning_rate: float
+    epochs: int
+    batch_size: int
+    max_in_memory_batches: int
+    metrics: List[int]
+    disable_inverted_index: bool
 
 
-class UnsupervisedTrainState:
-    def __init__(
-        self,
-        max_in_memory_batches: int,
-        current_epoch_number: int,
-        is_training_completed: bool,
-        learning_rate: float,
-        min_epochs: int,
-        max_epochs: int,
-        freeze_before_train: bool,
-        batch_size: int,
-        freeze_after_epoch: int,
-        freeze_after_acc: float,
-        balancing_samples: bool,
-        semantic_enhancement: bool,
-        semantic_model_cache_dir: str,
-        **kwargs,
-    ):
-        self.max_in_memory_batches = max_in_memory_batches
-        self.current_epoch_number = current_epoch_number
-        self.is_training_completed = is_training_completed
-        self.learning_rate = learning_rate
-        self.min_epochs = min_epochs
-        self.max_epochs = max_epochs
-        self.freeze_before_train = freeze_before_train
-        self.batch_size = batch_size
-        self.freeze_after_epoch = freeze_after_epoch
-        self.freeze_after_acc = freeze_after_acc
-        self.balancing_samples = balancing_samples
-        self.semantic_enhancement = semantic_enhancement
-        self.semantic_model_cache_dir = semantic_model_cache_dir
+@dataclass
+class InsertTrainState:
+    max_in_memory_batches: int
+    current_epoch_number: int
+    is_training_completed: bool
+    learning_rate: float
+    min_epochs: int
+    max_epochs: int
+    freeze_before_train: bool
+    batch_size: int
+    freeze_after_epoch: int
+    freeze_after_acc: float
+    balancing_samples: bool
+    semantic_enhancement: bool
+    semantic_model_cache_dir: str
 
 
 class IntroState:
@@ -86,9 +62,7 @@ class NeuralDbProgressTracker:
     Given the NeuralDbProgressTracker of the model and the data sources, we should be able to resume the training.
     """
 
-    def __init__(
-        self, train_state: Union[SupervisedTrainState, UnsupervisedTrainState]
-    ):
+    def __init__(self, train_state: Union[SupervisedTrainState, InsertTrainState]):
         # These are training arguments and are updated while the training is in progress
         self._train_state = train_state
 
@@ -147,7 +121,7 @@ class NeuralDbProgressTracker:
 
 class InsertProgressTracker(NeuralDbProgressTracker):
     def __init__(
-        self, intro_state: IntroState, train_state: UnsupervisedTrainState, vlc_config
+        self, intro_state: IntroState, train_state: InsertTrainState, vlc_config : data.transformations.VariableLengthConfig
     ):
         super().__init__(train_state=train_state)
 
@@ -225,7 +199,7 @@ class InsertProgressTracker(NeuralDbProgressTracker):
 
         return InsertProgressTracker(
             intro_state=IntroState(**args["intro_state"]),
-            train_state=UnsupervisedTrainState(**args["train_state"]),
+            train_state=InsertTrainState(**args["train_state"]),
             vlc_config=vlc_config,
         )
 
@@ -237,12 +211,8 @@ class SupervisedProgressTracker(NeuralDbProgressTracker):
 
     def training_arguments(self):
         epochs = self._train_state.epochs - self.current_epoch_number
-        args = {}
-        args["learning_rate"] = self._train_state.learning_rate
+        args = self._train_state.__dict__.copy()
         args["epochs"] = epochs
-        args["batch_size"] = self._train_state.batch_size
-        args["max_in_memory_batches"] = self._train_state.max_in_memory_batches
-        args["metrics"] = self._train_state.metrics
         return args
 
     def save(self, path: Path):
