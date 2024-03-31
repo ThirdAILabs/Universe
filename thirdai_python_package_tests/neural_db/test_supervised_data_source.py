@@ -86,7 +86,10 @@ def test_sup_data_source(model_id_delimiter):
         source_id=source_id,
     )
     data_source = SupDataSource(
-        doc_manager, query_col="query", data=[sup_doc], id_delimiter=model_id_delimiter
+        doc_manager=doc_manager,
+        query_col="query",
+        data=[sup_doc],
+        id_delimiter=model_id_delimiter,
     )
     assert data_source.next_batch(TARGET_BATCH_SIZE) == [
         'id,"query"',
@@ -114,7 +117,10 @@ def test_sup_data_source(model_id_delimiter):
         source_id=source_id,
     )
     data_source = SupDataSource(
-        doc_manager, query_col="query", data=[sup_doc], id_delimiter=model_id_delimiter
+        doc_manager=doc_manager,
+        query_col="query",
+        data=[sup_doc],
+        id_delimiter=model_id_delimiter,
     )
     assert data_source.next_batch(TARGET_BATCH_SIZE) == [
         'id,"query"',
@@ -123,7 +129,7 @@ def test_sup_data_source(model_id_delimiter):
     ]
 
     data_source = SupDataSource(
-        doc_manager,
+        doc_manager=doc_manager,
         query_col="query",
         data=[
             ndb.Sup(
@@ -183,7 +189,7 @@ def test_sup_data_source_with_id_map():
     mock_model_query_col = "model_query"
     mock_model_id_delimiter = " "
     data_source = SupDataSource(
-        doc_manager,
+        doc_manager=doc_manager,
         query_col=mock_model_query_col,
         data=[sup_doc],
         id_delimiter=mock_model_id_delimiter,
@@ -260,7 +266,7 @@ def test_sup_data_source_sharding_multilabel():
 
     sup = ndb.Sup(queries=queries, labels=labels, uses_db_id=True)
     sup_source = SupDataSource(
-        doc_manager=doc_manager, query_col="query", data=[sup], id_delimiter=","
+        query_col="query", data=[sup], id_delimiter=",", id_column="model_id"
     )
 
     label_to_segment_map = defaultdict(list)

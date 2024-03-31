@@ -173,7 +173,7 @@ def transform_shard_to_datasource(
         sup = Sup(
             csv=shard_path,
             query_column=original_data_source.query_col,
-            id_column=original_data_source.doc_manager.id_column,
+            id_column=original_data_source.id_column,
             id_delimiter=original_data_source.id_delimiter,
             uses_db_id=True,
         )
@@ -183,6 +183,7 @@ def transform_shard_to_datasource(
             query_col=original_data_source.query_col,
             data=[sup],
             id_delimiter=original_data_source.id_delimiter,
+            id_column=original_data_source.id_column,
         )
 
 

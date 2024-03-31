@@ -22,32 +22,18 @@ class CheckpointConfig:
     def __post_init__(self):
         self.checkpoint_dir = convert_str_to_path(self.checkpoint_dir)
 
-        # Before insert process is started, we first make a checkpoint of the neural db at ndb_checkpoint_path
-        self._ndb_checkpoint_path = self.checkpoint_dir / "checkpoint.ndb"
         # After the completion of training, we store the trained neural db at ndb_trained_path
         self._ndb_trained_path = self.checkpoint_dir / "trained.ndb"
 
-        self._pickled_ids_resource_name_path = (
-            self.ndb_checkpoint_path / "ids_resource_name.pkl"
+        self._pickled_documents_ids_resource_name_path = (
+            self.checkpoint_dir / "documents_ids_resource_name.pkl"
         )
-
-    @property
-    def ndb_checkpoint_path(self):
-        if self._ndb_checkpoint_path is None:
-            raise Exception(
-                "Invalid Access: The 'ndb_checkpoint_path' property is only accessible"
-                " when called by a NeuralDB object within its valid context. Currently,"
-                " this property is set to None. Ensure that you are accessing"
-                " 'ndb_checkpoint_path' from a properly initialized NeuralDB instance"
-                " with a valid configuration."
-            )
-        return self._ndb_checkpoint_path
 
     @property
     def ndb_trained_path(self):
         if self._ndb_trained_path is None:
             raise Exception(
-                "Invalid Access: The 'pickled_ids_resource_name_path' property is only"
+                "Invalid Access: The 'ndb_trained_path' property is only"
                 " accessible when called by a NeuralDB object within its valid context."
                 " Currently, this property is set to None. Ensure that you are"
                 " accessing 'ndb_trained_path' from a properly initialized NeuralDB"
@@ -56,16 +42,16 @@ class CheckpointConfig:
         return self._ndb_trained_path
 
     @property
-    def pickled_ids_resource_name_path(self):
-        if self._pickled_ids_resource_name_path is None:
+    def pickled_documents_ids_resource_name_path(self):
+        if self._pickled_documents_ids_resource_name_path is None:
             raise Exception(
-                "Invalid Access: The 'pickled_ids_resource_name_path' property is only"
+                "Invalid Access: The 'pickled_documents_ids_resource_name_path' property is only"
                 " accessible when called by a NeuralDB object within its valid context."
                 " Currently, this property is set to None. Ensure that you are"
-                " accessing 'pickled_ids_resource_name_path' from a properly"
+                " accessing 'pickled_documents_ids_resource_name_path' from a properly"
                 " initialized NeuralDB instance with a valid configuration."
             )
-        return self._pickled_ids_resource_name_path
+        return self._pickled_documents_ids_resource_name_path
 
     def get_mach_config(self):
         """
@@ -76,9 +62,8 @@ class CheckpointConfig:
             resume_from_checkpoint=self.resume_from_checkpoint,
             checkpoint_interval=self.checkpoint_interval,
         )
-        config._ndb_checkpoint_path = None
         config._ndb_trained_path = None
-        config._pickled_ids_resource_name_path = None
+        config._pickled_documents_ids_resource_name_path = None
         return config
 
 
