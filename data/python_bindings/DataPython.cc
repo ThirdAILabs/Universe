@@ -175,6 +175,11 @@ auto tokenArrayColumnFromNumpy(const NumpyArray<uint32_t>& array,
   return ArrayColumn<uint32_t>::make(fromNumpy2D(array), dim);
 }
 
+auto stringArrayColumnFromNumpy(const NumpyArray<std::string>& array,
+                               std::optional<size_t> dim) {
+  return ArrayColumn<std::string>::make(fromNumpy2D(array), dim);
+}
+
 auto decimalArrayColumnFromNumpy(const NumpyArray<float>& array,
                                  std::optional<size_t> dim) {
   return ArrayColumn<float>::make(fromNumpy2D(array), dim);
@@ -243,6 +248,15 @@ void createColumnsSubmodule(py::module_& dataset_submodule) {
       .def("__getitem__", &getRowNumpy<float, ArrayColumn<float>>,
            py::return_value_policy::reference_internal)
       .def("data", &ArrayColumn<float>::data);
+
+  
+
+  py::class_<ArrayColumn<std::string>, Column, ArrayColumnPtr<std::string>>(
+      columns_submodule, "StringArrayColumn")
+      .def(py::init(&ArrayColumn<std::string>::make), py::arg("data"),
+           py::arg("dim") = std::nullopt)
+      .def("data", &ArrayColumn<std::string>::data);
+
 }
 
 void createTransformationsSubmodule(py::module_& dataset_submodule) {
@@ -470,9 +484,9 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   py::class_<NextWordPrediction, Transformation,
              std::shared_ptr<NextWordPrediction>>(transformations_submodule,
                                                   "NextWordPrediction")
-      .def(py::init<std::string, std::string, std::string>(),
+      .def(py::init<std::string, std::string, std::string, std::optional<std::string>>(),
            py::arg("input_column"), py::arg("context_column"),
-           py::arg("target_column"));
+           py::arg("target_column"), py::arg("text_input_column") = std::nullopt);
 #endif
 
   py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>>(
