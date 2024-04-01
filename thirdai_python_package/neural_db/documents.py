@@ -676,11 +676,10 @@ class CSV(Document):
     def __getstate__(self):
         state = self.__dict__.copy()
 
-        # Remove the path attribute because it is not cross platform compatible
-        del state["path"]
-
         # Save the filename so we can load it with the same name
         state["doc_name"] = self.name
+
+        state["path"] = str(self.path)
 
         # End pickling functionality here to support old directory checkpoint save
         return state
@@ -689,6 +688,9 @@ class CSV(Document):
         # Add new attributes to state for older document object version backward compatibility
         if "_save_extra_info" not in state:
             state["_save_extra_info"] = True
+
+        if "path" in state:
+            state["path"] = Path(state["path"])
 
         self.__dict__.update(state)
 
@@ -840,11 +842,10 @@ class Extracted(Document):
         if "df" in state:
             state["df"] = state["df"].applymap(path_to_str)
 
-        # Remove the path attribute because it is not cross platform compatible
-        del state["path"]
-
         # Save the filename so we can load it with the same name
         state["doc_name"] = self.name
+
+        state["path"] = str(self.path)
 
         return state
 
@@ -854,6 +855,9 @@ class Extracted(Document):
             state["_save_extra_info"] = True
         if "filename" in state:
             state["path"] = state["filename"]
+
+        if "path" in state:
+            state["path"] = Path(state["path"])
 
         self.__dict__.update(state)
 
