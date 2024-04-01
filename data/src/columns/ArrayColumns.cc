@@ -114,17 +114,18 @@ ArrayColumnPtr<std::string> ArrayColumn<std::string>::make(
     std::vector<std::vector<std::string>>&& data, std::optional<size_t> dim) {
   if (dim) {
     bool all_dims_match = std::all_of(
-        data.begin(), data.end(),
-        [dim](const std::vector<std::string>& row) { return row.size() == *dim; });
+        data.begin(), data.end(), [dim](const std::vector<std::string>& row) {
+          return row.size() == *dim;
+        });
 
     if (!all_dims_match) {
       throw std::invalid_argument(
           "Not all rows in StringArray column match provided dimension.");
     }
   }
-  return ArrayColumnPtr<std::string>(new ArrayColumn<std::string>(std::move(data), dim));
+  return ArrayColumnPtr<std::string>(
+      new ArrayColumn<std::string>(std::move(data), dim));
 }
-
 
 template <typename T>
 ColumnPtr ArrayColumn<T>::permute(

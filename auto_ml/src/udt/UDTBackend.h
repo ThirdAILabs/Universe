@@ -423,6 +423,19 @@ class UDTBackend {
     return kwargs["splade_config"].cast<data::SpladeConfig>();
   }
 
+  static std::optional<std::pair<std::string, std::string>> getNextWordPredictionColumns(const py::kwargs& kwargs){
+    if(!kwargs.contains("tokens_input_column")  ||
+        kwargs["tokens_input_column"].is_none()){
+        return std::nullopt;
+    }
+    if(!kwargs.contains("texts_input_column") || 
+        kwargs["texts_input_column"].is_none()){
+        return std::nullopt;
+    }
+    return std::make_pair(kwargs["tokens_input_column"].cast<std::string>(), 
+                            kwargs["texts_input_column"].cast<std::string>());
+  }
+
   static bool getSpladeValidationOption(const py::kwargs& kwargs) {
     if (kwargs.contains("use_splade_in_validation") &&
         !kwargs["use_splade_in_validation"].is_none()) {

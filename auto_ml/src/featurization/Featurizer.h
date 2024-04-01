@@ -66,6 +66,7 @@ class Featurizer {
       const dataset::DataSourcePtr& data_source, size_t batch_size,
       bool shuffle, bool verbose,
       const std::optional<data::SpladeConfig>& splade_config = std::nullopt,
+      std::optional<std::pair<std::string, std::string>> nwp_columns = std::nullopt,
       dataset::DatasetShuffleConfig shuffle_config =
           dataset::DatasetShuffleConfig());
 

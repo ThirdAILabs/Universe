@@ -6,8 +6,10 @@
 namespace thirdai::data {
 class NextWordPrediction final : public Transformation {
  public:
-  NextWordPrediction(std::string input_column, std::string context_column,
-                     std::string target_column, std::optional<std::string> text_input_column = std::nullopt);
+  NextWordPrediction(
+      std::string input_column, std::string context_column,
+      std::string target_column,
+      std::optional<std::string> text_input_column = std::nullopt);
 
   explicit NextWordPrediction(const ar::Archive& archive);
 

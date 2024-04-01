@@ -9,9 +9,11 @@
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
 #include <data/src/transformations/CategoricalTemporal.h>
+#include <data/src/transformations/NextWordPrediction.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/StringConcat.h>
+#include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/cold_start/ColdStartText.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
@@ -69,12 +71,25 @@ Featurizer::Featurizer(data::TransformationPtr input_transform,
 data::LoaderPtr Featurizer::getDataLoader(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
     bool verbose, const std::optional<data::SpladeConfig>& splade_config,
+    std::optional<std::pair<std::string, std::string>> nwp_columns,
     dataset::DatasetShuffleConfig shuffle_config) {
   data::TransformationPtr preprocessor = nullptr;
   if (splade_config) {
     preprocessor = std::make_shared<data::SpladeAugmentation>(
         textDatasetConfig().textColumn(), textDatasetConfig().textColumn(),
         *splade_config);
+  }
+  if(nwp_columns){
+    auto [tokens_input_column, text_input_column] = *nwp_columns;
+    std::optional<std::string> optional_text_input_column = text_input_column;
+    preprocessor = 
+        data::Pipeline::make()
+            ->then(std::make_shared<data::StringToTokenArray>(tokens_input_column,
+                                                        tokens_input_column, ' ', std::nullopt))
+            ->then(std::make_shared<data::NextWordPrediction>(
+      tokens_input_column, textDatasetConfig().textColumn(), textDatasetConfig().labelColumn(), optional_text_input_column
+    ));
+    std::cout << "Passing NWP Columns to Preprocessor. If passing this, splade_config would not be passed!" << std::endl;
   }
 
   return getDataLoaderHelper(data_source, batch_size, shuffle, verbose,
