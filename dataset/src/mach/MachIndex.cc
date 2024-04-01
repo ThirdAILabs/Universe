@@ -98,6 +98,7 @@ void MachIndex::insertNewEntities(const std::unordered_set<uint32_t>& new_ids) {
   }
 }
 
+
 std::vector<std::pair<uint32_t, double>> MachIndex::decode(
     const BoltVector& output, uint32_t top_k,
     uint32_t num_buckets_to_eval) const {

@@ -107,6 +107,13 @@ UDTMach::UDTMach(
   dataset::mach::MachIndexPtr mach_index = dataset::mach::MachIndex::make(
       /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes);
 
+  // Adding indices directly in the start, since we dont ahve doc_ids already there.
+  std::unordered_set<uint32_t> doc_ids;
+  for(uint32_t token=0; token<n_target_classes; token+=1){
+    doc_ids.insert(token);
+  }
+  mach_index->insertNewEntities(doc_ids);
+
   auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
       input_data_types, temporal_tracking_relationships,
       tabular_options.lookahead);

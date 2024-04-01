@@ -36,7 +36,7 @@ def test_next_word_prediction(serialize):
         [20, 21, 22, 23],
         [20, 21, 22, 23, 24],
     ]
-    assert columns["target"].data() == [1, 2, 3, 4, 5, 21, 22, 23, 24, 25]
+    assert columns["target"].data() == ["1", "2", "3", "4", "5", "21", "22", "23", "24", "25"]
 
 
 @pytest.mark.parametrize("serialize", [True, False])
@@ -77,4 +77,4 @@ def test_next_word_prediction_with_string(serialize):
         "mn no op pq",
         "mn no op pq qr",
     ]
- assert columns["target"].data() == [1, 2, 3, 4, 5, 21, 22, 23, 24, 25]
+    assert columns["target"].data() == ["1", "2", "3", "4", "5", "21", "22", "23", "24", "25"]

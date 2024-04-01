@@ -43,7 +43,7 @@ ColumnMap NextWordPrediction::apply(ColumnMap columns, State& state) const {
     token_contexts.assign(sample_offsets.back(), {});
   }
 
-  std::vector<uint32_t> targets(sample_offsets.back());
+  std::vector<std::string> targets(sample_offsets.back());
 
   std::exception_ptr error;
 
@@ -78,7 +78,7 @@ ColumnMap NextWordPrediction::apply(ColumnMap columns, State& state) const {
           token_contexts[sample_offset] = {tokens_row.begin(),
                                            tokens_row.begin() + start};
         }
-        targets[sample_offset] = tokens_row[start];
+        targets[sample_offset] = std::to_string(tokens_row[start]);
         sample_offset += 1;
       }
 
@@ -99,7 +99,7 @@ ColumnMap NextWordPrediction::apply(ColumnMap columns, State& state) const {
         std::move(token_contexts), input_tokens->dim());
   }
   output_columns[_target_column] =
-      ValueColumn<uint32_t>::make(std::move(targets), input_tokens->dim());
+      ValueColumn<std::string>::make(std::move(targets));
 
   return ColumnMap(output_columns);
 }
