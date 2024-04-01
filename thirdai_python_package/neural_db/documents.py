@@ -534,8 +534,8 @@ class CSV(Document):
         # so it will not invoke df.itertuples on a dataframe that has spaced
         # column names.
         cols_with_spaces = [col for col in df.columns if " " in col]
+        self.with_space_to_no_space = {}
         if cols_with_spaces:
-            self.with_space_to_no_space = {}
             for col in cols_with_spaces:
                 self.with_space_to_no_space[col] = col.replace(" ", "_")
                 while self.with_space_to_no_space[col] in df.columns:
