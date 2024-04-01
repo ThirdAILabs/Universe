@@ -169,7 +169,7 @@ neural_db_deps = [
     "simple-salesforce==1.12.5",
     "ipython",
     # lxml is a dependency of trafilatura. We install lxml[html_clean] to fix
-    # this error https://github.com/ThirdAILabs/Universe/actions/runs/8501765287/job/23285023762
+    # this error https://github.com/adbar/trafilatura/issues/532
     "lxml[html_clean]",
 ]
 
