@@ -435,6 +435,7 @@ set(THIRDAI_SOURCES
     utils/src/SymSpellBackend/symspell.cc
     utils/src/SymSpellCpp/SymSpell.cc
     utils/text/PorterStemmer.cc
+    utils/text/WordTokenize.cc
     utils/Logging.cc
     utils/text/StringManipulation.cc
     utils/UUID.cc

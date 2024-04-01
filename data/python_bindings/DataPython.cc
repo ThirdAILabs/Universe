@@ -31,6 +31,7 @@
 #include <pybind11/stl.h>
 #include <utils/Random.h>
 #include <utils/text/PorterStemmer.h>
+#include <utils/text/WordTokenize.h>
 #include <cstddef>
 #include <memory>
 #include <optional>
@@ -125,6 +126,10 @@ void createDataSubmodule(py::module_& dataset_submodule) {
       "stem",
       py::overload_cast<const std::string&, bool>(&text::porter_stemmer::stem),
       py::arg("word"), py::arg("lowercase") = true);
+
+  py::class_<text::WordTokenizer>(dataset_submodule, "WordTokenizer")
+      .def(py::init<>())
+      .def("tokenize", &text::WordTokenizer::tokenize, py::arg("sentence"));
 }
 
 template <typename T>
