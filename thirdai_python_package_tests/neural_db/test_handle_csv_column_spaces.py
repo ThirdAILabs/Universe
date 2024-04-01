@@ -2,6 +2,7 @@ import pytest
 from thirdai import neural_db as ndb
 
 
+@pytest.mark.unit
 @pytest.mark.parametrize("explicit_cols", [False, True])
 def test_handle_csv_column_spaces(explicit_cols):
     filename = "spaced_columns.csv"
