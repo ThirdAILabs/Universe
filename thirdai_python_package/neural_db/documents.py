@@ -535,23 +535,24 @@ class CSV(Document):
         # column names.
         cols_with_spaces = [col for col in df.columns if " " in col]
         if cols_with_spaces:
-            print(
-                "Warning: Found CSV columns with spaces. Converting spaces to underscores. "
-                "When querying with a constraint on a CSV column, make sure to use "
-                "the converted column name (with underscores instead of spaces)."
-            )
-            print("Affected columns:")
+            self.with_space_to_no_space = {}
             for col in cols_with_spaces:
-                print(f"'{col}' -> '{CSV.remove_spaces(col)}'")
-            df.columns = CSV.remove_spaces_from_list(df.columns)
+                self.with_space_to_no_space[col] = col.replace(" ", "_")
+                while self.with_space_to_no_space[col] in df.columns:
+                    self.with_space_to_no_space[col] += "_"
+
+            def remove_spaces_from_list(cols):
+                return [self.with_space_to_no_space.get(col, col) for col in cols]
+
+            df.columns = remove_spaces_from_list(df.columns)
             if id_column:
-                id_column = CSV.remove_spaces(id_column)
+                id_column = self.with_space_to_no_space.get(id_column, id_column)
             if strong_columns:
-                strong_columns = CSV.remove_spaces_from_list(strong_columns)
+                strong_columns = remove_spaces_from_list(strong_columns)
             if weak_columns:
-                weak_columns = CSV.remove_spaces_from_list(weak_columns)
+                weak_columns = remove_spaces_from_list(weak_columns)
             if reference_columns:
-                reference_columns = CSV.remove_spaces_from_list(reference_columns)
+                reference_columns = remove_spaces_from_list(reference_columns)
 
         # This variable is used to check whether the id's in the CSV are supposed to start with 0 or with some custom offset. We need the latter when we shard the datasource.
         self.has_offset = has_offset
@@ -646,8 +647,12 @@ class CSV(Document):
         metadata_constraints = {
             key: ConstraintValue(value) for key, value in self.doc_metadata.items()
         }
+        no_space_to_space = {
+            val: key for key, val in self.with_space_to_no_space.items()
+        }
         indexed_column_constraints = {
-            key: ConstraintValue(is_any=True) for key in self.table.columns
+            no_space_to_space.get(key, key): ConstraintValue(is_any=True)
+            for key in self.table.columns
         }
         return {**metadata_constraints, **indexed_column_constraints}
 
@@ -656,7 +661,11 @@ class CSV(Document):
 
     def filter_entity_ids(self, filters: Dict[str, Filter]):
         table_filter = TableFilter(
-            {k: v for k, v in filters.items() if k not in self.doc_metadata_keys}
+            {
+                self.with_space_to_no_space.get(k, k): v
+                for k, v in filters.items()
+                if k not in self.doc_metadata_keys
+            }
         )
         return self.table.apply_filter(table_filter)
 
@@ -782,6 +791,9 @@ class CSV(Document):
             del self.df
         else:
             self.table.load_meta(directory)
+
+        if not hasattr(self, "with_space_to_no_space"):
+            self.with_space_to_no_space = {}
 
 
 # Base class for PDF, DOCX and Unstructured classes because they share the same logic.
