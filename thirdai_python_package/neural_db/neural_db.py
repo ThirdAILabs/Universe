@@ -775,7 +775,7 @@ class NeuralDB:
     def _get_text(self, result_id) -> str:
         return self._savable_state.documents.reference(result_id).text
 
-    def text_to_result(self, text: str, result_id: int) -> None:
+    def text_to_result(self, text: str, result_id: int, **kwargs) -> None:
         """Trains NeuralDB to map the given text to the given entity ID.
         Also known as "upvoting".
 
@@ -792,9 +792,12 @@ class NeuralDB:
                     result_id
                 ).upvote_ids
             ],
+            **kwargs,
         )
 
-    def text_to_result_batch(self, text_id_pairs: List[Tuple[str, int]]) -> None:
+    def text_to_result_batch(
+        self, text_id_pairs: List[Tuple[str, int]], **kwargs
+    ) -> None:
         """Trains NeuralDB to map the given texts to the given entity IDs.
         Also known as "batch upvoting".
         """
@@ -810,6 +813,7 @@ class NeuralDB:
             logger=self._savable_state.logger,
             user_id=self._user_id,
             query_id_para=query_id_para,
+            **kwargs,
         )
 
     def associate(

@@ -34,8 +34,9 @@ def upvote(
     logger: Logger,
     user_id: str,
     query_id_para: List[Tuple[str, int, str]],
+    **kwargs,
 ):
-    model.upvote([(query, _id) for query, _id, para in query_id_para])
+    model.upvote([(query, _id) for query, _id, para in query_id_para], **kwargs)
     logger.log(
         session_id=user_id,
         action="upvote",
