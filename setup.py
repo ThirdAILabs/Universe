@@ -168,6 +168,7 @@ neural_db_deps = [
     "Office365-REST-Python-Client==2.5.1",
     "simple-salesforce==1.12.5",
     "ipython",
+    "lxml[html_clean]",
 ]
 
 neural_db_v2_deps = ["pandas", "pandera"]
