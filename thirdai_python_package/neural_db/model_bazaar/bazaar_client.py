@@ -498,8 +498,9 @@ class ModelBazaar(Bazaar):
         test_doc: str,
         doc_type: str = "local",
         test_extra_options: dict = {},
+        is_async=True,
     ):
-        url = urljoin(self._base_url, f"jobs/{self._user_id}/test")
+        url = urljoin(self._base_url, f"test/test")
 
         files = [
             (
@@ -526,6 +527,58 @@ class ModelBazaar(Bazaar):
             headers=auth_header(self._access_token),
         )
         print(response.content)
+
+        response_content = json.loads(response.content)
+        if response_content["status"] != "success":
+            raise Exception(response_content["message"])
+
+        if is_async:
+            return response_content["data"]["data_id"]
+
+        self.await_test(model_identifier, response_content["data"]["data_id"])
+        return response_content["data"]["data_id"]
+
+    def test_status(self, test_id: str):
+        """
+        Checks for the status of the model training
+
+        Args:
+            model (Model): The Model instance.
+        """
+
+        url = urljoin(self._base_url, f"test/test-status")
+
+        response = http_get_with_error(
+            url,
+            params={"test_id": test_id},
+            headers=auth_header(self._access_token),
+        )
+
+        response_data = json.loads(response.content)["data"]
+
+        return response_data
+
+    def await_test(self, model_identifier: str, test_id: str):
+        """
+        Checks for the status of the model training
+
+        Args:
+            model (Model): The Model instance.
+        """
+
+        while True:
+            response_data = self.test_status(test_id)
+
+            if response_data["status"] == "complete":
+                print("\nTesting completed")
+                return response_data["results"]
+
+            if response_data["status"] == "failed":
+                print("\nTesting Failed")
+                raise ValueError(f"Training Failed for {model_identifier}")
+
+            print("Testing: In progress", end="", flush=True)
+            print_progress_dots(duration=10)
 
     def train_status(self, model: Model):
         """
