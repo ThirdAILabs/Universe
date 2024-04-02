@@ -6,6 +6,7 @@
 #include <data/src/Loader.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/rca/ExplanationMap.h>
+#include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
@@ -61,16 +62,19 @@ class Featurizer {
 
   explicit Featurizer(const ar::Archive& archive);
 
-  data::LoaderPtr getDataLoader(const dataset::DataSourcePtr& data_source,
-                                size_t batch_size, bool shuffle, bool verbose,
-                                dataset::DatasetShuffleConfig shuffle_config =
-                                    dataset::DatasetShuffleConfig());
+  data::LoaderPtr getDataLoader(
+      const dataset::DataSourcePtr& data_source, size_t batch_size,
+      bool shuffle, bool verbose,
+      const std::optional<data::SpladeConfig>& splade_config = std::nullopt,
+      dataset::DatasetShuffleConfig shuffle_config =
+          dataset::DatasetShuffleConfig());
 
   data::LoaderPtr getColdStartDataLoader(
       const dataset::DataSourcePtr& data_source,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       std::optional<data::VariableLengthConfig> variable_length,
+      const std::optional<data::SpladeConfig>& splade_config,
       bool fast_approximation, size_t batch_size, bool shuffle, bool verbose,
       dataset::DatasetShuffleConfig shuffle_config =
           dataset::DatasetShuffleConfig());
@@ -117,7 +121,7 @@ class Featurizer {
   data::LoaderPtr getDataLoaderHelper(
       const dataset::DataSourcePtr& data_source, size_t batch_size,
       bool shuffle, bool verbose, dataset::DatasetShuffleConfig shuffle_config,
-      const data::TransformationPtr& cold_start_transform = nullptr);
+      const data::TransformationPtr& preprocesser = nullptr);
 
   data::TransformationPtr coldStartTransform(
       const std::vector<std::string>& strong_column_names,

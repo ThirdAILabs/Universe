@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Iterable
 
-from core.types import NewChunkBatch
+from .types import NewChunkBatch
 
 
 class Document(ABC):

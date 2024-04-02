@@ -1,22 +1,26 @@
 from __future__ import annotations
 
+import math
+import os
 import random
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence, Tuple
 
 import numpy as np
-from thirdai import bolt, data
+import requests
+import tqdm
+from thirdai import bolt, data, demos
 
-from .documents import DocumentDataSource
-from .inverted_index import InvertedIndex
-from .mach_defaults import acc_to_stop, metric_to_track
-from .supervised_datasource import SupDataSource
-from .trainer.checkpoint_config import CheckpointConfig
-from .trainer.training_progress_manager import (
+from ..documents import DocumentDataSource
+from ..inverted_index import InvertedIndex
+from ..supervised_datasource import SupDataSource
+from ..trainer.checkpoint_config import CheckpointConfig
+from ..trainer.training_progress_manager import (
     TrainingProgressCallback,
     TrainingProgressManager,
 )
-from .utils import clean_text, pickle_to
+from ..utils import clean_text, pickle_to
+from .mach_defaults import acc_to_stop, metric_to_track
 
 InferSamples = List
 Predictions = Sequence
@@ -151,17 +155,13 @@ class Model:
         max_in_memory_batches: Optional[int],
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
+        disable_inverted_index: bool,
     ):
         raise NotImplementedError()
 
 
 class EarlyStopWithMinEpochs(bolt.train.callbacks.Callback):
-    def __init__(
-        self,
-        min_epochs,
-        tracked_metric,
-        metric_threshold,
-    ):
+    def __init__(self, min_epochs, tracked_metric, metric_threshold):
         super().__init__()
 
         self.epoch_count = 0
@@ -184,12 +184,14 @@ class ProgressUpdate(bolt.train.callbacks.Callback):
         self,
         max_epochs,
         progress_callback_fn,
+        total_num_batches,
     ):
         super().__init__()
 
         self.batch_count = 0
         self.max_epochs = max_epochs
         self.progress_callback_fn = progress_callback_fn
+        self.total_num_batches = total_num_batches
 
     def on_batch_end(self):
         self.batch_count += 1
@@ -197,7 +199,7 @@ class ProgressUpdate(bolt.train.callbacks.Callback):
         # We update progress every other batch because otherwise the updates are
         # too fast for frontend components to display these changes.
         if self.batch_count % 2:
-            batch_progress = self.batch_count / self.train_state.batches_in_dataset()
+            batch_progress = self.batch_count / self.total_num_batches
             progress = batch_progress / self.max_epochs
 
             # TODO revisit this progress bar update
@@ -208,11 +210,7 @@ class ProgressUpdate(bolt.train.callbacks.Callback):
 
 class FreezeHashTable(bolt.train.callbacks.Callback):
     def __init__(
-        self,
-        freeze_before_train,
-        freeze_after_epoch,
-        tracked_metric,
-        metric_threshold,
+        self, freeze_before_train, freeze_after_epoch, tracked_metric, metric_threshold
     ):
         super().__init__()
 
@@ -246,6 +244,35 @@ class CancelTraining(bolt.train.callbacks.Callback):
             self.train_state.stop_training()
 
 
+def download_semantic_enhancement_model(cache_dir, model_name="bolt-splade-medium"):
+    if not os.path.exists(cache_dir):
+        os.makedirs(cache_dir)
+
+    semantic_model_path = os.path.join(cache_dir, model_name)
+    if not os.path.exists(semantic_model_path):
+        response = requests.get(
+            "https://modelzoo-cdn.azureedge.net/test-models/bolt-splade-medium",
+            stream=True,
+        )
+        total_size_in_bytes = int(response.headers.get("content-length", 0))
+        block_size = 4096  # 4 Kibibyte
+
+        progress_bar = tqdm.tqdm(total=total_size_in_bytes, unit="iB", unit_scale=True)
+        with open(semantic_model_path, "wb") as f:
+            for data_chunk in response.iter_content(block_size):
+                progress_bar.update(len(data_chunk))
+                f.write(data_chunk)
+        progress_bar.close()
+
+    vocab_path = os.path.join(cache_dir, "bert-base-uncased.vocab")
+    if not os.path.exists(vocab_path):
+        demos.bert_base_uncased(dirname=cache_dir)
+
+    return data.transformations.SpladeConfig(
+        model_checkpoint=semantic_model_path, tokenizer_vocab=vocab_path
+    )
+
+
 def unsupervised_train_on_docs(
     model,
     documents: DocumentDataSource,
@@ -264,19 +291,25 @@ def unsupervised_train_on_docs(
     variable_length: Optional[data.transformations.VariableLengthConfig],
     training_progress_callback: Optional[TrainingProgressCallback],
     balancing_samples=False,
+    semantic_enhancement=False,
+    semantic_model_cache_dir=".cache/neural_db_semantic_model",
+    coldstart_callbacks: List[bolt.train.callbacks.Callback] = None,
     **kwargs,
 ):
     documents.restart()
 
     early_stop_callback = EarlyStopWithMinEpochs(
-        min_epochs=min_epochs,
-        tracked_metric=metric,
-        metric_threshold=acc_to_stop,
+        min_epochs=min_epochs, tracked_metric=metric, metric_threshold=acc_to_stop
     )
 
     progress_callback = ProgressUpdate(
         max_epochs=max_epochs,
         progress_callback_fn=on_progress,
+        total_num_batches=(
+            math.ceil(documents.size / batch_size)
+            if batch_size
+            else math.ceil(documents.size / 2048)  # default batch size we use in UDT.
+        ),
     )
 
     cancel_training_callback = CancelTraining(cancel_state=cancel_state)
@@ -295,8 +328,15 @@ def unsupervised_train_on_docs(
         freeze_hashtable_callback,
     ]
 
+    if coldstart_callbacks:
+        callbacks.extend(coldstart_callbacks)
+
     if training_progress_callback:
         callbacks.append(training_progress_callback)
+
+    splade_config = None
+    if semantic_enhancement:
+        splade_config = download_semantic_enhancement_model(semantic_model_cache_dir)
 
     if balancing_samples:
         model.cold_start_with_balancing_samples(
@@ -322,6 +362,7 @@ def unsupervised_train_on_docs(
             callbacks=callbacks,
             max_in_memory_batches=max_in_memory_batches,
             variable_length=variable_length,
+            splade_config=splade_config,
         )
 
 
@@ -391,6 +432,8 @@ class Mach(Model):
         hidden_bias=False,
         model_config=None,
         use_inverted_index=True,
+        mach_index_seed: int = 341,
+        index_max_shard_size=8_000_000,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -405,7 +448,12 @@ class Mach(Model):
         self.model = None
         self.balancing_samples = []
         self.model_config = model_config
-        self.inverted_index = InvertedIndex() if use_inverted_index else None
+        self.mach_index_seed = mach_index_seed
+        self.inverted_index = (
+            InvertedIndex(max_shard_size=index_max_shard_size)
+            if use_inverted_index
+            else None
+        )
 
     def set_mach_sampling_threshold(self, threshold: float):
         if self.model is None:
@@ -508,6 +556,7 @@ class Mach(Model):
         training_progress_manager: TrainingProgressManager,
         on_progress: Callable = lambda **kwargs: None,
         cancel_state: CancelState = None,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
     ):
         intro_documents = training_progress_manager.intro_source
         train_documents = training_progress_manager.train_source
@@ -531,6 +580,7 @@ class Mach(Model):
                 training_progress_callback=TrainingProgressCallback(
                     training_progress_manager=training_progress_manager
                 ),
+                coldstart_callbacks=callbacks,
                 **train_arguments,
             )
             training_progress_manager.training_complete()
@@ -540,16 +590,18 @@ class Mach(Model):
         on_progress: Callable,
         cancel_state: CancelState,
         checkpoint_config: CheckpointConfig,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
     ):
         # This will load the datasources, model, training config and upload the current model with the loaded one. This updates the underlying UDT MACH of the current model with the one from the checkpoint along with other class attributes.
         training_progress_manager = TrainingProgressManager.from_checkpoint(
-            self, checkpoint_config=checkpoint_config
+            self, checkpoint_config=checkpoint_config, for_supervised=False
         )
 
         self.index_documents_impl(
             training_progress_manager=training_progress_manager,
             on_progress=on_progress,
             cancel_state=cancel_state,
+            callbacks=callbacks,
         )
 
     def index_from_start(
@@ -567,6 +619,7 @@ class Mach(Model):
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
         checkpoint_config: CheckpointConfig = None,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
         **kwargs,
     ):
         """
@@ -575,18 +628,20 @@ class Mach(Model):
         Note: Given the datasources for introduction and training, we initialize a Mach model that has number_classes set to the size of introduce documents. But if we want to use this Mach model in our mixture of Models, this will not work because each Mach will be initialized with number of classes equal to the size of the datasource shard. Hence, we add override_number_classes parameters which if set, will initialize Mach Model with number of classes passed by the Mach Mixture.
         """
 
-        training_progress_manager = TrainingProgressManager.from_scratch(
-            model=self,
-            intro_documents=intro_documents,
-            train_documents=train_documents,
-            should_train=should_train,
-            fast_approximation=fast_approximation,
-            num_buckets_to_sample=num_buckets_to_sample,
-            max_in_memory_batches=max_in_memory_batches,
-            override_number_classes=override_number_classes,
-            variable_length=variable_length,
-            checkpoint_config=checkpoint_config,
-            **kwargs,
+        training_progress_manager = (
+            TrainingProgressManager.from_scratch_for_unsupervised(
+                model=self,
+                intro_documents=intro_documents,
+                train_documents=train_documents,
+                should_train=should_train,
+                fast_approximation=fast_approximation,
+                num_buckets_to_sample=num_buckets_to_sample,
+                max_in_memory_batches=max_in_memory_batches,
+                override_number_classes=override_number_classes,
+                variable_length=variable_length,
+                checkpoint_config=checkpoint_config,
+                **kwargs,
+            )
         )
 
         training_progress_manager.make_preindexing_checkpoint()
@@ -594,6 +649,7 @@ class Mach(Model):
             training_progress_manager=training_progress_manager,
             on_progress=on_progress,
             cancel_state=cancel_state,
+            callbacks=callbacks,
         )
 
     def add_balancing_samples(self, documents: DocumentDataSource):
@@ -630,6 +686,7 @@ class Mach(Model):
                 "extreme_num_hashes": self.extreme_num_hashes,
                 "hidden_bias": self.hidden_bias,
                 "rlhf": True,
+                "mach_index_seed": self.mach_index_seed,
             },
             model_config=self.model_config,
         )
@@ -665,11 +722,7 @@ class Mach(Model):
         )
 
     def infer_labels(
-        self,
-        samples: InferSamples,
-        n_results: int,
-        retriever=None,
-        **kwargs,
+        self, samples: InferSamples, n_results: int, retriever=None, **kwargs
     ) -> Predictions:
         if not retriever:
             if not self.inverted_index:
@@ -730,6 +783,9 @@ class Mach(Model):
             force_non_empty=kwargs.get("force_non_empty", True),
         )
 
+        if self.inverted_index:
+            self.inverted_index.associate(pairs)
+
     def upvote(
         self,
         pairs: List[Tuple[str, int]],
@@ -747,6 +803,9 @@ class Mach(Model):
             learning_rate=learning_rate,
             epochs=epochs,
         )
+
+        if self.inverted_index:
+            self.inverted_index.upvote(pairs)
 
     def retrain(
         self,
@@ -777,6 +836,34 @@ class Mach(Model):
             state["inverted_index"] = None
         self.__dict__.update(state)
 
+    def supervised_training_impl(
+        self,
+        supervised_progress_manager: TrainingProgressManager,
+        callbacks: List[bolt.train.callbacks.Callback],
+    ):
+        if not supervised_progress_manager.is_training_completed:
+            train_args = supervised_progress_manager.training_arguments()
+            self.model.train_on_data_source(
+                data_source=supervised_progress_manager.train_source,
+                callbacks=callbacks
+                + [
+                    TrainingProgressCallback(
+                        training_progress_manager=supervised_progress_manager
+                    )
+                ],
+                **train_args,
+            )
+
+            if supervised_progress_manager.tracker._train_state.disable_inverted_index:
+                self.inverted_index = None
+            elif self.inverted_index:
+                supervised_progress_manager.train_source.restart()
+                self.inverted_index.supervised_train(
+                    supervised_progress_manager.train_source
+                )
+
+            supervised_progress_manager.training_complete()
+
     def train_on_supervised_data_source(
         self,
         supervised_data_source: SupDataSource,
@@ -786,18 +873,31 @@ class Mach(Model):
         max_in_memory_batches: Optional[int],
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
+        disable_inverted_index: bool,
+        checkpoint_config: Optional[CheckpointConfig] = None,
     ):
-        self.model.train_on_data_source(
-            data_source=supervised_data_source,
-            learning_rate=learning_rate,
-            epochs=epochs,
-            batch_size=batch_size,
-            max_in_memory_batches=max_in_memory_batches,
-            metrics=metrics,
-            callbacks=callbacks,
-        )
-        # Invalidate inverted index once supervised data is used.
-        self.inverted_index = None
+        if (
+            checkpoint_config is None
+            or checkpoint_config.resume_from_checkpoint is False
+        ):
+            training_manager = TrainingProgressManager.from_scratch_for_supervised(
+                model=self,
+                supervised_datasource=supervised_data_source,
+                learning_rate=learning_rate,
+                epochs=epochs,
+                batch_size=batch_size,
+                max_in_memory_batches=max_in_memory_batches,
+                metrics=metrics,
+                disable_inverted_index=disable_inverted_index,
+                checkpoint_config=checkpoint_config,
+            )
+            training_manager.make_preindexing_checkpoint(save_datasource=True)
+        else:
+            training_manager = TrainingProgressManager.from_checkpoint(
+                self, checkpoint_config, for_supervised=True
+            )
+
+        self.supervised_training_impl(training_manager, callbacks=callbacks)
 
     def build_inverted_index(self, documents):
         if self.inverted_index:

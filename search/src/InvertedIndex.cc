@@ -24,37 +24,87 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
     throw std::invalid_argument(
         "Number of ids must match the number of docs in index.");
   }
-  std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>> doc_freqs(
-      docs.size());
 
-#pragma omp parallel for default(none) shared(docs, doc_freqs)
-  for (size_t i = 0; i < docs.size(); i++) {
-    const auto& tokens = docs[i];
-    std::unordered_map<Token, uint32_t> freqs;
-    for (const auto& token : preprocessText(tokens)) {
-      freqs[token]++;
-    }
-    doc_freqs[i] = {tokens.size(), std::move(freqs)};
-  }
+  auto doc_lens_and_occurences = countTokenOccurences(docs);
 
   for (size_t i = 0; i < docs.size(); i++) {
     const DocId doc_id = ids[i];
-    const size_t doc_len = doc_freqs[i].first;
-    const auto& freqs = doc_freqs[i].second;
+    const size_t doc_len = doc_lens_and_occurences[i].first;
+    const auto& occurences = doc_lens_and_occurences[i].second;
 
     if (_doc_lengths.count(doc_id)) {
       throw std::runtime_error("Document with id " + std::to_string(doc_id) +
                                " is already in InvertedIndex.");
     }
 
-    for (const auto& [token, freq] : freqs) {
-      _token_to_docs[token].emplace_back(doc_id, freq);
+    for (const auto& [token, cnt] : occurences) {
+      _token_to_docs[token].emplace_back(doc_id, cnt);
     }
     _doc_lengths[doc_id] = doc_len;
     _sum_doc_lens += doc_len;
   }
 
   recomputeMetadata();
+}
+
+void InvertedIndex::update(const std::vector<DocId>& ids,
+                           const std::vector<Tokens>& extra_tokens,
+                           bool ignore_missing_ids) {
+  if (ids.size() != extra_tokens.size()) {
+    throw std::invalid_argument(
+        "Number of ids must match the number of docs in index.");
+  }
+
+  auto doc_lens_and_occurences = countTokenOccurences(extra_tokens);
+
+  for (size_t i = 0; i < ids.size(); i++) {
+    const DocId doc_id = ids[i];
+    const size_t extra_len = doc_lens_and_occurences[i].first;
+    const auto& extra_occurences = doc_lens_and_occurences[i].second;
+
+    if (!_doc_lengths.count(doc_id)) {
+      if (ignore_missing_ids) {
+        continue;
+      }
+      throw std::runtime_error("Cannot update document with id " +
+                               std::to_string(doc_id) +
+                               " since it's not already in the index.");
+    }
+
+    for (const auto& [token, cnt] : extra_occurences) {
+      auto& docs_w_token = _token_to_docs[token];
+      auto it =
+          std::find_if(docs_w_token.begin(), docs_w_token.end(),
+                       [doc_id](const auto& a) { return a.first == doc_id; });
+      if (it != docs_w_token.end()) {
+        it->second += cnt;
+      } else {
+        docs_w_token.emplace_back(doc_id, cnt);
+      }
+    }
+    _doc_lengths[doc_id] += extra_len;
+    _sum_doc_lens += extra_len;
+  }
+
+  recomputeMetadata();
+}
+
+std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>>
+InvertedIndex::countTokenOccurences(const std::vector<Tokens>& docs) const {
+  std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>>
+      token_counts(docs.size());
+
+#pragma omp parallel for default(none) shared(docs, token_counts)
+  for (size_t i = 0; i < docs.size(); i++) {
+    const auto& tokens = docs[i];
+    std::unordered_map<Token, uint32_t> counts;
+    for (const auto& token : preprocessText(tokens)) {
+      counts[token]++;
+    }
+    token_counts[i] = {tokens.size(), std::move(counts)};
+  }
+
+  return token_counts;
 }
 
 void InvertedIndex::recomputeMetadata() {
@@ -112,25 +162,7 @@ struct HighestScore {
 
 std::vector<DocScore> InvertedIndex::query(const Tokens& query,
                                            uint32_t k) const {
-  std::unordered_map<DocId, float> doc_scores;
-
-  for (const Token& token : preprocessText(query)) {
-    if (!_token_to_idf.count(token)) {
-      continue;
-    }
-    const float token_idf = _token_to_idf.at(token);
-
-    for (const auto& [doc_id, token_freq] : _token_to_docs.at(token)) {
-      const uint64_t doc_len = _doc_lengths.at(doc_id);
-
-      // Note: This bm25 score could be precomputed for each (token, doc) pair.
-      // However it would mean that all scores would need to be recomputed when
-      // more docs are added since the idf and avg_doc_len will change. So if we
-      // do not need to support small incremental additions then it might make
-      // sense to precompute these values.
-      doc_scores[doc_id] += bm25(token_idf, token_freq, doc_len);
-    }
-  }
+  std::unordered_map<DocId, float> doc_scores = scoreDocuments(query);
 
   // Using a heap like this is O(N log(K)) where N is the number of docs.
   // Sorting the entire list and taking the top K would be O(N log(N)).
@@ -155,12 +187,86 @@ std::vector<DocScore> InvertedIndex::query(const Tokens& query,
   return top_scores;
 }
 
+std::unordered_map<DocId, float> InvertedIndex::scoreDocuments(
+    const Tokens& query) const {
+  std::unordered_map<DocId, float> doc_scores;
+
+  for (const Token& token : preprocessText(query)) {
+    if (!_token_to_idf.count(token)) {
+      continue;
+    }
+    const float token_idf = _token_to_idf.at(token);
+
+    for (const auto& [doc_id, cnt_in_doc] : _token_to_docs.at(token)) {
+      const uint64_t doc_len = _doc_lengths.at(doc_id);
+
+      // Note: This bm25 score could be precomputed for each (token, doc) pair.
+      // However it would mean that all scores would need to be recomputed when
+      // more docs are added since the idf and avg_doc_len will change. So if we
+      // do not need to support small incremental additions then it might make
+      // sense to precompute these values.
+      doc_scores[doc_id] += bm25(token_idf, cnt_in_doc, doc_len);
+    }
+  }
+
+  return doc_scores;
+}
+
+std::vector<std::vector<DocScore>> InvertedIndex::rankBatch(
+    const std::vector<Tokens>& queries,
+    const std::vector<std::vector<DocId>>& candidates, uint32_t k) const {
+  if (queries.size() != candidates.size()) {
+    throw std::invalid_argument(
+        "Number of queries must match number of candidate sets for ranking.");
+  }
+
+  std::vector<std::vector<DocScore>> scores(queries.size());
+
+#pragma omp parallel for default(none) \
+    shared(queries, candidates, scores, k) if (queries.size() > 1)
+  for (size_t i = 0; i < queries.size(); i++) {
+    scores[i] = rank(queries[i], candidates[i], k);
+  }
+
+  return scores;
+}
+
+std::vector<DocScore> InvertedIndex::rank(const Tokens& query,
+                                          const std::vector<DocId>& candidates,
+                                          uint32_t k) const {
+  std::unordered_map<DocId, float> doc_scores = scoreDocuments(query);
+
+  // Using a heap like this is O(N log(K)) where N is the number of candidates.
+  // Sorting the entire list and taking the top K would be O(N log(N)).
+  std::vector<DocScore> top_scores;
+  top_scores.reserve(k + 1);
+  const HighestScore cmp;
+
+  for (uint32_t candidate : candidates) {
+    if (!doc_scores.count(candidate)) {
+      continue;
+    }
+    float score = doc_scores.at(candidate);
+    if (top_scores.size() < k || top_scores.front().second < score) {
+      top_scores.emplace_back(candidate, score);
+      std::push_heap(top_scores.begin(), top_scores.end(), cmp);
+    }
+
+    if (top_scores.size() > k) {
+      std::pop_heap(top_scores.begin(), top_scores.end(), cmp);
+      top_scores.pop_back();
+    }
+  }
+
+  std::sort_heap(top_scores.begin(), top_scores.end(), cmp);
+
+  return top_scores;
+}
+
 void InvertedIndex::remove(const std::vector<DocId>& ids) {
   for (DocId id : ids) {
     if (!_doc_lengths.count(id)) {
-      throw std::runtime_error("Cannot remove element with id " +
-                               std::to_string(id) +
-                               ". No such element exists.");
+      continue;
     }
 
     _sum_doc_lens -= _doc_lengths.at(id);
@@ -175,6 +281,39 @@ void InvertedIndex::remove(const std::vector<DocId>& ids) {
   }
 
   recomputeMetadata();
+}
+
+std::vector<DocScore> InvertedIndex::parallelQuery(
+    const std::vector<std::shared_ptr<InvertedIndex>>& indices,
+    const Tokens& query, uint32_t k) {
+  std::vector<std::vector<DocScore>> scores(indices.size());
+
+#pragma omp parallel for default(none) shared(indices, query, k, scores)
+  for (size_t i = 0; i < indices.size(); i++) {
+    scores[i] = indices[i]->query(query, k);
+  }
+
+  std::vector<DocScore> top_scores;
+  top_scores.reserve(k + 1);
+  const HighestScore cmp;
+
+  for (const auto& doc_scores : scores) {
+    for (const auto& [doc, score] : doc_scores) {
+      if (top_scores.size() < k || top_scores.front().second < score) {
+        top_scores.emplace_back(doc, score);
+        std::push_heap(top_scores.begin(), top_scores.end(), cmp);
+      }
+
+      if (top_scores.size() > k) {
+        std::pop_heap(top_scores.begin(), top_scores.end(), cmp);
+        top_scores.pop_back();
+      }
+    }
+  }
+
+  std::sort_heap(top_scores.begin(), top_scores.end(), cmp);
+
+  return top_scores;
 }
 
 void InvertedIndex::save(const std::string& filename) const {
