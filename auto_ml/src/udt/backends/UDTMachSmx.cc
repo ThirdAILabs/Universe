@@ -109,7 +109,9 @@ py::object UDTMachSmx::train(const dataset::DataSourcePtr& data,
                              const std::vector<std::string>& val_metrics,
                              const std::vector<CallbackPtr>& callbacks,
                              TrainOptions options,
-                             const bolt::DistributedCommPtr& comm) {
+                             const bolt::DistributedCommPtr& comm,
+                             py::kwargs kwargs) {
+  (void)kwargs;
   CHECK(train_metrics.empty(), "Arg 'train_metrics' not supported.");
   CHECK(!val_data, "Arg 'val_data' not supported");
   CHECK(val_metrics.empty(), "Arg 'val_metrics' not supported");
@@ -150,7 +152,8 @@ py::object UDTMachSmx::coldstart(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::DistributedCommPtr& comm) {
+    const bolt::DistributedCommPtr& comm, const py::kwargs& kwargs) {
+  (void)kwargs;
   CHECK(train_metrics.empty(), "Arg 'train_metrics' not supported.");
   CHECK(!val_data, "Arg 'val_data' not supported");
   CHECK(val_metrics.empty(), "Arg 'val_metrics' not supported");
@@ -270,9 +273,9 @@ class MachMetric {
 py::object UDTMachSmx::evaluate(const dataset::DataSourcePtr& data,
                                 const std::vector<std::string>& metrics,
                                 bool sparse_inference, bool verbose,
-                                std::optional<uint32_t> top_k) {
+                                py::kwargs kwargs) {
   CHECK(!sparse_inference, "Sparse inference is not yet supported.");
-  (void)top_k;
+  (void)kwargs;
 
   std::vector<MachMetric> metric_trackers;
   metric_trackers.reserve(metrics.size());
