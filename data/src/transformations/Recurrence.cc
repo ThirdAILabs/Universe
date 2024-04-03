@@ -58,7 +58,7 @@ ColumnMap Recurrence::apply(ColumnMap columns, State& state) const {
 
 #pragma omp parallel for default(none)                                      \
     shared(source_column, target_column, row_offsets, unrolled_source_data, \
-           unrolled_target_data, error)
+               unrolled_target_data, error)
   for (uint32_t i = 0; i < source_column->numRows(); i++) {
     auto source_row = source_column->row(i);
     auto target_row = target_column->row(i);

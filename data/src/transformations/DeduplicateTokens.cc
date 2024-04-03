@@ -28,7 +28,7 @@ ColumnMap DeduplicateTokens::apply(ColumnMap columns, State& state) const {
 
 #pragma omp parallel for default(none)                       \
     shared(indices, values, deduped_indices, deduped_values, \
-           error) if (columns.numRows() > 1)
+               error) if (columns.numRows() > 1)
   for (uint32_t i = 0; i < indices->numRows(); i++) {
     try {
       auto indices_row = indices->row(i);
