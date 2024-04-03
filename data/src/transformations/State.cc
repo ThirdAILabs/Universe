@@ -41,6 +41,10 @@ ar::ConstArchivePtr State::toArchive() const {
     map->set("mach_index", _mach_index->toArchive());
   }
 
+  if (_mach_memory) {
+    map->set("mach_memory", _mach_memory->toArchive());
+  }
+
   auto vocabs = ar::Map::make();
   for (const auto& [k, v] : _vocabs) {
     vocabs->set(k, v->toArchive());
@@ -93,6 +97,10 @@ std::shared_ptr<State> State::fromArchive(const ar::Archive& archive) {
 State::State(const ar::Archive& archive) {
   if (archive.contains("mach_index")) {
     _mach_index = MachIndex::fromArchive(*archive.get("mach_index"));
+  }
+
+  if (archive.contains("mach_memory")) {
+    _mach_memory = MachMemory::fromArchive(*archive.get("mach_memory"));
   }
 
   for (const auto& [k, v] : archive.get("vocabs")->map()) {

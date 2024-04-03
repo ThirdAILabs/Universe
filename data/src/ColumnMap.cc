@@ -130,6 +130,15 @@ std::vector<std::string> ColumnMap::columns() const {
   return columns;
 }
 
+ColumnMap ColumnMap::selectColumns(
+    const std::vector<std::string>& columns) const {
+  std::unordered_map<std::string, ColumnPtr> new_columns;
+  for (const auto& name : columns) {
+    new_columns[name] = getColumn(name);
+  }
+  return ColumnMap(std::move(new_columns));
+}
+
 void ColumnMap::shuffle(uint32_t seed) {
   std::vector<size_t> permutation(numRows());
   std::iota(permutation.begin(), permutation.end(), 0);
@@ -164,6 +173,11 @@ ColumnMap ColumnMap::concat(ColumnMap& other) {
   std::unordered_map<std::string, ColumnPtr> new_columns;
 
   for (auto& [name, column] : _columns) {
+    if (column->dim() != other.getColumn(name)->dim()) {
+      throw std::invalid_argument(
+          "Cannot concatenate column '" + name +
+          "'. The dimensions don't match between column maps.");
+    }
     new_columns[name] = column->concat(other.getColumn(name));
   }
 

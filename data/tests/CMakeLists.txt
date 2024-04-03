@@ -16,7 +16,8 @@ set(DATA_TESTS
     ColumnMapIteratorTests
     TabularTests
     StateSerializationTest
-    TextCompatTest)
+    TextCompatTest
+    MachMemorySerializationTest)
 
 foreach(DATA_TEST IN LISTS DATA_TESTS)
   add_executable(${DATA_TEST} ${DATA_TEST}.cc)
