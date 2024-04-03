@@ -168,6 +168,8 @@ neural_db_deps = [
     "Office365-REST-Python-Client==2.5.1",
     "simple-salesforce==1.12.5",
     "ipython",
+    # lxml is a dependency of trafilatura. We install lxml[html_clean] to fix
+    # this error https://github.com/adbar/trafilatura/issues/532
     "lxml[html_clean]",
 ]
 
