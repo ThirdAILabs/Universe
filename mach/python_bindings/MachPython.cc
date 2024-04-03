@@ -181,8 +181,8 @@ void defineMach(py::module_& module) {
   py::class_<MachRetriever, MachRetrieverPtr>(module, "MachRetriever")
 #if THIRDAI_EXPOSE_ALL
       .def_property_readonly("model", &MachRetriever::model)
-      .def_property_readonly("index", &MachRetriever::index)
 #endif
+      .def_property_readonly("index", &MachRetriever::index)
       .def("train", &wrappedTrain, py::arg("data"), py::arg("learning_rate"),
            py::arg("epochs"), py::arg("metrics") = std::vector<std::string>{},
            py::arg("callbacks") = std::vector<bolt::callbacks::CallbackPtr>{})
