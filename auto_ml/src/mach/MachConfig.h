@@ -5,6 +5,8 @@
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
+#include <optional>
+#include <stdexcept>
 #include <string>
 
 namespace thirdai::automl::mach {
@@ -108,9 +110,25 @@ class MachConfig {
 
   bolt::ModelPtr model() const;
 
-  const auto& getTextCol() const { return _text_col; }
+  const std::string& getTextCol() const {
+    if (!_text_col) {
+      throw std::invalid_argument(
+          "Must set the text column of the MachConfig before calling build. "
+          "This can be done by calling the `text_col('column name')` method on "
+          "the MachConfig.");
+    }
+    return *_text_col;
+  }
 
-  const auto& getIdCol() const { return _id_col; }
+  const std::string& getIdCol() const {
+    if (!_id_col) {
+      throw std::invalid_argument(
+          "Must set the id column of the MachConfig before calling build. This "
+          "can be done by calling the `id_col('column name')` method on the "
+          "MachConfig.");
+    }
+    return *_id_col;
+  }
 
   data::TextTokenizerPtr textTransformation() const;
 
@@ -128,8 +146,8 @@ class MachConfig {
 
  private:
   // Data parameters
-  std::string _text_col = "QUERY";
-  std::string _id_col = "DOC_ID";
+  std::optional<std::string> _text_col = std::nullopt;
+  std::optional<std::string> _id_col = std::nullopt;
 
   // Data processing
   std::string _tokenizer = "char-4";
