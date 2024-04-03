@@ -542,9 +542,8 @@ std::vector<UDT::Scores> UDT::labelProbeMultipleMach(
     for (size_t m = 0; m < mach_models.size(); m++) {
       try {
         const auto& index = mach_models[m]->getIndex();
-        auto top_model_candidates =
-            scores[m]->getVector(i).findKLargestActivations(
-                mach_models[m]->numBucketsToEval());
+        auto top_model_candidates = scores[m]->getVector(i).topKNeurons(
+            mach_models[m]->numBucketsToEval());
 
         while (!top_model_candidates.empty()) {
           uint32_t bucket = top_model_candidates.top().second;
