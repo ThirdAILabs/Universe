@@ -5,7 +5,7 @@
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <auto_ml/src/featurization/DataTypes.h>
-#include <auto_ml/src/mach/MachRetriever.h>
+#include <mach/src/MachRetriever.h>
 
 namespace thirdai::automl::mach {
 

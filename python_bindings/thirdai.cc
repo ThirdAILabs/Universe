@@ -6,10 +6,10 @@
 #include <bolt/python_bindings/BoltTrainPython.h>
 #include <hashing/python_bindings/HashingPython.h>
 #include <auto_ml/python_bindings/AutomlPython.h>
-#include <auto_ml/python_bindings/MachPython.h>
 #include <data/python_bindings/DataPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <licensing/python_bindings/LicensingPython.h>
+#include <mach/python_bindings/MachPython.h>
 #include <search/python_bindings/DocSearchPython.h>
 #include <telemetry/python_bindings/TelemetryPython.h>
 #include <utils/Logging.h>

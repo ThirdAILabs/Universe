@@ -5,7 +5,6 @@
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <archive/src/Archive.h>
-#include <auto_ml/src/mach/MachConfig.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/TensorConversion.h>
@@ -22,6 +21,7 @@
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/mach/MachIndex.h>
+#include <mach/src/MachConfig.h>
 #include <memory>
 #include <unordered_set>
 #include <utility>

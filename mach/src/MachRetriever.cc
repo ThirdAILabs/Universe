@@ -11,7 +11,6 @@
 #include <bolt/src/train/trainer/Trainer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <archive/src/Archive.h>
-#include <auto_ml/src/mach/MachConfig.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/Loader.h>
@@ -21,6 +20,7 @@
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <mach/src/MachConfig.h>
 #include <cassert>
 #include <optional>
 #include <regex>

@@ -2,12 +2,12 @@
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/metrics/Metric.h>
-#include <auto_ml/src/mach/MachConfig.h>
-#include <auto_ml/src/mach/MachRetriever.h>
 #include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
+#include <mach/src/MachConfig.h>
+#include <mach/src/MachRetriever.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <limits>

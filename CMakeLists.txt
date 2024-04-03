@@ -265,6 +265,7 @@ add_subdirectory(dataset)
 add_subdirectory(search)
 add_subdirectory(hashing)
 add_subdirectory(hashtable)
+add_subdirectory(mach)
 add_subdirectory(archive)
 add_subdirectory(compression)
 add_subdirectory(utils)
@@ -411,8 +412,8 @@ set(THIRDAI_SOURCES
     data/src/Loader.cc
     data/src/ColumnMapIterator.cc
     data/src/rca/ExplanationMap.cc
-    auto_ml/src/mach/MachRetriever.cc
-    auto_ml/src/mach/MachConfig.cc
+    mach/src/MachRetriever.cc
+    mach/src/MachConfig.cc
     archive/src/Archive.cc
     archive/src/Map.cc
     archive/src/List.cc
