@@ -4,8 +4,8 @@
 
 namespace py = pybind11;
 
-namespace thirdai::automl::mach::python {
+namespace thirdai::mach::python {
 
 void defineMach(py::module_& module);
 
-}  // namespace thirdai::automl::mach::python
+}  // namespace thirdai::mach::python

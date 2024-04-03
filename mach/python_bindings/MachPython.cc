@@ -12,7 +12,7 @@
 #include <pybind11/stl.h>
 #include <limits>
 
-namespace thirdai::automl::mach::python {
+namespace thirdai::mach::python {
 
 void loadTrainOptions(const py::kwargs& kwargs, TrainOptions& options) {
   if (kwargs.contains("batch_size")) {
@@ -241,4 +241,4 @@ void defineMach(py::module_& module) {
       .def_static("load", &MachRetriever::load, py::arg("filename"));
 }
 
-}  // namespace thirdai::automl::mach::python
+}  // namespace thirdai::mach::python

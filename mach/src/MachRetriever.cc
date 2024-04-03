@@ -31,7 +31,7 @@
 #include <utility>
 #include <vector>
 
-namespace thirdai::automl::mach {
+namespace thirdai::mach {
 
 MachRetriever::MachRetriever(const MachConfig& config)
     : _state(config.state()),
@@ -715,4 +715,4 @@ std::shared_ptr<MachRetriever> MachRetriever::load(
   return fromArchive(*archive);
 }
 
-}  // namespace thirdai::automl::mach
+}  // namespace thirdai::mach

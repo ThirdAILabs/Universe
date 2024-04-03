@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace thirdai::automl::mach {
+namespace thirdai::mach {
 
 class MachRetriever;
 
@@ -181,4 +181,4 @@ static constexpr const char* input_values_column = "__input_values__";
 
 float autotuneSparsity(size_t dim);
 
-}  // namespace thirdai::automl::mach
+}  // namespace thirdai::mach

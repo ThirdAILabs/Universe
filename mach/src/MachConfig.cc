@@ -7,7 +7,7 @@
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <mach/src/MachRetriever.h>
 
-namespace thirdai::automl::mach {
+namespace thirdai::mach {
 
 std::shared_ptr<MachRetriever> MachConfig::build() const {
   return std::make_shared<MachRetriever>(*this);
@@ -84,4 +84,4 @@ data::MachLabelPtr MachConfig::idToBucketsTransform() const {
   return std::make_shared<data::MachLabel>(getIdCol(), bucket_column);
 }
 
-}  // namespace thirdai::automl::mach
+}  // namespace thirdai::mach

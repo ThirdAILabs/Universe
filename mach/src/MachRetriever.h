@@ -26,7 +26,7 @@
 #include <unordered_set>
 #include <utility>
 
-namespace thirdai::automl::mach {
+namespace thirdai::mach {
 
 using IdScores = std::vector<std::pair<uint32_t, double>>;
 
@@ -239,4 +239,4 @@ class MachRetriever {
 
 using MachRetrieverPtr = std::shared_ptr<MachRetriever>;
 
-}  // namespace thirdai::automl::mach
+}  // namespace thirdai::mach
