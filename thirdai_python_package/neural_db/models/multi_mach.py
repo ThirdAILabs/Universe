@@ -38,7 +38,6 @@ class MultiMach:
         extreme_num_hashes: int,
         tokenizer: int,
         hidden_bias: bool,
-        use_inverted_index: bool,
         model_config,
         mach_index_seed_offset: int,
     ):

@@ -8,6 +8,7 @@ from .loggers import Logger
 from .models.models import Model
 from .trainer.checkpoint_config import CheckpointConfig
 from .utils import delete_file, delete_folder, pickle_to, unpickle_from
+from .inverted_index import InvertedIndex
 
 
 def default_checkpoint_name():
@@ -15,9 +16,10 @@ def default_checkpoint_name():
 
 
 class State:
-    def __init__(self, model: Model, logger: Logger) -> None:
+    def __init__(self, model: Model, logger: Logger, inverted_index: InvertedIndex = None) -> None:
         self.model = model
         self.logger = logger
+        self.inverted_index = inverted_index
         self.documents = DocumentManager(
             id_column=model.get_id_col(),
             strong_column="strong",

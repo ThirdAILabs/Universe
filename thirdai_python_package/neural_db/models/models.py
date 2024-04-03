@@ -431,7 +431,6 @@ class Mach(Model):
         tokenizer="char-4",
         hidden_bias=False,
         model_config=None,
-        use_inverted_index=True,
         mach_index_seed: int = 341,
         index_max_shard_size=8_000_000,
     ):

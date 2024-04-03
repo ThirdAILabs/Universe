@@ -37,7 +37,6 @@ class MachMixture(Model):
         tokenizer="char-4",
         hidden_bias=False,
         model_config=None,
-        use_inverted_index=True,
         label_to_segment_map: defaultdict = None,
         seed_for_sharding: int = 0,
     ):

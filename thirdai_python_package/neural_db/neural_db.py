@@ -14,6 +14,7 @@ from .documents import CSV, Document, DocumentManager, Reference
 from .models.mach_mixture_model import MachMixture
 from .models.models import CancelState, Mach
 from .models.multi_mach import MultiMach
+from inverted_index import InvertedIndex
 from .savable_state import (
     State,
     load_checkpoint,
@@ -88,8 +89,12 @@ class NeuralDB:
                 )
             else:
                 model = Mach(id_col="id", query_col="query", **kwargs)
+            
+            if kwargs.get("use_inverted_index", True):
+                inverted_index = InvertedIndex(max_shard_size=kwargs.get("index_max_shard_size", 8_000_000))
+
             self._savable_state = State(
-                model, logger=loggers.LoggerList([loggers.InMemoryLogger()])
+                model, logger=loggers.LoggerList([loggers.InMemoryLogger()], inverted_index = inverted_index)
             )
         else:
             self._savable_state = kwargs["savable_state"]
@@ -480,6 +485,11 @@ class NeuralDB:
             callbacks=callbacks,
             **kwargs,
         )
+
+        if self._savable_state.inverted_index:
+            intro_documents = intro_and_train.intro
+            intro_documents.restart()
+            self._savable_state.inverted_index.insert(intro_documents)
 
         return ids, intro_and_train.intro.resource_name()
 
