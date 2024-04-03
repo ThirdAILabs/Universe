@@ -327,9 +327,8 @@ py::object UDTMachClassifier::scoreBatch(
   std::vector<std::vector<std::pair<uint32_t, double>>> scores(samples.size());
 
   const auto& index = _mach_label_block->index();
-#pragma omp parallel for default(none)                   \
-    shared(entities, outputs, scores, top_k, batch_size, \
-               index) if (batch_size > 1)
+#pragma omp parallel for default(none) shared( \
+    entities, outputs, scores, top_k, batch_size, index) if (batch_size > 1)
   for (uint32_t i = 0; i < batch_size; i++) {
     const BoltVector& vector = outputs->getVector(i);
     scores[i] = index->scoreEntities(vector, entities[i], top_k);
