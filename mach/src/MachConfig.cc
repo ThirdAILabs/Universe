@@ -74,8 +74,8 @@ data::TextTokenizerPtr MachConfig::textTransformation() const {
       /* input_column= */ getTextCol(),
       /* output_indices= */ input_indices_column,
       /* output_values= */ input_values_column,
-      /* tokenizer= */ getTextTokenizerFromString(_tokenizer),
-      /* encoder= */ getTextEncoderFromString(_contextual_encoding),
+      /* tokenizer= */ automl::getTextTokenizerFromString(_tokenizer),
+      /* encoder= */ automl::getTextEncoderFromString(_contextual_encoding),
       /* lowercase= */ _lowercase,
       /* dim= */ _text_feature_dim);
 }
