@@ -221,7 +221,9 @@ std::vector<IdScores> MachRetriever::rank(
     data::ColumnMap queries,
     const std::vector<std::unordered_set<uint32_t>>& candidates,
     std::optional<uint32_t> top_k, bool sparse_inference) {
-  if (queries.numRows() != candidates.size()) {
+  uint32_t n_queries = queries.numRows();
+
+  if (n_queries != candidates.size()) {
     throw std::invalid_argument(
         "Number of queries must match number of candidate sets.");
   }
@@ -229,7 +231,6 @@ std::vector<IdScores> MachRetriever::rank(
   auto in = inputTensors(_text_transform->apply(std::move(queries), *_state));
   auto out = _model->forward(in, sparse_inference).at(0);
 
-  uint32_t n_queries = queries.numRows();
   std::vector<IdScores> predictions(n_queries);
 #pragma omp parallel for default(none) \
     shared(out, candidates, predictions, top_k, n_queries) if (n_queries > 1)
