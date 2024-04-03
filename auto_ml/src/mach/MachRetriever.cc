@@ -1,5 +1,4 @@
 #include "MachRetriever.h"
-#include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/tensor/Tensor.h>
@@ -11,21 +10,49 @@
 #include <bolt/src/train/metrics/RecallAtK.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Archive.h>
+#include <auto_ml/src/mach/MachConfig.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/Loader.h>
+#include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Pipeline.h>
+#include <data/src/transformations/Transformation.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <cassert>
 #include <optional>
 #include <regex>
+#include <stdexcept>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
 
 namespace thirdai::automl::mach {
+
+MachRetriever::MachRetriever(const MachConfig& config)
+    : _state(config.state()),
+      _model(config.model()),
+      _text_column(config.getTextCol()),
+      _id_column(config.getIdCol()),
+      _text_transform(config.textTransformation()),
+      _id_to_buckets(config.idToBucketsTransform()),
+      _add_mach_memory_samples(std::make_shared<data::AddMachMemorySamples>()),
+      _bolt_input_columns({{input_indices_column, input_values_column}}),
+      _bolt_label_columns(
+          {data::OutputColumns(bucket_column,
+                               config.usesSoftmax()
+                                   ? data::ValueFillType::SumToOne
+                                   : data::ValueFillType::Ones),
+           data::OutputColumns(config.getIdCol())}),
+      _all_bolt_columns({input_indices_column, input_values_column,
+                         bucket_column, config.getIdCol()}),
+      _mach_sampling_threshold(config.getMachSamplingThreshold()),
+      _n_buckets_to_eval(config.getNBucketsToEval()),
+      _freeze_tables_epoch(config.getFeezeHashTablesEpoch()) {}
 
 using BucketScores = std::vector<ValueIndexPair>;
 
@@ -44,39 +71,36 @@ std::unordered_map<uint32_t, std::vector<BucketScores>> groupScoresByLabel(
   return grouped;
 }
 
-void MachRetriever::introduce(
-    const data::ColumnMapIteratorPtr& iter,
-    const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names, bool phrase_sampling,
-    std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, bool load_balancing, bool sort_random_hashes) {
-  while (auto columns = iter->next()) {
-    introduce(std::move(*columns), strong_column_names, weak_column_names,
-              phrase_sampling, num_buckets_to_sample_opt, num_random_hashes,
-              load_balancing, sort_random_hashes);
+void MachRetriever::introduceIterator(
+    const data::ColumnMapIteratorPtr& data,
+    const std::vector<std::string>& strong_cols,
+    const std::vector<std::string>& weak_cols, bool text_augmentation,
+    std::optional<uint32_t> n_buckets_to_sample_opt, uint32_t n_random_hashes,
+    bool load_balancing, bool sort_random_hashes) {
+  while (auto columns = data->next()) {
+    introduce(std::move(*columns), strong_cols, weak_cols, text_augmentation,
+              n_buckets_to_sample_opt, n_random_hashes, load_balancing,
+              sort_random_hashes);
   }
 }
 
-void MachRetriever::introduce(
-    data::ColumnMap columns,
-    const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names, bool phrase_sampling,
-    std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, bool load_balancing, bool sort_random_hashes) {
-  assertUniqueIds(columns);
+void MachRetriever::introduce(data::ColumnMap data,
+                              const std::vector<std::string>& strong_cols,
+                              const std::vector<std::string>& weak_cols,
+                              bool text_augmentation,
+                              std::optional<uint32_t> n_buckets_to_sample_opt,
+                              uint32_t n_random_hashes, bool load_balancing,
+                              bool sort_random_hashes) {
+  assertUniqueIds(data);
 
-  // Sorry I'm changing the names a bit but I think this will help us
-  // disambiguate overloaded terms in the long run.
-  if (phrase_sampling) {
-    // AKA coldstart transform
-    phraseSampling(strong_column_names, weak_column_names, std::nullopt)
-        ->apply(std::move(columns), *_state);
+  if (text_augmentation) {
+    data = coldStartTextAugmentation(strong_cols, weak_cols, std::nullopt)
+               ->apply(std::move(data), *_state);
   } else {
-    textConcat(strong_column_names, weak_column_names)
-        ->apply(std::move(columns), *_state);
+    data = textConcat(strong_cols, weak_cols)->apply(std::move(data), *_state);
   }
-  columns = _text_transform->apply(std::move(columns), *_state);
-  auto input_tensors = inputTensors(columns);
+  data = _text_transform->apply(std::move(data), *_state);
+  auto input_tensors = inputTensors(data);
 
   // Perform introduction
 
@@ -85,127 +109,109 @@ void MachRetriever::introduce(
   // cause new docs to only be mapped to buckets already containing
   // entities.
 
-  bolt::python::CtrlCCheck ctrl_c_check;
-
   auto scores = _model->forward(input_tensors).at(0);
 
-  ctrl_c_check();
-
-  uint32_t num_buckets_to_sample =
+  uint32_t n_buckets_to_sample =
       load_balancing ? index()->numBuckets()
-                     : num_buckets_to_sample_opt.value_or(index()->numHashes());
+                     : n_buckets_to_sample_opt.value_or(index()->numHashes());
 
   auto bucket_scores_by_doc = groupScoresByLabel(
       /* scores= */ *scores,
-      /* labels= */ *columns.getValueColumn<uint32_t>(_id_column),
+      /* labels= */ *data.getValueColumn<uint32_t>(_id_column),
       /* only_keep_top_k= */
-      load_balancing ? std::nullopt : std::make_optional(load_balancing));
+      load_balancing ? std::nullopt : std::make_optional(n_buckets_to_sample));
 
-  ctrl_c_check();
-
-  uint32_t approx_num_hashes_per_bucket = index()->approxNumHashesPerBucket(
+  uint32_t approx_n_hashes_per_bucket = index()->approxNumHashesPerBucket(
       /* num_new_samples= */ bucket_scores_by_doc.size());
 
   for (auto& [doc, bucket_scores] : bucket_scores_by_doc) {
-    auto hashes =
-        topHashesForDoc(std::move(bucket_scores), num_buckets_to_sample,
-                        approx_num_hashes_per_bucket, num_random_hashes,
-                        load_balancing, sort_random_hashes);
+    auto hashes = topHashesForDoc(std::move(bucket_scores), n_buckets_to_sample,
+                                  approx_n_hashes_per_bucket, n_random_hashes,
+                                  load_balancing, sort_random_hashes);
     index()->insert(doc, hashes);
-
-    ctrl_c_check();
   }
 
   updateSamplingStrategy();
 }
 
-void MachRetriever::coldstart(
-    data::ColumnMapIteratorPtr iter,
-    const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names,
-    std::optional<data::VariableLengthConfig> variable_length,
-    float learning_rate, uint32_t epochs,
-    const std::vector<std::string>& train_metrics,
-    data::ColumnMapIteratorPtr val_iter,
-    const std::vector<std::string>& val_metrics, const TrainOptions& options,
+bolt::metrics::History MachRetriever::coldstart(
+    const data::ColumnMapIteratorPtr& data,
+    const std::vector<std::string>& strong_cols,
+    const std::vector<std::string>& weak_cols, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& metrics,
     const std::vector<bolt::callbacks::CallbackPtr>& callbacks,
-    const bolt::DistributedCommPtr& comm) {
-  auto augmented_iter = data::TransformedIterator::make(
-      std::move(iter),
-      phraseSampling(strong_column_names, weak_column_names, variable_length),
+    const ColdStartOptions& options) {
+  auto augmented_data = data::TransformedIterator::make(
+      data,
+      textAugmentation(strong_cols, weak_cols, options.variable_length,
+                       options.splade_config),
       _state);
-  train(augmented_iter, learning_rate, epochs, train_metrics,
-        std::move(val_iter), val_metrics, options, callbacks, comm);
+
+  return train(augmented_data, learning_rate, epochs, metrics, callbacks,
+               options);
 }
 
-void MachRetriever::train(
-    data::ColumnMapIteratorPtr iter, float learning_rate, uint32_t epochs,
-    const std::vector<std::string>& train_metrics,
-    data::ColumnMapIteratorPtr val_iter,
-    const std::vector<std::string>& val_metrics, const TrainOptions& options,
+bolt::metrics::History MachRetriever::train(
+    const data::ColumnMapIteratorPtr& data, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& metrics,
     const std::vector<bolt::callbacks::CallbackPtr>& callbacks,
-    const bolt::DistributedCommPtr& comm) {
-  // Text features
-  // Label features
-  // Add balancing samples to column maps
-  // Extract balancing samples from pre-balancing samples map
+    const TrainOptions& options) {
+  insertNewIds(data);
+
   auto train_transform = data::Pipeline::make(
-      {_text_transform, _id_transform, _add_mach_memory_samples});
+      {_text_transform, _id_to_buckets, _add_mach_memory_samples});
 
   auto train_data_loader = data::Loader::make(
-      std::move(iter), train_transform, _state, _bolt_input_columns,
-      _bolt_label_columns, options.batch_size, /* shuffle= */ true,
-      options.verbose, options.shuffle_config.min_buffer_size,
-      options.shuffle_config.seed);
+      data, train_transform, _state, _bolt_input_columns, _bolt_label_columns,
+      options.batch_size, /* shuffle= */ true, options.verbose);
 
-  data::LoaderPtr val_data_loader;
-  if (val_iter) {
-    auto val_transform = data::Pipeline::make({_text_transform, _id_transform});
-    val_data_loader = data::Loader::make(
-        std::move(val_iter), val_transform, _state, _bolt_input_columns,
-        _bolt_label_columns, options.batch_size,
-        /* shuffle= */ false, options.verbose);
-  }
-
-  std::optional<uint32_t> freeze_hash_tables_epoch = std::nullopt;
-  if (options.freeze_hash_tables) {
-    freeze_hash_tables_epoch = 1;
-  }
-
-  bolt::Trainer trainer(_model, freeze_hash_tables_epoch,
+  bolt::Trainer trainer(_model, _freeze_tables_epoch,
                         /* gradient_update_interval */ 1,
-                        bolt::python::CtrlCCheck{});
+                        options.interrupt_check);
 
-  auto history = trainer.train_with_data_loader(
+  return trainer.train_with_data_loader(
       /* train_data_loader= */ train_data_loader,
       /* learning_rate= */ learning_rate, /* epochs= */ epochs,
       /* max_in_memory_batches= */ options.max_in_memory_batches,
-      /* train_metrics= */
-      getMetrics(train_metrics, "train_"),
-      /* validation_data_loader= */ val_data_loader,
-      /* validation_metrics= */
-      getMetrics(val_metrics, "val_"),
-      /* steps_per_validation= */ options.steps_per_validation,
-      /* use_sparsity_in_validation= */ options.sparse_validation,
+      /* train_metrics= */ getMetrics(metrics, "train_"),
+      /* validation_data_loader= */ nullptr,
+      /* validation_metrics= */ {},
+      /* steps_per_validation= */ std::nullopt,
+      /* use_sparsity_in_validation= */ false,
       /* callbacks= */ callbacks, /* autotune_rehash_rebuild= */ true,
-      /* verbose= */ options.verbose,
-      /* logging_interval= */ options.logging_interval,
-      /*comm= */ comm);
+      /* verbose= */ options.verbose);
+}
+
+bolt::metrics::History MachRetriever::evaluate(
+    const data::ColumnMapIteratorPtr& data,
+    const std::vector<std::string>& metrics, const EvaluateOptions& options) {
+  bolt::Trainer trainer(_model, _freeze_tables_epoch,
+                        /* gradient_update_interval */ 1);
+
+  auto transform = data::Pipeline::make({_text_transform, _id_to_buckets});
+
+  auto eval_data_loader = data::Loader::make(
+      data, transform, _state, _bolt_input_columns, _bolt_label_columns, 2048,
+      /* shuffle= */ false, options.verbose);
+
+  return trainer.validate_with_data_loader(
+      eval_data_loader, getMetrics(metrics, "val_"),
+      /*use_sparsity=*/options.use_sparsity, /*verbose=*/options.verbose);
 }
 
 std::vector<IdScores> MachRetriever::search(data::ColumnMap queries,
                                             uint32_t top_k,
                                             bool sparse_inference) {
+  uint32_t n_queries = queries.numRows();
   auto in = inputTensors(_text_transform->apply(std::move(queries), *_state));
   auto out = _model->forward(in, sparse_inference).at(0);
 
-  uint32_t num_queries = queries.numRows();
-  std::vector<IdScores> predictions(num_queries);
+  std::vector<IdScores> predictions(n_queries);
 #pragma omp parallel for default(none) \
-    shared(out, predictions, k, num_queries) if (num_queries > 1)
-  for (uint32_t i = 0; i < num_queries; i++) {
+    shared(out, predictions, top_k, n_queries) if (n_queries > 1)
+  for (uint32_t i = 0; i < n_queries; i++) {
     const BoltVector& out_vec = out->getVector(i);
-    predictions[i] = index()->decode(out_vec, top_k, _num_buckets_to_eval);
+    predictions[i] = index()->decode(out_vec, top_k, _n_buckets_to_eval);
   }
 
   return predictions;
@@ -213,20 +219,23 @@ std::vector<IdScores> MachRetriever::search(data::ColumnMap queries,
 
 std::vector<IdScores> MachRetriever::rank(
     data::ColumnMap queries,
-    const std::vector<std::unordered_set<uint32_t>>& choices,
+    const std::vector<std::unordered_set<uint32_t>>& candidates,
     std::optional<uint32_t> top_k, bool sparse_inference) {
-  assert(queries.numRows() == choices.size());
+  if (queries.numRows() != candidates.size()) {
+    throw std::invalid_argument(
+        "Number of queries must match number of candidate sets.");
+  }
 
   auto in = inputTensors(_text_transform->apply(std::move(queries), *_state));
   auto out = _model->forward(in, sparse_inference).at(0);
 
-  uint32_t num_queries = queries.numRows();
-  std::vector<IdScores> predictions(num_queries);
+  uint32_t n_queries = queries.numRows();
+  std::vector<IdScores> predictions(n_queries);
 #pragma omp parallel for default(none) \
-    shared(out, predictions, k, num_queries) if (num_queries > 1)
-  for (uint32_t i = 0; i < num_queries; i++) {
+    shared(out, candidates, predictions, top_k, n_queries) if (n_queries > 1)
+  for (uint32_t i = 0; i < n_queries; i++) {
     const BoltVector& out_vec = out->getVector(i);
-    predictions[i] = index()->scoreEntities(out_vec, choices[i], top_k);
+    predictions[i] = index()->scoreEntities(out_vec, candidates[i], top_k);
   }
 
   return predictions;
@@ -235,7 +244,8 @@ std::vector<IdScores> MachRetriever::rank(
 std::vector<std::vector<uint32_t>> MachRetriever::predictBuckets(
     const data::ColumnMap& columns, bool sparse_inference,
     std::optional<uint32_t> top_k, bool force_non_empty) {
-  auto outputs = _model->forward(inputTensors(columns), sparse_inference).at(0);
+  auto inputs = inputTensors(_text_transform->applyStateless(columns));
+  auto outputs = _model->forward(inputs, sparse_inference).at(0);
 
   uint32_t k = top_k.value_or(_state->machIndex()->numHashes());
 
@@ -275,43 +285,64 @@ auto repeatRows(data::ColumnMap&& columns, uint32_t repetitions) {
   return columns.permute(permutation);
 }
 
-void MachRetriever::upvote(data::ColumnMap upvotes, uint32_t num_upvote_samples,
-                           uint32_t num_balancing_samples, float learning_rate,
+void MachRetriever::upvote(data::ColumnMap upvotes, uint32_t n_upvote_samples,
+                           uint32_t n_balancing_samples, float learning_rate,
                            uint32_t epochs, size_t batch_size) {
-  upvotes = data::Pipeline({_text_transform, _id_transform})
+  upvotes = data::Pipeline({_text_transform, _id_to_buckets})
                 .apply(std::move(upvotes), *_state);
-  teach(upvotes, learning_rate, num_upvote_samples, num_balancing_samples,
-        epochs, batch_size);
+  teach(upvotes, learning_rate, n_upvote_samples,
+        n_balancing_samples * upvotes.numRows(), epochs, batch_size);
 }
 
-void MachRetriever::associate(data::ColumnMap from_columns,
-                              const data::ColumnMap& to_columns,
-                              uint32_t num_buckets,
-                              uint32_t num_association_samples,
-                              uint32_t num_balancing_samples,
-                              float learning_rate, uint32_t epochs,
-                              bool force_non_empty, size_t batch_size) {
-  auto mach_labels = thirdai::data::ArrayColumn<uint32_t>::make(
-      predictBuckets(to_columns, /* sparse_inference= */ false, num_buckets,
-                     force_non_empty),
-      index()->numBuckets());
-  from_columns.setColumn(bucket_column, mach_labels);
+void MachRetriever::associate(data::ColumnMap sources,
+                              const data::ColumnMap& targets,
+                              uint32_t n_buckets,
+                              uint32_t n_association_samples,
+                              uint32_t n_balancing_samples, float learning_rate,
+                              uint32_t epochs, bool force_non_empty,
+                              size_t batch_size) {
+  auto buckets = predictBuckets(targets, /* sparse_inference= */ false,
+                                std::max(index()->numBuckets(), n_buckets),
+                                force_non_empty);
+
+  auto texts = sources.getValueColumn<std::string>(_text_column);
+  std::vector<std::string> source_samples;
+  std::vector<std::vector<uint32_t>> mach_labels;
+  std::mt19937 rng(global_random::nextSeed());
+  for (size_t i = 0; i < buckets.size(); i++) {
+    for (size_t j = 0; j < n_association_samples; j++) {
+      std::vector<uint32_t> sampled_buckets;
+      std::sample(buckets[i].begin(), buckets[i].end(),
+                  std::back_inserter(sampled_buckets), n_buckets, rng);
+      mach_labels.push_back(sampled_buckets);
+      source_samples.push_back(texts->value(i));
+    }
+  }
+
+  sources = data::ColumnMap(
+      {{_text_column,
+        data::ValueColumn<std::string>::make(std::move(source_samples))}});
+
+  sources = _text_transform->applyStateless(sources);
+  sources.setColumn(bucket_column,
+                    data::ArrayColumn<uint32_t>::make(std::move(mach_labels),
+                                                      index()->numBuckets()));
 
   // Add dummy IDs since associations do not have IDs.
   auto doc_ids = thirdai::data::ValueColumn<uint32_t>::make(
-      std::vector<uint32_t>(from_columns.numRows(), 0),
+      std::vector<uint32_t>(sources.numRows(), 0),
       std::numeric_limits<uint32_t>::max());
-  from_columns.setColumn(_id_column, doc_ids);
+  sources.setColumn(_id_column, doc_ids);
 
-  teach(from_columns, learning_rate, num_association_samples,
-        num_balancing_samples, epochs, batch_size);
+  teach(sources, learning_rate, 1, n_balancing_samples * targets.numRows(),
+        epochs, batch_size);
 }
 
 void MachRetriever::teach(data::ColumnMap feedback, float learning_rate,
-                          uint32_t feedback_repetitions, uint32_t num_balancers,
-                          uint32_t epochs, size_t batch_size) {
-  auto balancers =
-      _state->machMemory().getSamples(num_balancers * feedback.numRows());
+                          uint32_t feedback_repetitions,
+                          uint32_t total_balancers, uint32_t epochs,
+                          size_t batch_size) {
+  auto balancers = _state->machMemory().getSamples(total_balancers);
 
   feedback = repeatRows(std::move(feedback), feedback_repetitions);
   feedback = feedback.selectColumns(_all_bolt_columns);
@@ -352,21 +383,21 @@ struct CompareBuckets {
 
 std::vector<uint32_t> MachRetriever::topHashesForDoc(
     std::vector<std::vector<ValueIndexPair>>&& top_k_per_sample,
-    uint32_t num_buckets_to_sample, uint32_t approx_num_hashes_per_bucket,
-    uint32_t num_random_hashes, bool load_balancing,
+    uint32_t n_buckets_to_sample, uint32_t approx_n_hashes_per_bucket,
+    uint32_t n_random_hashes, bool load_balancing,
     bool sort_random_hashes) const {
   const auto& mach_index = _state->machIndex();
 
-  uint32_t num_hashes = mach_index->numHashes();
+  uint32_t n_hashes = mach_index->numHashes();
 
-  if (num_buckets_to_sample < mach_index->numHashes()) {
+  if (n_buckets_to_sample < mach_index->numHashes()) {
     throw std::invalid_argument(
-        "Sampling from fewer buckets than num_hashes is not supported. If "
+        "Sampling from fewer buckets than n_hashes is not supported. If "
         "you'd like to introduce using fewer hashes, please reset the number "
         "of hashes for the index.");
   }
 
-  if (num_buckets_to_sample > mach_index->numBuckets()) {
+  if (n_buckets_to_sample > mach_index->numBuckets()) {
     throw std::invalid_argument(
         "Cannot sample more buckets than there are in the index.");
   }
@@ -383,12 +414,12 @@ std::vector<uint32_t> MachRetriever::topHashesForDoc(
     }
   }
 
-  uint32_t num_buckets = mach_index->numBuckets();
-  std::uniform_int_distribution<uint32_t> int_dist(0, num_buckets - 1);
+  uint32_t n_buckets = mach_index->numBuckets();
+  std::uniform_int_distribution<uint32_t> int_dist(0, n_buckets - 1);
   std::mt19937 rand(global_random::nextSeed());
 
   if (sort_random_hashes) {
-    for (uint32_t i = 0; i < num_random_hashes; i++) {
+    for (uint32_t i = 0; i < n_random_hashes; i++) {
       uint32_t active_neuron = int_dist(rand);
       if (!hash_freq_and_scores.count(active_neuron)) {
         hash_freq_and_scores[active_neuron] = BucketScore{1, 0};
@@ -409,12 +440,12 @@ std::vector<uint32_t> MachRetriever::topHashesForDoc(
   CompareBuckets cmp;
   std::sort(sorted_hashes.begin(), sorted_hashes.end(), cmp);
 
-  if (num_buckets_to_sample > num_hashes) {
+  if (n_buckets_to_sample > n_hashes) {
     // If we are sampling more buckets then we end up using we rerank the
     // buckets based on size to load balance the index.
     std::sort(sorted_hashes.begin(),
-              sorted_hashes.begin() + num_buckets_to_sample,
-              [&mach_index, &cmp, approx_num_hashes_per_bucket, load_balancing](
+              sorted_hashes.begin() + n_buckets_to_sample,
+              [&mach_index, &cmp, approx_n_hashes_per_bucket, load_balancing](
                   const auto& lhs, const auto& rhs) {
                 size_t lhs_size = mach_index->bucketSize(lhs.first);
                 size_t rhs_size = mach_index->bucketSize(rhs.first);
@@ -423,8 +454,8 @@ std::vector<uint32_t> MachRetriever::topHashesForDoc(
                 // equally empty, use one with the best score.
 
                 if (load_balancing) {
-                  if (lhs_size < approx_num_hashes_per_bucket &&
-                      rhs_size < approx_num_hashes_per_bucket) {
+                  if (lhs_size < approx_n_hashes_per_bucket &&
+                      rhs_size < approx_n_hashes_per_bucket) {
                     return cmp(lhs, rhs);
                   }
                 }
@@ -441,28 +472,28 @@ std::vector<uint32_t> MachRetriever::topHashesForDoc(
   // We can optionally specify the number of hashes we'd like to be
   // random for a new document. This is to encourage an even distribution
   // among buckets.
-  if (num_random_hashes > num_hashes) {
+  if (n_random_hashes > n_hashes) {
     throw std::invalid_argument(
-        "num_random_hashes cannot be greater than num hashes.");
+        "n_random_hashes cannot be greater than num hashes.");
   }
 
-  uint32_t num_informed_hashes =
-      sort_random_hashes ? num_hashes : (num_hashes - num_random_hashes);
+  uint32_t n_informed_hashes =
+      sort_random_hashes ? n_hashes : (n_hashes - n_random_hashes);
 
-  for (uint32_t i = 0; i < num_informed_hashes; i++) {
+  for (uint32_t i = 0; i < n_informed_hashes; i++) {
     auto [hash, freq_score_pair] = sorted_hashes[i];
     new_hashes.push_back(hash);
   }
 
   if (!sort_random_hashes) {
-    for (uint32_t i = 0; i < num_random_hashes; i++) {
+    for (uint32_t i = 0; i < n_random_hashes; i++) {
       if (load_balancing) {
         uint32_t random_hash;
 
         do {
           random_hash = int_dist(rand);
         } while (mach_index->bucketSize(random_hash) >=
-                 approx_num_hashes_per_bucket);
+                 approx_n_hashes_per_bucket);
 
         new_hashes.push_back(random_hash);
 
@@ -475,17 +506,54 @@ std::vector<uint32_t> MachRetriever::topHashesForDoc(
   return new_hashes;
 }
 
-float autotuneSparsity(uint32_t dim) {
-  std::vector<std::pair<uint32_t, float>> sparsity_values = {
-      {450, 1.0},    {900, 0.2},    {1800, 0.1},     {4000, 0.05},
-      {10000, 0.02}, {20000, 0.01}, {1000000, 0.005}};
-
-  for (const auto& [dim_threshold, sparsity] : sparsity_values) {
-    if (dim < dim_threshold) {
-      return sparsity;
+data::TransformationPtr MachRetriever::textAugmentation(
+    const std::vector<std::string>& strong_cols,
+    const std::vector<std::string>& weak_cols,
+    std::optional<data::VariableLengthConfig> variable_length,
+    const std::optional<data::SpladeConfig>& splade_config) {
+  if (splade_config && (!strong_cols.empty() || !weak_cols.empty())) {
+    // TODO(Nicholas, David): Should we add an option to sample a certain
+    // number of times from a specific column, i.e. splade tokens.
+    if (splade_config->strong_sample_override && variable_length) {
+      variable_length->overrideStrongSampleNumWords(
+          *splade_config->strong_sample_override);
     }
+
+    std::vector<std::string> all_cols;
+    all_cols.insert(all_cols.end(), strong_cols.begin(), strong_cols.end());
+    all_cols.insert(all_cols.end(), weak_cols.begin(), weak_cols.end());
+
+    const std::string splade_col = "__splade_tokens__";
+    std::vector<std::string> strong_cols_w_splade = strong_cols;
+    strong_cols_w_splade.push_back(splade_col);
+
+    return data::Pipeline::make()
+        ->then(std::make_shared<data::StringConcat>(all_cols, splade_col, " "))
+        ->then(std::make_shared<data::SpladeAugmentation>(
+            splade_col, splade_col, *splade_config))
+        ->then(coldStartTextAugmentation(strong_cols_w_splade, weak_cols,
+                                         variable_length));
   }
-  return sparsity_values.back().second;
+
+  return coldStartTextAugmentation(strong_cols, weak_cols, variable_length);
+}
+
+data::TransformationPtr MachRetriever::coldStartTextAugmentation(
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names,
+    std::optional<data::VariableLengthConfig> variable_length) {
+  if (variable_length) {
+    return std::make_shared<data::VariableLengthColdStart>(
+        /* strong_column_names= */ strong_column_names,
+        /* weak_column_names= */ weak_column_names,
+        /* output_column_name= */ _text_column,
+        /* config= */ *variable_length);
+  }
+
+  return std::make_shared<data::ColdStartTextAugmentation>(
+      /* strong_column_names= */ strong_column_names,
+      /* weak_column_names= */ weak_column_names,
+      /* output_column_name= */ _text_column);
 }
 
 void MachRetriever::updateSamplingStrategy() {
@@ -539,11 +607,11 @@ bolt::metrics::InputMetrics MachRetriever::getMetrics(
     if (std::regex_match(name, std::regex("precision@[1-9]\\d*"))) {
       uint32_t k = std::strtoul(name.data() + 10, nullptr, 10);
       metrics[prefix + name] = std::make_shared<bolt::metrics::MachPrecision>(
-          index(), _num_buckets_to_eval, output, true_class_labels, k);
+          index(), _n_buckets_to_eval, output, true_class_labels, k);
     } else if (std::regex_match(name, std::regex("recall@[1-9]\\d*"))) {
       uint32_t k = std::strtoul(name.data() + 7, nullptr, 10);
       metrics[prefix + name] = std::make_shared<bolt::metrics::MachRecall>(
-          index(), _num_buckets_to_eval, output, true_class_labels, k);
+          index(), _n_buckets_to_eval, output, true_class_labels, k);
     } else if (std::regex_match(name, std::regex("hash_precision@[1-9]\\d*"))) {
       uint32_t k = std::strtoul(name.data() + 15, nullptr, 10);
       metrics[prefix + name] =
@@ -565,95 +633,86 @@ bolt::metrics::InputMetrics MachRetriever::getMetrics(
   return metrics;
 }
 
-MachRetriever::MachRetriever(
-    std::string text_column, const std::string& id_column, uint32_t num_hashes,
-    uint32_t output_dim, uint32_t embedding_dim, uint32_t text_feature_dim,
-    uint32_t output_bias, uint32_t embedding_bias, bool normalize_embeddings,
-    const std::string& output_act_func, const std::string& embedding_act_func,
-    const std::string& tokenizer, const std::string& contextual_encoding,
-    bool lowercase, float mach_sampling_threshold, uint32_t num_buckets_to_eval,
-    size_t memory_max_ids, size_t memory_max_samples_per_id)
-    : _state(data::State::make(
-          dataset::mach::MachIndex::make(output_dim, num_hashes),
-          data::MachMemory::make(input_indices_column, input_values_column,
-                                 id_column, bucket_column, memory_max_ids,
-                                 memory_max_samples_per_id))),
-      _model(defaultModel(text_feature_dim, embedding_dim, output_dim,
-                          embedding_bias, output_bias, normalize_embeddings,
-                          embedding_act_func, output_act_func)),
-      _text_column(std::move(text_column)),
-      _id_column(id_column),
-      _text_transform(std::make_shared<data::TextTokenizer>(
-          /* input_column= */ text_column,
-          /* output_indices= */ input_indices_column,
-          /* output_values= */ input_values_column,
-          /* tokenizer= */ getTextTokenizerFromString(tokenizer),
-          /* encoder= */ getTextEncoderFromString(contextual_encoding),
-          /* lowercase= */ lowercase,
-          /* dim= */ text_feature_dim)),
-      _id_transform(
-          std::make_shared<data::MachLabel>(id_column, bucket_column)),
-      _add_mach_memory_samples(std::make_shared<data::AddMachMemorySamples>()),
-      _bolt_input_columns({{input_indices_column, input_values_column}}),
+void MachRetriever::insertNewIds(const data::ColumnMapIteratorPtr& data) {
+  data->restart();
+
+  while (auto chunk = data->next()) {
+    std::unordered_set<uint32_t> all_ids;
+
+    auto ids = chunk->getArrayColumn<uint32_t>(_id_column);
+    for (size_t i = 0; i < ids->numRows(); i++) {
+      auto row = ids->row(i);
+      all_ids.insert(row.begin(), row.end());
+    }
+
+    index()->insertNewEntities(all_ids);
+  }
+
+  data->restart();
+}
+
+ar::ConstArchivePtr MachRetriever::toArchive(bool with_optimizer) const {
+  auto map = ar::Map::make();
+
+  map->set("state", _state->toArchive());
+  map->set("model", _model->toArchive(with_optimizer));
+
+  map->set("text_column", ar::str(_text_column));
+  map->set("id_column", ar::str(_id_column));
+
+  map->set("text_transform", _text_transform->toArchive());
+  map->set("id_to_buckets", _id_to_buckets->toArchive());
+  map->set("add_mach_memory_samples", _add_mach_memory_samples->toArchive());
+
+  map->set("bolt_input_columns",
+           data::outputColumnsToArchive(_bolt_input_columns));
+  map->set("bolt_label_columns",
+           data::outputColumnsToArchive(_bolt_label_columns));
+  map->set("all_bolt_columns", ar::vecStr(_all_bolt_columns));
+
+  map->set("mach_sampling_threshold", ar::f32(_mach_sampling_threshold));
+  map->set("n_buckets_to_eval", ar::u64(_n_buckets_to_eval));
+
+  return map;
+}
+
+MachRetriever::MachRetriever(const ar::Archive& archive)
+    : _state(data::State::fromArchive(*archive.get("state"))),
+      _model(bolt::Model::fromArchive(*archive.get("model"))),
+      _text_column(archive.str("text_column")),
+      _id_column(archive.str("id_column")),
+      _text_transform(
+          data::Transformation::fromArchive(*archive.get("text_transform"))),
+      _id_to_buckets(
+          data::Transformation::fromArchive(*archive.get("id_to_buckets"))),
+      _add_mach_memory_samples(data::Transformation::fromArchive(
+          *archive.get("add_mach_memory_samples"))),
+      _bolt_input_columns(
+          data::outputColumnsFromArchive(*archive.get("bolt_input_columns"))),
       _bolt_label_columns(
-          {data::OutputColumns(label_indices_column,
-                               toValueFillType(output_act_func)),
-           data::OutputColumns(id_column)}),
-      _all_bolt_columns({input_indices_column, input_values_column,
-                         label_indices_column, id_column}),
-      _mach_sampling_threshold(mach_sampling_threshold),
-      _num_buckets_to_eval(num_buckets_to_eval) {}
-data::ValueFillType toValueFillType(const std::string& output_act_func) {
-  if (text::lower(output_act_func) == "softmax") {
-    return data::ValueFillType::SumToOne;
-  }
-  if (text::lower(output_act_func) == "sigmoid") {
-    return data::ValueFillType::Ones;
-  }
-  throw std::invalid_argument("Invalid output_act_func \"" + output_act_func +
-                              R"(". Choose one of "softmax" or "sigmoid".)");
+          data::outputColumnsFromArchive(*archive.get("bolt_label_columns"))),
+      _all_bolt_columns(archive.getAs<ar::VecStr>("all_bolt_columns")),
+      _mach_sampling_threshold(
+          archive.getAs<ar::F32>("mach_sampling_threshold")),
+      _n_buckets_to_eval(archive.u64("n_buckets_to_eval")) {}
+
+std::shared_ptr<MachRetriever> MachRetriever::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_shared<MachRetriever>(archive);
 }
-bolt::ModelPtr defaultModel(uint32_t text_feature_dim, uint32_t embedding_dim,
-                            uint32_t output_dim, bool embedding_bias,
-                            bool output_bias, bool normalize_embeddings,
-                            const std::string& embedding_act_func,
-                            const std::string& output_act_func) {
-  auto input = bolt::Input::make(text_feature_dim);
 
-  auto hidden =
-      bolt::Embedding::make(embedding_dim, text_feature_dim,
-                            text::lower(embedding_act_func), embedding_bias)
-          ->apply(input);
-
-  if (normalize_embeddings) {
-    hidden = bolt::LayerNorm::make()->apply(hidden);
-  }
-
-  auto sparsity = autotuneSparsity(output_dim);
-  auto output_act_func_lower = text::lower(output_act_func);
-  auto output = bolt::FullyConnected::make(output_dim, hidden->dim(), sparsity,
-                                           output_act_func_lower,
-                                           /* sampling= */ nullptr,
-                                           /* use_bias= */ output_bias)
-                    ->apply(hidden);
-
-  auto labels = bolt::Input::make(output_dim);
-
-  bolt::LossPtr loss;
-  if (output_act_func_lower == "sigmoid") {
-    loss = bolt::BinaryCrossEntropy::make(output, labels);
-  } else if (output_act_func_lower == "softmax") {
-    loss = bolt::CategoricalCrossEntropy::make(output, labels);
-  } else {
-    throw std::invalid_argument("Invalid output_act_func \"" + output_act_func +
-                                R"(". Choose one of "softmax" or "sigmoid".)");
-  }
-
-  return bolt::Model::make(
-      {input}, {output}, {loss},
-      // We need the hash based labels for training, but the actual
-      // document/class ids to compute metrics. Hence we add two labels to the
-      // model.
-      {bolt::Input::make(std::numeric_limits<uint32_t>::max())});
+void MachRetriever::save(const std::string& filename,
+                         bool with_optimizer) const {
+  auto archive = toArchive(with_optimizer);
+  auto output = dataset::SafeFileIO::ofstream(filename);
+  ar::serialize(archive, output);
 }
+
+std::shared_ptr<MachRetriever> MachRetriever::load(
+    const std::string& filename) {
+  auto input = dataset::SafeFileIO::ifstream(filename);
+  auto archive = ar::deserialize(input);
+  return fromArchive(*archive);
+}
+
 }  // namespace thirdai::automl::mach

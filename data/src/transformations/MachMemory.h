@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <archive/src/Archive.h>
 #include <data/src/ColumnMap.h>
 #include <cstdint>
 #include <optional>
@@ -18,9 +19,10 @@ struct MachSample {
   std::vector<float> input_values;
   std::vector<uint32_t> mach_buckets;
 
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
+  friend bool operator==(const MachSample& a, const MachSample& b) {
+    return a.input_indices == b.input_indices &&
+           b.input_values == a.input_values && a.mach_buckets == b.mach_buckets;
+  }
 };
 
 class MachMemory {
@@ -35,6 +37,8 @@ class MachMemory {
         _max_ids(max_ids),
         _max_samples_per_id(max_samples_per_id),
         _rng(RNG_SEED) {}
+
+  explicit MachMemory(const ar::Archive& archive);
 
   static auto make(std::string input_indices_column,
                    std::string input_values_column, std::string id_column,
@@ -61,6 +65,12 @@ class MachMemory {
     _id_to_samples.erase(id);
     _ids.erase(id);
   }
+
+  const auto& idToSamples() const { return _id_to_samples; }
+
+  ar::ConstArchivePtr toArchive() const;
+
+  static std::shared_ptr<MachMemory> fromArchive(const ar::Archive& archive);
 
  private:
   static constexpr uint32_t RNG_SEED = 7240924;

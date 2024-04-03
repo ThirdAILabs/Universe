@@ -1,18 +1,11 @@
 #pragma once
 
-#include <bolt/src/nn/loss/BinaryCrossEntropy.h>
-#include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/model/Model.h>
-#include <bolt/src/nn/ops/Embedding.h>
-#include <bolt/src/nn/ops/FullyConnected.h>
-#include <bolt/src/nn/ops/Input.h>
-#include <bolt/src/nn/ops/LayerNorm.h>
-#include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/metrics/Metric.h>
-#include <bolt/src/train/trainer/DistributedComm.h>
-#include <bolt_vector/src/BoltVector.h>
-#include <auto_ml/src/featurization/DataTypes.h>
+#include <bolt/src/train/trainer/Trainer.h>
+#include <archive/src/Archive.h>
+#include <auto_ml/src/mach/MachConfig.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/TensorConversion.h>
@@ -20,85 +13,129 @@
 #include <data/src/transformations/AddMachMemorySamples.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/MachMemory.h>
+#include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/cold_start/ColdStartText.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
-#include <dataset/src/blocks/text/TextEncoder.h>
-#include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/mach/MachIndex.h>
-#include <sys/types.h>
-#include <utils/text/StringManipulation.h>
-#include <algorithm>
 #include <memory>
-#include <optional>
-#include <stdexcept>
-#include <string>
-#include <unordered_map>
 #include <unordered_set>
 #include <utility>
-#include <vector>
 
 namespace thirdai::automl::mach {
 
 using IdScores = std::vector<std::pair<uint32_t, double>>;
 
 struct TrainOptions {
-  uint32_t batch_size;
-  std::optional<uint32_t> max_in_memory_batches;
-  std::optional<uint32_t> steps_per_validation;
-  std::optional<uint32_t> logging_interval;
-  bool sparse_validation;
-  bool verbose;
-  bool freeze_hash_tables;
-  dataset::DatasetShuffleConfig shuffle_config;
+  size_t batch_size = 2048;
+  std::optional<size_t> max_in_memory_batches = std::nullopt;
+  bool verbose = true;
+  bolt::InterruptCheck interrupt_check = std::nullopt;
 };
 
-static constexpr const char* bucket_column = "__buckets__";
-static constexpr const char* input_indices_column = "__input_indices__";
-static constexpr const char* input_values_column = "__input_values__";
-static constexpr const char* label_indices_column = "__label_indices__";
-static constexpr const char* label_values_column = "__label_values__";
+struct ColdStartOptions : public TrainOptions {
+  std::optional<data::VariableLengthConfig> variable_length =
+      data::VariableLengthConfig();
+  std::optional<data::SpladeConfig> splade_config = std::nullopt;
+};
 
-bolt::ModelPtr defaultModel(uint32_t text_feature_dim, uint32_t embedding_dim,
-                            uint32_t output_dim, bool embedding_bias,
-                            bool output_bias, bool normalize_embeddings,
-                            const std::string& embedding_act_func,
-                            const std::string& output_act_func);
-
-data::ValueFillType toValueFillType(const std::string& output_act_func);
+struct EvaluateOptions {
+  bool verbose = true;
+  bool use_sparsity = false;
+};
 
 class MachRetriever {
  public:
-  MachRetriever(std::string text_column, const std::string& id_column,
-                uint32_t num_hashes, uint32_t output_dim,
-                uint32_t embedding_dim, uint32_t text_feature_dim,
-                uint32_t output_bias, uint32_t embedding_bias,
-                bool normalize_embeddings, const std::string& output_act_func,
-                const std::string& embedding_act_func,
-                const std::string& tokenizer,
-                const std::string& contextual_encoding, bool lowercase,
-                float mach_sampling_threshold, uint32_t num_buckets_to_eval,
-                size_t memory_max_ids, size_t memory_max_samples_per_id);
+  explicit MachRetriever(const MachConfig& config);
 
-  void introduce(const data::ColumnMapIteratorPtr& iter,
-                 const std::vector<std::string>& strong_column_names,
-                 const std::vector<std::string>& weak_column_names,
-                 bool phrase_sampling,
-                 std::optional<uint32_t> num_buckets_to_sample_opt,
-                 uint32_t num_random_hashes, bool load_balancing,
+  explicit MachRetriever(const ar::Archive& archive);
+
+  void introduceIterator(const data::ColumnMapIteratorPtr& data,
+                         const std::vector<std::string>& strong_cols,
+                         const std::vector<std::string>& weak_cols,
+                         bool text_augmentation,
+                         std::optional<uint32_t> n_buckets_to_sample_opt,
+                         uint32_t n_random_hashes, bool load_balancing,
+                         bool sort_random_hashes);
+
+  void introduce(data::ColumnMap data,
+                 const std::vector<std::string>& strong_cols,
+                 const std::vector<std::string>& weak_cols,
+                 bool text_augmentation,
+                 std::optional<uint32_t> n_buckets_to_sample_opt,
+                 uint32_t n_random_hashes, bool load_balancing,
                  bool sort_random_hashes);
 
-  void introduce(data::ColumnMap columns,
-                 const std::vector<std::string>& strong_column_names,
-                 const std::vector<std::string>& weak_column_names,
-                 bool phrase_sampling,
-                 std::optional<uint32_t> num_buckets_to_sample_opt,
-                 uint32_t num_random_hashes, bool load_balancing,
-                 bool sort_random_hashes);
+  bolt::metrics::History coldstart(
+      const data::ColumnMapIteratorPtr& data,
+      const std::vector<std::string>& strong_cols,
+      const std::vector<std::string>& weak_cols, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& metrics,
+      const std::vector<bolt::callbacks::CallbackPtr>& callbacks,
+      const ColdStartOptions& options = ColdStartOptions());
+
+  bolt::metrics::History train(
+      const data::ColumnMapIteratorPtr& data, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& metrics,
+      const std::vector<bolt::callbacks::CallbackPtr>& callbacks,
+      const TrainOptions& options = TrainOptions());
+
+  bolt::metrics::History evaluate(
+      const data::ColumnMapIteratorPtr& data,
+      const std::vector<std::string>& metrics,
+      const EvaluateOptions& options = EvaluateOptions());
+
+  IdScores searchSingle(const std::string& query, uint32_t top_k,
+                        bool sparse_inference) {
+    return searchBatch({query}, top_k, sparse_inference)[0];
+  }
+
+  std::vector<IdScores> searchBatch(std::vector<std::string> queries,
+                                    uint32_t top_k, bool sparse_inference) {
+    data::ColumnMap data({{_text_column, data::ValueColumn<std::string>::make(
+                                             std::move(queries))}});
+    return search(data, top_k, sparse_inference);
+  }
+
+  std::vector<IdScores> search(data::ColumnMap queries, uint32_t top_k,
+                               bool sparse_inference);
+
+  IdScores rankSingle(const std::string& query,
+                      const std::unordered_set<uint32_t>& candidates,
+                      uint32_t top_k, bool sparse_inference) {
+    return rankBatch({query}, {candidates}, top_k, sparse_inference)[0];
+  }
+
+  std::vector<IdScores> rankBatch(
+      std::vector<std::string> queries,
+      const std::vector<std::unordered_set<uint32_t>>& candidates,
+      uint32_t top_k, bool sparse_inference) {
+    data::ColumnMap data({{_text_column, data::ValueColumn<std::string>::make(
+                                             std::move(queries))}});
+    return rank(data, candidates, top_k, sparse_inference);
+  }
+
+  std::vector<IdScores> rank(
+      data::ColumnMap queries,
+      const std::vector<std::unordered_set<uint32_t>>& candidates,
+      std::optional<uint32_t> top_k, bool sparse_inference);
+
+  std::vector<std::vector<uint32_t>> predictBuckets(
+      const data::ColumnMap& columns, bool sparse_inference,
+      std::optional<uint32_t> top_k, bool force_non_empty);
+
+  void upvote(data::ColumnMap upvotes, uint32_t n_upvote_samples,
+              uint32_t n_balancing_samples, float learning_rate,
+              uint32_t epochs, size_t batch_size);
+
+  void associate(data::ColumnMap sources, const data::ColumnMap& targets,
+                 uint32_t n_buckets, uint32_t n_association_samples,
+                 uint32_t n_balancing_samples, float learning_rate,
+                 uint32_t epochs, bool force_non_empty, size_t batch_size);
 
   dataset::mach::MachIndexPtr index() { return _state->machIndex(); }
 
@@ -106,49 +143,21 @@ class MachRetriever {
     for (uint32_t id : ids) {
       index()->erase(id);
     }
-  };
+  }
 
-  void coldstart(data::ColumnMapIteratorPtr iter,
-                 const std::vector<std::string>& strong_column_names,
-                 const std::vector<std::string>& weak_column_names,
-                 std::optional<data::VariableLengthConfig> variable_length,
-                 float learning_rate, uint32_t epochs,
-                 const std::vector<std::string>& train_metrics,
-                 data::ColumnMapIteratorPtr val_iter,
-                 const std::vector<std::string>& val_metrics,
-                 const TrainOptions& options,
-                 const std::vector<bolt::callbacks::CallbackPtr>& callbacks,
-                 const bolt::DistributedCommPtr& comm);
+  void clear() { index()->clear(); }
 
-  void train(data::ColumnMapIteratorPtr iter, float learning_rate,
-             uint32_t epochs, const std::vector<std::string>& train_metrics,
-             data::ColumnMapIteratorPtr val_iter,
-             const std::vector<std::string>& val_metrics,
-             const TrainOptions& options,
-             const std::vector<bolt::callbacks::CallbackPtr>& callbacks,
-             const bolt::DistributedCommPtr& comm);
+  bolt::ModelPtr model() const { return _model; }
 
-  std::vector<IdScores> search(data::ColumnMap queries, uint32_t top_k,
-                               bool sparse_inference);
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const;
 
-  std::vector<IdScores> rank(
-      data::ColumnMap queries,
-      const std::vector<std::unordered_set<uint32_t>>& choices,
-      std::optional<uint32_t> top_k, bool sparse_inference);
+  static std::shared_ptr<MachRetriever> fromArchive(const ar::Archive& archive);
 
-  std::vector<std::vector<uint32_t>> predictBuckets(
-      const data::ColumnMap& columns, bool sparse_inference,
-      std::optional<uint32_t> top_k, bool force_non_empty);
+  std::string idCol() const { return _id_column; }
 
-  void upvote(data::ColumnMap upvotes, uint32_t num_upvote_samples,
-              uint32_t num_balancing_samples, float learning_rate,
-              uint32_t epochs, size_t batch_size);
+  void save(const std::string& filename, bool with_optimizer = false) const;
 
-  void associate(data::ColumnMap from_columns,
-                 const data::ColumnMap& to_columns, uint32_t num_buckets,
-                 uint32_t num_association_samples,
-                 uint32_t num_balancing_samples, float learning_rate,
-                 uint32_t epochs, bool force_non_empty, size_t batch_size);
+  static std::shared_ptr<MachRetriever> load(const std::string& filename);
 
  private:
   bolt::TensorList inputTensors(const data::ColumnMap& columns) {
@@ -159,23 +168,16 @@ class MachRetriever {
     return data::toTensors(columns, _bolt_label_columns);
   }
 
-  data::TransformationPtr phraseSampling(
+  data::TransformationPtr textAugmentation(
+      const std::vector<std::string>& strong_cols,
+      const std::vector<std::string>& weak_cols,
+      std::optional<data::VariableLengthConfig> variable_length,
+      const std::optional<data::SpladeConfig>& splade_config);
+
+  data::TransformationPtr coldStartTextAugmentation(
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
-      std::optional<data::VariableLengthConfig> variable_length) {
-    if (variable_length) {
-      return std::make_shared<data::VariableLengthColdStart>(
-          /* strong_column_names= */ strong_column_names,
-          /* weak_column_names= */ weak_column_names,
-          /* output_column_name= */ _text_column,
-          /* config= */ *variable_length);
-    }
-
-    return std::make_shared<data::ColdStartTextAugmentation>(
-        /* strong_column_names= */ strong_column_names,
-        /* weak_column_names= */ weak_column_names,
-        /* output_column_name= */ _text_column);
-  }
+      std::optional<data::VariableLengthConfig> variable_length);
 
   data::TransformationPtr textConcat(
       const std::vector<std::string>& strong_column_names,
@@ -188,16 +190,18 @@ class MachRetriever {
 
   std::vector<uint32_t> topHashesForDoc(
       std::vector<std::vector<ValueIndexPair>>&& top_k_per_sample,
-      uint32_t num_buckets_to_sample, uint32_t approx_num_hashes_per_bucket,
-      uint32_t num_random_hashes, bool load_balancing,
+      uint32_t n_buckets_to_sample, uint32_t approx_n_hashes_per_bucket,
+      uint32_t n_random_hashes, bool load_balancing,
       bool sort_random_hashes) const;
+
   void updateSamplingStrategy();
+
   void assertUniqueIds(const data::ColumnMap& columns) {
     std::unordered_set<uint32_t> seen;
     auto ids = columns.getValueColumn<uint32_t>(_id_column);
     for (uint32_t i = 0; i < ids->numRows(); i++) {
       uint32_t id = ids->value(i);
-      if (seen.count(id) || index()->has(id)) {
+      if (seen.count(id) || index()->contains(id)) {
         throw std::invalid_argument("Found duplicate ID " + std::to_string(id));
       }
       seen.insert(id);
@@ -206,9 +210,12 @@ class MachRetriever {
 
   bolt::metrics::InputMetrics getMetrics(
       const std::vector<std::string>& metric_names, const std::string& prefix);
+
   void teach(data::ColumnMap feedback, float learning_rate,
-             uint32_t feedback_repetitions, uint32_t num_balancers,
+             uint32_t feedback_repetitions, uint32_t total_balancers,
              uint32_t epochs, size_t batch_size);
+
+  void insertNewIds(const data::ColumnMapIteratorPtr& data);
 
   data::StatePtr _state;
   bolt::ModelPtr _model;
@@ -218,7 +225,7 @@ class MachRetriever {
 
   // TODO(Geordie): Rename things
   data::TransformationPtr _text_transform;
-  data::TransformationPtr _id_transform;
+  data::TransformationPtr _id_to_buckets;
   data::TransformationPtr _add_mach_memory_samples;
 
   data::OutputColumnsList _bolt_input_columns;
@@ -226,7 +233,10 @@ class MachRetriever {
   std::vector<std::string> _all_bolt_columns;
 
   float _mach_sampling_threshold;
-  uint32_t _num_buckets_to_eval;
+  uint32_t _n_buckets_to_eval;
+  std::optional<uint32_t> _freeze_tables_epoch;
 };
+
+using MachRetrieverPtr = std::shared_ptr<MachRetriever>;
 
 }  // namespace thirdai::automl::mach
