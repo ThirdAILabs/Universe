@@ -470,9 +470,16 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   py::class_<NextWordPrediction, Transformation,
              std::shared_ptr<NextWordPrediction>>(transformations_submodule,
                                                   "NextWordPrediction")
-      .def(py::init<std::string, std::string, std::string>(),
+      .def(py::init<std::string, std::string, std::string, std::optional<std::string>>(),
            py::arg("input_column"), py::arg("context_column"),
-           py::arg("target_column"));
+           py::arg("target_column"), py::arg("value_column") = std::nullopt);
+
+  py::class_<NextWordPredictionConfig, std::shared_ptr<NextWordPredictionConfig>>(
+     transformations_submodule, "NextWordPredictionConfig"
+  )
+  .def(py::init<std::string, uint32_t>(), py::arg("input_column"), py::arg("vocab_size"));
+
+
 #endif
 
   py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>>(

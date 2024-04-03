@@ -6,6 +6,7 @@
 #include <data/src/Loader.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/rca/ExplanationMap.h>
+#include <data/src/transformations/NextWordPrediction.h>
 #include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
@@ -66,6 +67,7 @@ class Featurizer {
       const dataset::DataSourcePtr& data_source, size_t batch_size,
       bool shuffle, bool verbose,
       const std::optional<data::SpladeConfig>& splade_config = std::nullopt,
+      const std::optional<data::NextWordPredictionConfig>& nwp_config = std::nullopt,
       dataset::DatasetShuffleConfig shuffle_config =
           dataset::DatasetShuffleConfig());
 
@@ -121,7 +123,7 @@ class Featurizer {
   data::LoaderPtr getDataLoaderHelper(
       const dataset::DataSourcePtr& data_source, size_t batch_size,
       bool shuffle, bool verbose, dataset::DatasetShuffleConfig shuffle_config,
-      const data::TransformationPtr& preprocesser = nullptr);
+      const data::TransformationPtr& preprocesser = nullptr, std::optional<data::NextWordPredictionConfig> nwp_config = std::nullopt);
 
   data::TransformationPtr coldStartTransform(
       const std::vector<std::string>& strong_column_names,

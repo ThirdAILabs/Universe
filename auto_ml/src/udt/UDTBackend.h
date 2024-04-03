@@ -7,6 +7,7 @@
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/Featurizer.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <data/src/transformations/NextWordPrediction.h>
 #include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
@@ -429,6 +430,14 @@ class UDTBackend {
       return kwargs["use_splade_in_validation"].cast<bool>();
     }
     return false;
+  }
+
+  static std::optional<data::NextWordPredictionConfig> getNextWordPredictionConfig(const py::kwargs &kwargs){
+    if(!kwargs.contains("nwp_config") ||
+        kwargs["nwp_config"].is_none()){
+          return std::nullopt;
+      }
+    return kwargs["nwp_config"].cast<data::NextWordPredictionConfig>();
   }
 
  private:

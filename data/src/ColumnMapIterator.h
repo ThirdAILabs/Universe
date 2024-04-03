@@ -9,7 +9,8 @@ using dataset::DataSourcePtr;
 
 class ColumnMapIterator {
  public:
-  static constexpr size_t DEFAULT_ROWS_PER_LOAD = 1000000;
+  // NWP Task requires less rows per load
+  static constexpr size_t DEFAULT_ROWS_PER_LOAD = 100;
 
   virtual std::optional<ColumnMap> next() = 0;
 

@@ -95,6 +95,16 @@ void MachFeaturizer::insertNewDocIds(const data::ColumnMap& data) {
   machIndex()->insertNewEntities(all_doc_ids);
 }
 
+void MachFeaturizer::insertNewDocIds(uint32_t vocab_size) {
+  std::unordered_set<uint32_t> all_doc_ids;
+
+  for(uint32_t token=0; token<vocab_size; token+=1){
+    all_doc_ids.insert(token);
+  }
+
+  machIndex()->insertNewEntities(all_doc_ids);
+}
+
 std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>
 MachFeaturizer::featurizeForIntroduceDocuments(
     const dataset::DataSourcePtr& data_source,
@@ -279,7 +289,8 @@ data::TransformationPtr MachFeaturizer::makeLabelTransformations(
   auto mach_label_transform =
       std::make_shared<data::MachLabel>(MACH_DOC_IDS, MACH_LABELS);
 
-  return data::Pipeline::make({doc_id_transform, mach_label_transform});
+  // removing doc_id transform, since it featurization already converts label to tokens
+  return data::Pipeline::make({mach_label_transform});
 }
 
 void MachFeaturizer::addDummyDocIds(data::ColumnMap& columns) {

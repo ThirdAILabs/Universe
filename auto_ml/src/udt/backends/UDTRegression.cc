@@ -78,7 +78,7 @@ py::object UDTRegression::train(const dataset::DataSourcePtr& data,
 
   auto train_data_loader = _featurizer->getDataLoader(
       data, options.batchSize(), /* shuffle= */ true, options.verbose,
-      std::nullopt, options.shuffle_config);
+      std::nullopt, std::nullopt, options.shuffle_config);
 
   data::LoaderPtr val_data_loader;
   if (val_data) {

@@ -11,6 +11,7 @@
 #include <data/src/transformations/CategoricalTemporal.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/State.h>
+#include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/cold_start/ColdStartText.h>
@@ -69,7 +70,9 @@ Featurizer::Featurizer(data::TransformationPtr input_transform,
 data::LoaderPtr Featurizer::getDataLoader(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
     bool verbose, const std::optional<data::SpladeConfig>& splade_config,
+    const std::optional<data::NextWordPredictionConfig>& nwp_config,
     dataset::DatasetShuffleConfig shuffle_config) {
+  
   data::TransformationPtr preprocessor = nullptr;
   if (splade_config) {
     preprocessor = std::make_shared<data::SpladeAugmentation>(
@@ -78,7 +81,7 @@ data::LoaderPtr Featurizer::getDataLoader(
   }
 
   return getDataLoaderHelper(data_source, batch_size, shuffle, verbose,
-                             shuffle_config, preprocessor);
+                             shuffle_config, preprocessor, nwp_config);
 }
 
 data::LoaderPtr Featurizer::getColdStartDataLoader(
@@ -126,14 +129,25 @@ data::LoaderPtr Featurizer::getColdStartDataLoader(
 data::LoaderPtr Featurizer::getDataLoaderHelper(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
     bool verbose, dataset::DatasetShuffleConfig shuffle_config,
-    const data::TransformationPtr& preprocesser) {
+    const data::TransformationPtr& preprocesser,
+    std::optional<data::NextWordPredictionConfig> nwp_config) {
   auto data_iter = data::CsvIterator::make(data_source, _delimiter);
 
   std::vector<data::TransformationPtr> transformations;
   if (preprocesser) {
     transformations.push_back(preprocesser);
   }
-  transformations.push_back(_input_transform);
+  if(nwp_config && transformations.size() > 1){
+    throw std::invalid_argument("Cannot Use Preprocessor with Next Word Prediction");
+  }
+  if(nwp_config){
+    transformations.push_back(std::make_shared<data::StringToTokenArray>(
+      nwp_config.value().input_column, nwp_config.value().input_column, ' ', nwp_config.value().vocab_size));
+    transformations.push_back(std::make_shared<data::NextWordPrediction>(
+        nwp_config.value().input_column, FEATURIZED_INDICES, MACH_DOC_IDS, FEATURIZED_VALUES));
+  }else{
+    transformations.push_back(_input_transform);
+  }
   transformations.push_back(_label_transform);
 
   auto transformation_list = data::Pipeline::make(transformations);

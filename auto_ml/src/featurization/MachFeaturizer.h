@@ -37,6 +37,8 @@ class MachFeaturizer final : public Featurizer {
 
   void insertNewDocIds(const data::ColumnMap& data);
 
+  void insertNewDocIds(uint32_t vocab_size);
+
   std::vector<std::pair<bolt::TensorList, std::vector<uint32_t>>>
   featurizeForIntroduceDocuments(
       const dataset::DataSourcePtr& data_source,

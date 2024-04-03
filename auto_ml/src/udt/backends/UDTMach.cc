@@ -171,22 +171,33 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
                           TrainOptions options,
                           const bolt::DistributedCommPtr& comm,
                           py::kwargs kwargs) {
-  insertNewDocIds(data);
+  
+  auto nwp_config = getNextWordPredictionConfig(kwargs);
+  if(!nwp_config){
+    insertNewDocIds(data);
+  }else{
+    _featurizer->insertNewDocIds(nwp_config.value().vocab_size);
+    if(_classifier->model()->inputDims().at(0) != nwp_config.value().vocab_size){
+      throw std::invalid_argument("Input dim for model should be same as vocab_size.");
+    }
+  }
 
-  addBalancingSamples(data);
+  if(!nwp_config){
+    addBalancingSamples(data);
+  }
 
   auto splade_config = getSpladeConfig(kwargs);
   bool splade_in_val = getSpladeValidationOption(kwargs);
 
   auto train_data_loader = _featurizer->getDataLoader(
       data, options.batchSize(), /* shuffle= */ true, options.verbose,
-      splade_config, options.shuffle_config);
+      splade_config, nwp_config, options.shuffle_config);
 
   data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader = _featurizer->getDataLoader(
         val_data, defaults::BATCH_SIZE, /* shuffle= */ false, options.verbose,
-        splade_in_val ? splade_config : std::nullopt);
+        splade_in_val ? splade_config : std::nullopt, nwp_config);
   }
 
   return _classifier->train(train_data_loader, learning_rate, epochs,
@@ -227,10 +238,15 @@ py::object UDTMach::evaluate(const dataset::DataSourcePtr& data,
                              bool sparse_inference, bool verbose,
                              py::kwargs kwargs) {
   auto splade_config = getSpladeConfig(kwargs);
+  auto nwp_config = getNextWordPredictionConfig(kwargs);
+
+  if(nwp_config && _classifier->model()->inputDims().at(0) != nwp_config.value().vocab_size){
+      throw std::invalid_argument("Input dim for model should be same as vocab_size.");
+  }
 
   auto data_loader =
       _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
-                                 /* shuffle= */ false, verbose, splade_config);
+                                 /* shuffle= */ false, verbose, splade_config, nwp_config);
 
   return _classifier->evaluate(data_loader, getMetrics(metrics, "val_"),
                                sparse_inference, verbose);
