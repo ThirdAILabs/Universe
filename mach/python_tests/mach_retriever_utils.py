@@ -2,7 +2,9 @@ import os
 
 from thirdai import bolt, data
 
-QUERY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "texts.csv")
+QUERY_FILE = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "../../auto_ml/python_tests/texts.csv"
+)
 
 
 def train_simple_mach_retriever():

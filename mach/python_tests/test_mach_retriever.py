@@ -27,6 +27,8 @@ def test_mach_retriever_scifact(download_scifact_dataset):
 
     model = (
         bolt.MachConfig()
+        .text_col("QUERY")
+        .id_col("DOC_ID")
         .tokenizer("words")
         .emb_dim(1024)
         .n_buckets(1000)
