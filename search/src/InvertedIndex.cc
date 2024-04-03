@@ -6,6 +6,7 @@
 #include <cereal/types/vector.hpp>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <utils/text/PorterStemmer.h>
+#include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <cmath>
 #include <exception>
@@ -97,12 +98,12 @@ InvertedIndex::countTokenOccurences(
 
 #pragma omp parallel for default(none) shared(docs, token_counts)
   for (size_t i = 0; i < docs.size(); i++) {
-    const auto& doc = docs[i];
+    auto doc_tokens = tokenizeText(docs[i]);
     std::unordered_map<Token, uint32_t> counts;
-    for (const auto& token : tokenizeText(doc)) {
+    for (const auto& token : doc_tokens) {
       counts[token]++;
     }
-    token_counts[i] = {doc.size(), std::move(counts)};
+    token_counts[i] = {doc_tokens.size(), std::move(counts)};
   }
 
   return token_counts;
@@ -284,35 +285,17 @@ void InvertedIndex::remove(const std::vector<DocId>& ids) {
   recomputeMetadata();
 }
 
-std::vector<std::string> splitOnWhiteSpace(const std::string& sentence) {
-  std::vector<std::string> words;
-
-  bool last_is_word = false;
-  size_t word_start;
-  for (size_t i = 0; i < sentence.size(); i++) {
-    bool is_word = !std::isspace(sentence[i]);
-    if (!last_is_word && is_word) {
-      word_start = i;
-    } else if (last_is_word && !is_word) {
-      words.push_back(sentence.substr(word_start, i - word_start));
-    }
-    last_is_word = is_word;
-  }
-  if (last_is_word) {
-    words.push_back(sentence.substr(word_start));
-  }
-
-  return words;
-}
-
 Tokens InvertedIndex::tokenizeText(std::string text) const {
   for (char& c : text) {
     if (std::ispunct(c)) {
+      // if (std::ispunct(c) && c != '=' && c != '/' && c != '\\' && c != '+' &&
+      //     c != '<' && c != '>' && c != '~' && c != '_' && c != '|' && c !=
+      //     '`' && c != '^') {
       c = ' ';
     }
   }
 
-  Tokens tokens = splitOnWhiteSpace(text);
+  Tokens tokens = text::splitOnWhiteSpace(text);
 
   if (_stem) {
     return text::porter_stemmer::stem(tokens, _lowercase);

@@ -38,7 +38,7 @@ def test_inverted_index(download_scifact_dataset):
     unsupervised_acc = evaluate(index, query_df)
 
     print("unsupervised_acc=", unsupervised_acc)
-    assert unsupervised_acc >= 0.52  # Should be 0.53 (should be deterministic)
+    assert unsupervised_acc >= 0.54  # Should be 0.543 (should be deterministic)
 
     supervised_samples = load_supervised_data(trn_supervised)
 
@@ -53,4 +53,4 @@ def test_inverted_index(download_scifact_dataset):
     supervised_acc = evaluate(index, query_df)
 
     print("supervised_acc=", supervised_acc)
-    assert supervised_acc >= 0.71  # Should be 0.72 (should be deterministic)
+    assert supervised_acc >= 0.72  # Should be 0.723 (should be deterministic)
