@@ -16,8 +16,8 @@ std::shared_ptr<MachRetriever> MachConfig::build() const {
 data::StatePtr MachConfig::state() const {
   return data::State::make(
       dataset::mach::MachIndex::make(_n_buckets, _n_hashes),
-      data::MachMemory::make(input_indices_column, input_values_column, _id_col,
-                             bucket_column, _max_memory_ids,
+      data::MachMemory::make(input_indices_column, input_values_column,
+                             getIdCol(), bucket_column, _max_memory_ids,
                              _max_memory_samples_per_id));
 }
 
@@ -71,7 +71,7 @@ bolt::ModelPtr MachConfig::model() const {
 
 data::TextTokenizerPtr MachConfig::textTransformation() const {
   return std::make_shared<data::TextTokenizer>(
-      /* input_column= */ _text_col,
+      /* input_column= */ getTextCol(),
       /* output_indices= */ input_indices_column,
       /* output_values= */ input_values_column,
       /* tokenizer= */ getTextTokenizerFromString(_tokenizer),
@@ -81,7 +81,7 @@ data::TextTokenizerPtr MachConfig::textTransformation() const {
 }
 
 data::MachLabelPtr MachConfig::idToBucketsTransform() const {
-  return std::make_shared<data::MachLabel>(_id_col, bucket_column);
+  return std::make_shared<data::MachLabel>(getIdCol(), bucket_column);
 }
 
 }  // namespace thirdai::automl::mach
