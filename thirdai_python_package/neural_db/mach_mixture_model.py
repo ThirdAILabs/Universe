@@ -311,7 +311,7 @@ class MachMixture(Model):
                 min(self.n_ids, n_results), min(self.n_ids, 25)
             )
 
-        mach_results = bolt.UniversalDeepTransformer.regular_decode_mulitple_mach(
+        mach_results = bolt.UniversalDeepTransformer.regular_decode_multiple_mach(
             models=[model.model for model in self.models],
             batch=[{self.query_col: clean_text(text)} for text in samples],
         )
