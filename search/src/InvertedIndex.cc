@@ -288,9 +288,6 @@ void InvertedIndex::remove(const std::vector<DocId>& ids) {
 Tokens InvertedIndex::tokenizeText(std::string text) const {
   for (char& c : text) {
     if (std::ispunct(c)) {
-      // if (std::ispunct(c) && c != '=' && c != '/' && c != '\\' && c != '+' &&
-      //     c != '<' && c != '>' && c != '~' && c != '_' && c != '|' && c !=
-      //     '`' && c != '^') {
       c = ' ';
     }
   }
