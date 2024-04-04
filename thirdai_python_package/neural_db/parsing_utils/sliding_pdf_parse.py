@@ -183,7 +183,7 @@ def process_tables(filename, lines):
                     # Chunking of text within tables is left for future work
                     extracted_rows = table.extract()
                     table_as_text = " ".join(
-                        [item for row in extracted_rows for item in row]
+                        [item or "" for row in extracted_rows for item in row]
                     )
                     new_lines.append(
                         {
@@ -209,6 +209,14 @@ def get_chunks_from_lines(lines, chunk_words, stride_words):
         chunk_end = chunk_start
         chunk_size = 0
         while chunk_size < chunk_words and chunk_end < len(lines):
+            # This line ensures that a large table only shows up in a single
+            # chunk and not at the end of multiple chunks
+            if (
+                chunk_end != chunk_start
+                and "table" in lines[chunk_end]
+                and lines[chunk_end]["word_count"] > chunk_words
+            ):
+                break
             chunk_size += lines[chunk_end]["word_count"]
             chunk_end += 1
         stride_end = chunk_start
@@ -254,9 +262,9 @@ def get_chunks(
     blocks = remove_empty_blocks(blocks)
     lines = get_lines(blocks)
     lines = set_line_text(lines)
-    lines = set_line_word_counts(lines)
     if table_parsing:
         lines = process_tables(filename, lines)
+    lines = set_line_word_counts(lines)
     emphasis = get_lines_with_first_n_words(lines, emphasize_first_n_words)
     chunks, chunk_boxes, display = get_chunks_from_lines(
         lines, chunk_words, stride_words
