@@ -498,7 +498,7 @@ class ModelBazaar(Bazaar):
         test_doc: str,
         doc_type: str = "local",
         test_extra_options: dict = {},
-        is_async=True,
+        is_async: bool = False,
     ):
         url = urljoin(self._base_url, f"test/test")
 
@@ -540,10 +540,11 @@ class ModelBazaar(Bazaar):
 
     def test_status(self, test_id: str):
         """
-        Checks for the status of the model training
+        Checks for the status of the model testing
 
         Args:
-            model (Model): The Model instance.
+            test_id (str): The unique id with which we can recognize the test,
+            the user will get this id in the response when they trigger the test.
         """
 
         url = urljoin(self._base_url, f"test/test-status")
@@ -560,10 +561,11 @@ class ModelBazaar(Bazaar):
 
     def await_test(self, model_identifier: str, test_id: str):
         """
-        Checks for the status of the model training
+        Waits for the testing of the model to complete.
 
         Args:
-            model (Model): The Model instance.
+            model_identifier: The identifier of the model.
+            test_id: Unique id for the test.
         """
 
         while True:
@@ -575,7 +577,7 @@ class ModelBazaar(Bazaar):
 
             if response_data["status"] == "failed":
                 print("\nTesting Failed")
-                raise ValueError(f"Training Failed for {model_identifier}")
+                raise ValueError(f"Test Failed for {model_identifier} and {test_id}")
 
             print("Testing: In progress", end="", flush=True)
             print_progress_dots(duration=10)
