@@ -6,6 +6,7 @@
 #include <cereal/types/vector.hpp>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <utils/text/PorterStemmer.h>
+#include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <cmath>
 #include <exception>
@@ -19,7 +20,7 @@
 namespace thirdai::search {
 
 void InvertedIndex::index(const std::vector<DocId>& ids,
-                          const std::vector<Tokens>& docs) {
+                          const std::vector<std::string>& docs) {
   if (ids.size() != docs.size()) {
     throw std::invalid_argument(
         "Number of ids must match the number of docs in index.");
@@ -48,7 +49,7 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
 }
 
 void InvertedIndex::update(const std::vector<DocId>& ids,
-                           const std::vector<Tokens>& extra_tokens,
+                           const std::vector<std::string>& extra_tokens,
                            bool ignore_missing_ids) {
   if (ids.size() != extra_tokens.size()) {
     throw std::invalid_argument(
@@ -90,18 +91,19 @@ void InvertedIndex::update(const std::vector<DocId>& ids,
 }
 
 std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>>
-InvertedIndex::countTokenOccurences(const std::vector<Tokens>& docs) const {
+InvertedIndex::countTokenOccurences(
+    const std::vector<std::string>& docs) const {
   std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>>
       token_counts(docs.size());
 
 #pragma omp parallel for default(none) shared(docs, token_counts)
   for (size_t i = 0; i < docs.size(); i++) {
-    const auto& tokens = docs[i];
+    auto doc_tokens = tokenizeText(docs[i]);
     std::unordered_map<Token, uint32_t> counts;
-    for (const auto& token : preprocessText(tokens)) {
+    for (const auto& token : doc_tokens) {
       counts[token]++;
     }
-    token_counts[i] = {tokens.size(), std::move(counts)};
+    token_counts[i] = {doc_tokens.size(), std::move(counts)};
   }
 
   return token_counts;
@@ -142,7 +144,7 @@ void InvertedIndex::computeIdfs() {
 }
 
 std::vector<std::vector<DocScore>> InvertedIndex::queryBatch(
-    const std::vector<Tokens>& queries, uint32_t k) const {
+    const std::vector<std::string>& queries, uint32_t k) const {
   std::vector<std::vector<DocScore>> scores(queries.size());
 
 #pragma omp parallel for default(none) \
@@ -160,7 +162,7 @@ struct HighestScore {
   }
 };
 
-std::vector<DocScore> InvertedIndex::query(const Tokens& query,
+std::vector<DocScore> InvertedIndex::query(const std::string& query,
                                            uint32_t k) const {
   std::unordered_map<DocId, float> doc_scores = scoreDocuments(query);
 
@@ -188,10 +190,10 @@ std::vector<DocScore> InvertedIndex::query(const Tokens& query,
 }
 
 std::unordered_map<DocId, float> InvertedIndex::scoreDocuments(
-    const Tokens& query) const {
+    const std::string& query) const {
   std::unordered_map<DocId, float> doc_scores;
 
-  for (const Token& token : preprocessText(query)) {
+  for (const Token& token : tokenizeText(query)) {
     if (!_token_to_idf.count(token)) {
       continue;
     }
@@ -213,7 +215,7 @@ std::unordered_map<DocId, float> InvertedIndex::scoreDocuments(
 }
 
 std::vector<std::vector<DocScore>> InvertedIndex::rankBatch(
-    const std::vector<Tokens>& queries,
+    const std::vector<std::string>& queries,
     const std::vector<std::vector<DocId>>& candidates, uint32_t k) const {
   if (queries.size() != candidates.size()) {
     throw std::invalid_argument(
@@ -231,7 +233,7 @@ std::vector<std::vector<DocScore>> InvertedIndex::rankBatch(
   return scores;
 }
 
-std::vector<DocScore> InvertedIndex::rank(const Tokens& query,
+std::vector<DocScore> InvertedIndex::rank(const std::string& query,
                                           const std::vector<DocId>& candidates,
                                           uint32_t k) const {
   std::unordered_map<DocId, float> doc_scores = scoreDocuments(query);
@@ -283,9 +285,33 @@ void InvertedIndex::remove(const std::vector<DocId>& ids) {
   recomputeMetadata();
 }
 
+Tokens InvertedIndex::tokenizeText(std::string text) const {
+  for (char& c : text) {
+    if (std::ispunct(c)) {
+      c = ' ';
+    }
+  }
+
+  Tokens tokens = text::splitOnWhiteSpace(text);
+
+  if (_stem) {
+    return text::porter_stemmer::stem(tokens, _lowercase);
+  }
+
+  if (_lowercase) {
+    Tokens lower_tokens;
+    lower_tokens.reserve(tokens.size());
+    for (const auto& token : tokens) {
+      lower_tokens.push_back(text::lower(token));
+    }
+  }
+
+  return tokens;
+}
+
 std::vector<DocScore> InvertedIndex::parallelQuery(
     const std::vector<std::shared_ptr<InvertedIndex>>& indices,
-    const Tokens& query, uint32_t k) {
+    const std::string& query, uint32_t k) {
   std::vector<std::vector<DocScore>> scores(indices.size());
 
 #pragma omp parallel for default(none) shared(indices, query, k, scores)

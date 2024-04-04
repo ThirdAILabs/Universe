@@ -41,6 +41,44 @@ TEST(StringManipulationTest, TestSplitConsecutiveDelimiter) {
   ASSERT_EQ(words[2], "time.");
 }
 
+TEST(StringManipulationTest, TestSplitOnWhitespace) {
+  auto words = splitOnWhiteSpace("this is \ta\nsentence");
+  ASSERT_EQ(words.size(), 4);
+  ASSERT_EQ(words[0], "this");
+  ASSERT_EQ(words[1], "is");
+  ASSERT_EQ(words[2], "a");
+  ASSERT_EQ(words[3], "sentence");
+}
+
+TEST(StringManipulationTest, TestSplitOnWhitespaceStartWhitespace) {
+  auto words = splitOnWhiteSpace("\n  this is \ta\nsentence");
+  ASSERT_EQ(words.size(), 4);
+  ASSERT_EQ(words[0], "this");
+  ASSERT_EQ(words[1], "is");
+  ASSERT_EQ(words[2], "a");
+  ASSERT_EQ(words[3], "sentence");
+}
+
+TEST(StringManipulationTest, TestSplitOnWhitespaceEndWhitespace) {
+  auto words = splitOnWhiteSpace("this is \ta\nsentence \n");
+  ASSERT_EQ(words.size(), 4);
+  ASSERT_EQ(words[0], "this");
+  ASSERT_EQ(words[1], "is");
+  ASSERT_EQ(words[2], "a");
+  ASSERT_EQ(words[3], "sentence");
+}
+
+TEST(StringManipulationTest, TestSplitOnWhitespaceOnlyWord) {
+  auto words = splitOnWhiteSpace("a");
+  ASSERT_EQ(words.size(), 1);
+  ASSERT_EQ(words[0], "a");
+}
+
+TEST(StringManipulationTest, TestSplitOnWhitespaceOnlyWhitespace) {
+  auto words = splitOnWhiteSpace("\n \t");
+  ASSERT_EQ(words.size(), 0);
+}
+
 void assertEqualTokens(const std::vector<std::string>& parsed,
                        const std::vector<std::string>& expected) {
   ASSERT_EQ(parsed.size(), expected.size());
