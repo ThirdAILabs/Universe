@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cereal/access.hpp>
+#include <archive/src/Archive.h>
 #include <utils/text/PorterStemmer.h>
 #include <utils/text/StringManipulation.h>
 #include <cstdint>
@@ -34,6 +34,8 @@ class InvertedIndex {
         _stem(stem),
         _lowercase(lowercase) {}
 
+  explicit InvertedIndex(const ar::Archive& archive);
+
   void index(const std::vector<DocId>& ids,
              const std::vector<std::string>& docs);
 
@@ -66,6 +68,10 @@ class InvertedIndex {
   static std::vector<DocScore> parallelQuery(
       const std::vector<std::shared_ptr<InvertedIndex>>& indices,
       const std::string& query, uint32_t k);
+
+  ar::ConstArchivePtr toArchive() const;
+
+  static std::shared_ptr<InvertedIndex> fromArchive(const ar::Archive& archive);
 
   void save(const std::string& filename) const;
 
@@ -116,10 +122,6 @@ class InvertedIndex {
   float _k1, _b;
 
   bool _stem, _lowercase;
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::search
