@@ -209,14 +209,6 @@ def get_chunks_from_lines(lines, chunk_words, stride_words):
         chunk_end = chunk_start
         chunk_size = 0
         while chunk_size < chunk_words and chunk_end < len(lines):
-            # This line ensures that a large table only shows up in a single
-            # chunk and not at the end of multiple chunks
-            if (
-                chunk_end != chunk_start
-                and "table" in lines[chunk_end]
-                and lines[chunk_end]["word_count"] > chunk_words
-            ):
-                break
             chunk_size += lines[chunk_end]["word_count"]
             chunk_end += 1
         stride_end = chunk_start
