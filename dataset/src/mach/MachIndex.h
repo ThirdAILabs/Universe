@@ -28,7 +28,7 @@ class MachIndex {
       : _buckets(num_buckets), _num_hashes(num_hashes) {}
 
   static auto make(uint32_t num_buckets, uint32_t num_hashes,
-                   uint32_t num_elements, uint32_t seed = 341) {
+                   uint32_t num_elements, uint32_t seed = DEFAULT_SEED) {
     return std::make_shared<MachIndex>(num_buckets, num_hashes, num_elements, seed);
   }
 
