@@ -117,6 +117,9 @@ void InvertedIndex::recomputeMetadata() {
 inline float idf(size_t n_docs, size_t docs_w_token) {
   const float num = n_docs - docs_w_token + 0.5;
   const float denom = docs_w_token + 0.5;
+  // This is technically different from the BM25 definition, the added 1 is to
+  // ensure that this does not yield a negative value. This trick is how apache
+  // lucene solves the problem.
   return std::log(1.0 + num / denom);
 }
 
@@ -381,7 +384,8 @@ std::shared_ptr<InvertedIndex> InvertedIndex::load_stream(
 template <class Archive>
 void InvertedIndex::serialize(Archive& archive) {
   archive(_token_to_docs, _token_to_idf, _doc_lengths, _max_docs_to_score,
-          _sum_doc_lens, _avg_doc_length, _k1, _b, _stem, _lowercase);
+          _idf_cutoff_frac, _sum_doc_lens, _avg_doc_length, _k1, _b, _stem,
+          _lowercase);
 }
 
 }  // namespace thirdai::search

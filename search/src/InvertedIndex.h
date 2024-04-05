@@ -59,6 +59,11 @@ class InvertedIndex {
 
   void remove(const std::vector<DocId>& ids);
 
+  void updateIdfCutoff(float cutoff) {
+    _idf_cutoff_frac = cutoff;
+    computeIdfs();
+  }
+
   size_t size() const { return _doc_lengths.size(); }
 
   static std::vector<DocScore> parallelQuery(
@@ -99,7 +104,17 @@ class InvertedIndex {
   std::unordered_map<Token, float> _token_to_idf;
   std::unordered_map<DocId, uint64_t> _doc_lengths;
 
+  // Determines the maximum number of docs that will be scored for a given
+  // query. This is to help reduce query time. The documents that are scored are
+  // determined by selecting the documents which contain the query terms with
+  // the highest idf, thus prioritizing docs with less common terms from the
+  // query.
   size_t _max_docs_to_score;
+
+  // This is a cutoff in which tokens which occur in more than this fraction
+  // of the docs have have their idf treated as zero, meaning they are ignored.
+  // Experimentally this speeds up queries by reducing the number of docs
+  // scores, and also boosted query accuracy.
   float _idf_cutoff_frac;
 
   // This is a running total of all thedoc lengths to compute the avg doc
