@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Callable, List
 
 from .documents import DocumentManager
+from .inverted_index import InvertedIndex
 from .loggers import Logger
 from .models.models import Model
 from .trainer.checkpoint_config import CheckpointConfig
@@ -117,6 +118,14 @@ class State:
         on_progress(5 / total_steps)
         state.documents.load_meta(State.documents_meta_path(location))
         on_progress(6 / total_steps)
+
+        if (
+            hasattr(state.model, "inverted_index")
+            and state.model.inverted_index
+            and state.model.inverted_index.size() == 0
+        ):
+            state.model.inverted_index = InvertedIndex()
+            state.model.inverted_index.insert(state.documents.get_data_source())
 
         return state
 

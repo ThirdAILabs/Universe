@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cereal/access.hpp>
 #include <archive/src/Archive.h>
 #include <utils/text/PorterStemmer.h>
 #include <utils/text/StringManipulation.h>
@@ -123,10 +122,6 @@ class InvertedIndex {
   float _k1, _b;
 
   bool _stem, _lowercase;
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::search
