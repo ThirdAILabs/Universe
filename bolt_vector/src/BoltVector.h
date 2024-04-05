@@ -110,7 +110,9 @@ struct BoltVector {
       float activation_threshold, bool return_at_least_one,
       uint32_t max_count_to_return) const;
 
-  TopKActivationsQueue findKLargestActivations(uint32_t k) const;
+  TopKActivationsQueue topKNeurons(uint32_t k) const;
+
+  std::vector<ValueIndexPair> topKNeuronsAsVector(uint32_t k) const;
 
   bool hasGradients() const;
 

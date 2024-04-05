@@ -372,7 +372,7 @@ std::vector<std::vector<uint32_t>> UDTMachClassifier::predictHashesImpl(
     if (force_non_empty) {
       heap = _mach_label_block->index()->topKNonEmptyBuckets(output, k);
     } else {
-      heap = output.findKLargestActivations(k);
+      heap = output.topKNeurons(k);
     }
 
     std::vector<uint32_t> hashes;
@@ -705,7 +705,7 @@ void UDTMachClassifier::introduceDocuments(
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
       uint32_t label = std::stoi(labels->value(row_idx++));
       top_k_per_doc[label].push_back(
-          scores->getVector(i).findKLargestActivations(num_buckets_to_sample));
+          scores->getVector(i).topKNeurons(num_buckets_to_sample));
     }
 
     ctrl_c_check();
@@ -887,8 +887,7 @@ void UDTMachClassifier::introduceLabel(
 
   std::vector<TopKActivationsQueue> top_ks;
   for (uint32_t i = 0; i < output->batchSize(); i++) {
-    top_ks.push_back(
-        output->getVector(i).findKLargestActivations(num_buckets_to_sample));
+    top_ks.push_back(output->getVector(i).topKNeurons(num_buckets_to_sample));
   }
 
   auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,

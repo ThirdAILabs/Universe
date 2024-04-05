@@ -123,7 +123,6 @@ ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
             std::to_string(timer.seconds()) + "s.");
 
   ColumnMap output = columns;
-  output.dropColumn(_input_column);
   output.setColumn(_output_column,
                    ValueColumn<std::string>::make(std::move(augmented_text)));
 
@@ -133,7 +132,7 @@ ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
 std::string SpladeAugmentation::decodeTopTokens(const BoltVector& vec,
                                                 size_t k) const {
   std::string decoded;
-  auto topk = vec.findKLargestActivations(k);
+  auto topk = vec.topKNeurons(k);
   while (!topk.empty()) {
     auto token = _tokenizer->token(topk.top().second);
     topk.pop();

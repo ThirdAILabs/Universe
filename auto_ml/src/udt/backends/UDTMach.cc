@@ -107,6 +107,10 @@ UDTMach::UDTMach(
   dataset::mach::MachIndexPtr mach_index = dataset::mach::MachIndex::make(
       /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes);
 
+  if (user_args.contains("mach_index_seed")) {
+    mach_index->setSeed(user_args.get<uint32_t>("mach_index_seed", "integer"));
+  }
+
   auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
       input_data_types, temporal_tracking_relationships,
       tabular_options.lookahead);
@@ -373,7 +377,7 @@ std::vector<std::vector<uint32_t>> UDTMach::predictHashesImpl(
     if (force_non_empty) {
       heap = getIndex()->topKNonEmptyBuckets(output, k);
     } else {
-      heap = output.findKLargestActivations(k);
+      heap = output.topKNeurons(k);
     }
 
     std::vector<uint32_t> hashes;
@@ -626,9 +630,8 @@ void UDTMach::introduceDocuments(
       if (load_balancing) {
         top_k_per_doc[label].push_back(scores->getVector(i).valueIndexPairs());
       } else {
-        top_k_per_doc[label].push_back(
-            priorityQueueToVector(scores->getVector(i).findKLargestActivations(
-                num_buckets_to_sample)));
+        top_k_per_doc[label].push_back(priorityQueueToVector(
+            scores->getVector(i).topKNeurons(num_buckets_to_sample)));
       }
     }
 
@@ -840,7 +843,7 @@ void UDTMach::introduceLabelHelper(
       top_ks.push_back(output->getVector(i).valueIndexPairs());
     } else {
       top_ks.push_back(priorityQueueToVector(
-          output->getVector(i).findKLargestActivations(num_buckets_to_sample)));
+          output->getVector(i).topKNeurons(num_buckets_to_sample)));
     }
   }
 

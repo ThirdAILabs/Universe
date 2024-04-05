@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 from urllib.parse import urljoin
 
 from .bazaar_base import Bazaar, auth_header
@@ -498,8 +498,9 @@ class ModelBazaar(Bazaar):
         test_doc: str,
         doc_type: str = "local",
         test_extra_options: dict = {},
+        is_async: bool = False,
     ):
-        url = urljoin(self._base_url, f"jobs/{self._user_id}/test")
+        url = urljoin(self._base_url, f"test/test")
 
         files = [
             (
@@ -526,6 +527,60 @@ class ModelBazaar(Bazaar):
             headers=auth_header(self._access_token),
         )
         print(response.content)
+
+        response_content = json.loads(response.content)
+        if response_content["status"] != "success":
+            raise Exception(response_content["message"])
+
+        if is_async:
+            return response_content["data"]["data_id"]
+
+        self.await_test(model_identifier, response_content["data"]["data_id"])
+        return response_content["data"]["data_id"]
+
+    def test_status(self, test_id: str):
+        """
+        Checks for the status of the model testing
+
+        Args:
+            test_id (str): The unique id with which we can recognize the test,
+            the user will get this id in the response when they trigger the test.
+        """
+
+        url = urljoin(self._base_url, f"test/test-status")
+
+        response = http_get_with_error(
+            url,
+            params={"test_id": test_id},
+            headers=auth_header(self._access_token),
+        )
+
+        response_data = json.loads(response.content)["data"]
+
+        return response_data
+
+    def await_test(self, model_identifier: str, test_id: str):
+        """
+        Waits for the testing of the model to complete.
+
+        Args:
+            model_identifier: The identifier of the model.
+            test_id: Unique id for the test.
+        """
+
+        while True:
+            response_data = self.test_status(test_id)
+
+            if response_data["status"] == "complete":
+                print("\nTesting completed")
+                return response_data["results"]
+
+            if response_data["status"] == "failed":
+                print("\nTesting Failed")
+                raise ValueError(f"Test Failed for {model_identifier} and {test_id}")
+
+            print("Testing: In progress", end="", flush=True)
+            print_progress_dots(duration=10)
 
     def train_status(self, model: Model):
         """
@@ -568,7 +623,13 @@ class ModelBazaar(Bazaar):
             print("Training: In progress", end="", flush=True)
             print_progress_dots(duration=10)
 
-    def deploy(self, model_identifier: str, deployment_name: str, is_async=False):
+    def deploy(
+        self,
+        model_identifier: str,
+        deployment_name: str,
+        memory: Optional[int] = None,
+        is_async=False,
+    ):
         """
         Deploys a model and returns a NeuralDBClient instance.
 
@@ -585,6 +646,7 @@ class ModelBazaar(Bazaar):
             "user_id": self._user_id,
             "model_identifier": model_identifier,
             "deployment_name": deployment_name,
+            "memory": memory,
         }
         response = http_post_with_error(
             url, params=params, headers=auth_header(self._access_token)

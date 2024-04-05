@@ -66,3 +66,12 @@ def test_saved_ndb_associate():
 
     correct_after_associate = count_correct(db=db, queries=df["acronym"], ids=df["id"])
     assert correct_after_associate > 0.9 * len(df)
+
+
+def test_saved_ndb_constrained_search():
+    db = ndb.NeuralDB.from_checkpoint(save_path())
+    # InRange "S" to "R" will match any string that starts with the letter "S".
+    res = db.search("test", top_k=5, constraints={"text": ndb.InRange("S", "T")})
+    assert len(res) == 5
+    for r in res:
+        assert r.metadata["text"][0] == "S"

@@ -1,7 +1,9 @@
-from nltk.tokenize import word_tokenize
+from typing import List, Tuple
+
 from thirdai import search
 
 from .documents import DocumentDataSource
+from .supervised_datasource import SupDataSource
 
 
 class ChunkedRowIterator:
@@ -14,7 +16,7 @@ class ChunkedRowIterator:
 
         for row in self.iterator:
             ids.append(row.id)
-            docs.append(word_tokenize(row.strong) + word_tokenize(row.weak))
+            docs.append(row.strong + " " + row.weak)
 
             if len(ids) == n:
                 return ids, docs
@@ -47,17 +49,49 @@ class InvertedIndex:
         if curr_index.size() > 0:
             self.indexes.append(curr_index)
 
+    def supervised_train(self, data_source: SupDataSource):
+        queries = []
+        ids = []
+        for sup in data_source.data:
+            for query, labels in zip(sup.queries, data_source._labels(sup)):
+                for label in labels:
+                    queries.append(query)
+                    ids.append(int(label))
+        for index in self.indexes:
+            index.update(ids, queries, ignore_missing_ids=len(self.indexes) > 1)
+
+    def upvote(self, pairs: List[Tuple[str, int]]) -> None:
+        ids = [x[1] for x in pairs]
+        phrases = [x[0] for x in pairs]
+        for index in self.indexes:
+            index.update(ids, phrases, ignore_missing_ids=len(self.indexes) > 1)
+
+    def associate(self, pairs: List[Tuple[str, str]]) -> None:
+        sources = [x[0] for x in pairs]
+        targets = [x[1] for x in pairs]
+
+        for index in self.indexes:
+            top_results = index.query(targets, k=3)
+
+            update_texts = []
+            update_ids = []
+            for source, results in zip(sources, top_results):
+                for result in results:
+                    update_texts.append(source)
+                    update_ids.append(result[0])
+
+            index.update(
+                update_ids, update_texts, ignore_missing_ids=len(self.indexes) > 1
+            )
+
     def query(self, queries: str, k: int):
         if len(self.indexes) == 0:
             raise ValueError("Cannot query before inserting documents.")
 
         if len(self.indexes) == 1:
-            return self.indexes[0].query(
-                queries=[word_tokenize(q) for q in queries], k=k
-            )
+            return self.indexes[0].query(queries=[q for q in queries], k=k)
         return [
-            search.InvertedIndex.parallel_query(self.indexes, word_tokenize(q), k=k)
-            for q in queries
+            search.InvertedIndex.parallel_query(self.indexes, q, k=k) for q in queries
         ]
 
     def forget(self, ids):
