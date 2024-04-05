@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <archive/src/Archive.h>
 #include <utils/text/PorterStemmer.h>
 #include <utils/text/StringManipulation.h>
@@ -81,6 +82,9 @@ class InvertedIndex {
 
   static std::shared_ptr<InvertedIndex> load_stream(std::istream& istream);
 
+  static std::shared_ptr<InvertedIndex> load_stream_cereal(
+      std::istream& istream);
+
  private:
   std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>>
   countTokenOccurences(const std::vector<std::string>& docs) const;
@@ -122,6 +126,10 @@ class InvertedIndex {
   float _k1, _b;
 
   bool _stem, _lowercase;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::search

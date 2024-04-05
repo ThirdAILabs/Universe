@@ -101,9 +101,6 @@ class InvertedIndex:
     def clear(self):
         self.indexes = []
 
-    def size(self):
-        return sum(index.size() for index in self.indexes)
-
     def __setstate__(self, state):
         if "indexes" not in state:
             state["indexes"] = [state["index"]]

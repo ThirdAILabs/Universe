@@ -1,4 +1,9 @@
 #include "InvertedIndex.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/utility.hpp>
+#include <cereal/types/vector.hpp>
 #include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <utils/text/PorterStemmer.h>
@@ -415,15 +420,22 @@ std::shared_ptr<InvertedIndex> InvertedIndex::load(
 
 std::shared_ptr<InvertedIndex> InvertedIndex::load_stream(
     std::istream& istream) {
-  // If loading an old inverted index that was saved with cereal something will
-  // fail and throw an error. In that case try loading it using the old cereal
-  // method.
-  try {
-    auto archive = ar::deserialize(istream);
-    return fromArchive(*archive);
-  } catch (const std::exception& e) {
-    return std::make_shared<InvertedIndex>();
-  }
+  auto archive = ar::deserialize(istream);
+  return fromArchive(*archive);
+}
+
+std::shared_ptr<InvertedIndex> InvertedIndex::load_stream_cereal(
+    std::istream& istream) {
+  cereal::BinaryInputArchive iarchive(istream);
+  auto index = std::make_shared<InvertedIndex>();
+  iarchive(*index);
+  return index;
+}
+
+template <class Archive>
+void InvertedIndex::serialize(Archive& archive) {
+  archive(_token_to_docs, _token_to_idf, _doc_lengths, _idf_cutoff_frac,
+          _sum_doc_lens, _avg_doc_length, _k1, _b, _stem, _lowercase);
 }
 
 }  // namespace thirdai::search
