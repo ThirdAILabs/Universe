@@ -38,8 +38,8 @@ TEST(InvertedIndexTests, BasicRetrieval) {
                                                         {"c f"},
                                                         {"f g d g"},
                                                         {"c d e f"},
-                                                        {"t q v"},
-                                                        {"m n o"},
+                                                        {"f t q v w"},
+                                                        {"f m n o p"},
                                                         {"f g h i"},
                                                         {"c 7 8 9 10 11"}});
 
