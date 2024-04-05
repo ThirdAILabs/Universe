@@ -998,7 +998,7 @@ class PDF(Extracted):
             self.emphasize_first_words,
             self.ignore_header_footer,
             self.ignore_nonstandard_orientation,
-            self.table_parsing if hasattr(self, "table_parsing") else False,
+            self.table_parsing,
         )
 
     @staticmethod
