@@ -19,6 +19,8 @@ class PDF(Document):
         ignore_header_footer=True,
         ignore_nonstandard_orientation=True,
         doc_metadata=None,
+        doc_keywords="",
+        emphasize_section_titles=False,
     ):
         super().__init__()
 
@@ -29,6 +31,8 @@ class PDF(Document):
         self.ignore_header_footer = ignore_header_footer
         self.ignore_nonstandard_orientation = ignore_nonstandard_orientation
         self.doc_metadata = doc_metadata
+        self.doc_keywords = doc_keywords
+        self.emphasize_section_titles = emphasize_section_titles
 
     def chunks(self) -> Iterable[NewChunkBatch]:
         parsed_chunks = pdf_parse.make_df(
@@ -38,6 +42,8 @@ class PDF(Document):
             emphasize_first_n_words=self.emphasize_first_words,
             ignore_header_footer=self.ignore_header_footer,
             ignore_nonstandard_orientation=self.ignore_nonstandard_orientation,
+            doc_keywords=self.doc_keywords,
+            emphasize_section_titles=self.emphasize_section_titles,
         )
 
         text = parsed_chunks["para"]

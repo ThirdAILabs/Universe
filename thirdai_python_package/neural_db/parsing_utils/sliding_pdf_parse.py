@@ -147,10 +147,29 @@ def get_lines_with_first_n_words(lines, n):
     return " ".join(line["text"] for line in lines[:end])
 
 
+def estimate_section_titles(lines):
+    text_size_freq = defaultdict(int)
+    for line in lines:
+        for span in line["spans"]:
+            text_size_freq[line[span["size"]]] += 1
+
+    most_common_text_size = sorted(text_size_freq.items(), key=lambda x: x[1])[-1]
+
+    current_section_title = ""
+    for i in range(len(lines)):
+        # 20% larger than most common is considered a section title
+        if lines[i]["spans"][0]["size"] > most_common_text_size * 1.2:
+            current_section_title = lines[i]["text"]
+        lines[i]["section_title"] = current_section_title
+
+    return lines
+
+
 def get_chunks_from_lines(lines, chunk_words, stride_words):
     chunk_start = 0
     chunks = []
     chunk_boxes = []
+    section_titles = []
     while chunk_start < len(lines):
         chunk_end = chunk_start
         chunk_size = 0
@@ -166,8 +185,13 @@ def get_chunks_from_lines(lines, chunk_words, stride_words):
         chunk_boxes.append(
             [(line["page_num"], line["bbox"]) for line in lines[chunk_start:chunk_end]]
         )
+        if "section_tutle" in lines[0]:
+            unique_section_titles = set(
+                [line["section_title"] for line in lines[chunk_start:chunk_end]]
+            )
+            section_titles.append(" ".join(unique_section_titles))
         chunk_start = stride_end
-    return chunks, chunk_boxes
+    return chunks, chunk_boxes, section_titles
 
 
 def clean_encoding(text):
@@ -181,6 +205,7 @@ def get_chunks(
     emphasize_first_n_words,
     ignore_header_footer,
     ignore_nonstandard_orientation,
+    emphasize_section_titles,
 ):
     blocks = get_fitz_blocks(filename)
     blocks = remove_images(blocks)
@@ -192,10 +217,15 @@ def get_chunks(
     lines = get_lines(blocks)
     lines = set_line_text(lines)
     lines = set_line_word_counts(lines)
-    emphasis = get_lines_with_first_n_words(lines, emphasize_first_n_words)
-    chunks, chunk_boxes = get_chunks_from_lines(lines, chunk_words, stride_words)
+    first_n_words = get_lines_with_first_n_words(lines, emphasize_first_n_words)
+    if emphasize_section_titles:
+        lines = estimate_section_titles(lines)
+    chunks, chunk_boxes, section_titles = get_chunks_from_lines(
+        lines, chunk_words, stride_words
+    )
     chunks = [clean_encoding(text) for text in chunks]
-    return chunks, chunk_boxes, emphasis
+    section_titles = [clean_encoding(section_title) for section_title in section_titles]
+    return chunks, chunk_boxes, first_n_words
 
 
 def make_df(
@@ -205,6 +235,8 @@ def make_df(
     emphasize_first_n_words,
     ignore_header_footer,
     ignore_nonstandard_orientation,
+    doc_keywords,
+    emphasize_section_titles,
 ):
     """Arguments:
     chunk_size: number of words in each chunk of text.
@@ -214,19 +246,30 @@ def make_df(
         dataframe. We do this so that every row can capture important signals
         like file titles or introductory paragraphs.
     """
-    chunks, chunk_boxes, emphasis = get_chunks(
+    chunks, chunk_boxes, first_n_words, section_titles = get_chunks(
         filename,
         chunk_words,
         stride_words,
         emphasize_first_n_words,
         ignore_header_footer,
         ignore_nonstandard_orientation,
+        emphasize_section_titles,
     )
+
+    emphasis = [
+        (
+            first_n_words + " " + doc_keywords + " " + section_titles[i]
+            if section_titles
+            else ""
+        )
+        for i in range(len(chunks))
+    ]
+
     return pd.DataFrame(
         {
             "para": [c.lower() for c in chunks],
             "display": chunks,
-            "emphasis": [emphasis for _ in chunks],
+            "emphasis": emphasis,
             # chunk_boxes is a list of lists of (page_num, bbox) pairs
             "chunk_boxes": [str(chunk_box) for chunk_box in chunk_boxes],
             # get the first element of the first pair in the list of
