@@ -12,14 +12,13 @@ import tqdm
 from thirdai import bolt, data, demos
 
 from ..documents import DocumentDataSource
-from ..inverted_index import InvertedIndex
 from ..supervised_datasource import SupDataSource
 from ..trainer.checkpoint_config import CheckpointConfig
 from ..trainer.training_progress_manager import (
     TrainingProgressCallback,
     TrainingProgressManager,
 )
-from ..utils import clean_text, pickle_to
+from ..utils import add_retriever_tag, clean_text, pickle_to
 from .mach_defaults import acc_to_stop, metric_to_track
 
 InferSamples = List
@@ -155,7 +154,6 @@ class Model:
         max_in_memory_batches: Optional[int],
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
-        disable_inverted_index: bool,
     ):
         raise NotImplementedError()
 
@@ -376,48 +374,6 @@ def make_balancing_samples(documents: DocumentDataSource):
     return samples
 
 
-def normalize_scores(results):
-    if len(results) == 0:
-        return results
-    if len(results) == 1:
-        return [(results[0][0], 1.0, results[0][2])]
-    ids, scores, retriever = zip(*results)
-    scores = np.array(scores)
-    scores -= np.min(scores)
-    scores /= np.max(scores)
-    return list(zip(ids, scores, retriever))
-
-
-def merge_results(results_a, results_b, k):
-    results_a = normalize_scores(results_a)
-    results_b = normalize_scores(results_b)
-    results = []
-    cache = set()
-
-    min_len = min(len(results_a), len(results_b))
-    for a, b in zip(results_a, results_b):
-        if a[0] not in cache:
-            results.append(a)
-            cache.add(a[0])
-        if b[0] not in cache:
-            results.append(b)
-            cache.add(b[0])
-
-    if len(results) < k:
-        for i in range(min_len, len(results_a)):
-            if results_a[i][0] not in cache:
-                results.append(results_a[i])
-        for i in range(min_len, len(results_b)):
-            if results_b[i][0] not in cache:
-                results.append(results_b[i])
-
-    return results[:k]
-
-
-def add_retriever_tag(results, tag):
-    return [[(id, score, tag) for id, score in result] for result in results]
-
-
 class Mach(Model):
     def __init__(
         self,
@@ -448,11 +404,6 @@ class Mach(Model):
         self.balancing_samples = []
         self.model_config = model_config
         self.mach_index_seed = mach_index_seed
-        self.inverted_index = (
-            InvertedIndex(max_shard_size=index_max_shard_size)
-            if use_inverted_index
-            else None
-        )
 
     def set_mach_sampling_threshold(self, threshold: float):
         if self.model is None:
@@ -476,7 +427,6 @@ class Mach(Model):
         self.model = new_model.model
         self.balancing_samples = new_model.balancing_samples
         self.model_config = new_model.model_config
-        self.inverted_index = new_model.inverted_index
 
     def save(self, path: Path):
         pickle_to(self, filepath=path)
@@ -544,9 +494,9 @@ class Mach(Model):
                     num_buckets_to_sample=num_buckets_to_sample,
                 )
 
-        if self.inverted_index:
-            intro_documents.restart()
-            self.inverted_index.insert(intro_documents)
+        # if self.inverted_index:
+        #     intro_documents.restart()
+        #     self.inverted_index.insert(intro_documents)
 
         self.n_ids += intro_documents.size
 
@@ -661,9 +611,6 @@ class Mach(Model):
         for entity in entities:
             self.get_model().forget(entity)
 
-        if self.inverted_index:
-            self.inverted_index.forget(entities)
-
     def model_from_scratch(
         self, documents: DocumentDataSource, number_classes: int = None
     ):
@@ -698,9 +645,6 @@ class Mach(Model):
         self.n_ids = 0
         self.balancing_samples = []
 
-        if self.inverted_index:
-            self.inverted_index.clear()
-
     @property
     def searchable(self) -> bool:
         return self.n_ids != 0
@@ -710,14 +654,6 @@ class Mach(Model):
         infer_batch = self.infer_samples_to_infer_batch(samples)
         return add_retriever_tag(
             results=self.model.predict_batch(infer_batch), tag="mach"
-        )
-
-    def query_inverted_index(self, samples, n_results):
-        return add_retriever_tag(
-            results=self.inverted_index.query(
-                queries=samples, k=min(self.n_ids, n_results)
-            ),
-            tag="inverted_index",
         )
 
     def infer_labels(
@@ -897,10 +833,3 @@ class Mach(Model):
             )
 
         self.supervised_training_impl(training_manager, callbacks=callbacks)
-
-    def build_inverted_index(self, documents):
-        if self.inverted_index:
-            return
-
-        self.inverted_index = InvertedIndex()
-        self.inverted_index.insert(documents)

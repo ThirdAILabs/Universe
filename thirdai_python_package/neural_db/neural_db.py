@@ -7,6 +7,7 @@ from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 import numpy as np
 import pandas as pd
 import thirdai
+from inverted_index import InvertedIndex
 from thirdai._thirdai import bolt, data
 
 from . import loggers, teachers
@@ -14,7 +15,6 @@ from .documents import CSV, Document, DocumentManager, Reference
 from .models.mach_mixture_model import MachMixture
 from .models.models import CancelState, Mach
 from .models.multi_mach import MultiMach
-from inverted_index import InvertedIndex
 from .savable_state import (
     State,
     load_checkpoint,
@@ -23,6 +23,7 @@ from .savable_state import (
 )
 from .supervised_datasource import Sup, SupDataSource
 from .trainer.checkpoint_config import CheckpointConfig
+from .utils import merge_results
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
 
@@ -89,12 +90,17 @@ class NeuralDB:
                 )
             else:
                 model = Mach(id_col="id", query_col="query", **kwargs)
-            
+
             if kwargs.get("use_inverted_index", True):
-                inverted_index = InvertedIndex(max_shard_size=kwargs.get("index_max_shard_size", 8_000_000))
+                inverted_index = InvertedIndex(
+                    max_shard_size=kwargs.get("index_max_shard_size", 8_000_000)
+                )
 
             self._savable_state = State(
-                model, logger=loggers.LoggerList([loggers.InMemoryLogger()], inverted_index = inverted_index)
+                model,
+                logger=loggers.LoggerList(
+                    [loggers.InMemoryLogger()], inverted_index=inverted_index
+                ),
             )
         else:
             self._savable_state = kwargs["savable_state"]
@@ -582,6 +588,8 @@ class NeuralDB:
         """Deletes documents from the NeuralDB."""
         deleted_entities = self._savable_state.documents.delete(source_ids)
         self._savable_state.model.delete_entities(deleted_entities)
+        if self._savable_state.inverted_index:
+            self._savable_state.inverted_index.forget(deleted_entities)
         self._savable_state.logger.log(
             session_id=self._user_id, action="delete", args={"source_ids": source_ids}
         )
@@ -590,6 +598,8 @@ class NeuralDB:
         """Removes all documents stored in the NeuralDB."""
         self._savable_state.documents.clear()
         self._savable_state.model.forget_documents()
+        if self._savable_state.inverted_index:
+            self._savable_state.inverted_index.clear()
 
     def _get_query_references(
         self,
@@ -764,6 +774,36 @@ class NeuralDB:
                 samples=queries, entities=[matching_entities], n_results=top_k_to_search
             )
         else:
+            if retriever is None:
+                if not self.inverted_index:
+                    retriever = "mach"
+                else:
+                    mach_results = self._savable_state.model.query_mach(
+                        samples=queries, n_results=top_k
+                    )
+                    index_results = self._savable_state.inverted_index.query(
+                        queries=queries, k=top_k
+                    )
+
+                    queries_result_ids = [
+                        merge_results(mach_res, index_res, top_k)
+                        for mach_res, index_res in zip(mach_results, index_results)
+                    ]
+
+            if retriever == "mach":
+                queries_result_ids = self._savable_state.model.query_mach(
+                    samples=queries, n_results=top_k
+                )
+
+            if retriever == "inverted_index":
+                if self._savable_state.inverted_index is not None:
+                    raise ValueError(
+                        "Cannot use retriever 'inverted_index' since the index is None. "
+                        "Call 'db.build_inverted_index()' to enable this method."
+                    )
+                queries_result_ids = self._savable_state.inverted_index.query(
+                    queries=queries, k=top_k
+                )
             queries_result_ids = self._savable_state.model.infer_labels(
                 samples=queries,
                 n_results=top_k_to_search,
@@ -1036,6 +1076,7 @@ class NeuralDB:
         )
 
     def build_inverted_index(self):
-        self._savable_state.model.build_inverted_index(
+        self._savable_state.inverted_index = InvertedIndex()
+        self._savable_state.inverted_index.insert(
             self._savable_state.documents.get_data_source()
         )

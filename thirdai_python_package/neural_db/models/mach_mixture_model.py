@@ -67,7 +67,6 @@ class MachMixture(Model):
                 extreme_num_hashes=extreme_num_hashes,
                 tokenizer=tokenizer,
                 hidden_bias=hidden_bias,
-                use_inverted_index=use_inverted_index,
                 model_config=model_config,
                 mach_index_seed_offset=j * 341,
             )

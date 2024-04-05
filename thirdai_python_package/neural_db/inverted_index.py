@@ -3,6 +3,8 @@ from typing import List, Tuple
 from nltk.tokenize import word_tokenize
 from thirdai import search
 
+from utils import add_retriever_tag
+
 from .documents import DocumentDataSource
 from .supervised_datasource import SupDataSource
 
@@ -32,6 +34,7 @@ class InvertedIndex:
     def __init__(self, max_shard_size: int = 8_000_000):
         self.indexes = []
         self.max_shard_size = max_shard_size
+        self.n_ids = 0
 
     def insert(self, doc_data_source: DocumentDataSource):
         if len(self.indexes) > 0 and self.indexes[-1].size() < self.max_shard_size:
@@ -46,6 +49,7 @@ class InvertedIndex:
             if curr_index.size() == self.max_shard_size:
                 self.indexes.append(curr_index)
                 curr_index = search.InvertedIndex()
+            self.n_ids += len(chunk[0])
 
         if curr_index.size() > 0:
             self.indexes.append(curr_index)
@@ -92,12 +96,16 @@ class InvertedIndex:
 
         if len(self.indexes) == 1:
             return self.indexes[0].query(
-                queries=[word_tokenize(q) for q in queries], k=k
+                queries=[word_tokenize(q) for q in queries], k=min(k, self.n_ids)
             )
-        return [
-            search.InvertedIndex.parallel_query(self.indexes, word_tokenize(q), k=k)
+        index_results = [
+            search.InvertedIndex.parallel_query(
+                self.indexes, word_tokenize(q), k=min(k, self.n_ids)
+            )
             for q in queries
         ]
+
+        return add_retriever_tag(results=index_results, tag="inverted_index")
 
     def forget(self, ids):
         for index in self.indexes:
