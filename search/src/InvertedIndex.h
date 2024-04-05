@@ -21,7 +21,7 @@ class InvertedIndex {
   // The k1 and b defaults are the same as the defaults for BM25 in apache
   // Lucene. The idf_cutoff_frac default is just what seemed to work fairly
   // well in multiple experiments.
-  static constexpr size_t DEFAULT_MAX_DOCS_TO_SCORE = 100000;
+  static constexpr size_t DEFAULT_MAX_DOCS_TO_SCORE = 10000;
   static constexpr float DEFAULT_IDF_CUTOFF_FRAC = 0.2;
   static constexpr float DEFAULT_K1 = 1.2;
   static constexpr float DEFAULT_B = 0.75;

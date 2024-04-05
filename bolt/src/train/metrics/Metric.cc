@@ -140,7 +140,7 @@ float divideTwoAtomicIntegers(const std::atomic_uint64_t& numerator,
 
 uint32_t truePositivesInTopK(const BoltVector& output, const BoltVector& label,
                              const uint32_t& k) {
-  TopKActivationsQueue top_k_predictions = output.findKLargestActivations(k);
+  TopKActivationsQueue top_k_predictions = output.topKNeurons(k);
 
   uint32_t true_positives = 0;
   while (!top_k_predictions.empty()) {
