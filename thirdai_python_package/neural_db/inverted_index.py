@@ -3,10 +3,9 @@ from typing import List, Tuple
 from nltk.tokenize import word_tokenize
 from thirdai import search
 
-from utils import add_retriever_tag
-
 from .documents import DocumentDataSource
 from .supervised_datasource import SupDataSource
+from .utils import add_retriever_tag
 
 
 class ChunkedRowIterator:
@@ -99,13 +98,14 @@ class InvertedIndex:
                 queries=[word_tokenize(q) for q in queries], k=min(k, self.n_ids)
             )
         index_results = [
-            search.InvertedIndex.parallel_query(
-                self.indexes, word_tokenize(q), k=min(k, self.n_ids)
-            )
+            search.InvertedIndex.parallel_query(self.indexes, word_tokenize(q), k=min(k, self.n_ids))
             for q in queries
         ]
 
-        return add_retriever_tag(results=index_results, tag="inverted_index")
+        return add_retriever_tag(
+            results = index_results,
+            tag = "inverted_index"
+        )
 
     def forget(self, ids):
         for index in self.indexes:

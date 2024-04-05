@@ -774,6 +774,7 @@ class NeuralDB:
                 samples=queries, entities=[matching_entities], n_results=top_k_to_search
             )
         else:
+            retriever = "mach" if rerank else retr
             if retriever is None:
                 if not self.inverted_index:
                     retriever = "mach"

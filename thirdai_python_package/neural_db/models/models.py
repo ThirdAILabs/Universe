@@ -18,7 +18,7 @@ from ..trainer.training_progress_manager import (
     TrainingProgressCallback,
     TrainingProgressManager,
 )
-from ..utils import add_retriever_tag, clean_text, pickle_to
+from ..utils import clean_text, pickle_to, add_retriever_tag
 from .mach_defaults import acc_to_stop, metric_to_track
 
 InferSamples = List
@@ -373,7 +373,6 @@ def make_balancing_samples(documents: DocumentDataSource):
         samples = random.sample(samples, k=25000)
     return samples
 
-
 class Mach(Model):
     def __init__(
         self,
@@ -656,6 +655,14 @@ class Mach(Model):
             results=self.model.predict_batch(infer_batch), tag="mach"
         )
 
+    def query_inverted_index(self, samples, n_results):
+        return add_retriever_tag(
+            results=self.inverted_index.query(
+                queries=samples, k=min(self.n_ids, n_results)
+            ),
+            tag="inverted_index",
+        )
+
     def infer_labels(
         self, samples: InferSamples, n_results: int, retriever=None, **kwargs
     ) -> Predictions:
@@ -833,3 +840,10 @@ class Mach(Model):
             )
 
         self.supervised_training_impl(training_manager, callbacks=callbacks)
+
+    def build_inverted_index(self, documents):
+        if self.inverted_index:
+            return
+
+        self.inverted_index = InvertedIndex()
+        self.inverted_index.insert(documents)
