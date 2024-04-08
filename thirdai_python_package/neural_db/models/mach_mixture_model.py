@@ -330,8 +330,8 @@ class MachMixture(Model):
         for ensemble in self.ensembles:
             for model in ensemble.models:
                 model.model.set_decode_params(
-                    min(self.model.model.n_ids, n_results),
-                    min(self.model.model.n_ids, 100),
+                    min(model.n_ids, n_results),
+                    min(model.n_ids, 100),
                 )
 
         if not label_probing or self.ensembles[0].models[0].extreme_num_hashes != 1:
