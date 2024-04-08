@@ -76,6 +76,11 @@ std::string Value<std::vector<std::vector<float>>>::typeName() {
 }
 
 template <>
+std::string Value<std::unordered_map<uint64_t, uint64_t>>::typeName() {
+  return "Value[std::unordered_map<uint64_t, uint64_t>]";
+}
+
+template <>
 std::string
 Value<std::unordered_map<uint64_t, std::vector<uint64_t>>>::typeName() {
   return "Value[std::unordered_map<uint64_t, std::vector<uint64_t>>]";
@@ -95,6 +100,12 @@ std::string Value<std::unordered_map<std::string, uint64_t>>::typeName() {
 template <>
 std::string Value<std::unordered_map<std::string, int64_t>>::typeName() {
   return "Value[std::unordered_map<std::string, int64_t>]";
+}
+
+template <>
+std::string
+Value<std::unordered_map<std::string, std::vector<uint64_t>>>::typeName() {
+  return "Value[std::unordered_map<std::string, std::vector<uint64_t>>]";
 }
 
 template <>

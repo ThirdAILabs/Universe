@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 import pytest
 from download_dataset_fixtures import download_scifact_dataset
@@ -54,3 +56,13 @@ def test_inverted_index(download_scifact_dataset):
 
     print("supervised_acc=", supervised_acc)
     assert supervised_acc >= 0.72  # Should be 0.723 (should be deterministic)
+
+    path = "./scifact.index"
+    index.save(path)
+
+    index = search.InvertedIndex.load(path)
+    os.remove(path)
+
+    after_load_acc = evaluate(index, query_df)
+    print("after_load_acc=", after_load_acc)
+    assert after_load_acc == supervised_acc
