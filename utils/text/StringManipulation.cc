@@ -53,6 +53,27 @@ std::vector<std::string> split(const std::string_view& string, char delimiter) {
   return words;
 }
 
+std::vector<std::string> splitOnWhiteSpace(const std::string& text) {
+  std::vector<std::string> words;
+
+  bool last_is_word = false;
+  size_t word_start;
+  for (size_t i = 0; i < text.size(); i++) {
+    bool is_word = !std::isspace(text[i]);
+    if (!last_is_word && is_word) {
+      word_start = i;
+    } else if (last_is_word && !is_word) {
+      words.push_back(text.substr(word_start, i - word_start));
+    }
+    last_is_word = is_word;
+  }
+  if (last_is_word) {
+    words.push_back(text.substr(word_start));
+  }
+
+  return words;
+}
+
 std::vector<std::string> tokenizeSentenceUnicodeUnsafe(
     const std::string& sentence) {
   // A-Za-zÀ-ÖØ-öø-ÿ0-9 : alphanumeric characters, including accents.

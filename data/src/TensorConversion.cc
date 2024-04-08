@@ -1,4 +1,5 @@
 #include "TensorConversion.h"
+#include <bolt/src/train/trainer/Dataset.h>
 #include <archive/src/List.h>
 #include <archive/src/Map.h>
 #include <data/src/columns/ArrayColumns.h>
@@ -152,6 +153,15 @@ OutputColumnsList outputColumnsFromArchive(const ar::Archive& archive) {
     }
   }
   return output_columns;
+}
+
+bolt::LabeledDataset toLabeledDataset(const ColumnMap& columns,
+                                      const OutputColumnsList& input_columns,
+                                      const OutputColumnsList& label_columns,
+                                      size_t batch_size) {
+  auto inputs = toTensorBatches(columns, input_columns, batch_size);
+  auto labels = toTensorBatches(columns, label_columns, batch_size);
+  return std::make_pair(std::move(inputs), std::move(labels));
 }
 
 }  // namespace thirdai::data

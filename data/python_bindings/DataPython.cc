@@ -76,8 +76,11 @@ void createDataSubmodule(py::module_& dataset_submodule) {
 
   py::class_<CsvIterator, std::shared_ptr<CsvIterator>, ColumnMapIterator>(
       dataset_submodule, "CsvIterator")
+      .def(py::init<const std::string&, char, size_t>(), py::arg("filename"),
+           py::arg("delimiter") = ',',
+           py::arg("rows_per_load") = ColumnMapIterator::DEFAULT_ROWS_PER_LOAD)
       .def(py::init<DataSourcePtr, char, size_t>(), py::arg("data_source"),
-           py::arg("delimiter"),
+           py::arg("delimiter") = ',',
            py::arg("rows_per_load") = ColumnMapIterator::DEFAULT_ROWS_PER_LOAD)
       .def_static("all", &CsvIterator::all, py::arg("data_source"),
                   py::arg("delimiter"));
@@ -87,6 +90,12 @@ void createDataSubmodule(py::module_& dataset_submodule) {
       .def(py::init<DataSourcePtr, std::vector<std::string>, size_t>(),
            py::arg("data_source"), py::arg("columns"),
            py::arg("rows_per_load") = ColumnMapIterator::DEFAULT_ROWS_PER_LOAD);
+
+  py::class_<TransformedIterator, std::shared_ptr<TransformedIterator>,
+             ColumnMapIterator>(dataset_submodule, "TransformedIterator")
+      .def(py::init<ColumnMapIteratorPtr, TransformationPtr, StatePtr>(),
+           py::arg("iter"), py::arg("transformation"),
+           py::arg("state") = nullptr);
 
   py::enum_<ValueFillType>(dataset_submodule, "ValueFillType")
       .value("Ones", ValueFillType::Ones)

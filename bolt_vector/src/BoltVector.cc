@@ -6,6 +6,7 @@
 #include <cereal/cereal.hpp>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace thirdai {
 
@@ -367,7 +368,7 @@ std::vector<uint32_t> BoltVector::getThresholdedNeurons(
   return thresholded;
 }
 
-TopKActivationsQueue BoltVector::findKLargestActivations(uint32_t k) const {
+TopKActivationsQueue BoltVector::topKNeurons(uint32_t k) const {
   TopKActivationsQueue top_k;
   for (uint32_t pos = 0; pos < std::min(k, len); pos++) {
     uint32_t idx = isDense() ? pos : active_neurons[pos];
@@ -383,6 +384,16 @@ TopKActivationsQueue BoltVector::findKLargestActivations(uint32_t k) const {
     }
   }
   return top_k;
+}
+
+std::vector<ValueIndexPair> BoltVector::topKNeuronsAsVector(uint32_t k) const {
+  auto pq = topKNeurons(k);
+  std::vector<ValueIndexPair> vec;
+  while (!pq.empty()) {
+    vec.push_back(pq.top());
+    pq.pop();
+  }
+  return vec;
 }
 
 bool BoltVector::hasGradients() const { return gradients != nullptr; }

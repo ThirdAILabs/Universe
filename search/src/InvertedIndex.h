@@ -34,22 +34,23 @@ class InvertedIndex {
         _stem(stem),
         _lowercase(lowercase) {}
 
-  void index(const std::vector<DocId>& ids, const std::vector<Tokens>& docs);
+  void index(const std::vector<DocId>& ids,
+             const std::vector<std::string>& docs);
 
   void update(const std::vector<DocId>& ids,
-              const std::vector<Tokens>& extra_tokens,
+              const std::vector<std::string>& extra_tokens,
               bool ignore_missing_ids = true);
 
   std::vector<std::vector<DocScore>> queryBatch(
-      const std::vector<Tokens>& queries, uint32_t k) const;
+      const std::vector<std::string>& queries, uint32_t k) const;
 
-  std::vector<DocScore> query(const Tokens& query, uint32_t k) const;
+  std::vector<DocScore> query(const std::string& query, uint32_t k) const;
 
   std::vector<std::vector<DocScore>> rankBatch(
-      const std::vector<Tokens>& queries,
+      const std::vector<std::string>& queries,
       const std::vector<std::vector<DocId>>& candidates, uint32_t k) const;
 
-  std::vector<DocScore> rank(const Tokens& query,
+  std::vector<DocScore> rank(const std::string& query,
                              const std::vector<DocId>& candidates,
                              uint32_t k) const;
 
@@ -64,7 +65,7 @@ class InvertedIndex {
 
   static std::vector<DocScore> parallelQuery(
       const std::vector<std::shared_ptr<InvertedIndex>>& indices,
-      const Tokens& query, uint32_t k);
+      const std::string& query, uint32_t k);
 
   void save(const std::string& filename) const;
 
@@ -76,7 +77,7 @@ class InvertedIndex {
 
  private:
   std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>>
-  countTokenOccurences(const std::vector<Tokens>& docs) const;
+  countTokenOccurences(const std::vector<std::string>& docs) const;
 
   void recomputeMetadata();
 
@@ -89,23 +90,10 @@ class InvertedIndex {
     return idf * num / denom;
   }
 
-  inline Tokens preprocessText(const Tokens& tokens) const {
-    if (_stem) {
-      return text::porter_stemmer::stem(tokens, _lowercase);
-    }
+  Tokens tokenizeText(std::string text) const;
 
-    if (_lowercase) {
-      Tokens lower_tokens;
-      lower_tokens.reserve(tokens.size());
-      for (const auto& token : tokens) {
-        lower_tokens.push_back(text::lower(token));
-      }
-    }
-
-    return tokens;
-  }
-
-  std::unordered_map<DocId, float> scoreDocuments(const Tokens& query) const;
+  std::unordered_map<DocId, float> scoreDocuments(
+      const std::string& query) const;
 
   using TokenCountInfo = std::pair<DocId, uint32_t>;
 

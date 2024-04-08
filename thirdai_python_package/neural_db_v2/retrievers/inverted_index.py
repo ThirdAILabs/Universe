@@ -1,6 +1,5 @@
 from typing import Iterable, List, Tuple
 
-from nltk.tokenize import word_tokenize
 from thirdai import search
 
 from ..core.retriever import Retriever
@@ -15,7 +14,7 @@ class InvertedIndex(Retriever):
     def search(
         self, queries: List[str], top_k: int, **kwargs
     ) -> List[List[Tuple[ChunkId, Score]]]:
-        return self.inverted_index.query([word_tokenize(q) for q in queries], k=top_k)
+        return self.inverted_index.query(queries, k=top_k)
 
     def rank(
         self, queries: List[str], choices: List[List[ChunkId]], top_k: int, **kwargs
@@ -29,9 +28,7 @@ class InvertedIndex(Retriever):
         choices in memory. This function signature preempts the need to reshape
         these existing data structures.
         """
-        return self.inverted_index.rank(
-            [word_tokenize(q) for q in queries], candidates=choices, k=top_k
-        )
+        return self.inverted_index.rank(queries, candidates=choices, k=top_k)
 
     def upvote(self, queries: List[str], chunk_ids: List[ChunkId], **kwargs):
         raise NotImplementedError(
@@ -55,9 +52,10 @@ class InvertedIndex(Retriever):
                 + " "
                 + batch.text.reset_index(drop=True)
             )
-            texts = texts.map(word_tokenize).to_list()
 
-            self.inverted_index.index(ids=batch.chunk_id.to_list(), docs=texts)
+            self.inverted_index.index(
+                ids=batch.chunk_id.to_list(), docs=texts.to_list()
+            )
 
     def supervised_train(self, samples: Iterable[SupervisedBatch], **kwargs):
         raise NotImplementedError(
