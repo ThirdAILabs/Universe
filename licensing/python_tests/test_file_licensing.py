@@ -32,7 +32,7 @@ def this_should_require_a_license_query_reformulation():
 from pathlib import Path
 
 dir_path = Path(__file__).resolve().parent.parent / "licenses"
-valid_license_path = dir_path / "full_license_expires_mar_2024"
+valid_license_path = dir_path / "full_license_expires_mar_2025"
 nonexisting_license_path = dir_path / "nonexisting_license"
 expired_license_path = dir_path / "full_expired_license"
 invalid_license_1_path = dir_path / "invalid_license_1"
@@ -59,9 +59,9 @@ def test_license_print(capfd):
     print(out)
     assert (
         out.strip()
-        == "This is a license with an expiry time of 1711083134694 epoch ms. "
+        == "This is a license with an expiry time of 1797555168817 epoch ms. "
         "Entitlements are as follows: FULL_DATASET_ACCESS, LOAD_SAVE, "
-        "MAX_OUTPUT_DIM 18446744073709551615, MAX_TRAIN_SAMPLES 100,"
+        "MAX_OUTPUT_DIM 4294967295, MAX_TRAIN_SAMPLES 100,"
     )
     assert err == ""
 

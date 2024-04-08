@@ -6,6 +6,7 @@
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDT.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/detail/common.h>
@@ -142,7 +143,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("evaluate", &udt::UDT::evaluate, py::arg("data"),
            py::arg("metrics") = std::vector<std::string>{},
            py::arg("sparse_inference") = false, py::arg("verbose") = true,
-           py::arg("top_k") = std::nullopt, bolt::python::OutputRedirect())
+           bolt::python::OutputRedirect())
       .def("predict", &udt::UDT::predict, py::arg("sample"),
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false,
@@ -233,6 +234,14 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("n_buckets"), py::arg("n_association_samples"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
            py::arg("options"))
+      .def("cold_start_with_balancing_samples",
+           &udt::UDT::coldStartWithBalancingSamples, py::arg("data"),
+           py::arg("strong_column_names"), py::arg("weak_column_names"),
+           py::arg("learning_rate"), py::arg("epochs"),
+           py::arg("train_metrics") = std::vector<std::string>{},
+           py::arg("callbacks") = std::vector<bolt::callbacks::CallbackPtr>{},
+           py::arg("batch_size") = std::nullopt, py::arg("verbose") = true,
+           py::arg("variable_length") = data::VariableLengthConfig())
       .def("enable_rlhf", &udt::UDT::enableRlhf,
            py::arg("num_balancing_docs") = udt::defaults::MAX_BALANCING_DOCS,
            py::arg("num_balancing_samples_per_doc") =
@@ -277,6 +286,14 @@ void defineAutomlInModule(py::module_& module) {
       .def_static("parallel_inference", &udt::UDT::parallelInference,
                   py::arg("models"), py::arg("batch"),
                   py::arg("sparse_inference") = false,
+                  py::arg("top_k") = std::nullopt)
+      .def_static("label_probe_multiple_shards",
+                  &udt::UDT::labelProbeMultipleShards, py::arg("shards"),
+                  py::arg("batch"), py::arg("sparse_inference") = false,
+                  py::arg("top_k") = std::nullopt)
+      .def_static("label_probe_multiple_mach",
+                  &udt::UDT::labelProbeMultipleMach, py::arg("models"),
+                  py::arg("batch"), py::arg("sparse_inference") = false,
                   py::arg("top_k") = std::nullopt);
 }
 

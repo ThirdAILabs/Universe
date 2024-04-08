@@ -13,6 +13,8 @@ namespace thirdai::text {
  */
 std::vector<std::string> split(const std::string_view& string, char delimiter);
 
+std::vector<std::string> splitOnWhiteSpace(const std::string& text);
+
 /**
  * Parses a sentence into word and punctuation tokens.
  * The returned tokens are strings, not to be confused with integer token IDs,

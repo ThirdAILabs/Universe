@@ -11,8 +11,9 @@ from thirdai._thirdai import bolt, data
 
 from . import loggers, teachers
 from .documents import CSV, Document, DocumentManager, Reference
-from .mach_mixture_model import MachMixture
-from .models import CancelState, Mach
+from .models.mach_mixture_model import MachMixture
+from .models.models import CancelState, Mach
+from .models.multi_mach import MultiMach
 from .savable_state import (
     State,
     load_checkpoint,
@@ -41,7 +42,13 @@ class NeuralDB:
         >>> results = ndb.search("how to make chocolate chip cookies")
     """
 
-    def __init__(self, user_id: str = "user", number_models: int = 1, **kwargs) -> None:
+    def __init__(
+        self,
+        user_id: str = "user",
+        num_shards: int = 1,
+        num_models_per_shard: int = 1,
+        **kwargs,
+    ) -> None:
         """
         Constructs an empty NeuralDB.
 
@@ -59,15 +66,22 @@ class NeuralDB:
         # We read savable_state from kwargs so that it doesn't appear in the
         # arguments list and confuse users.
         if "savable_state" not in kwargs:
-            if number_models <= 0:
+            if num_shards <= 0:
                 raise Exception(
-                    f"Invalid Value Passed for number_models : {number_models}."
+                    f"Invalid Value Passed for num_shards : {num_shards}."
                     " NeuralDB can only be initialized with a positive number of"
-                    " models."
+                    " shards."
                 )
-            if number_models > 1:
+            if num_models_per_shard <= 0:
+                raise Exception(
+                    f"Invalid Value Passed for num_models_per_shard : {num_models_per_shard}."
+                    " NeuralDB can only be initialized with a positive number of"
+                    " models per shard."
+                )
+            if num_shards > 1 or num_models_per_shard > 1:
                 model = MachMixture(
-                    number_models=number_models,
+                    num_shards=num_shards,
+                    num_models_per_shard=num_models_per_shard,
                     id_col="id",
                     query_col="query",
                     **kwargs,
@@ -404,13 +418,17 @@ class NeuralDB:
         on_progress: Callable,
         cancel_state: CancelState,
         checkpoint_config: CheckpointConfig,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
     ):
-        state, ids, resource_name = load_checkpoint(checkpoint_config=checkpoint_config)
-        self._savable_state = state
+        documents, ids, resource_name = load_checkpoint(
+            checkpoint_config=checkpoint_config
+        )
+        self._savable_state.documents = documents
         self._savable_state.model.resume(
             on_progress=on_progress,
             cancel_state=cancel_state,
             checkpoint_config=checkpoint_config.get_mach_config(),
+            callbacks=callbacks,
         )
 
         return ids, resource_name
@@ -427,6 +445,7 @@ class NeuralDB:
         max_in_memory_batches: int,
         variable_length: Optional[data.transformations.VariableLengthConfig],
         checkpoint_config: CheckpointConfig,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
         **kwargs,
     ):
         documents_copy = copy.deepcopy(self._savable_state.documents)
@@ -439,11 +458,10 @@ class NeuralDB:
                 return []
             raise e
 
-        """
-        We need to store the model state so that our label_id -> reference mapping remains consistent on resuming.
-        """
         if checkpoint_config:
-            # If a checkpoint config is passed, then we delete any past ndb checkpoints from the folder and save the current neural db object.
+            """
+            We need to store the document manager state so that our label_id -> reference mapping remains consistent on resuming.
+            """
             make_preinsertion_checkpoint(
                 savable_state=self._savable_state,
                 ids=ids,
@@ -464,6 +482,7 @@ class NeuralDB:
             checkpoint_config=(
                 checkpoint_config.get_mach_config() if checkpoint_config else None
             ),
+            callbacks=callbacks,
             **kwargs,
         )
 
@@ -484,6 +503,7 @@ class NeuralDB:
             data.transformations.VariableLengthConfig
         ] = data.transformations.VariableLengthConfig(),
         checkpoint_config: Optional[CheckpointConfig] = None,
+        callbacks: List[bolt.train.callbacks.Callback] = None,
         **kwargs,
     ) -> List[str]:
         """
@@ -519,6 +539,7 @@ class NeuralDB:
                 on_progress=on_progress,
                 cancel_state=cancel_state,
                 checkpoint_config=checkpoint_config,
+                callbacks=callbacks,
             )
         else:
             ids, resource_name = self._insert_from_start(
@@ -532,6 +553,7 @@ class NeuralDB:
                 max_in_memory_batches=max_in_memory_batches,
                 variable_length=variable_length,
                 checkpoint_config=checkpoint_config,
+                callbacks=callbacks,
                 **kwargs,
             )
 
@@ -649,6 +671,7 @@ class NeuralDB:
         rerank_threshold=1.5,
         top_k_threshold=None,
         retriever=None,
+        label_probing=False,
     ) -> List[Reference]:
         """
         Searches the contents of the NeuralDB for documents relevant to the given query.
@@ -702,6 +725,7 @@ class NeuralDB:
             rerank_threshold=rerank_threshold,
             top_k_threshold=top_k_threshold,
             retriever=retriever,
+            label_probing=label_probing,
         )[0]
 
     def search_batch(
@@ -714,6 +738,7 @@ class NeuralDB:
         rerank_threshold=1.5,
         top_k_threshold=None,
         retriever=None,
+        label_probing=False,
     ):
         """
         Runs search on a batch of queries for much faster throughput.
@@ -738,6 +763,7 @@ class NeuralDB:
                 samples=queries,
                 n_results=top_k_to_search,
                 retriever="mach" if rerank else retriever,
+                label_probing=label_probing,
             )
 
         return [
@@ -754,7 +780,7 @@ class NeuralDB:
     def _get_text(self, result_id) -> str:
         return self._savable_state.documents.reference(result_id).text
 
-    def text_to_result(self, text: str, result_id: int) -> None:
+    def text_to_result(self, text: str, result_id: int, **kwargs) -> None:
         """Trains NeuralDB to map the given text to the given entity ID.
         Also known as "upvoting".
 
@@ -771,9 +797,12 @@ class NeuralDB:
                     result_id
                 ).upvote_ids
             ],
+            **kwargs,
         )
 
-    def text_to_result_batch(self, text_id_pairs: List[Tuple[str, int]]) -> None:
+    def text_to_result_batch(
+        self, text_id_pairs: List[Tuple[str, int]], **kwargs
+    ) -> None:
         """Trains NeuralDB to map the given texts to the given entity IDs.
         Also known as "batch upvoting".
         """
@@ -789,6 +818,7 @@ class NeuralDB:
             logger=self._savable_state.logger,
             user_id=self._user_id,
             query_id_para=query_id_para,
+            **kwargs,
         )
 
     def associate(
@@ -853,6 +883,8 @@ class NeuralDB:
         max_in_memory_batches: Optional[int] = None,
         metrics: List[str] = [],
         callbacks: List[bolt.train.callbacks.Callback] = [],
+        checkpoint_config: Optional[CheckpointConfig] = None,
+        **kwargs,
     ):
         """
         Train on supervised datasets that correspond to specific sources.
@@ -881,7 +913,12 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
+            disable_inverted_index=kwargs.get("disable_inverted_index", True),
+            checkpoint_config=checkpoint_config,
         )
+
+        if checkpoint_config:
+            make_training_checkpoint(self._savable_state, checkpoint_config)
 
     def supervised_train_with_ref_ids(
         self,
@@ -897,6 +934,8 @@ class NeuralDB:
         max_in_memory_batches: Optional[int] = None,
         metrics: List[str] = [],
         callbacks: List[bolt.train.callbacks.Callback] = [],
+        checkpoint_config: Optional[CheckpointConfig] = None,
+        **kwargs,
     ):
         """Train on supervised datasets that correspond to specific sources.
         Suppose you inserted a "sports" product catalog and a "furniture"
@@ -931,7 +970,11 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
+            disable_inverted_index=kwargs.get("disable_inverted_index", True),
+            checkpoint_config=checkpoint_config,
         )
+        if checkpoint_config:
+            make_training_checkpoint(self._savable_state, checkpoint_config)
 
     def get_associate_samples(self):
         """Get past associate() and associate_batch() samples from NeuralDB logs."""

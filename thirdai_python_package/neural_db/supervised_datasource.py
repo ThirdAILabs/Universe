@@ -1,3 +1,5 @@
+import json
+from pathlib import Path
 from typing import List, Optional, Sequence
 
 import pandas as pd
@@ -113,18 +115,28 @@ class SupDataSource(PyDataSource):
 
     def __init__(
         self,
-        doc_manager: DocumentManager,
         query_col: str,
         data: List[Sup],
         id_delimiter: Optional[str],
+        doc_manager: Optional[DocumentManager] = None,
+        id_column: Optional[str] = None,
     ):
         PyDataSource.__init__(self)
-        self.doc_manager = doc_manager
         self.query_col = query_col
         self.data = data
         self.id_delimiter = id_delimiter
         if not self.id_delimiter:
             print("WARNING: this model does not fully support multi-label datasets.")
+
+        self.doc_manager = doc_manager
+
+        if not self.doc_manager and not id_column:
+            raise Exception(
+                "Cannot initialize a SupDataSource with None values for both doc_manager and id_column"
+            )
+
+        self.id_column = id_column if id_column else doc_manager.id_column
+
         self.restart()
 
     def _csv_line(self, label: str, query: str):
@@ -132,6 +144,11 @@ class SupDataSource(PyDataSource):
         return f"{label},{query}"
 
     def _source_for_sup(self, sup: Sup):
+        if not self.doc_manager:
+            raise Exception(
+                "Cannot get document ids for a SupDataSource with no document manager"
+            )
+
         source_ids = self.doc_manager.match_source_id_by_prefix(sup.source_id)
         if len(source_ids) == 0:
             raise ValueError(f"Cannot find source with id {sup.source_id}")
@@ -159,7 +176,7 @@ class SupDataSource(PyDataSource):
         This is done to enable data sharding for SupDataSource as currently we can only shard data sources that have a label per line without any delimiters.
         """
         # First yield the header
-        yield self._csv_line(self.doc_manager.id_column, self.query_col)
+        yield self._csv_line(self.id_column, self.query_col)
         # Then yield rows
         for sup in self.data:
             for query, labels in zip(sup.queries, self._labels(sup)):
@@ -177,6 +194,15 @@ class SupDataSource(PyDataSource):
                             query,
                         )
 
+    def indices(self):
+        indices = set()
+        for sup in self.data:
+            for _, labels in zip(sup.queries, self._labels(sup)):
+                for label in labels:
+                    indices.add(label)
+
+        return list(indices)
+
     def resource_name(self) -> str:
         return "Supervised training samples"
 
@@ -184,3 +210,45 @@ class SupDataSource(PyDataSource):
     def size(self):
         sizes_sup = [sup.size for sup in self.data]
         return sum(sizes_sup)
+
+    def save(self, path: Path, save_interval=100_000):
+        path.mkdir(exist_ok=True, parents=True)
+        number_lines_in_buffer = 0
+        with open(path / "source.csv", "w", encoding="utf-8") as f:
+            for line in self._get_line_iterator():
+                f.write(line + "\n")
+                number_lines_in_buffer += 1
+            if number_lines_in_buffer > save_interval:
+                f.flush()
+                number_lines_in_buffer = 0
+
+        with open(path / "arguments.json", "w") as f:
+            json.dump(
+                {
+                    "query_column": self.query_col,
+                    "id_column": self.id_column,
+                    "id_delimiter": self.id_delimiter,
+                },
+                f,
+                indent=4,
+            )
+
+    @staticmethod
+    def load(path: Path):
+        with open(path / "arguments.json", "r") as f:
+            args = json.load(f)
+
+        sup_data = Sup(
+            csv=path / "source.csv",
+            query_column=args["query_column"],
+            id_column=args["id_column"],
+            id_delimiter=args["id_delimiter"],
+            uses_db_id=True,
+        )
+        data_source = SupDataSource(
+            query_col=args["query_column"],
+            data=[sup_data],
+            id_delimiter=args["id_delimiter"],
+            id_column=args["id_column"],
+        )
+        return data_source

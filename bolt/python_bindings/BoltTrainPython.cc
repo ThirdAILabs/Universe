@@ -185,8 +185,7 @@ void defineCallbacks(py::module_& train) {
   py::class_<TrainState, TrainStatePtr>(train, "TrainState")
       .def_property("learning_rate", &TrainState::learningRate,
                     &TrainState::updateLearningRate)
-      .def("stop_training", &TrainState::stopTraining)
-      .def("batches_in_dataset", &TrainState::batchesInDataset);
+      .def("stop_training", &TrainState::stopTraining);
 
   py::class_<callbacks::Callback, PyCallback, callbacks::CallbackPtr>(
       callbacks, "Callback")

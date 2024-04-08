@@ -179,7 +179,9 @@ py::object UDTMachClassifier::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::DistributedCommPtr& comm) {
+    const bolt::DistributedCommPtr& comm, py::kwargs kwargs) {
+  (void)kwargs;
+
   dataset::DatasetLoaderPtr val_dataset_loader;
   if (val_data) {
     val_dataset_loader = _dataset_factory->getLabeledDatasetLoader(
@@ -226,8 +228,8 @@ py::object UDTMachClassifier::trainWithHashes(const MapInputBatch& batch,
 py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
                                        const std::vector<std::string>& metrics,
                                        bool sparse_inference, bool verbose,
-                                       std::optional<uint32_t> top_k) {
-  (void)top_k;
+                                       py::kwargs kwargs) {
+  (void)kwargs;
 
   auto eval_dataset_loader =
       _dataset_factory->getLabeledDatasetLoader(data, /* shuffle= */ false);
@@ -370,7 +372,7 @@ std::vector<std::vector<uint32_t>> UDTMachClassifier::predictHashesImpl(
     if (force_non_empty) {
       heap = _mach_label_block->index()->topKNonEmptyBuckets(output, k);
     } else {
-      heap = output.findKLargestActivations(k);
+      heap = output.topKNeurons(k);
     }
 
     std::vector<uint32_t> hashes;
@@ -494,7 +496,8 @@ py::object UDTMachClassifier::coldstart(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::DistributedCommPtr& comm) {
+    const bolt::DistributedCommPtr& comm, const py::kwargs& kwargs) {
+  (void)kwargs;
   auto metadata = getColdStartMetaData();
 
   if (!variable_length.has_value()) {
@@ -503,7 +506,7 @@ py::object UDTMachClassifier::coldstart(
         metadata, variable_length);
 
     return train(data_source, learning_rate, epochs, train_metrics, val_data,
-                 val_metrics, callbacks, options, comm);
+                 val_metrics, callbacks, options, comm, {});
   }
 
   py::object history;
@@ -513,7 +516,7 @@ py::object UDTMachClassifier::coldstart(
         metadata, variable_length);
 
     history = train(data_source, learning_rate, /* epochs= */ 1, train_metrics,
-                    val_data, val_metrics, callbacks, options, comm);
+                    val_data, val_metrics, callbacks, options, comm, {});
     data->restart();
     if (val_data) {
       val_data->restart();
@@ -702,7 +705,7 @@ void UDTMachClassifier::introduceDocuments(
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
       uint32_t label = std::stoi(labels->value(row_idx++));
       top_k_per_doc[label].push_back(
-          scores->getVector(i).findKLargestActivations(num_buckets_to_sample));
+          scores->getVector(i).topKNeurons(num_buckets_to_sample));
     }
 
     ctrl_c_check();
@@ -884,8 +887,7 @@ void UDTMachClassifier::introduceLabel(
 
   std::vector<TopKActivationsQueue> top_ks;
   for (uint32_t i = 0; i < output->batchSize(); i++) {
-    top_ks.push_back(
-        output->getVector(i).findKLargestActivations(num_buckets_to_sample));
+    top_ks.push_back(output->getVector(i).topKNeurons(num_buckets_to_sample));
   }
 
   auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,

@@ -1,15 +1,28 @@
 from __future__ import annotations
 
+from typing import Optional, Union
+
 from thirdai import bolt
 
 from ..documents import DocumentDataSource
-from ..mach_defaults import (
+from ..models.mach_defaults import (
     training_arguments_from_base,
     training_arguments_from_scratch,
 )
+from ..supervised_datasource import SupDataSource
 from .checkpoint_config import CheckpointConfig
-from .training_data_manager import TrainingDataManager
-from .training_progress_tracker import IntroState, NeuralDbProgressTracker, TrainState
+from .training_data_manager import (
+    InsertDataManager,
+    SupervisedDataManager,
+    TrainingDataManager,
+)
+from .training_progress_tracker import (
+    InsertProgressTracker,
+    InsertTrainState,
+    IntroState,
+    SupervisedProgressTracker,
+    SupervisedTrainState,
+)
 
 
 class TrainingProgressCallback(bolt.train.callbacks.Callback):
@@ -32,7 +45,7 @@ class TrainingProgressManager:
 
     def __init__(
         self,
-        tracker: NeuralDbProgressTracker,
+        tracker: Union[SupervisedProgressTracker, InsertProgressTracker],
         save_load_manager: TrainingDataManager,
         makes_checkpoint: bool,
         checkpoint_interval: int = 1,
@@ -49,26 +62,45 @@ class TrainingProgressManager:
                 new_directory=save_load_manager.checkpoint_dir / "backup"
             )
 
-    def complete_epoch(self):
-        self.tracker.current_epoch_number += 1
-        if self.tracker.current_epoch_number % self.checkpoint_interval == 0:
-            if self.makes_checkpoint:
-                self.checkpoint_without_sources()
-
     @property
     def intro_source(self) -> DocumentDataSource:
         return self.save_load_manager.intro_source
 
     @property
-    def train_source(self) -> DocumentDataSource:
+    def train_source(self) -> Union[DocumentDataSource, SupDataSource]:
         return self.save_load_manager.train_source
 
-    def make_preindexing_checkpoint(self):
-        # Before starting indexing, we need to save all the resources (intro source, train source, model, tracker)
-        # to be able to resume.
+    @property
+    def datasource_manager(self) -> Union[InsertDataManager, SupervisedDataManager]:
+        return self.save_load_manager.datasource_manager
+
+    @property
+    def is_insert_completed(self):
+        return self.tracker.is_insert_completed
+
+    def introduce_arguments(self):
+        return self.tracker.introduce_arguments()
+
+    def insert_complete(self):
+        # Updates the tracker state by marking insert as completed and saves the resources (tracker and model)
+        # if makes_checkpoint is True.
+        self.tracker.insert_complete()
         if not self.makes_checkpoint:
             return
-        self.save_load_manager.save()
+        self.checkpoint_without_sources()
+
+    @property
+    def is_training_completed(self):
+        return self.tracker.is_training_completed
+
+    def training_arguments(self):
+        return self.tracker.training_arguments()
+
+    def complete_epoch(self):
+        self.tracker.current_epoch_number += 1
+        if self.tracker.current_epoch_number % self.checkpoint_interval == 0:
+            if self.makes_checkpoint:
+                self.checkpoint_without_sources()
 
     def training_complete(self):
         # Updates the tracker state by marking training as completed and saves the resources (tracker and model)
@@ -79,42 +111,30 @@ class TrainingProgressManager:
         self.checkpoint_without_sources()
         self.backup_config.delete_checkpoint()
 
-    def insert_complete(self):
-        # Updates the tracker state by marking insert as completed and saves the resources (tracker and model)
-        # if makes_checkpoint is True.
-        self.tracker.insert_complete()
+    def make_preindexing_checkpoint(self, save_datasource=True):
+        # Before starting indexing, save all the resources (datasource, model, tracker) to be able to resume.
         if not self.makes_checkpoint:
             return
-        self.checkpoint_without_sources()
+        if save_datasource:
+            self.save_load_manager.save()
+        else:
+            self.save_load_manager.save_without_sources()
 
     def checkpoint_without_sources(self):
         # First save the model in the backup directory. Once the resources have been successfully saved,
         # we can move them to their intended checkpoint location. We only need to maintain backups of the
         # model and the tracker because other resources (intro and train source) are never modified.
         self.backup_config.save_without_sources()
+
+        # This is used to "hot-swap" the model from backup to original checkpoint location. Saving a model takes longer
+        # than moving it across dir. Hence, if the program terminates while checkpointing, only the backup gets corrupted leaving the
+        # model in the original location in a valid state.
         TrainingDataManager.update_model_and_tracker_from_backup(
             backup_config=self.backup_config, target_config=self.save_load_manager
         )
 
-    def delete_backup(self):
-        self.backup_config.delete_checkpoint()
-
-    @property
-    def is_insert_completed(self):
-        return self.tracker.is_insert_completed
-
-    @property
-    def is_training_completed(self):
-        return self.tracker.is_training_completed
-
-    def training_arguments(self):
-        return self.tracker.training_arguments()
-
-    def introduce_arguments(self):
-        return self.tracker.introduce_arguments()
-
     @staticmethod
-    def from_scratch(
+    def from_scratch_for_unsupervised(
         model,
         intro_documents,
         train_documents,
@@ -152,15 +172,20 @@ class TrainingProgressManager:
         train_args["freeze_after_acc"] = kwargs.get(
             "freeze_after_acc", 0.80 if "freeze_after_epoch" not in kwargs else 1
         )
+        train_args["balancing_samples"] = kwargs.get("balancing_samples", False)
+        train_args["semantic_enhancement"] = kwargs.get("semantic_enhancement", False)
+        train_args["semantic_model_cache_dir"] = kwargs.get(
+            "semantic_model_cache_dir", ".cache/neural_db_semantic_model"
+        )
 
-        train_state = TrainState(
+        train_state = InsertTrainState(
             max_in_memory_batches=max_in_memory_batches,
             current_epoch_number=0,
             is_training_completed=not should_train,
             **train_args,
         )
 
-        tracker = NeuralDbProgressTracker(
+        tracker = InsertProgressTracker(
             intro_state=intro_state, train_state=train_state, vlc_config=variable_length
         )
 
@@ -169,8 +194,11 @@ class TrainingProgressManager:
                 checkpoint_config.checkpoint_dir if checkpoint_config else None
             ),
             model=model,
-            intro_source=intro_documents,
-            train_source=train_documents,
+            datasource_manager=InsertDataManager(
+                checkpoint_config.checkpoint_dir if checkpoint_config else None,
+                intro_source=intro_documents,
+                train_source=train_documents,
+            ),
             tracker=tracker,
         )
 
@@ -189,9 +217,63 @@ class TrainingProgressManager:
         return training_progress_manager
 
     @staticmethod
+    def from_scratch_for_supervised(
+        model,
+        supervised_datasource,
+        learning_rate,
+        epochs,
+        batch_size,
+        max_in_memory_batches,
+        metrics,
+        disable_inverted_index,
+        checkpoint_config: CheckpointConfig,
+        **kwargs,
+    ) -> TrainingProgressManager:
+
+        train_state = SupervisedTrainState(
+            is_training_completed=False,
+            current_epoch_number=0,
+            learning_rate=learning_rate,
+            epochs=epochs,
+            batch_size=batch_size,
+            max_in_memory_batches=max_in_memory_batches,
+            metrics=metrics,
+            disable_inverted_index=disable_inverted_index,
+        )
+
+        tracker = SupervisedProgressTracker(train_state=train_state)
+
+        save_load_manager = TrainingDataManager(
+            checkpoint_dir=(
+                checkpoint_config.checkpoint_dir if checkpoint_config else None
+            ),
+            model=model,
+            datasource_manager=SupervisedDataManager(
+                checkpoint_config.checkpoint_dir if checkpoint_config else None,
+                train_source=supervised_datasource,
+            ),
+            tracker=tracker,
+        )
+
+        training_progress_manager = TrainingProgressManager(
+            tracker=tracker,
+            save_load_manager=save_load_manager,
+            makes_checkpoint=True if checkpoint_config else False,
+            checkpoint_interval=(
+                checkpoint_config.checkpoint_interval if checkpoint_config else 1
+            ),
+        )
+
+        return training_progress_manager
+
+    @staticmethod
     def from_checkpoint(
         original_mach_model,
         checkpoint_config: CheckpointConfig,
+        for_supervised: bool,
+        datasource_manager: Optional[
+            Union[InsertDataManager, SupervisedDataManager]
+        ] = None,
     ) -> TrainingProgressManager:
         """
         Given a checkpoint, we will make a save load manager that will load the model, data sources, tracker.
@@ -199,8 +281,11 @@ class TrainingProgressManager:
         assert checkpoint_config.checkpoint_dir != None
 
         save_load_manager = TrainingDataManager.load(
-            checkpoint_dir=checkpoint_config.checkpoint_dir
+            checkpoint_dir=checkpoint_config.checkpoint_dir,
+            for_supervised=for_supervised,
+            data_manager=datasource_manager,
         )
+
         # We need to update the passed model with the state of the loaded model. Since, we need a model reference in the save_load_manager as well, we update the model reference there too.
         original_mach_model.reset_model(save_load_manager.model)
         save_load_manager.model = original_mach_model

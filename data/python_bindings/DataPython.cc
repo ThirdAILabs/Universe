@@ -13,6 +13,7 @@
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/Pipeline.h>
+#include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/StringHash.h>
@@ -75,8 +76,11 @@ void createDataSubmodule(py::module_& dataset_submodule) {
 
   py::class_<CsvIterator, std::shared_ptr<CsvIterator>, ColumnMapIterator>(
       dataset_submodule, "CsvIterator")
+      .def(py::init<const std::string&, char, size_t>(), py::arg("filename"),
+           py::arg("delimiter") = ',',
+           py::arg("rows_per_load") = ColumnMapIterator::DEFAULT_ROWS_PER_LOAD)
       .def(py::init<DataSourcePtr, char, size_t>(), py::arg("data_source"),
-           py::arg("delimiter"),
+           py::arg("delimiter") = ',',
            py::arg("rows_per_load") = ColumnMapIterator::DEFAULT_ROWS_PER_LOAD)
       .def_static("all", &CsvIterator::all, py::arg("data_source"),
                   py::arg("delimiter"));
@@ -86,6 +90,12 @@ void createDataSubmodule(py::module_& dataset_submodule) {
       .def(py::init<DataSourcePtr, std::vector<std::string>, size_t>(),
            py::arg("data_source"), py::arg("columns"),
            py::arg("rows_per_load") = ColumnMapIterator::DEFAULT_ROWS_PER_LOAD);
+
+  py::class_<TransformedIterator, std::shared_ptr<TransformedIterator>,
+             ColumnMapIterator>(dataset_submodule, "TransformedIterator")
+      .def(py::init<ColumnMapIteratorPtr, TransformationPtr, StatePtr>(),
+           py::arg("iter"), py::arg("transformation"),
+           py::arg("state") = nullptr);
 
   py::enum_<ValueFillType>(dataset_submodule, "ValueFillType")
       .value("Ones", ValueFillType::Ones)
@@ -465,6 +475,31 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       .def("inference_featurization", &DyadicInterval::inferenceFeaturization,
            py::arg("columns"));
 #endif
+
+  py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>>(
+      transformations_submodule, "SpladeConfig")
+      .def(py::init<std::string, std::string, std::optional<size_t>,
+                    std::optional<float>, bool, size_t, bool,
+                    std::optional<uint32_t>>(),
+           py::arg("model_checkpoint"), py::arg("tokenizer_vocab"),
+           py::arg("n_augmented_tokens") = 100,
+           py::arg("augmentation_frac") = std::nullopt,
+           py::arg("filter_tokens") = true, py::arg("batch_size") = 4096,
+           py::arg("lowercase") = true, py::arg("strong_sample_override") = 7)
+      .def(bolt::python::getPickleFunction<SpladeConfig>());
+
+  py::class_<SpladeAugmentation, Transformation,
+             std::shared_ptr<SpladeAugmentation>>(transformations_submodule,
+                                                  "SpladeAugmentation")
+      .def(py::init<std::string, std::string, const SpladeConfig&>(),
+           py::arg("input_column"), py::arg("output_column"), py::arg("config"))
+      .def(py::init<std::string, std::string, bolt::ModelPtr,
+                    dataset::WordpieceTokenizerPtr, std::optional<size_t>,
+                    std::optional<float>, bool, size_t>(),
+           py::arg("input_column"), py::arg("output_column"), py::arg("model"),
+           py::arg("tokenizer"), py::arg("n_augmented_tokens") = 100,
+           py::arg("augmentation_frac") = std::nullopt,
+           py::arg("filter_tokens") = true, py::arg("batch_size") = 4096);
 }
 
 }  // namespace thirdai::data::python

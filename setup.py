@@ -153,7 +153,7 @@ with open("thirdai.version") as version_file:
 
 neural_db_deps = [
     "PyTrie",
-    "PyMuPDF==1.22.5",
+    "PyMuPDF==1.23.26",
     "langchain",
     "bs4",
     "trafilatura",
@@ -163,12 +163,17 @@ neural_db_deps = [
     "unidecode",
     "pydantic<2.5",
     "sortedcontainers",
-    "SQLAlchemy",
+    "SQLAlchemy>=2.0.0",
     "scikit-learn",
     "Office365-REST-Python-Client==2.5.1",
     "simple-salesforce==1.12.5",
     "ipython",
+    # lxml is a dependency of trafilatura. We install lxml[html_clean] to fix
+    # this error https://github.com/adbar/trafilatura/issues/532
+    "lxml[html_clean]",
 ]
+
+neural_db_v2_deps = ["pandas", "pandera"]
 
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
@@ -192,8 +197,12 @@ setup(
         "typing_extensions",
         "requests",
         "pandas>=2.0.0, <=2.1.4",
-    ],
+    ]
+    + neural_db_deps,
     extras_require={
+        # separate neural_db_deps not needed anymore, kept for backwards compatibility
+        "neural_db": neural_db_deps,
+        "neural_db_v2": neural_db_v2_deps,
         # The cryptography requirement is necessary to avoid ssl errors
         # The tokenizers requirement ensures that all of the [test] depedencies are
         # installable from a wheel on an m1.
@@ -202,7 +211,6 @@ setup(
         # MLFLOW and server MLFLOW should be the same. Hence, we are fixing the
         # version of MLFLOW here. The version of protobuf that works with this
         # MLFLOW is also being fixed.
-        "neural_db": neural_db_deps,
         "test": [
             "pytest",
             "pytest-mock",
@@ -230,7 +238,8 @@ setup(
             "grpcio",
             "unstructured[all-docs]<=0.10.20",
         ]
-        + neural_db_deps,
+        + neural_db_deps
+        + neural_db_v2_deps,
         "benchmark": [
             "toml",
             "psutil",

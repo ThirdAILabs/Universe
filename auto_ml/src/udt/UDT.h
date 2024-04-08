@@ -8,6 +8,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/backends/UDTMach.h>
 #include <dataset/src/DataSource.h>
+#include <pybind11/pytypes.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -53,7 +54,8 @@ class UDT {
                    const dataset::DataSourcePtr& val_data,
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
-                   TrainOptions options, const bolt::DistributedCommPtr& comm);
+                   TrainOptions options, const bolt::DistributedCommPtr& comm,
+                   py::kwargs kwargs);
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate);
 
@@ -68,8 +70,7 @@ class UDT {
    */
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
-                      bool sparse_inference, bool verbose,
-                      std::optional<uint32_t> top_k);
+                      bool sparse_inference, bool verbose, py::kwargs kwargs);
 
   /**
    * Performs inference on a single sample and returns the resulting
@@ -133,7 +134,7 @@ class UDT {
       const dataset::DataSourcePtr& val_data,
       const std::vector<std::string>& val_metrics,
       const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-      const bolt::DistributedCommPtr& comm);
+      const bolt::DistributedCommPtr& comm, const py::kwargs& kwargs);
 
   /**
    * Returns some embedding representation for the given sample. Optional method
@@ -419,11 +420,30 @@ class UDT {
         options);
   }
 
+  py::object coldStartWithBalancingSamples(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& train_metrics,
+      const std::vector<CallbackPtr>& callbacks,
+      std::optional<uint32_t> batch_size, bool verbose,
+      const std::optional<data::VariableLengthConfig>& variable_length) {
+    licensing::entitlements().verifyDataSource(data);
+
+    TrainOptions options;
+    options.batch_size = batch_size;
+    options.verbose = verbose;
+
+    return _backend->coldStartWithBalancingSamples(
+        data, strong_column_names, weak_column_names, learning_rate, epochs,
+        train_metrics, callbacks, options, variable_length);
+  }
+
   /**
-   * Tells the model to begin collecting balancing samples from train and cold
-   * start calls. Without this enabled the model won't allow RLHF calls (upvote
-   * and associate). This can also be specified in the constructor options with
-   * "rlhf": true.
+   * Tells the model to begin collecting balancing samples from train and
+   * cold start calls. Without this enabled the model won't allow RLHF calls
+   * (upvote and associate). This can also be specified in the constructor
+   * options with "rlhf": true.
    */
   void enableRlhf(uint32_t num_balancing_docs,
                   uint32_t num_balancing_samples_per_doc) {
@@ -490,6 +510,17 @@ class UDT {
   }
 
   bool isOptimizerSavable() const { return _save_optimizer; }
+  using Scores = std::vector<std::pair<uint32_t, float>>;
+
+  static std::vector<std::vector<UDT::Scores>> labelProbeMultipleShards(
+      const std::vector<std::vector<std::shared_ptr<UDT>>>& shards,
+      const MapInputBatch& batch, bool sparse_inference,
+      std::optional<uint32_t> top_k);
+
+  static std::vector<Scores> labelProbeMultipleMach(
+      const std::vector<std::shared_ptr<UDT>>& models,
+      const MapInputBatch& batch, bool sparse_inference,
+      std::optional<uint32_t> top_k);
 
  private:
   UDT() {}

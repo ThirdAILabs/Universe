@@ -34,14 +34,38 @@ class InvertedIndex {
         _stem(stem),
         _lowercase(lowercase) {}
 
-  void index(const std::vector<DocId>& ids, const std::vector<Tokens>& docs);
+  void index(const std::vector<DocId>& ids,
+             const std::vector<std::string>& docs);
+
+  void update(const std::vector<DocId>& ids,
+              const std::vector<std::string>& extra_tokens,
+              bool ignore_missing_ids = true);
 
   std::vector<std::vector<DocScore>> queryBatch(
-      const std::vector<Tokens>& queries, uint32_t k) const;
+      const std::vector<std::string>& queries, uint32_t k) const;
 
-  std::vector<DocScore> query(const Tokens& query, uint32_t k) const;
+  std::vector<DocScore> query(const std::string& query, uint32_t k) const;
+
+  std::vector<std::vector<DocScore>> rankBatch(
+      const std::vector<std::string>& queries,
+      const std::vector<std::vector<DocId>>& candidates, uint32_t k) const;
+
+  std::vector<DocScore> rank(const std::string& query,
+                             const std::vector<DocId>& candidates,
+                             uint32_t k) const;
 
   void remove(const std::vector<DocId>& ids);
+
+  void updateIdfCutoff(float cutoff) {
+    _idf_cutoff_frac = cutoff;
+    computeIdfs();
+  }
+
+  size_t size() const { return _doc_lengths.size(); }
+
+  static std::vector<DocScore> parallelQuery(
+      const std::vector<std::shared_ptr<InvertedIndex>>& indices,
+      const std::string& query, uint32_t k);
 
   void save(const std::string& filename) const;
 
@@ -52,35 +76,28 @@ class InvertedIndex {
   static std::shared_ptr<InvertedIndex> load_stream(std::istream& istream);
 
  private:
+  std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>>
+  countTokenOccurences(const std::vector<std::string>& docs) const;
+
   void recomputeMetadata();
 
   void computeIdfs();
 
-  inline float bm25(float idf, uint32_t freq, uint64_t doc_len) const {
-    const float num = freq * (_k1 + 1);
-    const float denom = freq + _k1 * (1 - _b + _b * doc_len / _avg_doc_length);
+  inline float bm25(float idf, uint32_t cnt_in_doc, uint64_t doc_len) const {
+    const float num = cnt_in_doc * (_k1 + 1);
+    const float denom =
+        cnt_in_doc + _k1 * (1 - _b + _b * doc_len / _avg_doc_length);
     return idf * num / denom;
   }
 
-  inline Tokens preprocessText(const Tokens& tokens) const {
-    if (_stem) {
-      return text::porter_stemmer::stem(tokens, _lowercase);
-    }
+  Tokens tokenizeText(std::string text) const;
 
-    if (_lowercase) {
-      Tokens lower_tokens;
-      lower_tokens.reserve(tokens.size());
-      for (const auto& token : tokens) {
-        lower_tokens.push_back(text::lower(token));
-      }
-    }
+  std::unordered_map<DocId, float> scoreDocuments(
+      const std::string& query) const;
 
-    return tokens;
-  }
+  using TokenCountInfo = std::pair<DocId, uint32_t>;
 
-  using FreqInfo = std::pair<DocId, uint32_t>;
-
-  std::unordered_map<Token, std::vector<FreqInfo>> _token_to_docs;
+  std::unordered_map<Token, std::vector<TokenCountInfo>> _token_to_docs;
   std::unordered_map<Token, float> _token_to_idf;
   std::unordered_map<DocId, uint64_t> _doc_lengths;
 

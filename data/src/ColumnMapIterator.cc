@@ -23,6 +23,11 @@ ColumnMap makeColumnMap(std::vector<std::vector<std::string>>&& columns,
   return ColumnMap(std::move(column_map));
 }
 
+CsvIterator::CsvIterator(const std::string& filename, char delimiter,
+                         size_t rows_per_load)
+    : CsvIterator(dataset::FileDataSource::make(filename), delimiter,
+                  rows_per_load) {}
+
 CsvIterator::CsvIterator(DataSourcePtr data_source, char delimiter,
                          size_t rows_per_load)
     : _data_source(
