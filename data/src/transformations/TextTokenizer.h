@@ -49,4 +49,6 @@ class TextTokenizer final : public Transformation {
   void serialize(Archive& archive);
 };
 
+using TextTokenizerPtr = std::shared_ptr<TextTokenizer>;
+
 }  // namespace thirdai::data

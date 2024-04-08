@@ -1,6 +1,7 @@
 #pragma once
 
 #include <data/src/ColumnMap.h>
+#include <data/src/transformations/Transformation.h>
 #include <dataset/src/DataSource.h>
 
 namespace thirdai::data {
@@ -24,6 +25,9 @@ using ColumnMapIteratorPtr = std::shared_ptr<ColumnMapIterator>;
 
 class CsvIterator final : public ColumnMapIterator {
  public:
+  CsvIterator(const std::string& filename, char delimiter,
+              size_t rows_per_load = DEFAULT_ROWS_PER_LOAD);
+
   CsvIterator(DataSourcePtr data_source, char delimiter,
               size_t rows_per_load = DEFAULT_ROWS_PER_LOAD);
 
@@ -76,6 +80,38 @@ class JsonIterator final : public ColumnMapIterator {
   size_t _rows_per_load;
 
   std::vector<std::string> _column_names;
+};
+
+class TransformedIterator final : public ColumnMapIterator {
+ public:
+  TransformedIterator(ColumnMapIteratorPtr iter,
+                      TransformationPtr transformation, StatePtr state)
+      : _iter(std::move(iter)),
+        _transformation(std::move(transformation)),
+        _state(std::move(state)) {}
+
+  static auto make(ColumnMapIteratorPtr iter, TransformationPtr transformation,
+                   StatePtr state) {
+    return std::make_shared<TransformedIterator>(
+        std::move(iter), std::move(transformation), std::move(state));
+  }
+
+  std::optional<ColumnMap> next() final {
+    auto next_columns = _iter->next();
+    if (next_columns) {
+      next_columns = _transformation->apply(std::move(*next_columns), *_state);
+    }
+    return next_columns;
+  }
+
+  void restart() final { _iter->restart(); }
+
+  std::string resourceName() const final { return _iter->resourceName(); }
+
+ private:
+  ColumnMapIteratorPtr _iter;
+  TransformationPtr _transformation;
+  StatePtr _state;
 };
 
 }  // namespace thirdai::data

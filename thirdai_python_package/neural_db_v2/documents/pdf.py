@@ -21,6 +21,7 @@ class PDF(Document):
         doc_metadata=None,
         doc_keywords="",
         emphasize_section_titles=False,
+        table_parsing=False,
     ):
         super().__init__()
 
@@ -33,6 +34,7 @@ class PDF(Document):
         self.doc_metadata = doc_metadata
         self.doc_keywords = doc_keywords
         self.emphasize_section_titles = emphasize_section_titles
+        self.table_parsing = table_parsing
 
     def chunks(self) -> Iterable[NewChunkBatch]:
         parsed_chunks = pdf_parse.make_df(
@@ -44,6 +46,7 @@ class PDF(Document):
             ignore_nonstandard_orientation=self.ignore_nonstandard_orientation,
             doc_keywords=self.doc_keywords,
             emphasize_section_titles=self.emphasize_section_titles,
+            table_parsing=self.table_parsing,
         )
 
         text = parsed_chunks["para"]

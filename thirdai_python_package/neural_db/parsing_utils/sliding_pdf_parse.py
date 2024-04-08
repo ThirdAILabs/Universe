@@ -3,6 +3,7 @@ from collections import Counter, defaultdict
 import fitz
 import numpy as np
 import pandas as pd
+import pdfplumber
 import unidecode
 from sklearn.cluster import DBSCAN
 
@@ -161,11 +162,64 @@ def estimate_section_titles(lines):
     return lines
 
 
+def process_tables(filename, lines):
+    pdf = pdfplumber.open(filename)
+    tables_by_page = [page.find_tables() for page in pdf.pages]
+
+    def within_by_bbox(a, b):
+        ax1, ay1, ax2, ay2 = a
+        bx1, by1, bx2, by2 = b
+
+        def within(val, lower, upper):
+            return lower < val and val < upper
+
+        return (
+            within(ax1, bx1, bx2)
+            and within(ax2, bx1, bx2)
+            and within(ay1, by1, by2)
+            and within(ay2, by1, by2)
+        )
+
+    new_lines = []
+    seen = defaultdict(bool)
+    for line in lines:
+        is_contained_by_table = False
+        for table in tables_by_page[line["page_num"]]:
+            if within_by_bbox(line["bbox"], table.bbox):
+                is_contained_by_table = True
+                if not seen[table]:
+                    # The format we want the table in for cold_start is different
+                    # than the format we'd like to display so we modify the "text"
+                    # field and we include some display metadata in the line
+                    # Chunking of text within tables is left for future work
+                    extracted_rows = table.extract()
+                    table_as_text = " ".join(
+                        [item or "" for row in extracted_rows for item in row]
+                    )
+                    new_lines.append(
+                        {
+                            "text": table_as_text,
+                            "page_num": line["page_num"],
+                            "bbox": page.bbox,
+                            "table": extracted_rows,
+                        }
+                    )
+                    seen[table] = True
+        if not is_contained_by_table:
+            new_lines.append(line)
+
+    return new_lines
+
+
 def get_chunks_from_lines(lines, chunk_words, stride_words):
     chunk_start = 0
     chunks = []
     chunk_boxes = []
+<<<<<<< HEAD
     section_titles = []
+=======
+    display = []
+>>>>>>> pdf-parsing
     while chunk_start < len(lines):
         chunk_end = chunk_start
         chunk_size = 0
@@ -181,6 +235,7 @@ def get_chunks_from_lines(lines, chunk_words, stride_words):
         chunk_boxes.append(
             [(line["page_num"], line["bbox"]) for line in lines[chunk_start:chunk_end]]
         )
+<<<<<<< HEAD
         if "section_tutle" in lines[0]:
             unique_section_titles = set(
                 [line["section_title"] for line in lines[chunk_start:chunk_end]]
@@ -188,6 +243,18 @@ def get_chunks_from_lines(lines, chunk_words, stride_words):
             section_titles.append(" ".join(unique_section_titles))
         chunk_start = stride_end
     return chunks, chunk_boxes, section_titles
+=======
+        display.append(
+            " ".join(
+                [
+                    str(line["table"]) if "table" in line else line["text"]
+                    for line in lines[chunk_start:chunk_end]
+                ]
+            )
+        )
+        chunk_start = stride_end
+    return chunks, chunk_boxes, display
+>>>>>>> pdf-parsing
 
 
 def clean_encoding(text):
@@ -201,7 +268,11 @@ def get_chunks(
     emphasize_first_n_words,
     ignore_header_footer,
     ignore_nonstandard_orientation,
+<<<<<<< HEAD
     emphasize_section_titles,
+=======
+    table_parsing,
+>>>>>>> pdf-parsing
 ):
     blocks = get_fitz_blocks(filename)
     blocks = remove_images(blocks)
@@ -212,7 +283,10 @@ def get_chunks(
     blocks = remove_empty_blocks(blocks)
     lines = get_lines(blocks)
     lines = set_line_text(lines)
+    if table_parsing:
+        lines = process_tables(filename, lines)
     lines = set_line_word_counts(lines)
+<<<<<<< HEAD
     first_n_words = get_lines_with_first_n_words(lines, emphasize_first_n_words)
     if emphasize_section_titles:
         lines = estimate_section_titles(lines)
@@ -222,6 +296,14 @@ def get_chunks(
     chunks = [clean_encoding(text) for text in chunks]
     section_titles = [clean_encoding(section_title) for section_title in section_titles]
     return chunks, chunk_boxes, first_n_words, section_titles
+=======
+    emphasis = get_lines_with_first_n_words(lines, emphasize_first_n_words)
+    chunks, chunk_boxes, display = get_chunks_from_lines(
+        lines, chunk_words, stride_words
+    )
+    chunks = [clean_encoding(text) for text in chunks]
+    return chunks, chunk_boxes, display, emphasis
+>>>>>>> pdf-parsing
 
 
 def make_df(
@@ -231,8 +313,12 @@ def make_df(
     emphasize_first_n_words,
     ignore_header_footer,
     ignore_nonstandard_orientation,
+<<<<<<< HEAD
     doc_keywords,
     emphasize_section_titles,
+=======
+    table_parsing,
+>>>>>>> pdf-parsing
 ):
     """Arguments:
     chunk_size: number of words in each chunk of text.
@@ -241,15 +327,24 @@ def make_df(
         that will be used as strong column for all rows of the resulting
         dataframe. We do this so that every row can capture important signals
         like file titles or introductory paragraphs.
+    table_parsing: Whether to enable separate parsing of tables
     """
+<<<<<<< HEAD
     chunks, chunk_boxes, first_n_words, section_titles = get_chunks(
+=======
+    chunks, chunk_boxes, display, emphasis = get_chunks(
+>>>>>>> pdf-parsing
         filename,
         chunk_words,
         stride_words,
         emphasize_first_n_words,
         ignore_header_footer,
         ignore_nonstandard_orientation,
+<<<<<<< HEAD
         emphasize_section_titles,
+=======
+        table_parsing,
+>>>>>>> pdf-parsing
     )
 
     emphasis = [
@@ -264,8 +359,13 @@ def make_df(
     return pd.DataFrame(
         {
             "para": [c.lower() for c in chunks],
+<<<<<<< HEAD
             "display": chunks,
             "emphasis": emphasis,
+=======
+            "display": display,
+            "emphasis": [emphasis for _ in chunks],
+>>>>>>> pdf-parsing
             # chunk_boxes is a list of lists of (page_num, bbox) pairs
             "chunk_boxes": [str(chunk_box) for chunk_box in chunk_boxes],
             # get the first element of the first pair in the list of

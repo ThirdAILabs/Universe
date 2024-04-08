@@ -31,4 +31,6 @@ class MachLabel final : public Transformation {
   void serialize(Archive& archive);
 };
 
+using MachLabelPtr = std::shared_ptr<MachLabel>;
+
 }  // namespace thirdai::data

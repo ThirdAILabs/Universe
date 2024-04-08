@@ -1,6 +1,5 @@
 from typing import List, Tuple
 
-from nltk.tokenize import word_tokenize
 from thirdai import search
 
 from .documents import DocumentDataSource
@@ -17,7 +16,7 @@ class ChunkedRowIterator:
 
         for row in self.iterator:
             ids.append(row.id)
-            docs.append(word_tokenize(row.strong) + word_tokenize(row.weak))
+            docs.append(row.strong + " " + row.weak)
 
             if len(ids) == n:
                 return ids, docs
@@ -55,22 +54,21 @@ class InvertedIndex:
         ids = []
         for sup in data_source.data:
             for query, labels in zip(sup.queries, data_source._labels(sup)):
-                tokens = word_tokenize(query)
                 for label in labels:
-                    queries.append(tokens)
+                    queries.append(query)
                     ids.append(int(label))
         for index in self.indexes:
             index.update(ids, queries, ignore_missing_ids=len(self.indexes) > 1)
 
     def upvote(self, pairs: List[Tuple[str, int]]) -> None:
         ids = [x[1] for x in pairs]
-        phrases = [word_tokenize(x[0]) for x in pairs]
+        phrases = [x[0] for x in pairs]
         for index in self.indexes:
             index.update(ids, phrases, ignore_missing_ids=len(self.indexes) > 1)
 
     def associate(self, pairs: List[Tuple[str, str]]) -> None:
-        sources = [word_tokenize(x[0]) for x in pairs]
-        targets = [word_tokenize(x[1]) for x in pairs]
+        sources = [x[0] for x in pairs]
+        targets = [x[1] for x in pairs]
 
         for index in self.indexes:
             top_results = index.query(targets, k=3)
@@ -91,12 +89,9 @@ class InvertedIndex:
             raise ValueError("Cannot query before inserting documents.")
 
         if len(self.indexes) == 1:
-            return self.indexes[0].query(
-                queries=[word_tokenize(q) for q in queries], k=k
-            )
+            return self.indexes[0].query(queries=[q for q in queries], k=k)
         return [
-            search.InvertedIndex.parallel_query(self.indexes, word_tokenize(q), k=k)
-            for q in queries
+            search.InvertedIndex.parallel_query(self.indexes, q, k=k) for q in queries
         ]
 
     def forget(self, ids):
