@@ -4,7 +4,9 @@ import sqlite3
 import uuid
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Generator, List, Tuple
+from typing import Generator, List, Tuple, Union
+
+import dask.dataframe as dd
 
 # Libraries
 import pandas as pd
@@ -68,40 +70,54 @@ class Table(ABC):
 
 
 class DataFrameTable(Table):
-    def __init__(self, df: pd.DataFrame):
+    def __init__(self, df: Union[pd.DataFrame, dd.DataFrame]):
         """The index of the dataframe is assumed to be the ID column.
         In other words, the ID column of a data frame must be set as its index
         before being passed into this constructor.
         """
         self.df = df_with_index_name(df)
+        self.df_type = "pandas" if isinstance(df, pd.DataFrame) else "dask"
 
     @property
     def columns(self) -> List[str]:
         # Excludes ID column
-        return self.df.columns
+        return [col for col in self.df.columns if col != self.df.index.name]
 
     @property
     def size(self) -> int:
-        return len(self.df)
+        # For Dask, compute() is required to get the actual size
+        return len(self.df) if self.df_type == "pandas" else self.df.shape[0].compute()
 
     @property
     def ids(self) -> List[int]:
-        return self.df.index.to_list()
+        # Dask requires computation to convert index to a list
+        return (
+            self.df.index.to_list()
+            if self.df_type == "pandas"
+            else self.df.index.compute().to_list()
+        )
 
     def field(self, row_id: int, column: str):
-        if column == self.df.index.name:
-            return row_id
-        return self.df[column].loc[row_id]
+        # For Dask, use .compute() to get actual values
+        if self.df_type == "dask":
+            return self.df.loc[row_id][column].compute()
+        return self.df.at[row_id, column] if column != self.df.index.name else row_id
 
     def row_as_dict(self, row_id: int) -> dict:
-        row = self.df.loc[row_id].to_dict()
+        row = (
+            self.df.loc[[row_id]].compute().to_dict(orient="records")[0]
+            if self.df_type == "dask"
+            else self.df.loc[row_id].to_dict()
+        )
         row[self.df.index.name] = row_id
         return row
 
     def range_rows_as_dicts(self, from_row_id: int, to_row_id: int) -> List[dict]:
-        return (
-            self.df.loc[from_row_id:to_row_id].reset_index().to_dict(orient="records")
-        )
+        if self.df_type == "dask":
+            df_range = self.df.loc[from_row_id:to_row_id].compute()
+        else:
+            df_range = self.df.loc[from_row_id:to_row_id]
+        return df_range.reset_index().to_dict(orient="records")
 
     def iter_rows_as_dicts(self) -> Generator[Tuple[int, dict], None, None]:
         for row in self.df.itertuples(index=True):

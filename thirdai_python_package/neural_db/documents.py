@@ -8,6 +8,8 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+import dask.array as da
+import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 from nltk.tokenize import sent_tokenize
@@ -489,12 +491,21 @@ class CSV(Document):
             constrains to restrict results based on the metadata.
     """
 
-    def valid_id_column(column):
+    def valid_id_column(self, column):
+        if self.use_dask:
+            return self.valid_id_column_dask(column)
         return (
             (len(column.unique()) == len(column))
             and (column.min() == 0)
             and (column.max() == len(column) - 1)
         )
+
+    def valid_id_column_dask(self, column):
+        unique_count = column.nunique().compute()
+        min_val = column.min().compute()
+        max_val = column.max().compute()
+        length = column.size.compute()
+        return (unique_count == length) and (min_val == 0) and (max_val == length - 1)
 
     def remove_spaces(column_name):
         return column_name.replace(" ", "_")
@@ -513,8 +524,11 @@ class CSV(Document):
         metadata=None,
         has_offset=False,
         on_disk=False,
+        use_dask=False,
     ) -> None:
-        df = pd.read_csv(path)
+        self.use_dask = use_dask
+
+        df = dd.read_csv(path) if use_dask else pd.read_csv(path)
 
         # Convert spaces in column names to underscores because df.itertuples
         # does not work when there are spaces
@@ -563,11 +577,18 @@ class CSV(Document):
         self.orig_to_assigned_id = None
         self.id_column = id_column
         orig_id_column = id_column
-        if self.id_column and (has_offset or CSV.valid_id_column(df[self.id_column])):
+        if self.id_column and (has_offset or self.valid_id_column(df[self.id_column])):
             df = df.sort_values(self.id_column)
         else:
             self.id_column = "thirdai_index"
-            df[self.id_column] = range(df.shape[0])
+            if self.use_dask:
+                # sets dask df index column to range(len(df))
+                df[self.id_column] = (
+                    df.assign(partition_count=1).partition_count.cumsum() - 1
+                )
+            else:
+                df[self.id_column] = range(df.shape[0])
+
             if orig_id_column:
                 self.orig_to_assigned_id = {
                     str(getattr(row, orig_id_column)): getattr(row, self.id_column)
@@ -597,7 +618,13 @@ class CSV(Document):
         for col in strong_columns + weak_columns:
             df[col] = df[col].fillna("")
 
-        df = df.set_index(self.id_column)
+        if self.use_dask:
+            # The 'sorted=True' parameter is used to indicate that the column is already sorted.
+            # This optimization helps Dask to avoid expensive data shuffling operations, improving performance.
+            df = df.set_index(self.id_column, sorted=True)
+        else:
+            # Pandas automatically manages the index without needing to explicitly sort it here.
+            df = df.set_index(self.id_column)
 
         self.table = create_table(df, on_disk)
 
