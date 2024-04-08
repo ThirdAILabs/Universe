@@ -28,7 +28,7 @@ void checkRank(const InvertedIndex& index, const std::string& query,
 }
 
 TEST(InvertedIndexTests, BasicRetrieval) {
-  InvertedIndex index(1.0);
+  InvertedIndex index;
 
   index.index({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, {{"a b c d e g"},
                                                         {"a b c d"},
@@ -38,8 +38,8 @@ TEST(InvertedIndexTests, BasicRetrieval) {
                                                         {"c f"},
                                                         {"f g d g"},
                                                         {"c d e f"},
-                                                        {"t q v"},
-                                                        {"m n o"},
+                                                        {"f t q v w"},
+                                                        {"f m n o p"},
                                                         {"f g h i"},
                                                         {"c 7 8 9 10 11"}});
 
@@ -63,7 +63,7 @@ TEST(InvertedIndexTests, BasicRetrieval) {
 }
 
 TEST(InvertedIndexTests, LessFrequentTokensScoreHigher) {
-  InvertedIndex index(1.0);
+  InvertedIndex index;
 
   index.index({1, 2, 3, 4, 5, 6, 7}, {
                                          {"a b c d"},  // 2 query tokens
@@ -84,7 +84,7 @@ TEST(InvertedIndexTests, LessFrequentTokensScoreHigher) {
 }
 
 TEST(InvertedIndexTests, RepeatedTokensInDocs) {
-  InvertedIndex index(1.0);
+  InvertedIndex index;
 
   index.index(
       {1, 2, 3, 4, 5},
@@ -101,7 +101,7 @@ TEST(InvertedIndexTests, RepeatedTokensInDocs) {
 }
 
 TEST(InvertedIndexTests, RepeatedTokensInQuery) {
-  InvertedIndex index(1.0);
+  InvertedIndex index;
 
   index.index(
       {1, 2, 3, 4, 5},
@@ -114,7 +114,7 @@ TEST(InvertedIndexTests, RepeatedTokensInQuery) {
 }
 
 TEST(InvertedIndexTests, ShorterDocsScoreHigherWithSameTokens) {
-  InvertedIndex index(1.0);
+  InvertedIndex index;
 
   index.index({1, 2, 3, 4, 5},
               {{"x w z k"}, {"e c a"}, {"a b c d"}, {"l b f h"}, {"y r s"}});
@@ -125,7 +125,7 @@ TEST(InvertedIndexTests, ShorterDocsScoreHigherWithSameTokens) {
 }
 
 TEST(InvertedIndexTests, DocRemoval) {
-  InvertedIndex index(1.0);
+  InvertedIndex index;
 
   index.index({1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, {{"a b c d e"},
                                                 {"a b c d"},
