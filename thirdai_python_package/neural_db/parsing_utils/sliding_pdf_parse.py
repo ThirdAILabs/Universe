@@ -228,16 +228,19 @@ def get_chunks_from_lines(lines, chunk_words, stride_words):
         while stride_size < stride_words and stride_end < len(lines):
             stride_size += lines[stride_end]["word_count"]
             stride_end += 1
+        # combine the chunks
         chunks.append(" ".join(line["text"] for line in lines[chunk_start:chunk_end]))
+        # metadata for highlighting
         chunk_boxes.append(
             [(line["page_num"], line["bbox"]) for line in lines[chunk_start:chunk_end]]
         )
-        if "section_tutle" in lines[0]:
+        # combine unique section titles
+        if "section_title" in lines[0]:
             unique_section_titles = set(
                 [line["section_title"] for line in lines[chunk_start:chunk_end]]
             )
             section_titles.append(" ".join(unique_section_titles))
-        chunk_start = stride_end
+        # formulate display text (separating out tables)
         display.append(
             " ".join(
                 [
@@ -320,9 +323,11 @@ def make_df(
 
     emphasis = [
         (
-            first_n_words + " " + doc_keywords + " " + section_titles[i]
-            if section_titles
-            else ""
+            first_n_words
+            + " "
+            + doc_keywords
+            + " "
+            + (section_titles[i] if emphasize_section_titles else "")
         )
         for i in range(len(chunks))
     ]

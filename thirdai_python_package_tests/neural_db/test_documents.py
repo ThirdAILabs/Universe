@@ -583,11 +583,11 @@ def test_pdf_section_titles():
                 found_words = True
         assert found_words
 
-    find_strong_words(pdf, "some expected section title")
-    find_strong_words(pdf, "some expected section title")
-    find_strong_words(pdf, "some expected section title")
-    find_strong_words(pdf, "some expected section title")
-    find_strong_words(pdf, "some expected section title")
+    find_strong_words(pdf, "Restrictions and Limitations")
+    find_strong_words(pdf, "Groundwater Advisory")
+    find_strong_words(pdf, "Information on Droplet Size")
+    find_strong_words(pdf, "AGRICULTURAL USE REQUIREMENTS")
+    find_strong_words(pdf, "Environmental Hazards Surface Water Advisory")
 
 
 def test_pdf_keywords():
