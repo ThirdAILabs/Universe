@@ -18,7 +18,6 @@ class PDF(Document):
         emphasize_first_words=0,
         ignore_header_footer=True,
         ignore_nonstandard_orientation=True,
-        table_parsing=False,
         doc_metadata=None,
         doc_keywords="",
         emphasize_section_titles=False,
