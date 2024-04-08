@@ -118,7 +118,10 @@ void InvertedIndex::recomputeMetadata() {
 inline float idf(size_t n_docs, size_t docs_w_token) {
   const float num = n_docs - docs_w_token + 0.5;
   const float denom = docs_w_token + 0.5;
-  return std::log(num / denom);
+  // This is technically different from the BM25 definition, the added 1 is to
+  // ensure that this does not yield a negative value. This trick is how apache
+  // lucene solves the problem.
+  return std::log(1.0 + num / denom);
 }
 
 void InvertedIndex::computeIdfs() {
@@ -157,8 +160,10 @@ std::vector<std::vector<DocScore>> InvertedIndex::queryBatch(
   return scores;
 }
 
+template <typename T>
 struct HighestScore {
-  bool operator()(const DocScore& a, const DocScore& b) const {
+  using Item = std::pair<T, float>;
+  bool operator()(const Item& a, const Item& b) const {
     return a.second > b.second;
   }
 };
@@ -172,14 +177,21 @@ std::vector<DocScore> InvertedIndex::query(const std::string& query,
 
 std::unordered_map<DocId, float> InvertedIndex::scoreDocuments(
     const std::string& query) const {
-  std::unordered_map<DocId, float> doc_scores;
+  auto tokens = tokenizeText(query);
 
-  for (const Token& token : tokenizeText(query)) {
-    if (!_token_to_idf.count(token)) {
-      continue;
+  std::vector<std::pair<Token, float>> tokens_and_idfs;
+  tokens_and_idfs.reserve(tokens.size());
+  for (const auto& token : tokens) {
+    if (_token_to_idf.count(token)) {
+      tokens_and_idfs.emplace_back(token, _token_to_idf.at(token));
     }
-    const float token_idf = _token_to_idf.at(token);
+  }
 
+  std::sort(tokens_and_idfs.begin(), tokens_and_idfs.end(),
+            HighestScore<Token>{});
+
+  std::unordered_map<DocId, float> doc_scores;
+  for (const auto& [token, token_idf] : tokens_and_idfs) {
     for (const auto& [doc_id, cnt_in_doc] : _token_to_docs.at(token)) {
       const uint64_t doc_len = _doc_lengths.at(doc_id);
 
@@ -188,7 +200,9 @@ std::unordered_map<DocId, float> InvertedIndex::scoreDocuments(
       // more docs are added since the idf and avg_doc_len will change. So if we
       // do not need to support small incremental additions then it might make
       // sense to precompute these values.
-      doc_scores[doc_id] += bm25(token_idf, cnt_in_doc, doc_len);
+      if (doc_scores.size() < _max_docs_to_score || doc_scores.count(doc_id)) {
+        doc_scores[doc_id] += bm25(token_idf, cnt_in_doc, doc_len);
+      }
     }
   }
 
@@ -201,7 +215,7 @@ std::vector<DocScore> InvertedIndex::topk(
   // Sorting the entire list and taking the top K would be O(N log(N)).
   std::vector<DocScore> top_scores;
   top_scores.reserve(k + 1);
-  const HighestScore cmp;
+  const HighestScore<DocId> cmp;
 
   for (const auto& [doc, score] : doc_scores) {
     if (top_scores.size() < k || top_scores.front().second < score) {
@@ -249,7 +263,7 @@ std::vector<DocScore> InvertedIndex::rank(
   // Sorting the entire list and taking the top K would be O(N log(N)).
   std::vector<DocScore> top_scores;
   top_scores.reserve(k + 1);
-  const HighestScore cmp;
+  const HighestScore<DocId> cmp;
 
   for (uint32_t candidate : candidates) {
     if (!doc_scores.count(candidate)) {
@@ -328,7 +342,7 @@ std::vector<DocScore> InvertedIndex::parallelQuery(
 
   std::vector<DocScore> top_scores;
   top_scores.reserve(k + 1);
-  const HighestScore cmp;
+  const HighestScore<DocId> cmp;
 
   for (const auto& doc_scores : scores) {
     for (const auto& [doc, score] : doc_scores) {
@@ -366,6 +380,7 @@ ar::ConstArchivePtr InvertedIndex::toArchive() const {
 
   map->set("doc_lengths", ar::mapU64U64(_doc_lengths));
 
+  map->set("max_docs_to_score", ar::u64(_max_docs_to_score));
   map->set("idf_cutoff_frac", ar::f32(_idf_cutoff_frac));
 
   map->set("sum_doc_lens", ar::u64(_sum_doc_lens));
@@ -381,6 +396,7 @@ ar::ConstArchivePtr InvertedIndex::toArchive() const {
 
 InvertedIndex::InvertedIndex(const ar::Archive& archive)
     : _doc_lengths(archive.getAs<ar::MapU64U64>("doc_lengths")),
+      _max_docs_to_score(archive.u64("max_docs_to_score")),
       _idf_cutoff_frac(archive.f32("idf_cutoff_frac")),
       _sum_doc_lens(archive.u64("sum_doc_lens")),
       _k1(archive.f32("k1")),
@@ -442,6 +458,8 @@ template <class Archive>
 void InvertedIndex::serialize(Archive& archive) {
   archive(_token_to_docs, _token_to_idf, _doc_lengths, _idf_cutoff_frac,
           _sum_doc_lens, _avg_doc_length, _k1, _b, _stem, _lowercase);
+
+  _max_docs_to_score = DEFAULT_MAX_DOCS_TO_SCORE;
 }
 
 }  // namespace thirdai::search

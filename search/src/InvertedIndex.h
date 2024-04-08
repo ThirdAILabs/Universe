@@ -23,14 +23,17 @@ class InvertedIndex {
   // The k1 and b defaults are the same as the defaults for BM25 in apache
   // Lucene. The idf_cutoff_frac default is just what seemed to work fairly
   // well in multiple experiments.
-  static constexpr float DEFAULT_IDF_CUTOFF_FRAC = 0.1;
+  static constexpr size_t DEFAULT_MAX_DOCS_TO_SCORE = 10000;
+  static constexpr float DEFAULT_IDF_CUTOFF_FRAC = 0.2;
   static constexpr float DEFAULT_K1 = 1.2;
   static constexpr float DEFAULT_B = 0.75;
 
-  explicit InvertedIndex(float idf_cutoff_frac = DEFAULT_IDF_CUTOFF_FRAC,
+  explicit InvertedIndex(size_t max_docs_to_score = DEFAULT_MAX_DOCS_TO_SCORE,
+                         float idf_cutoff_frac = DEFAULT_IDF_CUTOFF_FRAC,
                          float k1 = DEFAULT_K1, float b = DEFAULT_B,
                          bool stem = true, bool lowercase = true)
-      : _idf_cutoff_frac(idf_cutoff_frac),
+      : _max_docs_to_score(max_docs_to_score),
+        _idf_cutoff_frac(idf_cutoff_frac),
         _k1(k1),
         _b(b),
         _stem(stem),
@@ -115,6 +118,13 @@ class InvertedIndex {
   std::unordered_map<Token, std::vector<TokenCountInfo>> _token_to_docs;
   std::unordered_map<Token, float> _token_to_idf;
   std::unordered_map<DocId, uint64_t> _doc_lengths;
+
+  // Determines the maximum number of docs that will be scored for a given
+  // query. This is to help reduce query time. The documents that are scored are
+  // determined by selecting the documents which contain the query terms with
+  // the highest idf, thus prioritizing docs with less common terms from the
+  // query.
+  size_t _max_docs_to_score;
 
   // This is a cutoff in which tokens which occur in more than this fraction
   // of the docs have have their idf treated as zero, meaning they are ignored.

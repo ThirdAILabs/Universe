@@ -75,7 +75,9 @@ void createSearchSubmodule(py::module_& module) {
 
   py::class_<InvertedIndex, std::shared_ptr<InvertedIndex>>(search_submodule,
                                                             "InvertedIndex")
-      .def(py::init<float, float, float, bool, bool>(),
+      .def(py::init<size_t, float, float, float, bool, bool>(),
+           py::arg("max_docs_to_score") =
+               InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE,
            py::arg("idf_cutoff_frac") = InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC,
            py::arg("k1") = InvertedIndex::DEFAULT_K1,
            py::arg("b") = InvertedIndex::DEFAULT_B, py::arg("stem") = true,
@@ -91,8 +93,6 @@ void createSearchSubmodule(py::module_& module) {
       .def("rank", &InvertedIndex::rank, py::arg("query"),
            py::arg("candidates"), py::arg("k"))
       .def("remove", &InvertedIndex::remove, py::arg("ids"))
-      .def("update_idf_cutoff", &InvertedIndex::updateIdfCutoff,
-           py::arg("cutoff"))
       .def("size", &InvertedIndex::size)
       .def_static("parallel_query", &InvertedIndex::parallelQuery,
                   py::arg("indices"), py::arg("query"), py::arg("k"))
