@@ -18,6 +18,7 @@ class PDF(Document):
         emphasize_first_words=0,
         ignore_header_footer=True,
         ignore_nonstandard_orientation=True,
+        table_parsing=False,
         doc_metadata=None,
         doc_keywords="",
         emphasize_section_titles=False,
@@ -31,6 +32,7 @@ class PDF(Document):
         self.emphasize_first_words = emphasize_first_words
         self.ignore_header_footer = ignore_header_footer
         self.ignore_nonstandard_orientation = ignore_nonstandard_orientation
+        self.table_parsing = table_parsing
         self.doc_metadata = doc_metadata
         self.doc_keywords = doc_keywords
         self.emphasize_section_titles = emphasize_section_titles

@@ -4,6 +4,7 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/types/vector.hpp>
+#include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <utils/text/PorterStemmer.h>
 #include <utils/text/StringManipulation.h>
@@ -117,7 +118,10 @@ void InvertedIndex::recomputeMetadata() {
 inline float idf(size_t n_docs, size_t docs_w_token) {
   const float num = n_docs - docs_w_token + 0.5;
   const float denom = docs_w_token + 0.5;
-  return std::log(num / denom);
+  // This is technically different from the BM25 definition, the added 1 is to
+  // ensure that this does not yield a negative value. This trick is how apache
+  // lucene solves the problem.
+  return std::log(1.0 + num / denom);
 }
 
 void InvertedIndex::computeIdfs() {
@@ -156,8 +160,10 @@ std::vector<std::vector<DocScore>> InvertedIndex::queryBatch(
   return scores;
 }
 
+template <typename T>
 struct HighestScore {
-  bool operator()(const DocScore& a, const DocScore& b) const {
+  using Item = std::pair<T, float>;
+  bool operator()(const Item& a, const Item& b) const {
     return a.second > b.second;
   }
 };
@@ -170,7 +176,7 @@ std::vector<DocScore> InvertedIndex::query(const std::string& query,
   // Sorting the entire list and taking the top K would be O(N log(N)).
   std::vector<DocScore> top_scores;
   top_scores.reserve(k + 1);
-  const HighestScore cmp;
+  const HighestScore<DocId> cmp;
 
   for (const auto& [doc, score] : doc_scores) {
     if (top_scores.size() < k || top_scores.front().second < score) {
@@ -191,14 +197,21 @@ std::vector<DocScore> InvertedIndex::query(const std::string& query,
 
 std::unordered_map<DocId, float> InvertedIndex::scoreDocuments(
     const std::string& query) const {
-  std::unordered_map<DocId, float> doc_scores;
+  auto tokens = tokenizeText(query);
 
-  for (const Token& token : tokenizeText(query)) {
-    if (!_token_to_idf.count(token)) {
-      continue;
+  std::vector<std::pair<Token, float>> tokens_and_idfs;
+  tokens_and_idfs.reserve(tokens.size());
+  for (const auto& token : tokens) {
+    if (_token_to_idf.count(token)) {
+      tokens_and_idfs.emplace_back(token, _token_to_idf.at(token));
     }
-    const float token_idf = _token_to_idf.at(token);
+  }
 
+  std::sort(tokens_and_idfs.begin(), tokens_and_idfs.end(),
+            HighestScore<Token>{});
+
+  std::unordered_map<DocId, float> doc_scores;
+  for (const auto& [token, token_idf] : tokens_and_idfs) {
     for (const auto& [doc_id, cnt_in_doc] : _token_to_docs.at(token)) {
       const uint64_t doc_len = _doc_lengths.at(doc_id);
 
@@ -207,7 +220,9 @@ std::unordered_map<DocId, float> InvertedIndex::scoreDocuments(
       // more docs are added since the idf and avg_doc_len will change. So if we
       // do not need to support small incremental additions then it might make
       // sense to precompute these values.
-      doc_scores[doc_id] += bm25(token_idf, cnt_in_doc, doc_len);
+      if (doc_scores.size() < _max_docs_to_score || doc_scores.count(doc_id)) {
+        doc_scores[doc_id] += bm25(token_idf, cnt_in_doc, doc_len);
+      }
     }
   }
 
@@ -242,7 +257,7 @@ std::vector<DocScore> InvertedIndex::rank(const std::string& query,
   // Sorting the entire list and taking the top K would be O(N log(N)).
   std::vector<DocScore> top_scores;
   top_scores.reserve(k + 1);
-  const HighestScore cmp;
+  const HighestScore<DocId> cmp;
 
   for (uint32_t candidate : candidates) {
     if (!doc_scores.count(candidate)) {
@@ -321,7 +336,7 @@ std::vector<DocScore> InvertedIndex::parallelQuery(
 
   std::vector<DocScore> top_scores;
   top_scores.reserve(k + 1);
-  const HighestScore cmp;
+  const HighestScore<DocId> cmp;
 
   for (const auto& doc_scores : scores) {
     for (const auto& [doc, score] : doc_scores) {
@@ -342,14 +357,75 @@ std::vector<DocScore> InvertedIndex::parallelQuery(
   return top_scores;
 }
 
+ar::ConstArchivePtr InvertedIndex::toArchive() const {
+  auto map = ar::Map::make();
+
+  ar::MapStrVecU64 token_to_docs;
+  ar::MapStrVecU64 token_to_doc_cnts;
+  for (const auto& [token, docs] : _token_to_docs) {
+    for (const auto& [doc_id, cnt] : docs) {
+      token_to_docs[token].push_back(doc_id);
+      token_to_doc_cnts[token].push_back(cnt);
+    }
+  }
+
+  map->set("token_to_docs", ar::mapStrVecU64(std::move(token_to_docs)));
+  map->set("token_to_doc_cnts", ar::mapStrVecU64(std::move(token_to_doc_cnts)));
+
+  map->set("doc_lengths", ar::mapU64U64(_doc_lengths));
+
+  map->set("max_docs_to_score", ar::u64(_max_docs_to_score));
+  map->set("idf_cutoff_frac", ar::f32(_idf_cutoff_frac));
+
+  map->set("sum_doc_lens", ar::u64(_sum_doc_lens));
+
+  map->set("k1", ar::f32(_k1));
+  map->set("b", ar::f32(_b));
+
+  map->set("stem", ar::boolean(_stem));
+  map->set("lowercase", ar::boolean(_lowercase));
+
+  return map;
+}
+
+InvertedIndex::InvertedIndex(const ar::Archive& archive)
+    : _doc_lengths(archive.getAs<ar::MapU64U64>("doc_lengths")),
+      _max_docs_to_score(archive.u64("max_docs_to_score")),
+      _idf_cutoff_frac(archive.f32("idf_cutoff_frac")),
+      _sum_doc_lens(archive.u64("sum_doc_lens")),
+      _k1(archive.f32("k1")),
+      _b(archive.f32("b")),
+      _stem(archive.boolean("stem")),
+      _lowercase(archive.boolean("lowercase")) {
+  const auto& token_to_docs = archive.getAs<ar::MapStrVecU64>("token_to_docs");
+  const auto& token_to_doc_cnts =
+      archive.getAs<ar::MapStrVecU64>("token_to_doc_cnts");
+
+  for (const auto& [token, docs] : token_to_docs) {
+    std::vector<TokenCountInfo> token_counts(docs.size());
+    const auto& cnts = token_to_doc_cnts.at(token);
+    for (size_t i = 0; i < docs.size(); i++) {
+      token_counts.at(i).first = docs.at(i);
+      token_counts.at(i).second = cnts.at(i);
+    }
+    _token_to_docs[token] = std::move(token_counts);
+  }
+
+  recomputeMetadata();
+}
+
+std::shared_ptr<InvertedIndex> InvertedIndex::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_shared<InvertedIndex>(archive);
+}
+
 void InvertedIndex::save(const std::string& filename) const {
   auto ostream = dataset::SafeFileIO::ofstream(filename);
   save_stream(ostream);
 }
 
 void InvertedIndex::save_stream(std::ostream& ostream) const {
-  cereal::BinaryOutputArchive oarchive(ostream);
-  oarchive(*this);
+  ar::serialize(toArchive(), ostream);
 }
 
 std::shared_ptr<InvertedIndex> InvertedIndex::load(
@@ -360,10 +436,15 @@ std::shared_ptr<InvertedIndex> InvertedIndex::load(
 
 std::shared_ptr<InvertedIndex> InvertedIndex::load_stream(
     std::istream& istream) {
+  auto archive = ar::deserialize(istream);
+  return fromArchive(*archive);
+}
+
+std::shared_ptr<InvertedIndex> InvertedIndex::load_stream_cereal(
+    std::istream& istream) {
   cereal::BinaryInputArchive iarchive(istream);
   auto index = std::make_shared<InvertedIndex>();
   iarchive(*index);
-
   return index;
 }
 
@@ -371,6 +452,8 @@ template <class Archive>
 void InvertedIndex::serialize(Archive& archive) {
   archive(_token_to_docs, _token_to_idf, _doc_lengths, _idf_cutoff_frac,
           _sum_doc_lens, _avg_doc_length, _k1, _b, _stem, _lowercase);
+
+  _max_docs_to_score = DEFAULT_MAX_DOCS_TO_SCORE;
 }
 
 }  // namespace thirdai::search

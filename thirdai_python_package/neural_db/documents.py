@@ -1009,6 +1009,7 @@ class PDF(Extracted):
         table_parsing=False,
         metadata=None,
         on_disk=False,
+        table_parsing=False,
     ):
         self.version = version
 

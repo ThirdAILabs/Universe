@@ -335,7 +335,7 @@ def make_df(
     return pd.DataFrame(
         {
             "para": [c.lower() for c in chunks],
-            "display": chunks,
+            "display": display,
             "emphasis": emphasis,
             # chunk_boxes is a list of lists of (page_num, bbox) pairs
             "chunk_boxes": [str(chunk_box) for chunk_box in chunk_boxes],
