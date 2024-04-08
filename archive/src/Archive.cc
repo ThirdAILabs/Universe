@@ -185,6 +185,10 @@ ConstArchivePtr vecVecF32(std::vector<std::vector<float>> val) {
   return Value<std::vector<std::vector<float>>>::make(std::move(val));
 }
 
+ConstArchivePtr mapU64U64(MapU64U64 val) {
+  return Value<MapU64U64>::make(std::move(val));
+}
+
 ConstArchivePtr mapU64VecU64(MapU64VecU64 val) {
   return Value<MapU64VecU64>::make(std::move(val));
 }
@@ -199,6 +203,10 @@ ConstArchivePtr mapStrU64(std::unordered_map<std::string, uint64_t> val) {
 
 ConstArchivePtr mapStrI64(std::unordered_map<std::string, int64_t> val) {
   return Value<std::unordered_map<std::string, int64_t>>::make(std::move(val));
+}
+
+ConstArchivePtr mapStrVecU64(MapStrVecU64 val) {
+  return Value<MapStrVecU64>::make(std::move(val));
 }
 
 ConstArchivePtr mapI64VecStr(MapI64VecStr val) {
