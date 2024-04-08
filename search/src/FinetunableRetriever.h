@@ -50,6 +50,8 @@ class FinetunableRetriever {
 
   void save_stream(std::ostream& ostream) const;
 
+  size_t size() const { return _doc_index->size(); }
+
   static std::shared_ptr<FinetunableRetriever> load(
       const std::string& filename);
 

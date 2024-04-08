@@ -144,6 +144,7 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("candidates"), py::arg("k"))
       .def("rank", &FinetunableRetriever::rank, py::arg("query"),
            py::arg("candidates"), py::arg("k"))
+      .def("size", &FinetunableRetriever::size)
       .def("remove", &FinetunableRetriever::remove, py::arg("ids"))
       .def("save", &FinetunableRetriever::save, py::arg("filename"))
       .def_static("load", &FinetunableRetriever::load, py::arg("filename"))
