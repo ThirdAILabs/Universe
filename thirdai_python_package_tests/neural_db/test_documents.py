@@ -573,6 +573,7 @@ def test_document_throws_when_user_passes_source_metadata(doc_factory):
         doc_factory()
 
 
+@pytest.mark.unit
 def test_pdf_section_titles():
     pdf = neural_db.PDF(PRIAXOR_PDF_FILE, version="v2", emphasize_section_titles=True)
 
@@ -590,6 +591,7 @@ def test_pdf_section_titles():
     find_strong_words(pdf, "Environmental Hazards Surface Water Advisory")
 
 
+@pytest.mark.unit
 def test_pdf_keywords():
     pdf = neural_db.PDF(PRIAXOR_PDF_FILE, version="v2", doc_keywords="ThirdAI BOLT UDT")
 
