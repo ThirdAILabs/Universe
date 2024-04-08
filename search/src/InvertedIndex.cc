@@ -221,7 +221,8 @@ std::vector<DocScore> InvertedIndex::topk(
 
 std::vector<std::vector<DocScore>> InvertedIndex::rankBatch(
     const std::vector<std::string>& queries,
-    const std::vector<std::vector<DocId>>& candidates, uint32_t k) const {
+    const std::vector<std::unordered_set<DocId>>& candidates,
+    uint32_t k) const {
   if (queries.size() != candidates.size()) {
     throw std::invalid_argument(
         "Number of queries must match number of candidate sets for ranking.");
@@ -238,9 +239,9 @@ std::vector<std::vector<DocScore>> InvertedIndex::rankBatch(
   return scores;
 }
 
-std::vector<DocScore> InvertedIndex::rank(const std::string& query,
-                                          const std::vector<DocId>& candidates,
-                                          uint32_t k) const {
+std::vector<DocScore> InvertedIndex::rank(
+    const std::string& query, const std::unordered_set<DocId>& candidates,
+    uint32_t k) const {
   std::unordered_map<DocId, float> doc_scores = scoreDocuments(query);
 
   // Using a heap like this is O(N log(K)) where N is the number of candidates.

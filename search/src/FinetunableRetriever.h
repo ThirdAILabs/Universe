@@ -28,12 +28,21 @@ class FinetunableRetriever {
   std::vector<std::vector<DocScore>> queryBatch(
       const std::vector<std::string>& queries, uint32_t k) const;
 
+  std::vector<DocScore> rank(const std::string& query,
+                             const std::unordered_set<DocId>& candidates,
+                             uint32_t k) const;
+
+  std::vector<std::vector<DocScore>> rankBatch(
+      const std::vector<std::string>& queries,
+      const std::vector<std::unordered_set<DocId>>& candidates,
+      uint32_t k) const;
+
  private:
   std::shared_ptr<InvertedIndex> _doc_index;
   std::shared_ptr<InvertedIndex> _query_index;
   std::unordered_map<QueryId, std::vector<DocId>> _query_to_docs;
 
-  QueryId _queries_indexed = 0;
+  QueryId _next_query_id = 0;
 
   float _lambda;
   uint32_t _min_top_docs;
