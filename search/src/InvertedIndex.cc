@@ -199,7 +199,7 @@ std::unordered_map<DocId, float> InvertedIndex::scoreDocuments(
     const std::string& query) const {
   auto tokens = tokenizeText(query);
 
-  std::vector<std::pair<std::string, float>> tokens_and_idfs;
+  std::vector<std::pair<Token, float>> tokens_and_idfs;
   tokens_and_idfs.reserve(tokens.size());
   for (const auto& token : tokens) {
     if (_token_to_idf.count(token)) {
@@ -208,7 +208,7 @@ std::unordered_map<DocId, float> InvertedIndex::scoreDocuments(
   }
 
   std::sort(tokens_and_idfs.begin(), tokens_and_idfs.end(),
-            HighestScore<std::string>{});
+            HighestScore<Token>{});
 
   std::unordered_map<DocId, float> doc_scores;
   for (const auto& [token, token_idf] : tokens_and_idfs) {
