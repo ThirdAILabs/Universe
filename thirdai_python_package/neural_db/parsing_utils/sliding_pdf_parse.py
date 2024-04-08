@@ -186,7 +186,7 @@ def process_tables(filename, lines):
                         {
                             "text": table_as_text,
                             "page_num": line["page_num"],
-                            "bbox": page.bbox,
+                            "bbox": pdf.pages[line["page_num"]].bbox,
                             "table": extracted_rows,
                         }
                     )
