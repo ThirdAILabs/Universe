@@ -3,6 +3,7 @@
 #include <bolt/python_bindings/PybindUtils.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/stl.h>
+#include <search/src/FinetunableRetriever.h>
 #include <search/src/InvertedIndex.h>
 
 namespace thirdai::search::python {
@@ -124,6 +125,19 @@ void createSearchSubmodule(py::module_& module) {
               return InvertedIndex::load_stream_cereal(input);
             }
           }));
+
+  py::class_<FinetunableRetriever, std::shared_ptr<FinetunableRetriever>>(
+      search_submodule, "FinetunableRetriever")
+      .def("index", &InvertedIndex::index, py::arg("ids"), py::arg("docs"))
+      .def("update", &InvertedIndex::update, py::arg("ids"),
+           py::arg("extra_tokens"), py::arg("ignore_missing_ids") = true)
+      .def("query", &InvertedIndex::queryBatch, py::arg("queries"),
+           py::arg("k"))
+      .def("query", &InvertedIndex::query, py::arg("query"), py::arg("k"))
+      .def("rank", &InvertedIndex::rankBatch, py::arg("queries"),
+           py::arg("candidates"), py::arg("k"))
+      .def("rank", &InvertedIndex::rank, py::arg("query"),
+           py::arg("candidates"), py::arg("k"));
 }
 
 }  // namespace thirdai::search::python

@@ -39,6 +39,8 @@ class FinetunableRetriever {
       const std::vector<std::unordered_set<DocId>>& candidates,
       uint32_t k) const;
 
+  void remove(const std::vector<DocId>& ids);
+
   ar::ConstArchivePtr toArchive() const;
 
   static std::shared_ptr<FinetunableRetriever> fromArchive(
@@ -58,6 +60,7 @@ class FinetunableRetriever {
   std::shared_ptr<InvertedIndex> _doc_index;
   std::shared_ptr<InvertedIndex> _query_index;
   std::unordered_map<QueryId, std::vector<DocId>> _query_to_docs;
+  std::unordered_map<DocId, std::vector<QueryId>> _doc_to_queries;
 
   QueryId _next_query_id = 0;
 

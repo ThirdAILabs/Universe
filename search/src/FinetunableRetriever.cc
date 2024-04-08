@@ -2,6 +2,7 @@
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <algorithm>
 #include <memory>
 #include <numeric>
 #include <unordered_map>
@@ -30,6 +31,9 @@ void FinetunableRetriever::finetune(
 
   for (size_t i = 0; i < query_ids.size(); i++) {
     _query_to_docs[query_ids[i]] = doc_ids[i];
+    for (DocId doc : doc_ids[i]) {
+      _doc_to_queries[doc].push_back(query_ids[i]);
+    }
   }
 
   _query_index->index(query_ids, queries);
@@ -110,6 +114,35 @@ std::vector<std::vector<DocScore>> FinetunableRetriever::rankBatch(
   }
 
   return scores;
+}
+
+void FinetunableRetriever::remove(const std::vector<DocId>& ids) {
+  _doc_index->remove(ids);
+
+  std::vector<QueryId> irrelevant_queries;
+  for (DocId doc : ids) {
+    if (!_doc_to_queries.count(doc)) {
+      continue;
+    }
+    for (QueryId query : _doc_to_queries.at(doc)) {
+      auto& docs_for_query = _query_to_docs.at(query);
+      auto loc = std::find(docs_for_query.begin(), docs_for_query.end(), doc);
+      if (loc != docs_for_query.end()) {
+        docs_for_query.erase(loc);
+      }
+      if (docs_for_query.empty()) {
+        irrelevant_queries.push_back(query);
+      }
+    }
+    _doc_to_queries.erase(doc);
+  }
+
+  _query_index->remove(irrelevant_queries);
+  for (QueryId query : irrelevant_queries) {
+    if (_query_to_docs.count(query)) {
+      _query_to_docs.erase(query);
+    }
+  }
 }
 
 ar::ConstArchivePtr FinetunableRetriever::toArchive() const {
