@@ -200,7 +200,7 @@ def process_tables(filename, lines):
                         {
                             "text": table_as_text,
                             "page_num": line["page_num"],
-                            "bbox": page.bbox,
+                            "bbox": pdf.pages[line["page_num"]].bbox,
                             "table": extracted_rows,
                         }
                     )
@@ -215,11 +215,8 @@ def get_chunks_from_lines(lines, chunk_words, stride_words):
     chunk_start = 0
     chunks = []
     chunk_boxes = []
-<<<<<<< HEAD
     section_titles = []
-=======
     display = []
->>>>>>> pdf-parsing
     while chunk_start < len(lines):
         chunk_end = chunk_start
         chunk_size = 0
@@ -235,15 +232,12 @@ def get_chunks_from_lines(lines, chunk_words, stride_words):
         chunk_boxes.append(
             [(line["page_num"], line["bbox"]) for line in lines[chunk_start:chunk_end]]
         )
-<<<<<<< HEAD
         if "section_tutle" in lines[0]:
             unique_section_titles = set(
                 [line["section_title"] for line in lines[chunk_start:chunk_end]]
             )
             section_titles.append(" ".join(unique_section_titles))
         chunk_start = stride_end
-    return chunks, chunk_boxes, section_titles
-=======
         display.append(
             " ".join(
                 [
@@ -253,8 +247,7 @@ def get_chunks_from_lines(lines, chunk_words, stride_words):
             )
         )
         chunk_start = stride_end
-    return chunks, chunk_boxes, display
->>>>>>> pdf-parsing
+    return chunks, chunk_boxes, display, section_titles
 
 
 def clean_encoding(text):
@@ -268,11 +261,8 @@ def get_chunks(
     emphasize_first_n_words,
     ignore_header_footer,
     ignore_nonstandard_orientation,
-<<<<<<< HEAD
     emphasize_section_titles,
-=======
     table_parsing,
->>>>>>> pdf-parsing
 ):
     blocks = get_fitz_blocks(filename)
     blocks = remove_images(blocks)
@@ -286,24 +276,15 @@ def get_chunks(
     if table_parsing:
         lines = process_tables(filename, lines)
     lines = set_line_word_counts(lines)
-<<<<<<< HEAD
     first_n_words = get_lines_with_first_n_words(lines, emphasize_first_n_words)
     if emphasize_section_titles:
         lines = estimate_section_titles(lines)
-    chunks, chunk_boxes, section_titles = get_chunks_from_lines(
+    chunks, chunk_boxes, display, section_titles = get_chunks_from_lines(
         lines, chunk_words, stride_words
     )
     chunks = [clean_encoding(text) for text in chunks]
     section_titles = [clean_encoding(section_title) for section_title in section_titles]
-    return chunks, chunk_boxes, first_n_words, section_titles
-=======
-    emphasis = get_lines_with_first_n_words(lines, emphasize_first_n_words)
-    chunks, chunk_boxes, display = get_chunks_from_lines(
-        lines, chunk_words, stride_words
-    )
-    chunks = [clean_encoding(text) for text in chunks]
-    return chunks, chunk_boxes, display, emphasis
->>>>>>> pdf-parsing
+    return chunks, chunk_boxes, display, first_n_words, section_titles
 
 
 def make_df(
@@ -313,12 +294,9 @@ def make_df(
     emphasize_first_n_words,
     ignore_header_footer,
     ignore_nonstandard_orientation,
-<<<<<<< HEAD
     doc_keywords,
     emphasize_section_titles,
-=======
     table_parsing,
->>>>>>> pdf-parsing
 ):
     """Arguments:
     chunk_size: number of words in each chunk of text.
@@ -329,22 +307,15 @@ def make_df(
         like file titles or introductory paragraphs.
     table_parsing: Whether to enable separate parsing of tables
     """
-<<<<<<< HEAD
-    chunks, chunk_boxes, first_n_words, section_titles = get_chunks(
-=======
-    chunks, chunk_boxes, display, emphasis = get_chunks(
->>>>>>> pdf-parsing
+    chunks, chunk_boxes, display, first_n_words, section_titles = get_chunks(
         filename,
         chunk_words,
         stride_words,
         emphasize_first_n_words,
         ignore_header_footer,
         ignore_nonstandard_orientation,
-<<<<<<< HEAD
         emphasize_section_titles,
-=======
         table_parsing,
->>>>>>> pdf-parsing
     )
 
     emphasis = [
@@ -359,13 +330,8 @@ def make_df(
     return pd.DataFrame(
         {
             "para": [c.lower() for c in chunks],
-<<<<<<< HEAD
             "display": chunks,
             "emphasis": emphasis,
-=======
-            "display": display,
-            "emphasis": [emphasis for _ in chunks],
->>>>>>> pdf-parsing
             # chunk_boxes is a list of lists of (page_num, bbox) pairs
             "chunk_boxes": [str(chunk_box) for chunk_box in chunk_boxes],
             # get the first element of the first pair in the list of
