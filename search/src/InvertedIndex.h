@@ -75,6 +75,9 @@ class InvertedIndex {
 
   static std::shared_ptr<InvertedIndex> load_stream(std::istream& istream);
 
+  static std::vector<DocScore> topk(
+      const std::unordered_map<DocId, float>& doc_scores, uint32_t k);
+
  private:
   std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>>
   countTokenOccurences(const std::vector<std::string>& docs) const;
