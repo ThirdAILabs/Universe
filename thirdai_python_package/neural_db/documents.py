@@ -1004,11 +1004,11 @@ class PDF(Extracted):
         emphasize_first_words=0,
         ignore_header_footer=True,
         ignore_nonstandard_orientation=True,
+        metadata=None,
+        on_disk=False,
         doc_keywords="",
         emphasize_section_titles=False,
         table_parsing=False,
-        metadata=None,
-        on_disk=False,
     ):
         self.version = version
 

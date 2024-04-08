@@ -171,6 +171,7 @@ neural_db_deps = [
     # lxml is a dependency of trafilatura. We install lxml[html_clean] to fix
     # this error https://github.com/adbar/trafilatura/issues/532
     "lxml[html_clean]",
+    "pdfplumber",
 ]
 
 neural_db_v2_deps = ["pandas", "pandera"]
