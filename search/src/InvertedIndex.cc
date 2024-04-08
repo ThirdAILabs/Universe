@@ -374,6 +374,7 @@ ar::ConstArchivePtr InvertedIndex::toArchive() const {
 
   map->set("doc_lengths", ar::mapU64U64(_doc_lengths));
 
+  map->set("max_docs_to_score", ar::u64(_max_docs_to_score));
   map->set("idf_cutoff_frac", ar::f32(_idf_cutoff_frac));
 
   map->set("sum_doc_lens", ar::u64(_sum_doc_lens));
@@ -389,6 +390,7 @@ ar::ConstArchivePtr InvertedIndex::toArchive() const {
 
 InvertedIndex::InvertedIndex(const ar::Archive& archive)
     : _doc_lengths(archive.getAs<ar::MapU64U64>("doc_lengths")),
+      _max_docs_to_score(archive.u64("max_docs_to_score")),
       _idf_cutoff_frac(archive.f32("idf_cutoff_frac")),
       _sum_doc_lens(archive.u64("sum_doc_lens")),
       _k1(archive.f32("k1")),
@@ -448,9 +450,10 @@ std::shared_ptr<InvertedIndex> InvertedIndex::load_stream_cereal(
 
 template <class Archive>
 void InvertedIndex::serialize(Archive& archive) {
-  archive(_token_to_docs, _token_to_idf, _doc_lengths, _max_docs_to_score,
-          _idf_cutoff_frac, _sum_doc_lens, _avg_doc_length, _k1, _b, _stem,
-          _lowercase);
+  archive(_token_to_docs, _token_to_idf, _doc_lengths, _idf_cutoff_frac,
+          _sum_doc_lens, _avg_doc_length, _k1, _b, _stem, _lowercase);
+
+  _max_docs_to_score = DEFAULT_MAX_DOCS_TO_SCORE;
 }
 
 }  // namespace thirdai::search
