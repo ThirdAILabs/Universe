@@ -128,16 +128,26 @@ void createSearchSubmodule(py::module_& module) {
 
   py::class_<FinetunableRetriever, std::shared_ptr<FinetunableRetriever>>(
       search_submodule, "FinetunableRetriever")
-      .def("index", &InvertedIndex::index, py::arg("ids"), py::arg("docs"))
-      .def("update", &InvertedIndex::update, py::arg("ids"),
-           py::arg("extra_tokens"), py::arg("ignore_missing_ids") = true)
-      .def("query", &InvertedIndex::queryBatch, py::arg("queries"),
+      .def(py::init<float, uint32_t, uint32_t>(),
+           py::arg("lambda") = FinetunableRetriever::DEFAULT_LAMBDA,
+           py::arg("min_top_docs") = FinetunableRetriever::DEFAULT_MIN_TOP_DOCS,
+           py::arg("top_queries") = FinetunableRetriever::DEFAULT_TOP_QUERIES)
+      .def("index", &FinetunableRetriever::index, py::arg("ids"),
+           py::arg("docs"))
+      .def("finetune", &FinetunableRetriever::finetune, py::arg("doc_ids"),
+           py::arg("queries"))
+      .def("query", &FinetunableRetriever::queryBatch, py::arg("queries"),
            py::arg("k"))
-      .def("query", &InvertedIndex::query, py::arg("query"), py::arg("k"))
-      .def("rank", &InvertedIndex::rankBatch, py::arg("queries"),
+      .def("query", &FinetunableRetriever::query, py::arg("query"),
+           py::arg("k"))
+      .def("rank", &FinetunableRetriever::rankBatch, py::arg("queries"),
            py::arg("candidates"), py::arg("k"))
-      .def("rank", &InvertedIndex::rank, py::arg("query"),
-           py::arg("candidates"), py::arg("k"));
+      .def("rank", &FinetunableRetriever::rank, py::arg("query"),
+           py::arg("candidates"), py::arg("k"))
+      .def("remove", &FinetunableRetriever::remove, py::arg("ids"))
+      .def("save", &FinetunableRetriever::save, py::arg("filename"))
+      .def_static("load", &FinetunableRetriever::load, py::arg("filename"))
+      .def(bolt::python::getPickleFunction<FinetunableRetriever>());
 }
 
 }  // namespace thirdai::search::python
