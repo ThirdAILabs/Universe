@@ -132,8 +132,8 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("norms", &Model::getNorms)
       .def_static("from_params", &modelFromParams, py::arg("params"))
 #endif
-      // The next three functions are used for distributed training.
       .def("change_optimizer", &Model::changeOptimizer, py::arg("optimizer"))
+      // The next three functions are used for distributed training.
       .def("disable_sparse_parameter_updates",
            &Model::disableSparseParameterUpdates)
       .def("get_gradients", &getGradients,
