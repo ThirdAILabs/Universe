@@ -4,6 +4,7 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/types/vector.hpp>
+#include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <utils/text/PorterStemmer.h>
 #include <utils/text/StringManipulation.h>
@@ -348,14 +349,73 @@ std::vector<DocScore> InvertedIndex::parallelQuery(
   return top_scores;
 }
 
+ar::ConstArchivePtr InvertedIndex::toArchive() const {
+  auto map = ar::Map::make();
+
+  ar::MapStrVecU64 token_to_docs;
+  ar::MapStrVecU64 token_to_doc_cnts;
+  for (const auto& [token, docs] : _token_to_docs) {
+    for (const auto& [doc_id, cnt] : docs) {
+      token_to_docs[token].push_back(doc_id);
+      token_to_doc_cnts[token].push_back(cnt);
+    }
+  }
+
+  map->set("token_to_docs", ar::mapStrVecU64(std::move(token_to_docs)));
+  map->set("token_to_doc_cnts", ar::mapStrVecU64(std::move(token_to_doc_cnts)));
+
+  map->set("doc_lengths", ar::mapU64U64(_doc_lengths));
+
+  map->set("idf_cutoff_frac", ar::f32(_idf_cutoff_frac));
+
+  map->set("sum_doc_lens", ar::u64(_sum_doc_lens));
+
+  map->set("k1", ar::f32(_k1));
+  map->set("b", ar::f32(_b));
+
+  map->set("stem", ar::boolean(_stem));
+  map->set("lowercase", ar::boolean(_lowercase));
+
+  return map;
+}
+
+InvertedIndex::InvertedIndex(const ar::Archive& archive)
+    : _doc_lengths(archive.getAs<ar::MapU64U64>("doc_lengths")),
+      _idf_cutoff_frac(archive.f32("idf_cutoff_frac")),
+      _sum_doc_lens(archive.u64("sum_doc_lens")),
+      _k1(archive.f32("k1")),
+      _b(archive.f32("b")),
+      _stem(archive.boolean("stem")),
+      _lowercase(archive.boolean("lowercase")) {
+  const auto& token_to_docs = archive.getAs<ar::MapStrVecU64>("token_to_docs");
+  const auto& token_to_doc_cnts =
+      archive.getAs<ar::MapStrVecU64>("token_to_doc_cnts");
+
+  for (const auto& [token, docs] : token_to_docs) {
+    std::vector<TokenCountInfo> token_counts(docs.size());
+    const auto& cnts = token_to_doc_cnts.at(token);
+    for (size_t i = 0; i < docs.size(); i++) {
+      token_counts.at(i).first = docs.at(i);
+      token_counts.at(i).second = cnts.at(i);
+    }
+    _token_to_docs[token] = std::move(token_counts);
+  }
+
+  recomputeMetadata();
+}
+
+std::shared_ptr<InvertedIndex> InvertedIndex::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_shared<InvertedIndex>(archive);
+}
+
 void InvertedIndex::save(const std::string& filename) const {
   auto ostream = dataset::SafeFileIO::ofstream(filename);
   save_stream(ostream);
 }
 
 void InvertedIndex::save_stream(std::ostream& ostream) const {
-  cereal::BinaryOutputArchive oarchive(ostream);
-  oarchive(*this);
+  ar::serialize(toArchive(), ostream);
 }
 
 std::shared_ptr<InvertedIndex> InvertedIndex::load(
@@ -366,10 +426,15 @@ std::shared_ptr<InvertedIndex> InvertedIndex::load(
 
 std::shared_ptr<InvertedIndex> InvertedIndex::load_stream(
     std::istream& istream) {
+  auto archive = ar::deserialize(istream);
+  return fromArchive(*archive);
+}
+
+std::shared_ptr<InvertedIndex> InvertedIndex::load_stream_cereal(
+    std::istream& istream) {
   cereal::BinaryInputArchive iarchive(istream);
   auto index = std::make_shared<InvertedIndex>();
   iarchive(*index);
-
   return index;
 }
 
