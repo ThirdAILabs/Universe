@@ -463,7 +463,7 @@ class Mach(Model):
             raise AttributeError(
                 f"Unsupported Optimizer: {self.optimizer}. Supported Optimizers: {Model.supported_optimizers()}"
             )
-        self.kwargs = kwargs
+        self.optimizer_params = kwargs.get("optimizer_params", {})
         self.mach_index_seed = mach_index_seed
         self.inverted_index = (
             InvertedIndex(max_shard_size=index_max_shard_size)
@@ -707,11 +707,10 @@ class Mach(Model):
             model_config=self.model_config,
         )
 
-        optimizer_params = self.kwargs.get("optimizer_params", {})
         if self.optimizer == "adam":
-            model_optimizer = bolt.nn.optimizers.Adam(**optimizer_params)
+            model_optimizer = bolt.nn.optimizers.Adam(**self.optimizer_params)
         else:
-            model_optimizer = bolt.nn.optimizers.SGD(**optimizer_params)
+            model_optimizer = bolt.nn.optimizers.SGD(**self.optimizer_params)
         model._get_model().change_optimizer(model_optimizer)
         model.insert_new_doc_ids(documents)
         return model

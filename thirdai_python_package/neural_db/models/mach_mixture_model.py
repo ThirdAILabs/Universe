@@ -38,8 +38,10 @@ class MachMixture(Model):
         hidden_bias=False,
         model_config=None,
         use_inverted_index=True,
+        optimizer : str = "adam",
         label_to_segment_map: defaultdict = None,
         seed_for_sharding: int = 0,
+        **kwargs
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -69,6 +71,8 @@ class MachMixture(Model):
                 tokenizer=tokenizer,
                 hidden_bias=hidden_bias,
                 use_inverted_index=use_inverted_index,
+                optimizer = optimizer,
+                optimizer_params = kwargs.get("optimizer_params", {}),
                 model_config=model_config,
                 mach_index_seed_offset=j * 341,
             )

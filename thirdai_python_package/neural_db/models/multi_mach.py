@@ -39,6 +39,8 @@ class MultiMach:
         tokenizer: int,
         hidden_bias: bool,
         use_inverted_index: bool,
+        optimizer: str,
+        optimizer_params: dict,
         model_config,
         mach_index_seed_offset: int,
     ):
@@ -62,6 +64,8 @@ class MultiMach:
                 use_inverted_index=(
                     use_inverted_index if j == 0 else False
                 ),  # inverted index will be the same for all models in the ensemble
+                optimizer = optimizer,
+                optimizer_params = optimizer_params,
                 mach_index_seed=(mach_index_seed_offset + j * 17),
             )
             for j in range(number_models)
