@@ -11,8 +11,8 @@ from ndb_utils import (
     DOCX_FILE,
     EML_FILE,
     PDF_FILE,
-    PRIAXOR_PDF_FILE,
     PPTX_FILE,
+    PRIAXOR_PDF_FILE,
     TXT_FILE,
     URL_LINK,
     create_simple_dataset,
@@ -582,13 +582,13 @@ def test_pdf_section_titles():
             if strong_words in row["emphasis"]:
                 found_words = True
         assert found_words
-    
+
     find_strong_words(pdf, "some expected section title")
     find_strong_words(pdf, "some expected section title")
     find_strong_words(pdf, "some expected section title")
     find_strong_words(pdf, "some expected section title")
     find_strong_words(pdf, "some expected section title")
-    
+
 
 def test_pdf_keywords():
     pdf = neural_db.PDF(PRIAXOR_PDF_FILE, version="v2", doc_keywords="ThirdAI BOLT UDT")

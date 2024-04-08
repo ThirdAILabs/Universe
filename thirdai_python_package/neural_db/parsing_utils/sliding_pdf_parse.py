@@ -151,17 +151,13 @@ def estimate_section_titles(lines):
     text_size_freq = defaultdict(int)
     for line in lines:
         for span in line["spans"]:
-            text_size_freq[line[span["size"]]] += 1
-
-    most_common_text_size = sorted(text_size_freq.items(), key=lambda x: x[1])[-1]
-
+            text_size_freq[int(span["size"])] += 1
+    most_common_text_size = sorted(text_size_freq.items(), key=lambda x: x[1])[-1][0]
     current_section_title = ""
     for i in range(len(lines)):
-        # 20% larger than most common is considered a section title
-        if lines[i]["spans"][0]["size"] > most_common_text_size * 1.2:
+        if lines[i]["spans"][0]["size"] > most_common_text_size:
             current_section_title = lines[i]["text"]
         lines[i]["section_title"] = current_section_title
-
     return lines
 
 
@@ -225,7 +221,7 @@ def get_chunks(
     )
     chunks = [clean_encoding(text) for text in chunks]
     section_titles = [clean_encoding(section_title) for section_title in section_titles]
-    return chunks, chunk_boxes, first_n_words
+    return chunks, chunk_boxes, first_n_words, section_titles
 
 
 def make_df(
