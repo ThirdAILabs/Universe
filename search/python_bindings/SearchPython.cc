@@ -97,7 +97,33 @@ void createSearchSubmodule(py::module_& module) {
                   py::arg("indices"), py::arg("query"), py::arg("k"))
       .def("save", &InvertedIndex::save, py::arg("filename"))
       .def_static("load", &InvertedIndex::load, py::arg("filename"))
-      .def(bolt::python::getPickleFunction<InvertedIndex>());
+      .def(py::pickle(
+          /**
+           * This is to achive compatability between neuraldb's with indexes
+           * that were pickled using cereal vs the archives. This try/catch
+           * logic is done here instead of in load_stream so that the binary
+           * stream can be reset before attempting to load with cereal if
+           * loading with the archive fails.
+           */
+          [](const std::shared_ptr<InvertedIndex>& index) -> py::bytes {
+            std::stringstream ss;
+            index->save_stream(ss);
+            return py::bytes(ss.str());
+          },
+          [](const py::bytes& binary_index) -> std::shared_ptr<InvertedIndex> {
+            py::buffer_info info(py::buffer(binary_index).request());
+            char* data_ptr = reinterpret_cast<char*>(info.ptr);
+
+            try {
+              bolt::python::Membuf sbuf(data_ptr, data_ptr + info.size);
+              std::istream input(&sbuf);
+              return InvertedIndex::load_stream(input);
+            } catch (...) {
+              bolt::python::Membuf sbuf(data_ptr, data_ptr + info.size);
+              std::istream input(&sbuf);
+              return InvertedIndex::load_stream_cereal(input);
+            }
+          }));
 }
 
 }  // namespace thirdai::search::python

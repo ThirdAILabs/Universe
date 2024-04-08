@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <archive/src/Archive.h>
 #include <utils/text/PorterStemmer.h>
 #include <utils/text/StringManipulation.h>
 #include <cstdint>
@@ -37,6 +38,8 @@ class InvertedIndex {
         _stem(stem),
         _lowercase(lowercase) {}
 
+  explicit InvertedIndex(const ar::Archive& archive);
+
   void index(const std::vector<DocId>& ids,
              const std::vector<std::string>& docs);
 
@@ -70,6 +73,10 @@ class InvertedIndex {
       const std::vector<std::shared_ptr<InvertedIndex>>& indices,
       const std::string& query, uint32_t k);
 
+  ar::ConstArchivePtr toArchive() const;
+
+  static std::shared_ptr<InvertedIndex> fromArchive(const ar::Archive& archive);
+
   void save(const std::string& filename) const;
 
   void save_stream(std::ostream& ostream) const;
@@ -77,6 +84,9 @@ class InvertedIndex {
   static std::shared_ptr<InvertedIndex> load(const std::string& filename);
 
   static std::shared_ptr<InvertedIndex> load_stream(std::istream& istream);
+
+  static std::shared_ptr<InvertedIndex> load_stream_cereal(
+      std::istream& istream);
 
  private:
   std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>>
