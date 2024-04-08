@@ -17,6 +17,8 @@ class FinetunableRetriever {
                                 uint32_t min_top_docs = DEFAULT_MIN_TOP_DOCS,
                                 uint32_t top_queries = DEFAULT_TOP_QUERIES);
 
+  explicit FinetunableRetriever(const ar::Archive& archive);
+
   void index(const std::vector<DocId>& ids,
              const std::vector<std::string>& docs);
 
@@ -36,6 +38,21 @@ class FinetunableRetriever {
       const std::vector<std::string>& queries,
       const std::vector<std::unordered_set<DocId>>& candidates,
       uint32_t k) const;
+
+  ar::ConstArchivePtr toArchive() const;
+
+  static std::shared_ptr<FinetunableRetriever> fromArchive(
+      const ar::Archive& archive);
+
+  void save(const std::string& filename) const;
+
+  void save_stream(std::ostream& ostream) const;
+
+  static std::shared_ptr<FinetunableRetriever> load(
+      const std::string& filename);
+
+  static std::shared_ptr<FinetunableRetriever> load_stream(
+      std::istream& istream);
 
  private:
   std::shared_ptr<InvertedIndex> _doc_index;

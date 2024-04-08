@@ -1,4 +1,7 @@
 #include "FinetunableRetriever.h"
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <memory>
 #include <numeric>
 #include <unordered_map>
@@ -107,6 +110,57 @@ std::vector<std::vector<DocScore>> FinetunableRetriever::rankBatch(
   }
 
   return scores;
+}
+
+ar::ConstArchivePtr FinetunableRetriever::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("doc_index", _doc_index->toArchive());
+  map->set("query_index", _query_index->toArchive());
+
+  map->set("query_to_docs", ar::mapU64VecU64(_query_to_docs));
+  map->set("next_query_id", ar::u64(_next_query_id));
+
+  map->set("lambda", ar::f32(_lambda));
+  map->set("min_top_docs", ar::u64(_min_top_docs));
+  map->set("top_queries", ar::u64(_top_queries));
+
+  return map;
+}
+
+FinetunableRetriever::FinetunableRetriever(const ar::Archive& archive)
+    : _doc_index(InvertedIndex::fromArchive(*archive.get("doc_index"))),
+      _query_index(InvertedIndex::fromArchive(*archive.get("query_index"))),
+      _query_to_docs(archive.getAs<ar::MapU64VecU64>("query_to_docs")),
+      _next_query_id(archive.u64("next_query_id")),
+      _lambda(archive.f32("lambda")),
+      _min_top_docs(archive.u64("min_top_docs")),
+      _top_queries(archive.u64("top_queries")) {}
+
+std::shared_ptr<FinetunableRetriever> FinetunableRetriever::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_shared<FinetunableRetriever>(archive);
+}
+
+void FinetunableRetriever::save(const std::string& filename) const {
+  auto ostream = dataset::SafeFileIO::ofstream(filename);
+  save_stream(ostream);
+}
+
+void FinetunableRetriever::save_stream(std::ostream& ostream) const {
+  ar::serialize(toArchive(), ostream);
+}
+
+std::shared_ptr<FinetunableRetriever> FinetunableRetriever::load(
+    const std::string& filename) {
+  auto istream = dataset::SafeFileIO::ifstream(filename);
+  return load_stream(istream);
+}
+
+std::shared_ptr<FinetunableRetriever> FinetunableRetriever::load_stream(
+    std::istream& istream) {
+  auto archive = ar::deserialize(istream);
+  return fromArchive(*archive);
 }
 
 }  // namespace thirdai::search
