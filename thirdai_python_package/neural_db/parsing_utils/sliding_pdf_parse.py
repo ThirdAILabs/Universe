@@ -150,10 +150,7 @@ def get_lines_with_first_n_words(lines, n):
 
 def process_tables(filename, lines):
     pdf = pdfplumber.open(filename)
-    tables_by_page = defaultdict(list)
-    for page in pdf.pages:
-        # page numbers in metadata are 0 indexed
-        tables_by_page[page.page_number - 1] = page.find_tables()
+    tables_by_page = [page.find_tables() for page in pdf.pages]
 
     def within_by_bbox(a, b):
         ax1, ay1, ax2, ay2 = a
