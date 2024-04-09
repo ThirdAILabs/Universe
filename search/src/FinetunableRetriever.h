@@ -25,6 +25,9 @@ class FinetunableRetriever {
   void finetune(const std::vector<std::vector<DocId>>& doc_ids,
                 const std::vector<std::string>& queries);
 
+  void associate(const std::vector<std::string>& sources,
+                 const std::vector<std::string>& targets, uint32_t strength);
+
   std::vector<DocScore> query(const std::string& query, uint32_t k) const;
 
   std::vector<std::vector<DocScore>> queryBatch(

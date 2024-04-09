@@ -7,6 +7,7 @@
 #include <numeric>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace thirdai::search {
 
@@ -39,6 +40,25 @@ void FinetunableRetriever::finetune(
   _query_index->index(query_ids, queries);
 
   _next_query_id += query_ids.size();
+}
+
+void FinetunableRetriever::associate(const std::vector<std::string>& sources,
+                                     const std::vector<std::string>& targets,
+                                     uint32_t strength) {
+  auto top_docs = queryBatch(targets, /*k=*/strength);
+
+  std::vector<std::vector<DocId>> ids_only;
+  ids_only.reserve(top_docs.size());
+  for (const auto& doc_scores : top_docs) {
+    std::vector<DocId> ids;
+    ids.reserve(doc_scores.size());
+    for (auto id_score : doc_scores) {
+      ids.push_back(id_score.first);
+    }
+    ids_only.push_back(ids);
+  }
+
+  finetune(ids_only, sources);
 }
 
 std::vector<DocScore> FinetunableRetriever::query(const std::string& query,
