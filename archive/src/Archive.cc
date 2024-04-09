@@ -140,6 +140,9 @@ ConstArchivePtr deserialize(std::istream& input) {
 
   ArchivePtr archive;
   iarchive(archive);
+  if (!archive) {
+    throw std::runtime_error("Deserialization resulted in null archive.");
+  }
   return archive;
 }
 
