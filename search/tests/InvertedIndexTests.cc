@@ -18,7 +18,7 @@ void checkQuery(const InvertedIndex& index, const std::string& query,
 }
 
 void checkRank(const InvertedIndex& index, const std::string& query,
-               const std::vector<DocId>& candidates,
+               const std::unordered_set<DocId>& candidates,
                const std::vector<DocId>& expected_ids) {
   auto results = index.rank(query, candidates, expected_ids.size());
   ASSERT_EQ(results.size(), expected_ids.size());
