@@ -89,7 +89,7 @@ class DaskDataFrameTable(Table):
 
     def field(self, row_id: int, column: str):
         # For Dask, use .compute() to get actual values
-        self.df.loc[row_id][column].compute()
+        return self.df.loc[row_id][column].compute()
 
     def row_as_dict(self, row_id: int) -> dict:
         row = self.df.loc[[row_id]].compute().to_dict(orient="records")[0]

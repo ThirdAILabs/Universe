@@ -42,7 +42,7 @@ def small_doc_set():
 
 @pytest.fixture(scope="session")
 def small_doc_set_dask():
-    return [ndb.CSV(CSV_FILE, use_dask=True)]
+    return [ndb.CSV(CSV_FILE, use_dask=True), ndb.PDF(PDF_FILE, on_disk=True)]
 
 
 @pytest.fixture(scope="session")
