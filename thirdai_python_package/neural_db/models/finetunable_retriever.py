@@ -22,8 +22,8 @@ class FinetunableRetriever(Model):
 
             if len(docs) == 1_000_000:
                 self.retriever.index(ids=ids, docs=docs)
-                self.docs = []
-                self.ids = []
+                docs = []
+                ids = []
 
         if len(docs):
             self.retriever.index(ids=ids, docs=docs)
