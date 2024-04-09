@@ -638,7 +638,9 @@ class CSV(Document):
         self.path = Path(path)
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
-        self.reference_columns = [col for col in reference_columns if col != self.id_column]
+        self.reference_columns = [
+            col for col in reference_columns if col != self.id_column
+        ]
         self._save_extra_info = save_extra_info
         self.doc_metadata = metadata_with_source(metadata or {}, Path(path).name)
         self.doc_metadata_keys = set(self.doc_metadata.keys())
