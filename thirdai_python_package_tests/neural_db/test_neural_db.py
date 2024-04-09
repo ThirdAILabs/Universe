@@ -39,6 +39,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
 def small_doc_set():
     return [ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE, on_disk=True)]
 
+@pytest.fixture(scope="session")
+def small_doc_set_dask():
+    return [ndb.CSV(CSV_FILE, use_dask=True)]
 
 @pytest.fixture(scope="session")
 def all_local_docs():
@@ -78,6 +81,15 @@ def test_neural_db_all_methods_work_on_new_model_with_inverted(
     all_methods_work(
         db,
         docs=small_doc_set,
+        num_duplicate_docs=0,
+        assert_acc=False,
+    )
+    
+def test_neural_db_all_methods_work_with_dask(small_doc_set_dask):
+    db = ndb.NeuralDB()
+    all_methods_work(
+        db,
+        docs=small_doc_set_dask,
         num_duplicate_docs=0,
         assert_acc=False,
     )

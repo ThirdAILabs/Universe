@@ -36,7 +36,7 @@ from .constraint_matcher import (
     to_filters,
 )
 from .parsing_utils import doc_parse, pdf_parse, sliding_pdf_parse, url_parse
-from .table import DataFrameTable, SQLiteTable
+from .table import DataFrameTable, SQLiteTable, DaskDataFrameTable
 from .utils import hash_file, hash_string, requires_condition
 
 
@@ -454,7 +454,7 @@ def safe_has_offset(this):
 
 
 def create_table(df, on_disk):
-    Table = SQLiteTable if on_disk else DataFrameTable
+    Table = SQLiteTable if on_disk else DaskDataFrameTable if isinstance(df, dd.DataFrame) else DataFrameTable
     return Table(df)
 
 

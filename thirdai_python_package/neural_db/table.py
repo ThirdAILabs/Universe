@@ -68,55 +68,35 @@ class Table(ABC):
     def load_meta(self, directory: Path):
         pass
 
-
-class DataFrameTable(Table):
-    def __init__(self, df: Union[pd.DataFrame, dd.DataFrame]):
-        """The index of the dataframe is assumed to be the ID column.
-        In other words, the ID column of a data frame must be set as its index
-        before being passed into this constructor.
-        """
+class DaskDataFrameTable(Table):
+    def __init__(self, df: dd.DataFrame):
         self.df = df_with_index_name(df)
-        self.df_type = "pandas" if isinstance(df, pd.DataFrame) else "dask"
-
+        
     @property
     def columns(self) -> List[str]:
-        # Excludes ID column
-        return [col for col in self.df.columns if col != self.df.index.name]
-
+         return [col for col in self.df.columns if col != self.df.index.name]
+     
     @property
     def size(self) -> int:
         # For Dask, compute() is required to get the actual size
-        return len(self.df) if self.df_type == "pandas" else self.df.shape[0].compute()
-
+        return self.df.shape[0].compute()
+    
     @property
     def ids(self) -> List[int]:
         # Dask requires computation to convert index to a list
-        return (
-            self.df.index.to_list()
-            if self.df_type == "pandas"
-            else self.df.index.compute().to_list()
-        )
-
+        return self.df.index.compute().to_list()
+        
     def field(self, row_id: int, column: str):
         # For Dask, use .compute() to get actual values
-        if self.df_type == "dask":
-            return self.df.loc[row_id][column].compute()
-        return self.df.at[row_id, column] if column != self.df.index.name else row_id
+        self.df.loc[row_id][column].compute()
 
     def row_as_dict(self, row_id: int) -> dict:
-        row = (
-            self.df.loc[[row_id]].compute().to_dict(orient="records")[0]
-            if self.df_type == "dask"
-            else self.df.loc[row_id].to_dict()
-        )
+        row = self.df.loc[[row_id]].compute().to_dict(orient="records")[0]
         row[self.df.index.name] = row_id
         return row
 
     def range_rows_as_dicts(self, from_row_id: int, to_row_id: int) -> List[dict]:
-        if self.df_type == "dask":
-            df_range = self.df.loc[from_row_id:to_row_id].compute()
-        else:
-            df_range = self.df.loc[from_row_id:to_row_id]
+        df_range = self.df.loc[from_row_id:to_row_id].compute()
         return df_range.reset_index().to_dict(orient="records")
 
     def iter_rows_as_dicts(self) -> Generator[Tuple[int, dict], None, None]:
@@ -128,7 +108,52 @@ class DataFrameTable(Table):
 
     def apply_filter(self, table_filter: TableFilter):
         return table_filter.filter_df_ids(self.df)
+    
+class DataFrameTable(Table):
+    def __init__(self, df: pd.DataFrame):
+        """The index of the dataframe is assumed to be the ID column.
+        In other words, the ID column of a data frame must be set as its index
+        before being passed into this constructor.
+        """
+        self.df = df_with_index_name(df)
 
+    @property
+    def columns(self) -> List[str]:
+        # Excludes ID column
+        return self.df.columns
+
+    @property
+    def size(self) -> int:
+        return len(self.df)
+
+    @property
+    def ids(self) -> List[int]:
+        return self.df.index.to_list()
+
+    def field(self, row_id: int, column: str):
+        if column == self.df.index.name:
+            return row_id
+        return self.df[column].loc[row_id]
+
+    def row_as_dict(self, row_id: int) -> dict:
+        row = self.df.loc[row_id].to_dict()
+        row[self.df.index.name] = row_id
+        return row
+
+    def range_rows_as_dicts(self, from_row_id: int, to_row_id: int) -> List[dict]:
+        return (
+            self.df.loc[from_row_id:to_row_id].reset_index().to_dict(orient="records")
+        )
+
+    def iter_rows_as_dicts(self) -> Generator[Tuple[int, dict], None, None]:
+        for row in self.df.itertuples(index=True):
+            row_id = row.Index
+            row_dict = row._asdict()
+            row_dict[self.df.index.name] = row_id
+            yield (row_id, row_dict)
+
+    def apply_filter(self, table_filter: TableFilter):
+        return table_filter.filter_df_ids(self.df)
 
 class SQLiteTable(Table):
     EVAL_PREFIX = "__eval__"
