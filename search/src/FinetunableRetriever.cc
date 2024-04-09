@@ -43,6 +43,10 @@ void FinetunableRetriever::finetune(
 
 std::vector<DocScore> FinetunableRetriever::query(const std::string& query,
                                                   uint32_t k) const {
+  if (_query_index->size() == 0) {
+    return _doc_index->query(query, k);
+  }
+
   auto top_docs = _doc_index->query(query, std::max(_min_top_docs, k));
   auto top_queries = _query_index->query(query, _top_queries);
 
@@ -76,6 +80,10 @@ std::vector<std::vector<DocScore>> FinetunableRetriever::queryBatch(
 std::vector<DocScore> FinetunableRetriever::rank(
     const std::string& query, const std::unordered_set<DocId>& candidates,
     uint32_t k) const {
+  if (_query_index->size() == 0) {
+    return _doc_index->rank(query, candidates, k);
+  }
+
   auto top_docs =
       _doc_index->rank(query, candidates, std::max(_min_top_docs, k));
   auto top_queries = _query_index->query(query, _top_queries);
@@ -152,6 +160,8 @@ ar::ConstArchivePtr FinetunableRetriever::toArchive() const {
   map->set("query_index", _query_index->toArchive());
 
   map->set("query_to_docs", ar::mapU64VecU64(_query_to_docs));
+  map->set("doc_to_queries", ar::mapU64VecU64(_doc_to_queries));
+
   map->set("next_query_id", ar::u64(_next_query_id));
 
   map->set("lambda", ar::f32(_lambda));

@@ -11,7 +11,7 @@ class FinetunableRetriever {
  public:
   static constexpr float DEFAULT_LAMBDA = 0.6;
   static constexpr uint32_t DEFAULT_MIN_TOP_DOCS = 20;
-  static constexpr uint32_t DEFAULT_TOP_QUERIES = 20;
+  static constexpr uint32_t DEFAULT_TOP_QUERIES = 10;
 
   explicit FinetunableRetriever(float lambda = DEFAULT_LAMBDA,
                                 uint32_t min_top_docs = DEFAULT_MIN_TOP_DOCS,
@@ -61,6 +61,7 @@ class FinetunableRetriever {
  private:
   std::shared_ptr<InvertedIndex> _doc_index;
   std::shared_ptr<InvertedIndex> _query_index;
+
   std::unordered_map<QueryId, std::vector<DocId>> _query_to_docs;
   std::unordered_map<DocId, std::vector<QueryId>> _doc_to_queries;
 
