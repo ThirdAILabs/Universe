@@ -12,6 +12,7 @@ from ndb_utils import (
     EML_FILE,
     PDF_FILE,
     PPTX_FILE,
+    PRIAXOR_PDF_FILE,
     TXT_FILE,
     URL_LINK,
     create_simple_dataset,
@@ -570,3 +571,29 @@ def test_document_throws_when_user_passes_source_metadata(doc_factory):
         match=r"Document metadata cannot contain the key 'source'. 'source' is a reserved key.",
     ):
         doc_factory()
+
+
+@pytest.mark.unit
+def test_pdf_section_titles():
+    pdf = neural_db.PDF(PRIAXOR_PDF_FILE, version="v2", emphasize_section_titles=True)
+
+    def find_strong_words(pdf, strong_words):
+        found_words = False
+        for _, row in pdf.table.df.iterrows():
+            if strong_words in row["emphasis"]:
+                found_words = True
+        assert found_words
+
+    find_strong_words(pdf, "Restrictions and Limitations")
+    find_strong_words(pdf, "Groundwater Advisory")
+    find_strong_words(pdf, "Information on Droplet Size")
+    find_strong_words(pdf, "AGRICULTURAL USE REQUIREMENTS")
+    find_strong_words(pdf, "Environmental Hazards")
+
+
+@pytest.mark.unit
+def test_pdf_keywords():
+    pdf = neural_db.PDF(PRIAXOR_PDF_FILE, version="v2", doc_keywords="ThirdAI BOLT UDT")
+
+    for _, row in pdf.table.df.iterrows():
+        assert "ThirdAI BOLT UDT" in row["emphasis"]

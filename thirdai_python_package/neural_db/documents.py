@@ -1038,6 +1038,8 @@ class PDF(Extracted):
         ignore_nonstandard_orientation=True,
         metadata=None,
         on_disk=False,
+        doc_keywords="",
+        emphasize_section_titles=False,
         table_parsing=False,
     ):
         self.version = version
@@ -1056,6 +1058,8 @@ class PDF(Extracted):
         self.emphasize_first_words = emphasize_first_words
         self.ignore_header_footer = ignore_header_footer
         self.ignore_nonstandard_orientation = ignore_nonstandard_orientation
+        self.doc_keywords = doc_keywords
+        self.emphasize_section_titles = emphasize_section_titles
         self.table_parsing = table_parsing
         # Add pdf version, chunk size, and stride metadata. The metadata will be
         # incorporated in the document hash so that the same PDF inserted with
@@ -1086,6 +1090,8 @@ class PDF(Extracted):
             self.emphasize_first_words,
             self.ignore_header_footer,
             self.ignore_nonstandard_orientation,
+            self.doc_keywords,
+            self.emphasize_section_titles,
             self.table_parsing,
         )
 
