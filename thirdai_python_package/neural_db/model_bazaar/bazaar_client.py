@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urljoin
 
 from .bazaar_base import Bazaar, auth_header
@@ -66,10 +67,10 @@ class NeuralDBClient:
         __init__(self, deployment_identifier: str, base_url: str) -> None:
             Initializes a new instance of the NeuralDBClient.
 
-        search(self, query: str, top_k: int = 10, constraints: Optional[Dict[str, str]] = None) -> List[dict]:
+        search(self, query, top_k=5, constraints: Optional[dict[str, dict[str, str]]]=None) -> List[dict]:
             Searches the ndb model for relevant search results.
 
-        insert(self, files: List[str], urls: List[str]) -> None:
+        insert(self, documents: list[dict[str, Any]]) -> None:
             Inserts documents into the ndb model.
 
         delete(self, source_ids: List[str]) -> None:
@@ -102,19 +103,52 @@ class NeuralDBClient:
         self.bazaar = bazaar
 
     @check_deployment_decorator
-    def search(self, query, top_k=10, constraints: Optional[Dict[str, str]] = None):
+    def search(
+        self, query, top_k=5, constraints: Optional[dict[str, dict[str, str]]] = None
+    ):
         """
         Searches the ndb model for similar queries.
 
         Args:
             query (str): The query to search for.
             top_k (int): The number of top results to retrieve (default is 10).
-            constraints (Optional[Dict[str, str]]): Constraints to filter the search by
+            constraints (Optional[dict[str, str]]): Constraints to filter the search result metadata by.
+                These constraints must be in the following format:
+                {"FIELD_NAME": {"constraint_type": "CONSTRAINT_NAME", **kwargs}} where
+                "FIELD_NAME" is the field that you want to filter over, and "CONSTRAINT_NAME"
+                is one of the following: "AnyOf", "EqualTo", "InRange", "GreaterThan", and "LessThan".
+                The kwargs for the above constraints are shown below:
+
+                class AnyOf(BaseModel):
+                    constraint_type: Literal["AnyOf"]
+                    values: Iterable[Any]
+
+                class EqualTo(BaseModel):
+                    constraint_type: Literal["EqualTo"]
+                    value: Any
+
+                class InRange(BaseModel):
+                    constraint_type: Literal["InRange"]
+                    minimum: Any
+                    maximum: Any
+                    inclusive_min: bool = True
+                    inclusive_max: bool = True
+
+                class GreaterThan(BaseModel):
+                    constraint_type: Literal["GreaterThan"]
+                    minimum: Any
+                    include_equal: bool = False
+
+                class LessThan(BaseModel):
+                    constraint_type: Literal["LessThan"]
+                    maximum: Any
+                    include_equal: bool = False
 
         Returns:
             Dict: A dict of search results containing keys: `query_text` and `references`.
         """
-        response = http_get_with_error(
+
+        response = http_post_with_error(
             urljoin(self.base_url, "predict"),
             params={"query_text": query, "top_k": top_k},
             json=constraints,
@@ -124,28 +158,94 @@ class NeuralDBClient:
         return json.loads(response.content)["data"]
 
     @check_deployment_decorator
-    def insert(
-        self, files: Optional[List[str]] = None, urls: Optional[List[str]] = None
-    ):
+    def insert(self, documents: list[dict[str, Any]]):
         """
         Inserts documents into the ndb model.
 
         Args:
-            files (List[str]): A list of file paths to be inserted into the ndb model.
-            urls (List[str]): A list of URLs to be inserted into the ndb model.
+            documents (List[dict[str, Any]]): A list of dictionaries that represent documents to be inserted to the ndb model.
+                The document dictionaries must be in the following format:
+                {"document_type": "DOCUMENT_TYPE", **kwargs} where "DOCUMENT_TYPE" is one of the following:
+                "PDF", "CSV", "DOCX", "URL", "SentenceLevelPDF", or "SentenceLevelDOCX".
+                The kwargs for each document type are shown below:
+
+                class PDF(Document):
+                    document_type: Literal["PDF"]
+                    path: str
+                    metadata: Optional[dict[str, Any]] = None
+                    on_disk: bool = False
+                    version: str = "v1"
+                    chunk_size: int = 100
+                    stride: int = 40
+                    emphasize_first_words: int = 0
+                    ignore_header_footer: bool = True
+                    ignore_nonstandard_orientation: bool = True
+
+                class CSV(Document):
+                    document_type: Literal["CSV"]
+                    path: str
+                    id_column: Optional[str] = None
+                    strong_columns: Optional[List[str]] = None
+                    weak_columns: Optional[List[str]] = None
+                    reference_columns: Optional[List[str]] = None
+                    save_extra_info: bool = True
+                    metadata: Optional[dict[str, Any]] = None
+                    has_offset: bool = False
+                    on_disk: bool = False
+
+                class DOCX(Document):
+                    document_type: Literal["DOCX"]
+                    path: str
+                    metadata: Optional[dict[str, Any]] = None
+                    on_disk: bool = False
+
+                class URL(Document):
+                    document_type: Literal["URL"]
+                    url: str
+                    save_extra_info: bool = True
+                    title_is_strong: bool = False
+                    metadata: Optional[dict[str, Any]] = None
+                    on_disk: bool = False
+
+                class SentenceLevelPDF(Document):
+                    document_type: Literal["SentenceLevelPDF"]
+                    path: str
+                    metadata: Optional[dict[str, Any]] = None
+                    on_disk: bool = False
+
+                class SentenceLevelDOCX(Document):
+                    document_type: Literal["SentenceLevelDOCX"]
+                    path: str
+                    metadata: Optional[dict[str, Any]] = None
+                    on_disk: bool = False
+
+                For Document types with the arg "path", ensure that the path exists on your local machine.
+                You will most likely only need to use the path/url and metadata kwargs for each document.
+                You can ignore other kwargs or reach out to Kartik for questions.
         """
-        if not files and not urls:
-            raise ValueError("Files and urls cannot both be empty.")
-        if files is not None:
-            files = [("files", open(file_path, "rb")) for file_path in files]
+
+        if not documents:
+            raise ValueError("Documents cannot be empty.")
+
+        files = []
+        for doc in documents:
+            if "path" in doc and ("location" not in doc or doc["location"] == "local"):
+                if not os.path.exists(doc["path"]):
+                    raise ValueError(
+                        f"Path {doc['path']} was provided but doesn't exist on the machine."
+                    )
+                files.append(("files", open(doc["path"], "rb")))
+
+        files.append(("documents", (None, json.dumps(documents), "application/json")))
+
         response = http_post_with_error(
             urljoin(self.base_url, "insert"),
             files=files,
-            data={"urls": urls},
             headers=auth_header(self.bazaar._access_token),
         )
 
-        print(json.loads(response.content)["message"])
+        print(response)
+        print(json.loads(response.content))
 
     @check_deployment_decorator
     def delete(self, source_ids: List[str]):
