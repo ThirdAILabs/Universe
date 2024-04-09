@@ -68,24 +68,25 @@ class Table(ABC):
     def load_meta(self, directory: Path):
         pass
 
+
 class DaskDataFrameTable(Table):
     def __init__(self, df: dd.DataFrame):
         self.df = df_with_index_name(df)
-        
+
     @property
     def columns(self) -> List[str]:
-         return [col for col in self.df.columns if col != self.df.index.name]
-     
+        return [col for col in self.df.columns if col != self.df.index.name]
+
     @property
     def size(self) -> int:
         # For Dask, compute() is required to get the actual size
         return self.df.shape[0].compute()
-    
+
     @property
     def ids(self) -> List[int]:
         # Dask requires computation to convert index to a list
         return self.df.index.compute().to_list()
-        
+
     def field(self, row_id: int, column: str):
         # For Dask, use .compute() to get actual values
         self.df.loc[row_id][column].compute()
@@ -108,7 +109,8 @@ class DaskDataFrameTable(Table):
 
     def apply_filter(self, table_filter: TableFilter):
         return table_filter.filter_df_ids(self.df)
-    
+
+
 class DataFrameTable(Table):
     def __init__(self, df: pd.DataFrame):
         """The index of the dataframe is assumed to be the ID column.
@@ -154,6 +156,7 @@ class DataFrameTable(Table):
 
     def apply_filter(self, table_filter: TableFilter):
         return table_filter.filter_df_ids(self.df)
+
 
 class SQLiteTable(Table):
     EVAL_PREFIX = "__eval__"
