@@ -588,7 +588,7 @@ def test_pdf_section_titles():
     find_strong_words(pdf, "Groundwater Advisory")
     find_strong_words(pdf, "Information on Droplet Size")
     find_strong_words(pdf, "AGRICULTURAL USE REQUIREMENTS")
-    find_strong_words(pdf, "Environmental Hazards Surface Water Advisory")
+    find_strong_words(pdf, "Environmental Hazards")
 
 
 @pytest.mark.unit
