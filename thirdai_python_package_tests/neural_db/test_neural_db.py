@@ -107,6 +107,7 @@ def test_neural_db_all_methods_work_on_finetunable_retriever():
 
     search_works(db, docs, assert_acc=True)
     upvote_works(db)
+    associate_works(db)
     save_load_works(db)
     clear_sources_works(db)
 

@@ -136,6 +136,8 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("docs"))
       .def("finetune", &FinetunableRetriever::finetune, py::arg("doc_ids"),
            py::arg("queries"))
+      .def("associate", &FinetunableRetriever::associate, py::arg("sources"),
+           py::arg("targets"), py::arg("strength") = 4)
       .def("query", &FinetunableRetriever::queryBatch, py::arg("queries"),
            py::arg("k"))
       .def("query", &FinetunableRetriever::query, py::arg("query"),
