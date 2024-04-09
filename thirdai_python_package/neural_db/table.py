@@ -4,7 +4,7 @@ import sqlite3
 import uuid
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Generator, List, Tuple, Union
+from typing import Generator, List, Tuple
 
 import dask.dataframe as dd
 
