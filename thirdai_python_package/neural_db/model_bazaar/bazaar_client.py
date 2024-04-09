@@ -267,6 +267,18 @@ class ModelBazaar(Bazaar):
         await_train(self, model: Model) -> None:
             Waits for the training of a model to complete.
 
+        test(self,
+            model_identifier: str,
+            test_doc: str,
+            doc_type: str = "local",
+            test_extra_options: dict = {},
+            is_async: bool = False,
+        ) -> str:
+            Starts the Model testing on given test file.
+
+        await_test(self, model_identifier: str, test_id: str) -> None:
+            Waits for the testing of a model on that test_id to complete.
+
         deploy(self, model_identifier: str, deployment_name: str, is_async: bool = False) -> NeuralDBClient:
             Deploys a model and returns a NeuralDBClient instance.
 
@@ -500,13 +512,26 @@ class ModelBazaar(Bazaar):
         test_extra_options: dict = {},
         is_async: bool = False,
     ):
+        """
+        Initiates testing for a model and returns the test_id (unique identifier for this test)
+
+        Args:
+            model_identifier (str): The identifier of the model.
+            test_doc (str): A path to a test file for evaluating the trained NeuralDB.
+            doc_type (str): Specifies document location type : "local"(default), "nfs" or "s3".
+            test_extra_options: (Optional[dict])
+            is_async (bool): Whether testing should be asynchronous (default is False).
+
+        Returns:
+            str: The test_id which is unique for given testing.
+        """
         url = urljoin(self._base_url, f"test/test")
 
         files = [
             (
                 ("file", open(test_doc, "rb"))
                 if doc_type == "local"
-                else ("files", (test_doc, "don't care"))
+                else ("file", (test_doc, "don't care"))
             )
         ]
         if test_extra_options:
