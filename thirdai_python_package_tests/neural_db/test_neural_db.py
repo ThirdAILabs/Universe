@@ -347,12 +347,9 @@ def test_neural_db_delete_document(empty_neural_db):
         ),
     ]
 
-    os.remove("ice_cream.csv")
-    os.remove("pizza.csv")
-
     for _ in range(5):
         [ice_cream_source_id, _] = db.insert(docs, train=True)
-
+    
     # We will delete the ice cream file. To know that we successfully deleted
     # it, make sure it comes up as a search result before deleting, and does not
     # come up after deleting.
@@ -394,6 +391,9 @@ def test_neural_db_delete_document(empty_neural_db):
     # Make sure constrained search index is also updated
     result = db.search("ice cream", top_k=1, constraints={"about": "ice cream"})[0]
     assert result.text == "text: ice cream"
+    
+    os.remove("ice_cream.csv")
+    os.remove("pizza.csv")
 
 
 def test_neural_db_delete_document_with_inverted_index():
