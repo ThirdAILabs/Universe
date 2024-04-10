@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace thirdai::search {
@@ -54,10 +55,11 @@ class InvertedIndex {
 
   std::vector<std::vector<DocScore>> rankBatch(
       const std::vector<std::string>& queries,
-      const std::vector<std::vector<DocId>>& candidates, uint32_t k) const;
+      const std::vector<std::unordered_set<DocId>>& candidates,
+      uint32_t k) const;
 
   std::vector<DocScore> rank(const std::string& query,
-                             const std::vector<DocId>& candidates,
+                             const std::unordered_set<DocId>& candidates,
                              uint32_t k) const;
 
   void remove(const std::vector<DocId>& ids);
@@ -68,6 +70,9 @@ class InvertedIndex {
   }
 
   size_t size() const { return _doc_lengths.size(); }
+
+  static std::vector<DocScore> topk(
+      const std::unordered_map<DocId, float>& doc_scores, uint32_t k);
 
   static std::vector<DocScore> parallelQuery(
       const std::vector<std::shared_ptr<InvertedIndex>>& indices,
