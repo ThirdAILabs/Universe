@@ -517,7 +517,8 @@ class UDT {
       const MapInputBatch& batch, bool sparse_inference,
       std::optional<uint32_t> top_k);
 
-  static size_t estimateHashTableSize(size_t output_dim);
+  static size_t estimateHashTableSize(size_t output_dim,
+                                      std::optional<float> sparsity);
 
  private:
   UDT() {}

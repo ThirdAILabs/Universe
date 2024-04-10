@@ -631,9 +631,10 @@ std::vector<UDT::Scores> UDT::labelProbeMultipleMach(
   return output;
 }
 
-size_t UDT::estimateHashTableSize(size_t output_dim) {
+size_t UDT::estimateHashTableSize(size_t output_dim,
+                                  std::optional<float> sparsity) {
   return bolt::DWTASamplingConfig::estimateHashTableSize(
-      output_dim, utils::autotuneSparsity(output_dim));
+      output_dim, sparsity.value_or(utils::autotuneSparsity(output_dim)));
 }
 
 }  // namespace thirdai::automl::udt
