@@ -100,12 +100,22 @@ class DaskDataFrameTable(Table):
         df_range = self.df.loc[from_row_id:to_row_id].compute()
         return df_range.reset_index().to_dict(orient="records")
 
-    def iter_rows_as_dicts(self) -> Generator[Tuple[int, dict], None, None]:
-        for row in self.df.itertuples(index=True):
-            row_id = row.Index
+    def _partition_to_dicts(self, df_partition):
+        dicts = []
+        for row in df_partition.itertuples(index=True):
             row_dict = row._asdict()
-            row_dict[self.df.index.name] = row_id
-            yield (row_id, row_dict)
+            dicts.append(row_dict)
+        return dicts
+
+    def iter_rows_as_dicts(self) -> Generator[Tuple[int, dict], None, None]:
+        index_name = self.df.index.name
+        results = self.df.map_partitions(self._partition_to_dicts, meta=("object"))
+        row_id = 0  # We are maintaining a global row_id because each parition will have it's local index
+        for batch in results.compute():
+            for row_dict in batch:
+                row_dict[index_name] = row_id
+                yield (row_id, row_dict)
+                row_id += 1
 
     def apply_filter(self, table_filter: TableFilter):
         return table_filter.filter_df_ids(self.df)
