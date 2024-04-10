@@ -40,9 +40,17 @@ def small_doc_set():
     return [ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE, on_disk=True)]
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def small_doc_set_dask():
     return [ndb.CSV(CSV_FILE, use_dask=True), ndb.PDF(PDF_FILE, on_disk=True)]
+
+
+@pytest.fixture(scope="module")
+def small_doc_set_dask_multiple_partitions():
+    return [
+        ndb.CSV(CSV_FILE, use_dask=True, blocksize=1e3),
+        ndb.PDF(PDF_FILE, on_disk=True),
+    ]
 
 
 @pytest.fixture(scope="session")
@@ -88,11 +96,14 @@ def test_neural_db_all_methods_work_on_new_model_with_inverted(
     )
 
 
-def test_neural_db_all_methods_work_with_dask(small_doc_set_dask):
+@pytest.mark.parametrize(
+    "doc_set", ["small_doc_set_dask", "small_doc_set_dask_multiple_partitions"]
+)
+def test_neural_db_all_methods_work_with_dask(doc_set, request):
     db = ndb.NeuralDB()
     all_methods_work(
         db,
-        docs=small_doc_set_dask,
+        docs=request.getfixturevalue(doc_set),
         num_duplicate_docs=0,
         assert_acc=False,
     )
