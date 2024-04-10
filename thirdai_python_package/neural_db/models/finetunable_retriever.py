@@ -65,8 +65,11 @@ class FinetunableRetriever(Model):
     def load_meta(self, directory: Path):
         pass
 
-    def associate(self, pairs: List[Tuple[str, str]], **kwargs):
-        pass
+    def associate(self, pairs: List[Tuple[str, str]], retriever_strength=4, **kwargs):
+        sources, targets = list(zip(*pairs))
+        self.retriever.associate(
+            sources=sources, targets=targets, strength=retriever_strength
+        )
 
     def upvote(self, pairs: List[Tuple[str, int]], **kwargs):
         queries, ids = list(zip(*pairs))

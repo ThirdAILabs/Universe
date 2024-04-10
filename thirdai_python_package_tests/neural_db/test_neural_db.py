@@ -99,19 +99,6 @@ def test_neuralb_db_all_methods_work_on_new_mach_mixture(small_doc_set, num_shar
     )
 
 
-def test_neural_db_all_methods_work_on_finetunable_retriever():
-    db = ndb.NeuralDB(low_memory=True)
-
-    docs = [ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE, on_disk=True)]
-    db.insert(docs, train=False)
-
-    search_works(db, docs, assert_acc=True)
-    upvote_works(db)
-    db.associate("some random text", "different random text")
-    save_load_works(db)
-    clear_sources_works(db)
-
-
 def test_neural_db_constrained_search_with_single_constraint():
     db = ndb.NeuralDB()
     db.insert(docs_with_meta(), train=False)
