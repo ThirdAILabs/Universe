@@ -11,6 +11,7 @@ from thirdai._thirdai import bolt, data
 
 from . import loggers, teachers
 from .documents import CSV, Document, DocumentManager, Reference
+from .models.finetunable_retriever import FinetunableRetriever
 from .models.mach_mixture_model import MachMixture
 from .models.models import CancelState, Mach
 from .models.multi_mach import MultiMach
@@ -78,7 +79,9 @@ class NeuralDB:
                     " NeuralDB can only be initialized with a positive number of"
                     " models per shard."
                 )
-            if num_shards > 1 or num_models_per_shard > 1:
+            if kwargs.get("low_memory", False):
+                model = FinetunableRetriever()
+            elif num_shards > 1 or num_models_per_shard > 1:
                 model = MachMixture(
                     num_shards=num_shards,
                     num_models_per_shard=num_models_per_shard,

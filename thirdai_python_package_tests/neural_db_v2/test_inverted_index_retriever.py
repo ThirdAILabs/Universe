@@ -49,6 +49,6 @@ def test_inverted_index_search(load_chunks):
         search_results = index.search([row["text"]], top_k=1)
         assert id == search_results[0][0][0]
         rank_results = index.rank(
-            [row["text"]], choices=[[id + 2, id, id + 1]], top_k=1
+            [row["text"]], choices=[set([id + 2, id, id + 1])], top_k=1
         )
         assert id == rank_results[0][0][0]
