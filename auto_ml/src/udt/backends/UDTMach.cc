@@ -1,4 +1,5 @@
 #include "UDTMach.h"
+#include <cereal/archives/binary.hpp>
 #include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/python_bindings/NumpyConversions.h>
@@ -39,6 +40,7 @@
 #include <optional>
 #include <random>
 #include <stdexcept>
+#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -1255,6 +1257,8 @@ UDTMach::UDTMach(const ar::Archive& archive)
   if (archive.contains("balancing_samples")) {
     _balancing_samples = BalancingSamples(*archive.get("balancing_samples"));
   }
+
+  updateSamplingStrategy();
 }
 
 template void UDTMach::serialize(cereal::BinaryInputArchive&,
@@ -1275,6 +1279,10 @@ void UDTMach::serialize(Archive& archive, const uint32_t version) {
   archive(cereal::base_class<UDTBackend>(this), _classifier, _featurizer,
           _default_top_k_to_return, _num_buckets_to_eval,
           _mach_sampling_threshold, _balancing_samples);
+
+  if (std::is_same_v<Archive, cereal::BinaryInputArchive>) {
+    updateSamplingStrategy();
+  }
 }
 
 }  // namespace thirdai::automl::udt
