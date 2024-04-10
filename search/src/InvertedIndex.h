@@ -31,13 +31,7 @@ class InvertedIndex {
   explicit InvertedIndex(size_t max_docs_to_score = DEFAULT_MAX_DOCS_TO_SCORE,
                          float idf_cutoff_frac = DEFAULT_IDF_CUTOFF_FRAC,
                          float k1 = DEFAULT_K1, float b = DEFAULT_B,
-                         bool stem = true, bool lowercase = true)
-      : _max_docs_to_score(max_docs_to_score),
-        _idf_cutoff_frac(idf_cutoff_frac),
-        _k1(k1),
-        _b(b),
-        _stem(stem),
-        _lowercase(lowercase) {}
+                         bool stem = true, bool lowercase = true);
 
   explicit InvertedIndex(const ar::Archive& archive);
 

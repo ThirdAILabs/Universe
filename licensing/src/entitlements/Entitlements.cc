@@ -93,6 +93,15 @@ void Entitlements::verifyDataSource(
 #endif
 }
 
+void Entitlements::verifyNoDataSourceRetrictions() const {
+  if (getDatasetRestrictions()) {
+#ifdef THIRDAI_BUILD_LICENSE
+    throw exceptions::LicenseCheckException(
+        "This dataset is not authorized under this license.");
+#endif
+  }
+}
+
 std::optional<ModelRestrictions> Entitlements::getModelRestrictions() const {
   if (!_entitlements.restrictions) {
     return std::nullopt;
