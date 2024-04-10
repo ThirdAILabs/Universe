@@ -177,6 +177,13 @@ std::shared_ptr<DWTASamplingConfig> DWTASamplingConfig::autotune(
   return oldAutotune(layer_dim, sparsity);
 }
 
+size_t DWTASamplingConfig::estimateHashTableSize(uint32_t dim, float sparsity) {
+  auto config = autotune(dim, sparsity, false);
+
+  return config->_num_tables * config->_reservoir_size *
+         (1 << config->_range_pow) * 4;
+}
+
 NeuronIndexPtr FastSRPSamplingConfig::getNeuronIndex(uint32_t layer_dim,
                                                      uint32_t input_dim) const {
   auto hash_fn = getHashFunction(input_dim);

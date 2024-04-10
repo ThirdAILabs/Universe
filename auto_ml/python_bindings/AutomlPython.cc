@@ -292,7 +292,8 @@ void defineAutomlInModule(py::module_& module) {
       .def_static("label_probe_multiple_mach",
                   &udt::UDT::labelProbeMultipleMach, py::arg("models"),
                   py::arg("batch"), py::arg("sparse_inference") = false,
-                  py::arg("top_k") = std::nullopt);
+                  py::arg("top_k") = std::nullopt)
+      .def_static("estimate_hash_table_size", &udt::UDT::estimateHashTableSize);
 }
 
 void createUDTTypesSubmodule(py::module_& module) {
