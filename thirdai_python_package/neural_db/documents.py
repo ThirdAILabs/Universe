@@ -516,6 +516,12 @@ class CSV(Document):
     def remove_spaces_from_list(column_name_list):
         return [CSV.remove_spaces(col) for col in column_name_list]
 
+    # blocksize (when using dask) Determines the size of each partition/chunk in bytes.
+    # For example, setting blocksize=25e6 will aim for partitions of approximately 25MB.
+    # If you decrease the block size, Dask will create more partitions, and
+    # increasing it will result in fewer partitions.
+    # Default value is computed based on available physical memory
+    # and the number of cores, up to a maximum of 64MB.
     def __init__(
         self,
         path: str,
@@ -528,10 +534,18 @@ class CSV(Document):
         has_offset=False,
         on_disk=False,
         use_dask=False,
+        blocksize=None,
     ) -> None:
         self.use_dask = use_dask
 
-        df = dd.read_csv(path) if use_dask else pd.read_csv(path)
+        if use_dask:
+            df = (
+                dd.read_csv(path, blocksize=blocksize)
+                if blocksize
+                else dd.read_csv(path)
+            )
+        else:
+            df = pd.read_csv(path)
 
         # Convert spaces in column names to underscores because df.itertuples
         # does not work when there are spaces
