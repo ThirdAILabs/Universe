@@ -278,7 +278,8 @@ def test_neural_db_constrained_search_no_matches(empty_neural_db):
 
 
 @pytest.mark.parametrize("empty_neural_db", ([1, 2]), indirect=True)
-def test_neural_db_constrained_search_row_level_constraints(empty_neural_db):
+@pytest.mark.parametrize("use_dask", ([True, False]))
+def test_neural_db_constrained_search_row_level_constraints(empty_neural_db, use_dask):
     csv_contents = [
         "id,text,date",
     ] + [f"{i},a reusable chunk of text,{1950 + i}-10-10" for i in range(100)]
@@ -294,6 +295,7 @@ def test_neural_db_constrained_search_row_level_constraints(empty_neural_db):
             strong_columns=["text"],
             weak_columns=["text"],
             reference_columns=["text"],
+            use_dask=use_dask,
         )
     ]
     db = empty_neural_db
@@ -314,7 +316,8 @@ def test_neural_db_constrained_search_row_level_constraints(empty_neural_db):
 
 
 @pytest.mark.parametrize("empty_neural_db", ([1, 2]), indirect=True)
-def test_neural_db_delete_document(empty_neural_db):
+@pytest.mark.parametrize("use_dask", ([True, False]))
+def test_neural_db_delete_document(empty_neural_db, use_dask):
     with open("ice_cream.csv", "w") as f:
         f.write("text,id\n")
         f.write("ice cream,0\n")
@@ -333,6 +336,7 @@ def test_neural_db_delete_document(empty_neural_db):
             weak_columns=["text"],
             reference_columns=["text"],
             metadata={"about": "ice cream"},
+            use_dask=use_dask,
         ),
         ndb.CSV(
             "pizza.csv",
