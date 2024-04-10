@@ -232,6 +232,9 @@ class DocumentDataSource(PyDataSource):
 
     def add(self, document: Document, start_id: int):
         self.documents.append((document, start_id))
+        print("adding")
+        print(type(document.size))
+        print(document.size)
         self._size += document.size
 
     def row_iterator(self):
@@ -631,7 +634,6 @@ class CSV(Document):
         else:
             # Pandas automatically manages the index without needing to explicitly sort it here.
             df = df.set_index(self.id_column)
-            
 
         self.table = create_table(df, on_disk)
 

@@ -80,7 +80,7 @@ class DaskDataFrameTable(Table):
     @property
     def size(self) -> int:
         # For Dask, compute() is required to get the actual size
-        return self.df.shape[0].compute()
+        return int(self.df.shape[0].compute())
 
     @property
     def ids(self) -> List[int]:
