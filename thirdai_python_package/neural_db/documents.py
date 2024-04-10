@@ -8,7 +8,6 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import dask.array as da
 import dask.dataframe as dd
 import numpy as np
 import pandas as pd
@@ -232,9 +231,6 @@ class DocumentDataSource(PyDataSource):
 
     def add(self, document: Document, start_id: int):
         self.documents.append((document, start_id))
-        print("adding")
-        print(type(document.size))
-        print(document.size)
         self._size += document.size
 
     def row_iterator(self):
