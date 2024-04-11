@@ -72,6 +72,7 @@ class Table(ABC):
 class DaskDataFrameTable(Table):
     def __init__(self, df: dd.DataFrame):
         self.df = df_with_index_name(df)
+        self.row_id_to_dict = {}
 
     @property
     def columns(self) -> List[str]:
@@ -92,13 +93,10 @@ class DaskDataFrameTable(Table):
         return self.df.loc[row_id][column].compute()
 
     def row_as_dict(self, row_id: int) -> dict:
-        row = self.df.loc[[row_id]].compute().to_dict(orient="records")[0]
-        row[self.df.index.name] = row_id
-        return row
+        return self.row_id_to_dict[row_id]
 
     def range_rows_as_dicts(self, from_row_id: int, to_row_id: int) -> List[dict]:
-        df_range = self.df.loc[from_row_id:to_row_id].compute()
-        return df_range.reset_index().to_dict(orient="records")
+        return self.row_id_to_dict[from_row_id:to_row_id]
 
     def _partition_to_dicts(self, df_partition):
         dicts = []
@@ -115,6 +113,7 @@ class DaskDataFrameTable(Table):
         for batch in results.compute():
             for row_dict in batch:
                 row_dict[index_name] = row_id
+                self.row_id_to_dict[row_id] = row_dict
                 yield (row_id, row_dict)
                 row_id += 1
 
