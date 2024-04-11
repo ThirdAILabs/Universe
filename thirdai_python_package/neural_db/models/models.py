@@ -722,7 +722,12 @@ class Mach(Model):
         )
 
     def infer_labels(
-        self, samples: InferSamples, n_results: int, retriever=None, **kwargs
+        self,
+        samples: InferSamples,
+        n_results: int,
+        retriever=None,
+        mach_first=False,
+        **kwargs,
     ) -> Predictions:
         if not retriever:
             if not self.inverted_index:
@@ -733,7 +738,12 @@ class Mach(Model):
                     samples=samples, n_results=n_results
                 )
                 return [
-                    merge_results(mach_res, index_res, n_results)
+                    (
+                        merge_results(mach_res, index_res, n_results)
+                        if mach_first
+                        # Prioritize inverted index results.
+                        else merge_results(index_res, mach_res, n_results)
+                    )
                     for mach_res, index_res in zip(mach_results, index_results)
                 ]
 
