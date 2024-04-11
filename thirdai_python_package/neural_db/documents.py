@@ -599,7 +599,7 @@ class CSV(Document):
             df = df.sort_values(self.id_column)
         else:
             self.id_column = "thirdai_index"
-            if self.use_dask:
+            if use_dask:
                 # sets dask df index column to range(len(df))
                 df[self.id_column] = (
                     df.assign(partition_count=1).partition_count.cumsum() - 1
@@ -636,7 +636,7 @@ class CSV(Document):
         for col in strong_columns + weak_columns:
             df[col] = df[col].fillna("")
 
-        if self.use_dask:
+        if use_dask:
             # The 'sorted=True' parameter is used to indicate that the column is already sorted.
             # This optimization helps Dask to avoid expensive data shuffling operations, improving performance.
             df = df.set_index(self.id_column, sorted=True)
