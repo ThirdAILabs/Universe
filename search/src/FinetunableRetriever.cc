@@ -173,14 +173,28 @@ void FinetunableRetriever::remove(const std::vector<DocId>& ids) {
   }
 }
 
+template <typename From, typename To>
+std::unordered_map<To, std::vector<To>> convertMap(
+    const std::unordered_map<From, std::vector<From>>& input) {
+  std::unordered_map<To, std::vector<To>> output;
+  output.reserve(input.size());
+  for (const auto& [key, value] : input) {
+    output[key] = {value.begin(), value.end()};
+  }
+
+  return output;
+}
+
 ar::ConstArchivePtr FinetunableRetriever::toArchive() const {
   auto map = ar::Map::make();
 
   map->set("doc_index", _doc_index->toArchive());
   map->set("query_index", _query_index->toArchive());
 
-  map->set("query_to_docs", ar::mapU64VecU64(_query_to_docs));
-  map->set("doc_to_queries", ar::mapU64VecU64(_doc_to_queries));
+  map->set("query_to_docs",
+           ar::mapU64VecU64(convertMap<uint32_t, uint64_t>(_query_to_docs)));
+  map->set("doc_to_queries",
+           ar::mapU64VecU64(convertMap<uint32_t, uint64_t>(_doc_to_queries)));
 
   map->set("next_query_id", ar::u64(_next_query_id));
 
@@ -194,7 +208,10 @@ ar::ConstArchivePtr FinetunableRetriever::toArchive() const {
 FinetunableRetriever::FinetunableRetriever(const ar::Archive& archive)
     : _doc_index(InvertedIndex::fromArchive(*archive.get("doc_index"))),
       _query_index(InvertedIndex::fromArchive(*archive.get("query_index"))),
-      _query_to_docs(archive.getAs<ar::MapU64VecU64>("query_to_docs")),
+      _query_to_docs(convertMap<uint64_t, uint32_t>(
+          archive.getAs<ar::MapU64VecU64>("query_to_docs"))),
+      _doc_to_queries(convertMap<uint64_t, uint32_t>(
+          archive.getAs<ar::MapU64VecU64>("doc_to_queries"))),
       _next_query_id(archive.u64("next_query_id")),
       _lambda(archive.f32("lambda")),
       _min_top_docs(archive.u64("min_top_docs")),

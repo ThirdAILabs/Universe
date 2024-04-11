@@ -20,7 +20,7 @@ class FinetunableRetriever(Model):
             docs.append(row.strong + " " + row.weak)
             ids.append(row.id)
 
-            if len(docs) == 1_000_000:
+            if len(docs) == 100_000:
                 self.retriever.index(ids=ids, docs=docs)
                 docs = []
                 ids = []

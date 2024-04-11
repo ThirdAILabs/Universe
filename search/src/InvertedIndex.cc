@@ -4,6 +4,8 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/types/vector.hpp>
+#include <_types/_uint32_t.h>
+#include <_types/_uint64_t.h>
 #include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <licensing/src/CheckLicense.h>
@@ -37,6 +39,12 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
   if (ids.size() != docs.size()) {
     throw std::invalid_argument(
         "Number of ids must match the number of docs in index.");
+  }
+
+  if (ids.size() + _doc_lengths.size() > std::numeric_limits<DocId>::max()) {
+    throw std::runtime_error(
+        "Cannot add additional documents without overflowing maximum "
+        "representable doc id.");
   }
 
   licensing::entitlements().verifyNoDataSourceRetrictions();
@@ -379,6 +387,18 @@ std::vector<DocScore> InvertedIndex::parallelQuery(
   return top_scores;
 }
 
+template <typename From, typename To>
+std::unordered_map<To, uint64_t> convertDocLengths(
+    const std::unordered_map<From, uint64_t>& input) {
+  std::unordered_map<To, uint64_t> output;
+  output.reserve(input.size());
+  for (const auto& [key, value] : input) {
+    output[key] = value;
+  }
+
+  return output;
+}
+
 ar::ConstArchivePtr InvertedIndex::toArchive() const {
   licensing::entitlements().verifySaveLoad();
 
@@ -396,7 +416,8 @@ ar::ConstArchivePtr InvertedIndex::toArchive() const {
   map->set("token_to_docs", ar::mapStrVecU64(std::move(token_to_docs)));
   map->set("token_to_doc_cnts", ar::mapStrVecU64(std::move(token_to_doc_cnts)));
 
-  map->set("doc_lengths", ar::mapU64U64(_doc_lengths));
+  map->set("doc_lengths",
+           ar::mapU64U64(convertDocLengths<uint32_t, uint64_t>(_doc_lengths)));
 
   map->set("max_docs_to_score", ar::u64(_max_docs_to_score));
   map->set("idf_cutoff_frac", ar::f32(_idf_cutoff_frac));
@@ -413,7 +434,8 @@ ar::ConstArchivePtr InvertedIndex::toArchive() const {
 }
 
 InvertedIndex::InvertedIndex(const ar::Archive& archive)
-    : _doc_lengths(archive.getAs<ar::MapU64U64>("doc_lengths")),
+    : _doc_lengths(convertDocLengths<uint64_t, uint32_t>(
+          archive.getAs<ar::MapU64U64>("doc_lengths"))),
       _max_docs_to_score(archive.u64("max_docs_to_score")),
       _idf_cutoff_frac(archive.f32("idf_cutoff_frac")),
       _sum_doc_lens(archive.u64("sum_doc_lens")),
@@ -478,8 +500,21 @@ template <class Archive>
 void InvertedIndex::serialize(Archive& archive) {
   licensing::entitlements().verifySaveLoad();
 
-  archive(_token_to_docs, _token_to_idf, _doc_lengths, _idf_cutoff_frac,
+  std::unordered_map<uint64_t, uint64_t> doc_lengths;
+
+  std::unordered_map<Token, std::vector<std::pair<uint64_t, uint32_t>>>
+      token_to_docs;
+
+  archive(token_to_docs, _token_to_idf, doc_lengths, _idf_cutoff_frac,
           _sum_doc_lens, _avg_doc_length, _k1, _b, _stem, _lowercase);
+
+  for (const auto& [token, doc_scores] : token_to_docs) {
+    for (const auto& [doc, score] : doc_scores) {
+      _token_to_docs[token].emplace_back(doc, score);
+    }
+  }
+
+  _doc_lengths = convertDocLengths<uint64_t, uint32_t>(doc_lengths);
 
   _max_docs_to_score = DEFAULT_MAX_DOCS_TO_SCORE;
 }

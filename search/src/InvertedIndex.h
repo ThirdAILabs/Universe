@@ -12,7 +12,7 @@
 
 namespace thirdai::search {
 
-using DocId = uint64_t;
+using DocId = uint32_t;
 using Token = std::string;
 using Tokens = std::vector<Token>;
 

@@ -5,7 +5,7 @@
 
 namespace thirdai::search {
 
-using QueryId = uint64_t;
+using QueryId = uint32_t;
 
 class FinetunableRetriever {
  public:
