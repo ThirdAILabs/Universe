@@ -1,3 +1,5 @@
+import operator
+from functools import reduce
 from typing import Dict, Iterable, List, Set, Union
 
 import numpy as np
@@ -33,9 +35,9 @@ class PandasChunkStore(ChunkStore):
         output_batches = []
         for batch in chunks:
             chunk_ids = pd.Series(
-                np.arange(self.next_id, self.next_id + len(batch.text), dtype=np.int64)
+                np.arange(self.next_id, self.next_id + len(batch), dtype=np.int64)
             )
-            self.next_id += len(batch.text)
+            self.next_id += len(batch)
 
             chunk_df = batch.to_df()
             chunk_df["chunk_id"] = chunk_ids
@@ -59,6 +61,8 @@ class PandasChunkStore(ChunkStore):
         self.chunk_df.set_index("chunk_id", inplace=True, drop=False)
 
         self.metadata_df = pd.concat(all_metadata)
+        # Numpy will default missing values to NaN, however we want missing values
+        # to be None so that it's consistent with the behavior of sqlalchemy.
         self.metadata_df.replace(to_replace=np.nan, value=None, inplace=True)
         self.metadata_df.set_index("chunk_id", inplace=True, drop=False)
 
@@ -97,15 +101,14 @@ class PandasChunkStore(ChunkStore):
     ) -> Set[ChunkId]:
         if not len(constraints):
             raise ValueError("Cannot call filter_chunk_ids with empty constraints.")
-        condition = None
-        for column, constraint in constraints.items():
-            curr_condition = constraint.pd_filter(
-                column_name=column, df=self.metadata_df
-            )
-            if condition is None:
-                condition = curr_condition
-            else:
-                condition = condition & curr_condition
+
+        condition = reduce(
+            operator.and_,
+            [
+                constraint.pd_filter(column_name=column, df=self.metadata_df)
+                for column, constraint in constraints.items()
+            ],
+        )
 
         return set(self.chunk_df[condition]["chunk_id"])
 
@@ -117,13 +120,16 @@ class PandasChunkStore(ChunkStore):
     def remap_custom_ids(
         self, samples: Iterable[CustomIdSupervisedBatch]
     ) -> Iterable[SupervisedBatch]:
-        batches = []
-        for batch in samples:
-            chunk_ids = []
-            for custom_ids in batch.custom_id:
-                chunk_ids.append(list(map(self._remap_id, custom_ids)))
 
-            batches.append(
-                SupervisedBatch(query=batch.query, chunk_id=pd.Series(chunk_ids))
+        return [
+            SupervisedBatch(
+                query=batch.query,
+                chunk_id=pd.Series(
+                    [
+                        list(map(self._remap_id, custom_ids))
+                        for custom_ids in batch.custom_id
+                    ]
+                ),
             )
-        return batches
+            for batch in samples
+        ]

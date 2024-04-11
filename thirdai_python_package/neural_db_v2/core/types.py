@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Union
+from typing import List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -71,8 +71,11 @@ class NewChunkBatch:
     custom_id: Union[pt.Series[str], pt.Series[int], None]
     text: pt.Series[str]
     keywords: pt.Series[str]
-    metadata: Union[pt.DataFrame, None]
+    metadata: Optional[pt.DataFrame]
     document: pt.Series[str]
+
+    def __len__(self):
+        return len(self.text)
 
     def __getitem__(self, i: int):
         return NewChunk(

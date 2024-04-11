@@ -1,4 +1,6 @@
+import operator
 import uuid
+from functools import reduce
 from typing import Dict, Iterable, List, Set
 
 import numpy as np
@@ -155,9 +157,9 @@ class SQLiteChunkStore(ChunkStore):
         inserted_batches = []
         for batch in chunks:
             chunk_ids = pd.Series(
-                np.arange(self.next_id, self.next_id + len(batch.text), dtype=np.int64)
+                np.arange(self.next_id, self.next_id + len(batch), dtype=np.int64)
             )
-            self.next_id += len(batch.text)
+            self.next_id += len(batch)
 
             chunk_df = batch.to_df()
             chunk_df["chunk_id"] = chunk_ids
@@ -202,7 +204,7 @@ class SQLiteChunkStore(ChunkStore):
             self.metadata_table.c.chunk_id.in_(chunk_ids)
         )
         with self.engine.connect() as conn:
-            for row in conn.execute(chunk_stmt):
+            for row in conn.execute(chunk_stmt).all():
                 id_to_chunk[row.chunk_id] = Chunk(
                     custom_id=row.custom_id,
                     text=row.text,
@@ -211,7 +213,7 @@ class SQLiteChunkStore(ChunkStore):
                     chunk_id=row.chunk_id,
                     metadata=None,
                 )
-            for row in conn.execute(metadata_stmt):
+            for row in conn.execute(metadata_stmt).all():
                 metadata = row._asdict()
                 del metadata["chunk_id"]
                 id_to_chunk[row.chunk_id].metadata = metadata
@@ -229,15 +231,14 @@ class SQLiteChunkStore(ChunkStore):
     ) -> Set[ChunkId]:
         if not len(constraints):
             raise ValueError("Cannot call filter_chunk_ids with empty constraints.")
-        condition = None
-        for column, constraint in constraints.items():
-            curr_condition = constraint.sql_condition(
-                column_name=column, table=self.metadata_table
-            )
-            if condition is None:
-                condition = curr_condition
-            else:
-                condition = condition & curr_condition
+
+        condition = reduce(
+            operator.and_,
+            [
+                constraint.sql_condition(column_name=column, table=self.metadata_table)
+                for column, constraint in constraints.items()
+            ],
+        )
 
         stmt = select(self.metadata_table.c.chunk_id).where(condition)
 
