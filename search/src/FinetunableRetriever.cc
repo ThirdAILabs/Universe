@@ -195,6 +195,7 @@ FinetunableRetriever::FinetunableRetriever(const ar::Archive& archive)
     : _doc_index(InvertedIndex::fromArchive(*archive.get("doc_index"))),
       _query_index(InvertedIndex::fromArchive(*archive.get("query_index"))),
       _query_to_docs(archive.getAs<ar::MapU64VecU64>("query_to_docs")),
+      _doc_to_queries(archive.getAs<ar::MapU64VecU64>("doc_to_queries")),
       _next_query_id(archive.u64("next_query_id")),
       _lambda(archive.f32("lambda")),
       _min_top_docs(archive.u64("min_top_docs")),
