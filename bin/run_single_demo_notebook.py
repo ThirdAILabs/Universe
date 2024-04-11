@@ -15,6 +15,10 @@ DEMO_URL = "https://github.com/ThirdAILabs/Demos.git"
 def get_notebook_path(temp_dir, relative_notebook_path):
     # Collect all of the jupyter notebooks in the Demos repo
     subprocess.call(["git", "clone", DEMO_URL], cwd=temp_dir)
+    repo_name = "Demos"
+    repo_path = os.path.join(temp_dir, repo_name)
+
+    subprocess.call(["git", "checkout", "check-msmarkov"], cwd=repo_path)
     return os.path.join(temp_dir, "Demos", relative_notebook_path)
 
 
