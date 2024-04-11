@@ -12,7 +12,9 @@ class FinetunableRetriever(Model):
     def __init__(self):
         self.retriever = search.FinetunableRetriever()
 
-    def index_from_start(self, intro_documents: DocumentDataSource, **kwargs):
+    def index_from_start(
+        self, intro_documents: DocumentDataSource, batch_size=100000, **kwargs
+    ):
         docs = []
         ids = []
 
@@ -20,7 +22,7 @@ class FinetunableRetriever(Model):
             docs.append(row.strong + " " + row.weak)
             ids.append(row.id)
 
-            if len(docs) == 1_000_000:
+            if len(docs) == batch_size:
                 self.retriever.index(ids=ids, docs=docs)
                 docs = []
                 ids = []
