@@ -495,20 +495,22 @@ class CSV(Document):
     """
 
     def valid_id_column(self, column):
-        if self.use_dask:
-            return self.valid_id_column_dask(column)
-        return (
-            (len(column.unique()) == len(column))
-            and (column.min() == 0)
-            and (column.max() == len(column) - 1)
-        )
+        if isinstance(column, dd.Series):
+            unique_count = column.nunique().compute()
+            min_val = column.min().compute()
+            max_val = column.max().compute()
+            length = column.size.compute()
+            condition = (
+                (unique_count == length) and (min_val == 0) and (max_val == length - 1)
+            )
+        else:
+            condition = (
+                (len(column.unique()) == len(column))
+                and (column.min() == 0)
+                and (column.max() == len(column) - 1)
+            )
 
-    def valid_id_column_dask(self, column):
-        unique_count = column.nunique().compute()
-        min_val = column.min().compute()
-        max_val = column.max().compute()
-        length = column.size.compute()
-        return (unique_count == length) and (min_val == 0) and (max_val == length - 1)
+        return condition
 
     def remove_spaces(column_name):
         return column_name.replace(" ", "_")
@@ -536,7 +538,6 @@ class CSV(Document):
         use_dask=False,
         blocksize=None,
     ) -> None:
-        self.use_dask = use_dask
 
         if use_dask:
             df = (
@@ -594,7 +595,7 @@ class CSV(Document):
         self.orig_to_assigned_id = None
         self.id_column = id_column
         orig_id_column = id_column
-        if self.id_column and (has_offset or self.valid_id_column(df[self.id_column])):
+        if self.id_column and (has_offset or CSV.valid_id_column(df[self.id_column])):
             df = df.sort_values(self.id_column)
         else:
             self.id_column = "thirdai_index"
