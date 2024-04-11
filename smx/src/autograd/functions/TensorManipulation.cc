@@ -1,5 +1,7 @@
 #include "TensorManipulation.h"
+#include <smx/src/autograd/Variable.h>
 #include <smx/src/tensor/Functions.h>
+#include <smx/src/tensor/Tensor.h>
 
 namespace thirdai::smx {
 
@@ -44,6 +46,32 @@ VariablePtr reshape(const VariablePtr& input, const Shape& new_shape) {
 
   return Variable::make(reshape(input->tensor(), new_shape), grad_func,
                         {input});
+}
+
+VariablePtr concat(const std::vector<VariablePtr>& inputs, size_t dim) {
+  std::vector<TensorPtr> tensors;
+  tensors.reserve(inputs.size());
+  std::vector<size_t> sizes;
+  sizes.reserve(inputs.size());
+  for (const auto& input : inputs) {
+    tensors.push_back(input->tensor());
+    sizes.push_back(input->tensor()->shape(dim));
+  }
+
+  auto output = concat(tensors, dim);
+
+  GradFunc grad_func = [dim, sizes](const TensorPtr& grad,
+                                    const std::vector<VariablePtr>& inputs) {
+    auto input_grads = split(grad, dim, sizes);
+
+    for (size_t i = 0; i < inputs.size(); i++) {
+      if (inputs.at(i)->requiresGrad()) {
+        inputs.at(i)->addGradient(input_grads.at(i));
+      }
+    }
+  };
+
+  return Variable::make(output, grad_func, inputs);
 }
 
 }  // namespace thirdai::smx

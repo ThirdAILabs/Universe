@@ -208,6 +208,10 @@ void defineAutograd(py::module_& smx) {
   smx.def("reshape",
           py::overload_cast<const VariablePtr&, const Shape&>(&reshape),
           py::arg("input"), py::arg("new_shape"));
+
+  smx.def("concat",
+          py::overload_cast<const std::vector<VariablePtr>&, size_t>(&concat),
+          py::arg("input"), py::arg("dim"));
 }
 
 class PyModule : public Module {

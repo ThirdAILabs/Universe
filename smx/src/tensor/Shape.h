@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cstddef>
 #include <functional>
 #include <numeric>
 #include <sstream>
@@ -40,6 +41,17 @@ class Shape {
   }
 
   Shape slice(size_t start) const { return slice(start, ndim()); }
+
+  Shape newShapeWithDimReplaced(size_t dim, size_t new_size) const {
+    if (dim >= _shape.size()) {
+      throw std::invalid_argument(
+          "Cannot replace dim " + std::to_string(dim) + " of shape with " +
+          std::to_string(_shape.size()) + " dimensinos.");
+    }
+    std::vector<size_t> new_shape = _shape;
+    new_shape[dim] = new_size;
+    return Shape(std::move(new_shape));
+  }
 
   size_t operator[](size_t dim) const {
     if (dim >= _shape.size()) {

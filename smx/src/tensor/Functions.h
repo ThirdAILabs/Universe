@@ -14,6 +14,11 @@ TensorPtr transpose(const TensorPtr& tensor, const std::vector<size_t>& perm);
 
 TensorPtr reshape(const TensorPtr& tensor, const Shape& new_shape);
 
+TensorPtr concat(const std::vector<TensorPtr>& tensors, size_t dim);
+
+std::vector<TensorPtr> split(const TensorPtr& tensor, size_t dim,
+                             const std::vector<size_t>& sizes);
+
 /**
  * Activation functions.
  */

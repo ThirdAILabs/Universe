@@ -11,4 +11,6 @@ VariablePtr transpose(const VariablePtr& input,
 
 VariablePtr reshape(const VariablePtr& input, const Shape& new_shape);
 
+VariablePtr concat(const std::vector<VariablePtr>& inputs, size_t dim);
+
 }  // namespace thirdai::smx

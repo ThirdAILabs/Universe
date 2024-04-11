@@ -291,6 +291,8 @@ set(THIRDAI_SOURCES
     smx/src/tensor/CsrTensor.cc
     smx/src/tensor/functions/Reshape.cc
     smx/src/tensor/functions/Transpose.cc
+    smx/src/tensor/functions/Concat.cc
+    smx/src/tensor/functions/Split.cc
     smx/src/tensor/functions/Activations.cc
     smx/src/tensor/functions/LinearAlgebra.cc
     smx/src/tensor/functions/sparse/SparseLinear.cc
