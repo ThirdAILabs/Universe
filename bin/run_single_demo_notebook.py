@@ -19,6 +19,7 @@ def get_notebook_path(temp_dir, relative_notebook_path):
 
 
 def run_demo_notebook(notebook_path):
+    print(f"Running {notebook_path}")
     if "msmarco" in notebook_path:
         with open(notebook_path) as notebook_file:
             # Ref: https://nbformat.readthedocs.io/en/latest/format_description.html
