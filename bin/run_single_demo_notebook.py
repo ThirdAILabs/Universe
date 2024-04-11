@@ -38,6 +38,13 @@ def run_demo_notebook(notebook_path):
             return 0
         except Exception as error:
             print(f"Failure in notebook: {notebook_path}:\n{error}")
+            for cell in nb_in.cells:
+                if cell.cell_type == "code":
+                    for output in cell.get("outputs", []):
+                        if output.output_type == "error":
+                            print(
+                                f"Error in cell: {cell.source}\nError Message: {'; '.join(output.traceback)}\n"
+                            )
             return 1
 
 
