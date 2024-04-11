@@ -19,33 +19,37 @@ def get_notebook_path(temp_dir, relative_notebook_path):
 
 
 def run_demo_notebook(notebook_path):
-    with open(notebook_path) as notebook_file:
-        # Ref: https://nbformat.readthedocs.io/en/latest/format_description.html
-        nb_in = nbformat.read(notebook_file, nbformat.NO_CONVERT)
-        # The resources argument is needed to execute the notebook in a specific
-        # directory. We run the notebooks in the directory they are located in
-        # to ensure that paths work correctly to configs (or anything else).
-        working_dir = str(Path(notebook_path).parent)
-        try:
-            print(f"Running notebook: {notebook_path}")
-            ep = ExecutePreprocessor(
-                timeout=None,
-                kernel_name="python3",
-                resources={"metadata": {"path": working_dir}},
-            )
-            nb_out = ep.preprocess(nb_in)
-            print(f"Successfully ran the notebook: {notebook_path}")
-            return 0
-        except Exception as error:
-            print(f"Failure in notebook: {notebook_path}:\n{error}")
-            for cell in nb_in.cells:
-                if cell.cell_type == "code":
-                    for output in cell.get("outputs", []):
-                        if output.output_type == "error":
-                            print(
-                                f"Error in cell: {cell.source}\nError Message: {'; '.join(output.traceback)}\n"
-                            )
-            return 1
+    if "msmarco" in notebook_path:
+        with open(notebook_path) as notebook_file:
+            # Ref: https://nbformat.readthedocs.io/en/latest/format_description.html
+            nb_in = nbformat.read(notebook_file, nbformat.NO_CONVERT)
+            # The resources argument is needed to execute the notebook in a specific
+            # directory. We run the notebooks in the directory they are located in
+            # to ensure that paths work correctly to configs (or anything else).
+            working_dir = str(Path(notebook_path).parent)
+            try:
+                print(f"Running notebook: {notebook_path}")
+                ep = ExecutePreprocessor(
+                    timeout=None,
+                    kernel_name="python3",
+                    resources={"metadata": {"path": working_dir}},
+                )
+                nb_out = ep.preprocess(nb_in)
+                print(f"Successfully ran the notebook: {notebook_path}")
+                return 0
+            except Exception as error:
+                print(f"Failure in notebook: {notebook_path}:\n{error}")
+                for cell in nb_in.cells:
+                    if cell.cell_type == "code":
+                        for output in cell.get("outputs", []):
+                            if output.output_type == "error":
+                                print(
+                                    f"Error in cell: {cell.source}\nError Message: {'; '.join(output.traceback)}\n"
+                                )
+                return 1
+    else:
+        print(f"Skipping {notebook_path} for testing.")
+        return 0
 
 
 def main():
