@@ -40,6 +40,19 @@ def small_doc_set():
     return [ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE, on_disk=True)]
 
 
+@pytest.fixture(scope="module")
+def small_doc_set_dask():
+    return [ndb.CSV(CSV_FILE, use_dask=True), ndb.PDF(PDF_FILE, on_disk=True)]
+
+
+@pytest.fixture(scope="module")
+def small_doc_set_dask_multiple_partitions():
+    return [
+        ndb.CSV(CSV_FILE, use_dask=True, blocksize=1e3),
+        ndb.PDF(PDF_FILE, on_disk=True),
+    ]
+
+
 @pytest.fixture(scope="session")
 def all_local_docs():
     return [get_doc() for get_doc in all_local_doc_getters]
@@ -78,6 +91,19 @@ def test_neural_db_all_methods_work_on_new_model_with_inverted(
     all_methods_work(
         db,
         docs=small_doc_set,
+        num_duplicate_docs=0,
+        assert_acc=False,
+    )
+
+
+@pytest.mark.parametrize(
+    "doc_set", ["small_doc_set_dask", "small_doc_set_dask_multiple_partitions"]
+)
+def test_neural_db_all_methods_work_with_dask(doc_set, request):
+    db = ndb.NeuralDB()
+    all_methods_work(
+        db,
+        docs=request.getfixturevalue(doc_set),
         num_duplicate_docs=0,
         assert_acc=False,
     )
@@ -263,7 +289,8 @@ def test_neural_db_constrained_search_no_matches(empty_neural_db):
 
 
 @pytest.mark.parametrize("empty_neural_db", ([1, 2]), indirect=True)
-def test_neural_db_constrained_search_row_level_constraints(empty_neural_db):
+@pytest.mark.parametrize("use_dask", ([True, False]))
+def test_neural_db_constrained_search_row_level_constraints(empty_neural_db, use_dask):
     csv_contents = [
         "id,text,date",
     ] + [f"{i},a reusable chunk of text,{1950 + i}-10-10" for i in range(100)]
@@ -279,6 +306,7 @@ def test_neural_db_constrained_search_row_level_constraints(empty_neural_db):
             strong_columns=["text"],
             weak_columns=["text"],
             reference_columns=["text"],
+            use_dask=use_dask,
         )
     ]
     db = empty_neural_db
@@ -318,6 +346,7 @@ def test_neural_db_delete_document(empty_neural_db):
             weak_columns=["text"],
             reference_columns=["text"],
             metadata={"about": "ice cream"},
+            use_dask=True,
         ),
         ndb.CSV(
             "pizza.csv",
@@ -328,9 +357,6 @@ def test_neural_db_delete_document(empty_neural_db):
             metadata={"about": "pizza"},
         ),
     ]
-
-    os.remove("ice_cream.csv")
-    os.remove("pizza.csv")
 
     for _ in range(5):
         [ice_cream_source_id, _] = db.insert(docs, train=True)
@@ -376,6 +402,9 @@ def test_neural_db_delete_document(empty_neural_db):
     # Make sure constrained search index is also updated
     result = db.search("ice cream", top_k=1, constraints={"about": "ice cream"})[0]
     assert result.text == "text: ice cream"
+
+    os.remove("ice_cream.csv")
+    os.remove("pizza.csv")
 
 
 def test_neural_db_delete_document_with_inverted_index():

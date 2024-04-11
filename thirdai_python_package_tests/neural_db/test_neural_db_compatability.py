@@ -29,13 +29,14 @@ def create_ndb():
     db.save(save_path())
 
 
-def count_correct(db, queries, ids):
+def count_correct(db, queries, ids, retriever=None):
     correct = 0
     for query, id in zip(queries, ids):
-        result = db.search(query, top_k=1)[0]
-
+        result = db.search(query, top_k=1, retriever=retriever)[0]
         if result.id == id:
             correct += 1
+        if retriever:
+            assert result.retriever == retriever
 
     return correct
 
@@ -45,7 +46,15 @@ def test_saved_ndb_accuracy():
 
     df = pd.read_csv(query_file())
 
-    assert count_correct(db=db, queries=df["text"], ids=df["id"]) == len(df)
+    mach_correct = count_correct(
+        db=db, queries=df["text"], ids=df["id"], retriever="mach"
+    )
+    assert mach_correct == len(df)
+
+    inverted_index_correct = count_correct(
+        db=db, queries=df["text"], ids=df["id"], retriever="inverted_index"
+    )
+    assert inverted_index_correct == len(df)
 
 
 def test_saved_ndb_associate():

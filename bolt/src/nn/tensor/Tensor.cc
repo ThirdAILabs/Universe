@@ -210,7 +210,7 @@ Tensor::topKIndexValuePair(size_t topk) {
   for (size_t batch_idx = 0; batch_idx < batch_size; batch_idx++) {
     int idx_ = topk - 1;
     TopKActivationsQueue topk_activations_queue =
-        getVector(batch_idx).findKLargestActivations(topk);
+        getVector(batch_idx).topKNeurons(topk);
 
     while (!topk_activations_queue.empty() && idx_ >= 0) {
       ValueIndexPair val_idx_pair = topk_activations_queue.top();

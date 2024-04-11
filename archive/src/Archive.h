@@ -82,6 +82,8 @@ class Archive {
 
   uint64_t u64(const std::string& key) const { return getAs<uint64_t>(key); }
 
+  float f32(const std::string& key) const { return getAs<float>(key); }
+
   const std::string& str(const std::string& key) const {
     return getAs<std::string>(key);
   }
@@ -174,10 +176,12 @@ using VecStr = std::vector<std::string>;
 using VecWStr = std::vector<std::wstring>;
 using VecVecU32 = std::vector<std::vector<uint32_t>>;
 using VecVecF32 = std::vector<std::vector<float>>;
+using MapU64U64 = std::unordered_map<uint64_t, uint64_t>;
 using MapU64VecU64 = std::unordered_map<uint64_t, std::vector<uint64_t>>;
 using MapU64VecF32 = std::unordered_map<uint64_t, std::vector<float>>;
 using MapStrU64 = std::unordered_map<std::string, uint64_t>;
 using MapStrI64 = std::unordered_map<std::string, int64_t>;
+using MapStrVecU64 = std::unordered_map<std::string, std::vector<uint64_t>>;
 using MapI64VecStr = std::unordered_map<int64_t, std::vector<std::string>>;
 
 ConstArchivePtr boolean(bool val);
@@ -206,6 +210,8 @@ ConstArchivePtr vecVecU32(std::vector<std::vector<uint32_t>> val);
 
 ConstArchivePtr vecVecF32(std::vector<std::vector<float>> val);
 
+ConstArchivePtr mapU64U64(MapU64U64 val);
+
 ConstArchivePtr mapU64VecU64(MapU64VecU64 val);
 
 ConstArchivePtr mapU64VecF32(MapU64VecF32 val);
@@ -213,6 +219,8 @@ ConstArchivePtr mapU64VecF32(MapU64VecF32 val);
 ConstArchivePtr mapStrU64(std::unordered_map<std::string, uint64_t> val);
 
 ConstArchivePtr mapStrI64(std::unordered_map<std::string, int64_t> val);
+
+ConstArchivePtr mapStrVecU64(MapStrVecU64 val);
 
 ConstArchivePtr mapI64VecStr(MapI64VecStr val);
 

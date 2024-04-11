@@ -9,6 +9,7 @@
 #include <data/python_bindings/DataPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <licensing/python_bindings/LicensingPython.h>
+#include <mach/python_bindings/MachPython.h>
 #include <search/python_bindings/DocSearchPython.h>
 #include <smx/python_bindings/SmxPython.h>
 #include <telemetry/python_bindings/TelemetryPython.h>
@@ -142,6 +143,7 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
   // Automl in Bolt
   thirdai::automl::python::defineAutomlInModule(bolt_submodule);
+  thirdai::mach::python::defineMach(bolt_submodule);
 
   thirdai::automl::python::createUDTTypesSubmodule(bolt_submodule);
   thirdai::automl::python::createUDTTemporalSubmodule(bolt_submodule);

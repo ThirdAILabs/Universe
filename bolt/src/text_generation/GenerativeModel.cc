@@ -61,7 +61,7 @@ std::optional<std::vector<uint32_t>> BeamSearchDecoder::next() {
         applyTemperature(token_probs, *_temperature);
       }
 
-      auto top_tokens = token_probs.findKLargestActivations(_beam_width);
+      auto top_tokens = token_probs.topKNeurons(_beam_width);
 
       while (!top_tokens.empty()) {
         auto [prob, token] = top_tokens.top();

@@ -276,6 +276,7 @@ add_subdirectory(dataset)
 add_subdirectory(search)
 add_subdirectory(hashing)
 add_subdirectory(hashtable)
+add_subdirectory(mach)
 add_subdirectory(archive)
 add_subdirectory(compression)
 add_subdirectory(utils)
@@ -369,6 +370,7 @@ set(THIRDAI_SOURCES
     search/src/MaxFlashArray.cc
     search/src/Flash.cc
     search/src/InvertedIndex.cc
+    search/src/FinetunableRetriever.cc
     hashing/src/DensifiedMinHash.cc
     hashing/src/DWTA.cc
     hashing/src/FastSRP.cc
@@ -420,6 +422,8 @@ set(THIRDAI_SOURCES
     data/src/transformations/Tabular.cc
     data/src/transformations/Pipeline.cc
     data/src/transformations/MachLabel.cc
+    data/src/transformations/MachMemory.cc
+    data/src/transformations/AddMachMemorySamples.cc
     data/src/transformations/StringConcat.cc
     data/src/transformations/StringCast.cc
     data/src/transformations/StringIDLookup.cc
@@ -443,6 +447,8 @@ set(THIRDAI_SOURCES
     data/src/Loader.cc
     data/src/ColumnMapIterator.cc
     data/src/rca/ExplanationMap.cc
+    mach/src/MachRetriever.cc
+    mach/src/MachConfig.cc
     archive/src/Archive.cc
     archive/src/Map.cc
     archive/src/List.cc
@@ -559,6 +565,7 @@ pybind11_add_module(
   auto_ml/src/udt/backends/UDTSVMClassifier.cc
   auto_ml/src/udt/backends/UDTGraphClassifier.cc
   auto_ml/src/udt/utils/Classifier.cc
+  mach/python_bindings/MachPython.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)
 

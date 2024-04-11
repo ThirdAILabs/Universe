@@ -8,6 +8,7 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 from nltk.tokenize import sent_tokenize
@@ -34,7 +35,7 @@ from .constraint_matcher import (
     to_filters,
 )
 from .parsing_utils import doc_parse, pdf_parse, sliding_pdf_parse, url_parse
-from .table import DataFrameTable, SQLiteTable
+from .table import DaskDataFrameTable, DataFrameTable, SQLiteTable
 from .utils import hash_file, hash_string, requires_condition
 
 
@@ -452,7 +453,11 @@ def safe_has_offset(this):
 
 
 def create_table(df, on_disk):
-    Table = SQLiteTable if on_disk else DataFrameTable
+    Table = (
+        SQLiteTable
+        if on_disk
+        else DaskDataFrameTable if isinstance(df, dd.DataFrame) else DataFrameTable
+    )
     return Table(df)
 
 
@@ -490,11 +495,22 @@ class CSV(Document):
     """
 
     def valid_id_column(column):
-        return (
-            (len(column.unique()) == len(column))
-            and (column.min() == 0)
-            and (column.max() == len(column) - 1)
-        )
+        if isinstance(column, dd.Series):
+            unique_count = column.nunique().compute()
+            min_val = column.min().compute()
+            max_val = column.max().compute()
+            length = column.size.compute()
+            condition = (
+                (unique_count == length) and (min_val == 0) and (max_val == length - 1)
+            )
+        else:
+            condition = (
+                (len(column.unique()) == len(column))
+                and (column.min() == 0)
+                and (column.max() == len(column) - 1)
+            )
+
+        return condition
 
     def remove_spaces(column_name):
         return column_name.replace(" ", "_")
@@ -502,6 +518,12 @@ class CSV(Document):
     def remove_spaces_from_list(column_name_list):
         return [CSV.remove_spaces(col) for col in column_name_list]
 
+    # blocksize (when using dask) Determines the size of each partition/chunk in bytes.
+    # For example, setting blocksize=25e6 will aim for partitions of approximately 25MB.
+    # If you decrease the block size, Dask will create more partitions, and
+    # increasing it will result in fewer partitions.
+    # Default value is computed based on available physical memory
+    # and the number of cores, up to a maximum of 64MB.
     def __init__(
         self,
         path: str,
@@ -513,8 +535,18 @@ class CSV(Document):
         metadata=None,
         has_offset=False,
         on_disk=False,
+        use_dask=False,
+        blocksize=None,
     ) -> None:
-        df = pd.read_csv(path)
+
+        if use_dask:
+            df = (
+                dd.read_csv(path, blocksize=blocksize)
+                if blocksize
+                else dd.read_csv(path)
+            )
+        else:
+            df = pd.read_csv(path)
 
         # Convert spaces in column names to underscores because df.itertuples
         # does not work when there are spaces
@@ -567,7 +599,14 @@ class CSV(Document):
             df = df.sort_values(self.id_column)
         else:
             self.id_column = "thirdai_index"
-            df[self.id_column] = range(df.shape[0])
+            if use_dask:
+                # sets dask df index column to range(len(df))
+                df[self.id_column] = (
+                    df.assign(partition_count=1).partition_count.cumsum() - 1
+                )
+            else:
+                df[self.id_column] = range(df.shape[0])
+
             if orig_id_column:
                 self.orig_to_assigned_id = {
                     str(getattr(row, orig_id_column)): getattr(row, self.id_column)
@@ -597,7 +636,13 @@ class CSV(Document):
         for col in strong_columns + weak_columns:
             df[col] = df[col].fillna("")
 
-        df = df.set_index(self.id_column)
+        if use_dask:
+            # The 'sorted=True' parameter is used to indicate that the column is already sorted.
+            # This optimization helps Dask to avoid expensive data shuffling operations, improving performance.
+            df = df.set_index(self.id_column, sorted=True)
+        else:
+            # Pandas automatically manages the index without needing to explicitly sort it here.
+            df = df.set_index(self.id_column)
 
         self.table = create_table(df, on_disk)
 
@@ -1006,6 +1051,9 @@ class PDF(Extracted):
         ignore_nonstandard_orientation=True,
         metadata=None,
         on_disk=False,
+        doc_keywords="",
+        emphasize_section_titles=False,
+        table_parsing=False,
     ):
         self.version = version
 
@@ -1023,6 +1071,9 @@ class PDF(Extracted):
         self.emphasize_first_words = emphasize_first_words
         self.ignore_header_footer = ignore_header_footer
         self.ignore_nonstandard_orientation = ignore_nonstandard_orientation
+        self.doc_keywords = doc_keywords
+        self.emphasize_section_titles = emphasize_section_titles
+        self.table_parsing = table_parsing
         # Add pdf version, chunk size, and stride metadata. The metadata will be
         # incorporated in the document hash so that the same PDF inserted with
         # different hyperparameters are treated as different documents.
@@ -1052,6 +1103,9 @@ class PDF(Extracted):
             self.emphasize_first_words,
             self.ignore_header_footer,
             self.ignore_nonstandard_orientation,
+            self.doc_keywords,
+            self.emphasize_section_titles,
+            self.table_parsing,
         )
 
     @staticmethod

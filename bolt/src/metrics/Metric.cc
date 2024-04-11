@@ -187,7 +187,7 @@ std::string WeightedMeanAbsolutePercentageError::summary() {
 }
 
 void RecallAtK::record(const BoltVector& output, const BoltVector& labels) {
-  auto top_k = output.findKLargestActivations(_k);
+  auto top_k = output.topKNeurons(_k);
 
   uint32_t matches = 0;
   while (!top_k.empty()) {
@@ -256,7 +256,7 @@ uint32_t RecallAtK::countLabels(const BoltVector& labels) {
 }
 
 void PrecisionAtK::record(const BoltVector& output, const BoltVector& labels) {
-  auto top_k = output.findKLargestActivations(_k);
+  auto top_k = output.topKNeurons(_k);
 
   uint32_t correct_guesses = 0;
   while (!top_k.empty()) {

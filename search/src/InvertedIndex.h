@@ -1,11 +1,13 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <archive/src/Archive.h>
 #include <utils/text/PorterStemmer.h>
 #include <utils/text/StringManipulation.h>
 #include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace thirdai::search {
@@ -21,36 +23,37 @@ class InvertedIndex {
   // The k1 and b defaults are the same as the defaults for BM25 in apache
   // Lucene. The idf_cutoff_frac default is just what seemed to work fairly
   // well in multiple experiments.
-  static constexpr float DEFAULT_IDF_CUTOFF_FRAC = 0.1;
+  static constexpr size_t DEFAULT_MAX_DOCS_TO_SCORE = 10000;
+  static constexpr float DEFAULT_IDF_CUTOFF_FRAC = 0.2;
   static constexpr float DEFAULT_K1 = 1.2;
   static constexpr float DEFAULT_B = 0.75;
 
-  explicit InvertedIndex(float idf_cutoff_frac = DEFAULT_IDF_CUTOFF_FRAC,
+  explicit InvertedIndex(size_t max_docs_to_score = DEFAULT_MAX_DOCS_TO_SCORE,
+                         float idf_cutoff_frac = DEFAULT_IDF_CUTOFF_FRAC,
                          float k1 = DEFAULT_K1, float b = DEFAULT_B,
-                         bool stem = true, bool lowercase = true)
-      : _idf_cutoff_frac(idf_cutoff_frac),
-        _k1(k1),
-        _b(b),
-        _stem(stem),
-        _lowercase(lowercase) {}
+                         bool stem = true, bool lowercase = true);
 
-  void index(const std::vector<DocId>& ids, const std::vector<Tokens>& docs);
+  explicit InvertedIndex(const ar::Archive& archive);
+
+  void index(const std::vector<DocId>& ids,
+             const std::vector<std::string>& docs);
 
   void update(const std::vector<DocId>& ids,
-              const std::vector<Tokens>& extra_tokens,
+              const std::vector<std::string>& extra_tokens,
               bool ignore_missing_ids = true);
 
   std::vector<std::vector<DocScore>> queryBatch(
-      const std::vector<Tokens>& queries, uint32_t k) const;
+      const std::vector<std::string>& queries, uint32_t k) const;
 
-  std::vector<DocScore> query(const Tokens& query, uint32_t k) const;
+  std::vector<DocScore> query(const std::string& query, uint32_t k) const;
 
   std::vector<std::vector<DocScore>> rankBatch(
-      const std::vector<Tokens>& queries,
-      const std::vector<std::vector<DocId>>& candidates, uint32_t k) const;
+      const std::vector<std::string>& queries,
+      const std::vector<std::unordered_set<DocId>>& candidates,
+      uint32_t k) const;
 
-  std::vector<DocScore> rank(const Tokens& query,
-                             const std::vector<DocId>& candidates,
+  std::vector<DocScore> rank(const std::string& query,
+                             const std::unordered_set<DocId>& candidates,
                              uint32_t k) const;
 
   void remove(const std::vector<DocId>& ids);
@@ -62,9 +65,16 @@ class InvertedIndex {
 
   size_t size() const { return _doc_lengths.size(); }
 
+  static std::vector<DocScore> topk(
+      const std::unordered_map<DocId, float>& doc_scores, uint32_t k);
+
   static std::vector<DocScore> parallelQuery(
       const std::vector<std::shared_ptr<InvertedIndex>>& indices,
-      const Tokens& query, uint32_t k);
+      const std::string& query, uint32_t k);
+
+  ar::ConstArchivePtr toArchive() const;
+
+  static std::shared_ptr<InvertedIndex> fromArchive(const ar::Archive& archive);
 
   void save(const std::string& filename) const;
 
@@ -74,9 +84,12 @@ class InvertedIndex {
 
   static std::shared_ptr<InvertedIndex> load_stream(std::istream& istream);
 
+  static std::shared_ptr<InvertedIndex> load_stream_cereal(
+      std::istream& istream);
+
  private:
   std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>>
-  countTokenOccurences(const std::vector<Tokens>& docs) const;
+  countTokenOccurences(const std::vector<std::string>& docs) const;
 
   void recomputeMetadata();
 
@@ -89,29 +102,23 @@ class InvertedIndex {
     return idf * num / denom;
   }
 
-  inline Tokens preprocessText(const Tokens& tokens) const {
-    if (_stem) {
-      return text::porter_stemmer::stem(tokens, _lowercase);
-    }
+  Tokens tokenizeText(std::string text) const;
 
-    if (_lowercase) {
-      Tokens lower_tokens;
-      lower_tokens.reserve(tokens.size());
-      for (const auto& token : tokens) {
-        lower_tokens.push_back(text::lower(token));
-      }
-    }
-
-    return tokens;
-  }
-
-  std::unordered_map<DocId, float> scoreDocuments(const Tokens& query) const;
+  std::unordered_map<DocId, float> scoreDocuments(
+      const std::string& query) const;
 
   using TokenCountInfo = std::pair<DocId, uint32_t>;
 
   std::unordered_map<Token, std::vector<TokenCountInfo>> _token_to_docs;
   std::unordered_map<Token, float> _token_to_idf;
   std::unordered_map<DocId, uint64_t> _doc_lengths;
+
+  // Determines the maximum number of docs that will be scored for a given
+  // query. This is to help reduce query time. The documents that are scored are
+  // determined by selecting the documents which contain the query terms with
+  // the highest idf, thus prioritizing docs with less common terms from the
+  // query.
+  size_t _max_docs_to_score;
 
   // This is a cutoff in which tokens which occur in more than this fraction
   // of the docs have have their idf treated as zero, meaning they are ignored.
