@@ -22,7 +22,7 @@ def get_relative_notebook_paths(temp_dir):
     notebook_dir = os.path.join(temp_dir, "Demos", "**", "*.ipynb")
     notebook_paths = glob.glob(notebook_dir, recursive=True)
     notebook_paths = [path for path in notebook_paths if not skip_nb(path)]
-    notebook_paths = [path for path in notebook_paths if "msmarkov" in path]
+    notebook_paths = [path for path in notebook_paths if "msmarko" in path]
     print(f"{notebook_paths=}")
     len_demos_dir = len(str(os.path.join(temp_dir, "Demos"))) + 1  # For slash
     relative_notebook_paths = [str(path)[len_demos_dir:] for path in notebook_paths]
