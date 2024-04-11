@@ -19,10 +19,6 @@ def skip_nb(path):
 def get_relative_notebook_paths(temp_dir):
     # Collect all of the jupyter notebooks in the Demos repo
     subprocess.call(["git", "clone", DEMO_URL], cwd=temp_dir)
-    repo_name = "Demos"
-    repo_path = os.path.join(temp_dir, repo_name)
-
-    subprocess.call(["git", "checkout", "check-msmarkov"], cwd=repo_path)
     notebook_dir = os.path.join(temp_dir, repo_name, "**", "*.ipynb")
     notebook_paths = glob.glob(notebook_dir, recursive=True)
     notebook_paths = [path for path in notebook_paths if not skip_nb(path)]
