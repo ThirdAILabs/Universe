@@ -687,3 +687,24 @@ def test_insert_callback(small_doc_set):
     db.insert(small_doc_set, epochs=epochs, callbacks=[epoch_count_callback])
 
     assert epoch_count_callback.epochs_completed == epochs
+
+
+def test_neural_db_prioritizes_inverted_index_results():
+    db = ndb.NeuralDB()
+
+    texts = [
+        "apples are green",
+        "bananas are yellow",
+        "oranges are orange",
+        "spinach is green",
+        "apples are red",
+    ]
+
+    db.insert(
+        [ndb.InMemoryText(name=str(i), texts=[text]) for i, text in enumerate(texts)],
+        train=False,
+    )
+
+    res = db.search("carrots bananas", top_k=5)
+    assert res[0].retriever == "inverted_index"
+    assert "mach" in set([r.retriever for r in res])

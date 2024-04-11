@@ -733,7 +733,8 @@ class Mach(Model):
                     samples=samples, n_results=n_results
                 )
                 return [
-                    merge_results(mach_res, index_res, n_results)
+                    # Prioritize inverted index results.
+                    merge_results(index_res, mach_res, n_results)
                     for mach_res, index_res in zip(mach_results, index_results)
                 ]
 
