@@ -72,7 +72,18 @@ class Table(ABC):
 class DaskDataFrameTable(Table):
     def __init__(self, df: dd.DataFrame):
         self.df = df_with_index_name(df)
-        self.row_id_to_dict = {}
+        self.row_id_to_dict = (
+            {}
+        )  # store row_id_to_dict before hand for quick retrieval in future
+        index_name = self.df.index.name
+        meta = pd.DataFrame({"data": pd.Series(dtype="object")})
+        results = self.df.map_partitions(self._partition_to_dicts, meta=meta)
+        row_id = 0  # We are maintaining a global row_id because each partition will have it's local index
+        for batch in results.compute():
+            for row_dict in batch:
+                row_dict[index_name] = row_id
+                self.row_id_to_dict[row_id] = row_dict
+                row_id += 1
 
     @property
     def columns(self) -> List[str]:
@@ -106,16 +117,8 @@ class DaskDataFrameTable(Table):
         return dicts
 
     def iter_rows_as_dicts(self) -> Generator[Tuple[int, dict], None, None]:
-        index_name = self.df.index.name
-        meta = pd.DataFrame({"data": pd.Series(dtype="object")})
-        results = self.df.map_partitions(self._partition_to_dicts, meta=meta)
-        row_id = 0  # We are maintaining a global row_id because each partition will have it's local index
-        for batch in results.compute():
-            for row_dict in batch:
-                row_dict[index_name] = row_id
-                self.row_id_to_dict[row_id] = row_dict
-                yield (row_id, row_dict)
-                row_id += 1
+        for row_id, row_dict in enumerate(self.row_id_to_dict[row_id]):
+            yield (row_id, row_dict)
 
     def apply_filter(self, table_filter: TableFilter):
         return table_filter.filter_df_ids(self.df)
