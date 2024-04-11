@@ -67,13 +67,17 @@ def test_saved_ndb_associate():
     # with the full text.
     df["acronym"] = df["text"].map(lambda s: "".join(w[0] for w in s.split()))
 
-    correct_before_associate = count_correct(db=db, queries=df["acronym"], ids=df["id"])
+    correct_before_associate = count_correct(
+        db=db, queries=df["acronym"], ids=df["id"], retriever="mach"
+    )
     assert correct_before_associate < 0.1 * len(df)
 
     association_samples = list(zip(df["acronym"], df["text"]))
     db.associate_batch(association_samples)
 
-    correct_after_associate = count_correct(db=db, queries=df["acronym"], ids=df["id"])
+    correct_after_associate = count_correct(
+        db=db, queries=df["acronym"], ids=df["id"], retriever="mach"
+    )
     assert correct_after_associate > 0.9 * len(df)
 
 
