@@ -705,5 +705,5 @@ def test_neural_db_prioritizes_inverted_index_results():
         train=False,
     )
 
-    assert db.search("carrots bananas", top_k=5)[0].retriever = "inverted_index"
-    assert db.search("carrots bananas", top_k=5, mach_first=True)[0].retriever = "mach"
+    assert db.search("carrots bananas", top_k=5)[0].retriever == "inverted_index"
+    assert db.search("carrots bananas", top_k=5, mach_first=True)[0].retriever == "mach"
