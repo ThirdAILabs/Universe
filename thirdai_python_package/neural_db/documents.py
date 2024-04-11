@@ -494,7 +494,7 @@ class CSV(Document):
             constrains to restrict results based on the metadata.
     """
 
-    def valid_id_column(self, column):
+    def valid_id_column(column):
         if isinstance(column, dd.Series):
             unique_count = column.nunique().compute()
             min_val = column.min().compute()
