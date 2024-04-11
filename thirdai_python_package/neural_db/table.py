@@ -117,7 +117,7 @@ class DaskDataFrameTable(Table):
         return dicts
 
     def iter_rows_as_dicts(self) -> Generator[Tuple[int, dict], None, None]:
-        for row_id, row_dict in enumerate(self.row_id_to_dict[row_id]):
+        for row_id, row_dict in self.row_id_to_dict.items():
             yield (row_id, row_dict)
 
     def apply_filter(self, table_filter: TableFilter):
