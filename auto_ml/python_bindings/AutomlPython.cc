@@ -248,7 +248,8 @@ void defineAutomlInModule(py::module_& module) {
                udt::defaults::MAX_BALANCING_SAMPLES_PER_DOC)
       .def("get_index", &udt::UDT::getIndex)
       .def("set_index", &udt::UDT::setIndex, py::arg("index"))
-      .def("set_mach_sampling_threshold", &udt::UDT::setMachSamplingThreshold)
+      .def("set_mach_sampling_threshold", &udt::UDT::setMachSamplingThreshold,
+           py::arg("threshold"))
       .def("explain", &udt::UDT::explain, py::arg("input_sample"),
            py::arg("target_class") = std::nullopt, docs::UDT_EXPLAIN)
       .def("class_name", &udt::UDT::className, docs::UDT_CLASS_NAME)
