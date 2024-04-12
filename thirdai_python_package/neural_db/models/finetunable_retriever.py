@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Callable, List, Tuple
 
 from thirdai import search
 
@@ -13,7 +13,11 @@ class FinetunableRetriever(Model):
         self.retriever = search.FinetunableRetriever()
 
     def index_from_start(
-        self, intro_documents: DocumentDataSource, batch_size=100000, **kwargs
+        self,
+        intro_documents: DocumentDataSource,
+        on_progress: Callable = lambda **kwargs: None,
+        batch_size=100000,
+        **kwargs
     ):
         docs = []
         ids = []
@@ -27,8 +31,11 @@ class FinetunableRetriever(Model):
                 docs = []
                 ids = []
 
+                on_progress(self.retriever.size() / intro_documents.size)
+
         if len(docs):
             self.retriever.index(ids=ids, docs=docs)
+            on_progress(self.retriever.size() / intro_documents.size)
 
     def forget_documents(self) -> None:
         self.retriever = search.FinetunableRetriever()
