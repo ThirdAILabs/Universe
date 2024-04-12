@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace thirdai::search {
@@ -30,13 +31,7 @@ class InvertedIndex {
   explicit InvertedIndex(size_t max_docs_to_score = DEFAULT_MAX_DOCS_TO_SCORE,
                          float idf_cutoff_frac = DEFAULT_IDF_CUTOFF_FRAC,
                          float k1 = DEFAULT_K1, float b = DEFAULT_B,
-                         bool stem = true, bool lowercase = true)
-      : _max_docs_to_score(max_docs_to_score),
-        _idf_cutoff_frac(idf_cutoff_frac),
-        _k1(k1),
-        _b(b),
-        _stem(stem),
-        _lowercase(lowercase) {}
+                         bool stem = true, bool lowercase = true);
 
   explicit InvertedIndex(const ar::Archive& archive);
 
@@ -54,10 +49,11 @@ class InvertedIndex {
 
   std::vector<std::vector<DocScore>> rankBatch(
       const std::vector<std::string>& queries,
-      const std::vector<std::vector<DocId>>& candidates, uint32_t k) const;
+      const std::vector<std::unordered_set<DocId>>& candidates,
+      uint32_t k) const;
 
   std::vector<DocScore> rank(const std::string& query,
-                             const std::vector<DocId>& candidates,
+                             const std::unordered_set<DocId>& candidates,
                              uint32_t k) const;
 
   void remove(const std::vector<DocId>& ids);
@@ -68,6 +64,9 @@ class InvertedIndex {
   }
 
   size_t size() const { return _doc_lengths.size(); }
+
+  static std::vector<DocScore> topk(
+      const std::unordered_map<DocId, float>& doc_scores, uint32_t k);
 
   static std::vector<DocScore> parallelQuery(
       const std::vector<std::shared_ptr<InvertedIndex>>& indices,

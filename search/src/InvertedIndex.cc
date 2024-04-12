@@ -6,6 +6,7 @@
 #include <cereal/types/vector.hpp>
 #include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <licensing/src/CheckLicense.h>
 #include <utils/text/PorterStemmer.h>
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
@@ -20,12 +21,25 @@
 
 namespace thirdai::search {
 
+InvertedIndex::InvertedIndex(size_t max_docs_to_score, float idf_cutoff_frac,
+                             float k1, float b, bool stem, bool lowercase)
+    : _max_docs_to_score(max_docs_to_score),
+      _idf_cutoff_frac(idf_cutoff_frac),
+      _k1(k1),
+      _b(b),
+      _stem(stem),
+      _lowercase(lowercase) {
+  licensing::checkLicense();
+}
+
 void InvertedIndex::index(const std::vector<DocId>& ids,
                           const std::vector<std::string>& docs) {
   if (ids.size() != docs.size()) {
     throw std::invalid_argument(
         "Number of ids must match the number of docs in index.");
   }
+
+  licensing::entitlements().verifyNoDataSourceRetrictions();
 
   auto doc_lens_and_occurences = countTokenOccurences(docs);
 
@@ -56,6 +70,8 @@ void InvertedIndex::update(const std::vector<DocId>& ids,
     throw std::invalid_argument(
         "Number of ids must match the number of docs in index.");
   }
+
+  licensing::entitlements().verifyNoDataSourceRetrictions();
 
   auto doc_lens_and_occurences = countTokenOccurences(extra_tokens);
 
@@ -172,27 +188,7 @@ std::vector<DocScore> InvertedIndex::query(const std::string& query,
                                            uint32_t k) const {
   std::unordered_map<DocId, float> doc_scores = scoreDocuments(query);
 
-  // Using a heap like this is O(N log(K)) where N is the number of docs.
-  // Sorting the entire list and taking the top K would be O(N log(N)).
-  std::vector<DocScore> top_scores;
-  top_scores.reserve(k + 1);
-  const HighestScore<DocId> cmp;
-
-  for (const auto& [doc, score] : doc_scores) {
-    if (top_scores.size() < k || top_scores.front().second < score) {
-      top_scores.emplace_back(doc, score);
-      std::push_heap(top_scores.begin(), top_scores.end(), cmp);
-    }
-
-    if (top_scores.size() > k) {
-      std::pop_heap(top_scores.begin(), top_scores.end(), cmp);
-      top_scores.pop_back();
-    }
-  }
-
-  std::sort_heap(top_scores.begin(), top_scores.end(), cmp);
-
-  return top_scores;
+  return topk(doc_scores, k);
 }
 
 std::unordered_map<DocId, float> InvertedIndex::scoreDocuments(
@@ -229,9 +225,35 @@ std::unordered_map<DocId, float> InvertedIndex::scoreDocuments(
   return doc_scores;
 }
 
+std::vector<DocScore> InvertedIndex::topk(
+    const std::unordered_map<DocId, float>& doc_scores, uint32_t k) {
+  // Using a heap like this is O(N log(K)) where N is the number of docs.
+  // Sorting the entire list and taking the top K would be O(N log(N)).
+  std::vector<DocScore> top_scores;
+  top_scores.reserve(k + 1);
+  const HighestScore<DocId> cmp;
+
+  for (const auto& [doc, score] : doc_scores) {
+    if (top_scores.size() < k || top_scores.front().second < score) {
+      top_scores.emplace_back(doc, score);
+      std::push_heap(top_scores.begin(), top_scores.end(), cmp);
+    }
+
+    if (top_scores.size() > k) {
+      std::pop_heap(top_scores.begin(), top_scores.end(), cmp);
+      top_scores.pop_back();
+    }
+  }
+
+  std::sort_heap(top_scores.begin(), top_scores.end(), cmp);
+
+  return top_scores;
+}
+
 std::vector<std::vector<DocScore>> InvertedIndex::rankBatch(
     const std::vector<std::string>& queries,
-    const std::vector<std::vector<DocId>>& candidates, uint32_t k) const {
+    const std::vector<std::unordered_set<DocId>>& candidates,
+    uint32_t k) const {
   if (queries.size() != candidates.size()) {
     throw std::invalid_argument(
         "Number of queries must match number of candidate sets for ranking.");
@@ -248,9 +270,9 @@ std::vector<std::vector<DocScore>> InvertedIndex::rankBatch(
   return scores;
 }
 
-std::vector<DocScore> InvertedIndex::rank(const std::string& query,
-                                          const std::vector<DocId>& candidates,
-                                          uint32_t k) const {
+std::vector<DocScore> InvertedIndex::rank(
+    const std::string& query, const std::unordered_set<DocId>& candidates,
+    uint32_t k) const {
   std::unordered_map<DocId, float> doc_scores = scoreDocuments(query);
 
   // Using a heap like this is O(N log(K)) where N is the number of candidates.
@@ -358,6 +380,8 @@ std::vector<DocScore> InvertedIndex::parallelQuery(
 }
 
 ar::ConstArchivePtr InvertedIndex::toArchive() const {
+  licensing::entitlements().verifySaveLoad();
+
   auto map = ar::Map::make();
 
   ar::MapStrVecU64 token_to_docs;
@@ -397,6 +421,8 @@ InvertedIndex::InvertedIndex(const ar::Archive& archive)
       _b(archive.f32("b")),
       _stem(archive.boolean("stem")),
       _lowercase(archive.boolean("lowercase")) {
+  licensing::entitlements().verifySaveLoad();
+
   const auto& token_to_docs = archive.getAs<ar::MapStrVecU64>("token_to_docs");
   const auto& token_to_doc_cnts =
       archive.getAs<ar::MapStrVecU64>("token_to_doc_cnts");
@@ -450,6 +476,8 @@ std::shared_ptr<InvertedIndex> InvertedIndex::load_stream_cereal(
 
 template <class Archive>
 void InvertedIndex::serialize(Archive& archive) {
+  licensing::entitlements().verifySaveLoad();
+
   archive(_token_to_docs, _token_to_idf, _doc_lengths, _idf_cutoff_frac,
           _sum_doc_lens, _avg_doc_length, _k1, _b, _stem, _lowercase);
 

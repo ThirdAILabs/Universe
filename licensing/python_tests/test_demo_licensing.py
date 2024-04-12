@@ -45,6 +45,16 @@ def test_census_demo_key_fails_on_udt():
         make_simple_trained_model()
 
 
+def test_census_demo_keys_fails_on_inverted_index():
+    thirdai.licensing.activate(SMALL_CENSUS_KEY)
+    index = thirdai.search.InvertedIndex()
+    with pytest.raises(
+        RuntimeError,
+        match="This dataset is not authorized under this license.",
+    ):
+        index.index([1, 2], ["a", "b"])
+
+
 def test_census_demo_key_fails_on_query_reformulation():
     thirdai.licensing.activate(SMALL_CENSUS_KEY)
 

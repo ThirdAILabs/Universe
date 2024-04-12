@@ -11,6 +11,7 @@ from thirdai._thirdai import bolt, data
 
 from . import loggers, teachers
 from .documents import CSV, Document, DocumentManager, Reference
+from .models.finetunable_retriever import FinetunableRetriever
 from .models.mach_mixture_model import MachMixture
 from .models.models import CancelState, Mach
 from .models.multi_mach import MultiMach
@@ -78,7 +79,9 @@ class NeuralDB:
                     " NeuralDB can only be initialized with a positive number of"
                     " models per shard."
                 )
-            if num_shards > 1 or num_models_per_shard > 1:
+            if kwargs.get("low_memory", False):
+                model = FinetunableRetriever()
+            elif num_shards > 1 or num_models_per_shard > 1:
                 model = MachMixture(
                     num_shards=num_shards,
                     num_models_per_shard=num_models_per_shard,
@@ -667,6 +670,7 @@ class NeuralDB:
         top_k_threshold=None,
         retriever=None,
         label_probing=False,
+        mach_first=False,
     ) -> List[Reference]:
         """
         Searches the contents of the NeuralDB for documents relevant to the given query.
@@ -721,6 +725,7 @@ class NeuralDB:
             top_k_threshold=top_k_threshold,
             retriever=retriever,
             label_probing=label_probing,
+            mach_first=mach_first,
         )[0]
 
     def search_batch(
@@ -734,6 +739,7 @@ class NeuralDB:
         top_k_threshold=None,
         retriever=None,
         label_probing=False,
+        mach_first=False,
     ):
         """
         Runs search on a batch of queries for much faster throughput.
@@ -759,6 +765,7 @@ class NeuralDB:
                 n_results=top_k_to_search,
                 retriever="mach" if rerank else retriever,
                 label_probing=label_probing,
+                mach_first=mach_first,
             )
 
         return [

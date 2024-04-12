@@ -380,6 +380,7 @@ class MachMixture(Model):
         n_results: int,
         retriever=None,
         label_probing=True,
+        mach_first=False,
         **kwargs,
     ) -> Predictions:
         if not retriever:
@@ -391,7 +392,12 @@ class MachMixture(Model):
                     samples, n_results=n_results, label_probing=label_probing
                 )
                 return [
-                    merge_results(mach_res, index_res, n_results)
+                    (
+                        merge_results(mach_res, index_res, n_results)
+                        if mach_first
+                        # Prioritize inverted index results.
+                        else merge_results(index_res, mach_res, n_results)
+                    )
                     for mach_res, index_res in zip(mach_results, index_results)
                 ]
 

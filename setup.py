@@ -160,6 +160,7 @@ neural_db_deps = [
     "python-docx",
     "url-normalize",
     "nltk",
+    "dask[complete]",
     "unidecode",
     "pydantic<2.5",
     "sortedcontainers",
