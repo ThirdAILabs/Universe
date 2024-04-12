@@ -41,7 +41,7 @@ def build_index(chunk_df):
     return index
 
 
-def test_inverted_index_search(load_chunks):
+def test_inverted_index_retriever_search(load_chunks):
     index = build_index(load_chunks)
 
     for _, row in load_chunks.iterrows():
