@@ -210,13 +210,13 @@ void defineMach(py::module_& module) {
       .def("search", &MachRetriever::searchBatch, py::arg("queries"),
            py::arg("top_k"), py::arg("sparse_inference") = false)
       .def("rank", &MachRetriever::rank, py::arg("queries"),
-           py::arg("candidate"), py::arg("top_k"),
+           py::arg("candidates"), py::arg("top_k"),
            py::arg("sparse_inference") = false)
       .def("rank", &MachRetriever::rankSingle, py::arg("query"),
-           py::arg("candidate"), py::arg("top_k"),
+           py::arg("candidates"), py::arg("top_k"),
            py::arg("sparse_inference") = false)
       .def("rank", &MachRetriever::rankBatch, py::arg("queries"),
-           py::arg("candidate"), py::arg("top_k"),
+           py::arg("candidates"), py::arg("top_k"),
            py::arg("sparse_inference") = false)
       .def("introduce", &MachRetriever::introduceIterator, py::arg("data"),
            py::arg("strong_cols"), py::arg("weak_cols"),
@@ -230,7 +230,17 @@ void defineMach(py::module_& module) {
            py::arg("n_upvote_samples") = 16,
            py::arg("n_balancing_samples") = 50, py::arg("learning_rate") = 1e-3,
            py::arg("epochs") = 3, py::arg("batch_size") = 200)
-      .def("associate", &MachRetriever::associate, py::arg("sources"),
+      .def("upvote", &MachRetriever::upvoteBatch, py::arg("queries"),
+           py::arg("ids"), py::arg("n_upvote_samples") = 16,
+           py::arg("n_balancing_samples") = 50, py::arg("learning_rate") = 1e-3,
+           py::arg("epochs") = 3, py::arg("batch_size") = 200)
+     .def("associate", &MachRetriever::associate, py::arg("sources"),
+           py::arg("targets"), py::arg("n_buckets"),
+           py::arg("n_association_samples") = 16,
+           py::arg("n_balancing_samples") = 50, py::arg("learning_rate") = 1e-3,
+           py::arg("epochs") = 3, py::arg("force_non_empty") = true,
+           py::arg("batch_size") = 200)
+      .def("associate", &MachRetriever::associateBatch, py::arg("sources"),
            py::arg("targets"), py::arg("n_buckets"),
            py::arg("n_association_samples") = 16,
            py::arg("n_balancing_samples") = 50, py::arg("learning_rate") = 1e-3,

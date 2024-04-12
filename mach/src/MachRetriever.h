@@ -128,9 +128,39 @@ class MachRetriever {
       const data::ColumnMap& columns, bool sparse_inference,
       std::optional<uint32_t> top_k, bool force_non_empty);
 
+  void upvoteBatch(std::vector<std::string> queries, std::vector<uint32_t> ids,
+                   uint32_t n_upvote_samples, uint32_t n_balancing_samples,
+                   float learning_rate, uint32_t epochs, size_t batch_size) {
+    data::ColumnMap data(
+        {{_text_column,
+          data::ValueColumn<std::string>::make(std::move(queries))},
+         {_id_column,
+          data::ValueColumn<uint32_t>::make(
+              std::move(ids), std::numeric_limits<uint32_t>::max())}});
+    upvote(std::move(data), n_upvote_samples, n_balancing_samples,
+           learning_rate, epochs, batch_size);
+  }
+
   void upvote(data::ColumnMap upvotes, uint32_t n_upvote_samples,
               uint32_t n_balancing_samples, float learning_rate,
               uint32_t epochs, size_t batch_size);
+
+  void associateBatch(std::vector<std::string> sources,
+                      std::vector<std::string> targets, uint32_t n_buckets,
+                      uint32_t n_association_samples,
+                      uint32_t n_balancing_samples, float learning_rate,
+                      uint32_t epochs, bool force_non_empty,
+                      size_t batch_size) {
+    data::ColumnMap source_data(
+        {{_text_column,
+          data::ValueColumn<std::string>::make(std::move(sources))}});
+    data::ColumnMap target_data(
+        {{_text_column,
+          data::ValueColumn<std::string>::make(std::move(targets))}});
+    associate(std::move(source_data), target_data, n_buckets,
+              n_association_samples, n_balancing_samples, learning_rate, epochs,
+              force_non_empty, batch_size);
+  }
 
   void associate(data::ColumnMap sources, const data::ColumnMap& targets,
                  uint32_t n_buckets, uint32_t n_association_samples,

@@ -1,5 +1,6 @@
 #include "DataPython.h"
 #include <bolt/python_bindings/PybindUtils.h>
+#include <data/python_bindings/PyColumnMapIterator.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/Loader.h>
 #include <data/src/TensorConversion.h>
@@ -90,6 +91,13 @@ void createDataSubmodule(py::module_& dataset_submodule) {
       .def(py::init<DataSourcePtr, std::vector<std::string>, size_t>(),
            py::arg("data_source"), py::arg("columns"),
            py::arg("rows_per_load") = ColumnMapIterator::DEFAULT_ROWS_PER_LOAD);
+
+  py::class_<PyColumnMapIterator, std::shared_ptr<PyColumnMapIterator>,
+             ColumnMapIterator>(dataset_submodule, "PyColumnMapIterator")
+      .def(py::init<>())
+      .def("next", &PyColumnMapIterator::next)
+      .def("resource_name", &PyColumnMapIterator::resourceName)
+      .def("restart", &PyColumnMapIterator::restart);
 
   py::class_<TransformedIterator, std::shared_ptr<TransformedIterator>,
              ColumnMapIterator>(dataset_submodule, "TransformedIterator")
