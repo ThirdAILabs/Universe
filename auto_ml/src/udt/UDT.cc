@@ -14,6 +14,7 @@
 #include <auto_ml/src/udt/backends/UDTRecurrentClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
 #include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
+#include <auto_ml/src/udt/utils/Models.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/CheckLicense.h>
 #include <pybind11/pytypes.h>
@@ -628,6 +629,12 @@ std::vector<UDT::Scores> UDT::labelProbeMultipleMach(
   }
 
   return output;
+}
+
+size_t UDT::estimateHashTableSize(size_t output_dim,
+                                  std::optional<float> sparsity) {
+  return bolt::DWTASamplingConfig::estimateHashTableSize(
+      output_dim, sparsity.value_or(utils::autotuneSparsity(output_dim)));
 }
 
 }  // namespace thirdai::automl::udt
