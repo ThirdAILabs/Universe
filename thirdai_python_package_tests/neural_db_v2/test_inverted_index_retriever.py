@@ -25,11 +25,8 @@ def build_index(chunk_df):
         chunks = chunk_df.iloc[i : i + batch_size]
         chunk_batches.append(
             ChunkBatch(
-                custom_id=None,
                 text=chunks["text"],
                 keywords=pd.Series(["" for _ in range(len(chunks))]),
-                metadata=None,
-                document=pd.Series(["texts.csv" for _ in range(len(chunks))]),
                 chunk_id=chunks["id"],
             )
         )
