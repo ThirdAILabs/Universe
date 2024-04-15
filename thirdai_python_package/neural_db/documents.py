@@ -57,6 +57,10 @@ class Document:
         raise NotImplementedError()
 
     @property
+    def source(self) -> str:
+        raise NotImplementedError()
+
+    @property
     def hash(self) -> str:
         sha1 = hashlib.sha1()
         sha1.update(bytes(self.name, "utf-8"))
@@ -456,7 +460,9 @@ def create_table(df, on_disk):
     Table = (
         SQLiteTable
         if on_disk
-        else DaskDataFrameTable if isinstance(df, dd.DataFrame) else DataFrameTable
+        else DaskDataFrameTable
+        if isinstance(df, dd.DataFrame)
+        else DataFrameTable
     )
     return Table(df)
 
@@ -538,7 +544,6 @@ class CSV(Document):
         use_dask=False,
         blocksize=None,
     ) -> None:
-
         if use_dask:
             df = (
                 dd.read_csv(path, blocksize=blocksize)
@@ -681,6 +686,10 @@ class CSV(Document):
     def name(self) -> str:
         return self.path.name
 
+    @property
+    def source(self) -> str:
+        return str(self.path.absolute())
+
     @requires_condition(
         check_func=lambda self: not safe_has_offset(self),
         method_name="matched_constraints",
@@ -754,7 +763,7 @@ class CSV(Document):
             document=self,
             element_id=element_id,
             text=text,
-            source=str(self.path.absolute()),
+            source=self.source,
             metadata={**row, **self.doc_metadata},
         )
 
@@ -886,6 +895,10 @@ class Extracted(Document):
         return self.path.name
 
     @property
+    def source(self) -> str:
+        return str(self.path.absolute())
+
+    @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
         return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
 
@@ -912,7 +925,7 @@ class Extracted(Document):
             document=self,
             element_id=element_id,
             text=self.table.field(element_id, "display"),
-            source=str(self.path.absolute()),
+            source=self.source,
             metadata={**self.table.row_as_dict(element_id), **self.doc_metadata},
         )
 
@@ -1234,6 +1247,10 @@ class URL(Document):
         return self.url
 
     @property
+    def source(self) -> str:
+        return self.url
+
+    @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
         return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
 
@@ -1256,7 +1273,7 @@ class URL(Document):
             document=self,
             element_id=element_id,
             text=self.table.field(element_id, "display"),
-            source=self.url,
+            source=self.source,
             metadata=(
                 {"title": self.table.field(element_id, "title"), **self.doc_metadata}
                 if "title" in self.table.columns
@@ -1432,6 +1449,10 @@ class SQLDatabase(DocumentConnector):
         return self.database_name + "-" + self.table_name
 
     @property
+    def source(self) -> str:
+        return str(self.engine_uq)
+
+    @property
     def hash(self):
         return self._hash
 
@@ -1538,7 +1559,7 @@ class SQLDatabase(DocumentConnector):
             document=self,
             element_id=element_id,
             text=text,
-            source=str(self.engine_uq),
+            source=self.source,
             metadata={
                 "Database": self.database_name,
                 "Table": self.table_name,
@@ -1697,6 +1718,10 @@ class SharePoint(DocumentConnector):
         return self._name
 
     @property
+    def source(self) -> str:
+        return self._source
+
+    @property
     def hash(self) -> str:
         return self._hash
 
@@ -1773,7 +1798,7 @@ class SharePoint(DocumentConnector):
                 if self.meta_table.iloc[element_id]["page"] is not None
                 else ""
             ),
-            source=self._source + "/" + filename,
+            source=self.source + "/" + filename,
             metadata={
                 **self.meta_table.loc[element_id].to_dict(),
                 **self.doc_metadata,
@@ -1938,6 +1963,10 @@ class SalesForce(DocumentConnector):
         return self.object_name
 
     @property
+    def source(self) -> str:
+        return self._source
+
+    @property
     def hash(self) -> str:
         return self._hash
 
@@ -2044,7 +2073,7 @@ class SalesForce(DocumentConnector):
             document=self,
             element_id=element_id,
             text=text,
-            source=self._source,
+            source=self.source,
             metadata={
                 "object_name": self.object_name,
                 **self.doc_metadata,
@@ -2286,6 +2315,10 @@ class SentenceLevelExtracted(Extracted):
     def name(self) -> str:
         return self.path.name if self.path else None
 
+    @property
+    def source(self) -> str:
+        return str(self.path.absolute())
+
     def strong_text(self, element_id: int) -> str:
         return self.table.field(element_id, "sentence")
 
@@ -2302,7 +2335,7 @@ class SentenceLevelExtracted(Extracted):
             document=self,
             element_id=element_id,
             text=self.table.field(element_id, "display"),
-            source=str(self.path.absolute()),
+            source=self.source,
             metadata={**self.table.row_as_dict(element_id), **self.doc_metadata},
             upvote_ids=eval(self.table.field(element_id, "sentence_ids_in_para")),
         )
@@ -2445,6 +2478,10 @@ class InMemoryText(Document):
         return self._name
 
     @property
+    def source(self) -> str:
+        return self._name
+
+    @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
         metadata_constraints = {
             key: ConstraintValue(value) for key, value in self.global_metadata.items()
@@ -2476,7 +2513,7 @@ class InMemoryText(Document):
             document=self,
             element_id=element_id,
             text=self.table.field(element_id, "texts"),
-            source=self._name,
+            source=self.source,
             metadata={**self.table.row_as_dict(element_id), **self.global_metadata},
         )
 
