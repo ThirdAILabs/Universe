@@ -183,7 +183,7 @@ bool createDirectories(const std::string& path) {
 // Progress callback function to display download progress
 static int progressCallback(void* clientp, curl_off_t dltotal, curl_off_t dlnow,
                             curl_off_t /* ultotal */, curl_off_t /* ulnow */) {
-  ProgressData* progressData = (ProgressData*)clientp;
+  ProgressData* progressData = static_cast<ProgressData*>(clientp);
 
   // Calculate progress percentage
   double progressPercent =
@@ -226,19 +226,19 @@ bool downloadFile(const std::string& url, const std::string& filePath) {
 
     CURLcode res = curl_easy_perform(curl);
     curl_easy_cleanup(curl);
-    fclose(file);
+    fclose(file);  // NOLINT
 
     if (res != CURLE_OK) {
       std::cerr << "\nFailed to download file: " << url << " ("
                 << curl_easy_strerror(res) << ")" << std::endl;
-      std::remove(filePath.c_str());  // Remove incomplete file
+      std::remove(filePath.c_str());  // NOLINT // Remove incomplete file
       return false;
     }
 
     std::cout << "\nDownload complete: " << filePath << std::endl;
   } else {
     std::cerr << "Failed to initialize libcurl" << std::endl;
-    fclose(file);
+    fclose(file);  // NOLINT
     return false;
   }
 
