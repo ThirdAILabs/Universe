@@ -13,6 +13,8 @@
 #include <auto_ml/src/udt/Defaults.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <cstdio>
+#include <filesystem>
 #include <limits>
 #include <stdexcept>
 
@@ -168,19 +170,34 @@ bool hasSoftmaxOutput(const ModelPtr& model) {
 
 // Function to create directories recursively
 bool createDirectories(const std::string& path) {
-  size_t pos = 0;
-  do {
-    pos = path.find_first_of("/\\", pos + 1);
-    if (pos != std::string::npos) {
-      std::string dir = path.substr(0, pos);
-      if (mkdir(dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0 &&
-          errno != EEXIST) {
-        std::cerr << "Error creating directory: " << dir << std::endl;
-        return false;
-      }
-    }
-  } while (pos != std::string::npos);
-  return true;
+  try {
+    std::filesystem::create_directories(path);
+    return true;
+  } catch (const std::exception& e) {
+    std::cerr << "Failed to create directory: " << path << "\n";
+    std::cerr << "Error: " << e.what() << "\n";
+    return false;
+  }
+}
+
+// Progress callback function to display download progress
+static int progressCallback(void* clientp, curl_off_t dltotal, curl_off_t dlnow,
+                            curl_off_t /* ultotal */, curl_off_t /* ulnow */) {
+  ProgressData* progressData = (ProgressData*)clientp;
+
+  // Calculate progress percentage
+  double progressPercent =
+      (dltotal > 0)
+          ? (static_cast<double>(dlnow) / static_cast<double>(dltotal)) * 100.0
+          : 0.0;
+
+  // Display progress information
+  std::cout << "\rDownloading... " << dlnow << " / " << dltotal << " bytes "
+            << "(" << progressPercent << "%) ";
+
+  progressData->lastDownloadedBytes = dlnow;
+
+  return 0;
 }
 
 // Function to download a file using libcurl
@@ -193,19 +210,32 @@ bool downloadFile(const std::string& url, const std::string& filePath) {
 
   CURL* curl = curl_easy_init();
   if (curl) {
+    // Set the URL to download
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+
+    // Set the file to write to
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
+
+    // Set progress callback function
+    ProgressData progressData = {0};
+    curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, progressCallback);
+    curl_easy_setopt(curl, CURLOPT_XFERINFODATA, &progressData);
+
+    // Disable printing download progress to stdout
+    curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
+
     CURLcode res = curl_easy_perform(curl);
     curl_easy_cleanup(curl);
-
     fclose(file);
 
     if (res != CURLE_OK) {
-      std::cerr << "Failed to download file: " << url << " ("
+      std::cerr << "\nFailed to download file: " << url << " ("
                 << curl_easy_strerror(res) << ")" << std::endl;
       std::remove(filePath.c_str());  // Remove incomplete file
       return false;
     }
+
+    std::cout << "\nDownload complete: " << filePath << std::endl;
   } else {
     std::cerr << "Failed to initialize libcurl" << std::endl;
     fclose(file);
@@ -217,12 +247,17 @@ bool downloadFile(const std::string& url, const std::string& filePath) {
 
 data::SpladeConfig downloadSemanticEnhancementModel(
     const std::string& cacheDir, const std::string& modelName) {
-  // Ensure cache directory exists
-  if (!createDirectories(cacheDir)) {
-    throw std::runtime_error("Failed to create cache directory: " + cacheDir);
+  // Get the current working directory
+  std::filesystem::path currentDir = std::filesystem::current_path();
+
+  // Ensure cache directory exists (relative to the current directory)
+  std::filesystem::path fullCacheDir = currentDir / cacheDir;
+  if (!createDirectories(fullCacheDir.string())) {
+    throw std::runtime_error("Failed to create cache directory: " +
+                             fullCacheDir.string());
   }
 
-  std::string semanticModelPath = cacheDir + "/" + modelName;
+  std::string semanticModelPath = (fullCacheDir / modelName).string();
 
   // Download the model only if it does not already exist
   if (access(semanticModelPath.c_str(), F_OK) == -1) {
@@ -234,7 +269,7 @@ data::SpladeConfig downloadSemanticEnhancementModel(
   }
 
   // Download BERT vocabulary if it does not exist
-  std::string vocabPath = cacheDir + "/bert-base-uncased.vocab";
+  std::string vocabPath = (fullCacheDir / "bert-base-uncased.vocab").string();
   if (access(vocabPath.c_str(), F_OK) == -1) {
     std::string vocabUrl =
         "https://huggingface.co/bert-base-uncased/resolve/main/vocab.txt";

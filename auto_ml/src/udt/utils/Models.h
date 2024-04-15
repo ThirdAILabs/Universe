@@ -10,6 +10,11 @@
 
 namespace thirdai::automl::udt::utils {
 
+// Structure to hold progress information
+struct ProgressData {
+  curl_off_t lastDownloadedBytes;
+};
+
 using bolt::ModelPtr;
 
 ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
@@ -38,7 +43,7 @@ bool createDirectories(const std::string& path);
 bool downloadFile(const std::string& url, const std::string& filePath);
 
 data::SpladeConfig downloadSemanticEnhancementModel(
-    const std::string& cacheDir = ".cache/neural_db_semantic_model",
+    const std::string& cacheDir = "cache/neural_db_semantic_model",
     const std::string& modelName = "bolt-splade-medium");
 
 }  // namespace thirdai::automl::udt::utils
