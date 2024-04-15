@@ -586,7 +586,7 @@ class CSV(Document):
             if reference_columns:
                 reference_columns = remove_spaces_from_list(reference_columns)
 
-        self.no_space_to_space = {
+        self.no_space_to_with_space = {
             val: key for key, val in self.with_space_to_no_space.items()
         }
 
@@ -697,7 +697,7 @@ class CSV(Document):
             key: ConstraintValue(value) for key, value in self.doc_metadata.items()
         }
         indexed_column_constraints = {
-            self.no_space_to_space.get(key, key): ConstraintValue(is_any=True)
+            self.no_space_to_with_space.get(key, key): ConstraintValue(is_any=True)
             for key in self.table.columns
         }
         return {**metadata_constraints, **indexed_column_constraints}
@@ -752,11 +752,13 @@ class CSV(Document):
         row = self.table.row_as_dict(element_id)
         text = "\n\n".join(
             [
-                f"{self.no_space_to_space.get(col, col)}: {row[col]}"
+                f"{self.no_space_to_with_space.get(col, col)}: {row[col]}"
                 for col in self.reference_columns
             ]
         )
-        row = {self.no_space_to_space.get(col, col): val for col, val in row.items()}
+        row = {
+            self.no_space_to_with_space.get(col, col): val for col, val in row.items()
+        }
         return Reference(
             document=self,
             element_id=element_id,
@@ -775,7 +777,7 @@ class CSV(Document):
             [
                 "\n\n".join(
                     [
-                        f"{self.no_space_to_space.get(col, col)}: {row[col]}"
+                        f"{self.no_space_to_with_space.get(col, col)}: {row[col]}"
                         for col in self.reference_columns
                     ]
                 )
@@ -853,8 +855,8 @@ class CSV(Document):
 
         if not hasattr(self, "with_space_to_no_space"):
             self.with_space_to_no_space = {}
-        if not hasattr(self, "no_space_to_space"):
-            self.no_space_to_space = {}
+        if not hasattr(self, "no_space_to_with_space"):
+            self.no_space_to_with_space = {}
 
 
 # Base class for PDF, DOCX and Unstructured classes because they share the same logic.
