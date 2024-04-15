@@ -61,6 +61,7 @@ CSV_FILE = os.path.join(BASE_DIR, "lorem_ipsum.csv")
 URL_LINK = "https://en.wikipedia.org/wiki/Rice_University"
 PDF_FILE = os.path.join(BASE_DIR, "mutual_nda.pdf")
 PRIAXOR_PDF_FILE = os.path.join(BASE_DIR, "Priaxor.pdf")
+CITI_PDF_FILE = os.path.join(BASE_DIR, "Citi_Q323.pdf")
 DOCX_FILE = os.path.join(BASE_DIR, "four_english_words.docx")
 PPTX_FILE = os.path.join(BASE_DIR, "quantum_mechanics.pptx")
 TXT_FILE = os.path.join(BASE_DIR, "nature.txt")
