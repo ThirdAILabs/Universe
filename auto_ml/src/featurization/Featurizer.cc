@@ -8,6 +8,7 @@
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/featurization/TabularTransformations.h>
+#include <data/src/ColumnMap.h>
 #include <data/src/transformations/CategoricalTemporal.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/State.h>
@@ -152,16 +153,40 @@ data::LoaderPtr Featurizer::getDataLoaderHelper(
       /* shuffle_seed= */ shuffle_config.seed);
 }
 
-bolt::TensorList Featurizer::featurizeInput(const MapInput& sample) {
+bolt::TensorList Featurizer::featurizeInput(const MapInput& sample, const std::optional<data::SpladeConfig>& splade_config) {
   auto columns = data::ColumnMap::fromMapInput(sample);
 
+  if(splade_config){
+    auto preprocessor = data::Pipeline::make()
+            ->then(std::make_shared<data::SpladeAugmentation>(
+                textDatasetConfig().textColumn(), SPLADE_TOKENS,
+                *splade_config))
+            ->then(std::make_shared<data::StringConcat>(
+                std::vector<std::string>(std::initializer_list<std::string>{
+                    textDatasetConfig().textColumn(), SPLADE_TOKENS}),
+                textDatasetConfig().textColumn(), " "));
+    columns = preprocessor->apply(columns,*_state);
+  }
+  
   columns = _const_input_transform->apply(std::move(columns), *_state);
 
   return data::toTensors(columns, _bolt_input_columns);
 }
 
-bolt::TensorList Featurizer::featurizeInputBatch(const MapInputBatch& samples) {
+bolt::TensorList Featurizer::featurizeInputBatch(const MapInputBatch& samples, const std::optional<data::SpladeConfig>& splade_config) {
   auto columns = data::ColumnMap::fromMapInputBatch(samples);
+
+  if(splade_config){
+    auto preprocessor = data::Pipeline::make()
+            ->then(std::make_shared<data::SpladeAugmentation>(
+                textDatasetConfig().textColumn(), SPLADE_TOKENS,
+                *splade_config))
+            ->then(std::make_shared<data::StringConcat>(
+                std::vector<std::string>(std::initializer_list<std::string>{
+                    textDatasetConfig().textColumn(), SPLADE_TOKENS}),
+                textDatasetConfig().textColumn(), " "));
+    columns = preprocessor->apply(columns,*_state);
+  }
 
   columns = _const_input_transform->apply(std::move(columns), *_state);
 

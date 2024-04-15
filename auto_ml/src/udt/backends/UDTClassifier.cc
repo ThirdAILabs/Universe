@@ -159,8 +159,10 @@ py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
 
 py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,
                                   bool return_predicted_class,
-                                  std::optional<uint32_t> top_k) {
-  return _classifier->predict(_featurizer->featurizeInput(sample),
+                                  std::optional<uint32_t> top_k,
+                                  py::kwargs kwargs) {
+  auto splade_config = getSpladeConfig(kwargs);
+  return _classifier->predict(_featurizer->featurizeInput(sample, splade_config),
                               sparse_inference, return_predicted_class,
                               /* single= */ true, top_k);
 }
@@ -168,8 +170,10 @@ py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,
 py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
                                        bool sparse_inference,
                                        bool return_predicted_class,
-                                       std::optional<uint32_t> top_k) {
-  return _classifier->predict(_featurizer->featurizeInputBatch(samples),
+                                       std::optional<uint32_t> top_k,
+                                       py::kwargs kwargs) {
+  auto splade_config = getSpladeConfig(kwargs);
+  return _classifier->predict(_featurizer->featurizeInputBatch(samples, splade_config),
                               sparse_inference, return_predicted_class,
                               /* single= */ false, top_k);
 }
