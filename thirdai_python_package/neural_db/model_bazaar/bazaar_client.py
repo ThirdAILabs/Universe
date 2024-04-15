@@ -112,7 +112,7 @@ class NeuralDBClient:
         Args:
             query (str): The query to search for.
             top_k (int): The number of top results to retrieve (default is 10).
-            constraints (Optional[dict[str, str]]): Constraints to filter the search result metadata by.
+            constraints (Optional[dict[str, dict[str, str]]]): Constraints to filter the search result metadata by.
                 These constraints must be in the following format:
                 {"FIELD_NAME": {"constraint_type": "CONSTRAINT_NAME", **kwargs}} where
                 "FIELD_NAME" is the field that you want to filter over, and "CONSTRAINT_NAME"
