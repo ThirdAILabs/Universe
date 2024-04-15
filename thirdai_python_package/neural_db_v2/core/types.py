@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from typing import List, Union
+from typing import List, Optional, Union
 
+import numpy as np
 import pandas as pd
 from pandera import typing as pt
 
@@ -70,8 +71,11 @@ class NewChunkBatch:
     custom_id: Union[pt.Series[str], pt.Series[int], None]
     text: pt.Series[str]
     keywords: pt.Series[str]
-    metadata: pt.DataFrame
+    metadata: Optional[pt.DataFrame]
     document: pt.Series[str]
+
+    def __len__(self):
+        return len(self.text)
 
     def __getitem__(self, i: int):
         return NewChunk(
@@ -82,20 +86,25 @@ class NewChunkBatch:
             document=self.document[i],
         )
 
+    def to_df(self):
+        columns = {
+            "text": self.text,
+            "keywords": self.keywords,
+            "document": self.document,
+        }
+        if self.custom_id is not None:
+            columns["custom_id"] = self.custom_id
+        else:
+            columns["custom_id"] = pd.Series(np.full(len(self.text), None))
+
+        return pd.DataFrame(columns)
+
 
 @dataclass
-class ChunkBatch(NewChunkBatch):
+class ChunkBatch:
     chunk_id: pt.Series[ChunkId]
-
-    def __getitem__(self, i: int):
-        return Chunk(
-            custom_id=self.custom_id[i],
-            text=self.text[i],
-            keywords=self.keywords[i],
-            metadata=self.metadata[i],
-            document=self.document[i],
-            chunk_id=self.chunk_id[i],
-        )
+    text: pt.Series[str]
+    keywords: pt.Series[str]
 
     def to_df(self):
         return pd.DataFrame(self.__dict__)
