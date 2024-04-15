@@ -59,6 +59,11 @@ jobs:
           submodules: "recursive"
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
+      - name: Install libcurl dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl libssl-dev libcurl4-openssl-dev
+
       - name: Build python package release version and install test dependencies
         # Issue: https://github.com/pypa/pip/issues/10851
         run: |
