@@ -166,7 +166,7 @@ class NeuralDBClient:
             documents (List[dict[str, Any]]): A list of dictionaries that represent documents to be inserted to the ndb model.
                 The document dictionaries must be in the following format:
                 {"document_type": "DOCUMENT_TYPE", **kwargs} where "DOCUMENT_TYPE" is one of the following:
-                "PDF", "CSV", "DOCX", "URL", "SentenceLevelPDF", or "SentenceLevelDOCX".
+                "PDF", "CSV", "DOCX", "URL", "SentenceLevelPDF", "SentenceLevelDOCX", "Unstructured", "InMemoryText".
                 The kwargs for each document type are shown below:
 
                 class PDF(Document):
@@ -219,9 +219,22 @@ class NeuralDBClient:
                     metadata: Optional[dict[str, Any]] = None
                     on_disk: bool = False
 
+                class Unstructured(Document):
+                    document_type: Literal["Unstructured"]
+                    path: str
+                    save_extra_info: bool = True
+                    metadata: Optional[dict[str, Any]] = None
+                    on_disk: bool = False
+
+                class InMemoryText(Document):
+                    document_type: Literal["InMemoryText"]
+                    name: str
+                    texts: list[str]
+                    metadatas: Optional[list[dict[str, Any]]] = None
+                    global_metadata: Optional[dict[str, Any]] = None
+                    on_disk: bool = False
+
                 For Document types with the arg "path", ensure that the path exists on your local machine.
-                You will most likely only need to use the path/url and metadata kwargs for each document.
-                You can ignore other kwargs or reach out to Kartik for questions.
         """
 
         if not documents:
@@ -244,9 +257,6 @@ class NeuralDBClient:
             headers=auth_header(self.bazaar._access_token),
         )
 
-        print(response)
-        print(json.loads(response.content))
-
     @check_deployment_decorator
     def delete(self, source_ids: List[str]):
         """
@@ -260,8 +270,6 @@ class NeuralDBClient:
             json={"source_ids": source_ids},
             headers=auth_header(self.bazaar._access_token),
         )
-
-        print(json.loads(response.content)["message"])
 
     @check_deployment_decorator
     def associate(self, text_pairs: List[Dict[str, str]]):
