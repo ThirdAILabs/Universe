@@ -853,9 +853,12 @@ class CSV(Document):
         else:
             self.table.load_meta(directory)
 
-        if not hasattr(self, "with_space_to_no_space"):
+        if hasattr(self, "with_space_to_no_space"):
+            self.no_space_to_with_space = {
+                val: key for key, val in self.with_space_to_no_space.items()
+            }
+        else:
             self.with_space_to_no_space = {}
-        if not hasattr(self, "no_space_to_with_space"):
             self.no_space_to_with_space = {}
 
 
