@@ -72,9 +72,15 @@ data::LoaderPtr Featurizer::getDataLoader(
     dataset::DatasetShuffleConfig shuffle_config) {
   data::TransformationPtr preprocessor = nullptr;
   if (splade_config) {
-    preprocessor = std::make_shared<data::SpladeAugmentation>(
-        textDatasetConfig().textColumn(), textDatasetConfig().textColumn(),
-        *splade_config);
+    preprocessor =
+        data::Pipeline::make()
+            ->then(std::make_shared<data::SpladeAugmentation>(
+                textDatasetConfig().textColumn(), SPLADE_TOKENS,
+                *splade_config))
+            ->then(std::make_shared<data::StringConcat>(
+                std::vector<std::string>(std::initializer_list<std::string>{
+                    textDatasetConfig().textColumn(), SPLADE_TOKENS}),
+                textDatasetConfig().textColumn(), " "));
   }
 
   return getDataLoaderHelper(data_source, batch_size, shuffle, verbose,
