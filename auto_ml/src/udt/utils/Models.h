@@ -2,6 +2,11 @@
 
 #include <bolt/src/nn/model/Model.h>
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <curl/curl.h>
+#include <data/src/transformations/SpladeAugmentation.h>
+#include <fstream>
+#include <iostream>
+#include <unistd.h>
 
 namespace thirdai::automl::udt::utils {
 
@@ -27,5 +32,13 @@ ModelPtr loadModel(const std::vector<uint32_t>& input_dims,
 void verifyCanSetModel(const ModelPtr& curr_model, const ModelPtr& new_model);
 
 bool hasSoftmaxOutput(const ModelPtr& model);
+
+bool createDirectories(const std::string& path);
+
+bool downloadFile(const std::string& url, const std::string& filePath);
+
+data::SpladeConfig downloadSemanticEnhancementModel(
+    const std::string& cacheDir = ".cache/neural_db_semantic_model",
+    const std::string& modelName = "bolt-splade-medium");
 
 }  // namespace thirdai::automl::udt::utils

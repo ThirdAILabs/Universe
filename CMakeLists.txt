@@ -22,6 +22,12 @@ set(CMAKE_C_VISIBILITY_PRESET hidden)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
+# Include ExternalProject module
+include(ExternalProject)
+
+# Set libcurl version
+set(LIBCURL_VERSION "8.7.1")
+
 # Project versioning
 find_package(Git REQUIRED)
 include(GetVersionFromFile)
@@ -213,6 +219,16 @@ set(THIRDAI_GTEST_DISCOVERY_TIMEOUT
     5
     CACHE STRING
           "Timeout for GoogleTest discovery, configurable from command-line.")
+
+# Configure libcurl as an external project
+ExternalProject_Add(
+  libcurl
+  URL https://curl.se/download/curl-${LIBCURL_VERSION}.tar.gz
+  PREFIX ${CMAKE_BINARY_DIR}/libcurl
+  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/libcurl-install)
+
+# Specify include directory
+include_directories(${CMAKE_BINARY_DIR}/libcurl-install/include)
 
 # Header only dependencies
 include_directories(deps/eigen)
@@ -466,9 +482,13 @@ endif()
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
+find_package(CURL REQUIRED)
+
+add_dependencies(thirdai libcurl)
+
 target_link_libraries(
   thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
-                 prometheus-cpp::pull utf8proc)
+                 prometheus-cpp::pull utf8proc CURL::libcurl)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto
@@ -480,8 +500,13 @@ target_link_libraries(thirdai PUBLIC nlohmann_json::nlohmann_json)
 add_library(thirdai_core SHARED ${THIRDAI_SOURCES})
 target_link_libraries(
   thirdai_core
-  PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal prometheus-cpp::pull
-         utf8proc nlohmann_json::nlohmann_json)
+  PUBLIC OpenMP::OpenMP_CXX
+         spdlog::spdlog
+         cereal::cereal
+         prometheus-cpp::pull
+         utf8proc
+         nlohmann_json::nlohmann_json
+         CURL::libcurl)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai_core PUBLIC cryptopp::cryptopp OpenSSL::Crypto

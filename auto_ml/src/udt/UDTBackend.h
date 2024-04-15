@@ -7,6 +7,7 @@
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/Featurizer.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <auto_ml/src/udt/utils/Models.h>
 #include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
@@ -416,11 +417,31 @@ class UDTBackend {
 
   static std::optional<data::SpladeConfig> getSpladeConfig(
       const py::kwargs& kwargs) {
-    if (!kwargs.contains("splade_config") ||
-        kwargs["splade_config"].is_none()) {
-      return std::nullopt;
+    // Check if splade_config is provided and not None
+    if (kwargs.contains("splade_config") &&
+        !kwargs["splade_config"].is_none()) {
+      return kwargs["splade_config"].cast<data::SpladeConfig>();
     }
-    return kwargs["splade_config"].cast<data::SpladeConfig>();
+
+    // Check if semantic_enhancement is true
+    if (kwargs.contains("semantic_enhancement") &&
+        kwargs["semantic_enhancement"].cast<bool>()) {
+      try {
+        // Download the semantic enhancement model
+        data::SpladeConfig config = utils::downloadSemanticEnhancementModel();
+        return config;
+      } catch (const std::runtime_error& e) {
+        // Handle download error (you can log or throw the error)
+        std::cerr << "Error downloading semantic enhancement model: "
+                  << e.what() << std::endl;
+        // Optionally return std::nullopt to indicate failure
+        return std::nullopt;
+      }
+    }
+
+    // If neither splade_config nor semantic_enhancement is provided or
+    // specified as false, return std::nullopt
+    return std::nullopt;
   }
 
   static bool getSpladeValidationOption(const py::kwargs& kwargs) {

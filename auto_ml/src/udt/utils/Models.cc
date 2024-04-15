@@ -11,6 +11,8 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <limits>
 #include <stdexcept>
 
@@ -162,6 +164,86 @@ bool hasSoftmaxOutput(const ModelPtr& model) {
   auto fc = bolt::FullyConnected::cast(outputs.at(0)->op());
   return fc && (fc->kernel()->getActivationFunction() ==
                 bolt::ActivationFunction::Softmax);
+}
+
+// Function to create directories recursively
+bool createDirectories(const std::string& path) {
+  size_t pos = 0;
+  do {
+    pos = path.find_first_of("/\\", pos + 1);
+    if (pos != std::string::npos) {
+      std::string dir = path.substr(0, pos);
+      if (mkdir(dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0 &&
+          errno != EEXIST) {
+        std::cerr << "Error creating directory: " << dir << std::endl;
+        return false;
+      }
+    }
+  } while (pos != std::string::npos);
+  return true;
+}
+
+// Function to download a file using libcurl
+bool downloadFile(const std::string& url, const std::string& filePath) {
+  FILE* file = fopen(filePath.c_str(), "wb");
+  if (!file) {
+    std::cerr << "Failed to open file for writing: " << filePath << std::endl;
+    return false;
+  }
+
+  CURL* curl = curl_easy_init();
+  if (curl) {
+    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
+    CURLcode res = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+
+    fclose(file);
+
+    if (res != CURLE_OK) {
+      std::cerr << "Failed to download file: " << url << " ("
+                << curl_easy_strerror(res) << ")" << std::endl;
+      std::remove(filePath.c_str());  // Remove incomplete file
+      return false;
+    }
+  } else {
+    std::cerr << "Failed to initialize libcurl" << std::endl;
+    fclose(file);
+    return false;
+  }
+
+  return true;
+}
+
+data::SpladeConfig downloadSemanticEnhancementModel(
+    const std::string& cacheDir, const std::string& modelName) {
+  // Ensure cache directory exists
+  if (!createDirectories(cacheDir)) {
+    throw std::runtime_error("Failed to create cache directory: " + cacheDir);
+  }
+
+  std::string semanticModelPath = cacheDir + "/" + modelName;
+
+  // Download the model only if it does not already exist
+  if (access(semanticModelPath.c_str(), F_OK) == -1) {
+    std::string url =
+        "https://modelzoo-cdn.azureedge.net/test-models/" + modelName;
+    if (!downloadFile(url, semanticModelPath)) {
+      throw std::runtime_error("Failed to download semantic enhancement model");
+    }
+  }
+
+  // Download BERT vocabulary if it does not exist
+  std::string vocabPath = cacheDir + "/bert-base-uncased.vocab";
+  if (access(vocabPath.c_str(), F_OK) == -1) {
+    std::string vocabUrl =
+        "https://huggingface.co/bert-base-uncased/resolve/main/vocab.txt";
+    if (!downloadFile(vocabUrl, vocabPath)) {
+      throw std::runtime_error("Failed to download BERT vocabulary");
+    }
+  }
+
+  return data::SpladeConfig(semanticModelPath, vocabPath, 100, std::nullopt);
 }
 
 }  // namespace thirdai::automl::udt::utils
