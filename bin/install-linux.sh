@@ -8,6 +8,9 @@ apt install cmake -y
 apt install clang-format -y
 apt install clang-tidy -y
 
+# Install libcurl dependencies
+apt-get install curl libssl-dev libcurl4-openssl-dev
+
 # Install necessary python packages
 pip3 install dark
 pip3 install pytest
