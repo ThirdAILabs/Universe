@@ -79,9 +79,13 @@ class Featurizer {
       dataset::DatasetShuffleConfig shuffle_config =
           dataset::DatasetShuffleConfig());
 
-  bolt::TensorList featurizeInput(const MapInput& sample, const std::optional<data::SpladeConfig>& splade_config=std::nullopt);
+  bolt::TensorList featurizeInput(
+      const MapInput& sample,
+      const std::optional<data::SpladeConfig>& splade_config = std::nullopt);
 
-  bolt::TensorList featurizeInputBatch(const MapInputBatch& sampless, const std::optional<data::SpladeConfig>& splade_config=std::nullopt);
+  bolt::TensorList featurizeInputBatch(
+      const MapInputBatch& sampless,
+      const std::optional<data::SpladeConfig>& splade_config = std::nullopt);
 
   bolt::TensorList featurizeInputColdStart(
       MapInput sample, const std::vector<std::string>& strong_column_names,

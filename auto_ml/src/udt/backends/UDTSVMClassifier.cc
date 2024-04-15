@@ -79,7 +79,7 @@ py::object UDTSVMClassifier::predictBatch(const MapInputBatch& samples,
                                           bool return_predicted_class,
                                           std::optional<uint32_t> top_k,
                                           py::kwargs kwargs) {
-  (void)kwargs;                                          
+  (void)kwargs;
   auto inputs =
       bolt::convertBatch({dataset::SvmDatasetLoader::toSparseVectors(samples)},
                          _classifier->model()->inputDims());

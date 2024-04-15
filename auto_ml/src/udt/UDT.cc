@@ -202,8 +202,7 @@ py::object UDT::evaluate(const dataset::DataSourcePtr& data,
 
 py::object UDT::predict(const MapInput& sample, bool sparse_inference,
                         bool return_predicted_class,
-                        std::optional<uint32_t> top_k,
-                        py::kwargs kwargs) {
+                        std::optional<uint32_t> top_k, py::kwargs kwargs) {
   bolt::utils::Timer timer;
 
   auto result = _backend->predict(sample, sparse_inference,
@@ -218,8 +217,7 @@ py::object UDT::predict(const MapInput& sample, bool sparse_inference,
 
 py::object UDT::predictBatch(const MapInputBatch& sample, bool sparse_inference,
                              bool return_predicted_class,
-                             std::optional<uint32_t> top_k,
-                             py::kwargs kwargs) {
+                             std::optional<uint32_t> top_k, py::kwargs kwargs) {
   bolt::utils::Timer timer;
 
   auto result = _backend->predictBatch(sample, sparse_inference,
@@ -449,19 +447,19 @@ bool UDT::isV1() const {
 std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
 UDT::parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
                        const MapInputBatch& batch, bool sparse_inference,
-                       std::optional<uint32_t> top_k,
-                       py::kwargs kwargs) {
+                       std::optional<uint32_t> top_k, py::kwargs kwargs) {
   std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>> outputs(
       models.size());
 
   bool non_mach = false;
-#pragma omp parallel for default(none)                      \
-    shared(models, batch, outputs, sparse_inference, top_k, \
-           non_mach, kwargs) if (batch.size() == 1)
+#pragma omp parallel for default(none)                                \
+    shared(models, batch, outputs, sparse_inference, top_k, non_mach, \
+           kwargs) if (batch.size() == 1)
   for (size_t i = 0; i < models.size(); i++) {
     if (auto* mach = dynamic_cast<UDTMach*>(models[i]->_backend.get())) {
-      outputs[i] = mach->predictBatchImpl(
-          batch, sparse_inference, /*return_predicted_class*/ false, top_k, kwargs);
+      outputs[i] = mach->predictBatchImpl(batch, sparse_inference,
+                                          /*return_predicted_class*/ false,
+                                          top_k, kwargs);
     } else if (auto* mach = dynamic_cast<UDTMachClassifier*>(
                    models[i]->_backend.get())) {
       outputs[i] = mach->predictImpl(batch, sparse_inference, top_k);

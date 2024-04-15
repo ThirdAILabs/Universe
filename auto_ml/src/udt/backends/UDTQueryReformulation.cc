@@ -254,8 +254,8 @@ py::object UDTQueryReformulation::predict(const MapInput& sample,
   (void)sparse_inference;
   (void)return_predicted_class;
   (void)top_k;
-  return predictBatch({sample}, sparse_inference, return_predicted_class,
-                      top_k, kwargs);
+  return predictBatch({sample}, sparse_inference, return_predicted_class, top_k,
+                      kwargs);
 }
 
 IdScorePairs UDTQueryReformulation::queryBatchResults(

@@ -162,9 +162,10 @@ py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,
                                   std::optional<uint32_t> top_k,
                                   py::kwargs kwargs) {
   auto splade_config = getSpladeConfig(kwargs);
-  return _classifier->predict(_featurizer->featurizeInput(sample, splade_config),
-                              sparse_inference, return_predicted_class,
-                              /* single= */ true, top_k);
+  return _classifier->predict(
+      _featurizer->featurizeInput(sample, splade_config), sparse_inference,
+      return_predicted_class,
+      /* single= */ true, top_k);
 }
 
 py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
@@ -173,9 +174,10 @@ py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
                                        std::optional<uint32_t> top_k,
                                        py::kwargs kwargs) {
   auto splade_config = getSpladeConfig(kwargs);
-  return _classifier->predict(_featurizer->featurizeInputBatch(samples, splade_config),
-                              sparse_inference, return_predicted_class,
-                              /* single= */ false, top_k);
+  return _classifier->predict(
+      _featurizer->featurizeInputBatch(samples, splade_config),
+      sparse_inference, return_predicted_class,
+      /* single= */ false, top_k);
 }
 
 std::vector<std::pair<std::string, float>> UDTClassifier::explain(

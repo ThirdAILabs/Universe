@@ -153,11 +153,14 @@ data::LoaderPtr Featurizer::getDataLoaderHelper(
       /* shuffle_seed= */ shuffle_config.seed);
 }
 
-bolt::TensorList Featurizer::featurizeInput(const MapInput& sample, const std::optional<data::SpladeConfig>& splade_config) {
+bolt::TensorList Featurizer::featurizeInput(
+    const MapInput& sample,
+    const std::optional<data::SpladeConfig>& splade_config) {
   auto columns = data::ColumnMap::fromMapInput(sample);
 
-  if(splade_config){
-    auto preprocessor = data::Pipeline::make()
+  if (splade_config) {
+    auto preprocessor =
+        data::Pipeline::make()
             ->then(std::make_shared<data::SpladeAugmentation>(
                 textDatasetConfig().textColumn(), SPLADE_TOKENS,
                 *splade_config))
@@ -165,19 +168,22 @@ bolt::TensorList Featurizer::featurizeInput(const MapInput& sample, const std::o
                 std::vector<std::string>(std::initializer_list<std::string>{
                     textDatasetConfig().textColumn(), SPLADE_TOKENS}),
                 textDatasetConfig().textColumn(), " "));
-    columns = preprocessor->apply(columns,*_state);
+    columns = preprocessor->apply(columns, *_state);
   }
-  
+
   columns = _const_input_transform->apply(std::move(columns), *_state);
 
   return data::toTensors(columns, _bolt_input_columns);
 }
 
-bolt::TensorList Featurizer::featurizeInputBatch(const MapInputBatch& samples, const std::optional<data::SpladeConfig>& splade_config) {
+bolt::TensorList Featurizer::featurizeInputBatch(
+    const MapInputBatch& samples,
+    const std::optional<data::SpladeConfig>& splade_config) {
   auto columns = data::ColumnMap::fromMapInputBatch(samples);
 
-  if(splade_config){
-    auto preprocessor = data::Pipeline::make()
+  if (splade_config) {
+    auto preprocessor =
+        data::Pipeline::make()
             ->then(std::make_shared<data::SpladeAugmentation>(
                 textDatasetConfig().textColumn(), SPLADE_TOKENS,
                 *splade_config))
@@ -185,7 +191,7 @@ bolt::TensorList Featurizer::featurizeInputBatch(const MapInputBatch& samples, c
                 std::vector<std::string>(std::initializer_list<std::string>{
                     textDatasetConfig().textColumn(), SPLADE_TOKENS}),
                 textDatasetConfig().textColumn(), " "));
-    columns = preprocessor->apply(columns,*_state);
+    columns = preprocessor->apply(columns, *_state);
   }
 
   columns = _const_input_transform->apply(std::move(columns), *_state);

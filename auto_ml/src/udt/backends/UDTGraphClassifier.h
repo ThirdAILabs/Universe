@@ -30,8 +30,7 @@ class UDTGraphClassifier final : public UDTBackend {
                       py::kwargs kwargs) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
-                     bool return_predicted_class,
-                     std::optional<uint32_t> top_k,
+                     bool return_predicted_class, std::optional<uint32_t> top_k,
                      py::kwargs kwargs) final {
     (void)kwargs;
     return _classifier->predict(_featurizer->featurizeInput(sample),

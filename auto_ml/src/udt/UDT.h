@@ -78,8 +78,7 @@ class UDT {
    * predicted classes if its a classification task instead of the activations.
    */
   py::object predict(const MapInput& sample, bool sparse_inference,
-                     bool return_predicted_class,
-                     std::optional<uint32_t> top_k,
+                     bool return_predicted_class, std::optional<uint32_t> top_k,
                      py::kwargs kwargs);
 
   /**
@@ -90,8 +89,7 @@ class UDT {
    */
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class,
-                          std::optional<uint32_t> top_k,
-                          py::kwargs kwargs);
+                          std::optional<uint32_t> top_k, py::kwargs kwargs);
 
   py::object predictActivationsBatch(const MapInputBatch& samples,
                                      bool sparse_inference) {

@@ -175,7 +175,6 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
                           TrainOptions options,
                           const bolt::DistributedCommPtr& comm,
                           py::kwargs kwargs) {
-                            
   insertNewDocIds(data);
 
   addBalancingSamples(data);
@@ -243,10 +242,9 @@ py::object UDTMach::evaluate(const dataset::DataSourcePtr& data,
 
 py::object UDTMach::predict(const MapInput& sample, bool sparse_inference,
                             bool return_predicted_class,
-                            std::optional<uint32_t> top_k,
-                            py::kwargs kwargs) {
-  auto output =
-      predictBatch({sample}, sparse_inference, return_predicted_class, top_k, kwargs);
+                            std::optional<uint32_t> top_k, py::kwargs kwargs) {
+  auto output = predictBatch({sample}, sparse_inference, return_predicted_class,
+                             top_k, kwargs);
   return output.cast<py::list>()[0];
 }
 
@@ -271,7 +269,6 @@ std::vector<std::vector<std::pair<uint32_t, double>>> UDTMach::predictBatchImpl(
     const MapInputBatch& samples, bool sparse_inference,
     bool return_predicted_class, std::optional<uint32_t> top_k,
     py::kwargs kwargs) {
-
   auto splade_config = getSpladeConfig(kwargs);
   if (return_predicted_class) {
     throw std::invalid_argument(
@@ -281,7 +278,8 @@ std::vector<std::vector<std::pair<uint32_t, double>>> UDTMach::predictBatchImpl(
 
   auto outputs =
       _classifier->model()
-          ->forward(_featurizer->featurizeInputBatch(samples, splade_config), sparse_inference)
+          ->forward(_featurizer->featurizeInputBatch(samples, splade_config),
+                    sparse_inference)
           .at(0);
 
   uint32_t num_classes = getIndex()->numEntities();
