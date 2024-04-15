@@ -25,24 +25,29 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
-        with:           
-          submodules: 'recursive'
+        with:
+          submodules: "recursive"
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-          
+
+      - name: Install libcurl dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl libssl-dev libcurl4-openssl-dev
+
       - name: Run all c++ tests
         run: |
           bin/build.py -t all -f THIRDAI_BUILD_LICENSE
           bin/cpp-test.sh -V
-          
+
   cpp-asan-tests:
-    runs-on: 
+    runs-on:
       labels: ubuntu-latest-8-cores
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
-        with:           
-          submodules: 'recursive'
+        with:
+          submodules: "recursive"
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
       - name: Fix kernel mmap rnd bits
         # Asan in llvm 14 provided in ubuntu 22.04 is incompatible with
@@ -50,6 +55,12 @@ jobs:
         # using leading to random crashes: https://reviews.llvm.org/D148280
         # https://github.com/actions/runner-images/issues/9524
         run: sudo sysctl vm.mmap_rnd_bits=28
+
+      - name: Install libcurl dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl libssl-dev libcurl4-openssl-dev
+
       - name: Run all c++ tests
         run: |
           bin/build.py -t all -f THIRDAI_BUILD_LICENSE -m RelWithAsan
@@ -61,10 +72,15 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
-        with:           
-          submodules: 'recursive'
+        with:
+          submodules: "recursive"
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-          
+
+      - name: Install libcurl dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl libssl-dev libcurl4-openssl-dev
+
       - name: Run all c++ tests
         run: |
           bin/build.py -t all -f THIRDAI_BUILD_LICENSE -m Debug

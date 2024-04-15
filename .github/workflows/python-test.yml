@@ -5,7 +5,7 @@ name: Run Python Tests
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-  
+
 # Controls when the workflow will run
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
@@ -25,10 +25,15 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
-        with:           
-          submodules: 'recursive'
+        with:
+          submodules: "recursive"
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-        
+
+      - name: Install libcurl dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl libssl-dev libcurl4-openssl-dev
+
       - name: Build python package and install test dependencies
         # Issue: https://github.com/pypa/pip/issues/10851
         run: |
@@ -50,10 +55,10 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
-        with:           
-          submodules: 'recursive'
+        with:
+          submodules: "recursive"
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-        
+
       - name: Build python package release version and install test dependencies
         # Issue: https://github.com/pypa/pip/issues/10851
         run: |
@@ -74,10 +79,15 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
-        with:           
-          submodules: 'recursive'
+        with:
+          submodules: "recursive"
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-        
+
+      - name: Install libcurl dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl libssl-dev libcurl4-openssl-dev
+
       - name: Build python package and install test dependencies
         # Issue: https://github.com/pypa/pip/issues/10851
         run: |
