@@ -23,6 +23,7 @@ from .utils import (
     hash_path,
     http_get_with_error,
     http_post_with_error,
+    zip_file,
     zip_folder,
 )
 
@@ -374,7 +375,6 @@ class Bazaar:
         on_progress: Callable,
         cancel_state: CancelState,
         disable_progress_bar: bool = False,
-        model_type: str = "ndb",
     ):
         if self.is_logged_in():
             url = urljoin(
@@ -401,10 +401,7 @@ class Bazaar:
             pass
         os.makedirs(self._cached_checkpoint_dir(model_identifier))
 
-        if model_type == "ndb":
-            destination = self._cached_model_zip_path(model_identifier)
-        else:
-            destination = self._cached_checkpoint_dir(model_identifier) / "model"
+        destination = self._cached_model_zip_path(model_identifier)
 
         # Try to get the total size from the Content-Length header
         total_size = int(response.headers.get("Content-Length", 0))
@@ -454,10 +451,10 @@ class Bazaar:
         model_type: str = "ndb",
     ):
         model_path = Path(model_path)
-        if model_type == "ndb":
+        if model_type == "ndb" or os.path.isdir(model_path):
             zip_path = zip_folder(model_path)
         else:
-            zip_path = str(model_path)
+            zip_path = zip_file(model_path)
 
         model_hash = hash_path(model_path)
 
@@ -541,9 +538,19 @@ class Bazaar:
                 + os.path.getsize(logger_pickle)
             )
         elif model_type == "bolt":
-            model = bolt.nn.Model.load(str(model_path))
-            size = os.path.getsize(model_path)
-            size_in_memory = size
+            if os.path.isfile(model_path):
+                model = bolt.nn.Model.load(str(model_path))
+                size = os.path.getsize(model_path)
+                size_in_memory = size
+            else:
+                size = get_directory_size(model_path)
+                size_in_memory = size
+
+                for file in os.listdir(model_path):
+                    file_path = os.path.join(model_path, file)
+                    model = bolt.nn.Model.load(str(file_path))
+                    break
+
         else:
             raise ValueError("Currently supports only bolt and ndb models.")
 
@@ -572,8 +579,7 @@ class Bazaar:
             headers=auth_header(upload_token),
         )
 
-        if model_type == "ndb":
-            os.remove(zip_path)
+        os.remove(zip_path)
 
     @login_required
     def delete(
