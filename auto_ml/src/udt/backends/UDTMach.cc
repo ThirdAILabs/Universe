@@ -621,7 +621,7 @@ void UDTMach::introduceDocuments(
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
       auto& vec = scores->getVector(i);
       for (uint32_t j = 0; j < vec.len; j++) {
-        abs[j] = vec.activations[j];
+        abs[j] += vec.activations[j];
       }
     }
 
