@@ -486,17 +486,7 @@ class ModelBazaar(Bazaar):
         return self.get_neuraldb(model_identifier=model_identifier)
 
     def pull_bolt_model(self, model_identifier: str):
-        def no_op(*args, **kwargs):
-            pass
-
-        self._download(
-            model_identifier=model_identifier,
-            on_progress=no_op(),
-            cancel_state=CancelState(),
-            model_type="bolt",
-        )
-
-        return self._cached_checkpoint_dir(model_identifier) / "model"
+        return self.get_model_dir(model_identifier)
 
     def list_models(self):
         """
