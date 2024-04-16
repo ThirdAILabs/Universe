@@ -586,6 +586,10 @@ class CSV(Document):
             if reference_columns:
                 reference_columns = remove_spaces_from_list(reference_columns)
 
+        self.no_space_to_with_space = {
+            val: key for key, val in self.with_space_to_no_space.items()
+        }
+
         # This variable is used to check whether the id's in the CSV are supposed to start with 0 or with some custom offset. We need the latter when we shard the datasource.
         self.has_offset = has_offset
 
@@ -692,11 +696,8 @@ class CSV(Document):
         metadata_constraints = {
             key: ConstraintValue(value) for key, value in self.doc_metadata.items()
         }
-        no_space_to_space = {
-            val: key for key, val in self.with_space_to_no_space.items()
-        }
         indexed_column_constraints = {
-            no_space_to_space.get(key, key): ConstraintValue(is_any=True)
+            self.no_space_to_with_space.get(key, key): ConstraintValue(is_any=True)
             for key in self.table.columns
         }
         return {**metadata_constraints, **indexed_column_constraints}
@@ -749,7 +750,15 @@ class CSV(Document):
         if element_id >= self.table.size:
             _raise_unknown_doc_error(element_id)
         row = self.table.row_as_dict(element_id)
-        text = "\n\n".join([f"{col}: {row[col]}" for col in self.reference_columns])
+        text = "\n\n".join(
+            [
+                f"{self.no_space_to_with_space.get(col, col)}: {row[col]}"
+                for col in self.reference_columns
+            ]
+        )
+        row = {
+            self.no_space_to_with_space.get(col, col): val for col, val in row.items()
+        }
         return Reference(
             document=self,
             element_id=element_id,
@@ -766,7 +775,12 @@ class CSV(Document):
 
         return " ".join(
             [
-                "\n\n".join([f"{col}: {row[col]}" for col in self.reference_columns])
+                "\n\n".join(
+                    [
+                        f"{self.no_space_to_with_space.get(col, col)}: {row[col]}"
+                        for col in self.reference_columns
+                    ]
+                )
                 for row in rows
             ]
         )
@@ -839,8 +853,13 @@ class CSV(Document):
         else:
             self.table.load_meta(directory)
 
-        if not hasattr(self, "with_space_to_no_space"):
+        if hasattr(self, "with_space_to_no_space"):
+            self.no_space_to_with_space = {
+                val: key for key, val in self.with_space_to_no_space.items()
+            }
+        else:
             self.with_space_to_no_space = {}
+            self.no_space_to_with_space = {}
 
 
 # Base class for PDF, DOCX and Unstructured classes because they share the same logic.
