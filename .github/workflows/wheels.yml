@@ -60,7 +60,7 @@ jobs:
           $Env:VCPKG_BUILD_TYPE = 'release'
           $Env:VCPKG_DEFAULT_TRIPLET = 'x64-windows-static'
           $Env:VCPKG_ROOT = 'C:\'
-          .\vcpkg install zlib:x64-windows-static openssl:x64-windows-static
+          .\vcpkg install zlib:x64-windows-static openssl:x64-windows-static curl:x64-windows-static
           .\vcpkg upgrade --no-dry-run # In case there are new builds available after cache restoration
         shell: powershell
 
@@ -100,9 +100,9 @@ jobs:
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
             yum install openssl11-devel -y &&
-            yum install -y libxslt-devel libxml2-devel
+            yum install -y libxslt-devel libxml2-devel &&
             yum install -y curl libssl-dev libcurl4-openssl-dev
-          CIBW_BEFORE_BUILD_MACOS: brew install openssl
+          CIBW_BEFORE_BUILD_MACOS: brew install openssl curl
           # Online compile cpython wheels (pytorch does this too), no big
           # advantage to JIT compilation of python since most of our processing
           # happens in C++ (it can actually make it slower!). Also, on some
