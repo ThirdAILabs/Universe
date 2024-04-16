@@ -447,7 +447,11 @@ class ModelBazaar(Bazaar):
         self._username = self._login_instance.username
 
     def push_model(
-        self, model_name: str, local_path: str, access_level: str = "private"
+        self,
+        model_name: str,
+        local_path: str,
+        access_level: str = "private",
+        model_type: str = "ndb",
     ):
         """
         Pushes a model to the Model Bazaar.
@@ -464,6 +468,7 @@ class ModelBazaar(Bazaar):
             access_level=access_level,
             is_indexed=True,
             description="",
+            model_type=model_type,
         )
 
     def pull_model(self, model_identifier: str):
