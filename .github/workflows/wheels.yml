@@ -101,7 +101,7 @@ jobs:
             yum update -y && yum clean all &&
             yum install openssl11-devel -y &&
             yum install -y libxslt-devel libxml2-devel &&
-            yum install -y curl libssl-dev libcurl4-openssl-dev
+            yum install -y curl libcurl4-openssl-dev
           CIBW_BEFORE_BUILD_MACOS: brew install openssl curl
           # Online compile cpython wheels (pytorch does this too), no big
           # advantage to JIT compilation of python since most of our processing
