@@ -608,6 +608,30 @@ void UDTMach::introduceDocuments(
       data, strong_column_names, weak_column_names, fast_approximation,
       defaults::BATCH_SIZE);
 
+  std::vector<double> abs(mach_index->numBuckets());
+  uint32_t num_samples = 0;
+
+  for (const auto& [input, doc_ids] : data_and_doc_ids) {
+    // Note: using sparse inference here could cause issues because the
+    // mach index sampler will only return nonempty buckets, which could
+    // cause new docs to only be mapped to buckets already containing
+    // entities.
+    auto scores = _classifier->model()->forward(input).at(0);
+
+    for (uint32_t i = 0; i < scores->batchSize(); i++) {
+      auto& vec = scores->getVector(i);
+      for (uint32_t j = 0; j < vec.len; j++) {
+        abs[j] = vec.activations[j];
+      }
+    }
+
+    num_samples += scores->batchSize();
+  }
+
+  for (double& bs : abs) {
+    bs /= num_samples;
+  }
+
   uint32_t num_buckets_to_sample =
       load_balancing
           ? mach_index->numBuckets()
@@ -627,11 +651,15 @@ void UDTMach::introduceDocuments(
 
     for (uint32_t i = 0; i < scores->batchSize(); i++) {
       uint32_t label = doc_ids[i];
+      auto& vec = scores->getVector(i);
+      for (uint32_t j = 0; j < vec.len; j++) {
+        vec.activations[j] /= abs[j];
+      }
       if (load_balancing) {
-        top_k_per_doc[label].push_back(scores->getVector(i).valueIndexPairs());
+        top_k_per_doc[label].push_back(vec.valueIndexPairs());
       } else {
-        top_k_per_doc[label].push_back(priorityQueueToVector(
-            scores->getVector(i).topKNeurons(num_buckets_to_sample)));
+        top_k_per_doc[label].push_back(
+            priorityQueueToVector(vec.topKNeurons(num_buckets_to_sample)));
       }
     }
 
@@ -1033,7 +1061,8 @@ py::object UDTMach::associateColdStart(
 
   if (options.max_in_memory_batches) {
     throw std::invalid_argument(
-        "Streaming is not supported for associate_train/associate_cold_start. "
+        "Streaming is not supported for "
+        "associate_train/associate_cold_start. "
         "Please pass max_in_memory_batches=None.");
   }
 
@@ -1152,7 +1181,8 @@ void UDTMach::setDecodeParams(uint32_t top_k_to_return,
 }
 
 void UDTMach::setIndex(const dataset::mach::MachIndexPtr& index) {
-  // block allows indexes with different number of hashes but not output ranges
+  // block allows indexes with different number of hashes but not output
+  // ranges
   _featurizer->state()->setMachIndex(index);
 
   updateSamplingStrategy();
