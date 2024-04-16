@@ -23,16 +23,21 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
-        with:           
-          submodules: 'recursive'
+        with:
+          submodules: "recursive"
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-          
+
       - name: Install SSH key
         uses: shimataro/ssh-key-action@v2
         with:
           key: ${{ secrets.DOC_HOSTING_EC2_SSH_KEY }}
           name: id_rsa
           known_hosts: ${{ secrets.DOC_HOSTING_KNOWN_HOSTS }}
+
+      - name: Install libcurl dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl libssl-dev libcurl4-openssl-dev
 
       - name: Build Universe
         run: bin/build.py -f THIRDAI_BUILD_LICENSE -e docs

@@ -24,21 +24,26 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
-        with:           
-          submodules: 'recursive'
+        with:
+          submodules: "recursive"
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+
+      - name: Install libcurl dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl libssl-dev libcurl4-openssl-dev
 
       - name: Build Universe
         run: pip3 install .[docs] --verbose --force
 
       - name: Build public docs
-      # We need the .nojekyll here because gh actions uses jekyll by default 
-      # and it doesn't work with the _static directory created by sphinx.
+        # We need the .nojekyll here because gh actions uses jekyll by default
+        # and it doesn't work with the _static directory created by sphinx.
         run: |
           (cd docs/public_docs && make html && touch _build/html/.nojekyll)
 
       - name: Publish new docs
-      # https://github.com/peaceiris/actions-gh-pages
+        # https://github.com/peaceiris/actions-gh-pages
         uses: peaceiris/actions-gh-pages@v2
         env:
           ACTIONS_DEPLOY_KEY: ${{ secrets.PUBLIC_DOCS_DEPLOY_KEY }}
