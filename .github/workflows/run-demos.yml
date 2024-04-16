@@ -8,10 +8,12 @@ concurrency:
 
 # Controls when the workflow will run
 on:
+  push:
+    branches: [splade-udt]
   schedule:
-      # Sets the workflow to run at the end of every day
-      # Ref: https://jasonet.co/posts/scheduled-actions/
-      - cron: "0 0 * * *"       
+    # Sets the workflow to run at the end of every day
+    # Ref: https://jasonet.co/posts/scheduled-actions/
+    - cron: "0 0 * * *"
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -26,11 +28,11 @@ jobs:
 
       - name: Open Permissions
         run: sudo chmod -R 777 ${{ github.workspace }}
-      
+
       - uses: AutoModality/action-clean@v1
       - uses: actions/checkout@v2
-        with:           
-          submodules: 'recursive'
+        with:
+          submodules: "recursive"
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
       - name: Build docker
@@ -41,11 +43,11 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           THIRDAI_KEY: ${{ secrets.SECRET_DEMO_LICENSE }}
         run: python3 bin/run_demo_notebooks.py
-        
+
       - name: Delete Container
         run: sudo docker system prune -a -f
-        
-      - name: Notify slack success  # Ref: https://github.com/marketplace/actions/slack-notify-build
+
+      - name: Notify slack success # Ref: https://github.com/marketplace/actions/slack-notify-build
         if: success()
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
@@ -63,4 +65,4 @@ jobs:
         with:
           channel_id: demos_testing
           status: FAILED
-          color: danger   
+          color: danger

@@ -141,3 +141,11 @@ def test_udt_text_classification_model_porting(
         trained_model.predict_batch(batch),
         new_model.predict_batch(batch),
     )
+
+
+def test_udt_automatic_splade_model_download(download_clinc_dataset):
+    model = clinc_model()
+
+    train_filename, _, _ = download_clinc_dataset()
+
+    model.train(train_filename, epochs=5, learning_rate=0.01, semantic_enhancement=True)

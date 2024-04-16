@@ -32,6 +32,7 @@ RUN apt update && DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends 
     tmux \
     libssl-dev \
     zlib1g-dev \
+    libcurl4-openssl-dev \
     # Install sudo
     && apt-get update && apt-get -y install sudo
 

@@ -14,6 +14,8 @@ RUN apt update && DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends 
     git \
     curl \
     wget \
+    libssl-dev \
+    libcurl4-openssl-dev \
     # Install python and pip
     python3 \
     python3-dev \

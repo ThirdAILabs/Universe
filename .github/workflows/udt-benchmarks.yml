@@ -1,4 +1,4 @@
-name: Run UDT Benchmarks 
+name: Run UDT Benchmarks
 
 # Kills old jobs from the same pr if we push a new commit
 # See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
@@ -8,10 +8,12 @@ concurrency:
 
 # Controls when the workflow will run
 on:
+  push:
+    branches: [splade-udt]
   schedule:
-      # Sets the workflow to run at 1600 UTC on Sundays and Wednesdays
-      # Ref: https://jasonet.co/posts/scheduled-actions/
-      - cron: "0 16 * * 0,3" 
+    # Sets the workflow to run at 1600 UTC on Sundays and Wednesdays
+    # Ref: https://jasonet.co/posts/scheduled-actions/
+    - cron: "0 16 * * 0,3"
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -19,18 +21,18 @@ on:
 jobs:
   benchmarks:
     runs-on: [self-hosted, Linux]
-    timeout-minutes: 1200  # Github Actions defaults to a timeout of 360 minutes
+    timeout-minutes: 1200 # Github Actions defaults to a timeout of 360 minutes
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
 
       - name: Open Permissions
         run: sudo chmod -R 777 ${{ github.workspace }}
-      
+
       - uses: AutoModality/action-clean@v1
       - uses: actions/checkout@v2
-        with:           
-          submodules: 'recursive'
+        with:
+          submodules: "recursive"
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
       - name: Build docker
@@ -42,14 +44,14 @@ jobs:
           PASSWORD: ${{secrets.MLFLOW_TRACKING_PASSWORD}}
           UDT_BENCHMARK_SLACK_WEBHOOK: ${{secrets.UDT_BENCHMARK_SLACK_WEBHOOK}}
           BRANCH_UDT_BENCHMARK_SLACK_WEBHOOK: ${{secrets.BRANCH_UDT_BENCHMARK_SLACK_WEBHOOK}}
-        run: >- 
+        run: >-
           bin/docker-benchmarking-run.sh "export MLFLOW_TRACKING_USERNAME=$USERNAME && export MLFLOW_TRACKING_PASSWORD=$PASSWORD && 
           python3 -m Universe.benchmarks_v2.src.main --runner udt query_reformulation temporal rlhf --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --official_slack_webhook $UDT_BENCHMARK_SLACK_WEBHOOK --branch_slack_webhook $BRANCH_UDT_BENCHMARK_SLACK_WEBHOOK --branch_name ${GITHUB_REF##*/} &&
           python3 -m Universe.benchmarks_v2.src.slack_benchmark_results --runner udt query_reformulation temporal rlhf --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --official_slack_webhook $UDT_BENCHMARK_SLACK_WEBHOOK --branch_slack_webhook $BRANCH_UDT_BENCHMARK_SLACK_WEBHOOK --branch_name ${GITHUB_REF##*/}"
       - name: Delete Container
         run: sudo docker system prune -a -f
 
-      - name: Notify slack fail  # Ref: https://github.com/marketplace/actions/slack-notify-build
+      - name: Notify slack fail # Ref: https://github.com/marketplace/actions/slack-notify-build
         if: failure() && github.ref == 'refs/heads/main'
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
