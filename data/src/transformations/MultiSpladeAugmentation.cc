@@ -63,10 +63,9 @@ MultiSpladeAugmentation::MultiSpladeAugmentation(
           "MultiSpladeAugmentation must have 1 input and output");
     }
 
-    if (model->inputs()[0]->dim() != _tokenizer->vocabSize() ||
-        model->outputs()[0]->dim() != _tokenizer->vocabSize()) {
+    if (model->inputs()[0]->dim() != _tokenizer->vocabSize()) {
       throw std::invalid_argument(
-          "MultiSpladeAugmentation model input and output dim should match "
+          "MultiSpladeAugmentation model input dim should match "
           "tokenizer "
           "vocab size.");
     }
