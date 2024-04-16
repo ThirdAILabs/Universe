@@ -6,6 +6,7 @@
 #include <data/src/Loader.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/rca/ExplanationMap.h>
+#include <data/src/transformations/MultiSpladeAugmentation.h>
 #include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
@@ -69,6 +70,14 @@ class Featurizer {
       dataset::DatasetShuffleConfig shuffle_config =
           dataset::DatasetShuffleConfig());
 
+  data::LoaderPtr getMultiSpladeDataLoader(
+      const dataset::DataSourcePtr& data_source, size_t batch_size,
+      bool shuffle, bool verbose,
+      const std::optional<data::MultiSpladeConfig>& splade_config =
+          std::nullopt,
+      dataset::DatasetShuffleConfig shuffle_config =
+          dataset::DatasetShuffleConfig());
+
   data::LoaderPtr getColdStartDataLoader(
       const dataset::DataSourcePtr& data_source,
       const std::vector<std::string>& strong_column_names,
@@ -78,6 +87,26 @@ class Featurizer {
       bool fast_approximation, size_t batch_size, bool shuffle, bool verbose,
       dataset::DatasetShuffleConfig shuffle_config =
           dataset::DatasetShuffleConfig());
+
+  data::LoaderPtr getMultiSpladeColdStartDataLoader(
+      const dataset::DataSourcePtr& data_source,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names,
+      std::optional<data::VariableLengthConfig> variable_length,
+      const std::optional<data::MultiSpladeConfig>& splade_config,
+      bool fast_approximation, size_t batch_size, bool shuffle, bool verbose,
+      dataset::DatasetShuffleConfig shuffle_config =
+          dataset::DatasetShuffleConfig());
+
+  bolt::TensorList featurizeMultiSpladeInput(
+      const MapInput& sample,
+      const std::optional<data::MultiSpladeConfig>& splade_config =
+          std::nullopt);
+
+  bolt::TensorList featurizeMultiSpladeInputBatch(
+      const MapInputBatch& sampless,
+      const std::optional<data::MultiSpladeConfig>& splade_config =
+          std::nullopt);
 
   bolt::TensorList featurizeInput(
       const MapInput& sample,

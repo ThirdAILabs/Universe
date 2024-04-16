@@ -12,6 +12,7 @@
 #include <data/src/transformations/DyadicInterval.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
+#include <data/src/transformations/MultiSpladeAugmentation.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/StringCast.h>
@@ -500,6 +501,25 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("tokenizer"), py::arg("n_augmented_tokens") = 100,
            py::arg("augmentation_frac") = std::nullopt,
            py::arg("filter_tokens") = true, py::arg("batch_size") = 4096);
+
+  py::class_<MultiSpladeConfig, std::shared_ptr<MultiSpladeConfig>>(
+      transformations_submodule, "MultiSpladeConfig")
+      .def(py::init<std::vector<std::string>, std::vector<uint32_t>,
+                    std::string, std::optional<size_t>, std::optional<float>,
+                    bool, size_t, bool, std::optional<uint32_t>>(),
+           py::arg("model_checkpoints"), py::arg("mach_index_seeds"),
+           py::arg("tokenizer_vocab"), py::arg("n_augmented_tokens") = 100,
+           py::arg("augmentation_frac") = std::nullopt,
+           py::arg("filter_tokens") = true, py::arg("batch_size") = 4096,
+           py::arg("lowercase") = true, py::arg("strong_sample_override") = 7)
+      .def(bolt::python::getPickleFunction<MultiSpladeConfig>());
+
+  py::class_<MultiSpladeAugmentation, Transformation,
+             std::shared_ptr<MultiSpladeAugmentation>>(
+      transformations_submodule, "MultiSpladeAugmentation")
+      .def(py::init<std::string, std::string, const MultiSpladeConfig&>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("config"));
 }
 
 }  // namespace thirdai::data::python
