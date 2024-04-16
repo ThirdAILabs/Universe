@@ -82,6 +82,7 @@ metrics::History DyadicModel::train(
             /* logging_interval= */ std::nullopt, comm);
       }
     }
+    train_dataset_loader.restart();
   }
   return trainer.getHistory();
 }
