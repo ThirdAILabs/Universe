@@ -374,6 +374,7 @@ class Bazaar:
         on_progress: Callable,
         cancel_state: CancelState,
         disable_progress_bar: bool = False,
+        model_type: str = "ndb",
     ):
         if self.is_logged_in():
             url = urljoin(
@@ -400,7 +401,10 @@ class Bazaar:
             pass
         os.makedirs(self._cached_checkpoint_dir(model_identifier))
 
-        destination = self._cached_model_zip_path(model_identifier)
+        if model_type == "ndb":
+            destination = self._cached_model_zip_path(model_identifier)
+        else:
+            destination = self._cached_checkpoint_dir(model_identifier) / "model"
 
         # Try to get the total size from the Content-Length header
         total_size = int(response.headers.get("Content-Length", 0))
@@ -453,7 +457,7 @@ class Bazaar:
         if model_type == "ndb":
             zip_path = zip_folder(model_path)
         else:
-            zip_path = model_path
+            zip_path = str(model_path)
 
         model_hash = hash_path(model_path)
 
@@ -537,7 +541,7 @@ class Bazaar:
                 + os.path.getsize(logger_pickle)
             )
         elif model_type == "bolt":
-            model = bolt.nn.Model.load(model_path)
+            model = bolt.nn.Model.load(str(model_path))
             size = os.path.getsize(model_path)
             size_in_memory = size
         else:
@@ -568,7 +572,8 @@ class Bazaar:
             headers=auth_header(upload_token),
         )
 
-        os.remove(zip_path)
+        if model_type == "ndb":
+            os.remove(zip_path)
 
     @login_required
     def delete(
