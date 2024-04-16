@@ -12,6 +12,7 @@ from urllib.parse import urljoin
 import requests
 from pydantic import BaseModel, ValidationError
 from requests.auth import HTTPBasicAuth
+from thirdai import bolt
 from thirdai.neural_db.neural_db import CancelState, NeuralDB
 from tqdm import tqdm
 
@@ -446,9 +447,13 @@ class Bazaar:
         is_indexed: bool = False,
         access_level: str = "public",
         description: str = "",
+        model_type: str = "ndb",
     ):
         model_path = Path(model_path)
-        zip_path = zip_folder(model_path)
+        if model_type == "ndb":
+            zip_path = zip_folder(model_path)
+        else:
+            zip_path = model_path
 
         model_hash = hash_path(model_path)
 
@@ -514,24 +519,32 @@ class Bazaar:
                 else:
                     print("File upload failed.")
 
-        db = NeuralDB.from_checkpoint(checkpoint_path=model_path)
-        model = db._savable_state.model.model._get_model()
+        if model_type == "ndb":
+            db = NeuralDB.from_checkpoint(checkpoint_path=model_path)
+            model = db._savable_state.model.model._get_model()
+
+            size = get_directory_size(model_path)
+
+            # TODO: Get actual size in memory when db is loaded
+            # This is a temporary approximation of how much RAM a model will take.
+            # Approximation comes from 4x explosion of weights in ADAM optimizer.
+            udt_pickle = model_path / "model.pkl"
+            documents_pickle = model_path / "documents.pkl"
+            logger_pickle = model_path / "logger.pkl"
+            size_in_memory = (
+                os.path.getsize(udt_pickle) * 4
+                + os.path.getsize(documents_pickle)
+                + os.path.getsize(logger_pickle)
+            )
+        elif model_type == "bolt":
+            model = bolt.nn.Model.load(model_path)
+            size = os.path.getsize(model_path)
+            size_in_memory = size
+        else:
+            raise ValueError("Currently supports only bolt and ndb models.")
+
         num_params = model.num_params()
         thirdai_version = model.thirdai_version()
-
-        size = get_directory_size(model_path)
-
-        # TODO: Get actual size in memory when db is loaded
-        # This is a temporary approximation of how much RAM a model will take.
-        # Approximation comes from 4x explosion of weights in ADAM optimizer.
-        udt_pickle = model_path / "model.pkl"
-        documents_pickle = model_path / "documents.pkl"
-        logger_pickle = model_path / "logger.pkl"
-        size_in_memory = (
-            os.path.getsize(udt_pickle) * 4
-            + os.path.getsize(documents_pickle)
-            + os.path.getsize(logger_pickle)
-        )
 
         json_data = {
             "trained_on": trained_on,
