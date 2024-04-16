@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urljoin
 
+from thirdai.neural_db.neural_db import CancelState
+
 from .bazaar_base import Bazaar, auth_header
 from .utils import (
     check_deployment_decorator,
@@ -521,6 +523,19 @@ class ModelBazaar(Bazaar):
             NeuralDBClient: A NeuralDBClient instance.
         """
         return self.get_neuraldb(model_identifier=model_identifier)
+
+    def pull_bolt_model(self, model_identifier: str):
+        def no_op(*args, **kwargs):
+            pass
+
+        self._download(
+            model_identifier=model_identifier,
+            on_progress=no_op(),
+            cancel_state=CancelState(),
+            model_type="bolt",
+        )
+
+        return self._cached_checkpoint_dir(model_identifier) / "model"
 
     def list_models(self):
         """
