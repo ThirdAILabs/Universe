@@ -4,6 +4,7 @@ import os
 import shutil
 import sys
 import time
+import zipfile
 from functools import wraps
 from pathlib import Path
 
@@ -125,6 +126,15 @@ def http_post_with_error(*args, **kwargs):
 def zip_folder(folder_path):
     shutil.make_archive(folder_path, "zip", folder_path)
     return str(folder_path) + ".zip"
+
+
+def zip_file(file_path):
+    folder_path, filename = os.path.split(file_path)
+    base_name, _ = os.path.splitext(filename)
+    zip_path = os.path.join(folder_path, base_name + ".zip")
+    with zipfile.ZipFile(zip_path, "w") as zipf:
+        zipf.write(file_path, arcname=filename)
+    return zip_path
 
 
 def get_file_size(file_path, unit="B"):
