@@ -12,7 +12,9 @@
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <memory>
 #include <stdexcept>
+#include <variant>
 
 namespace thirdai::automl {
 
@@ -66,15 +68,9 @@ class Featurizer {
   data::LoaderPtr getDataLoader(
       const dataset::DataSourcePtr& data_source, size_t batch_size,
       bool shuffle, bool verbose,
-      const std::optional<data::SpladeConfig>& splade_config = std::nullopt,
-      dataset::DatasetShuffleConfig shuffle_config =
-          dataset::DatasetShuffleConfig());
-
-  data::LoaderPtr getMultiSpladeDataLoader(
-      const dataset::DataSourcePtr& data_source, size_t batch_size,
-      bool shuffle, bool verbose,
-      const std::optional<data::MultiSpladeConfig>& splade_config =
-          std::nullopt,
+      const std::optional<
+          std::variant<data::SpladeConfig, data::MultiSpladeConfig>>&
+          splade_config = std::nullopt,
       dataset::DatasetShuffleConfig shuffle_config =
           dataset::DatasetShuffleConfig());
 
@@ -83,38 +79,23 @@ class Featurizer {
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       std::optional<data::VariableLengthConfig> variable_length,
-      const std::optional<data::SpladeConfig>& splade_config,
+      const std::optional<std::variant<data::SpladeConfig,
+                                       data::MultiSpladeConfig>>& splade_config,
       bool fast_approximation, size_t batch_size, bool shuffle, bool verbose,
       dataset::DatasetShuffleConfig shuffle_config =
           dataset::DatasetShuffleConfig());
-
-  data::LoaderPtr getMultiSpladeColdStartDataLoader(
-      const dataset::DataSourcePtr& data_source,
-      const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names,
-      std::optional<data::VariableLengthConfig> variable_length,
-      const std::optional<data::MultiSpladeConfig>& splade_config,
-      bool fast_approximation, size_t batch_size, bool shuffle, bool verbose,
-      dataset::DatasetShuffleConfig shuffle_config =
-          dataset::DatasetShuffleConfig());
-
-  bolt::TensorList featurizeMultiSpladeInput(
-      const MapInput& sample,
-      const std::optional<data::MultiSpladeConfig>& splade_config =
-          std::nullopt);
-
-  bolt::TensorList featurizeMultiSpladeInputBatch(
-      const MapInputBatch& sampless,
-      const std::optional<data::MultiSpladeConfig>& splade_config =
-          std::nullopt);
 
   bolt::TensorList featurizeInput(
       const MapInput& sample,
-      const std::optional<data::SpladeConfig>& splade_config = std::nullopt);
+      const std::optional<
+          std::variant<data::SpladeConfig, data::MultiSpladeConfig>>&
+          splade_config = std::nullopt);
 
   bolt::TensorList featurizeInputBatch(
       const MapInputBatch& sampless,
-      const std::optional<data::SpladeConfig>& splade_config = std::nullopt);
+      const std::optional<
+          std::variant<data::SpladeConfig, data::MultiSpladeConfig>>&
+          splade_config = std::nullopt);
 
   bolt::TensorList featurizeInputColdStart(
       MapInput sample, const std::vector<std::string>& strong_column_names,

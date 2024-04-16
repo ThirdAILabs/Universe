@@ -67,37 +67,30 @@ Featurizer::Featurizer(data::TransformationPtr input_transform,
       _state(std::move(state)),
       _text_dataset(std::move(text_dataset)) {}
 
-data::LoaderPtr Featurizer::getMultiSpladeDataLoader(
-    const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
-    bool verbose, const std::optional<data::MultiSpladeConfig>& splade_config,
-    dataset::DatasetShuffleConfig shuffle_config) {
-  data::TransformationPtr preprocessor = nullptr;
-  if (splade_config) {
-    preprocessor =
-        data::Pipeline::make()
-            ->then(std::make_shared<data::MultiSpladeAugmentation>(
-                textDatasetConfig().textColumn(), SPLADE_TOKENS,
-                *splade_config))
-            ->then(std::make_shared<data::StringConcat>(
-                std::vector<std::string>(std::initializer_list<std::string>{
-                    textDatasetConfig().textColumn(), SPLADE_TOKENS}),
-                textDatasetConfig().textColumn(), " "));
-  }
-
-  return getDataLoaderHelper(data_source, batch_size, shuffle, verbose,
-                             shuffle_config, preprocessor);
-}
-
 data::LoaderPtr Featurizer::getDataLoader(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
-    bool verbose, const std::optional<data::SpladeConfig>& splade_config,
+    bool verbose,
+    const std::optional<std::variant<data::SpladeConfig,
+                                     data::MultiSpladeConfig>>& splade_config,
     dataset::DatasetShuffleConfig shuffle_config) {
   data::TransformationPtr preprocessor = nullptr;
   if (splade_config) {
     preprocessor =
         data::Pipeline::make()
-            ->then(std::make_shared<data::SpladeAugmentation>(
-                textDatasetConfig().textColumn(), SPLADE_TOKENS,
+            ->then(std::visit(
+                [&](auto&& config) -> data::TransformationPtr {
+                  using T = std::decay_t<decltype(config)>;
+                  if constexpr (std::is_same_v<T, data::SpladeConfig>) {
+                    return std::make_shared<data::SpladeAugmentation>(
+                        textDatasetConfig().textColumn(), SPLADE_TOKENS,
+                        config);
+                  } else if constexpr (std::is_same_v<
+                                           T, data::MultiSpladeConfig>) {
+                    return std::make_shared<data::MultiSpladeAugmentation>(
+                        textDatasetConfig().textColumn(), SPLADE_TOKENS,
+                        config);
+                  }
+                },
                 *splade_config))
             ->then(std::make_shared<data::StringConcat>(
                 std::vector<std::string>(std::initializer_list<std::string>{
@@ -107,48 +100,6 @@ data::LoaderPtr Featurizer::getDataLoader(
 
   return getDataLoaderHelper(data_source, batch_size, shuffle, verbose,
                              shuffle_config, preprocessor);
-}
-
-data::LoaderPtr Featurizer::getMultiSpladeColdStartDataLoader(
-    const dataset::DataSourcePtr& data_source,
-    const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names,
-    std::optional<data::VariableLengthConfig> variable_length,
-    const std::optional<data::MultiSpladeConfig>& splade_config,
-    bool fast_approximation, size_t batch_size, bool shuffle, bool verbose,
-    dataset::DatasetShuffleConfig shuffle_config) {
-  data::TransformationPtr cold_start;
-
-  if (splade_config &&
-      (!strong_column_names.empty() || !weak_column_names.empty())) {
-    // TODO(Nicholas, David): Should we add an option to sample a certain number
-    // of times from a specific column, i.e. splade tokens.
-    if (splade_config->strong_sample_override && variable_length) {
-      variable_length->overrideStrongSampleNumWords(
-          *splade_config->strong_sample_override);
-    }
-
-    auto strong_columns_copy = strong_column_names;
-    strong_columns_copy.push_back(SPLADE_TOKENS);
-
-    auto all_columns = strong_column_names;
-    all_columns.insert(all_columns.end(), weak_column_names.begin(),
-                       weak_column_names.end());
-    cold_start =
-        data::Pipeline::make()
-            ->then(std::make_shared<data::StringConcat>(all_columns,
-                                                        SPLADE_TOKENS, " "))
-            ->then(std::make_shared<data::MultiSpladeAugmentation>(
-                SPLADE_TOKENS, SPLADE_TOKENS, *splade_config))
-            ->then(coldStartTransform(strong_columns_copy, weak_column_names,
-                                      variable_length, fast_approximation));
-  } else {
-    cold_start = coldStartTransform(strong_column_names, weak_column_names,
-                                    variable_length, fast_approximation);
-  }
-
-  return getDataLoaderHelper(data_source, batch_size, shuffle, verbose,
-                             shuffle_config, cold_start);
 }
 
 data::LoaderPtr Featurizer::getColdStartDataLoader(
@@ -156,7 +107,8 @@ data::LoaderPtr Featurizer::getColdStartDataLoader(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     std::optional<data::VariableLengthConfig> variable_length,
-    const std::optional<data::SpladeConfig>& splade_config,
+    const std::optional<std::variant<data::SpladeConfig,
+                                     data::MultiSpladeConfig>>& splade_config,
     bool fast_approximation, size_t batch_size, bool shuffle, bool verbose,
     dataset::DatasetShuffleConfig shuffle_config) {
   data::TransformationPtr cold_start;
@@ -165,9 +117,14 @@ data::LoaderPtr Featurizer::getColdStartDataLoader(
       (!strong_column_names.empty() || !weak_column_names.empty())) {
     // TODO(Nicholas, David): Should we add an option to sample a certain number
     // of times from a specific column, i.e. splade tokens.
-    if (splade_config->strong_sample_override && variable_length) {
-      variable_length->overrideStrongSampleNumWords(
-          *splade_config->strong_sample_override);
+    auto strong_sample_override = std::visit(
+        [](auto&& arg) -> std::optional<uint32_t> {
+          return arg.strong_sample_override;
+        },
+        *splade_config);
+
+    if (strong_sample_override && variable_length) {
+      variable_length->overrideStrongSampleNumWords(*strong_sample_override);
     }
 
     auto strong_columns_copy = strong_column_names;
@@ -180,8 +137,19 @@ data::LoaderPtr Featurizer::getColdStartDataLoader(
         data::Pipeline::make()
             ->then(std::make_shared<data::StringConcat>(all_columns,
                                                         SPLADE_TOKENS, " "))
-            ->then(std::make_shared<data::SpladeAugmentation>(
-                SPLADE_TOKENS, SPLADE_TOKENS, *splade_config))
+            ->then(std::visit(
+                [&](auto&& config) -> data::TransformationPtr {
+                  using T = std::decay_t<decltype(config)>;
+                  if constexpr (std::is_same_v<T, data::SpladeConfig>) {
+                    return std::make_shared<data::SpladeAugmentation>(
+                        SPLADE_TOKENS, SPLADE_TOKENS, config);
+                  } else if constexpr (std::is_same_v<
+                                           T, data::MultiSpladeConfig>) {
+                    return std::make_shared<data::MultiSpladeAugmentation>(
+                        SPLADE_TOKENS, SPLADE_TOKENS, config);
+                  }
+                },
+                *splade_config))
             ->then(coldStartTransform(strong_columns_copy, weak_column_names,
                                       variable_length, fast_approximation));
   } else {
@@ -216,62 +184,29 @@ data::LoaderPtr Featurizer::getDataLoaderHelper(
       /* shuffle_seed= */ shuffle_config.seed);
 }
 
-bolt::TensorList Featurizer::featurizeMultiSpladeInput(
-    const MapInput& sample,
-    const std::optional<data::MultiSpladeConfig>& splade_config) {
-  auto columns = data::ColumnMap::fromMapInput(sample);
-
-  if (splade_config) {
-    auto preprocessor =
-        data::Pipeline::make()
-            ->then(std::make_shared<data::MultiSpladeAugmentation>(
-                textDatasetConfig().textColumn(), SPLADE_TOKENS,
-                *splade_config))
-            ->then(std::make_shared<data::StringConcat>(
-                std::vector<std::string>(std::initializer_list<std::string>{
-                    textDatasetConfig().textColumn(), SPLADE_TOKENS}),
-                textDatasetConfig().textColumn(), " "));
-    columns = preprocessor->apply(columns, *_state);
-  }
-
-  columns = _const_input_transform->apply(std::move(columns), *_state);
-
-  return data::toTensors(columns, _bolt_input_columns);
-}
-
 bolt::TensorList Featurizer::featurizeInput(
     const MapInput& sample,
-    const std::optional<data::SpladeConfig>& splade_config) {
+    const std::optional<std::variant<data::SpladeConfig,
+                                     data::MultiSpladeConfig>>& splade_config) {
   auto columns = data::ColumnMap::fromMapInput(sample);
 
   if (splade_config) {
     auto preprocessor =
         data::Pipeline::make()
-            ->then(std::make_shared<data::SpladeAugmentation>(
-                textDatasetConfig().textColumn(), SPLADE_TOKENS,
-                *splade_config))
-            ->then(std::make_shared<data::StringConcat>(
-                std::vector<std::string>(std::initializer_list<std::string>{
-                    textDatasetConfig().textColumn(), SPLADE_TOKENS}),
-                textDatasetConfig().textColumn(), " "));
-    columns = preprocessor->apply(columns, *_state);
-  }
-
-  columns = _const_input_transform->apply(std::move(columns), *_state);
-
-  return data::toTensors(columns, _bolt_input_columns);
-}
-
-bolt::TensorList Featurizer::featurizeMultiSpladeInputBatch(
-    const MapInputBatch& samples,
-    const std::optional<data::MultiSpladeConfig>& splade_config) {
-  auto columns = data::ColumnMap::fromMapInputBatch(samples);
-
-  if (splade_config) {
-    auto preprocessor =
-        data::Pipeline::make()
-            ->then(std::make_shared<data::MultiSpladeAugmentation>(
-                textDatasetConfig().textColumn(), SPLADE_TOKENS,
+            ->then(std::visit(
+                [&](auto&& config) -> data::TransformationPtr {
+                  using T = std::decay_t<decltype(config)>;
+                  if constexpr (std::is_same_v<T, data::SpladeConfig>) {
+                    return std::make_shared<data::SpladeAugmentation>(
+                        textDatasetConfig().textColumn(), SPLADE_TOKENS,
+                        config);
+                  } else if constexpr (std::is_same_v<
+                                           T, data::MultiSpladeConfig>) {
+                    return std::make_shared<data::MultiSpladeAugmentation>(
+                        textDatasetConfig().textColumn(), SPLADE_TOKENS,
+                        config);
+                  }
+                },
                 *splade_config))
             ->then(std::make_shared<data::StringConcat>(
                 std::vector<std::string>(std::initializer_list<std::string>{
@@ -287,14 +222,27 @@ bolt::TensorList Featurizer::featurizeMultiSpladeInputBatch(
 
 bolt::TensorList Featurizer::featurizeInputBatch(
     const MapInputBatch& samples,
-    const std::optional<data::SpladeConfig>& splade_config) {
+    const std::optional<std::variant<data::SpladeConfig,
+                                     data::MultiSpladeConfig>>& splade_config) {
   auto columns = data::ColumnMap::fromMapInputBatch(samples);
 
   if (splade_config) {
     auto preprocessor =
         data::Pipeline::make()
-            ->then(std::make_shared<data::SpladeAugmentation>(
-                textDatasetConfig().textColumn(), SPLADE_TOKENS,
+            ->then(std::visit(
+                [&](auto&& config) -> data::TransformationPtr {
+                  using T = std::decay_t<decltype(config)>;
+                  if constexpr (std::is_same_v<T, data::SpladeConfig>) {
+                    return std::make_shared<data::SpladeAugmentation>(
+                        textDatasetConfig().textColumn(), SPLADE_TOKENS,
+                        config);
+                  } else if constexpr (std::is_same_v<
+                                           T, data::MultiSpladeConfig>) {
+                    return std::make_shared<data::MultiSpladeAugmentation>(
+                        textDatasetConfig().textColumn(), SPLADE_TOKENS,
+                        config);
+                  }
+                },
                 *splade_config))
             ->then(std::make_shared<data::StringConcat>(
                 std::vector<std::string>(std::initializer_list<std::string>{

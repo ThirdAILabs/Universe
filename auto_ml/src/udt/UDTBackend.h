@@ -7,6 +7,7 @@
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/Featurizer.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <data/src/transformations/MultiSpladeAugmentation.h>
 #include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
@@ -16,6 +17,7 @@
 #include <pybind11/pybind11.h>
 #include <optional>
 #include <stdexcept>
+#include <variant>
 
 namespace py = pybind11;
 
@@ -416,13 +418,32 @@ class UDTBackend {
                               "' is not supported for this type of model.");
   }
 
-  static std::optional<data::SpladeConfig> getSpladeConfig(
-      const py::kwargs& kwargs) {
-    if (!kwargs.contains("splade_config") ||
-        kwargs["splade_config"].is_none()) {
-      return std::nullopt;
+  static std::optional<
+      std::variant<data::SpladeConfig, data::MultiSpladeConfig>>
+  getSpladeConfig(const py::kwargs& kwargs) {
+    if (kwargs.contains("splade_config") &&
+        !kwargs["splade_config"].is_none()) {
+      try {
+        // Attempt to cast the Python object to the C++ variant type
+        return kwargs["splade_config"].cast<data::SpladeConfig>();
+      } catch (const py::cast_error& e) {
+        // Handle the casting error, e.g., log or throw a different exception
+        std::cerr << "Casting error: " << e.what() << std::endl;
+        throw std::invalid_argument("Cannot cast");
+      }
     }
-    return kwargs["splade_config"].cast<data::SpladeConfig>();
+    if (kwargs.contains("multi_splade_config") &&
+        !kwargs["multi_splade_config"].is_none()) {
+      try {
+        // Attempt to cast the Python object to the C++ variant type
+        return kwargs["multi_splade_config"].cast<data::MultiSpladeConfig>();
+      } catch (const py::cast_error& e) {
+        // Handle the casting error, e.g., log or throw a different exception
+        std::cerr << "Casting error: " << e.what() << std::endl;
+        throw std::invalid_argument("Cannot cast");
+      }
+    }
+    return std::nullopt;
   }
 
   static bool getSpladeValidationOption(const py::kwargs& kwargs) {
