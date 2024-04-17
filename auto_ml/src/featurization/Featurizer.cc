@@ -49,8 +49,10 @@ Featurizer::Featurizer(
     }
   }
 
-  _pretrained_augmentation = pretrained_augmentation->transformation(
-      textDatasetConfig().textColumn(), AUGMENTED_TOKENS);
+  if (pretrained_augmentation) {
+    _pretrained_augmentation = pretrained_augmentation->transformation(
+        textDatasetConfig().textColumn(), AUGMENTED_TOKENS);
+  }
 }
 
 Featurizer::Featurizer(data::TransformationPtr input_transform,
