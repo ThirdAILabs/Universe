@@ -478,14 +478,14 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
 
   py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>>(
       transformations_submodule, "SpladeConfig")
-      .def(py::init<std::string, std::string, std::optional<size_t>,
-                    std::optional<float>, bool, size_t, bool,
+      .def(py::init<std::vector<std::string>, std::string, std::optional<size_t>,
+                    std::optional<float>, bool, size_t, std::optional<bool>, bool,
                     std::optional<uint32_t>>(),
-           py::arg("model_checkpoint"), py::arg("tokenizer_vocab"),
+           py::arg("model_checkpoints"), py::arg("tokenizer_vocab"),
            py::arg("n_augmented_tokens") = 100,
            py::arg("augmentation_frac") = std::nullopt,
            py::arg("filter_tokens") = true, py::arg("batch_size") = 4096,
-           py::arg("lowercase") = true, py::arg("strong_sample_override") = 7)
+           py::arg("lowercase") = true, py::arg("decode_tokens")=true, py::arg("strong_sample_override") = 7)
       .def(bolt::python::getPickleFunction<SpladeConfig>());
 
   py::class_<SpladeAugmentation, Transformation,
@@ -493,13 +493,13 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                                                   "SpladeAugmentation")
       .def(py::init<std::string, std::string, const SpladeConfig&>(),
            py::arg("input_column"), py::arg("output_column"), py::arg("config"))
-      .def(py::init<std::string, std::string, bolt::ModelPtr,
+      .def(py::init<std::string, std::string, std::vector<bolt::ModelPtr>,
                     dataset::WordpieceTokenizerPtr, std::optional<size_t>,
-                    std::optional<float>, bool, size_t>(),
-           py::arg("input_column"), py::arg("output_column"), py::arg("model"),
+                    std::optional<float>, bool, size_t, std::optional<bool>>(),
+           py::arg("input_column"), py::arg("output_column"), py::arg("models"),
            py::arg("tokenizer"), py::arg("n_augmented_tokens") = 100,
            py::arg("augmentation_frac") = std::nullopt,
-           py::arg("filter_tokens") = true, py::arg("batch_size") = 4096);
+           py::arg("filter_tokens") = true, py::arg("batch_size") = 4096, py::arg("decode_tokens"));
 }
 
 }  // namespace thirdai::data::python

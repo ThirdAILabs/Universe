@@ -7,6 +7,7 @@
 #include <auto_ml/src/udt/UDT.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
+#include <data/src/transformations/SpladeAugmentation.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/detail/common.h>
@@ -432,7 +433,7 @@ config::ArgumentMap createArgumentMap(const py::dict& input_args) {
         throw std::invalid_argument(
             "List argument must contain only integers.");
       }
-    } else {
+    }else {
       throw std::invalid_argument(
           "Invalid type '" + py::str(v.get_type()).cast<std::string>() +
           "'. Values of parameters dictionary must be "

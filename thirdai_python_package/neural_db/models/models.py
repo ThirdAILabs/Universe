@@ -269,7 +269,7 @@ def download_semantic_enhancement_model(cache_dir, model_name="bolt-splade-mediu
         demos.bert_base_uncased(dirname=cache_dir)
 
     return data.transformations.SpladeConfig(
-        model_checkpoint=semantic_model_path, tokenizer_vocab=vocab_path
+        model_checkpoints=[semantic_model_path], tokenizer_vocab=vocab_path
     )
 
 

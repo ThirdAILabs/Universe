@@ -24,6 +24,7 @@
 #include <auto_ml/src/udt/utils/Numpy.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
+#include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/cold_start/ColdStartText.h>
 #include <dataset/src/DataSource.h>
 #include <pybind11/cast.h>
@@ -118,6 +119,7 @@ UDTMach::UDTMach(
   data::ValueFillType value_fill =
       softmax ? data::ValueFillType::SumToOne : data::ValueFillType::Ones;
 
+  
   _featurizer = std::make_shared<MachFeaturizer>(
       input_data_types, temporal_relationships, target_name, mach_index,
       tabular_options, value_fill);
