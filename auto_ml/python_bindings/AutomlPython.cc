@@ -296,8 +296,12 @@ void defineAutomlInModule(py::module_& module) {
       .def_static("estimate_hash_table_size", &udt::UDT::estimateHashTableSize,
                   py::arg("output_dim"), py::arg("sparsity") = std::nullopt);
 
-  py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>>(module,
-                                                          "SpladeConfig")
+  // NOLINTNEXTLINE
+  py::class_<PretrainedAugmentation, std::shared_ptr<PretrainedAugmentation>>(
+      module, "PretrainedAugmentation");
+
+  py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>,
+             PretrainedAugmentation>(module, "SpladeConfig")
       .def(py::init<std::string, std::string, std::optional<size_t>,
                     std::optional<float>, bool, size_t, bool,
                     std::optional<uint32_t>>(),
@@ -443,7 +447,7 @@ config::ArgumentMap createArgumentMap(const py::dict& input_args) {
         throw std::invalid_argument(
             "List argument must contain only integers.");
       }
-    } else {
+    } else if (!v.is_none()) {
       throw std::invalid_argument(
           "Invalid type '" + py::str(v.get_type()).cast<std::string>() +
           "'. Values of parameters dictionary must be "
@@ -467,6 +471,7 @@ std::shared_ptr<udt::UDT> makeUDT(
     pretrained_augmentation =
         options["pretrained_augmentation"]
             .cast<std::shared_ptr<PretrainedAugmentation>>();
+    options["pretrained_augmentation"] = py::none();
   }
 
   return std::make_shared<udt::UDT>(
