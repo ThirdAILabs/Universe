@@ -53,6 +53,29 @@ std::vector<std::string> split(const std::string_view& string, char delimiter) {
   return words;
 }
 
+std::vector<uint32_t> NativeSplitOffsets(const std::string_view& string,
+                                         char delimiter) {
+  std::vector<uint32_t> offsets;
+
+  bool prev_is_delim = true;
+  uint32_t start_of_word_offset = 0;
+  for (uint32_t i = 0; i < string.size(); i++) {
+    if (prev_is_delim && string[i] != delimiter) {
+      start_of_word_offset = i;
+      prev_is_delim = false;
+    }
+    if (!prev_is_delim && string[i] == delimiter) {
+      offsets.push_back(start_of_word_offset);
+      prev_is_delim = true;
+    }
+  }
+  if (!prev_is_delim) {
+    offsets.push_back(start_of_word_offset);
+  }
+
+  return offsets;
+}
+
 std::vector<std::string> splitOnWhiteSpace(const std::string& text) {
   std::vector<std::string> words;
 
@@ -141,22 +164,47 @@ std::vector<std::string> tokenizeSentence(const std::string& sentence) {
   return tokenizeSentenceUnicodeUnsafe(sentence);
 }
 
-std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
+std::tuple<std::string, size_t, size_t> prepareKgramData(
+    const std::string_view& text, uint32_t k) {
   utils::validateGreaterThanZero(k, "k for Char-k grams");
-
   std::string text_str(text);
+  if (text_str.empty()) {
+    return {"", 0, 0};
+  }
+
+  size_t n_kgrams = text_str.size() >= k ? text_str.size() - (k - 1) : 1;
+  size_t len = std::min(text_str.size(), static_cast<size_t>(k));
+  return {text_str, n_kgrams, len};
+}
+
+std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
+  auto [text_str, n_kgrams, len] = prepareKgramData(text, k);
   if (text_str.empty()) {
     return {};
   }
 
   std::vector<std::string> char_k_grams;
-  size_t n_kgrams = text_str.size() >= k ? text_str.size() - (k - 1) : 1;
-  size_t len = std::min(text_str.size(), static_cast<size_t>(k));
   for (uint32_t offset = 0; offset < n_kgrams; offset++) {
     char_k_grams.push_back(text_str.substr(offset, len));
   }
 
   return char_k_grams;
+}
+
+std::vector<uint32_t> charKGramsOffsets(const std::string_view& text,
+                                        uint32_t k) {
+  auto [text_str, n_kgrams, len] = prepareKgramData(text, k);
+  if (text_str.empty()) {
+    return {};
+  }
+
+  std::vector<uint32_t> char_k_grams_offsets;
+  for (uint32_t offset = 0; offset < n_kgrams; offset++) {
+    char_k_grams_offsets.push_back(
+        offset);  // Fixed to push the correct type and value
+  }
+
+  return char_k_grams_offsets;
 }
 
 std::vector<std::string> wordLevelCharKGrams(
