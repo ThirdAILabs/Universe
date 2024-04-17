@@ -44,6 +44,6 @@ const std::string GRAPH_NBR_IDS = "__graph_nbr_ids__";
 
 const std::string RECURRENT_SEQUENCE = "__sequential_target__";
 
-const std::string SPLADE_TOKENS = "__splade_tokens__";
+const std::string AUGMENTED_TOKENS = "__augmented_tokens__";
 
 }  // namespace thirdai::automl

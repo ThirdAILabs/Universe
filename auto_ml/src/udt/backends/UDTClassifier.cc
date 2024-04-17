@@ -45,6 +45,7 @@ UDTClassifier::UDTClassifier(
     uint32_t n_target_classes, bool integer_target,
     const TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
+    const std::shared_ptr<PretrainedAugmentation>& pretrained_augmentation,
     const config::ArgumentMap& user_args)
     : _classifier(utils::Classifier::make(
           utils::buildModel(
@@ -73,7 +74,7 @@ UDTClassifier::UDTClassifier(
 
   _featurizer = std::make_shared<Featurizer>(
       input_data_types, temporal_relationships, target_name, label_transform,
-      bolt_labels, tabular_options);
+      bolt_labels, tabular_options, pretrained_augmentation);
 }
 
 py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
@@ -85,19 +86,16 @@ py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
                                 TrainOptions options,
                                 const bolt::DistributedCommPtr& comm,
                                 py::kwargs kwargs) {
-  auto splade_config = getSpladeConfig(kwargs);
-  bool splade_in_val = getSpladeValidationOption(kwargs);
-
   auto train_data_loader = _featurizer->getDataLoader(
       data, options.batchSize(), /* shuffle= */ true, options.verbose,
-      splade_config, options.shuffle_config);
+      getAugmentOption(kwargs), options.shuffle_config);
 
   data::LoaderPtr val_data_loader;
   if (val_data) {
-    val_data_loader = _featurizer->getDataLoader(
-        val_data, defaults::BATCH_SIZE,
-        /* shuffle= */ false, options.verbose,
-        splade_in_val ? splade_config : std::nullopt);
+    val_data_loader =
+        _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
+                                   /* shuffle= */ false, options.verbose,
+                                   getValidationAugmentOption(kwargs));
   }
 
   return _classifier->train(train_data_loader, learning_rate, epochs,
@@ -148,19 +146,19 @@ py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
                                    const std::vector<std::string>& metrics,
                                    bool sparse_inference, bool verbose,
                                    py::kwargs kwargs) {
-  auto splade_config = getSpladeConfig(kwargs);
-
-  auto dataset =
-      _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
-                                 /* shuffle= */ false, verbose, splade_config);
+  auto dataset = _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
+                                            /* shuffle= */ false, verbose,
+                                            getAugmentOption(kwargs));
 
   return _classifier->evaluate(dataset, metrics, sparse_inference, verbose);
 }
 
 py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,
                                   bool return_predicted_class,
-                                  std::optional<uint32_t> top_k) {
-  return _classifier->predict(_featurizer->featurizeInput(sample),
+                                  std::optional<uint32_t> top_k,
+                                  const py::kwargs& kwargs) {
+  bool augment = getAugmentOption(kwargs);
+  return _classifier->predict(_featurizer->featurizeInput(sample, augment),
                               sparse_inference, return_predicted_class,
                               /* single= */ true, top_k);
 }
@@ -168,10 +166,13 @@ py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,
 py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
                                        bool sparse_inference,
                                        bool return_predicted_class,
-                                       std::optional<uint32_t> top_k) {
-  return _classifier->predict(_featurizer->featurizeInputBatch(samples),
-                              sparse_inference, return_predicted_class,
-                              /* single= */ false, top_k);
+                                       std::optional<uint32_t> top_k,
+                                       const py::kwargs& kwargs) {
+  bool augment = getAugmentOption(kwargs);
+  return _classifier->predict(
+      _featurizer->featurizeInputBatch(samples, augment), sparse_inference,
+      return_predicted_class,
+      /* single= */ false, top_k);
 }
 
 std::vector<std::pair<std::string, float>> UDTClassifier::explain(
@@ -227,21 +228,18 @@ py::object UDTClassifier::coldstart(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm, const py::kwargs& kwargs) {
-  auto splade_config = getSpladeConfig(kwargs);
-  auto splade_in_val = getSpladeValidationOption(kwargs);
-
   auto train_data_loader = _featurizer->getColdStartDataLoader(
       data, strong_column_names, weak_column_names, variable_length,
-      /*splade_config=*/splade_config, /* fast_approximation= */ false,
+      /*augment=*/getAugmentOption(kwargs), /* fast_approximation= */ false,
       options.batchSize(), /* shuffle= */ true, options.verbose,
       options.shuffle_config);
 
   data::LoaderPtr val_data_loader;
   if (val_data) {
-    val_data_loader = _featurizer->getDataLoader(
-        val_data, defaults::BATCH_SIZE,
-        /* shuffle= */ false, options.verbose,
-        splade_in_val ? splade_config : std::nullopt);
+    val_data_loader =
+        _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
+                                   /* shuffle= */ false, options.verbose,
+                                   getValidationAugmentOption(kwargs));
   }
 
   return _classifier->train(train_data_loader, learning_rate, epochs,

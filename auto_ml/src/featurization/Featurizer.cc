@@ -20,12 +20,12 @@
 
 namespace thirdai::automl {
 
-Featurizer::Featurizer(ColumnDataTypes data_types,
-                       const TemporalRelationships& temporal_relationships,
-                       const std::string& label_column,
-                       data::TransformationPtr label_transform,
-                       data::OutputColumnsList bolt_label_columns,
-                       const TabularOptions& options)
+Featurizer::Featurizer(
+    ColumnDataTypes data_types,
+    const TemporalRelationships& temporal_relationships,
+    const std::string& label_column, data::TransformationPtr label_transform,
+    data::OutputColumnsList bolt_label_columns, const TabularOptions& options,
+    const std::shared_ptr<PretrainedAugmentation>& pretrained_augmentation)
     : _label_transform(std::move(label_transform)),
       _bolt_label_columns(std::move(bolt_label_columns)),
       _delimiter(options.delimiter),
@@ -48,6 +48,9 @@ Featurizer::Featurizer(ColumnDataTypes data_types,
                                         cat_label->delimiter);
     }
   }
+
+  _pretrained_augmentation = pretrained_augmentation->transformation(
+      textDatasetConfig().textColumn(), AUGMENTED_TOKENS);
 }
 
 Featurizer::Featurizer(data::TransformationPtr input_transform,
@@ -68,18 +71,16 @@ Featurizer::Featurizer(data::TransformationPtr input_transform,
 
 data::LoaderPtr Featurizer::getDataLoader(
     const dataset::DataSourcePtr& data_source, size_t batch_size, bool shuffle,
-    bool verbose, const std::optional<data::SpladeConfig>& splade_config,
-    dataset::DatasetShuffleConfig shuffle_config) {
+    bool verbose, bool augment, dataset::DatasetShuffleConfig shuffle_config) {
   data::TransformationPtr preprocessor = nullptr;
-  if (splade_config) {
-    preprocessor = data::Pipeline::make()
-                       ->then(std::make_shared<data::SpladeAugmentation>(
-                           textDatasetConfig().textColumn(), SPLADE_TOKENS,
-                           *splade_config))
-                       ->then(std::make_shared<data::StringConcat>(
-                           std::vector<std::string>{
-                               textDatasetConfig().textColumn(), SPLADE_TOKENS},
-                           textDatasetConfig().textColumn(), " "));
+  if (augment && _pretrained_augmentation) {
+    preprocessor =
+        data::Pipeline::make()
+            ->then(_pretrained_augmentation)
+            ->then(std::make_shared<data::StringConcat>(
+                std::vector<std::string>{textDatasetConfig().textColumn(),
+                                         AUGMENTED_TOKENS},
+                textDatasetConfig().textColumn(), " "));
   }
 
   return getDataLoaderHelper(data_source, batch_size, shuffle, verbose,
@@ -90,33 +91,33 @@ data::LoaderPtr Featurizer::getColdStartDataLoader(
     const dataset::DataSourcePtr& data_source,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
-    std::optional<data::VariableLengthConfig> variable_length,
-    const std::optional<data::SpladeConfig>& splade_config,
+    std::optional<data::VariableLengthConfig> variable_length, bool augment,
     bool fast_approximation, size_t batch_size, bool shuffle, bool verbose,
     dataset::DatasetShuffleConfig shuffle_config) {
   data::TransformationPtr cold_start;
 
-  if (splade_config &&
+  if (augment && _pretrained_augmentation &&
       (!strong_column_names.empty() || !weak_column_names.empty())) {
     // TODO(Nicholas, David): Should we add an option to sample a certain number
     // of times from a specific column, i.e. splade tokens.
-    if (splade_config->strong_sample_override && variable_length) {
-      variable_length->overrideStrongSampleNumWords(
-          *splade_config->strong_sample_override);
-    }
+
+    // TODO(Nicholas) handle this for new design
+    // if (splade_config->strong_sample_override && variable_length) {
+    //   variable_length->overrideStrongSampleNumWords(
+    //       *splade_config->strong_sample_override);
+    // }
 
     auto strong_columns_copy = strong_column_names;
-    strong_columns_copy.push_back(SPLADE_TOKENS);
+    strong_columns_copy.push_back(AUGMENTED_TOKENS);
 
     auto all_columns = strong_column_names;
     all_columns.insert(all_columns.end(), weak_column_names.begin(),
                        weak_column_names.end());
     cold_start =
         data::Pipeline::make()
-            ->then(std::make_shared<data::StringConcat>(all_columns,
-                                                        SPLADE_TOKENS, " "))
-            ->then(std::make_shared<data::SpladeAugmentation>(
-                SPLADE_TOKENS, SPLADE_TOKENS, *splade_config))
+            ->then(std::make_shared<data::StringConcat>(
+                all_columns, textDatasetConfig().textColumn(), " "))
+            ->then(_pretrained_augmentation)
             ->then(coldStartTransform(strong_columns_copy, weak_column_names,
                                       variable_length, fast_approximation));
   } else {
@@ -151,17 +152,25 @@ data::LoaderPtr Featurizer::getDataLoaderHelper(
       /* shuffle_seed= */ shuffle_config.seed);
 }
 
-bolt::TensorList Featurizer::featurizeInput(const MapInput& sample) {
+bolt::TensorList Featurizer::featurizeInput(const MapInput& sample,
+                                            bool augment) {
   auto columns = data::ColumnMap::fromMapInput(sample);
 
+  if (augment && _pretrained_augmentation) {
+    columns = _pretrained_augmentation->apply(std::move(columns), *_state);
+  }
   columns = _const_input_transform->apply(std::move(columns), *_state);
 
   return data::toTensors(columns, _bolt_input_columns);
 }
 
-bolt::TensorList Featurizer::featurizeInputBatch(const MapInputBatch& samples) {
+bolt::TensorList Featurizer::featurizeInputBatch(const MapInputBatch& samples,
+                                                 bool augment) {
   auto columns = data::ColumnMap::fromMapInputBatch(samples);
 
+  if (augment && _pretrained_augmentation) {
+    columns = _pretrained_augmentation->apply(std::move(columns), *_state);
+  }
   columns = _const_input_transform->apply(std::move(columns), *_state);
 
   return data::toTensors(columns, _bolt_input_columns);

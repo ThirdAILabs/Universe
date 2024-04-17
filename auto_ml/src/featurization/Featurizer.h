@@ -2,11 +2,11 @@
 
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/featurization/DataTypes.h>
+#include <auto_ml/src/featurization/PretrainedAugmentation.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <data/src/Loader.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/rca/ExplanationMap.h>
-#include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/State.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
@@ -45,12 +45,13 @@ class TextDatasetConfig {
 
 class Featurizer {
  public:
-  Featurizer(ColumnDataTypes data_types,
-             const TemporalRelationships& temporal_relationships,
-             const std::string& label_column,
-             data::TransformationPtr label_transform,
-             data::OutputColumnsList bolt_label_columns,
-             const TabularOptions& options);
+  Featurizer(
+      ColumnDataTypes data_types,
+      const TemporalRelationships& temporal_relationships,
+      const std::string& label_column, data::TransformationPtr label_transform,
+      data::OutputColumnsList bolt_label_columns, const TabularOptions& options,
+      const std::shared_ptr<PretrainedAugmentation>& pretrained_augmentation =
+          nullptr);
 
   Featurizer(data::TransformationPtr input_transform,
              data::TransformationPtr const_input_transform,
@@ -62,26 +63,25 @@ class Featurizer {
 
   explicit Featurizer(const ar::Archive& archive);
 
-  data::LoaderPtr getDataLoader(
-      const dataset::DataSourcePtr& data_source, size_t batch_size,
-      bool shuffle, bool verbose,
-      const std::optional<data::SpladeConfig>& splade_config = std::nullopt,
-      dataset::DatasetShuffleConfig shuffle_config =
-          dataset::DatasetShuffleConfig());
+  data::LoaderPtr getDataLoader(const dataset::DataSourcePtr& data_source,
+                                size_t batch_size, bool shuffle, bool verbose,
+                                bool augment = false,
+                                dataset::DatasetShuffleConfig shuffle_config =
+                                    dataset::DatasetShuffleConfig());
 
   data::LoaderPtr getColdStartDataLoader(
       const dataset::DataSourcePtr& data_source,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
-      std::optional<data::VariableLengthConfig> variable_length,
-      const std::optional<data::SpladeConfig>& splade_config,
+      std::optional<data::VariableLengthConfig> variable_length, bool augment,
       bool fast_approximation, size_t batch_size, bool shuffle, bool verbose,
       dataset::DatasetShuffleConfig shuffle_config =
           dataset::DatasetShuffleConfig());
 
-  bolt::TensorList featurizeInput(const MapInput& sample);
+  bolt::TensorList featurizeInput(const MapInput& sample, bool augment = false);
 
-  bolt::TensorList featurizeInputBatch(const MapInputBatch& samples);
+  bolt::TensorList featurizeInputBatch(const MapInputBatch& samples,
+                                       bool augment = false);
 
   bolt::TensorList featurizeInputColdStart(
       MapInput sample, const std::vector<std::string>& strong_column_names,
@@ -143,6 +143,8 @@ class Featurizer {
   data::StatePtr _state;
 
   std::optional<TextDatasetConfig> _text_dataset;
+
+  data::TransformationPtr _pretrained_augmentation;
 
   Featurizer() {}  // For cereal
 

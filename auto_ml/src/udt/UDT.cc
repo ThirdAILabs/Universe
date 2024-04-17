@@ -43,6 +43,7 @@ UDT::UDT(
     const std::string& target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
+    const std::shared_ptr<PretrainedAugmentation>& pretrained_augmentation,
     const config::ArgumentMap& user_args) {
   TabularOptions tabular_options;
   tabular_options.contextual_columns = user_args.get<bool>(
@@ -99,13 +100,13 @@ UDT::UDT(
         _backend = std::make_unique<UDTMach>(
             data_types, temporal_tracking_relationships, target_col,
             as_categorical, n_target_classes.value(), integer_target,
-            tabular_options, model_config, user_args);
+            tabular_options, model_config, pretrained_augmentation, user_args);
       }
     } else {
       _backend = std::make_unique<UDTClassifier>(
           data_types, temporal_tracking_relationships, target_col,
           as_categorical, n_target_classes.value(), integer_target,
-          tabular_options, model_config, user_args);
+          tabular_options, model_config, pretrained_augmentation, user_args);
     }
   } else if (as_numerical && !has_graph_inputs) {
     _backend = std::make_unique<UDTRegression>(
@@ -202,11 +203,12 @@ py::object UDT::evaluate(const dataset::DataSourcePtr& data,
 
 py::object UDT::predict(const MapInput& sample, bool sparse_inference,
                         bool return_predicted_class,
-                        std::optional<uint32_t> top_k) {
+                        std::optional<uint32_t> top_k,
+                        const py::kwargs& kwargs) {
   bolt::utils::Timer timer;
 
   auto result = _backend->predict(sample, sparse_inference,
-                                  return_predicted_class, top_k);
+                                  return_predicted_class, top_k, kwargs);
 
   timer.stop();
   telemetry::client.trackPrediction(
@@ -217,11 +219,12 @@ py::object UDT::predict(const MapInput& sample, bool sparse_inference,
 
 py::object UDT::predictBatch(const MapInputBatch& sample, bool sparse_inference,
                              bool return_predicted_class,
-                             std::optional<uint32_t> top_k) {
+                             std::optional<uint32_t> top_k,
+                             const py::kwargs& kwargs) {
   bolt::utils::Timer timer;
 
   auto result = _backend->predictBatch(sample, sparse_inference,
-                                       return_predicted_class, top_k);
+                                       return_predicted_class, top_k, kwargs);
 
   timer.stop();
   telemetry::client.trackBatchPredictions(
@@ -447,18 +450,19 @@ bool UDT::isV1() const {
 std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
 UDT::parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
                        const MapInputBatch& batch, bool sparse_inference,
-                       std::optional<uint32_t> top_k) {
+                       std::optional<uint32_t> top_k, bool augment) {
   std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>> outputs(
       models.size());
 
   bool non_mach = false;
-#pragma omp parallel for default(none)                      \
-    shared(models, batch, outputs, sparse_inference, top_k, \
+#pragma omp parallel for default(none)                               \
+    shared(models, batch, outputs, sparse_inference, top_k, augment, \
            non_mach) if (batch.size() == 1)
   for (size_t i = 0; i < models.size(); i++) {
     if (auto* mach = dynamic_cast<UDTMach*>(models[i]->_backend.get())) {
-      outputs[i] = mach->predictBatchImpl(
-          batch, sparse_inference, /*return_predicted_class*/ false, top_k);
+      outputs[i] = mach->predictBatchImpl(batch, sparse_inference,
+                                          /*return_predicted_class*/ false,
+                                          top_k, augment);
     } else if (auto* mach = dynamic_cast<UDTMachClassifier*>(
                    models[i]->_backend.get())) {
       outputs[i] = mach->predictImpl(batch, sparse_inference, top_k);

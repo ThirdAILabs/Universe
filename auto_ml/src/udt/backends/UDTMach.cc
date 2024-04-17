@@ -65,6 +65,7 @@ UDTMach::UDTMach(
     uint32_t n_target_classes, bool integer_target,
     const TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
+    const std::shared_ptr<PretrainedAugmentation>& pretrained_augmentation,
     config::ArgumentMap user_args)
     : _default_top_k_to_return(defaults::MACH_TOP_K_TO_RETURN),
       _num_buckets_to_eval(defaults::MACH_NUM_BUCKETS_TO_EVAL) {
@@ -120,7 +121,7 @@ UDTMach::UDTMach(
 
   _featurizer = std::make_shared<MachFeaturizer>(
       input_data_types, temporal_relationships, target_name, mach_index,
-      tabular_options, value_fill);
+      tabular_options, value_fill, pretrained_augmentation);
 
   _mach_sampling_threshold = user_args.get<float>(
       "mach_sampling_threshold", "float", defaults::MACH_SAMPLING_THRESHOLD);
@@ -179,18 +180,18 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
 
   addBalancingSamples(data);
 
-  auto splade_config = getSpladeConfig(kwargs);
-  bool splade_in_val = getSpladeValidationOption(kwargs);
+  bool augment = getAugmentOption(kwargs);
+  bool augment_val_data = getValidationAugmentOption(kwargs);
 
   auto train_data_loader = _featurizer->getDataLoader(
-      data, options.batchSize(), /* shuffle= */ true, options.verbose,
-      splade_config, options.shuffle_config);
+      data, options.batchSize(), /* shuffle= */ true, options.verbose, augment,
+      options.shuffle_config);
 
   data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader = _featurizer->getDataLoader(
         val_data, defaults::BATCH_SIZE, /* shuffle= */ false, options.verbose,
-        splade_in_val ? splade_config : std::nullopt);
+        augment_val_data);
   }
 
   return _classifier->train(train_data_loader, learning_rate, epochs,
@@ -230,11 +231,9 @@ py::object UDTMach::evaluate(const dataset::DataSourcePtr& data,
                              const std::vector<std::string>& metrics,
                              bool sparse_inference, bool verbose,
                              py::kwargs kwargs) {
-  auto splade_config = getSpladeConfig(kwargs);
-
-  auto data_loader =
-      _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
-                                 /* shuffle= */ false, verbose, splade_config);
+  auto data_loader = _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
+                                                /* shuffle= */ false, verbose,
+                                                getAugmentOption(kwargs));
 
   return _classifier->evaluate(data_loader, getMetrics(metrics, "val_"),
                                sparse_inference, verbose);
@@ -242,18 +241,21 @@ py::object UDTMach::evaluate(const dataset::DataSourcePtr& data,
 
 py::object UDTMach::predict(const MapInput& sample, bool sparse_inference,
                             bool return_predicted_class,
-                            std::optional<uint32_t> top_k) {
-  auto output =
-      predictBatch({sample}, sparse_inference, return_predicted_class, top_k);
+                            std::optional<uint32_t> top_k,
+                            const py::kwargs& kwargs) {
+  auto output = predictBatch({sample}, sparse_inference, return_predicted_class,
+                             top_k, kwargs);
   return output.cast<py::list>()[0];
 }
 
 py::object UDTMach::predictBatch(const MapInputBatch& samples,
                                  bool sparse_inference,
                                  bool return_predicted_class,
-                                 std::optional<uint32_t> top_k) {
+                                 std::optional<uint32_t> top_k,
+                                 const py::kwargs& kwargs) {
   return py::cast(predictBatchImpl(samples, sparse_inference,
-                                   return_predicted_class, top_k));
+                                   return_predicted_class, top_k,
+                                   getAugmentOption(kwargs)));
 }
 
 py::object UDTMach::predictActivationsBatch(const MapInputBatch& samples,
@@ -266,7 +268,7 @@ py::object UDTMach::predictActivationsBatch(const MapInputBatch& samples,
 
 std::vector<std::vector<std::pair<uint32_t, double>>> UDTMach::predictBatchImpl(
     const MapInputBatch& samples, bool sparse_inference,
-    bool return_predicted_class, std::optional<uint32_t> top_k) {
+    bool return_predicted_class, std::optional<uint32_t> top_k, bool augment) {
   if (return_predicted_class) {
     throw std::invalid_argument(
         "UDT Extreme Classification does not support the "
@@ -275,7 +277,8 @@ std::vector<std::vector<std::pair<uint32_t, double>>> UDTMach::predictBatchImpl(
 
   auto outputs =
       _classifier->model()
-          ->forward(_featurizer->featurizeInputBatch(samples), sparse_inference)
+          ->forward(_featurizer->featurizeInputBatch(samples, augment),
+                    sparse_inference)
           .at(0);
 
   uint32_t num_classes = getIndex()->numEntities();
@@ -455,15 +458,14 @@ py::object UDTMach::coldstart(
   addBalancingSamples(data, strong_column_names, weak_column_names,
                       variable_length);
 
-  auto splade_config = getSpladeConfig(kwargs);
-  auto splade_in_val = getSpladeValidationOption(kwargs);
+  bool augment = getAugmentOption(kwargs);
+  auto augment_val_data = getValidationAugmentOption(kwargs);
 
   data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader = _featurizer->getDataLoader(
         val_data, defaults::BATCH_SIZE,
-        /* shuffle= */ false, options.verbose,
-        /*splade_config=*/splade_in_val ? splade_config : std::nullopt);
+        /* shuffle= */ false, options.verbose, augment_val_data);
   }
 
   bool stopped = false;
@@ -483,7 +485,7 @@ py::object UDTMach::coldstart(
     auto train_data_loader = _featurizer->getColdStartDataLoader(
         data, strong_column_names, weak_column_names,
         /* variable_length= */ variable_length,
-        /*splade_config=*/splade_config, /* fast_approximation= */ false,
+        /*augment=*/augment, /* fast_approximation= */ false,
         options.batchSize(), /* shuffle= */ true, options.verbose,
         options.shuffle_config);
 

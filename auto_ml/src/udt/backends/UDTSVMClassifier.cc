@@ -64,7 +64,10 @@ py::object UDTSVMClassifier::evaluate(const dataset::DataSourcePtr& data,
 py::object UDTSVMClassifier::predict(const MapInput& sample,
                                      bool sparse_inference,
                                      bool return_predicted_class,
-                                     std::optional<uint32_t> top_k) {
+                                     std::optional<uint32_t> top_k,
+                                     const py::kwargs& kwargs) {
+  (void)kwargs;
+
   auto inputs =
       bolt::convertVectors({dataset::SvmDatasetLoader::toSparseVector(sample)},
                            _classifier->model()->inputDims());
@@ -75,7 +78,10 @@ py::object UDTSVMClassifier::predict(const MapInput& sample,
 py::object UDTSVMClassifier::predictBatch(const MapInputBatch& samples,
                                           bool sparse_inference,
                                           bool return_predicted_class,
-                                          std::optional<uint32_t> top_k) {
+                                          std::optional<uint32_t> top_k,
+                                          const py::kwargs& kwargs) {
+  (void)kwargs;
+
   auto inputs =
       bolt::convertBatch({dataset::SvmDatasetLoader::toSparseVectors(samples)},
                          _classifier->model()->inputDims());

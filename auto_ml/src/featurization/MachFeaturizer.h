@@ -4,6 +4,7 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/featurization/Featurizer.h>
+#include <auto_ml/src/featurization/PretrainedAugmentation.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/transformations/TextCompat.h>
@@ -16,12 +17,13 @@ using RlhfSample = std::pair<std::string, std::vector<uint32_t>>;
 
 class MachFeaturizer final : public Featurizer {
  public:
-  MachFeaturizer(ColumnDataTypes data_types,
-                 const TemporalRelationships& temporal_relationship,
-                 const std::string& label_column,
-                 const dataset::mach::MachIndexPtr& mach_index,
-                 const TabularOptions& options,
-                 data::ValueFillType label_value_fill);
+  MachFeaturizer(
+      ColumnDataTypes data_types,
+      const TemporalRelationships& temporal_relationship,
+      const std::string& label_column,
+      const dataset::mach::MachIndexPtr& mach_index,
+      const TabularOptions& options, data::ValueFillType label_value_fill,
+      const std::shared_ptr<PretrainedAugmentation>& pretrained_augmentation);
 
   MachFeaturizer(
       const std::shared_ptr<data::TextCompat>& text_transform,

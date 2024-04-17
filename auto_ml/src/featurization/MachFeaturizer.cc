@@ -36,12 +36,14 @@ MachFeaturizer::MachFeaturizer(
     const TemporalRelationships& temporal_relationship,
     const std::string& label_column,
     const dataset::mach::MachIndexPtr& mach_index,
-    const TabularOptions& options, data::ValueFillType label_value_fill)
+    const TabularOptions& options, data::ValueFillType label_value_fill,
+    const std::shared_ptr<PretrainedAugmentation>& pretrained_augmentation)
     : Featurizer(data_types, temporal_relationship, label_column,
                  makeLabelTransformations(
                      label_column,
                      asCategorical(data_types.at(label_column))->delimiter),
-                 machLabelColumns(label_value_fill), options) {
+                 machLabelColumns(label_value_fill), options,
+                 pretrained_augmentation) {
   _state = std::make_shared<data::State>(mach_index);
 
   _prehashed_labels_transform = std::make_shared<data::StringToTokenArray>(

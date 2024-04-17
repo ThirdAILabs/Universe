@@ -126,10 +126,12 @@ py::object UDTRecurrentClassifier::evaluate(
 py::object UDTRecurrentClassifier::predict(const MapInput& sample,
                                            bool sparse_inference,
                                            bool return_predicted_class,
-                                           std::optional<uint32_t> top_k) {
+                                           std::optional<uint32_t> top_k,
+                                           const py::kwargs& kwargs) {
   throwIfSparseInference(sparse_inference);
   (void)return_predicted_class;
   (void)top_k;
+  (void)kwargs;
 
   const auto& vocab = _featurizer->vocab();
   size_t vocab_size = _featurizer->vocabSize();
@@ -182,10 +184,12 @@ struct PredictBatchProgress {
 py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
                                                 bool sparse_inference,
                                                 bool return_predicted_class,
-                                                std::optional<uint32_t> top_k) {
+                                                std::optional<uint32_t> top_k,
+                                                const py::kwargs& kwargs) {
   throwIfSparseInference(sparse_inference);
   (void)return_predicted_class;
   (void)top_k;
+  (void)kwargs;
 
   const auto& vocab = _featurizer->vocab();
   size_t vocab_size = _featurizer->vocabSize();

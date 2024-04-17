@@ -81,12 +81,14 @@ class UDTBackend {
 
   virtual py::object predict(const MapInput& sample, bool sparse_inference,
                              bool return_predicted_class,
-                             std::optional<uint32_t> top_k) = 0;
+                             std::optional<uint32_t> top_k,
+                             const py::kwargs& kwargs) = 0;
 
   virtual py::object predictBatch(const MapInputBatch& sample,
                                   bool sparse_inference,
                                   bool return_predicted_class,
-                                  std::optional<uint32_t> top_k) = 0;
+                                  std::optional<uint32_t> top_k,
+                                  const py::kwargs& kwargs) = 0;
 
   virtual ar::ConstArchivePtr toArchive(bool with_optimizer) const = 0;
 
@@ -414,19 +416,17 @@ class UDTBackend {
                               "' is not supported for this type of model.");
   }
 
-  static std::optional<data::SpladeConfig> getSpladeConfig(
-      const py::kwargs& kwargs) {
-    if (!kwargs.contains("splade_config") ||
-        kwargs["splade_config"].is_none()) {
-      return std::nullopt;
+  static bool getAugmentOption(const py::kwargs& kwargs) {
+    if (kwargs.contains("augment") && !kwargs["augment"].is_none()) {
+      return kwargs["augment"].cast<bool>();
     }
-    return kwargs["splade_config"].cast<data::SpladeConfig>();
+    return false;
   }
 
-  static bool getSpladeValidationOption(const py::kwargs& kwargs) {
-    if (kwargs.contains("use_splade_in_validation") &&
-        !kwargs["use_splade_in_validation"].is_none()) {
-      return kwargs["use_splade_in_validation"].cast<bool>();
+  static bool getValidationAugmentOption(const py::kwargs& kwargs) {
+    if (kwargs.contains("augment_val_data") &&
+        !kwargs["augment_val_data"].is_none()) {
+      return kwargs["augment_val_data"].cast<bool>();
     }
     return false;
   }

@@ -284,7 +284,7 @@ void defineAutomlInModule(py::module_& module) {
       .def_static("parallel_inference", &udt::UDT::parallelInference,
                   py::arg("models"), py::arg("batch"),
                   py::arg("sparse_inference") = false,
-                  py::arg("top_k") = std::nullopt)
+                  py::arg("top_k") = std::nullopt, py::arg("augment") = false)
       .def_static("label_probe_multiple_shards",
                   &udt::UDT::labelProbeMultipleShards, py::arg("shards"),
                   py::arg("batch"), py::arg("sparse_inference") = false,
@@ -450,6 +450,14 @@ std::shared_ptr<udt::UDT> makeUDT(
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
     const py::dict& options) {
+  std::shared_ptr<PretrainedAugmentation> pretrained_augmentation;
+  if (options.contains("pretrained_augmentation") &&
+      !options["pretrained_augmentation"].is_none()) {
+    pretrained_augmentation =
+        options["pretrained_augmentation"]
+            .cast<std::shared_ptr<PretrainedAugmentation>>();
+  }
+
   return std::make_shared<udt::UDT>(
       /* data_types = */ std::move(data_types),
       /* temporal_tracking_relationships = */ temporal_tracking_relationships,
@@ -459,6 +467,7 @@ std::shared_ptr<udt::UDT> makeUDT(
       /* time_granularity = */ std::move(time_granularity),
       /* lookahead = */ lookahead, /* delimiter = */ delimiter,
       /* model_config= */ model_config,
+      /* pretrained_augmentation= */ pretrained_augmentation,
       /* options = */ createArgumentMap(options));
 }
 

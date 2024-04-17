@@ -36,6 +36,7 @@ class UDT {
       const std::string& target_col, std::optional<uint32_t> n_target_classes,
       bool integer_target, std::string time_granularity, uint32_t lookahead,
       char delimiter, const std::optional<std::string>& model_config,
+      const std::shared_ptr<PretrainedAugmentation>& pretrained_augmentation,
       const config::ArgumentMap& user_args);
 
   UDT(std::optional<std::string> incorrect_column_name,
@@ -78,8 +79,8 @@ class UDT {
    * predicted classes if its a classification task instead of the activations.
    */
   py::object predict(const MapInput& sample, bool sparse_inference,
-                     bool return_predicted_class,
-                     std::optional<uint32_t> top_k);
+                     bool return_predicted_class, std::optional<uint32_t> top_k,
+                     const py::kwargs& kwargs);
 
   /**
    * Performs inference on a batch of samples in parallel and returns the
@@ -89,7 +90,8 @@ class UDT {
    */
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class,
-                          std::optional<uint32_t> top_k);
+                          std::optional<uint32_t> top_k,
+                          const py::kwargs& kwargs);
 
   py::object predictActivationsBatch(const MapInputBatch& samples,
                                      bool sparse_inference) {
@@ -499,7 +501,7 @@ class UDT {
   static std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
   parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
                     const MapInputBatch& batch, bool sparse_inference,
-                    std::optional<uint32_t> top_k);
+                    std::optional<uint32_t> top_k, bool augment);
 
   void saveCppClassifier(const std::string& save_path) const {
     _backend->saveCppClassifier(save_path);
