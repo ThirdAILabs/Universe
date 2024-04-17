@@ -19,7 +19,9 @@ NextWordPredictionDualTokenizer::NextWordPredictionDualTokenizer(
       _context_column(std::move(context_column)),
       _target_column(std::move(target_column)),
       _input_tokenizer(automl::getTextTokenizerFromString(input_tokenizer)),
-      _output_tokenizer(automl::getTextTokenizerFromString(output_tokenizer)) {}
+      _output_tokenizer(automl::getTextTokenizerFromString(output_tokenizer)),
+      _input_tokenizer_type(std::move(input_tokenizer)),
+      _output_tokenizer_type(std::move(output_tokenizer)) {}
 
 ColumnMap NextWordPredictionDualTokenizer::apply(ColumnMap columns,
                                                  State& state) const {
@@ -101,6 +103,8 @@ ar::ConstArchivePtr NextWordPredictionDualTokenizer::toArchive() const {
   map->set("input_column", ar::str(_input_column));
   map->set("context_column", ar::str(_context_column));
   map->set("target_column", ar::str(_target_column));
+  map->set("input_tokenizer_type", ar::str(_input_tokenizer_type));
+  map->set("output_tokenizer_type", ar::str(_output_tokenizer_type));
   return map;
 }
 
@@ -108,5 +112,11 @@ NextWordPredictionDualTokenizer::NextWordPredictionDualTokenizer(
     const ar::Archive& archive)
     : _input_column(archive.str("input_column")),
       _context_column(archive.str("context_column")),
-      _target_column(archive.str("target_column")) {}
+      _target_column(archive.str("target_column")),
+      _input_tokenizer_type(archive.str("input_tokenizer_type")),
+      _output_tokenizer_type(archive.str("output_tokenizer_type")) {
+  _input_tokenizer = automl::getTextTokenizerFromString(_input_tokenizer_type);
+  _output_tokenizer =
+      automl::getTextTokenizerFromString(_output_tokenizer_type);
+}
 }  // namespace thirdai::data

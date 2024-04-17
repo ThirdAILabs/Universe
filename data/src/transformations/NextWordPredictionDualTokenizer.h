@@ -31,6 +31,8 @@ class NextWordPredictionDualTokenizer final : public Transformation {
   std::string _target_column;
   dataset::TextTokenizerPtr _input_tokenizer;
   dataset::TextTokenizerPtr _output_tokenizer;
+  std::string _input_tokenizer_type;
+  std::string _output_tokenizer_type;
 };
 
 }  // namespace thirdai::data

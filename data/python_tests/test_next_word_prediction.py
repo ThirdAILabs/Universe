@@ -3,7 +3,7 @@ from thirdai import data
 
 
 # TODO(Pratyush) Add serialization to NWP Dual Tokenizers
-@pytest.mark.parametrize("serialize", [False])
+@pytest.mark.parametrize("serialize", [True, False])
 @pytest.mark.unit
 def test_next_word_prediction_dual_tokenizers(serialize):
     columns = data.ColumnMap({"text": data.columns.StringColumn(["Banana is yellow"])})
