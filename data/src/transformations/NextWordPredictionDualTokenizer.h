@@ -1,36 +1,19 @@
 #pragma once
 
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <data/src/ColumnMap.h>
-#include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
 #include <optional>
 
 namespace thirdai::data {
 
-// struct NWPDualTokenizerConfig {
-//   NWPDualTokenizerConfig(std::optional<std::string> input_tokenizer,
-//                          std::optional<std::string> output_tokenizer,
-//                          std::optional<std::string&> input_tokenizer_vocab,
-//                          bool input_lowercase,
-//                          std::optional<std::string&> output_tokenizer_vocab,
-//                          bool output_lowercase, ) {
-//     if (input_tokenizer_vocab.has_value()) {
-//       _input_tokenizer = std::make_shared<dataset::WordpieceTokenizer>(
-//           input_tokenizer_vocab, input_lowercase)
-//     }
-//     else if (input_tokenizer.has_value()){
-//       if (input_tokenizer == "char-")
-//     }
-//   }
-//   data::TextTokenizer _input_tokenizer;
-//   data::TextTokenizer _output_tokenizer;
-// }
-
 class NextWordPredictionDualTokenizer final : public Transformation {
  public:
   NextWordPredictionDualTokenizer(std::string input_column,
                                   std::string context_column,
-                                  std::string target_column);
+                                  std::string target_column,
+                                  std::string input_tokenizer,
+                                  std::string output_tokenizer);
 
   explicit NextWordPredictionDualTokenizer(const ar::Archive& archive);
 
@@ -42,12 +25,12 @@ class NextWordPredictionDualTokenizer final : public Transformation {
 
  private:
   std::vector<size_t> computeOffsets(
-      const ArrayColumnBasePtr<uint32_t>& texts) const;
+      const std::vector<std::vector<uint32_t>>& offsets) const;
   std::string _input_column;
   std::string _context_column;
   std::string _target_column;
-  data::TextTokenizer _input_tokenizer;
-  data::TextTokenizer _output_tokenizer;
+  dataset::TextTokenizerPtr _input_tokenizer;
+  dataset::TextTokenizerPtr _output_tokenizer;
 };
 
 }  // namespace thirdai::data

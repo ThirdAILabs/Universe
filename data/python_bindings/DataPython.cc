@@ -13,6 +13,7 @@
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/NextWordPrediction.h>
+#include <data/src/transformations/NextWordPredictionDualTokenizer.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/StringCast.h>
@@ -482,6 +483,15 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       .def(py::init<std::string, std::string, std::string>(),
            py::arg("input_column"), py::arg("context_column"),
            py::arg("target_column"));
+
+  py::class_<NextWordPredictionDualTokenizer, Transformation,
+             std::shared_ptr<NextWordPredictionDualTokenizer>>(
+      transformations_submodule, "NextWordPredictionDualTokenizer")
+      .def(py::init<std::string, std::string, std::string, std::string,
+                    std::string>(),
+           py::arg("input_column"), py::arg("context_column"),
+           py::arg("target_column"), py::arg("input_tokenizer"),
+           py::arg("output_tokenizer"));
 #endif
 
   py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>>(

@@ -49,7 +49,7 @@ class NaiveSplitTokenizer : public TextTokenizer {
   }
 
   std::vector<uint32_t> getOffsets(const std::string& input) final {
-    return text::NativeSplitOffsets(input);
+    return text::NativeSplitOffsets(input, _delimiter);
   }
 
   std::string getResponsibleWord(const std::string& input,
@@ -91,6 +91,12 @@ class WordPunctTokenizer : public TextTokenizer {
 
   std::vector<uint32_t> tokenize(const std::string& input) final {
     return token_encoding::hashTokens(text::tokenizeSentence(input));
+  }
+
+  std::vector<uint32_t> getOffsets(const std::string& input) final {
+    (void)input;
+    throw std::logic_error(
+        "The method is not supported for Word Punct Tokenizer");
   }
 
   std::string getResponsibleWord(const std::string& input,
