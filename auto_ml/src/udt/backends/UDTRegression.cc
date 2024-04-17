@@ -73,7 +73,7 @@ py::object UDTRegression::train(const dataset::DataSourcePtr& data,
                                 const std::vector<CallbackPtr>& callbacks,
                                 TrainOptions options,
                                 const bolt::DistributedCommPtr& comm,
-                                py::kwargs kwargs) {
+                                const py::kwargs &kwargs) {
   (void)kwargs;
 
   auto train_data_loader = _featurizer->getDataLoader(
@@ -111,7 +111,7 @@ py::object UDTRegression::train(const dataset::DataSourcePtr& data,
 py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
                                    const std::vector<std::string>& metrics,
                                    bool sparse_inference, bool verbose,
-                                   py::kwargs kwargs) {
+                                   const py::kwargs &kwargs) {
   (void)kwargs;
 
   bolt::Trainer trainer(_model, std::nullopt, /* gradient_update_interval */ 1,
@@ -130,7 +130,7 @@ py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
 py::object UDTRegression::predict(const MapInput& sample, bool sparse_inference,
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k,
-                                  py::kwargs kwargs) {
+                                  const py::kwargs &kwargs) {
   (void)return_predicted_class;  // No classes to return in regression;
   (void)top_k;
   (void)kwargs;
@@ -145,7 +145,7 @@ py::object UDTRegression::predictBatch(const MapInputBatch& samples,
                                        bool sparse_inference,
                                        bool return_predicted_class,
                                        std::optional<uint32_t> top_k,
-                                       py::kwargs kwargs) {
+                                       const py::kwargs &kwargs) {
   (void)return_predicted_class;  // No classes to return in regression;
   (void)top_k;
   (void)kwargs;

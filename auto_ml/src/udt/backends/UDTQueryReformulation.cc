@@ -80,7 +80,7 @@ py::object UDTQueryReformulation::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::DistributedCommPtr& comm, py::kwargs kwargs) {
+    const bolt::DistributedCommPtr& comm, const py::kwargs &kwargs) {
   (void)learning_rate;
   (void)epochs;
   (void)train_metrics;
@@ -162,7 +162,7 @@ py::object UDTQueryReformulation::train(
 
 py::object UDTQueryReformulation::evaluate(
     const dataset::DataSourcePtr& data, const std::vector<std::string>& metrics,
-    bool sparse_inference, bool verbose, py::kwargs kwargs) {
+    bool sparse_inference, bool verbose, const py::kwargs &kwargs) {
   (void)metrics;
   (void)sparse_inference;
 
@@ -249,11 +249,7 @@ py::object UDTQueryReformulation::predict(const MapInput& sample,
                                           bool sparse_inference,
                                           bool return_predicted_class,
                                           std::optional<uint32_t> top_k,
-                                          py::kwargs kwargs) {
-  (void)sample;
-  (void)sparse_inference;
-  (void)return_predicted_class;
-  (void)top_k;
+                                          const py::kwargs &kwargs) {
   return predictBatch({sample}, sparse_inference, return_predicted_class, top_k,
                       kwargs);
 }
@@ -308,7 +304,7 @@ py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
                                                bool sparse_inference,
                                                bool return_predicted_class,
                                                std::optional<uint32_t> top_k,
-                                               py::kwargs kwargs) {
+                                               const py::kwargs &kwargs) {
   (void)sparse_inference;
   (void)return_predicted_class;
   (void)kwargs;

@@ -61,7 +61,7 @@ py::object UDTRecurrentClassifier::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::DistributedCommPtr& comm, py::kwargs kwargs) {
+    const bolt::DistributedCommPtr& comm, const py::kwargs &kwargs) {
   (void)kwargs;
 
   data::LoaderPtr val_dataset = nullptr;
@@ -105,7 +105,7 @@ py::object UDTRecurrentClassifier::train(
 
 py::object UDTRecurrentClassifier::evaluate(
     const dataset::DataSourcePtr& data, const std::vector<std::string>& metrics,
-    bool sparse_inference, bool verbose, py::kwargs kwargs) {
+    bool sparse_inference, bool verbose, const py::kwargs &kwargs) {
   (void)kwargs;
 
   throwIfSparseInference(sparse_inference);
@@ -127,7 +127,7 @@ py::object UDTRecurrentClassifier::predict(const MapInput& sample,
                                            bool sparse_inference,
                                            bool return_predicted_class,
                                            std::optional<uint32_t> top_k,
-                                           py::kwargs kwargs) {
+                                           const py::kwargs &kwargs) {
   throwIfSparseInference(sparse_inference);
   (void)return_predicted_class;
   (void)top_k;
@@ -185,7 +185,7 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
                                                 bool sparse_inference,
                                                 bool return_predicted_class,
                                                 std::optional<uint32_t> top_k,
-                                                py::kwargs kwargs) {
+                                                const py::kwargs &kwargs) {
   throwIfSparseInference(sparse_inference);
   (void)return_predicted_class;
   (void)top_k;

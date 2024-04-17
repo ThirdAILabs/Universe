@@ -84,7 +84,7 @@ py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
                                 const std::vector<CallbackPtr>& callbacks,
                                 TrainOptions options,
                                 const bolt::DistributedCommPtr& comm,
-                                py::kwargs kwargs) {
+                                const py::kwargs &kwargs) {
   auto splade_config = getSpladeConfig(kwargs);
   bool splade_in_val = getSpladeValidationOption(kwargs);
 
@@ -147,7 +147,7 @@ void UDTClassifier::setOutputSparsity(float sparsity,
 py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
                                    const std::vector<std::string>& metrics,
                                    bool sparse_inference, bool verbose,
-                                   py::kwargs kwargs) {
+                                   const py::kwargs &kwargs) {
   auto splade_config = getSpladeConfig(kwargs);
 
   auto dataset =
@@ -160,7 +160,7 @@ py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
 py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k,
-                                  py::kwargs kwargs) {
+                                  const py::kwargs &kwargs) {
   auto splade_config = getSpladeConfig(kwargs);
   return _classifier->predict(
       _featurizer->featurizeInput(sample, splade_config), sparse_inference,
@@ -172,7 +172,7 @@ py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
                                        bool sparse_inference,
                                        bool return_predicted_class,
                                        std::optional<uint32_t> top_k,
-                                       py::kwargs kwargs) {
+                                       const py::kwargs &kwargs) {
   auto splade_config = getSpladeConfig(kwargs);
   return _classifier->predict(
       _featurizer->featurizeInputBatch(samples, splade_config),

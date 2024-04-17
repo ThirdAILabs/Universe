@@ -150,7 +150,7 @@ py::object UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
                       const std::vector<std::string>& val_metrics,
                       const std::vector<CallbackPtr>& callbacks,
                       TrainOptions options,
-                      const bolt::DistributedCommPtr& comm, py::kwargs kwargs) {
+                      const bolt::DistributedCommPtr& comm, const py::kwargs &kwargs) {
   licensing::entitlements().verifyDataSource(data);
 
   bolt::utils::Timer timer;
@@ -188,7 +188,7 @@ void UDT::setOutputSparsity(float sparsity, bool rebuild_hash_tables) {
 py::object UDT::evaluate(const dataset::DataSourcePtr& data,
                          const std::vector<std::string>& metrics,
                          bool sparse_inference, bool verbose,
-                         py::kwargs kwargs) {
+                         const py::kwargs &kwargs) {
   bolt::utils::Timer timer;
 
   auto result = _backend->evaluate(data, metrics, sparse_inference, verbose,
@@ -202,7 +202,7 @@ py::object UDT::evaluate(const dataset::DataSourcePtr& data,
 
 py::object UDT::predict(const MapInput& sample, bool sparse_inference,
                         bool return_predicted_class,
-                        std::optional<uint32_t> top_k, py::kwargs kwargs) {
+                        std::optional<uint32_t> top_k, const py::kwargs &kwargs) {
   bolt::utils::Timer timer;
 
   auto result = _backend->predict(sample, sparse_inference,
@@ -217,7 +217,7 @@ py::object UDT::predict(const MapInput& sample, bool sparse_inference,
 
 py::object UDT::predictBatch(const MapInputBatch& sample, bool sparse_inference,
                              bool return_predicted_class,
-                             std::optional<uint32_t> top_k, py::kwargs kwargs) {
+                             std::optional<uint32_t> top_k, const py::kwargs &kwargs) {
   bolt::utils::Timer timer;
 
   auto result = _backend->predictBatch(sample, sparse_inference,
@@ -447,7 +447,7 @@ bool UDT::isV1() const {
 std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>>
 UDT::parallelInference(const std::vector<std::shared_ptr<UDT>>& models,
                        const MapInputBatch& batch, bool sparse_inference,
-                       std::optional<uint32_t> top_k, py::kwargs kwargs) {
+                       std::optional<uint32_t> top_k, const py::kwargs &kwargs) {
   std::vector<std::vector<std::vector<std::pair<uint32_t, double>>>> outputs(
       models.size());
 

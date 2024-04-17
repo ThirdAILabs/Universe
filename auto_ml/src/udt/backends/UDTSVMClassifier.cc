@@ -33,7 +33,7 @@ py::object UDTSVMClassifier::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::DistributedCommPtr& comm, py::kwargs kwargs) {
+    const bolt::DistributedCommPtr& comm, const py::kwargs &kwargs) {
   (void)kwargs;
 
   auto featurizer = std::make_shared<dataset::SvmFeaturizer>();
@@ -53,7 +53,7 @@ py::object UDTSVMClassifier::train(
 py::object UDTSVMClassifier::evaluate(const dataset::DataSourcePtr& data,
                                       const std::vector<std::string>& metrics,
                                       bool sparse_inference, bool verbose,
-                                      py::kwargs kwargs) {
+                                      const py::kwargs &kwargs) {
   (void)kwargs;
 
   auto dataset = svmDatasetLoader(data, /* shuffle= */ false);
@@ -65,7 +65,7 @@ py::object UDTSVMClassifier::predict(const MapInput& sample,
                                      bool sparse_inference,
                                      bool return_predicted_class,
                                      std::optional<uint32_t> top_k,
-                                     py::kwargs kwargs) {
+                                     const py::kwargs &kwargs) {
   (void)kwargs;
   auto inputs =
       bolt::convertVectors({dataset::SvmDatasetLoader::toSparseVector(sample)},
@@ -78,7 +78,7 @@ py::object UDTSVMClassifier::predictBatch(const MapInputBatch& samples,
                                           bool sparse_inference,
                                           bool return_predicted_class,
                                           std::optional<uint32_t> top_k,
-                                          py::kwargs kwargs) {
+                                          const py::kwargs &kwargs) {
   (void)kwargs;
   auto inputs =
       bolt::convertBatch({dataset::SvmDatasetLoader::toSparseVectors(samples)},

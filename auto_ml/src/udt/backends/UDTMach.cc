@@ -174,7 +174,7 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
                           const std::vector<CallbackPtr>& callbacks,
                           TrainOptions options,
                           const bolt::DistributedCommPtr& comm,
-                          py::kwargs kwargs) {
+                          const py::kwargs &kwargs) {
   insertNewDocIds(data);
 
   addBalancingSamples(data);
@@ -229,7 +229,7 @@ py::object UDTMach::trainWithHashes(const MapInputBatch& batch,
 py::object UDTMach::evaluate(const dataset::DataSourcePtr& data,
                              const std::vector<std::string>& metrics,
                              bool sparse_inference, bool verbose,
-                             py::kwargs kwargs) {
+                             const py::kwargs &kwargs) {
   auto splade_config = getSpladeConfig(kwargs);
 
   auto data_loader =
@@ -242,7 +242,7 @@ py::object UDTMach::evaluate(const dataset::DataSourcePtr& data,
 
 py::object UDTMach::predict(const MapInput& sample, bool sparse_inference,
                             bool return_predicted_class,
-                            std::optional<uint32_t> top_k, py::kwargs kwargs) {
+                            std::optional<uint32_t> top_k, const py::kwargs &kwargs) {
   auto output = predictBatch({sample}, sparse_inference, return_predicted_class,
                              top_k, kwargs);
   return output.cast<py::list>()[0];
@@ -252,7 +252,7 @@ py::object UDTMach::predictBatch(const MapInputBatch& samples,
                                  bool sparse_inference,
                                  bool return_predicted_class,
                                  std::optional<uint32_t> top_k,
-                                 py::kwargs kwargs) {
+                                 const py::kwargs &kwargs) {
   return py::cast(predictBatchImpl(samples, sparse_inference,
                                    return_predicted_class, top_k, kwargs));
 }
@@ -268,7 +268,7 @@ py::object UDTMach::predictActivationsBatch(const MapInputBatch& samples,
 std::vector<std::vector<std::pair<uint32_t, double>>> UDTMach::predictBatchImpl(
     const MapInputBatch& samples, bool sparse_inference,
     bool return_predicted_class, std::optional<uint32_t> top_k,
-    py::kwargs kwargs) {
+    const py::kwargs &kwargs) {
   auto splade_config = getSpladeConfig(kwargs);
   if (return_predicted_class) {
     throw std::invalid_argument(

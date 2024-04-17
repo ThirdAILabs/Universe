@@ -37,21 +37,21 @@ class UDTQueryReformulation final : public UDTBackend {
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
                    TrainOptions option, const bolt::DistributedCommPtr& comm,
-                   py::kwargs kwargs) final;
+                   const py::kwargs &kwargs) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool verbose,
-                      py::kwargs kwargs) final;
+                      const py::kwargs &kwargs) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
                      bool return_predicted_class, std::optional<uint32_t> top_k,
-                     py::kwargs kwargs) final;
+                     const py::kwargs &kwargs) final;
 
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k,
-                          py::kwargs kwargs) final;
+                          const py::kwargs &kwargs) final;
 
   ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
 

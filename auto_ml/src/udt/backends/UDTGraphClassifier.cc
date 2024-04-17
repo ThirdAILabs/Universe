@@ -40,7 +40,7 @@ py::object UDTGraphClassifier::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::DistributedCommPtr& comm, py::kwargs kwargs) {
+    const bolt::DistributedCommPtr& comm, const py::kwargs &kwargs) {
   (void)kwargs;
 
   auto train_data_loader = _featurizer->indexAndGetDataLoader(
@@ -61,7 +61,7 @@ py::object UDTGraphClassifier::train(
 py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,
                                         const std::vector<std::string>& metrics,
                                         bool sparse_inference, bool verbose,
-                                        py::kwargs kwargs) {
+                                        const py::kwargs &kwargs) {
   (void)kwargs;
 
   auto eval_dataset_loader = _featurizer->indexAndGetDataLoader(

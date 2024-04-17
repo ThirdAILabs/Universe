@@ -179,7 +179,7 @@ py::object UDTMachClassifier::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::DistributedCommPtr& comm, py::kwargs kwargs) {
+    const bolt::DistributedCommPtr& comm, const py::kwargs &kwargs) {
   (void)kwargs;
 
   dataset::DatasetLoaderPtr val_dataset_loader;
@@ -228,7 +228,7 @@ py::object UDTMachClassifier::trainWithHashes(const MapInputBatch& batch,
 py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
                                        const std::vector<std::string>& metrics,
                                        bool sparse_inference, bool verbose,
-                                       py::kwargs kwargs) {
+                                       const py::kwargs &kwargs) {
   (void)kwargs;
 
   auto eval_dataset_loader =
@@ -242,7 +242,7 @@ py::object UDTMachClassifier::predict(const MapInput& sample,
                                       bool sparse_inference,
                                       bool return_predicted_class,
                                       std::optional<uint32_t> top_k,
-                                      py::kwargs kwargs) {
+                                      const py::kwargs &kwargs) {
   (void)kwargs;
   if (return_predicted_class) {
     throw std::invalid_argument(
@@ -296,7 +296,7 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
                                            bool sparse_inference,
                                            bool return_predicted_class,
                                            std::optional<uint32_t> top_k,
-                                           py::kwargs kwargs) {
+                                           const py::kwargs &kwargs) {
   (void)kwargs;
   if (return_predicted_class) {
     throw std::invalid_argument(
