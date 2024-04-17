@@ -9,42 +9,8 @@
 
 namespace thirdai::data {
 
-struct SpladeConfig {
-  SpladeConfig(const std::string& model_checkpoint,
-               const std::string& tokenizer_vocab,
-               std::optional<size_t> n_augmented_tokens,
-               std::optional<float> augmentation_frac,
-               bool filter_tokens = true, size_t batch_size = 4096,
-               bool lowercase = true,
-               std::optional<uint32_t> strong_sample_override = 7);
-
-  bolt::ModelPtr model;
-  dataset::WordpieceTokenizerPtr tokenizer;
-  std::optional<size_t> n_augmented_tokens;
-  std::optional<float> augmentation_frac;
-  bool filter_tokens;
-  size_t batch_size = 4096;
-  std::optional<uint32_t> strong_sample_override;
-
-  void save_stream(std::ostream& output_stream) const;
-
-  static std::shared_ptr<SpladeConfig> load_stream(std::istream& input_stream);
-
- private:
-  // Rather than saving the model and tokenizer, this object just stores the
-  // paths and recreates them on load, this is to avoid the cost of serializtion
-  // the model for NDB checkpointing, which is really the only case in which
-  // this should be serialized.
-  std::string _model_checkpoint;
-  std::string _tokenizer_vocab;
-  bool _lowercase = true;
-};
-
 class SpladeAugmentation final : public Transformation {
  public:
-  SpladeAugmentation(std::string input_column, std::string output_column,
-                     const SpladeConfig& config);
-
   SpladeAugmentation(std::string input_column, std::string output_column,
                      bolt::ModelPtr model,
                      dataset::WordpieceTokenizerPtr tokenizer,
@@ -52,9 +18,13 @@ class SpladeAugmentation final : public Transformation {
                      std::optional<float> augmentation_frac, bool filter_tokens,
                      size_t batch_size);
 
+  explicit SpladeAugmentation(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
   ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "splade_augmentation"; }
 
  private:
   std::string decodeTopTokens(const BoltVector& vec, size_t k) const;

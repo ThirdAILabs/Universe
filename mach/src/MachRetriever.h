@@ -40,7 +40,6 @@ struct TrainOptions {
 struct ColdStartOptions : public TrainOptions {
   std::optional<data::VariableLengthConfig> variable_length =
       data::VariableLengthConfig();
-  std::optional<data::SpladeConfig> splade_config = std::nullopt;
 };
 
 struct EvaluateOptions {
@@ -171,8 +170,7 @@ class MachRetriever {
   data::TransformationPtr textAugmentation(
       const std::vector<std::string>& strong_cols,
       const std::vector<std::string>& weak_cols,
-      std::optional<data::VariableLengthConfig> variable_length,
-      const std::optional<data::SpladeConfig>& splade_config);
+      std::optional<data::VariableLengthConfig> variable_length);
 
   data::TransformationPtr coldStartTextAugmentation(
       const std::vector<std::string>& strong_column_names,

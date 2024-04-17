@@ -295,6 +295,17 @@ void defineAutomlInModule(py::module_& module) {
                   py::arg("top_k") = std::nullopt)
       .def_static("estimate_hash_table_size", &udt::UDT::estimateHashTableSize,
                   py::arg("output_dim"), py::arg("sparsity") = std::nullopt);
+
+  py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>>(module,
+                                                          "SpladeConfig")
+      .def(py::init<std::string, std::string, std::optional<size_t>,
+                    std::optional<float>, bool, size_t, bool,
+                    std::optional<uint32_t>>(),
+           py::arg("model_checkpoint"), py::arg("tokenizer_vocab"),
+           py::arg("n_augmented_tokens") = 100,
+           py::arg("augmentation_frac") = std::nullopt,
+           py::arg("filter_tokens") = true, py::arg("batch_size") = 4096,
+           py::arg("lowercase") = true, py::arg("strong_sample_override") = 7);
 }
 
 void createUDTTypesSubmodule(py::module_& module) {

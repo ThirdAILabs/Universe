@@ -15,6 +15,7 @@
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/Recurrence.h>
 #include <data/src/transformations/RegressionBinning.h>
+#include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/StringHash.h>
@@ -69,6 +70,7 @@ TransformationPtr Transformation::fromArchive(const ar::Archive& archive) {
   HANDLE_TYPE(TextTokenizer)
   HANDLE_TYPE(AddMachMemorySamples)
   HANDLE_TYPE(TextCompat)
+  HANDLE_TYPE(SpladeAugmentation)
 
   throw std::runtime_error("Invalid transformation type '" + type +
                            "' in fromArchive.");

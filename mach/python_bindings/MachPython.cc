@@ -41,9 +41,6 @@ ColdStartOptions getColdStartOptions(const py::kwargs& kwargs) {
     options.variable_length =
         kwargs["variable_length"].cast<data::VariableLengthConfig>();
   }
-  if (kwargs.contains("splade_config")) {
-    options.splade_config = kwargs["splade_config"].cast<data::SpladeConfig>();
-  }
   return options;
 }
 

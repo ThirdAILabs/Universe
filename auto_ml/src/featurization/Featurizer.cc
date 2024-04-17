@@ -313,6 +313,10 @@ std::shared_ptr<ar::Map> Featurizer::toArchiveMap() const {
     map->set("text_dataset", text_dataset);
   }
 
+  if (_pretrained_augmentation) {
+    map->set("pretrained_augmentation", _pretrained_augmentation->toArchive());
+  }
+
   return map;
 }
 
@@ -339,6 +343,11 @@ Featurizer::Featurizer(const ar::Archive& archive)
     _text_dataset = TextDatasetConfig(
         text_dataset->str("text_column"), text_dataset->str("label_column"),
         text_dataset->getOpt<ar::Char>("label_delimiter"));
+  }
+
+  if (archive.contains("pretrained_augmentation")) {
+    _pretrained_augmentation = data::Transformation::fromArchive(
+        *archive.get("pretrained_augmentation"));
   }
 }
 

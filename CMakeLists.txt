@@ -429,6 +429,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/featurization/GraphFeaturizer.cc
     auto_ml/src/featurization/RecurrentFeaturizer.cc
     auto_ml/src/featurization/ReservedColumns.cc
+    auto_ml/src/featurization/PretrainedAugmentation.cc
     auto_ml/src/featurization/TabularBlockComposer.cc # Deprecate
     auto_ml/src/featurization/TabularDatasetFactory.cc # Deprecate
     auto_ml/src/cold_start/ColdStartUtils.cc # Deprecate

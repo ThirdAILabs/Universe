@@ -142,9 +142,7 @@ bolt::metrics::History MachRetriever::coldstart(
     const std::vector<bolt::callbacks::CallbackPtr>& callbacks,
     const ColdStartOptions& options) {
   auto augmented_data = data::TransformedIterator::make(
-      data,
-      textAugmentation(strong_cols, weak_cols, options.variable_length,
-                       options.splade_config),
+      data, textAugmentation(strong_cols, weak_cols, options.variable_length),
       _state);
 
   return train(augmented_data, learning_rate, epochs, metrics, callbacks,
@@ -510,32 +508,7 @@ std::vector<uint32_t> MachRetriever::topHashesForDoc(
 data::TransformationPtr MachRetriever::textAugmentation(
     const std::vector<std::string>& strong_cols,
     const std::vector<std::string>& weak_cols,
-    std::optional<data::VariableLengthConfig> variable_length,
-    const std::optional<data::SpladeConfig>& splade_config) {
-  if (splade_config && (!strong_cols.empty() || !weak_cols.empty())) {
-    // TODO(Nicholas, David): Should we add an option to sample a certain
-    // number of times from a specific column, i.e. splade tokens.
-    if (splade_config->strong_sample_override && variable_length) {
-      variable_length->overrideStrongSampleNumWords(
-          *splade_config->strong_sample_override);
-    }
-
-    std::vector<std::string> all_cols;
-    all_cols.insert(all_cols.end(), strong_cols.begin(), strong_cols.end());
-    all_cols.insert(all_cols.end(), weak_cols.begin(), weak_cols.end());
-
-    const std::string splade_col = "__splade_tokens__";
-    std::vector<std::string> strong_cols_w_splade = strong_cols;
-    strong_cols_w_splade.push_back(splade_col);
-
-    return data::Pipeline::make()
-        ->then(std::make_shared<data::StringConcat>(all_cols, splade_col, " "))
-        ->then(std::make_shared<data::SpladeAugmentation>(
-            splade_col, splade_col, *splade_config))
-        ->then(coldStartTextAugmentation(strong_cols_w_splade, weak_cols,
-                                         variable_length));
-  }
-
+    std::optional<data::VariableLengthConfig> variable_length) {
   return coldStartTextAugmentation(strong_cols, weak_cols, variable_length);
 }
 
