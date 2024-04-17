@@ -33,6 +33,12 @@ class WordpieceTokenizer : public TextTokenizer {
 
   std::vector<uint32_t> tokenize(const std::string& sentence) final;
 
+  std::vector<uint32_t> getOffsets(const std::string& input) final {
+    (void)input;
+    throw std::logic_error(
+        "The method is not supported for WordpieceTokenizer");
+  }
+
   std::vector<std::wstring> tokenizeToStrings(
       const std::string& sentence) const;
 

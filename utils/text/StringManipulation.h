@@ -13,6 +13,9 @@ namespace thirdai::text {
  */
 std::vector<std::string> split(const std::string_view& string, char delimiter);
 
+std::vector<uint32_t> NativeSplitOffsets(const std::string_view& string,
+                                         char delimiter);
+
 std::vector<std::string> splitOnWhiteSpace(const std::string& text);
 
 /**
@@ -28,6 +31,9 @@ std::vector<std::string> splitOnWhiteSpace(const std::string& text);
 std::vector<std::string> tokenizeSentence(const std::string& sentence);
 
 std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k);
+
+std::vector<uint32_t> charKGramsOffsets(const std::string_view& text,
+                                        uint32_t k);
 
 std::vector<std::string> wordLevelCharKGrams(
     const std::vector<std::string>& words, uint32_t k,
