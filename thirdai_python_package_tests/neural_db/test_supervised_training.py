@@ -3,7 +3,9 @@ import random
 from collections import defaultdict
 
 import pytest
+from ndb_utils import CSV_FILE, DOCX_FILE, PDF_FILE
 from thirdai import neural_db as ndb
+from thirdai.gen import QAGenMethod
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -392,3 +394,39 @@ def test_neural_db_supervised_train_invalid_int_ids():
     )
 
     db.supervised_train([sup_doc], learning_rate=0.1, epochs=1)
+
+
+def test_neural_db_supervised_question_generation():
+    db = ndb.NeuralDB()
+    docs = [ndb.PDF(PDF_FILE), ndb.CSV(CSV_FILE), ndb.DOCX(DOCX_FILE)]
+    db.insert(docs, train=False)
+
+    class CustomGenerator(QAGenMethod):
+        def __init__(self):
+            pass
+
+        def generate(self, texts):
+            print([[text] for text in texts])
+            return [[text] for text in texts]
+
+    db.supervised_train(
+        data=ndb.gen_questions(docs, generator=CustomGenerator()),
+        epochs=15,
+        learning_rate=0.001,
+    )
+
+    def get_accuracy(db, docs):
+        correct = 0
+        total = 0
+        offset_id = 0
+        for doc in docs:
+            queries = [doc.reference(i).text for i in range(doc.size)]
+            results = db.search_batch(queries, 1)
+            for result in results:
+                if result[0].id == offset_id:
+                    correct += 1
+                offset_id += 1
+            total += len(results)
+        return correct / total
+
+    assert get_accuracy(db, docs) > 0.8
