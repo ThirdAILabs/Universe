@@ -1,6 +1,6 @@
 import fitz
 import pytest
-from ndb_utils import PDF_FILE, PRIAXOR_PDF_FILE
+from ndb_utils import CITI_PDF_FILE, PDF_FILE, PRIAXOR_PDF_FILE
 from thirdai import neural_db as ndb
 
 pytestmark = [pytest.mark.unit]
@@ -40,3 +40,8 @@ def test_pdf_table_parsing():
 
     table_string = "[['Crop', 'Target Disease', 'Product Use\\nRate per\\nApplication\\n(fl ozs/A)', 'Maximum\\nNumber of\\nApplications\\nper Year', 'Maximum\\nProduct Rate\\nper Year\\n(fl ozs/A)', 'Minimum\\nTime from\\nApplication\\nto Harvest\\n(PHI) (days)'], ['Barley', 'Black point\\n(Kernel blight or Head mold)\\n(Cochliobolus sativus,\\nAlternaria spp .)\\nLeaf rust\\n(Puccinia spp .)\\nNet blotch\\n(Pyrenophora teres)\\nPowdery mildew\\n(Blumeria graminis f . sp .\\nhordei)\\nScald\\n(Rhynchosporium secalis)\\nSeptoria leaf and\\nglume blotch\\n(Septoria spp .,\\nStagonospora spp .)\\nSpot blotch\\n(Cochliobolus sativus)\\nStem rust\\n(Puccinia graminis f . sp .\\ntritici)\\nStripe rust\\n(Puccinia striiformis)\\nTan spot (Yellow leaf spot)\\n(Pyrenophora spp .)', '4 to 8*', '2', '16', 'Apply no later\\nthan 50% head\\nemergence\\n(Feekes 10 .3,\\nZadok’s 55)\\nbut no less\\nthan 21 days\\nbefore harvest'], ['Application Directions. For optimal disease control, begin foliar applications of Priaxor® Xemium® brand\\nfungicide prior to disease development . To maximize yields in cereals, it is important to protect the flag leaf . Apply\\nPriaxor immediately after flag leaf emergence for optimum results .\\nPriaxor does not control Fusarium head blight (head scab) or prevent the reductions in grain quality that can result\\nfrom this disease . When head blight is a concern, growers should manage this disease with fungicides that are labeled\\nfor and effective in managing this disease, and with cultural practices like crop rotation and plowing to reduce crop\\nresidues that serve as an inoculum source .\\nDO NOT harvest barley hay or feed green-chopped barley within 14 days of last application .\\nDO NOT apply more than 16 fl ozs of Priaxor per acre per year (0 .174 lb ai/year fluxapyroxad and 0 .348 lb ai/year\\npyraclostrobin) . DO NOT make more than two (2) sequential applications of Priaxor before alternating to a labeled\\nnon-Group 7 or non-Group 11 fungicide .\\n* F or early season control of net blotch, Septoria leaf and glume blotch, spot blotch, and tan spot when conditions\\nfavor disease development, apply 2 to 4 fl ozs per acre of Priaxor either in combination with a herbicide application\\nor when conditions favor disease development . When the 2 to 4 fl ozs early season application rate is used, a second\\napplication of Priaxor may be required to protect the emerged flag leaf . Environmental conditions for disease or cur-\\nrent disease pressure at the time of flag-leaf emergence should be used to determine the Priaxor rate for the second\\napplication . For high disease pressure, use the higher rate of Priaxor .', None, None, None, None, None]]"
     find_table(df, table_string)
+
+
+def test_pdf_table_parsing_with_section_titles():
+    pdf = ndb.PDF(PRIAXOR_PDF_FILE, version="v2", table_parsing=True)
+    pdf = ndb.PDF(CITI_PDF_FILE, version="v2", table_parsing=True)
