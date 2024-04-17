@@ -40,6 +40,7 @@ class MachMixture(Model):
         use_inverted_index=True,
         label_to_segment_map: defaultdict = None,
         seed_for_sharding: int = 0,
+        **kwargs,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
