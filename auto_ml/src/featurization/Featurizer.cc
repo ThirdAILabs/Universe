@@ -78,8 +78,8 @@ data::LoaderPtr Featurizer::getDataLoader(
                 textDatasetConfig().textColumn(), SPLADE_TOKENS,
                 *splade_config))
             ->then(std::make_shared<data::StringConcat>(
-                std::vector<std::string>(std::initializer_list<std::string>{
-                    textDatasetConfig().textColumn(), SPLADE_TOKENS}),
+                std::vector<std::string>{
+                    textDatasetConfig().textColumn(), SPLADE_TOKENS},
                 textDatasetConfig().textColumn(), " "));
   }
 
