@@ -12,6 +12,7 @@
 #include <data/src/transformations/DyadicInterval.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
+#include <data/src/transformations/NextWordPrediction.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/StringCast.h>
@@ -474,6 +475,13 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("n_intervals"), py::arg("is_bidirectional") = false)
       .def("inference_featurization", &DyadicInterval::inferenceFeaturization,
            py::arg("columns"));
+
+  py::class_<NextWordPrediction, Transformation,
+             std::shared_ptr<NextWordPrediction>>(transformations_submodule,
+                                                  "NextWordPrediction")
+      .def(py::init<std::string, std::string, std::string>(),
+           py::arg("input_column"), py::arg("context_column"),
+           py::arg("target_column"));
 #endif
 
   py::class_<SpladeAugmentation, Transformation,
