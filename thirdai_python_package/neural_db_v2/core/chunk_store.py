@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Iterable, List, Set
 
-from core.types import (
+from .types import (
     Chunk,
     ChunkBatch,
     ChunkId,

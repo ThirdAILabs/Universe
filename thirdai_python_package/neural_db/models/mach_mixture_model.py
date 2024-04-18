@@ -39,6 +39,7 @@ class MachMixture(Model):
         model_config=None,
         label_to_segment_map: defaultdict = None,
         seed_for_sharding: int = 0,
+        **kwargs,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -329,7 +330,8 @@ class MachMixture(Model):
         for ensemble in self.ensembles:
             for model in ensemble.models:
                 model.model.set_decode_params(
-                    min(self.n_ids, n_results), min(self.n_ids, 100)
+                    min(model.n_ids, n_results),
+                    min(model.n_ids, 100),
                 )
 
         if not label_probing or self.ensembles[0].models[0].extreme_num_hashes != 1:
@@ -378,6 +380,7 @@ class MachMixture(Model):
         n_results: int,
         retriever=None,
         label_probing=True,
+        mach_first=False,
         **kwargs,
     ) -> Predictions:
         if not retriever:
@@ -389,7 +392,12 @@ class MachMixture(Model):
                     samples, n_results=n_results, label_probing=label_probing
                 )
                 return [
-                    merge_results(mach_res, index_res, n_results)
+                    (
+                        merge_results(mach_res, index_res, n_results)
+                        if mach_first
+                        # Prioritize inverted index results.
+                        else merge_results(index_res, mach_res, n_results)
+                    )
                     for mach_res, index_res in zip(mach_results, index_results)
                 ]
 

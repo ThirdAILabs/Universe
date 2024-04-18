@@ -35,7 +35,7 @@ struct TestDatasetGenerators {
           v.activations[label] += 1.0;
         }
         if (sparse) {
-          auto top_k_indices = v.findKLargestActivations(n_classes / 2);
+          auto top_k_indices = v.topKNeurons(n_classes / 2);
           v = BoltVector(/*l= */ top_k_indices.size(), /* is_dense= */ false,
                          /* has_gradient*/ false);
           uint32_t index = 0;

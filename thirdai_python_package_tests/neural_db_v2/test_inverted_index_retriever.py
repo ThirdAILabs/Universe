@@ -25,11 +25,8 @@ def build_index(chunk_df):
         chunks = chunk_df.iloc[i : i + batch_size]
         chunk_batches.append(
             ChunkBatch(
-                custom_id=None,
                 text=chunks["text"],
                 keywords=pd.Series(["" for _ in range(len(chunks))]),
-                metadata=None,
-                document=pd.Series(["texts.csv" for _ in range(len(chunks))]),
                 chunk_id=chunks["id"],
             )
         )
@@ -49,6 +46,6 @@ def test_inverted_index_search(load_chunks):
         search_results = index.search([row["text"]], top_k=1)
         assert id == search_results[0][0][0]
         rank_results = index.rank(
-            [row["text"]], choices=[[id + 2, id, id + 1]], top_k=1
+            [row["text"]], choices=[set([id + 2, id, id + 1])], top_k=1
         )
         assert id == rank_results[0][0][0]

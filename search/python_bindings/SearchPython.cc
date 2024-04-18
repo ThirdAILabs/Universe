@@ -3,6 +3,7 @@
 #include <bolt/python_bindings/PybindUtils.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/stl.h>
+#include <search/src/FinetunableRetriever.h>
 #include <search/src/InvertedIndex.h>
 
 namespace thirdai::search::python {
@@ -74,7 +75,9 @@ void createSearchSubmodule(py::module_& module) {
 
   py::class_<InvertedIndex, std::shared_ptr<InvertedIndex>>(search_submodule,
                                                             "InvertedIndex")
-      .def(py::init<float, float, float, bool, bool>(),
+      .def(py::init<size_t, float, float, float, bool, bool>(),
+           py::arg("max_docs_to_score") =
+               InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE,
            py::arg("idf_cutoff_frac") = InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC,
            py::arg("k1") = InvertedIndex::DEFAULT_K1,
            py::arg("b") = InvertedIndex::DEFAULT_B, py::arg("stem") = true,
@@ -90,14 +93,64 @@ void createSearchSubmodule(py::module_& module) {
       .def("rank", &InvertedIndex::rank, py::arg("query"),
            py::arg("candidates"), py::arg("k"))
       .def("remove", &InvertedIndex::remove, py::arg("ids"))
-      .def("update_idf_cutoff", &InvertedIndex::updateIdfCutoff,
-           py::arg("cutoff"))
       .def("size", &InvertedIndex::size)
       .def_static("parallel_query", &InvertedIndex::parallelQuery,
                   py::arg("indices"), py::arg("query"), py::arg("k"))
       .def("save", &InvertedIndex::save, py::arg("filename"))
       .def_static("load", &InvertedIndex::load, py::arg("filename"))
-      .def(bolt::python::getPickleFunction<InvertedIndex>());
+      .def(py::pickle(
+          /**
+           * This is to achive compatability between neuraldb's with indexes
+           * that were pickled using cereal vs the archives. This try/catch
+           * logic is done here instead of in load_stream so that the binary
+           * stream can be reset before attempting to load with cereal if
+           * loading with the archive fails.
+           */
+          [](const std::shared_ptr<InvertedIndex>& index) -> py::bytes {
+            std::stringstream ss;
+            index->save_stream(ss);
+            return py::bytes(ss.str());
+          },
+          [](const py::bytes& binary_index) -> std::shared_ptr<InvertedIndex> {
+            py::buffer_info info(py::buffer(binary_index).request());
+            char* data_ptr = reinterpret_cast<char*>(info.ptr);
+
+            try {
+              bolt::python::Membuf sbuf(data_ptr, data_ptr + info.size);
+              std::istream input(&sbuf);
+              return InvertedIndex::load_stream(input);
+            } catch (...) {
+              bolt::python::Membuf sbuf(data_ptr, data_ptr + info.size);
+              std::istream input(&sbuf);
+              return InvertedIndex::load_stream_cereal(input);
+            }
+          }));
+
+  py::class_<FinetunableRetriever, std::shared_ptr<FinetunableRetriever>>(
+      search_submodule, "FinetunableRetriever")
+      .def(py::init<float, uint32_t, uint32_t>(),
+           py::arg("lambda") = FinetunableRetriever::DEFAULT_LAMBDA,
+           py::arg("min_top_docs") = FinetunableRetriever::DEFAULT_MIN_TOP_DOCS,
+           py::arg("top_queries") = FinetunableRetriever::DEFAULT_TOP_QUERIES)
+      .def("index", &FinetunableRetriever::index, py::arg("ids"),
+           py::arg("docs"))
+      .def("finetune", &FinetunableRetriever::finetune, py::arg("doc_ids"),
+           py::arg("queries"))
+      .def("associate", &FinetunableRetriever::associate, py::arg("sources"),
+           py::arg("targets"), py::arg("strength") = 4)
+      .def("query", &FinetunableRetriever::queryBatch, py::arg("queries"),
+           py::arg("k"))
+      .def("query", &FinetunableRetriever::query, py::arg("query"),
+           py::arg("k"))
+      .def("rank", &FinetunableRetriever::rankBatch, py::arg("queries"),
+           py::arg("candidates"), py::arg("k"))
+      .def("rank", &FinetunableRetriever::rank, py::arg("query"),
+           py::arg("candidates"), py::arg("k"))
+      .def("size", &FinetunableRetriever::size)
+      .def("remove", &FinetunableRetriever::remove, py::arg("ids"))
+      .def("save", &FinetunableRetriever::save, py::arg("filename"))
+      .def_static("load", &FinetunableRetriever::load, py::arg("filename"))
+      .def(bolt::python::getPickleFunction<FinetunableRetriever>());
 }
 
 }  // namespace thirdai::search::python

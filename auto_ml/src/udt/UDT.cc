@@ -14,6 +14,7 @@
 #include <auto_ml/src/udt/backends/UDTRecurrentClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
 #include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
+#include <auto_ml/src/udt/utils/Models.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/CheckLicense.h>
 #include <pybind11/pytypes.h>
@@ -542,9 +543,8 @@ std::vector<UDT::Scores> UDT::labelProbeMultipleMach(
     for (size_t m = 0; m < mach_models.size(); m++) {
       try {
         const auto& index = mach_models[m]->getIndex();
-        auto top_model_candidates =
-            scores[m]->getVector(i).findKLargestActivations(
-                mach_models[m]->numBucketsToEval());
+        auto top_model_candidates = scores[m]->getVector(i).topKNeurons(
+            mach_models[m]->numBucketsToEval());
 
         while (!top_model_candidates.empty()) {
           uint32_t bucket = top_model_candidates.top().second;
@@ -629,6 +629,12 @@ std::vector<UDT::Scores> UDT::labelProbeMultipleMach(
   }
 
   return output;
+}
+
+size_t UDT::estimateHashTableSize(size_t output_dim,
+                                  std::optional<float> sparsity) {
+  return bolt::DWTASamplingConfig::estimateHashTableSize(
+      output_dim, sparsity.value_or(utils::autotuneSparsity(output_dim)));
 }
 
 }  // namespace thirdai::automl::udt

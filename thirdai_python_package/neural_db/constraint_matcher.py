@@ -138,11 +138,14 @@ class TableFilter:
         self.filters = filters
 
     def filter_df_ids(self, df) -> List[int]:
+        is_pandas_df = isinstance(df, pd.DataFrame)
         for column_name, filterer in self.filters.items():
             if column_name not in df.columns:
                 return []
             df = filterer.filter_df_column(df, column_name)
-        return df.index.to_list()
+        if is_pandas_df:
+            return df.index.to_list()
+        return df.index.compute().tolist()
 
     def filter_sql_ids(
         self, con: sqlite3.Connection, table_name: str, id_column: str

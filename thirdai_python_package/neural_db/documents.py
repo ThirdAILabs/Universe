@@ -8,6 +8,7 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 from nltk.tokenize import sent_tokenize
@@ -34,7 +35,7 @@ from .constraint_matcher import (
     to_filters,
 )
 from .parsing_utils import doc_parse, pdf_parse, sliding_pdf_parse, url_parse
-from .table import DataFrameTable, SQLiteTable
+from .table import DaskDataFrameTable, DataFrameTable, SQLiteTable
 from .utils import hash_file, hash_string, requires_condition
 
 
@@ -53,6 +54,10 @@ class Document:
 
     @property
     def name(self) -> str:
+        raise NotImplementedError()
+
+    @property
+    def source(self) -> str:
         raise NotImplementedError()
 
     @property
@@ -452,7 +457,11 @@ def safe_has_offset(this):
 
 
 def create_table(df, on_disk):
-    Table = SQLiteTable if on_disk else DataFrameTable
+    Table = (
+        SQLiteTable
+        if on_disk
+        else DaskDataFrameTable if isinstance(df, dd.DataFrame) else DataFrameTable
+    )
     return Table(df)
 
 
@@ -490,11 +499,22 @@ class CSV(Document):
     """
 
     def valid_id_column(column):
-        return (
-            (len(column.unique()) == len(column))
-            and (column.min() == 0)
-            and (column.max() == len(column) - 1)
-        )
+        if isinstance(column, dd.Series):
+            unique_count = column.nunique().compute()
+            min_val = column.min().compute()
+            max_val = column.max().compute()
+            length = column.size.compute()
+            condition = (
+                (unique_count == length) and (min_val == 0) and (max_val == length - 1)
+            )
+        else:
+            condition = (
+                (len(column.unique()) == len(column))
+                and (column.min() == 0)
+                and (column.max() == len(column) - 1)
+            )
+
+        return condition
 
     def remove_spaces(column_name):
         return column_name.replace(" ", "_")
@@ -502,6 +522,12 @@ class CSV(Document):
     def remove_spaces_from_list(column_name_list):
         return [CSV.remove_spaces(col) for col in column_name_list]
 
+    # blocksize (when using dask) Determines the size of each partition/chunk in bytes.
+    # For example, setting blocksize=25e6 will aim for partitions of approximately 25MB.
+    # If you decrease the block size, Dask will create more partitions, and
+    # increasing it will result in fewer partitions.
+    # Default value is computed based on available physical memory
+    # and the number of cores, up to a maximum of 64MB.
     def __init__(
         self,
         path: str,
@@ -513,8 +539,17 @@ class CSV(Document):
         metadata=None,
         has_offset=False,
         on_disk=False,
+        use_dask=False,
+        blocksize=None,
     ) -> None:
-        df = pd.read_csv(path)
+        if use_dask:
+            df = (
+                dd.read_csv(path, blocksize=blocksize)
+                if blocksize
+                else dd.read_csv(path)
+            )
+        else:
+            df = pd.read_csv(path)
 
         # Convert spaces in column names to underscores because df.itertuples
         # does not work when there are spaces
@@ -554,6 +589,10 @@ class CSV(Document):
             if reference_columns:
                 reference_columns = remove_spaces_from_list(reference_columns)
 
+        self.no_space_to_with_space = {
+            val: key for key, val in self.with_space_to_no_space.items()
+        }
+
         # This variable is used to check whether the id's in the CSV are supposed to start with 0 or with some custom offset. We need the latter when we shard the datasource.
         self.has_offset = has_offset
 
@@ -567,7 +606,14 @@ class CSV(Document):
             df = df.sort_values(self.id_column)
         else:
             self.id_column = "thirdai_index"
-            df[self.id_column] = range(df.shape[0])
+            if use_dask:
+                # sets dask df index column to range(len(df))
+                df[self.id_column] = (
+                    df.assign(partition_count=1).partition_count.cumsum() - 1
+                )
+            else:
+                df[self.id_column] = range(df.shape[0])
+
             if orig_id_column:
                 self.orig_to_assigned_id = {
                     str(getattr(row, orig_id_column)): getattr(row, self.id_column)
@@ -597,7 +643,13 @@ class CSV(Document):
         for col in strong_columns + weak_columns:
             df[col] = df[col].fillna("")
 
-        df = df.set_index(self.id_column)
+        if use_dask:
+            # The 'sorted=True' parameter is used to indicate that the column is already sorted.
+            # This optimization helps Dask to avoid expensive data shuffling operations, improving performance.
+            df = df.set_index(self.id_column, sorted=True)
+        else:
+            # Pandas automatically manages the index without needing to explicitly sort it here.
+            df = df.set_index(self.id_column)
 
         self.table = create_table(df, on_disk)
 
@@ -636,6 +688,10 @@ class CSV(Document):
     def name(self) -> str:
         return self.path.name
 
+    @property
+    def source(self) -> str:
+        return str(self.path.absolute())
+
     @requires_condition(
         check_func=lambda self: not safe_has_offset(self),
         method_name="matched_constraints",
@@ -647,11 +703,8 @@ class CSV(Document):
         metadata_constraints = {
             key: ConstraintValue(value) for key, value in self.doc_metadata.items()
         }
-        no_space_to_space = {
-            val: key for key, val in self.with_space_to_no_space.items()
-        }
         indexed_column_constraints = {
-            no_space_to_space.get(key, key): ConstraintValue(is_any=True)
+            self.no_space_to_with_space.get(key, key): ConstraintValue(is_any=True)
             for key in self.table.columns
         }
         return {**metadata_constraints, **indexed_column_constraints}
@@ -704,12 +757,20 @@ class CSV(Document):
         if element_id >= self.table.size:
             _raise_unknown_doc_error(element_id)
         row = self.table.row_as_dict(element_id)
-        text = "\n\n".join([f"{col}: {row[col]}" for col in self.reference_columns])
+        text = "\n\n".join(
+            [
+                f"{self.no_space_to_with_space.get(col, col)}: {row[col]}"
+                for col in self.reference_columns
+            ]
+        )
+        row = {
+            self.no_space_to_with_space.get(col, col): val for col, val in row.items()
+        }
         return Reference(
             document=self,
             element_id=element_id,
             text=text,
-            source=str(self.path.absolute()),
+            source=self.source,
             metadata={**row, **self.doc_metadata},
         )
 
@@ -721,7 +782,12 @@ class CSV(Document):
 
         return " ".join(
             [
-                "\n\n".join([f"{col}: {row[col]}" for col in self.reference_columns])
+                "\n\n".join(
+                    [
+                        f"{self.no_space_to_with_space.get(col, col)}: {row[col]}"
+                        for col in self.reference_columns
+                    ]
+                )
                 for row in rows
             ]
         )
@@ -794,8 +860,13 @@ class CSV(Document):
         else:
             self.table.load_meta(directory)
 
-        if not hasattr(self, "with_space_to_no_space"):
+        if hasattr(self, "with_space_to_no_space"):
+            self.no_space_to_with_space = {
+                val: key for key, val in self.with_space_to_no_space.items()
+            }
+        else:
             self.with_space_to_no_space = {}
+            self.no_space_to_with_space = {}
 
 
 # Base class for PDF, DOCX and Unstructured classes because they share the same logic.
@@ -841,6 +912,10 @@ class Extracted(Document):
         return self.path.name
 
     @property
+    def source(self) -> str:
+        return str(self.path.absolute())
+
+    @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
         return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
 
@@ -867,7 +942,7 @@ class Extracted(Document):
             document=self,
             element_id=element_id,
             text=self.table.field(element_id, "display"),
-            source=str(self.path.absolute()),
+            source=self.source,
             metadata={**self.table.row_as_dict(element_id), **self.doc_metadata},
         )
 
@@ -1006,6 +1081,9 @@ class PDF(Extracted):
         ignore_nonstandard_orientation=True,
         metadata=None,
         on_disk=False,
+        doc_keywords="",
+        emphasize_section_titles=False,
+        table_parsing=False,
     ):
         self.version = version
 
@@ -1023,6 +1101,9 @@ class PDF(Extracted):
         self.emphasize_first_words = emphasize_first_words
         self.ignore_header_footer = ignore_header_footer
         self.ignore_nonstandard_orientation = ignore_nonstandard_orientation
+        self.doc_keywords = doc_keywords
+        self.emphasize_section_titles = emphasize_section_titles
+        self.table_parsing = table_parsing
         # Add pdf version, chunk size, and stride metadata. The metadata will be
         # incorporated in the document hash so that the same PDF inserted with
         # different hyperparameters are treated as different documents.
@@ -1052,6 +1133,9 @@ class PDF(Extracted):
             self.emphasize_first_words,
             self.ignore_header_footer,
             self.ignore_nonstandard_orientation,
+            self.doc_keywords,
+            self.emphasize_section_titles,
+            self.table_parsing,
         )
 
     @staticmethod
@@ -1180,6 +1264,10 @@ class URL(Document):
         return self.url
 
     @property
+    def source(self) -> str:
+        return self.url
+
+    @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
         return {key: ConstraintValue(value) for key, value in self.doc_metadata.items()}
 
@@ -1202,7 +1290,7 @@ class URL(Document):
             document=self,
             element_id=element_id,
             text=self.table.field(element_id, "display"),
-            source=self.url,
+            source=self.source,
             metadata=(
                 {"title": self.table.field(element_id, "title"), **self.doc_metadata}
                 if "title" in self.table.columns
@@ -1378,6 +1466,10 @@ class SQLDatabase(DocumentConnector):
         return self.database_name + "-" + self.table_name
 
     @property
+    def source(self) -> str:
+        return str(self.engine_uq)
+
+    @property
     def hash(self):
         return self._hash
 
@@ -1484,7 +1576,7 @@ class SQLDatabase(DocumentConnector):
             document=self,
             element_id=element_id,
             text=text,
-            source=str(self.engine_uq),
+            source=self.source,
             metadata={
                 "Database": self.database_name,
                 "Table": self.table_name,
@@ -1643,6 +1735,10 @@ class SharePoint(DocumentConnector):
         return self._name
 
     @property
+    def source(self) -> str:
+        return self._source
+
+    @property
     def hash(self) -> str:
         return self._hash
 
@@ -1719,7 +1815,7 @@ class SharePoint(DocumentConnector):
                 if self.meta_table.iloc[element_id]["page"] is not None
                 else ""
             ),
-            source=self._source + "/" + filename,
+            source=self.source + "/" + filename,
             metadata={
                 **self.meta_table.loc[element_id].to_dict(),
                 **self.doc_metadata,
@@ -1884,6 +1980,10 @@ class SalesForce(DocumentConnector):
         return self.object_name
 
     @property
+    def source(self) -> str:
+        return self._source
+
+    @property
     def hash(self) -> str:
         return self._hash
 
@@ -1990,7 +2090,7 @@ class SalesForce(DocumentConnector):
             document=self,
             element_id=element_id,
             text=text,
-            source=self._source,
+            source=self.source,
             metadata={
                 "object_name": self.object_name,
                 **self.doc_metadata,
@@ -2232,6 +2332,10 @@ class SentenceLevelExtracted(Extracted):
     def name(self) -> str:
         return self.path.name if self.path else None
 
+    @property
+    def source(self) -> str:
+        return str(self.path.absolute())
+
     def strong_text(self, element_id: int) -> str:
         return self.table.field(element_id, "sentence")
 
@@ -2248,7 +2352,7 @@ class SentenceLevelExtracted(Extracted):
             document=self,
             element_id=element_id,
             text=self.table.field(element_id, "display"),
-            source=str(self.path.absolute()),
+            source=self.source,
             metadata={**self.table.row_as_dict(element_id), **self.doc_metadata},
             upvote_ids=eval(self.table.field(element_id, "sentence_ids_in_para")),
         )
@@ -2391,6 +2495,10 @@ class InMemoryText(Document):
         return self._name
 
     @property
+    def source(self) -> str:
+        return self._name
+
+    @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
         metadata_constraints = {
             key: ConstraintValue(value) for key, value in self.global_metadata.items()
@@ -2422,7 +2530,7 @@ class InMemoryText(Document):
             document=self,
             element_id=element_id,
             text=self.table.field(element_id, "texts"),
-            source=self._name,
+            source=self.source,
             metadata={**self.table.row_as_dict(element_id), **self.global_metadata},
         )
 

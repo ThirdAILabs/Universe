@@ -132,7 +132,7 @@ ColumnMap SpladeAugmentation::apply(ColumnMap columns, State& state) const {
 std::string SpladeAugmentation::decodeTopTokens(const BoltVector& vec,
                                                 size_t k) const {
   std::string decoded;
-  auto topk = vec.findKLargestActivations(k);
+  auto topk = vec.topKNeurons(k);
   while (!topk.empty()) {
     auto token = _tokenizer->token(topk.top().second);
     topk.pop();
