@@ -69,7 +69,7 @@ def test_test_mach_pretrained(create_simple_dataset, download_bert_base_uncased)
         "target", models, indexes, tokenizer, VOCAB_SIZE
     )
 
-    json_column_data = data.JsonIterator(dataset.FileDataSource(train_file), "target")
+    json_column_data = data.JsonIterator(dataset.FileDataSource(train_file), ["target"])
 
     pretrained_mach_models.train(json_column_data, 1, 10, 0.001, json_column_data)
 
