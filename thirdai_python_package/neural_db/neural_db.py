@@ -757,7 +757,9 @@ class NeuralDB:
                 constraints
             )
             queries_result_ids = self._savable_state.model.score(
-                samples=queries, entities=[matching_entities], n_results=top_k_to_search
+                samples=queries,
+                entities=[matching_entities] * len(queries),
+                n_results=top_k_to_search,
             )
         else:
             queries_result_ids = self._savable_state.model.infer_labels(
