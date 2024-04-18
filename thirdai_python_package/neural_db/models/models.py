@@ -18,7 +18,7 @@ from ..trainer.training_progress_manager import (
     TrainingProgressCallback,
     TrainingProgressManager,
 )
-from ..utils import clean_text, pickle_to, add_retriever_tag
+from ..utils import add_retriever_tag, clean_text, pickle_to
 from .mach_defaults import acc_to_stop, metric_to_track
 
 InferSamples = List
@@ -371,6 +371,7 @@ def make_balancing_samples(documents: DocumentDataSource):
     if len(samples) > 25000:
         samples = random.sample(samples, k=25000)
     return samples
+
 
 class Mach(Model):
     def __init__(

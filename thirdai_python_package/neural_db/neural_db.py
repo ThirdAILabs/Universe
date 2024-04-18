@@ -94,6 +94,7 @@ class NeuralDB:
             else:
                 model = Mach(id_col="id", query_col="query", **kwargs)
 
+            inverted_index = None
             if kwargs.get("use_inverted_index", True):
                 inverted_index = InvertedIndex(
                     max_shard_size=kwargs.get("index_max_shard_size", 8_000_000)
@@ -782,6 +783,12 @@ class NeuralDB:
         Returns:
             List[List[Reference]]: Combines each result of db.search into a list.
         """
+        assert retriever not in [
+            "mach",
+            "inverted_index",
+            None,
+        ], f"Invalid retriever '{retriever}'. Please use 'mach', 'inverted_index or pass None to allow the model to autotune which is used."
+
         matching_entities = None
         top_k_to_search = top_k_rerank if rerank else top_k
         if constraints:
@@ -792,24 +799,35 @@ class NeuralDB:
                 samples=queries, entities=[matching_entities], n_results=top_k_to_search
             )
         else:
-            if not self.inverted_index:
+            if not self._savable_state.inverted_index:
                 retriever = "mach"
-            else:
+
+            if retriever is None:
                 mach_results = self._savable_state.model.infer_labels(
                     samples=queries,
                     n_results=top_k_to_search,
-                    retriever="mach" if rerank else retriever,
                     label_probing=label_probing,
-                    mach_first=mach_first,
+                )
+                index_results = self._savable_state.inverted_index.query(
+                    queries, k=top_k_rerank
                 )
 
-            queries_result_ids = self._savable_state.model.infer_labels(
-                samples=queries,
-                n_results=top_k_to_search,
-                retriever="mach" if rerank else retriever,
-                label_probing=label_probing,
-                mach_first=mach_first,
-            )
+                queries_result_ids = (
+                    merge_results(mach_results, index_results, top_k_to_search)
+                    if mach_first
+                    # Prioritize inverted index results.
+                    else merge_results(index_results, mach_results, top_k_to_search)
+                )
+            elif retriever == "mach":
+                queries_result_ids = self._savable_state.model.infer_labels(
+                    samples=queries,
+                    n_results=top_k_to_search,
+                    label_probing=label_probing,
+                )
+            elif retriever == "inverted_index":
+                queries_result_ids = self._savable_state.inverted_index.query(
+                    queries, k=top_k_rerank
+                )
 
         return [
             self._get_query_references(

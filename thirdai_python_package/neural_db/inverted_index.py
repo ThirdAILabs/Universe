@@ -101,11 +101,6 @@ class InvertedIndex:
             tag="inverted_index",
         )
 
-        return add_retriever_tag(
-            results = index_results,
-            tag = "inverted_index"
-        )
-
     def forget(self, ids):
         for index in self.indexes:
             index.remove(ids)
