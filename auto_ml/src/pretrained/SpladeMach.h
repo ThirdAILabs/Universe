@@ -58,7 +58,7 @@ class SpladeMach : public std::enable_shared_from_this<SpladeMach> {
     return data::Pipeline::make()
         ->then(_tokenizer)
         ->then(std::make_shared<data::NextWordPrediction>(
-            _input_column, _source_column, _target_column))
+            _source_column, _source_column, _target_column))
         ->then(
             std::make_shared<data::MachLabel>(_target_column, _target_column));
   }

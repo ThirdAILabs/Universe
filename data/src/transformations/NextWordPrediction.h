@@ -18,8 +18,6 @@ class NextWordPrediction final : public Transformation {
   static std::string type() { return "next_word_prediction"; }
 
  private:
-  std::vector<size_t> computeOffsets(
-      const ArrayColumnBasePtr<uint32_t>& texts) const;
   std::string _input_column;
   std::string _context_column;
   std::string _target_column;

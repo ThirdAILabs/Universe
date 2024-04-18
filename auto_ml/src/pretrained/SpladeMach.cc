@@ -47,7 +47,7 @@ SpladeMach::SpladeMach(std::string input_column,
   }
 
   _tokenizer = std::make_shared<data::TextTokenizer>(
-      _input_column, _input_column, std::nullopt, std::move(tokenizer),
+      _input_column, _source_column, std::nullopt, std::move(tokenizer),
       dataset::NGramEncoder::make(1), false, vocab_size);
 }
 
@@ -60,7 +60,7 @@ SpladeMach::SpladeMach(std::string input_column,
       _input_column(std::move(input_column)),
       _vocab_size(vocab_size) {
   _tokenizer = std::make_shared<data::TextTokenizer>(
-      _input_column, _input_column, std::nullopt, std::move(tokenizer),
+      _input_column, _source_column, std::nullopt, std::move(tokenizer),
       dataset::NGramEncoder::make(1), false, vocab_size);
 }
 

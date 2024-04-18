@@ -10,12 +10,22 @@
 #include <utility>
 
 namespace thirdai::data {
+
 NextWordPrediction::NextWordPrediction(std::string input_column,
                                        std::string context_column,
                                        std::string target_column)
     : _input_column(std::move(input_column)),
       _context_column(std::move(context_column)),
       _target_column(std::move(target_column)) {}
+
+std::vector<size_t> computeOffsets(const ArrayColumnBasePtr<uint32_t>& texts) {
+  std::vector<size_t> offsets(texts->numRows() + 1);
+  offsets[0] = 0;
+  for (size_t i = 0; i < texts->numRows(); i++) {
+    offsets[i + 1] = offsets[i] + texts->row(i).size() - 1;
+  }
+  return offsets;
+}
 
 ColumnMap NextWordPrediction::apply(ColumnMap columns, State& state) const {
   (void)state;
@@ -33,13 +43,11 @@ ColumnMap NextWordPrediction::apply(ColumnMap columns, State& state) const {
     shared(texts, contexts, targets, sample_offsets, error)
   for (size_t i = 0; i < texts->numRows(); i += 1) {
     try {
-      auto input_tokens = texts->row(i);
-      std::vector<uint32_t> tokens;
-      tokens.insert(tokens.end(), input_tokens.begin(), input_tokens.end());
+      auto tokens = texts->row(i);
 
       size_t sample_offset = sample_offsets[i];
       for (size_t start = 1; start < tokens.size(); start += 1) {
-        contexts[sample_offset] = {tokens.begin(), tokens.begin() + start};
+        contexts[sample_offset] = tokens.range(0, start);
         targets[sample_offset] = tokens[start];
         sample_offset += 1;
       }
@@ -59,16 +67,6 @@ ColumnMap NextWordPrediction::apply(ColumnMap columns, State& state) const {
       ValueColumn<uint32_t>::make(std::move(targets), texts->dim());
 
   return ColumnMap(output_columns);
-}
-
-std::vector<size_t> NextWordPrediction::computeOffsets(
-    const ArrayColumnBasePtr<uint32_t>& texts) const {
-  std::vector<size_t> offsets(texts->numRows() + 1);
-  offsets[0] = 0;
-  for (size_t i = 0; i < texts->numRows(); i++) {
-    offsets[i + 1] = offsets[i] + texts->row(i).size() - 1;
-  }
-  return offsets;
 }
 
 ar::ConstArchivePtr NextWordPrediction::toArchive() const {
