@@ -130,8 +130,7 @@ def zip_folder(folder_path):
 
 def zip_file(file_path):
     folder_path, filename = os.path.split(file_path)
-    base_name, _ = os.path.splitext(filename)
-    zip_path = os.path.join(folder_path, base_name + ".zip")
+    zip_path = os.path.join(folder_path, filename + ".zip")
     with zipfile.ZipFile(zip_path, "w") as zipf:
         zipf.write(file_path, arcname=filename)
     return zip_path

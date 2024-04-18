@@ -66,6 +66,7 @@ class BazaarEntry(BaseModel):
             author_email=entry["user_email"],
             access_level=entry["access_level"],
             thirdai_version=entry["thirdai_version"],
+            type=entry["type"],
         )
 
     @staticmethod
@@ -316,10 +317,11 @@ class Bazaar:
             on_progress=on_progress,
             cancel_state=cancel_state,
             disable_progress_bar=disable_progress_bar,
+            model_type=bazaar_entry.type
         )
 
         if not cancel_state.is_canceled():
-            return self._unpack_and_remove_zip(model_identifier)
+            return self._unpack_and_remove_zip(model_identifier, model_type=bazaar_entry.type)
         else:
             try:
                 shutil.rmtree(self._cached_checkpoint_dir(model_identifier))
@@ -333,12 +335,12 @@ class Bazaar:
         return self._cache_dir / identifier
 
     # The ndb path is cache_dir/model_identifier/model.ndb
-    def _cached_model_dir_path(self, identifier: str):
-        return self._cached_checkpoint_dir(identifier) / "model.ndb"
+    def _cached_model_dir_path(self, identifier: str, model_type: str = "ndb"):
+        return self._cached_checkpoint_dir(identifier) / f"model.{model_type}"
 
     # The ndb zip download path is cache_dir/model_identifier/model.ndb.zip
-    def _cached_model_zip_path(self, identifier: str):
-        return self._cached_checkpoint_dir(identifier) / "model.ndb.zip"
+    def _cached_model_zip_path(self, identifier: str, model_type: str = "ndb"):
+        return self._cached_checkpoint_dir(identifier) / f"model.{model_type}.zip"
 
     # The BazaarEntry json metadata path is cache_dir/author_username/model_name/metadata.json
     def _cached_model_metadata_path(self, identifier: str):
@@ -350,8 +352,9 @@ class Bazaar:
         fetched_bazaar_entry: str,
         only_check_dir_exists: bool = False,
     ):
-        cached_model_dir = self._cached_model_dir_path(identifier)
-        if cached_model_dir.is_dir():
+        model_type = fetched_bazaar_entry.type
+        cached_model_dir = self._cached_model_dir_path(identifier, model_type)
+        if cached_model_dir.is_dir() and model_type == "ndb":
             if not only_check_dir_exists:
                 hash_match = hash_path(cached_model_dir) == fetched_bazaar_entry.hash
                 size_match = (
@@ -361,11 +364,24 @@ class Bazaar:
                     return cached_model_dir
             else:
                 return cached_model_dir
+        elif cached_model_dir.is_file() and model_type == "bolt":
+            if not only_check_dir_exists:
+                hash_match = hash_path(cached_model_dir) == fetched_bazaar_entry.hash
+                size_match = (
+                    os.path.getsize(cached_model_dir) == fetched_bazaar_entry.size
+                )
+                if hash_match and size_match:
+                    return cached_model_dir
+            else:
+                return cached_model_dir
         return None
 
-    def _unpack_and_remove_zip(self, identifier: str):
-        zip_path = self._cached_model_zip_path(identifier)
-        extract_dir = self._cached_model_dir_path(identifier)
+    def _unpack_and_remove_zip(self, identifier: str, model_type: str = "ndb"):
+        zip_path = self._cached_model_zip_path(identifier, model_type)
+        if model_type == "ndb":
+            extract_dir = self._cached_model_dir_path(identifier, model_type)
+        elif model_type == "bolt":
+            extract_dir = os.path.dirname(self._cached_model_dir_path(identifier, model_type))
         shutil.unpack_archive(filename=zip_path, extract_dir=extract_dir)
         os.remove(zip_path)
         return extract_dir
@@ -376,6 +392,7 @@ class Bazaar:
         on_progress: Callable,
         cancel_state: CancelState,
         disable_progress_bar: bool = False,
+        model_type: str = "ndb"
     ):
         if self.is_logged_in():
             url = urljoin(
@@ -384,7 +401,7 @@ class Bazaar:
             )
             response = requests.get(
                 url,
-                params={"model_identifier": model_identifier},
+                params={"model_identifier": model_identifier, "model_type": model_type},
                 headers=auth_header(self._login_instance.access_token),
                 stream=True,
             )
@@ -394,7 +411,7 @@ class Bazaar:
                 f"bazaar/public-download",
             )
             response = requests.get(
-                url, params={"model_identifier": model_identifier}, stream=True
+                url, params={"model_identifier": model_identifier, "model_type": model_type}, stream=True
             )
         try:
             shutil.rmtree(self._cached_checkpoint_dir(model_identifier))
@@ -402,7 +419,7 @@ class Bazaar:
             pass
         os.makedirs(self._cached_checkpoint_dir(model_identifier))
 
-        destination = self._cached_model_zip_path(model_identifier)
+        destination = self._cached_model_zip_path(model_identifier, model_type)
 
         # Try to get the total size from the Content-Length header
         total_size = int(response.headers.get("Content-Length", 0))
@@ -417,7 +434,7 @@ class Bazaar:
                     f.write(chunk)
                     bar.update(len(chunk))
 
-    def upload_chunk(self, upload_token, chunk_number, chunk_data, bar, progress_lock):
+    def upload_chunk(self, upload_token, chunk_number, chunk_data, bar, progress_lock, model_type = "ndb"):
         files = {"chunk": chunk_data}
         response = requests.post(
             urljoin(
@@ -425,7 +442,7 @@ class Bazaar:
                 "bazaar/upload-chunk",
             ),
             files=files,
-            params={"chunk_number": chunk_number},
+            params={"chunk_number": chunk_number, "model_type": model_type},
             headers=auth_header(upload_token),
         )
 
@@ -512,6 +529,7 @@ class Bazaar:
                             chunk_data,
                             bar,
                             progress_lock,
+                            model_type
                         )
                         futures.append(future)
 
@@ -544,14 +562,17 @@ class Bazaar:
                 + os.path.getsize(documents_pickle)
                 + os.path.getsize(logger_pickle)
             )
+            num_params = model.num_params()
         elif model_type == "bolt":
             model = bolt.SpladeMach.load(model_path)
             size = os.path.getsize(model_path)
             size_in_memory = size
+
+            # dummy number of params for splade mach model, until there is an API
+            num_params = 100
         else:
             raise ValueError("Currently supports only bolt and ndb models.")
 
-        num_params = model.num_params()
         thirdai_version = thirdai.__version__
 
         json_data = {
@@ -564,6 +585,7 @@ class Bazaar:
             "access_level": access_level,
             "description": description,
             "thirdai_version": thirdai_version,
+            "type": model_type
         }
 
         response = http_post_with_error(
