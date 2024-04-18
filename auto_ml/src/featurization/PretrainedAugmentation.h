@@ -20,8 +20,7 @@ struct SpladeConfig final : public PretrainedAugmentation {
                std::optional<size_t> n_augmented_tokens,
                std::optional<float> augmentation_frac,
                bool filter_tokens = true, size_t batch_size = 4096,
-               bool lowercase = true,
-               std::optional<uint32_t> strong_sample_override = 7);
+               bool lowercase = true);
 
   data::TransformationPtr transformation(
       const std::string& input_col, const std::string& output_col) const final;
@@ -33,7 +32,6 @@ struct SpladeConfig final : public PretrainedAugmentation {
   std::optional<float> _augmentation_frac;
   bool _filter_tokens;
   size_t _batch_size = 4096;
-  std::optional<uint32_t> _strong_sample_override;
 };
 
 }  // namespace thirdai::automl

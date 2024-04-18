@@ -102,12 +102,10 @@ data::LoaderPtr Featurizer::getColdStartDataLoader(
       (!strong_column_names.empty() || !weak_column_names.empty())) {
     // TODO(Nicholas, David): Should we add an option to sample a certain number
     // of times from a specific column, i.e. splade tokens.
-
-    // TODO(Nicholas) handle this for new design
-    // if (splade_config->strong_sample_override && variable_length) {
-    //   variable_length->overrideStrongSampleNumWords(
-    //       *splade_config->strong_sample_override);
-    // }
+    if (variable_length) {
+      variable_length->overrideStrongSampleNumWords(
+          udt::defaults::STRONG_SAMPLE_OVERRIDE);
+    }
 
     auto strong_columns_copy = strong_column_names;
     strong_columns_copy.push_back(AUGMENTED_TOKENS);

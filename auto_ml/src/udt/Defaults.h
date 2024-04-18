@@ -125,4 +125,7 @@ constexpr bool PREDICTIONS_PER_TOKEN = 2;
 constexpr bool BEAM_SEARCH_WIDTH = 3;
 
 constexpr bool STOP_IF_FOUND = false;
+
+constexpr size_t STRONG_SAMPLE_OVERRIDE = 7;
+
 }  // namespace thirdai::automl::udt::defaults

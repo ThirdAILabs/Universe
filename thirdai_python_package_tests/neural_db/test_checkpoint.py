@@ -249,8 +249,6 @@ def make_db_and_training_manager(num_models_per_shard=2, makes_checkpoint=True):
                 freeze_after_epoch=7,
                 freeze_after_acc=0.95,
                 balancing_samples=False,
-                semantic_enhancement=True,
-                semantic_model_cache_dir=".cache/neural_db_semantic_model",
             ),
             vlc_config=data.transformations.VariableLengthConfig(),
         ),
@@ -408,8 +406,6 @@ def test_tracker_save_load(setup_and_cleanup):
             freeze_after_epoch=7,
             freeze_after_acc=0.95,
             balancing_samples=False,
-            semantic_enhancement=False,
-            semantic_model_cache_dir="",
         ),
         vlc_config=data.transformations.VariableLengthConfig(),
     )

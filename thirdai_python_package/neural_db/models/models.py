@@ -244,7 +244,9 @@ class CancelTraining(bolt.train.callbacks.Callback):
             self.train_state.stop_training()
 
 
-def download_semantic_enhancement_model(cache_dir, model_name="bolt-splade-medium"):
+def download_semantic_enhancement_model(
+    cache_dir=".cache/neural_db_semantic_model", model_name="bolt-splade-medium"
+):
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
 
@@ -268,7 +270,7 @@ def download_semantic_enhancement_model(cache_dir, model_name="bolt-splade-mediu
     if not os.path.exists(vocab_path):
         demos.bert_base_uncased(dirname=cache_dir)
 
-    return data.transformations.SpladeConfig(
+    return bolt.SpladeConfig(
         model_checkpoint=semantic_model_path, tokenizer_vocab=vocab_path
     )
 
@@ -292,7 +294,6 @@ def unsupervised_train_on_docs(
     training_progress_callback: Optional[TrainingProgressCallback],
     balancing_samples=False,
     semantic_enhancement=False,
-    semantic_model_cache_dir=".cache/neural_db_semantic_model",
     coldstart_callbacks: List[bolt.train.callbacks.Callback] = None,
     **kwargs,
 ):
@@ -334,10 +335,6 @@ def unsupervised_train_on_docs(
     if training_progress_callback:
         callbacks.append(training_progress_callback)
 
-    splade_config = None
-    if semantic_enhancement:
-        splade_config = download_semantic_enhancement_model(semantic_model_cache_dir)
-
     if balancing_samples:
         model.cold_start_with_balancing_samples(
             data=documents,
@@ -362,7 +359,7 @@ def unsupervised_train_on_docs(
             callbacks=callbacks,
             max_in_memory_batches=max_in_memory_batches,
             variable_length=variable_length,
-            splade_config=splade_config,
+            augment=semantic_enhancement,
         )
 
 
@@ -434,6 +431,7 @@ class Mach(Model):
         use_inverted_index=True,
         mach_index_seed: int = 341,
         index_max_shard_size=8_000_000,
+        semantic_enhancement=False,
         **kwargs,
     ):
         self.id_col = id_col
@@ -455,6 +453,7 @@ class Mach(Model):
             if use_inverted_index
             else None
         )
+        self.semantic_enhancement = semantic_enhancement
 
     def set_mach_sampling_threshold(self, threshold: float):
         if self.model is None:
@@ -582,6 +581,7 @@ class Mach(Model):
                     training_progress_manager=training_progress_manager
                 ),
                 coldstart_callbacks=callbacks,
+                semantic_enhancement=self.semantic_enhancement,
                 **train_arguments,
             )
             training_progress_manager.training_complete()
@@ -669,6 +669,9 @@ class Mach(Model):
     def model_from_scratch(
         self, documents: DocumentDataSource, number_classes: int = None
     ):
+        pretrained_augmentation = None
+        if self.semantic_enhancement:
+            pretrained_augmentation = download_semantic_enhancement_model()
         model = bolt.UniversalDeepTransformer(
             data_types={
                 self.query_col: bolt.types.text(tokenizer=self.tokenizer),
@@ -688,6 +691,7 @@ class Mach(Model):
                 "hidden_bias": self.hidden_bias,
                 "rlhf": True,
                 "mach_index_seed": self.mach_index_seed,
+                "pretrained_augmentation": pretrained_augmentation,
             },
             model_config=self.model_config,
         )
