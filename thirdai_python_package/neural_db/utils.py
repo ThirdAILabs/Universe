@@ -7,6 +7,8 @@ import shutil
 from functools import wraps
 from pathlib import Path
 
+import numpy as np
+
 DIRECTORY_CONNECTOR_SUPPORTED_EXT = ["pdf", "docx", "pptx", "txt", "eml"]
 SUPPORTED_EXT = ["csv"] + DIRECTORY_CONNECTOR_SUPPORTED_EXT
 
@@ -131,6 +133,44 @@ def requires_condition(
         return wrapper
 
     return decorator
+
+
+def normalize_scores(results):
+    if len(results) == 0:
+        return results
+    if len(results) == 1:
+        return [(results[0][0], 1.0, results[0][2])]
+    ids, scores, retriever = zip(*results)
+    scores = np.array(scores)
+    scores -= np.min(scores)
+    scores /= np.max(scores)
+    return list(zip(ids, scores, retriever))
+
+
+def merge_results(results_a, results_b, k):
+    results_a = normalize_scores(results_a)
+    results_b = normalize_scores(results_b)
+    results = []
+    cache = set()
+
+    min_len = min(len(results_a), len(results_b))
+    for a, b in zip(results_a, results_b):
+        if a[0] not in cache:
+            results.append(a)
+            cache.add(a[0])
+        if b[0] not in cache:
+            results.append(b)
+            cache.add(b[0])
+
+    if len(results) < k:
+        for i in range(min_len, len(results_a)):
+            if results_a[i][0] not in cache:
+                results.append(results_a[i])
+        for i in range(min_len, len(results_b)):
+            if results_b[i][0] not in cache:
+                results.append(results_b[i])
+
+    return results[:k]
 
 
 def add_retriever_tag(results, tag):

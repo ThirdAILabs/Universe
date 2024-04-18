@@ -18,7 +18,7 @@ from ..trainer.training_progress_manager import (
     TrainingProgressCallback,
     TrainingProgressManager,
 )
-from ..utils import add_retriever_tag, clean_text, pickle_to
+from ..utils import clean_text, pickle_to, add_retriever_tag
 from .mach_defaults import acc_to_stop, metric_to_track
 
 InferSamples = List
@@ -371,49 +371,6 @@ def make_balancing_samples(documents: DocumentDataSource):
     if len(samples) > 25000:
         samples = random.sample(samples, k=25000)
     return samples
-
-
-def normalize_scores(results):
-    if len(results) == 0:
-        return results
-    if len(results) == 1:
-        return [(results[0][0], 1.0, results[0][2])]
-    ids, scores, retriever = zip(*results)
-    scores = np.array(scores)
-    scores -= np.min(scores)
-    scores /= np.max(scores)
-    return list(zip(ids, scores, retriever))
-
-
-def merge_results(results_a, results_b, k):
-    results_a = normalize_scores(results_a)
-    results_b = normalize_scores(results_b)
-    results = []
-    cache = set()
-
-    min_len = min(len(results_a), len(results_b))
-    for a, b in zip(results_a, results_b):
-        if a[0] not in cache:
-            results.append(a)
-            cache.add(a[0])
-        if b[0] not in cache:
-            results.append(b)
-            cache.add(b[0])
-
-    if len(results) < k:
-        for i in range(min_len, len(results_a)):
-            if results_a[i][0] not in cache:
-                results.append(results_a[i])
-        for i in range(min_len, len(results_b)):
-            if results_b[i][0] not in cache:
-                results.append(results_b[i])
-
-    return results[:k]
-
-
-def add_retriever_tag(results, tag):
-    return [[(id, score, tag) for id, score in result] for result in results]
-
 
 class Mach(Model):
     def __init__(

@@ -24,6 +24,7 @@ from .savable_state import (
 )
 from .supervised_datasource import Sup, SupDataSource
 from .trainer.checkpoint_config import CheckpointConfig
+from .utils import merge_results
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
 
@@ -602,6 +603,8 @@ class NeuralDB:
         if self._savable_state.inverted_index:
             self._savable_state.inverted_index.forget(deleted_entities)
         self._savable_state.model.delete_entities(deleted_entities)
+        if self._savable_state.inverted_index:
+            self._savable_state.inverted_index.forget(deleted_entities)
         self._savable_state.logger.log(
             session_id=self._user_id, action="delete", args={"source_ids": source_ids}
         )
