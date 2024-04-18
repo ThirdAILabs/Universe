@@ -2,8 +2,8 @@
 
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/featurization/DataTypes.h>
-#include <auto_ml/src/featurization/PretrainedAugmentation.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
+#include <auto_ml/src/pretrained/PretrainedAugmentation.h>
 #include <data/src/Loader.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/rca/ExplanationMap.h>
