@@ -12,28 +12,54 @@
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
+#include <dataset/src/mach/MachIndex.h>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/vector.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/List.h>
+#include <archive/src/Map.h>
+#include <memory>
 
 namespace thirdai::automl {
 
-class MachPretrained {
+class MachPretrained  : public std::enable_shared_from_this<MachPretrained> {
  public:
   MachPretrained(std::string input_column, dataset::TextTokenizerPtr tokenizer,
                  size_t vocab_size, size_t emb_dim, size_t output_dim,
                  size_t n_models);
+
+  MachPretrained(std::string input_column, std::vector<bolt::ModelPtr> models, std::vector<data::MachIndexPtr> indexes, dataset::TextTokenizerPtr tokenizer, uint32_t vocab_size);
 
   std::vector<bolt::metrics::History> train(
       const data::ColumnMapIteratorPtr& train_data, size_t epochs,
       size_t batch_size, float learning_rate,
       const data::ColumnMapIteratorPtr& val_data);
 
-  std::vector<std::vector<uint32_t>> decodeHashes(
+  std::vector<std::vector<uint32_t>> getTopHashBuckets(
       std::vector<std::string> phrases, size_t hashes_per_model);
 
+  std::vector<uint32_t> getTopTokens(
+    std::string phrase, size_t num_tokens, size_t num_buckets_to_decode
+  );
+
+  ar::ConstArchivePtr toArchive() const;
+
+  static std::shared_ptr<MachPretrained> fromArchive(const ar::Archive& archive);
+
+  void save(const std::string& filename) const;
+
+  void save_stream(std::ostream& output_stream) const;
+
+  static std::shared_ptr<MachPretrained> load(const std::string& filename);
+
+  static std::shared_ptr<MachPretrained> load_stream(std::istream& input_stream);
+
  private:
-  data::TransformationPtr buildPipeline() {
+  data::TransformationPtr buildPipeline(std::shared_ptr<data::NextWordPrediction> nwp) {
     return data::Pipeline::make()
         ->then(_tokenizer)
-        ->then(_nwp)
+        ->then(nwp)
         ->then(
             std::make_shared<data::MachLabel>(_target_column, _target_column));
   }
@@ -41,24 +67,36 @@ class MachPretrained {
   std::shared_ptr<data::Loader> getDataLoader(
       data::ColumnMapIteratorPtr data_iter, data::StatePtr state,
       size_t batch_size) {
+    auto nwp = std::make_shared<data::NextWordPrediction>(_input_column, _source_column, _target_column);
     return std::make_shared<data::Loader>(
-        std::move(data_iter), buildPipeline(), std::move(state),
+        std::move(data_iter), buildPipeline(nwp), std::move(state),
         data::OutputColumnsList{data::OutputColumns(_source_column)},
         data::OutputColumnsList{data::OutputColumns(_target_column)},
         batch_size, /*shuffle=*/true, /*verbose=*/true,
         /*shuffle_buffer_size=*/1000000);
   }
+  MachPretrained() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void save(Archive& archive, const uint32_t version) const;
+
+  friend class cereal::access;
+  template <class Archive>
+  void load(Archive& archive, const uint32_t version);
 
   std::vector<bolt::ModelPtr> _models;
   std::vector<data::MachIndexPtr> _indexes;
 
   data::TextTokenizerPtr _tokenizer;
-  std::shared_ptr<data::NextWordPrediction> _nwp;
 
   std::string _input_column;
+  uint32_t _vocab_size;
 
   std::string _source_column = "__source__";
   std::string _target_column = "__target__";
 };
+
+using MachPretrainedPtr = std::shared_ptr<MachPretrained>;
 
 }  // namespace thirdai::automl
