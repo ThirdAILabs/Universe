@@ -198,8 +198,8 @@ def process_tables(filename, lines):
                     )
                     new_lines.append(
                         {
+                            **line,
                             "text": table_as_text,
-                            "page_num": line["page_num"],
                             "bbox": table.bbox,
                             "table": extracted_rows,
                         }
@@ -276,12 +276,12 @@ def get_chunks(
     blocks = remove_empty_blocks(blocks)
     lines = get_lines(blocks)
     lines = set_line_text(lines)
+    if emphasize_section_titles:
+        lines = estimate_section_titles(lines)
     if table_parsing:
         lines = process_tables(filename, lines)
     lines = set_line_word_counts(lines)
     first_n_words = get_lines_with_first_n_words(lines, emphasize_first_n_words)
-    if emphasize_section_titles:
-        lines = estimate_section_titles(lines)
     chunks, chunk_boxes, display, section_titles = get_chunks_from_lines(
         lines, chunk_words, stride_words
     )
