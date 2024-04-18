@@ -171,14 +171,18 @@ def test_neural_db_constrained_search_with_list_constraints(empty_neural_db):
     db = empty_neural_db
     db.clear_sources()  # clear sources in case a different test added sources
     db.insert(documents, train=False)
-    for constraints in [{"groups": [1]}, {"groups": [2]}, {"groups": [1, 3]}]:
+    for constraints in [
+        {"groups": ndb.AnyOf([1])},
+        {"groups": ndb.AnyOf([2])},
+        {"groups": ndb.AnyOf([1, 3])},
+    ]:
         references = db.search("hello", top_k=10, constraints=constraints)
         assert len(references) > 0
         assert all(
             [
                 all(
                     [
-                        len(set(value) & set(ref.metadata[key])) > 0
+                        len(set(value.values) & set(ref.metadata[key])) > 0
                         for key, value in constraints.items()
                     ]
                 )
