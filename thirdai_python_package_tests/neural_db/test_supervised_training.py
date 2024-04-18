@@ -406,7 +406,6 @@ def test_neural_db_supervised_question_generation():
             pass
 
         def generate(self, texts):
-            print([[text] for text in texts])
             return [[text] for text in texts]
 
     db.supervised_train(
