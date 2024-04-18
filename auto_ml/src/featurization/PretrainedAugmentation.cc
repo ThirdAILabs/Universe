@@ -15,7 +15,7 @@ SpladeConfig::SpladeConfig(const std::string& model_checkpoint,
       _n_augmented_tokens(n_augmented_tokens),
       _augmentation_frac(augmentation_frac),
       _filter_tokens(filter_tokens),
-      _batch_size(batch_size){}
+      _batch_size(batch_size) {}
 
 data::TransformationPtr SpladeConfig::transformation(
     const std::string& input_col, const std::string& output_col) const {
