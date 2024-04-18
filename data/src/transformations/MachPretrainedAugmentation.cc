@@ -18,7 +18,7 @@ ColumnMap MachPretrainedAugmentation::apply(ColumnMap columns,
       batch.push_back(input->value(j));
     }
 
-    auto hashes = _model->decodeHashes(batch, _n_hashes_per_model);
+    auto hashes = _model->getTopHashBuckets(batch, _n_hashes_per_model);
 
     for (size_t j = 0; j < hashes.size(); j++) {
       std::string joined;

@@ -15,6 +15,7 @@
 #include <data/src/transformations/TextTokenizer.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/mach/MachIndex.h>
+#include <utility>
 
 namespace thirdai::automl {
 
@@ -37,7 +38,8 @@ MachPretrained::MachPretrained(std::string input_column,
                                dataset::TextTokenizerPtr tokenizer,
                                size_t vocab_size, size_t emb_dim,
                                size_t output_dim, size_t n_models)
-    : _input_column(std::move(input_column)) {
+    : _input_column(std::move(input_column)),
+      _vocab_size(vocab_size) {
   for (size_t i = 0; i < n_models; i++) {
     _indexes.push_back(dataset::mach::MachIndex::make(
         output_dim, /*num_hashes=*/1, vocab_size, /*seed=*/i + 1));
@@ -49,8 +51,17 @@ MachPretrained::MachPretrained(std::string input_column,
       _input_column, _input_column, std::nullopt, std::move(tokenizer),
       dataset::NGramEncoder::make(1), false, vocab_size);
 
-  _nwp = std::make_shared<data::NextWordPrediction>(
-      _input_column, _source_column, _target_column);
+}
+
+MachPretrained::MachPretrained(std::string input_column, std::vector<bolt::ModelPtr> models, std::vector<data::MachIndexPtr> indexes, dataset::TextTokenizerPtr tokenizer, uint32_t vocab_size)
+                        : _models(std::move(models)),
+                          _indexes(std::move(indexes)),
+                          _input_column(std::move(input_column)),
+                          _vocab_size(vocab_size){
+  
+  _tokenizer = std::make_shared<data::TextTokenizer>(
+      _input_column, _input_column, std::nullopt, std::move(tokenizer),
+      dataset::NGramEncoder::make(1), false, vocab_size);                          
 }
 
 std::vector<bolt::metrics::History> MachPretrained::train(
@@ -87,7 +98,7 @@ std::vector<bolt::metrics::History> MachPretrained::train(
   return histories;
 }
 
-std::vector<std::vector<uint32_t>> MachPretrained::decodeHashes(
+std::vector<std::vector<uint32_t>> MachPretrained::getTopHashBuckets(
     std::vector<std::string> phrases, size_t hashes_per_model) {
   data::ColumnMap columns({{_input_column, data::ValueColumn<std::string>::make(
                                                std::move(phrases))}});
@@ -116,5 +127,147 @@ std::vector<std::vector<uint32_t>> MachPretrained::decodeHashes(
 
   return hashes;
 }
+
+std::vector<uint32_t> MachPretrained::getTopTokens(std::string phrase, size_t num_tokens, size_t num_buckets_to_decode){
+  data::ColumnMap columns({{_input_column, data::ValueColumn<std::string>::make(
+                                               std::move(std::vector<std::string>{phrase}))}});
+
+  columns = _tokenizer->applyStateless(columns);
+
+  auto tensor = data::toTensors(columns, {data::OutputColumns(_source_column)});
+
+  std::vector<uint32_t> top_tokens;
+  std::vector<TopKActivationsQueue> top_k_buckets;
+
+  for (const auto& model : _models) {
+    auto output = model->forward(tensor).at(0);
+    top_k_buckets.push_back(output->getVector(0).topKNeurons(num_buckets_to_decode));
+  }
+
+  std::unordered_map<uint32_t, float> score_map;
+  for (size_t model_id = 0; model_id < _models.size(); model_id++) {
+    auto model_top_k_buckets = top_k_buckets[model_id];
+    while (!model_top_k_buckets.empty()) {
+      auto bucket_id = model_top_k_buckets.top().second;
+      auto bucket_activation = model_top_k_buckets.top().first;
+
+      model_top_k_buckets.pop();
+      auto indices = _indexes[model_id]->getEntities(bucket_id);
+
+      for (const auto& label : indices) {
+        if (!score_map.count(label)) {
+          score_map[label] = bucket_activation;
+        } else {
+          score_map[label] += bucket_activation;
+        }
+      }
+    }
+  }
+
+  std::vector<std::pair<uint32_t, float>> score_map_v(score_map.begin(), score_map.end());
+
+  std::sort(score_map_v.begin(), score_map_v.end(), [](const auto& a, const auto& b) {
+      return a.second > b.second;  // Sort by value descending
+  });
+
+  for(const auto top_token_p: score_map_v){
+    top_tokens.push_back(top_token_p.first);
+    if(top_tokens.size() == num_tokens){
+      break;
+    }
+  }
+    
+  return top_tokens;
+
+}
+
+ar::ConstArchivePtr MachPretrained::toArchive() const {
+  auto mach_pretrained = ar::Map::make();
+
+  auto models = ar::List::make();
+  for(const auto &model: _models){
+    models->append(model->toArchive(/*with_optimizer*/false));
+  }
+  mach_pretrained->set("models", models);
+
+  auto indexes = ar::List::make();
+  for(const auto &index: _indexes){
+    indexes->append(index->toArchive());
+  }
+  mach_pretrained->set("indexes", indexes);
+
+  mach_pretrained->set("tokenizer", _tokenizer->getTokenizer()->toArchive());
+
+  mach_pretrained->set("input_column", ar::str(_input_column));
+
+  mach_pretrained->set("vocab_size", ar::u64(_vocab_size));
+
+  return mach_pretrained;
+}
+
+std::shared_ptr<MachPretrained> MachPretrained::fromArchive(const ar::Archive& archive){
+  std::vector<bolt::ModelPtr> models;
+  for(const auto &model: archive.get("models")->list()){
+    models.push_back(bolt::Model::fromArchive(*model));
+  }
+
+  std::vector<data::MachIndexPtr> indexes;
+  for(const auto& index: archive.get("indexes")->list()){
+    indexes.push_back(dataset::mach::MachIndex::fromArchive(*index));
+  } 
+
+  dataset::TextTokenizerPtr tokenizer = dataset::TextTokenizer::fromArchive(*archive.get("tokenizer"));
+
+  std::string input_column = archive.str("input_column");
+
+  auto vocab_size = archive.u64("vocab_size");
+
+  return std::make_shared<MachPretrained>(MachPretrained(input_column, models, indexes, tokenizer, vocab_size));
+}
+
+template <class Archive>
+void MachPretrained::save(Archive& archive, const uint32_t version) const {
+  (void)version;
+
+  auto mach_pretrained_archive = toArchive();
+
+  archive(mach_pretrained_archive);
+}
+
+template <class Archive>
+void MachPretrained::load(Archive& archive, const uint32_t version) {
+    (void)version;
+
+    ar::ArchivePtr mach_pretrained_archive;
+    archive(mach_pretrained_archive);
+
+    *this = *fromArchive(*mach_pretrained_archive);
+}
+
+void MachPretrained::save(const std::string& filename) const {
+  std::ofstream filestream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  save_stream(filestream);
+}
+
+void MachPretrained::save_stream(std::ostream& output) const {
+  cereal::BinaryOutputArchive oarchive(output);
+  oarchive(*this);
+}
+
+std::shared_ptr<MachPretrained> MachPretrained::load(const std::string& filename) {
+  std::ifstream filestream =
+      dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  return load_stream(filestream);
+}
+
+std::shared_ptr<MachPretrained> MachPretrained::load_stream(std::istream& input) {
+  cereal::BinaryInputArchive iarchive(input);
+  std::shared_ptr<MachPretrained> deserialize_into(new MachPretrained());
+  iarchive(*deserialize_into);
+
+  return deserialize_into;
+}
+
 
 }  // namespace thirdai::automl
