@@ -4,6 +4,7 @@
 #include <archive/src/Archive.h>
 #include <utils/text/PorterStemmer.h>
 #include <utils/text/StringManipulation.h>
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <unordered_map>
@@ -68,10 +69,6 @@ class InvertedIndex {
   static std::vector<DocScore> topk(
       const std::unordered_map<DocId, float>& doc_scores, uint32_t k);
 
-  static std::vector<DocScore> parallelQuery(
-      const std::vector<std::shared_ptr<InvertedIndex>>& indices,
-      const std::string& query, uint32_t k);
-
   ar::ConstArchivePtr toArchive() const;
 
   static std::shared_ptr<InvertedIndex> fromArchive(const ar::Archive& archive);
@@ -93,6 +90,8 @@ class InvertedIndex {
 
   void recomputeMetadata();
 
+  std::unordered_map<Token, size_t> tokenCountsAcrossShards() const;
+
   void computeIdfs();
 
   inline float bm25(float idf, uint32_t cnt_in_doc, uint64_t doc_len) const {
@@ -104,12 +103,25 @@ class InvertedIndex {
 
   Tokens tokenizeText(std::string text) const;
 
-  std::unordered_map<DocId, float> scoreDocuments(
-      const std::string& query) const;
-
   using TokenCountInfo = std::pair<DocId, uint32_t>;
 
-  std::unordered_map<Token, std::vector<TokenCountInfo>> _token_to_docs;
+  struct Shard {
+    Shard() : n_docs(0) {}
+
+    std::unordered_map<Token, std::vector<TokenCountInfo>> token_to_docs;
+    size_t n_docs;
+  };
+
+  std::vector<std::pair<Token, float>> rankByIdf(
+      const std::string& query) const;
+
+  std::unordered_map<DocId, float> scoreDocuments(
+      const Shard& shard,
+      const std::vector<std::pair<Token, float>>& tokens_and_idfs) const;
+
+  std::vector<Shard> _shards;
+  size_t _max_shard_size = 10000000;
+
   std::unordered_map<Token, float> _token_to_idf;
   std::unordered_map<DocId, uint64_t> _doc_lengths;
 
