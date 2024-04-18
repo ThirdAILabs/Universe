@@ -1,6 +1,7 @@
 #pragma once
 
 #include <search/src/InvertedIndex.h>
+#include <search/src/ShardedIndex.h>
 #include <unordered_map>
 
 namespace thirdai::search {
@@ -62,7 +63,7 @@ class FinetunableRetriever {
       std::istream& istream);
 
  private:
-  std::shared_ptr<InvertedIndex> _doc_index;
+  std::shared_ptr<ShardedIndex> _doc_index;
   std::shared_ptr<InvertedIndex> _query_index;
 
   std::unordered_map<QueryId, std::vector<DocId>> _query_to_docs;

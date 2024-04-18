@@ -176,14 +176,6 @@ std::vector<std::vector<DocScore>> InvertedIndex::queryBatch(
   return scores;
 }
 
-template <typename T>
-struct HighestScore {
-  using Item = std::pair<T, float>;
-  bool operator()(const Item& a, const Item& b) const {
-    return a.second > b.second;
-  }
-};
-
 std::vector<DocScore> InvertedIndex::query(const std::string& query,
                                            uint32_t k) const {
   std::unordered_map<DocId, float> doc_scores = scoreDocuments(query);

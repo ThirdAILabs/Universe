@@ -141,4 +141,12 @@ class InvertedIndex {
   void serialize(Archive& archive);
 };
 
+template <typename T>
+struct HighestScore {
+  using Item = std::pair<T, float>;
+  bool operator()(const Item& a, const Item& b) const {
+    return a.second > b.second;
+  }
+};
+
 }  // namespace thirdai::search

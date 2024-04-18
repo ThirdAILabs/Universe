@@ -13,7 +13,7 @@ namespace thirdai::search {
 
 FinetunableRetriever::FinetunableRetriever(float lambda, uint32_t min_top_docs,
                                            uint32_t top_queries)
-    : _doc_index(std::make_shared<InvertedIndex>()),
+    : _doc_index(std::make_shared<ShardedIndex>()),
       _query_index(std::make_shared<InvertedIndex>()),
       _lambda(lambda),
       _min_top_docs(min_top_docs),
@@ -176,7 +176,7 @@ void FinetunableRetriever::remove(const std::vector<DocId>& ids) {
 ar::ConstArchivePtr FinetunableRetriever::toArchive() const {
   auto map = ar::Map::make();
 
-  map->set("doc_index", _doc_index->toArchive());
+  map->set("sharded_doc_index", _doc_index->toArchive());
   map->set("query_index", _query_index->toArchive());
 
   map->set("query_to_docs", ar::mapU64VecU64(_query_to_docs));
@@ -192,14 +192,21 @@ ar::ConstArchivePtr FinetunableRetriever::toArchive() const {
 }
 
 FinetunableRetriever::FinetunableRetriever(const ar::Archive& archive)
-    : _doc_index(InvertedIndex::fromArchive(*archive.get("doc_index"))),
-      _query_index(InvertedIndex::fromArchive(*archive.get("query_index"))),
+    : _query_index(InvertedIndex::fromArchive(*archive.get("query_index"))),
       _query_to_docs(archive.getAs<ar::MapU64VecU64>("query_to_docs")),
       _doc_to_queries(archive.getAs<ar::MapU64VecU64>("doc_to_queries")),
       _next_query_id(archive.u64("next_query_id")),
       _lambda(archive.f32("lambda")),
       _min_top_docs(archive.u64("min_top_docs")),
-      _top_queries(archive.u64("top_queries")) {}
+      _top_queries(archive.u64("top_queries")) {
+  if (archive.contains("sharded_doc_index")) {
+    _doc_index = ShardedIndex::fromArchive(*archive.get("sharded_doc_index"));
+  } else {
+    auto index = InvertedIndex::fromArchive(*archive.get("doc_index"));
+    _doc_index = std::make_shared<ShardedIndex>(
+        std::vector<std::shared_ptr<InvertedIndex>>{index});
+  }
+}
 
 std::shared_ptr<FinetunableRetriever> FinetunableRetriever::fromArchive(
     const ar::Archive& archive) {
