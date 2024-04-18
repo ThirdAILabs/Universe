@@ -3,8 +3,6 @@
 #include <archive/src/Archive.h>
 #include <auto_ml/src/pretrained/SpladeMach.h>
 #include <data/src/transformations/Transformation.h>
-#include <regex>
-#include <stdexcept>
 
 namespace thirdai::data {
 
