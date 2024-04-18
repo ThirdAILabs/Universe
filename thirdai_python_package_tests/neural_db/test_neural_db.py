@@ -151,7 +151,9 @@ def test_neural_db_constrained_search_with_multiple_constraints(empty_neural_db)
     ]:
         # Since we always use the same query, we know that we're getting different
         # results solely due to the imposed constraints.
-        references = db.search("Confidential Information", top_k=10, constraints=constraints)
+        references = db.search(
+            "Confidential Information", top_k=10, constraints=constraints
+        )
         assert len(references) > 0
         assert all(
             [
@@ -176,7 +178,9 @@ def test_neural_db_constrained_search_with_list_constraints(empty_neural_db):
         {"groups": ndb.AnyOf([2])},
         {"groups": ndb.AnyOf([1, 3])},
     ]:
-        references = db.search("Confidential Information", top_k=10, constraints=constraints)
+        references = db.search(
+            "Confidential Information", top_k=10, constraints=constraints
+        )
         assert len(references) > 0
         assert all(
             [
