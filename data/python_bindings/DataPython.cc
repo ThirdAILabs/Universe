@@ -15,6 +15,7 @@
 #include <data/src/transformations/NextWordPrediction.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/SpladeAugmentation.h>
+#include <data/src/transformations/SpladeMachAugmentation.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/StringHash.h>
@@ -494,6 +495,14 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("tokenizer"), py::arg("n_augmented_tokens") = 100,
            py::arg("augmentation_frac") = std::nullopt,
            py::arg("filter_tokens") = true, py::arg("batch_size") = 4096);
+
+  py::class_<SpladeMachAugmentation, Transformation,
+             std::shared_ptr<SpladeMachAugmentation>>(transformations_submodule,
+                                                      "SpladeMachAugmentation")
+      .def(py::init<std::string, std::string,
+                    std::shared_ptr<automl::SpladeMach>, size_t>(),
+           py::arg("input_column"), py::arg("output_column"), py::arg("model"),
+           py::arg("n_hashes_per_model"));
 }
 
 }  // namespace thirdai::data::python

@@ -113,6 +113,8 @@ class Featurizer {
 
   void resetTemporalTrackers();
 
+  bool augmentByDefault() const { return _augment_by_default; }
+
   ar::ConstArchivePtr toArchive() const;
 
   static std::shared_ptr<Featurizer> fromArchive(const ar::Archive& archive);
@@ -145,6 +147,7 @@ class Featurizer {
   std::optional<TextDatasetConfig> _text_dataset;
 
   data::TransformationPtr _pretrained_augmentation;
+  bool _augment_by_default = false;
 
   Featurizer() {}  // For cereal
 

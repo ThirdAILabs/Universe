@@ -1,10 +1,10 @@
-import pytest
-
-from thirdai import bolt, data, dataset
-from conftest import download_bert_base_uncased
-
-import os
 import json
+import os
+
+import pytest
+from thirdai import bolt, data, dataset
+
+from conftest import download_bert_base_uncased
 
 pytestmark = [pytest.mark.unit]
 VOCAB_SIZE = 30522
@@ -56,7 +56,7 @@ def create_simple_dataset():
     os.remove(filename)
 
 
-def test_mach_pretrained(create_simple_dataset, download_bert_base_uncased):
+def test_splade_mach(create_simple_dataset, download_bert_base_uncased):
     train_file = create_simple_dataset
     num_models = 4
 
@@ -84,3 +84,19 @@ def test_mach_pretrained(create_simple_dataset, download_bert_base_uncased):
     pretrained_mach_model_load = bolt.SpladeMach.load("./pretrained_mach_model")
 
     os.remove("./pretrained_mach_model")
+
+    transformation = data.transformations.SpladeMachAugmentation(
+        "source", "augmented", pretrained_mach_models, 10
+    )
+
+    phrases = ["what are apples", "hi how are you"]
+    columns = data.ColumnMap({"source": data.columns.StringColumn(phrases)})
+    augmented_data = transformation(columns)["augmented"].data()
+
+    expected_augmented_data = list(
+        map(
+            lambda x: " ".join(map(str, x)),
+            pretrained_mach_models.get_top_hash_buckets(phrases, 10),
+        )
+    )
+    assert augmented_data == expected_augmented_data

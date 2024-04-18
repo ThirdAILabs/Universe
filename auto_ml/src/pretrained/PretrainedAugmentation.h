@@ -12,6 +12,8 @@ class PretrainedAugmentation {
   virtual data::TransformationPtr transformation(
       const std::string& input_col, const std::string& output_col) const = 0;
 
+  virtual bool useByDefault() const = 0;
+
   virtual ~PretrainedAugmentation() = default;
 };
 
@@ -26,6 +28,8 @@ class SpladeConfig final : public PretrainedAugmentation {
 
   data::TransformationPtr transformation(
       const std::string& input_col, const std::string& output_col) const final;
+
+  bool useByDefault() const final { return false; }
 
  private:
   bolt::ModelPtr _model;
@@ -43,6 +47,8 @@ class SpladeMachConfig final : public PretrainedAugmentation {
 
   data::TransformationPtr transformation(
       const std::string& input_col, const std::string& output_col) const final;
+
+  bool useByDefault() const final { return true; }
 
  private:
   std::shared_ptr<SpladeMach> _model;

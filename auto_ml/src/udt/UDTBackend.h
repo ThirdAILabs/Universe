@@ -416,11 +416,11 @@ class UDTBackend {
                               "' is not supported for this type of model.");
   }
 
-  static bool getAugmentOption(const py::kwargs& kwargs) {
+  static bool getAugmentOption(const py::kwargs& kwargs, bool default_val) {
     if (kwargs.contains("augment") && !kwargs["augment"].is_none()) {
       return kwargs["augment"].cast<bool>();
     }
-    return false;
+    return default_val;
   }
 
   static bool getValidationAugmentOption(const py::kwargs& kwargs) {
