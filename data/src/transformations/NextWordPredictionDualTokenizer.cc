@@ -49,7 +49,7 @@ ColumnMap NextWordPredictionDualTokenizer::apply(ColumnMap columns,
 
 #pragma omp parallel for default(none)                                    \
     shared(texts, contexts, targets, _input_tokenizer, _output_tokenizer, \
-           sample_offsets, target_offsets, error)
+               sample_offsets, target_offsets, error)
   for (size_t i = 0; i < texts->numRows(); i += 1) {
     try {
       std::string input_text = texts->value(i);
