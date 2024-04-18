@@ -65,7 +65,7 @@ def test_test_mach_pretrained(create_simple_dataset, download_bert_base_uncased)
     BERT_VOCAB_PATH = download_bert_base_uncased
     tokenizer = dataset.WordpieceTokenizer(BERT_VOCAB_PATH)
 
-    pretrained_mach_models = bolt.MachPretrained(
+    pretrained_mach_models = bolt.SpladeMach(
         "target", models, indexes, tokenizer, VOCAB_SIZE
     )
 
@@ -81,6 +81,6 @@ def test_test_mach_pretrained(create_simple_dataset, download_bert_base_uncased)
 
     pretrained_mach_models.save("./pretrained_mach_model")
 
-    pretrained_mach_model_load = bolt.MachPretrained.load("./pretrained_mach_model")
+    pretrained_mach_model_load = bolt.SpladeMach.load("./pretrained_mach_model")
 
     os.remove("/pretrained_mach_model")

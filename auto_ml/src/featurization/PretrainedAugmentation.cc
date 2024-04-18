@@ -1,6 +1,6 @@
 #include "PretrainedAugmentation.h"
-#include <data/src/transformations/MachPretrainedAugmentation.h>
 #include <data/src/transformations/SpladeAugmentation.h>
+#include <data/src/transformations/SpladeMachAugmentation.h>
 
 namespace thirdai::automl {
 
@@ -31,9 +31,9 @@ data::TransformationPtr SpladeConfig::transformation(
       /*batch_size=*/_batch_size);
 }
 
-data::TransformationPtr MachPretrainedConfig::transformation(
+data::TransformationPtr SpladeMachConfig::transformation(
     const std::string& input_col, const std::string& output_col) const {
-  return std::make_shared<data::MachPretrainedAugmentation>(
+  return std::make_shared<data::SpladeMachAugmentation>(
       input_col, output_col, _model, _n_hashes_per_model);
 }
 

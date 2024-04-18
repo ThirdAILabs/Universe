@@ -1,7 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/model/Model.h>
-#include <auto_ml/src/pretrained/MachPretrained.h>
+#include <auto_ml/src/pretrained/SpladeMach.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/blocks/text/WordpieceTokenizer.h>
 
@@ -35,16 +35,15 @@ struct SpladeConfig final : public PretrainedAugmentation {
   size_t _batch_size = 4096;
 };
 
-class MachPretrainedConfig final : public PretrainedAugmentation {
-  MachPretrainedConfig(std::shared_ptr<MachPretrained> model,
-                       size_t n_hashes_per_model)
+class SpladeMachConfig final : public PretrainedAugmentation {
+  SpladeMachConfig(std::shared_ptr<SpladeMach> model, size_t n_hashes_per_model)
       : _model(std::move(model)), _n_hashes_per_model(n_hashes_per_model) {}
 
   data::TransformationPtr transformation(
       const std::string& input_col, const std::string& output_col) const final;
 
  private:
-  std::shared_ptr<MachPretrained> _model;
+  std::shared_ptr<SpladeMach> _model;
   size_t _n_hashes_per_model;
 };
 
