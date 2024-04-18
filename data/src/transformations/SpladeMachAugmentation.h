@@ -18,13 +18,13 @@ class SpladeMachAugmentation final : public Transformation {
         _model(std::move(model)),
         _n_hashes_per_model(n_hashes_per_model) {}
 
-  // explicit SpladeMachAugmentation(const ar::Archive& archive);
+  explicit SpladeMachAugmentation(const ar::Archive& archive);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
-  ar::ConstArchivePtr toArchive() const final {
-    throw std::invalid_argument("TODO(Nicholas): toArchive");
-  }
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "splade_mach_augmentation"; }
 
  private:
   std::string _input_column;

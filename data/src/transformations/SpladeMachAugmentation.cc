@@ -1,4 +1,6 @@
 #include "SpladeMachAugmentation.h"
+#include <archive/src/Archive.h>
+#include <auto_ml/src/pretrained/SpladeMach.h>
 #include <data/src/columns/ValueColumns.h>
 #include <string>
 
@@ -36,5 +38,23 @@ ColumnMap SpladeMachAugmentation::apply(ColumnMap columns, State& state) const {
 
   return columns;
 }
+
+ar::ConstArchivePtr SpladeMachAugmentation::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("input_column", ar::str(_input_column));
+  map->set("output_column", ar::str(_output_column));
+
+  map->set("model", _model->toArchive());
+  map->set("n_hashes_per_model", ar::u64(_n_hashes_per_model));
+
+  return map;
+}
+
+SpladeMachAugmentation::SpladeMachAugmentation(const ar::Archive& archive)
+    : SpladeMachAugmentation(
+          archive.str("input_column"), archive.str("output_column"),
+          automl::SpladeMach::fromArchive(*archive.get("model")),
+          archive.u64("n_hashes_per_model")) {}
 
 }  // namespace thirdai::data
