@@ -162,6 +162,32 @@ def test_neural_db_constrained_search_with_multiple_constraints(empty_neural_db)
 
 
 @pytest.mark.parametrize("empty_neural_db", ([1, 2]), indirect=True)
+def test_neural_db_constrained_search_with_list_constraints(empty_neural_db):
+    documents = [
+        ndb.PDF(PDF_FILE, metadata={"groups": [1], "county": "Harris"}),
+        ndb.PDF(PDF_FILE, metadata={"groups": [1, 2], "county": "Austin"}),
+        ndb.PDF(PDF_FILE, metadata={"groups": [3], "county": "Dallas"}),
+    ]
+    db = empty_neural_db
+    db.clear_sources()  # clear sources in case a different test added sources
+    db.insert(documents, train=False)
+    for constraints in [{"groups": [1]}, {"groups": [2]}, {"groups": [1, 3]}]:
+        references = db.search("hello", top_k=10, constraints=constraints)
+        assert len(references) > 0
+        assert all(
+            [
+                all(
+                    [
+                        len(set(value) & set(ref.metadata[key])) > 0
+                        for key, value in constraints.items()
+                    ]
+                )
+                for ref in references
+            ]
+        )
+
+
+@pytest.mark.parametrize("empty_neural_db", ([1, 2]), indirect=True)
 def test_neural_db_constrained_search_with_multiple_constraints_multiple_models(
     empty_neural_db,
 ):
