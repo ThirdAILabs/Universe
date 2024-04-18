@@ -407,6 +407,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/DyadicInterval.cc
     data/src/transformations/SpladeAugmentation.cc
     data/src/transformations/NextWordPrediction.cc
+    data/src/transformations/MachPretrainedAugmentation.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
