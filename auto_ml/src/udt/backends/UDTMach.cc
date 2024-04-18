@@ -181,7 +181,8 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
   addBalancingSamples(data);
 
   bool augment = getAugmentOption(kwargs, _featurizer->augmentByDefault());
-  bool augment_val_data = getValidationAugmentOption(kwargs);
+  bool augment_val_data =
+      getValidationAugmentOption(kwargs, _featurizer->augmentByDefault());
 
   auto train_data_loader = _featurizer->getDataLoader(
       data, options.batchSize(), /* shuffle= */ true, options.verbose, augment,
@@ -461,7 +462,8 @@ py::object UDTMach::coldstart(
                       variable_length);
 
   bool augment = getAugmentOption(kwargs, _featurizer->augmentByDefault());
-  auto augment_val_data = getValidationAugmentOption(kwargs);
+  auto augment_val_data =
+      getValidationAugmentOption(kwargs, _featurizer->augmentByDefault());
 
   data::LoaderPtr val_data_loader;
   if (val_data) {

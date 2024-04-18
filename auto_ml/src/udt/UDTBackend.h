@@ -423,12 +423,13 @@ class UDTBackend {
     return default_val;
   }
 
-  static bool getValidationAugmentOption(const py::kwargs& kwargs) {
+  static bool getValidationAugmentOption(const py::kwargs& kwargs,
+                                         bool default_val) {
     if (kwargs.contains("augment_val_data") &&
         !kwargs["augment_val_data"].is_none()) {
       return kwargs["augment_val_data"].cast<bool>();
     }
-    return false;
+    return default_val;
   }
 
  private:

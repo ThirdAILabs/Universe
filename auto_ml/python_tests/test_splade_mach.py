@@ -86,7 +86,7 @@ def test_splade_mach(create_simple_dataset, download_bert_base_uncased):
     os.remove("./pretrained_mach_model")
 
     transformation = data.transformations.SpladeMachAugmentation(
-        "source", "augmented", pretrained_mach_models, 10
+        "source", "augmented", pretrained_mach_model_load, 10
     )
 
     phrases = ["what are apples", "hi how are you"]

@@ -93,10 +93,10 @@ py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
 
   data::LoaderPtr val_data_loader;
   if (val_data) {
-    val_data_loader =
-        _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
-                                   /* shuffle= */ false, options.verbose,
-                                   getValidationAugmentOption(kwargs));
+    val_data_loader = _featurizer->getDataLoader(
+        val_data, defaults::BATCH_SIZE,
+        /* shuffle= */ false, options.verbose,
+        getValidationAugmentOption(kwargs, _featurizer->augmentByDefault()));
   }
 
   return _classifier->train(train_data_loader, learning_rate, epochs,
@@ -239,10 +239,10 @@ py::object UDTClassifier::coldstart(
 
   data::LoaderPtr val_data_loader;
   if (val_data) {
-    val_data_loader =
-        _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
-                                   /* shuffle= */ false, options.verbose,
-                                   getValidationAugmentOption(kwargs));
+    val_data_loader = _featurizer->getDataLoader(
+        val_data, defaults::BATCH_SIZE,
+        /* shuffle= */ false, options.verbose,
+        getValidationAugmentOption(kwargs, _featurizer->augmentByDefault()));
   }
 
   return _classifier->train(train_data_loader, learning_rate, epochs,
