@@ -27,16 +27,13 @@ ColumnMap NextWordPredictionDualTokenizer::apply(ColumnMap columns,
                                                  State& state) const {
   (void)state;
 
-  // auto texts = columns.getArrayColumn<std::string>(_input_column);
   auto texts = columns.getValueColumn<std::string>(_input_column);
-  // auto sample_offsets = computeOffsets(texts);
 
   std::vector<std::vector<uint32_t>> target_offsets(texts->numRows());
 
 #pragma omp parallel for default(none) \
     shared(texts, _output_tokenizer, target_offsets)
   for (size_t i = 0; i < texts->numRows(); i += 1) {
-    // std::string input_text = texts->row(i).data();
     auto input_text = texts->value(i);
     std::vector<uint32_t> offsets = _output_tokenizer->getOffsets(input_text);
     target_offsets[i] = offsets;
@@ -86,7 +83,7 @@ ColumnMap NextWordPredictionDualTokenizer::apply(ColumnMap columns,
 }
 
 std::vector<size_t> NextWordPredictionDualTokenizer::computeOffsets(
-    const std::vector<std::vector<uint32_t>>& target_offsets) const {
+    const std::vector<std::vector<uint32_t>>& target_offsets) {
   std::vector<size_t> offsets(target_offsets.size() + 1);
   offsets[0] = 0;
   for (size_t i = 0; i < target_offsets.size(); i++) {

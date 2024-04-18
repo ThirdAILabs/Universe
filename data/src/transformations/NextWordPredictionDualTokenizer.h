@@ -24,8 +24,8 @@ class NextWordPredictionDualTokenizer final : public Transformation {
   static std::string type() { return "next_word_prediction_dual_tokenizer"; }
 
  private:
-  std::vector<size_t> computeOffsets(
-      const std::vector<std::vector<uint32_t>>& offsets) const;
+  static std::vector<size_t> computeOffsets(
+      const std::vector<std::vector<uint32_t>>& target_offsets);
   std::string _input_column;
   std::string _context_column;
   std::string _target_column;
