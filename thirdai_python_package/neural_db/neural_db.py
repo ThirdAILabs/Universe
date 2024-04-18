@@ -7,15 +7,15 @@ from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 import numpy as np
 import pandas as pd
 import thirdai
+from inverted_index import InvertedIndex
 from thirdai._thirdai import bolt, data
 
 from . import loggers, teachers
-from .documents import CSV, Document, DocumentManager, Reference
+from .documents import CSV, Document, DocumentDataSource, DocumentManager, Reference
 from .models.finetunable_retriever import FinetunableRetriever
 from .models.mach_mixture_model import MachMixture
 from .models.models import CancelState, Mach
 from .models.multi_mach import MultiMach
-from inverted_index import InvertedIndex
 from .savable_state import (
     State,
     load_checkpoint,
@@ -92,12 +92,17 @@ class NeuralDB:
                 )
             else:
                 model = Mach(id_col="id", query_col="query", **kwargs)
-            
+
             if kwargs.get("use_inverted_index", True):
-                inverted_index = InvertedIndex(max_shard_size=kwargs.get("index_max_shard_size", 8_000_000))
+                inverted_index = InvertedIndex(
+                    max_shard_size=kwargs.get("index_max_shard_size", 8_000_000)
+                )
 
             self._savable_state = State(
-                model, logger=loggers.LoggerList([loggers.InMemoryLogger()], inverted_index = inverted_index)
+                model,
+                logger=loggers.LoggerList(
+                    [loggers.InMemoryLogger()], inverted_index=inverted_index
+                ),
             )
         else:
             self._savable_state = kwargs["savable_state"]
@@ -434,6 +439,16 @@ class NeuralDB:
             callbacks=callbacks,
         )
 
+        if self._savable_state.inverted_index:
+
+            # TODO: Retrieve intro-source from someother place rather than mach's checkpointing folder.
+            # Retreiving the intro_source from checkpoint_dir
+            intro_source = DocumentDataSource.load(
+                path=checkpoint_config.checkpoint_dir / "intro_source"
+            )
+            intro_source.restart()
+            self._savable_state.inverted_index.insert(doc_data_source=intro_source)
+
         return ids, resource_name
 
     def _insert_from_start(
@@ -584,6 +599,8 @@ class NeuralDB:
     def delete(self, source_ids: List[str]):
         """Deletes documents from the NeuralDB."""
         deleted_entities = self._savable_state.documents.delete(source_ids)
+        if self._savable_state.inverted_index:
+            self._savable_state.inverted_index.forget(deleted_entities)
         self._savable_state.model.delete_entities(deleted_entities)
         self._savable_state.logger.log(
             session_id=self._user_id, action="delete", args={"source_ids": source_ids}
@@ -593,6 +610,8 @@ class NeuralDB:
         """Removes all documents stored in the NeuralDB."""
         self._savable_state.documents.clear()
         self._savable_state.model.forget_documents()
+        if self._savable_state.inverted_index:
+            self._savable_state.inverted_index.clear()
 
     def _get_query_references(
         self,
@@ -770,6 +789,17 @@ class NeuralDB:
                 samples=queries, entities=[matching_entities], n_results=top_k_to_search
             )
         else:
+            if not self.inverted_index:
+                retriever = "mach"
+            else:
+                mach_results = self._savable_state.model.infer_labels(
+                    samples=queries,
+                    n_results=top_k_to_search,
+                    retriever="mach" if rerank else retriever,
+                    label_probing=label_probing,
+                    mach_first=mach_first,
+                )
+
             queries_result_ids = self._savable_state.model.infer_labels(
                 samples=queries,
                 n_results=top_k_to_search,
@@ -801,6 +831,7 @@ class NeuralDB:
         """
         teachers.upvote(
             model=self._savable_state.model,
+            inverted_index=self._savable_state.inverted_index,
             logger=self._savable_state.logger,
             user_id=self._user_id,
             query_id_para=[
@@ -827,6 +858,7 @@ class NeuralDB:
         ]
         teachers.upvote(
             model=self._savable_state.model,
+            inverted_index=self._savable_state.inverted_index,
             logger=self._savable_state.logger,
             user_id=self._user_id,
             query_id_para=query_id_para,
@@ -852,6 +884,7 @@ class NeuralDB:
         top_k = self._get_associate_top_k(strength)
         teachers.associate(
             model=self._savable_state.model,
+            inverted_index=self._savable_state.inverted_index,
             logger=self._savable_state.logger,
             user_id=self._user_id,
             text_pairs=[(source, target)],
@@ -869,6 +902,7 @@ class NeuralDB:
         top_k = self._get_associate_top_k(strength)
         teachers.associate(
             model=self._savable_state.model,
+            inverted_index=self._savable_state.inverted_index,
             logger=self._savable_state.logger,
             user_id=self._user_id,
             text_pairs=text_pairs,
@@ -912,22 +946,28 @@ class NeuralDB:
         """
         doc_manager = self._savable_state.documents
         query_col = self._savable_state.model.get_query_col()
+        supervised_data_source = SupDataSource(
+            doc_manager=doc_manager,
+            query_col=query_col,
+            data=data,
+            id_delimiter=self._savable_state.model.get_id_delimiter(),
+        )
         self._savable_state.model.train_on_supervised_data_source(
-            supervised_data_source=SupDataSource(
-                doc_manager=doc_manager,
-                query_col=query_col,
-                data=data,
-                id_delimiter=self._savable_state.model.get_id_delimiter(),
-            ),
+            supervised_data_source=supervised_data_source,
             learning_rate=learning_rate,
             epochs=epochs,
             batch_size=batch_size,
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
-            disable_inverted_index=kwargs.get("disable_inverted_index", True),
             checkpoint_config=checkpoint_config,
         )
+
+        if kwargs.get("disable_inverted_index", False):
+            self._savable_state.inverted_index = None
+        else:
+            supervised_data_source.restart()
+            self._savable_state.inverted_index.supervised_train(supervised_data_source)
 
         if checkpoint_config:
             make_training_checkpoint(self._savable_state, checkpoint_config)
@@ -959,32 +999,37 @@ class NeuralDB:
         """
         doc_manager = self._savable_state.documents
         model_query_col = self._savable_state.model.get_query_col()
+        supervised_data_source = SupDataSource(
+            doc_manager=doc_manager,
+            query_col=model_query_col,
+            data=[
+                Sup(
+                    csv=csv,
+                    query_column=query_column,
+                    id_column=id_column,
+                    id_delimiter=id_delimiter,
+                    queries=queries,
+                    labels=labels,
+                    uses_db_id=True,
+                )
+            ],
+            id_delimiter=self._savable_state.model.get_id_delimiter(),
+        )
         self._savable_state.model.train_on_supervised_data_source(
-            supervised_data_source=SupDataSource(
-                doc_manager=doc_manager,
-                query_col=model_query_col,
-                data=[
-                    Sup(
-                        csv=csv,
-                        query_column=query_column,
-                        id_column=id_column,
-                        id_delimiter=id_delimiter,
-                        queries=queries,
-                        labels=labels,
-                        uses_db_id=True,
-                    )
-                ],
-                id_delimiter=self._savable_state.model.get_id_delimiter(),
-            ),
+            supervised_data_source=supervised_data_source,
             learning_rate=learning_rate,
             epochs=epochs,
             batch_size=batch_size,
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
-            disable_inverted_index=kwargs.get("disable_inverted_index", True),
             checkpoint_config=checkpoint_config,
         )
+        if kwargs.get("disable_inverted_index", False):
+            self._savable_state.inverted_index = None
+        else:
+            supervised_data_source.restart()
+            self._savable_state.inverted_index.supervised_train(supervised_data_source)
         if checkpoint_config:
             make_training_checkpoint(self._savable_state, checkpoint_config)
 
@@ -1042,7 +1087,10 @@ class NeuralDB:
             epochs=epochs,
         )
 
-    def build_inverted_index(self):
-        self._savable_state.model.build_inverted_index(
+    def build_inverted_index(self, index_max_shard_size: int = 8_000_000):
+        self._savable_state.inverted_index = InvertedIndex(
+            max_shard_size=index_max_shard_size
+        )
+        self._savable_state.inverted_index.insert(
             self._savable_state.documents.get_data_source()
         )

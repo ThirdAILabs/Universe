@@ -12,14 +12,13 @@ import tqdm
 from thirdai import bolt, data, demos
 
 from ..documents import DocumentDataSource
-from ..inverted_index import InvertedIndex
 from ..supervised_datasource import SupDataSource
 from ..trainer.checkpoint_config import CheckpointConfig
 from ..trainer.training_progress_manager import (
     TrainingProgressCallback,
     TrainingProgressManager,
 )
-from ..utils import clean_text, pickle_to
+from ..utils import add_retriever_tag, clean_text, pickle_to
 from .mach_defaults import acc_to_stop, metric_to_track
 
 InferSamples = List
@@ -98,7 +97,6 @@ class Model:
         self,
         samples: InferSamples,
         n_results: int,
-        retriever: Optional[str] = None,
         **kwargs,
     ) -> Predictions:
         raise NotImplementedError()
@@ -155,7 +153,6 @@ class Model:
         max_in_memory_batches: Optional[int],
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
-        disable_inverted_index: bool,
     ):
         raise NotImplementedError()
 
@@ -432,7 +429,6 @@ class Mach(Model):
         hidden_bias=False,
         model_config=None,
         mach_index_seed: int = 341,
-        index_max_shard_size=8_000_000,
         **kwargs,
     ):
         self.id_col = id_col
@@ -449,11 +445,6 @@ class Mach(Model):
         self.balancing_samples = []
         self.model_config = model_config
         self.mach_index_seed = mach_index_seed
-        self.inverted_index = (
-            InvertedIndex(max_shard_size=index_max_shard_size)
-            if use_inverted_index
-            else None
-        )
 
     def set_mach_sampling_threshold(self, threshold: float):
         if self.model is None:
@@ -477,7 +468,6 @@ class Mach(Model):
         self.model = new_model.model
         self.balancing_samples = new_model.balancing_samples
         self.model_config = new_model.model_config
-        self.inverted_index = new_model.inverted_index
 
     def save(self, path: Path):
         pickle_to(self, filepath=path)
@@ -544,10 +534,6 @@ class Mach(Model):
                     fast_approximation=fast_approximation,
                     num_buckets_to_sample=num_buckets_to_sample,
                 )
-
-        if self.inverted_index:
-            intro_documents.restart()
-            self.inverted_index.insert(intro_documents)
 
         self.n_ids += intro_documents.size
 
@@ -662,9 +648,6 @@ class Mach(Model):
         for entity in entities:
             self.get_model().forget(entity)
 
-        if self.inverted_index:
-            self.inverted_index.forget(entities)
-
     def model_from_scratch(
         self, documents: DocumentDataSource, number_classes: int = None
     ):
@@ -699,68 +682,20 @@ class Mach(Model):
         self.n_ids = 0
         self.balancing_samples = []
 
-        if self.inverted_index:
-            self.inverted_index.clear()
-
     @property
     def searchable(self) -> bool:
         return self.n_ids != 0
-
-    def query_mach(self, samples, n_results):
-        self.model.set_decode_params(min(self.n_ids, n_results), min(self.n_ids, 100))
-        infer_batch = self.infer_samples_to_infer_batch(samples)
-        return add_retriever_tag(
-            results=self.model.predict_batch(infer_batch), tag="mach"
-        )
-
-    def query_inverted_index(self, samples, n_results):
-        return add_retriever_tag(
-            results=self.inverted_index.query(
-                queries=samples, k=min(self.n_ids, n_results)
-            ),
-            tag="inverted_index",
-        )
 
     def infer_labels(
         self,
         samples: InferSamples,
         n_results: int,
-        retriever=None,
-        mach_first=False,
         **kwargs,
     ) -> Predictions:
-        if not retriever:
-            if not self.inverted_index:
-                retriever = "mach"
-            else:
-                mach_results = self.query_mach(samples=samples, n_results=n_results)
-                index_results = self.query_inverted_index(
-                    samples=samples, n_results=n_results
-                )
-                return [
-                    (
-                        merge_results(mach_res, index_res, n_results)
-                        if mach_first
-                        # Prioritize inverted index results.
-                        else merge_results(index_res, mach_res, n_results)
-                    )
-                    for mach_res, index_res in zip(mach_results, index_results)
-                ]
-
-        if retriever == "mach":
-            return self.query_mach(samples=samples, n_results=n_results)
-
-        if retriever == "inverted_index":
-            if not self.inverted_index:
-                raise ValueError(
-                    "Cannot use retriever 'inverted_index' since the index is None. "
-                    "Call 'db.build_inverted_index()' to enable this method."
-                )
-            return self.query_inverted_index(samples=samples, n_results=n_results)
-
-        raise ValueError(
-            f"Invalid retriever '{retriever}'. Please use 'mach', 'inverted_index', "
-            "or pass None to allow the model to autotune which is used."
+        self.model.set_decode_params(min(self.n_ids, n_results), min(self.n_ids, 100))
+        infer_batch = self.infer_samples_to_infer_batch(samples)
+        return add_retriever_tag(
+            results=self.model.predict_batch(infer_batch), tag="mach"
         )
 
     def score(
@@ -793,9 +728,6 @@ class Mach(Model):
             force_non_empty=kwargs.get("force_non_empty", True),
         )
 
-        if self.inverted_index:
-            self.inverted_index.associate(pairs)
-
     def upvote(
         self,
         pairs: List[Tuple[str, int]],
@@ -813,9 +745,6 @@ class Mach(Model):
             learning_rate=learning_rate,
             epochs=epochs,
         )
-
-        if self.inverted_index:
-            self.inverted_index.upvote(pairs)
 
     def retrain(
         self,
@@ -842,8 +771,6 @@ class Mach(Model):
         if "model_config" not in state:
             # Add model_config field if an older model is being loaded.
             state["model_config"] = None
-        if "inverted_index" not in state:
-            state["inverted_index"] = None
         self.__dict__.update(state)
 
     def supervised_training_impl(
@@ -864,14 +791,6 @@ class Mach(Model):
                 **train_args,
             )
 
-            if supervised_progress_manager.tracker._train_state.disable_inverted_index:
-                self.inverted_index = None
-            elif self.inverted_index:
-                supervised_progress_manager.train_source.restart()
-                self.inverted_index.supervised_train(
-                    supervised_progress_manager.train_source
-                )
-
             supervised_progress_manager.training_complete()
 
     def train_on_supervised_data_source(
@@ -883,7 +802,6 @@ class Mach(Model):
         max_in_memory_batches: Optional[int],
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
-        disable_inverted_index: bool,
         checkpoint_config: Optional[CheckpointConfig] = None,
     ):
         if (
@@ -898,7 +816,6 @@ class Mach(Model):
                 batch_size=batch_size,
                 max_in_memory_batches=max_in_memory_batches,
                 metrics=metrics,
-                disable_inverted_index=disable_inverted_index,
                 checkpoint_config=checkpoint_config,
             )
             training_manager.make_preindexing_checkpoint(save_datasource=True)
@@ -908,10 +825,3 @@ class Mach(Model):
             )
 
         self.supervised_training_impl(training_manager, callbacks=callbacks)
-
-    def build_inverted_index(self, documents):
-        if self.inverted_index:
-            return
-
-        self.inverted_index = InvertedIndex()
-        self.inverted_index.insert(documents)

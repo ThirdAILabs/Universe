@@ -576,6 +576,7 @@ def test_neural_db_reranking_threshold(all_local_docs):
     )
 
 
+# fix this
 def test_inverted_index_improves_zero_shot():
     docs = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
@@ -609,6 +610,7 @@ def test_inverted_index_improves_zero_shot():
 
     assert compute_acc(mach_only_db) < 0.1
 
+    # build_inverted_index is
     mach_only_db.build_inverted_index()
 
     assert compute_acc(mach_only_db) > 0.9

@@ -131,3 +131,7 @@ def requires_condition(
         return wrapper
 
     return decorator
+
+
+def add_retriever_tag(results, tag):
+    return [[(id, score, tag) for id, score in result] for result in results]

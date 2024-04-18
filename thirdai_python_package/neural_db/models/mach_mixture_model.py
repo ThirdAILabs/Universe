@@ -68,7 +68,6 @@ class MachMixture(Model):
                 extreme_num_hashes=extreme_num_hashes,
                 tokenizer=tokenizer,
                 hidden_bias=hidden_bias,
-                use_inverted_index=use_inverted_index,
                 model_config=model_config,
                 mach_index_seed_offset=j * 341,
             )
@@ -359,21 +358,6 @@ class MachMixture(Model):
             tag="mach",
         )
 
-    def query_inverted_index(self, samples, n_results):
-        inverted_index_results = []
-        for ensemble in self.ensembles:
-            ensemble_result = ensemble.query_inverted_index(samples, n_results)
-            if ensemble_result:
-                inverted_index_results.append(ensemble_result)
-
-        if not inverted_index_results:
-            return None
-
-        return add_retriever_tag(
-            self.aggregate_results(inverted_index_results, n_results),
-            tag="inverted_index",
-        )
-
     def infer_labels(
         self,
         samples: InferSamples,
@@ -383,6 +367,10 @@ class MachMixture(Model):
         mach_first=False,
         **kwargs,
     ) -> Predictions:
+        return self.query_mach(
+            samples=samples, n_results=n_results, label_probing=label_probing
+        )
+
         if not retriever:
             index_results = self.query_inverted_index(samples, n_results=n_results)
             if not index_results:

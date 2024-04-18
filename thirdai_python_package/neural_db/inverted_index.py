@@ -4,6 +4,7 @@ from thirdai import search
 
 from .documents import DocumentDataSource
 from .supervised_datasource import SupDataSource
+from .utils import add_retriever_tag
 
 
 class ChunkedRowIterator:
@@ -84,15 +85,19 @@ class InvertedIndex:
                 update_ids, update_texts, ignore_missing_ids=len(self.indexes) > 1
             )
 
-    def query(self, queries: str, k: int):
+    def query(self, queries: List[str], k: int):
         if len(self.indexes) == 0:
             raise ValueError("Cannot query before inserting documents.")
 
         if len(self.indexes) == 1:
             return self.indexes[0].query(queries=[q for q in queries], k=k)
-        return [
-            search.InvertedIndex.parallel_query(self.indexes, q, k=k) for q in queries
-        ]
+        return add_retriever_tag(
+            results=[
+                search.InvertedIndex.parallel_query(self.indexes, q, k=k)
+                for q in queries
+            ],
+            tag="inverted_index",
+        )
 
     def forget(self, ids):
         for index in self.indexes:
