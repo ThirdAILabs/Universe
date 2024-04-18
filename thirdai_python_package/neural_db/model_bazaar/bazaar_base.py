@@ -13,6 +13,7 @@ import requests
 from pydantic import BaseModel, ValidationError
 from requests.auth import HTTPBasicAuth
 from thirdai import bolt
+import thirdai
 from thirdai.neural_db.neural_db import CancelState, NeuralDB
 from tqdm import tqdm
 
@@ -451,10 +452,16 @@ class Bazaar:
         model_type: str = "ndb",
     ):
         model_path = Path(model_path)
-        if model_type == "ndb" or os.path.isdir(model_path):
+        if model_type == "ndb":
+            if not os.path.isdir(model_path) or model_path.split(".")[-1] != "ndb":
+                raise Exception("Invalid NeuralDB checkpoint")
             zip_path = zip_folder(model_path)
-        else:
+        elif model_type == "bolt":
+            if not os.path.isfile(model_path) or model_path.split(".")[-1] != "bolt":
+                raise Exception("Invalid Bolt checkpoint")
             zip_path = zip_file(model_path)
+        else:
+            raise Exception(f"{model_type} model type not supported. Please choose 'ndb' or 'bolt'.")
 
         model_hash = hash_path(model_path)
 
@@ -538,24 +545,14 @@ class Bazaar:
                 + os.path.getsize(logger_pickle)
             )
         elif model_type == "bolt":
-            if os.path.isfile(model_path):
-                model = bolt.nn.Model.load(str(model_path))
-                size = os.path.getsize(model_path)
-                size_in_memory = size
-            else:
-                size = get_directory_size(model_path)
-                size_in_memory = size
-
-                for file in os.listdir(model_path):
-                    file_path = os.path.join(model_path, file)
-                    model = bolt.nn.Model.load(str(file_path))
-                    break
-
+            model = bolt.SpladeMach.load(model_path)
+            size = os.path.getsize(model_path)
+            size_in_memory = size
         else:
             raise ValueError("Currently supports only bolt and ndb models.")
 
         num_params = model.num_params()
-        thirdai_version = model.thirdai_version()
+        thirdai_version = thirdai.__version__
 
         json_data = {
             "trained_on": trained_on,

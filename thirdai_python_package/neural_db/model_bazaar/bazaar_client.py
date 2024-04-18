@@ -512,7 +512,7 @@ class ModelBazaar(Bazaar):
             model_type=model_type,
         )
 
-    def pull_model(self, model_identifier: str):
+    def pull_model(self, model_identifier: str, model_type: str = "ndb"):
         """
         Pulls a model from the Model Bazaar and returns a NeuralDBClient instance.
 
@@ -520,12 +520,12 @@ class ModelBazaar(Bazaar):
             model_identifier (str): The identifier of the model.
 
         Returns:
-            NeuralDBClient: A NeuralDBClient instance.
+            NeuralDB | str: A NeuralDB object (if model_type == "ndb") or a path to a model
         """
-        return self.get_neuraldb(model_identifier=model_identifier)
-
-    def pull_bolt_model(self, model_identifier: str):
-        return self.get_model_dir(model_identifier)
+        if model_type == "ndb":
+            return self.get_neuraldb(model_identifier=model_identifier)
+        elif model_type == "bolt":
+            return self.get_model_dir(model_identifier)
 
     def list_models(self):
         """
