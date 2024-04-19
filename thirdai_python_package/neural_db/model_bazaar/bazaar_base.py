@@ -354,7 +354,7 @@ class Bazaar:
         fetched_bazaar_entry: str,
         only_check_dir_exists: bool = False,
     ):
-        model_type = fetched_bazaar_entry.type
+        model_type = fetched_bazaar_entry.type        
         cached_model_dir = self._cached_model_dir_path(identifier, model_type)
         if cached_model_dir.is_dir() and model_type == "ndb":
             if not only_check_dir_exists:
@@ -382,9 +382,12 @@ class Bazaar:
         zip_path = self._cached_model_zip_path(identifier, model_type)
         if model_type == "ndb":
             extract_dir = self._cached_model_dir_path(identifier, model_type)
+            shutil.unpack_archive(filename=zip_path, extract_dir=extract_dir)
         elif model_type == "bolt":
             extract_dir = os.path.dirname(self._cached_model_dir_path(identifier, model_type))
-        shutil.unpack_archive(filename=zip_path, extract_dir=extract_dir)
+            shutil.unpack_archive(filename=zip_path, extract_dir=extract_dir)
+            os.replace(os.path.join(extract_dir, os.listdir(extract_dir)[0]), self._cached_model_dir_path(identifier, model_type))
+
         os.remove(zip_path)
         return extract_dir
 
