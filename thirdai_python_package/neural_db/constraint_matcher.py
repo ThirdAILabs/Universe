@@ -188,16 +188,26 @@ class ConstraintIndex(Generic[ItemT]):
             self._any_value.add(item)
         else:
             value = constraint_value.value()
-            if not value in self._match_value:
-                self._match_value[value] = set()
-            self._match_value[constraint_value.value()].add(item)
+            if isinstance(value, list) or isinstance(value, set):
+                for sub_value in value:
+                    if not sub_value in self._match_value:
+                        self._match_value[sub_value] = set()
+                    self._match_value[sub_value].add(item)
+            else:
+                if not value in self._match_value:
+                    self._match_value[value] = set()
+                self._match_value[value].add(item)
 
     def delete(self, item: ItemT, constraint_value: ConstraintValue) -> None:
         if constraint_value.any():
             self._any_value.remove(item)
         else:
             value = constraint_value.value()
-            self._match_value[constraint_value.value()].remove(item)
+            if isinstance(value, list) or isinstance(value, set):
+                for sub_value in value:
+                    self._match_value[sub_value].remove(item)
+            else:
+                self._match_value[value].remove(item)
 
 
 class ConstraintMatcher(Generic[ItemT]):
