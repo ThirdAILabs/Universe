@@ -370,7 +370,7 @@ std::vector<uint32_t> BoltVector::getThresholdedNeurons(
 
 TopKActivationsQueue BoltVector::topKNeurons(uint32_t k) const {
   TopKActivationsQueue top_k;
-  if(k==0){
+  if (k == 0) {
     return top_k;
   }
   for (uint32_t pos = 0; pos < std::min(k, len); pos++) {
