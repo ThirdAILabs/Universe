@@ -10,6 +10,7 @@
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
 #include <auto_ml/src/udt/backends/UDTGraphClassifier.h>
 #include <auto_ml/src/udt/backends/UDTMach.h>
+#include <auto_ml/src/udt/backends/UDTPretrainedText.h>
 #include <auto_ml/src/udt/backends/UDTQueryReformulation.h>
 #include <auto_ml/src/udt/backends/UDTRecurrentClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
@@ -119,6 +120,14 @@ UDT::UDT(
     throwUnsupportedUDTConfigurationError(as_categorical, as_numerical,
                                           as_sequence, has_graph_inputs);
   }
+}
+
+UDT::UDT(const ColumnDataTypes& input_data_types, uint32_t n_target_classes,
+         bool integer_target, const SpladeMachPtr& pretrained_model,
+         char delimiter, const config::ArgumentMap& user_args) {
+  _backend = std::make_unique<UDTPretrainedText>(
+      input_data_types, n_target_classes, integer_target, pretrained_model,
+      delimiter, user_args);
 }
 
 UDT::UDT(std::optional<std::string> incorrect_column_name,

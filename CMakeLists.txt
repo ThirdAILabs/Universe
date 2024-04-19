@@ -405,7 +405,9 @@ set(THIRDAI_SOURCES
     data/src/transformations/Graph.cc
     data/src/transformations/RegressionBinning.cc
     data/src/transformations/DyadicInterval.cc
+    data/src/transformations/NextWordPrediction.cc
     data/src/transformations/SpladeAugmentation.cc
+    data/src/transformations/SpladeMachAugmentation.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
@@ -432,6 +434,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/featurization/TabularBlockComposer.cc # Deprecate
     auto_ml/src/featurization/TabularDatasetFactory.cc # Deprecate
     auto_ml/src/cold_start/ColdStartUtils.cc # Deprecate
+    auto_ml/src/pretrained/SpladeMach.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
@@ -524,6 +527,7 @@ pybind11_add_module(
   auto_ml/src/udt/backends/UDTQueryReformulation.cc
   auto_ml/src/udt/backends/UDTSVMClassifier.cc
   auto_ml/src/udt/backends/UDTGraphClassifier.cc
+  auto_ml/src/udt/backends/UDTPretrainedText.cc
   auto_ml/src/udt/utils/Classifier.cc
   mach/python_bindings/MachPython.cc
   telemetry/python_bindings/TelemetryPython.cc
