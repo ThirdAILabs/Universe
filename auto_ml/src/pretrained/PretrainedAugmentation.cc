@@ -9,14 +9,15 @@ SpladeConfig::SpladeConfig(const std::string& model_checkpoint,
                            std::optional<size_t> n_augmented_tokens,
                            std::optional<float> augmentation_frac,
                            bool filter_tokens, size_t batch_size,
-                           bool lowercase)
+                           bool lowercase, std::optional<size_t> splade_input_range)
     : _model(bolt::Model::load(model_checkpoint)),
       _tokenizer(std::make_shared<dataset::WordpieceTokenizer>(tokenizer_vocab,
                                                                lowercase)),
       _n_augmented_tokens(n_augmented_tokens),
       _augmentation_frac(augmentation_frac),
       _filter_tokens(filter_tokens),
-      _batch_size(batch_size) {}
+      _batch_size(batch_size),
+      _splade_input_range(splade_input_range) {}
 
 data::TransformationPtr SpladeConfig::transformation(
     const std::string& input_col, const std::string& output_col) const {

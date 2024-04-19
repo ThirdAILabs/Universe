@@ -19,7 +19,7 @@ namespace thirdai::automl::udt::utils {
 ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
                     const config::ArgumentMap& args,
                     const std::optional<std::string>& model_config,
-                    bool use_sigmoid_bce, bool mach) {
+                    bool use_sigmoid_bce, bool mach, std::optional<size_t> splade_featurization_range) {
   if (model_config) {
     return utils::loadModel({input_dim}, output_dim, *model_config, mach);
   }
@@ -42,7 +42,7 @@ ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
   return utils::defaultModel(input_dim, hidden_dim, output_dim, use_sigmoid_bce,
                              use_tanh, /* hidden_bias= */ hidden_bias,
                              /* output_bias= */ output_bias, /* mach= */ mach,
-                             /* normalize_embeddings= */ normalize_embeddings);
+                             /* normalize_embeddings= */ normalize_embeddings, splade_featurization_range);
 }
 
 float autotuneSparsity(uint32_t dim) {
@@ -61,8 +61,12 @@ float autotuneSparsity(uint32_t dim) {
 ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
                       uint32_t output_dim, bool use_sigmoid_bce, bool use_tanh,
                       bool hidden_bias, bool output_bias, bool mach,
-                      bool normalize_embeddings) {
-  auto input = bolt::Input::make(input_dim);
+                      bool normalize_embeddings, std::optional<size_t> splade_featurization_range) {
+  auto model_input_dim = input_dim;
+  if(splade_featurization_range){
+    model_input_dim += *splade_featurization_range;
+  }
+  auto input = bolt::Input::make(model_input_dim);
 
   const auto* hidden_activation = use_tanh ? "tanh" : "relu";
 

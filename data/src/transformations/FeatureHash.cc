@@ -18,8 +18,10 @@ namespace thirdai::data {
 
 FeatureHash::FeatureHash(std::vector<std::string> input_columns,
                          std::string output_indices_column,
-                         std::string output_values_column, size_t hash_range)
+                         std::string output_values_column, size_t hash_range,
+                         std::optional<size_t> hash_offset)
     : _hash_range(hash_range),
+      _hash_offset(hash_offset),
       _input_columns(std::move(input_columns)),
       _output_indices_column(std::move(output_indices_column)),
       _output_values_column(std::move(output_values_column)) {}
@@ -138,12 +140,16 @@ ar::ConstArchivePtr FeatureHash::toArchive() const {
   map->set("output_indices_column", ar::str(_output_indices_column));
   map->set("output_values_column", ar::str(_output_values_column));
   map->set("hash_range", ar::u64(_hash_range));
+  if(_hash_offset){
+    map->set("hash_offset", ar::u64(*_hash_offset));
+  }
 
   return map;
 }
 
 FeatureHash::FeatureHash(const ar::Archive& archive)
     : _hash_range(archive.u64("hash_range")),
+      _hash_offset(archive.getOpt<ar::u64>("hash_offset")),
       _input_columns(archive.getAs<ar::VecStr>("input_columns")),
       _output_indices_column(archive.str("output_indices_column")),
       _output_values_column(archive.str("output_values_column")) {}

@@ -16,7 +16,7 @@ class SpladeAugmentation final : public Transformation {
                      dataset::WordpieceTokenizerPtr tokenizer,
                      std::optional<size_t> n_augmented_tokens,
                      std::optional<float> augmentation_frac, bool filter_tokens,
-                     size_t batch_size);
+                     size_t batch_size, bool to_decode_tokens=true);
 
   explicit SpladeAugmentation(const ar::Archive& archive);
 
@@ -46,6 +46,8 @@ class SpladeAugmentation final : public Transformation {
   std::optional<float> _augmentation_frac;
   bool _filter_tokens;
   size_t _batch_size = 4096;
+
+  bool _to_decode_tokens;
 
   const std::regex _allowed_tokens = std::regex(R"([a-zA-Z]{3,})");
 };

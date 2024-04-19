@@ -14,7 +14,8 @@ std::pair<data::TransformationPtr, data::OutputColumnsList>
 inputTransformations(const ColumnDataTypes& data_types,
                      const std::string& label_column,
                      const TemporalRelationships& temporal_relationships,
-                     const TabularOptions& options, bool should_update_history);
+                     const TabularOptions& options, bool should_update_history,
+                     std::optional<size_t> feature_hash_offset=std::nullopt);
 
 // This represents a sequence of transformations and the final output columns.
 using MergedTransformSeries =

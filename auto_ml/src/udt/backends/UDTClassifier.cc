@@ -54,7 +54,7 @@ UDTClassifier::UDTClassifier(
               /* args= */ user_args, /* model_config= */ model_config,
               /* use_sigmoid_bce = */
               user_args.get<bool>("sigmoid_bce", "boolean",
-                                  defaults::USE_SIGMOID_BCE)),
+                                  defaults::USE_SIGMOID_BCE), /*mach=*/ false, pretrained_augmentation->spladeInputRange()),
           user_args.get<bool>("freeze_hash_tables", "boolean",
                               defaults::FREEZE_HASH_TABLES))) {
   auto label_transform = labelTransformation(target_name, target,

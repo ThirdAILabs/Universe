@@ -19,7 +19,8 @@ class FeatureHash final : public Transformation {
  public:
   FeatureHash(std::vector<std::string> input_columns,
               std::string output_indices_column,
-              std::string output_values_columns, size_t hash_range);
+              std::string output_values_columns, size_t hash_range,
+              std::optional<size_t> hash_offset);
 
   explicit FeatureHash(const ar::Archive& archive);
 
@@ -36,7 +37,11 @@ class FeatureHash final : public Transformation {
 
  private:
   inline uint32_t hash(uint32_t index, uint32_t column_salt) const {
-    return hashing::combineHashes(index, column_salt) % _hash_range;
+    auto hash = hashing::combineHashes(index, column_salt) % _hash_range;
+    if(_hash_offset){
+      return hash + *_hash_offset;
+    }
+    return hash;
   }
 
   static uint32_t columnSalt(const std::string& name) {
@@ -44,6 +49,7 @@ class FeatureHash final : public Transformation {
   }
 
   size_t _hash_range;
+  std::optional<size_t> _hash_offset;
 
   std::vector<std::string> _input_columns;
   std::string _output_indices_column;

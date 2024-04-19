@@ -95,7 +95,7 @@ UDTMach::UDTMach(
       utils::buildModel(
           /* input_dim= */ input_dim, /* output_dim= */ num_buckets,
           /* args= */ user_args, /* model_config= */ model_config,
-          /* use_sigmoid_bce = */ !softmax, /* mach= */ true),
+          /* use_sigmoid_bce = */ !softmax, /* mach= */ true, pretrained_augmentation->spladeInputRange()),
       user_args.get<bool>("freeze_hash_tables", "boolean",
                           defaults::FREEZE_HASH_TABLES));
 

@@ -32,11 +32,11 @@ Featurizer::Featurizer(
       _state(std::make_shared<data::State>()) {
   std::tie(_input_transform, _bolt_input_columns) =
       inputTransformations(data_types, label_column, temporal_relationships,
-                           options, /* should_update_history= */ true);
+                           options, /* should_update_history= */ true, pretrained_augmentation->spladeInputRange());
 
   _const_input_transform =
       inputTransformations(data_types, label_column, temporal_relationships,
-                           options, /* should_update_history= */ false)
+                           options, /* should_update_history= */ false, pretrained_augmentation->spladeInputRange())
           .first;
 
   if (data_types.size() == 2 && temporal_relationships.empty()) {
