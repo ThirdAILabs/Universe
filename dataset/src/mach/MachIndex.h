@@ -17,7 +17,8 @@ static constexpr uint32_t DEFAULT_SEED = 341;
 
 class MachIndex {
  public:
-  MachIndex(uint32_t num_buckets, uint32_t num_hashes, uint32_t num_elements, uint32_t seed = DEFAULT_SEED);
+  MachIndex(uint32_t num_buckets, uint32_t num_hashes, uint32_t num_elements,
+            uint32_t seed = DEFAULT_SEED);
 
   MachIndex(const std::unordered_map<uint32_t, std::vector<uint32_t>>&
                 entity_to_hashes,
@@ -29,7 +30,8 @@ class MachIndex {
 
   static auto make(uint32_t num_buckets, uint32_t num_hashes,
                    uint32_t num_elements, uint32_t seed = DEFAULT_SEED) {
-    return std::make_shared<MachIndex>(num_buckets, num_hashes, num_elements, seed);
+    return std::make_shared<MachIndex>(num_buckets, num_hashes, num_elements,
+                                       seed);
   }
 
   static auto make(uint32_t num_buckets, uint32_t num_hashes) {

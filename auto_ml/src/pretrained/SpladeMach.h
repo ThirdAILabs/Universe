@@ -76,7 +76,7 @@ class SpladeMach : public std::enable_shared_from_this<SpladeMach> {
   data::TextTokenizerPtr _tokenizer;
 
   std::string _input_column;
-//   size_t _vocab_size;
+  //   size_t _vocab_size;
 
   const std::string _source_column = "__source__";
   const std::string _target_column = "__target__";

@@ -28,9 +28,9 @@ class TextTokenizer final : public Transformation {
 
   static std::string type() { return "text_tokenizer"; }
 
-  std::string inputColumn() {return _input_column;}
+  std::string inputColumn() { return _input_column; }
 
-  dataset::TextTokenizerPtr getTokenizer(){return _tokenizer;}
+  dataset::TextTokenizerPtr getTokenizer() { return _tokenizer; }
 
  private:
   static std::pair<std::vector<uint32_t>, std::vector<float>>
