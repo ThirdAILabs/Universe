@@ -29,7 +29,8 @@ ColumnMap SpladeMachAugmentation::apply(ColumnMap columns, State& state) const {
   }
 
   columns.setColumn(_output_column,
-                    data::ArrayColumn<uint32_t>::make(std::move(output)));
+                    data::ArrayColumn<uint32_t>::make(std::move(output),
+                                                      _model->outputDim()));
 
   return columns;
 }

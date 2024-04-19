@@ -4,10 +4,12 @@
 #include <archive/src/Archive.h>
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
+#include <auto_ml/src/pretrained/SpladeMach.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
+#include <data/src/transformations/ConcatTokens.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/SpladeMachAugmentation.h>
@@ -64,7 +66,7 @@ std::pair<std::string, CategoricalDataTypePtr> categoricalDataType(
       "classifier.");
 }
 
-uint32_t getInputDim(const config::ArgumentMap& user_args) {
+uint32_t textDim(const config::ArgumentMap& user_args) {
   uint32_t input_dim = user_args.get<uint32_t>("input_dim", "integer",
                                                defaults::FEATURE_HASH_RANGE);
   if (user_args.contains("fhr")) {
@@ -76,6 +78,10 @@ uint32_t getInputDim(const config::ArgumentMap& user_args) {
   return input_dim;
 }
 
+uint32_t modelDim(const SpladeMachPtr& model) {
+  return model ? model->outputDim() : 0;
+}
+
 UDTPretrainedText::UDTPretrainedText(const ColumnDataTypes& data_types,
                                      uint32_t n_target_classes,
                                      bool integer_target,
@@ -84,7 +90,7 @@ UDTPretrainedText::UDTPretrainedText(const ColumnDataTypes& data_types,
                                      const config::ArgumentMap& user_args)
     : _classifier(utils::Classifier::make(
           utils::buildModel(
-              /* input_dim= */ getInputDim(user_args),
+              /* input_dim= */ textDim(user_args) + modelDim(pretrained_model),
               /* output_dim= */ n_target_classes,
               /* args= */ user_args, /* model_config= */ std::nullopt,
               /* use_sigmoid_bce = */
@@ -105,14 +111,11 @@ UDTPretrainedText::UDTPretrainedText(const ColumnDataTypes& data_types,
         user_args.get<uint32_t>("hashes_per_model", "integer", 10));
   }
 
-  _text_transform = textTransformation(text_col, text_type,
-                                       _classifier->model()->inputDims().at(0),
-                                       !!_pretrained_augmentation);
+  std::tie(_text_transform, _bolt_inputs) = textTransformation(
+      text_col, text_type, textDim(user_args), !!_pretrained_augmentation);
 
   _label_transform =
       labelTransformation(cat_col, cat_type, n_target_classes, integer_target);
-
-  _bolt_inputs = {data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)};
 
   bool softmax = utils::hasSoftmaxOutput(_classifier->model());
 
@@ -275,25 +278,29 @@ data::LoaderPtr UDTPretrainedText::getDataLoader(
       /* shuffle_seed= */ shuffle_config.seed);
 }
 
-data::TransformationPtr UDTPretrainedText::textTransformation(
-    const std::string& text_col, const TextDataTypePtr& text_type,
-    uint32_t token_dim, bool has_augmentation) {
+std::pair<data::TransformationPtr, data::OutputColumnsList>
+UDTPretrainedText::textTransformation(const std::string& text_col,
+                                      const TextDataTypePtr& text_type,
+                                      uint32_t token_dim,
+                                      bool has_augmentation) {
   if (!has_augmentation) {
-    return std::make_shared<data::TextTokenizer>(
+    auto transform = std::make_shared<data::TextTokenizer>(
         text_col, FEATURIZED_INDICES, FEATURIZED_VALUES, text_type->tokenizer,
         text_type->encoder, text_type->lowercase, token_dim);
+
+    return {transform,
+            {data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)}};
   }
 
   auto tokenizer = std::make_shared<data::TextTokenizer>(
       text_col, text_col, std::nullopt, text_type->tokenizer,
-      text_type->encoder, text_type->lowercase,
-      std::numeric_limits<uint32_t>::max());
+      text_type->encoder, text_type->lowercase, token_dim);
 
-  auto feature_hash = std::make_shared<data::FeatureHash>(
-      std::vector<std::string>{text_col, SPLADE_TOKENS}, FEATURIZED_INDICES,
-      FEATURIZED_VALUES, token_dim);
+  auto concat_tokens = std::make_shared<data::ConcatTokens>(
+      std::vector<std::string>{text_col, SPLADE_TOKENS}, FEATURIZED_INDICES);
 
-  return data::Pipeline::make({tokenizer, feature_hash});
+  return {data::Pipeline::make({tokenizer, concat_tokens}),
+          {data::OutputColumns(FEATURIZED_INDICES)}};
 }
 
 data::TransformationPtr UDTPretrainedText::labelTransformation(

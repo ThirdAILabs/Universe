@@ -31,6 +31,10 @@ SpladeMach::SpladeMach(std::string input_column,
   _tokenizer = std::make_shared<data::TextTokenizer>(
       _input_column, _source_column, std::nullopt, std::move(tokenizer),
       dataset::NGramEncoder::make(1), false, vocab_size);
+
+  for (const auto& model : _models) {
+    _combined_output_dim += model->outputs().at(0)->dim();
+  }
 }
 
 std::vector<bolt::metrics::History> SpladeMach::train(

@@ -37,6 +37,8 @@ class SpladeMach : public std::enable_shared_from_this<SpladeMach> {
   std::vector<uint32_t> getTopTokens(std::string phrase, size_t num_tokens,
                                      size_t num_buckets_to_decode);
 
+  size_t outputDim() const { return _combined_output_dim; }
+
   ar::ConstArchivePtr toArchive() const;
 
   static std::shared_ptr<SpladeMach> fromArchive(const ar::Archive& archive);
@@ -76,7 +78,8 @@ class SpladeMach : public std::enable_shared_from_this<SpladeMach> {
   data::TextTokenizerPtr _tokenizer;
 
   std::string _input_column;
-  //   size_t _vocab_size;
+
+  size_t _combined_output_dim = 0;
 
   const std::string _source_column = "__source__";
   const std::string _target_column = "__target__";

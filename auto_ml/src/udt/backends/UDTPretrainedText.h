@@ -83,9 +83,10 @@ class UDTPretrainedText final : public UDTBackend {
   static std::string type() { return "udt_pretrained_text"; }
 
  private:
-  static data::TransformationPtr textTransformation(
-      const std::string& text_col, const TextDataTypePtr& text_type,
-      uint32_t token_dim, bool has_augmentation);
+  static std::pair<data::TransformationPtr, data::OutputColumnsList>
+  textTransformation(const std::string& text_col,
+                     const TextDataTypePtr& text_type, uint32_t token_dim,
+                     bool has_augmentation);
 
   static data::TransformationPtr labelTransformation(
       const std::string& target_name, CategoricalDataTypePtr& target_config,

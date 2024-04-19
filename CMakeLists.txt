@@ -395,6 +395,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/StringCast.cc
     data/src/transformations/StringIDLookup.cc
     data/src/transformations/CategoricalTemporal.cc
+    data/src/transformations/ConcatTokens.cc
     data/src/transformations/Tabular.cc
     data/src/transformations/Date.cc
     data/src/transformations/CrossColumnPairgrams.cc

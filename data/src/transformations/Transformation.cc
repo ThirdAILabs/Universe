@@ -3,6 +3,7 @@
 #include <data/src/transformations/AddMachMemorySamples.h>
 #include <data/src/transformations/Binning.h>
 #include <data/src/transformations/CategoricalTemporal.h>
+#include <data/src/transformations/ConcatTokens.h>
 #include <data/src/transformations/CountTokens.h>
 #include <data/src/transformations/CrossColumnPairgrams.h>
 #include <data/src/transformations/Date.h>
@@ -70,6 +71,7 @@ TransformationPtr Transformation::fromArchive(const ar::Archive& archive) {
   HANDLE_TYPE(TextTokenizer)
   HANDLE_TYPE(AddMachMemorySamples)
   HANDLE_TYPE(TextCompat)
+  HANDLE_TYPE(ConcatTokens)
   HANDLE_TYPE(SpladeMachAugmentation)
 
   throw std::runtime_error("Invalid transformation type '" + type +
