@@ -65,9 +65,7 @@ def test_splade_mach(create_simple_dataset, download_bert_base_uncased):
     BERT_VOCAB_PATH = download_bert_base_uncased
     tokenizer = dataset.WordpieceTokenizer(BERT_VOCAB_PATH)
 
-    pretrained_mach_models = bolt.SpladeMach(
-        "target", models, indexes, tokenizer, VOCAB_SIZE
-    )
+    pretrained_mach_models = bolt.SpladeMach("target", models, indexes, tokenizer)
 
     json_column_data = data.JsonIterator(dataset.FileDataSource(train_file), ["target"])
 
