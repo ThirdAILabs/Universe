@@ -13,9 +13,11 @@ ColumnMap SpladeMachAugmentation::apply(ColumnMap columns, State& state) const {
 
   std::vector<std::string> output(input->numRows());
 
-  for (size_t i = 0; i < output.size(); i += 4096) {
+  const size_t batch_size = 4096;
+  for (size_t start = 0; start < output.size(); start += batch_size) {
+    size_t end = std::min(start + batch_size, output.size());
     std::vector<std::string> batch;
-    for (size_t j = i; j < std::min(i + 4096, output.size()); j++) {
+    for (size_t j = start; j < end; j++) {
       batch.push_back(input->value(j));
     }
 
@@ -29,7 +31,7 @@ ColumnMap SpladeMachAugmentation::apply(ColumnMap columns, State& state) const {
       if (!joined.empty()) {
         joined.pop_back();
       }
-      output[i + j] = joined;
+      output[start + j] = joined;
     }
   }
 

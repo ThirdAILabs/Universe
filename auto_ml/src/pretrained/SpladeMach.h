@@ -22,10 +22,6 @@ namespace thirdai::automl {
 
 class SpladeMach : public std::enable_shared_from_this<SpladeMach> {
  public:
-  SpladeMach(std::string input_column, dataset::TextTokenizerPtr tokenizer,
-             size_t vocab_size, size_t emb_dim, size_t output_dim,
-             size_t n_models);
-
   SpladeMach(std::string input_column, std::vector<bolt::ModelPtr> models,
              std::vector<data::MachIndexPtr> indexes,
              dataset::TextTokenizerPtr tokenizer, size_t vocab_size);
