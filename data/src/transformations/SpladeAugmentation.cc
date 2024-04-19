@@ -107,7 +107,7 @@ std::string SpladeAugmentation::decodeTopTokens(const BoltVector& vec,
   std::string decoded;
   auto topk = vec.topKNeurons(k);
   while (!topk.empty()) { 
-    if(_token_offset){
+    if(!_token_offset){
       auto token = _tokenizer->token(topk.top().second);
 
       if (!_filter_tokens || std::regex_match(token, _allowed_tokens)) {

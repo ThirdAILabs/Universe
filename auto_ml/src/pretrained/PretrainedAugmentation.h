@@ -38,7 +38,13 @@ class SpladeConfig final : public PretrainedAugmentation {
     return _feature_hashing_range.has_value();
 }
 
-  std::optional<size_t> spladeInputRange() const final { return _model->outputs()[0]->dim(); }
+  std::optional<size_t> spladeInputRange() const final {
+    if(_feature_hashing_range){
+      return _model->outputs()[0]->dim(); 
+    }else{
+      return 0;
+    }
+  }
 
  private:
   bolt::ModelPtr _model;
@@ -65,7 +71,10 @@ bool containsOffset() const final {
 }
 
   std::optional<size_t> spladeInputRange() const final { 
-    return _model->sumOutputDimensions();
+    if(_feature_hashing_range){
+      return _model->sumOutputDimensions();
+    }
+    return 0;
 }
 
  private:
