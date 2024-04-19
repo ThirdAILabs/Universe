@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/model/Model.h>
+#include <auto_ml/src/pretrained/SpladeMach.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/blocks/text/WordpieceTokenizer.h>
 
@@ -11,10 +12,13 @@ class PretrainedAugmentation {
   virtual data::TransformationPtr transformation(
       const std::string& input_col, const std::string& output_col) const = 0;
 
+  virtual bool useByDefault() const = 0;
+
   virtual ~PretrainedAugmentation() = default;
 };
 
-struct SpladeConfig final : public PretrainedAugmentation {
+class SpladeConfig final : public PretrainedAugmentation {
+ public:
   SpladeConfig(const std::string& model_checkpoint,
                const std::string& tokenizer_vocab,
                std::optional<size_t> n_augmented_tokens,
@@ -25,6 +29,8 @@ struct SpladeConfig final : public PretrainedAugmentation {
   data::TransformationPtr transformation(
       const std::string& input_col, const std::string& output_col) const final;
 
+  bool useByDefault() const final { return false; }
+
  private:
   bolt::ModelPtr _model;
   dataset::WordpieceTokenizerPtr _tokenizer;
@@ -32,6 +38,21 @@ struct SpladeConfig final : public PretrainedAugmentation {
   std::optional<float> _augmentation_frac;
   bool _filter_tokens;
   size_t _batch_size = 4096;
+};
+
+class SpladeMachConfig final : public PretrainedAugmentation {
+ public:
+  SpladeMachConfig(std::shared_ptr<SpladeMach> model, size_t n_hashes_per_model)
+      : _model(std::move(model)), _n_hashes_per_model(n_hashes_per_model) {}
+
+  data::TransformationPtr transformation(
+      const std::string& input_col, const std::string& output_col) const final;
+
+  bool useByDefault() const final { return true; }
+
+ private:
+  std::shared_ptr<SpladeMach> _model;
+  size_t _n_hashes_per_model;
 };
 
 }  // namespace thirdai::automl

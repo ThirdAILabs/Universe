@@ -309,6 +309,11 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("augmentation_frac") = std::nullopt,
            py::arg("filter_tokens") = true, py::arg("batch_size") = 4096,
            py::arg("lowercase") = true);
+
+  py::class_<SpladeMachConfig, std::shared_ptr<SpladeMachConfig>,
+             PretrainedAugmentation>(module, "SpladeMachConfig")
+      .def(py::init<std::shared_ptr<SpladeMach>, size_t>(), py::arg("model"),
+           py::arg("n_hashes_per_model"));
 }
 
 void createUDTTypesSubmodule(py::module_& module) {

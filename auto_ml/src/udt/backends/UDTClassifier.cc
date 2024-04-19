@@ -88,14 +88,15 @@ py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
                                 py::kwargs kwargs) {
   auto train_data_loader = _featurizer->getDataLoader(
       data, options.batchSize(), /* shuffle= */ true, options.verbose,
-      getAugmentOption(kwargs), options.shuffle_config);
+      getAugmentOption(kwargs, _featurizer->augmentByDefault()),
+      options.shuffle_config);
 
   data::LoaderPtr val_data_loader;
   if (val_data) {
-    val_data_loader =
-        _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
-                                   /* shuffle= */ false, options.verbose,
-                                   getValidationAugmentOption(kwargs));
+    val_data_loader = _featurizer->getDataLoader(
+        val_data, defaults::BATCH_SIZE,
+        /* shuffle= */ false, options.verbose,
+        getValidationAugmentOption(kwargs, _featurizer->augmentByDefault()));
   }
 
   return _classifier->train(train_data_loader, learning_rate, epochs,
@@ -146,9 +147,10 @@ py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
                                    const std::vector<std::string>& metrics,
                                    bool sparse_inference, bool verbose,
                                    py::kwargs kwargs) {
-  auto dataset = _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
-                                            /* shuffle= */ false, verbose,
-                                            getAugmentOption(kwargs));
+  bool augment = getAugmentOption(kwargs, _featurizer->augmentByDefault());
+  auto dataset =
+      _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
+                                 /* shuffle= */ false, verbose, augment);
 
   return _classifier->evaluate(dataset, metrics, sparse_inference, verbose);
 }
@@ -157,7 +159,7 @@ py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k,
                                   const py::kwargs& kwargs) {
-  bool augment = getAugmentOption(kwargs);
+  bool augment = getAugmentOption(kwargs, _featurizer->augmentByDefault());
   return _classifier->predict(_featurizer->featurizeInput(sample, augment),
                               sparse_inference, return_predicted_class,
                               /* single= */ true, top_k);
@@ -168,7 +170,7 @@ py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
                                        bool return_predicted_class,
                                        std::optional<uint32_t> top_k,
                                        const py::kwargs& kwargs) {
-  bool augment = getAugmentOption(kwargs);
+  bool augment = getAugmentOption(kwargs, _featurizer->augmentByDefault());
   return _classifier->predict(
       _featurizer->featurizeInputBatch(samples, augment), sparse_inference,
       return_predicted_class,
@@ -228,18 +230,19 @@ py::object UDTClassifier::coldstart(
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
     const bolt::DistributedCommPtr& comm, const py::kwargs& kwargs) {
+  bool augment = getAugmentOption(kwargs, _featurizer->augmentByDefault());
+
   auto train_data_loader = _featurizer->getColdStartDataLoader(
       data, strong_column_names, weak_column_names, variable_length,
-      /*augment=*/getAugmentOption(kwargs), /* fast_approximation= */ false,
-      options.batchSize(), /* shuffle= */ true, options.verbose,
-      options.shuffle_config);
+      /*augment=*/augment, /* fast_approximation= */ false, options.batchSize(),
+      /* shuffle= */ true, options.verbose, options.shuffle_config);
 
   data::LoaderPtr val_data_loader;
   if (val_data) {
-    val_data_loader =
-        _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
-                                   /* shuffle= */ false, options.verbose,
-                                   getValidationAugmentOption(kwargs));
+    val_data_loader = _featurizer->getDataLoader(
+        val_data, defaults::BATCH_SIZE,
+        /* shuffle= */ false, options.verbose,
+        getValidationAugmentOption(kwargs, _featurizer->augmentByDefault()));
   }
 
   return _classifier->train(train_data_loader, learning_rate, epochs,

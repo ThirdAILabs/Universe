@@ -52,6 +52,7 @@ Featurizer::Featurizer(
   if (pretrained_augmentation) {
     _pretrained_augmentation = pretrained_augmentation->transformation(
         textDatasetConfig().textColumn(), AUGMENTED_TOKENS);
+    _augment_by_default = pretrained_augmentation->useByDefault();
   }
 }
 

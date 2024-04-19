@@ -12,10 +12,12 @@
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/Graph.h>
 #include <data/src/transformations/MachLabel.h>
+#include <data/src/transformations/NextWordPrediction.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/Recurrence.h>
 #include <data/src/transformations/RegressionBinning.h>
 #include <data/src/transformations/SpladeAugmentation.h>
+#include <data/src/transformations/SpladeMachAugmentation.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/StringHash.h>
@@ -55,6 +57,7 @@ TransformationPtr Transformation::fromArchive(const ar::Archive& archive) {
   HANDLE_TYPE(HashPositionTransform)
   HANDLE_TYPE(OffsetPositionTransform)
   HANDLE_TYPE(MachLabel)
+  HANDLE_TYPE(NextWordPrediction)
   HANDLE_TYPE(Pipeline)
   HANDLE_TYPE(Recurrence)
   HANDLE_TYPE(RegressionBinning)
@@ -71,6 +74,7 @@ TransformationPtr Transformation::fromArchive(const ar::Archive& archive) {
   HANDLE_TYPE(AddMachMemorySamples)
   HANDLE_TYPE(TextCompat)
   HANDLE_TYPE(SpladeAugmentation)
+  HANDLE_TYPE(SpladeMachAugmentation)
 
   throw std::runtime_error("Invalid transformation type '" + type +
                            "' in fromArchive.");

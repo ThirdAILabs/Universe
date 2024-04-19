@@ -180,8 +180,9 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
 
   addBalancingSamples(data);
 
-  bool augment = getAugmentOption(kwargs);
-  bool augment_val_data = getValidationAugmentOption(kwargs);
+  bool augment = getAugmentOption(kwargs, _featurizer->augmentByDefault());
+  bool augment_val_data =
+      getValidationAugmentOption(kwargs, _featurizer->augmentByDefault());
 
   auto train_data_loader = _featurizer->getDataLoader(
       data, options.batchSize(), /* shuffle= */ true, options.verbose, augment,
@@ -231,9 +232,11 @@ py::object UDTMach::evaluate(const dataset::DataSourcePtr& data,
                              const std::vector<std::string>& metrics,
                              bool sparse_inference, bool verbose,
                              py::kwargs kwargs) {
-  auto data_loader = _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
-                                                /* shuffle= */ false, verbose,
-                                                getAugmentOption(kwargs));
+  bool augment = getAugmentOption(kwargs, _featurizer->augmentByDefault());
+
+  auto data_loader =
+      _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
+                                 /* shuffle= */ false, verbose, augment);
 
   return _classifier->evaluate(data_loader, getMetrics(metrics, "val_"),
                                sparse_inference, verbose);
@@ -253,9 +256,9 @@ py::object UDTMach::predictBatch(const MapInputBatch& samples,
                                  bool return_predicted_class,
                                  std::optional<uint32_t> top_k,
                                  const py::kwargs& kwargs) {
+  bool augment = getAugmentOption(kwargs, _featurizer->augmentByDefault());
   return py::cast(predictBatchImpl(samples, sparse_inference,
-                                   return_predicted_class, top_k,
-                                   getAugmentOption(kwargs)));
+                                   return_predicted_class, top_k, augment));
 }
 
 py::object UDTMach::predictActivationsBatch(const MapInputBatch& samples,
@@ -458,8 +461,9 @@ py::object UDTMach::coldstart(
   addBalancingSamples(data, strong_column_names, weak_column_names,
                       variable_length);
 
-  bool augment = getAugmentOption(kwargs);
-  auto augment_val_data = getValidationAugmentOption(kwargs);
+  bool augment = getAugmentOption(kwargs, _featurizer->augmentByDefault());
+  auto augment_val_data =
+      getValidationAugmentOption(kwargs, _featurizer->augmentByDefault());
 
   data::LoaderPtr val_data_loader;
   if (val_data) {

@@ -4,7 +4,6 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <auto_ml/src/featurization/Featurizer.h>
-#include <auto_ml/src/featurization/PretrainedAugmentation.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/transformations/TextCompat.h>
