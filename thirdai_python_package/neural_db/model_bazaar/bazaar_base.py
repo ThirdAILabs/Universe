@@ -26,6 +26,7 @@ from .utils import (
     http_post_with_error,
     zip_file,
     zip_folder,
+    requests_retry_session
 )
 
 
@@ -45,6 +46,7 @@ class BazaarEntry(BaseModel):
     author_email: str
     access_level: str = "public"
     thirdai_version: str
+    type: str = "ndb"
 
     @staticmethod
     def from_dict(entry):
@@ -419,6 +421,7 @@ class Bazaar:
             pass
         os.makedirs(self._cached_checkpoint_dir(model_identifier))
 
+
         destination = self._cached_model_zip_path(model_identifier, model_type)
 
         # Try to get the total size from the Content-Length header
@@ -434,9 +437,10 @@ class Bazaar:
                     f.write(chunk)
                     bar.update(len(chunk))
 
+
     def upload_chunk(self, upload_token, chunk_number, chunk_data, bar, progress_lock, model_type = "ndb"):
         files = {"chunk": chunk_data}
-        response = requests.post(
+        response = requests_retry_session().post(
             urljoin(
                 self._login_instance.base_url,
                 "bazaar/upload-chunk",
@@ -470,17 +474,47 @@ class Bazaar:
     ):
         model_path = Path(model_path)
         if model_type == "ndb":
-            if not os.path.isdir(model_path) or model_path.split(".")[-1] != "ndb":
+            if not os.path.isdir(model_path) or os.path.splitext(model_path)[-1] != ".ndb":
                 raise Exception("Invalid NeuralDB checkpoint")
             zip_path = zip_folder(model_path)
         elif model_type == "bolt":
-            if not os.path.isfile(model_path) or model_path.split(".")[-1] != "bolt":
+            if not os.path.isfile(model_path) or os.path.splitext(model_path)[-1] != ".bolt":
                 raise Exception("Invalid Bolt checkpoint")
             zip_path = zip_file(model_path)
         else:
             raise Exception(f"{model_type} model type not supported. Please choose 'ndb' or 'bolt'.")
 
         model_hash = hash_path(model_path)
+
+        if model_type == "ndb":
+            db = NeuralDB.from_checkpoint(checkpoint_path=model_path)
+            model = db._savable_state.model.model._get_model()
+
+            size = get_directory_size(model_path)
+
+            # TODO: Get actual size in memory when db is loaded
+            # This is a temporary approximation of how much RAM a model will take.
+            # Approximation comes from 4x explosion of weights in ADAM optimizer.
+            udt_pickle = model_path / "model.pkl"
+            documents_pickle = model_path / "documents.pkl"
+            logger_pickle = model_path / "logger.pkl"
+            size_in_memory = (
+                os.path.getsize(udt_pickle) * 4
+                + os.path.getsize(documents_pickle)
+                + os.path.getsize(logger_pickle)
+            )
+            num_params = model.num_params()
+        elif model_type == "bolt":
+            model = bolt.SpladeMach.load(str(model_path))
+            size = os.path.getsize(model_path)
+            size_in_memory = size
+
+            # dummy number of params for splade mach model, until there is an API
+            num_params = 100
+        else:
+            raise ValueError("Currently supports only bolt and ndb models.")
+
+        thirdai_version = thirdai.__version__
 
         # Generate upload token
         token_response = http_get_with_error(
@@ -544,36 +578,6 @@ class Bazaar:
                     print("File upload completed successfully.")
                 else:
                     print("File upload failed.")
-
-        if model_type == "ndb":
-            db = NeuralDB.from_checkpoint(checkpoint_path=model_path)
-            model = db._savable_state.model.model._get_model()
-
-            size = get_directory_size(model_path)
-
-            # TODO: Get actual size in memory when db is loaded
-            # This is a temporary approximation of how much RAM a model will take.
-            # Approximation comes from 4x explosion of weights in ADAM optimizer.
-            udt_pickle = model_path / "model.pkl"
-            documents_pickle = model_path / "documents.pkl"
-            logger_pickle = model_path / "logger.pkl"
-            size_in_memory = (
-                os.path.getsize(udt_pickle) * 4
-                + os.path.getsize(documents_pickle)
-                + os.path.getsize(logger_pickle)
-            )
-            num_params = model.num_params()
-        elif model_type == "bolt":
-            model = bolt.SpladeMach.load(model_path)
-            size = os.path.getsize(model_path)
-            size_in_memory = size
-
-            # dummy number of params for splade mach model, until there is an API
-            num_params = 100
-        else:
-            raise ValueError("Currently supports only bolt and ndb models.")
-
-        thirdai_version = thirdai.__version__
 
         json_data = {
             "trained_on": trained_on,
