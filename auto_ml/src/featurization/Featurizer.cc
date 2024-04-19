@@ -11,7 +11,9 @@
 #include <data/src/transformations/CategoricalTemporal.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/State.h>
+#include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringConcat.h>
+#include <data/src/transformations/ConcatTokenArrayColumn.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/cold_start/ColdStartText.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
@@ -32,11 +34,11 @@ Featurizer::Featurizer(
       _state(std::make_shared<data::State>()) {
   std::tie(_input_transform, _bolt_input_columns) =
       inputTransformations(data_types, label_column, temporal_relationships,
-                           options, /* should_update_history= */ true, pretrained_augmentation->spladeInputRange());
+                           options, /* should_update_history= */ true);
 
   _const_input_transform =
       inputTransformations(data_types, label_column, temporal_relationships,
-                           options, /* should_update_history= */ false, pretrained_augmentation->spladeInputRange())
+                           options, /* should_update_history= */ false)
           .first;
 
   if (data_types.size() == 2 && temporal_relationships.empty()) {
@@ -53,6 +55,7 @@ Featurizer::Featurizer(
     _pretrained_augmentation = pretrained_augmentation->transformation(
         textDatasetConfig().textColumn(), AUGMENTED_TOKENS);
     _augment_by_default = pretrained_augmentation->useByDefault();
+    _augmentation_with_offset = pretrained_augmentation->containsOffset();
   }
 }
 
@@ -77,13 +80,21 @@ data::LoaderPtr Featurizer::getDataLoader(
     bool verbose, bool augment, dataset::DatasetShuffleConfig shuffle_config) {
   data::TransformationPtr preprocessor = nullptr;
   if (augment && _pretrained_augmentation) {
-    preprocessor =
+    if(_augmentation_with_offset){
+      preprocessor =
+        data::Pipeline::make()
+            ->then(_pretrained_augmentation)
+            ->then(std::make_shared<data::StringToTokenArray>(
+      AUGMENTED_TOKENS, AUGMENTED_TOKENS, ' ', std::nullopt));
+    }else{
+      preprocessor =
         data::Pipeline::make()
             ->then(_pretrained_augmentation)
             ->then(std::make_shared<data::StringConcat>(
-                std::vector<std::string>{textDatasetConfig().textColumn(),
-                                         AUGMENTED_TOKENS},
-                textDatasetConfig().textColumn(), " "));
+          std::vector<std::string>{textDatasetConfig().textColumn(),
+                                    AUGMENTED_TOKENS},
+          textDatasetConfig().textColumn(), " "));
+    }
   }
 
   return getDataLoaderHelper(data_source, batch_size, shuffle, verbose,
@@ -142,6 +153,9 @@ data::LoaderPtr Featurizer::getDataLoaderHelper(
   }
   transformations.push_back(_input_transform);
   transformations.push_back(_label_transform);
+  if(_augmentation_with_offset){
+    transformations.push_back(std::make_shared<data::ConcatTokenArrayColumn>(FEATURIZED_INDICES, FEATURIZED_VALUES, AUGMENTED_TOKENS, FEATURIZED_INDICES, FEATURIZED_VALUES));
+  }
 
   auto transformation_list = data::Pipeline::make(transformations);
 

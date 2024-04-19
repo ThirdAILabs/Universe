@@ -53,6 +53,14 @@ class SpladeMach : public std::enable_shared_from_this<SpladeMach> {
 
   static std::shared_ptr<SpladeMach> load_stream(std::istream& input_stream);
 
+  size_t sumOutputDimensions(){
+    size_t output_splade_range = 0;
+    for(const auto &model: _models){
+        output_splade_range += model->outputs()[0]->dim();
+    }
+    return output_splade_range;
+  }
+
  private:
   data::TransformationPtr buildPipeline() {
     return data::Pipeline::make()

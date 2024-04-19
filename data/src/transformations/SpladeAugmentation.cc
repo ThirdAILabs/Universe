@@ -22,7 +22,7 @@ SpladeAugmentation::SpladeAugmentation(std::string input_column,
                                        std::optional<size_t> n_augmented_tokens,
                                        std::optional<float> augmentation_frac,
                                        bool filter_tokens, size_t batch_size,
-                                       bool to_decode_tokens)
+                                       std::optional<size_t> token_offset)
     : _input_column(std::move(input_column)),
       _output_column(std::move(output_column)),
       _model(std::move(model)),
@@ -31,7 +31,7 @@ SpladeAugmentation::SpladeAugmentation(std::string input_column,
       _augmentation_frac(augmentation_frac),
       _filter_tokens(filter_tokens),
       _batch_size(batch_size),
-      _to_decode_tokens(to_decode_tokens) {
+      _token_offset(token_offset) {
   if (_model->inputs().size() != 1 || _model->outputs().size() != 1) {
     throw std::invalid_argument(
         "SpladeAugmentation model must have 1 input and output.");
@@ -107,7 +107,7 @@ std::string SpladeAugmentation::decodeTopTokens(const BoltVector& vec,
   std::string decoded;
   auto topk = vec.topKNeurons(k);
   while (!topk.empty()) { 
-    if(_to_decode_tokens){
+    if(_token_offset){
       auto token = _tokenizer->token(topk.top().second);
 
       if (!_filter_tokens || std::regex_match(token, _allowed_tokens)) {
@@ -122,7 +122,7 @@ std::string SpladeAugmentation::decodeTopTokens(const BoltVector& vec,
       if (!decoded.empty()) {
           decoded.push_back(' ');
         }
-        decoded.append(std::to_string(token));
+        decoded.append(std::to_string(token + *_token_offset));
     }
 
     topk.pop();
@@ -148,7 +148,9 @@ ar::ConstArchivePtr SpladeAugmentation::toArchive() const {
   }
   map->set("filter_tokens", ar::boolean(_filter_tokens));
   map->set("batch_size", ar::u64(_batch_size));
-  map->set("to_decode_tokens", ar::boolean(_to_decode_tokens));
+  if(_token_offset){
+    map->set("token_offset", ar::u64(*_token_offset));
+  }
 
   return map;
 }
@@ -163,5 +165,5 @@ SpladeAugmentation::SpladeAugmentation(const ar::Archive& archive)
       _augmentation_frac(archive.getOpt<ar::F32>("augmentation_frac")),
       _filter_tokens(archive.boolean("filter_tokens")),
       _batch_size(archive.u64("batch_size")),
-      _to_decode_tokens(archive.boolean("to_decode_tokens")) {}
+      _token_offset(archive.getOpt<ar::U64>("token_offset")) {}
 }  // namespace thirdai::data

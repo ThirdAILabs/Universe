@@ -148,6 +148,7 @@ class Featurizer {
 
   data::TransformationPtr _pretrained_augmentation;
   bool _augment_by_default = false;
+  bool _augmentation_with_offset = false;
 
   Featurizer() {}  // For cereal
 

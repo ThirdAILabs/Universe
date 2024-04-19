@@ -1,5 +1,6 @@
 #include "SpladeMachAugmentation.h"
 #include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <auto_ml/src/pretrained/SpladeMach.h>
 #include <data/src/columns/ValueColumns.h>
 #include <string>
@@ -24,7 +25,11 @@ ColumnMap SpladeMachAugmentation::apply(ColumnMap columns, State& state) const {
     for (size_t j = 0; j < hashes.size(); j++) {
       std::string joined;
       for (uint32_t hash : hashes.at(j)) {
-        joined += std::to_string(hash) + ' ';
+        auto token = hash;
+        if(_token_offset){
+          token += *_token_offset;
+        }
+          joined += std::to_string(token) + ' ';
       }
       if (!joined.empty()) {
         joined.pop_back();
@@ -48,13 +53,18 @@ ar::ConstArchivePtr SpladeMachAugmentation::toArchive() const {
   map->set("model", _model->toArchive());
   map->set("n_hashes_per_model", ar::u64(_n_hashes_per_model));
 
+  if(_token_offset){
+    map->set("token_offset", ar::u64(*_token_offset));
+  }
+
   return map;
 }
 
 SpladeMachAugmentation::SpladeMachAugmentation(const ar::Archive& archive)
-    : SpladeMachAugmentation(
-          archive.str("input_column"), archive.str("output_column"),
-          automl::SpladeMach::fromArchive(*archive.get("model")),
-          archive.u64("n_hashes_per_model")) {}
+    : _input_column(archive.str("input_column")),
+      _output_column(archive.str("output_column")),
+      _model(automl::SpladeMach::fromArchive(*archive.get("model"))),
+      _n_hashes_per_model(archive.u64("n_hashes_per_model")), 
+      _token_offset(archive.getOpt<ar::U64>("token_offset")) {}
 
 }  // namespace thirdai::data

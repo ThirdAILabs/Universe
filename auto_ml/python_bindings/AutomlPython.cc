@@ -303,17 +303,17 @@ void defineAutomlInModule(py::module_& module) {
   py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>,
              PretrainedAugmentation>(module, "SpladeConfig")
       .def(py::init<std::string, std::string, std::optional<size_t>,
-                    std::optional<float>, bool, size_t, bool>(),
+                    std::optional<float>, bool, size_t, bool, std::optional<size_t>>(),
            py::arg("model_checkpoint"), py::arg("tokenizer_vocab"),
            py::arg("n_augmented_tokens") = 100,
            py::arg("augmentation_frac") = std::nullopt,
            py::arg("filter_tokens") = true, py::arg("batch_size") = 4096,
-           py::arg("lowercase") = true, py::arg("splade_input_range") = std::nullopt);
+           py::arg("lowercase") = true, py::arg("feature_hashing_range") = std::nullopt);
 
   py::class_<SpladeMachConfig, std::shared_ptr<SpladeMachConfig>,
              PretrainedAugmentation>(module, "SpladeMachConfig")
-      .def(py::init<std::shared_ptr<SpladeMach>, size_t>(), py::arg("model"),
-           py::arg("n_hashes_per_model"), py::arg("splade_input_range") = std::nullopt);
+      .def(py::init<std::shared_ptr<SpladeMach>, size_t, std::optional<size_t>>(), py::arg("model"),
+           py::arg("n_hashes_per_model"), py::arg("feature_hashing_range") = std::nullopt);
 }
 
 void createUDTTypesSubmodule(py::module_& module) {

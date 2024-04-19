@@ -16,7 +16,7 @@ class SpladeAugmentation final : public Transformation {
                      dataset::WordpieceTokenizerPtr tokenizer,
                      std::optional<size_t> n_augmented_tokens,
                      std::optional<float> augmentation_frac, bool filter_tokens,
-                     size_t batch_size, bool to_decode_tokens=true);
+                     size_t batch_size, std::optional<size_t> token_offset=std::nullopt);
 
   explicit SpladeAugmentation(const ar::Archive& archive);
 
@@ -25,6 +25,8 @@ class SpladeAugmentation final : public Transformation {
   ar::ConstArchivePtr toArchive() const final;
 
   static std::string type() { return "splade_augmentation"; }
+
+  bool hasTokenOffset() { return _token_offset.has_value();}
 
  private:
   std::string decodeTopTokens(const BoltVector& vec, size_t k) const;
@@ -47,7 +49,7 @@ class SpladeAugmentation final : public Transformation {
   bool _filter_tokens;
   size_t _batch_size = 4096;
 
-  bool _to_decode_tokens;
+  std::optional<size_t> _token_offset;
 
   const std::regex _allowed_tokens = std::regex(R"([a-zA-Z]{3,})");
 };

@@ -291,8 +291,7 @@ inputTransformations(const ColumnDataTypes& data_types,
                      const std::string& label_column,
                      const TemporalRelationships& temporal_relationships,
                      const TabularOptions& options,
-                     bool should_update_history,
-                     std::optional<size_t> feature_hash_offset) {
+                     bool should_update_history) {
   if (!data_types.count(label_column)) {
     throw std::invalid_argument(
         "Target column was not specified in data_types.");
@@ -340,8 +339,7 @@ inputTransformations(const ColumnDataTypes& data_types,
       /* input_columns= */ output_columns,
       /* output_indices_column= */ FEATURIZED_INDICES,
       /* output_values_column= */ FEATURIZED_VALUES,
-      /* hash_range= */ options.feature_hash_range,
-      feature_hash_offset);
+      /* hash_range= */ options.feature_hash_range);
 
   transformations.push_back(feature_hash);
 
