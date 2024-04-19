@@ -10,6 +10,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <auto_ml/src/udt/utils/Models.h>
+#include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -100,6 +101,10 @@ class UDTPretrainedText final : public UDTBackend {
                                 size_t batch_size, bool shuffle, bool verbose,
                                 dataset::DatasetShuffleConfig shuffle_config =
                                     dataset::DatasetShuffleConfig());
+
+  py::object predict(data::ColumnMap columns, bool sparse_inference,
+                     bool return_predicted_class, std::optional<uint32_t> top_k,
+                     bool single);
 
   utils::ClassifierPtr _classifier;
 

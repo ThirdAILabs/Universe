@@ -22,13 +22,9 @@ namespace thirdai::automl {
 
 class SpladeMach : public std::enable_shared_from_this<SpladeMach> {
  public:
-  SpladeMach(std::string input_column, dataset::TextTokenizerPtr tokenizer,
-             size_t vocab_size, size_t emb_dim, size_t output_dim,
-             size_t n_models);
-
   SpladeMach(std::string input_column, std::vector<bolt::ModelPtr> models,
              std::vector<data::MachIndexPtr> indexes,
-             dataset::TextTokenizerPtr tokenizer, size_t vocab_size);
+             dataset::TextTokenizerPtr tokenizer);
 
   std::vector<bolt::metrics::History> train(
       const data::ColumnMapIteratorPtr& train_data, size_t epochs,
@@ -80,7 +76,7 @@ class SpladeMach : public std::enable_shared_from_this<SpladeMach> {
   data::TextTokenizerPtr _tokenizer;
 
   std::string _input_column;
-  size_t _vocab_size;
+//   size_t _vocab_size;
 
   const std::string _source_column = "__source__";
   const std::string _target_column = "__target__";

@@ -528,6 +528,7 @@ pybind11_add_module(
   auto_ml/src/udt/backends/UDTSVMClassifier.cc
   auto_ml/src/udt/backends/UDTGraphClassifier.cc
   auto_ml/src/udt/backends/UDTPretrainedText.cc
+  auto_ml/python_bindings/SpladeMachPython.cc
   auto_ml/src/udt/utils/Classifier.cc
   mach/python_bindings/MachPython.cc
   telemetry/python_bindings/TelemetryPython.cc

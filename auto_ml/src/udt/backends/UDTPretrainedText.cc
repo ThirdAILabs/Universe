@@ -164,14 +164,8 @@ py::object UDTPretrainedText::predict(const MapInput& sample,
                                       std::optional<uint32_t> top_k) {
   auto columns = data::ColumnMap::fromMapInput(sample);
 
-  columns = _pretrained_augmentation->applyStateless(std::move(columns));
-  columns = _text_transform->applyStateless(std::move(columns));
-
-  auto tensors = data::toTensors(
-      columns, {data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)});
-
-  return _classifier->predict(tensors, sparse_inference, return_predicted_class,
-                              /*single*/ true, top_k);
+  return predict(std::move(columns), sparse_inference, return_predicted_class,
+                 top_k, /*single=*/true);
 }
 
 py::object UDTPretrainedText::predictBatch(const MapInputBatch& sample,
@@ -180,13 +174,24 @@ py::object UDTPretrainedText::predictBatch(const MapInputBatch& sample,
                                            std::optional<uint32_t> top_k) {
   auto columns = data::ColumnMap::fromMapInputBatch(sample);
 
-  columns = _pretrained_augmentation->applyStateless(std::move(columns));
+  return predict(std::move(columns), sparse_inference, return_predicted_class,
+                 top_k, /*single=*/false);
+}
+
+py::object UDTPretrainedText::predict(data::ColumnMap columns,
+                                      bool sparse_inference,
+                                      bool return_predicted_class,
+                                      std::optional<uint32_t> top_k,
+                                      bool single) {
+  if (_pretrained_augmentation) {
+    columns = _pretrained_augmentation->applyStateless(std::move(columns));
+  }
   columns = _text_transform->applyStateless(std::move(columns));
 
   auto tensors = data::toTensors(columns, _bolt_inputs);
 
   return _classifier->predict(tensors, sparse_inference, return_predicted_class,
-                              /*single*/ false, top_k);
+                              /*single*/ single, top_k);
 }
 
 py::object UDTPretrainedText::coldstart(
@@ -234,7 +239,7 @@ data::TransformationPtr UDTPretrainedText::buildPipeline(
   auto pipeline = data::Pipeline::make();
 
   if (_pretrained_augmentation) {
-    pipeline->then(_pretrained_augmentation);
+    pipeline = pipeline->then(_pretrained_augmentation);
   }
 
   if (!strong_cols.empty() || !weak_cols.empty()) {
@@ -311,6 +316,7 @@ data::TransformationPtr UDTPretrainedText::labelTransformation(
 
 ar::ConstArchivePtr UDTPretrainedText::toArchive(bool with_optimizer) const {
   auto map = _classifier->toArchive(with_optimizer);
+  map->set("type", ar::str(type()));
 
   if (_pretrained_augmentation) {
     map->set("pretrained_augmentation", _pretrained_augmentation->toArchive());

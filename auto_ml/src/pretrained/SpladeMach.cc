@@ -20,45 +20,14 @@
 
 namespace thirdai::automl {
 
-bolt::ModelPtr buildModel(size_t vocab_size, size_t emb_dim,
-                          size_t output_dim) {
-  auto input = bolt::Input::make(vocab_size);
-
-  auto emb = bolt::Embedding::make(emb_dim, vocab_size, "relu")->apply(input);
-
-  auto out = bolt::FullyConnected::make(output_dim, emb_dim, 0.02, "sigmoid")
-                 ->apply(emb);
-
-  auto loss =
-      bolt::BinaryCrossEntropy::make(out, bolt::Input::make(output_dim));
-
-  return bolt::Model::make({input}, {out}, {loss});
-}
-
-SpladeMach::SpladeMach(std::string input_column,
-                       dataset::TextTokenizerPtr tokenizer, size_t vocab_size,
-                       size_t emb_dim, size_t output_dim, size_t n_models)
-    : _input_column(std::move(input_column)), _vocab_size(vocab_size) {
-  for (size_t i = 0; i < n_models; i++) {
-    _indexes.push_back(dataset::mach::MachIndex::make(
-        output_dim, /*num_hashes=*/1, vocab_size, /*seed=*/i + 1));
-
-    _models.push_back(buildModel(vocab_size, emb_dim, output_dim));
-  }
-
-  _tokenizer = std::make_shared<data::TextTokenizer>(
-      _input_column, _source_column, std::nullopt, std::move(tokenizer),
-      dataset::NGramEncoder::make(1), false, vocab_size);
-}
-
 SpladeMach::SpladeMach(std::string input_column,
                        std::vector<bolt::ModelPtr> models,
                        std::vector<data::MachIndexPtr> indexes,
-                       dataset::TextTokenizerPtr tokenizer, size_t vocab_size)
+                       dataset::TextTokenizerPtr tokenizer)
     : _models(std::move(models)),
       _indexes(std::move(indexes)),
-      _input_column(std::move(input_column)),
-      _vocab_size(vocab_size) {
+      _input_column(std::move(input_column)) {
+  uint32_t vocab_size = _models.at(0)->inputDims().at(0);
   _tokenizer = std::make_shared<data::TextTokenizer>(
       _input_column, _source_column, std::nullopt, std::move(tokenizer),
       dataset::NGramEncoder::make(1), false, vocab_size);
@@ -85,7 +54,7 @@ std::vector<bolt::metrics::History> SpladeMach::train(
         train_loader, learning_rate, epochs,
         /*max_in_memory_batches=*/100, {}, val_loader,
         {{"loss", std::make_shared<bolt::metrics::LossMetric>(
-                      _models[0]->losses().at(0))}});
+                      _models[i]->losses().at(0))}});
 
     histories.push_back(metrics);
 
@@ -204,8 +173,6 @@ ar::ConstArchivePtr SpladeMach::toArchive() const {
 
   mach_pretrained->set("input_column", ar::str(_input_column));
 
-  mach_pretrained->set("vocab_size", ar::u64(_vocab_size));
-
   return mach_pretrained;
 }
 
@@ -226,10 +193,8 @@ std::shared_ptr<SpladeMach> SpladeMach::fromArchive(
 
   std::string input_column = archive.str("input_column");
 
-  auto vocab_size = archive.u64("vocab_size");
-
   return std::make_shared<SpladeMach>(
-      SpladeMach(input_column, models, indexes, tokenizer, vocab_size));
+      SpladeMach(input_column, models, indexes, tokenizer));
 }
 
 void SpladeMach::save(const std::string& filename) const {

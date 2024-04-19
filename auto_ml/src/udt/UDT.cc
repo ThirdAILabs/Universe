@@ -379,6 +379,9 @@ std::unique_ptr<UDTBackend> backendFromArchive(const ar::Archive& archive) {
   if (type == UDTSVMClassifier::type()) {
     return UDTSVMClassifier::fromArchive(archive);
   }
+  if (type == UDTPretrainedText::type()) {
+    return UDTPretrainedText::fromArchive(archive);
+  }
   throw std::invalid_argument("Invalid backend type '" + type + "'.");
 }
 
