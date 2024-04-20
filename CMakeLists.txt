@@ -405,6 +405,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/Graph.cc
     data/src/transformations/RegressionBinning.cc
     data/src/transformations/DyadicInterval.cc
+    data/src/transformations/NextWordPrediction.cc
     data/src/transformations/SpladeAugmentation.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
@@ -432,6 +433,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/featurization/TabularBlockComposer.cc # Deprecate
     auto_ml/src/featurization/TabularDatasetFactory.cc # Deprecate
     auto_ml/src/cold_start/ColdStartUtils.cc # Deprecate
+    auto_ml/src/pretrained/SpladeMach.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
@@ -513,6 +515,7 @@ pybind11_add_module(
   search/python_bindings/BeamSearch.cc
   hashing/python_bindings/HashingPython.cc
   auto_ml/python_bindings/AutomlPython.cc
+  auto_ml/python_bindings/SpladeMachPython.cc
   auto_ml/src/udt/UDT.cc
   auto_ml/src/udt/utils/Models.cc
   auto_ml/src/udt/utils/Classifier.cc

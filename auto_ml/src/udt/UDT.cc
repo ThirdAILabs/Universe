@@ -121,6 +121,14 @@ UDT::UDT(
   }
 }
 
+UDT::UDT(const ColumnDataTypes& data_types, uint32_t n_target_classes,
+         bool integer_target, const SpladeMachPtr& pretrained_model,
+         char delimiter, const config::ArgumentMap& user_args) {
+  _backend = std::make_unique<UDTClassifier>(data_types, n_target_classes,
+                                             integer_target, pretrained_model,
+                                             delimiter, user_args);
+}
+
 UDT::UDT(std::optional<std::string> incorrect_column_name,
          std::string correct_column_name, const std::string& dataset_size,
          bool use_spell_checker, char delimiter,

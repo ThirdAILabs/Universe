@@ -5,6 +5,7 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
+#include <auto_ml/src/pretrained/SpladeMach.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/backends/UDTMach.h>
 #include <dataset/src/DataSource.h>
@@ -37,6 +38,10 @@ class UDT {
       bool integer_target, std::string time_granularity, uint32_t lookahead,
       char delimiter, const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
+
+  UDT(const ColumnDataTypes& data_types, uint32_t n_target_classes,
+      bool integer_target, const SpladeMachPtr& pretrained_model,
+      char delimiter, const config::ArgumentMap& user_args);
 
   UDT(std::optional<std::string> incorrect_column_name,
       std::string correct_column_name, const std::string& dataset_size,

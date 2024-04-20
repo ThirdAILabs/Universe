@@ -54,6 +54,11 @@ std::shared_ptr<udt::UDT> makeUDT(
     char delimiter, const std::optional<std::string>& model_config,
     const py::dict& options);
 
+std::shared_ptr<udt::UDT> makeUDTPretrained(
+    const ColumnDataTypes& data_types, uint32_t n_target_classes,
+    bool integer_target, const SpladeMachPtr& pretrained_model, char delimiter,
+    const py::dict& options);
+
 std::shared_ptr<udt::UDT> makeQueryReformulation(
     std::string source_column, std::string target_column,
     const std::string& dataset_size, bool use_spell_checker, char delimiter,
@@ -112,6 +117,10 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
            py::arg("options") = py::dict(), docs::UDT_INIT,
            bolt::python::OutputRedirect())
+      .def(py::init(&makeUDTPretrained), py::arg("data_types"),
+           py::arg("n_target_classes"), py::arg("integer_target"),
+           py::arg("pretrained_model"), py::arg("delimiter") = ',',
+           py::arg("options") = py::dict())
       .def(py::init(&makeQueryReformulation), py::arg("source_column"),
            py::arg("target_column"), py::arg("dataset_size"),
            py::arg("use_spell_checker") = false, py::arg("delimiter") = ',',
@@ -460,6 +469,15 @@ std::shared_ptr<udt::UDT> makeUDT(
       /* lookahead = */ lookahead, /* delimiter = */ delimiter,
       /* model_config= */ model_config,
       /* options = */ createArgumentMap(options));
+}
+
+std::shared_ptr<udt::UDT> makeUDTPretrained(
+    const ColumnDataTypes& data_types, uint32_t n_target_classes,
+    bool integer_target, const SpladeMachPtr& pretrained_model, char delimiter,
+    const py::dict& options) {
+  return std::make_shared<udt::UDT>(data_types, n_target_classes,
+                                    integer_target, pretrained_model, delimiter,
+                                    createArgumentMap(options));
 }
 
 std::shared_ptr<udt::UDT> makeQueryReformulation(
