@@ -117,8 +117,9 @@ void createDatasetSubmodule(py::module_& module) {
                     uint32_t, uint32_t>(),
            py::arg("entity_to_hashes"), py::arg("output_range"),
            py::arg("num_hashes"))
-      .def(py::init<uint32_t, uint32_t>(), py::arg("output_range"),
-           py::arg("num_hashes"))
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
+           py::arg("output_range"), py::arg("num_hashes"),
+           py::arg("num_elements"), py::arg("seed") = 341)
       .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("output_range"),
            py::arg("num_hashes"), py::arg("num_elements"))
       .def("get_entity_hashes", &mach::MachIndex::getHashes, py::arg("entity"))
