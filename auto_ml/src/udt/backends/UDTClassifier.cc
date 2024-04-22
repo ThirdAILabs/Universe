@@ -139,20 +139,22 @@ bolt::ModelPtr buildModel(const bolt::EmbeddingPtr& emb,
                           const bolt::FullyConnectedPtr& fc,
                           uint32_t n_target_classes,
                           bool disable_hidden_sparsity) {
-  fc->kernel()->swapActivation(bolt::ActivationFunction::ReLU);
-  if (disable_hidden_sparsity) {
-    fc->setSparsity(1.0, false, false);
+  auto input = bolt::Input::make(emb->inputDim());
+  auto hidden = emb->apply(input);
+  if (fc) {
+    fc->kernel()->swapActivation(bolt::ActivationFunction::ReLU);
+    if (disable_hidden_sparsity) {
+      fc->setSparsity(1.0, false, false);
+    }
+    hidden = fc->apply(hidden);
   }
-  auto out = bolt::FullyConnected::make(
-      n_target_classes, fc->dim(), utils::autotuneSparsity(n_target_classes),
-      "softmax");
 
+  auto out = bolt::FullyConnected::make(
+      n_target_classes, hidden->dim(),
+      utils::autotuneSparsity(n_target_classes), "softmax");
   out->setName("output");
 
-  auto input = bolt::Input::make(emb->inputDim());
-  auto hidden1 = emb->apply(input);
-  auto hidden2 = fc->apply(hidden1);
-  auto output = out->apply(hidden2);
+  auto output = out->apply(hidden);
 
   auto loss = bolt::CategoricalCrossEntropy::make(
       output, bolt::Input::make(output->dim()));
@@ -167,6 +169,9 @@ UDTClassifier::UDTClassifier(const ColumnDataTypes& data_types,
                              const config::ArgumentMap& user_args) {
   auto [emb, fc] = getOps(pretrained_model->model());
 
+  if (user_args.get<bool>("emb_only", "boolean", false)) {
+    fc = nullptr;
+  }
   auto model = buildModel(
       emb, fc, n_target_classes,
       user_args.get<bool>("disable_hidden_sparsity", "boolean", true));
