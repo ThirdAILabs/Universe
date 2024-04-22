@@ -40,6 +40,7 @@ class MachMixture(Model):
         use_inverted_index=True,
         label_to_segment_map: defaultdict = None,
         seed_for_sharding: int = 0,
+        **kwargs,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -380,6 +381,7 @@ class MachMixture(Model):
         n_results: int,
         retriever=None,
         label_probing=True,
+        mach_first=False,
         **kwargs,
     ) -> Predictions:
         if not retriever:
@@ -391,7 +393,12 @@ class MachMixture(Model):
                     samples, n_results=n_results, label_probing=label_probing
                 )
                 return [
-                    merge_results(mach_res, index_res, n_results)
+                    (
+                        merge_results(mach_res, index_res, n_results)
+                        if mach_first
+                        # Prioritize inverted index results.
+                        else merge_results(index_res, mach_res, n_results)
+                    )
                     for mach_res, index_res in zip(mach_results, index_results)
                 ]
 

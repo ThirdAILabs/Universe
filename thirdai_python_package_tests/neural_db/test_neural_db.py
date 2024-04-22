@@ -136,7 +136,7 @@ def test_neural_db_constrained_search_with_single_constraint():
         assert all([constraint == ref.metadata["meta"] for ref in references])
 
 
-@pytest.mark.parametrize("empty_neural_db", ([1, 2]), indirect=True)
+@pytest.mark.parametrize("empty_neural_db", ([1, 2, "low_memory"]), indirect=True)
 def test_neural_db_constrained_search_with_multiple_constraints(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"language": "English", "county": "Harris"}),
@@ -151,11 +151,45 @@ def test_neural_db_constrained_search_with_multiple_constraints(empty_neural_db)
     ]:
         # Since we always use the same query, we know that we're getting different
         # results solely due to the imposed constraints.
-        references = db.search("hello", top_k=10, constraints=constraints)
+        references = db.search(
+            "Confidential Information", top_k=10, constraints=constraints
+        )
         assert len(references) > 0
         assert all(
             [
                 all([ref.metadata[key] == value for key, value in constraints.items()])
+                for ref in references
+            ]
+        )
+
+
+@pytest.mark.parametrize("empty_neural_db", ([1, 2, "low_memory"]), indirect=True)
+def test_neural_db_constrained_search_with_list_constraints(empty_neural_db):
+    documents = [
+        ndb.PDF(PDF_FILE, metadata={"groups": [1], "county": "Harris"}),
+        ndb.PDF(PDF_FILE, metadata={"groups": [1, 2], "county": "Austin"}),
+        ndb.PDF(PDF_FILE, metadata={"groups": [3], "county": "Dallas"}),
+    ]
+    db = empty_neural_db
+    db.clear_sources()  # clear sources in case a different test added sources
+    db.insert(documents, train=False)
+    for constraints in [
+        {"groups": ndb.AnyOf([1])},
+        {"groups": ndb.AnyOf([2])},
+        {"groups": ndb.AnyOf([1, 3])},
+    ]:
+        references = db.search(
+            "Confidential Information", top_k=10, constraints=constraints
+        )
+        assert len(references) > 0
+        assert all(
+            [
+                all(
+                    [
+                        len(set(value.values) & set(ref.metadata[key])) > 0
+                        for key, value in constraints.items()
+                    ]
+                )
                 for ref in references
             ]
         )
@@ -687,3 +721,23 @@ def test_insert_callback(small_doc_set):
     db.insert(small_doc_set, epochs=epochs, callbacks=[epoch_count_callback])
 
     assert epoch_count_callback.epochs_completed == epochs
+
+
+def test_neural_db_prioritizes_inverted_index_results():
+    db = ndb.NeuralDB()
+
+    texts = [
+        "apples are green",
+        "bananas are yellow",
+        "oranges are orange",
+        "spinach is green",
+        "apples are red",
+    ]
+
+    db.insert(
+        [ndb.InMemoryText(name=str(i), texts=[text]) for i, text in enumerate(texts)],
+        train=False,
+    )
+
+    assert db.search("carrots bananas", top_k=5)[0].retriever == "inverted_index"
+    assert db.search("carrots bananas", top_k=5, mach_first=True)[0].retriever == "mach"

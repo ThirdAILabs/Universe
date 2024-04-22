@@ -61,6 +61,7 @@ CSV_FILE = os.path.join(BASE_DIR, "lorem_ipsum.csv")
 URL_LINK = "https://en.wikipedia.org/wiki/Rice_University"
 PDF_FILE = os.path.join(BASE_DIR, "mutual_nda.pdf")
 PRIAXOR_PDF_FILE = os.path.join(BASE_DIR, "Priaxor.pdf")
+CITI_PDF_FILE = os.path.join(BASE_DIR, "Citi_3Q23.pdf")
 DOCX_FILE = os.path.join(BASE_DIR, "four_english_words.docx")
 PPTX_FILE = os.path.join(BASE_DIR, "quantum_mechanics.pptx")
 TXT_FILE = os.path.join(BASE_DIR, "nature.txt")
@@ -477,8 +478,11 @@ def empty_neural_db(request):
     """Initializes an empty NeuralDB once per test session to speed up tests.
     Best used for tests that don't assert accuracy.
     """
-    num_models_per_shard = request.param
-    db = ndb.NeuralDB(num_shards=1, num_models_per_shard=num_models_per_shard)
+    if request.param == "low_memory":
+        db = ndb.NeuralDB(low_memory=True)
+    else:
+        num_models_per_shard = request.param
+        db = ndb.NeuralDB(num_shards=1, num_models_per_shard=num_models_per_shard)
     # db.insert() initializes the mach model so this only happens once per
     # test session. Clear the sources so it's back to being empty.
     db.insert([ndb.CSV(CSV_FILE)], train=False)

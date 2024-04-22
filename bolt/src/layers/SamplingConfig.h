@@ -65,6 +65,8 @@ class DWTASamplingConfig final : public SamplingConfig {
   static std::shared_ptr<DWTASamplingConfig> autotune(
       uint32_t layer_dim, float sparsity, bool experimental_autotune);
 
+  static size_t estimateHashTableSize(uint32_t dim, float sparsity);
+
  private:
   uint32_t _num_tables, _hashes_per_table, _range_pow, _binsize,
       _reservoir_size;

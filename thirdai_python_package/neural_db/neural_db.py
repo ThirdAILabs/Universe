@@ -670,6 +670,7 @@ class NeuralDB:
         top_k_threshold=None,
         retriever=None,
         label_probing=False,
+        mach_first=False,
     ) -> List[Reference]:
         """
         Searches the contents of the NeuralDB for documents relevant to the given query.
@@ -724,6 +725,7 @@ class NeuralDB:
             top_k_threshold=top_k_threshold,
             retriever=retriever,
             label_probing=label_probing,
+            mach_first=mach_first,
         )[0]
 
     def search_batch(
@@ -737,6 +739,7 @@ class NeuralDB:
         top_k_threshold=None,
         retriever=None,
         label_probing=False,
+        mach_first=False,
     ):
         """
         Runs search on a batch of queries for much faster throughput.
@@ -754,7 +757,9 @@ class NeuralDB:
                 constraints
             )
             queries_result_ids = self._savable_state.model.score(
-                samples=queries, entities=[matching_entities], n_results=top_k_to_search
+                samples=queries,
+                entities=[matching_entities] * len(queries),
+                n_results=top_k_to_search,
             )
         else:
             queries_result_ids = self._savable_state.model.infer_labels(
@@ -762,6 +767,7 @@ class NeuralDB:
                 n_results=top_k_to_search,
                 retriever="mach" if rerank else retriever,
                 label_probing=label_probing,
+                mach_first=mach_first,
             )
 
         return [

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Callable, List, Tuple
 
 from thirdai import search
 
@@ -12,7 +12,13 @@ class FinetunableRetriever(Model):
     def __init__(self):
         self.retriever = search.FinetunableRetriever()
 
-    def index_from_start(self, intro_documents: DocumentDataSource, **kwargs):
+    def index_from_start(
+        self,
+        intro_documents: DocumentDataSource,
+        on_progress: Callable = lambda **kwargs: None,
+        batch_size=100000,
+        **kwargs
+    ):
         docs = []
         ids = []
 
@@ -20,13 +26,16 @@ class FinetunableRetriever(Model):
             docs.append(row.strong + " " + row.weak)
             ids.append(row.id)
 
-            if len(docs) == 1_000_000:
+            if len(docs) == batch_size:
                 self.retriever.index(ids=ids, docs=docs)
                 docs = []
                 ids = []
 
+                on_progress(self.retriever.size() / intro_documents.size)
+
         if len(docs):
             self.retriever.index(ids=ids, docs=docs)
+            on_progress(self.retriever.size() / intro_documents.size)
 
     def forget_documents(self) -> None:
         self.retriever = search.FinetunableRetriever()
@@ -56,8 +65,13 @@ class FinetunableRetriever(Model):
     def score(
         self, samples: InferSamples, entities: List[List[int]], n_results: int = None
     ) -> Predictions:
-        results = self.retriever.rank(queries=samples, candidates=entities, k=n_results)
-        return add_retriever_tag(results)
+
+        # retriever.rank() expects candidates to be a list of sets
+        candidates = [set(ids) for ids in entities]
+        results = self.retriever.rank(
+            queries=samples, candidates=candidates, k=n_results
+        )
+        return add_retriever_tag(results, "finetunable_retriever")
 
     def save_meta(self, directory: Path) -> None:
         pass
