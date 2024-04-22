@@ -25,7 +25,7 @@ class SpladeMach : public std::enable_shared_from_this<SpladeMach> {
  public:
   SpladeMach(std::string input_column, std::vector<bolt::ModelPtr> models,
              std::vector<data::MachIndexPtr> indexes,
-             dataset::TextTokenizerPtr tokenizer);
+             dataset::TextTokenizerPtr tokenizer, bool lowercase);
 
   std::vector<bolt::metrics::History> train(
       const data::ColumnMapIteratorPtr& train_data, size_t epochs,

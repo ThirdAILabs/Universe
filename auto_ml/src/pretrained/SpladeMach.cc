@@ -23,14 +23,14 @@ namespace thirdai::automl {
 SpladeMach::SpladeMach(std::string input_column,
                        std::vector<bolt::ModelPtr> models,
                        std::vector<data::MachIndexPtr> indexes,
-                       dataset::TextTokenizerPtr tokenizer)
+                       dataset::TextTokenizerPtr tokenizer, bool lowercase)
     : _models(std::move(models)),
       _indexes(std::move(indexes)),
       _input_column(std::move(input_column)) {
   uint32_t vocab_size = _models.at(0)->inputDims().at(0);
   _tokenizer = std::make_shared<data::TextTokenizer>(
       _input_column, _source_column, std::nullopt, std::move(tokenizer),
-      dataset::NGramEncoder::make(1), false, vocab_size);
+      dataset::NGramEncoder::make(1), lowercase, vocab_size);
 
   for (const auto& model : _models) {
     _combined_output_dim += model->outputs().at(0)->dim();
@@ -174,6 +174,7 @@ ar::ConstArchivePtr SpladeMach::toArchive() const {
   mach_pretrained->set("indexes", indexes);
 
   mach_pretrained->set("tokenizer", _tokenizer->tokenizer()->toArchive());
+  mach_pretrained->set("lowercase", ar::boolean(_tokenizer->lowercase()));
 
   mach_pretrained->set("input_column", ar::str(_input_column));
 
@@ -194,11 +195,12 @@ std::shared_ptr<SpladeMach> SpladeMach::fromArchive(
 
   dataset::TextTokenizerPtr tokenizer =
       dataset::TextTokenizer::fromArchive(*archive.get("tokenizer"));
+  bool lowercase = archive.boolean("lowercase");
 
   std::string input_column = archive.str("input_column");
 
   return std::make_shared<SpladeMach>(
-      SpladeMach(input_column, models, indexes, tokenizer));
+      SpladeMach(input_column, models, indexes, tokenizer, lowercase));
 }
 
 void SpladeMach::save(const std::string& filename) const {
