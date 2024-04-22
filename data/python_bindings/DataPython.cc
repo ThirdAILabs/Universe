@@ -98,6 +98,12 @@ void createDataSubmodule(py::module_& dataset_submodule) {
            py::arg("iter"), py::arg("transformation"),
            py::arg("state") = nullptr);
 
+  py::class_<LineIterator, std::shared_ptr<LineIterator>, ColumnMapIterator>(
+      dataset_submodule, "LineIterator")
+      .def(py::init<const std::string&, std::string, size_t>(),
+           py::arg("filename"), py::arg("column_name"),
+           py::arg("rows_per_load") = ColumnMapIterator::DEFAULT_ROWS_PER_LOAD);
+
   py::enum_<ValueFillType>(dataset_submodule, "ValueFillType")
       .value("Ones", ValueFillType::Ones)
       .value("SumToOne", ValueFillType::SumToOne)

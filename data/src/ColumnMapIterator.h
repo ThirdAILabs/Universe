@@ -114,4 +114,26 @@ class TransformedIterator final : public ColumnMapIterator {
   StatePtr _state;
 };
 
+class LineIterator final : public ColumnMapIterator {
+ public:
+  LineIterator(const std::string& filename, std::string column_name,
+               size_t rows_per_load = DEFAULT_ROWS_PER_LOAD);
+
+  LineIterator(DataSourcePtr data_source, std::string column_name,
+               size_t rows_per_load = DEFAULT_ROWS_PER_LOAD);
+
+  std::optional<ColumnMap> next() final;
+
+  void restart() final { _data_source->restart(); }
+
+  std::string resourceName() const final {
+    return _data_source->resourceName();
+  }
+
+ private:
+  DataSourcePtr _data_source;
+  std::string _column_name;
+  size_t _rows_per_load;
+};
+
 }  // namespace thirdai::data

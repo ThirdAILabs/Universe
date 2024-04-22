@@ -1,10 +1,12 @@
 #include "ColumnMapIterator.h"
+#include <data/src/ColumnMap.h>
 #include <data/src/columns/ValueColumns.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/utils/CsvParser.h>
 #include <nlohmann/json.hpp>
 #include <exception>
 #include <limits>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::data {
@@ -155,5 +157,26 @@ std::optional<ColumnMap> JsonIterator::next() {
 }
 
 void JsonIterator::restart() { _data_source->restart(); }
+
+LineIterator::LineIterator(const std::string& filename, std::string column_name,
+                           size_t rows_per_load)
+    : LineIterator(dataset::FileDataSource::make(filename),
+                   std::move(column_name), rows_per_load) {}
+
+LineIterator::LineIterator(DataSourcePtr data_source, std::string column_name,
+                           size_t rows_per_load)
+    : _data_source(std::move(data_source)),
+      _column_name(std::move(column_name)),
+      _rows_per_load(rows_per_load) {}
+
+std::optional<ColumnMap> LineIterator::next() {
+  auto rows = _data_source->nextBatch(_rows_per_load);
+  if (!rows) {
+    return std::nullopt;
+  }
+
+  return ColumnMap({{_column_name,
+                     ValueColumn<std::string>::make(std::move(rows.value()))}});
+}
 
 }  // namespace thirdai::data
