@@ -12,6 +12,7 @@
 #include <data/src/transformations/DyadicInterval.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
+#include <data/src/transformations/ParseSvm.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/StringCast.h>
@@ -504,6 +505,14 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("tokenizer"), py::arg("n_augmented_tokens") = 100,
            py::arg("augmentation_frac") = std::nullopt,
            py::arg("filter_tokens") = true, py::arg("batch_size") = 4096);
+
+  py::class_<ParseSvm, Transformation, std::shared_ptr<ParseSvm>>(
+      transformations_submodule, "ParseSvm")
+      .def(py::init<std::string, std::string, std::string, std::string, size_t,
+                    size_t>(),
+           py::arg("input_col"), py::arg("indices_col"), py::arg("values_col"),
+           py::arg("labels_col"), py::arg("indices_dim"),
+           py::arg("labels_dim"));
 }
 
 }  // namespace thirdai::data::python

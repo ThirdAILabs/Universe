@@ -438,6 +438,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/Recurrence.cc
     data/src/transformations/CountTokens.cc
     data/src/transformations/Graph.cc
+    data/src/transformations/ParseSvm.cc
     data/src/transformations/RegressionBinning.cc
     data/src/transformations/DyadicInterval.cc
     data/src/transformations/SpladeAugmentation.cc
