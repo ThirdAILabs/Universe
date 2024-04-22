@@ -140,21 +140,21 @@ bolt::ModelPtr buildModel(const bolt::EmbeddingPtr& emb,
                           uint32_t n_target_classes,
                           bool disable_hidden_sparsity,
                           bool use_pretrained_fc) {
-  if(use_pretrained_fc){                          
+  if (use_pretrained_fc) {
     fc->kernel()->swapActivation(bolt::ActivationFunction::ReLU);
     if (disable_hidden_sparsity) {
       fc->setSparsity(1.0, false, false);
     }
   }
   auto out = bolt::FullyConnected::make(
-      n_target_classes, use_pretrained_fc ? fc->dim() : emb->dim(), utils::autotuneSparsity(n_target_classes),
-      "softmax");
+      n_target_classes, use_pretrained_fc ? fc->dim() : emb->dim(),
+      utils::autotuneSparsity(n_target_classes), "softmax");
 
   out->setName("output");
 
   auto input = bolt::Input::make(emb->inputDim());
   auto hidden = emb->apply(input);
-  if(use_pretrained_fc){
+  if (use_pretrained_fc) {
     hidden = fc->apply(hidden);
   }
   auto output = out->apply(hidden);
@@ -172,12 +172,13 @@ UDTClassifier::UDTClassifier(const ColumnDataTypes& data_types,
                              const config::ArgumentMap& user_args) {
   auto [emb, fc] = getOps(pretrained_model->model());
 
-  auto use_pretrained_fc = user_args.get<bool>("use_pretrained_fc", "boolean",
-                                 true);
+  auto use_pretrained_fc =
+      user_args.get<bool>("use_pretrained_fc", "boolean", true);
 
   auto model = buildModel(
       emb, fc, n_target_classes,
-      user_args.get<bool>("disable_hidden_sparsity", "boolean", true), use_pretrained_fc);
+      user_args.get<bool>("disable_hidden_sparsity", "boolean", true),
+      use_pretrained_fc);
 
   _classifier = std::make_shared<utils::Classifier>(
       model, user_args.get<bool>("freeze_hash_tables", "boolean",
