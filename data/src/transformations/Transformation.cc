@@ -12,6 +12,7 @@
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/Graph.h>
 #include <data/src/transformations/MachLabel.h>
+#include <data/src/transformations/NextWordPredictionDualTokenizer.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/Recurrence.h>
 #include <data/src/transformations/RegressionBinning.h>
@@ -57,6 +58,7 @@ TransformationPtr Transformation::fromArchive(const ar::Archive& archive) {
   HANDLE_TYPE(Pipeline)
   HANDLE_TYPE(Recurrence)
   HANDLE_TYPE(RegressionBinning)
+  HANDLE_TYPE(NextWordPredictionDualTokenizer)
   HANDLE_TYPE(CastToValue<uint32_t>)
   HANDLE_TYPE(CastToValue<float>)
   HANDLE_TYPE(CastToValue<int64_t>)
