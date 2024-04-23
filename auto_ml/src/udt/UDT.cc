@@ -43,7 +43,7 @@ UDT::UDT(
     const std::string& target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
-    const SpladeMachPtr& pretrained_model,
+    const PretrainedBasePtr& pretrained_model,
     const config::ArgumentMap& user_args) {
   if (pretrained_model) {
     if (!n_target_classes) {

@@ -5,7 +5,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/Featurizer.h>
-#include <auto_ml/src/pretrained/SpladeMach.h>
+#include <auto_ml/src/pretrained/PretrainedBase.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <auto_ml/src/udt/utils/Models.h>
@@ -29,7 +29,7 @@ class UDTClassifier final : public UDTBackend {
       const config::ArgumentMap& user_args);
 
   UDTClassifier(const ColumnDataTypes& data_types, uint32_t n_target_classes,
-                bool integer_target, const SpladeMachPtr& pretrained_model,
+                bool integer_target, const PretrainedBasePtr& pretrained_model,
                 char delimiter, const config::ArgumentMap& user_args);
 
   explicit UDTClassifier(const ar::Archive& archive);

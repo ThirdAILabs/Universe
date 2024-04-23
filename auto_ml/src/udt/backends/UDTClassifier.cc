@@ -164,12 +164,12 @@ bolt::ModelPtr buildModel(const bolt::EmbeddingPtr& emb,
 
 UDTClassifier::UDTClassifier(const ColumnDataTypes& data_types,
                              uint32_t n_target_classes, bool integer_target,
-                             const SpladeMachPtr& pretrained_model,
+                             const PretrainedBasePtr& pretrained_model,
                              char delimiter,
                              const config::ArgumentMap& user_args) {
   auto [emb, fc] = getOps(pretrained_model->model());
 
-  if (user_args.get<bool>("emb_only", "boolean", false)) {
+  if (user_args.get<bool>("emb_only", "boolean", true)) {
     fc = nullptr;
   }
   auto model = buildModel(

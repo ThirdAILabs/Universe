@@ -6,7 +6,7 @@
 #include <bolt/python_bindings/BoltTrainPython.h>
 #include <hashing/python_bindings/HashingPython.h>
 #include <auto_ml/python_bindings/AutomlPython.h>
-#include <auto_ml/python_bindings/SpladeMachPython.h>
+#include <auto_ml/python_bindings/PretrainedBasePython.h>
 #include <data/python_bindings/DataPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <licensing/python_bindings/LicensingPython.h>
@@ -143,7 +143,7 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
   // Automl in Bolt
   thirdai::automl::python::defineAutomlInModule(bolt_submodule);
-  thirdai::automl::python::addSpladeMachModule(bolt_submodule);
+  thirdai::automl::python::addPretrainedBaseModule(bolt_submodule);
   thirdai::mach::python::defineMach(bolt_submodule);
 
   thirdai::automl::python::createUDTTypesSubmodule(bolt_submodule);
