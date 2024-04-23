@@ -119,20 +119,34 @@ std::pair<std::string, CategoricalDataTypePtr> categoricalDataType(
       "classifier.");
 }
 
-std::pair<bolt::EmbeddingPtr, bolt::FullyConnectedPtr> getOps(
-    const bolt::ModelPtr& model) {
-  if (model->opExecutionOrder().size() != 2) {
+bolt::EmbeddingPtr getEmbeddingLayer(const bolt::ModelPtr& model) {
+  if (model->opExecutionOrder().empty()) {
     throw std::invalid_argument("Invalid base pretrained model.");
   }
 
   auto emb = bolt::Embedding::cast(model->opExecutionOrder()[0]);
-  auto fc = bolt::FullyConnected::cast(model->opExecutionOrder()[1]);
-
-  if (!emb || !fc) {
+  if (!emb) {
     throw std::invalid_argument("Invalid base pretrained model.");
   }
 
-  return {emb, fc};
+  if (model->opExecutionOrder().size() == 1) {
+    emb->swapActivation(bolt::ActivationFunction::ReLU);
+  }
+
+  return emb;
+}
+
+bolt::FullyConnectedPtr getFcLayer(const bolt::ModelPtr& model) {
+  if (model->opExecutionOrder().size() != 2) {
+    return nullptr;
+  }
+
+  auto fc = bolt::FullyConnected::cast(model->opExecutionOrder()[1]);
+  if (fc) {
+    fc->kernel()->swapActivation(bolt::ActivationFunction::ReLU);
+  }
+
+  return fc;
 }
 
 bolt::ModelPtr buildModel(const bolt::EmbeddingPtr& emb,
@@ -142,7 +156,6 @@ bolt::ModelPtr buildModel(const bolt::EmbeddingPtr& emb,
   auto input = bolt::Input::make(emb->inputDim());
   auto hidden = emb->apply(input);
   if (fc) {
-    fc->kernel()->swapActivation(bolt::ActivationFunction::ReLU);
     if (disable_hidden_sparsity) {
       fc->setSparsity(1.0, false, false);
     }
@@ -167,11 +180,11 @@ UDTClassifier::UDTClassifier(const ColumnDataTypes& data_types,
                              const PretrainedBasePtr& pretrained_model,
                              char delimiter,
                              const config::ArgumentMap& user_args) {
-  auto [emb, fc] = getOps(pretrained_model->model());
+  auto emb = getEmbeddingLayer(pretrained_model->model());
 
-  if (user_args.get<bool>("emb_only", "boolean", true)) {
-    fc = nullptr;
-  }
+  bool emb_only = user_args.get<bool>("emb_only", "boolean", true);
+  auto fc = !emb_only ? getFcLayer(pretrained_model->model()) : nullptr;
+
   auto model = buildModel(
       emb, fc, n_target_classes,
       user_args.get<bool>("disable_hidden_sparsity", "boolean", true));
