@@ -19,10 +19,10 @@ void addPretrainedBaseModule(py::module_& module) {
            py::arg("phrases"), py::arg("hashes_per_model"))
       .def("get_top_tokens", &PretrainedBase::getTopTokens, py::arg("phrase"),
            py::arg("num_tokens"), py::arg("num_buckets_to_decode"))
-#endif
       .def("train", &PretrainedBase::train, py::arg("train_data"),
            py::arg("epochs"), py::arg("batch_size"), py::arg("learning_rate"),
            py::arg("val_data"))
+#endif
       .def(
           "save",
           [](const PretrainedBasePtr& model, const std::string& filename) {
