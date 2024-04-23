@@ -4,7 +4,6 @@ from typing import List, Optional, Union
 import numpy as np
 import pandas as pd
 from pandera import typing as pt
-
 from thirdai import data
 
 # We typedef doc ID to anticipate switching over to string IDs

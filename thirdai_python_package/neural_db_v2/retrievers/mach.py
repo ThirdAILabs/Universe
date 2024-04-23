@@ -1,8 +1,9 @@
-from ..core.retriever import Retriever
-from ..core.types import ChunkBatch, ChunkId, Score, SupervisedBatch
 from typing import Iterable, List, Tuple
 
 from thirdai import bolt, data
+
+from ..core.retriever import Retriever
+from ..core.types import ChunkBatch, ChunkId, Score, SupervisedBatch
 
 
 class ChunkBatchColumnMapIterator(data.PyColumnMapIterator):
@@ -104,7 +105,7 @@ class Mach(Retriever):
     def insert(self, chunks: Iterable[ChunkBatch], **kwargs):
         train_data = ChunkBatchColumnMapIterator(chunks)
 
-        metrics = (kwargs.get("metrics", []))
+        metrics = kwargs.get("metrics", [])
         if "hash_precision@5" not in metrics:
             metrics.append("hash_precision@5")
 

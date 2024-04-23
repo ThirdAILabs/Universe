@@ -1,7 +1,7 @@
 import operator
 import uuid
 from functools import reduce
-from typing import Dict, Iterable, List, Set, Optional
+from typing import Dict, Iterable, List, Optional, Set
 
 import numpy as np
 import pandas as pd
@@ -47,12 +47,12 @@ def get_sql_columns(df: pd.DataFrame):
     return columns
 
 
-class SqlLiteIterator():
+class SqlLiteIterator:
     def __init__(self, table: Table, insertion_id: str, batch_size: int = 100):
         self.table = table
         self.insertion_id = insertion_id
         self.batch_size = batch_size
-    
+
     def __next__(self) -> Optional[ChunkBatch]:
         for sql_lite_batch in self.sql_row_iterator.yield_per(self.batch_size):
             df = pd.DataFrame(sql_lite_batch, columns=self.sql_row_iterator.keys())
@@ -65,7 +65,9 @@ class SqlLiteIterator():
         raise StopIteration
 
     def __iter__(self):
-        stmt = select(self.chunk_table).where(self.chunk_table.c.insertion_id == self.insertion_id)
+        stmt = select(self.chunk_table).where(
+            self.chunk_table.c.insertion_id == self.insertion_id
+        )
         with self.engine.connect() as conn:
             self.sql_row_iterator = conn.execute(stmt)
 
@@ -197,7 +199,9 @@ class SQLiteChunkStore(ChunkStore):
 
             self._write_to_table(df=chunk_df, table=self.chunk_table)
 
-        inserted_chunks_iterator = SqlLiteIterator(table=self.chunk_table, insertion_id=insertion_id)
+        inserted_chunks_iterator = SqlLiteIterator(
+            table=self.chunk_table, insertion_id=insertion_id
+        )
 
         return inserted_chunks_iterator
 
@@ -295,22 +299,3 @@ class SQLiteChunkStore(ChunkStore):
             )
 
         return remapped_batches
-
-
-
-
-class MyNumbers:
-    def __iter__(self):
-        self.a = 1
-        return self
-    
-    def __next__(self):
-        if self.a <= 4:
-            x = self.a
-            self.a += 1
-            return x
-        else:
-            raise StopIteration
-    
-    def restart(self):
-        self.a = 1
