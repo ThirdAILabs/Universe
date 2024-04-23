@@ -288,6 +288,7 @@ endif()
 
 set(THIRDAI_SOURCES
     smx/src/tensor/DenseTensor.cc
+    smx/src/tensor/MemoryHandle.cc
     smx/src/tensor/CsrTensor.cc
     smx/src/tensor/functions/Reshape.cc
     smx/src/tensor/functions/Transpose.cc
