@@ -1,7 +1,7 @@
 import operator
 import uuid
 from functools import reduce
-from typing import Dict, Iterable, List, Set
+from typing import Dict, Iterable, List, Set, Optional
 
 import numpy as np
 import pandas as pd
@@ -47,6 +47,29 @@ def get_sql_columns(df: pd.DataFrame):
     return columns
 
 
+class SqlLiteIterator():
+    def __init__(self, table: Table, insertion_id: str, batch_size: int = 100):
+        self.table = table
+        self.insertion_id = insertion_id
+        self.batch_size = batch_size
+    
+    def __next__(self) -> Optional[ChunkBatch]:
+        for sql_lite_batch in self.sql_row_iterator.yield_per(self.batch_size):
+            df = pd.DataFrame(sql_lite_batch, columns=self.sql_row_iterator.keys())
+            chunk_batch = ChunkBatch(
+                chunk_id=df.chunk_id,
+                text=df.text,
+                keywords=df.keywords,
+            )
+            yield chunk_batch
+        raise StopIteration
+
+    def __iter__(self):
+        stmt = select(self.chunk_table).where(self.chunk_table.c.insertion_id == self.insertion_id)
+        with self.engine.connect() as conn:
+            self.sql_row_iterator = conn.execute(stmt)
+
+
 class SQLiteChunkStore(ChunkStore):
     def __init__(self, in_memory=True, **kwargs):
         super().__init__(**kwargs)
@@ -67,6 +90,7 @@ class SQLiteChunkStore(ChunkStore):
             Column("text", String),
             Column("keywords", String),
             Column("document", String),
+            Column("insertion_id", String),
         )
         self.metadata.create_all(self.engine)
 
@@ -154,7 +178,7 @@ class SQLiteChunkStore(ChunkStore):
         self._write_to_table(df=metadata, table=self.metadata_table)
 
     def insert(self, chunks: Iterable[NewChunkBatch], **kwargs) -> Iterable[ChunkBatch]:
-        inserted_batches = []
+        insertion_id = str(uuid.uuid4())
         for batch in chunks:
             chunk_ids = pd.Series(
                 np.arange(self.next_id, self.next_id + len(batch), dtype=np.int64)
@@ -163,6 +187,7 @@ class SQLiteChunkStore(ChunkStore):
 
             chunk_df = batch.to_df()
             chunk_df["chunk_id"] = chunk_ids
+            chunk_df["insertion_id"] = insertion_id
 
             if batch.custom_id is not None:
                 self._store_custom_ids(custom_ids=batch.custom_id, chunk_ids=chunk_ids)
@@ -172,15 +197,9 @@ class SQLiteChunkStore(ChunkStore):
 
             self._write_to_table(df=chunk_df, table=self.chunk_table)
 
-            inserted_batches.append(
-                ChunkBatch(
-                    chunk_id=chunk_ids,
-                    text=batch.text,
-                    keywords=batch.keywords,
-                )
-            )
+        inserted_chunks_iterator = SqlLiteIterator(table=self.chunk_table, insertion_id=insertion_id)
 
-        return inserted_batches
+        return inserted_chunks_iterator
 
     def delete(self, chunk_ids: List[ChunkId], **kwargs):
         delete_chunks = delete(self.chunk_table).where(
@@ -276,3 +295,22 @@ class SQLiteChunkStore(ChunkStore):
             )
 
         return remapped_batches
+
+
+
+
+class MyNumbers:
+    def __iter__(self):
+        self.a = 1
+        return self
+    
+    def __next__(self):
+        if self.a <= 4:
+            x = self.a
+            self.a += 1
+            return x
+        else:
+            raise StopIteration
+    
+    def restart(self):
+        self.a = 1

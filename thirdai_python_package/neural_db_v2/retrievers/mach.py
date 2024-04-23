@@ -11,23 +11,21 @@ class ChunkBatchColumnMapIterator(data.PyColumnMapIterator):
         self.iterator = iter(self.iterable)
 
     def next(self):
-        try:
-            batch = next(self.iterator)
-            return data.ColumnMap(
+        for batch in self.chunk_iterator:
+            yield data.ColumnMap(
                 {
                     Mach.WEAK: data.columns.StringColumn(batch.text),
                     Mach.STRONG: data.columns.StringColumn(batch.keywords),
                     Mach.ID: data.columns.DecimalColumn(batch.chunk_id),
                 }
             )
-        except StopIteration:
-            return None
+        return None
 
     def resource_name(self):
         return "ChunkBatchIterable"
 
     def restart(self):
-        raise NotImplementedError()
+        self.iterator = iter(self.iterable)
 
 
 class EarlyStopWithMinEpochs(bolt.train.callbacks.Callback):
@@ -104,34 +102,28 @@ class Mach(Retriever):
         )
 
     def insert(self, chunks: Iterable[ChunkBatch], **kwargs):
-        for batch in chunks:
-            train_data = data.ColumnMap(
-                {
-                    Mach.WEAK: data.columns.StringColumn(batch.text),
-                    Mach.STRONG: data.columns.StringColumn(batch.keywords),
-                    Mach.ID: data.columns.DecimalColumn(batch.chunk_id),
-                }
-            )
+        train_data = ChunkBatchColumnMapIterator(chunks)
 
-            metrics = kwargs.get("metrics", ["hash_precision@5"])
-            if not metrics:
-                metrics = ["hash_precision@5"]
+        metrics = (kwargs.get("metrics", []))
+        if "hash_precision@5" not in metrics:
+            metrics.append("hash_precision@5")
 
-            early_stop_callback = EarlyStopWithMinEpochs(
-                min_epochs=kwargs.get("early_stop_min_epochs", 3),
-                tracked_metric=kwargs.get("early_stop_metric", metrics[0]),
-                metric_threshold=kwargs.get("early_stop_metric_threshold", 0.95),
-            )
+        early_stop_callback = EarlyStopWithMinEpochs(
+            min_epochs=kwargs.get("early_stop_min_epochs", 3),
+            tracked_metric=kwargs.get("early_stop_metric", "hash_precision@5"),
+            metric_threshold=kwargs.get("early_stop_metric_threshold", 0.95),
+        )
 
-            self.model.coldstart(
-                data=train_data,
-                strong_cols=[Mach.STRONG],
-                weak_cols=[Mach.WEAK],
-                learning_rate=kwargs.get("learning_rate", 0.001),
-                epochs=kwargs.get("epochs", 15),
-                metrics=metrics,
-                callbacks=[early_stop_callback],
-            )
+        self.model.coldstart(
+            data=train_data,
+            strong_cols=[Mach.STRONG],
+            weak_cols=[Mach.WEAK],
+            learning_rate=kwargs.get("learning_rate", 0.001),
+            epochs=kwargs.get("epochs", 15),
+            metrics=metrics,
+            callbacks=[early_stop_callback],
+            max_in_memory_batches=kwargs.get("max_in_memory_batches", None),
+        )
 
     def supervised_train(self, samples: Iterable[SupervisedBatch], **kwargs):
         for batch in samples:
