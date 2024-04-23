@@ -1,5 +1,5 @@
-from thirdai import bolt, dataset
 import pytest
+from thirdai import bolt, dataset
 
 pytestmark = [pytest.mark.unit]
 
