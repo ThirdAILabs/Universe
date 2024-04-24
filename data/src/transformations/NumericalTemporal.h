@@ -11,7 +11,7 @@ class NumericalTemporal final : public Transformation {
                     std::string timestamp_column, std::string output_column,
                     std::string tracker_key, size_t history_len,
                     int64_t interval_len, bool should_update_history,
-                    bool include_current_row, int64_t time_lag);
+                    bool include_current_row, int64_t interval_lag);
 
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
@@ -39,7 +39,7 @@ class NumericalTemporal final : public Transformation {
   int64_t _interval_len;
   bool _should_update_history;
   bool _include_current_row;
-  int64_t _time_lag;
+  int64_t _interval_lag;
 };
 
 }  // namespace thirdai::data

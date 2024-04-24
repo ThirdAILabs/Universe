@@ -253,7 +253,7 @@ TransformSeries numericalTemporal(
     const std::string& timestamp_col,
     const TemporalNumericalConfig& numerical_temporal,
     const std::string& label_column, bool should_update_history,
-    int64_t interval_len, int64_t time_lag, uint32_t temporal_id) {
+    int64_t interval_len, int64_t interval_lag, uint32_t temporal_id) {
   std::vector<data::TransformationPtr> transformations;
 
   if (!asNumerical(data_types.at(numerical_temporal.column_name))) {
@@ -292,7 +292,7 @@ TransformSeries numericalTemporal(
       /* interval_len= */ interval_len,
       /* should_update_history= */ should_update_history,
       /* include_current_row= */ include_current_row,
-      /* time_lag= */ time_lag);
+      /* interval_lag= */ interval_lag);
 
   transformations.push_back(transformation);
 
@@ -341,7 +341,7 @@ MergedTransformSeries temporalTransformations(
             /*label_column=*/label_column,
             /*should_update_history=*/should_update_history,
             /*interval_len=*/options.granularity(),
-            /*time_lag=*/options.timeLag(), /*temporal_id=*/temporal_id++);
+            /*interval_lag=*/options.lookahead, /*temporal_id=*/temporal_id++);
 
         transformations.insert(transformations.end(),
                                tracker_transformations.begin(),

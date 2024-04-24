@@ -8,7 +8,7 @@ NumericalTemporal::NumericalTemporal(
     std::string user_column, std::string value_column,
     std::string timestamp_column, std::string output_column,
     std::string tracker_key, size_t history_len, int64_t interval_len,
-    bool should_update_history, bool include_current_row, int64_t time_lag)
+    bool should_update_history, bool include_current_row, int64_t interval_lag)
     : _user_column(std::move(user_column)),
       _value_column(std::move(value_column)),
       _timestamp_column(std::move(timestamp_column)),
@@ -18,11 +18,11 @@ NumericalTemporal::NumericalTemporal(
       _interval_len(interval_len),
       _should_update_history(should_update_history),
       _include_current_row(include_current_row),
-      _time_lag(time_lag) {
-  if (time_lag < 0) {
+      _interval_lag(interval_lag) {
+  if (_interval_lag < 0) {
     throw std::invalid_argument("time_lag must be > 0.");
   }
-  if (_include_current_row && time_lag != 0) {
+  if (_include_current_row && _interval_lag != 0) {
     throw std::invalid_argument(
         "time_lag must be 0 if include_current_row=True.");
   }
@@ -68,7 +68,7 @@ ColumnMap NumericalTemporal::apply(ColumnMap columns, State& state) const {
 
     std::vector<float> user_last_n_counts(_history_len, 0);
 
-    if (_include_current_row && _time_lag == 0) {
+    if (_include_current_row && _interval_lag == 0) {
       user_last_n_counts.back() += value_col->value(i);
     }
 
@@ -91,7 +91,7 @@ ColumnMap NumericalTemporal::apply(ColumnMap columns, State& state) const {
     // The -1 is so that the current interval is included. For example if the
     // history length is 2 and the time lag is 0, then we want the previous and
     // current intervals.
-    int64_t start_interval = curr_interval - (_history_len + _time_lag - 1);
+    int64_t start_interval = curr_interval - (_history_len + _interval_lag - 1);
     int64_t end_interval = start_interval + _history_len;
 
     size_t relevant_intervals = 0;
