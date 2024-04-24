@@ -31,6 +31,15 @@ struct ItemRecord {
 
 using ItemHistoryTracker =
     std::unordered_map<std::string, std::deque<ItemRecord>>;
+
+struct CountRecord {
+  float value;
+  int64_t interval;
+};
+
+using CountHistoryTracker =
+    std::unordered_map<std::string, std::deque<CountRecord>>;
+
 /**
  * The purpose of this state object is to have a central location where stateful
  * information is stored in the data pipeline. Having a unique owner for all the
@@ -135,6 +144,10 @@ class State {
     return _item_history_trackers[tracker_key];
   }
 
+  CountHistoryTracker& getCountHistoryTracker(const std::string& tracker_key) {
+    return _count_history_trackers[tracker_key];
+  }
+
   void clearHistoryTrackers() { _item_history_trackers.clear(); }
 
   const auto& graph() const {
@@ -157,6 +170,8 @@ class State {
   std::unordered_map<std::string, ThreadSafeVocabularyPtr> _vocabs;
 
   std::unordered_map<std::string, ItemHistoryTracker> _item_history_trackers;
+
+  std::unordered_map<std::string, CountHistoryTracker> _count_history_trackers;
 
   automl::GraphInfoPtr _graph;
 

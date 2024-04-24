@@ -13,6 +13,7 @@
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/NextWordPrediction.h>
+#include <data/src/transformations/NumericalTemporal.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/StringCast.h>
@@ -372,6 +373,17 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("timestamp_column"), py::arg("output_column"),
            py::arg("tracker_key"), py::arg("track_last_n"),
            py::arg("should_update_history") = true,
+           py::arg("include_current_row") = false, py::arg("time_lag") = 0);
+
+  py::class_<NumericalTemporal, Transformation,
+             std::shared_ptr<NumericalTemporal>>(transformations_submodule,
+                                                 "NumericalTemporal")
+      .def(py::init<std::string, std::string, std::string, std::string,
+                    std::string, size_t, int64_t, bool, bool, int64_t>(),
+           py::arg("user_column"), py::arg("value_column"),
+           py::arg("timestamp_column"), py::arg("output_column"),
+           py::arg("tracker_key"), py::arg("history_len"),
+           py::arg("interval_len"), py::arg("should_update_history") = true,
            py::arg("include_current_row") = false, py::arg("time_lag") = 0);
 
   py::class_<Date, Transformation, std::shared_ptr<Date>>(

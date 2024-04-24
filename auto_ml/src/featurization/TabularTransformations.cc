@@ -5,6 +5,7 @@
 #include <data/src/transformations/Date.h>
 #include <data/src/transformations/EncodePosition.h>
 #include <data/src/transformations/FeatureHash.h>
+#include <data/src/transformations/NumericalTemporal.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringHash.h>
@@ -189,24 +190,113 @@ void checkKeyColumn(const std::string& key_column,
 
 void checkTemporalConfig(const TemporalConfig& temporal_config,
                          const ColumnDataTypes& data_types) {
-  if (!temporal_config.isCategorical()) {
-    throw std::invalid_argument(
-        "Only categorical temporal tracking is supported.");
-  }
-
-  auto categorical_temporal = temporal_config.asCategorical();
-
-  if (!data_types.count(categorical_temporal.column_name)) {
+  if (!data_types.count(temporal_config.columnName())) {
     throw std::invalid_argument("Tracked column '" +
-                                categorical_temporal.column_name +
+                                temporal_config.columnName() +
                                 "' is not specified in data_types.");
   }
+}
+
+TransformSeries categoricalTemporal(
+    const ColumnDataTypes& data_types, const std::string& key_column,
+    const std::string& timestamp_col,
+    const TemporalCategoricalConfig& categorical_temporal,
+    const std::string& label_column, bool should_update_history,
+    int64_t time_lag, uint32_t temporal_id) {
+  std::vector<data::TransformationPtr> transformations;
 
   if (!asCategorical(data_types.at(categorical_temporal.column_name))) {
     throw std::invalid_argument("Expected the tracked column '" +
                                 categorical_temporal.column_name +
                                 "' to be categorical.");
   }
+
+  auto tracked_column =
+      asCategorical(data_types.at(categorical_temporal.column_name));
+
+  // This is just an additional check to ensure that we don't leak labels if
+  // the tracked column is the labels.
+  bool tracking_labels = categorical_temporal.column_name == label_column;
+  bool include_current_row =
+      categorical_temporal.include_current_row && !tracking_labels;
+
+  std::string item_column =
+      temporalItemIdsOutput(categorical_temporal.column_name);
+
+  if (should_update_history || !tracking_labels) {
+    auto item_hash = std::make_shared<data::StringHash>(
+        categorical_temporal.column_name, item_column, std::nullopt,
+        tracked_column->delimiter);
+    transformations.push_back(item_hash);
+  }
+
+  std::string output = temporalTrackingOutput(temporal_id);
+
+  auto transformation = std::make_shared<data::CategoricalTemporal>(
+      /* user_column= */ key_column,
+      /* item_column= */ item_column,
+      /* timestamp_column= */ timestamp_col,
+      /* output_column= */ output,
+      /* tracker_key= */ output,
+      /* track_last_n= */ categorical_temporal.track_last_n,
+      /* should_update_history= */ should_update_history,
+      /* include_current_row= */ include_current_row,
+      /* time_lag= */ time_lag);
+
+  transformations.push_back(transformation);
+
+  return {transformations, output};
+}
+
+TransformSeries numericalTemporal(
+    const ColumnDataTypes& data_types, const std::string& key_column,
+    const std::string& timestamp_col,
+    const TemporalNumericalConfig& numerical_temporal,
+    const std::string& label_column, bool should_update_history,
+    int64_t interval_len, int64_t time_lag, uint32_t temporal_id) {
+  std::vector<data::TransformationPtr> transformations;
+
+  if (!asNumerical(data_types.at(numerical_temporal.column_name))) {
+    throw std::invalid_argument("Expected the tracked column '" +
+                                numerical_temporal.column_name +
+                                "' to be numerical.");
+  }
+
+  auto tracked_column =
+      asNumerical(data_types.at(numerical_temporal.column_name));
+
+  // This is just an additional check to ensure that we don't leak labels if
+  // the tracked column is the labels.
+  bool tracking_labels = numerical_temporal.column_name == label_column;
+  bool include_current_row =
+      numerical_temporal.include_current_row && !tracking_labels;
+
+  std::string value_column =
+      temporalNumericalValueOutput(numerical_temporal.column_name);
+
+  if (should_update_history || !tracking_labels) {
+    auto parse_value = std::make_shared<data::CastToValue<float>>(
+        numerical_temporal.column_name, value_column);
+    transformations.push_back(parse_value);
+  }
+
+  std::string output = temporalTrackingOutput(temporal_id);
+
+  auto transformation = std::make_shared<data::NumericalTemporal>(
+      /* user_column= */ key_column,
+      /* value_column= */ value_column,
+      /* timestamp_column= */ timestamp_col,
+      /* output_column= */ output,
+      /* tracker_key= */ output,
+      /* history_len= */ numerical_temporal.history_length,
+      /* interval_len= */ interval_len,
+      /* should_update_history= */ should_update_history,
+      /* include_current_row= */ include_current_row,
+      /* time_lag= */ time_lag);
+
+  transformations.push_back(transformation);
+
+  return {transformations, output};
 }
 
 MergedTransformSeries temporalTransformations(
@@ -230,42 +320,34 @@ MergedTransformSeries temporalTransformations(
     for (const auto& temporal_config : relationships) {
       checkTemporalConfig(temporal_config, data_types);
 
-      auto categorical_temporal = temporal_config.asCategorical();
+      if (temporal_config.isCategorical()) {
+        auto [tracker_transformations, output] = categoricalTemporal(
+            /*data_types=*/data_types, /*key_column=*/key_column,
+            /*timestamp_col=*/timestamp_col,
+            /*categorical_temporal=*/temporal_config.asCategorical(),
+            /*label_column=*/label_column,
+            /*should_update_history=*/should_update_history,
+            /*time_lag=*/options.timeLag(), /*temporal_id=*/temporal_id++);
 
-      auto tracked_column =
-          asCategorical(data_types.at(categorical_temporal.column_name));
+        transformations.insert(transformations.end(),
+                               tracker_transformations.begin(),
+                               tracker_transformations.end());
+        output_columns.push_back(output);
+      } else if (temporal_config.isNumerical()) {
+        auto [tracker_transformations, output] = numericalTemporal(
+            /*data_types=*/data_types, /*key_column=*/key_column,
+            /*timestamp_col=*/timestamp_col,
+            /*numerical_temporal=*/temporal_config.asNumerical(),
+            /*label_column=*/label_column,
+            /*should_update_history=*/should_update_history,
+            /*interval_len=*/options.granularity(),
+            /*time_lag=*/options.timeLag(), /*temporal_id=*/temporal_id++);
 
-      // This is just an additional check to ensure that we don't leak labels if
-      // the tracked column is the labels.
-      bool tracking_labels = categorical_temporal.column_name == label_column;
-      bool include_current_row =
-          categorical_temporal.include_current_row && !tracking_labels;
-
-      std::string item_column =
-          temporalItemIdsOutput(categorical_temporal.column_name);
-
-      if (should_update_history || !tracking_labels) {
-        auto item_hash = std::make_shared<data::StringHash>(
-            categorical_temporal.column_name, item_column, std::nullopt,
-            tracked_column->delimiter);
-        transformations.push_back(item_hash);
+        transformations.insert(transformations.end(),
+                               tracker_transformations.begin(),
+                               tracker_transformations.end());
+        output_columns.push_back(output);
       }
-
-      std::string output = temporalTrackingOutput(temporal_id++);
-
-      auto transformation = std::make_shared<data::CategoricalTemporal>(
-          /* user_column= */ key_column,
-          /* item_column= */ item_column,
-          /* timestamp_column= */ timestamp_col,
-          /* output_column= */ output,
-          /* tracker_key= */ output,
-          /* track_last_n= */ categorical_temporal.track_last_n,
-          /* should_update_history= */ should_update_history,
-          /* include_current_row= */ include_current_row,
-          /* time_lag= */ options.timeLag());
-
-      transformations.push_back(transformation);
-      output_columns.push_back(output);
     }
   }
 

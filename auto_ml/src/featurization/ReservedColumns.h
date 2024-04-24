@@ -22,6 +22,8 @@ std::string dateOutputColumn(const std::string& input_column_name);
 
 std::string temporalItemIdsOutput(const std::string& input_column_name);
 
+std::string temporalNumericalValueOutput(const std::string& input_column_name);
+
 std::string temporalTrackingOutput(uint32_t temporal_id);
 
 const std::string TABULAR_COLUMNS_OUTPUT = "__tabular_columns__";
