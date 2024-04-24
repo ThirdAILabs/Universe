@@ -384,7 +384,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("timestamp_column"), py::arg("output_column"),
            py::arg("tracker_key"), py::arg("history_len"),
            py::arg("interval_len"), py::arg("should_update_history") = true,
-           py::arg("include_current_row") = false, py::arg("time_lag") = 0);
+           py::arg("include_current_row") = false, py::arg("interval_lag") = 0);
 
   py::class_<Date, Transformation, std::shared_ptr<Date>>(
       transformations_submodule, "Date")
