@@ -14,7 +14,6 @@ def load_chunks():
         os.path.dirname(os.path.abspath(__file__)),
         "../../auto_ml/python_tests/texts.csv",
     )
-
     return pd.read_csv(filename)
 
 

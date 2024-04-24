@@ -1,32 +1,83 @@
-from typing import Iterable, List, Tuple
+from typing import Iterable, List, Optional, Tuple
 
 from thirdai import bolt, data
+
+from thirdai_python_package.neural_db.models.mach_defaults import (
+    autotune_from_scratch_min_max_epochs,
+)
 
 from ..core.retriever import Retriever
 from ..core.types import ChunkBatch, ChunkId, Score, SupervisedBatch
 
 
-class ChunkBatchColumnMapIterator(data.PyColumnMapIterator):
+class ChunkColumnMapIterator(data.ColumnMapIterator):
     def __init__(self, iterable: Iterable[ChunkBatch]):
+        data.ColumnMapIterator.__init__(self)
+
         self.iterable = iterable
         self.iterator = iter(self.iterable)
 
-    def next(self):
-        for batch in self.chunk_iterator:
-            yield data.ColumnMap(
+    def next(self) -> Optional[data.ColumnMap]:
+        try:
+            batch = next(self.iterator)
+            print("LMFAO")
+            print(batch)
+            print(batch.chunk_id)
+            return data.ColumnMap(
                 {
-                    Mach.WEAK: data.columns.StringColumn(batch.text),
-                    Mach.STRONG: data.columns.StringColumn(batch.keywords),
-                    Mach.ID: data.columns.DecimalColumn(batch.chunk_id),
+                    Mach.WEAK: data.columns.StringColumn(batch.text.reset_index(drop=True)),
+                    Mach.STRONG: data.columns.StringColumn(batch.keywords.reset_index(drop=True)),
+                    Mach.ID: data.columns.TokenColumn(batch.chunk_id.reset_index(drop=True)),
                 }
             )
-        return None
+        except StopIteration:
+            return None
+    
+    def restart(self) -> None:
+        self.iterator = iter(self.iterable)
 
     def resource_name(self):
-        return "ChunkBatchIterable"
+        return "ChunkColumnMapIterator"
 
+    def size(self) -> int:
+        total_size = 0
+        for chunk_batch in self.iterator:
+            total_size += len(chunk_batch.text)
+        self.restart()
+        return total_size
+
+
+class SupervisedColumnMapIterator(data.ColumnMapIterator):
+    def __init__(self, iterable: Iterable[SupervisedBatch]):
+        data.ColumnMapIterator.__init__(self)
+
+        self.iterable = iterable
+        self.iterator = iter(self.iterable)
+
+    def next(self) -> Optional[data.ColumnMap]:
+        try:
+            batch = next(self.iterator)
+            return data.ColumnMap(
+                {
+                    Mach.TEXT: data.columns.StringColumn(batch.query),
+                    Mach.ID: data.columns.TokenColumn(batch.chunk_id),
+                }
+            )
+        except StopIteration:
+            return None
+    
     def restart(self):
         self.iterator = iter(self.iterable)
+
+    def resource_name(self):
+        return "SupervisedColumnMapIterator"
+
+    def size(self) -> int:
+        total_size = 0
+        for batch in self.iterator:
+            total_size += len(batch.query)
+        self.restart()
+        return total_size
 
 
 class EarlyStopWithMinEpochs(bolt.train.callbacks.Callback):
@@ -58,12 +109,12 @@ class Mach(Retriever):
         super().__init__(**kwargs)
         self.model = (
             bolt.MachConfig()
-            .text_col("text")
-            .id_col("id")
-            .tokenizer("words")
+            .text_col(Mach.TEXT)
+            .id_col(Mach.ID)
+            .tokenizer("char-4")
             .contextual_encoding("none")
-            .emb_dim(512)
-            .n_buckets(10000)
+            .emb_dim(2000)
+            .n_buckets(50000)
             .emb_bias()
             .output_bias()
             .output_activation("sigmoid")
@@ -103,44 +154,48 @@ class Mach(Retriever):
         )
 
     def insert(self, chunks: Iterable[ChunkBatch], **kwargs):
-        train_data = ChunkBatchColumnMapIterator(chunks)
+        train_data = ChunkColumnMapIterator(chunks)
 
         metrics = kwargs.get("metrics", [])
         if "hash_precision@5" not in metrics:
             metrics.append("hash_precision@5")
 
+        min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
+            size=train_data.size()
+        )
+
         early_stop_callback = EarlyStopWithMinEpochs(
-            min_epochs=kwargs.get("early_stop_min_epochs", 3),
+            min_epochs=kwargs.get("epochs", min_epochs),
             tracked_metric=kwargs.get("early_stop_metric", "hash_precision@5"),
             metric_threshold=kwargs.get("early_stop_metric_threshold", 0.95),
         )
+
+        callbacks = [early_stop_callback] + kwargs.get("callbacks", [])
 
         self.model.coldstart(
             data=train_data,
             strong_cols=[Mach.STRONG],
             weak_cols=[Mach.WEAK],
             learning_rate=kwargs.get("learning_rate", 0.001),
-            epochs=kwargs.get("epochs", 15),
+            epochs=kwargs.get("epochs", max_epochs),
             metrics=metrics,
-            callbacks=[early_stop_callback],
-            max_in_memory_batches=kwargs.get("max_in_memory_batches", None),
+            callbacks=callbacks,
+            # max_in_memory_batches=kwargs.get("max_in_memory_batches", None),
+            # variable_length=kwargs.get(
+            #     "variable_length", data.transformations.VariableLengthConfig()
+            # ),
+            # batch_size=kwargs.get("batch_size", 2000),
         )
 
     def supervised_train(self, samples: Iterable[SupervisedBatch], **kwargs):
-        for batch in samples:
-            train_data = data.ColumnMap(
-                {
-                    Mach.TEXT: data.columns.StringColumn(batch.query),
-                    Mach.ID: data.columns.DecimalColumn(batch.chunk_id),
-                }
-            )
+        train_data = SupervisedColumnMapIterator(samples)
 
-            self.model.train(
-                data=train_data,
-                learning_rate=kwargs.get("learning_rate", 0.0001),
-                epochs=kwargs.get("epochs", 3),
-                metrics=kwargs.get("metrics", ["hash_precision@5"]),
-            )
+        self.model.train(
+            data=train_data,
+            learning_rate=kwargs.get("learning_rate", 0.001),
+            epochs=kwargs.get("epochs", 3),
+            metrics=kwargs.get("metrics", ["hash_precision@5"]),
+        )
 
     def delete(self, chunk_ids: List[ChunkId], **kwargs):
         self.model.erase(ids=chunk_ids)

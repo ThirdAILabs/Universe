@@ -76,7 +76,8 @@ class MachRetriever {
       const std::vector<std::string>& weak_cols, float learning_rate,
       uint32_t epochs, const std::vector<std::string>& metrics,
       const std::vector<bolt::callbacks::CallbackPtr>& callbacks,
-      const ColdStartOptions& options = ColdStartOptions());
+      const TrainOptions& train_options = TrainOptions(),
+      const ColdStartOptions& coldstart_options = ColdStartOptions());
 
   bolt::metrics::History train(
       const data::ColumnMapIteratorPtr& data, float learning_rate,

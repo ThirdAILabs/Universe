@@ -114,10 +114,11 @@ bolt::metrics::History wrappedColdStart(
     uint32_t epochs, const std::vector<std::string>& metrics,
     const std::vector<bolt::callbacks::CallbackPtr>& callbacks,
     const py::kwargs& kwargs) {
-  auto options = getColdStartOptions(kwargs);
+  auto coldstart_options = getColdStartOptions(kwargs);
+  auto train_options = getTrainOptions(kwargs);
 
   return mach->coldstart(data, strong_cols, weak_cols, learning_rate, epochs,
-                         metrics, callbacks, options);
+                         metrics, callbacks, train_options, coldstart_options);
 }
 
 bolt::metrics::History wrappedColdStartOnCsv(
@@ -128,10 +129,11 @@ bolt::metrics::History wrappedColdStartOnCsv(
     const std::vector<bolt::callbacks::CallbackPtr>& callbacks,
     const py::kwargs& kwargs) {
   auto data = csvIterator(filename, mach->idCol(), kwargs);
-  auto options = getColdStartOptions(kwargs);
+  auto coldstart_options = getColdStartOptions(kwargs);
+  auto train_options = getTrainOptions(kwargs);
 
   return mach->coldstart(data, strong_cols, weak_cols, learning_rate, epochs,
-                         metrics, callbacks, options);
+                         metrics, callbacks, train_options, coldstart_options);
 }
 
 bolt::metrics::History wrappedEvaluate(const MachRetrieverPtr& mach,
@@ -234,7 +236,7 @@ void defineMach(py::module_& module) {
            py::arg("ids"), py::arg("n_upvote_samples") = 16,
            py::arg("n_balancing_samples") = 50, py::arg("learning_rate") = 1e-3,
            py::arg("epochs") = 3, py::arg("batch_size") = 200)
-     .def("associate", &MachRetriever::associate, py::arg("sources"),
+      .def("associate", &MachRetriever::associate, py::arg("sources"),
            py::arg("targets"), py::arg("n_buckets"),
            py::arg("n_association_samples") = 16,
            py::arg("n_balancing_samples") = 50, py::arg("learning_rate") = 1e-3,

@@ -71,9 +71,13 @@ void createDataSubmodule(py::module_& dataset_submodule) {
 
   createTransformationsSubmodule(dataset_submodule);
 
-  py::class_<ColumnMapIterator, ColumnMapIteratorPtr>(dataset_submodule,
-                                                      "ColumnMapIterator")
-      .def("next", &ColumnMapIterator::next);
+  py::class_<ColumnMapIterator, PyColumnMapIterator,
+             std::shared_ptr<ColumnMapIterator>>(dataset_submodule,
+                                                 "ColumnMapIterator")
+      .def(py::init<>())
+      .def("next", &ColumnMapIterator::next)
+      .def("resource_name", &ColumnMapIterator::resourceName)
+      .def("restart", &ColumnMapIterator::restart);
 
   py::class_<CsvIterator, std::shared_ptr<CsvIterator>, ColumnMapIterator>(
       dataset_submodule, "CsvIterator")
@@ -91,13 +95,6 @@ void createDataSubmodule(py::module_& dataset_submodule) {
       .def(py::init<DataSourcePtr, std::vector<std::string>, size_t>(),
            py::arg("data_source"), py::arg("columns"),
            py::arg("rows_per_load") = ColumnMapIterator::DEFAULT_ROWS_PER_LOAD);
-
-  py::class_<PyColumnMapIterator, std::shared_ptr<PyColumnMapIterator>,
-             ColumnMapIterator>(dataset_submodule, "PyColumnMapIterator")
-      .def(py::init<>())
-      .def("next", &PyColumnMapIterator::next)
-      .def("resource_name", &PyColumnMapIterator::resourceName)
-      .def("restart", &PyColumnMapIterator::restart);
 
   py::class_<TransformedIterator, std::shared_ptr<TransformedIterator>,
              ColumnMapIterator>(dataset_submodule, "TransformedIterator")
