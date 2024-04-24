@@ -148,7 +148,10 @@ class State {
     return _count_history_trackers[tracker_key];
   }
 
-  void clearHistoryTrackers() { _item_history_trackers.clear(); }
+  void clearHistoryTrackers() {
+    _item_history_trackers.clear();
+    _count_history_trackers.clear();
+  }
 
   const auto& graph() const {
     if (!_graph) {
