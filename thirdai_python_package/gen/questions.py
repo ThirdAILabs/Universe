@@ -17,7 +17,8 @@ class OpenAI(QAGenMethod):
         self.model = model
         self.prompt = (
             f"Generate {questions_per_paragraph} questions from the "
-            "following text. Return your answers as newline separated responses "
+            "following text. Try to ask questions that don't just reference "
+            "keywords in the text. Return your answers as newline separated responses "
             "without any number or bullet prefixes. Here is the content: \n\n"
         )
         self.verbose = verbose
