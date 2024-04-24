@@ -9,6 +9,7 @@ __all__ = [
     "distributed_bolt",
     "licensing",
     "demos",
+    "gen",
     "telemetry",
     "set_global_num_threads",
     "logging",
@@ -19,6 +20,7 @@ import thirdai.bolt as bolt
 import thirdai.data as data
 import thirdai.dataset as dataset
 import thirdai.demos as demos
+import thirdai.gen as gen
 import thirdai.hashing as hashing
 import thirdai.licensing as licensing
 import thirdai.search as search
