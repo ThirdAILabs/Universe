@@ -38,14 +38,19 @@ FullyConnectedLayer::FullyConnectedLayer(
       _prev_is_active(prev_dim, false),
       _is_active(config.getDim(), false) {
   std::mt19937 rng(global_random::nextSeed());
-  std::normal_distribution<float> dist(0.0, 0.01);
 
-  std::generate(_weights.begin(), _weights.end(), [&]() { return dist(rng); });
+  float limit = 1 / sqrt(prev_dim);
+  std::uniform_real_distribution<float> weight_dist(-limit, limit);
+  std::generate(_weights.begin(), _weights.end(),
+                [&]() { return weight_dist(rng); });
 
   if (_use_bias) {
-    std::generate(_biases.begin(), _biases.end(), [&]() { return dist(rng); });
+    float bias_limit = 1 / sqrt(prev_dim);
+    std::uniform_real_distribution<float> bias_dist(-bias_limit, bias_limit);
+    std::generate(_biases.begin(), _biases.end(),
+                  [&]() { return bias_dist(rng); });
   } else {
-    _biases.assign(_biases.size(), 0.0);
+    std::fill(_biases.begin(), _biases.end(), 0.0);
   }
   if (_sparsity < 1.0) {
     _neuron_index = config.getSamplingConfig()->getNeuronIndex(_dim, _prev_dim);
