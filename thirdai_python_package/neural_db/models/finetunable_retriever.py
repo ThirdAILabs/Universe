@@ -65,8 +65,13 @@ class FinetunableRetriever(Model):
     def score(
         self, samples: InferSamples, entities: List[List[int]], n_results: int = None
     ) -> Predictions:
-        results = self.retriever.rank(queries=samples, candidates=entities, k=n_results)
-        return add_retriever_tag(results)
+
+        # retriever.rank() expects candidates to be a list of sets
+        candidates = [set(ids) for ids in entities]
+        results = self.retriever.rank(
+            queries=samples, candidates=candidates, k=n_results
+        )
+        return add_retriever_tag(results, "finetunable_retriever")
 
     def save_meta(self, directory: Path) -> None:
         pass
