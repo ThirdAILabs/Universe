@@ -131,4 +131,38 @@ ColumnMap NumericalTemporal::apply(ColumnMap columns, State& state) const {
   return columns;
 }
 
+ar::ConstArchivePtr NumericalTemporal::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+
+  map->set("user_column", ar::str(_user_column));
+  map->set("value_column", ar::str(_value_column));
+  map->set("timestamp_column", ar::str(_timestamp_column));
+  map->set("output_column", ar::str(_output_column));
+
+  map->set("tracker_key", ar::str(_tracker_key));
+
+  map->set("history_len", ar::u64(_history_len));
+  map->set("interval_len", ar::i64(_interval_len));
+  map->set("should_update_history", ar::boolean(_should_update_history));
+  map->set("include_current_row", ar::boolean(_include_current_row));
+  map->set("interval_lag", ar::i64(_interval_lag));
+
+  return map;
+}
+
+NumericalTemporal::NumericalTemporal(const ar::Archive& archive)
+    : _user_column(archive.str("user_column")),
+      _value_column(archive.str("value_column")),
+      _timestamp_column(archive.str("timestamp_column")),
+      _output_column(archive.str("output_column")),
+      _tracker_key(archive.str("tracker_key")),
+      _history_len(archive.u64("history_len")),
+      _interval_len(archive.getAs<ar::I64>("interval_len")),
+      _should_update_history(
+          archive.getAs<ar::Boolean>("should_update_history")),
+      _include_current_row(archive.getAs<ar::Boolean>("include_current_row")),
+      _interval_lag(archive.getAs<ar::I64>("interval_lag")) {}
+
 }  // namespace thirdai::data

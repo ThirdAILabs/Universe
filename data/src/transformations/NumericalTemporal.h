@@ -13,9 +13,13 @@ class NumericalTemporal final : public Transformation {
                     int64_t interval_len, bool should_update_history,
                     bool include_current_row, int64_t interval_lag);
 
+  explicit NumericalTemporal(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
 
-  ar::ConstArchivePtr toArchive() const final { return nullptr; }
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "numerical_temporal"; }
 
  private:
   ValueColumnBasePtr<float> getValueColumn(const ColumnMap& columns) const {
