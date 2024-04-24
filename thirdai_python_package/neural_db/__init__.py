@@ -19,6 +19,7 @@ from .documents import (
 )
 from .model_bazaar import Login, ModelBazaar
 from .neural_db import CancelState, CheckpointConfig, NeuralDB, Strength, Sup
+from .question_generation import gen_questions
 from .trainer import training_data_manager, training_progress_manager
 
 nltk.download("punkt")
