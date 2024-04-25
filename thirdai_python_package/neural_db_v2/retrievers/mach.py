@@ -24,8 +24,8 @@ class ChunkColumnMapIterator(data.ColumnMapIterator):
                 {
                     Mach.WEAK: data.columns.StringColumn(batch.text),
                     Mach.STRONG: data.columns.StringColumn(batch.keywords),
-                    Mach.ID: data.columns.TokenArrayColumn(
-                        [[x] for x in batch.chunk_id], 4294967295
+                    Mach.ID: data.columns.TokenColumn(
+                        batch.chunk_id, dim=data.columns.MAX_DIM
                     ),
                 }
             )
@@ -59,8 +59,8 @@ class SupervisedColumnMapIterator(data.ColumnMapIterator):
             return data.ColumnMap(
                 {
                     Mach.TEXT: data.columns.StringColumn(batch.query),
-                    Mach.ID: data.columns.TokenArrayColumn(
-                        [[x] for x in batch.chunk_id], 4294967295
+                    Mach.ID: data.columns.TokenColumn(
+                        batch.chunk_id, dim=data.columns.MAX_DIM
                     ),
                 }
             )
@@ -112,15 +112,20 @@ class Mach(Retriever):
             bolt.MachConfig()
             .text_col(Mach.TEXT)
             .id_col(Mach.ID)
-            .tokenizer("char-4")
-            .contextual_encoding("none")
-            .emb_dim(2000)
-            .n_buckets(50000)
-            .emb_bias()
-            .output_bias()
-            .output_activation("sigmoid")
-            .build()
+            .tokenizer(kwargs.get("tokenizer", "char-4"))
+            .contextual_encoding(kwargs.get("encoding", "none"))
+            .emb_dim(kwargs.get("emb_dim", 2000))
+            .n_buckets(kwargs.get("n_buckets", 50000))
+            .output_activation(kwargs.get("output_act", "sigmoid"))
         )
+
+        if kwargs.get("emb_bias"):
+            self.model = self.model.emb_bias()
+
+        if kwargs.get("output_bias"):
+            self.model = self.model.output_bias()
+
+        self.model = self.model.build()
 
     def search(
         self, queries: List[str], top_k: int, **kwargs

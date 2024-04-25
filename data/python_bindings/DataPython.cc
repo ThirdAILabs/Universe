@@ -197,6 +197,8 @@ auto decimalArrayColumnFromNumpy(const NumpyArray<float>& array,
 void createColumnsSubmodule(py::module_& dataset_submodule) {
   auto columns_submodule = dataset_submodule.def_submodule("columns");
 
+  columns_submodule.attr("MAX_DIM") = std::numeric_limits<uint32_t>::max();
+
   py::class_<Column, ColumnPtr>(columns_submodule, "Column")
       .def("dim", &Column::dim)
       .def("__len__", &Column::numRows);
