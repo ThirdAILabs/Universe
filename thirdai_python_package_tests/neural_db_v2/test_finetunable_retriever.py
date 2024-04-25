@@ -1,8 +1,8 @@
 import os
+import random
 
 import pandas as pd
 import pytest
-import random
 from thirdai.neural_db_v2.core.types import ChunkBatch, SupervisedBatch
 from thirdai.neural_db_v2.retrievers.finetunable_retriever import FinetunableRetriever
 
