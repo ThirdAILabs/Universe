@@ -59,7 +59,9 @@ class SupervisedColumnMapIterator(data.ColumnMapIterator):
             return data.ColumnMap(
                 {
                     Mach.TEXT: data.columns.StringColumn(batch.query),
-                    Mach.ID: data.columns.TokenColumn(batch.chunk_id),
+                    Mach.ID: data.columns.TokenArrayColumn(
+                        [[x] for x in batch.chunk_id], 4294967295
+                    ),
                 }
             )
         except StopIteration:

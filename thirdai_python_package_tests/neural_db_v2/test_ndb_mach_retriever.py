@@ -2,14 +2,14 @@ import os
 
 import pandas as pd
 import pytest
-from thirdai.neural_db_v2.core.types import ChunkBatch
+from thirdai.neural_db_v2.core.types import ChunkBatch, SupervisedBatch
 from thirdai.neural_db_v2.retrievers.mach import Mach
 
 pytestmark = [pytest.mark.release]
 
 
 @pytest.fixture(scope="session")
-def load_chunks():
+def chunks():
     filename = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "../../auto_ml/python_tests/texts.csv",
@@ -37,11 +37,11 @@ def build_retriever(chunk_df):
     return retriever
 
 
-def test_ndb_mach_retriever_search(load_chunks):
-    retriever = build_retriever(load_chunks)
+def test_ndb_mach_retriever_search(chunks):
+    retriever = build_retriever(chunks)
 
-    n = len(load_chunks)
-    for _, row in load_chunks.iterrows():
+    n = len(chunks)
+    for _, row in chunks.iterrows():
         id = row["id"]
         search_results = retriever.search([row["text"]], top_k=1)
         assert id == search_results[0][0][0]
@@ -49,3 +49,21 @@ def test_ndb_mach_retriever_search(load_chunks):
             [row["text"]], choices=[set([id, (id + 1) % n])], top_k=1
         )
         assert id == rank_results[0][0][0]
+
+
+def test_ndb_mach_retriever_supervised_train(chunks):
+    retriever = build_retriever(chunks)
+
+    supervised_batch = SupervisedBatch(
+        query=[str(chunk_id) for chunk_id in chunks["id"]], chunk_id=chunks["id"]
+    )
+
+    retriever.supervised_train([supervised_batch], epochs=10)
+
+    accuracy = 0
+    for i in range(len(chunks)):
+        results = retriever.search([str(i)], top_k=1)
+        if results[0][0][0] == i:
+            accuracy += 1
+
+    assert accuracy > 0.8

@@ -139,7 +139,7 @@ class SupervisedBatch:
     def __getitem__(self, i: int):
         return SupervisedSample(
             query=self.query[i],
-            custom_id=self.chunk_id[i],
+            chunk_id=self.chunk_id[i],
         )
 
     def to_df(self):
