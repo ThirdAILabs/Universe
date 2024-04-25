@@ -67,9 +67,7 @@ jobs:
       - name: Install llvm clang and libomp for macosx-x86
         if: ${{ startsWith(matrix.runs-on, 'macos-12')}}
         run: brew install llvm@17 libomp
-      - name: Setup tmate session
-        if: ${{ startsWith(matrix.runs-on, 'macos-12')}}
-        uses: mxschmitt/action-tmate@v3
+
       - name: Build and test wheels
         uses: pypa/cibuildwheel@v2.9.0
         env:
@@ -97,8 +95,8 @@ jobs:
             OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
             OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
-            CXX="$(brew --prefix llvm)/bin/clang++"
-            CC="$(brew --prefix llvm)/bin/clang"
+            CXX="$(brew --prefix llvm@17)/bin/clang++"
+            CC="$(brew --prefix llvm@17)/bin/clang"
          
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
