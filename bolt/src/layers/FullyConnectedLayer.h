@@ -156,6 +156,8 @@ class FullyConnectedLayer final {
   void initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
                      bool replace_existing_optimizer);
 
+  void swapActivation(ActivationFunction new_act) { _act_func = new_act; }
+
   ~FullyConnectedLayer() = default;
 
  private:

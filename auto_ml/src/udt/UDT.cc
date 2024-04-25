@@ -44,7 +44,19 @@ UDT::UDT(
     const std::string& target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
+    const PretrainedBasePtr& pretrained_model,
     const config::ArgumentMap& user_args) {
+  if (pretrained_model) {
+    if (!n_target_classes) {
+      throw std::invalid_argument(
+          "Must specify n_target_classes when using a pretrained model.");
+    }
+    _backend = std::make_unique<UDTClassifier>(
+        data_types, n_target_classes.value(), integer_target, pretrained_model,
+        delimiter, user_args);
+    return;
+  }
+
   TabularOptions tabular_options;
   tabular_options.contextual_columns = user_args.get<bool>(
       "contextual_columns", "boolean", defaults::CONTEXTUAL_COLUMNS);
