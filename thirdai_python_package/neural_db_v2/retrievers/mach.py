@@ -11,24 +11,17 @@ from ..core.types import ChunkBatch, ChunkId, Score, SupervisedBatch
 
 
 class ChunkColumnMapIterator(data.ColumnMapIterator):
-    def __init__(self, iterable: Iterable[ChunkBatch]):
+    def __init__(self, iterable: Iterable[ChunkBatch], column_generator):
         data.ColumnMapIterator.__init__(self)
 
         self.iterable = iterable
         self.iterator = iter(self.iterable)
+        self.column_generator = column_generator
 
     def next(self) -> Optional[data.ColumnMap]:
         try:
             batch = next(self.iterator)
-            return data.ColumnMap(
-                {
-                    Mach.WEAK: data.columns.StringColumn(batch.text),
-                    Mach.STRONG: data.columns.StringColumn(batch.keywords),
-                    Mach.ID: data.columns.TokenColumn(
-                        batch.chunk_id, dim=data.columns.MAX_DIM
-                    ),
-                }
-            )
+            return self.column_generator(batch)
         except StopIteration:
             return None
 
@@ -39,46 +32,7 @@ class ChunkColumnMapIterator(data.ColumnMapIterator):
         return "ChunkColumnMapIterator"
 
     def size(self) -> int:
-        total_size = 0
-        for chunk_batch in self.iterator:
-            total_size += len(chunk_batch.text)
-        self.restart()
-        return total_size
-
-
-class SupervisedColumnMapIterator(data.ColumnMapIterator):
-    def __init__(self, iterable: Iterable[SupervisedBatch]):
-        data.ColumnMapIterator.__init__(self)
-
-        self.iterable = iterable
-        self.iterator = iter(self.iterable)
-
-    def next(self) -> Optional[data.ColumnMap]:
-        try:
-            batch = next(self.iterator)
-            return data.ColumnMap(
-                {
-                    Mach.TEXT: data.columns.StringColumn(batch.query),
-                    Mach.ID: data.columns.TokenColumn(
-                        batch.chunk_id, dim=data.columns.MAX_DIM
-                    ),
-                }
-            )
-        except StopIteration:
-            return None
-
-    def restart(self):
-        self.iterator = iter(self.iterable)
-
-    def resource_name(self):
-        return "SupervisedColumnMapIterator"
-
-    def size(self) -> int:
-        total_size = 0
-        for batch in self.iterator:
-            total_size += len(batch.query)
-        self.restart()
-        return total_size
+        return len(self.iterable)
 
 
 class EarlyStopWithMinEpochs(bolt.train.callbacks.Callback):
@@ -159,8 +113,16 @@ class Mach(Retriever):
             n_buckets=kwargs.get("n_buckets", 7),
         )
 
+    unsupervised_col_generator = lambda batch: data.ColumnMap(
+        {
+            Mach.WEAK: data.columns.StringColumn(batch.text),
+            Mach.STRONG: data.columns.StringColumn(batch.keywords),
+            Mach.ID: data.columns.TokenColumn(batch.chunk_id, dim=data.columns.MAX_DIM),
+        }
+    )
+
     def insert(self, chunks: Iterable[ChunkBatch], **kwargs):
-        train_data = ChunkColumnMapIterator(chunks)
+        train_data = ChunkColumnMapIterator(chunks, self.unsupervised_col_generator)
 
         metrics = kwargs.get("metrics", [])
         if "hash_precision@5" not in metrics:
@@ -193,8 +155,15 @@ class Mach(Retriever):
             batch_size=kwargs.get("batch_size", 2000),
         )
 
+    supervised_col_generator = lambda batch: data.ColumnMap(
+        {
+            Mach.TEXT: data.columns.StringColumn(batch.query),
+            Mach.ID: data.columns.TokenColumn(batch.chunk_id, dim=data.columns.MAX_DIM),
+        }
+    )
+
     def supervised_train(self, samples: Iterable[SupervisedBatch], **kwargs):
-        train_data = SupervisedColumnMapIterator(samples)
+        train_data = ChunkColumnMapIterator(samples, self.supervised_col_generator)
 
         self.model.train(
             data=train_data,
