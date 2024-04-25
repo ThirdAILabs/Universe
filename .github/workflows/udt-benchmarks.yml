@@ -8,8 +8,6 @@ concurrency:
 
 # Controls when the workflow will run
 on:
-  push:
-    branches: [splade-udt]
   schedule:
     # Sets the workflow to run at 1600 UTC on Sundays and Wednesdays
     # Ref: https://jasonet.co/posts/scheduled-actions/

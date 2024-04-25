@@ -6,7 +6,6 @@
 #include <data/src/transformations/SpladeAugmentation.h>
 #include <fstream>
 #include <iostream>
-#include <unistd.h>
 
 namespace thirdai::automl::udt::utils {
 

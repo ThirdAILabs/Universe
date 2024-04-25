@@ -8,8 +8,6 @@ concurrency:
 
 # Controls when the workflow will run
 on:
-  push:
-    branches: [splade-udt]
   schedule:
     # Sets the workflow to run at the end of every day
     # Ref: https://jasonet.co/posts/scheduled-actions/

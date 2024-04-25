@@ -260,7 +260,7 @@ data::SpladeConfig downloadSemanticEnhancementModel(
   std::string semanticModelPath = (fullCacheDir / modelName).string();
 
   // Download the model only if it does not already exist
-  if (access(semanticModelPath.c_str(), F_OK) == -1) {
+  if (!std::filesystem::exists(semanticModelPath)) {
     std::string url =
         "https://modelzoo-cdn.azureedge.net/test-models/" + modelName;
     if (!downloadFile(url, semanticModelPath)) {
@@ -270,7 +270,7 @@ data::SpladeConfig downloadSemanticEnhancementModel(
 
   // Download BERT vocabulary if it does not exist
   std::string vocabPath = (fullCacheDir / "bert-base-uncased.vocab").string();
-  if (access(vocabPath.c_str(), F_OK) == -1) {
+  if (!std::filesystem::exists(vocabPath)) {
     std::string vocabUrl =
         "https://huggingface.co/bert-base-uncased/resolve/main/vocab.txt";
     if (!downloadFile(vocabUrl, vocabPath)) {
