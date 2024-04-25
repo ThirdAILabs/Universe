@@ -42,9 +42,6 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
 
     steps:
-      - name: Setup tmate session
-        if: ${{ startsWith(matrix.runs-on, 'macos-12')}}
-        uses: mxschmitt/action-tmate@v3
       - uses: actions/checkout@v2
         with:           
           submodules: 'recursive'
