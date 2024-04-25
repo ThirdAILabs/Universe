@@ -40,11 +40,12 @@ def build_retriever(chunk_df):
 def test_ndb_mach_retriever_search(load_chunks):
     retriever = build_retriever(load_chunks)
 
+    n = len(load_chunks)
     for _, row in load_chunks.iterrows():
         id = row["id"]
         search_results = retriever.search([row["text"]], top_k=1)
         assert id == search_results[0][0][0]
         rank_results = retriever.rank(
-            [row["text"]], choices=[set([id + 2, id, id + 1])], top_k=1
+            [row["text"]], choices=[set([id, (id + 1) % n])], top_k=1
         )
         assert id == rank_results[0][0][0]

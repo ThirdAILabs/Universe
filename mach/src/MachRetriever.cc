@@ -208,12 +208,22 @@ std::vector<IdScores> MachRetriever::search(data::ColumnMap queries,
   auto in = inputTensors(_text_transform->apply(std::move(queries), *_state));
   auto out = _model->forward(in, sparse_inference).at(0);
 
+  std::exception_ptr error;
   std::vector<IdScores> predictions(n_queries);
 #pragma omp parallel for default(none) \
-    shared(out, predictions, top_k, n_queries) if (n_queries > 1)
+    shared(out, predictions, top_k, n_queries, error) if (n_queries > 1)
   for (uint32_t i = 0; i < n_queries; i++) {
-    const BoltVector& out_vec = out->getVector(i);
-    predictions[i] = index()->decode(out_vec, top_k, _n_buckets_to_eval);
+    try {
+      const BoltVector& out_vec = out->getVector(i);
+      predictions[i] = index()->decode(out_vec, top_k, _n_buckets_to_eval);
+    } catch (...) {
+#pragma omp critical
+      error = std::current_exception();
+    }
+  }
+
+  if (error) {
+    std::rethrow_exception(error);
   }
 
   return predictions;
@@ -233,12 +243,22 @@ std::vector<IdScores> MachRetriever::rank(
   auto in = inputTensors(_text_transform->apply(std::move(queries), *_state));
   auto out = _model->forward(in, sparse_inference).at(0);
 
+  std::exception_ptr error;
   std::vector<IdScores> predictions(n_queries);
-#pragma omp parallel for default(none) \
-    shared(out, candidates, predictions, top_k, n_queries) if (n_queries > 1)
+#pragma omp parallel for default(none) shared( \
+    out, candidates, predictions, top_k, n_queries, error) if (n_queries > 1)
   for (uint32_t i = 0; i < n_queries; i++) {
-    const BoltVector& out_vec = out->getVector(i);
-    predictions[i] = index()->scoreEntities(out_vec, candidates[i], top_k);
+    try {
+      const BoltVector& out_vec = out->getVector(i);
+      predictions[i] = index()->scoreEntities(out_vec, candidates[i], top_k);
+    } catch (...) {
+#pragma omp critical
+      error = std::current_exception();
+    }
+  }
+
+  if (error) {
+    std::rethrow_exception(error);
   }
 
   return predictions;

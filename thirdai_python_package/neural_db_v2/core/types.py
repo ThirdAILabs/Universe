@@ -107,6 +107,11 @@ class ChunkBatch:
     text: pt.Series[str]
     keywords: pt.Series[str]
 
+    def __post_init__(self):
+        self.chunk_id = self.chunk_id.reset_index(drop=True)
+        self.text = self.text.reset_index(drop=True)
+        self.keywords = self.keywords.reset_index(drop=True)
+
     def to_df(self):
         return pd.DataFrame(self.__dict__)
 

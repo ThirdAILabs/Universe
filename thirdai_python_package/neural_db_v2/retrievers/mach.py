@@ -20,19 +20,18 @@ class ChunkColumnMapIterator(data.ColumnMapIterator):
     def next(self) -> Optional[data.ColumnMap]:
         try:
             batch = next(self.iterator)
-            print("LMFAO")
-            print(batch)
-            print(batch.chunk_id)
             return data.ColumnMap(
                 {
-                    Mach.WEAK: data.columns.StringColumn(batch.text.reset_index(drop=True)),
-                    Mach.STRONG: data.columns.StringColumn(batch.keywords.reset_index(drop=True)),
-                    Mach.ID: data.columns.TokenColumn(batch.chunk_id.reset_index(drop=True)),
+                    Mach.WEAK: data.columns.StringColumn(batch.text),
+                    Mach.STRONG: data.columns.StringColumn(batch.keywords),
+                    Mach.ID: data.columns.TokenArrayColumn(
+                        [[x] for x in batch.chunk_id], 4294967295
+                    ),
                 }
             )
         except StopIteration:
             return None
-    
+
     def restart(self) -> None:
         self.iterator = iter(self.iterable)
 
@@ -65,7 +64,7 @@ class SupervisedColumnMapIterator(data.ColumnMapIterator):
             )
         except StopIteration:
             return None
-    
+
     def restart(self):
         self.iterator = iter(self.iterable)
 
