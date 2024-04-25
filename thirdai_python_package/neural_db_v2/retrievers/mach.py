@@ -179,11 +179,11 @@ class Mach(Retriever):
             epochs=kwargs.get("epochs", max_epochs),
             metrics=metrics,
             callbacks=callbacks,
-            # max_in_memory_batches=kwargs.get("max_in_memory_batches", None),
-            # variable_length=kwargs.get(
-            #     "variable_length", data.transformations.VariableLengthConfig()
-            # ),
-            # batch_size=kwargs.get("batch_size", 2000),
+            max_in_memory_batches=kwargs.get("max_in_memory_batches", None),
+            variable_length=kwargs.get(
+                "variable_length", data.transformations.VariableLengthConfig()
+            ),
+            batch_size=kwargs.get("batch_size", 2000),
         )
 
     def supervised_train(self, samples: Iterable[SupervisedBatch], **kwargs):

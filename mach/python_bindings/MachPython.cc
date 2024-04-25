@@ -20,7 +20,7 @@ void loadTrainOptions(const py::kwargs& kwargs, TrainOptions& options) {
   }
   if (kwargs.contains("max_in_memory_batches")) {
     options.max_in_memory_batches =
-        kwargs["max_in_memory_batches"].cast<size_t>();
+        kwargs["max_in_memory_batches"].cast<std::optional<size_t>>();
   }
   if (kwargs.contains("verbose")) {
     options.verbose = kwargs["verbose"].cast<bool>();
