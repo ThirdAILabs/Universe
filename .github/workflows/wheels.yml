@@ -59,12 +59,13 @@ jobs:
       - name: Install llvm clang and libomp for macosx-x86
         if: ${{ startsWith(matrix.runs-on, 'macos-12')}}
         run: |
-          brew install llvm@17 libomp
+          ls -l /usr/local/opt
           echo "$(brew --prefix llvm)/bin/clang++"
-          ls -l /usr/local/opt/llvm/bin/
           which clang++ 
           clang++ --version
           echo "we here boys"
+          
+          ls -l /usr/local/opt/llvm/bin/
 
       - name: Build and test wheels
         uses: pypa/cibuildwheel@v2.9.0
