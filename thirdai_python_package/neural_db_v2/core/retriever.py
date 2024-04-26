@@ -31,10 +31,6 @@ class Retriever(ABC):
         pass
 
     @abstractmethod
-    def downvote(self, queries: List[str], chunk_ids: List[ChunkId], **kwargs):
-        pass
-
-    @abstractmethod
     def associate(self, sources: List[str], targets: List[str], **kwargs):
         pass
 
