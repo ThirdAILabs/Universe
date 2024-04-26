@@ -5,7 +5,7 @@ import pytest
 
 
 @pytest.fixture(scope="session")
-def simple_chunks_df():
+def load_chunks():
     filename = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "../../auto_ml/python_tests/texts.csv",

@@ -1,22 +1,12 @@
-import os
 import random
 
 import pandas as pd
 import pytest
+from ndbv2_utils import load_chunks
 from thirdai.neural_db_v2.core.types import ChunkBatch, SupervisedBatch
 from thirdai.neural_db_v2.retrievers.finetunable_retriever import FinetunableRetriever
 
 pytestmark = [pytest.mark.release]
-
-
-@pytest.fixture(scope="session")
-def load_chunks():
-    filename = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "../../auto_ml/python_tests/texts.csv",
-    )
-
-    return pd.read_csv(filename)
 
 
 def build_retriever(chunk_df: pd.DataFrame) -> FinetunableRetriever:

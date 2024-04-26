@@ -1,6 +1,6 @@
 import pandas as pd
 import pytest
-from ndbv2_test_utils import simple_chunks_df
+from ndbv2_utils import load_chunks
 from thirdai.neural_db_v2.core.types import ChunkBatch, SupervisedBatch
 from thirdai.neural_db_v2.retrievers.mach import Mach
 
@@ -8,11 +8,11 @@ pytestmark = [pytest.mark.release]
 
 
 @pytest.fixture(scope="session")
-def build_retriever(simple_chunks_df):
+def build_retriever(load_chunks):
     chunk_batches = []
     batch_size = 5
-    for i in range(0, len(simple_chunks_df), batch_size):
-        chunks = simple_chunks_df.iloc[i : i + batch_size]
+    for i in range(0, len(load_chunks), batch_size):
+        chunks = load_chunks.iloc[i : i + batch_size]
         chunk_batches.append(
             ChunkBatch(
                 text=chunks["text"],
@@ -28,13 +28,13 @@ def build_retriever(simple_chunks_df):
     return retriever
 
 
-def test_ndb_mach_retriever_search(build_retriever, simple_chunks_df):
+def test_ndb_mach_retriever_search(build_retriever, load_chunks):
     retriever = build_retriever
 
-    n = len(simple_chunks_df)
+    n = len(load_chunks)
     search_accuracy = 0
     rank_accuracy = 0
-    for _, row in simple_chunks_df.iterrows():
+    for _, row in load_chunks.iterrows():
         id = row["id"]
         search_results = retriever.search([row["text"]], top_k=1)
         if id == search_results[0][0][0]:
@@ -59,27 +59,27 @@ def get_accuracy(retriever, queries, ids):
     return accuracy / len(queries)
 
 
-def test_ndb_mach_retriever_supervised_train(build_retriever, simple_chunks_df):
+def test_ndb_mach_retriever_supervised_train(build_retriever, load_chunks):
     retriever = build_retriever
 
-    queries = [str(chunk_id) for chunk_id in simple_chunks_df["id"]]
+    queries = [str(chunk_id) for chunk_id in load_chunks["id"]]
 
-    supervised_batch = SupervisedBatch(query=queries, chunk_id=simple_chunks_df["id"])
+    supervised_batch = SupervisedBatch(query=queries, chunk_id=load_chunks["id"])
 
-    before_accuracy = get_accuracy(retriever, queries, simple_chunks_df["id"])
+    before_accuracy = get_accuracy(retriever, queries, load_chunks["id"])
     assert before_accuracy < 0.5
 
     retriever.supervised_train([supervised_batch], epochs=15, learning_rate=0.1)
 
-    after_accuracy = get_accuracy(retriever, queries, simple_chunks_df["id"])
+    after_accuracy = get_accuracy(retriever, queries, load_chunks["id"])
     assert after_accuracy > 0.9
 
 
-def test_ndb_mach_retriever_delete(build_retriever, simple_chunks_df):
+def test_ndb_mach_retriever_delete(build_retriever, load_chunks):
     retriever = build_retriever
 
-    before_del_results = retriever.search([simple_chunks_df["text"][0]], top_k=1)
+    before_del_results = retriever.search([load_chunks["text"][0]], top_k=1)
     retriever.delete([before_del_results[0][0][0]])
-    after_del_results = retriever.search([simple_chunks_df["text"][0]], top_k=1)
+    after_del_results = retriever.search([load_chunks["text"][0]], top_k=1)
 
     assert before_del_results[0][0][0] != after_del_results[0][0][0]
