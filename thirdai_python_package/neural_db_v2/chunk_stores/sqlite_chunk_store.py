@@ -55,11 +55,18 @@ class SqlLiteIterator:
         table: Table,
         engine: Engine,
         min_insertion_chunk_id: int,
+        max_insertion_chunk_id: int,
         batch_size: int = 100,
     ):
         self.chunk_table = table
         self.engine = engine
+
+        # Since assigned chunk_ids are contiguous, each SqlLiteIterator can search
+        # through a range of chunk_ids. We need a min and a max we do an insertion
+        # while another iterator still exists
         self.min_insertion_chunk_id = min_insertion_chunk_id
+        self.max_insertion_chunk_id = max_insertion_chunk_id
+
         self.batch_size = batch_size
 
     def __next__(self) -> Optional[ChunkBatch]:
@@ -84,7 +91,8 @@ class SqlLiteIterator:
 
     def __iter__(self):
         stmt = select(self.chunk_table).where(
-            self.chunk_table.c.chunk_id >= self.min_insertion_chunk_id
+            (self.chunk_table.c.chunk_id >= self.min_insertion_chunk_id)
+            & (self.chunk_table.c.chunk_id < self.max_insertion_chunk_id)
         )
         with self.engine.connect() as conn:
             result = conn.execute(stmt)
@@ -217,10 +225,13 @@ class SQLiteChunkStore(ChunkStore):
 
             self._write_to_table(df=chunk_df, table=self.chunk_table)
 
+        max_insertion_chunk_id = self.next_id
+
         inserted_chunks_iterator = SqlLiteIterator(
             table=self.chunk_table,
             engine=self.engine,
             min_insertion_chunk_id=min_insertion_chunk_id,
+            max_insertion_chunk_id=max_insertion_chunk_id,
             batch_size=kwargs.get("sql_lite_iterator_batch_size", 100),
         )
 

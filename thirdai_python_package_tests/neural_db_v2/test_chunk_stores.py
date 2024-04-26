@@ -321,13 +321,21 @@ def test_sql_lite_chunk_store_batching():
         ),
     )
 
-    inserted_batches = store.insert([new_batch], sql_lite_iterator_batch_size=2)
+    inserted_batches_1 = store.insert([new_batch], sql_lite_iterator_batch_size=2)
+    inserted_batches_2 = store.insert([new_batch], sql_lite_iterator_batch_size=2)
 
-    num_batches = 0
-    num_rows = 0
-    for batch in inserted_batches:
-        num_batches += 1
-        num_rows += len(batch.text)
+    def assert_lens(inserted_batches):
+        num_batches = 0
+        num_rows = 0
+        for batch in inserted_batches:
+            num_batches += 1
+            num_rows += len(batch.text)
 
-    assert num_batches == 2
-    assert num_rows == 3
+        assert num_batches == 2
+        assert num_rows == 3
+
+    # we check this out of order to verify that the min/max chunk_id logic works
+    # in the SQLLiteIterator object, ie that we pull the right range of chunk_ids
+    # despite using the iterators out of order
+    assert_lens(inserted_batches_2)
+    assert_lens(inserted_batches_1)

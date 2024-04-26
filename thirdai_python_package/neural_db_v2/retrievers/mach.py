@@ -121,9 +121,6 @@ class Mach(Retriever):
     def upvote(self, queries: List[str], chunk_ids: List[ChunkId], **kwargs):
         self.model.upvote(queries=queries, ids=chunk_ids)
 
-    def downvote(self, queries: List[str], chunk_ids: List[ChunkId], **kwargs):
-        raise NotImplementedError("Method 'downvote' is not supported for Mach.")
-
     def associate(
         self, sources: List[str], targets: List[str], n_buckets: int = 7, **kwargs
     ):
