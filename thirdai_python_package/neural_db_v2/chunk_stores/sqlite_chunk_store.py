@@ -324,12 +324,3 @@ class SQLiteChunkStore(ChunkStore):
             )
 
         return remapped_batches
-
-
-[
-    (0, None, "0 1", "00 11", "doc0", "dec9720a-9cd2-4da4-b280-5fb5cd7d1774"),
-    (1, None, "1 2", "11 22", "doc1", "dec9720a-9cd2-4da4-b280-5fb5cd7d1774"),
-    (2, 200, "2 3", "22 33", "doc2", "dec9720a-9cd2-4da4-b280-5fb5cd7d1774"),
-    (3, 300, "3 4", "33 44", "doc3", "dec9720a-9cd2-4da4-b280-5fb5cd7d1774"),
-    (4, 400, "4 5", "44, 55", "doc4", "dec9720a-9cd2-4da4-b280-5fb5cd7d1774"),
-]
