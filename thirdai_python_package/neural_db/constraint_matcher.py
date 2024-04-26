@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+import warnings
 from collections import defaultdict
 from typing import Any, Dict, Generic, Iterable, List, Optional, Set, TypeVar
 
@@ -165,8 +166,16 @@ class ConstraintValue:
             raise RuntimeError(
                 "ConstraintValue cannot accept non-None value and is_any=True at the same time."
             )
-        self._value = value
-        self._is_any = is_any
+
+        if value == "__any__":
+            self._value = None
+            self._is_any = True
+            warnings.warn(
+                "Setting the metadata value to '__any__' treats it as a wildcard that matches any value, which differs from the standard behavior where the value is set exactly as provided."
+            )
+        else:
+            self._value = value
+            self._is_any = is_any
 
     def any(self):
         return self._is_any
