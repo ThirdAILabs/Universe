@@ -48,6 +48,7 @@ class NeuralDB:
         user_id: str = "user",
         num_shards: int = 1,
         num_models_per_shard: int = 1,
+        mach=False,
         **kwargs,
     ) -> None:
         """
@@ -79,7 +80,7 @@ class NeuralDB:
                     " NeuralDB can only be initialized with a positive number of"
                     " models per shard."
                 )
-            if kwargs.get("low_memory", False):
+            if not mach:
                 model = FinetunableRetriever()
             elif num_shards > 1 or num_models_per_shard > 1:
                 model = MachMixture(
@@ -1032,9 +1033,4 @@ class NeuralDB:
             n_buckets=self._get_associate_top_k(strength),
             learning_rate=learning_rate,
             epochs=epochs,
-        )
-
-    def build_inverted_index(self):
-        self._savable_state.model.build_inverted_index(
-            self._savable_state.documents.get_data_source()
         )

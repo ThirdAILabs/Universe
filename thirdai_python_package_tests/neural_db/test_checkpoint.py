@@ -71,6 +71,7 @@ def train_neural_db_with_checkpoint(num_shards: int, num_models_per_shard: int):
         extreme_output_dim=OUTPUT_DIM,
         fhr=FHR,
         embedding_dimension=EMBEDDING_DIM,
+        mach=True,
     )
     # only training for the first two documents
 
@@ -136,6 +137,7 @@ def interrupted_insert(num_shards: int, num_models_per_shard: int, interrupt_fun
         extreme_output_dim=OUTPUT_DIM,
         fhr=FHR,
         embedding_dimension=EMBEDDING_DIM,
+        mach=True,
     )
 
     checkpoint_config = ndb.CheckpointConfig(
@@ -210,7 +212,7 @@ def interrupted_training(num_shards, num_models_per_shard, interrupt_function):
 
 
 def make_db_and_training_manager(num_models_per_shard=2, makes_checkpoint=True):
-    db = ndb.NeuralDB(num_models_per_shard=num_models_per_shard)
+    db = ndb.NeuralDB(num_models_per_shard=num_models_per_shard, mach=True)
     checkpoint_dir = Path(CHECKPOINT_DIR) / str(0)
 
     document_manager = db._savable_state.documents

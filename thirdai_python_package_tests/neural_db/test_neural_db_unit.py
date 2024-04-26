@@ -7,7 +7,7 @@ pytestmark = [pytest.mark.unit]
 
 
 def test_custom_epoch(create_simple_dataset):
-    db = ndb.NeuralDB(user_id="user")
+    db = ndb.NeuralDB(user_id="user", mach=True)
 
     doc = ndb.CSV(
         path=create_simple_dataset,
@@ -24,7 +24,7 @@ def test_custom_epoch(create_simple_dataset):
 
 
 def test_neuraldb_stopping_condition(create_simple_dataset):
-    db = ndb.NeuralDB(user_id="user")
+    db = ndb.NeuralDB(user_id="user", mach=True)
 
     doc = ndb.CSV(
         path=create_simple_dataset,
