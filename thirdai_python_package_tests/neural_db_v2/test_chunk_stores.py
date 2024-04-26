@@ -13,6 +13,15 @@ from thirdai.neural_db_v2.core.types import CustomIdSupervisedBatch, NewChunkBat
 pytestmark = [pytest.mark.release]
 
 
+def assert_chunk_ids(inserted_batches, expected_chunk_ids):
+    actual_chunk_ids = []
+    for batch in inserted_batches:
+        for chunk_id in batch.chunk_id:
+            actual_chunk_ids.append(chunk_id)
+
+    assert expected_chunk_ids == actual_chunk_ids
+
+
 def get_simple_chunk_store(chunk_store_type, custom_id_type=int):
     store = chunk_store_type()
 
@@ -41,10 +50,7 @@ def get_simple_chunk_store(chunk_store_type, custom_id_type=int):
 
     inserted_batches = store.insert(batches)
 
-    assert len(inserted_batches) == 2
-
-    assert (inserted_batches[0].chunk_id == pd.Series([0, 1])).all()
-    assert (inserted_batches[1].chunk_id == pd.Series([2, 3, 4])).all()
+    assert_chunk_ids(inserted_batches, [0, 1, 2, 3, 4])
 
     return store
 
@@ -117,7 +123,7 @@ def test_chunk_store_basic_operations(chunk_store):
     ]
 
     inserted_batches = store.insert(new_batches)
-    assert (inserted_batches[0].chunk_id == pd.Series([5, 6])).all()
+    assert_chunk_ids(inserted_batches, [5, 6])
 
     chunks = store.get_chunks([6, 0, 5])
     check_chunk_contents(

@@ -1,21 +1,10 @@
-import os
-
 import pandas as pd
 import pytest
+from ndbv2_test_utils import simple_chunks_df
 from thirdai.neural_db_v2.core.types import ChunkBatch
 from thirdai.neural_db_v2.retrievers.inverted_index import InvertedIndex
 
 pytestmark = [pytest.mark.release]
-
-
-@pytest.fixture(scope="session")
-def load_chunks():
-    filename = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "../../auto_ml/python_tests/texts.csv",
-    )
-
-    return pd.read_csv(filename)
 
 
 def build_index(chunk_df):
@@ -38,10 +27,10 @@ def build_index(chunk_df):
     return index
 
 
-def test_inverted_index_retriever_search(load_chunks):
-    index = build_index(load_chunks)
+def test_inverted_index_retriever_search(simple_chunks_df):
+    index = build_index(simple_chunks_df)
 
-    for _, row in load_chunks.iterrows():
+    for _, row in simple_chunks_df.iterrows():
         id = row["id"]
         search_results = index.search([row["text"]], top_k=1)
         assert id == search_results[0][0][0]

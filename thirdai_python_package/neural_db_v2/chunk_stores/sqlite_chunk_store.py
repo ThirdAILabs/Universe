@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from sqlalchemy import (
     Column,
+    Engine,
     Float,
     Integer,
     MetaData,
@@ -14,6 +15,7 @@ from sqlalchemy import (
     Table,
     create_engine,
     delete,
+    func,
     select,
     text,
 )
@@ -48,28 +50,51 @@ def get_sql_columns(df: pd.DataFrame):
 
 
 class SqlLiteIterator:
-    def __init__(self, table: Table, insertion_id: str, batch_size: int = 100):
-        self.table = table
+    def __init__(
+        self, table: Table, engine: Engine, insertion_id: str, batch_size: int = 100
+    ):
+        self.chunk_table = table
+        self.engine = engine
         self.insertion_id = insertion_id
         self.batch_size = batch_size
 
     def __next__(self) -> Optional[ChunkBatch]:
-        for sql_lite_batch in self.sql_row_iterator.yield_per(self.batch_size):
-            df = pd.DataFrame(sql_lite_batch, columns=self.sql_row_iterator.keys())
-            chunk_batch = ChunkBatch(
-                chunk_id=df.chunk_id,
-                text=df.text,
-                keywords=df.keywords,
-            )
-            yield chunk_batch
-        raise StopIteration
+        # The "next" call on the sql_row_iterator returns one row at a time
+        # despite fetching them in "batch_size" quantities from the database.
+        # Thus we call "next" "batch_size" times to pull out all the rows we want
+        sql_lite_batch = []
+        try:
+            for _ in range(self.batch_size):
+                sql_lite_batch.append(next(self.sql_row_iterator))
+        except StopIteration:
+            if not sql_lite_batch:
+                raise StopIteration
+
+        df = pd.DataFrame(sql_lite_batch, columns=self.sql_row_iterator.keys())
+
+        return ChunkBatch(
+            chunk_id=df["chunk_id"],
+            text=df["text"],
+            keywords=df["keywords"],
+        )
 
     def __iter__(self):
         stmt = select(self.chunk_table).where(
             self.chunk_table.c.insertion_id == self.insertion_id
         )
         with self.engine.connect() as conn:
-            self.sql_row_iterator = conn.execute(stmt)
+            result = conn.execute(stmt)
+            self.sql_row_iterator = result.yield_per(self.batch_size)
+        return self
+
+    def __len__(self):
+        stmt = (
+            select(func.count())
+            .select_from(self.chunk_table)
+            .filter(self.chunk_table.c.insertion_id == self.insertion_id)
+        )
+        with self.engine.connect() as conn:
+            return conn.execute(stmt).scalar()
 
 
 class SQLiteChunkStore(ChunkStore):
@@ -200,7 +225,7 @@ class SQLiteChunkStore(ChunkStore):
             self._write_to_table(df=chunk_df, table=self.chunk_table)
 
         inserted_chunks_iterator = SqlLiteIterator(
-            table=self.chunk_table, insertion_id=insertion_id
+            table=self.chunk_table, engine=self.engine, insertion_id=insertion_id
         )
 
         return inserted_chunks_iterator
@@ -299,3 +324,12 @@ class SQLiteChunkStore(ChunkStore):
             )
 
         return remapped_batches
+
+
+[
+    (0, None, "0 1", "00 11", "doc0", "dec9720a-9cd2-4da4-b280-5fb5cd7d1774"),
+    (1, None, "1 2", "11 22", "doc1", "dec9720a-9cd2-4da4-b280-5fb5cd7d1774"),
+    (2, 200, "2 3", "22 33", "doc2", "dec9720a-9cd2-4da4-b280-5fb5cd7d1774"),
+    (3, 300, "3 4", "33 44", "doc3", "dec9720a-9cd2-4da4-b280-5fb5cd7d1774"),
+    (4, 400, "4 5", "44, 55", "doc4", "dec9720a-9cd2-4da4-b280-5fb5cd7d1774"),
+]

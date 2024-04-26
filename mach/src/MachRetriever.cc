@@ -140,7 +140,6 @@ bolt::metrics::History MachRetriever::coldstart(
     const std::vector<std::string>& weak_cols, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
     const std::vector<bolt::callbacks::CallbackPtr>& callbacks,
-    const TrainOptions& train_options,
     const ColdStartOptions& coldstart_options) {
   auto augmented_data = data::TransformedIterator::make(
       data,
@@ -150,7 +149,7 @@ bolt::metrics::History MachRetriever::coldstart(
       _state);
 
   return train(augmented_data, learning_rate, epochs, metrics, callbacks,
-               train_options);
+               coldstart_options);
 }
 
 bolt::metrics::History MachRetriever::train(

@@ -2,6 +2,7 @@
 #include <bolt/python_bindings/CtrlCCheck.h>
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/metrics/Metric.h>
+#include <auto_ml/src/udt/Defaults.h>
 #include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
@@ -11,6 +12,8 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <limits>
+
+namespace defaults = thirdai::automl::udt::defaults;
 
 namespace thirdai::mach::python {
 
@@ -115,10 +118,9 @@ bolt::metrics::History wrappedColdStart(
     const std::vector<bolt::callbacks::CallbackPtr>& callbacks,
     const py::kwargs& kwargs) {
   auto coldstart_options = getColdStartOptions(kwargs);
-  auto train_options = getTrainOptions(kwargs);
 
   return mach->coldstart(data, strong_cols, weak_cols, learning_rate, epochs,
-                         metrics, callbacks, train_options, coldstart_options);
+                         metrics, callbacks, coldstart_options);
 }
 
 bolt::metrics::History wrappedColdStartOnCsv(
@@ -130,10 +132,9 @@ bolt::metrics::History wrappedColdStartOnCsv(
     const py::kwargs& kwargs) {
   auto data = csvIterator(filename, mach->idCol(), kwargs);
   auto coldstart_options = getColdStartOptions(kwargs);
-  auto train_options = getTrainOptions(kwargs);
 
   return mach->coldstart(data, strong_cols, weak_cols, learning_rate, epochs,
-                         metrics, callbacks, train_options, coldstart_options);
+                         metrics, callbacks, coldstart_options);
 }
 
 bolt::metrics::History wrappedEvaluate(const MachRetrieverPtr& mach,
@@ -229,25 +230,34 @@ void defineMach(py::module_& module) {
       .def("erase", &MachRetriever::erase, py::arg("ids"))
       .def("clear", &MachRetriever::clear)
       .def("upvote", &MachRetriever::upvote, py::arg("upvotes"),
-           py::arg("n_upvote_samples") = 16,
-           py::arg("n_balancing_samples") = 50, py::arg("learning_rate") = 1e-3,
-           py::arg("epochs") = 3, py::arg("batch_size") = 200)
+           py::arg("n_upvote_samples") = defaults::RLHF_N_FEEDBACK_SAMPLES,
+           py::arg("n_balancing_samples") = defaults::RLHF_N_BALANCING_SAMPLES,
+           py::arg("learning_rate") = defaults::RLHF_LEARNING_RATE,
+           py::arg("epochs") = defaults::RLHF_EPOCHS,
+           py::arg("batch_size") = defaults::RLHF_BATCH_SIZE)
       .def("upvote", &MachRetriever::upvoteBatch, py::arg("queries"),
-           py::arg("ids"), py::arg("n_upvote_samples") = 16,
-           py::arg("n_balancing_samples") = 50, py::arg("learning_rate") = 1e-3,
-           py::arg("epochs") = 3, py::arg("batch_size") = 200)
+           py::arg("ids"),
+           py::arg("n_upvote_samples") = defaults::RLHF_N_FEEDBACK_SAMPLES,
+           py::arg("n_balancing_samples") = defaults::RLHF_N_BALANCING_SAMPLES,
+           py::arg("learning_rate") = defaults::RLHF_LEARNING_RATE,
+           py::arg("epochs") = defaults::RLHF_EPOCHS,
+           py::arg("batch_size") = defaults::RLHF_BATCH_SIZE)
       .def("associate", &MachRetriever::associate, py::arg("sources"),
            py::arg("targets"), py::arg("n_buckets"),
-           py::arg("n_association_samples") = 16,
-           py::arg("n_balancing_samples") = 50, py::arg("learning_rate") = 1e-3,
-           py::arg("epochs") = 3, py::arg("force_non_empty") = true,
-           py::arg("batch_size") = 200)
+           py::arg("n_association_samples") = defaults::RLHF_N_FEEDBACK_SAMPLES,
+           py::arg("n_balancing_samples") = defaults::RLHF_N_BALANCING_SAMPLES,
+           py::arg("learning_rate") = defaults::RLHF_LEARNING_RATE,
+           py::arg("epochs") = defaults::RLHF_EPOCHS,
+           py::arg("force_non_empty") = true,
+           py::arg("batch_size") = defaults::RLHF_BATCH_SIZE)
       .def("associate", &MachRetriever::associateBatch, py::arg("sources"),
            py::arg("targets"), py::arg("n_buckets"),
-           py::arg("n_association_samples") = 16,
-           py::arg("n_balancing_samples") = 50, py::arg("learning_rate") = 1e-3,
-           py::arg("epochs") = 3, py::arg("force_non_empty") = true,
-           py::arg("batch_size") = 200)
+           py::arg("n_association_samples") = defaults::RLHF_N_FEEDBACK_SAMPLES,
+           py::arg("n_balancing_samples") = defaults::RLHF_N_BALANCING_SAMPLES,
+           py::arg("learning_rate") = defaults::RLHF_LEARNING_RATE,
+           py::arg("epochs") = defaults::RLHF_EPOCHS,
+           py::arg("force_non_empty") = true,
+           py::arg("batch_size") = defaults::RLHF_BATCH_SIZE)
       .def("save", &MachRetriever::save, py::arg("filename"),
            py::arg("with_optimizer") = false)
       .def_static("load", &MachRetriever::load, py::arg("filename"));
