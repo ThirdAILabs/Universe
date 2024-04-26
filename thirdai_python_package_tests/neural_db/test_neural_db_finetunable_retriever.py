@@ -17,7 +17,7 @@ def textfile():
 
 
 def build_db():
-    db = ndb.NeuralDB(low_memory=True)
+    db = ndb.NeuralDB()
 
     db.insert([ndb.CSV(path=textfile(), id_column="id", weak_columns=["text"])])
 
