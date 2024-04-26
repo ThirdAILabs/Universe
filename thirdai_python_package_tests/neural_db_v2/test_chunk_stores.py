@@ -306,3 +306,28 @@ def test_chunk_store_remapping(chunk_store, id_type):
                 )
             ]
         )
+
+
+def test_sql_lite_chunk_store_batching():
+    store = SQLiteChunkStore()
+
+    new_batch = NewChunkBatch(
+        custom_id=None,
+        text=pd.Series(["0", "1", "2"]),
+        keywords=pd.Series(["00 11", "11 22", "22 33"]),
+        document=pd.Series(["doc0", "doc1", "doc2"]),
+        metadata=pd.DataFrame(
+            {"class": ["a", "b", "c"], "number": [4, 9, 11], "item": ["x", "y", "z"]}
+        ),
+    )
+
+    inserted_batches = store.insert([new_batch], sql_lite_iterator_batch_size=2)
+
+    num_batches = 0
+    num_rows = 0
+    for batch in inserted_batches:
+        num_batches += 1
+        num_rows += len(batch.text)
+
+    assert num_batches == 2
+    assert num_rows == 3

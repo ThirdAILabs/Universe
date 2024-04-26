@@ -51,11 +51,15 @@ def get_sql_columns(df: pd.DataFrame):
 
 class SqlLiteIterator:
     def __init__(
-        self, table: Table, engine: Engine, insertion_id: str, batch_size: int = 100
+        self,
+        table: Table,
+        engine: Engine,
+        min_insertion_chunk_id: int,
+        batch_size: int = 100,
     ):
         self.chunk_table = table
         self.engine = engine
-        self.insertion_id = insertion_id
+        self.min_insertion_chunk_id = min_insertion_chunk_id
         self.batch_size = batch_size
 
     def __next__(self) -> Optional[ChunkBatch]:
@@ -80,21 +84,12 @@ class SqlLiteIterator:
 
     def __iter__(self):
         stmt = select(self.chunk_table).where(
-            self.chunk_table.c.insertion_id == self.insertion_id
+            self.chunk_table.c.chunk_id >= self.min_insertion_chunk_id
         )
         with self.engine.connect() as conn:
             result = conn.execute(stmt)
             self.sql_row_iterator = result.yield_per(self.batch_size)
         return self
-
-    def __len__(self):
-        stmt = (
-            select(func.count())
-            .select_from(self.chunk_table)
-            .filter(self.chunk_table.c.insertion_id == self.insertion_id)
-        )
-        with self.engine.connect() as conn:
-            return conn.execute(stmt).scalar()
 
 
 class SQLiteChunkStore(ChunkStore):
@@ -117,7 +112,6 @@ class SQLiteChunkStore(ChunkStore):
             Column("text", String),
             Column("keywords", String),
             Column("document", String),
-            Column("insertion_id", String),
         )
         self.metadata.create_all(self.engine)
 
@@ -205,7 +199,7 @@ class SQLiteChunkStore(ChunkStore):
         self._write_to_table(df=metadata, table=self.metadata_table)
 
     def insert(self, chunks: Iterable[NewChunkBatch], **kwargs) -> Iterable[ChunkBatch]:
-        insertion_id = str(uuid.uuid4())
+        min_insertion_chunk_id = self.next_id
         for batch in chunks:
             chunk_ids = pd.Series(
                 np.arange(self.next_id, self.next_id + len(batch), dtype=np.int64)
@@ -214,7 +208,6 @@ class SQLiteChunkStore(ChunkStore):
 
             chunk_df = batch.to_df()
             chunk_df["chunk_id"] = chunk_ids
-            chunk_df["insertion_id"] = insertion_id
 
             if batch.custom_id is not None:
                 self._store_custom_ids(custom_ids=batch.custom_id, chunk_ids=chunk_ids)
@@ -225,7 +218,10 @@ class SQLiteChunkStore(ChunkStore):
             self._write_to_table(df=chunk_df, table=self.chunk_table)
 
         inserted_chunks_iterator = SqlLiteIterator(
-            table=self.chunk_table, engine=self.engine, insertion_id=insertion_id
+            table=self.chunk_table,
+            engine=self.engine,
+            min_insertion_chunk_id=min_insertion_chunk_id,
+            batch_size=kwargs.get("sql_lite_iterator_batch_size", 100),
         )
 
         return inserted_chunks_iterator
