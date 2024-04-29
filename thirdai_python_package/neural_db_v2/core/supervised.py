@@ -9,7 +9,7 @@ class Supervised(ABC):
     def samples(
         self,
     ) -> Union[Iterable[SupervisedBatch], Iterable[CustomIdSupervisedBatch]]:
-        pass
+        raise NotImplementedError
 
     def supervised_samples(
         queries: List[str],

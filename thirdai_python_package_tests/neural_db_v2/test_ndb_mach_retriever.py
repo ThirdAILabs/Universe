@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 from ndbv2_utils import load_chunks
 from thirdai.neural_db_v2.core.types import ChunkBatch, SupervisedBatch
-from thirdai.neural_db_v2.retrievers.mach import Mach
+from thirdai.neural_db_v2.retrievers import Mach
 
 pytestmark = [pytest.mark.release]
 

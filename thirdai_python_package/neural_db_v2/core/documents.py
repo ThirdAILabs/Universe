@@ -7,4 +7,4 @@ from .types import NewChunkBatch
 class Document(ABC):
     @abstractmethod
     def chunks(self) -> Iterable[NewChunkBatch]:
-        pass
+        raise NotImplementedError

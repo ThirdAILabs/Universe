@@ -199,3 +199,12 @@ class Mach(Retriever):
 
     def delete(self, chunk_ids: List[ChunkId], **kwargs):
         self.model.erase(ids=chunk_ids)
+
+    def save(self, path: str):
+        self.model.save(path)
+
+    @classmethod
+    def load(cls, path: str):
+        instance = cls()
+        instance.retriever = bolt.MachRetriever.load(path)
+        return instance

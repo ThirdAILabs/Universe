@@ -1,6 +1,8 @@
+import pickle
 import operator
 from functools import reduce
 from typing import Dict, Iterable, List, Set, Union
+from thirdai_python_package.neural_db.utils import pickle_to, unpickle_from
 
 import numpy as np
 import pandas as pd
@@ -133,3 +135,10 @@ class PandasChunkStore(ChunkStore):
             )
             for batch in samples
         ]
+
+    def save(self, path: str):
+        pickle_to(self, path)
+
+    @classmethod
+    def load(cls, path: str):
+        return unpickle_from(path)

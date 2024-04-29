@@ -1,13 +1,12 @@
 import pandas as pd
 import pytest
+from thirdai.neural_db_v2.chunk_stores import PandasChunkStore, SQLiteChunkStore
 from thirdai.neural_db_v2.chunk_stores.constraints import (
     AnyOf,
     EqualTo,
     GreaterThan,
     LessThan,
 )
-from thirdai.neural_db_v2.chunk_stores.pandas_chunk_store import PandasChunkStore
-from thirdai.neural_db_v2.chunk_stores.sqlite_chunk_store import SQLiteChunkStore
 from thirdai.neural_db_v2.core.types import CustomIdSupervisedBatch, NewChunkBatch
 
 pytestmark = [pytest.mark.release]

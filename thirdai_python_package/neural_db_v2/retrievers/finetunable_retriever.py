@@ -45,3 +45,12 @@ class FinetunableRetriever(Retriever):
 
     def delete(self, chunk_ids: List[ChunkId], **kwargs):
         self.retriever.remove(ids=chunk_ids)
+
+    def save(self, path: str):
+        self.retriever.save(path)
+
+    @classmethod
+    def load(cls, path: str):
+        instance = cls()
+        instance.retriever = search.FinetunableRetriever.load(path)
+        return instance

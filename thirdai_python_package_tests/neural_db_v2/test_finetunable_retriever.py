@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 from ndbv2_utils import load_chunks
 from thirdai.neural_db_v2.core.types import ChunkBatch, SupervisedBatch
-from thirdai.neural_db_v2.retrievers.finetunable_retriever import FinetunableRetriever
+from thirdai.neural_db_v2.retrievers import FinetunableRetriever
 
 pytestmark = [pytest.mark.release]
 

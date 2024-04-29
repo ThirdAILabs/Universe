@@ -1,5 +1,9 @@
+import json
+import os
+from pathlib import Path
 from typing import Iterable, List, Optional, Union
 
+from chunk_stores import load_chunk_store
 from chunk_stores.sqlite_chunk_store import SQLiteChunkStore
 from core.chunk_store import ChunkStore
 from core.documents import Document
@@ -12,8 +16,8 @@ from core.types import (
     Supervised,
 )
 from documents import document_by_name
-
-from thirdai_python_package.neural_db_v2.retrievers.mach import Mach
+from retrievers import load_retriever
+from retrievers.mach import Mach
 
 
 class NeuralDB:
@@ -74,9 +78,35 @@ class NeuralDB:
 
         self.retriever.supervised_train(iterable, **kwargs)
 
-    def save(self, path):
-        pass
+    def save(self, path: str):
+        directory = Path(path)
+        os.makedirs(directory)
+
+        self.chunk_store.save(directory / "chunk_store")
+        self.retriever.save(directory / "retriever")
+
+        metadata = {
+            "chunk_store_name": self.chunk_store.__class__.__name__,
+            "retriever_name": self.retriever.__class__.__name__,
+        }
+
+        metadata_path = directory / "metadata.json"
+        with open(metadata_path, "w") as f:
+            json.dump(metadata, f)
 
     @staticmethod
-    def load(path):
-        pass
+    def load(path: str):
+        directory = Path(path)
+
+        metadata_path = directory / "metadata.json"
+        with open(metadata_path, "r") as f:
+            metadata = json.load(f)
+
+        chunk_store = load_chunk_store(
+            path / "chunk_store", chunk_store_name=metadata["chunk_store_name"]
+        )
+        retriever = load_retriever(
+            path / "retriever", retriever_name=metadata["retriever_name"]
+        )
+
+        return NeuralDB(chunk_store=chunk_store, retriever=retriever)
