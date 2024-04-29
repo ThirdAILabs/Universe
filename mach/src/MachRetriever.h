@@ -183,6 +183,8 @@ class MachRetriever {
 
   static std::shared_ptr<MachRetriever> fromArchive(const ar::Archive& archive);
 
+  std::string textCol() const { return _text_column; }
+
   std::string idCol() const { return _id_column; }
 
   void save(const std::string& filename, bool with_optimizer = false) const;

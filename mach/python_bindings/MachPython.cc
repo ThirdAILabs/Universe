@@ -9,6 +9,7 @@
 #include <dataset/src/DataSource.h>
 #include <mach/src/MachConfig.h>
 #include <mach/src/MachRetriever.h>
+#include <mach/src/MachTrainer.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <limits>
@@ -261,6 +262,25 @@ void defineMach(py::module_& module) {
       .def("save", &MachRetriever::save, py::arg("filename"),
            py::arg("with_optimizer") = false)
       .def_static("load", &MachRetriever::load, py::arg("filename"));
+
+  py::class_<MachTrainer>(module, "MachTrainer")
+      .def(py::init<MachRetrieverPtr, data::ColumnMapIteratorPtr>(),
+           py::arg("model"), py::arg("data"))
+      .def("complete", &MachTrainer::complete, py::arg("ckpt_dir"))
+      .def_static("from_checkpoint", &MachTrainer::fromCheckpoint,
+                  py::arg("ckpt_dir"))
+      .def("strong_weak_cols", &MachTrainer::strongWeakCols,
+           py::arg("strong_cols"), py::arg("weak_cols"))
+      .def("learning_rate", &MachTrainer::learningRate,
+           py::arg("learning_rate"))
+      .def("min_max_epochs", &MachTrainer::minMaxEpochs, py::arg("min_epochs"),
+           py::arg("max_epochs"))
+      .def("metrics", &MachTrainer::metrics, py::arg("metrics"))
+      .def("max_in_memory_batches", &MachTrainer::maxInMemoryBatches,
+           py::arg("max_in_memory_batches"))
+      .def("batch_size", &MachTrainer::batchSize, py::arg("batch_size"))
+      .def("early_stop", &MachTrainer::earlyStop, py::arg("metric"),
+           py::arg("threshold"));
 }
 
 }  // namespace thirdai::mach::python

@@ -144,6 +144,7 @@ class Mach(Retriever):
         batch_size: int = 2000,
         early_stop_metric: str = "hash_precision@5",
         early_stop_metric_threshold: float = 0.95,
+        ckpt_dir: Optional[str] = None,
         **kwargs,
     ):
         train_data = ChunkColumnMapIterator(
@@ -154,31 +155,25 @@ class Mach(Retriever):
         if "hash_precision@5" not in metrics:
             metrics.append("hash_precision@5")
 
-        min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
-            size=train_data.size()
+        if epochs:
+            min_epochs, max_epochs = (epochs, epochs)
+        else:
+            min_epochs, max_epochs = autotune_from_scratch_min_max_epochs(
+                size=train_data.size()
+            )
+
+        trainer = (
+            bolt.MachTrainer(model=self.model, data=train_data)
+            .strong_weak_cols([Mach.STRONG], [Mach.WEAK])
+            .learning_rate(learning_rate)
+            .min_max_epochs(min_epochs, max_epochs)
+            .metrics(metrics)
+            .max_in_memory_batches(max_in_memory_batches)
+            .batch_size(batch_size)
+            .early_stop(metric=early_stop_metric, threshold=early_stop_metric_threshold)
         )
 
-        early_stop_callback = EarlyStopWithMinEpochs(
-            min_epochs=epochs or min_epochs,
-            tracked_metric=early_stop_metric,
-            metric_threshold=early_stop_metric_threshold,
-        )
-
-        callbacks = callbacks or []
-        callbacks.append(early_stop_callback)
-
-        self.model.coldstart(
-            data=train_data,
-            strong_cols=[Mach.STRONG],
-            weak_cols=[Mach.WEAK],
-            learning_rate=learning_rate,
-            epochs=epochs or max_epochs,
-            metrics=metrics,
-            callbacks=callbacks,
-            max_in_memory_batches=max_in_memory_batches,
-            variable_length=variable_length,
-            batch_size=batch_size,
-        )
+        trainer.complete(ckpt_dir)
 
     def supervised_train(
         self,
@@ -186,16 +181,19 @@ class Mach(Retriever):
         learning_rate: float = 0.001,
         epochs: int = 3,
         metrics: Optional[List[str]] = None,
+        ckpt_dir: Optional[str] = None,
         **kwargs,
     ):
         train_data = ChunkColumnMapIterator(samples, text_columns={Mach.TEXT: "query"})
 
-        self.model.train(
-            data=train_data,
-            learning_rate=learning_rate,
-            epochs=epochs,
-            metrics=metrics or ["hash_precision@5"],
+        trainer = (
+            bolt.MachTrainer(model=self.model, data=train_data)
+            .learning_rate(learning_rate)
+            .min_max_epochs(epochs, epochs)
+            .metrics(metrics or ["hash_precision@5"])
         )
+
+        trainer.complete(ckpt_dir)
 
     def delete(self, chunk_ids: List[ChunkId], **kwargs):
         self.model.erase(ids=chunk_ids)
