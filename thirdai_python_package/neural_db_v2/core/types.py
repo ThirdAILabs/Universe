@@ -10,6 +10,8 @@ ChunkId = int
 
 Score = float
 
+CustomId
+
 
 @dataclass
 class NewChunk:
@@ -37,18 +39,6 @@ class Chunk(NewChunk):
 
     # A unique identifier assigned by a chunk store.
     chunk_id: ChunkId
-
-
-@dataclass
-class CustomIdSupervisedSample:
-    query: str
-    custom_id: Union[List[str], List[int]]
-
-
-@dataclass
-class SupervisedSample:
-    query: str
-    chunk_id: List[int]
 
 
 """Design choices for batch objects:
@@ -111,6 +101,18 @@ class ChunkBatch:
 
 
 @dataclass
+class CustomIdSupervisedSample:
+    query: str
+    custom_id: Union[List[str], List[int]]
+
+
+@dataclass
+class SupervisedSample:
+    query: str
+    chunk_id: List[ChunkId]
+
+
+@dataclass
 class CustomIdSupervisedBatch:
     query: pt.Series[str]
     custom_id: Union[pt.Series[List[str]], pt.Series[List[int]]]
@@ -128,7 +130,7 @@ class CustomIdSupervisedBatch:
 @dataclass
 class SupervisedBatch:
     query: pt.Series[str]
-    chunk_id: pt.Series[List[int]]
+    chunk_id: pt.Series[List[ChunkId]]
 
     def __getitem__(self, i: int):
         return SupervisedSample(

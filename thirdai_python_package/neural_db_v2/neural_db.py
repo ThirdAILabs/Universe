@@ -4,7 +4,13 @@ from chunk_stores.sqlite_chunk_store import SQLiteChunkStore
 from core.chunk_store import ChunkStore
 from core.documents import Document
 from core.retriever import Retriever
-from core.types import Chunk, NewChunkBatch
+from core.types import (
+    Chunk,
+    ChunkId,
+    CustomIdSupervisedBatch,
+    NewChunkBatch,
+    Supervised,
+)
 from documents import document_by_name
 from retrievers.mach_retriever import MachRetriever
 
@@ -14,7 +20,7 @@ class NeuralDB:
         self,
         chunk_store: Optional[ChunkStore] = None,
         retriever: Optional[Retriever] = None,
-        **kwargs
+        **kwargs,
     ):
         self.chunk_store = chunk_store or SQLiteChunkStore(**kwargs)
         self.retriever = retriever or MachRetriever(**kwargs)
@@ -41,11 +47,35 @@ class NeuralDB:
         self.insert_chunks(chunk_generator(), **kwargs)
 
     def search(
-        self, query: str, top_k: int, constraints: dict = None, **kwargs
-    ) -> List[Chunk]:
+        self, queries: List[str], top_k: int, constraints: dict = None, **kwargs
+    ) -> List[List[Chunk]]:
         if not constraints:
-            chunk_ids = self.retriever.search([query], top_k, **kwargs)
+            chunk_ids = self.retriever.search(queries, top_k, **kwargs)
         else:
             choices = self.chunk_store.filter_chunk_ids(constraints, **kwargs)
-            chunk_ids = self.retriever.rank([query], [choices], **kwargs)
+            chunk_ids = self.retriever.rank(queries, [choices], **kwargs)
         return self.chunk_store.get_chunks(chunk_ids, **kwargs)
+
+    def delete(self, chunk_ids: List[ChunkId], **kwargs):
+        self.retriever.delete(chunk_ids, **kwargs)
+
+    def upvote(self, queries: List[str], chunk_ids: List[ChunkId], **kwargs):
+        self.retriever.upvote(queries, chunk_ids, **kwargs)
+
+    def associate(self, sources: List[str], targets: List[str], **kwargs):
+        self.retriever.associate(sources, targets, **kwargs)
+
+    def supervised_train(self, supervised: Supervised, **kwargs):
+        iterable = supervised.samples()
+
+        if isinstance(next(iter(iterable)), CustomIdSupervisedBatch):
+            iterable = self.chunk_store.remap_custom_ids(iterable)
+
+        self.retriever.supervised_train(iterable, **kwargs)
+
+    def save(self, path):
+        pass
+
+    @staticmethod
+    def load(path):
+        pass

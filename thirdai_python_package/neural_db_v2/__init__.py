@@ -9,3 +9,4 @@ from .documents import (
     InMemoryText,
     TextFile,
 )
+from .supervised import CsvSupervised, InMemorySupervised
