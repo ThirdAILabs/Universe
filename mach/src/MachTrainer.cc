@@ -221,6 +221,12 @@ MachTrainer& MachTrainer::strongWeakCols(
   return *this;
 }
 
+MachTrainer& MachTrainer::vlc(
+    const std::optional<data::VariableLengthConfig>& vlc) {
+  _vlc = vlc;
+  return *this;
+}
+
 MachTrainer& MachTrainer::learningRate(float learning_rate) {
   _learning_rate = learning_rate;
   return *this;

@@ -20,6 +20,8 @@ class MachTrainer {
   MachTrainer& strongWeakCols(const std::vector<std::string>& strong_cols,
                               const std::vector<std::string>& weak_cols);
 
+  MachTrainer& vlc(const std::optional<data::VariableLengthConfig>& vlc);
+
   MachTrainer& learningRate(float learning_rate);
 
   MachTrainer& minMaxEpochs(uint32_t min_epochs, uint32_t max_epochs);

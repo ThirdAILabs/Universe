@@ -136,7 +136,6 @@ class Mach(Retriever):
         learning_rate: float = 0.001,
         epochs: Optional[int] = None,
         metrics: Optional[List[str]] = None,
-        callbacks: Optional[List[bolt.train.callbacks.Callback]] = None,
         max_in_memory_batches: Optional[int] = None,
         variable_length: Optional[
             data.transformations.VariableLengthConfig
@@ -167,6 +166,7 @@ class Mach(Retriever):
         trainer = (
             bolt.MachTrainer(model=self.model, data=train_data)
             .strong_weak_cols([Mach.STRONG], [Mach.WEAK])
+            .vlc(variable_length)
             .learning_rate(learning_rate)
             .min_max_epochs(min_epochs, max_epochs)
             .metrics(metrics)
