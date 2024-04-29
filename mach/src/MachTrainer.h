@@ -1,6 +1,5 @@
 #pragma once
 
-#include <_types/_uint32_t.h>
 #include <data/src/ColumnMapIterator.h>
 #include <mach/src/MachConfig.h>
 #include <mach/src/MachRetriever.h>

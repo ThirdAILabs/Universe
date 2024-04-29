@@ -1,7 +1,6 @@
 #include "MachTrainer.h"
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/callbacks/Overfitting.h>
-#include <_types/_uint32_t.h>
 #include <archive/src/Archive.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/columns/Column.h>
