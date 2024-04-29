@@ -214,15 +214,21 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("force_non_empty") = true,
            py::arg("num_hashes") = std::nullopt)
       .def("associate", &udt::UDT::associate, py::arg("source_target_samples"),
-           py::arg("n_buckets"), py::arg("n_association_samples") = 16,
-           py::arg("n_balancing_samples") = 50,
-           py::arg("learning_rate") = 0.001, py::arg("epochs") = 3,
+           py::arg("n_buckets"),
+           py::arg("n_association_samples") =
+               udt::defaults::RLHF_N_FEEDBACK_SAMPLES,
+           py::arg("n_balancing_samples") =
+               udt::defaults::RLHF_N_BALANCING_SAMPLES,
+           py::arg("learning_rate") = udt::defaults::RLHF_LEARNING_RATE,
+           py::arg("epochs") = udt::defaults::RLHF_EPOCHS,
            py::arg("force_non_empty") = true,
            py::arg("batch_size") = udt::defaults::RLHF_BATCH_SIZE)
       .def("upvote", &udt::UDT::upvote, py::arg("source_target_samples"),
-           py::arg("n_upvote_samples") = 16,
-           py::arg("n_balancing_samples") = 50,
-           py::arg("learning_rate") = 0.001, py::arg("epochs") = 3,
+           py::arg("n_upvote_samples") = udt::defaults::RLHF_N_FEEDBACK_SAMPLES,
+           py::arg("n_balancing_samples") =
+               udt::defaults::RLHF_N_BALANCING_SAMPLES,
+           py::arg("learning_rate") = udt::defaults::RLHF_LEARNING_RATE,
+           py::arg("epochs") = udt::defaults::RLHF_EPOCHS,
            py::arg("batch_size") = udt::defaults::RLHF_BATCH_SIZE)
       .def("associate_train_data_source", &udt::UDT::associateTrain,
            py::arg("balancing_data"), py::arg("source_target_samples"),
