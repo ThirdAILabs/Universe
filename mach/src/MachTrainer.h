@@ -15,6 +15,8 @@ class MachTrainer {
 
   MachRetrieverPtr complete(const std::optional<std::string>& ckpt_dir);
 
+  void intermediateCheckpoint(const std::string& ckpt_dir);
+
   static std::shared_ptr<MachTrainer> fromCheckpoint(const std::string& dir);
 
   MachTrainer& strongWeakCols(const std::vector<std::string>& strong_cols,
@@ -40,7 +42,7 @@ class MachTrainer {
     return !_strong_cols.empty() || !_weak_cols.empty();
   }
 
-  void makeInitialCheckpoint(const std::string& dir) const;
+  void initialCheckpoint(const std::string& ckpt_dir) const;
 
   void saveTrainerMetadata(const std::string& path) const;
 
@@ -50,6 +52,13 @@ class MachTrainer {
 
   static data::ColumnMapIteratorPtr loadDataset(const std::string& path,
                                                 const std::string& id_col);
+
+  uint32_t correctEpochs(uint32_t epochs) const {
+    if (epochs < _model->model()->epochs()) {
+      return 0;
+    }
+    return epochs - _model->model()->epochs();
+  }
 
   MachRetrieverPtr _model;
 

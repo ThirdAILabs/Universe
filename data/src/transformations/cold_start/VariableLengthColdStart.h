@@ -47,7 +47,7 @@ struct VariableLengthConfig {
             archive.f32("stopword_insertion_probability")),
         word_removal_probability(archive.f32("word_removal_probability")),
         word_perturbation_probability(
-            archive.f32("word_pertubation_probability")),
+            archive.f32("word_perturbation_probability")),
         chars_replace_with_space(archive.u64("chars_replace_with_space")),
         chars_deleted(archive.u64("chars_deleted")),
         chars_duplicated(archive.u64("chars_duplicated")),
@@ -98,7 +98,7 @@ struct VariableLengthConfig {
     map->set("num_slices", ar::u64(num_slices));
     map->set("add_whole_doc", ar::boolean(add_whole_doc));
     map->set("prefilter_punctuation", ar::boolean(prefilter_punctuation));
-    map->set("strong_sample_num_word", ar::u64(strong_sample_num_words));
+    map->set("strong_sample_num_words", ar::u64(strong_sample_num_words));
     if (strong_to_weak_ratio) {
       map->set("strong_to_weak_ratio", ar::u64(*strong_to_weak_ratio));
     }

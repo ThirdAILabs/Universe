@@ -1,6 +1,7 @@
 #include "MachTrainer.h"
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/callbacks/Overfitting.h>
+#include <_types/_uint32_t.h>
 #include <archive/src/Archive.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/columns/Column.h>
@@ -8,6 +9,7 @@
 #include <dataset/src/utils/SafeFileIO.h>
 #include <mach/src/MachConfig.h>
 #include <filesystem>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -16,13 +18,13 @@ namespace thirdai::mach {
 
 class MachCheckpoint final : public bolt::callbacks::Callback {
  public:
-  MachCheckpoint(MachRetrieverPtr model, std::string save_path)
-      : _model(std::move(model)), _save_path(std::move(save_path)) {}
+  MachCheckpoint(MachTrainer* trainer, std::string save_path)
+      : _trainer(trainer), _save_path(std::move(save_path)) {}
 
-  void onEpochEnd() final { _model->save(_save_path, /*with_optimizer=*/true); }
+  void onEpochEnd() final { _trainer->intermediateCheckpoint(_save_path); }
 
  private:
-  MachRetrieverPtr _model;
+  MachTrainer* _trainer;
 
   std::string _save_path;
 };
@@ -53,13 +55,13 @@ MachRetrieverPtr MachTrainer::complete(
   }
 
   if (ckpt_dir) {
-    makeInitialCheckpoint(*ckpt_dir);
+    initialCheckpoint(*ckpt_dir);
   }
 
   std::vector<bolt::callbacks::CallbackPtr> callbacks;
   if (_min_epochs < _max_epochs) {
     callbacks.push_back(std::make_shared<bolt::callbacks::Overfitting>(
-        _early_stop_metric, /*threshold=*/_early_stop_threshold,
+        "train_" + _early_stop_metric, /*threshold=*/_early_stop_threshold,
         /*freeze_hash_tables=*/false, /*maximize=*/true,
         /*min_epochs=*/_min_epochs));
 
@@ -69,21 +71,29 @@ MachRetrieverPtr MachTrainer::complete(
     }
   }
   if (ckpt_dir) {
-    callbacks.push_back(
-        std::make_shared<MachCheckpoint>(_model, modelPath(*ckpt_dir)));
+    callbacks.push_back(std::make_shared<MachCheckpoint>(this, *ckpt_dir));
   }
 
   if (isColdstart()) {
+    ColdStartOptions options;
+    options.batch_size = _batch_size;
+    options.max_in_memory_batches = _max_in_memory_batches;
+    options.variable_length = _vlc;
+
     _model->coldstart(_data, _strong_cols, _weak_cols, _learning_rate,
-                      _max_epochs, _metrics, callbacks);
+                      correctEpochs(_max_epochs), _metrics, callbacks, options);
   } else {
-    _model->train(_data, _learning_rate, _max_epochs, _metrics, callbacks);
+    TrainOptions options;
+    options.batch_size = _batch_size;
+    options.max_in_memory_batches = _max_in_memory_batches;
+    _model->train(_data, _learning_rate, correctEpochs(_max_epochs), _metrics,
+                  callbacks, options);
   }
 
   return _model;
 }
 
-void MachTrainer::makeInitialCheckpoint(const std::string& ckpt_dir) const {
+void MachTrainer::initialCheckpoint(const std::string& ckpt_dir) const {
   if (std::filesystem::exists(ckpt_dir)) {
     throw std::invalid_argument("Found existing checkpoint in '" + ckpt_dir +
                                 "'.");
@@ -98,6 +108,12 @@ void MachTrainer::makeInitialCheckpoint(const std::string& ckpt_dir) const {
   saveDataset(dataPath(ckpt_dir));
 }
 
+void MachTrainer::intermediateCheckpoint(const std::string& ckpt_dir) {
+  _model->save(modelPath(ckpt_dir), /*with_optimizer=*/true);
+
+  saveTrainerMetadata(metadataPath(ckpt_dir));
+}
+
 std::shared_ptr<MachTrainer> MachTrainer::fromCheckpoint(
     const std::string& dir) {
   auto model = MachRetriever::load(modelPath(dir));
@@ -106,6 +122,7 @@ std::shared_ptr<MachTrainer> MachTrainer::fromCheckpoint(
 
   auto trainer =
       std::make_shared<MachTrainer>(std::move(model), std::move(data));
+
   trainer->loadTrainerMetadata(metadataPath(dir));
 
   return trainer;
@@ -208,7 +225,7 @@ data::ColumnMapIteratorPtr MachTrainer::loadDataset(const std::string& path,
   auto iter = std::make_shared<data::CsvIterator>(path, ',');
 
   auto parse_labels = std::make_shared<data::StringToTokenArray>(
-      id_col, id_col, ':', std::nullopt);
+      id_col, id_col, ':', std::numeric_limits<uint32_t>::max());
 
   return data::TransformedIterator::make(iter, parse_labels, nullptr);
 }
