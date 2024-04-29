@@ -116,6 +116,9 @@ void MachTrainer::saveTrainerMetadata(const std::string& path) const {
 
   map->set("strong_cols", ar::vecStr(_strong_cols));
   map->set("weak_cols", ar::vecStr(_weak_cols));
+  if (_vlc) {
+    map->set("vlc", _vlc->toArchive());
+  }
 
   map->set("learning_rate", ar::f32(_learning_rate));
   map->set("min_epochs", ar::u64(_min_epochs));
@@ -139,6 +142,9 @@ void MachTrainer::loadTrainerMetadata(const std::string& path) {
 
   _strong_cols = archive->getAs<ar::VecStr>("strong_cols");
   _weak_cols = archive->getAs<ar::VecStr>("weak_cols");
+  if (archive->contains("vlc")) {
+    _vlc = data::VariableLengthConfig(*archive->get("vlc"));
+  }
 
   _learning_rate = archive->f32("learning_rate");
   _min_epochs = archive->u64("min_epochs");

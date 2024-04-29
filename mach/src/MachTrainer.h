@@ -55,6 +55,7 @@ class MachTrainer {
 
   std::vector<std::string> _strong_cols;
   std::vector<std::string> _weak_cols;
+  std::optional<data::VariableLengthConfig> _vlc = data::VariableLengthConfig();
 
   float _learning_rate = 1e-3;
   uint32_t _min_epochs = 5;

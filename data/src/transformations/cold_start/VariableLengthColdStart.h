@@ -30,6 +30,30 @@ struct VariableLengthConfig {
       size_t chars_replace_with_space = 0, size_t chars_deleted = 0,
       size_t chars_duplicated = 0, size_t chars_replace_with_adjacents = 0);
 
+  explicit VariableLengthConfig(const ar::Archive& archive)
+      : covering_min_length(archive.u64("covering_min_length")),
+        covering_max_length(archive.u64("covering_max_length")),
+        max_covering_samples(archive.getOpt<ar::U64>("max_covering_samples")),
+        slice_min_length(archive.u64("slice_min_length")),
+        slice_max_length(archive.getOpt<ar::U64>("slice_max_length")),
+        num_slices(archive.u64("num_slices")),
+        add_whole_doc(archive.boolean("add_whole_doc")),
+        prefilter_punctuation(archive.boolean("prefilter_punctuation")),
+        strong_sample_num_words(archive.u64("strong_sample_num_words")),
+        strong_to_weak_ratio(archive.getOpt<ar::F32>("strong_to_weak_ratio")),
+        stopword_removal_probability(
+            archive.f32("stopword_removal_probability")),
+        stopword_insertion_probability(
+            archive.f32("stopword_insertion_probability")),
+        word_removal_probability(archive.f32("word_removal_probability")),
+        word_perturbation_probability(
+            archive.f32("word_pertubation_probability")),
+        chars_replace_with_space(archive.u64("chars_replace_with_space")),
+        chars_deleted(archive.u64("chars_deleted")),
+        chars_duplicated(archive.u64("chars_duplicated")),
+        chars_replace_with_adjacents(
+            archive.u64("chars_replace_with_adjacents")) {}
+
   size_t covering_min_length;
   size_t covering_max_length;
   std::optional<uint32_t> max_covering_samples;
@@ -57,6 +81,41 @@ struct VariableLengthConfig {
             stopword_insertion_probability, word_removal_probability,
             word_perturbation_probability, chars_replace_with_space,
             chars_deleted, chars_duplicated, chars_replace_with_adjacents);
+  }
+
+  ar::ConstArchivePtr toArchive() const {
+    auto map = ar::Map::make();
+
+    map->set("covering_min_length", ar::u64(covering_min_length));
+    map->set("covering_max_length", ar::u64(covering_max_length));
+    if (max_covering_samples) {
+      map->set("max_covering_samples", ar::u64(*max_covering_samples));
+    }
+    map->set("slice_min_length", ar::u64(slice_min_length));
+    if (slice_max_length) {
+      map->set("slice_max_length", ar::u64(*slice_max_length));
+    }
+    map->set("num_slices", ar::u64(num_slices));
+    map->set("add_whole_doc", ar::boolean(add_whole_doc));
+    map->set("prefilter_punctuation", ar::boolean(prefilter_punctuation));
+    map->set("strong_sample_num_word", ar::u64(strong_sample_num_words));
+    if (strong_to_weak_ratio) {
+      map->set("strong_to_weak_ratio", ar::u64(*strong_to_weak_ratio));
+    }
+    map->set("stopword_removal_probability",
+             ar::f32(stopword_removal_probability));
+    map->set("stopword_insertion_probability",
+             ar::f32(stopword_insertion_probability));
+    map->set("word_removal_probability", ar::f32(word_removal_probability));
+    map->set("word_perturbation_probability",
+             ar::f32(word_perturbation_probability));
+    map->set("chars_replace_with_space", ar::u64(chars_replace_with_space));
+    map->set("chars_deleted", ar::u64(chars_deleted));
+    map->set("chars_duplicated", ar::u64(chars_duplicated));
+    map->set("chars_replace_with_adjacents",
+             ar::u64(chars_replace_with_adjacents));
+
+    return map;
   }
 
   void save_stream(std::ostream& output_stream) const {
