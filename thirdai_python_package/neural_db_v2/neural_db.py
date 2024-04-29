@@ -12,7 +12,8 @@ from core.types import (
     Supervised,
 )
 from documents import document_by_name
-from retrievers.mach_retriever import MachRetriever
+
+from thirdai_python_package.neural_db_v2.retrievers.mach import Mach
 
 
 class NeuralDB:
@@ -23,7 +24,7 @@ class NeuralDB:
         **kwargs,
     ):
         self.chunk_store = chunk_store or SQLiteChunkStore(**kwargs)
-        self.retriever = retriever or MachRetriever(**kwargs)
+        self.retriever = retriever or Mach(**kwargs)
 
     def insert_chunks(self, chunks: Iterable[NewChunkBatch], **kwargs):
         stored_chunks = self.chunk_store.insert(

@@ -4,6 +4,7 @@ from typing import List, Optional, Union
 import numpy as np
 import pandas as pd
 from pandera import typing as pt
+from thirdai import data
 
 # We typedef doc ID to anticipate switching over to string IDs
 ChunkId = int
@@ -96,6 +97,11 @@ class ChunkBatch:
     text: pt.Series[str]
     keywords: pt.Series[str]
 
+    def __post_init__(self):
+        self.chunk_id = self.chunk_id.reset_index(drop=True)
+        self.text = self.text.reset_index(drop=True)
+        self.keywords = self.keywords.reset_index(drop=True)
+
     def to_df(self):
         return pd.DataFrame(self.__dict__)
 
@@ -135,7 +141,7 @@ class SupervisedBatch:
     def __getitem__(self, i: int):
         return SupervisedSample(
             query=self.query[i],
-            custom_id=self.chunk_id[i],
+            chunk_id=self.chunk_id[i],
         )
 
     def to_df(self):
