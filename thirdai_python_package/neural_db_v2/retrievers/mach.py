@@ -162,6 +162,8 @@ class Mach(Retriever):
                 size=train_data.size()
             )
 
+        # TODO(Nicholas): how do we want to support VLC in this? Also callbacks
+        # can't be serialized through pybind trampoline class.
         trainer = (
             bolt.MachTrainer(model=self.model, data=train_data)
             .strong_weak_cols([Mach.STRONG], [Mach.WEAK])

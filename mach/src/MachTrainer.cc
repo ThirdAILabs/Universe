@@ -88,7 +88,8 @@ void MachTrainer::makeInitialCheckpoint(const std::string& ckpt_dir) const {
     throw std::invalid_argument("Found existing checkpoint in '" + ckpt_dir +
                                 "'.");
   }
-  // TODO(Nicholas) create directory
+
+  std::filesystem::create_directories(ckpt_dir);
 
   _model->save(modelPath(ckpt_dir), /*with_optimizer=*/true);
 
