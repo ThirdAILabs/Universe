@@ -206,5 +206,5 @@ class Mach(Retriever):
     @classmethod
     def load(cls, path: str):
         instance = cls()
-        instance.retriever = bolt.MachRetriever.load(path)
+        instance.model = bolt.MachRetriever.load(path)
         return instance

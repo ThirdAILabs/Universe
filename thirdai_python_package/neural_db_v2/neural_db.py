@@ -51,11 +51,19 @@ class NeuralDB:
         self, queries: List[str], top_k: int, constraints: dict = None, **kwargs
     ) -> List[List[Chunk]]:
         if not constraints:
-            chunk_ids = self.retriever.search(queries, top_k, **kwargs)
+            results = self.retriever.search(queries, top_k, **kwargs)
         else:
             choices = self.chunk_store.filter_chunk_ids(constraints, **kwargs)
-            chunk_ids = self.retriever.rank(queries, [choices], **kwargs)
-        return self.chunk_store.get_chunks(chunk_ids, **kwargs)
+            results = self.retriever.rank(queries, [choices], **kwargs)
+
+        chunk_ids = [
+            [chunk_id for chunk_id, score in query_results] for query_results in results
+        ]
+
+        return [
+            self.chunk_store.get_chunks(query_chunk_ids, **kwargs)
+            for query_chunk_ids in chunk_ids
+        ]
 
     def delete(self, chunk_ids: List[ChunkId], **kwargs):
         self.retriever.delete(chunk_ids, **kwargs)
@@ -74,35 +82,47 @@ class NeuralDB:
 
         self.retriever.supervised_train(iterable, **kwargs)
 
+    @staticmethod
+    def chunk_store_path(directory: Path) -> str:
+        return str(directory / "chunk_store")
+
+    @staticmethod
+    def retriever_path(directory: Path) -> str:
+        return str(directory / "retriever")
+    
+    @staticmethod
+    def metadata_path(directory: Path) -> str:
+        return str(directory / "metadata.json")
+
     def save(self, path: str):
         directory = Path(path)
         os.makedirs(directory)
 
-        self.chunk_store.save(directory / "chunk_store")
-        self.retriever.save(directory / "retriever")
+        self.chunk_store.save(self.chunk_store_path(directory))
+        self.retriever.save(self.retriever_path(directory))
 
         metadata = {
             "chunk_store_name": self.chunk_store.__class__.__name__,
             "retriever_name": self.retriever.__class__.__name__,
         }
 
-        metadata_path = directory / "metadata.json"
-        with open(metadata_path, "w") as f:
+        with open(self.metadata_path(directory), "w") as f:
             json.dump(metadata, f)
 
     @staticmethod
     def load(path: str):
         directory = Path(path)
 
-        metadata_path = directory / "metadata.json"
-        with open(metadata_path, "r") as f:
+        with open(NeuralDB.metadata_path(directory), "r") as f:
             metadata = json.load(f)
 
         chunk_store = load_chunk_store(
-            path / "chunk_store", chunk_store_name=metadata["chunk_store_name"]
+            NeuralDB.chunk_store_path(directory),
+            chunk_store_name=metadata["chunk_store_name"],
         )
         retriever = load_retriever(
-            path / "retriever", retriever_name=metadata["retriever_name"]
+            NeuralDB.retriever_path(directory),
+            retriever_name=metadata["retriever_name"],
         )
 
         return NeuralDB(chunk_store=chunk_store, retriever=retriever)
