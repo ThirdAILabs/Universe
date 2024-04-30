@@ -106,6 +106,18 @@ const std::vector<uint32_t> N_GRAMS_FOR_GENERATOR = {3, 4};
 // Batch size to use during associates/upvotes.
 constexpr uint32_t RLHF_BATCH_SIZE = 200;
 
+// balancing samples to use during associates/upvotes.
+constexpr uint32_t RLHF_N_BALANCING_SAMPLES = 50;
+
+// duplication multiplier for associate/upvote queries
+constexpr uint32_t RLHF_N_FEEDBACK_SAMPLES = 16;
+
+// learning rate for associates/upvotes.
+constexpr float RLHF_LEARNING_RATE = 0.001;
+
+// epochs for associates/upvotes.
+constexpr uint32_t RLHF_EPOCHS = 3;
+
 // Edit distance to be used in SpellChecker
 constexpr uint32_t MAX_EDIT_DISTANCE = 3;
 
