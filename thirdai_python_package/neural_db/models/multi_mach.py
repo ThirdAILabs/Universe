@@ -38,7 +38,6 @@ class MultiMach:
         extreme_num_hashes: int,
         tokenizer: int,
         hidden_bias: bool,
-        use_inverted_index: bool,
         model_config,
         mach_index_seed_offset: int,
     ):
@@ -59,9 +58,6 @@ class MultiMach:
                 tokenizer=tokenizer,
                 hidden_bias=hidden_bias,
                 model_config=model_config,
-                use_inverted_index=(
-                    use_inverted_index if j == 0 else False
-                ),  # inverted index will be the same for all models in the ensemble
                 mach_index_seed=(mach_index_seed_offset + j * 17),
             )
             for j in range(number_models)
@@ -117,17 +113,6 @@ class MultiMach:
     @property
     def searchable(self) -> bool:
         return self.n_ids != 0
-
-    def query_inverted_index(self, samples, n_results):
-        # only the first model in the ensemble can have inverted index
-        model = self.models[0]
-        if model.inverted_index:
-            single_index_results = model.inverted_index.query(
-                samples, k=min(n_results, model.n_ids)
-            )
-            return single_index_results
-        else:
-            return None
 
     def score(self, samples: List, entities: List[List[int]], n_results: int = None):
         model_scores = [

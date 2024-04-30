@@ -225,7 +225,6 @@ class TrainingProgressManager:
         batch_size,
         max_in_memory_batches,
         metrics,
-        disable_inverted_index,
         checkpoint_config: CheckpointConfig,
         **kwargs,
     ) -> TrainingProgressManager:
@@ -238,7 +237,6 @@ class TrainingProgressManager:
             batch_size=batch_size,
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
-            disable_inverted_index=disable_inverted_index,
         )
 
         tracker = SupervisedProgressTracker(train_state=train_state)

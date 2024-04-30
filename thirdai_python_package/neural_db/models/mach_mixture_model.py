@@ -13,7 +13,7 @@ from ..trainer.checkpoint_config import (
 )
 from ..trainer.training_progress_manager import TrainingProgressManager
 from ..utils import clean_text, pickle_to, requires_condition, unpickle_from
-from .models import CancelState, Mach, Model, add_retriever_tag, merge_results
+from .models import CancelState, Mach, Model, add_retriever_tag
 from .multi_mach import MultiMach, aggregate_ensemble_results
 
 InferSamples = List
@@ -37,7 +37,6 @@ class MachMixture(Model):
         tokenizer="char-4",
         hidden_bias=False,
         model_config=None,
-        use_inverted_index=True,
         label_to_segment_map: defaultdict = None,
         seed_for_sharding: int = 0,
         **kwargs,
@@ -69,7 +68,6 @@ class MachMixture(Model):
                 extreme_num_hashes=extreme_num_hashes,
                 tokenizer=tokenizer,
                 hidden_bias=hidden_bias,
-                use_inverted_index=use_inverted_index,
                 model_config=model_config,
                 mach_index_seed_offset=j * 341,
             )
@@ -327,7 +325,13 @@ class MachMixture(Model):
             joined_results.append(joined_result)
         return joined_results
 
-    def query_mach(self, samples: List, n_results: int, label_probing: bool):
+    def infer_labels(
+        self,
+        samples: InferSamples,
+        n_results: int,
+        label_probing=True,
+        **kwargs,
+    ) -> Predictions:
         for ensemble in self.ensembles:
             for model in ensemble.models:
                 model.model.set_decode_params(
@@ -358,66 +362,6 @@ class MachMixture(Model):
         return add_retriever_tag(
             self.aggregate_results(ensemble_results, n_results),
             tag="mach",
-        )
-
-    def query_inverted_index(self, samples, n_results):
-        inverted_index_results = []
-        for ensemble in self.ensembles:
-            ensemble_result = ensemble.query_inverted_index(samples, n_results)
-            if ensemble_result:
-                inverted_index_results.append(ensemble_result)
-
-        if not inverted_index_results:
-            return None
-
-        return add_retriever_tag(
-            self.aggregate_results(inverted_index_results, n_results),
-            tag="inverted_index",
-        )
-
-    def infer_labels(
-        self,
-        samples: InferSamples,
-        n_results: int,
-        retriever=None,
-        label_probing=True,
-        mach_first=False,
-        **kwargs,
-    ) -> Predictions:
-        if not retriever:
-            index_results = self.query_inverted_index(samples, n_results=n_results)
-            if not index_results:
-                retriever = "mach"
-            else:
-                mach_results = self.query_mach(
-                    samples, n_results=n_results, label_probing=label_probing
-                )
-                return [
-                    (
-                        merge_results(mach_res, index_res, n_results)
-                        if mach_first
-                        # Prioritize inverted index results.
-                        else merge_results(index_res, mach_res, n_results)
-                    )
-                    for mach_res, index_res in zip(mach_results, index_results)
-                ]
-
-        if retriever == "mach":
-            return self.query_mach(
-                samples=samples, n_results=n_results, label_probing=label_probing
-            )
-
-        if retriever == "inverted_index":
-            results = self.query_inverted_index(samples=samples, n_results=n_results)
-            if not results:
-                raise ValueError(
-                    "Cannot use retriever 'inverted_index' since the index is None."
-                )
-            return results
-
-        raise ValueError(
-            f"Invalid retriever '{retriever}'. Please use 'mach', 'inverted_index', "
-            "or pass None to allow the model to autotune which is used."
         )
 
     def _shard_label_constraints(
