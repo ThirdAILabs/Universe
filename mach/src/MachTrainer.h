@@ -9,8 +9,7 @@ namespace thirdai::mach {
 
 class MachTrainer {
  public:
-  explicit MachTrainer(MachRetrieverPtr model, data::ColumnMapIteratorPtr data)
-      : _model(std::move(model)), _data(std::move(data)) {}
+  explicit MachTrainer(MachRetrieverPtr model, data::ColumnMapIteratorPtr data);
 
   MachRetrieverPtr complete(const std::optional<std::string>& ckpt_dir);
 
@@ -52,14 +51,15 @@ class MachTrainer {
   static data::ColumnMapIteratorPtr loadDataset(const std::string& path,
                                                 const std::string& id_col);
 
-  uint32_t correctEpochs(uint32_t epochs) const {
-    if (epochs < _model->model()->epochs()) {
+  uint32_t epochsRemaining(uint32_t epochs) const {
+    if (_initial_model_epochs + epochs < _model->model()->epochs()) {
       return 0;
     }
-    return epochs - _model->model()->epochs();
+    return _initial_model_epochs + epochs - _model->model()->epochs();
   }
 
   MachRetrieverPtr _model;
+  uint32_t _initial_model_epochs;
 
   data::ColumnMapIteratorPtr _data;
 

@@ -40,6 +40,12 @@ std::string dataPath(const std::string& ckpt_dir) {
   return std::filesystem::path(ckpt_dir) / "data";
 }
 
+MachTrainer::MachTrainer(MachRetrieverPtr model,
+                         data::ColumnMapIteratorPtr data)
+    : _model(std::move(model)),
+      _initial_model_epochs(_model->model()->epochs()),
+      _data(std::move(data)) {}
+
 MachRetrieverPtr MachTrainer::complete(
     const std::optional<std::string>& ckpt_dir) {
   if (_model->model()->trainSteps() > 0 && isColdstart() && !_loaded_ckpt) {
@@ -62,7 +68,7 @@ MachRetrieverPtr MachTrainer::complete(
     callbacks.push_back(std::make_shared<bolt::callbacks::Overfitting>(
         "train_" + _early_stop_metric, /*threshold=*/_early_stop_threshold,
         /*freeze_hash_tables=*/false, /*maximize=*/true,
-        /*min_epochs=*/_min_epochs));
+        /*min_epochs=*/_initial_model_epochs + _min_epochs));
 
     if (std::find(_metrics.begin(), _metrics.end(), _early_stop_metric) ==
         _metrics.end()) {
@@ -80,12 +86,13 @@ MachRetrieverPtr MachTrainer::complete(
     options.variable_length = _vlc;
 
     _model->coldstart(_data, _strong_cols, _weak_cols, _learning_rate,
-                      correctEpochs(_max_epochs), _metrics, callbacks, options);
+                      epochsRemaining(_max_epochs), _metrics, callbacks,
+                      options);
   } else {
     TrainOptions options;
     options.batch_size = _batch_size;
     options.max_in_memory_batches = _max_in_memory_batches;
-    _model->train(_data, _learning_rate, correctEpochs(_max_epochs), _metrics,
+    _model->train(_data, _learning_rate, epochsRemaining(_max_epochs), _metrics,
                   callbacks, options);
   }
 
@@ -139,6 +146,7 @@ void MachTrainer::saveTrainerMetadata(const std::string& path) const {
   map->set("learning_rate", ar::f32(_learning_rate));
   map->set("min_epochs", ar::u64(_min_epochs));
   map->set("max_epochs", ar::u64(_max_epochs));
+  map->set("initial_model_epochs", ar::u64(_initial_model_epochs));
   map->set("metrics", ar::vecStr(_metrics));
   if (_max_in_memory_batches) {
     map->set("max_in_memory_batches", ar::u64(*_max_in_memory_batches));
@@ -165,6 +173,7 @@ void MachTrainer::loadTrainerMetadata(const std::string& path) {
   _learning_rate = archive->f32("learning_rate");
   _min_epochs = archive->u64("min_epochs");
   _max_epochs = archive->u64("max_epochs");
+  _initial_model_epochs = archive->u64("initial_model_epochs");
   _metrics = archive->getAs<ar::VecStr>("metrics");
   _max_in_memory_batches = archive->getOpt<ar::U64>("max_in_memory_batches");
   _batch_size = archive->u64("batch_size");
