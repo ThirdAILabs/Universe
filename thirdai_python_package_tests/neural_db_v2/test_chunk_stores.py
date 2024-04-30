@@ -1,3 +1,4 @@
+import shutil
 import pandas as pd
 import pytest
 from thirdai.neural_db_v2.chunk_stores import PandasChunkStore, SQLiteChunkStore
@@ -145,6 +146,20 @@ def test_chunk_store_basic_operations(chunk_store):
         custom_id=1000,
         metadata={"class": "c", "number": None, "time": 7.2, "item": "y"},
     )
+
+    path = "chunk_store_for_ndb_test.store"
+    store.save(path)
+    store = chunk_store.load(path)
+    chunks = store.get_chunks([6, 0, 5])
+    check_chunk_contents(
+        chunks[0],
+        chunk_id=6,
+        value=1,
+        custom_id=2000,
+        metadata={"class": "d", "number": None, "time": 8.1, "item": "z"},
+    )
+
+    shutil.rmtree(path)
 
 
 def test_sqlite_chunk_store_custom_id_type_mismatch():

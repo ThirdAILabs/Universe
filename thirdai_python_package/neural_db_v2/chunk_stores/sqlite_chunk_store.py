@@ -1,7 +1,10 @@
+import os
+import shutil
 import operator
 import uuid
 from functools import reduce
 from typing import Dict, Iterable, List, Optional, Set
+from thirdai_python_package.neural_db.utils import pickle_to, unpickle_from
 
 import numpy as np
 import pandas as pd
@@ -327,3 +330,25 @@ class SQLiteChunkStore(ChunkStore):
             )
 
         return remapped_batches
+
+    def save(self, path: str):
+        db_target_path = os.path.join(path, self.db_name)
+        shutil.copyfile(self.db_name, db_target_path)
+
+        # Temporarily remove engine attribute to pickle the rest of the object
+        engine = self.engine
+        self.engine = None
+
+        pickle_path = os.path.join(path, 'object.pkl')
+        pickle_to(self, pickle_path)
+        
+        self.engine = engine
+
+    @classmethod
+    def load(cls, path: str):
+        pickle_path = os.path.join(path, 'object.pkl')
+        obj = unpickle_from(pickle_path)
+        db_name = os.path.basename(obj.db_name)
+        obj.db_name = os.path.join(path, db_name)
+        obj.engine = create_engine(f"sqlite:///{obj.db_path}")
+        return obj

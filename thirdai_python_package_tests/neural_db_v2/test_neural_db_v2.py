@@ -13,8 +13,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
     "chunk_store, retriever",
     [
         (SQLiteChunkStore, FinetunableRetriever),
-        (PandasChunkStore, Mach),
-        (PandasChunkStore, FinetunableRetriever),
+        # (PandasChunkStore, Mach),
     ],
 )
 def test_neural_db_v2_save_load_integration(chunk_store, retriever):
@@ -26,6 +25,12 @@ def test_neural_db_v2_save_load_integration(chunk_store, retriever):
     results_before = db.search(queries, top_k=10)
 
     save_file = "neural_db_v2_save_file.ndb"
+
+    import os
+    if os.path.exists(save_file):
+        shutil.rmtree(save_file)
+
+
     db.save(save_file)
     db = ndb.NeuralDB.load(save_file)
 

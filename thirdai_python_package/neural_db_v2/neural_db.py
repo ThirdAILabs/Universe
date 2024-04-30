@@ -83,45 +83,42 @@ class NeuralDB:
         self.retriever.supervised_train(iterable, **kwargs)
 
     @staticmethod
-    def chunk_store_path(directory: Path) -> str:
-        return str(directory / "chunk_store")
+    def chunk_store_path(directory: str) -> str:
+        return os.path.join(directory, "chunk_store")
 
     @staticmethod
-    def retriever_path(directory: Path) -> str:
-        return str(directory / "retriever")
+    def retriever_path(directory: str) -> str:
+        return os.path.join(directory, "retriever")
     
     @staticmethod
-    def metadata_path(directory: Path) -> str:
-        return str(directory / "metadata.json")
+    def metadata_path(directory: str) -> str:
+        return os.path.join(directory, "metadata.json")
 
     def save(self, path: str):
-        directory = Path(path)
-        os.makedirs(directory)
+        os.makedirs(path)
 
-        self.chunk_store.save(self.chunk_store_path(directory))
-        self.retriever.save(self.retriever_path(directory))
+        self.chunk_store.save(self.chunk_store_path(path))
+        self.retriever.save(self.retriever_path(path))
 
         metadata = {
             "chunk_store_name": self.chunk_store.__class__.__name__,
             "retriever_name": self.retriever.__class__.__name__,
         }
 
-        with open(self.metadata_path(directory), "w") as f:
+        with open(self.metadata_path(path), "w") as f:
             json.dump(metadata, f)
 
     @staticmethod
     def load(path: str):
-        directory = Path(path)
-
-        with open(NeuralDB.metadata_path(directory), "r") as f:
+        with open(NeuralDB.metadata_path(path), "r") as f:
             metadata = json.load(f)
 
         chunk_store = load_chunk_store(
-            NeuralDB.chunk_store_path(directory),
+            NeuralDB.chunk_store_path(path),
             chunk_store_name=metadata["chunk_store_name"],
         )
         retriever = load_retriever(
-            NeuralDB.retriever_path(directory),
+            NeuralDB.retriever_path(path),
             retriever_name=metadata["retriever_name"],
         )
 
