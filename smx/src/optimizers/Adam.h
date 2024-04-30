@@ -11,7 +11,8 @@ namespace thirdai::smx {
 class Adam final : public Optimizer {
  public:
   Adam(const std::vector<VariablePtr>& parameters, float lr, float beta_1 = 0.9,
-       float beta_2 = 0.999, float eps = 1e-7);
+       float beta_2 = 0.999, float eps = 1e-7,
+       bool allow_sparse_updates = true);
 
   void update(VariablePtr& parameter) final;
 
@@ -37,6 +38,8 @@ class Adam final : public Optimizer {
   float _beta_1;
   float _beta_2;
   float _eps;
+
+  bool _allow_sparse_updates = true;
 };
 
 }  // namespace thirdai::smx

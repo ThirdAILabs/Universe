@@ -323,10 +323,11 @@ void defineOptimizers(py::module_& smx) {
            py::arg("callback"));
 
   py::class_<Adam, Optimizer>(optimizers, "Adam")
-      .def(py::init<const std::vector<VariablePtr>&, float, float, float,
-                    float>(),
+      .def(py::init<const std::vector<VariablePtr>&, float, float, float, float,
+                    bool>(),
            py::arg("parameters"), py::arg("lr"), py::arg("beta_1") = 0.9,
-           py::arg("beta_2") = 0.999, py::arg("eps") = 1e-7);
+           py::arg("beta_2") = 0.999, py::arg("eps") = 1e-7,
+           py::arg("allow_sparse_updates") = true);
 }
 
 void defineMetrics(py::module_& smx) {

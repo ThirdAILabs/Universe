@@ -5,12 +5,13 @@
 namespace thirdai::smx {
 
 Adam::Adam(const std::vector<VariablePtr>& parameters, float lr, float beta_1,
-           float beta_2, float eps)
+           float beta_2, float eps, bool allow_sparse_updates)
     : Optimizer(parameters),
       _lr(lr),
       _beta_1(beta_1),
       _beta_2(beta_2),
-      _eps(eps) {
+      _eps(eps),
+      _allow_sparse_updates(allow_sparse_updates) {
   for (const auto& param : parameters) {
     _adam_parameters[param.get()] = {
         /*momentum=*/zeros(param->tensor()->shape()),
@@ -34,7 +35,7 @@ void Adam::update(VariablePtr& parameter) {
   CHECK(param->shape() == velocity->shape(),
         "Param and velocity must have same shape.");
 
-  if (parameter->grad()->isMasked()) {
+  if (parameter->grad()->isMasked() && _allow_sparse_updates) {
     updateSparse(param, masked(parameter->grad()), momentum, velocity);
   } else {
     updateDense(param, dense(parameter->grad()), momentum, velocity);
