@@ -99,6 +99,16 @@ class SqlLiteIterator:
             self.sql_row_iterator = result.yield_per(self.batch_size)
         return self
 
+    def __getstate__(self):
+        state = {k: v for k, v in self.__dict__.items() if k != "engine"}
+        state["db_name"] = str(self.engine.url)
+        return state
+
+    def __setstate__(self, state):
+        state["engine"] = create_engine(state["db_name"])
+        del state["db_name"]
+        self.__dict__.update(state)
+
 
 class SQLiteChunkStore(ChunkStore):
     def __init__(self, in_memory=True, **kwargs):
