@@ -3,21 +3,16 @@ import os
 from pathlib import Path
 from typing import Iterable, List, Optional, Union
 
-from chunk_stores import load_chunk_store
-from chunk_stores.sqlite_chunk_store import SQLiteChunkStore
-from core.chunk_store import ChunkStore
-from core.documents import Document
-from core.retriever import Retriever
-from core.types import (
-    Chunk,
-    ChunkId,
-    CustomIdSupervisedBatch,
-    NewChunkBatch,
-    Supervised,
-)
-from documents import document_by_name
-from retrievers import load_retriever
-from retrievers.mach import Mach
+from .chunk_stores import load_chunk_store
+from .chunk_stores.sqlite_chunk_store import SQLiteChunkStore
+from .core.chunk_store import ChunkStore
+from .core.documents import Document
+from .core.retriever import Retriever
+from .core.supervised import Supervised
+from .core.types import Chunk, ChunkId, CustomIdSupervisedBatch, NewChunkBatch
+from .documents import document_by_name
+from .retrievers import load_retriever
+from .retrievers.mach import Mach
 
 
 class NeuralDB:
@@ -47,7 +42,8 @@ class NeuralDB:
 
         def chunk_generator():
             for doc in docs:
-                yield doc.chunks()
+                for chunk in doc.chunks():
+                    yield chunk
 
         self.insert_chunks(chunk_generator(), **kwargs)
 

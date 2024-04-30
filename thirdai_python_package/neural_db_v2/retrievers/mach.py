@@ -78,7 +78,7 @@ class Mach(Retriever):
         output_bias: bool = True,
         **kwargs,
     ):
-        super().__init__(**kwargs)
+        super().__init__()
         config = (
             bolt.MachConfig()
             .text_col(Mach.TEXT)

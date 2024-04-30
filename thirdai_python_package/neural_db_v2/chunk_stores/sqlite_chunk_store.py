@@ -15,7 +15,6 @@ from sqlalchemy import (
     Table,
     create_engine,
     delete,
-    func,
     select,
     text,
 )
@@ -102,7 +101,7 @@ class SqlLiteIterator:
 
 class SQLiteChunkStore(ChunkStore):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__()
 
         self.db_name = f"{uuid.uuid4()}.db"
         self.engine = create_engine(f"sqlite:///{self.db_name}")

@@ -3,6 +3,15 @@ from typing import List
 
 import pandas as pd
 import pytest
+from ndbv2_utils import (
+    CSV_FILE,
+    DOCX_FILE,
+    EML_FILE,
+    PDF_FILE,
+    PPTX_FILE,
+    TXT_FILE,
+    URL_LINK,
+)
 from thirdai.neural_db_v2 import (
     CSV,
     DOCX,
@@ -84,16 +93,10 @@ def doc_property_checks(
     assert has_chunks
 
 
-DOC_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "../neural_db/document_test_data"
-)
-
-
 def test_csv_doc_infered_columns():
-    path = os.path.join(DOC_DIR, "lorem_ipsum.csv")
-    df = pd.read_csv(path)
+    df = pd.read_csv(CSV_FILE)
 
-    doc = CSV(path, custom_id_column="category")
+    doc = CSV(CSV_FILE, custom_id_column="category")
     doc_property_checks(
         doc,
         has_keywords=False,
@@ -107,10 +110,9 @@ def test_csv_doc_infered_columns():
 
 
 def test_csv_doc_no_keywords():
-    path = os.path.join(DOC_DIR, "lorem_ipsum.csv")
-    df = pd.read_csv(path)
+    df = pd.read_csv(CSV_FILE)
 
-    doc = CSV(path, text_columns=["text", "text"], doc_metadata={"type": "csv"})
+    doc = CSV(CSV_FILE, text_columns=["text", "text"], doc_metadata={"type": "csv"})
     doc_property_checks(
         doc,
         has_keywords=False,
@@ -125,11 +127,10 @@ def test_csv_doc_no_keywords():
 
 
 def test_csv_doc_with_keywords():
-    path = os.path.join(DOC_DIR, "lorem_ipsum.csv")
-    df = pd.read_csv(path)
+    df = pd.read_csv(CSV_FILE)
 
     doc = CSV(
-        path,
+        CSV_FILE,
         custom_id_column="category",
         text_columns=["text"],
         keyword_columns=["text", "text"],
@@ -149,11 +150,10 @@ def test_csv_doc_with_keywords():
 
 
 def test_csv_doc_streaming():
-    path = os.path.join(DOC_DIR, "lorem_ipsum.csv")
-    df = pd.read_csv(path)
+    df = pd.read_csv(CSV_FILE)
 
     doc = CSV(
-        path,
+        CSV_FILE,
         custom_id_column="category",
         text_columns=["text"],
         keyword_columns=["text", "text"],
@@ -184,9 +184,7 @@ def test_csv_doc_streaming():
 
 @pytest.mark.parametrize("metadata", [{}, {"val": "abc"}])
 def test_docx_doc(metadata):
-    path = os.path.join(DOC_DIR, "four_english_words.docx")
-
-    doc = DOCX(path, doc_metadata=metadata)
+    doc = DOCX(DOCX_FILE, doc_metadata=metadata)
 
     doc_property_checks(
         doc=doc,
@@ -199,9 +197,7 @@ def test_docx_doc(metadata):
 
 @pytest.mark.parametrize("metadata", [{}, {"val": "abc"}])
 def test_pdf_doc(metadata):
-    path = os.path.join(DOC_DIR, "mutual_nda.pdf")
-
-    doc = PDF(path, doc_metadata=metadata)
+    doc = PDF(PDF_FILE, doc_metadata=metadata)
 
     doc_property_checks(
         doc=doc,
@@ -215,9 +211,7 @@ def test_pdf_doc(metadata):
 
 @pytest.mark.parametrize("metadata", [{}, {"val": "abc"}])
 def test_email_doc(metadata):
-    path = os.path.join(DOC_DIR, "Message.eml")
-
-    doc = Email(path, doc_metadata=metadata)
+    doc = Email(EML_FILE, doc_metadata=metadata)
 
     doc_property_checks(
         doc=doc,
@@ -230,9 +224,7 @@ def test_email_doc(metadata):
 
 @pytest.mark.parametrize("metadata", [{}, {"val": "abc"}])
 def test_pptx_doc(metadata):
-    path = os.path.join(DOC_DIR, "quantum_mechanics.pptx")
-
-    doc = PPTX(path, doc_metadata=metadata)
+    doc = PPTX(PPTX_FILE, doc_metadata=metadata)
 
     doc_property_checks(
         doc=doc,
@@ -245,9 +237,7 @@ def test_pptx_doc(metadata):
 
 @pytest.mark.parametrize("metadata", [{}])
 def test_txt_doc(metadata):
-    path = os.path.join(DOC_DIR, "nature.txt")
-
-    doc = TextFile(path, doc_metadata=metadata)
+    doc = TextFile(TXT_FILE, doc_metadata=metadata)
 
     doc_property_checks(
         doc=doc,
@@ -260,10 +250,8 @@ def test_txt_doc(metadata):
 
 @pytest.mark.parametrize("metadata", [{}, {"val": "abc"}])
 def test_url_doc(metadata):
-    url = "https://en.wikipedia.org/wiki/Rice_University"
-
     for title_is_strong in [True, False]:
-        doc = URL(url=url, title_is_strong=title_is_strong, doc_metadata=metadata)
+        doc = URL(url=URL_LINK, title_is_strong=title_is_strong, doc_metadata=metadata)
 
         doc_property_checks(
             doc=doc,

@@ -1,8 +1,7 @@
 from pathlib import Path
 
-from finetunable_retriever import FinetunableRetriever
-
-from mach import Mach
+from .finetunable_retriever import FinetunableRetriever
+from .mach import Mach
 
 retriever_name_map = {
     "FinetunableRetriever": FinetunableRetriever,

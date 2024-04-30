@@ -8,7 +8,7 @@ from ..core.types import ChunkBatch, ChunkId, Score, SupervisedBatch
 
 class FinetunableRetriever(Retriever):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__()
         self.retriever = search.FinetunableRetriever()
 
     def search(

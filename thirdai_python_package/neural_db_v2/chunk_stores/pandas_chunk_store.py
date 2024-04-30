@@ -1,11 +1,12 @@
-import pickle
 import operator
+import pickle
 from functools import reduce
 from typing import Dict, Iterable, List, Set, Union
-from thirdai_python_package.neural_db.utils import pickle_to, unpickle_from
 
 import numpy as np
 import pandas as pd
+
+from thirdai_python_package.neural_db.utils import pickle_to, unpickle_from
 
 from ..core.chunk_store import ChunkStore
 from ..core.types import (
@@ -21,7 +22,7 @@ from .constraints import Constraint
 
 class PandasChunkStore(ChunkStore):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__()
 
         self.chunk_df = pd.DataFrame()
 

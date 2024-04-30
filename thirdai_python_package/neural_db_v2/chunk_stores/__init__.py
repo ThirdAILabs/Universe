@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from pandas_chunk_store import PandasChunkStore
-from sqlite_chunk_store import SQLiteChunkStore
+from .pandas_chunk_store import PandasChunkStore
+from .sqlite_chunk_store import SQLiteChunkStore
 
 chunk_store_name_map = {
     "PandasChunkStore": PandasChunkStore,
