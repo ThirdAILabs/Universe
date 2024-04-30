@@ -11,8 +11,6 @@ ChunkId = int
 
 Score = float
 
-CustomId
-
 
 @dataclass
 class NewChunk:

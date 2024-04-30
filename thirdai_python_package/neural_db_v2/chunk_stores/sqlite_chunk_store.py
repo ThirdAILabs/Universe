@@ -101,14 +101,11 @@ class SqlLiteIterator:
 
 
 class SQLiteChunkStore(ChunkStore):
-    def __init__(self, in_memory=True, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        if in_memory:
-            self.engine = create_engine(f"sqlite:///:memory:")
-        else:
-            self.db_name = f"{uuid.uuid4()}.db"
-            self.engine = create_engine(f"sqlite:///{self.db_name}")
+        self.db_name = f"{uuid.uuid4()}.db"
+        self.engine = create_engine(f"sqlite:///{self.db_name}")
 
         self.metadata = MetaData()
 
