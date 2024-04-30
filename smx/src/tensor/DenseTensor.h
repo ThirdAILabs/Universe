@@ -30,7 +30,7 @@ template <typename T>
 using EigenArray =
     Eigen::Map<Eigen::Array<T, 1, Eigen::Dynamic, Eigen::RowMajor>>;
 
-class DenseTensor final : public Tensor {
+class DenseTensor : public Tensor {
  public:
   DenseTensor(const Shape& shape, Dtype dtype);
 

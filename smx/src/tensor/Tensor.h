@@ -23,6 +23,8 @@ class Tensor {
 
   virtual bool isSparse() const = 0;
 
+  virtual bool isMasked() const { return false; }
+
   virtual ~Tensor() = default;
 
  protected:

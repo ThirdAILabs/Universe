@@ -2,6 +2,7 @@
 #include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Functions.h>
 #include <smx/src/tensor/Init.h>
+#include <smx/src/tensor/MaskedTensor.h>
 #include <algorithm>
 #include <cstring>
 #include <iostream>
@@ -93,7 +94,9 @@ std::pair<DenseTensorPtr, DenseTensorPtr> embeddingGrad(
   size_t emb_dim = out_grad->shape(1);
 
   auto emb_grad =
-      DenseTensor::make(Shape(indices->shape(1), emb_dim), Dtype::f32);
+      MaskedTensor::make(Shape(indices->shape(1), emb_dim), Dtype::f32);
+
+  auto& grad_mask = emb_grad->mask();
 
   float* emb_grad_ptr = emb_grad->data<float>();
 
@@ -101,7 +104,7 @@ std::pair<DenseTensorPtr, DenseTensorPtr> embeddingGrad(
 
 #pragma omp parallel for default(none)                                        \
     shared(n_embs, emb_dim, batch_size, shard_size, row_offsets, col_indices, \
-           col_values, emb_grad_ptr, out_grad_ptr)
+           col_values, emb_grad_ptr, out_grad_ptr, grad_mask)
   for (size_t start = 0; start < n_embs; start += shard_size) {
     size_t end = std::min(start + shard_size, n_embs);
 
@@ -119,6 +122,7 @@ std::pair<DenseTensorPtr, DenseTensorPtr> embeddingGrad(
         size_t token = col_indices[j];
         // if (token < end) {
         if (start <= token && token < end) {
+          grad_mask[token] = true;
           float token_weight = col_values[j];
 
           float* token_grad = emb_grad_ptr + token * emb_dim;

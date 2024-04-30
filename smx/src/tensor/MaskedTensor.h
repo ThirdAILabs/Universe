@@ -1,24 +1,27 @@
 #pragma once
 
 #include <smx/src/tensor/DenseTensor.h>
-#include <smx/src/tensor/Tensor.h>
 
 namespace thirdai::smx {
 
-class MaskedTensor final : public Tensor {
+class MaskedTensor final : public DenseTensor {
  public:
-  MaskedTensor(DenseTensorPtr tensor, std::vector<bool> mask)
-      : Tensor(tensor->shape(), tensor->dtype()),
-        _tensor(std::move(tensor)),
-        _mask(std::move(mask)) {
-    CHECK(tensor->ndim() == 2, "Masked tensor must be 2d.");
-    CHECK(tensor->shape(0) == mask.size(), "Mask size must match tensor.");
+  MaskedTensor(const Shape& shape, Dtype dtype)
+      : DenseTensor(shape, dtype), _mask(shape[0], false) {
+    CHECK(ndim() == 2, "Masked tensor must be 2d.");
   }
 
-  bool isSparse() const final { return false; }
+  static auto make(const Shape& shape, Dtype dtype) {
+    return std::make_shared<MaskedTensor>(shape, dtype);
+  }
+
+  auto& mask() { return _mask; }
+
+  const auto& mask() const { return _mask; }
+
+  bool isMasked() const final { return true; }
 
  private:
-  DenseTensorPtr _tensor;
   std::vector<bool> _mask;
 };
 

@@ -2,6 +2,8 @@
 
 #include <smx/src/modules/Module.h>
 #include <smx/src/optimizers/Optimizer.h>
+#include <smx/src/tensor/DenseTensor.h>
+#include <smx/src/tensor/MaskedTensor.h>
 #include <unordered_map>
 
 namespace thirdai::smx {
@@ -16,6 +18,14 @@ class Adam final : public Optimizer {
   void updateLr(float lr) { _lr = lr; }
 
  private:
+  void updateDense(const DenseTensorPtr& param, const DenseTensorPtr& grad,
+                   const DenseTensorPtr& momentum,
+                   const DenseTensorPtr& velocity);
+
+  void updateSparse(const DenseTensorPtr& param, const MaskedTensorPtr& grad,
+                    const DenseTensorPtr& momentum,
+                    const DenseTensorPtr& velocity);
+
   struct AdamInfo {
     DenseTensorPtr momentum;
     DenseTensorPtr velocity;
