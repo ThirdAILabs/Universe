@@ -93,7 +93,6 @@ class Sup:
                 )
             self.queries = queries
             self.labels = labels
-        # elif csv is None and
         else:
             raise ValueError(
                 "Sup must be initialized with csv, query_column and id_column, or"
