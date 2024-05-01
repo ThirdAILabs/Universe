@@ -1,6 +1,7 @@
 #pragma once
 
 #include <data/src/ColumnMapIterator.h>
+#include <mach/src/DataCheckpoint.h>
 #include <mach/src/MachConfig.h>
 #include <mach/src/MachRetriever.h>
 #include <optional>
@@ -9,7 +10,7 @@ namespace thirdai::mach {
 
 class MachTrainer {
  public:
-  explicit MachTrainer(MachRetrieverPtr model, data::ColumnMapIteratorPtr data);
+  explicit MachTrainer(MachRetrieverPtr model, DataCheckpoint data);
 
   MachRetrieverPtr complete(const std::optional<std::string>& ckpt_dir);
 
@@ -40,16 +41,11 @@ class MachTrainer {
     return !_strong_cols.empty() || !_weak_cols.empty();
   }
 
-  void initialCheckpoint(const std::string& ckpt_dir) const;
+  void initialCheckpoint(const std::string& ckpt_dir);
 
   void saveTrainerMetadata(const std::string& path) const;
 
   void loadTrainerMetadata(const std::string& path);
-
-  void saveDataset(const std::string& path) const;
-
-  static data::ColumnMapIteratorPtr loadDataset(const std::string& path,
-                                                const std::string& id_col);
 
   uint32_t epochsRemaining(uint32_t epochs) const {
     if (_initial_model_epochs + epochs < _model->model()->epochs()) {
@@ -61,7 +57,7 @@ class MachTrainer {
   MachRetrieverPtr _model;
   uint32_t _initial_model_epochs;
 
-  data::ColumnMapIteratorPtr _data;
+  DataCheckpoint _data_ckpt;
 
   std::vector<std::string> _strong_cols;
   std::vector<std::string> _weak_cols;

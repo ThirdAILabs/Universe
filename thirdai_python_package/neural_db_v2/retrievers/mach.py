@@ -161,10 +161,11 @@ class Mach(Retriever):
                 size=train_data.size()
             )
 
-        # TODO(Nicholas): how do we want to support VLC in this? Also callbacks
-        # can't be serialized through pybind trampoline class.
         trainer = (
-            bolt.MachTrainer(model=self.model, data=train_data)
+            bolt.MachTrainer(
+                model=self.model,
+                data=bolt.DataCheckpoint(train_data, Mach.ID, [Mach.STRONG, Mach.WEAK]),
+            )
             .strong_weak_cols([Mach.STRONG], [Mach.WEAK])
             .vlc(variable_length)
             .learning_rate(learning_rate)
@@ -189,7 +190,10 @@ class Mach(Retriever):
         train_data = ChunkColumnMapIterator(samples, text_columns={Mach.TEXT: "query"})
 
         trainer = (
-            bolt.MachTrainer(model=self.model, data=train_data)
+            bolt.MachTrainer(
+                model=self.model,
+                data=bolt.DataCheckpoint(train_data, Mach.ID, [Mach.TEXT]),
+            )
             .learning_rate(learning_rate)
             .min_max_epochs(epochs, epochs)
             .metrics(metrics or ["hash_precision@5"])

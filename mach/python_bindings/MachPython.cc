@@ -3,6 +3,7 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <data/src/ColumnMapIterator.h>
 #include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
@@ -263,9 +264,14 @@ void defineMach(py::module_& module) {
            py::arg("with_optimizer") = false)
       .def_static("load", &MachRetriever::load, py::arg("filename"));
 
+  py::class_<DataCheckpoint>(module, "DataCheckpoint")
+      .def(py::init<data::ColumnMapIteratorPtr, std::string,
+                    std::vector<std::string>>(),
+           py::arg("data_iter"), py::arg("id_col"), py::arg("text_cols"));
+
   py::class_<MachTrainer>(module, "MachTrainer")
-      .def(py::init<MachRetrieverPtr, data::ColumnMapIteratorPtr>(),
-           py::arg("model"), py::arg("data"))
+      .def(py::init<MachRetrieverPtr, DataCheckpoint>(), py::arg("model"),
+           py::arg("data"))
       .def("complete", &MachTrainer::complete, py::arg("ckpt_dir"))
       .def_static("from_checkpoint", &MachTrainer::fromCheckpoint,
                   py::arg("ckpt_dir"))

@@ -4,7 +4,6 @@
 #include <archive/src/Archive.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/columns/Column.h>
-#include <data/src/transformations/StringCast.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <mach/src/MachConfig.h>
 #include <filesystem>
@@ -40,23 +39,23 @@ std::string dataPath(const std::string& ckpt_dir) {
   return std::filesystem::path(ckpt_dir) / "data";
 }
 
-MachTrainer::MachTrainer(MachRetrieverPtr model,
-                         data::ColumnMapIteratorPtr data)
+MachTrainer::MachTrainer(MachRetrieverPtr model, DataCheckpoint data)
     : _model(std::move(model)),
       _initial_model_epochs(_model->model()->epochs()),
-      _data(std::move(data)) {}
+      _data_ckpt(std::move(data)) {}
 
 MachRetrieverPtr MachTrainer::complete(
     const std::optional<std::string>& ckpt_dir) {
+  auto data = _data_ckpt.data();
   if (_model->model()->trainSteps() > 0 && isColdstart() && !_loaded_ckpt) {
     // TODO(Nicholas) what should these args default to, do we need option to
     // override?
-    _model->introduceIterator(_data, _strong_cols, _weak_cols,
+    _model->introduceIterator(data, _strong_cols, _weak_cols,
                               /*text_augmentation=*/true,
                               /*n_buckets_to_sample_opt=*/std::nullopt,
                               /*n_random_hashes=*/0, /*load_balancing=*/true,
                               /*sort_random_hashes=*/false);
-    _data->restart();
+    data->restart();
   }
 
   if (ckpt_dir) {
@@ -85,21 +84,21 @@ MachRetrieverPtr MachTrainer::complete(
     options.max_in_memory_batches = _max_in_memory_batches;
     options.variable_length = _vlc;
 
-    _model->coldstart(_data, _strong_cols, _weak_cols, _learning_rate,
+    _model->coldstart(data, _strong_cols, _weak_cols, _learning_rate,
                       epochsRemaining(_max_epochs), _metrics, callbacks,
                       options);
   } else {
     TrainOptions options;
     options.batch_size = _batch_size;
     options.max_in_memory_batches = _max_in_memory_batches;
-    _model->train(_data, _learning_rate, epochsRemaining(_max_epochs), _metrics,
+    _model->train(data, _learning_rate, epochsRemaining(_max_epochs), _metrics,
                   callbacks, options);
   }
 
   return _model;
 }
 
-void MachTrainer::initialCheckpoint(const std::string& ckpt_dir) const {
+void MachTrainer::initialCheckpoint(const std::string& ckpt_dir) {
   if (std::filesystem::exists(ckpt_dir)) {
     throw std::invalid_argument("Found existing checkpoint in '" + ckpt_dir +
                                 "'.");
@@ -111,7 +110,7 @@ void MachTrainer::initialCheckpoint(const std::string& ckpt_dir) const {
 
   saveTrainerMetadata(metadataPath(ckpt_dir));
 
-  saveDataset(dataPath(ckpt_dir));
+  _data_ckpt.save(dataPath(ckpt_dir));
 }
 
 void MachTrainer::intermediateCheckpoint(const std::string& ckpt_dir) {
@@ -124,7 +123,7 @@ std::shared_ptr<MachTrainer> MachTrainer::fromCheckpoint(
     const std::string& dir) {
   auto model = MachRetriever::load(modelPath(dir));
 
-  auto data = loadDataset(dataPath(dir), model->idCol());
+  auto data = DataCheckpoint::load(dataPath(dir));
 
   auto trainer =
       std::make_shared<MachTrainer>(std::move(model), std::move(data));
@@ -182,60 +181,6 @@ void MachTrainer::loadTrainerMetadata(const std::string& path) {
   _early_stop_threshold = archive->f32("early_stop_threshold");
 
   _loaded_ckpt = true;
-}
-
-void MachTrainer::saveDataset(const std::string& path) const {
-  auto output = dataset::SafeFileIO::ofstream(path);
-
-  output << _model->idCol();
-
-  std::vector<std::string> text_cols;
-  if (isColdstart()) {
-    text_cols.insert(text_cols.end(), _strong_cols.begin(), _strong_cols.end());
-    text_cols.insert(text_cols.end(), _weak_cols.begin(), _weak_cols.end());
-  } else {
-    text_cols.push_back(_model->textCol());
-  }
-
-  for (const auto& col : text_cols) {
-    output << "," << col;
-  }
-  output << std::endl;
-
-  while (auto chunk = _data->next()) {
-    auto ids = chunk->getArrayColumn<uint32_t>(_model->idCol());
-
-    std::vector<data::ValueColumnBasePtr<std::string>> texts;
-    texts.reserve(text_cols.size());
-    for (const auto& col : text_cols) {
-      texts.push_back(chunk->getValueColumn<std::string>(col));
-    }
-
-    for (size_t i = 0; i < ids->numRows(); i++) {
-      auto row_ids = ids->row(i);
-      output << row_ids[0];
-      for (size_t j = 1; j < row_ids.size(); j++) {
-        output << ":" << row_ids[j];
-      }
-
-      for (const auto& text : texts) {
-        output << ",\"" << text->value(i) << '"';
-      }
-      output << std::endl;
-    }
-  }
-
-  _data->restart();
-}
-
-data::ColumnMapIteratorPtr MachTrainer::loadDataset(const std::string& path,
-                                                    const std::string& id_col) {
-  auto iter = std::make_shared<data::CsvIterator>(path, ',');
-
-  auto parse_labels = std::make_shared<data::StringToTokenArray>(
-      id_col, id_col, ':', std::numeric_limits<uint32_t>::max());
-
-  return data::TransformedIterator::make(iter, parse_labels, nullptr);
 }
 
 MachTrainer& MachTrainer::strongWeakCols(

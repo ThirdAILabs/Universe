@@ -417,6 +417,7 @@ set(THIRDAI_SOURCES
     mach/src/MachRetriever.cc
     mach/src/MachConfig.cc
     mach/src/MachTrainer.cc
+    mach/src/DataCheckpoint.cc
     archive/src/Archive.cc
     archive/src/Map.cc
     archive/src/List.cc
