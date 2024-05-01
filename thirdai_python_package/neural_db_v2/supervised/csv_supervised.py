@@ -12,16 +12,14 @@ class CsvSupervised(Supervised):
         path: str,
         query_column: str,
         id_column: str,
+        id_delimiter: str,
         uses_db_id: bool,
-        id_delimiter: Optional[str] = None,
-        max_rows: int = 10_000_000,
     ):
         self.path = path
         self.query_column = query_column
         self.id_column = id_column
         self.id_delimiter = id_delimiter
         self.uses_db_id = uses_db_id
-        self.max_rows = max_rows
 
     def samples(
         self,
@@ -32,7 +30,7 @@ class CsvSupervised(Supervised):
             self.supervised_samples(
                 queries=df[self.query_column],
                 ids=df[self.id_column].map(
-                    lambda val: list(str(val).split(self.id_delimiter))
+                    lambda val: str(val).split(self.id_delimiter)
                 ),
                 uses_db_id=self.uses_db_id,
             )

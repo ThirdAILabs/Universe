@@ -2,6 +2,7 @@ import os
 
 import pandas as pd
 import pytest
+from thirdai.neural_db_v2.chunk_stores import PandasChunkStore, SQLiteChunkStore
 
 DOC_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "../neural_db/document_test_data"

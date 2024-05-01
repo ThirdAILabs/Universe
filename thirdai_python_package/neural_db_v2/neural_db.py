@@ -9,7 +9,7 @@ from .core.retriever import Retriever
 from .core.supervised import Supervised
 from .core.types import Chunk, ChunkId, CustomIdSupervisedBatch, NewChunkBatch
 from .documents import document_by_name
-from .retrievers import Mach, FinetunableRetriever
+from .retrievers import FinetunableRetriever, Mach
 
 
 class NeuralDB:
@@ -90,7 +90,7 @@ class NeuralDB:
     @staticmethod
     def metadata_path(directory: str) -> str:
         return os.path.join(directory, "metadata.json")
-    
+
     @staticmethod
     def load_chunk_store(path: str, chunk_store_name: str):
         chunk_store_name_map = {
