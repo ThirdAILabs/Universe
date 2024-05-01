@@ -70,7 +70,7 @@ TEST(MachTrainerTests, ColdStartCheckpointing) {
 
   auto loaded_trainer = MachTrainer::fromCheckpoint(ckpt_dir);
 
-  // std::filesystem::remove_all(ckpt_dir);
+  std::filesystem::remove_all(ckpt_dir);
 
   auto mach_ckpt = loaded_trainer->complete(std::nullopt);
 
