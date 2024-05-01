@@ -5,8 +5,6 @@ import pandas as pd
 import pytest
 from thirdai.neural_db import documents as docs
 
-nltk.download("punkt")
-
 pytestmark = [pytest.mark.unit]
 
 

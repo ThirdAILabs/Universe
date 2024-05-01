@@ -3,9 +3,6 @@ import shutil
 from pathlib import Path
 
 import nltk
-
-nltk.download("punkt")
-
 import pytest
 from document_common_tests import assess_doc_methods_properties
 from ndb_utils import all_local_doc_getters, on_diskable_doc_getters

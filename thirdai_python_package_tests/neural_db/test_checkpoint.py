@@ -5,8 +5,6 @@ from pathlib import Path
 
 import nltk
 import pytest
-
-nltk.download("punkt")
 from ndb_utils import PDF_FILE, all_local_doc_getters, associate_works, upvote_works
 from thirdai import data
 from thirdai import neural_db as ndb
