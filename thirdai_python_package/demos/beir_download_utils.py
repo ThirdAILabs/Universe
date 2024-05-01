@@ -61,6 +61,13 @@ def write_supervised_file(queries, answers, data_path, filename):
             fw.write(query + "," + doc_ids + "\n")
 
 
+#############################################################################
+# Everything below this was taken from https://github.com/beir-cellar/beir
+# They have an Apache 2.0 license so it should be good for commercial and private
+# use. We include their logic here so as to not add the additional dependency
+#############################################################################
+
+
 def download_url(url: str, save_path: str, chunk_size: int = 1024):
     """Download url with progress bar using tqdm
     https://stackoverflow.com/questions/15644964/python-progress-bar-and-downloads
