@@ -1,16 +1,17 @@
 #include <gtest/gtest.h>
-#include <archive/src/Archive.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/tests/MockDataSource.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <mach/src/MachConfig.h>
 #include <mach/src/MachTrainer.h>
+#include <nlohmann/json.hpp>
 #include <filesystem>
 #include <limits>
 
-namespace thirdai::mach::tests {
+using nlohmann::json;
 
+namespace thirdai::mach::tests {
 data::ColumnMapIteratorPtr makeIterator(const std::vector<std::string>& lines) {
   return data::CsvIterator::make(
       std::make_shared<data::tests::MockDataSource>(lines), ',');
@@ -19,20 +20,14 @@ data::ColumnMapIteratorPtr makeIterator(const std::vector<std::string>& lines) {
 void changeMinMaxEpochs(const std::string& path, uint32_t min_epochs,
                         uint32_t max_epochs) {
   auto input = dataset::SafeFileIO::ifstream(path);
-  auto archive = ar::deserialize(input);
+  json metadata;
+  input >> metadata;
 
-  auto map = ar::Map::make();
-  map->set("min_epochs", ar::u64(min_epochs));
-  map->set("max_epochs", ar::u64(max_epochs));
-
-  for (const auto& [k, v] : archive->map()) {
-    if (!map->contains(k)) {
-      map->set(k, v);
-    }
-  }
+  metadata["min_epochs"] = min_epochs;
+  metadata["max_epochs"] = max_epochs;
 
   auto output = dataset::SafeFileIO::ofstream(path);
-  ar::serialize(map, output);
+  output << std::setw(4) << metadata << std::endl;
 }
 
 TEST(MachTrainerTests, ColdStartCheckpointing) {
@@ -75,7 +70,7 @@ TEST(MachTrainerTests, ColdStartCheckpointing) {
 
   auto loaded_trainer = MachTrainer::fromCheckpoint(ckpt_dir);
 
-  std::filesystem::remove_all(ckpt_dir);
+  // std::filesystem::remove_all(ckpt_dir);
 
   auto mach_ckpt = loaded_trainer->complete(std::nullopt);
 

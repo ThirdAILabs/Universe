@@ -14,14 +14,12 @@ class MachTrainer {
 
   MachRetrieverPtr complete(const std::optional<std::string>& ckpt_dir);
 
-  void intermediateCheckpoint(const std::string& ckpt_dir);
+  void makeCheckpoint(const std::string& ckpt_dir);
 
   static std::shared_ptr<MachTrainer> fromCheckpoint(const std::string& dir);
 
   MachTrainer& strongWeakCols(const std::vector<std::string>& strong_cols,
                               const std::vector<std::string>& weak_cols);
-
-  MachTrainer& vlc(const std::optional<data::VariableLengthConfig>& vlc);
 
   MachTrainer& learningRate(float learning_rate);
 
@@ -41,8 +39,6 @@ class MachTrainer {
     return !_strong_cols.empty() || !_weak_cols.empty();
   }
 
-  void initialCheckpoint(const std::string& ckpt_dir);
-
   void saveTrainerMetadata(const std::string& path) const;
 
   void loadTrainerMetadata(const std::string& path);
@@ -61,7 +57,6 @@ class MachTrainer {
 
   std::vector<std::string> _strong_cols;
   std::vector<std::string> _weak_cols;
-  std::optional<data::VariableLengthConfig> _vlc = data::VariableLengthConfig();
 
   float _learning_rate = 1e-3;
   uint32_t _min_epochs = 5;

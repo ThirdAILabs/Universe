@@ -1,16 +1,18 @@
 #include "MachTrainer.h"
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/callbacks/Overfitting.h>
-#include <archive/src/Archive.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/columns/Column.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <mach/src/MachConfig.h>
+#include <nlohmann/json.hpp>
 #include <filesystem>
 #include <limits>
 #include <stdexcept>
 #include <string>
 #include <vector>
+
+using json = nlohmann::json;
 
 namespace thirdai::mach {
 
@@ -19,7 +21,7 @@ class MachCheckpoint final : public bolt::callbacks::Callback {
   MachCheckpoint(MachTrainer* trainer, std::string save_path)
       : _trainer(trainer), _save_path(std::move(save_path)) {}
 
-  void onEpochEnd() final { _trainer->intermediateCheckpoint(_save_path); }
+  void onEpochEnd() final { _trainer->makeCheckpoint(_save_path); }
 
  private:
   MachTrainer* _trainer;
@@ -59,7 +61,12 @@ MachRetrieverPtr MachTrainer::complete(
   }
 
   if (ckpt_dir) {
-    initialCheckpoint(*ckpt_dir);
+    if (std::filesystem::exists(*ckpt_dir)) {
+      throw std::invalid_argument("Found existing checkpoint in '" + *ckpt_dir +
+                                  "'.");
+    }
+    std::filesystem::create_directories(*ckpt_dir);
+    makeCheckpoint(*ckpt_dir);
   }
 
   std::vector<bolt::callbacks::CallbackPtr> callbacks;
@@ -82,7 +89,6 @@ MachRetrieverPtr MachTrainer::complete(
     ColdStartOptions options;
     options.batch_size = _batch_size;
     options.max_in_memory_batches = _max_in_memory_batches;
-    options.variable_length = _vlc;
 
     _model->coldstart(data, _strong_cols, _weak_cols, _learning_rate,
                       epochsRemaining(_max_epochs), _metrics, callbacks,
@@ -98,25 +104,16 @@ MachRetrieverPtr MachTrainer::complete(
   return _model;
 }
 
-void MachTrainer::initialCheckpoint(const std::string& ckpt_dir) {
-  if (std::filesystem::exists(ckpt_dir)) {
-    throw std::invalid_argument("Found existing checkpoint in '" + ckpt_dir +
-                                "'.");
-  }
+void MachTrainer::makeCheckpoint(const std::string& ckpt_dir) {
+  const std::string model_path = modelPath(ckpt_dir);
+  _model->save(model_path + "_tmp", /*with_optimizer=*/true);
+  std::filesystem::rename(model_path + "_tmp", model_path);
 
-  std::filesystem::create_directories(ckpt_dir);
-
-  _model->save(modelPath(ckpt_dir), /*with_optimizer=*/true);
-
-  saveTrainerMetadata(metadataPath(ckpt_dir));
+  const std::string metadata_path = metadataPath(ckpt_dir);
+  saveTrainerMetadata(metadata_path + "_tmp");
+  std::filesystem::rename(metadata_path + "_tmp", metadata_path);
 
   _data_ckpt.save(dataPath(ckpt_dir));
-}
-
-void MachTrainer::intermediateCheckpoint(const std::string& ckpt_dir) {
-  _model->save(modelPath(ckpt_dir), /*with_optimizer=*/true);
-
-  saveTrainerMetadata(metadataPath(ckpt_dir));
 }
 
 std::shared_ptr<MachTrainer> MachTrainer::fromCheckpoint(
@@ -134,51 +131,52 @@ std::shared_ptr<MachTrainer> MachTrainer::fromCheckpoint(
 }
 
 void MachTrainer::saveTrainerMetadata(const std::string& path) const {
-  auto map = ar::Map::make();
+  json metadata;
 
-  map->set("strong_cols", ar::vecStr(_strong_cols));
-  map->set("weak_cols", ar::vecStr(_weak_cols));
-  if (_vlc) {
-    map->set("vlc", _vlc->toArchive());
-  }
+  metadata["strong_cols"] = _strong_cols;
+  metadata["weak_cols"] = _weak_cols;
 
-  map->set("learning_rate", ar::f32(_learning_rate));
-  map->set("min_epochs", ar::u64(_min_epochs));
-  map->set("max_epochs", ar::u64(_max_epochs));
-  map->set("initial_model_epochs", ar::u64(_initial_model_epochs));
-  map->set("metrics", ar::vecStr(_metrics));
+  metadata["learning_rate"] = _learning_rate;
+  metadata["min_epochs"] = _min_epochs;
+  metadata["max_epochs"] = _max_epochs;
+  metadata["initial_model_epochs"] = _initial_model_epochs;
+  metadata["metrics"] = _metrics;
+
   if (_max_in_memory_batches) {
-    map->set("max_in_memory_batches", ar::u64(*_max_in_memory_batches));
+    metadata["max_in_memory_batches"] = *_max_in_memory_batches;
   }
-  map->set("batch_size", ar::u64(_batch_size));
 
-  map->set("early_stop_metric", ar::str(_early_stop_metric));
-  map->set("early_stop_threshold", ar::f32(_early_stop_threshold));
+  metadata["batch_size"] = _batch_size;
+
+  metadata["early_stop_metric"] = _early_stop_metric;
+  metadata["early_stop_threshold"] = _early_stop_threshold;
 
   auto output = dataset::SafeFileIO::ofstream(path);
-  ar::serialize(map, output);
+
+  output << std::setw(4) << metadata << std::endl;
 }
 
 void MachTrainer::loadTrainerMetadata(const std::string& path) {
   auto input = dataset::SafeFileIO::ifstream(path);
-  auto archive = ar::deserialize(input);
 
-  _strong_cols = archive->getAs<ar::VecStr>("strong_cols");
-  _weak_cols = archive->getAs<ar::VecStr>("weak_cols");
-  if (archive->contains("vlc")) {
-    _vlc = data::VariableLengthConfig(*archive->get("vlc"));
+  json metadata;
+  input >> metadata;
+
+  _strong_cols = metadata["strong_cols"];
+  _weak_cols = metadata["weak_cols"];
+
+  _learning_rate = metadata["learning_rate"];
+  _min_epochs = metadata["min_epochs"];
+  _max_epochs = metadata["max_epochs"];
+  _initial_model_epochs = metadata["initial_model_epochs"];
+  _metrics = metadata["metrics"];
+  if (metadata.contains("max_in_memory_batches")) {
+    _max_in_memory_batches = metadata["max_in_memory_batches"];
   }
+  _batch_size = metadata["batch_size"];
 
-  _learning_rate = archive->f32("learning_rate");
-  _min_epochs = archive->u64("min_epochs");
-  _max_epochs = archive->u64("max_epochs");
-  _initial_model_epochs = archive->u64("initial_model_epochs");
-  _metrics = archive->getAs<ar::VecStr>("metrics");
-  _max_in_memory_batches = archive->getOpt<ar::U64>("max_in_memory_batches");
-  _batch_size = archive->u64("batch_size");
-
-  _early_stop_metric = archive->str("early_stop_metric");
-  _early_stop_threshold = archive->f32("early_stop_threshold");
+  _early_stop_metric = metadata["early_stop_metric"];
+  _early_stop_threshold = metadata["early_stop_threshold"];
 
   _loaded_ckpt = true;
 }
@@ -188,12 +186,6 @@ MachTrainer& MachTrainer::strongWeakCols(
     const std::vector<std::string>& weak_cols) {
   _strong_cols = strong_cols;
   _weak_cols = weak_cols;
-  return *this;
-}
-
-MachTrainer& MachTrainer::vlc(
-    const std::optional<data::VariableLengthConfig>& vlc) {
-  _vlc = vlc;
   return *this;
 }
 

@@ -1,10 +1,11 @@
 #include "DataCheckpoint.h"
-#include <archive/src/Archive.h>
-#include <archive/src/Map.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/transformations/StringCast.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <nlohmann/json.hpp>
 #include <filesystem>
+
+using json = nlohmann::json;
 
 namespace thirdai::mach {
 
@@ -56,19 +57,22 @@ std::string dataMetadataPath(const std::string& ckpt_dir) {
 }
 
 void DataCheckpoint::save(const std::string& ckpt_dir) {
+  if (!std::filesystem::exists(ckpt_dir)) {
+    std::filesystem::create_directories(ckpt_dir);
+  }
   if (!_dataset_path) {
     _dataset_path = std::filesystem::path(ckpt_dir) / "dataset.csv";
     saveDataset(_data_iter, _dataset_path.value(), _id_col, _text_cols);
   }
 
-  auto metadata = ar::Map::make();
+  json metadata;
 
-  metadata->set("dataset_path", ar::str(_dataset_path.value()));
-  metadata->set("id_col", ar::str(_id_col));
-  metadata->set("text_cols", ar::vecStr(_text_cols));
+  metadata["dataset_path"] = _dataset_path.value();
+  metadata["id_col"] = _id_col;
+  metadata["text_cols"] = _text_cols;
 
   auto output = dataset::SafeFileIO::ofstream(dataMetadataPath(ckpt_dir));
-  ar::serialize(metadata, output);
+  output << std::setw(4) << metadata;
 }
 
 DataCheckpoint DataCheckpoint::load(const std::string& ckpt_dir) {
@@ -77,11 +81,13 @@ DataCheckpoint DataCheckpoint::load(const std::string& ckpt_dir) {
 
 DataCheckpoint::DataCheckpoint(const std::string& ckpt_dir) {
   auto input = dataset::SafeFileIO::ifstream(dataMetadataPath(ckpt_dir));
-  auto metadata = ar::deserialize(input);
+  json metadata;
 
-  _dataset_path = metadata->str("dataset_path");
-  _id_col = metadata->str("id_col");
-  _text_cols = metadata->getAs<ar::VecStr>("text_cols");
+  input >> metadata;
+
+  _dataset_path = metadata["dataset_path"];
+  _id_col = metadata["id_col"];
+  _text_cols = metadata["text_cols"];
 
   auto iter = std::make_shared<data::CsvIterator>(_dataset_path.value(), ',');
 

@@ -277,7 +277,6 @@ void defineMach(py::module_& module) {
                   py::arg("ckpt_dir"))
       .def("strong_weak_cols", &MachTrainer::strongWeakCols,
            py::arg("strong_cols"), py::arg("weak_cols"))
-      .def("vlc", &MachTrainer::vlc, py::arg("vlc"))
       .def("learning_rate", &MachTrainer::learningRate,
            py::arg("learning_rate"))
       .def("min_max_epochs", &MachTrainer::minMaxEpochs, py::arg("min_epochs"),
