@@ -2,10 +2,6 @@ import os
 import shutil
 from pathlib import Path
 
-import nltk
-
-nltk.download("punkt")
-
 import pytest
 from thirdai import neural_db as ndb
 

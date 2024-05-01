@@ -3,7 +3,6 @@ import shutil
 from collections import defaultdict
 from pathlib import Path
 
-import nltk
 import pytest
 from ndb_utils import PDF_FILE, all_local_doc_getters, associate_works, upvote_works
 from thirdai import data
