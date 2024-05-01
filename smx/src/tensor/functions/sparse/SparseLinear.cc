@@ -1,6 +1,7 @@
 #include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Functions.h>
 #include <smx/src/tensor/Init.h>
+#include <smx/src/tensor/MaskedTensor.h>
 
 namespace thirdai::smx {
 
@@ -166,11 +167,13 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
   const float* w_ptr = w->data<float>();
   const float* x_ptr = x->data<float>();
 
-  auto w_grad = DenseTensor::make(w->shape(), w->dtype());
+  auto w_grad = MaskedTensor::make(w->shape(), w->dtype());
   auto x_grad = DenseTensor::make(x->shape(), x->dtype());
 
   float* w_grad_ptr = w_grad->data<float>();
   float* x_grad_ptr = x_grad->data<float>();
+
+  auto& grad_mask = w_grad->mask();
 
   DenseTensorPtr b_grad = nullptr;
   float* b_grad_ptr = nullptr;
@@ -192,9 +195,9 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
 
   size_t shard_size = std::max(dim / 384, 1UL);
 
-#pragma omp parallel for default(none)                            \
-    shared(batch_size, dim, input_dim, shard_size, y_offsets_ptr, \
-           y_indices_ptr, y_grad_ptr, w_grad_ptr, b_grad_ptr, x_ptr)
+#pragma omp parallel for default(none) shared(                            \
+    batch_size, dim, input_dim, shard_size, y_offsets_ptr, y_indices_ptr, \
+    y_grad_ptr, w_grad_ptr, b_grad_ptr, x_ptr, grad_mask)
   for (size_t start = 0; start < dim; start += shard_size) {
     const size_t end = std::min(start + shard_size, dim);
 
@@ -206,6 +209,7 @@ std::tuple<DenseTensorPtr, DenseTensorPtr, DenseTensorPtr> linearGrad(
       for (size_t i = y_start; i < y_end; i++) {
         const size_t neuron = y_indices_ptr[i];
         if (start <= neuron && neuron < end) {
+          grad_mask[neuron] = true;
           const float neuron_grad = y_grad_ptr[i];
 
           float* neuron_w_grad = w_grad_ptr + neuron * input_dim;
