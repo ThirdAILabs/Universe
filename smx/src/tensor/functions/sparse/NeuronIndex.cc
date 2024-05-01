@@ -28,6 +28,9 @@ std::shared_ptr<LshIndex> LshIndex::autotune(size_t dim, size_t input_dim,
                                              size_t updates_per_new_hash_fn) {
   // TODO(Nicholas): Move this autotuning code out of the SamplingConfig.
   auto config = bolt::DWTASamplingConfig::autotune(dim, sparsity, false);
+  if (!config) {
+    return nullptr;
+  }
 
   return make(config->getHashFunction(input_dim), config->reservoirSize(),
               weight, updates_per_rebuild, updates_per_new_hash_fn);
