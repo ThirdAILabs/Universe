@@ -137,9 +137,6 @@ class Mach(Retriever):
         epochs: Optional[int] = None,
         metrics: Optional[List[str]] = None,
         max_in_memory_batches: Optional[int] = None,
-        variable_length: Optional[
-            data.transformations.VariableLengthConfig
-        ] = data.transformations.VariableLengthConfig(),
         batch_size: int = 2000,
         early_stop_metric: str = "hash_precision@5",
         early_stop_metric_threshold: float = 0.95,
@@ -167,7 +164,6 @@ class Mach(Retriever):
                 data=bolt.DataCheckpoint(train_data, Mach.ID, [Mach.STRONG, Mach.WEAK]),
             )
             .strong_weak_cols([Mach.STRONG], [Mach.WEAK])
-            .vlc(variable_length)
             .learning_rate(learning_rate)
             .min_max_epochs(min_epochs, max_epochs)
             .metrics(metrics)
