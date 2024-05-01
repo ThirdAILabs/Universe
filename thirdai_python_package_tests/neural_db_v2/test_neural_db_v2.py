@@ -42,7 +42,8 @@ def test_neural_db_v2_save_load_integration(chunk_store, retriever):
 
     shutil.rmtree(save_file)
 
-    clean_up_sql_lite_db(db.chunk_store)
+    if isinstance(db.chunk_store, SQLiteChunkStore):
+        os.remove(os.path.basename(db.chunk_store.db_name))
 
 
 @pytest.mark.parametrize(

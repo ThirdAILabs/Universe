@@ -90,7 +90,7 @@ class PandasChunkStore(ChunkStore):
             )
         output_chunks = []
         for i, row in enumerate(chunks.itertuples()):
-            if metadatas:
+            if metadatas is None:
                 metadata = metadatas.iloc[i].to_dict()
                 del metadata["chunk_id"]
             else:
