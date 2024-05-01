@@ -1,6 +1,5 @@
 import json
 import os
-from pathlib import Path
 from typing import Iterable, List, Optional, Union
 
 from .chunk_stores import load_chunk_store
@@ -89,7 +88,7 @@ class NeuralDB:
     @staticmethod
     def retriever_path(directory: str) -> str:
         return os.path.join(directory, "retriever")
-    
+
     @staticmethod
     def metadata_path(directory: str) -> str:
         return os.path.join(directory, "metadata.json")

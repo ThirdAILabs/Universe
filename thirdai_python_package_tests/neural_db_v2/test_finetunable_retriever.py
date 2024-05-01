@@ -1,8 +1,9 @@
+import os
 import random
 
 import pandas as pd
 import pytest
-from ndbv2_utils import load_chunks
+from ndbv2_utils import compute_accuracy, load_chunks
 from thirdai.neural_db_v2.core.types import ChunkBatch, SupervisedBatch
 from thirdai.neural_db_v2.retrievers import FinetunableRetriever
 
@@ -82,30 +83,18 @@ def test_finetunable_retriever_delete(load_chunks):
         assert results[0][0] == label[1]
 
 
-def compute_accuracy(retriever, queries, labels):
-    correct = 0
-    for query, label in zip(queries, labels):
-        if retriever.search([query], top_k=1)[0][0][0] == label:
-            correct += 1
-    return correct / len(labels)
-
-
 def get_supervised_samples(dataset):
     random_words = []
     for sample in dataset["text"]:
         words = sample.split()
         random_words.extend(random.choices(words, k=4))
 
-    acronyms = (
-        dataset["text"]
-        .map(
-            lambda s: "".join(w[0] for w in s.split())
-            + " "
-            + " ".join(random.choices(random_words, k=5))
-        )
-        .to_list()
+    acronyms = dataset["text"].map(
+        lambda s: "".join(w[0] for w in s.split())
+        + " "
+        + " ".join(random.choices(random_words, k=5))
     )
-    ids = dataset["id"].to_list()
+    ids = dataset["id"]
 
     return ids, acronyms
 
@@ -124,8 +113,8 @@ def test_finetunable_retriever_finetuning(load_chunks):
     for i in range(0, len(ids), batch_size):
         batches.append(
             SupervisedBatch(
-                query=acronyms[i : i + batch_size],
-                chunk_id=list(map(lambda id: [id], ids[i : i + batch_size])),
+                query=pd.Series(acronyms[i : i + batch_size]),
+                chunk_id=pd.Series(map(lambda id: [id], ids[i : i + batch_size])),
             )
         )
 
@@ -134,6 +123,16 @@ def test_finetunable_retriever_finetuning(load_chunks):
     acc_after_finetuning = compute_accuracy(retriever, queries=acronyms, labels=ids)
     print("after finetuning: p@1 =", acc_after_finetuning)
     assert acc_after_finetuning >= 0.9
+
+    model_path = "ndb_finetunable_retriever_for_test"
+    retriever.save(model_path)
+    retriever = FinetunableRetriever.load(model_path)
+
+    after_load_accuracy = compute_accuracy(retriever, acronyms, load_chunks["id"])
+
+    assert acc_after_finetuning == after_load_accuracy
+
+    os.remove(model_path)
 
 
 def test_finetunable_retriever_upvote(load_chunks):

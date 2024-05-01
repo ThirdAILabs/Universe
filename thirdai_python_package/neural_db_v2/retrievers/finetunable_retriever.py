@@ -41,7 +41,9 @@ class FinetunableRetriever(Retriever):
 
     def supervised_train(self, samples: Iterable[SupervisedBatch], **kwargs):
         for batch in samples:
-            self.retriever.finetune(doc_ids=batch.chunk_id, queries=batch.query)
+            self.retriever.finetune(
+                doc_ids=batch.chunk_id.to_list(), queries=batch.query.to_list()
+            )
 
     def delete(self, chunk_ids: List[ChunkId], **kwargs):
         self.retriever.remove(ids=chunk_ids)

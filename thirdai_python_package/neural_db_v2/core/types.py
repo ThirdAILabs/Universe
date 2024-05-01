@@ -121,6 +121,10 @@ class CustomIdSupervisedBatch:
     query: pt.Series[str]
     custom_id: Union[pt.Series[List[str]], pt.Series[List[int]]]
 
+    def __post_init__(self):
+        self.query = self.query.reset_index(drop=True)
+        self.custom_id = self.custom_id.reset_index(drop=True)
+
     def __getitem__(self, i: int):
         return CustomIdSupervisedSample(
             query=self.query[i],
@@ -135,6 +139,10 @@ class CustomIdSupervisedBatch:
 class SupervisedBatch:
     query: pt.Series[str]
     chunk_id: pt.Series[List[ChunkId]]
+
+    def __post_init__(self):
+        self.query = self.query.reset_index(drop=True)
+        self.chunk_id = self.chunk_id.reset_index(drop=True)
 
     def __getitem__(self, i: int):
         return SupervisedSample(

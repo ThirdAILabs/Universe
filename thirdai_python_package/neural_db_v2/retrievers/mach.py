@@ -11,21 +11,29 @@ from ..core.types import ChunkBatch, ChunkId, Score, SupervisedBatch
 
 
 class ChunkColumnMapIterator(data.ColumnMapIterator):
-    def __init__(self, iterable: Iterable[ChunkBatch], text_columns: Dict[str, str]):
+    def __init__(
+        self,
+        iterable: Iterable[ChunkBatch],
+        text_columns: Dict[str, str],
+        supervised=False,
+    ):
         data.ColumnMapIterator.__init__(self)
 
         self.iterable = iterable
         self.iterator = iter(self.iterable)
         self.text_columns = text_columns
+        self.supervised = supervised
 
     def next(self) -> Optional[data.ColumnMap]:
+        id_column = (
+            data.columns.TokenArrayColumn
+            if self.supervised
+            else data.columns.TokenColumn
+        )
+
         try:
             batch = next(self.iterator)
-            columns = {
-                Mach.ID: data.columns.TokenColumn(
-                    batch.chunk_id, dim=data.columns.MAX_DIM
-                )
-            }
+            columns = {Mach.ID: id_column(batch.chunk_id, dim=data.columns.MAX_DIM)}
             for name, attr in self.text_columns.items():
                 columns[name] = data.columns.StringColumn(getattr(batch, attr))
             return data.ColumnMap(columns)
@@ -188,7 +196,9 @@ class Mach(Retriever):
         metrics: Optional[List[str]] = None,
         **kwargs,
     ):
-        train_data = ChunkColumnMapIterator(samples, text_columns={Mach.TEXT: "query"})
+        train_data = ChunkColumnMapIterator(
+            samples, text_columns={Mach.TEXT: "query"}, supervised=True
+        )
 
         self.model.train(
             data=train_data,

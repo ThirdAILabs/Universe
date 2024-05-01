@@ -12,6 +12,7 @@ class Supervised(ABC):
         raise NotImplementedError
 
     def supervised_samples(
+        self,
         queries: List[str],
         ids: Union[List[List[ChunkId]], List[List[str]], List[List[int]]],
         uses_db_id: bool,
