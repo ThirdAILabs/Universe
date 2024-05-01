@@ -1,11 +1,9 @@
 import nltk
 from nltk.data import find
 
-# Check if 'punkt' tokenizer models are already downloaded
 try:
     find("tokenizers/punkt")
 except LookupError:
-    # Download 'punkt' if not already downloaded
     nltk.download("punkt")
 
 from . import parsing_utils
