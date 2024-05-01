@@ -61,10 +61,11 @@ TEST(MachTrainerTests, ColdStartCheckpointing) {
           "id", "id", ':', std::numeric_limits<uint32_t>::max()),
       nullptr);
 
-  auto trainer = MachTrainer(mach, data)
-                     .strongWeakCols({"strong_col"}, {"weak_col"})
-                     .batchSize(2)
-                     .minMaxEpochs(2, 4);
+  auto trainer =
+      MachTrainer(mach, DataCheckpoint(data, "id", {"strong_col", "weak_col"}))
+          .strongWeakCols({"strong_col"}, {"weak_col"})
+          .batchSize(2)
+          .minMaxEpochs(2, 4);
 
   trainer.complete(ckpt_dir);
 
@@ -107,7 +108,9 @@ TEST(MachTrainerTests, TrainCheckpointing) {
           "id", "id", ':', std::numeric_limits<uint32_t>::max()),
       nullptr);
 
-  auto trainer = MachTrainer(mach, data).batchSize(2).minMaxEpochs(3, 3);
+  auto trainer = MachTrainer(mach, DataCheckpoint(data, "id", {"text"}))
+                     .batchSize(2)
+                     .minMaxEpochs(3, 3);
 
   trainer.complete(ckpt_dir);
 
