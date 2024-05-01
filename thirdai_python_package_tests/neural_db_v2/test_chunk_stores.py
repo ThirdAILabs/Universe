@@ -2,6 +2,7 @@ import os
 
 import pandas as pd
 import pytest
+from ndbv2_utils import clean_up_sql_lite_db
 from thirdai.neural_db_v2.chunk_stores import PandasChunkStore, SQLiteChunkStore
 from thirdai.neural_db_v2.chunk_stores.constraints import (
     AnyOf,
@@ -12,11 +13,6 @@ from thirdai.neural_db_v2.chunk_stores.constraints import (
 from thirdai.neural_db_v2.core.types import CustomIdSupervisedBatch, NewChunkBatch
 
 pytestmark = [pytest.mark.release]
-
-
-def clean_up_sql_lite_db(store):
-    if isinstance(store, SQLiteChunkStore):
-        os.remove(store.db_name)
 
 
 def assert_chunk_ids(inserted_batches, expected_chunk_ids):
@@ -212,7 +208,7 @@ def test_sqlite_chunk_store_custom_id_type_mismatch():
                 string_label_batch,
             ]
         )
-    
+
     clean_up_sql_lite_db(store)
 
     with pytest.raises(
@@ -226,7 +222,7 @@ def test_sqlite_chunk_store_custom_id_type_mismatch():
                 integer_label_batch,
             ]
         )
-    
+
     clean_up_sql_lite_db(store)
 
 
@@ -236,7 +232,7 @@ def test_chunk_store_constraints_equal_to(chunk_store):
 
     chunk_ids = store.filter_chunk_ids({"class": EqualTo("b")})
     assert chunk_ids == set([1, 3])
-    
+
     clean_up_sql_lite_db(store)
 
 
@@ -358,7 +354,7 @@ def test_chunk_store_remapping(chunk_store, id_type):
                 )
             ]
         )
-    
+
     clean_up_sql_lite_db(store)
 
 
@@ -422,5 +418,10 @@ def test_chunk_store_with_no_metadata(chunk_store):
         value=0,
         metadata=None,
     )
+
+    store.delete([0])
+
+    with pytest.raises(ValueError, match="Cannot filter constraints with no metadata."):
+        chunk_ids = store.filter_chunk_ids({"class": EqualTo("b")})
 
     clean_up_sql_lite_db(store)

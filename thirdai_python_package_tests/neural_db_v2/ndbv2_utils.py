@@ -32,3 +32,8 @@ def compute_accuracy(retriever, queries, labels):
         if retriever.search([query], top_k=1)[0][0][0] == label:
             correct += 1
     return correct / len(labels)
+
+
+def clean_up_sql_lite_db(store):
+    if isinstance(store, SQLiteChunkStore):
+        os.remove(store.db_name)

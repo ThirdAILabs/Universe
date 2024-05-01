@@ -56,7 +56,9 @@ def test_ndb_mach_retriever_supervised_train(build_retriever, load_chunks):
 
     queries = [str(chunk_id) for chunk_id in load_chunks["id"]]
 
-    supervised_batch = SupervisedBatch(query=queries, chunk_id=load_chunks["id"].map(lambda id: [id]))
+    supervised_batch = SupervisedBatch(
+        query=queries, chunk_id=load_chunks["id"].map(lambda id: [id])
+    )
 
     before_sup_accuracy = compute_accuracy(retriever, queries, load_chunks["id"])
     assert before_sup_accuracy < 0.5

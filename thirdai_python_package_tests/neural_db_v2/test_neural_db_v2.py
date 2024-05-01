@@ -1,8 +1,9 @@
 import os
 import shutil
 
+import pandas as pd
 import pytest
-from ndbv2_utils import CSV_FILE, PDF_FILE, load_chunks
+from ndbv2_utils import CSV_FILE, PDF_FILE, clean_up_sql_lite_db, load_chunks
 from thirdai import neural_db_v2 as ndb
 from thirdai.neural_db_v2.chunk_stores import PandasChunkStore, SQLiteChunkStore
 from thirdai.neural_db_v2.retrievers import FinetunableRetriever, Mach
@@ -41,11 +42,13 @@ def test_neural_db_v2_save_load_integration(chunk_store, retriever):
 
     shutil.rmtree(save_file)
 
+    clean_up_sql_lite_db(db.chunk_store)
+
 
 @pytest.mark.parametrize(
     "chunk_store, retriever",
     [
-        # (SQLiteChunkStore, FinetunableRetriever),
+        (SQLiteChunkStore, FinetunableRetriever),
         (PandasChunkStore, Mach),
     ],
 )
@@ -58,7 +61,7 @@ def test_neural_db_v2_supervised_training(chunk_store, retriever, load_chunks):
                 document_name="texts",
                 text=load_chunks["text"],
                 custom_id=[f"custom{i}" for i in range(len(load_chunks))],
-                doc_metadata=[{"a": "b"} for i in range(len(load_chunks))],
+                chunk_metadata=[{"a": "b"} for i in range(len(load_chunks))],
             )
         ]
     )
@@ -66,8 +69,27 @@ def test_neural_db_v2_supervised_training(chunk_store, retriever, load_chunks):
     queries = ["alpha beta phi", "epsilon omega phi delta"]
 
     for uses_db_id in [True, False]:
-        ids = [[1], [2]] if uses_db_id else [["custom1"], ["custom2"]]
+        ids = [[1], [2, 3]] if uses_db_id else [["custom1"], ["custom2", "custom3"]]
 
         db.supervised_train(
             ndb.InMemorySupervised(queries=queries, ids=ids, uses_db_id=uses_db_id)
         )
+
+        ids = ["1", "2:3"] if uses_db_id else ["custom1", "custom2:custom3"]
+        df = pd.DataFrame({"queries": queries, "ids": ids})
+        csv_file_name = "test_neural_db_v2_supervised_training.csv"
+        df.to_csv(csv_file_name, index=False)
+
+        db.supervised_train(
+            ndb.CsvSupervised(
+                path=csv_file_name,
+                query_column="queries",
+                id_column="ids",
+                uses_db_id=uses_db_id,
+                id_delimiter=":",
+            )
+        )
+
+        os.remove(csv_file_name)
+
+    clean_up_sql_lite_db(db.chunk_store)

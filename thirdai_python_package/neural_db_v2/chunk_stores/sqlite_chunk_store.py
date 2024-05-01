@@ -238,27 +238,25 @@ class SQLiteChunkStore(ChunkStore):
         return inserted_chunks_iterator
 
     def delete(self, chunk_ids: List[ChunkId], **kwargs):
-        delete_chunks = delete(self.chunk_table).where(
-            self.chunk_table.c.chunk_id.in_(chunk_ids)
-        )
-        delete_metadata = delete(self.metadata_table).where(
-            self.metadata_table.c.chunk_id.in_(chunk_ids)
-        )
         with self.engine.begin() as conn:
+            delete_chunks = delete(self.chunk_table).where(
+                self.chunk_table.c.chunk_id.in_(chunk_ids)
+            )
             conn.execute(delete_chunks)
-            conn.execute(delete_metadata)
+
+            if self.metadata_table is not None:
+                delete_metadata = delete(self.metadata_table).where(
+                    self.metadata_table.c.chunk_id.in_(chunk_ids)
+                )
+                conn.execute(delete_metadata)
 
     def get_chunks(self, chunk_ids: List[ChunkId], **kwargs) -> List[Chunk]:
-
         id_to_chunk = {}
 
-        chunk_stmt = select(self.chunk_table).where(
-            self.chunk_table.c.chunk_id.in_(chunk_ids)
-        )
-        metadata_stmt = select(self.metadata_table).where(
-            self.metadata_table.c.chunk_id.in_(chunk_ids)
-        )
         with self.engine.connect() as conn:
+            chunk_stmt = select(self.chunk_table).where(
+                self.chunk_table.c.chunk_id.in_(chunk_ids)
+            )
             for row in conn.execute(chunk_stmt).all():
                 id_to_chunk[row.chunk_id] = Chunk(
                     custom_id=row.custom_id,
@@ -268,10 +266,15 @@ class SQLiteChunkStore(ChunkStore):
                     chunk_id=row.chunk_id,
                     metadata=None,
                 )
-            for row in conn.execute(metadata_stmt).all():
-                metadata = row._asdict()
-                del metadata["chunk_id"]
-                id_to_chunk[row.chunk_id].metadata = metadata
+
+            if self.metadata_table is not None:
+                metadata_stmt = select(self.metadata_table).where(
+                    self.metadata_table.c.chunk_id.in_(chunk_ids)
+                )
+                for row in conn.execute(metadata_stmt).all():
+                    metadata = row._asdict()
+                    del metadata["chunk_id"]
+                    id_to_chunk[row.chunk_id].metadata = metadata
 
         chunks = []
         for chunk_id in chunk_ids:
@@ -286,6 +289,9 @@ class SQLiteChunkStore(ChunkStore):
     ) -> Set[ChunkId]:
         if not len(constraints):
             raise ValueError("Cannot call filter_chunk_ids with empty constraints.")
+
+        if self.metadata_table is None:
+            raise ValueError("Cannot filter constraints with no metadata.")
 
         condition = reduce(
             operator.and_,

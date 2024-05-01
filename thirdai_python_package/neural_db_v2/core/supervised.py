@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Iterable, List, Union
 
+import pandas as pd
+
 from .types import ChunkId, CustomIdSupervisedBatch, SupervisedBatch
 
 
@@ -18,5 +20,8 @@ class Supervised(ABC):
         uses_db_id: bool,
     ) -> Union[SupervisedBatch, CustomIdSupervisedBatch]:
         if uses_db_id:
-            return SupervisedBatch(query=queries, chunk_id=ids)
+            return SupervisedBatch(
+                query=queries,
+                chunk_id=pd.Series([list(map(int, row_ids)) for row_ids in ids]),
+            )
         return CustomIdSupervisedBatch(query=queries, custom_id=ids)

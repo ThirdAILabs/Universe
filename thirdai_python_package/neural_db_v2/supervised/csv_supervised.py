@@ -1,4 +1,4 @@
-from typing import Iterable, Union
+from typing import Iterable, Optional, Union
 
 import pandas as pd
 
@@ -12,8 +12,8 @@ class CsvSupervised(Supervised):
         path: str,
         query_column: str,
         id_column: str,
-        id_delimiter: str,
         uses_db_id: bool,
+        id_delimiter: Optional[str] = None,
         max_rows: int = 10_000_000,
     ):
         self.path = path
@@ -26,17 +26,14 @@ class CsvSupervised(Supervised):
     def samples(
         self,
     ) -> Union[Iterable[SupervisedBatch], Iterable[CustomIdSupervisedBatch]]:
-        data_iter = pd.read_csv(self.path, chunksize=self.max_rows)
+        df = pd.read_csv(self.path)
 
-        for df in data_iter:
-            df.reset_index(drop=True, inplace=True)
-
-            # TODO(david) do we need some sort of assertion for having list of values?
-            # or do we need to convert to list of values somewhere?
-            # I don't think we need to because the data pipeline should take care of it but we might need to update the typing
-
-            yield self.supervised_samples(
+        return [
+            self.supervised_samples(
                 queries=df[self.query_column],
-                ids=df[self.id_column],
+                ids=df[self.id_column].map(
+                    lambda val: list(str(val).split(self.id_delimiter))
+                ),
                 uses_db_id=self.uses_db_id,
             )
+        ]

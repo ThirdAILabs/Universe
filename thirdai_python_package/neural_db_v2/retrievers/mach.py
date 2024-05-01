@@ -33,7 +33,9 @@ class ChunkColumnMapIterator(data.ColumnMapIterator):
 
         try:
             batch = next(self.iterator)
-            columns = {Mach.ID: id_column(batch.chunk_id, dim=data.columns.MAX_DIM)}
+            columns = {
+                Mach.ID: id_column(batch.chunk_id.to_list(), dim=data.columns.MAX_DIM)
+            }
             for name, attr in self.text_columns.items():
                 columns[name] = data.columns.StringColumn(getattr(batch, attr))
             return data.ColumnMap(columns)
