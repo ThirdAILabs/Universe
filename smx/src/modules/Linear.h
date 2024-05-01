@@ -165,6 +165,9 @@ class SparseLinear final : public Module {
   }
 
   std::function<void()> onUpdateCallback() {
+    if (!_neuron_index) {
+      return []() {};
+    }
     return [neuron_index = _neuron_index]() { neuron_index->onUpdate(); };
   }
 
