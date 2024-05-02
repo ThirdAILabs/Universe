@@ -1,5 +1,6 @@
 #include "DataPython.h"
 #include <bolt/python_bindings/PybindUtils.h>
+#include <data/python_bindings/PyColumnMapIterator.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/Loader.h>
 #include <data/src/TensorConversion.h>
@@ -71,9 +72,13 @@ void createDataSubmodule(py::module_& dataset_submodule) {
 
   createTransformationsSubmodule(dataset_submodule);
 
-  py::class_<ColumnMapIterator, ColumnMapIteratorPtr>(dataset_submodule,
-                                                      "ColumnMapIterator")
-      .def("next", &ColumnMapIterator::next);
+  py::class_<ColumnMapIterator, PyColumnMapIterator,
+             std::shared_ptr<ColumnMapIterator>>(dataset_submodule,
+                                                 "ColumnMapIterator")
+      .def(py::init<>())
+      .def("next", &ColumnMapIterator::next)
+      .def("resource_name", &ColumnMapIterator::resourceName)
+      .def("restart", &ColumnMapIterator::restart);
 
   py::class_<CsvIterator, std::shared_ptr<CsvIterator>, ColumnMapIterator>(
       dataset_submodule, "CsvIterator")
@@ -191,6 +196,8 @@ auto decimalArrayColumnFromNumpy(const NumpyArray<float>& array,
 
 void createColumnsSubmodule(py::module_& dataset_submodule) {
   auto columns_submodule = dataset_submodule.def_submodule("columns");
+
+  columns_submodule.attr("MAX_DIM") = std::numeric_limits<uint32_t>::max();
 
   py::class_<Column, ColumnPtr>(columns_submodule, "Column")
       .def("dim", &Column::dim)

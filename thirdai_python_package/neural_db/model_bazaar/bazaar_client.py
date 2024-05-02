@@ -263,6 +263,8 @@ class NeuralDBClient:
             headers=auth_header(self.bazaar._access_token),
         )
 
+        return json.loads(response.content)["data"]
+
     @check_deployment_decorator
     def delete(self, source_ids: List[str]):
         """

@@ -1,12 +1,13 @@
 import operator
 import uuid
 from functools import reduce
-from typing import Dict, Iterable, List, Set
+from typing import Dict, Iterable, List, Optional, Set
 
 import numpy as np
 import pandas as pd
 from sqlalchemy import (
     Column,
+    Engine,
     Float,
     Integer,
     MetaData,
@@ -14,6 +15,7 @@ from sqlalchemy import (
     Table,
     create_engine,
     delete,
+    func,
     select,
     text,
 )
@@ -45,6 +47,57 @@ def get_sql_columns(df: pd.DataFrame):
                 f"Column {col} has dtype {str(dtype)} which is not a supported type for metadata columns."
             )
     return columns
+
+
+class SqlLiteIterator:
+    def __init__(
+        self,
+        table: Table,
+        engine: Engine,
+        min_insertion_chunk_id: int,
+        max_insertion_chunk_id: int,
+        batch_size: int = 100,
+    ):
+        self.chunk_table = table
+        self.engine = engine
+
+        # Since assigned chunk_ids are contiguous, each SqlLiteIterator can search
+        # through a range of chunk_ids. We need a min and a max we do an insertion
+        # while another iterator still exists
+        self.min_insertion_chunk_id = min_insertion_chunk_id
+        self.max_insertion_chunk_id = max_insertion_chunk_id
+
+        self.batch_size = batch_size
+
+    def __next__(self) -> Optional[ChunkBatch]:
+        # The "next" call on the sql_row_iterator returns one row at a time
+        # despite fetching them in "batch_size" quantities from the database.
+        # Thus we call "next" "batch_size" times to pull out all the rows we want
+        sql_lite_batch = []
+        try:
+            for _ in range(self.batch_size):
+                sql_lite_batch.append(next(self.sql_row_iterator))
+        except StopIteration:
+            if not sql_lite_batch:
+                raise StopIteration
+
+        df = pd.DataFrame(sql_lite_batch, columns=self.sql_row_iterator.keys())
+
+        return ChunkBatch(
+            chunk_id=df["chunk_id"],
+            text=df["text"],
+            keywords=df["keywords"],
+        )
+
+    def __iter__(self):
+        stmt = select(self.chunk_table).where(
+            (self.chunk_table.c.chunk_id >= self.min_insertion_chunk_id)
+            & (self.chunk_table.c.chunk_id < self.max_insertion_chunk_id)
+        )
+        with self.engine.connect() as conn:
+            result = conn.execute(stmt)
+            self.sql_row_iterator = result.yield_per(self.batch_size)
+        return self
 
 
 class SQLiteChunkStore(ChunkStore):
@@ -154,7 +207,7 @@ class SQLiteChunkStore(ChunkStore):
         self._write_to_table(df=metadata, table=self.metadata_table)
 
     def insert(self, chunks: Iterable[NewChunkBatch], **kwargs) -> Iterable[ChunkBatch]:
-        inserted_batches = []
+        min_insertion_chunk_id = self.next_id
         for batch in chunks:
             chunk_ids = pd.Series(
                 np.arange(self.next_id, self.next_id + len(batch), dtype=np.int64)
@@ -172,15 +225,17 @@ class SQLiteChunkStore(ChunkStore):
 
             self._write_to_table(df=chunk_df, table=self.chunk_table)
 
-            inserted_batches.append(
-                ChunkBatch(
-                    chunk_id=chunk_ids,
-                    text=batch.text,
-                    keywords=batch.keywords,
-                )
-            )
+        max_insertion_chunk_id = self.next_id
 
-        return inserted_batches
+        inserted_chunks_iterator = SqlLiteIterator(
+            table=self.chunk_table,
+            engine=self.engine,
+            min_insertion_chunk_id=min_insertion_chunk_id,
+            max_insertion_chunk_id=max_insertion_chunk_id,
+            batch_size=kwargs.get("sql_lite_iterator_batch_size", 100),
+        )
+
+        return inserted_chunks_iterator
 
     def delete(self, chunk_ids: List[ChunkId], **kwargs):
         delete_chunks = delete(self.chunk_table).where(

@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple, Type, TypeVar, Union, final
 
 import pandas as pd
-from langchain.document_loaders import (
+from langchain_community.document_loaders import (
     UnstructuredEmailLoader,
     UnstructuredFileLoader,
     UnstructuredPowerPointLoader,
