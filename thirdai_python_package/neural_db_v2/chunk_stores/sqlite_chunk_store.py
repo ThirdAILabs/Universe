@@ -343,20 +343,20 @@ class SQLiteChunkStore(ChunkStore):
         db_target_path = os.path.join(path, self.db_name)
         shutil.copyfile(self.db_name, db_target_path)
 
-        # remove engine temporarily to pickle the other attributes
-        engine = self.engine
-        self.engine = None
-
+        contents = {k: v for k, v in self.__dict__.items() if k != "engine"}
         pickle_path = os.path.join(path, "object.pkl")
-        pickle_to(self, pickle_path)
-
-        self.engine = engine
+        pickle_to(contents, pickle_path)
 
     @classmethod
     def load(cls, path: str):
         pickle_path = os.path.join(path, "object.pkl")
-        obj = unpickle_from(pickle_path)
+        contents = unpickle_from(pickle_path)
+
+        obj = cls.__new__(cls)
+        obj.__dict__.update(contents)
+
         db_name = os.path.basename(obj.db_name)
         obj.db_name = os.path.join(path, db_name)
         obj.engine = create_engine(f"sqlite:///{obj.db_name}")
+
         return obj
