@@ -2,11 +2,11 @@ from typing import Iterable, Optional, Union
 
 import pandas as pd
 
-from ..core.supervised import Supervised
+from ..core.supervised import SupervisedDataset
 from ..core.types import CustomIdSupervisedBatch, SupervisedBatch
 
 
-class CsvSupervised(Supervised):
+class CsvSupervised(SupervisedDataset):
     def __init__(
         self,
         path: str,

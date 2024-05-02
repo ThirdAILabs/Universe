@@ -45,6 +45,11 @@ class NeuralDB:
         self.insert_chunks(chunk_generator(), **kwargs)
 
     def search(
+        self, query: str, top_k: int, constraints: dict = None, **kwargs
+    ) -> List[Chunk]:
+        return self.search_batch([query], top_k, constraints, **kwargs)[0]
+
+    def search_batch(
         self, queries: List[str], top_k: int, constraints: dict = None, **kwargs
     ) -> List[List[Chunk]]:
         if not constraints:
@@ -58,12 +63,13 @@ class NeuralDB:
         ]
 
         return [
-            self.chunk_store.get_chunks(query_chunk_ids, **kwargs)
+            self.chunk_store.get_chunks(query_chunk_ids)
             for query_chunk_ids in chunk_ids
         ]
 
-    def delete(self, chunk_ids: List[ChunkId], **kwargs):
-        self.retriever.delete(chunk_ids, **kwargs)
+    def delete(self, chunk_ids: List[ChunkId]):
+        self.chunk_store.delete(chunk_ids)
+        self.retriever.delete(chunk_ids)
 
     def upvote(self, queries: List[str], chunk_ids: List[ChunkId], **kwargs):
         self.retriever.upvote(queries, chunk_ids, **kwargs)
@@ -105,8 +111,8 @@ class NeuralDB:
     @staticmethod
     def load_retriever(path: str, retriever_name: str):
         retriever_name_map = {
-            "FinetunableRetriever": FinetunableRetriever,
-            "Mach": Mach,
+            FinetunableRetriever.__class__.__name__: FinetunableRetriever,
+            Mach.__class__.__name__: Mach,
         }
         if retriever_name not in retriever_name_map:
             raise ValueError(f"Class name {retriever_name} not found in registry.")

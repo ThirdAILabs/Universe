@@ -2,11 +2,11 @@ from typing import Iterable, List, Union
 
 import pandas as pd
 
-from ..core.supervised import Supervised
+from ..core.supervised import SupervisedDataset
 from ..core.types import ChunkId, CustomIdSupervisedBatch, SupervisedBatch
 
 
-class InMemorySupervised(Supervised):
+class InMemorySupervised(SupervisedDataset):
     def __init__(
         self,
         queries: List[str],

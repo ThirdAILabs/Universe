@@ -15,19 +15,19 @@ class ChunkColumnMapIterator(data.ColumnMapIterator):
         self,
         iterable: Iterable[ChunkBatch],
         text_columns: Dict[str, str],
-        supervised=False,
+        multi_label=False,
     ):
         data.ColumnMapIterator.__init__(self)
 
         self.iterable = iterable
         self.iterator = iter(self.iterable)
         self.text_columns = text_columns
-        self.supervised = supervised
+        self.multi_label = multi_label
 
     def next(self) -> Optional[data.ColumnMap]:
         id_column = (
             data.columns.TokenArrayColumn
-            if self.supervised
+            if self.multi_label
             else data.columns.TokenColumn
         )
 
@@ -199,7 +199,7 @@ class Mach(Retriever):
         **kwargs,
     ):
         train_data = ChunkColumnMapIterator(
-            samples, text_columns={Mach.TEXT: "query"}, supervised=True
+            samples, text_columns={Mach.TEXT: "query"}, multi_label=True
         )
 
         self.model.train(

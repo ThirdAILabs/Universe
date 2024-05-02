@@ -6,7 +6,7 @@ import pandas as pd
 from .types import ChunkId, CustomIdSupervisedBatch, SupervisedBatch
 
 
-class Supervised(ABC):
+class SupervisedDataset(ABC):
     @abstractmethod
     def samples(
         self,
