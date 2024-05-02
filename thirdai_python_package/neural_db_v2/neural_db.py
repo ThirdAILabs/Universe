@@ -6,7 +6,7 @@ from .chunk_stores import PandasChunkStore, SQLiteChunkStore
 from .core.chunk_store import ChunkStore
 from .core.documents import Document
 from .core.retriever import Retriever
-from .core.supervised import Supervised
+from .core.supervised import SupervisedDataset
 from .core.types import Chunk, ChunkId, CustomIdSupervisedBatch, NewChunkBatch, Score
 from .documents import document_by_name
 from .retrievers import FinetunableRetriever, Mach
@@ -76,7 +76,7 @@ class NeuralDB:
     def associate(self, sources: List[str], targets: List[str], **kwargs):
         self.retriever.associate(sources, targets, **kwargs)
 
-    def supervised_train(self, supervised: Supervised, **kwargs):
+    def supervised_train(self, supervised: SupervisedDataset, **kwargs):
         iterable = supervised.samples()
 
         if isinstance(next(iter(iterable)), CustomIdSupervisedBatch):

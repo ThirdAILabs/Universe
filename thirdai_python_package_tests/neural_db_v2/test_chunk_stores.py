@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import pandas as pd
 import pytest
@@ -174,7 +175,7 @@ def test_chunk_store_basic_operations(chunk_store):
         metadata={"class": "d", "number": None, "time": 8.1, "item": "z"},
     )
 
-    os.system(f"rm -rf {path}")
+    shutil.rmtree(path)
 
     if isinstance(store, SQLiteChunkStore):
         os.remove(os.path.basename(store.db_name))

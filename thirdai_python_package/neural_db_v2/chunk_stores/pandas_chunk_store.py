@@ -1,5 +1,5 @@
 import operator
-import pickle
+import os
 from functools import reduce
 from typing import Dict, Iterable, List, Set, Union
 
@@ -90,7 +90,7 @@ class PandasChunkStore(ChunkStore):
             )
         output_chunks = []
         for i, row in enumerate(chunks.itertuples()):
-            if metadatas is None:
+            if metadatas is not None:
                 metadata = metadatas.iloc[i].to_dict()
                 del metadata["chunk_id"]
             else:
@@ -148,9 +148,14 @@ class PandasChunkStore(ChunkStore):
             for batch in samples
         ]
 
+    @staticmethod
+    def object_pickle_path(path):
+        return os.path.join(path, "object.pkl")
+
     def save(self, path: str):
-        pickle_to(self, path)
+        os.makedirs(path)
+        pickle_to(self, self.object_pickle_path(path))
 
     @classmethod
     def load(cls, path: str):
-        return unpickle_from(path)
+        return unpickle_from(PandasChunkStore.object_pickle_path(path))

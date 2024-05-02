@@ -22,6 +22,6 @@ class SupervisedDataset(ABC):
         if uses_db_id:
             return SupervisedBatch(
                 query=queries,
-                chunk_id=pd.Series([list(map(int, row_ids)) for row_ids in ids]),
+                chunk_id=ids,
             )
         return CustomIdSupervisedBatch(query=queries, custom_id=ids)

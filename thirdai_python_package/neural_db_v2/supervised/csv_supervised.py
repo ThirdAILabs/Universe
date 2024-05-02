@@ -26,12 +26,15 @@ class CsvSupervised(SupervisedDataset):
     ) -> Union[Iterable[SupervisedBatch], Iterable[CustomIdSupervisedBatch]]:
         df = pd.read_csv(self.path)
 
+        ids = df[self.id_column].map(lambda val: str(val).split(self.id_delimiter))
+
+        if not self.uses_db_id:
+            ids = pd.Series([list(map(int, row_ids)) for row_ids in ids])
+
         return [
             self.supervised_samples(
                 queries=df[self.query_column],
-                ids=df[self.id_column].map(
-                    lambda val: str(val).split(self.id_delimiter)
-                ),
+                ids=ids,
                 uses_db_id=self.uses_db_id,
             )
         ]
