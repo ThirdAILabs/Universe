@@ -1,13 +1,13 @@
 import json
 import os
-from typing import Iterable, List, Optional, Union
+from typing import Iterable, List, Optional, Tuple, Union
 
 from .chunk_stores import PandasChunkStore, SQLiteChunkStore
 from .core.chunk_store import ChunkStore
 from .core.documents import Document
 from .core.retriever import Retriever
 from .core.supervised import Supervised
-from .core.types import Chunk, ChunkId, CustomIdSupervisedBatch, NewChunkBatch
+from .core.types import Chunk, ChunkId, CustomIdSupervisedBatch, NewChunkBatch, Score
 from .documents import document_by_name
 from .retrievers import FinetunableRetriever, Mach
 
@@ -46,26 +46,25 @@ class NeuralDB:
 
     def search(
         self, query: str, top_k: int, constraints: dict = None, **kwargs
-    ) -> List[Chunk]:
+    ) -> List[Tuple[Chunk, Score]]:
         return self.search_batch([query], top_k, constraints, **kwargs)[0]
 
     def search_batch(
         self, queries: List[str], top_k: int, constraints: dict = None, **kwargs
-    ) -> List[List[Chunk]]:
+    ) -> List[List[Tuple[Chunk, Score]]]:
         if not constraints:
             results = self.retriever.search(queries, top_k, **kwargs)
         else:
             choices = self.chunk_store.filter_chunk_ids(constraints, **kwargs)
             results = self.retriever.rank(queries, [choices], **kwargs)
 
-        chunk_ids = [
-            [chunk_id for chunk_id, score in query_results] for query_results in results
-        ]
+        chunk_results = []
+        for query_results in results:
+            chunk_ids, scores = list(zip(*query_results))
+            chunks = self.chunk_store.get_chunks(chunk_ids)
+            chunk_results.append(list(zip(chunks, scores)))
 
-        return [
-            self.chunk_store.get_chunks(query_chunk_ids)
-            for query_chunk_ids in chunk_ids
-        ]
+        return chunk_results
 
     def delete(self, chunk_ids: List[ChunkId]):
         self.chunk_store.delete(chunk_ids)
