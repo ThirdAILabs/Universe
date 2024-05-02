@@ -34,7 +34,7 @@ def parse_arguments():
     parser.add_argument(
         "--write_path_prefix",
         type=str,
-        default="./benchmarks-v2/mini_benchmark_datasets/",
+        default="./benchmarks/mini_benchmark_datasets/",
         help="The path prefix to write the mini benchmark datasets to",
     )
     return parser.parse_args()
