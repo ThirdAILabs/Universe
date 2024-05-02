@@ -23,5 +23,5 @@ def csv():
 def test_csv_handles_numeric_columns(csv):
     # Just make sure it doesn't break, which it did previously.
     db = ndb.NeuralDB()
-    db.insert(ndb.CSV(csv, strong_columns=["col"], weak_columns=["col"]))
+    db.insert([ndb.CSV(csv, strong_columns=["col"], weak_columns=["col"])])
     db.search("0", top_k=1)
