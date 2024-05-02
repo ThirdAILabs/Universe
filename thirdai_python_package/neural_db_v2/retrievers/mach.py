@@ -199,3 +199,6 @@ class Mach(Retriever):
 
     def delete(self, chunk_ids: List[ChunkId], **kwargs):
         self.model.erase(ids=chunk_ids)
+
+    def resume(self, ckpt_dir: str):
+        self.model = bolt.MachTrainer.from_checkpoint(ckpt_dir).complete(ckpt_dir=None)
