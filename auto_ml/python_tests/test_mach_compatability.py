@@ -24,10 +24,6 @@ def clinc_model():
     return model
 
 
-def test_definitely_failing():
-    raise ValueError("fAILS ON WINDOWS")
-
-
 def test_mach_compatability(download_clinc_dataset):
     model = clinc_model()
     assert model.is_v1()
