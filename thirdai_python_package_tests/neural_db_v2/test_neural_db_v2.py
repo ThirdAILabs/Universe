@@ -24,7 +24,7 @@ def test_neural_db_v2_save_load_integration(chunk_store, retriever):
     db.insert([ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE)])
 
     queries = ["lorem ipsum", "contrary"]
-    results_before = db.search(queries, top_k=10)
+    results_before = db.search_batch(queries, top_k=10)
 
     save_file = "neural_db_v2_save_file.ndb"
 
@@ -34,7 +34,7 @@ def test_neural_db_v2_save_load_integration(chunk_store, retriever):
     db.save(save_file)
     db = ndb.NeuralDB.load(save_file)
 
-    results_after = db.search(queries, top_k=10)
+    results_after = db.search_batch(queries, top_k=10)
 
     assert results_before == results_after
 

@@ -61,7 +61,7 @@ class NeuralDB:
 
         chunk_results = []
         for query_results in results:
-            chunk_ids, scores = list(zip(*query_results))
+            chunk_ids, scores = [list(tup) for tup in zip(*query_results)]
             chunks = self.chunk_store.get_chunks(chunk_ids)
             chunk_results.append(list(zip(chunks, scores)))
 
@@ -111,8 +111,8 @@ class NeuralDB:
     @staticmethod
     def load_retriever(path: str, retriever_name: str):
         retriever_name_map = {
-            FinetunableRetriever.__class__.__name__: FinetunableRetriever,
-            Mach.__class__.__name__: Mach,
+            FinetunableRetriever.__name__: FinetunableRetriever,
+            Mach.__name__: Mach,
         }
         if retriever_name not in retriever_name_map:
             raise ValueError(f"Class name {retriever_name} not found in registry.")

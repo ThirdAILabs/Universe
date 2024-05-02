@@ -28,7 +28,7 @@ class CsvSupervised(SupervisedDataset):
 
         ids = df[self.id_column].map(lambda val: str(val).split(self.id_delimiter))
 
-        if not self.uses_db_id:
+        if self.uses_db_id:
             ids = pd.Series([list(map(int, row_ids)) for row_ids in ids])
 
         return [
