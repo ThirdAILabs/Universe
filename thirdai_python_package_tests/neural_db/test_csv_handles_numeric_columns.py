@@ -8,9 +8,9 @@ from thirdai import neural_db as ndb
 pytestmark = [pytest.mark.unit]
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def csv():
-    path = f"numeric_csv_{uuid.uuid4()}.csv"
+    path = os.path.abspath(f"numeric_csv_{uuid.uuid4()}.csv")
     pd.DataFrame(
         {
             "col": [0, 1, 2, 3, 4],
