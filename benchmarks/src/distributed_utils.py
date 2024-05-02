@@ -37,7 +37,7 @@ def setup_ray(num_workers=2):
                 "OMP_NUM_THREADS": f"{num_cpu_per_node}",
                 "PYTHONPATH": os.path.join(
                     working_dir, "../../"
-                ),  # Change to your home directory where benchmarks_v2 module is present
+                ),  # Change to your home directory where benchmarks module is present
             },
         },
         ignore_reinit_error=True,

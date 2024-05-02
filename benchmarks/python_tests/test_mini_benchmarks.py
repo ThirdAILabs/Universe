@@ -6,7 +6,7 @@ pytestmark = [pytest.mark.unit]
 
 
 def test_mini_benchmarks():
-    from benchmarks_v2.src.main import main
+    from benchmarks.src.main import main
 
     curr_path = os.path.dirname(os.path.abspath(__file__))
     main(
