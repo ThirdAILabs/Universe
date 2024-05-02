@@ -118,6 +118,10 @@ jobs:
           CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
           CIBW_TEST_COMMAND_WINDOWS: rem
 
+          # Skip tests on windows
+          # TODO(Jerin): Get tests working on windows wheels
+          CIBW_TEST_SKIP: "*win*"
+
           # Build both x86_64 and arm64 (apple silicon)
           CIBW_ARCHS_MACOS: ${{ matrix.archs }}
 
