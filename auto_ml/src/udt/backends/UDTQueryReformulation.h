@@ -13,6 +13,7 @@
 #include <search/src/Flash.h>
 #include <utils/src/SymSpellBackend/symspell.h>
 #include <optional>
+#include <sstream>
 #include <unordered_map>
 
 using IdScorePairs = std::pair<std::vector<std::vector<uint32_t>>,
@@ -51,6 +52,8 @@ class UDTQueryReformulation final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
+
+  std::string modelSummary() const final { return _flash_index->summary(); }
 
   ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
 

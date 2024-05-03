@@ -76,9 +76,7 @@ def get_config(have_user_specified_parameters: bool = False):
     return config
 
 
-def compare_summaries(model, expected_summary):
-    summary = model.summary(print=False)
-
+def compare_summaries(summary, expected_summary):
     summary = textwrap.dedent(summary).strip().replace("\n", "")
 
     expected_summary = re.escape(
@@ -107,7 +105,7 @@ def verify_model_summary(config, params, input_dims, expected_summary):
 
     os.remove(CONFIG_FILE)
 
-    compare_summaries(model, expected_summary)
+    compare_summaries(model.summary(print=False), expected_summary)
 
 
 @pytest.mark.unit
@@ -210,7 +208,45 @@ def test_udt_model_config_override():
     =================================================
     """
 
-    compare_summaries(udt_model._get_model(), expected_summary)
+    compare_summaries(udt_model._get_model().summary(print=False), expected_summary)
+
+
+@pytest.mark.unit
+def test_udt_query_reformulation_model_config_override():
+    from thirdai import deployment
+
+    CONFIG_FILE = "./model_config"
+
+    # Intentionally assigning random param_names to show param names work.
+    config = {
+        "num_tables": {"param_name": "quantum"},
+        "hashes_per_table": {"param_name": "entanglement"},
+        "range": {"param_name": "particles"},
+        "hash_fn": {"param_name": "quarks"},
+    }
+
+    deployment.dump_config(json.dumps(config), CONFIG_FILE)
+
+    udt_model = bolt.UniversalDeepTransformer(
+        target_column="target",
+        dataset_size="small",
+        model_config=CONFIG_FILE,
+        options={
+            "quantum": 5,
+            "entanglement": 2,
+            "particles": 10,
+            "quarks": "densifiedminhash"
+        }
+    )
+    os.remove(CONFIG_FILE)
+
+    expected_summary = f"""
+    num_tables = 5
+    range = 10
+    hash_fn = DensifiedMinhash
+    """
+
+    compare_summaries(udt_model.model_summary(), expected_summary)
 
 
 @pytest.mark.unit

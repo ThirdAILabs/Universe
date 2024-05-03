@@ -11,6 +11,8 @@
 #include <licensing/src/CheckLicense.h>
 #include <licensing/src/entitlements/TrainPermissionsToken.h>
 #include <optional>
+#include <sstream>
+#include <string>
 
 namespace thirdai::search {
 
@@ -60,6 +62,16 @@ class Flash {
   std::pair<std::vector<std::vector<uint32_t>>, std::vector<std::vector<float>>>
   queryBatch(const BoltBatch& batch, uint32_t top_k,
              bool pad_zeros = false) const;
+
+  std::string summary() const {
+    // Only num_tables, range, and hash_fn for now.
+    // Getting the other numbers is too involved.
+    std::stringstream ss;
+    ss << "num_tables = " << _hashtable->numTables() << std::endl;
+    ss << "range = " << _hashtable->tableRange() << std::endl;
+    ss << "hash_fn = " << _hash_function->getName() << std::endl;
+    return ss.str();
+  }
 
   ar::ConstArchivePtr toArchive() const;
 
