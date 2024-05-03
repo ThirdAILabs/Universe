@@ -7,7 +7,7 @@ from ndbv2_utils import compute_accuracy, load_chunks
 from thirdai.neural_db_v2.core.types import ChunkBatch, SupervisedBatch
 from thirdai.neural_db_v2.retrievers import FinetunableRetriever
 
-pytestmark = [pytest.mark.release]
+pytestmark = [pytest.mark.unit]
 
 
 def build_retriever(chunk_df: pd.DataFrame) -> FinetunableRetriever:

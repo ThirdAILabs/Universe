@@ -12,7 +12,7 @@ from model_test_utils import get_udt_census_income_model
 from test_udt_simple import make_simple_trained_model
 from thirdai import bolt
 
-pytestmark = [pytest.mark.release]
+pytestmark = [pytest.mark.unit]
 
 # I created this key on Keygen, it should be good only for the small census
 # dataset (the first 10 lines of the normal census training set)

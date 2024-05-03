@@ -5,7 +5,7 @@ from thirdai.neural_db.documents import CSV, DocumentDataSource, DocumentManager
 from thirdai.neural_db.inverted_index import InvertedIndex
 from thirdai.neural_db.supervised_datasource import Sup, SupDataSource
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit, pytest.mark.unit]
 
 
 @pytest.mark.parametrize("shard_size, expected_num_shards", [(2000, 3), (6000, 1)])

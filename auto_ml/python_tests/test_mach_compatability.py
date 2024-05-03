@@ -2,7 +2,7 @@ import pytest
 from download_dataset_fixtures import download_clinc_dataset
 from thirdai import bolt
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit, pytest.mark.unit]
 
 
 def clinc_model():

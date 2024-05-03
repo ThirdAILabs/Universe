@@ -9,7 +9,7 @@ import pytest
 from google.cloud import storage
 from thirdai import dataset
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit, pytest.mark.unit]
 
 
 BUCKET = "testing-bucket"

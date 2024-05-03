@@ -6,7 +6,7 @@ from moto.server import ThreadedMotoServer
 from telemetry_testing_utils import THIRDAI_TEST_TELEMETRY_PORT, run_udt_telemetry_test
 from thirdai import telemetry
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit, pytest.mark.unit]
 
 THIRDAI_TEST_TELEMETRY_S3_DIR = "s3://test_bucket/test_telemetry_dir"
 THIRDAI_TEST_TELEMETRY_BUCKET = "test_bucket"

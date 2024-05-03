@@ -7,7 +7,7 @@ from model_test_utils import (
 )
 from thirdai import bolt
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit, pytest.mark.unit]
 
 ACCURACY_WITHOUT_THRESHOLD = 0.8
 ACCURACY_WITH_THRESHOLD = 0.9

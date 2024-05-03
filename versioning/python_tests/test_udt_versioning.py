@@ -69,7 +69,7 @@ def test_load_old_udt_checkpoint():
     "error_string",
     [
         pytest.param(INTERNAL_ERROR_STRING, marks=pytest.mark.unit),
-        pytest.param(EXTERNAL_ERROR_STRING, marks=pytest.mark.release),
+        pytest.param(EXTERNAL_ERROR_STRING, marks=pytest.mark.unit),
     ],
 )
 def test_load_old_udt_model(error_string):

@@ -5,7 +5,7 @@ import boto3
 import pytest
 from moto import mock_aws
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit, pytest.mark.unit]
 
 batch_size = 64
 num_lines_per_file = 100

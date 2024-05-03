@@ -32,7 +32,7 @@ from thirdai import bolt
 from thirdai import neural_db as ndb
 from thirdai.neural_db.models.models import merge_results
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit, pytest.mark.unit]
 
 
 @pytest.fixture(scope="session")

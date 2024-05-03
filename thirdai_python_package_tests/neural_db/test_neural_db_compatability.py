@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 from thirdai import neural_db as ndb
 
-pytestmark = [pytest.mark.release]
+pytestmark = [pytest.mark.unit]
 
 
 def current_dir():

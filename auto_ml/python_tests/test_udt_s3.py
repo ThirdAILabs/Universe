@@ -7,7 +7,7 @@ from model_test_utils import compute_evaluate_accuracy, get_udt_census_income_mo
 from moto import mock_aws
 from thirdai import bolt
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit, pytest.mark.unit]
 
 
 # These fixtures allow us to take in a parameter to our tests called "s3" that

@@ -13,7 +13,7 @@ from thirdai.neural_db_v2.chunk_stores.constraints import (
 )
 from thirdai.neural_db_v2.core.types import CustomIdSupervisedBatch, NewChunkBatch
 
-pytestmark = [pytest.mark.release]
+pytestmark = [pytest.mark.unit]
 
 
 def assert_chunk_ids(inserted_batches, expected_chunk_ids):
