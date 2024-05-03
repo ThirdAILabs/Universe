@@ -340,10 +340,8 @@ Tokens InvertedIndex::tokenizeText(std::string text) const {
   }
 
   if (_lowercase) {
-    Tokens lower_tokens;
-    lower_tokens.reserve(tokens.size());
-    for (const auto& token : tokens) {
-      lower_tokens.push_back(text::lower(token));
+    for (auto& token : tokens) {
+      token = text::lower(token);
     }
     tokens = lower_tokens;
   }
