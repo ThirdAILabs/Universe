@@ -5,8 +5,7 @@ from typing import Dict, Iterable, List, Set, Union
 
 import numpy as np
 import pandas as pd
-
-from thirdai_python_package.neural_db.utils import pickle_to, unpickle_from
+from thirdai.neural_db.utils import pickle_to, unpickle_from
 
 from ..core.chunk_store import ChunkStore
 from ..core.types import (

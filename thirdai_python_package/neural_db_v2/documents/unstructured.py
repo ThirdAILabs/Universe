@@ -1,8 +1,7 @@
 from typing import Iterable, List
 
 import pandas as pd
-
-from thirdai_python_package.neural_db.parsing_utils.unstructured_parse import (
+from thirdai.neural_db.parsing_utils.unstructured_parse import (
     EmlParse,
     PptxParse,
     TxtParse,

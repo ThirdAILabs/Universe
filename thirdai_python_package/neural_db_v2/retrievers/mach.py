@@ -1,10 +1,7 @@
 from typing import Dict, Iterable, List, Optional, Tuple
 
 from thirdai import bolt, data
-
-from thirdai_python_package.neural_db.models.mach_defaults import (
-    autotune_from_scratch_min_max_epochs,
-)
+from thirdai.neural_db.models.mach_defaults import autotune_from_scratch_min_max_epochs
 
 from ..core.retriever import Retriever
 from ..core.types import ChunkBatch, ChunkId, Score, SupervisedBatch

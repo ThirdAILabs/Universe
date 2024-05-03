@@ -20,8 +20,7 @@ from sqlalchemy import (
     select,
     text,
 )
-
-from thirdai_python_package.neural_db.utils import pickle_to, unpickle_from
+from thirdai.neural_db.utils import pickle_to, unpickle_from
 
 from ..core.chunk_store import ChunkStore
 from ..core.types import (

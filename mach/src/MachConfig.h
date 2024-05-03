@@ -151,7 +151,7 @@ class MachConfig {
 
   // Data processing
   std::string _tokenizer = "char-4";
-  std::string _contextual_encoding = "local";
+  std::string _contextual_encoding = "none";
   bool _lowercase = true;
 
   // Model parameters
