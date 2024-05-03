@@ -2,10 +2,6 @@ import os
 import shutil
 from pathlib import Path
 
-import nltk
-
-nltk.download("punkt")
-
 import pytest
 from base_connectors.base import get_base_connectors
 from document_common_tests import assess_doc_methods_properties
