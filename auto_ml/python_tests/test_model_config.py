@@ -235,8 +235,8 @@ def test_udt_query_reformulation_model_config_override():
             "quantum": 5,
             "entanglement": 2,
             "particles": 10,
-            "quarks": "densifiedminhash"
-        }
+            "quarks": "densifiedminhash",
+        },
     )
     os.remove(CONFIG_FILE)
 
