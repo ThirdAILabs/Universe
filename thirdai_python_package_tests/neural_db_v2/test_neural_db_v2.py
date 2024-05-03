@@ -21,7 +21,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
 def test_neural_db_v2_save_load_integration(chunk_store, retriever):
     db = ndb.NeuralDB(chunk_store=chunk_store(), retriever=retriever())
 
-    db.insert([ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE)])
+    db.insert([ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE)], epochs=4)
 
     queries = ["lorem ipsum", "contrary"]
     results_before = db.search_batch(queries, top_k=10)
@@ -38,7 +38,7 @@ def test_neural_db_v2_save_load_integration(chunk_store, retriever):
 
     assert results_before == results_after
 
-    db.insert([ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE)])
+    db.insert([ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE)], epochs=1)
 
     shutil.rmtree(save_file)
 
