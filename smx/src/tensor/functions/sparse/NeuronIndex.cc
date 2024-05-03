@@ -89,7 +89,7 @@ void LshIndex::query(const float* query, uint32_t* candidates,
 
 void LshIndex::onUpdate() {
   _updates_since_rebuild++;
-  _updates_per_new_hash_fn++;
+  _updates_since_new_hash_fn++;
 
   if (_frozen) {
     return;
