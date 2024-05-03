@@ -236,7 +236,6 @@ setup(
             "s3fs",
             "mock",
             "scikit-learn",
-            "beir",
             "pyOpenSSL>22.1.0",
             "ray",
             "grpcio",
