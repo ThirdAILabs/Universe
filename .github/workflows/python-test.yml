@@ -67,6 +67,7 @@ jobs:
       
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 180
 
       - name: Run python release tests
         run: cd build && python3 -m pytest ../ --ignore-glob=../deps -v -m release --durations=0
