@@ -5,6 +5,7 @@
 #include <pybind11/stl.h>
 #include <search/src/FinetunableRetriever.h>
 #include <search/src/InvertedIndex.h>
+#include <optional>
 
 namespace thirdai::search::python {
 
@@ -75,13 +76,14 @@ void createSearchSubmodule(py::module_& module) {
 
   py::class_<InvertedIndex, std::shared_ptr<InvertedIndex>>(search_submodule,
                                                             "InvertedIndex")
-      .def(py::init<size_t, float, float, float, bool, bool>(),
+      .def(py::init<size_t, float, float, float, bool, bool,
+                    std::optional<size_t>>(),
            py::arg("max_docs_to_score") =
                InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE,
            py::arg("idf_cutoff_frac") = InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC,
            py::arg("k1") = InvertedIndex::DEFAULT_K1,
            py::arg("b") = InvertedIndex::DEFAULT_B, py::arg("stem") = true,
-           py::arg("lowercase") = true)
+           py::arg("lowercase") = true, py::arg("k_grams") = std::nullopt)
       .def("index", &InvertedIndex::index, py::arg("ids"), py::arg("docs"))
       .def("update", &InvertedIndex::update, py::arg("ids"),
            py::arg("extra_tokens"), py::arg("ignore_missing_ids") = true)

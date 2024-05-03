@@ -5,6 +5,7 @@
 #include <utils/text/PorterStemmer.h>
 #include <utils/text/StringManipulation.h>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -17,6 +18,8 @@ using Token = std::string;
 using Tokens = std::vector<Token>;
 
 using DocScore = std::pair<DocId, float>;
+
+// struct InvertedIndexConfig()
 
 class InvertedIndex {
  public:
@@ -31,7 +34,8 @@ class InvertedIndex {
   explicit InvertedIndex(size_t max_docs_to_score = DEFAULT_MAX_DOCS_TO_SCORE,
                          float idf_cutoff_frac = DEFAULT_IDF_CUTOFF_FRAC,
                          float k1 = DEFAULT_K1, float b = DEFAULT_B,
-                         bool stem = true, bool lowercase = true);
+                         bool stem = true, bool lowercase = true,
+                         std::optional<size_t> k_grams = std::nullopt);
 
   explicit InvertedIndex(const ar::Archive& archive);
 
@@ -135,6 +139,8 @@ class InvertedIndex {
   float _k1, _b;
 
   bool _stem, _lowercase;
+
+  std::optional<size_t> _k_grams;
 
   friend class cereal::access;
   template <class Archive>

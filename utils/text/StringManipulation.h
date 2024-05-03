@@ -31,7 +31,7 @@ std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k);
 
 std::vector<std::string> wordLevelCharKGrams(
     const std::vector<std::string>& words, uint32_t k,
-    size_t min_word_length = 4);
+    size_t min_word_length = 4, bool soft_start = false);
 
 std::string deleteRandomCharacters(const std::string& input,
                                    size_t num_to_delete, std::mt19937& rng);

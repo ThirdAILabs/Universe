@@ -4,6 +4,7 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/types/vector.hpp>
+#include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <licensing/src/CheckLicense.h>
@@ -11,6 +12,7 @@
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <exception>
 #include <limits>
 #include <memory>
@@ -22,13 +24,15 @@
 namespace thirdai::search {
 
 InvertedIndex::InvertedIndex(size_t max_docs_to_score, float idf_cutoff_frac,
-                             float k1, float b, bool stem, bool lowercase)
+                             float k1, float b, bool stem, bool lowercase,
+                             std::optional<size_t> k_grams)
     : _max_docs_to_score(max_docs_to_score),
       _idf_cutoff_frac(idf_cutoff_frac),
       _k1(k1),
       _b(b),
       _stem(stem),
-      _lowercase(lowercase) {
+      _lowercase(lowercase),
+      _k_grams(k_grams) {
   licensing::checkLicense();
 }
 
@@ -332,7 +336,7 @@ Tokens InvertedIndex::tokenizeText(std::string text) const {
   Tokens tokens = text::splitOnWhiteSpace(text);
 
   if (_stem) {
-    return text::porter_stemmer::stem(tokens, _lowercase);
+    tokens = text::porter_stemmer::stem(tokens, _lowercase);
   }
 
   if (_lowercase) {
@@ -341,6 +345,13 @@ Tokens InvertedIndex::tokenizeText(std::string text) const {
     for (const auto& token : tokens) {
       lower_tokens.push_back(text::lower(token));
     }
+    tokens = lower_tokens;
+  }
+
+  if (_k_grams) {
+    auto k_grams = text::wordLevelCharKGrams(
+        tokens, *_k_grams, /* min_word_length= */ 1, /* soft_start= */ true);
+    tokens.insert(tokens.end(), k_grams.begin(), k_grams.end());
   }
 
   return tokens;
@@ -409,6 +420,10 @@ ar::ConstArchivePtr InvertedIndex::toArchive() const {
   map->set("stem", ar::boolean(_stem));
   map->set("lowercase", ar::boolean(_lowercase));
 
+  if (_k_grams) {
+    map->set("k_grams", ar::u64(*_k_grams));
+  }
+
   return map;
 }
 
@@ -420,7 +435,8 @@ InvertedIndex::InvertedIndex(const ar::Archive& archive)
       _k1(archive.f32("k1")),
       _b(archive.f32("b")),
       _stem(archive.boolean("stem")),
-      _lowercase(archive.boolean("lowercase")) {
+      _lowercase(archive.boolean("lowercase")),
+      _k_grams(archive.getOpt<ar::U64>("k_grams")) {
   licensing::entitlements().verifySaveLoad();
 
   const auto& token_to_docs = archive.getAs<ar::MapStrVecU64>("token_to_docs");
