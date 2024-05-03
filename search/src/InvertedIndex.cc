@@ -341,6 +341,7 @@ Tokens InvertedIndex::tokenizeText(std::string text) const {
     for (const auto& token : tokens) {
       lower_tokens.push_back(text::lower(token));
     }
+    tokens = std::move(lower_tokens);
   }
 
   return tokens;
