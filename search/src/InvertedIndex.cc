@@ -337,13 +337,10 @@ Tokens InvertedIndex::tokenizeText(std::string text) const {
 
   if (_stem) {
     tokens = text::porter_stemmer::stem(tokens, _lowercase);
-  }
-
-  if (_lowercase) {
+  } else if (_lowercase) {
     for (auto& token : tokens) {
       token = text::lower(token);
     }
-    tokens = lower_tokens;
   }
 
   if (_k_grams) {
