@@ -39,7 +39,7 @@ def train_udt_text_classification(download_clinc_dataset):
     return model
 
 
-@pytest.mark.unit
+@pytest.mark.release
 def test_udt_text_classification_accuarcy(
     train_udt_text_classification, download_clinc_dataset
 ):
@@ -49,7 +49,7 @@ def test_udt_text_classification_accuarcy(
     assert compute_evaluate_accuracy(model, test_filename) >= ACCURACY_THRESHOLD
 
 
-@pytest.mark.unit
+@pytest.mark.release
 def test_udt_text_classification_save_load(
     train_udt_text_classification, download_clinc_dataset
 ):
@@ -61,7 +61,7 @@ def test_udt_text_classification_save_load(
     )
 
 
-@pytest.mark.unit
+@pytest.mark.release
 def test_udt_text_classification_predict_single(
     train_udt_text_classification, download_clinc_dataset
 ):
@@ -72,7 +72,7 @@ def test_udt_text_classification_predict_single(
     assert acc >= ACCURACY_THRESHOLD
 
 
-@pytest.mark.unit
+@pytest.mark.release
 def test_udt_text_classification_predict_batch(
     train_udt_text_classification, download_clinc_dataset
 ):

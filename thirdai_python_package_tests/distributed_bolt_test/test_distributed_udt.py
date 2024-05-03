@@ -322,7 +322,7 @@ def test_udt_mach_distributed(download_scifact_dataset):
 # works as just initializing the model should work. Also, `udt_training_loop_per_worker`
 # runs in a separate environment hence we need to pass in license state to its thirdai
 # namespace
-@pytest.mark.unit
+@pytest.mark.release
 def test_udt_licensed_training():
     def udt_training_loop_per_worker(config):
         # Ideally, we should just call thirdai.licensing.setup/set_license_path here
@@ -378,7 +378,7 @@ def test_udt_licensed_training():
 # works as just initializing the model should work. Also, `udt_training_loop_per_worker`
 # runs in a separate environment hence we need to pass in license state to its thirdai
 # namespace
-@pytest.mark.unit
+@pytest.mark.release
 def test_udt_licensed_fail():
     def udt_training_loop_per_worker(config):
         with pytest.raises(

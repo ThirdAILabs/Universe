@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 from thirdai import neural_db as ndb
 
-pytestmark = [pytest.mark.unit, pytest.mark.unit]
+pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 
 def textfile():

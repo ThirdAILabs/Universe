@@ -8,7 +8,7 @@ from licensing_utils import (
     run_udt_training_routine,
 )
 
-pytestmark = [pytest.mark.unit]
+pytestmark = [pytest.mark.release]
 
 
 def this_should_require_a_license_search():

@@ -3,7 +3,7 @@ import platform
 
 import pytest
 
-pytestmark = [pytest.mark.unit, pytest.mark.unit]
+pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 import time
 

@@ -124,7 +124,7 @@ def compare_explanations(explanations_1, explanations_2, assert_mode):
     platform.system() == "Windows",
     reason="Throwing an exception leads to an access violation on windows.",
 )
-@pytest.mark.unit
+@pytest.mark.release
 def test_temporal_not_in_data_type_throws():
     with pytest.raises(
         ValueError,
@@ -153,7 +153,7 @@ def test_temporal_not_in_data_type_throws():
         )
 
 
-@pytest.mark.unit
+@pytest.mark.release
 def test_save_load():
     save_file = "savefile.bolt"
     model = make_simple_trained_model(integer_label=False)
@@ -182,7 +182,7 @@ def test_save_load():
     compare_explanations(explain_res, saved_explain_res, assert_mode="equal")
 
 
-@pytest.mark.unit
+@pytest.mark.release
 def test_multiple_predict_returns_same_results():
     model = make_simple_trained_model(integer_label=False)
     first = model.predict(single_sample())
@@ -194,7 +194,7 @@ def test_multiple_predict_returns_same_results():
     assert (first_batch == second_batch).all()
 
 
-@pytest.mark.unit
+@pytest.mark.release
 def test_index_changes_predict_result():
     model = make_simple_trained_model(integer_label=False)
     first = model.predict(single_sample())
@@ -207,7 +207,7 @@ def test_index_changes_predict_result():
     assert (second != third).any()
 
 
-@pytest.mark.unit
+@pytest.mark.release
 def test_embedding_representation_returns_correct_dimension():
     for embedding_dim in [128, 256]:
         model = make_simple_trained_model(embedding_dim=embedding_dim)
@@ -241,7 +241,7 @@ def test_entity_embedding(embedding_dim, integer_label):
         assert (weights[labels_to_neurons[output_label]] == embedding).all()
 
 
-@pytest.mark.unit
+@pytest.mark.release
 def test_entity_embedding_fails_on_large_label():
     model = make_simple_trained_model(embedding_dim=100, integer_label=True)
 
@@ -252,7 +252,7 @@ def test_entity_embedding_fails_on_large_label():
         embedding = model.get_entity_embedding(100000)
 
 
-@pytest.mark.unit
+@pytest.mark.release
 def test_explanations_total_percentage():
     model = make_simple_trained_model(integer_label=False)
     explanations = model.explain(single_sample())
@@ -263,7 +263,7 @@ def test_explanations_total_percentage():
     assert total_percentage > 0.99 and total_percentage < 1.01
 
 
-@pytest.mark.unit
+@pytest.mark.release
 def test_different_explanation_target_returns_different_results():
     model = make_simple_trained_model(integer_label=False)
 
@@ -286,7 +286,7 @@ def test_explanations_target_label_format():
         model.explain(single_sample(), target_class="1")
 
 
-@pytest.mark.unit
+@pytest.mark.release
 def test_neuron_id_to_target_class_map():
     model = make_simple_trained_model(integer_label=False)
     prediction = model.predict(single_sample())
@@ -303,7 +303,7 @@ def test_neuron_id_to_target_class_map():
     assert all([seen for seen in labels_seen.values()])
 
 
-@pytest.mark.unit
+@pytest.mark.release
 def test_reset_clears_history():
     model = make_simple_trained_model(integer_label=False)
     model.reset_temporal_trackers()
@@ -318,7 +318,7 @@ def test_reset_clears_history():
     assert (first == after_reset).all()
 
 
-@pytest.mark.unit
+@pytest.mark.release
 def test_works_without_temporal_relationships():
     write_lines_to_file(
         TRAIN_FILE,

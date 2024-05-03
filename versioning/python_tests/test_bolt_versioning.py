@@ -50,7 +50,7 @@ def test_save_load_bolt_model():
     "error_string",
     [
         pytest.param(INTERNAL_ERROR_STRING, marks=pytest.mark.unit),
-        pytest.param(EXTERNAL_ERROR_STRING, marks=pytest.mark.unit),
+        pytest.param(EXTERNAL_ERROR_STRING, marks=pytest.mark.release),
     ],
 )
 def test_load_old_bolt_model(error_string):

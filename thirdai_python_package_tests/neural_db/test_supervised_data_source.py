@@ -7,7 +7,7 @@ from thirdai.neural_db.neural_db import DocumentManager
 from thirdai.neural_db.sharded_documents import shard_data_source
 from thirdai.neural_db.supervised_datasource import SupDataSource
 
-pytestmark = [pytest.mark.unit, pytest.mark.unit]
+pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 
 def expected_rows(queries, labels, delimiter):

@@ -6,7 +6,7 @@ from ndbv2_utils import compute_accuracy, load_chunks
 from thirdai.neural_db_v2.core.types import ChunkBatch, SupervisedBatch
 from thirdai.neural_db_v2.retrievers import Mach
 
-pytestmark = [pytest.mark.unit]
+pytestmark = [pytest.mark.release]
 
 
 @pytest.fixture(scope="session")
