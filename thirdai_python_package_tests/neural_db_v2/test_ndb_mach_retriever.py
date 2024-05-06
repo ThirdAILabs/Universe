@@ -54,7 +54,7 @@ def test_ndb_mach_retriever_search(build_retriever, load_chunks):
 def test_ndb_mach_retriever_supervised_train(build_retriever, load_chunks):
     retriever = build_retriever
 
-    queries = [str(chunk_id) for chunk_id in load_chunks["id"]]
+    queries = pd.Series([str(chunk_id) for chunk_id in load_chunks["id"]])
 
     supervised_batch = SupervisedBatch(
         query=queries, chunk_id=load_chunks["id"].map(lambda id: [id])
