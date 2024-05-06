@@ -8,7 +8,7 @@ from ..core.types import ChunkBatch, ChunkId, Score, SupervisedBatch
 
 class FinetunableRetriever(Retriever):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__()
         self.retriever = search.FinetunableRetriever()
 
     def search(
@@ -41,7 +41,18 @@ class FinetunableRetriever(Retriever):
 
     def supervised_train(self, samples: Iterable[SupervisedBatch], **kwargs):
         for batch in samples:
-            self.retriever.finetune(doc_ids=batch.chunk_id, queries=batch.query)
+            self.retriever.finetune(
+                doc_ids=batch.chunk_id.to_list(), queries=batch.query.to_list()
+            )
 
     def delete(self, chunk_ids: List[ChunkId], **kwargs):
         self.retriever.remove(ids=chunk_ids)
+
+    def save(self, path: str):
+        self.retriever.save(path)
+
+    @classmethod
+    def load(cls, path: str):
+        instance = cls()
+        instance.retriever = search.FinetunableRetriever.load(path)
+        return instance

@@ -7,11 +7,11 @@ from sqlalchemy import Table
 class Constraint(ABC):
     @abstractmethod
     def sql_condition(self, column_name: str, table: Table):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def pd_filter(self, column_name: str, df: pd.DataFrame):
-        pass
+        raise NotImplementedError
 
 
 class EqualTo(Constraint):

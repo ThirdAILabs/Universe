@@ -40,18 +40,6 @@ class Chunk(NewChunk):
     chunk_id: ChunkId
 
 
-@dataclass
-class CustomIdSupervisedSample:
-    query: str
-    custom_id: Union[List[str], List[int]]
-
-
-@dataclass
-class SupervisedSample:
-    query: str
-    chunk_id: List[int]
-
-
 """Design choices for batch objects:
 - Column oriented so we can efficiently convert it to a ColumnMap
 - Pandas series instead of Columns.
@@ -117,9 +105,25 @@ class ChunkBatch:
 
 
 @dataclass
+class CustomIdSupervisedSample:
+    query: str
+    custom_id: Union[List[str], List[int]]
+
+
+@dataclass
+class SupervisedSample:
+    query: str
+    chunk_id: List[ChunkId]
+
+
+@dataclass
 class CustomIdSupervisedBatch:
     query: pt.Series[str]
     custom_id: Union[pt.Series[List[str]], pt.Series[List[int]]]
+
+    def __post_init__(self):
+        self.query = self.query.reset_index(drop=True)
+        self.custom_id = self.custom_id.reset_index(drop=True)
 
     def __getitem__(self, i: int):
         return CustomIdSupervisedSample(
@@ -134,7 +138,11 @@ class CustomIdSupervisedBatch:
 @dataclass
 class SupervisedBatch:
     query: pt.Series[str]
-    chunk_id: pt.Series[List[int]]
+    chunk_id: pt.Series[List[ChunkId]]
+
+    def __post_init__(self):
+        self.query = self.query.reset_index(drop=True)
+        self.chunk_id = self.chunk_id.reset_index(drop=True)
 
     def __getitem__(self, i: int):
         return SupervisedSample(

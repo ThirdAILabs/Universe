@@ -1,4 +1,6 @@
 import operator
+import os
+import shutil
 import uuid
 from functools import reduce
 from typing import Dict, Iterable, List, Optional, Set
@@ -15,10 +17,10 @@ from sqlalchemy import (
     Table,
     create_engine,
     delete,
-    func,
     select,
     text,
 )
+from thirdai.neural_db.utils import pickle_to, unpickle_from
 
 from ..core.chunk_store import ChunkStore
 from ..core.types import (
@@ -101,14 +103,11 @@ class SqlLiteIterator:
 
 
 class SQLiteChunkStore(ChunkStore):
-    def __init__(self, in_memory=True, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, **kwargs):
+        super().__init__()
 
-        if in_memory:
-            self.engine = create_engine(f"sqlite:///:memory:")
-        else:
-            self.db_name = f"{uuid.uuid4()}.db"
-            self.engine = create_engine(f"sqlite:///{self.db_name}")
+        self.db_name = f"{uuid.uuid4()}.db"
+        self.engine = create_engine(f"sqlite:///{self.db_name}")
 
         self.metadata = MetaData()
 
@@ -238,27 +237,25 @@ class SQLiteChunkStore(ChunkStore):
         return inserted_chunks_iterator
 
     def delete(self, chunk_ids: List[ChunkId], **kwargs):
-        delete_chunks = delete(self.chunk_table).where(
-            self.chunk_table.c.chunk_id.in_(chunk_ids)
-        )
-        delete_metadata = delete(self.metadata_table).where(
-            self.metadata_table.c.chunk_id.in_(chunk_ids)
-        )
         with self.engine.begin() as conn:
+            delete_chunks = delete(self.chunk_table).where(
+                self.chunk_table.c.chunk_id.in_(chunk_ids)
+            )
             conn.execute(delete_chunks)
-            conn.execute(delete_metadata)
+
+            if self.metadata_table is not None:
+                delete_metadata = delete(self.metadata_table).where(
+                    self.metadata_table.c.chunk_id.in_(chunk_ids)
+                )
+                conn.execute(delete_metadata)
 
     def get_chunks(self, chunk_ids: List[ChunkId], **kwargs) -> List[Chunk]:
-
         id_to_chunk = {}
 
-        chunk_stmt = select(self.chunk_table).where(
-            self.chunk_table.c.chunk_id.in_(chunk_ids)
-        )
-        metadata_stmt = select(self.metadata_table).where(
-            self.metadata_table.c.chunk_id.in_(chunk_ids)
-        )
         with self.engine.connect() as conn:
+            chunk_stmt = select(self.chunk_table).where(
+                self.chunk_table.c.chunk_id.in_(chunk_ids)
+            )
             for row in conn.execute(chunk_stmt).all():
                 id_to_chunk[row.chunk_id] = Chunk(
                     custom_id=row.custom_id,
@@ -268,10 +265,15 @@ class SQLiteChunkStore(ChunkStore):
                     chunk_id=row.chunk_id,
                     metadata=None,
                 )
-            for row in conn.execute(metadata_stmt).all():
-                metadata = row._asdict()
-                del metadata["chunk_id"]
-                id_to_chunk[row.chunk_id].metadata = metadata
+
+            if self.metadata_table is not None:
+                metadata_stmt = select(self.metadata_table).where(
+                    self.metadata_table.c.chunk_id.in_(chunk_ids)
+                )
+                for row in conn.execute(metadata_stmt).all():
+                    metadata = row._asdict()
+                    del metadata["chunk_id"]
+                    id_to_chunk[row.chunk_id].metadata = metadata
 
         chunks = []
         for chunk_id in chunk_ids:
@@ -286,6 +288,9 @@ class SQLiteChunkStore(ChunkStore):
     ) -> Set[ChunkId]:
         if not len(constraints):
             raise ValueError("Cannot call filter_chunk_ids with empty constraints.")
+
+        if self.metadata_table is None:
+            raise ValueError("Cannot filter constraints with no metadata.")
 
         condition = reduce(
             operator.and_,
@@ -331,3 +336,26 @@ class SQLiteChunkStore(ChunkStore):
             )
 
         return remapped_batches
+
+    def save(self, path: str):
+        os.makedirs(path)
+        db_target_path = os.path.join(path, self.db_name)
+        shutil.copyfile(self.db_name, db_target_path)
+
+        contents = {k: v for k, v in self.__dict__.items() if k != "engine"}
+        pickle_path = os.path.join(path, "object.pkl")
+        pickle_to(contents, pickle_path)
+
+    @classmethod
+    def load(cls, path: str):
+        pickle_path = os.path.join(path, "object.pkl")
+        contents = unpickle_from(pickle_path)
+
+        obj = cls.__new__(cls)
+        obj.__dict__.update(contents)
+
+        db_name = os.path.basename(obj.db_name)
+        obj.db_name = os.path.join(path, db_name)
+        obj.engine = create_engine(f"sqlite:///{obj.db_name}")
+
+        return obj
