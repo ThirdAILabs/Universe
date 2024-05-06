@@ -7,7 +7,7 @@ import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, List, Optional, Union
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import requests
 from pydantic import BaseModel, ValidationError
@@ -138,6 +138,9 @@ class Bazaar:
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
         self._cache_dir = cache_dir
+        parsed_url = urlparse(base_url)
+        if "/api" not in parsed_url.path:
+            raise ValueError("base_url must end with '/api' or '/api/'.")
         self._base_url = base_url
         self._login_instance = None
 
