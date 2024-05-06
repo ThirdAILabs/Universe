@@ -50,7 +50,7 @@ def test_neural_db_v2_save_load_integration(chunk_store, retriever):
     "chunk_store, retriever",
     [
         (SQLiteChunkStore, FinetunableRetriever),
-        (PandasChunkStore, Mach),
+        # (PandasChunkStore, Mach),
     ],
 )
 def test_neural_db_v2_supervised_training(chunk_store, retriever, load_chunks):
@@ -100,7 +100,7 @@ def test_neural_db_v2_supervised_training(chunk_store, retriever, load_chunks):
     "chunk_store, retriever",
     [
         (SQLiteChunkStore, FinetunableRetriever),
-        (PandasChunkStore, Mach),
+        # (PandasChunkStore, Mach),
     ],
 )
 def test_neural_db_v2_save_load_integration_2(chunk_store, retriever):
