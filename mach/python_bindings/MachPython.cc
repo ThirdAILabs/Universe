@@ -3,12 +3,14 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <data/src/ColumnMapIterator.h>
 #include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
 #include <mach/src/MachConfig.h>
 #include <mach/src/MachRetriever.h>
+#include <mach/src/MachTrainer.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <limits>
@@ -261,6 +263,30 @@ void defineMach(py::module_& module) {
       .def("save", &MachRetriever::save, py::arg("filename"),
            py::arg("with_optimizer") = false)
       .def_static("load", &MachRetriever::load, py::arg("filename"));
+
+  py::class_<DataCheckpoint>(module, "DataCheckpoint")
+      .def(py::init<data::ColumnMapIteratorPtr, std::string,
+                    std::vector<std::string>>(),
+           py::arg("data_iter"), py::arg("id_col"), py::arg("text_cols"));
+
+  py::class_<MachTrainer>(module, "MachTrainer")
+      .def(py::init<MachRetrieverPtr, DataCheckpoint>(), py::arg("model"),
+           py::arg("data"))
+      .def("complete", &MachTrainer::complete, py::arg("ckpt_dir"))
+      .def_static("from_checkpoint", &MachTrainer::fromCheckpoint,
+                  py::arg("ckpt_dir"))
+      .def("strong_weak_cols", &MachTrainer::strongWeakCols,
+           py::arg("strong_cols"), py::arg("weak_cols"))
+      .def("learning_rate", &MachTrainer::learningRate,
+           py::arg("learning_rate"))
+      .def("min_max_epochs", &MachTrainer::minMaxEpochs, py::arg("min_epochs"),
+           py::arg("max_epochs"))
+      .def("metrics", &MachTrainer::metrics, py::arg("metrics"))
+      .def("max_in_memory_batches", &MachTrainer::maxInMemoryBatches,
+           py::arg("max_in_memory_batches"))
+      .def("batch_size", &MachTrainer::batchSize, py::arg("batch_size"))
+      .def("early_stop", &MachTrainer::earlyStop, py::arg("metric"),
+           py::arg("threshold"));
 }
 
 }  // namespace thirdai::mach::python

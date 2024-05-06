@@ -160,7 +160,7 @@ metrics::History Trainer::train(
   callbacks.onTrainBegin();
 
   uint32_t num_epochs = _model->epochs() + epochs;
-  for (; _model->epochs() < num_epochs; _model->incrementEpochs()) {
+  while (_model->epochs() < num_epochs) {
     if (_freeze_hash_tables_epoch &&
         _model->epochs() == *_freeze_hash_tables_epoch) {
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
@@ -190,11 +190,12 @@ metrics::History Trainer::train(
       train_state->resetStepsSinceVal();
     }
 
+    _model->incrementEpochs();
+
     callbacks.onEpochEnd();
 
     if (train_state->isTrainingStopped()) {
       // TODO(Nicholas): Print stuff and have more graceful termination
-      _model->incrementEpochs();
       return *_history;
     }
   }
@@ -277,7 +278,7 @@ metrics::History Trainer::train_with_dataset_loader(
 
   uint32_t num_epochs = _model->epochs() + epochs;
 
-  for (; _model->epochs() < num_epochs; _model->incrementEpochs()) {
+  while (_model->epochs() < num_epochs) {
     if (_freeze_hash_tables_epoch &&
         _model->epochs() == *_freeze_hash_tables_epoch) {
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
@@ -296,12 +297,16 @@ metrics::History Trainer::train_with_dataset_loader(
     (*_history)["epoch_times"].push_back(epoch_timer.seconds());
 
     train_metrics.reset();
-    callbacks.onEpochEnd();
+
     if (validation_data && !train_state->compareStepsSinceVal(0)) {
       validate(*validation_data, validation_metrics,
                use_sparsity_in_validation);
       train_state->resetStepsSinceVal();
     }
+
+    _model->incrementEpochs();
+
+    callbacks.onEpochEnd();
 
     if (train_state->isTrainingStopped()) {
       // TODO(Nicholas): Print stuff and have more graceful termination
@@ -360,7 +365,7 @@ metrics::History Trainer::train_with_data_loader(
 
   uint32_t num_epochs = _model->epochs() + epochs;
 
-  for (; _model->epochs() < num_epochs; _model->incrementEpochs()) {
+  while (_model->epochs() < num_epochs) {
     if (_freeze_hash_tables_epoch &&
         _model->epochs() == *_freeze_hash_tables_epoch) {
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
@@ -377,12 +382,16 @@ metrics::History Trainer::train_with_data_loader(
     (*_history)["epoch_times"].push_back(epoch_timer.seconds());
 
     train_metrics.reset();
-    callbacks.onEpochEnd();
+
     if (validation_data && !train_state->compareStepsSinceVal(0)) {
       validate(*validation_data, validation_metrics,
                use_sparsity_in_validation);
       train_state->resetStepsSinceVal();
     }
+
+    _model->incrementEpochs();
+
+    callbacks.onEpochEnd();
 
     if (train_state->isTrainingStopped()) {
       // TODO(Nicholas): Print stuff and have more graceful termination

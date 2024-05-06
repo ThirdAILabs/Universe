@@ -501,6 +501,7 @@ ar::ConstArchivePtr Model::toArchive(bool with_optimizer) const {
    */
   auto metadata = ar::Map::make();
   metadata->set("train_steps", ar::u64(_train_steps));
+  metadata->set("epochs", ar::u64(_epochs));
   metadata->set("total_training_samples", ar::u64(_total_training_samples));
   metadata->set("uuid", ar::str(_model_uuid));
   model->set("metadata", metadata);
@@ -587,6 +588,7 @@ std::shared_ptr<Model> Model::fromArchive(const ar::Archive& archive) {
   auto metadata = archive.get("metadata");
   model->_model_uuid = metadata->str("uuid");
   model->_train_steps = metadata->u64("train_steps");
+  model->_epochs = metadata->getOr<ar::U64>("epochs", 0);
   model->_total_training_samples = metadata->u64("total_training_samples");
 
   return model;
