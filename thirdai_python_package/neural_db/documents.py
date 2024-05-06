@@ -726,14 +726,14 @@ class CSV(Document):
         return self.orig_to_assigned_id
 
     def strong_text_from_row(self, row) -> str:
-        return " ".join(row[col] for col in self.strong_columns)
+        return " ".join(str(row[col]) for col in self.strong_columns)
 
     def strong_text(self, element_id: int) -> str:
         row = self.table.row_as_dict(element_id)
         return self.strong_text_from_row(row)
 
     def weak_text_from_row(self, row) -> str:
-        return " ".join(row[col] for col in self.weak_columns)
+        return " ".join(str(row[col]) for col in self.weak_columns)
 
     def weak_text(self, element_id: int) -> str:
         row = self.table.row_as_dict(element_id)
