@@ -24,7 +24,7 @@ from thirdai.neural_db_v2 import (
     TextFile,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.unit]
+pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 
 def all_empty_strings(series: pd.Series):

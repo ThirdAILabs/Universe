@@ -2,7 +2,7 @@ import pytest
 from ndb_utils import create_simple_dataset
 from thirdai import neural_db
 
-pytestmark = [pytest.mark.unit, pytest.mark.unit]
+pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 
 def test_neural_db_associate(create_simple_dataset):

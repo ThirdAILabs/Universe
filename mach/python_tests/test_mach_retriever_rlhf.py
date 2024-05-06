@@ -6,7 +6,7 @@ import pytest
 from mach_retriever_utils import QUERY_FILE, train_simple_mach_retriever
 from thirdai import bolt, data
 
-pytestmark = [pytest.mark.unit, pytest.mark.unit]
+pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 
 def get_upvote_samples():

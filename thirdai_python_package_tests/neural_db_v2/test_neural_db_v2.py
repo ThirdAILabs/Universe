@@ -50,15 +50,12 @@ def test_neural_db_v2_save_load_integration(chunk_store, retriever):
 @pytest.mark.parametrize(
     "chunk_store, retriever",
     [
-        # (SQLiteChunkStore, FinetunableRetriever),
-        # (PandasChunkStore, FinetunableRetriever),
+        (SQLiteChunkStore, FinetunableRetriever),
         (PandasChunkStore, Mach),
     ],
 )
 def test_neural_db_v2_supervised_training(chunk_store, retriever, load_chunks):
     db = ndb.NeuralDB(chunk_store=chunk_store(), retriever=retriever())
-
-    print("CREATED NEURALDB")
 
     db.insert(
         [

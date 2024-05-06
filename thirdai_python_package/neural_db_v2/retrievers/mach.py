@@ -28,22 +28,15 @@ class ChunkColumnMapIterator(data.ColumnMapIterator):
             else data.columns.TokenColumn
         )
 
-        print("IN COLUMN MAP ITERATOR NEXT CALL")
-
         try:
-            print("before next")
             batch = next(self.iterator)
-            print("after next")
             columns = {
                 Mach.ID: id_column(batch.chunk_id.to_list(), dim=data.columns.MAX_DIM)
             }
-            print("after creating columns")
             for name, attr in self.text_columns.items():
                 columns[name] = data.columns.StringColumn(getattr(batch, attr))
-            print("before return function")
             return data.ColumnMap(columns)
         except StopIteration:
-            print("FOUND STOP ITERATION")
             return None
 
     def restart(self) -> None:
@@ -160,7 +153,6 @@ class Mach(Retriever):
         early_stop_metric_threshold: float = 0.95,
         **kwargs,
     ):
-        print("CREATING COLUMN MAP ITERATOR")
         train_data = ChunkColumnMapIterator(
             chunks, text_columns={Mach.STRONG: "keywords", Mach.WEAK: "text"}
         )
@@ -181,8 +173,6 @@ class Mach(Retriever):
 
         callbacks = callbacks or []
         callbacks.append(early_stop_callback)
-
-        print("STARTING COLDSTART CALL")
 
         self.model.coldstart(
             data=train_data,

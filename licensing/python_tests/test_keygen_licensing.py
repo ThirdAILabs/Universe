@@ -5,7 +5,7 @@ from licensing_utils import (
     run_udt_training_routine,
 )
 
-pytestmark = [pytest.mark.unit]
+pytestmark = [pytest.mark.release]
 
 # Note that neither of these tests check what happens when we don't activate.
 # at all. This is because these tests are running in CI with a valid license

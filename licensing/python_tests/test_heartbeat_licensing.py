@@ -12,7 +12,7 @@ from licensing_utils import (
     run_udt_training_routine,
 )
 
-pytestmark = [pytest.mark.unit]
+pytestmark = [pytest.mark.release]
 
 invalid_heartbeat_location = f"http://localhost:97531"
 
