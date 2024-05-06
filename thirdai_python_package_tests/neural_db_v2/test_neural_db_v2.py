@@ -15,7 +15,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
     "chunk_store, retriever",
     [
         (SQLiteChunkStore, FinetunableRetriever),
-        (PandasChunkStore, Mach),
+        # (PandasChunkStore, Mach),
     ],
 )
 def test_neural_db_v2_save_load_integration(chunk_store, retriever):
@@ -94,3 +94,38 @@ def test_neural_db_v2_supervised_training(chunk_store, retriever, load_chunks):
         os.remove(csv_file_name)
 
     clean_up_sql_lite_db(db.chunk_store)
+
+
+@pytest.mark.parametrize(
+    "chunk_store, retriever",
+    [
+        (SQLiteChunkStore, FinetunableRetriever),
+        (PandasChunkStore, Mach),
+    ],
+)
+def test_neural_db_v2_save_load_integration_2(chunk_store, retriever):
+    db = ndb.NeuralDB(chunk_store=chunk_store(), retriever=retriever())
+
+    db.insert([ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE)], epochs=4)
+
+    queries = ["lorem ipsum", "contrary"]
+    results_before = db.search_batch(queries, top_k=10)
+
+    save_file = "neural_db_v2_save_file.ndb"
+
+    if os.path.exists(save_file):
+        shutil.rmtree(save_file)
+
+    db.save(save_file)
+    db = ndb.NeuralDB.load(save_file)
+
+    results_after = db.search_batch(queries, top_k=10)
+
+    assert results_before == results_after
+
+    db.insert([ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE)], epochs=1)
+
+    shutil.rmtree(save_file)
+
+    if isinstance(db.chunk_store, SQLiteChunkStore):
+        os.remove(os.path.basename(db.chunk_store.db_name))
