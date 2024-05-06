@@ -263,7 +263,7 @@ def make_db_and_training_manager(num_models_per_shard=2, makes_checkpoint=True):
 
 
 # Asserts that the final checkpoint created is the same as the db whose reference is held rn.
-@pytest.mark.release
+@pytest.mark.unit
 def test_neural_db_checkpoint_on_single_mach(setup_and_cleanup):
     db = train_neural_db_with_checkpoint(num_shards=1, num_models_per_shard=1)
     loaded_db = ndb.NeuralDB.from_checkpoint(
@@ -273,7 +273,7 @@ def test_neural_db_checkpoint_on_single_mach(setup_and_cleanup):
     assert_same_dbs(db, loaded_db)
 
 
-@pytest.mark.release
+@pytest.mark.unit
 @pytest.mark.parametrize("num_shards", [1, 2])
 def test_neural_db_checkpoint_on_mach_mixture(setup_and_cleanup, num_shards):
     db = train_neural_db_with_checkpoint(num_shards=num_shards, num_models_per_shard=2)
@@ -283,7 +283,7 @@ def test_neural_db_checkpoint_on_mach_mixture(setup_and_cleanup, num_shards):
     assert_same_dbs(db, loaded_db)
 
 
-@pytest.mark.release
+@pytest.mark.unit
 def test_interrupted_training_single_mach(setup_and_cleanup):
     interrupted_training(
         num_shards=1, num_models_per_shard=1, interrupt_function=interrupt_immediately
@@ -296,7 +296,7 @@ def test_interrupted_training_single_mach(setup_and_cleanup):
     )
 
 
-@pytest.mark.release
+@pytest.mark.unit
 def test_interrupted_training_mach_mixture(setup_and_cleanup):
     interrupted_training(
         num_shards=2, num_models_per_shard=2, interrupt_function=interrupt_immediately
@@ -309,7 +309,7 @@ def test_interrupted_training_mach_mixture(setup_and_cleanup):
     )
 
 
-@pytest.mark.release
+@pytest.mark.unit
 def test_reset_mach_model():
     model1 = Mach(
         id_col="id",
@@ -333,7 +333,7 @@ def test_reset_mach_model():
     assert_same_objects(model1, model2)
 
 
-@pytest.mark.release
+@pytest.mark.unit
 def test_meta_save_load_for_mach_mixture(setup_and_cleanup):
     # This test asserts that the label to segment map is saved and loaded correctly.
 
@@ -419,7 +419,7 @@ def test_tracker_save_load(setup_and_cleanup):
     assert str(new_tracker.vlc_config) == str(tracker.vlc_config)
 
 
-@pytest.mark.release
+@pytest.mark.unit
 def test_save_load_training_data_manager(setup_and_cleanup):
     _, training_manager, _ = make_db_and_training_manager(makes_checkpoint=True)
 
@@ -443,7 +443,7 @@ def test_save_load_training_data_manager(setup_and_cleanup):
     assert_same_data_sources(save_load_manager.train_source, new_manager.train_source)
 
 
-@pytest.mark.release
+@pytest.mark.unit
 def test_training_progress_manager_no_checkpointing(setup_and_cleanup):
     _, training_manager, checkpoint_dir = make_db_and_training_manager(
         makes_checkpoint=False
@@ -476,7 +476,7 @@ def test_training_progress_manager_no_checkpointing(setup_and_cleanup):
     assert_no_checkpoints(training_manager.save_load_manager)
 
 
-@pytest.mark.release
+@pytest.mark.unit
 def test_training_progress_manager_with_resuming_without_sources():
     db, training_manager, checkpoint_dir = make_db_and_training_manager(
         makes_checkpoint=True
@@ -522,7 +522,7 @@ def test_training_progress_manager_with_resuming_without_sources():
     )
 
 
-@pytest.mark.release
+@pytest.mark.unit
 def test_training_progress_manager_with_resuming(setup_and_cleanup):
     db, training_manager, checkpoint_dir = make_db_and_training_manager(
         makes_checkpoint=True

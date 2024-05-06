@@ -27,6 +27,7 @@ class NeuralDB:
             chunks=chunks,
             **kwargs,
         )
+        print("ADDED CHUNKS TO STORE")
         self.retriever.insert(
             chunks=stored_chunks,
             **kwargs,
@@ -40,6 +41,7 @@ class NeuralDB:
         def chunk_generator():
             for doc in docs:
                 for chunk in doc.chunks():
+                    print("IN CHUNK GENERATOR")
                     yield chunk
 
         self.insert_chunks(chunk_generator(), **kwargs)

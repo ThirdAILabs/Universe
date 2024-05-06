@@ -3,7 +3,7 @@ import pytest
 from telemetry_testing_utils import THIRDAI_TEST_TELEMETRY_PORT, run_udt_telemetry_test
 from thirdai import telemetry
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit, pytest.mark.unit]
 
 THIRDAI_TEST_TELEMETRY_DIR = "test_telemetry_dir"
 

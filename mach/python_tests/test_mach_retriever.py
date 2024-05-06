@@ -6,7 +6,7 @@ from download_dataset_fixtures import download_scifact_dataset
 from mach_retriever_utils import QUERY_FILE, train_simple_mach_retriever
 from thirdai import bolt, data
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit, pytest.mark.unit]
 
 
 def check_search_accuracy(model, supervised_tst, expected_accuracy):

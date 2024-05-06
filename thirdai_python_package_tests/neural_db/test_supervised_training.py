@@ -7,7 +7,7 @@ from ndb_utils import CSV_FILE, DOCX_FILE, PDF_FILE
 from thirdai import neural_db as ndb
 from thirdai.gen import QAGenMethod
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit, pytest.mark.unit]
 
 
 def get_label_from_same_shard(db: ndb.NeuralDB, original_label: int, number_labels):

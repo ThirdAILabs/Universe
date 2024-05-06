@@ -5,7 +5,7 @@ import pytest
 from download_dataset_fixtures import download_brazilian_houses_dataset
 from thirdai import bolt
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit, pytest.mark.unit]
 
 MAE_THRESHOLD = 0.3
 
