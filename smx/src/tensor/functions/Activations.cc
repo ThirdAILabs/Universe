@@ -1,6 +1,8 @@
 #include <smx/src/tensor/CsrTensor.h>
 #include <smx/src/tensor/DenseTensor.h>
 #include <smx/src/tensor/Dtype.h>
+#include <cmath>
+#include <sstream>
 #include <stdexcept>
 
 namespace thirdai::smx {
@@ -208,7 +210,7 @@ CsrTensorPtr softmax(const CsrTensorPtr& in) {
     size_t start = offsets[n];
     size_t end = offsets[n + 1];
 
-    float max = 0.0;
+    float max = std::numeric_limits<float>::lowest();
     for (size_t i = start; i < end; i++) {
       if (x[i] > max) {
         max = x[i];
