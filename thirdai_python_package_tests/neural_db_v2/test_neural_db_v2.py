@@ -16,7 +16,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
     [
         (SQLiteChunkStore, FinetunableRetriever),
         (PandasChunkStore, FinetunableRetriever),
-        # (PandasChunkStore, Mach),
+        (PandasChunkStore, Mach),
     ],
 )
 def test_neural_db_v2_save_load_integration(chunk_store, retriever):
