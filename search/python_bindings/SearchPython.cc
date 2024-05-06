@@ -75,23 +75,23 @@ void createSearchSubmodule(py::module_& module) {
 
   py::class_<InvertedIndex, std::shared_ptr<InvertedIndex>>(search_submodule,
                                                             "InvertedIndex")
-      .def(py::init<size_t, float, float, float, bool, bool>(),
+      .def(py::init<size_t, float, float, float, bool, bool, size_t>(),
            py::arg("max_docs_to_score") =
                InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE,
            py::arg("idf_cutoff_frac") = InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC,
            py::arg("k1") = InvertedIndex::DEFAULT_K1,
            py::arg("b") = InvertedIndex::DEFAULT_B, py::arg("stem") = true,
-           py::arg("lowercase") = true)
+           py::arg("lowercase") = true,
+           py::arg("shard_size") = InvertedIndex::DEFAULT_SHARD_SIZE)
       .def("index", &InvertedIndex::index, py::arg("ids"), py::arg("docs"))
-      .def("update", &InvertedIndex::update, py::arg("ids"),
-           py::arg("extra_tokens"), py::arg("ignore_missing_ids") = true)
       .def("query", &InvertedIndex::queryBatch, py::arg("queries"),
            py::arg("k"))
-      .def("query", &InvertedIndex::query, py::arg("query"), py::arg("k"))
+      .def("query", &InvertedIndex::query, py::arg("query"), py::arg("k"),
+           py::arg("parallelize") = true)
       .def("rank", &InvertedIndex::rankBatch, py::arg("queries"),
            py::arg("candidates"), py::arg("k"))
       .def("rank", &InvertedIndex::rank, py::arg("query"),
-           py::arg("candidates"), py::arg("k"))
+           py::arg("candidates"), py::arg("k"), py::arg("parallelize") = true)
       .def("remove", &InvertedIndex::remove, py::arg("ids"))
       .def("size", &InvertedIndex::size)
       .def("save", &InvertedIndex::save, py::arg("filename"))

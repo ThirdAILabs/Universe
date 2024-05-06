@@ -9,9 +9,16 @@
 
 namespace thirdai::search::tests {
 
-TEST(InvertedIndexTests, BasicRetrieval) {
-  InvertedIndex index;
+InvertedIndex indexWithShardSize(size_t shard_size) {
+  return InvertedIndex(
+      /*max_docs_to_score=*/InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE,
+      /*idf_cutoff_frac=*/InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC,
+      /*k1=*/InvertedIndex::DEFAULT_K1, /*b=*/InvertedIndex::DEFAULT_B,
+      /*stem=*/true,
+      /*lowercase=*/true, /*shard_size=*/shard_size);
+}
 
+void runBasicRetrievalTest(InvertedIndex& index) {
   index.index({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, {{"a b c d e g"},
                                                         {"a b c d"},
                                                         {"1 2 3"},
@@ -42,6 +49,18 @@ TEST(InvertedIndexTests, BasicRetrieval) {
   // These candidates are a subset of the original results plus docs 5 & 2 which
   // score 0 are added to test they are not returned.
   checkRank(index, {"f g"}, {8, 5, 6, 2, 7}, {7, 6, 8});
+}
+
+TEST(InvertedIndexTests, BasicRetrieval) {
+  InvertedIndex index;
+  runBasicRetrievalTest(index);
+  ASSERT_EQ(index.nShards(), 1);
+}
+
+TEST(InvertedIndexTests, BasicRetrievalSharded) {
+  InvertedIndex index = indexWithShardSize(3);
+  runBasicRetrievalTest(index);
+  ASSERT_EQ(index.nShards(), 4);
 }
 
 TEST(InvertedIndexTests, LessFrequentTokensScoreHigher) {
@@ -131,8 +150,9 @@ TEST(InvertedIndexTests, SyntheticDataset) {
 
   auto [ids, docs, queries] = makeDocsAndQueries(vocab_size, n_docs);
 
-  InvertedIndex index;
+  InvertedIndex index = indexWithShardSize(240);
   index.index(ids, docs);
+  ASSERT_GT(index.nShards(), 1);
 
   auto results = index.queryBatch(queries, /*k=*/5);
 
@@ -144,7 +164,7 @@ TEST(InvertedIndexTests, SyntheticDataset) {
   }
 
   // Check that building index incrementally gets the same results.
-  InvertedIndex incremental_index;
+  InvertedIndex incremental_index = indexWithShardSize(240);
   size_t n_chunks = 10;
   size_t chunksize = n_docs / n_chunks;
   for (int i = 0; i < n_chunks; i++) {
@@ -165,9 +185,13 @@ TEST(InvertedIndexTests, SaveLoad) {
 
   auto [ids, docs, queries] = makeDocsAndQueries(vocab_size, n_docs);
 
-  InvertedIndex index;
+  InvertedIndex index = indexWithShardSize(24);
+
   index.index({ids.begin(), ids.begin() + n_docs / 2},
               {docs.begin(), docs.begin() + n_docs / 2});
+
+  ASSERT_GT(index.nShards(), 1);
+
   auto original_partial_results = index.queryBatch(queries, /*k=*/5);
 
   std::string save_path = "./test_partial_index";

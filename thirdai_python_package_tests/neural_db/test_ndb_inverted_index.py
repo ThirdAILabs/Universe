@@ -49,23 +49,3 @@ def test_ndb_inverted_index(download_scifact_dataset, shard_size, expected_num_s
 
     print(f"{acc=}")
     assert acc >= 0.52  # Should be ~0.5367 for 3 shards and 0.53 for 1 shard
-
-    supervised_data = SupDataSource(
-        doc_manager=doc_manager,
-        query_col="QUERY",
-        data=[
-            Sup(
-                csv=supervised_trn,
-                query_column="QUERY",
-                id_column="DOC_ID",
-                id_delimiter=":",
-            )
-        ],
-        id_delimiter=":",
-    )
-    index.supervised_train(supervised_data)
-
-    acc = accuracy()
-
-    print(f"{acc=}")
-    assert acc >= 0.72  # Should be ~0.7267 for 3 shards and 0.73 for 1 shard

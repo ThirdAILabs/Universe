@@ -28,25 +28,24 @@ class InvertedIndex {
   static constexpr float DEFAULT_IDF_CUTOFF_FRAC = 0.2;
   static constexpr float DEFAULT_K1 = 1.2;
   static constexpr float DEFAULT_B = 0.75;
+  static constexpr size_t DEFAULT_SHARD_SIZE = 10000000;
 
   explicit InvertedIndex(size_t max_docs_to_score = DEFAULT_MAX_DOCS_TO_SCORE,
                          float idf_cutoff_frac = DEFAULT_IDF_CUTOFF_FRAC,
                          float k1 = DEFAULT_K1, float b = DEFAULT_B,
-                         bool stem = true, bool lowercase = true);
+                         bool stem = true, bool lowercase = true,
+                         size_t shard_size = DEFAULT_SHARD_SIZE);
 
   explicit InvertedIndex(const ar::Archive& archive);
 
   void index(const std::vector<DocId>& ids,
              const std::vector<std::string>& docs);
 
-  void update(const std::vector<DocId>& ids,
-              const std::vector<std::string>& extra_tokens,
-              bool ignore_missing_ids = true);
-
   std::vector<std::vector<DocScore>> queryBatch(
       const std::vector<std::string>& queries, uint32_t k) const;
 
-  std::vector<DocScore> query(const std::string& query, uint32_t k) const;
+  std::vector<DocScore> query(const std::string& query, uint32_t k,
+                              bool parallelize = true) const;
 
   std::vector<std::vector<DocScore>> rankBatch(
       const std::vector<std::string>& queries,
@@ -55,7 +54,7 @@ class InvertedIndex {
 
   std::vector<DocScore> rank(const std::string& query,
                              const std::unordered_set<DocId>& candidates,
-                             uint32_t k) const;
+                             uint32_t k, bool parallelize = true) const;
 
   void remove(const std::vector<DocId>& ids);
 
@@ -65,6 +64,8 @@ class InvertedIndex {
   }
 
   size_t size() const { return _doc_lengths.size(); }
+
+  size_t nShards() const { return _shards.size(); }
 
   static std::vector<DocScore> topk(
       const std::unordered_map<DocId, float>& doc_scores, uint32_t k);
@@ -120,7 +121,7 @@ class InvertedIndex {
       const std::vector<std::pair<Token, float>>& tokens_and_idfs) const;
 
   std::vector<Shard> _shards;
-  size_t _max_shard_size = 10000000;
+  size_t _shard_size;
 
   std::unordered_map<Token, float> _token_to_idf;
   std::unordered_map<DocId, uint64_t> _doc_lengths;
