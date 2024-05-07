@@ -31,7 +31,7 @@ def create_deployment_identifier(
 
 
 def construct_deployment_url(host, deployment_id):
-    return urljoin(host, deployment_id)
+    return urljoin(host, deployment_id) + "/"
 
 
 def check_deployment_decorator(func):
