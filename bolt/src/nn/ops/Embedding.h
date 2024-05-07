@@ -102,6 +102,8 @@ class Embedding final : public Op,
 
   static std::string type() { return "emb"; }
 
+  void swapActivation(ActivationFunction new_act) { _act_func = new_act; }
+
  private:
   inline void applyActivationFunction(float* activations) const;
 

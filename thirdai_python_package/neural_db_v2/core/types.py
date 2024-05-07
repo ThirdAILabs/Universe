@@ -4,6 +4,7 @@ from typing import List, Optional, Union
 import numpy as np
 import pandas as pd
 from pandera import typing as pt
+from thirdai import data
 
 # We typedef doc ID to anticipate switching over to string IDs
 ChunkId = int
@@ -37,18 +38,6 @@ class Chunk(NewChunk):
 
     # A unique identifier assigned by a chunk store.
     chunk_id: ChunkId
-
-
-@dataclass
-class CustomIdSupervisedSample:
-    query: str
-    custom_id: Union[List[str], List[int]]
-
-
-@dataclass
-class SupervisedSample:
-    query: str
-    chunk_id: List[int]
 
 
 """Design choices for batch objects:
@@ -106,14 +95,35 @@ class ChunkBatch:
     text: pt.Series[str]
     keywords: pt.Series[str]
 
+    def __post_init__(self):
+        self.chunk_id = self.chunk_id.reset_index(drop=True)
+        self.text = self.text.reset_index(drop=True)
+        self.keywords = self.keywords.reset_index(drop=True)
+
     def to_df(self):
         return pd.DataFrame(self.__dict__)
+
+
+@dataclass
+class CustomIdSupervisedSample:
+    query: str
+    custom_id: Union[List[str], List[int]]
+
+
+@dataclass
+class SupervisedSample:
+    query: str
+    chunk_id: List[ChunkId]
 
 
 @dataclass
 class CustomIdSupervisedBatch:
     query: pt.Series[str]
     custom_id: Union[pt.Series[List[str]], pt.Series[List[int]]]
+
+    def __post_init__(self):
+        self.query = self.query.reset_index(drop=True)
+        self.custom_id = self.custom_id.reset_index(drop=True)
 
     def __getitem__(self, i: int):
         return CustomIdSupervisedSample(
@@ -128,12 +138,16 @@ class CustomIdSupervisedBatch:
 @dataclass
 class SupervisedBatch:
     query: pt.Series[str]
-    chunk_id: pt.Series[List[int]]
+    chunk_id: pt.Series[List[ChunkId]]
+
+    def __post_init__(self):
+        self.query = self.query.reset_index(drop=True)
+        self.chunk_id = self.chunk_id.reset_index(drop=True)
 
     def __getitem__(self, i: int):
         return SupervisedSample(
             query=self.query[i],
-            custom_id=self.chunk_id[i],
+            chunk_id=self.chunk_id[i],
         )
 
     def to_df(self):

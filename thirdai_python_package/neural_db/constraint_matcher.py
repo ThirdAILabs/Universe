@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+import warnings
 from collections import defaultdict
 from typing import Any, Dict, Generic, Iterable, List, Optional, Set, TypeVar
 
@@ -165,8 +166,16 @@ class ConstraintValue:
             raise RuntimeError(
                 "ConstraintValue cannot accept non-None value and is_any=True at the same time."
             )
-        self._value = value
-        self._is_any = is_any
+
+        if value == "__any__":
+            self._value = None
+            self._is_any = True
+            warnings.warn(
+                "Setting the metadata value to '__any__' treats it as a wildcard that matches any value, which differs from the standard behavior where the value is set exactly as provided."
+            )
+        else:
+            self._value = value
+            self._is_any = is_any
 
     def any(self):
         return self._is_any
@@ -188,16 +197,26 @@ class ConstraintIndex(Generic[ItemT]):
             self._any_value.add(item)
         else:
             value = constraint_value.value()
-            if not value in self._match_value:
-                self._match_value[value] = set()
-            self._match_value[constraint_value.value()].add(item)
+            if isinstance(value, list) or isinstance(value, set):
+                for sub_value in value:
+                    if not sub_value in self._match_value:
+                        self._match_value[sub_value] = set()
+                    self._match_value[sub_value].add(item)
+            else:
+                if not value in self._match_value:
+                    self._match_value[value] = set()
+                self._match_value[value].add(item)
 
     def delete(self, item: ItemT, constraint_value: ConstraintValue) -> None:
         if constraint_value.any():
             self._any_value.remove(item)
         else:
             value = constraint_value.value()
-            self._match_value[constraint_value.value()].remove(item)
+            if isinstance(value, list) or isinstance(value, set):
+                for sub_value in value:
+                    self._match_value[sub_value].remove(item)
+            else:
+                self._match_value[value].remove(item)
 
 
 class ConstraintMatcher(Generic[ItemT]):

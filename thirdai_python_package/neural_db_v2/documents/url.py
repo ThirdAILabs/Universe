@@ -1,9 +1,7 @@
 from typing import Iterable
 
-import pandas as pd
+import thirdai.neural_db.parsing_utils.url_parse as url_parse
 from requests.models import Response
-
-import thirdai_python_package.neural_db.parsing_utils.url_parse as url_parse
 
 from ..core.documents import Document
 from ..core.types import NewChunkBatch

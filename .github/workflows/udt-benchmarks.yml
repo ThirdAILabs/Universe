@@ -44,8 +44,8 @@ jobs:
           BRANCH_UDT_BENCHMARK_SLACK_WEBHOOK: ${{secrets.BRANCH_UDT_BENCHMARK_SLACK_WEBHOOK}}
         run: >- 
           bin/docker-benchmarking-run.sh "export MLFLOW_TRACKING_USERNAME=$USERNAME && export MLFLOW_TRACKING_PASSWORD=$PASSWORD && 
-          python3 -m Universe.benchmarks_v2.src.main --runner udt query_reformulation temporal rlhf --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --official_slack_webhook $UDT_BENCHMARK_SLACK_WEBHOOK --branch_slack_webhook $BRANCH_UDT_BENCHMARK_SLACK_WEBHOOK --branch_name ${GITHUB_REF##*/} &&
-          python3 -m Universe.benchmarks_v2.src.slack_benchmark_results --runner udt query_reformulation temporal rlhf --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --official_slack_webhook $UDT_BENCHMARK_SLACK_WEBHOOK --branch_slack_webhook $BRANCH_UDT_BENCHMARK_SLACK_WEBHOOK --branch_name ${GITHUB_REF##*/}"
+          python3 -m Universe.benchmarks.src.main --runner udt query_reformulation temporal rlhf --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --official_slack_webhook $UDT_BENCHMARK_SLACK_WEBHOOK --branch_slack_webhook $BRANCH_UDT_BENCHMARK_SLACK_WEBHOOK --branch_name ${GITHUB_REF##*/} &&
+          python3 -m Universe.benchmarks.src.slack_benchmark_results --runner udt query_reformulation temporal rlhf --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com --official_slack_webhook $UDT_BENCHMARK_SLACK_WEBHOOK --branch_slack_webhook $BRANCH_UDT_BENCHMARK_SLACK_WEBHOOK --branch_name ${GITHUB_REF##*/}"
       - name: Delete Container
         run: sudo docker system prune -a -f
 

@@ -173,6 +173,8 @@ neural_db_deps = [
     # lxml is a dependency of trafilatura. We install lxml[html_clean] to fix
     # this error https://github.com/adbar/trafilatura/issues/532
     "lxml[html_clean]",
+    "openai",
+    "tqdm",
 ]
 
 neural_db_v2_deps = ["pandas", "pandera"]
@@ -234,7 +236,6 @@ setup(
             "s3fs",
             "mock",
             "scikit-learn",
-            "beir",
             "pyOpenSSL>22.1.0",
             "ray",
             "grpcio",

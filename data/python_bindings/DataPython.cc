@@ -1,5 +1,6 @@
 #include "DataPython.h"
 #include <bolt/python_bindings/PybindUtils.h>
+#include <data/python_bindings/PyColumnMapIterator.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/Loader.h>
 #include <data/src/TensorConversion.h>
@@ -12,6 +13,7 @@
 #include <data/src/transformations/DyadicInterval.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
+#include <data/src/transformations/NextWordPrediction.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/StringCast.h>
@@ -70,9 +72,13 @@ void createDataSubmodule(py::module_& dataset_submodule) {
 
   createTransformationsSubmodule(dataset_submodule);
 
-  py::class_<ColumnMapIterator, ColumnMapIteratorPtr>(dataset_submodule,
-                                                      "ColumnMapIterator")
-      .def("next", &ColumnMapIterator::next);
+  py::class_<ColumnMapIterator, PyColumnMapIterator,
+             std::shared_ptr<ColumnMapIterator>>(dataset_submodule,
+                                                 "ColumnMapIterator")
+      .def(py::init<>())
+      .def("next", &ColumnMapIterator::next)
+      .def("resource_name", &ColumnMapIterator::resourceName)
+      .def("restart", &ColumnMapIterator::restart);
 
   py::class_<CsvIterator, std::shared_ptr<CsvIterator>, ColumnMapIterator>(
       dataset_submodule, "CsvIterator")
@@ -190,6 +196,8 @@ auto decimalArrayColumnFromNumpy(const NumpyArray<float>& array,
 
 void createColumnsSubmodule(py::module_& dataset_submodule) {
   auto columns_submodule = dataset_submodule.def_submodule("columns");
+
+  columns_submodule.attr("MAX_DIM") = std::numeric_limits<uint32_t>::max();
 
   py::class_<Column, ColumnPtr>(columns_submodule, "Column")
       .def("dim", &Column::dim)
@@ -413,6 +421,13 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("row_id_salt") = global_random::nextSeed())
       .def("augment_map_input", &ColdStartTextAugmentation::augmentMapInput,
            py::arg("document"));
+
+  py::class_<NextWordPrediction, Transformation,
+             std::shared_ptr<NextWordPrediction>>(transformations_submodule,
+                                                  "NextWordPrediction")
+      .def(py::init<std::string, std::string, std::string>(),
+           py::arg("input_column"), py::arg("context_column"),
+           py::arg("target_column"));
 #endif
 
   py::class_<VariableLengthConfig,
