@@ -96,6 +96,8 @@ void createSearchSubmodule(py::module_& module) {
       .def("size", &InvertedIndex::size)
       .def("save", &InvertedIndex::save, py::arg("filename"))
       .def_static("load", &InvertedIndex::load, py::arg("filename"))
+      .def_static("parallel_query", &InvertedIndex::parallelQuery,
+                  py::arg("indices"), py::arg("query"), py::arg("k"))
       .def(py::pickle(
           /**
            * This is to achive compatability between neuraldb's with indexes

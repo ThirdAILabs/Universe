@@ -85,6 +85,10 @@ class InvertedIndex {
   static std::shared_ptr<InvertedIndex> load_stream_cereal(
       std::istream& istream);
 
+  static std::vector<DocScore> parallelQuery(
+      const std::vector<std::shared_ptr<InvertedIndex>>& indices,
+      const std::string& query, uint32_t k);
+
  private:
   std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>>
   countTokenOccurences(const std::vector<std::string>& docs) const;
