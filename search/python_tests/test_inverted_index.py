@@ -32,7 +32,7 @@ def test_inverted_index(download_scifact_dataset):
 
     doc_df["TEXT"] = doc_df["TITLE"] + " " + doc_df["TEXT"]
 
-    index = search.Finetunabl(shard_size=1000)
+    index = search.InvertedIndex(shard_size=1000)
 
     index.index(ids=doc_df["DOC_ID"].to_list(), docs=doc_df["TEXT"].to_list())
 

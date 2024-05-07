@@ -106,11 +106,16 @@ TEST(InvertedIndexTests, RepeatedTokensInQuery) {
 
   index.index(
       {1, 2, 3, 4, 5},
-      {{"y r q z"}, {"c a z m"}, {"e c c m"}, {"a b q d"}, {"l b f h"}});
+      {{"y r q z"}, {"c a z m"}, {"e c c m"}, {"a b q d"}, {"l b f h q"}});
 
   // All of the tokens in the query occur in 2 docs. Doc 4 has tokens "a" and
   // "q" from the query, doc 2 has tokens "a m" from the query. Doc 4 scores
   // higher because token "q" occurs more in the query than token "m".
+
+  for (auto res : index.query({"q a q m"}, 3)) {
+    std::cerr << res.first << " & " << res.second << std::endl;
+  }
+
   checkQuery(index, {"q a q m"}, {4, 2});
 }
 
@@ -144,9 +149,36 @@ TEST(InvertedIndexTests, DocRemoval) {
   checkQuery(index, {"a b c d e"}, {1, 3, 5});
 }
 
+void compareResults(std::vector<DocScore> a, std::vector<DocScore> b) {
+  // For some queries two docs may have the same score. For different numbers of
+  // shards the docs may have a different ordering when the score is the
+  // same. Sorting by doc ids if the scores are the same solves this, it only
+  // doesn't handle if a doc doesn't make the topk cuttoff because of this.
+  // Removing the last item by allowing the end to differ as long as the prior
+  // results match.
+
+  auto sort = [](auto& vec) {
+    std::sort(vec.begin(), vec.end(), [](const auto& x, const auto& y) {
+      if (x.second == y.second) {
+        return x.first < y.first;
+      }
+      return x.second > y.second;
+    });
+  };
+
+  sort(a);
+  sort(b);
+
+  a.pop_back();
+  b.pop_back();
+
+  ASSERT_EQ(a, b);
+}
+
 TEST(InvertedIndexTests, SyntheticDataset) {
   size_t vocab_size = 10000;
   size_t n_docs = 1000;
+  size_t topk = 10;
 
   auto [ids, docs, queries] = makeDocsAndQueries(vocab_size, n_docs);
 
@@ -154,17 +186,17 @@ TEST(InvertedIndexTests, SyntheticDataset) {
   index.index(ids, docs);
   ASSERT_GT(index.nShards(), 1);
 
-  auto results = index.queryBatch(queries, /*k=*/5);
+  auto results = index.queryBatch(queries, /*k=*/topk);
 
   for (size_t i = 0; i < queries.size(); i++) {
     // i-th query goes to i-th doc.
     ASSERT_EQ(results[i][0].first, i);
     // Check single query vs batch query consistency.
-    ASSERT_EQ(index.query(queries[i], /*k=*/5), results[i]);
+    ASSERT_EQ(index.query(queries[i], /*k=*/topk), results[i]);
   }
 
   // Check that building index incrementally gets the same results.
-  InvertedIndex incremental_index = indexWithShardSize(240);
+  InvertedIndex incremental_index;
   size_t n_chunks = 10;
   size_t chunksize = n_docs / n_chunks;
   for (int i = 0; i < n_chunks; i++) {
@@ -174,9 +206,12 @@ TEST(InvertedIndexTests, SyntheticDataset) {
                             {docs.begin() + start, docs.begin() + end});
   }
 
-  auto incremental_results = incremental_index.queryBatch(queries, /*k=*/5);
+  auto incremental_results = incremental_index.queryBatch(queries, /*k=*/topk);
 
-  ASSERT_EQ(results, incremental_results);
+  ASSERT_EQ(results.size(), incremental_results.size());
+  for (size_t i = 0; i < results.size(); i++) {
+    compareResults(results[i], incremental_results[i]);
+  }
 }
 
 TEST(InvertedIndexTests, SaveLoad) {
