@@ -45,7 +45,7 @@ jobs:
         run: cd build && python3 -m pytest ../ --ignore-glob=../deps -v -m unit --durations=0
 
   python-release-tests:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ubuntu-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
@@ -53,6 +53,9 @@ jobs:
         with:           
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+      
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
         
       - name: Build python package release version and install test dependencies
         # Issue: https://github.com/pypa/pip/issues/10851
