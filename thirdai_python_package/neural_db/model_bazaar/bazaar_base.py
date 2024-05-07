@@ -138,9 +138,8 @@ class Bazaar:
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
         self._cache_dir = cache_dir
-        parsed_url = urlparse(base_url)
-        if "/api" not in parsed_url.path:
-            raise ValueError("base_url must end with '/api' or '/api/'.")
+        if not base_url.endswith("/api/"):
+            raise ValueError("base_url must end with '/api/'.")
         self._base_url = base_url
         self._login_instance = None
 

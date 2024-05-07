@@ -109,7 +109,7 @@ class NeuralDBClient:
         """
         self.deployment_identifier = deployment_identifier
         self.base_url = construct_deployment_url(
-            bazaar._base_url.rstrip("/api"), deployment_id
+            bazaar._base_url.removesuffix("api/"), deployment_id
         )
         self.bazaar = bazaar
 
