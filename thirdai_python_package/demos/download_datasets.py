@@ -9,6 +9,8 @@ import pandas as pd
 from thirdai._thirdai import bolt
 
 from .beir_download_utils import (
+    GenericDataLoader,
+    download_and_unzip,
     remap_doc_ids,
     remap_query_answers,
     write_supervised_file,
@@ -653,11 +655,8 @@ def download_agnews_dataset(corpus_file):
 
 
 def download_beir_dataset(dataset):
-    from beir import util
-    from beir.datasets.data_loader import GenericDataLoader
-
     url = f"https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/{dataset}.zip"
-    data_path = util.download_and_unzip(url, ".")
+    data_path = download_and_unzip(url, ".")
 
     corpus, queries_test, qrels_test = GenericDataLoader(data_folder=data_path).load(
         split="test"

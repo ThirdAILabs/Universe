@@ -140,15 +140,16 @@ bolt::metrics::History MachRetriever::coldstart(
     const std::vector<std::string>& weak_cols, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
     const std::vector<bolt::callbacks::CallbackPtr>& callbacks,
-    const ColdStartOptions& options) {
+    const ColdStartOptions& coldstart_options) {
   auto augmented_data = data::TransformedIterator::make(
       data,
-      textAugmentation(strong_cols, weak_cols, options.variable_length,
-                       options.splade_config),
+      textAugmentation(strong_cols, weak_cols,
+                       coldstart_options.variable_length,
+                       coldstart_options.splade_config),
       _state);
 
   return train(augmented_data, learning_rate, epochs, metrics, callbacks,
-               options);
+               coldstart_options);
 }
 
 bolt::metrics::History MachRetriever::train(
@@ -206,12 +207,22 @@ std::vector<IdScores> MachRetriever::search(data::ColumnMap queries,
   auto in = inputTensors(_text_transform->apply(std::move(queries), *_state));
   auto out = _model->forward(in, sparse_inference).at(0);
 
+  std::exception_ptr error;
   std::vector<IdScores> predictions(n_queries);
 #pragma omp parallel for default(none) \
-    shared(out, predictions, top_k, n_queries) if (n_queries > 1)
+    shared(out, predictions, top_k, n_queries, error) if (n_queries > 1)
   for (uint32_t i = 0; i < n_queries; i++) {
-    const BoltVector& out_vec = out->getVector(i);
-    predictions[i] = index()->decode(out_vec, top_k, _n_buckets_to_eval);
+    try {
+      const BoltVector& out_vec = out->getVector(i);
+      predictions[i] = index()->decode(out_vec, top_k, _n_buckets_to_eval);
+    } catch (...) {
+#pragma omp critical
+      error = std::current_exception();
+    }
+  }
+
+  if (error) {
+    std::rethrow_exception(error);
   }
 
   return predictions;
@@ -231,12 +242,22 @@ std::vector<IdScores> MachRetriever::rank(
   auto in = inputTensors(_text_transform->apply(std::move(queries), *_state));
   auto out = _model->forward(in, sparse_inference).at(0);
 
+  std::exception_ptr error;
   std::vector<IdScores> predictions(n_queries);
-#pragma omp parallel for default(none) \
-    shared(out, candidates, predictions, top_k, n_queries) if (n_queries > 1)
+#pragma omp parallel for default(none) shared( \
+    out, candidates, predictions, top_k, n_queries, error) if (n_queries > 1)
   for (uint32_t i = 0; i < n_queries; i++) {
-    const BoltVector& out_vec = out->getVector(i);
-    predictions[i] = index()->scoreEntities(out_vec, candidates[i], top_k);
+    try {
+      const BoltVector& out_vec = out->getVector(i);
+      predictions[i] = index()->scoreEntities(out_vec, candidates[i], top_k);
+    } catch (...) {
+#pragma omp critical
+      error = std::current_exception();
+    }
+  }
+
+  if (error) {
+    std::rethrow_exception(error);
   }
 
   return predictions;

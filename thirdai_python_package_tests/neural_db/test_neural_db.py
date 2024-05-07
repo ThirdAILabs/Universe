@@ -535,7 +535,7 @@ def descending_order(seq):
 
 def test_neural_db_reranking(all_local_docs):
     db = ndb.NeuralDB("user", use_inverted_index=False, mach=True)
-    db.insert(all_local_docs, train=True)
+    db.insert(all_local_docs, train=True, epochs=1)
 
     query = "Lorem Ipsum"
 
@@ -576,7 +576,7 @@ def test_neural_db_reranking(all_local_docs):
 
 def test_neural_db_reranking_threshold(all_local_docs):
     db = ndb.NeuralDB("user", use_inverted_index=False, mach=True)
-    db.insert(all_local_docs, train=True)
+    db.insert(all_local_docs, train=True, epochs=1)
 
     query = "agreement"
 
