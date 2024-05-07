@@ -102,11 +102,13 @@ class NDBRunner(Runner):
         correct_count = 0
         batched_results = db.search_batch(queries=list(test_df[query_col]), top_k=1)
         for i in range(test_df.shape[0]):
-            top_pred = batched_results[i][0].id
             if id_delimiter and is_string_dtype(test_df[id_column]):
                 relevant_ids = [x for x in test_df[id_column][i].split(id_delimiter)]
             else:
                 relevant_ids = [str(test_df[id_column][i])]
-            if str(top_pred) in relevant_ids:
+            if (
+                len(batched_results[i])
+                and str(batched_results[i][0].id) in relevant_ids
+            ):
                 correct_count += 1
         return correct_count / test_df.shape[0]
