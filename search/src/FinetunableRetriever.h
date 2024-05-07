@@ -13,9 +13,11 @@ class FinetunableRetriever {
   static constexpr uint32_t DEFAULT_MIN_TOP_DOCS = 20;
   static constexpr uint32_t DEFAULT_TOP_QUERIES = 10;
 
-  explicit FinetunableRetriever(float lambda = DEFAULT_LAMBDA,
-                                uint32_t min_top_docs = DEFAULT_MIN_TOP_DOCS,
-                                uint32_t top_queries = DEFAULT_TOP_QUERIES);
+  explicit FinetunableRetriever(
+      float lambda = DEFAULT_LAMBDA,
+      uint32_t min_top_docs = DEFAULT_MIN_TOP_DOCS,
+      uint32_t top_queries = DEFAULT_TOP_QUERIES,
+      size_t shard_size = InvertedIndex::DEFAULT_SHARD_SIZE);
 
   explicit FinetunableRetriever(const ar::Archive& archive);
 

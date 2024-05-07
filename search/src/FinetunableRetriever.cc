@@ -12,8 +12,13 @@
 namespace thirdai::search {
 
 FinetunableRetriever::FinetunableRetriever(float lambda, uint32_t min_top_docs,
-                                           uint32_t top_queries)
-    : _doc_index(std::make_shared<InvertedIndex>()),
+                                           uint32_t top_queries,
+                                           size_t shard_size)
+    : _doc_index(std::make_shared<InvertedIndex>(
+          /*max_docs_to_score=*/InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE,
+          /*idf_cutoff_frac=*/InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC,
+          /*k1=*/InvertedIndex::DEFAULT_K1, /*b=*/InvertedIndex::DEFAULT_B,
+          /*stem=*/true, /*lowercase=*/true, /*shard_size=*/shard_size)),
       _query_index(std::make_shared<InvertedIndex>()),
       _lambda(lambda),
       _min_top_docs(min_top_docs),

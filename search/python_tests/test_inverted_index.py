@@ -25,14 +25,14 @@ def load_supervised_data(filename):
 
 
 @pytest.mark.unit
-def test_inverted_index(download_scifact_dataset):
+def test_inverted_index_scifact(download_scifact_dataset):
     doc_file, trn_supervised, query_file, _ = download_scifact_dataset
 
     doc_df = pd.read_csv(doc_file)
 
     doc_df["TEXT"] = doc_df["TITLE"] + " " + doc_df["TEXT"]
 
-    index = search.InvertedIndex(shard_size=1000)
+    index = search.FinetunableRetriever(shard_size=100000)
 
     index.index(ids=doc_df["DOC_ID"].to_list(), docs=doc_df["TEXT"].to_list())
 
@@ -42,12 +42,27 @@ def test_inverted_index(download_scifact_dataset):
     print("unsupervised_acc=", unsupervised_acc)
     assert unsupervised_acc >= 0.54  # Should be 0.543 (should be deterministic)
 
+    supervised_samples = load_supervised_data(trn_supervised)
+
+    sup_ids, update_texts = [], []
+    for _, row in supervised_samples.iterrows():
+        for doc_id in row["DOC_ID"]:
+            sup_ids.append([doc_id])
+            update_texts.append(row["QUERY"])
+
+    index.finetune(sup_ids, update_texts)
+
+    supervised_acc = evaluate(index, query_df)
+
+    print("supervised_acc=", supervised_acc)
+    assert supervised_acc >= 0.77  # Should be 0.78 (should be deterministic)
+
     path = "./scifact.index"
     index.save(path)
 
-    index = search.InvertedIndex.load(path)
+    index = search.FinetunableRetriever.load(path)
     os.remove(path)
 
     after_load_acc = evaluate(index, query_df)
     print("after_load_acc=", after_load_acc)
-    assert after_load_acc == unsupervised_acc
+    assert after_load_acc == supervised_acc
