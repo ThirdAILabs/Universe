@@ -61,7 +61,7 @@ class NeuralDBClient:
 
     Attributes:
         deployment_identifier (str): The identifier for the deployment.
-        base_url (str): The base URL for the deployed NeuralDB model.
+        deployment_id (str): The deployment ID for the deployed NeuralDB model.
         bazaar (thirdai.neural_db.ModelBazaar): The bazaar object corresponding to a NeuralDB Enterprise installation
 
     Methods:
