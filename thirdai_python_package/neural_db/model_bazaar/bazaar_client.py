@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -109,7 +110,7 @@ class NeuralDBClient:
         """
         self.deployment_identifier = deployment_identifier
         self.base_url = construct_deployment_url(
-            bazaar._base_url.removesuffix("api/"), deployment_id
+            re.sub(r"api/$", "", bazaar._base_url), deployment_id
         )
         self.bazaar = bazaar
 
