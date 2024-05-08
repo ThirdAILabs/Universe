@@ -261,6 +261,9 @@ void defineAutomlInModule(py::module_& module) {
       .def("class_name", &udt::UDT::className, docs::UDT_CLASS_NAME)
       .def("_get_model", &udt::UDT::model)
       .def("_set_model", &udt::UDT::setModel, py::arg("trained_model"))
+#if THIRDAI_EXPOSE_ALL
+      .def("model_summary", &udt::UDT::modelSummary)
+#endif
       .def("model_dims", &udt::UDT::modelDims)
       .def("text_dataset_config", &udt::UDT::textDatasetConfig)
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)

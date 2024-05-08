@@ -209,6 +209,12 @@ class UDT {
    */
   void setModel(const ModelPtr& model) { _backend->setModel(model); }
 
+  /**
+   * Returns a model summary. This allows backends that do not use BOLT to
+   * also provide a summary of its architecture.
+   */
+  std::string modelSummary() const { return _backend->modelSummary(); }
+
   std::vector<uint32_t> modelDims() const;
 
   TextDatasetConfig textDatasetConfig() const {

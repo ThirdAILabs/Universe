@@ -126,6 +126,8 @@ class UDTBackend {
     throw notSupported("modifying underlying model");
   }
 
+  virtual std::string modelSummary() const { return model()->summary(); }
+
   virtual FeaturizerPtr featurizer() const { return nullptr; }
 
   virtual void verifyCanDistribute() const {
