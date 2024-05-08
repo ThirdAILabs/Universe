@@ -7,7 +7,7 @@ import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, List, Optional, Union
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 import requests
 from pydantic import BaseModel, ValidationError
