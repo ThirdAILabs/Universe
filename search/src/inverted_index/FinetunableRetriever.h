@@ -1,6 +1,6 @@
 #pragma once
 
-#include <search/src/InvertedIndex.h>
+#include <search/src/inverted_index/InvertedIndex.h>
 #include <unordered_map>
 
 namespace thirdai::search {
