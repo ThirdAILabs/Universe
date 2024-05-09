@@ -60,7 +60,7 @@ def test_finetunable_retriever(download_scifact_dataset):
     path = "./scifact.index"
     index.save(path)
 
-    index = search.InvertedIndex.load(path)
+    index = search.FinetunableRetriever.load(path)
     os.remove(path)
 
     after_load_acc = evaluate(index, query_df)
