@@ -21,10 +21,7 @@ class DistributedNDBRunner(Runner):
     ):
         scaling_config = setup_ray()
         ndb_model = ndb.NeuralDB(
-            embedding_dimension=2048,
-            extreme_output_dim=40_000,
-            mach=True,
-            inverted_index=False,
+            embedding_dimension=2048, extreme_output_dim=40_000, retriever="mach"
         )
         doc = ndb.CSV(
             path=os.path.join(path_prefix, config.doc_path),

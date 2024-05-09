@@ -38,7 +38,7 @@ class MultiMach:
         extreme_num_hashes: int,
         tokenizer: int,
         hidden_bias: bool,
-        use_inverted_index: bool,
+        hybrid: bool,
         model_config,
         mach_index_seed_offset: int,
     ):
@@ -59,8 +59,8 @@ class MultiMach:
                 tokenizer=tokenizer,
                 hidden_bias=hidden_bias,
                 model_config=model_config,
-                use_inverted_index=(
-                    use_inverted_index if j == 0 else False
+                hybrid=(
+                    hybrid if j == 0 else False
                 ),  # inverted index will be the same for all models in the ensemble
                 mach_index_seed=(mach_index_seed_offset + j * 17),
             )

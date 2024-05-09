@@ -48,7 +48,8 @@ class NeuralDB:
         user_id: str = "user",
         num_shards: int = 1,
         num_models_per_shard: int = 1,
-        mach=False,
+        retriever=None,
+        low_memory=None,
         **kwargs,
     ) -> None:
         """
@@ -80,18 +81,29 @@ class NeuralDB:
                     " NeuralDB can only be initialized with a positive number of"
                     " models per shard."
                 )
-            if not mach:
+            if not retriever or low_memory:
                 model = FinetunableRetriever()
-            elif num_shards > 1 or num_models_per_shard > 1:
-                model = MachMixture(
-                    num_shards=num_shards,
-                    num_models_per_shard=num_models_per_shard,
-                    id_col="id",
-                    query_col="query",
-                    **kwargs,
-                )
+            elif retriever == "mach" or retriever == "hybrid":
+                if num_shards > 1 or num_models_per_shard > 1:
+                    model = MachMixture(
+                        num_shards=num_shards,
+                        num_models_per_shard=num_models_per_shard,
+                        id_col="id",
+                        query_col="query",
+                        hybrid=(retriever == "hybrid") ** kwargs,
+                    )
+                else:
+                    model = Mach(
+                        id_col="id",
+                        query_col="query",
+                        hybrid=(retriever == "hybrid"),
+                        **kwargs,
+                    )
             else:
-                model = Mach(id_col="id", query_col="query", **kwargs)
+                raise ValueError(
+                    f"Invalid retriever '{retriever}'. Please use 'mach', 'hybrid', or None (autotuned)."
+                )
+
             self._savable_state = State(
                 model, logger=loggers.LoggerList([loggers.InMemoryLogger()])
             )

@@ -431,7 +431,7 @@ class Mach(Model):
         tokenizer="char-4",
         hidden_bias=False,
         model_config=None,
-        use_inverted_index=True,
+        hybrid=True,
         mach_index_seed: int = 341,
         index_max_shard_size=8_000_000,
         **kwargs,
@@ -451,9 +451,7 @@ class Mach(Model):
         self.model_config = model_config
         self.mach_index_seed = mach_index_seed
         self.inverted_index = (
-            InvertedIndex(max_shard_size=index_max_shard_size)
-            if use_inverted_index
-            else None
+            InvertedIndex(max_shard_size=index_max_shard_size) if hybrid else None
         )
 
     def set_mach_sampling_threshold(self, threshold: float):

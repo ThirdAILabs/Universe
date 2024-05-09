@@ -39,7 +39,7 @@ def create_simple_dataset():
 @pytest.fixture
 def train_simple_neural_db(create_simple_dataset):
     filename = create_simple_dataset
-    db = ndb.NeuralDB(mach=True)
+    db = ndb.NeuralDB(retriever="hybrid")
 
     doc = ndb.CSV(
         filename,
@@ -491,7 +491,7 @@ def empty_neural_db(request):
     else:
         num_models_per_shard = request.param
         db = ndb.NeuralDB(
-            num_shards=1, num_models_per_shard=num_models_per_shard, mach=True
+            num_shards=1, num_models_per_shard=num_models_per_shard, retriever="hybrid"
         )
     # db.insert() initializes the mach model so this only happens once per
     # test session. Clear the sources so it's back to being empty.

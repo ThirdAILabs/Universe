@@ -37,7 +37,7 @@ class MachMixture(Model):
         tokenizer="char-4",
         hidden_bias=False,
         model_config=None,
-        use_inverted_index=True,
+        hybrid=True,
         label_to_segment_map: defaultdict = None,
         seed_for_sharding: int = 0,
         **kwargs,
@@ -69,7 +69,7 @@ class MachMixture(Model):
                 extreme_num_hashes=extreme_num_hashes,
                 tokenizer=tokenizer,
                 hidden_bias=hidden_bias,
-                use_inverted_index=use_inverted_index,
+                hybrid=hybrid,
                 model_config=model_config,
                 mach_index_seed_offset=j * 341,
             )
