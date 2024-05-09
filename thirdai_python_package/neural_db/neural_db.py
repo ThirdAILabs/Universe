@@ -118,7 +118,7 @@ class NeuralDB:
         checkpoint_path = Path(checkpoint_path)
         savable_state = State.load(checkpoint_path, on_progress)
         if savable_state.model and savable_state.model.get_model():
-            savable_state.model.set_mach_sampling_threshold(0.01)
+            savable_state.model.set_mach_sampling_threshold(0.0)
         if not isinstance(savable_state.logger, loggers.LoggerList):
             # TODO(Geordie / Yash): Add DBLogger to LoggerList once ready.
             savable_state.logger = loggers.LoggerList([savable_state.logger])
@@ -167,7 +167,7 @@ class NeuralDB:
             udt.clear_index()
 
         udt.enable_rlhf()
-        udt.set_mach_sampling_threshold(0.01)
+        udt.set_mach_sampling_threshold(0.0)
         fhr, emb_dim, out_dim = udt.model_dims()
 
         text_dataset_config = udt.text_dataset_config()

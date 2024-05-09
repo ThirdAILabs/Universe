@@ -84,7 +84,7 @@ constexpr uint32_t MACH_TOP_K_TO_RETURN = 5;
 constexpr uint32_t MACH_MIN_TARGET_CLASSES = 5000;
 
 // When to switch to using the mach index for sparse inference
-constexpr float MACH_SAMPLING_THRESHOLD = 0.01;
+constexpr float MACH_SAMPLING_THRESHOLD = 0.0;
 
 // Whether to use the experimental autotune for fully connected layer hash
 // tables
