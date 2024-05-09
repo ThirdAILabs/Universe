@@ -91,7 +91,7 @@ class NeuralDB:
                     " NeuralDB can only be initialized with a positive number of"
                     " models per shard."
                 )
-            if retriever == "finetunable_retriever" or low_memory:
+            if retriever == "finetunable_retriever":
                 model = FinetunableRetriever()
             elif retriever == "mach" or retriever == "hybrid":
                 if num_shards > 1 or num_models_per_shard > 1:

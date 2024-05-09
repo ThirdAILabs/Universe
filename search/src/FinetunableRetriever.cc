@@ -11,7 +11,16 @@
 
 namespace thirdai::search {
 
-constexpr size_t PEFA_THRESHOLD = 10;
+/**
+ * Because of how bm25 is calculated, particularly the idf scores, the query
+ * index does not work will with only a couple of finetuning samples, for
+ * instance a single upvote/associate. Thus for a small number of finetuning
+ * samples we concatenate the query to the documents it maps to, this boosts the
+ * score for the document for that query maps to. The samples are still added to
+ * the query index, just the query index isn't used until this threshold of
+ * samples is reached.
+ */
+constexpr size_t QUERY_INDEX_THRESHOLD = 10;
 
 FinetunableRetriever::FinetunableRetriever(float lambda, uint32_t min_top_docs,
                                            uint32_t top_queries)
@@ -41,7 +50,7 @@ void FinetunableRetriever::finetune(
 
   _query_index->index(query_ids, queries);
 
-  if (_query_index->size() < PEFA_THRESHOLD) {
+  if (_query_index->size() < QUERY_INDEX_THRESHOLD) {
     std::vector<DocId> flattened_doc_ids;
     std::vector<std::string> flattened_queries;
     for (size_t i = 0; i < doc_ids.size(); i++) {
@@ -77,7 +86,7 @@ void FinetunableRetriever::associate(const std::vector<std::string>& sources,
 
 std::vector<DocScore> FinetunableRetriever::query(const std::string& query,
                                                   uint32_t k) const {
-  if (_query_index->size() < PEFA_THRESHOLD) {
+  if (_query_index->size() < QUERY_INDEX_THRESHOLD) {
     return _doc_index->query(query, k);
   }
 
@@ -114,7 +123,7 @@ std::vector<std::vector<DocScore>> FinetunableRetriever::queryBatch(
 std::vector<DocScore> FinetunableRetriever::rank(
     const std::string& query, const std::unordered_set<DocId>& candidates,
     uint32_t k) const {
-  if (_query_index->size() < PEFA_THRESHOLD) {
+  if (_query_index->size() < QUERY_INDEX_THRESHOLD) {
     return _doc_index->rank(query, candidates, k);
   }
 
