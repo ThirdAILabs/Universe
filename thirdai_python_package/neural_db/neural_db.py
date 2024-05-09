@@ -13,8 +13,8 @@ from . import loggers, teachers
 from .documents import CSV, Document, DocumentManager, Reference
 from .models.finetunable_retriever import FinetunableRetriever
 from .models.mach_mixture_model import MachMixture
-from .models.models import CancelState, Mach
-from .models.multi_mach import MultiMach
+from .models.models import CancelState
+from .models.mach import Mach
 from .savable_state import (
     State,
     load_checkpoint,
@@ -57,7 +57,7 @@ class NeuralDB:
 
         Args:
             user_id (str): Optional, used to identify user/session in logging.
-            retriever (str): One of 'finetunable_retriever', 'mach', or 'hybrid'. 
+            retriever (str): One of 'finetunable_retriever', 'mach', or 'hybrid'.
                 Identifies which retriever to use as the backend. Defaults to
                 'finetunable_retriever'.
 
@@ -941,7 +941,9 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
-            disable_inverted_index=kwargs.get("disable_inverted_index", True),
+            disable_finetunable_retriever=kwargs.get(
+                "disable_finetunable_retriever", True
+            ),
             checkpoint_config=checkpoint_config,
         )
 
@@ -998,7 +1000,9 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
-            disable_inverted_index=kwargs.get("disable_inverted_index", True),
+            disable_finetunable_retriever=kwargs.get(
+                "disable_finetunable_retriever", True
+            ),
             checkpoint_config=checkpoint_config,
         )
         if checkpoint_config:

@@ -8,7 +8,7 @@ from ndb_utils import PDF_FILE, all_local_doc_getters, associate_works, upvote_w
 from thirdai import data
 from thirdai import neural_db as ndb
 from thirdai.neural_db.models.mach_mixture_model import MachMixture
-from thirdai.neural_db.models.models import Mach, ProgressUpdate
+from thirdai.neural_db.models.mach import Mach, ProgressUpdate
 from thirdai.neural_db.trainer.training_data_manager import (
     InsertDataManager,
     TrainingDataManager,

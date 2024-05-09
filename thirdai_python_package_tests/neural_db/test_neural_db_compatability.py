@@ -51,10 +51,10 @@ def test_saved_ndb_accuracy():
     )
     assert mach_correct == len(df)
 
-    inverted_index_correct = count_correct(
-        db=db, queries=df["text"], ids=df["id"], retriever="inverted_index"
+    finetunable_retriever_correct = count_correct(
+        db=db, queries=df["text"], ids=df["id"], retriever="finetunable_retriever"
     )
-    assert inverted_index_correct == len(df)
+    assert finetunable_retriever_correct == len(df)
 
 
 def test_saved_ndb_associate():

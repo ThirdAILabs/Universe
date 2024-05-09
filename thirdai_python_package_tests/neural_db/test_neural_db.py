@@ -452,7 +452,7 @@ def test_neural_db_delete_document(empty_neural_db):
     os.remove("pizza.csv")
 
 
-def test_neural_db_delete_document_with_inverted_index():
+def test_neural_db_delete_document_with_finetunable_retriever():
     # The other delete test is only returning 1 entity, so it will only return
     # the top result from mach, thus it doesn't test if the inverted index is
     # returning the result.
@@ -621,7 +621,7 @@ def test_neural_db_reranking_threshold(all_local_docs):
     )
 
 
-def test_inverted_index_improves_zero_shot():
+def test_finetunable_retriever_improves_zero_shot():
     docs = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "../../auto_ml/python_tests/texts.csv",
@@ -684,10 +684,10 @@ def test_neural_db_retriever_specification():
     for res in mach_results:
         assert res.retriever == "mach"
 
-    index_results = db.search("carrots bananas", top_k=10, retriever="inverted_index")
+    index_results = db.search("carrots bananas", top_k=10, retriever="finetunable_retriever")
     assert len(index_results) > 0
     for res in index_results:
-        assert res.retriever == "inverted_index"
+        assert res.retriever == "finetunable_retriever"
 
 
 def test_result_merging():
@@ -730,7 +730,7 @@ def test_insert_callback(small_doc_set):
     assert epoch_count_callback.epochs_completed == epochs
 
 
-def test_neural_db_prioritizes_inverted_index_results():
+def test_neural_db_prioritizes_finetunable_retriever_results():
     db = ndb.NeuralDB(retriever="hybrid")
 
     texts = [
@@ -746,5 +746,5 @@ def test_neural_db_prioritizes_inverted_index_results():
         train=False,
     )
 
-    assert db.search("carrots bananas", top_k=5)[0].retriever == "inverted_index"
+    assert db.search("carrots bananas", top_k=5)[0].retriever == "finetunable_retriever"
     assert db.search("carrots bananas", top_k=5, mach_first=True)[0].retriever == "mach"
