@@ -6,7 +6,6 @@ import random
 from pathlib import Path
 from typing import Callable, List, Optional, Tuple
 
-
 import requests
 import tqdm
 from thirdai import bolt, data, demos, search
@@ -18,15 +17,15 @@ from ..trainer.training_progress_manager import (
     TrainingProgressCallback,
     TrainingProgressManager,
 )
-from .finetunable_retriever import FinetunableRetriever
 from ..utils import clean_text, pickle_to
+from .finetunable_retriever import FinetunableRetriever
 from .mach_defaults import acc_to_stop, metric_to_track
 from .models import (
-    Model,
     CancelState,
-    add_retriever_tag,
     InferSamples,
+    Model,
     Predictions,
+    add_retriever_tag,
     merge_results,
 )
 

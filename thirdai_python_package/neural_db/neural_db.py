@@ -12,9 +12,9 @@ from thirdai._thirdai import bolt, data
 from . import loggers, teachers
 from .documents import CSV, Document, DocumentManager, Reference
 from .models.finetunable_retriever import FinetunableRetriever
+from .models.mach import Mach
 from .models.mach_mixture_model import MachMixture
 from .models.models import CancelState
-from .models.mach import Mach
 from .savable_state import (
     State,
     load_checkpoint,

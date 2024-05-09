@@ -13,8 +13,8 @@ from ..trainer.checkpoint_config import (
 )
 from ..trainer.training_progress_manager import TrainingProgressManager
 from ..utils import clean_text, pickle_to, requires_condition, unpickle_from
-from .models import CancelState, Model, add_retriever_tag, merge_results
 from .mach import Mach
+from .models import CancelState, Model, add_retriever_tag, merge_results
 from .multi_mach import MultiMach, aggregate_ensemble_results
 
 InferSamples = List

@@ -684,7 +684,9 @@ def test_neural_db_retriever_specification():
     for res in mach_results:
         assert res.retriever == "mach"
 
-    index_results = db.search("carrots bananas", top_k=10, retriever="finetunable_retriever")
+    index_results = db.search(
+        "carrots bananas", top_k=10, retriever="finetunable_retriever"
+    )
     assert len(index_results) > 0
     for res in index_results:
         assert res.retriever == "finetunable_retriever"

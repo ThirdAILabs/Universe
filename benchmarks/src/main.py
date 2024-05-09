@@ -140,7 +140,8 @@ def main(**kwargs):
                     f"An error occurred running the {config.config_name} benchmark:",
                     error,
                 )
-                print(traceback.format_exc())
+                traceback.print_exc()
+
                 payload = f"{config.config_name} benchmark failed on the {args.branch_name} branch!"
                 if slack_webhook:
                     requests.post(slack_webhook, json.dumps({"text": payload}))

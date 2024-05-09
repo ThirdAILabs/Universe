@@ -8,8 +8,8 @@ from ..documents import DocumentDataSource
 from ..supervised_datasource import SupDataSource
 from ..trainer.training_progress_manager import TrainingProgressManager
 from ..utils import clean_text
-from .models import CancelState
 from .mach import Mach
+from .models import CancelState
 
 
 def aggregate_ensemble_results(results):
