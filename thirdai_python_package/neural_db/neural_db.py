@@ -48,7 +48,7 @@ class NeuralDB:
         user_id: str = "user",
         num_shards: int = 1,
         num_models_per_shard: int = 1,
-        retriever=None,
+        retriever="finetunable_retriever",
         low_memory=None,
         **kwargs,
     ) -> None:
@@ -57,11 +57,21 @@ class NeuralDB:
 
         Args:
             user_id (str): Optional, used to identify user/session in logging.
-            number_models (int): Optional, default 1. Used to control model sharding.
+            retriever (str): One of 'finetunable_retriever', 'mach', or 'hybrid'. 
+                Identifies which retriever to use as the backend. Defaults to
+                'finetunable_retriever'.
 
         Returns:
             A NeuralDB.
         """
+        if low_memory is not None:
+            print(
+                "Warning: 'low_memory' flag will be deprecated soon in the NeuralDB constructor. Please pass 'retriever=' instead."
+            )
+            if low_memory == True:
+                retriever = "finetunable_retriever"
+            elif low_memory == False:
+                retriever = "hybrid"
         self._user_id: str = user_id
 
         # The savable_state kwarg is only used in static constructor methods
@@ -81,7 +91,7 @@ class NeuralDB:
                     " NeuralDB can only be initialized with a positive number of"
                     " models per shard."
                 )
-            if not retriever or low_memory:
+            if retriever == "finetunable_retriever" or low_memory:
                 model = FinetunableRetriever()
             elif retriever == "mach" or retriever == "hybrid":
                 if num_shards > 1 or num_models_per_shard > 1:
@@ -102,7 +112,7 @@ class NeuralDB:
                     )
             else:
                 raise ValueError(
-                    f"Invalid retriever '{retriever}'. Please use 'mach', 'hybrid', or None (autotuned)."
+                    f"Invalid retriever '{retriever}'. Please use 'finetunable_retriever', 'mach', or 'hybrid'."
                 )
 
             self._savable_state = State(

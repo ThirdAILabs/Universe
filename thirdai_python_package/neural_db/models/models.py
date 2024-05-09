@@ -841,8 +841,10 @@ class Mach(Model):
         if "model_config" not in state:
             # Add model_config field if an older model is being loaded.
             state["model_config"] = None
-        if "inverted_index" not in state:
-            state["inverted_index"] = None
+        # if "inverted_index" not in state:
+        #     state["inverted_index"] = None
+        if "inverted_index" in state:
+            state["finetunable_retriever"] = search.FinetunableRetriever.train_from(state["inverted_index"])
         self.__dict__.update(state)
 
     def supervised_training_impl(
