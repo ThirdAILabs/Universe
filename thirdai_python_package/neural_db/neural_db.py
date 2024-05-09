@@ -90,7 +90,8 @@ class NeuralDB:
                         num_models_per_shard=num_models_per_shard,
                         id_col="id",
                         query_col="query",
-                        hybrid=(retriever == "hybrid") ** kwargs,
+                        hybrid=(retriever == "hybrid"),
+                        **kwargs,
                     )
                 else:
                     model = Mach(
