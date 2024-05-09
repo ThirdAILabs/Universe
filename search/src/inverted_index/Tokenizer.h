@@ -18,6 +18,8 @@ class Tokenizer {
   virtual ar::ConstArchivePtr toArchive() const = 0;
 
   static std::shared_ptr<Tokenizer> fromArchive(const ar::Archive& archive);
+
+  virtual ~Tokenizer() = default;
 };
 
 using TokenizerPtr = std::shared_ptr<Tokenizer>;
