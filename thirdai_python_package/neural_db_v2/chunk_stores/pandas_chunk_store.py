@@ -1,10 +1,12 @@
 import operator
 import os
+from enum import Enum
 from functools import reduce
 from typing import Dict, Iterable, List, Set, Union
 
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_numeric_dtype, is_string_dtype
 from thirdai.neural_db.utils import pickle_to, unpickle_from
 
 from ..core.chunk_store import ChunkStore
@@ -19,6 +21,13 @@ from ..core.types import (
 from .constraints import Constraint
 
 
+class CustomIDType(Enum):
+    NotSet = 1
+    NoneType = 2
+    String = 3
+    Integer = 4
+
+
 class PandasChunkStore(ChunkStore):
     def __init__(self, **kwargs):
         super().__init__()
@@ -26,10 +35,33 @@ class PandasChunkStore(ChunkStore):
         self.chunk_df = pd.DataFrame()
 
         self.custom_id_map = {}
+        self.custom_id_type = CustomIDType.NotSet
 
         self.metadata_df = pd.DataFrame()
 
         self.next_id = 0
+
+    def _update_custom_ids(self, custom_ids, chunk_ids):
+        incoming_custom_id_type = CustomIDType.NotSet
+        if custom_ids is None:
+            incoming_custom_id_type = CustomIDType.NoneType
+        elif is_string_dtype(custom_ids):
+            incoming_custom_id_type = CustomIDType.String
+        elif is_numeric_dtype(custom_ids):
+            incoming_custom_id_type = CustomIDType.Integer
+        else:
+            raise ValueError("Invalid custom id type.")
+
+        if self.custom_id_type == CustomIDType.NotSet:
+            self.custom_id_type = incoming_custom_id_type
+        elif incoming_custom_id_type != self.custom_id_type:
+            raise ValueError(
+                "Custom ids must all have the same type. Found some custom ids with type int, and some with type str."
+            )
+
+        if custom_ids is not None:
+            for custom_id, chunk_id in zip(custom_ids, chunk_ids):
+                self.custom_id_map[custom_id] = chunk_id
 
     def insert(self, chunks: Iterable[NewChunkBatch], **kwargs) -> Iterable[ChunkBatch]:
         all_chunks = [self.chunk_df]
@@ -51,9 +83,7 @@ class PandasChunkStore(ChunkStore):
                 metadata["chunk_id"] = chunk_ids
                 all_metadata.append(metadata)
 
-            if batch.custom_id is not None:
-                for custom_id, chunk_id in zip(batch.custom_id, chunk_ids):
-                    self.custom_id_map[custom_id] = chunk_id
+            self._update_custom_ids(batch.custom_id, chunk_ids)
 
             output_batches.append(
                 ChunkBatch(chunk_id=chunk_ids, text=batch.text, keywords=batch.keywords)
@@ -76,6 +106,7 @@ class PandasChunkStore(ChunkStore):
         self.chunk_df.drop(chunk_ids, inplace=True)
         if not self.metadata_df.empty:
             self.metadata_df.drop(chunk_ids, inplace=True)
+        # TODO remove from custom id map, add test
 
     def get_chunks(self, chunk_ids: List[ChunkId], **kwargs) -> List[Chunk]:
         try:

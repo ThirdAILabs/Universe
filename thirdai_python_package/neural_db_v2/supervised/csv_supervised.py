@@ -28,8 +28,10 @@ class CsvSupervised(SupervisedDataset):
 
         ids = df[self.id_column].map(lambda val: str(val).split(self.id_delimiter))
 
-        if self.uses_db_id:
+        try:
             ids = pd.Series([list(map(int, row_ids)) for row_ids in ids])
+        except:
+            pass
 
         return [
             self.supervised_samples(

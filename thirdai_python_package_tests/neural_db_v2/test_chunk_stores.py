@@ -1,3 +1,4 @@
+import itertools
 import os
 import shutil
 
@@ -181,7 +182,8 @@ def test_chunk_store_basic_operations(chunk_store):
         os.remove(os.path.basename(store.db_name))
 
 
-def test_sqlite_chunk_store_custom_id_type_mismatch():
+@pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])
+def test_chunk_store_custom_id_type_mismatch(chunk_store):
     integer_label_batch = NewChunkBatch(
         custom_id=pd.Series([200]),
         text=pd.Series(["2 3"]),
@@ -198,31 +200,27 @@ def test_sqlite_chunk_store_custom_id_type_mismatch():
         metadata=None,
     )
 
-    with pytest.raises(
-        ValueError,
-        match="Custom ids must all have the same type. Found some custom ids with type int, and some with type str.",
-    ):
-        store = SQLiteChunkStore()
-        store.insert(
-            chunks=[
-                integer_label_batch,
-                string_label_batch,
-            ]
-        )
+    no_label_batch = NewChunkBatch(
+        custom_id=None,
+        text=pd.Series(["0 1"]),
+        keywords=pd.Series(["00 01"]),
+        document=pd.Series(["doc3"]),
+        metadata=None,
+    )
 
-    clean_up_sql_lite_db(store)
+    store = chunk_store()
 
-    with pytest.raises(
-        ValueError,
-        match="Custom ids must all have the same type. Found some custom ids with type int, and some with type str.",
-    ):
-        store = SQLiteChunkStore()
-        store.insert(
-            chunks=[
-                string_label_batch,
-                integer_label_batch,
-            ]
-        )
+    possible_batches = [integer_label_batch, string_label_batch, no_label_batch]
+
+    for perm in itertools.permutations(possible_batches, 2):
+        with pytest.raises(
+            ValueError,
+            match="Custom ids must all have the same type. Found some custom ids with type int, and some with type str.",
+        ):
+            print(
+                f"Trying insertion with first type as '{type(perm[0][0].custom_id)}' and second type as '{type(perm[1][0].custom_id)}'."
+            )
+            store.insert(chunks=list(perm))
 
     clean_up_sql_lite_db(store)
 
