@@ -123,7 +123,6 @@ class SQLiteChunkStore(ChunkStore):
         self.metadata.create_all(self.engine)
 
         self.custom_id_table = None
-        self.custom_id_type = CustomIDType.NotSet
 
         self.metadata_table = None
 
