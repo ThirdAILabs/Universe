@@ -83,9 +83,9 @@ class PandasChunkStore(ChunkStore):
             self.metadata_df.drop(chunk_ids, inplace=True)
 
         chunk_ids = set(chunk_ids)
-        for _, chunk_id in self.custom_id_map.items():
+        for custom_id, chunk_id in list(self.custom_id_map.items()):
             if chunk_id in chunk_ids:
-                del self.custom_id_map[chunk_id]
+                del self.custom_id_map[custom_id]
 
     def get_chunks(self, chunk_ids: List[ChunkId], **kwargs) -> List[Chunk]:
         try:
