@@ -36,8 +36,8 @@ namespace thirdai::bolt {
                 _source_column, "tokens", "sentences", _target_column
             )});
         }
-        transform = transform->then(std::make_shared<data::StringToTokenArray>("tokens", "tokens", " ", _vocab_size));
-        transform = transform->then(std::make_shared<data::StringToTokenArray>("sentences", "sentences", " ", _vocab_size));
+        transform = transform->then(std::make_shared<data::StringToTokenArray>("tokens", "tokens", ' ', _vocab_size));
+        transform = transform->then(std::make_shared<data::StringToTokenArray>("sentences", "sentences", ' ', _vocab_size));
         return transform;
     }
 
@@ -123,7 +123,7 @@ namespace thirdai::bolt {
         return ner_bolt_model;
     }
 
-     std::shared_ptr<NerBackend> NerBoltModel::fromArchive(
+     std::shared_ptr<NerBoltModel> NerBoltModel::fromArchive(
         const ar::Archive& archive) {
         
         bolt::ModelPtr bolt_model = bolt::Model::fromArchive(*archive.get("bolt_model"));

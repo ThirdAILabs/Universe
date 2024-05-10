@@ -34,7 +34,7 @@ namespace thirdai::bolt {
 
             ar::ConstArchivePtr toArchive() const final ;
 
-            static std::shared_ptr<NerBackend> fromArchive(
+            static std::shared_ptr<NerBoltModel> fromArchive(
                 const ar::Archive& archive);
 
             void save(const std::string& filename) const;
