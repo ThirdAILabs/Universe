@@ -5,7 +5,7 @@ import pytest
 from thirdai import bolt, data, dataset
 
 VOCAB_SIZE = 50257
-TAG_MAP = {"0": 0, "B-PER": 1, "I-PER": 2, "B-LOC": 3, "I-LOC": 4}
+TAG_MAP = {"O": 0, "B-PER": 1, "I-PER": 2, "B-LOC": 3, "I-LOC": 4}
 
 
 @pytest.fixture()
@@ -64,7 +64,7 @@ def create_bolt_backend():
     )
 
     model = bolt.nn.Model(inputs=inputs, outputs=[output], losses=[loss])
-    return bolt.NerBackend(model)
+    return bolt.BoltNerModel(model)
 
 
 @pytest.mark.unit

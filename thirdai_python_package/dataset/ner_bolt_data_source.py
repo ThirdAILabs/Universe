@@ -26,13 +26,13 @@ class NerBoltDataSource(PyDataSource):
             for line in file:
                 json_obj = json.loads(line.strip())
                 json_obj["source"] = [
-                    tokenize_text(token, self.tokenizer) for token in json_obj["source"]
+                    tokenize_text(self.tokenizer, token) for token in json_obj["source"]
                 ]
                 yield json_obj
 
     def inference_featurizer(self, sentence_tokens_list):
         return [
-            [tokenize_text(token, self.tokenizer) for token in sentence_tokens]
+            [tokenize_text(self.tokenizer, token) for token in sentence_tokens]
             for sentence_tokens in sentence_tokens_list
         ]
 

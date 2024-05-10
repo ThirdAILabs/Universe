@@ -10,3 +10,4 @@ from .csv_data_source import CSVDataSource
 from .llm_data_source import LLMDataSource, RayTextDataSource
 from .parquet_data_source import ParquetSource
 from .ray_data_source import RayCsvDataSource
+from .ner_bolt_data_source import NerBoltDataSource
