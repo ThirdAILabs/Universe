@@ -358,7 +358,7 @@ def test_chunk_store_remapping(chunk_store, id_type):
             ]
         )
 
-    reverse_id_type = str if id_type == int else str
+    reverse_id_type = str if id_type == int else int
     store.remap_custom_ids(
         [
             CustomIdSupervisedBatch(

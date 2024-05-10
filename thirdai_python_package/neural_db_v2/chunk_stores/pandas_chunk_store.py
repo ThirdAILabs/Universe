@@ -137,9 +137,10 @@ class PandasChunkStore(ChunkStore):
 
     def _remap_id(self, custom_id: Union[int, str]) -> int:
         if custom_id not in self.custom_id_map:
-            if int(custom_id) not in self.custom_id_map:
+            reversed_id = str(custom_id) if isinstance(custom_id, int) else int(custom_id)
+            if reversed_id not in self.custom_id_map:
                 raise ValueError(f"Could not find chunk with custom id {custom_id}.")
-            return self.custom_id_map[int(custom_id)]
+            return self.custom_id_map[reversed_id]
         return self.custom_id_map[custom_id]
 
     def remap_custom_ids(
