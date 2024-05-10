@@ -1,5 +1,7 @@
 #pragma once
 
+#include<string>
+#include <data/src/columns/ValueColumns.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/transformations/Transformation.h>
 

@@ -3,9 +3,9 @@
 #include <cereal/types/base_class.hpp>
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
+#include <data/src/columns/Column.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
-#include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Transformation.h>
 #include <sstream>
 #include <utility>
@@ -86,9 +86,9 @@ ColumnMap NerTokenFromStringArray::apply(ColumnMap columns,
   }
   std::unordered_map<std::string, ColumnPtr> output_columns;
   output_columns[_token_column] =
-      ValueColumn<std::string>::make(std::move(tokens), texts->dim());
+      ValueColumn<std::string>::make(std::move(tokens));
   output_columns[_sentence_column] =
-      ValueColumn<std::string>::make(std::move(sentences), texts->dim());
+      ValueColumn<std::string>::make(std::move(sentences));
   if (_target_column) {
     output_columns[*_target_column] =
         ValueColumn<uint32_t>::make(std::move(targets), texts->dim());

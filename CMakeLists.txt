@@ -507,6 +507,7 @@ pybind11_add_module(
   bolt/python_bindings/BoltCompression.cc
   bolt/python_bindings/NumpyConversions.cc
   bolt/python_bindings/BoltTextGeneration.cc
+  bolt/python_bindings/BoltNERPython.cc
   bolt/python_bindings/Porting.cc
   bolt/src/seismic/SeismicBase.cc
   bolt/src/seismic/SeismicEmbedding.cc

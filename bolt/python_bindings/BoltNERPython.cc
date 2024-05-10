@@ -1,4 +1,4 @@
-#include "BoltNerPython.h"
+#include "BoltNERPython.h"
 #include "PybindUtils.h"
 #include <bolt/src/NER/model/NerBoltModel.h>
 #include <bolt/src/NER/model/NerModel.h>
@@ -39,7 +39,7 @@ void addNERModels(py::module_& module) {
            py::arg("train_metrics") = std::vector<std::string>{"loss"},
            py::arg("val_data") = nullptr,
            py::arg("val_metrics") = std::vector<std::string>{})
-      .def("get_ner_tags", py::arg("tokens"))
+      .def("get_ner_tags",&NerModel::getNerTags, py::arg("tokens"))
       .def("save", &NerModel::save)
       .def_static("load", &NerModel::load, py::arg("filename"))
       .def(thirdai::bolt::python::getPickleFunction<NerModel>());

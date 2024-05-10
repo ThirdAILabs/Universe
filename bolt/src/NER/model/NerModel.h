@@ -38,7 +38,8 @@ class NerBackend {
 class NerModel;
 
 class NerModel : public std::enable_shared_from_this<NerModel> {
- private:
+
+ public:
   NerModel(std::shared_ptr<NerBackend> model,
            std::unordered_map<std::string, uint32_t> label_to_tag_map)
       : _ner_backend_model(std::move(model)),
@@ -48,7 +49,6 @@ class NerModel : public std::enable_shared_from_this<NerModel> {
     }
   }
 
- public:
   // initialize (flag)
   metrics::History train(const dataset::DataSourcePtr& train_data,
                          float learning_rate, uint32_t epochs,
