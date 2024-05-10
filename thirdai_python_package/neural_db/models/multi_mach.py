@@ -8,7 +8,8 @@ from ..documents import DocumentDataSource
 from ..supervised_datasource import SupDataSource
 from ..trainer.training_progress_manager import TrainingProgressManager
 from ..utils import clean_text
-from .models import CancelState, Mach
+from .mach import Mach
+from .models import CancelState
 
 
 def aggregate_ensemble_results(results):
@@ -38,7 +39,7 @@ class MultiMach:
         extreme_num_hashes: int,
         tokenizer: int,
         hidden_bias: bool,
-        use_inverted_index: bool,
+        hybrid: bool,
         model_config,
         mach_index_seed_offset: int,
     ):
@@ -59,9 +60,9 @@ class MultiMach:
                 tokenizer=tokenizer,
                 hidden_bias=hidden_bias,
                 model_config=model_config,
-                use_inverted_index=(
-                    use_inverted_index if j == 0 else False
-                ),  # inverted index will be the same for all models in the ensemble
+                hybrid=(
+                    hybrid if j == 0 else False
+                ),  # retriever will be the same for all models in the ensemble
                 mach_index_seed=(mach_index_seed_offset + j * 17),
             )
             for j in range(number_models)
@@ -118,14 +119,11 @@ class MultiMach:
     def searchable(self) -> bool:
         return self.n_ids != 0
 
-    def query_inverted_index(self, samples, n_results):
-        # only the first model in the ensemble can have inverted index
+    def query_finetunable_retriever(self, samples, n_results):
+        # only the first model in the ensemble can have the retriever
         model = self.models[0]
-        if model.inverted_index:
-            single_index_results = model.inverted_index.query(
-                samples, k=min(n_results, model.n_ids)
-            )
-            return single_index_results
+        if model.finetunable_retriever:
+            model.query_finetunable_retriever(samples=samples, n_results=n_results)
         else:
             return None
 

@@ -20,7 +20,9 @@ class DistributedNDBRunner(Runner):
         cls, config: DistributedNDBConfig, path_prefix: str, mlflow_logger
     ):
         scaling_config = setup_ray()
-        ndb_model = ndb.NeuralDB(embedding_dimension=2048, extreme_output_dim=40_000)
+        ndb_model = ndb.NeuralDB(
+            embedding_dimension=2048, extreme_output_dim=40_000, retriever="mach"
+        )
         doc = ndb.CSV(
             path=os.path.join(path_prefix, config.doc_path),
             id_column=config.doc_id_column,

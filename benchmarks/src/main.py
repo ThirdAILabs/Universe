@@ -1,5 +1,6 @@
 import argparse
 import json
+import traceback
 from datetime import date
 from types import SimpleNamespace
 
@@ -139,6 +140,8 @@ def main(**kwargs):
                     f"An error occurred running the {config.config_name} benchmark:",
                     error,
                 )
+                traceback.print_exc()
+
                 payload = f"{config.config_name} benchmark failed on the {args.branch_name} branch!"
                 if slack_webhook:
                     requests.post(slack_webhook, json.dumps({"text": payload}))

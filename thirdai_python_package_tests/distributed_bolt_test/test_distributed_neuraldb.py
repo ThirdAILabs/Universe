@@ -18,7 +18,7 @@ def test_neural_db_training(create_simple_dataset):
     os.makedirs(LOG_PATH, exist_ok=True)
 
     filename = create_simple_dataset
-    ndb = neural_db.NeuralDB("")
+    ndb = neural_db.NeuralDB("", retriever="mach")
 
     doc = neural_db.CSV(
         filename,

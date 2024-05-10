@@ -148,6 +148,8 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("candidates"), py::arg("k"))
       .def("size", &FinetunableRetriever::size)
       .def("remove", &FinetunableRetriever::remove, py::arg("ids"))
+      .def_static("train_from", &FinetunableRetriever::trainFrom,
+                  py::arg("index"))
       .def("save", &FinetunableRetriever::save, py::arg("filename"))
       .def_static("load", &FinetunableRetriever::load, py::arg("filename"))
       .def(bolt::python::getPickleFunction<FinetunableRetriever>());

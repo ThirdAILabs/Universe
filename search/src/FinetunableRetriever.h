@@ -19,6 +19,13 @@ class FinetunableRetriever {
 
   explicit FinetunableRetriever(const ar::Archive& archive);
 
+  static std::shared_ptr<FinetunableRetriever> trainFrom(
+      const std::shared_ptr<InvertedIndex>& index) {
+    auto retriever = std::make_shared<FinetunableRetriever>();
+    retriever->_doc_index = index;
+    return retriever;
+  }
+
   void index(const std::vector<DocId>& ids,
              const std::vector<std::string>& docs);
 
