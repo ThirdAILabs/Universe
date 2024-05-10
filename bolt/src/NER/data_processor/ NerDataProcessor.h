@@ -9,9 +9,6 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <licensing/src/CheckLicense.h>
 #include <memory>
-#include <optional>
-#include <unordered_set>
-#include <utility>
 
 namespace thirdai::bolt {
 class NerDataProcesser : public std::enable_shared_from_this<NerDataProcesser> {

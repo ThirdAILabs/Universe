@@ -14,6 +14,9 @@ void createNERModule(py::module_& module) {
            py::arg("tags_column"), py::arg("fhr_dim"),
            py::arg("target_word_tokenizers"), py::arg("dyadic_num_intervals"))
       .def("process_token", &SimpleDataProcessor::processToken,
-           py::arg("tokens"), py::arg("index"));
+           py::arg("tokens"), py::arg("index"))
+      .def("featurize_token_tag_list",
+           &SimpleDataProcessor::featurizeTokenTagList, py::arg("tokens"),
+           py::arg("tags"));
 }
 }  // namespace thirdai::bolt::ner::python

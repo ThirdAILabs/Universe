@@ -1,6 +1,7 @@
 // Code to create thirdai modules
 #include <bolt/python_bindings/BoltCompression.h>
 #include <bolt/python_bindings/BoltNNPython.h>
+#include <bolt/python_bindings/BoltNer.h>
 #include <bolt/python_bindings/BoltSeismic.h>
 #include <bolt/python_bindings/BoltTextGeneration.h>
 #include <bolt/python_bindings/BoltTrainPython.h>
@@ -140,6 +141,8 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
       bolt_submodule);
   thirdai::bolt::python::addTextGenerationModels(bolt_submodule);
   thirdai::bolt::seismic::python::createSeismicSubmodule(bolt_submodule);
+
+  thirdai::bolt::ner::python::createNERModule(bolt_submodule);
 
   // Automl in Bolt
   thirdai::automl::python::defineAutomlInModule(bolt_submodule);

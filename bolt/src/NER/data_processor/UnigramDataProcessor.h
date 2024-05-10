@@ -4,8 +4,8 @@
 #include " NerDataProcessor.h"
 #include <data/src/transformations/DyadicInterval.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
+#include <cstdint>
 #include <memory>
-#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -33,6 +33,22 @@ class SimpleDataProcessor : std::enable_shared_from_this<SimpleDataProcessor>,
         dyadic_num_intervals);
   }
 
+  std::pair<std::vector<std::vector<uint32_t>>,
+            std::vector<std::vector<uint32_t>>>
+  featurizeTokenTagList(const std::vector<std::string>& tokens,
+                        std::vector<uint32_t> tags) {
+    std::vector<std::vector<uint32_t>> features(tokens.size());
+    std::vector<std::vector<uint32_t>> labels(tags.size());
+
+    for (uint32_t index = 0; index < tokens.size(); index++) {
+      std::string featurized_string = processToken(tokens, index);
+      features[index] = _sentence_tokenizer->tokenize(featurized_string);
+      labels[index] =
+          std::vector<uint32_t>({static_cast<uint32_t>(tags[index])});
+    }
+    return std::make_pair(features, labels);
+  }
+
   std::string processToken(std::vector<std::string> tokens, uint32_t index) {
     /*
      * 1. Generate Dyadic Intervals for the token
@@ -54,7 +70,7 @@ class SimpleDataProcessor : std::enable_shared_from_this<SimpleDataProcessor>,
 
     std::string repr;
     for (const auto& tok : tokenized_target_token) {
-      repr += tok + " ";
+      repr += _target_prefix + tok + " ";
     }
 
     repr += generateDyadicWindows(tokens, index);
@@ -63,10 +79,22 @@ class SimpleDataProcessor : std::enable_shared_from_this<SimpleDataProcessor>,
 
   std::string generateDyadicWindows(std::vector<std::string> tokens,
                                     uint32_t index) {
+    // auto print_vector = [](const auto& vec) {
+    //   for (const auto& element : vec) {
+    //     std::cout << element << " ";
+    //   }
+    //   std::cout << std::endl;
+    // };
+
+    // print_vector(tokens);
+
     std::vector<std::vector<std::string>> dyadic_windows;
     for (size_t interval_id = 0; interval_id < _dyadic_num_intervals;
          interval_id++) {
-      uint32_t interval_size = 2 ^ interval_id;
+      uint32_t interval_size = 1 << interval_id;
+
+      // std::cout << interval_id << std::endl;
+      // std::cout << interval_size << std::endl;
 
       std::vector<std::string> prev_window, next_window;
       prev_window.reserve(interval_size);
@@ -75,17 +103,24 @@ class SimpleDataProcessor : std::enable_shared_from_this<SimpleDataProcessor>,
       for (size_t lower_index =
                std::max(index - interval_size, static_cast<uint32_t>(0));
            lower_index < index; lower_index++) {
-        prev_window.push_back(dyadic_previous_prefix +
+        prev_window.push_back(_dyadic_previous_prefix +
                               std::to_string(interval_id) + "_" +
                               tokens[lower_index]);
       }
 
-      for (size_t upper_index = std::min(index + interval_size,
-                                         static_cast<uint32_t>(tokens.size()));
+      // print_vector(prev_window);
+
+      for (size_t upper_index = std::min(
+               index + interval_size, static_cast<uint32_t>(tokens.size() - 1));
            upper_index > index; upper_index--) {
-        prev_window.push_back(dyadic_next_prefix + std::to_string(interval_id) +
-                              "_" + tokens[upper_index]);
+        next_window.push_back(_dyadic_next_prefix +
+                              std::to_string(interval_id) + "_" +
+                              tokens[upper_index]);
       }
+      // print_vector(next_window);
+
+      dyadic_windows.push_back(prev_window);
+      dyadic_windows.push_back(next_window);
     }
 
     std::string repr;
@@ -94,6 +129,8 @@ class SimpleDataProcessor : std::enable_shared_from_this<SimpleDataProcessor>,
         repr += tok + " ";
       }
     }
+
+    // std::cout << repr << std::endl;
     return repr;
   }
 
@@ -106,8 +143,11 @@ class SimpleDataProcessor : std::enable_shared_from_this<SimpleDataProcessor>,
   std::vector<dataset::TextTokenizerPtr> _target_word_tokenizers;
   uint32_t _dyadic_num_intervals;
 
-  std::string target_prefix = "t_";
-  std::string dyadic_previous_prefix = "pp_";
-  std::string dyadic_next_prefix = "np_";
+  std::string _target_prefix = "t_";
+  std::string _dyadic_previous_prefix = "pp_";
+  std::string _dyadic_next_prefix = "np_";
+
+  dataset::TextTokenizerPtr _sentence_tokenizer =
+      std::make_shared<dataset::NaiveSplitTokenizer>(' ');
 };
 }  // namespace thirdai::bolt
