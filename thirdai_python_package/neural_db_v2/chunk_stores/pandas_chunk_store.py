@@ -77,11 +77,15 @@ class PandasChunkStore(ChunkStore):
 
         return output_batches
 
-    def delete(self, chunk_ids: List[ChunkId], **kwargs):
+    def delete(self, chunk_ids: List[ChunkId]):
         self.chunk_df.drop(chunk_ids, inplace=True)
         if not self.metadata_df.empty:
             self.metadata_df.drop(chunk_ids, inplace=True)
-        # TODO remove from custom id map, add test
+
+        chunk_ids = set(chunk_ids)
+        for _, chunk_id in self.custom_id_map.items():
+            if chunk_id in chunk_ids:
+                del self.custom_id_map[chunk_id]
 
     def get_chunks(self, chunk_ids: List[ChunkId], **kwargs) -> List[Chunk]:
         try:
@@ -139,6 +143,9 @@ class PandasChunkStore(ChunkStore):
     def remap_custom_ids(
         self, samples: Iterable[CustomIdSupervisedBatch]
     ) -> Iterable[SupervisedBatch]:
+
+        if not self.custom_id_map:
+            raise ValueError(f"Chunk Store does not contain custom ids.")
 
         return [
             SupervisedBatch(

@@ -232,7 +232,7 @@ class SQLiteChunkStore(ChunkStore):
 
         return inserted_chunks_iterator
 
-    def delete(self, chunk_ids: List[ChunkId], **kwargs):
+    def delete(self, chunk_ids: List[ChunkId]):
         with self.engine.begin() as conn:
             delete_chunks = delete(self.chunk_table).where(
                 self.chunk_table.c.chunk_id.in_(chunk_ids)
@@ -244,6 +244,12 @@ class SQLiteChunkStore(ChunkStore):
                     self.metadata_table.c.chunk_id.in_(chunk_ids)
                 )
                 conn.execute(delete_metadata)
+
+            if self.custom_id_table is not None:
+                delete_chunk_ids = delete(self.custom_id_table).where(
+                    self.custom_id_table.c.chunk_id.in_(chunk_ids)
+                )
+                conn.execute(delete_chunk_ids)
 
     def get_chunks(self, chunk_ids: List[ChunkId], **kwargs) -> List[Chunk]:
         id_to_chunk = {}
@@ -310,7 +316,8 @@ class SQLiteChunkStore(ChunkStore):
     ) -> Iterable[SupervisedBatch]:
         remapped_batches = []
 
-        # TODO check for if table is none
+        if self.custom_id_table is None:
+            raise ValueError(f"Chunk Store does not contain custom ids.")
 
         for batch in samples:
             chunk_ids = []
