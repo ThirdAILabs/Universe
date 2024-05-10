@@ -49,7 +49,7 @@ class ChunkStore(ABC):
     ) -> Iterable[SupervisedBatch]:
         raise NotImplementedError
 
-    def _set_and_validate_custom_id_type(self, custom_ids):
+    def _set_or_validate_custom_id_type(self, custom_ids):
         incoming_custom_id_type = CustomIDType.NotSet
         if custom_ids is None:
             incoming_custom_id_type = CustomIDType.NoneType

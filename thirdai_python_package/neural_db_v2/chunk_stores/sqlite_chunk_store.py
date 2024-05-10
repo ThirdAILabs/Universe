@@ -150,7 +150,7 @@ class SQLiteChunkStore(ChunkStore):
         self.metadata.create_all(self.engine)
 
     def _update_custom_ids(self, custom_ids, chunk_ids):
-        self._set_and_validate_custom_id_type(custom_ids)
+        self._set_or_validate_custom_id_type(custom_ids)
 
         if custom_ids is not None:
             if self.custom_id_table is None:

@@ -358,6 +358,21 @@ def test_chunk_store_remapping(chunk_store, id_type):
             ]
         )
 
+    reverse_id_type = str if id_type == int else str
+    store.remap_custom_ids(
+        [
+            CustomIdSupervisedBatch(
+                query=pd.Series(["w", "x"]),
+                custom_id=pd.Series(
+                    [
+                        [reverse_id_type(200)],
+                        [reverse_id_type(400), reverse_id_type(300)],
+                    ]
+                ),
+            )
+        ]
+    )
+
     clean_up_sql_lite_db(store)
 
 

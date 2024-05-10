@@ -32,7 +32,7 @@ class PandasChunkStore(ChunkStore):
         self.next_id = 0
 
     def _update_custom_ids(self, custom_ids, chunk_ids):
-        self._set_and_validate_custom_id_type(custom_ids)
+        self._set_or_validate_custom_id_type(custom_ids)
 
         if custom_ids is not None:
             for custom_id, chunk_id in zip(custom_ids, chunk_ids):
@@ -137,7 +137,9 @@ class PandasChunkStore(ChunkStore):
 
     def _remap_id(self, custom_id: Union[int, str]) -> int:
         if custom_id not in self.custom_id_map:
-            raise ValueError(f"Could not find chunk with custom id {custom_id}.")
+            if int(custom_id) not in self.custom_id_map:
+                raise ValueError(f"Could not find chunk with custom id {custom_id}.")
+            return self.custom_id_map[int(custom_id)]
         return self.custom_id_map[custom_id]
 
     def remap_custom_ids(
