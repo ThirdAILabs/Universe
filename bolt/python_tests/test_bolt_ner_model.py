@@ -1,7 +1,6 @@
 import json
 import os
 
-
 import pytest
 from thirdai import bolt, data, dataset
 
