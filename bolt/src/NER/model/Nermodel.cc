@@ -12,7 +12,31 @@
 
 namespace thirdai::bolt {
 
+     
+        // need to use label tag as transform for label during training
+        metrics::History NerModel::train(
+            const dataset::DataSourcePtr& train_data, float learning_rate,
+            uint32_t epochs, size_t batch_size,
+            const std::vector<std::string>& train_metrics,
+            const dataset::DataSourcePtr& val_data,
+            const std::vector<std::string>& val_metrics
+        ){
+            return _ner_backend_model->train(train_data, learning_rate, epochs, batch_size, train_metrics, val_data, val_metrics);
+        }
 
+        std::vector<std::vector<std::string>> NerModel::getNerTags(std::vector<std::vector<std::string>>& tokens){
+            std::vector<std::vector<uint32_t>> tags = _ner_backend_model->getTags(tokens);
+            
+            std::vector<std::vector<std::string>> string_tags(tags.size());
+            for(const auto &sentence_tag: tags){
+                std::vector<std::string> sentence_string_tags;
+                sentence_string_tags.reserve(sentence_tag.size());
+                for(const auto &tag: sentence_tag){
+                    sentence_string_tags.push_back(_tag_to_label_map[tag]);
+                }
+            }
+            return string_tags;
+        }
 
      ar::ConstArchivePtr NerModel::toArchive() const {
         auto ner_bolt_model = ar::Map::make();
@@ -24,7 +48,7 @@ namespace thirdai::bolt {
             label_to_tags[label] = tag;
         }
         ner_bolt_model->set("label_to_tag_map", ar::mapStrU64(label_to_tags));
-
+        
         return ner_bolt_model;
     }
 

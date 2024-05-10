@@ -19,6 +19,7 @@
 
 namespace thirdai::bolt {
 
+// added to support both bolt and udt back in case
 class NerBackend {
  public:
     virtual ~NerBackend() = default;
@@ -45,7 +46,13 @@ class NerModel;
 class NerModel : public std::enable_shared_from_this<NerModel> {
     private:
         NerModel(std::shared_ptr<NerBackend> model,
-                        std::unordered_map<std::string, uint32_t> _label_to_tag_map);
+                        std::unordered_map<std::string, uint32_t> label_to_tag_map):
+                        _ner_backend_model(std::move(model)),
+                        _label_to_tag_map(std::move(label_to_tag_map)) {
+                            for (const auto& [k, v] : _label_to_tag_map) {
+                                _tag_to_label_map[v] = k;
+                            }
+                        }
 
     public:
         //initialize (flag)
@@ -57,7 +64,7 @@ class NerModel : public std::enable_shared_from_this<NerModel> {
             const std::vector<std::string>& val_metrics
         );
 
-        std::unordered_map<std::string, std::string> getNerTags(std::vector<std::string>& tokens);
+        std::vector<std::vector<std::string>> getNerTags(std::vector<std::vector<std::string>>& tokens);
 
 
         ar::ConstArchivePtr toArchive() const;
@@ -78,6 +85,7 @@ class NerModel : public std::enable_shared_from_this<NerModel> {
         std::shared_ptr<NerBackend> _ner_backend_model;
 
         std::unordered_map<std::string, uint32_t> _label_to_tag_map;
+        std::unordered_map<uint32_t, std::string> _tag_to_label_map;
 
         NerModel() {}
 };
