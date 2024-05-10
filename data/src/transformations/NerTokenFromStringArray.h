@@ -1,11 +1,22 @@
 #pragma once
 
-#include<string>
-#include <data/src/columns/ValueColumns.h>
 #include <data/src/ColumnMap.h>
+#include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Transformation.h>
+#include <string>
 
 namespace thirdai::data {
+inline std::vector<size_t> computeOffsets(
+    const ArrayColumnBasePtr<std::string>& texts) {
+  std::vector<size_t> offsets(texts->numRows() + 1);
+  offsets[0] = 0;
+  for (size_t i = 0; i < texts->numRows(); i++) {
+    // number of samples is equal to number of tokens
+    offsets[i + 1] = offsets[i] + texts->row(i).size();
+  }
+  return offsets;
+}
+
 class NerTokenFromStringArray final : public Transformation {
  public:
   NerTokenFromStringArray(std::string source_column, std::string token_column,

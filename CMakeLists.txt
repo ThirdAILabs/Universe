@@ -410,6 +410,8 @@ set(THIRDAI_SOURCES
     data/src/transformations/NextWordPrediction.cc
     data/src/transformations/SpladeAugmentation.cc
     data/src/transformations/NerTokenFromStringArray.cc
+    data/src/transformations/ner/NerTokenizationUnigram.cc
+    data/src/transformations/ner/UnigramDataProcessor.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
@@ -513,7 +515,6 @@ pybind11_add_module(
   bolt/src/seismic/SeismicEmbedding.cc
   bolt/src/seismic/SeismicClassifier.cc
   bolt/python_bindings/BoltSeismic.cc
-  bolt/python_bindings/BoltNer.cc
   dataset/python_bindings/DatasetPython.cc
   data/python_bindings/DataPython.cc
   search/python_bindings/SearchPython.cc

@@ -25,7 +25,10 @@
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/cold_start/ColdStartText.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
+#include <data/src/transformations/ner/NerTokenizationUnigram.h>
+#include <data/src/transformations/ner/UnigramDataProcessor.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
+#include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <pybind11/attr.h>
 #include <pybind11/detail/common.h>
@@ -524,6 +527,18 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                     std::optional<std::string>>(),
            py::arg("source_column"), py::arg("token_column"),
            py::arg("sentence_column"), py::arg("target_column"));
+
+  py::class_<NerTokenizerUnigram, Transformation,
+             std::shared_ptr<NerTokenizerUnigram>>(transformations_submodule,
+                                                   "NerTokenizerUnigram")
+      .def(py::init<std::string, std::string, std::optional<std::string>,
+                    uint32_t, uint32_t,
+                    std::vector<dataset::TextTokenizerPtr>>(),
+           py::arg("tokens_column"), py::arg("featurized_sentence_column"),
+           py::arg("target_column"), py::arg("fhr_dim"),
+           py::arg("dyadic_num_intervals"), py::arg("target_word_tokenizers"))
+      .def("process_token", &NerTokenizerUnigram::processToken,
+           py::arg("tokens"), py::arg("index"));
 }
 
 }  // namespace thirdai::data::python

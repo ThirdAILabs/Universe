@@ -3,9 +3,9 @@
 #include <cereal/types/base_class.hpp>
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
-#include <data/src/columns/Column.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
+#include <data/src/columns/Column.h>
 #include <data/src/transformations/Transformation.h>
 #include <iterator>
 #include <sstream>
@@ -21,17 +21,6 @@ NerTokenFromStringArray::NerTokenFromStringArray(
       _sentence_column(std::move(sentence_column)),
       _target_column(std::move(target_column)) {}
 
-std::vector<size_t> computeOffsets(
-    const ArrayColumnBasePtr<std::string>& texts) {
-  std::vector<size_t> offsets(texts->numRows() + 1);
-  offsets[0] = 0;
-  for (size_t i = 0; i < texts->numRows(); i++) {
-    // number of samples is equal to number of tokens
-    offsets[i + 1] = offsets[i] + texts->row(i).size();
-  }
-  return offsets;
-}
-
 ColumnMap NerTokenFromStringArray::apply(ColumnMap columns,
                                          State& state) const {
   (void)state;
@@ -41,7 +30,7 @@ ColumnMap NerTokenFromStringArray::apply(ColumnMap columns,
   if (_target_column) {
     tags = columns.getValueColumn<uint32_t>(*_target_column);
   }
-  auto sample_offsets = computeOffsets(texts);
+  auto sample_offsets = thirdai::data::computeOffsets(texts);
 
   std::vector<std::string> tokens(sample_offsets.back());
 
