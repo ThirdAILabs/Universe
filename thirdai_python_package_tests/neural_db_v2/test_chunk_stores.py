@@ -1,3 +1,4 @@
+import itertools
 import os
 import shutil
 
@@ -30,7 +31,7 @@ def get_simple_chunk_store(chunk_store_type, custom_id_type=int, use_metadata=Tr
 
     batches = [
         NewChunkBatch(
-            custom_id=None,
+            custom_id=pd.Series([custom_id_type(500), custom_id_type(600)]),
             text=pd.Series(["0 1", "1 2"]),
             keywords=pd.Series(["00 11", "11 22"]),
             document=pd.Series(["doc0", "doc1"]),
@@ -89,6 +90,7 @@ def test_chunk_store_basic_operations(chunk_store):
         chunks[0],
         chunk_id=1,
         value=1,
+        custom_id=600,
         metadata={"class": "b", "number": 9, "item": "y", "time": None},
     )
     check_chunk_contents(
@@ -102,6 +104,7 @@ def test_chunk_store_basic_operations(chunk_store):
         chunks[2],
         chunk_id=0,
         value=0,
+        custom_id=500,
         metadata={"class": "a", "number": 4, "item": "x", "time": None},
     )
 
@@ -123,6 +126,7 @@ def test_chunk_store_basic_operations(chunk_store):
         chunks[1],
         chunk_id=0,
         value=0,
+        custom_id=500,
         metadata={"class": "a", "number": 4, "item": "x", "time": None},
     )
 
@@ -153,6 +157,7 @@ def test_chunk_store_basic_operations(chunk_store):
         chunks[1],
         chunk_id=0,
         value=0,
+        custom_id=500,
         metadata={"class": "a", "number": 4, "item": "x", "time": None},
     )
     check_chunk_contents(
@@ -181,7 +186,8 @@ def test_chunk_store_basic_operations(chunk_store):
         os.remove(os.path.basename(store.db_name))
 
 
-def test_sqlite_chunk_store_custom_id_type_mismatch():
+@pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])
+def test_chunk_store_custom_id_type_mismatch(chunk_store):
     integer_label_batch = NewChunkBatch(
         custom_id=pd.Series([200]),
         text=pd.Series(["2 3"]),
@@ -198,33 +204,29 @@ def test_sqlite_chunk_store_custom_id_type_mismatch():
         metadata=None,
     )
 
-    with pytest.raises(
-        ValueError,
-        match="Custom ids must all have the same type. Found some custom ids with type int, and some with type str.",
-    ):
-        store = SQLiteChunkStore()
-        store.insert(
-            chunks=[
-                integer_label_batch,
-                string_label_batch,
-            ]
-        )
+    no_label_batch = NewChunkBatch(
+        custom_id=None,
+        text=pd.Series(["0 1"]),
+        keywords=pd.Series(["00 01"]),
+        document=pd.Series(["doc3"]),
+        metadata=None,
+    )
 
-    clean_up_sql_lite_db(store)
-
-    with pytest.raises(
-        ValueError,
-        match="Custom ids must all have the same type. Found some custom ids with type int, and some with type str.",
-    ):
-        store = SQLiteChunkStore()
-        store.insert(
-            chunks=[
-                string_label_batch,
-                integer_label_batch,
-            ]
-        )
-
-    clean_up_sql_lite_db(store)
+    possible_batches = [integer_label_batch, string_label_batch, no_label_batch]
+    for perm in itertools.permutations(possible_batches, 2):
+        with pytest.raises(
+            ValueError,
+            match="Custom ids must all have the same type. Must be int, str, or None.",
+        ):
+            print(
+                f"Trying insertion with first type as '{type(perm[0][0].custom_id)}' and second type as '{type(perm[1][0].custom_id)}'."
+            )
+            store = chunk_store()
+            try:
+                store.insert(chunks=list(perm))
+            except:
+                clean_up_sql_lite_db(store)
+                raise
 
 
 @pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])
@@ -356,6 +358,21 @@ def test_chunk_store_remapping(chunk_store, id_type):
             ]
         )
 
+    reverse_id_type = str if id_type == int else int
+    store.remap_custom_ids(
+        [
+            CustomIdSupervisedBatch(
+                query=pd.Series(["w", "x"]),
+                custom_id=pd.Series(
+                    [
+                        [reverse_id_type(200)],
+                        [reverse_id_type(400), reverse_id_type(300)],
+                    ]
+                ),
+            )
+        ]
+    )
+
     clean_up_sql_lite_db(store)
 
 
@@ -404,6 +421,7 @@ def test_chunk_store_with_no_metadata(chunk_store):
         chunks[0],
         chunk_id=1,
         value=1,
+        custom_id=600,
         metadata=None,
     )
     check_chunk_contents(
@@ -417,6 +435,7 @@ def test_chunk_store_with_no_metadata(chunk_store):
         chunks[2],
         chunk_id=0,
         value=0,
+        custom_id=500,
         metadata=None,
     )
 

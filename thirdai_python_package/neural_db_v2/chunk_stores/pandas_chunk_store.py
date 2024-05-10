@@ -31,6 +31,13 @@ class PandasChunkStore(ChunkStore):
 
         self.next_id = 0
 
+    def _update_custom_ids(self, custom_ids, chunk_ids):
+        self._set_or_validate_custom_id_type(custom_ids)
+
+        if custom_ids is not None:
+            for custom_id, chunk_id in zip(custom_ids, chunk_ids):
+                self.custom_id_map[custom_id] = chunk_id
+
     def insert(self, chunks: Iterable[NewChunkBatch], **kwargs) -> Iterable[ChunkBatch]:
         all_chunks = [self.chunk_df]
         all_metadata = [self.metadata_df]
@@ -51,9 +58,7 @@ class PandasChunkStore(ChunkStore):
                 metadata["chunk_id"] = chunk_ids
                 all_metadata.append(metadata)
 
-            if batch.custom_id is not None:
-                for custom_id, chunk_id in zip(batch.custom_id, chunk_ids):
-                    self.custom_id_map[custom_id] = chunk_id
+            self._update_custom_ids(batch.custom_id, chunk_ids)
 
             output_batches.append(
                 ChunkBatch(chunk_id=chunk_ids, text=batch.text, keywords=batch.keywords)
@@ -72,10 +77,15 @@ class PandasChunkStore(ChunkStore):
 
         return output_batches
 
-    def delete(self, chunk_ids: List[ChunkId], **kwargs):
+    def delete(self, chunk_ids: List[ChunkId]):
         self.chunk_df.drop(chunk_ids, inplace=True)
         if not self.metadata_df.empty:
             self.metadata_df.drop(chunk_ids, inplace=True)
+
+        chunk_ids = set(chunk_ids)
+        for custom_id, chunk_id in list(self.custom_id_map.items()):
+            if chunk_id in chunk_ids:
+                del self.custom_id_map[custom_id]
 
     def get_chunks(self, chunk_ids: List[ChunkId], **kwargs) -> List[Chunk]:
         try:
@@ -127,12 +137,22 @@ class PandasChunkStore(ChunkStore):
 
     def _remap_id(self, custom_id: Union[int, str]) -> int:
         if custom_id not in self.custom_id_map:
-            raise ValueError(f"Could not find chunk with custom id {custom_id}.")
+            reversed_id = (
+                int(custom_id)
+                if isinstance(custom_id, str) and custom_id.isdigit()
+                else str(custom_id)
+            )
+            if reversed_id not in self.custom_id_map:
+                raise ValueError(f"Could not find chunk with custom id {custom_id}.")
+            return self.custom_id_map[reversed_id]
         return self.custom_id_map[custom_id]
 
     def remap_custom_ids(
         self, samples: Iterable[CustomIdSupervisedBatch]
     ) -> Iterable[SupervisedBatch]:
+
+        if not self.custom_id_map:
+            raise ValueError(f"Chunk Store does not contain custom ids.")
 
         return [
             SupervisedBatch(
