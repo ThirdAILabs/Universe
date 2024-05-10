@@ -7,6 +7,7 @@
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/Transformation.h>
+#include <iterator>
 #include <sstream>
 #include <utility>
 
