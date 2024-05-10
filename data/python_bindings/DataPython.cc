@@ -14,6 +14,7 @@
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/NextWordPrediction.h>
+#include <data/src/transformations/NerTokenFromStringArray.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/StringCast.h>
@@ -515,6 +516,13 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("tokenizer"), py::arg("n_augmented_tokens") = 100,
            py::arg("augmentation_frac") = std::nullopt,
            py::arg("filter_tokens") = true, py::arg("batch_size") = 4096);
+
+    py::class_<NerTokenFromStringArray, Transformation,
+             std::shared_ptr<NerTokenFromStringArray>>(transformations_submodule,
+                                                  "NerTokenFromStringArray")
+      .def(py::init<std::string, std::string, std::string, std::string>(),
+           py::arg("source_column"), py::arg("target_column"),
+           py::arg("token_column"), py::arg("sentence_column"));
 }
 
 }  // namespace thirdai::data::python

@@ -1,0 +1,27 @@
+#pragma once
+
+#include <data/src/ColumnMap.h>
+#include <data/src/transformations/Transformation.h>
+
+namespace thirdai::data {
+    class NerTokenFromStringArray final: public Transformation {
+        public:
+            NerTokenFromStringArray(std::string source_column,std::string token_column, 
+                        std::string sentence_column, std::optional<std::string> target_column);
+
+            explicit NerTokenFromStringArray(const ar::Archive& archive);
+
+            ColumnMap apply(ColumnMap columns, State& state) const final;
+
+            ar::ConstArchivePtr toArchive() const final;
+
+            static std::string type() { return "ner_token_from_string_array"; }
+
+
+        private:
+            std::string _source_column;
+            std::string _token_column;
+            std::string _sentence_column;
+            std::optional<std::string> _target_column;
+    };
+}  // namespace thirdai::data
