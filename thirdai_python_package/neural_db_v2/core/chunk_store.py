@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Iterable, List, Set
+
+from pandas.api.types import is_numeric_dtype, is_string_dtype
 
 from .types import (
     Chunk,
@@ -11,9 +14,19 @@ from .types import (
 )
 
 
+class CustomIDType(Enum):
+    NotSet = 1
+    NoneType = 2
+    String = 3
+    Integer = 4
+
+
 # Calling this ChunkStore instead of DocumentStore because it stores chunks
 # instead of documents.
 class ChunkStore(ABC):
+    def __init__(self):
+        self.custom_id_type = CustomIDType.NotSet
+
     @abstractmethod
     def insert(self, chunks: Iterable[NewChunkBatch], **kwargs) -> Iterable[ChunkBatch]:
         raise NotImplementedError
@@ -35,3 +48,21 @@ class ChunkStore(ABC):
         self, samples: Iterable[CustomIdSupervisedBatch]
     ) -> Iterable[SupervisedBatch]:
         raise NotImplementedError
+
+    def _set_and_validate_custom_id_type(self, custom_ids):
+        incoming_custom_id_type = CustomIDType.NotSet
+        if custom_ids is None:
+            incoming_custom_id_type = CustomIDType.NoneType
+        elif is_string_dtype(custom_ids):
+            incoming_custom_id_type = CustomIDType.String
+        elif is_numeric_dtype(custom_ids):
+            incoming_custom_id_type = CustomIDType.Integer
+        else:
+            raise ValueError("Invalid custom id type.")
+
+        if self.custom_id_type == CustomIDType.NotSet:
+            self.custom_id_type = incoming_custom_id_type
+        elif incoming_custom_id_type != self.custom_id_type:
+            raise ValueError(
+                "Custom ids must all have the same type. Must be int, str, or None."
+            )

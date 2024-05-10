@@ -1,12 +1,10 @@
 import operator
 import os
-from enum import Enum
 from functools import reduce
 from typing import Dict, Iterable, List, Set, Union
 
 import numpy as np
 import pandas as pd
-from pandas.api.types import is_numeric_dtype, is_string_dtype
 from thirdai.neural_db.utils import pickle_to, unpickle_from
 
 from ..core.chunk_store import ChunkStore
@@ -21,13 +19,6 @@ from ..core.types import (
 from .constraints import Constraint
 
 
-class CustomIDType(Enum):
-    NotSet = 1
-    NoneType = 2
-    String = 3
-    Integer = 4
-
-
 class PandasChunkStore(ChunkStore):
     def __init__(self, **kwargs):
         super().__init__()
@@ -35,29 +26,13 @@ class PandasChunkStore(ChunkStore):
         self.chunk_df = pd.DataFrame()
 
         self.custom_id_map = {}
-        self.custom_id_type = CustomIDType.NotSet
 
         self.metadata_df = pd.DataFrame()
 
         self.next_id = 0
 
     def _update_custom_ids(self, custom_ids, chunk_ids):
-        incoming_custom_id_type = CustomIDType.NotSet
-        if custom_ids is None:
-            incoming_custom_id_type = CustomIDType.NoneType
-        elif is_string_dtype(custom_ids):
-            incoming_custom_id_type = CustomIDType.String
-        elif is_numeric_dtype(custom_ids):
-            incoming_custom_id_type = CustomIDType.Integer
-        else:
-            raise ValueError("Invalid custom id type.")
-
-        if self.custom_id_type == CustomIDType.NotSet:
-            self.custom_id_type = incoming_custom_id_type
-        elif incoming_custom_id_type != self.custom_id_type:
-            raise ValueError(
-                "Custom ids must all have the same type. Found some custom ids with type int, and some with type str."
-            )
+        self._set_and_validate_custom_id_type(custom_ids)
 
         if custom_ids is not None:
             for custom_id, chunk_id in zip(custom_ids, chunk_ids):
