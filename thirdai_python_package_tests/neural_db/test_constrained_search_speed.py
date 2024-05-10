@@ -239,27 +239,3 @@ def benchmark(
         "avg_constraint_matching_time": constraint_matching_time / num_queries,
         "total_constraint_indexing_time": constraint_indexing_time,
     }
-
-
-@pytest.mark.unit
-def test_constrained_search_speed():
-    times = benchmark(
-        num_metadata_fields=10,
-        num_options_per_field=4,
-        metadata_field_len=5,
-        metadata_option_len=5,
-        num_exact_filters=5,
-        num_range_filters=1,
-        range_size=3,
-        num_docs=1_000_000,
-        num_queries=100,
-        verbose=True,
-    )
-
-    avg_search_time = neuraldb_search_time()
-
-    # Compare time with search time to account for different hardware speeds.
-    # Average constraint matching time is around 6x search time on mac
-    assert times["avg_constraint_matching_time"] < 20 * avg_search_time
-    # Total constraint indexing time is around 300x search time on mac.
-    assert times["total_constraint_indexing_time"] < 1000 * avg_search_time

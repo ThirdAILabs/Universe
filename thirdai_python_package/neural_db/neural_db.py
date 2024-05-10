@@ -12,9 +12,9 @@ from thirdai._thirdai import bolt, data
 from . import loggers, teachers
 from .documents import CSV, Document, DocumentManager, Reference
 from .models.finetunable_retriever import FinetunableRetriever
+from .models.mach import Mach
 from .models.mach_mixture_model import MachMixture
-from .models.models import CancelState, Mach
-from .models.multi_mach import MultiMach
+from .models.models import CancelState
 from .savable_state import (
     State,
     load_checkpoint,
@@ -48,6 +48,8 @@ class NeuralDB:
         user_id: str = "user",
         num_shards: int = 1,
         num_models_per_shard: int = 1,
+        retriever="finetunable_retriever",
+        low_memory=None,
         **kwargs,
     ) -> None:
         """
@@ -55,11 +57,21 @@ class NeuralDB:
 
         Args:
             user_id (str): Optional, used to identify user/session in logging.
-            number_models (int): Optional, default 1. Used to control model sharding.
+            retriever (str): One of 'finetunable_retriever', 'mach', or 'hybrid'.
+                Identifies which retriever to use as the backend. Defaults to
+                'finetunable_retriever'.
 
         Returns:
             A NeuralDB.
         """
+        if low_memory is not None:
+            print(
+                "Warning: 'low_memory' flag will be deprecated soon in the NeuralDB constructor. Please pass 'retriever=' instead."
+            )
+            if low_memory == True:
+                retriever = "finetunable_retriever"
+            elif low_memory == False:
+                retriever = "hybrid"
         self._user_id: str = user_id
 
         # The savable_state kwarg is only used in static constructor methods
@@ -79,18 +91,30 @@ class NeuralDB:
                     " NeuralDB can only be initialized with a positive number of"
                     " models per shard."
                 )
-            if kwargs.get("low_memory", False):
+            if retriever == "finetunable_retriever":
                 model = FinetunableRetriever()
-            elif num_shards > 1 or num_models_per_shard > 1:
-                model = MachMixture(
-                    num_shards=num_shards,
-                    num_models_per_shard=num_models_per_shard,
-                    id_col="id",
-                    query_col="query",
-                    **kwargs,
-                )
+            elif retriever == "mach" or retriever == "hybrid":
+                if num_shards > 1 or num_models_per_shard > 1:
+                    model = MachMixture(
+                        num_shards=num_shards,
+                        num_models_per_shard=num_models_per_shard,
+                        id_col="id",
+                        query_col="query",
+                        hybrid=(retriever == "hybrid"),
+                        **kwargs,
+                    )
+                else:
+                    model = Mach(
+                        id_col="id",
+                        query_col="query",
+                        hybrid=(retriever == "hybrid"),
+                        **kwargs,
+                    )
             else:
-                model = Mach(id_col="id", query_col="query", **kwargs)
+                raise ValueError(
+                    f"Invalid retriever '{retriever}'. Please use 'finetunable_retriever', 'mach', or 'hybrid'."
+                )
+
             self._savable_state = State(
                 model, logger=loggers.LoggerList([loggers.InMemoryLogger()])
             )
@@ -917,7 +941,9 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
-            disable_inverted_index=kwargs.get("disable_inverted_index", True),
+            disable_finetunable_retriever=kwargs.get(
+                "disable_finetunable_retriever", True
+            ),
             checkpoint_config=checkpoint_config,
         )
 
@@ -974,7 +1000,9 @@ class NeuralDB:
             max_in_memory_batches=max_in_memory_batches,
             metrics=metrics,
             callbacks=callbacks,
-            disable_inverted_index=kwargs.get("disable_inverted_index", True),
+            disable_finetunable_retriever=kwargs.get(
+                "disable_finetunable_retriever", True
+            ),
             checkpoint_config=checkpoint_config,
         )
         if checkpoint_config:
@@ -1032,9 +1060,4 @@ class NeuralDB:
             n_buckets=self._get_associate_top_k(strength),
             learning_rate=learning_rate,
             epochs=epochs,
-        )
-
-    def build_inverted_index(self):
-        self._savable_state.model.build_inverted_index(
-            self._savable_state.documents.get_data_source()
         )
