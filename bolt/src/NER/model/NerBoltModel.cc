@@ -88,6 +88,7 @@ std::vector<std::vector<uint32_t>> NerBoltModel::getTags(
   data::ColumnMap data(
       data::ColumnMap({{_source_column, data::ArrayColumn<std::string>::make(
                                             std::move(tokens), _vocab_size)}}));
+  
   auto columns = _inference_transforms->applyStateless(data);
   auto tensors = data::toTensorBatches(columns, _bolt_inputs, 2048);
 

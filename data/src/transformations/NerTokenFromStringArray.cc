@@ -94,12 +94,7 @@ ColumnMap NerTokenFromStringArray::apply(ColumnMap columns,
     std::rethrow_exception(error);
   }
   std::unordered_map<std::string, ColumnPtr> output_columns;
-  size_t size = tokens.size();
 
-  std::cout << "Tokens | Sentences | Targets\n";
-  for (size_t i = 0; i < size; ++i) {
-      std::cout << tokens[i] << " | " << sentences[i] << " | " << targets[i] << '\n';
-  }
   output_columns[_token_column] =
       ValueColumn<std::string>::make(std::move(tokens));
   output_columns[_sentence_column] =
