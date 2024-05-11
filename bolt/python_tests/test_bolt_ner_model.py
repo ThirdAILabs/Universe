@@ -32,7 +32,7 @@ def sample_training_data():
             label_ids = [TAG_MAP[tag] for tag in tags]
 
             # Create a dictionary to hold the source and target data
-            data = {"source": " ".join(tokens), "target": label_ids}
+            data = {"source": tokens, "target": label_ids}
 
             # Write the JSON line to the file
             json_line = json.dumps(data)
@@ -92,7 +92,7 @@ def test_ner_backend(sample_training_data):
         ["Ram", "is", "going", "to", "Delhi"],
         ["Shyam", "is", "going", "to", "Kolhapur"],
     ]
-    results = bolt_ner_model.get_ner_tags(train_data_source.NerBoltDataSource(texts))
+    results = bolt_ner_model.get_ner_tags(train_data_source.inference_featurizer(texts))
     assert all([len(text) == len(result) for text, result in zip(texts, results)])
 
     bolt_ner_model.save("ner_model")
