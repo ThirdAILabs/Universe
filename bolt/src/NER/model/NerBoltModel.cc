@@ -27,7 +27,7 @@ NerBoltModel::NerBoltModel(bolt::ModelPtr model)
 
 data::PipelinePtr NerBoltModel::getTransformations(bool inference) {
   data::PipelinePtr transform;
-  if (inference) {
+  if (!inference) {
     transform =
         data::Pipeline::make({std::make_shared<data::NerTokenFromStringArray>(
             _source_column, "tokens", "sentences", std::nullopt)});
@@ -48,7 +48,7 @@ data::Loader NerBoltModel::getDataLoader(const dataset::DataSourcePtr& data,
   auto data_iter =
       data::JsonIterator::make(data, {_source_column, _target_column}, 1000);
   return data::Loader(data_iter, _train_transforms, nullptr, _bolt_inputs,
-                      {data::OutputColumns()},
+                      {data::OutputColumns(_target_column)},
                       /* batch_size= */ batch_size,
                       /* shuffle= */ shuffle, /* verbose= */ true,
                       /* shuffle_buffer_size= */ 20000);

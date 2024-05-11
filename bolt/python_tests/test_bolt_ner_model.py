@@ -8,7 +8,6 @@ VOCAB_SIZE = 50257
 TAG_MAP = {"O": 0, "B-PER": 1, "I-PER": 2, "B-LOC": 3, "I-LOC": 4}
 
 
-@pytest.fixture()
 def sample_training_data():
     sentences = [
         ("John Doe went to Paris", ["B-PER", "I-PER", "O", "O", "B-LOC"]),
@@ -38,9 +37,7 @@ def sample_training_data():
             json_line = json.dumps(data)
             file.write(json_line + "\n")
 
-    yield filename
-
-    os.remove(filename)
+    return filename
 
 
 def create_bolt_backend():
@@ -68,8 +65,8 @@ def create_bolt_backend():
 
 
 @pytest.mark.unit
-def test_ner_backend(sample_training_data):
-    filename = sample_training_data
+def test_ner_backend():
+    filename = sample_training_data()
 
     backend_model = create_bolt_backend()
 
@@ -111,3 +108,4 @@ def test_ner_backend(sample_training_data):
             for result_after_load, result in zip(results_after_load, results)
         ]
     )
+    os.remove(filename)
