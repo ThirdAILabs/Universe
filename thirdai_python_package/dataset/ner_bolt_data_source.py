@@ -19,6 +19,7 @@ class NerBoltDataSource(PyDataSource):
             )
         self.tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
         PyDataSource.__init__(self)
+
         self.restart()
 
     def _get_line_iterator(self):
@@ -28,7 +29,9 @@ class NerBoltDataSource(PyDataSource):
                 json_obj["source"] = [
                     tokenize_text(self.tokenizer, token) for token in json_obj["source"]
                 ]
-                yield json_obj
+                data = json.dumps(json_obj)
+                print(data)
+                yield data
 
     def inference_featurizer(self, sentence_tokens_list):
         return [

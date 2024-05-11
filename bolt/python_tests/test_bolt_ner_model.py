@@ -8,7 +8,6 @@ VOCAB_SIZE = 50257
 TAG_MAP = {"O": 0, "B-PER": 1, "I-PER": 2, "B-LOC": 3, "I-LOC": 4}
 
 
-@pytest.fixture()
 def sample_training_data():
     sentences = [
         ("John Doe went to Paris", ["B-PER", "I-PER", "O", "O", "B-LOC"]),
@@ -32,15 +31,13 @@ def sample_training_data():
             label_ids = [TAG_MAP[tag] for tag in tags]
 
             # Create a dictionary to hold the source and target data
-            data = {"source": " ".join(tokens), "target": label_ids}
+            data = {"source": tokens, "target": label_ids}
 
             # Write the JSON line to the file
             json_line = json.dumps(data)
             file.write(json_line + "\n")
 
-    yield filename
-
-    os.remove(filename)
+    return filename
 
 
 def create_bolt_backend():
@@ -68,8 +65,8 @@ def create_bolt_backend():
 
 
 @pytest.mark.unit
-def test_ner_backend(sample_training_data):
-    filename = sample_training_data
+def test_ner_backend():
+    filename = sample_training_data()
 
     backend_model = create_bolt_backend()
 
@@ -92,7 +89,7 @@ def test_ner_backend(sample_training_data):
         ["Ram", "is", "going", "to", "Delhi"],
         ["Shyam", "is", "going", "to", "Kolhapur"],
     ]
-    results = bolt_ner_model.get_ner_tags(train_data_source.NerBoltDataSource(texts))
+    results = bolt_ner_model.get_ner_tags(train_data_source.inference_featurizer(texts))
     assert all([len(text) == len(result) for text, result in zip(texts, results)])
 
     bolt_ner_model.save("ner_model")
@@ -111,3 +108,4 @@ def test_ner_backend(sample_training_data):
             for result_after_load, result in zip(results_after_load, results)
         ]
     )
+    os.remove(filename)

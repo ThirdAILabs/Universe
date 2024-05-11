@@ -4,6 +4,7 @@
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Transformation.h>
 #include <string>
+#include <unordered_map>
 
 namespace thirdai::data {
 inline std::vector<size_t> computeOffsets(
@@ -19,9 +20,12 @@ inline std::vector<size_t> computeOffsets(
 
 class NerTokenFromStringArray final : public Transformation {
  public:
-  NerTokenFromStringArray(std::string source_column, std::string token_column,
-                          std::string sentence_column,
-                          std::optional<std::string> target_column);
+  NerTokenFromStringArray(
+      std::string source_column, std::string token_column,
+      std::string sentence_column,
+      std::optional<std::string> target_column = std::nullopt,
+      std::optional<std::unordered_map<std::string, uint32_t>> tag_to_label =
+          std::nullopt);
 
   explicit NerTokenFromStringArray(const ar::Archive& archive);
 
@@ -36,5 +40,6 @@ class NerTokenFromStringArray final : public Transformation {
   std::string _token_column;
   std::string _sentence_column;
   std::optional<std::string> _target_column;
+  std::optional<std::unordered_map<std::string, uint32_t>> _tag_to_label;
 };
 }  // namespace thirdai::data

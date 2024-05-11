@@ -32,7 +32,7 @@ std::vector<std::vector<std::string>> NerModel::getNerTags(
     std::vector<std::string> sentence_string_tags;
     sentence_string_tags.reserve(sentence_tag.size());
     for (const auto& tag : sentence_tag) {
-      sentence_string_tags.push_back(_tag_to_label_map[tag]);
+      sentence_string_tags.push_back(_label_to_tag_map[tag]);
     }
   }
   return string_tags;
@@ -43,23 +43,13 @@ ar::ConstArchivePtr NerModel::toArchive() const {
 
   ner_bolt_model->set("ner_backend_model", _ner_backend_model->toArchive());
 
-  ar::MapStrU64 label_to_tags;
-  for (const auto& [label, tag] : _label_to_tag_map) {
-    label_to_tags[label] = tag;
-  }
-  ner_bolt_model->set("label_to_tag_map", ar::mapStrU64(label_to_tags));
-
   return ner_bolt_model;
 }
 
 std::shared_ptr<NerModel> NerModel::fromArchive(const ar::Archive& archive) {
   std::shared_ptr<bolt::NerBackend> ner_backend_model =
       bolt::NerBoltModel::fromArchive(*archive.get("ner_backend_model"));
-  std::unordered_map<std::string, uint32_t> label_to_tags;
-  for (const auto& [k, v] : archive.getAs<ar::MapStrU64>("string_to_id")) {
-    label_to_tags[k] = v;
-  }
-  return std::make_shared<NerModel>(NerModel(ner_backend_model, label_to_tags));
+  return std::make_shared<NerModel>(NerModel(ner_backend_model));
 }
 
 void NerModel::save(const std::string& filename) const {
