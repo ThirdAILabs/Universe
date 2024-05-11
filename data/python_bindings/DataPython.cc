@@ -254,6 +254,19 @@ void createColumnsSubmodule(py::module_& dataset_submodule) {
            py::return_value_policy::reference_internal)
       .def("data", &ArrayColumn<uint32_t>::data);
 
+  py::class_<ArrayColumn<std::string>, Column, ArrayColumnPtr<std::string>>(
+      columns_submodule, "StringArrayColumn")
+      .def(py::init(&ArrayColumn<std::string>::make), py::arg("data"),
+           py::arg("dim") = std::nullopt)
+      .def(
+          "__getitem__",
+          [](ArrayColumn<std::string>& self, size_t n) {
+            // Fetch row as vector of strings and return it directly
+            return self.row(n).toVector();
+          },
+          py::return_value_policy::reference_internal, py::arg("n"))
+      .def("data", &ArrayColumn<std::string>::data);
+
   py::class_<ArrayColumn<float>, Column, ArrayColumnPtr<float>>(
       columns_submodule, "DecimalArrayColumn")
       .def(py::init(&ArrayColumn<float>::make), py::arg("data"),
@@ -300,6 +313,13 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   py::class_<StringToTokenArray, Transformation,
              std::shared_ptr<StringToTokenArray>>(transformations_submodule,
                                                   "ToTokenArrays")
+      .def(py::init<std::string, std::string, char, std::optional<uint32_t>>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("delimiter"), py::arg("dim") = std::nullopt);
+
+  py::class_<StringToStringArray, Transformation,
+             std::shared_ptr<StringToStringArray>>(transformations_submodule,
+                                                   "ToStringArrays")
       .def(py::init<std::string, std::string, char, std::optional<uint32_t>>(),
            py::arg("input_column"), py::arg("output_column"),
            py::arg("delimiter"), py::arg("dim") = std::nullopt);

@@ -1,0 +1,56 @@
+#pragma once
+
+#include "NerModel.h"
+#include <bolt/src/nn/model/Model.h>
+#include <data/src/transformations/Pipeline.h>
+#include <dataset/src/blocks/text/TextTokenizer.h>
+
+namespace thirdai::bolt {
+
+class NerUnigramModel final : public NerBackend {
+ public:
+  explicit NerUnigramModel(
+      bolt::ModelPtr model, std::string tokens_column, std::string tags_column,
+      std::vector<dataset::TextTokenizerPtr> target_word_tokenizers);
+
+  std::vector<std::vector<uint32_t>> getTags(
+      std::vector<std::vector<std::string>> tokens) final;
+
+  metrics::History train(const dataset::DataSourcePtr& train_data,
+                         float learning_rate, uint32_t epochs,
+                         size_t batch_size,
+                         const std::vector<std::string>& train_metrics,
+                         const dataset::DataSourcePtr& val_data,
+                         const std::vector<std::string>& val_metrics) final;
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::shared_ptr<NerUnigramModel> fromArchive(
+      const ar::Archive& archive);
+
+  void save(const std::string& filename) const;
+
+  void save_stream(std::ostream& output_stream) const;
+
+  static std::shared_ptr<NerUnigramModel> load(const std::string& filename);
+
+  static std::shared_ptr<NerUnigramModel> load_stream(
+      std::istream& input_stream);
+
+ private:
+  data::Loader getDataLoader(const dataset::DataSourcePtr& data,
+                             size_t batch_size, bool shuffle);
+
+  bolt::ModelPtr _bolt_model;
+  std::string _tokens_column, _tags_column;
+  std::vector<dataset::TextTokenizerPtr> _target_word_tokenizers;
+
+  data::PipelinePtr _train_transforms;
+  data::PipelinePtr _inference_transforms;
+  data::OutputColumnsList _bolt_inputs;
+
+  uint32_t _fhr = 100'000, _dyadic_num_intervals = 3;
+
+  std::string _featurized_sentence_column =
+      "featurized_sentence_for_" + _tokens_column;
+};
+}  // namespace thirdai::bolt

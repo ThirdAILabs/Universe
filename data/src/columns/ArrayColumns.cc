@@ -3,7 +3,6 @@
 #include <data/src/columns/Column.h>
 #include <algorithm>
 #include <cstddef>
-#include <iterator>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -17,6 +16,7 @@ void ArrayColumn<T>::shuffle(const std::vector<size_t>& permutation) {
 
 template class ArrayColumn<uint32_t>;
 template class ArrayColumn<float>;
+template class ArrayColumn<std::string>;
 
 template <typename T>
 ColumnPtr ArrayColumn<T>::concat(ColumnPtr&& other) {

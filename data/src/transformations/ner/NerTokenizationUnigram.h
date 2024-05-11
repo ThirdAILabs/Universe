@@ -34,6 +34,14 @@ class NerTokenizerUnigram final : public Transformation {
     return _processor.processToken(tokens, index);
   }
 
+  std::string getFeaturizedIndicesColumn() const {
+    return _featurized_tokens_indices_column;
+  }
+
+  std::string getFeaturizedValuesColumn() const {
+    return _featurized_tokens_values_column;
+  }
+
  private:
   std::string _tokens_column;
   std::string _featurized_sentence_column;

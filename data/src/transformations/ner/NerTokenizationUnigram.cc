@@ -1,6 +1,7 @@
 #include "NerTokenizationUnigram.h"
 #include <archive/src/Archive.h>
 #include <data/src/ColumnMap.h>
+#include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/NerTokenFromStringArray.h>
@@ -36,9 +37,10 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
   (void)state;
 
   auto text_tokens = columns.getArrayColumn<std::string>(_tokens_column);
-  ValueColumnBasePtr<uint32_t> tags;
+
+  ArrayColumnBasePtr<uint32_t> tags;
   if (_target_column) {
-    tags = columns.getValueColumn<uint32_t>(*_target_column);
+    tags = columns.getArrayColumn<uint32_t>(*_target_column);
   }
 
   auto sample_offsets = computeOffsets(text_tokens);
@@ -55,7 +57,6 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
     for (size_t start = 0; start < row_tokens.size(); start += 1) {
       featurized_sentences[sample_offset] =
           _processor.processToken(row_tokens.toVector(), start);
-
       if (_target_column) {
         targets[sample_offset] = tags->row(i)[start];
       }
@@ -69,7 +70,7 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
       ValueColumn<std::string>::make(std::move(featurized_sentences));
   if (_target_column) {
     output_columns[*_target_column] =
-        ValueColumn<uint32_t>::make(std::move(targets));
+        ValueColumn<uint32_t>::make(std::move(targets), tags->dim());
   }
 
   ColumnMap processed_column_map = ColumnMap(output_columns);
