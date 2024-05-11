@@ -3,9 +3,9 @@
 #include <cereal/types/base_class.hpp>
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
-#include <data/src/columns/Column.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ArrayColumns.h>
+#include <data/src/columns/Column.h>
 #include <data/src/transformations/Transformation.h>
 #include <iterator>
 #include <sstream>

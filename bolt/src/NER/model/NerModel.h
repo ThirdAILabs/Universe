@@ -38,7 +38,6 @@ class NerBackend {
 class NerModel;
 
 class NerModel : public std::enable_shared_from_this<NerModel> {
-
  public:
   NerModel(std::shared_ptr<NerBackend> model,
            std::unordered_map<std::string, uint32_t> label_to_tag_map)

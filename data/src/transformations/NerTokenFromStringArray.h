@@ -1,9 +1,9 @@
 #pragma once
 
-#include<string>
-#include <data/src/columns/ValueColumns.h>
 #include <data/src/ColumnMap.h>
+#include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Transformation.h>
+#include <string>
 
 namespace thirdai::data {
 class NerTokenFromStringArray final : public Transformation {
