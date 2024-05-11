@@ -23,15 +23,15 @@ void addNERModels(py::module_& module) {
 
   py::class_<NerBoltModel, NerBackend, std::shared_ptr<NerBoltModel>>(
       module, "BoltNerModel")
-      .def(py::init<bolt::ModelPtr>(), py::arg("model"));
+      .def(py::init<bolt::ModelPtr,
+                    std::unordered_map<std::string, uint32_t>>(), py::arg("model"), py::arg("tag_to_label"));
 
 #endif
 
   py::class_<NerModel, std::shared_ptr<NerModel>>(module, "NerModel")
 #if THIRDAI_EXPOSE_ALL
-      .def(py::init<std::shared_ptr<NerBackend>,
-                    std::unordered_map<std::string, uint32_t>>(),
-           py::arg("model"), py::arg("label_to_tag_map"))
+      .def(py::init<std::shared_ptr<NerBackend>>(),
+           py::arg("model"))
 #endif
       .def("train", &NerModel::train, py::arg("train_data"),
            py::arg("learning_rate") = 1e-5, py::arg("epochs") = 5,

@@ -13,12 +13,14 @@
 #include <cmath>
 #include <optional>
 #include <queue>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
 namespace thirdai::bolt {
-NerBoltModel::NerBoltModel(bolt::ModelPtr model)
-    : _bolt_model(std::move(model)) {
+NerBoltModel::NerBoltModel(bolt::ModelPtr model, std::unordered_map<std::string, uint32_t> tag_to_label)
+    : _bolt_model(std::move(model)),
+    _tag_to_label(std::move(tag_to_label)) {
   _train_transforms = getTransformations(true);
   _inference_transforms = getTransformations(false);
   _bolt_inputs = {data::OutputColumns("tokens"),
@@ -30,11 +32,11 @@ data::PipelinePtr NerBoltModel::getTransformations(bool inference) {
   if (!inference) {
     transform =
         data::Pipeline::make({std::make_shared<data::NerTokenFromStringArray>(
-            _source_column, "tokens", "sentences", std::nullopt)});
+            _source_column, "tokens", "sentences", std::nullopt, std::nullopt)});
   } else {
     transform =
         data::Pipeline::make({std::make_shared<data::NerTokenFromStringArray>(
-            _source_column, "tokens", "sentences", _target_column)});
+            _source_column, "tokens", "sentences", _target_column, _tag_to_label)});
   }
   transform = transform->then(std::make_shared<data::StringToTokenArray>(
       "tokens", "tokens", ' ', _vocab_size));
@@ -60,9 +62,12 @@ metrics::History NerBoltModel::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics) {
   auto train_dataset =
-      getDataLoader(train_data, batch_size, /* shuffle= */ true).all();
+      getDataLoader(train_data, batch_size, /* shuffle= */ false).all();
   auto val_dataset =
       getDataLoader(val_data, batch_size, /* shuffle= */ false).all();
+
+  auto train_data_input = train_dataset.first;
+  auto train_data_label = train_dataset.second;
 
   Trainer trainer(_bolt_model);
 
@@ -122,6 +127,12 @@ ar::ConstArchivePtr NerBoltModel::toArchive() const {
   ner_bolt_model->set("bolt_model",
                       _bolt_model->toArchive(/*with_optimizer*/ false));
 
+  ar::MapStrU64 tag_to_label;
+  for (const auto& [label, tag] : _tag_to_label) {
+    tag_to_label[label] = tag;
+  }
+  ner_bolt_model->set("tag_to_label", ar::mapStrU64(tag_to_label));
+
   return ner_bolt_model;
 }
 
@@ -129,8 +140,11 @@ std::shared_ptr<NerBoltModel> NerBoltModel::fromArchive(
     const ar::Archive& archive) {
   bolt::ModelPtr bolt_model =
       bolt::Model::fromArchive(*archive.get("bolt_model"));
-
-  return std::make_shared<NerBoltModel>(NerBoltModel(bolt_model));
+  std::unordered_map<std::string, uint32_t> tag_to_label;
+  for (const auto& [k, v] : archive.getAs<ar::MapStrU64>("tag_to_label")) {
+    tag_to_label[k] = v;
+  }
+  return std::make_shared<NerBoltModel>(NerBoltModel(bolt_model, tag_to_label));
 }
 
 void NerBoltModel::save(const std::string& filename) const {

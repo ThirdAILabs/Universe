@@ -39,6 +39,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 
 namespace thirdai::data::python {
 
@@ -521,9 +522,10 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
              std::shared_ptr<NerTokenFromStringArray>>(
       transformations_submodule, "NerTokenFromStringArray")
       .def(py::init<std::string, std::string, std::string,
-                    std::optional<std::string>>(),
+                    std::optional<std::string>, std::optional<std::unordered_map<std::string, uint32_t>>>(),
            py::arg("source_column"), py::arg("token_column"),
-           py::arg("sentence_column"), py::arg("target_column"));
+           py::arg("sentence_column"), py::arg("target_column"),
+           py::arg("tag_to_label"));
 }
 
 }  // namespace thirdai::data::python

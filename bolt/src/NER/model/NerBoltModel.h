@@ -14,12 +14,14 @@
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/DataSource.h>
+#include <unordered_map>
 
 namespace thirdai::bolt {
 
 class NerBoltModel final : public NerBackend {
  public:
-  explicit NerBoltModel(bolt::ModelPtr model);
+  explicit NerBoltModel(bolt::ModelPtr model,
+                          std::unordered_map<std::string, uint32_t> tag_to_label);
 
   std::vector<std::vector<uint32_t>> getTags(
       std::vector<std::vector<std::string>> tokens) final;
@@ -32,6 +34,8 @@ class NerBoltModel final : public NerBackend {
                          const std::vector<std::string>& val_metrics) final;
 
   ar::ConstArchivePtr toArchive() const final;
+
+  std::unordered_map<std::string, uint32_t> getTagToLabel() final { return _tag_to_label;}
 
   static std::shared_ptr<NerBoltModel> fromArchive(const ar::Archive& archive);
 
@@ -53,6 +57,7 @@ class NerBoltModel final : public NerBackend {
   data::PipelinePtr _train_transforms;
   data::PipelinePtr _inference_transforms;
   data::OutputColumnsList _bolt_inputs;
+  std::unordered_map<std::string, uint32_t> _tag_to_label;
 
   std::string _source_column = "source";
   std::string _target_column = "target";

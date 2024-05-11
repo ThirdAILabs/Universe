@@ -79,6 +79,10 @@ class Tensor {
 
   const float* gradientsPtr() const;
 
+  std::vector<uint32_t> getActiveNeuron(){
+       return _active_neurons;
+  }
+
  private:
   static void checkBatchContents(const BoltBatch& batch, size_t dim);
 

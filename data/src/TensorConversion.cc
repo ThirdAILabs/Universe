@@ -17,7 +17,14 @@ std::vector<bolt::TensorList> toTensorBatches(
 
   for (const auto& column_info : columns_to_convert) {
     auto indices = columns.getArrayColumn<uint32_t>(column_info.indices());
-
+    std::cout <<  "Column Name: " << column_info.indices() << " num_rows= " << indices->numRows() <<std::endl;
+    for(size_t i=0; i<indices->numRows(); i+=1){
+      auto data = indices->row(i);
+      for(uint32_t j=0; j<data.size(); j+=1){
+        std::cout << data[j] << " ";
+      }
+      std::cout << std::endl;
+    }
     if (!indices->dim()) {
       throw std::invalid_argument(
           "No dimension found for column '" + column_info.indices() +
@@ -34,9 +41,9 @@ std::vector<bolt::TensorList> toTensorBatches(
 
     std::exception_ptr error;
 
-#pragma omp parallel for default(none)                                 \
-    shared(num_batches, batch_size, columns, indices, values, tensors, \
-           value_fill_type, error) if (num_batches > 1)
+// #pragma omp parallel for default(none)                                 \
+//     shared(num_batches, batch_size, columns, indices, values, tensors, \
+//            value_fill_type, error) if (num_batches > 1)
     for (size_t batch = 0; batch < num_batches; batch++) {
       size_t batch_start = batch * batch_size;
       size_t batch_end = std::min((batch + 1) * batch_size, columns.numRows());
@@ -44,6 +51,7 @@ std::vector<bolt::TensorList> toTensorBatches(
       size_t batch_nonzeros = 0;
       for (size_t i = batch_start; i < batch_end; i++) {
         batch_nonzeros += indices->row(i).size();
+       
       }
 
       std::vector<uint32_t> batch_indices;
@@ -61,7 +69,7 @@ std::vector<bolt::TensorList> toTensorBatches(
         if (values) {
           auto values_row = values->row(i);
           if (indices_row.size() != values_row.size()) {
-#pragma omp critical
+// #pragma omp critical
             error = std::make_exception_ptr(std::invalid_argument(
                 "Indices size does not batch values size in row " +
                 std::to_string(i) + "."));

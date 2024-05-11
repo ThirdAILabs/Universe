@@ -33,18 +33,19 @@ class NerBackend {
       const std::vector<std::string>& val_metrics) = 0;
 
   virtual ar::ConstArchivePtr toArchive() const = 0;
+
+  virtual std::unordered_map<std::string, uint32_t> getTagToLabel() = 0;
 };
 
 class NerModel;
 
 class NerModel : public std::enable_shared_from_this<NerModel> {
  public:
-  NerModel(std::shared_ptr<NerBackend> model,
-           std::unordered_map<std::string, uint32_t> label_to_tag_map)
-      : _ner_backend_model(std::move(model)),
-        _label_to_tag_map(std::move(label_to_tag_map)) {
-    for (const auto& [k, v] : _label_to_tag_map) {
-      _tag_to_label_map[v] = k;
+  explicit NerModel(std::shared_ptr<NerBackend> model)
+      : _ner_backend_model(std::move(model)) {
+    _tag_to_label_map = _ner_backend_model->getTagToLabel();
+    for (const auto& [k, v] : _tag_to_label_map) {
+      _label_to_tag_map[v] = k;
     }
   }
 
@@ -74,8 +75,8 @@ class NerModel : public std::enable_shared_from_this<NerModel> {
  private:
   std::shared_ptr<NerBackend> _ner_backend_model;
 
-  std::unordered_map<std::string, uint32_t> _label_to_tag_map;
-  std::unordered_map<uint32_t, std::string> _tag_to_label_map;
+  std::unordered_map<std::string, uint32_t> _tag_to_label_map;
+  std::unordered_map<uint32_t, std::string> _label_to_tag_map;
 
   NerModel() {}
 };
