@@ -53,8 +53,8 @@ ColumnMap NerTokenFromStringArray::apply(ColumnMap columns,
 
   std::exception_ptr error;
 
-// #pragma omp parallel for default(none) \
-//     shared(texts, tags, tokens, sentences, targets, sample_offsets, error)
+#pragma omp parallel for default(none) \
+    shared(texts, tags, tokens, sentences, targets, sample_offsets, error)
   for (size_t i = 0; i < texts->numRows(); i += 1) {
     try {
       auto row_tokens = texts->row(i);
