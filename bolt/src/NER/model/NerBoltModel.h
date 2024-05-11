@@ -21,7 +21,7 @@ namespace thirdai::bolt {
 class NerBoltModel final : public NerBackend {
  public:
   explicit NerBoltModel(bolt::ModelPtr model,
-                          std::unordered_map<std::string, uint32_t> tag_to_label);
+                        std::unordered_map<std::string, uint32_t> tag_to_label);
 
   std::vector<std::vector<uint32_t>> getTags(
       std::vector<std::vector<std::string>> tokens) final;
@@ -35,7 +35,9 @@ class NerBoltModel final : public NerBackend {
 
   ar::ConstArchivePtr toArchive() const final;
 
-  std::unordered_map<std::string, uint32_t> getTagToLabel() final { return _tag_to_label;}
+  std::unordered_map<std::string, uint32_t> getTagToLabel() final {
+    return _tag_to_label;
+  }
 
   static std::shared_ptr<NerBoltModel> fromArchive(const ar::Archive& archive);
 

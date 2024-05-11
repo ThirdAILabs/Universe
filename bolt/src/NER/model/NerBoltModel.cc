@@ -13,14 +13,16 @@
 #include <cmath>
 #include <optional>
 #include <queue>
+#include <stdexcept>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
 namespace thirdai::bolt {
-NerBoltModel::NerBoltModel(bolt::ModelPtr model, std::unordered_map<std::string, uint32_t> tag_to_label)
-    : _bolt_model(std::move(model)),
-    _tag_to_label(std::move(tag_to_label)) {
+NerBoltModel::NerBoltModel(
+    bolt::ModelPtr model,
+    std::unordered_map<std::string, uint32_t> tag_to_label)
+    : _bolt_model(std::move(model)), _tag_to_label(std::move(tag_to_label)) {
   _train_transforms = getTransformations(true);
   _inference_transforms = getTransformations(false);
   _bolt_inputs = {data::OutputColumns("tokens"),
@@ -32,11 +34,13 @@ data::PipelinePtr NerBoltModel::getTransformations(bool inference) {
   if (!inference) {
     transform =
         data::Pipeline::make({std::make_shared<data::NerTokenFromStringArray>(
-            _source_column, "tokens", "sentences", std::nullopt, std::nullopt)});
+            _source_column, "tokens", "sentences", std::nullopt,
+            std::nullopt)});
   } else {
     transform =
         data::Pipeline::make({std::make_shared<data::NerTokenFromStringArray>(
-            _source_column, "tokens", "sentences", _target_column, _tag_to_label)});
+            _source_column, "tokens", "sentences", _target_column,
+            _tag_to_label)});
   }
   transform = transform->then(std::make_shared<data::StringToTokenArray>(
       "tokens", "tokens", ' ', _vocab_size));
@@ -62,7 +66,7 @@ metrics::History NerBoltModel::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics) {
   auto train_dataset =
-      getDataLoader(train_data, batch_size, /* shuffle= */ false).all();
+      getDataLoader(train_data, batch_size, /* shuffle= */ true).all();
   auto val_dataset =
       getDataLoader(val_data, batch_size, /* shuffle= */ false).all();
 
@@ -85,19 +89,18 @@ metrics::History NerBoltModel::train(
 
 std::vector<std::vector<uint32_t>> NerBoltModel::getTags(
     std::vector<std::vector<std::string>> tokens) {
-  data::ColumnMap data(
-      data::ColumnMap({{_source_column, data::ArrayColumn<std::string>::make(
-                                            std::move(tokens), _vocab_size)}}));
-  auto columns = _inference_transforms->applyStateless(data);
-  auto tensors = data::toTensorBatches(columns, _bolt_inputs, 2048);
-
-  std::vector<std::vector<uint32_t>> tags(tokens.size(),
-                                          std::vector<uint32_t>());
+  std::vector<std::vector<uint32_t>> tags;
 
   for (const auto& sub_vector : tokens) {
     std::vector<uint32_t> uint_sub_vector(sub_vector.size(), 0);
     tags.push_back(uint_sub_vector);
   }
+  data::ColumnMap data(
+      data::ColumnMap({{_source_column, data::ArrayColumn<std::string>::make(
+                                            std::move(tokens), _vocab_size)}}));
+
+  auto columns = _inference_transforms->applyStateless(data);
+  auto tensors = data::toTensorBatches(columns, _bolt_inputs, 2048);
 
   size_t sub_vector_index = 0;
   size_t token_index = 0;
@@ -108,10 +111,14 @@ std::vector<std::vector<uint32_t>> NerBoltModel::getTags(
     for (size_t i = 0; i < outputs->batchSize(); i += 1) {
       uint32_t predicted_tag =
           outputs->getVector(i).topKNeurons(1).top().second;
-      // To handle empty vectos in case
-      while (token_index < tags[sub_vector_index].size()) {
+      // To handle empty vectors in case
+      while (sub_vector_index < tags.size() &&
+             token_index >= tags[sub_vector_index].size()) {
         sub_vector_index += 1;
         token_index = 0;
+      }
+      if (sub_vector_index >= tags.size()) {
+        throw std::runtime_error("tags indices not matching");
       }
       tags[sub_vector_index][token_index] = predicted_tag;
       token_index += 1;

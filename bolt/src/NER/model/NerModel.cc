@@ -27,13 +27,14 @@ std::vector<std::vector<std::string>> NerModel::getNerTags(
     std::vector<std::vector<std::string>>& tokens) {
   std::vector<std::vector<uint32_t>> tags = _ner_backend_model->getTags(tokens);
 
-  std::vector<std::vector<std::string>> string_tags(tags.size());
+  std::vector<std::vector<std::string>> string_tags;
   for (const auto& sentence_tag : tags) {
     std::vector<std::string> sentence_string_tags;
     sentence_string_tags.reserve(sentence_tag.size());
     for (const auto& tag : sentence_tag) {
       sentence_string_tags.push_back(_label_to_tag_map[tag]);
     }
+    string_tags.push_back(sentence_string_tags);
   }
   return string_tags;
 }
