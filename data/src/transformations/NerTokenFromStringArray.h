@@ -9,10 +9,12 @@
 namespace thirdai::data {
 class NerTokenFromStringArray final : public Transformation {
  public:
-  NerTokenFromStringArray(std::string source_column, std::string token_column,
-                          std::string sentence_column,
-                          std::optional<std::string> target_column = std::nullopt,
-                          std::optional<std::unordered_map<std::string, uint32_t>> tag_to_label = std::nullopt);
+  NerTokenFromStringArray(
+      std::string source_column, std::string token_column,
+      std::string sentence_column,
+      std::optional<std::string> target_column = std::nullopt,
+      std::optional<std::unordered_map<std::string, uint32_t>> tag_to_label =
+          std::nullopt);
 
   explicit NerTokenFromStringArray(const ar::Archive& archive);
 

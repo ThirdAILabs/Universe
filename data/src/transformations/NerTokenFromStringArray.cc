@@ -73,14 +73,14 @@ ColumnMap NerTokenFromStringArray::apply(ColumnMap columns,
       for (size_t start = 0; start < row_tokens.size(); start += 1) {
         sentences[sample_offset] = joinedString;
         tokens[sample_offset] = row_tokens[start];
-        if (_target_column && _tag_to_label.has_value()){
-              const auto& tagLabelMap = _tag_to_label.value();
-              const auto& tag = tags->row(i)[start];
-              if (tagLabelMap.find(tag) != tagLabelMap.end()) {
-                  targets[sample_offset] = tagLabelMap.at(tag);
-              } else {
-                  throw std::out_of_range("String not found in label map: " + tag);
-              }
+        if (_target_column && _tag_to_label.has_value()) {
+          const auto& tagLabelMap = _tag_to_label.value();
+          const auto& tag = tags->row(i)[start];
+          if (tagLabelMap.find(tag) != tagLabelMap.end()) {
+            targets[sample_offset] = tagLabelMap.at(tag);
+          } else {
+            throw std::out_of_range("String not found in label map: " + tag);
+          }
         }
         sample_offset += 1;
       }
@@ -100,10 +100,11 @@ ColumnMap NerTokenFromStringArray::apply(ColumnMap columns,
   output_columns[_sentence_column] =
       ValueColumn<std::string>::make(std::move(sentences));
   if (_target_column && _tag_to_label.has_value()) {
-    auto maxPair = std::max_element(_tag_to_label.value().begin(), _tag_to_label.value().end(), 
-                                         [](const auto& a, const auto& b) { return a.second < b.second; });
+    auto maxPair = std::max_element(
+        _tag_to_label.value().begin(), _tag_to_label.value().end(),
+        [](const auto& a, const auto& b) { return a.second < b.second; });
     output_columns[*_target_column] =
-        ValueColumn<uint32_t>::make(std::move(targets), maxPair->second+1);
+        ValueColumn<uint32_t>::make(std::move(targets), maxPair->second + 1);
   }
 
   return ColumnMap(output_columns);
