@@ -8,6 +8,6 @@ __all__.extend(dir(thirdai._thirdai.dataset))
 
 from .csv_data_source import CSVDataSource
 from .llm_data_source import LLMDataSource, RayTextDataSource
-from .ner_bolt_data_source import NerBoltDataSource
+from .ner_bolt_data_source import NerBoltDataSource, NerUnigramDataSource
 from .parquet_data_source import ParquetSource
 from .ray_data_source import RayCsvDataSource

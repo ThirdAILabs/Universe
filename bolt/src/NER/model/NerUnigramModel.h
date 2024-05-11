@@ -11,6 +11,7 @@ class NerUnigramModel final : public NerBackend {
  public:
   explicit NerUnigramModel(
       bolt::ModelPtr model, std::string tokens_column, std::string tags_column,
+      std::unordered_map<std::string, uint32_t> tag_to_label,
       std::vector<dataset::TextTokenizerPtr> target_word_tokenizers);
 
   std::vector<std::vector<uint32_t>> getTags(
@@ -22,7 +23,12 @@ class NerUnigramModel final : public NerBackend {
                          const std::vector<std::string>& train_metrics,
                          const dataset::DataSourcePtr& val_data,
                          const std::vector<std::string>& val_metrics) final;
+
   ar::ConstArchivePtr toArchive() const final;
+
+  std::unordered_map<std::string, uint32_t> getTagToLabel() final {
+    return _tag_to_label;
+  }
 
   static std::shared_ptr<NerUnigramModel> fromArchive(
       const ar::Archive& archive);
@@ -44,11 +50,13 @@ class NerUnigramModel final : public NerBackend {
   std::string _tokens_column, _tags_column;
   std::vector<dataset::TextTokenizerPtr> _target_word_tokenizers;
 
+  std::unordered_map<std::string, uint32_t> _tag_to_label;
+
   data::PipelinePtr _train_transforms;
   data::PipelinePtr _inference_transforms;
   data::OutputColumnsList _bolt_inputs;
 
-  uint32_t _fhr = 100'000, _dyadic_num_intervals = 3;
+  uint32_t _fhr, _number_labels, _dyadic_num_intervals = 3;
 
   std::string _featurized_sentence_column =
       "featurized_sentence_for_" + _tokens_column;

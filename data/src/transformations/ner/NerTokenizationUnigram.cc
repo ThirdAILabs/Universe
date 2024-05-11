@@ -11,24 +11,33 @@
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <cstdint>
 #include <memory>
+#include <optional>
+#include <stdexcept>
 #include <utility>
 
 namespace thirdai::data {
 
 NerTokenizerUnigram::NerTokenizerUnigram(
     std::string tokens_column, std::string featurized_sentence_column,
-    std::optional<std::string> target_column, uint32_t fhr_dim,
+    std::optional<std::string> target_column,
+    std::optional<uint32_t> target_dim, uint32_t fhr_dim,
     uint32_t dyadic_num_intervals,
-    std::vector<dataset::TextTokenizerPtr> target_word_tokenizers)
+    std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
+    std::optional<std::unordered_map<std::string, uint32_t>> tag_to_label)
     : _tokens_column(std::move(tokens_column)),
       _featurized_sentence_column(std::move(featurized_sentence_column)),
       _target_column(std::move(target_column)),
-      _processor(std::move(target_word_tokenizers), dyadic_num_intervals) {
+      _target_dim(target_dim),
+      _processor(std::move(target_word_tokenizers), dyadic_num_intervals),
+      _tag_to_label(std::move(tag_to_label)) {
   _tokenizer_transformation = std::make_shared<TextTokenizer>(
-      _featurized_sentence_column, _featurized_tokens_indices_column,
-      _featurized_tokens_values_column,
+      /*input_column=*/_featurized_sentence_column,
+      /*output_indices=*/_featurized_tokens_indices_column,
+      /*output_values=*/std::nullopt,
+      /*tokenizer=*/
       std::make_shared<dataset::NaiveSplitTokenizer>(
           dataset::NaiveSplitTokenizer()),
+      /*encoder=*/
       std::make_shared<dataset::NGramEncoder>(dataset::NGramEncoder(1)), false,
       fhr_dim);
 }
@@ -38,9 +47,9 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
 
   auto text_tokens = columns.getArrayColumn<std::string>(_tokens_column);
 
-  ArrayColumnBasePtr<uint32_t> tags;
+  ArrayColumnBasePtr<std::string> tags;
   if (_target_column) {
-    tags = columns.getArrayColumn<uint32_t>(*_target_column);
+    tags = columns.getArrayColumn<std::string>(*_target_column);
   }
 
   auto sample_offsets = computeOffsets(text_tokens);
@@ -58,9 +67,20 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
       featurized_sentences[sample_offset] =
           _processor.processToken(row_tokens.toVector(), start);
       if (_target_column) {
-        targets[sample_offset] = tags->row(i)[start];
+        if (_tag_to_label.has_value()) {
+          targets[sample_offset] = findTagValueForString(tags->row(i)[start]);
+        } else {
+          try {
+            targets[sample_offset] = std::stoi(tags->row(i)[start]);
+          } catch (...) {
+            throw std::invalid_argument(
+                "Cannot convert a string to uint32_t. Ensure that the tags are "
+                "either uint32_t or a valid tag_to_label is passed to the "
+                "transformation. String: " +
+                tags->row(i)[start]);
+          }
+        }
       }
-
       sample_offset += 1;
     }
   }
@@ -70,7 +90,7 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
       ValueColumn<std::string>::make(std::move(featurized_sentences));
   if (_target_column) {
     output_columns[*_target_column] =
-        ValueColumn<uint32_t>::make(std::move(targets), tags->dim());
+        ValueColumn<uint32_t>::make(std::move(targets), _target_dim.value());
   }
 
   ColumnMap processed_column_map = ColumnMap(output_columns);

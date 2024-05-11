@@ -329,6 +329,7 @@ set(THIRDAI_SOURCES
     bolt/src/inference/EmbFcInference.cc
     bolt/src/NER/model/NerModel.cc
     bolt/src/NER/model/NerBoltModel.cc
+    bolt/src/NER/model/NerUnigramModel.cc
     bolt/src/text_generation/ContextualModel.cc
     bolt/src/text_generation/DyadicModel.cc
     bolt/src/text_generation/GenerativeModel.cc
