@@ -48,7 +48,7 @@ def bolt_backend():
 
 def test_ner_backend(sample_training_data, bolt_backend):
     backend_model = bolt_backend
-    bolt_ner_model = bolt.NerModel(backend_model)
+    bolt_ner_model = bolt.NER(backend_model)
 
     train_data_source = dataset.NerBoltDataSource(sample_training_data)
     validation_data_source = dataset.NerBoltDataSource(sample_training_data)
@@ -85,8 +85,3 @@ def test_ner_backend(sample_training_data, bolt_backend):
 
     # Cleanup after test
     os.remove(sample_training_data)
-
-
-# Allow the test to be run from the command line
-if __name__ == "__main__":
-    pytest.main([__file__])
