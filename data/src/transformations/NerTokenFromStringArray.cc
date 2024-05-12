@@ -23,17 +23,6 @@ NerTokenFromStringArray::NerTokenFromStringArray(
       _target_column(std::move(target_column)),
       _tag_to_label(std::move(tag_to_label)) {}
 
-std::vector<size_t> computeOffsets(
-    const ArrayColumnBasePtr<std::string>& texts) {
-  std::vector<size_t> offsets(texts->numRows() + 1);
-  offsets[0] = 0;
-  for (size_t i = 0; i < texts->numRows(); i++) {
-    // number of samples is equal to number of tokens
-    offsets[i + 1] = offsets[i] + texts->row(i).size();
-  }
-  return offsets;
-}
-
 ColumnMap NerTokenFromStringArray::apply(ColumnMap columns,
                                          State& state) const {
   (void)state;
@@ -43,7 +32,7 @@ ColumnMap NerTokenFromStringArray::apply(ColumnMap columns,
   if (_target_column) {
     tags = columns.getArrayColumn<std::string>(*_target_column);
   }
-  auto sample_offsets = computeOffsets(texts);
+  auto sample_offsets = thirdai::data::computeOffsets(texts);
 
   std::vector<std::string> tokens(sample_offsets.back());
 
