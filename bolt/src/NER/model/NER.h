@@ -37,6 +37,8 @@ class NerBackend {
 
   virtual ar::ConstArchivePtr toArchive() const = 0;
 
+  virtual std::string type() const = 0;
+
   virtual std::unordered_map<std::string, uint32_t> getTagToLabel() = 0;
 };
 

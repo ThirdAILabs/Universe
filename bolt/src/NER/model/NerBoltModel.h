@@ -20,6 +20,7 @@ namespace thirdai::bolt {
 
 class NerBoltModel final : public NerBackend {
  public:
+  std::string type() const final { return "bolt_ner"; }
   explicit NerBoltModel(bolt::ModelPtr model,
                         std::unordered_map<std::string, uint32_t> tag_to_label);
 

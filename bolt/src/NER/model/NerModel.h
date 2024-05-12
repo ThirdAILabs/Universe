@@ -9,6 +9,7 @@ namespace thirdai::bolt {
 
 class NerModel final : public NerBackend {
  public:
+  std::string type() const final { return "simple_ner"; }
   explicit NerModel(
       bolt::ModelPtr model, std::string tokens_column, std::string tags_column,
       std::unordered_map<std::string, uint32_t> tag_to_label,

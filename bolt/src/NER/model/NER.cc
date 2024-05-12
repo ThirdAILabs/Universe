@@ -1,12 +1,15 @@
 #include "NER.h"
 #include <bolt/src/NER/model/NerBoltModel.h>
+#include <bolt/src/NER/model/NerModel.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Archive.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <cmath>
 #include <iostream>
 #include <memory>
 #include <optional>
 #include <queue>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -52,17 +55,29 @@ NER::getNerTags(std::vector<std::vector<std::string>>& tokens, uint32_t top_k) {
 }
 
 ar::ConstArchivePtr NER::toArchive() const {
-  auto ner_bolt_model = ar::Map::make();
+  auto map = ar::Map::make();
 
-  ner_bolt_model->set("ner_backend_model", _ner_backend_model->toArchive());
+  map->set("type", ar::str(_ner_backend_model->type()));
 
-  return ner_bolt_model;
+  map->set("ner_backend_model", _ner_backend_model->toArchive());
+
+  return map;
 }
 
 std::shared_ptr<NER> NER::fromArchive(const ar::Archive& archive) {
-  std::shared_ptr<bolt::NerBackend> ner_backend_model =
-      bolt::NerBoltModel::fromArchive(*archive.get("ner_backend_model"));
-  return std::make_shared<NER>(NER(ner_backend_model));
+  std::string type = archive.getAs<std::string>("type");
+
+  if (type == "bolt_ner") {
+    std::shared_ptr<bolt::NerBackend> ner_backend_model =
+        bolt::NerBoltModel::fromArchive(*archive.get("ner_backend_model"));
+    return std::make_shared<NER>(NER(ner_backend_model));
+  }
+  if (type == "simple_ner") {
+    std::shared_ptr<bolt::NerBackend> ner_backend_model =
+        bolt::NerModel::fromArchive(*archive.get("ner_backend_model"));
+    return std::make_shared<NER>(NER(ner_backend_model));
+  }
+  throw std::invalid_argument("Cannot load a NER backend of type: " + type);
 }
 
 void NER::save(const std::string& filename) const {
