@@ -30,7 +30,6 @@ class NerBoltDataSource(PyDataSource):
                     tokenize_text(self.tokenizer, token) for token in json_obj["source"]
                 ]
                 data = json.dumps(json_obj)
-                print(data)
                 yield data
 
     def inference_featurizer(self, sentence_tokens_list):
@@ -42,7 +41,7 @@ class NerBoltDataSource(PyDataSource):
     def resource_name(self) -> str:
         return self.file_path
 
-class NerUnigramDataSource(PyDataSource):
+class NerDataSource(PyDataSource):
     def __init__(self, file_path):
         PyDataSource.__init__(self)
         self.file_path = file_path
@@ -53,7 +52,6 @@ class NerUnigramDataSource(PyDataSource):
             for line in file:
                 json_obj = json.loads(line.strip())
                 data = json.dumps(json_obj)
-                print(data)
                 yield data
 
     def inference_featurizer(self, sentence_tokens_list):

@@ -514,6 +514,20 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("n_intervals"), py::arg("is_bidirectional") = false)
       .def("inference_featurization", &DyadicInterval::inferenceFeaturization,
            py::arg("columns"));
+
+  py::class_<NerTokenizerUnigram, Transformation,
+             std::shared_ptr<NerTokenizerUnigram>>(transformations_submodule,
+                                                   "NerTokenizerUnigram")
+      .def(py::init<std::string, std::string, std::optional<std::string>,
+                    std::optional<uint32_t>, uint32_t, uint32_t,
+                    std::vector<dataset::TextTokenizerPtr>,
+                    std::optional<std::unordered_map<std::string, uint32_t>>>(),
+           py::arg("tokens_column"), py::arg("featurized_sentence_column"),
+           py::arg("target_column"), py::arg("target_dim"), py::arg("fhr_dim"),
+           py::arg("dyadic_num_intervals"), py::arg("target_word_tokenizers"),
+           py::arg("tag_to_label"))
+      .def("process_token", &NerTokenizerUnigram::processToken,
+           py::arg("tokens"), py::arg("index"));
 #endif
 
   py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>>(
@@ -550,20 +564,6 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("source_column"), py::arg("token_column"),
            py::arg("sentence_column"), py::arg("target_column"),
            py::arg("tag_to_label"));
-
-  py::class_<NerTokenizerUnigram, Transformation,
-             std::shared_ptr<NerTokenizerUnigram>>(transformations_submodule,
-                                                   "NerTokenizerUnigram")
-      .def(py::init<std::string, std::string, std::optional<std::string>,
-                    std::optional<uint32_t>, uint32_t, uint32_t,
-                    std::vector<dataset::TextTokenizerPtr>,
-                    std::optional<std::unordered_map<std::string, uint32_t>>>(),
-           py::arg("tokens_column"), py::arg("featurized_sentence_column"),
-           py::arg("target_column"), py::arg("target_dim"), py::arg("fhr_dim"),
-           py::arg("dyadic_num_intervals"), py::arg("target_word_tokenizers"),
-           py::arg("tag_to_label"))
-      .def("process_token", &NerTokenizerUnigram::processToken,
-           py::arg("tokens"), py::arg("index"));
 }
 
 }  // namespace thirdai::data::python

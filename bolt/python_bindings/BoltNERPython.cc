@@ -1,8 +1,8 @@
 #include "BoltNERPython.h"
 #include "PybindUtils.h"
+#include <bolt/src/NER/model/NER.h>
 #include <bolt/src/NER/model/NerBoltModel.h>
 #include <bolt/src/NER/model/NerModel.h>
-#include <bolt/src/NER/model/NerUnigramModel.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/train/callbacks/Callback.h>
 #include <data/src/TensorConversion.h>
@@ -25,8 +25,8 @@ void addNERModels(py::module_& module) {
           py::init<bolt::ModelPtr, std::unordered_map<std::string, uint32_t>>(),
           py::arg("model"), py::arg("tag_to_label"));
 
-  py::class_<NerUnigramModel, NerBackend, std::shared_ptr<NerUnigramModel>>(
-      module, "UnigramNerModel")
+  py::class_<NerModel, NerBackend, std::shared_ptr<NerModel>>(module,
+                                                              "NerModel")
       .def(py::init<bolt::ModelPtr, std::string, std::string,
                     std::unordered_map<std::string, uint32_t>,
                     std::vector<dataset::TextTokenizerPtr>>(),
@@ -38,20 +38,21 @@ void addNERModels(py::module_& module) {
                     std::make_shared<dataset::CharKGramTokenizer>(4)}));
 #endif
 
-  py::class_<NerModel, std::shared_ptr<NerModel>>(module, "NerModel")
+  py::class_<NER, std::shared_ptr<NER>>(module, "NER")
 #if THIRDAI_EXPOSE_ALL
       .def(py::init<std::shared_ptr<NerBackend>>(), py::arg("model"))
 #endif
-      .def("train", &NerModel::train, py::arg("train_data"),
+      .def("train", &NER::train, py::arg("train_data"),
            py::arg("learning_rate") = 1e-5, py::arg("epochs") = 5,
            py::arg("batch_size") = 10000,
            py::arg("train_metrics") = std::vector<std::string>{"loss"},
            py::arg("val_data") = nullptr,
            py::arg("val_metrics") = std::vector<std::string>{})
-      .def("get_ner_tags", &NerModel::getNerTags, py::arg("tokens"))
-      .def("save", &NerModel::save)
-      .def_static("load", &NerModel::load, py::arg("filename"))
-      .def(thirdai::bolt::python::getPickleFunction<NerModel>());
+      .def("get_ner_tags", &NER::getNerTags, py::arg("tokens"),
+           py::arg("top_k") = 1)
+      .def("save", &NER::save)
+      .def_static("load", &NER::load, py::arg("filename"))
+      .def(thirdai::bolt::python::getPickleFunction<NER>());
 }
 
 }  // namespace thirdai::bolt::python
