@@ -15,11 +15,13 @@ namespace thirdai::data {
 
 NerTokenFromStringArray::NerTokenFromStringArray(
     std::string source_column, std::string token_column,
-    std::string sentence_column, std::optional<std::string> target_column,
+    std::string token_front_column, std::string token_behind_column,
+    std::optional<std::string> target_column,
     std::optional<std::unordered_map<std::string, uint32_t>> tag_to_label)
     : _source_column(std::move(source_column)),
       _token_column(std::move(token_column)),
-      _sentence_column(std::move(sentence_column)),
+      _token_front_column(std::move(token_front_column)),
+      _token_behind_column(std::move(token_behind_column)),
       _target_column(std::move(target_column)),
       _tag_to_label(std::move(tag_to_label)) {}
 
@@ -36,14 +38,16 @@ ColumnMap NerTokenFromStringArray::apply(ColumnMap columns,
 
   std::vector<std::string> tokens(sample_offsets.back());
 
-  std::vector<std::string> sentences(sample_offsets.back());
+  std::vector<std::string> tokens_front(sample_offsets.back());
+  std::vector<std::string> tokens_behind(sample_offsets.back());
 
   std::vector<uint32_t> targets(sample_offsets.back());
 
   std::exception_ptr error;
 
-#pragma omp parallel for default(none) \
-    shared(texts, tags, tokens, sentences, targets, sample_offsets, error)
+#pragma omp parallel for default(none)                                \
+    shared(texts, tags, tokens, tokens_front, tokens_behind, targets, \
+           sample_offsets, error)
   for (size_t i = 0; i < texts->numRows(); i += 1) {
     try {
       auto row_tokens = texts->row(i);
@@ -60,7 +64,10 @@ ColumnMap NerTokenFromStringArray::apply(ColumnMap columns,
       std::string joinedString = oss.str();
 
       for (size_t start = 0; start < row_tokens.size(); start += 1) {
-        sentences[sample_offset] = joinedString;
+        tokens_front[sample_offset] =
+            (start + 1 < row_tokens.size()) ? row_tokens[start + 1] : "198";
+        tokens_behind[sample_offset] =
+            (start > 0) ? row_tokens[start - 1] : "198";
         tokens[sample_offset] = row_tokens[start];
         if (_target_column && _tag_to_label.has_value()) {
           const auto& tagLabelMap = _tag_to_label.value();
@@ -86,8 +93,10 @@ ColumnMap NerTokenFromStringArray::apply(ColumnMap columns,
 
   output_columns[_token_column] =
       ValueColumn<std::string>::make(std::move(tokens));
-  output_columns[_sentence_column] =
-      ValueColumn<std::string>::make(std::move(sentences));
+  output_columns[_token_front_column] =
+      ValueColumn<std::string>::make(std::move(tokens_front));
+  output_columns[_token_behind_column] =
+      ValueColumn<std::string>::make(std::move(tokens_behind));
   if (_target_column && _tag_to_label.has_value()) {
     auto maxPair = std::max_element(
         _tag_to_label.value().begin(), _tag_to_label.value().end(),
@@ -106,7 +115,8 @@ ar::ConstArchivePtr NerTokenFromStringArray::toArchive() const {
 
   map->set("source_column", ar::str(_source_column));
   map->set("token_column", ar::str(_token_column));
-  map->set("sentence_column", ar::str(_sentence_column));
+  map->set("token_front_column", ar::str(_token_front_column));
+  map->set("token_behind_column", ar::str(_token_behind_column));
   if (_target_column) {
     map->set("target_column", ar::str(*_target_column));
   }
@@ -117,6 +127,7 @@ ar::ConstArchivePtr NerTokenFromStringArray::toArchive() const {
 NerTokenFromStringArray::NerTokenFromStringArray(const ar::Archive& archive)
     : _source_column(archive.str("source_column")),
       _token_column(archive.str("token_column")),
-      _sentence_column(archive.str("sentence_column")),
+      _token_front_column(archive.str("token_front_column")),
+      _token_behind_column(archive.str("token_behind_column")),
       _target_column(archive.getOpt<ar::Str>("target_column")) {}
 }  // namespace thirdai::data

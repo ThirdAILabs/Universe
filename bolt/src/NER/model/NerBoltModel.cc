@@ -27,7 +27,8 @@ NerBoltModel::NerBoltModel(
   _train_transforms = getTransformations(true);
   _inference_transforms = getTransformations(false);
   _bolt_inputs = {data::OutputColumns("tokens"),
-                  data::OutputColumns("sentences")};
+                  data::OutputColumns("token_front"),
+                  data::OutputColumns("token_behind")};
 }
 
 data::PipelinePtr NerBoltModel::getTransformations(bool inference) {
@@ -35,18 +36,20 @@ data::PipelinePtr NerBoltModel::getTransformations(bool inference) {
   if (!inference) {
     transform =
         data::Pipeline::make({std::make_shared<data::NerTokenFromStringArray>(
-            _source_column, "tokens", "sentences", std::nullopt,
-            std::nullopt)});
+            _source_column, "tokens", "token_front", "token_behind",
+            std::nullopt, std::nullopt)});
   } else {
     transform =
         data::Pipeline::make({std::make_shared<data::NerTokenFromStringArray>(
-            _source_column, "tokens", "sentences", _target_column,
-            _tag_to_label)});
+            _source_column, "tokens", "token_front", "token_behind",
+            _target_column, _tag_to_label)});
   }
   transform = transform->then(std::make_shared<data::StringToTokenArray>(
       "tokens", "tokens", ' ', _vocab_size));
   transform = transform->then(std::make_shared<data::StringToTokenArray>(
-      "sentences", "sentences", ' ', _vocab_size));
+      "token_front", "token_front", ' ', _vocab_size));
+  transform = transform->then(std::make_shared<data::StringToTokenArray>(
+      "token_behind", "token_behind", ' ', _vocab_size));
   return transform;
 }
 

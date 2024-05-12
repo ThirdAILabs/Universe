@@ -558,12 +558,12 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   py::class_<NerTokenFromStringArray, Transformation,
              std::shared_ptr<NerTokenFromStringArray>>(
       transformations_submodule, "NerTokenFromStringArray")
-      .def(py::init<std::string, std::string, std::string,
+      .def(py::init<std::string, std::string, std::string, std::string,
                     std::optional<std::string>,
                     std::optional<std::unordered_map<std::string, uint32_t>>>(),
            py::arg("source_column"), py::arg("token_column"),
-           py::arg("sentence_column"), py::arg("target_column"),
-           py::arg("tag_to_label"));
+           py::arg("token_front_column"), py::arg("token_behind_column"),
+           py::arg("target_column"), py::arg("tag_to_label"));
 }
 
 }  // namespace thirdai::data::python
