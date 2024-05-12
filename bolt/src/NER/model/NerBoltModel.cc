@@ -1,5 +1,6 @@
 #include "NerBoltModel.h"
 #include <cereal/archives/binary.hpp>
+#include <bolt/src/NER/model/NER.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -87,17 +88,22 @@ metrics::History NerBoltModel::train(
   return trainer.getHistory();
 }
 
-std::vector<std::vector<uint32_t>> NerBoltModel::getTags(
-    std::vector<std::vector<std::string>> tokens) {
-  std::vector<std::vector<uint32_t>> tags;
+std::vector<PerTokenListPredictions> NerBoltModel::getTags(
+    std::vector<std::vector<std::string>> tokens, uint32_t top_k) {
+  std::vector<PerTokenListPredictions> tags_and_scores;
+  tags_and_scores.reserve(tokens.size());
 
   for (const auto& sub_vector : tokens) {
-    std::vector<uint32_t> uint_sub_vector(sub_vector.size(), 0);
-    tags.push_back(uint_sub_vector);
+    PerTokenListPredictions predictions;
+    predictions.reserve(sub_vector.size());
+    for (size_t i = 0; i < sub_vector.size(); i++) {
+      predictions.push_back(PerTokenPredictions());
+    }
+    tags_and_scores.push_back(predictions);
   }
-  data::ColumnMap data(
-      data::ColumnMap({{_source_column, data::ArrayColumn<std::string>::make(
-                                            std::move(tokens), _vocab_size)}}));
+  data::ColumnMap data(data::ColumnMap(
+      {{_source_column, data::ArrayColumn<std::string>::make(std::move(tokens),
+                                                             std::nullopt)}}));
 
   auto columns = _inference_transforms->applyStateless(data);
   auto tensors = data::toTensorBatches(columns, _bolt_inputs, 2048);
@@ -109,23 +115,24 @@ std::vector<std::vector<uint32_t>> NerBoltModel::getTags(
     auto outputs = _bolt_model->forward(batch).at(0);
 
     for (size_t i = 0; i < outputs->batchSize(); i += 1) {
-      uint32_t predicted_tag =
-          outputs->getVector(i).topKNeurons(1).top().second;
-      // To handle empty vectors in case
-      while (sub_vector_index < tags.size() &&
-             token_index >= tags[sub_vector_index].size()) {
-        sub_vector_index += 1;
+      if (token_index >= tags_and_scores[sub_vector_index].size()) {
         token_index = 0;
+        sub_vector_index++;
       }
-      if (sub_vector_index >= tags.size()) {
+      auto token_level_predictions = outputs->getVector(i).topKNeurons(top_k);
+      while (!token_level_predictions.empty()) {
+        float score = token_level_predictions.top().first;
+        uint32_t tag = token_level_predictions.top().second;
+        tags_and_scores[sub_vector_index][token_index].push_back({tag, score});
+        token_level_predictions.pop();
+      }
+      if (sub_vector_index >= tags_and_scores.size()) {
         throw std::runtime_error("tags indices not matching");
       }
-      tags[sub_vector_index][token_index] = predicted_tag;
       token_index += 1;
     }
   }
-
-  return tags;
+  return tags_and_scores;
 }
 
 ar::ConstArchivePtr NerBoltModel::toArchive() const {

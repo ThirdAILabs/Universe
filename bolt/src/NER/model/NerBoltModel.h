@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <bolt/src/NER/model/NerModel.h>
+#include <bolt/src/NER/model/NER.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/text_generation/GenerativeModel.h>
 #include <bolt/src/train/trainer/Trainer.h>
@@ -20,11 +20,12 @@ namespace thirdai::bolt {
 
 class NerBoltModel final : public NerBackend {
  public:
+  std::string type() const final { return "bolt_ner"; }
   explicit NerBoltModel(bolt::ModelPtr model,
                         std::unordered_map<std::string, uint32_t> tag_to_label);
 
-  std::vector<std::vector<uint32_t>> getTags(
-      std::vector<std::vector<std::string>> tokens) final;
+  std::vector<PerTokenListPredictions> getTags(
+      std::vector<std::vector<std::string>> tokens, uint32_t top_k) final;
 
   metrics::History train(const dataset::DataSourcePtr& train_data,
                          float learning_rate, uint32_t epochs,

@@ -1,0 +1,136 @@
+#include "UnigramDataProcessor.h"
+#include <archive/src/Archive.h>
+#include <archive/src/List.h>
+#include <data/src/transformations/TextTokenizer.h>
+#include <dataset/src/blocks/text/TextTokenizer.h>
+
+namespace thirdai::data {
+SimpleDataProcessor::SimpleDataProcessor(
+    std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
+    uint32_t dyadic_num_intervals)
+    : _target_word_tokenizers(std::move(target_word_tokenizers)),
+      _dyadic_num_intervals(dyadic_num_intervals) {}
+
+std::shared_ptr<SimpleDataProcessor> SimpleDataProcessor::make(
+    std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
+    uint32_t dyadic_num_intervals) {
+  return std::make_shared<SimpleDataProcessor>(target_word_tokenizers,
+                                               dyadic_num_intervals);
+}
+
+std::vector<std::vector<uint32_t>> SimpleDataProcessor::featurizeTokenTagList(
+    const std::vector<std::string>& tokens) const {
+  std::vector<std::vector<uint32_t>> features(tokens.size());
+
+  for (uint32_t index = 0; index < tokens.size(); index++) {
+    std::string featurized_string = processToken(tokens, index);
+    features[index] = _sentence_tokenizer->tokenize(featurized_string);
+  }
+  return features;
+}
+
+std::string SimpleDataProcessor::processToken(
+    const std::vector<std::string>& tokens, uint32_t index) const {
+  /*
+   * 1. Generate Dyadic Intervals for the token
+   * 2. For the target word, generate the tokenized word and all.
+   * 3. Combine everything into a single string and return it.
+   */
+
+  const std::string& target_token = tokens[index];
+
+  std::vector<std::string> tokenized_target_token;
+
+  for (const auto& tokenizer : _target_word_tokenizers) {
+    auto tokens = tokenizer->toStrings(target_token);
+    tokenized_target_token.reserve(tokenized_target_token.size() +
+                                   tokens.size());
+    tokenized_target_token.insert(tokenized_target_token.end(), tokens.begin(),
+                                  tokens.end());
+  }
+
+  std::string repr;
+  for (const auto& tok : tokenized_target_token) {
+    repr += _target_prefix + tok + " ";
+  }
+
+  repr += generateDyadicWindows(tokens, index);
+  return repr;
+}
+
+std::string SimpleDataProcessor::generateDyadicWindows(
+    std::vector<std::string> tokens, uint32_t index) const {
+  // auto print_vector = [](const auto& vec) {
+  //   for (const auto& element : vec) {
+  //     std::cout << element << " ";
+  //   }
+  //   std::cout << std::endl;
+  // };
+
+  // print_vector(tokens);
+
+  std::vector<std::vector<std::string>> dyadic_windows;
+  for (size_t interval_id = 0; interval_id < _dyadic_num_intervals;
+       interval_id++) {
+    uint32_t interval_size = 1 << interval_id;
+
+    // std::cout << interval_id << std::endl;
+    // std::cout << interval_size << std::endl;
+
+    std::vector<std::string> prev_window, next_window;
+    prev_window.reserve(interval_size);
+    next_window.reserve(interval_size);
+
+    for (size_t lower_index =
+             std::max(index - interval_size, static_cast<uint32_t>(0));
+         lower_index < index; lower_index++) {
+      prev_window.push_back(_dyadic_previous_prefix +
+                            std::to_string(interval_id) + "_" +
+                            tokens[lower_index]);
+    }
+
+    // print_vector(prev_window);
+
+    for (size_t upper_index = std::min(
+             index + interval_size, static_cast<uint32_t>(tokens.size() - 1));
+         upper_index > index; upper_index--) {
+      next_window.push_back(_dyadic_next_prefix + std::to_string(interval_id) +
+                            "_" + tokens[upper_index]);
+    }
+    // print_vector(next_window);
+
+    dyadic_windows.push_back(prev_window);
+    dyadic_windows.push_back(next_window);
+  }
+
+  std::string repr;
+  for (const auto& window : dyadic_windows) {
+    for (const auto& tok : window) {
+      repr += tok + " ";
+    }
+  }
+
+  // std::cout << repr << std::endl;
+  return repr;
+}
+
+ar::ConstArchivePtr SimpleDataProcessor::toArchive() const {
+  auto map = ar::Map::make();
+  auto tokenizers = ar::List::make();
+  for (const auto& t : _target_word_tokenizers) {
+    tokenizers->append(t->toArchive());
+  }
+
+  map->set("target_word_tokenizers", tokenizers);
+  map->set("dyadic_num_intervals", ar::u64(_dyadic_num_intervals));
+
+  return map;
+}
+
+SimpleDataProcessor::SimpleDataProcessor(const ar::Archive& archive) {
+  for (const auto& t : archive.get("target_word_tokenizers")->list()) {
+    _target_word_tokenizers.push_back(dataset::TextTokenizer::fromArchive(*t));
+  }
+  _dyadic_num_intervals = archive.u64("dyadic_num_intervals");
+}
+}  // namespace thirdai::data
