@@ -22,7 +22,7 @@ from sqlalchemy import (
 )
 from thirdai.neural_db.utils import pickle_to, unpickle_from
 
-from ..core.chunk_store import ChunkStore
+from ..core.chunk_store import ChunkStore, CustomIDType
 from ..core.types import (
     Chunk,
     ChunkBatch,
@@ -137,8 +137,10 @@ class SQLiteChunkStore(ChunkStore):
             index=False,
         )
 
-    def _create_custom_id_table(self, integer_custom_ids):
-        custom_id_dtype = Integer if integer_custom_ids else String
+    def _create_custom_id_table(self):
+        custom_id_dtype = (
+            Integer if self.custom_id_type == CustomIDType.Integer else String
+        )
         self.custom_id_table = Table(
             "neural_db_custom_ids",
             self.metadata,
@@ -147,22 +149,17 @@ class SQLiteChunkStore(ChunkStore):
         )
         self.metadata.create_all(self.engine)
 
-    def _store_custom_ids(self, custom_ids, chunk_ids):
-        batch_integer_custom_ids = custom_ids.dtype == int
-        if self.custom_id_table is None:
-            self._create_custom_id_table(integer_custom_ids=batch_integer_custom_ids)
+    def _update_custom_ids(self, custom_ids, chunk_ids):
+        self._set_or_validate_custom_id_type(custom_ids)
 
-        table_integer_custom_ids = isinstance(
-            self.custom_id_table.columns.custom_id.type, Integer
-        )
+        if custom_ids is not None:
+            if self.custom_id_table is None:
+                self._create_custom_id_table()
 
-        if table_integer_custom_ids != batch_integer_custom_ids:
-            raise ValueError(
-                "Custom ids must all have the same type. Found some custom ids with type int, and some with type str."
+            custom_id_df = pd.DataFrame(
+                {"custom_id": custom_ids, "chunk_id": chunk_ids}
             )
-
-        custom_id_df = pd.DataFrame({"custom_id": custom_ids, "chunk_id": chunk_ids})
-        self._write_to_table(df=custom_id_df, table=self.custom_id_table)
+            self._write_to_table(df=custom_id_df, table=self.custom_id_table)
 
     def _add_metadata_column(self, column: Column):
         column_name = column.compile(dialect=self.engine.dialect)
@@ -216,8 +213,7 @@ class SQLiteChunkStore(ChunkStore):
             chunk_df = batch.to_df()
             chunk_df["chunk_id"] = chunk_ids
 
-            if batch.custom_id is not None:
-                self._store_custom_ids(custom_ids=batch.custom_id, chunk_ids=chunk_ids)
+            self._update_custom_ids(custom_ids=batch.custom_id, chunk_ids=chunk_ids)
 
             if batch.metadata is not None:
                 self._store_metadata(batch.metadata, chunk_ids=chunk_ids)
@@ -236,7 +232,7 @@ class SQLiteChunkStore(ChunkStore):
 
         return inserted_chunks_iterator
 
-    def delete(self, chunk_ids: List[ChunkId], **kwargs):
+    def delete(self, chunk_ids: List[ChunkId]):
         with self.engine.begin() as conn:
             delete_chunks = delete(self.chunk_table).where(
                 self.chunk_table.c.chunk_id.in_(chunk_ids)
@@ -248,6 +244,12 @@ class SQLiteChunkStore(ChunkStore):
                     self.metadata_table.c.chunk_id.in_(chunk_ids)
                 )
                 conn.execute(delete_metadata)
+
+            if self.custom_id_table is not None:
+                delete_chunk_ids = delete(self.custom_id_table).where(
+                    self.custom_id_table.c.chunk_id.in_(chunk_ids)
+                )
+                conn.execute(delete_chunk_ids)
 
     def get_chunks(self, chunk_ids: List[ChunkId], **kwargs) -> List[Chunk]:
         id_to_chunk = {}
@@ -313,6 +315,9 @@ class SQLiteChunkStore(ChunkStore):
         self, samples: Iterable[CustomIdSupervisedBatch]
     ) -> Iterable[SupervisedBatch]:
         remapped_batches = []
+
+        if self.custom_id_table is None:
+            raise ValueError(f"Chunk Store does not contain custom ids.")
 
         for batch in samples:
             chunk_ids = []

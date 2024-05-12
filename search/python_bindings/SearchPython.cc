@@ -3,8 +3,8 @@
 #include <bolt/python_bindings/PybindUtils.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/stl.h>
-#include <search/src/FinetunableRetriever.h>
-#include <search/src/InvertedIndex.h>
+#include <search/src/inverted_index/FinetunableRetriever.h>
+#include <search/src/inverted_index/InvertedIndex.h>
 
 namespace thirdai::search::python {
 
@@ -73,15 +73,22 @@ void createSearchSubmodule(py::module_& module) {
                        py::arg("probabilities"), py::arg("transition_matrix"),
                        py::arg("beam_size"));
 
+  py::class_<Tokenizer, TokenizerPtr>(search_submodule, "Tokenizer");  // NOLINT
+
+  py::class_<DefaultTokenizer, Tokenizer, std::shared_ptr<DefaultTokenizer>>(
+      search_submodule, "DefaultTokenizer")
+      .def(py::init<bool, bool>(), py::arg("stem") = true,
+           py::arg("lowercase") = true);
+
   py::class_<InvertedIndex, std::shared_ptr<InvertedIndex>>(search_submodule,
                                                             "InvertedIndex")
-      .def(py::init<size_t, float, float, float, bool, bool>(),
+      .def(py::init<size_t, float, float, float, TokenizerPtr>(),
            py::arg("max_docs_to_score") =
                InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE,
            py::arg("idf_cutoff_frac") = InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC,
            py::arg("k1") = InvertedIndex::DEFAULT_K1,
-           py::arg("b") = InvertedIndex::DEFAULT_B, py::arg("stem") = true,
-           py::arg("lowercase") = true)
+           py::arg("b") = InvertedIndex::DEFAULT_B,
+           py::arg("tokenizer") = std::make_shared<DefaultTokenizer>())
       .def("index", &InvertedIndex::index, py::arg("ids"), py::arg("docs"))
       .def("update", &InvertedIndex::update, py::arg("ids"),
            py::arg("extra_tokens"), py::arg("ignore_missing_ids") = true)

@@ -22,13 +22,12 @@
 namespace thirdai::search {
 
 InvertedIndex::InvertedIndex(size_t max_docs_to_score, float idf_cutoff_frac,
-                             float k1, float b, bool stem, bool lowercase)
+                             float k1, float b, TokenizerPtr tokenizer)
     : _max_docs_to_score(max_docs_to_score),
       _idf_cutoff_frac(idf_cutoff_frac),
       _k1(k1),
       _b(b),
-      _stem(stem),
-      _lowercase(lowercase) {
+      _tokenizer(std::move(tokenizer)) {
   licensing::checkLicense();
 }
 
@@ -115,7 +114,7 @@ InvertedIndex::countTokenOccurences(
 
 #pragma omp parallel for default(none) shared(docs, token_counts)
   for (size_t i = 0; i < docs.size(); i++) {
-    auto doc_tokens = tokenizeText(docs[i]);
+    auto doc_tokens = _tokenizer->tokenize(docs[i]);
     std::unordered_map<Token, uint32_t> counts;
     for (const auto& token : doc_tokens) {
       counts[token]++;
@@ -193,7 +192,7 @@ std::vector<DocScore> InvertedIndex::query(const std::string& query,
 
 std::unordered_map<DocId, float> InvertedIndex::scoreDocuments(
     const std::string& query) const {
-  auto tokens = tokenizeText(query);
+  auto tokens = _tokenizer->tokenize(query);
 
   std::vector<std::pair<Token, float>> tokens_and_idfs;
   tokens_and_idfs.reserve(tokens.size());
@@ -322,28 +321,6 @@ void InvertedIndex::remove(const std::vector<DocId>& ids) {
   recomputeMetadata();
 }
 
-Tokens InvertedIndex::tokenizeText(std::string text) const {
-  for (char& c : text) {
-    if (std::ispunct(c)) {
-      c = ' ';
-    }
-  }
-
-  Tokens tokens = text::splitOnWhiteSpace(text);
-
-  if (_stem) {
-    return text::porter_stemmer::stem(tokens, _lowercase);
-  }
-
-  if (_lowercase) {
-    for (auto& token : tokens) {
-      token = text::lower(token);
-    }
-  }
-
-  return tokens;
-}
-
 std::vector<DocScore> InvertedIndex::parallelQuery(
     const std::vector<std::shared_ptr<InvertedIndex>>& indices,
     const std::string& query, uint32_t k) {
@@ -404,8 +381,7 @@ ar::ConstArchivePtr InvertedIndex::toArchive() const {
   map->set("k1", ar::f32(_k1));
   map->set("b", ar::f32(_b));
 
-  map->set("stem", ar::boolean(_stem));
-  map->set("lowercase", ar::boolean(_lowercase));
+  map->set("tokenizer", _tokenizer->toArchive());
 
   return map;
 }
@@ -416,10 +392,15 @@ InvertedIndex::InvertedIndex(const ar::Archive& archive)
       _idf_cutoff_frac(archive.f32("idf_cutoff_frac")),
       _sum_doc_lens(archive.u64("sum_doc_lens")),
       _k1(archive.f32("k1")),
-      _b(archive.f32("b")),
-      _stem(archive.boolean("stem")),
-      _lowercase(archive.boolean("lowercase")) {
+      _b(archive.f32("b")) {
   licensing::entitlements().verifySaveLoad();
+
+  if (archive.contains("tokenizer")) {
+    _tokenizer = Tokenizer::fromArchive(*archive.get("tokenizer"));
+  } else {
+    _tokenizer = std::make_shared<DefaultTokenizer>(
+        archive.boolean("stem"), archive.boolean("lowercase"));
+  }
 
   const auto& token_to_docs = archive.getAs<ar::MapStrVecU64>("token_to_docs");
   const auto& token_to_doc_cnts =
@@ -476,10 +457,14 @@ template <class Archive>
 void InvertedIndex::serialize(Archive& archive) {
   licensing::entitlements().verifySaveLoad();
 
+  bool stem, lowercase;
+
   archive(_token_to_docs, _token_to_idf, _doc_lengths, _idf_cutoff_frac,
-          _sum_doc_lens, _avg_doc_length, _k1, _b, _stem, _lowercase);
+          _sum_doc_lens, _avg_doc_length, _k1, _b, stem, lowercase);
 
   _max_docs_to_score = DEFAULT_MAX_DOCS_TO_SCORE;
+
+  _tokenizer = std::make_shared<DefaultTokenizer>(stem, lowercase);
 }
 
 }  // namespace thirdai::search

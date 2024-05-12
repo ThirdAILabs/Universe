@@ -1,6 +1,6 @@
 #include "InvertedIndexTestUtils.h"
 #include <gtest/gtest.h>
-#include <search/src/FinetunableRetriever.h>
+#include <search/src/inverted_index/FinetunableRetriever.h>
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <iterator>

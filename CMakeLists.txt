@@ -338,8 +338,9 @@ set(THIRDAI_SOURCES
     search/src/MaxFlash.cc
     search/src/MaxFlashArray.cc
     search/src/Flash.cc
-    search/src/InvertedIndex.cc
-    search/src/FinetunableRetriever.cc
+    search/src/inverted_index/InvertedIndex.cc
+    search/src/inverted_index/FinetunableRetriever.cc
+    search/src/inverted_index/Tokenizer.cc
     hashing/src/DensifiedMinHash.cc
     hashing/src/DWTA.cc
     hashing/src/FastSRP.cc

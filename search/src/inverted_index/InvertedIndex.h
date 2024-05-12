@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <archive/src/Archive.h>
+#include <search/src/inverted_index/Tokenizer.h>
 #include <utils/text/PorterStemmer.h>
 #include <utils/text/StringManipulation.h>
 #include <cstdint>
@@ -13,8 +14,6 @@
 namespace thirdai::search {
 
 using DocId = uint64_t;
-using Token = std::string;
-using Tokens = std::vector<Token>;
 
 using DocScore = std::pair<DocId, float>;
 
@@ -28,10 +27,11 @@ class InvertedIndex {
   static constexpr float DEFAULT_K1 = 1.2;
   static constexpr float DEFAULT_B = 0.75;
 
-  explicit InvertedIndex(size_t max_docs_to_score = DEFAULT_MAX_DOCS_TO_SCORE,
-                         float idf_cutoff_frac = DEFAULT_IDF_CUTOFF_FRAC,
-                         float k1 = DEFAULT_K1, float b = DEFAULT_B,
-                         bool stem = true, bool lowercase = true);
+  explicit InvertedIndex(
+      size_t max_docs_to_score = DEFAULT_MAX_DOCS_TO_SCORE,
+      float idf_cutoff_frac = DEFAULT_IDF_CUTOFF_FRAC, float k1 = DEFAULT_K1,
+      float b = DEFAULT_B,
+      TokenizerPtr tokenizer = std::make_shared<DefaultTokenizer>());
 
   explicit InvertedIndex(const ar::Archive& archive);
 
@@ -102,8 +102,6 @@ class InvertedIndex {
     return idf * num / denom;
   }
 
-  Tokens tokenizeText(std::string text) const;
-
   std::unordered_map<DocId, float> scoreDocuments(
       const std::string& query) const;
 
@@ -134,7 +132,7 @@ class InvertedIndex {
   // Parameters for computing the BM25 score.
   float _k1, _b;
 
-  bool _stem, _lowercase;
+  TokenizerPtr _tokenizer;
 
   friend class cereal::access;
   template <class Archive>
