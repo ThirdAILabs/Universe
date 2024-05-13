@@ -1,8 +1,8 @@
 #include "BoltNERPython.h"
 #include "PybindUtils.h"
 #include <bolt/src/NER/model/NER.h>
-#include <bolt/src/NER/model/NerBoltModel.h>
-#include <bolt/src/NER/model/NerModel.h>
+#include <bolt/src/NER/model/NerPretrainedModel.h>
+#include <bolt/src/NER/model/NerUDTModel.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/train/callbacks/Callback.h>
 #include <data/src/TensorConversion.h>
@@ -19,14 +19,14 @@ void addNERModels(py::module_& module) {
   py::class_<NerBackend, std::shared_ptr<NerBackend>>(  // NOLINT
       module, "NerBackend");
 
-  py::class_<NerBoltModel, NerBackend, std::shared_ptr<NerBoltModel>>(
-      module, "BoltNerModel")
+  py::class_<NerPretrainedModel, NerBackend, std::shared_ptr<NerPretrainedModel>>(
+      module, "NerPretrainedModel")
       .def(
           py::init<bolt::ModelPtr, std::unordered_map<std::string, uint32_t>>(),
           py::arg("model"), py::arg("tag_to_label"));
 
-  py::class_<NerModel, NerBackend, std::shared_ptr<NerModel>>(module,
-                                                              "NerModel")
+  py::class_<NerUDTModel, NerBackend, std::shared_ptr<NerUDTModel>>(module,
+                                                              "NerUDTModel")
       .def(py::init<bolt::ModelPtr, std::string, std::string,
                     std::unordered_map<std::string, uint32_t>,
                     std::vector<dataset::TextTokenizerPtr>>(),

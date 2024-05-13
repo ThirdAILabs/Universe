@@ -1,8 +1,8 @@
 #pragma once
 
 #include <bolt/src/NER/model/NerBackend.h>
-#include <bolt/src/NER/model/NerBoltModel.h>
-#include <bolt/src/NER/model/NerModel.h>
+#include <bolt/src/NER/model/NerPretrainedModel.h>
+#include <bolt/src/NER/model/NerUDTModel.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Trainer.h>
@@ -39,12 +39,12 @@ class NER : public std::enable_shared_from_this<NER> {
               {std::make_shared<dataset::NaiveSplitTokenizer>(),
                std::make_shared<dataset::CharKGramTokenizer>(4)})) {
     if (pretrained_model_path) {
-      auto model = std::make_shared<NerBoltModel>(
+      auto model = std::make_shared<NerPretrainedModel>(
           *pretrained_model_path, tokens_column, tags_column, tag_to_label);
       _ner_backend_model = std::static_pointer_cast<NerBackend>(model);
 
     } else {
-      auto model = std::make_shared<NerModel>(
+      auto model = std::make_shared<NerUDTModel>(
           tokens_column, tags_column, tag_to_label, target_word_tokenizers);
       _ner_backend_model = std::static_pointer_cast<NerBackend>(model);
     }

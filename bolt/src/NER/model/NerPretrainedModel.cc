@@ -1,4 +1,4 @@
-#include "NerBoltModel.h"
+#include "NerPretrainedModel.h"
 #include <cereal/archives/binary.hpp>
 #include <bolt/src/NER/model/NER.h>
 #include <bolt/src/nn/autograd/Computation.h>
@@ -29,7 +29,7 @@
 #include <vector>
 
 namespace thirdai::bolt {
-NerBoltModel::NerBoltModel(
+NerPretrainedModel::NerPretrainedModel(
     bolt::ModelPtr model,
     std::unordered_map<std::string, uint32_t> tag_to_label)
     : _bolt_model(std::move(model)), _tag_to_label(std::move(tag_to_label)) {
@@ -39,7 +39,7 @@ NerBoltModel::NerBoltModel(
                   data::OutputColumns("token_front"),
                   data::OutputColumns("token_behind")};
 }
-NerBoltModel::NerBoltModel(
+NerPretrainedModel::NerPretrainedModel(
     std::string& pretrained_model_path, std::string token_column,
     std::string tag_column,
     std::unordered_map<std::string, uint32_t> tag_to_label)
@@ -114,7 +114,7 @@ NerBoltModel::NerBoltModel(
                   data::OutputColumns("token_behind")};
 }
 
-data::PipelinePtr NerBoltModel::getTransformations(bool inference) {
+data::PipelinePtr NerPretrainedModel::getTransformations(bool inference) {
   data::PipelinePtr transform;
   if (!inference) {
     transform =
@@ -136,7 +136,7 @@ data::PipelinePtr NerBoltModel::getTransformations(bool inference) {
   return transform;
 }
 
-data::Loader NerBoltModel::getDataLoader(const dataset::DataSourcePtr& data,
+data::Loader NerPretrainedModel::getDataLoader(const dataset::DataSourcePtr& data,
                                          size_t batch_size, bool shuffle) {
   auto data_iter =
       data::JsonIterator::make(data, {_source_column, _target_column}, 1000);
@@ -146,7 +146,7 @@ data::Loader NerBoltModel::getDataLoader(const dataset::DataSourcePtr& data,
                       /* shuffle= */ shuffle, /* verbose= */ true,
                       /* shuffle_buffer_size= */ 20000);
 }
-metrics::History NerBoltModel::train(
+metrics::History NerPretrainedModel::train(
     const dataset::DataSourcePtr& train_data, float learning_rate,
     uint32_t epochs, size_t batch_size,
     const std::vector<std::string>& train_metrics,
@@ -177,7 +177,7 @@ metrics::History NerBoltModel::train(
   return trainer.getHistory();
 }
 
-std::vector<PerTokenListPredictions> NerBoltModel::getTags(
+std::vector<PerTokenListPredictions> NerPretrainedModel::getTags(
     std::vector<std::vector<std::string>> tokens, uint32_t top_k) {
   std::vector<PerTokenListPredictions> tags_and_scores;
   tags_and_scores.reserve(tokens.size());
@@ -224,7 +224,7 @@ std::vector<PerTokenListPredictions> NerBoltModel::getTags(
   return tags_and_scores;
 }
 
-ar::ConstArchivePtr NerBoltModel::toArchive() const {
+ar::ConstArchivePtr NerPretrainedModel::toArchive() const {
   auto ner_bolt_model = ar::Map::make();
 
   ner_bolt_model->set("bolt_model",
@@ -239,7 +239,7 @@ ar::ConstArchivePtr NerBoltModel::toArchive() const {
   return ner_bolt_model;
 }
 
-std::shared_ptr<NerBoltModel> NerBoltModel::fromArchive(
+std::shared_ptr<NerPretrainedModel> NerPretrainedModel::fromArchive(
     const ar::Archive& archive) {
   bolt::ModelPtr bolt_model =
       bolt::Model::fromArchive(*archive.get("bolt_model"));
@@ -247,26 +247,26 @@ std::shared_ptr<NerBoltModel> NerBoltModel::fromArchive(
   for (const auto& [k, v] : archive.getAs<ar::MapStrU64>("tag_to_label")) {
     tag_to_label[k] = v;
   }
-  return std::make_shared<NerBoltModel>(NerBoltModel(bolt_model, tag_to_label));
+  return std::make_shared<NerPretrainedModel>(NerPretrainedModel(bolt_model, tag_to_label));
 }
 
-void NerBoltModel::save(const std::string& filename) const {
+void NerPretrainedModel::save(const std::string& filename) const {
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   save_stream(filestream);
 }
 
-void NerBoltModel::save_stream(std::ostream& output) const {
+void NerPretrainedModel::save_stream(std::ostream& output) const {
   ar::serialize(toArchive(), output);
 }
 
-std::shared_ptr<NerBoltModel> NerBoltModel::load(const std::string& filename) {
+std::shared_ptr<NerPretrainedModel> NerPretrainedModel::load(const std::string& filename) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
   return load_stream(filestream);
 }
 
-std::shared_ptr<NerBoltModel> NerBoltModel::load_stream(std::istream& input) {
+std::shared_ptr<NerPretrainedModel> NerPretrainedModel::load_stream(std::istream& input) {
   auto archive = ar::deserialize(input);
   return fromArchive(*archive);
 }

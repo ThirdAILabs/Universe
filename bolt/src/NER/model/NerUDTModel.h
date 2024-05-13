@@ -7,15 +7,15 @@
 
 namespace thirdai::bolt {
 
-class NerModel final : public NerBackend {
+class NerUDTModel final : public NerBackend {
  public:
   std::string type() const final { return "ner"; }
-  NerModel(bolt::ModelPtr model, std::string tokens_column,
+  NerUDTModel(bolt::ModelPtr model, std::string tokens_column,
            std::string tags_column,
            std::unordered_map<std::string, uint32_t> tag_to_label,
            std::vector<dataset::TextTokenizerPtr> target_word_tokenizers);
 
-  NerModel(std::string tokens_column, std::string tags_column,
+  NerUDTModel(std::string tokens_column, std::string tags_column,
            std::unordered_map<std::string, uint32_t> tag_to_label,
            std::vector<dataset::TextTokenizerPtr> target_word_tokenizers);
 
@@ -35,18 +35,18 @@ class NerModel final : public NerBackend {
     return _tag_to_label;
   }
 
-  static std::shared_ptr<NerModel> fromArchive(const ar::Archive& archive);
+  static std::shared_ptr<NerUDTModel> fromArchive(const ar::Archive& archive);
 
   void save(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;
 
-  static std::shared_ptr<NerModel> load(const std::string& filename);
+  static std::shared_ptr<NerUDTModel> load(const std::string& filename);
 
-  static std::shared_ptr<NerModel> load_stream(std::istream& input_stream);
+  static std::shared_ptr<NerUDTModel> load_stream(std::istream& input_stream);
 
-  NerModel() = default;
-  ~NerModel() override = default;
+  NerUDTModel() = default;
+  ~NerUDTModel() override = default;
 
  private:
   void initialize();

@@ -17,13 +17,13 @@
 
 namespace thirdai::bolt {
 
-class NerBoltModel final : public NerBackend {
+class NerPretrainedModel final : public NerBackend {
  public:
   std::string type() const final { return "pretrained_ner"; }
-  NerBoltModel(bolt::ModelPtr model,
+  NerPretrainedModel(bolt::ModelPtr model,
                std::unordered_map<std::string, uint32_t> tag_to_label);
 
-  NerBoltModel(std::string& pretrained_model_path, std::string token_column,
+  NerPretrainedModel(std::string& pretrained_model_path, std::string token_column,
                std::string tag_column,
                std::unordered_map<std::string, uint32_t> tag_to_label);
 
@@ -43,18 +43,18 @@ class NerBoltModel final : public NerBackend {
     return _tag_to_label;
   }
 
-  static std::shared_ptr<NerBoltModel> fromArchive(const ar::Archive& archive);
+  static std::shared_ptr<NerPretrainedModel> fromArchive(const ar::Archive& archive);
 
   void save(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;
 
-  static std::shared_ptr<NerBoltModel> load(const std::string& filename);
+  static std::shared_ptr<NerPretrainedModel> load(const std::string& filename);
 
-  static std::shared_ptr<NerBoltModel> load_stream(std::istream& input_stream);
+  static std::shared_ptr<NerPretrainedModel> load_stream(std::istream& input_stream);
 
-  NerBoltModel() = default;
-  ~NerBoltModel() override = default;
+  NerPretrainedModel() = default;
+  ~NerPretrainedModel() override = default;
 
  private:
   data::Loader getDataLoader(const dataset::DataSourcePtr& data,

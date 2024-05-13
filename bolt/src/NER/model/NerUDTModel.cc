@@ -1,4 +1,4 @@
-#include "NerModel.h"
+#include "NerUDTModel.h"
 #include <bolt/src/NER/model/NER.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/Loss.h>
@@ -17,7 +17,7 @@
 
 namespace thirdai::bolt {
 
-void NerModel::initialize() {
+void NerUDTModel::initialize() {
   auto train_transformation = thirdai::data::NerTokenizerUnigram(
       /*tokens_column=*/_tokens_column,
       /*featurized_sentence_column=*/_featurized_sentence_column,
@@ -46,7 +46,7 @@ void NerModel::initialize() {
       data::OutputColumns(train_transformation.getFeaturizedIndicesColumn())};
 }
 
-NerModel::NerModel(
+NerUDTModel::NerUDTModel(
     bolt::ModelPtr model, std::string tokens_column, std::string tags_column,
     std::unordered_map<std::string, uint32_t> tag_to_label,
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers)
@@ -72,7 +72,7 @@ NerModel::NerModel(
   initialize();
 }
 
-NerModel::NerModel(
+NerUDTModel::NerUDTModel(
     std::string tokens_column, std::string tags_column,
     std::unordered_map<std::string, uint32_t> tag_to_label,
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers)
@@ -104,7 +104,7 @@ NerModel::NerModel(
   initialize();
 }
 
-std::vector<PerTokenListPredictions> NerModel::getTags(
+std::vector<PerTokenListPredictions> NerUDTModel::getTags(
     std::vector<std::vector<std::string>> tokens, uint32_t top_k) {
   std::vector<PerTokenListPredictions> tags_and_scores;
   tags_and_scores.reserve(tokens.size());
@@ -151,7 +151,7 @@ std::vector<PerTokenListPredictions> NerModel::getTags(
   return tags_and_scores;
 }
 
-metrics::History NerModel::train(const dataset::DataSourcePtr& train_data,
+metrics::History NerUDTModel::train(const dataset::DataSourcePtr& train_data,
                                  float learning_rate, uint32_t epochs,
                                  size_t batch_size,
                                  const std::vector<std::string>& train_metrics,
@@ -182,7 +182,7 @@ metrics::History NerModel::train(const dataset::DataSourcePtr& train_data,
   return trainer.getHistory();
 }
 
-ar::ConstArchivePtr NerModel::toArchive() const {
+ar::ConstArchivePtr NerUDTModel::toArchive() const {
   auto map = ar::Map::make();
 
   map->set("bolt_model", _bolt_model->toArchive(/*with_optimizer*/ false));
@@ -205,7 +205,7 @@ ar::ConstArchivePtr NerModel::toArchive() const {
   return map;
 }
 
-std::shared_ptr<NerModel> NerModel::fromArchive(const ar::Archive& archive) {
+std::shared_ptr<NerUDTModel> NerUDTModel::fromArchive(const ar::Archive& archive) {
   bolt::ModelPtr bolt_model =
       bolt::Model::fromArchive(*archive.get("bolt_model"));
 
@@ -221,33 +221,33 @@ std::shared_ptr<NerModel> NerModel::fromArchive(const ar::Archive& archive) {
   for (const auto& [k, v] : archive.getAs<ar::MapStrU64>("tag_to_label")) {
     tag_to_label[k] = v;
   }
-  return std::make_shared<NerModel>(NerModel(bolt_model, tokens_column,
+  return std::make_shared<NerUDTModel>(NerUDTModel(bolt_model, tokens_column,
                                              tags_column, tag_to_label,
                                              target_word_tokenizers));
 }
 
-void NerModel::save(const std::string& filename) const {
+void NerUDTModel::save(const std::string& filename) const {
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   save_stream(filestream);
 }
 
-void NerModel::save_stream(std::ostream& output) const {
+void NerUDTModel::save_stream(std::ostream& output) const {
   ar::serialize(toArchive(), output);
 }
 
-std::shared_ptr<NerModel> NerModel::load(const std::string& filename) {
+std::shared_ptr<NerUDTModel> NerUDTModel::load(const std::string& filename) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
   return load_stream(filestream);
 }
 
-std::shared_ptr<NerModel> NerModel::load_stream(std::istream& input) {
+std::shared_ptr<NerUDTModel> NerUDTModel::load_stream(std::istream& input) {
   auto archive = ar::deserialize(input);
   return fromArchive(*archive);
 }
 
-data::Loader NerModel::getDataLoader(const dataset::DataSourcePtr& data,
+data::Loader NerUDTModel::getDataLoader(const dataset::DataSourcePtr& data,
                                      size_t batch_size, bool shuffle) {
   auto data_iter =
       data::JsonIterator::make(data, {_tokens_column, _tags_column}, 1000);
