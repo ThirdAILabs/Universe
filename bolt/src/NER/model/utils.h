@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <bolt/src/NER/model/NerBackend.h>
