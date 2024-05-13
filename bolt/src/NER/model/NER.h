@@ -49,6 +49,9 @@ class NER : public std::enable_shared_from_this<NER> {
       _ner_backend_model = std::static_pointer_cast<NerBackend>(model);
     }
     _tag_to_label_map = tag_to_label;
+    for (const auto& [k, v] : _tag_to_label_map) {
+      _label_to_tag_map[v] = k;
+    }
   }
 
   metrics::History train(const dataset::DataSourcePtr& train_data,
