@@ -136,8 +136,8 @@ data::PipelinePtr NerPretrainedModel::getTransformations(bool inference) {
   return transform;
 }
 
-data::Loader NerPretrainedModel::getDataLoader(const dataset::DataSourcePtr& data,
-                                         size_t batch_size, bool shuffle) {
+data::Loader NerPretrainedModel::getDataLoader(
+    const dataset::DataSourcePtr& data, size_t batch_size, bool shuffle) {
   auto data_iter =
       data::JsonIterator::make(data, {_source_column, _target_column}, 1000);
   return data::Loader(data_iter, _train_transforms, nullptr, _bolt_inputs,
@@ -247,7 +247,8 @@ std::shared_ptr<NerPretrainedModel> NerPretrainedModel::fromArchive(
   for (const auto& [k, v] : archive.getAs<ar::MapStrU64>("tag_to_label")) {
     tag_to_label[k] = v;
   }
-  return std::make_shared<NerPretrainedModel>(NerPretrainedModel(bolt_model, tag_to_label));
+  return std::make_shared<NerPretrainedModel>(
+      NerPretrainedModel(bolt_model, tag_to_label));
 }
 
 void NerPretrainedModel::save(const std::string& filename) const {
@@ -260,13 +261,15 @@ void NerPretrainedModel::save_stream(std::ostream& output) const {
   ar::serialize(toArchive(), output);
 }
 
-std::shared_ptr<NerPretrainedModel> NerPretrainedModel::load(const std::string& filename) {
+std::shared_ptr<NerPretrainedModel> NerPretrainedModel::load(
+    const std::string& filename) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
   return load_stream(filestream);
 }
 
-std::shared_ptr<NerPretrainedModel> NerPretrainedModel::load_stream(std::istream& input) {
+std::shared_ptr<NerPretrainedModel> NerPretrainedModel::load_stream(
+    std::istream& input) {
   auto archive = ar::deserialize(input);
   return fromArchive(*archive);
 }

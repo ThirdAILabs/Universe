@@ -11,13 +11,13 @@ class NerUDTModel final : public NerBackend {
  public:
   std::string type() const final { return "ner"; }
   NerUDTModel(bolt::ModelPtr model, std::string tokens_column,
-           std::string tags_column,
-           std::unordered_map<std::string, uint32_t> tag_to_label,
-           std::vector<dataset::TextTokenizerPtr> target_word_tokenizers);
+              std::string tags_column,
+              std::unordered_map<std::string, uint32_t> tag_to_label,
+              std::vector<dataset::TextTokenizerPtr> target_word_tokenizers);
 
   NerUDTModel(std::string tokens_column, std::string tags_column,
-           std::unordered_map<std::string, uint32_t> tag_to_label,
-           std::vector<dataset::TextTokenizerPtr> target_word_tokenizers);
+              std::unordered_map<std::string, uint32_t> tag_to_label,
+              std::vector<dataset::TextTokenizerPtr> target_word_tokenizers);
 
   std::vector<PerTokenListPredictions> getTags(
       std::vector<std::vector<std::string>> tokens, uint32_t top_k) final;

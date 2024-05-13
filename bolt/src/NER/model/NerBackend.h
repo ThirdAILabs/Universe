@@ -18,7 +18,6 @@ namespace thirdai::bolt {
 using PerTokenPredictions = std::vector<std::pair<uint32_t, float>>;
 using PerTokenListPredictions = std::vector<PerTokenPredictions>;
 
-// added to support both bolt and udt back in case
 class NerBackend {
  public:
   virtual ~NerBackend() = default;

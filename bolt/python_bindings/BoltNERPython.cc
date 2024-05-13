@@ -19,14 +19,14 @@ void addNERModels(py::module_& module) {
   py::class_<NerBackend, std::shared_ptr<NerBackend>>(  // NOLINT
       module, "NerBackend");
 
-  py::class_<NerPretrainedModel, NerBackend, std::shared_ptr<NerPretrainedModel>>(
-      module, "NerPretrainedModel")
+  py::class_<NerPretrainedModel, NerBackend,
+             std::shared_ptr<NerPretrainedModel>>(module, "NerPretrainedModel")
       .def(
           py::init<bolt::ModelPtr, std::unordered_map<std::string, uint32_t>>(),
           py::arg("model"), py::arg("tag_to_label"));
 
-  py::class_<NerUDTModel, NerBackend, std::shared_ptr<NerUDTModel>>(module,
-                                                              "NerUDTModel")
+  py::class_<NerUDTModel, NerBackend, std::shared_ptr<NerUDTModel>>(
+      module, "NerUDTModel")
       .def(py::init<bolt::ModelPtr, std::string, std::string,
                     std::unordered_map<std::string, uint32_t>,
                     std::vector<dataset::TextTokenizerPtr>>(),

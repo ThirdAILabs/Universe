@@ -46,12 +46,12 @@ def bolt_pretrained():
     return pretrained_path
 
 
-def test_ner_backend(sample_training_data):
+def test_udt_ner_backend(sample_training_data):
     bolt_ner_model = bolt.NER("source", "target", TAG_MAP)
     train_file = sample_training_data
 
-    train_data_source = dataset.NerDataSource(train_file)
-    validation_data_source = dataset.NerDataSource(train_file)
+    train_data_source = dataset.NerDataSource(file_path=train_file)
+    validation_data_source = dataset.NerDataSource(file_path=train_file)
 
     bolt_ner_model.train(
         train_data=train_data_source,
@@ -67,17 +67,15 @@ def test_ner_backend(sample_training_data):
         ["Ram", "is", "going", "to", "Delhi"],
         ["Shyam", "is", "going", "to", "Kolhapur"],
     ]
-    results = bolt_ner_model.get_ner_tags(
-        dataset.NerDataSource().inference_featurizer(texts)
-    )
+    results = bolt_ner_model.get_ner_tags(texts)
+
     assert all([len(text) == len(result) for text, result in zip(texts, results)])
 
     bolt_ner_model.save("ner_model")
     bolt_ner_model.load("ner_model")
 
-    results_after_load = bolt_ner_model.get_ner_tags(
-        dataset.NerDataSource().inference_featurizer(texts)
-    )
+    results_after_load = bolt_ner_model.get_ner_tags(texts)
+
     assert all(
         [
             len(result_after_load) == len(result)
@@ -99,8 +97,10 @@ def test_pretrained_ner_backend(sample_training_data, bolt_pretrained):
     )
     train_file = sample_training_data
 
-    train_data_source = dataset.NerBoltDataSource(train_file)
-    validation_data_source = dataset.NerBoltDataSource(train_file)
+    train_data_source = dataset.NerDataSource(file_path=train_file, pretrained=True)
+    validation_data_source = dataset.NerDataSource(
+        file_path=train_file, pretrained=True
+    )
 
     bolt_ner_model.train(
         train_data=train_data_source,
@@ -117,7 +117,7 @@ def test_pretrained_ner_backend(sample_training_data, bolt_pretrained):
         ["Shyam", "is", "going", "to", "Kolhapur"],
     ]
     results = bolt_ner_model.get_ner_tags(
-        dataset.NerBoltDataSource().inference_featurizer(texts)
+        dataset.NerDataSource(pretrained=True).inference_featurizer(texts)
     )
     assert all([len(text) == len(result) for text, result in zip(texts, results)])
 
@@ -125,7 +125,7 @@ def test_pretrained_ner_backend(sample_training_data, bolt_pretrained):
     bolt_ner_model.load("ner_model")
 
     results_after_load = bolt_ner_model.get_ner_tags(
-        dataset.NerBoltDataSource().inference_featurizer(texts)
+        dataset.NerDataSource(pretrained=True).inference_featurizer(texts)
     )
 
     assert all(

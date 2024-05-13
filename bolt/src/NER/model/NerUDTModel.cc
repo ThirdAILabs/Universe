@@ -151,12 +151,12 @@ std::vector<PerTokenListPredictions> NerUDTModel::getTags(
   return tags_and_scores;
 }
 
-metrics::History NerUDTModel::train(const dataset::DataSourcePtr& train_data,
-                                 float learning_rate, uint32_t epochs,
-                                 size_t batch_size,
-                                 const std::vector<std::string>& train_metrics,
-                                 const dataset::DataSourcePtr& val_data,
-                                 const std::vector<std::string>& val_metrics) {
+metrics::History NerUDTModel::train(
+    const dataset::DataSourcePtr& train_data, float learning_rate,
+    uint32_t epochs, size_t batch_size,
+    const std::vector<std::string>& train_metrics,
+    const dataset::DataSourcePtr& val_data,
+    const std::vector<std::string>& val_metrics) {
   auto train_dataset =
       getDataLoader(train_data, batch_size, /* shuffle= */ true).all();
   bolt::LabeledDataset val_dataset;
@@ -205,7 +205,8 @@ ar::ConstArchivePtr NerUDTModel::toArchive() const {
   return map;
 }
 
-std::shared_ptr<NerUDTModel> NerUDTModel::fromArchive(const ar::Archive& archive) {
+std::shared_ptr<NerUDTModel> NerUDTModel::fromArchive(
+    const ar::Archive& archive) {
   bolt::ModelPtr bolt_model =
       bolt::Model::fromArchive(*archive.get("bolt_model"));
 
@@ -222,8 +223,8 @@ std::shared_ptr<NerUDTModel> NerUDTModel::fromArchive(const ar::Archive& archive
     tag_to_label[k] = v;
   }
   return std::make_shared<NerUDTModel>(NerUDTModel(bolt_model, tokens_column,
-                                             tags_column, tag_to_label,
-                                             target_word_tokenizers));
+                                                   tags_column, tag_to_label,
+                                                   target_word_tokenizers));
 }
 
 void NerUDTModel::save(const std::string& filename) const {
@@ -248,7 +249,7 @@ std::shared_ptr<NerUDTModel> NerUDTModel::load_stream(std::istream& input) {
 }
 
 data::Loader NerUDTModel::getDataLoader(const dataset::DataSourcePtr& data,
-                                     size_t batch_size, bool shuffle) {
+                                        size_t batch_size, bool shuffle) {
   auto data_iter =
       data::JsonIterator::make(data, {_tokens_column, _tags_column}, 1000);
   return data::Loader(data_iter, _train_transforms, nullptr, _bolt_inputs,
