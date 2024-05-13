@@ -1,5 +1,11 @@
 #include "NerModel.h"
 #include <bolt/src/NER/model/NER.h>
+#include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
+#include <bolt/src/nn/loss/Loss.h>
+#include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Embedding.h>
+#include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Input.h>
 #include <archive/src/Archive.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
@@ -7,32 +13,11 @@
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
 #include <optional>
 #include <stdexcept>
+#include <utility>
 
 namespace thirdai::bolt {
-NerModel::NerModel(
-    bolt::ModelPtr model, std::string tokens_column, std::string tags_column,
-    std::unordered_map<std::string, uint32_t> tag_to_label,
-    std::vector<dataset::TextTokenizerPtr> target_word_tokenizers)
-    : _bolt_model(std::move(model)),
-      _tokens_column(std::move(tokens_column)),
-      _tags_column(std::move(tags_column)),
-      _target_word_tokenizers(std::move(target_word_tokenizers)),
-      _tag_to_label(std::move(tag_to_label)) {
-  auto input_dims = _bolt_model->inputDims();
-  if (input_dims.size() != 1) {
-    throw std::logic_error(
-        "Can only train a bolt model with a Single Input. Found model with "
-        "number of inputs: " +
-        std::to_string(input_dims.size()));
-  }
 
-  _fhr = input_dims[0];
-
-  auto maxPair = std::max_element(
-      _tag_to_label.begin(), _tag_to_label.end(),
-      [](const auto& a, const auto& b) { return a.second < b.second; });
-  _number_labels = maxPair->second + 1;
-
+void NerModel::initialize() {
   auto train_transformation = thirdai::data::NerTokenizerUnigram(
       /*tokens_column=*/_tokens_column,
       /*featurized_sentence_column=*/_featurized_sentence_column,
@@ -59,6 +44,64 @@ NerModel::NerModel(
 
   _bolt_inputs = {
       data::OutputColumns(train_transformation.getFeaturizedIndicesColumn())};
+}
+
+NerModel::NerModel(
+    bolt::ModelPtr model, std::string tokens_column, std::string tags_column,
+    std::unordered_map<std::string, uint32_t> tag_to_label,
+    std::vector<dataset::TextTokenizerPtr> target_word_tokenizers)
+    : _bolt_model(std::move(model)),
+      _tokens_column(std::move(tokens_column)),
+      _tags_column(std::move(tags_column)),
+      _target_word_tokenizers(std::move(target_word_tokenizers)),
+      _tag_to_label(std::move(tag_to_label)) {
+  auto input_dims = _bolt_model->inputDims();
+  if (input_dims.size() != 1) {
+    throw std::logic_error(
+        "Can only train a bolt model with a Single Input. Found model with "
+        "number of inputs: " +
+        std::to_string(input_dims.size()));
+  }
+
+  _fhr = input_dims[0];
+  auto maxPair = std::max_element(
+      _tag_to_label.begin(), _tag_to_label.end(),
+      [](const auto& a, const auto& b) { return a.second < b.second; });
+  _number_labels = maxPair->second + 1;
+
+  initialize();
+}
+
+NerModel::NerModel(
+    std::string tokens_column, std::string tags_column,
+    std::unordered_map<std::string, uint32_t> tag_to_label,
+    std::vector<dataset::TextTokenizerPtr> target_word_tokenizers)
+    : _tokens_column(std::move(tokens_column)),
+      _tags_column(std::move(tags_column)),
+      _target_word_tokenizers(std::move(target_word_tokenizers)),
+      _tag_to_label(tag_to_label),
+      _fhr(100000) {
+  auto maxPair = std::max_element(
+      tag_to_label.begin(), tag_to_label.end(),
+      [](const auto& a, const auto& b) { return a.second < b.second; });
+  _number_labels = maxPair->second + 1;
+
+  auto input = bolt::Input::make(_fhr);
+
+  auto hidden = bolt::Embedding::make(2000, 100000, "relu",
+                                      /* bias= */ true)
+                    ->apply(input);
+
+  auto output =
+      bolt::FullyConnected::make(_number_labels, hidden->dim(), 1, "softmax",
+                                 /* sampling= */ nullptr, /* use_bias= */ true)
+          ->apply(hidden);
+
+  auto labels = bolt::Input::make(_number_labels);
+  auto loss = bolt::CategoricalCrossEntropy::make(output, labels);
+
+  _bolt_model = bolt::Model::make({input}, {output}, {loss});
+  initialize();
 }
 
 std::vector<PerTokenListPredictions> NerModel::getTags(
@@ -116,8 +159,11 @@ metrics::History NerModel::train(const dataset::DataSourcePtr& train_data,
                                  const std::vector<std::string>& val_metrics) {
   auto train_dataset =
       getDataLoader(train_data, batch_size, /* shuffle= */ true).all();
-  auto val_dataset =
-      getDataLoader(val_data, batch_size, /* shuffle= */ false).all();
+  bolt::LabeledDataset val_dataset;
+  if (val_data) {
+    val_dataset =
+        getDataLoader(val_data, batch_size, /* shuffle= */ false).all();
+  }
 
   auto train_data_input = train_dataset.first;
   auto train_data_label = train_dataset.second;

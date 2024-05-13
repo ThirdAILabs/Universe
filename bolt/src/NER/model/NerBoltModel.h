@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <bolt/src/NER/model/NER.h>
+#include <bolt/src/NER/model/NerBackend.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/text_generation/GenerativeModel.h>
 #include <bolt/src/train/trainer/Trainer.h>
@@ -20,9 +20,13 @@ namespace thirdai::bolt {
 
 class NerBoltModel final : public NerBackend {
  public:
-  std::string type() const final { return "bolt_ner"; }
-  explicit NerBoltModel(bolt::ModelPtr model,
-                        std::unordered_map<std::string, uint32_t> tag_to_label);
+  std::string type() const final { return "pretrained_ner"; }
+  NerBoltModel(bolt::ModelPtr model,
+               std::unordered_map<std::string, uint32_t> tag_to_label);
+
+  NerBoltModel(std::string& pretrained_model_path, std::string token_column,
+               std::string tag_column,
+               std::unordered_map<std::string, uint32_t> tag_to_label);
 
   std::vector<PerTokenListPredictions> getTags(
       std::vector<std::vector<std::string>> tokens, uint32_t top_k) final;
@@ -49,6 +53,9 @@ class NerBoltModel final : public NerBackend {
   static std::shared_ptr<NerBoltModel> load(const std::string& filename);
 
   static std::shared_ptr<NerBoltModel> load_stream(std::istream& input_stream);
+
+  NerBoltModel() = default;
+  ~NerBoltModel() override = default;
 
  private:
   data::Loader getDataLoader(const dataset::DataSourcePtr& data,

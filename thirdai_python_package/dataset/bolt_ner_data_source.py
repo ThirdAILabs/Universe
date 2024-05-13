@@ -9,8 +9,9 @@ def tokenize_text(tokenizer, text):
 
 
 class NerBoltDataSource(PyDataSource):
-    def __init__(self, file_path):
-        self.file_path = file_path
+    def __init__(self, file_path=None):
+        if file_path:
+            self.file_path = file_path
         try:
             from transformers import GPT2Tokenizer
         except ImportError:
@@ -41,10 +42,12 @@ class NerBoltDataSource(PyDataSource):
     def resource_name(self) -> str:
         return self.file_path
 
+
 class NerDataSource(PyDataSource):
-    def __init__(self, file_path):
+    def __init__(self, file_path=None):
         PyDataSource.__init__(self)
-        self.file_path = file_path
+        if file_path:
+            self.file_path = file_path
         self.restart()
 
     def _get_line_iterator(self):

@@ -1,8 +1,17 @@
 #include "NerBoltModel.h"
 #include <cereal/archives/binary.hpp>
 #include <bolt/src/NER/model/NER.h>
+#include <bolt/src/nn/autograd/Computation.h>
+#include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Concatenate.h>
+#include <bolt/src/nn/ops/Embedding.h>
+#include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Input.h>
+#include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/ops/WeightedSum.h>
 #include <bolt/src/train/metrics/Metric.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
@@ -24,6 +33,80 @@ NerBoltModel::NerBoltModel(
     bolt::ModelPtr model,
     std::unordered_map<std::string, uint32_t> tag_to_label)
     : _bolt_model(std::move(model)), _tag_to_label(std::move(tag_to_label)) {
+  _train_transforms = getTransformations(true);
+  _inference_transforms = getTransformations(false);
+  _bolt_inputs = {data::OutputColumns("tokens"),
+                  data::OutputColumns("token_front"),
+                  data::OutputColumns("token_behind")};
+}
+NerBoltModel::NerBoltModel(
+    std::string& pretrained_model_path, std::string token_column,
+    std::string tag_column,
+    std::unordered_map<std::string, uint32_t> tag_to_label)
+    : _tag_to_label(tag_to_label),
+      _source_column(std::move(token_column)),
+      _target_column(std::move(tag_column)) {
+  auto pretrained_model = bolt::Model::load(pretrained_model_path);
+  if (pretrained_model->inputs()[0]->dim() != 50257) {
+    throw std::invalid_argument(
+        "Model input should have same vocab as GPT2Tokenizer");
+  }
+
+  auto maxPair = std::max_element(
+      tag_to_label.begin(), tag_to_label.end(),
+      [](const auto& a, const auto& b) { return a.second < b.second; });
+  auto num_labels = maxPair->second + 1;
+
+  auto ops = pretrained_model->ops();
+  bool found = std::any_of(ops.begin(), ops.end(), [](const bolt::OpPtr& op) {
+    return op->name() == "emb_1";
+  });
+
+  if (!found) {
+    throw std::runtime_error(
+        "Error: No operation named 'emb_1' found in Pretrained Model");
+  }
+  auto emb =
+      std::dynamic_pointer_cast<Embedding>(pretrained_model->getOp("emb_1"));
+
+  auto emb_weights = emb->parameters();
+
+  auto inputs = std::vector<bolt::ComputationPtr>(
+      {bolt::Input::make(_vocab_size), bolt::Input::make(_vocab_size),
+       bolt::Input::make(_vocab_size)});
+
+  auto emb_op = bolt::Embedding::make(6000, _vocab_size, "relu",
+                                      /* bias= */ false);
+  auto* pretrained_weights = emb_weights[0];
+
+  if (pretrained_weights->size() == 6000 * _vocab_size) {
+    emb_op->setEmbeddings(pretrained_weights->data());
+  } else {
+    throw std::runtime_error("Size mismatch in embeddings vector.");
+  }
+  auto tokens_embedding = emb_op->apply(inputs[0]);
+  auto token_front_embedding = emb_op->apply(inputs[1]);
+  auto token_behind_embedding = emb_op->apply(inputs[2]);
+
+  auto concat =
+      bolt::Concatenate::make()->apply(std::vector<bolt::ComputationPtr>(
+          {token_front_embedding, token_behind_embedding}));
+
+  auto weighted_sum = bolt::WeightedSum::make(2, 6000)->apply(concat);
+
+  concat = bolt::Concatenate::make()->apply(
+      std::vector<bolt::ComputationPtr>({tokens_embedding, weighted_sum}));
+
+  auto output =
+      bolt::FullyConnected::make(num_labels, concat->dim(), 1, "softmax",
+                                 /* sampling= */ nullptr, /* use_bias= */ true)
+          ->apply(concat);
+
+  auto labels = bolt::Input::make(num_labels);
+  auto loss = bolt::CategoricalCrossEntropy::make(output, labels);
+
+  _bolt_model = bolt::Model::make({inputs}, {output}, {loss});
+
   _train_transforms = getTransformations(true);
   _inference_transforms = getTransformations(false);
   _bolt_inputs = {data::OutputColumns("tokens"),
@@ -71,9 +154,12 @@ metrics::History NerBoltModel::train(
     const std::vector<std::string>& val_metrics) {
   auto train_dataset =
       getDataLoader(train_data, batch_size, /* shuffle= */ true).all();
-  auto val_dataset =
-      getDataLoader(val_data, batch_size, /* shuffle= */ false).all();
 
+  bolt::LabeledDataset val_dataset;
+  if (val_data) {
+    val_dataset =
+        getDataLoader(val_data, batch_size, /* shuffle= */ false).all();
+  }
   auto train_data_input = train_dataset.first;
   auto train_data_label = train_dataset.second;
 

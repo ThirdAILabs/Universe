@@ -1,6 +1,6 @@
 #pragma once
 
-#include "NER.h"
+#include <bolt/src/NER/model/NerBackend.h>
 #include <bolt/src/nn/model/Model.h>
 #include <data/src/transformations/Pipeline.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
@@ -9,11 +9,15 @@ namespace thirdai::bolt {
 
 class NerModel final : public NerBackend {
  public:
-  std::string type() const final { return "simple_ner"; }
-  explicit NerModel(
-      bolt::ModelPtr model, std::string tokens_column, std::string tags_column,
-      std::unordered_map<std::string, uint32_t> tag_to_label,
-      std::vector<dataset::TextTokenizerPtr> target_word_tokenizers);
+  std::string type() const final { return "ner"; }
+  NerModel(bolt::ModelPtr model, std::string tokens_column,
+           std::string tags_column,
+           std::unordered_map<std::string, uint32_t> tag_to_label,
+           std::vector<dataset::TextTokenizerPtr> target_word_tokenizers);
+
+  NerModel(std::string tokens_column, std::string tags_column,
+           std::unordered_map<std::string, uint32_t> tag_to_label,
+           std::vector<dataset::TextTokenizerPtr> target_word_tokenizers);
 
   std::vector<PerTokenListPredictions> getTags(
       std::vector<std::vector<std::string>> tokens, uint32_t top_k) final;
@@ -41,7 +45,12 @@ class NerModel final : public NerBackend {
 
   static std::shared_ptr<NerModel> load_stream(std::istream& input_stream);
 
+  NerModel() = default;
+  ~NerModel() override = default;
+
  private:
+  void initialize();
+
   data::Loader getDataLoader(const dataset::DataSourcePtr& data,
                              size_t batch_size, bool shuffle);
 

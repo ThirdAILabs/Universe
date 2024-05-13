@@ -67,12 +67,12 @@ ar::ConstArchivePtr NER::toArchive() const {
 std::shared_ptr<NER> NER::fromArchive(const ar::Archive& archive) {
   std::string type = archive.getAs<std::string>("type");
 
-  if (type == "bolt_ner") {
+  if (type == "pretrained_ner") {
     std::shared_ptr<bolt::NerBackend> ner_backend_model =
         bolt::NerBoltModel::fromArchive(*archive.get("ner_backend_model"));
     return std::make_shared<NER>(NER(ner_backend_model));
   }
-  if (type == "simple_ner") {
+  if (type == "ner") {
     std::shared_ptr<bolt::NerBackend> ner_backend_model =
         bolt::NerModel::fromArchive(*archive.get("ner_backend_model"));
     return std::make_shared<NER>(NER(ner_backend_model));

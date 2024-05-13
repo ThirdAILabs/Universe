@@ -1,6 +1,8 @@
 #pragma once
 
-#include <bolt/src/NER/model/NER.h>
+#include <bolt/src/NER/model/NerBackend.h>
+#include <bolt/src/NER/model/NerBoltModel.h>
+#include <bolt/src/NER/model/NerModel.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Trainer.h>
@@ -17,31 +19,6 @@
 
 namespace thirdai::bolt {
 
-using PerTokenPredictions = std::vector<std::pair<uint32_t, float>>;
-using PerTokenListPredictions = std::vector<PerTokenPredictions>;
-
-// added to support both bolt and udt back in case
-class NerBackend {
- public:
-  virtual ~NerBackend() = default;
-  // initialize
-  virtual std::vector<PerTokenListPredictions> getTags(
-      std::vector<std::vector<std::string>> tokens, uint32_t top_k) = 0;
-
-  virtual metrics::History train(
-      const dataset::DataSourcePtr& train_data, float learning_rate,
-      uint32_t epochs, size_t batch_size,
-      const std::vector<std::string>& train_metrics,
-      const dataset::DataSourcePtr& val_data,
-      const std::vector<std::string>& val_metrics) = 0;
-
-  virtual ar::ConstArchivePtr toArchive() const = 0;
-
-  virtual std::string type() const = 0;
-
-  virtual std::unordered_map<std::string, uint32_t> getTagToLabel() = 0;
-};
-
 class NER;
 
 class NER : public std::enable_shared_from_this<NER> {
@@ -54,7 +31,26 @@ class NER : public std::enable_shared_from_this<NER> {
     }
   }
 
-  // initialize (flag)
+  NER(std::string tokens_column, std::string tags_column,
+      std::unordered_map<std::string, uint32_t> tag_to_label,
+      std::optional<std::string> pretrained_model_path = std::nullopt,
+      std::vector<dataset::TextTokenizerPtr> target_word_tokenizers =
+          std::vector<dataset::TextTokenizerPtr>(
+              {std::make_shared<dataset::NaiveSplitTokenizer>(),
+               std::make_shared<dataset::CharKGramTokenizer>(4)})) {
+    if (pretrained_model_path) {
+      auto model = std::make_shared<NerBoltModel>(
+          *pretrained_model_path, tokens_column, tags_column, tag_to_label);
+      _ner_backend_model = std::static_pointer_cast<NerBackend>(model);
+
+    } else {
+      auto model = std::make_shared<NerModel>(
+          tokens_column, tags_column, tag_to_label, target_word_tokenizers);
+      _ner_backend_model = std::static_pointer_cast<NerBackend>(model);
+    }
+    _tag_to_label_map = tag_to_label;
+  }
+
   metrics::History train(const dataset::DataSourcePtr& train_data,
                          float learning_rate, uint32_t epochs,
                          size_t batch_size,
@@ -76,6 +72,8 @@ class NER : public std::enable_shared_from_this<NER> {
   static std::shared_ptr<NER> load(const std::string& filename);
 
   static std::shared_ptr<NER> load_stream(std::istream& input_stream);
+
+  std::string getModelType() { return _ner_backend_model->type(); }
 
  private:
   std::shared_ptr<NerBackend> _ner_backend_model;

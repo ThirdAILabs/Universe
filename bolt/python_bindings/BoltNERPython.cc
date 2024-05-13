@@ -42,14 +42,26 @@ void addNERModels(py::module_& module) {
 #if THIRDAI_EXPOSE_ALL
       .def(py::init<std::shared_ptr<NerBackend>>(), py::arg("model"))
 #endif
+      .def(py::init<std::string, std::string,
+                    std::unordered_map<std::string, uint32_t>,
+                    std::optional<std::string>,
+                    std::vector<dataset::TextTokenizerPtr>>(),
+           py ::arg("tokens_column"), py::arg("tags_column"),
+           py::arg("tag_to_label"),
+           py::arg("pretrained_model_path") = std::nullopt,
+           py::arg("target_word_tokenizers") =
+               std::vector<dataset::TextTokenizerPtr>(
+                   {std::make_shared<dataset::NaiveSplitTokenizer>(),
+                    std::make_shared<dataset::CharKGramTokenizer>(4)}))
       .def("train", &NER::train, py::arg("train_data"),
            py::arg("learning_rate") = 1e-5, py::arg("epochs") = 5,
-           py::arg("batch_size") = 10000,
+           py::arg("batch_size") = 2000,
            py::arg("train_metrics") = std::vector<std::string>{"loss"},
            py::arg("val_data") = nullptr,
            py::arg("val_metrics") = std::vector<std::string>{})
       .def("get_ner_tags", &NER::getNerTags, py::arg("tokens"),
            py::arg("top_k") = 1)
+      .def("get_model_type", &NER::getModelType)
       .def("save", &NER::save)
       .def_static("load", &NER::load, py::arg("filename"))
       .def(thirdai::bolt::python::getPickleFunction<NER>());
