@@ -6,10 +6,8 @@
 #include "TextTokenizer.h"
 #include <dataset/src/utils/SafeFileIO.h>
 #include <codecvt>
-#include <iostream>
 #include <locale>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -19,8 +17,22 @@ namespace thirdai::dataset {
 
 inline std::string wstring_to_string(const std::wstring& wstr) {
   // This is used to transform wstring tokens to UTF-8 tokens.
+/* codecvt and wstring_convert have been deprecated in C++17 but there are no
+ * native C++ standard solutions which are also platform independent. There are
+ * external libraries that can be used for wstring to string conversion but that
+ * would add an extra dependency to our code. Since, codecvt will be deprecated
+ * in C++26, we can comeback later to fix this.
+ */
+// TODO(Shubh) : Find a platform independent solution for this.
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
   std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
   return converter.to_bytes(wstr);
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 }
 
 namespace special_tokens {

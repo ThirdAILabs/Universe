@@ -8,10 +8,7 @@
 #include <archive/src/List.h>
 #include <archive/src/Map.h>
 #include <licensing/src/CheckLicense.h>
-#include <memory>
-#include <optional>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 
 namespace thirdai::bolt {

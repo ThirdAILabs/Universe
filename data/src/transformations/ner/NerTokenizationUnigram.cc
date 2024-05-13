@@ -10,6 +10,7 @@
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <cstdint>
+#include <exception>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -58,33 +59,47 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr error;
 
-#pragma omp parallel for default(none) shared( \
-    text_tokens, sample_offsets, featurized_sentences, targets, tags, error)
+#pragma omp parallel for default(none)                                       \
+    shared(text_tokens, sample_offsets, featurized_sentences, targets, tags, \
+           error) if (text_tokens->numRows() > 1)
   for (size_t i = 0; i < text_tokens->numRows(); i += 1) {
     try {
       RowView<std::string> row_tokens = text_tokens->row(i);
       size_t sample_offset = sample_offsets[i];
 
+      std::exception_ptr per_sentence_exception_ptr;
+#pragma omp parallel for default(none) shared(                             \
+    text_tokens, row_tokens, sample_offset, featurized_sentences, targets, \
+    tags, i, per_sentence_exception_ptr) if (text_tokens->numRows() <= 1)
       for (size_t start = 0; start < row_tokens.size(); start += 1) {
-        featurized_sentences[sample_offset] =
+        size_t featurized_sentence_offset = sample_offset + start;
+        featurized_sentences[featurized_sentence_offset] =
             _processor.processToken(row_tokens.toVector(), start);
         if (_target_column) {
           if (_tag_to_label.has_value()) {
-            targets[sample_offset] = findTagValueForString(tags->row(i)[start]);
+            targets[featurized_sentence_offset] =
+                findTagValueForString(tags->row(i)[start]);
           } else {
             try {
-              targets[sample_offset] = std::stoi(tags->row(i)[start]);
+              targets[featurized_sentence_offset] =
+                  std::stoi(tags->row(i)[start]);
             } catch (...) {
-              throw std::invalid_argument(
-                  "Cannot convert a string to uint32_t. Ensure that the tags "
-                  "are "
-                  "either uint32_t or a valid tag_to_label is passed to the "
-                  "transformation. String: " +
-                  tags->row(i)[start]);
+#pragma omp critical
+              per_sentence_exception_ptr = std::make_exception_ptr(
+                  std::invalid_argument("Cannot convert a string to uint32_t. "
+                                        "Ensure that the tags "
+                                        "are "
+                                        "either uint32_t or a valid "
+                                        "tag_to_label is passed to the "
+                                        "transformation. String: " +
+                                        tags->row(i)[start]));
+              ;
             }
           }
         }
-        sample_offset += 1;
+      }
+      if (per_sentence_exception_ptr) {
+        std::rethrow_exception(per_sentence_exception_ptr);
       }
     } catch (...) {
 #pragma omp critical
