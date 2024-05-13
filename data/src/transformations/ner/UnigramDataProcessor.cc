@@ -14,8 +14,8 @@ SimpleDataProcessor::SimpleDataProcessor(
 std::shared_ptr<SimpleDataProcessor> SimpleDataProcessor::make(
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
     uint32_t dyadic_num_intervals) {
-  return std::make_shared<SimpleDataProcessor>(target_word_tokenizers,
-                                               dyadic_num_intervals);
+  return std::make_shared<SimpleDataProcessor>(
+      std::move(target_word_tokenizers), dyadic_num_intervals);
 }
 
 std::string SimpleDataProcessor::processToken(

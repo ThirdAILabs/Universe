@@ -305,11 +305,6 @@ ColumnPtr CastToArray<T>::makeColumn(std::vector<std::vector<T>>&& rows) const {
   return ArrayColumn<T>::make(std::move(rows), _dim);
 }
 
-// static std::shared_ptr<ArrayColumn<std::string>> dummy_func(
-//     std::vector<std::vector<std::string>>&& rows) {
-//   return ArrayColumn<std::string>::make(std::move(rows), std::nullopt);
-// }
-
 template <>
 void CastToArray<uint32_t>::buildExplanationMap(
     const ColumnMap& input, State& state, ExplanationMap& explanations) const {

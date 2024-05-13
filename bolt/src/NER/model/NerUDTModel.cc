@@ -1,5 +1,6 @@
 #include "NerUDTModel.h"
 #include <bolt/src/NER/model/NER.h>
+#include <bolt/src/NER/model/utils.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
@@ -106,53 +107,9 @@ NerUDTModel::NerUDTModel(
 
 std::vector<PerTokenListPredictions> NerUDTModel::getTags(
     std::vector<std::vector<std::string>> tokens, uint32_t top_k) {
-  std::vector<PerTokenListPredictions> tags_and_scores;
-  tags_and_scores.reserve(tokens.size());
-
-  for (const auto& sub_vector : tokens) {
-    PerTokenListPredictions predictions;
-    predictions.reserve(sub_vector.size());
-    for (size_t i = 0; i < sub_vector.size(); i++) {
-      predictions.push_back(PerTokenPredictions());
-    }
-    tags_and_scores.push_back(predictions);
-  }
-  data::ColumnMap data(data::ColumnMap(
-      {{_tokens_column, data::ArrayColumn<std::string>::make(std::move(tokens),
-                                                             std::nullopt)}}));
-
-  // featurize input data
-  auto columns = _inference_transforms->applyStateless(data);
-  auto tensors = data::toTensorBatches(columns, _bolt_inputs, 2048);
-
-  size_t sub_vector_index = 0;
-  size_t token_index = 0;
-
-  for (const auto& batch : tensors) {
-    auto outputs = _bolt_model->forward(batch).at(0);
-
-    for (size_t i = 0; i < outputs->batchSize(); i += 1) {
-      if (token_index >= tags_and_scores[sub_vector_index].size()) {
-        token_index = 0;
-        sub_vector_index++;
-      }
-      auto token_level_predictions = outputs->getVector(i).topKNeurons(top_k);
-      while (!token_level_predictions.empty()) {
-        float score = token_level_predictions.top().first;
-        uint32_t tag = token_level_predictions.top().second;
-        tags_and_scores[sub_vector_index][token_index].push_back({tag, score});
-        token_level_predictions.pop();
-      }
-      // topkactivation is a min heap hence, reverse it
-      std::reverse(tags_and_scores[sub_vector_index][token_index].begin(),
-                   tags_and_scores[sub_vector_index][token_index].end());
-      if (sub_vector_index >= tags_and_scores.size()) {
-        throw std::runtime_error("tags indices not matching");
-      }
-      token_index += 1;
-    }
-  }
-  return tags_and_scores;
+  return thirdai::bolt::getTags(tokens, top_k, _tokens_column,
+                                _inference_transforms, _bolt_inputs,
+                                _bolt_model);
 }
 
 metrics::History NerUDTModel::train(

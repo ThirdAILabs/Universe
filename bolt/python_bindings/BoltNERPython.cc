@@ -61,7 +61,6 @@ void addNERModels(py::module_& module) {
            py::arg("val_metrics") = std::vector<std::string>{})
       .def("get_ner_tags", &NER::getNerTags, py::arg("tokens"),
            py::arg("top_k") = 1)
-      .def("get_model_type", &NER::getModelType)
       .def("save", &NER::save)
       .def_static("load", &NER::load, py::arg("filename"))
       .def(thirdai::bolt::python::getPickleFunction<NER>());

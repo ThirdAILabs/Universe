@@ -14,7 +14,7 @@ concurrency:
 # for more details.
 on: 
   push: 
-    branches: [main]
+    branches: [main, ner-model]
     tags: [ 'v*.*.*' ]
   workflow_dispatch:  
 
