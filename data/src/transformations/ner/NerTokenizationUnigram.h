@@ -42,10 +42,6 @@ class NerTokenizerUnigram final : public Transformation {
     return _featurized_tokens_indices_column;
   }
 
-  // std::string getFeaturizedValuesColumn() const {
-  //   return _featurized_tokens_values_column;
-  // }
-
   uint32_t findTagValueForString(const std::string& tag) const {
     if (!_tag_to_label.has_value()) {
       throw std::logic_error("Tag to Label is None");
@@ -59,6 +55,15 @@ class NerTokenizerUnigram final : public Transformation {
   }
 
  private:
+  /*
+   * _tokens_column : the column containing the string tokens
+   * _target_column : the column containing the target tags
+   * _target_dim : the number of total different labels
+   * _featurized_tokens_indices_column : this column contains the tokens after
+   * tokenizing the _featurized_sentence_column
+   * _tokenization_transformation : the transformation used to tokenize the
+   * featurized sentences
+   */
   std::string _tokens_column;
   std::string _featurized_sentence_column;
   std::optional<std::string> _target_column;
@@ -67,8 +72,9 @@ class NerTokenizerUnigram final : public Transformation {
   SimpleDataProcessor _processor;
   std::string _featurized_tokens_indices_column =
       _featurized_sentence_column + "_tokens";
-  // std::string _featurized_tokens_values_column =
-  // _featurized_sentence_column + "_values";
+
+  // TODO(Shubh) : Add support for depuplicating the tokens by using indices and
+  // values pair.
 
   TransformationPtr _tokenizer_transformation;
   std::optional<std::unordered_map<std::string, uint32_t>> _tag_to_label;

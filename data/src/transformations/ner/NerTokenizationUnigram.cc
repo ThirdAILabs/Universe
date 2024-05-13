@@ -30,6 +30,10 @@ NerTokenizerUnigram::NerTokenizerUnigram(
       _target_dim(target_dim),
       _processor(std::move(target_word_tokenizers), dyadic_num_intervals),
       _tag_to_label(std::move(tag_to_label)) {
+  /*
+   * Target Word Tokenizers are used to tokenize the target token. They are used
+   * for generating extra features for the target token.
+   */
   _tokenizer_transformation = std::make_shared<TextTokenizer>(
       /*input_column=*/_featurized_sentence_column,
       /*output_indices=*/_featurized_tokens_indices_column,
@@ -58,6 +62,15 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
   std::vector<uint32_t> targets(sample_offsets.back());
 
   std::exception_ptr error;
+
+  /*
+   * This a nested pragma loop. The outer loop parallelizes over the different
+   * sentences and the inner loop performs parallelization over the tokens in a
+   * sentence. The inner loop only activates when there is a single sentence in
+   * the column map.
+   * TODO(Shubh) : Convert to a single for loop by using offsets
+   * for the tokens inside samples.
+   */
 
 #pragma omp parallel for default(none)                                       \
     shared(text_tokens, sample_offsets, featurized_sentences, targets, tags, \

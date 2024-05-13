@@ -18,20 +18,11 @@ std::shared_ptr<SimpleDataProcessor> SimpleDataProcessor::make(
                                                dyadic_num_intervals);
 }
 
-std::vector<std::vector<uint32_t>> SimpleDataProcessor::featurizeTokenTagList(
-    const std::vector<std::string>& tokens) const {
-  std::vector<std::vector<uint32_t>> features(tokens.size());
-
-  for (uint32_t index = 0; index < tokens.size(); index++) {
-    std::string featurized_string = processToken(tokens, index);
-    features[index] = _sentence_tokenizer->tokenize(featurized_string);
-  }
-  return features;
-}
-
 std::string SimpleDataProcessor::processToken(
     const std::vector<std::string>& tokens, uint32_t index) const {
   /*
+   * Returns a featurized string for the target token and it's context in the
+   * sentence.
    * 1. Generate Dyadic Intervals for the token
    * 2. For the target word, generate the tokenized word and all.
    * 3. Combine everything into a single string and return it.
@@ -49,6 +40,10 @@ std::string SimpleDataProcessor::processToken(
                                   tokens.end());
   }
 
+  /*
+   * We do not perform deduplication over the tokens returned by the tokenizers.
+   * Hence, same tokens can be appended to the string multiple times.
+   */
   std::string repr;
   for (const auto& tok : tokenized_target_token) {
     repr += _target_prefix + tok + " ";
@@ -60,22 +55,10 @@ std::string SimpleDataProcessor::processToken(
 
 std::string SimpleDataProcessor::generateDyadicWindows(
     std::vector<std::string> tokens, uint32_t index) const {
-  // auto print_vector = [](const auto& vec) {
-  //   for (const auto& element : vec) {
-  //     std::cout << element << " ";
-  //   }
-  //   std::cout << std::endl;
-  // };
-
-  // print_vector(tokens);
-
   std::vector<std::vector<std::string>> dyadic_windows;
   for (size_t interval_id = 0; interval_id < _dyadic_num_intervals;
        interval_id++) {
     uint32_t interval_size = 1 << interval_id;
-
-    // std::cout << interval_id << std::endl;
-    // std::cout << interval_size << std::endl;
 
     std::vector<std::string> prev_window, next_window;
     prev_window.reserve(interval_size);
@@ -89,15 +72,12 @@ std::string SimpleDataProcessor::generateDyadicWindows(
                             tokens[lower_index]);
     }
 
-    // print_vector(prev_window);
-
     for (size_t upper_index = std::min(
              index + interval_size, static_cast<uint32_t>(tokens.size() - 1));
          upper_index > index; upper_index--) {
       next_window.push_back(_dyadic_next_prefix + std::to_string(interval_id) +
                             "_" + tokens[upper_index]);
     }
-    // print_vector(next_window);
 
     dyadic_windows.push_back(prev_window);
     dyadic_windows.push_back(next_window);
@@ -109,8 +89,6 @@ std::string SimpleDataProcessor::generateDyadicWindows(
       repr += tok + " ";
     }
   }
-
-  // std::cout << repr << std::endl;
   return repr;
 }
 

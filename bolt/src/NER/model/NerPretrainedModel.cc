@@ -215,7 +215,9 @@ std::vector<PerTokenListPredictions> NerPretrainedModel::getTags(
         tags_and_scores[sub_vector_index][token_index].push_back({tag, score});
         token_level_predictions.pop();
       }
-      std::reverse(tags_and_scores.begin(), tags_and_scores.end());
+      // topkactivation is a min heap hence, reverse it
+      std::reverse(tags_and_scores[sub_vector_index][token_index].begin(),
+                   tags_and_scores[sub_vector_index][token_index].end());
       if (sub_vector_index >= tags_and_scores.size()) {
         throw std::runtime_error("tags indices not matching");
       }

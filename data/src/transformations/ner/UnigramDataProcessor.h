@@ -23,9 +23,6 @@ class SimpleDataProcessor : std::enable_shared_from_this<SimpleDataProcessor> {
       std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
       uint32_t dyadic_num_intervals);
 
-  std::vector<std::vector<uint32_t>> featurizeTokenTagList(
-      const std::vector<std::string>& tokens) const;
-
   std::string processToken(const std::vector<std::string>& tokens,
                            uint32_t index) const;
 
