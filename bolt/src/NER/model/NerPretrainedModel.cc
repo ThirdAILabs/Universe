@@ -180,7 +180,7 @@ metrics::History NerPretrainedModel::train(
 std::vector<PerTokenListPredictions> NerPretrainedModel::getTags(
     std::vector<std::vector<std::string>> tokens, uint32_t top_k) {
   return thirdai::bolt::getTags(tokens, top_k, _source_column,
-                                getTransformations(true), _bolt_inputs,
+                                _inference_transforms, _bolt_inputs,
                                 _bolt_model);
 }
 
