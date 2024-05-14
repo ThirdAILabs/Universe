@@ -20,6 +20,8 @@ class TextTokenizer {
 
   virtual ar::ConstArchivePtr toArchive() const = 0;
 
+  virtual std::vector<std::string> toStrings(const std::string& input) = 0;
+
   static std::shared_ptr<TextTokenizer> fromArchive(const ar::Archive& archive);
 
   virtual ~TextTokenizer() = default;
@@ -44,6 +46,10 @@ class NaiveSplitTokenizer : public TextTokenizer {
 
   std::vector<uint32_t> tokenize(const std::string& input) final {
     return token_encoding::hashTokens(text::split(input, _delimiter));
+  }
+
+  std::vector<std::string> toStrings(const std::string& input) final {
+    return text::split(input, _delimiter);
   }
 
   std::string getResponsibleWord(const std::string& input,
@@ -87,6 +93,10 @@ class WordPunctTokenizer : public TextTokenizer {
     return token_encoding::hashTokens(text::tokenizeSentence(input));
   }
 
+  std::vector<std::string> toStrings(const std::string& input) final {
+    return text::tokenizeSentence(input);
+  }
+
   std::string getResponsibleWord(const std::string& input,
                                  uint32_t source_token) final {
     auto map = token_encoding::buildUnigramHashToWordMap(
@@ -125,6 +135,10 @@ class CharKGramTokenizer : public TextTokenizer {
 
   std::vector<uint32_t> tokenize(const std::string& input) final {
     return token_encoding::hashTokens(text::charKGrams(input, _k));
+  }
+
+  std::vector<std::string> toStrings(const std::string& input) final {
+    return text::charKGrams(input, _k);
   }
 
   std::string getResponsibleWord(const std::string& input,
