@@ -13,12 +13,13 @@ class NerClassifier {
   NerClassifier(bolt::ModelPtr model, data::OutputColumnsList bolt_inputs,
                 data::PipelinePtr train_transforms,
                 data::PipelinePtr inference_transforms,
-                std::string tokens_column)
+                std::string tokens_column, std::string tags_column)
       : _bolt_model(std::move(model)),
         _train_transforms(std::move(train_transforms)),
         _inference_transforms(std::move(inference_transforms)),
         _bolt_inputs(std::move(bolt_inputs)),
-        _tokens_column(std::move(tokens_column)) {}
+        _tokens_column(std::move(tokens_column)),
+        _tags_column(std::move(tags_column)) {}
 
   metrics::History train(const dataset::DataSourcePtr& train_data,
                          float learning_rate, uint32_t epochs,
@@ -52,10 +53,9 @@ class NerClassifier {
   data::Loader getDataLoader(const dataset::DataSourcePtr& data,
                              size_t batch_size, bool shuffle) const {
     auto data_iter =
-        data::JsonIterator::make(data, {_tokens_column, _tokens_column}, 1000);
-
+        data::JsonIterator::make(data, {_tokens_column, _tags_column}, 1000);
     return data::Loader(data_iter, _train_transforms, nullptr, _bolt_inputs,
-                        {data::OutputColumns(_tokens_column)},
+                        {data::OutputColumns(_tags_column)},
                         /* batch_size= */ batch_size,
                         /* shuffle= */ shuffle, /* verbose= */ true,
                         /* shuffle_buffer_size= */ 20000);
@@ -73,6 +73,7 @@ class NerClassifier {
   data::PipelinePtr _train_transforms, _inference_transforms;
   data::OutputColumnsList _bolt_inputs;
   std::string _tokens_column;
+  std::string _tags_column;
 };
 
 using NerClassifierPtr = std::shared_ptr<NerClassifier>;

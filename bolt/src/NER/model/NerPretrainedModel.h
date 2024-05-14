@@ -21,12 +21,14 @@ namespace thirdai::bolt {
 class NerPretrainedModel final : public NerModelInterface {
  public:
   std::string type() const final { return "pretrained_ner"; }
-  NerPretrainedModel(bolt::ModelPtr model,
-                     std::unordered_map<std::string, uint32_t> tag_to_label);
+  explicit NerPretrainedModel(
+      bolt::ModelPtr model, std::string tokens_column, std::string tags_column,
+      std::unordered_map<std::string, uint32_t> tag_to_label);
 
-  NerPretrainedModel(std::string& pretrained_model_path,
-                     std::string token_column, std::string tag_column,
-                     std::unordered_map<std::string, uint32_t> tag_to_label);
+  explicit NerPretrainedModel(
+      std::string& pretrained_model_path, std::string tokens_column,
+      std::string tags_column,
+      std::unordered_map<std::string, uint32_t> tag_to_label);
 
   std::vector<PerTokenListPredictions> getTags(
       std::vector<std::vector<std::string>> tokens, uint32_t top_k) const final;
@@ -38,11 +40,11 @@ class NerPretrainedModel final : public NerModelInterface {
       const dataset::DataSourcePtr& val_data,
       const std::vector<std::string>& val_metrics) const final;
 
-  ar::ConstArchivePtr toArchive() const final;
-
   std::unordered_map<std::string, uint32_t> getTagToLabel() const final {
     return _tag_to_label;
   }
+
+  ar::ConstArchivePtr toArchive() const final;
 
   static std::shared_ptr<NerPretrainedModel> fromArchive(
       const ar::Archive& archive);
@@ -60,14 +62,16 @@ class NerPretrainedModel final : public NerModelInterface {
 
   data::PipelinePtr getTransformations(bool inference);
 
+  bolt::ModelPtr getBoltModel(std::string& pretrained_model_path);
+
   bolt::ModelPtr _bolt_model;
   data::PipelinePtr _train_transforms;
   data::PipelinePtr _inference_transforms;
   data::OutputColumnsList _bolt_inputs;
   std::unordered_map<std::string, uint32_t> _tag_to_label;
 
-  std::string _source_column = "source";
-  std::string _target_column = "target";
+  std::string _tokens_column;
+  std::string _tags_column;
 
   NerClassifierPtr _classifier;
 

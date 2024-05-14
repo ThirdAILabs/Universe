@@ -30,37 +30,15 @@
 #include <vector>
 
 namespace thirdai::bolt {
-NerPretrainedModel::NerPretrainedModel(
-    bolt::ModelPtr model,
-    std::unordered_map<std::string, uint32_t> tag_to_label)
-    : _bolt_model(std::move(model)), _tag_to_label(std::move(tag_to_label)) {
-  _train_transforms = getTransformations(true);
-  _inference_transforms = getTransformations(false);
-  _bolt_inputs = {data::OutputColumns("tokens"),
-                  data::OutputColumns("token_front"),
-                  data::OutputColumns("token_behind")};
-  _classifier = std::make_shared<NerClassifier>(
-      _bolt_model, _bolt_inputs, _train_transforms, _inference_transforms,
-      _source_column);
-}
 
-NerPretrainedModel::NerPretrainedModel(
-    std::string& pretrained_model_path, std::string token_column,
-    std::string tag_column,
-    std::unordered_map<std::string, uint32_t> tag_to_label)
-    : _tag_to_label(tag_to_label),
-      _source_column(std::move(token_column)),
-      _target_column(std::move(tag_column)) {
+bolt::ModelPtr NerPretrainedModel::getBoltModel(
+    std::string& pretrained_model_path) {
   auto pretrained_model = bolt::Model::load(pretrained_model_path);
   if (pretrained_model->inputs()[0]->dim() != 50257) {
     throw std::invalid_argument(
         "Model input should have same vocab as GPT2Tokenizer");
   }
-
-  auto maxPair = std::max_element(
-      tag_to_label.begin(), tag_to_label.end(),
-      [](const auto& a, const auto& b) { return a.second < b.second; });
-  auto num_labels = maxPair->second + 1;
+  uint32_t num_labels = getMaxLabelFromTagToLabel(_tag_to_label);
 
   auto ops = pretrained_model->ops();
   bool found = std::any_of(ops.begin(), ops.end(), [](const bolt::OpPtr& op) {
@@ -110,13 +88,44 @@ NerPretrainedModel::NerPretrainedModel(
   auto labels = bolt::Input::make(num_labels);
   auto loss = bolt::CategoricalCrossEntropy::make(output, labels);
 
-  _bolt_model = bolt::Model::make({inputs}, {output}, {loss});
+  return bolt::Model::make({inputs}, {output}, {loss});
+}
+
+NerPretrainedModel::NerPretrainedModel(
+    bolt::ModelPtr model, std::string tokens_column, std::string tags_column,
+    std::unordered_map<std::string, uint32_t> tag_to_label)
+    : _bolt_model(std::move(model)),
+      _tag_to_label(std::move(tag_to_label)),
+      _tokens_column(std::move(tokens_column)),
+      _tags_column(std::move(tags_column)) {
+  _train_transforms = getTransformations(true);
+  _inference_transforms = getTransformations(false);
+  _bolt_inputs = {data::OutputColumns("tokens"),
+                  data::OutputColumns("token_front"),
+                  data::OutputColumns("token_behind")};
+  _classifier = std::make_shared<NerClassifier>(
+      _bolt_model, _bolt_inputs, _train_transforms, _inference_transforms,
+      _tokens_column);
+}
+
+NerPretrainedModel::NerPretrainedModel(
+    std::string& pretrained_model_path, std::string tokens_column,
+    std::string tags_column,
+    std::unordered_map<std::string, uint32_t> tag_to_label)
+    : _tag_to_label(std::move(tag_to_label)),
+      _tokens_column(std::move(tokens_column)),
+      _tags_column(std::move(tags_column)) {
+  _bolt_model = getBoltModel(pretrained_model_path);
 
   _train_transforms = getTransformations(true);
   _inference_transforms = getTransformations(false);
   _bolt_inputs = {data::OutputColumns("tokens"),
                   data::OutputColumns("token_front"),
                   data::OutputColumns("token_behind")};
+
+  _classifier = std::make_shared<NerClassifier>(
+      _bolt_model, _bolt_inputs, _train_transforms, _inference_transforms,
+      _tokens_column);
 }
 
 data::PipelinePtr NerPretrainedModel::getTransformations(bool inference) {
@@ -124,13 +133,13 @@ data::PipelinePtr NerPretrainedModel::getTransformations(bool inference) {
   if (!inference) {
     transform =
         data::Pipeline::make({std::make_shared<data::NerTokenFromStringArray>(
-            _source_column, "tokens", "token_front", "token_behind",
+            _tokens_column, "tokens", "token_front", "token_behind",
             std::nullopt, std::nullopt)});
   } else {
     transform =
         data::Pipeline::make({std::make_shared<data::NerTokenFromStringArray>(
-            _source_column, "tokens", "token_front", "token_behind",
-            _target_column, _tag_to_label)});
+            _tokens_column, "tokens", "token_front", "token_behind",
+            _tags_column, _tag_to_label)});
   }
   transform = transform->then(std::make_shared<data::StringToTokenArray>(
       "tokens", "tokens", ' ', _vocab_size));
@@ -141,96 +150,56 @@ data::PipelinePtr NerPretrainedModel::getTransformations(bool inference) {
   return transform;
 }
 
-data::Loader NerPretrainedModel::getDataLoader(
-    const dataset::DataSourcePtr& data, size_t batch_size, bool shuffle) const {
-  auto data_iter =
-      data::JsonIterator::make(data, {_source_column, _target_column}, 1000);
-  return data::Loader(data_iter, _train_transforms, nullptr, _bolt_inputs,
-                      {data::OutputColumns(_target_column)},
-                      /* batch_size= */ batch_size,
-                      /* shuffle= */ shuffle, /* verbose= */ true,
-                      /* shuffle_buffer_size= */ 20000);
-}
 metrics::History NerPretrainedModel::train(
     const dataset::DataSourcePtr& train_data, float learning_rate,
     uint32_t epochs, size_t batch_size,
     const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics) const {
-  auto train_dataset =
-      getDataLoader(train_data, batch_size, /* shuffle= */ true).all();
-
-  bolt::LabeledDataset val_dataset;
-  if (val_data) {
-    val_dataset =
-        getDataLoader(val_data, batch_size, /* shuffle= */ false).all();
-  }
-  auto train_data_input = train_dataset.first;
-  auto train_data_label = train_dataset.second;
-
-  Trainer trainer(_bolt_model);
-
-  // We cannot use train_with_dataset_loader, since it is using the older
-  // dataset::DatasetLoader while dyadic model is using data::Loader
-  for (uint32_t e = 0; e < epochs; e++) {
-    trainer.train_with_metric_names(
-        train_dataset, learning_rate, 1, train_metrics, val_dataset,
-        val_metrics, /* steps_per_validation= */ std::nullopt,
-        /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
-        /* autotune_rehash_rebuild= */ false, /* verbose= */ true);
-  }
-  return trainer.getHistory();
+  return _classifier->train(train_data, learning_rate, epochs, batch_size,
+                            train_metrics, val_data, val_metrics);
 }
 
 std::vector<PerTokenListPredictions> NerPretrainedModel::getTags(
     std::vector<std::vector<std::string>> tokens, uint32_t top_k) const {
-  return thirdai::bolt::getTags(tokens, top_k, _source_column,
-                                _inference_transforms, _bolt_inputs,
-                                _bolt_model);
+  return _classifier->getTags(tokens, top_k);
 }
 
 ar::ConstArchivePtr NerPretrainedModel::toArchive() const {
-  auto ner_bolt_model = ar::Map::make();
+  auto map = ar::Map::make();
 
-  ner_bolt_model->set("bolt_model",
-                      _bolt_model->toArchive(/*with_optimizer*/ false));
+  map->set("bolt_model", _bolt_model->toArchive(/*with_optimizer*/ false));
+
+  map->set("tokens_column", ar::str(_tokens_column));
+  map->set("tags_column", ar::str(_tags_column));
 
   ar::MapStrU64 tag_to_label;
   for (const auto& [label, tag] : _tag_to_label) {
     tag_to_label[label] = tag;
   }
-  ner_bolt_model->set("tag_to_label", ar::mapStrU64(tag_to_label));
+  map->set("tag_to_label", ar::mapStrU64(tag_to_label));
 
-  return ner_bolt_model;
+  return map;
 }
 
 std::shared_ptr<NerPretrainedModel> NerPretrainedModel::fromArchive(
     const ar::Archive& archive) {
   bolt::ModelPtr bolt_model =
       bolt::Model::fromArchive(*archive.get("bolt_model"));
+
+  std::string tokens_column = archive.getAs<std::string>("tokens_column");
+  std::string tags_column = archive.getAs<std::string>("tags_column");
+
   std::unordered_map<std::string, uint32_t> tag_to_label;
   for (const auto& [k, v] : archive.getAs<ar::MapStrU64>("tag_to_label")) {
     tag_to_label[k] = v;
   }
   return std::make_shared<NerPretrainedModel>(
-      NerPretrainedModel(bolt_model, tag_to_label));
-}
-
-void NerPretrainedModel::save(const std::string& filename) const {
-  std::ofstream filestream =
-      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  save_stream(filestream);
+      NerPretrainedModel(bolt_model, tokens_column, tags_column, tag_to_label));
 }
 
 void NerPretrainedModel::save_stream(std::ostream& output) const {
   ar::serialize(toArchive(), output);
-}
-
-std::shared_ptr<NerPretrainedModel> NerPretrainedModel::load(
-    const std::string& filename) {
-  std::ifstream filestream =
-      dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-  return load_stream(filestream);
 }
 
 std::shared_ptr<NerPretrainedModel> NerPretrainedModel::load_stream(
