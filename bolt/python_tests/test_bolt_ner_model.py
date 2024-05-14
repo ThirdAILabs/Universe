@@ -32,9 +32,9 @@ def sample_training_data():
 @pytest.fixture
 def bolt_pretrained():
     inputs = [bolt.nn.Input(dim=VOCAB_SIZE)]
-    embeddings = bolt.nn.Embedding(dim=6000, input_dim=VOCAB_SIZE, activation="relu")(
-        inputs[0]
-    )
+    embeddings = bolt.nn.Embedding(dim=6000, input_dim=VOCAB_SIZE, activation="relu")
+    embeddings.name = "emb_1"
+    embeddings = embeddings(inputs[0])
 
     loss = bolt.nn.losses.CategoricalCrossEntropy(
         embeddings, labels=bolt.nn.Input(dim=embeddings.dim())
