@@ -12,6 +12,7 @@
 #include <dataset/src/utils/TimeUtils.h>
 #include <utils/text/StringManipulation.h>
 #include <exception>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -37,6 +38,11 @@ std::string typeName<float>() {
 template <>
 std::string typeName<int64_t>() {
   return "i64";
+}
+
+template <>
+std::string typeName<std::string>() {
+  return "str";
 }
 
 template <>
@@ -289,6 +295,11 @@ float CastToArray<float>::parse(const std::string& row) const {
   return std::stof(row);
 }
 
+template <>
+std::string CastToArray<std::string>::parse(const std::string& row) const {
+  return row;
+}
+
 template <typename T>
 ColumnPtr CastToArray<T>::makeColumn(std::vector<std::vector<T>>&& rows) const {
   return ArrayColumn<T>::make(std::move(rows), _dim);
@@ -329,6 +340,23 @@ void CastToArray<float>::buildExplanationMap(
   }
 }
 
+template <>
+void CastToArray<std::string>::buildExplanationMap(
+    const ColumnMap& input, State& state, ExplanationMap& explanations) const {
+  (void)state;
+
+  std::string input_str =
+      input.getValueColumn<std::string>(_input_column_name)->value(0);
+
+  for (const auto& item : text::split(input_str, _delimiter)) {
+    std::string explanation =
+        "token " + item + " from " +
+        explanations.explain(_input_column_name, input_str);
+
+    explanations.store(_output_column_name, parse(item), explanation);
+  }
+}
+
 template <typename T>
 template <class Archive>
 void CastToArray<T>::serialize(Archive& archive) {
@@ -342,8 +370,12 @@ template void CastToArray<uint32_t>::serialize(cereal::BinaryOutputArchive&);
 template void CastToArray<float>::serialize(cereal::BinaryInputArchive&);
 template void CastToArray<float>::serialize(cereal::BinaryOutputArchive&);
 
+template void CastToArray<std::string>::serialize(cereal::BinaryInputArchive&);
+template void CastToArray<std::string>::serialize(cereal::BinaryOutputArchive&);
+
 template class CastToArray<uint32_t>;
 template class CastToArray<float>;
+template class CastToArray<std::string>;
 
 }  // namespace thirdai::data
 
@@ -351,4 +383,3 @@ CEREAL_REGISTER_TYPE(thirdai::data::StringToToken)
 CEREAL_REGISTER_TYPE(thirdai::data::StringToTokenArray)
 CEREAL_REGISTER_TYPE(thirdai::data::StringToDecimal)
 CEREAL_REGISTER_TYPE(thirdai::data::StringToDecimalArray)
-CEREAL_REGISTER_TYPE(thirdai::data::StringToTimestamp)

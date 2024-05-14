@@ -114,7 +114,6 @@ def download_and_unzip(url: str, out_dir: str, chunk_size: int = 1024) -> str:
 
 
 class GenericDataLoader:
-
     def __init__(
         self,
         data_folder: str = None,

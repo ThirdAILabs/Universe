@@ -1,4 +1,5 @@
 #include "ColumnMapIterator.h"
+#include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/ValueColumns.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/utils/CsvParser.h>
@@ -10,6 +11,8 @@
 namespace thirdai::data {
 
 using json = nlohmann::json;
+using ColumnData = std::variant<std::string, std::vector<std::string>, uint32_t,
+                                std::vector<uint32_t>>;
 
 ColumnMap makeColumnMap(std::vector<std::vector<std::string>>&& columns,
                         const std::vector<std::string>& column_names) {
@@ -113,33 +116,56 @@ std::optional<ColumnMap> JsonIterator::next() {
     return std::nullopt;
   }
 
-  std::vector<std::vector<std::string>> columns(
-      _column_names.size(), std::vector<std::string>(rows->size()));
-
+  std::vector<std::vector<ColumnData>> columns(
+      _column_names.size(), std::vector<ColumnData>(rows->size()));
   std::exception_ptr error;
+  std::vector<std::string> column_types(_column_names.size());
 
-#pragma omp parallel for default(none) shared(rows, columns, error)
+#pragma omp parallel for default(none) \
+    shared(rows, columns, column_types, error)
   for (size_t row_idx = 0; row_idx < rows->size(); row_idx++) {
     try {
       auto row = json::parse(rows->at(row_idx));
       if (!row.is_object()) {
         throw std::invalid_argument(
-            "Expected row to be json object but received '" +
+            "Expected row to be a json object but received '" +
             rows->at(row_idx) + "'.");
       }
 
-      for (size_t i = 0; i < columns.size(); i++) {
+      for (size_t i = 0; i < _column_names.size(); i++) {
         if (!row.contains(_column_names[i])) {
           throw std::invalid_argument("Expected row to contain key '" +
                                       _column_names[i] + "'.");
         }
 
-        if (!row[_column_names[i]].is_string()) {
+        auto& cell = row[_column_names[i]];
+        if (cell.is_number_integer()) {
+          columns[i][row_idx] = cell.get<uint32_t>();
+          if (row_idx == 0) {
+            column_types[i] = "int";
+          }
+        } else if (cell.is_array() && !cell.empty()) {
+          if (cell[0].is_number_integer()) {
+            columns[i][row_idx] = cell.get<std::vector<uint32_t>>();
+            if (row_idx == 0) {
+              column_types[i] = "vec-int";
+            }
+          } else {
+            columns[i][row_idx] = cell.get<std::vector<std::string>>();
+            if (row_idx == 0) {
+              column_types[i] = "vec-string";
+            }
+          }
+        } else if (cell.is_string()) {
+          columns[i][row_idx] = cell.get<std::string>();
+          if (row_idx == 0) {
+            column_types[i] = "string";
+          }
+        } else {
           throw std::invalid_argument(
-              "Expected values of fields in row to be string.");
+              "Expected values of fields in row to be "
+              "string/integer/List[integer]/List[string].");
         }
-
-        columns[i][row_idx] = row[_column_names[i]].get<std::string>();
       }
     } catch (...) {
 #pragma omp critical
@@ -151,7 +177,44 @@ std::optional<ColumnMap> JsonIterator::next() {
     std::rethrow_exception(error);
   }
 
-  return makeColumnMap(std::move(columns), _column_names);
+  std::unordered_map<std::string, ColumnPtr> column_map;
+  for (size_t column_idx = 0; column_idx < columns.size(); column_idx += 1) {
+    if (column_types[column_idx] == "int") {
+      std::vector<uint32_t> all_ints;
+      for (auto& i : columns[column_idx]) {
+        all_ints.push_back(std::get<uint32_t>(i));
+      }
+
+      column_map[_column_names[column_idx]] =
+          ValueColumn<uint32_t>::make(std::move(all_ints));
+    } else if (column_types[column_idx] == "string") {
+      std::vector<std::string> all_strings;
+      for (auto& i : columns[column_idx]) {
+        all_strings.push_back(std::get<std::string>(i));
+      }
+
+      column_map[_column_names[column_idx]] =
+          ValueColumn<std::string>::make(std::move(all_strings));
+    } else if (column_types[column_idx] == "vec-int") {
+      std::vector<std::vector<uint32_t>> all_vec_ints;
+      for (auto& i : columns[column_idx]) {
+        all_vec_ints.push_back(std::get<std::vector<uint32_t>>(i));
+      }
+
+      column_map[_column_names[column_idx]] =
+          ArrayColumn<uint32_t>::make(std::move(all_vec_ints));
+    } else {
+      std::vector<std::vector<std::string>> all_vec_strings;
+      for (auto& i : columns[column_idx]) {
+        all_vec_strings.push_back(std::get<std::vector<std::string>>(i));
+      }
+
+      column_map[_column_names[column_idx]] =
+          ArrayColumn<std::string>::make(std::move(all_vec_strings));
+    }
+  }
+
+  return ColumnMap(std::move(column_map));
 }
 
 void JsonIterator::restart() { _data_source->restart(); }
