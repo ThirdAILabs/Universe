@@ -1085,12 +1085,17 @@ class PDF(Extracted):
         doc_keywords="",
         emphasize_section_titles=False,
         table_parsing=False,
-        save_extra_info=True
+        save_extra_info=True,
     ):
         self.version = version
 
         if version == "v1":
-            super().__init__(path=path, metadata=metadata, on_disk=on_disk, save_extra_info=save_extra_info)
+            super().__init__(
+                path=path,
+                metadata=metadata,
+                on_disk=on_disk,
+                save_extra_info=save_extra_info,
+            )
             return
 
         if version != "v2":
@@ -1120,7 +1125,7 @@ class PDF(Extracted):
             },
             strong_column="emphasis",
             on_disk=on_disk,
-            save_extra_info=save_extra_info
+            save_extra_info=save_extra_info,
         )
 
     def process_data(
