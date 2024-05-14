@@ -80,22 +80,33 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
       size_t sample_offset = sample_offsets[i];
       std::vector<std::string> row_token_vectors =
           text_tokens->row(i).toVector();
-#pragma omp parallel for default(none)                                         \
-    shared(text_tokens, sample_offset, featurized_sentences, targets, tags, i, \
-           row_token_vectors) if (text_tokens->numRows() <= 1)
+
+      std::exception_ptr per_sample_error;
+#pragma omp parallel for default(none) shared(                          \
+    text_tokens, sample_offset, featurized_sentences, targets, tags, i, \
+    row_token_vectors, per_sample_error) if (text_tokens->numRows() <= 1)
       for (size_t start = 0; start < row_token_vectors.size(); start += 1) {
-        size_t featurized_sentence_offset = sample_offset + start;
-        featurized_sentences[featurized_sentence_offset] =
-            _processor.processToken(row_token_vectors, start);
-        if (_target_column) {
-          if (_tag_to_label.has_value()) {
-            targets[featurized_sentence_offset] =
-                findTagValueForString(tags->row(i)[start]);
-          } else {
-            targets[featurized_sentence_offset] =
-                std::stoi(tags->row(i)[start]);
+        try {
+          size_t featurized_sentence_offset = sample_offset + start;
+          featurized_sentences[featurized_sentence_offset] =
+              _processor.processToken(row_token_vectors, start);
+          if (_target_column) {
+            if (_tag_to_label.has_value()) {
+              targets[featurized_sentence_offset] =
+                  findTagValueForString(tags->row(i)[start]);
+            } else {
+              targets[featurized_sentence_offset] =
+                  std::stoi(tags->row(i)[start]);
+            }
           }
+        } catch (...) {
+#pragma omp critical
+          per_sample_error = std::current_exception();
         }
+      }
+
+      if (per_sample_error) {
+        std::rethrow_exception(per_sample_error);
       }
     } catch (...) {
 #pragma omp critical
