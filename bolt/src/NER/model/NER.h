@@ -50,7 +50,7 @@ class NER : public std::enable_shared_from_this<NER> {
       _ner_backend_model = std::static_pointer_cast<NerBackend>(model);
     }
 
-    auto tag_to_label_map = tag_to_label;
+    auto tag_to_label_map = _ner_backend_model->getTagToLabel();
     for (const auto& [k, v] : tag_to_label_map) {
       _label_to_tag_map[v] = k;
     }

@@ -77,42 +77,25 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
            error) if (text_tokens->numRows() > 1)
   for (size_t i = 0; i < text_tokens->numRows(); i += 1) {
     try {
-      RowView<std::string> row_tokens = text_tokens->row(i);
       size_t sample_offset = sample_offsets[i];
-
-      std::exception_ptr per_sentence_exception_ptr;
-#pragma omp parallel for default(none) shared(                             \
-    text_tokens, row_tokens, sample_offset, featurized_sentences, targets, \
-    tags, i, per_sentence_exception_ptr) if (text_tokens->numRows() <= 1)
-      for (size_t start = 0; start < row_tokens.size(); start += 1) {
+      std::vector<std::string> row_token_vectors =
+          text_tokens->row(i).toVector();
+#pragma omp parallel for default(none)                                         \
+    shared(text_tokens, sample_offset, featurized_sentences, targets, tags, i, \
+           row_token_vectors) if (text_tokens->numRows() <= 1)
+      for (size_t start = 0; start < row_token_vectors.size(); start += 1) {
         size_t featurized_sentence_offset = sample_offset + start;
         featurized_sentences[featurized_sentence_offset] =
-            _processor.processToken(row_tokens.toVector(), start);
+            _processor.processToken(row_token_vectors, start);
         if (_target_column) {
           if (_tag_to_label.has_value()) {
             targets[featurized_sentence_offset] =
                 findTagValueForString(tags->row(i)[start]);
           } else {
-            try {
-              targets[featurized_sentence_offset] =
-                  std::stoi(tags->row(i)[start]);
-            } catch (...) {
-#pragma omp critical
-              per_sentence_exception_ptr = std::make_exception_ptr(
-                  std::invalid_argument("Cannot convert a string to uint32_t. "
-                                        "Ensure that the tags "
-                                        "are "
-                                        "either uint32_t or a valid "
-                                        "tag_to_label is passed to the "
-                                        "transformation. String: " +
-                                        tags->row(i)[start]));
-              ;
-            }
+            targets[featurized_sentence_offset] =
+                std::stoi(tags->row(i)[start]);
           }
         }
-      }
-      if (per_sentence_exception_ptr) {
-        std::rethrow_exception(per_sentence_exception_ptr);
       }
     } catch (...) {
 #pragma omp critical
