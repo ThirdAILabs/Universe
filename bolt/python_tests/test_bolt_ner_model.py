@@ -47,6 +47,7 @@ def bolt_pretrained():
     return pretrained_path
 
 
+@pytest.mark.unit
 def test_udt_ner_backend(sample_training_data):
     bolt_ner_model = bolt.NER("source", "target", TAG_MAP)
     train_file = sample_training_data
@@ -88,6 +89,7 @@ def test_udt_ner_backend(sample_training_data):
     os.remove(sample_training_data)
 
 
+@pytest.mark.unit
 def test_pretrained_ner_backend(sample_training_data, bolt_pretrained):
     pretrained_path = bolt_pretrained
     bolt_ner_model = bolt.NER(
