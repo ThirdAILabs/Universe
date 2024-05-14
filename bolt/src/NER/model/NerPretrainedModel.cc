@@ -22,6 +22,7 @@
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <cmath>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <unordered_map>
@@ -38,7 +39,11 @@ NerPretrainedModel::NerPretrainedModel(
   _bolt_inputs = {data::OutputColumns("tokens"),
                   data::OutputColumns("token_front"),
                   data::OutputColumns("token_behind")};
+  _classifier = std::make_shared<NerClassifier>(
+      _bolt_model, _bolt_inputs, _train_transforms, _inference_transforms,
+      _source_column);
 }
+
 NerPretrainedModel::NerPretrainedModel(
     std::string& pretrained_model_path, std::string token_column,
     std::string tag_column,
@@ -137,7 +142,7 @@ data::PipelinePtr NerPretrainedModel::getTransformations(bool inference) {
 }
 
 data::Loader NerPretrainedModel::getDataLoader(
-    const dataset::DataSourcePtr& data, size_t batch_size, bool shuffle) {
+    const dataset::DataSourcePtr& data, size_t batch_size, bool shuffle) const {
   auto data_iter =
       data::JsonIterator::make(data, {_source_column, _target_column}, 1000);
   return data::Loader(data_iter, _train_transforms, nullptr, _bolt_inputs,
@@ -151,7 +156,7 @@ metrics::History NerPretrainedModel::train(
     uint32_t epochs, size_t batch_size,
     const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
-    const std::vector<std::string>& val_metrics) {
+    const std::vector<std::string>& val_metrics) const {
   auto train_dataset =
       getDataLoader(train_data, batch_size, /* shuffle= */ true).all();
 
@@ -178,7 +183,7 @@ metrics::History NerPretrainedModel::train(
 }
 
 std::vector<PerTokenListPredictions> NerPretrainedModel::getTags(
-    std::vector<std::vector<std::string>> tokens, uint32_t top_k) {
+    std::vector<std::vector<std::string>> tokens, uint32_t top_k) const {
   return thirdai::bolt::getTags(tokens, top_k, _source_column,
                                 _inference_transforms, _bolt_inputs,
                                 _bolt_model);

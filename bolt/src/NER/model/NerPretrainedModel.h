@@ -1,5 +1,6 @@
 #pragma once
 
+#include "NerClassifier.h"
 #include <bolt/src/NER/model/NerBackend.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/text_generation/GenerativeModel.h>
@@ -17,7 +18,7 @@
 
 namespace thirdai::bolt {
 
-class NerPretrainedModel final : public NerBackend {
+class NerPretrainedModel final : public NerModelInterface {
  public:
   std::string type() const final { return "pretrained_ner"; }
   NerPretrainedModel(bolt::ModelPtr model,
@@ -28,39 +29,34 @@ class NerPretrainedModel final : public NerBackend {
                      std::unordered_map<std::string, uint32_t> tag_to_label);
 
   std::vector<PerTokenListPredictions> getTags(
-      std::vector<std::vector<std::string>> tokens, uint32_t top_k) final;
+      std::vector<std::vector<std::string>> tokens, uint32_t top_k) const final;
 
-  metrics::History train(const dataset::DataSourcePtr& train_data,
-                         float learning_rate, uint32_t epochs,
-                         size_t batch_size,
-                         const std::vector<std::string>& train_metrics,
-                         const dataset::DataSourcePtr& val_data,
-                         const std::vector<std::string>& val_metrics) final;
+  metrics::History train(
+      const dataset::DataSourcePtr& train_data, float learning_rate,
+      uint32_t epochs, size_t batch_size,
+      const std::vector<std::string>& train_metrics,
+      const dataset::DataSourcePtr& val_data,
+      const std::vector<std::string>& val_metrics) const final;
 
   ar::ConstArchivePtr toArchive() const final;
 
-  std::unordered_map<std::string, uint32_t> getTagToLabel() final {
+  std::unordered_map<std::string, uint32_t> getTagToLabel() const final {
     return _tag_to_label;
   }
 
   static std::shared_ptr<NerPretrainedModel> fromArchive(
       const ar::Archive& archive);
 
-  void save(const std::string& filename) const;
-
   void save_stream(std::ostream& output_stream) const;
-
-  static std::shared_ptr<NerPretrainedModel> load(const std::string& filename);
 
   static std::shared_ptr<NerPretrainedModel> load_stream(
       std::istream& input_stream);
 
-  NerPretrainedModel() = default;
   ~NerPretrainedModel() override = default;
 
  private:
   data::Loader getDataLoader(const dataset::DataSourcePtr& data,
-                             size_t batch_size, bool shuffle);
+                             size_t batch_size, bool shuffle) const;
 
   data::PipelinePtr getTransformations(bool inference);
 
@@ -72,6 +68,8 @@ class NerPretrainedModel final : public NerBackend {
 
   std::string _source_column = "source";
   std::string _target_column = "target";
+
+  NerClassifierPtr _classifier;
 
   const size_t _vocab_size = 50257;
 };
