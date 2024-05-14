@@ -149,7 +149,7 @@ ar::ConstArchivePtr NerUDTModel::toArchive() const {
   map->set("bolt_model", _bolt_model->toArchive(/*with_optimizer*/ false));
 
   map->set("tokens_column", ar::str(_tokens_column));
-  map->set("tags_column", ar::str(_tokens_column));
+  map->set("tags_column", ar::str(_tags_column));
 
   auto tokenizers = ar::List::make();
   for (const auto& t : _target_word_tokenizers) {
