@@ -74,7 +74,7 @@ def test_udt_ner_backend(sample_training_data):
     assert all([len(text) == len(result) for text, result in zip(texts, results)])
 
     bolt_ner_model.save("ner_model")
-    bolt_ner_model.load("ner_model")
+    bolt_ner_model = bolt.NER.load("ner_model")
 
     results_after_load = bolt_ner_model.get_ner_tags(texts)
 
@@ -125,7 +125,7 @@ def test_pretrained_ner_backend(sample_training_data, bolt_pretrained):
     assert all([len(text) == len(result) for text, result in zip(texts, results)])
 
     bolt_ner_model.save("ner_model")
-    bolt_ner_model.load("ner_model")
+    bolt_ner_model = bolt.NER.load("ner_model")
 
     results_after_load = bolt_ner_model.get_ner_tags(
         dataset.NerDataSource(pretrained=True).inference_featurizer(texts)
