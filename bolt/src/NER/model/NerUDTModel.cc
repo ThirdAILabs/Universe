@@ -124,7 +124,7 @@ NerUDTModel::NerUDTModel(std::shared_ptr<NerUDTModel> pretrained_model,
       _tags_column(std::move(tags_column)),
       _target_word_tokenizers(pretrained_model->getTargetWordTokenizers()),
       _tag_to_label(tag_to_label),
-      _fhr(_fhr = pretrained_model->getBoltModel()->inputDims()[0]) {
+      _fhr(pretrained_model->getBoltModel()->inputDims()[0]) {
   auto maxPair = std::max_element(
       tag_to_label.begin(), tag_to_label.end(),
       [](const auto& a, const auto& b) { return a.second < b.second; });
