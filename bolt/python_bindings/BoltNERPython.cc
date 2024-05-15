@@ -16,16 +16,17 @@ namespace thirdai::bolt::python {
 
 void addNERModels(py::module_& module) {
 #if THIRDAI_EXPOSE_ALL
-  py::class_<NerBackend, std::shared_ptr<NerBackend>>(  // NOLINT
+  py::class_<NerModelInterface, std::shared_ptr<NerModelInterface>>(  // NOLINT
       module, "NerBackend");
 
-  py::class_<NerPretrainedModel, NerBackend,
+  py::class_<NerPretrainedModel, NerModelInterface,
              std::shared_ptr<NerPretrainedModel>>(module, "NerPretrainedModel")
-      .def(
-          py::init<bolt::ModelPtr, std::unordered_map<std::string, uint32_t>>(),
-          py::arg("model"), py::arg("tag_to_label"));
+      .def(py::init<bolt::ModelPtr, std::string, std::string,
+                    std::unordered_map<std::string, uint32_t>>(),
+           py::arg("model"), py::arg("tokens_column"), py::arg("tags_column"),
+           py::arg("tag_to_label"));
 
-  py::class_<NerUDTModel, NerBackend, std::shared_ptr<NerUDTModel>>(
+  py::class_<NerUDTModel, NerModelInterface, std::shared_ptr<NerUDTModel>>(
       module, "NerUDTModel")
       .def(py::init<bolt::ModelPtr, std::string, std::string,
                     std::unordered_map<std::string, uint32_t>,
@@ -40,7 +41,7 @@ void addNERModels(py::module_& module) {
 
   py::class_<NER, std::shared_ptr<NER>>(module, "NER")
 #if THIRDAI_EXPOSE_ALL
-      .def(py::init<std::shared_ptr<NerBackend>>(), py::arg("model"))
+      .def(py::init<std::shared_ptr<NerModelInterface>>(), py::arg("model"))
 #endif
       .def(py::init<std::string, std::string,
                     std::unordered_map<std::string, uint32_t>,

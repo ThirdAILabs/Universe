@@ -22,8 +22,8 @@ class NER;
 
 class NER : public std::enable_shared_from_this<NER> {
  public:
-  explicit NER(std::shared_ptr<NerBackend> model)
-      : _ner_backend_model(std::move(model)) {
+  explicit NER(const std::shared_ptr<NerModelInterface>& model)
+      : _ner_backend_model(model) {
     auto tag_to_label_map = _ner_backend_model->getTagToLabel();
     for (const auto& [k, v] : tag_to_label_map) {
       _label_to_tag_map[v] = k;
@@ -41,13 +41,15 @@ class NER : public std::enable_shared_from_this<NER> {
       auto model = std::make_shared<NerPretrainedModel>(
           *pretrained_model_path, std::move(tokens_column),
           std::move(tags_column), std::move(tag_to_label));
-      _ner_backend_model = std::static_pointer_cast<NerBackend>(model);
+      _ner_backend_model = std::static_pointer_cast<NerModelInterface>(model);
 
     } else {
+      std::cout << "The total number of elements in the unordered_map is: "
+                << tag_to_label.size() << std::endl;
       auto model = std::make_shared<NerUDTModel>(
           std::move(tokens_column), std::move(tags_column),
           std::move(tag_to_label), std::move(target_word_tokenizers));
-      _ner_backend_model = std::static_pointer_cast<NerBackend>(model);
+      _ner_backend_model = std::static_pointer_cast<NerModelInterface>(model);
     }
 
     auto tag_to_label_map = _ner_backend_model->getTagToLabel();
@@ -79,7 +81,7 @@ class NER : public std::enable_shared_from_this<NER> {
   static std::shared_ptr<NER> load_stream(std::istream& input_stream);
 
  private:
-  std::shared_ptr<NerBackend> _ner_backend_model;
+  std::shared_ptr<NerModelInterface> _ner_backend_model;
 
   std::unordered_map<uint32_t, std::string> _label_to_tag_map;
 

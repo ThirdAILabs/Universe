@@ -1,37 +1,39 @@
 #pragma once
 
 #include <bolt/src/NER/model/NerBackend.h>
+#include <bolt/src/NER/model/NerPretrainedModel.h>
 #include <bolt/src/nn/model/Model.h>
 #include <data/src/transformations/Pipeline.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 
 namespace thirdai::bolt {
 
-class NerUDTModel final : public NerBackend {
+class NerUDTModel final : public NerModelInterface {
  public:
   std::string type() const final { return "ner"; }
-  NerUDTModel(bolt::ModelPtr model, std::string tokens_column,
-              std::string tags_column,
-              std::unordered_map<std::string, uint32_t> tag_to_label,
-              std::vector<dataset::TextTokenizerPtr> target_word_tokenizers);
+  explicit NerUDTModel(
+      bolt::ModelPtr model, std::string tokens_column, std::string tags_column,
+      std::unordered_map<std::string, uint32_t> tag_to_label,
+      std::vector<dataset::TextTokenizerPtr> target_word_tokenizers);
 
-  NerUDTModel(std::string tokens_column, std::string tags_column,
-              std::unordered_map<std::string, uint32_t> tag_to_label,
-              std::vector<dataset::TextTokenizerPtr> target_word_tokenizers);
+  explicit NerUDTModel(
+      std::string tokens_column, std::string tags_column,
+      std::unordered_map<std::string, uint32_t> tag_to_label,
+      std::vector<dataset::TextTokenizerPtr> target_word_tokenizers);
 
   std::vector<PerTokenListPredictions> getTags(
-      std::vector<std::vector<std::string>> tokens, uint32_t top_k) final;
+      std::vector<std::vector<std::string>> tokens, uint32_t top_k) const final;
 
-  metrics::History train(const dataset::DataSourcePtr& train_data,
-                         float learning_rate, uint32_t epochs,
-                         size_t batch_size,
-                         const std::vector<std::string>& train_metrics,
-                         const dataset::DataSourcePtr& val_data,
-                         const std::vector<std::string>& val_metrics) final;
+  metrics::History train(
+      const dataset::DataSourcePtr& train_data, float learning_rate,
+      uint32_t epochs, size_t batch_size,
+      const std::vector<std::string>& train_metrics,
+      const dataset::DataSourcePtr& val_data,
+      const std::vector<std::string>& val_metrics) const final;
 
   ar::ConstArchivePtr toArchive() const final;
 
-  std::unordered_map<std::string, uint32_t> getTagToLabel() final {
+  std::unordered_map<std::string, uint32_t> getTagToLabel() const final {
     return _tag_to_label;
   }
 
@@ -45,14 +47,14 @@ class NerUDTModel final : public NerBackend {
 
   static std::shared_ptr<NerUDTModel> load_stream(std::istream& input_stream);
 
-  NerUDTModel() = default;
+  //   NerUDTModel() = default;
   ~NerUDTModel() override = default;
 
  private:
-  void initialize();
+  void initialize(uint32_t fhr, uint32_t number_labels);
 
-  data::Loader getDataLoader(const dataset::DataSourcePtr& data,
-                             size_t batch_size, bool shuffle);
+  static bolt::ModelPtr getBoltModel(
+      std::unordered_map<std::string, uint32_t>& tag_to_label, uint32_t fhr);
 
   bolt::ModelPtr _bolt_model;
   std::string _tokens_column, _tags_column;
@@ -60,13 +62,11 @@ class NerUDTModel final : public NerBackend {
 
   std::unordered_map<std::string, uint32_t> _tag_to_label;
 
-  data::PipelinePtr _train_transforms;
-  data::PipelinePtr _inference_transforms;
-  data::OutputColumnsList _bolt_inputs;
-
-  uint32_t _fhr, _number_labels, _dyadic_num_intervals = 3;
+  uint32_t _dyadic_num_intervals = 3;
 
   std::string _featurized_sentence_column =
       "featurized_sentence_for_" + _tokens_column;
+
+  NerClassifierPtr _classifier;
 };
 }  // namespace thirdai::bolt

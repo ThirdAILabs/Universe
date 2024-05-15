@@ -57,21 +57,17 @@ class NerPretrainedModel final : public NerModelInterface {
   ~NerPretrainedModel() override = default;
 
  private:
-  data::Loader getDataLoader(const dataset::DataSourcePtr& data,
-                             size_t batch_size, bool shuffle) const;
-
   data::PipelinePtr getTransformations(bool inference);
 
-  bolt::ModelPtr getBoltModel(std::string& pretrained_model_path);
+  static bolt::ModelPtr getBoltModel(
+      std::string& pretrained_model_path,
+      std::unordered_map<std::string, uint32_t> tag_to_label,
+      uint32_t vocab_size);
 
   bolt::ModelPtr _bolt_model;
-  data::PipelinePtr _train_transforms;
-  data::PipelinePtr _inference_transforms;
-  data::OutputColumnsList _bolt_inputs;
-  std::unordered_map<std::string, uint32_t> _tag_to_label;
-
   std::string _tokens_column;
   std::string _tags_column;
+  std::unordered_map<std::string, uint32_t> _tag_to_label;
 
   NerClassifierPtr _classifier;
 

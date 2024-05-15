@@ -64,6 +64,18 @@ def test_udt_ner_backend(sample_training_data):
         val_data=validation_data_source,
         val_metrics=["loss"],
     )
+    
+    print("train on same file again")
+    
+    bolt_ner_model.train(
+        train_data=train_data_source,
+        epochs=3,
+        learning_rate=0.001,
+        batch_size=5,
+        train_metrics=["loss"],
+        val_data=validation_data_source,
+        val_metrics=["loss"],
+    )
 
     texts = [
         ["Ram", "is", "going", "to", "Delhi"],
@@ -75,7 +87,7 @@ def test_udt_ner_backend(sample_training_data):
 
     bolt_ner_model.save("ner_model")
     bolt_ner_model = bolt.NER.load("ner_model")
-
+    
     results_after_load = bolt_ner_model.get_ner_tags(texts)
 
     assert all(
@@ -83,6 +95,21 @@ def test_udt_ner_backend(sample_training_data):
             len(result_after_load) == len(result)
             for result_after_load, result in zip(results_after_load, results)
         ]
+    )
+    
+    print(os.path.exists(train_file))
+    with open(train_file, "r") as f:
+        for l in f.readlines():
+            print(l)
+    
+    bolt_ner_model.train(
+        train_data=train_data_source,
+        epochs=3,
+        learning_rate=0.001,
+        batch_size=5,
+        train_metrics=["loss"],
+        val_data=validation_data_source,
+        val_metrics=["loss"],
     )
 
     # Cleanup after test
@@ -136,6 +163,16 @@ def test_pretrained_ner_backend(sample_training_data, bolt_pretrained):
             len(result_after_load) == len(result)
             for result_after_load, result in zip(results_after_load, results)
         ]
+    )
+    
+    bolt_ner_model.train(
+        train_data=train_data_source,
+        epochs=3,
+        learning_rate=0.001,
+        batch_size=5,
+        train_metrics=["loss"],
+        val_data=validation_data_source,
+        val_metrics=["loss"],
     )
 
     # Cleanup after test
