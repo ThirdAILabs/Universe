@@ -118,8 +118,8 @@ NerUDTModel::NerUDTModel(
 }
 
 NerUDTModel::NerUDTModel(std::shared_ptr<NerUDTModel>& pretrained_model,
-                         std::unordered_map<std::string, uint32_t> tag_to_label,
-                         std::string tokens_column, std::string tags_column)
+                         std::string tokens_column, std::string tags_column,
+                         std::unordered_map<std::string, uint32_t> tag_to_label)
     : _tokens_column(std::move(tokens_column)),
       _tags_column(std::move(tags_column)),
       _target_word_tokenizers(pretrained_model->getTargetWordTokenizers()),
@@ -165,7 +165,7 @@ metrics::History NerUDTModel::train(
     const std::vector<std::string>& val_metrics) {
   auto train_dataset =
       getDataLoader(train_data, batch_size, /* shuffle= */ true).all();
-  bolt::LabeledDataset val_dataset;
+  std::optional<bolt::LabeledDataset> val_dataset = std::nullopt;
   if (val_data) {
     val_dataset =
         getDataLoader(val_data, batch_size, /* shuffle= */ false).all();

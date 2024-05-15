@@ -37,6 +37,8 @@ class NerBackend {
 
   virtual std::unordered_map<std::string, uint32_t> getTagToLabel() = 0;
 
-  virtual std::string getTokenColumn() const = 0;
+  virtual std::string getTokensColumn() const = 0;
+
+  virtual std::string getTagsColumn() const = 0;
 };
 }  // namespace thirdai::bolt

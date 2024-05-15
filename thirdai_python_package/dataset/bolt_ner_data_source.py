@@ -9,13 +9,14 @@ def tokenize_text(tokenizer, text):
 
 
 class NerDataSource(PyDataSource):
-    def __init__(self, type, file_path=None, token_column=None, tag_column=None):
+    def __init__(self, ner_model, file_path = None):
         PyDataSource.__init__(self)
 
         self.file_path = file_path
-        self.token_column = token_column
-        self.tag_column = tag_column
-        self.pretrained = type == "bolt_ner"
+        
+        self.tokens_column = ner_model.tokens_column()
+        self.tags_column = ner_model.tags_column()
+        self.pretrained = ner_model.type() == "bolt_ner"
 
         if self.pretrained:
             try:
@@ -30,26 +31,27 @@ class NerDataSource(PyDataSource):
         self.restart()
 
     def _get_line_iterator(self):
+        
+        if (self.file_path) == None:
+            raise Exception("Cannot get data from a datasource with no file.")
+        
         with open(self.file_path, "r") as file:
             for line in file:
 
                 json_obj = json.loads(line.strip())
                 if not all(
                     column in json_obj
-                    for column in [self.tag_column, self.token_column]
+                    for column in [self.tags_column, self.tokens_column]
                 ):
                     raise ValueError(
-                        f"{self.tag_column} or {self.token_column} doesn't exist in the column, line: {line}"
+                        f"{self.tags_column} or {self.tokens_column} doesn't exist in the column, line: {line}"
                     )
                 if self.pretrained:
-                    json_obj["tokens"] = [
+                    json_obj[self.tokens_column] = [
                         tokenize_text(self.tokenizer, token)
-                        for token in json_obj[self.token_column]
+                        for token in json_obj[self.tokens_column]
                     ]
-                else:
-                    json_obj["tokens"] = json_obj[self.token_column]
-
-                json_obj["tags"] = json_obj[self.tag_column]
+                    
                 data = json.dumps(json_obj)
 
                 yield data

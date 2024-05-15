@@ -12,7 +12,6 @@
 #include <archive/src/Map.h>
 #include <licensing/src/CheckLicense.h>
 #include <memory>
-#include <optional>
 #include <unordered_map>
 #include <utility>
 
@@ -30,14 +29,15 @@ class NER : public std::enable_shared_from_this<NER> {
     }
   }
 
-  explicit NER(std::unordered_map<std::string, uint32_t> tag_to_label,
+  explicit NER(std::string tokens_column, std::string tags_column,
+               std::unordered_map<std::string, uint32_t> tag_to_label,
                std::vector<dataset::TextTokenizerPtr> target_word_tokenizers =
                    std::vector<dataset::TextTokenizerPtr>(
                        {std::make_shared<dataset::NaiveSplitTokenizer>(),
                         std::make_shared<dataset::CharKGramTokenizer>(4)})) {
-    auto model =
-        std::make_shared<NerUDTModel>("tokens", "tags", std::move(tag_to_label),
-                                      std::move(target_word_tokenizers));
+    auto model = std::make_shared<NerUDTModel>(
+        std::move(tokens_column), std::move(tags_column),
+        std::move(tag_to_label), std::move(target_word_tokenizers));
     _ner_backend_model = std::static_pointer_cast<NerBackend>(model);
 
     auto tag_to_label_map = _ner_backend_model->getTagToLabel();
@@ -46,7 +46,8 @@ class NER : public std::enable_shared_from_this<NER> {
     }
   }
 
-  NER(const std::string& model_path,
+  NER(const std::string& model_path, std::string tokens_column,
+      std::string tags_column,
       std::unordered_map<std::string, uint32_t> tag_to_label) {
     auto ner_model = load(model_path);
     auto ner_backend = ner_model->getBackend();
@@ -54,13 +55,15 @@ class NER : public std::enable_shared_from_this<NER> {
       auto ner_pretrained_model =
           std::dynamic_pointer_cast<NerBoltModel>(ner_backend);
       auto model = std::make_shared<NerBoltModel>(
-          ner_pretrained_model, std::move(tag_to_label), "tokens", "tags");
+          ner_pretrained_model, std::move(tokens_column),
+          std::move(tags_column), std::move(tag_to_label));
       _ner_backend_model = std::static_pointer_cast<NerBackend>(model);
 
     } else {
       auto ner_udt_model = std::dynamic_pointer_cast<NerUDTModel>(ner_backend);
       auto model = std::make_shared<NerUDTModel>(
-          ner_udt_model, std::move(tag_to_label), "tokens", "tags");
+          ner_udt_model, std::move(tokens_column), std::move(tags_column),
+          std::move(tag_to_label));
       _ner_backend_model = std::static_pointer_cast<NerBackend>(model);
     }
 
@@ -96,7 +99,11 @@ class NER : public std::enable_shared_from_this<NER> {
 
   std::string type() { return _ner_backend_model->type(); }
 
-  std::string getTokenColumn() { return _ner_backend_model->getTokenColumn(); }
+  std::string getTokensColumn() {
+    return _ner_backend_model->getTokensColumn();
+  }
+
+  std::string getTagsColumn() { return _ner_backend_model->getTagsColumn(); }
 
  private:
   std::shared_ptr<NerBackend> _ner_backend_model;
