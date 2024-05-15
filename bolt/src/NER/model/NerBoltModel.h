@@ -26,7 +26,7 @@ class NerBoltModel final : public NerBackend {
   NerBoltModel(bolt::ModelPtr model,
                std::unordered_map<std::string, uint32_t> tag_to_label);
 
-  NerBoltModel(std::shared_ptr<NerBoltModel> pretrained_model,
+  NerBoltModel(std::shared_ptr<NerBoltModel> &pretrained_model,
                std::unordered_map<std::string, uint32_t> tag_to_label,
                std::string token_column, std::string tag_column);
 

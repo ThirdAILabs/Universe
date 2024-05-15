@@ -40,7 +40,7 @@ NerBoltModel::NerBoltModel(
                   data::OutputColumns("token_behind")};
 }
 NerBoltModel::NerBoltModel(
-    std::shared_ptr<NerBoltModel> pretrained_model,
+    std::shared_ptr<NerBoltModel> &pretrained_model,
     std::unordered_map<std::string, uint32_t> tag_to_label,
     std::string token_column, std::string tag_column)
     : _tag_to_label(tag_to_label),

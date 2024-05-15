@@ -117,7 +117,7 @@ NerUDTModel::NerUDTModel(
   initializeNER();
 }
 
-NerUDTModel::NerUDTModel(std::shared_ptr<NerUDTModel> pretrained_model,
+NerUDTModel::NerUDTModel(std::shared_ptr<NerUDTModel> &pretrained_model,
                          std::unordered_map<std::string, uint32_t> tag_to_label,
                          std::string tokens_column, std::string tags_column)
     : _tokens_column(std::move(tokens_column)),
