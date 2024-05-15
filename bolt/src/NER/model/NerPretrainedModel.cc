@@ -95,7 +95,7 @@ bolt::ModelPtr NerPretrainedModel::getBoltModel(
 
 data::PipelinePtr NerPretrainedModel::getTransformations(bool inference) {
   data::PipelinePtr transform;
-  if (!inference) {
+  if (inference) {
     transform =
         data::Pipeline::make({std::make_shared<data::NerTokenFromStringArray>(
             _tokens_column, "tokens", "token_front", "token_behind",
@@ -122,8 +122,8 @@ NerPretrainedModel::NerPretrainedModel(
       _tokens_column(std::move(tokens_column)),
       _tags_column(std::move(tags_column)),
       _tag_to_label(std::move(tag_to_label)) {
-  auto train_transforms = getTransformations(true);
-  auto inference_transforms = getTransformations(false);
+  auto train_transforms = getTransformations(/*inference=*/false);
+  auto inference_transforms = getTransformations(/*inference=*/true);
   auto bolt_inputs = {data::OutputColumns("tokens"),
                       data::OutputColumns("token_front"),
                       data::OutputColumns("token_behind")};
@@ -136,10 +136,19 @@ NerPretrainedModel::NerPretrainedModel(
     std::string& pretrained_model_path, std::string tokens_column,
     std::string tags_column,
     std::unordered_map<std::string, uint32_t> tag_to_label)
-    : NerPretrainedModel(
-          getBoltModel(pretrained_model_path, tag_to_label, 50257),
-          std::move(tokens_column), std::move(tags_column),
-          std::move(tag_to_label)) {}
+    : _tokens_column(std::move(tokens_column)),
+      _tags_column(std::move(tags_column)),
+      _tag_to_label(std::move(tag_to_label)) {
+  _bolt_model = getBoltModel(pretrained_model_path, tag_to_label, 50257);
+  auto train_transforms = getTransformations(/*inference=*/false);
+  auto inference_transforms = getTransformations(/*inference=*/true);
+  auto bolt_inputs = {data::OutputColumns("tokens"),
+                      data::OutputColumns("token_front"),
+                      data::OutputColumns("token_behind")};
+  _classifier = std::make_shared<NerClassifier>(
+      _bolt_model, bolt_inputs, train_transforms, inference_transforms,
+      _tokens_column, _tags_column);
+}
 
 metrics::History NerPretrainedModel::train(
     const dataset::DataSourcePtr& train_data, float learning_rate,
