@@ -92,4 +92,6 @@ using StringToTimestamp = CastToValue<int64_t>;
 using StringToDecimal = CastToValue<float>;
 using StringToDecimalArray = CastToArray<float>;
 
+using StringToStringArray = CastToArray<std::string>;
+
 }  // namespace thirdai::data

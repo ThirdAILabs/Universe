@@ -17,23 +17,36 @@ def textfile():
 
 
 def build_db():
-    db = ndb.NeuralDB(low_memory=True)
+    db = ndb.NeuralDB()
 
     db.insert([ndb.CSV(path=textfile(), id_column="id", weak_columns=["text"])])
 
     return db
 
 
+def subsample_query(text, k=20):
+    return " ".join(random.choices(text.split(), k=k))
+
+
 def check_basic_query_accuracy(db):
     random.seed(64)
     for row in pd.read_csv(textfile()).itertuples():
-        query = " ".join(random.choices(row.text.split(), k=20))
+        query = subsample_query(row.text)
         assert db.search(query, top_k=1)[0].id == row.id
 
 
 def test_ndb_finetunable_retriever_search():
     db = build_db()
     check_basic_query_accuracy(db)
+
+    for _, row in pd.read_csv(textfile()).iterrows():
+        id = row["id"]
+        rank_results = db._savable_state.model.score(
+            [row["text"]],
+            entities=[[id + 2, id, id + 1]],
+            n_results=1,
+        )[0]
+        assert id == rank_results[0][0]
 
 
 def compute_accuracy(db, queries, labels):

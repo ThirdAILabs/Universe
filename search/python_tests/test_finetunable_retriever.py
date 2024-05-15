@@ -25,14 +25,14 @@ def load_supervised_data(filename):
 
 
 @pytest.mark.unit
-def test_inverted_index_scifact(download_scifact_dataset):
+def test_finetunable_retriever(download_scifact_dataset):
     doc_file, trn_supervised, query_file, _ = download_scifact_dataset
 
     doc_df = pd.read_csv(doc_file)
 
     doc_df["TEXT"] = doc_df["TITLE"] + " " + doc_df["TEXT"]
 
-    index = search.FinetunableRetriever(shard_size=100000)
+    index = search.FinetunableRetriever()
 
     index.index(ids=doc_df["DOC_ID"].to_list(), docs=doc_df["TEXT"].to_list())
 
@@ -44,13 +44,13 @@ def test_inverted_index_scifact(download_scifact_dataset):
 
     supervised_samples = load_supervised_data(trn_supervised)
 
-    sup_ids, update_texts = [], []
+    sup_ids, sup_texts = [], []
     for _, row in supervised_samples.iterrows():
         for doc_id in row["DOC_ID"]:
             sup_ids.append([doc_id])
-            update_texts.append(row["QUERY"])
+            sup_texts.append(row["QUERY"])
 
-    index.finetune(sup_ids, update_texts)
+    index.finetune(sup_ids, sup_texts)
 
     supervised_acc = evaluate(index, query_df)
 

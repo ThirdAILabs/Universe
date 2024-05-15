@@ -3,8 +3,8 @@
 #include <bolt/python_bindings/PybindUtils.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/stl.h>
-#include <search/src/FinetunableRetriever.h>
-#include <search/src/InvertedIndex.h>
+#include <search/src/inverted_index/FinetunableRetriever.h>
+#include <search/src/inverted_index/InvertedIndex.h>
 
 namespace thirdai::search::python {
 
@@ -73,15 +73,22 @@ void createSearchSubmodule(py::module_& module) {
                        py::arg("probabilities"), py::arg("transition_matrix"),
                        py::arg("beam_size"));
 
+  py::class_<Tokenizer, TokenizerPtr>(search_submodule, "Tokenizer");  // NOLINT
+
+  py::class_<DefaultTokenizer, Tokenizer, std::shared_ptr<DefaultTokenizer>>(
+      search_submodule, "DefaultTokenizer")
+      .def(py::init<bool, bool>(), py::arg("stem") = true,
+           py::arg("lowercase") = true);
+
   py::class_<InvertedIndex, std::shared_ptr<InvertedIndex>>(search_submodule,
                                                             "InvertedIndex")
-      .def(py::init<size_t, float, float, float, bool, bool, size_t>(),
+      .def(py::init<size_t, float, float, float, TokenizerPtr, size_t>(),
            py::arg("max_docs_to_score") =
                InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE,
            py::arg("idf_cutoff_frac") = InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC,
            py::arg("k1") = InvertedIndex::DEFAULT_K1,
-           py::arg("b") = InvertedIndex::DEFAULT_B, py::arg("stem") = true,
-           py::arg("lowercase") = true,
+           py::arg("b") = InvertedIndex::DEFAULT_B,
+           py::arg("tokenizer") = std::make_shared<DefaultTokenizer>(),
            py::arg("shard_size") = InvertedIndex::DEFAULT_SHARD_SIZE)
       .def("index", &InvertedIndex::index, py::arg("ids"), py::arg("docs"))
       .def("query", &InvertedIndex::queryBatch, py::arg("queries"),
@@ -149,6 +156,8 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("candidates"), py::arg("k"))
       .def("size", &FinetunableRetriever::size)
       .def("remove", &FinetunableRetriever::remove, py::arg("ids"))
+      .def_static("train_from", &FinetunableRetriever::trainFrom,
+                  py::arg("index"))
       .def("save", &FinetunableRetriever::save, py::arg("filename"))
       .def_static("load", &FinetunableRetriever::load, py::arg("filename"))
       .def(bolt::python::getPickleFunction<FinetunableRetriever>());

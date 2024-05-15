@@ -49,6 +49,13 @@ class InvertedIndex:
         if curr_index.size() > 0:
             self.indexes.append(curr_index)
 
+    def export(self):
+        if len(self.indexes) != 1:
+            raise ValueError(
+                "Checkpoint is not compatible with this version of thirdai."
+            )
+        return self.indexes[0]
+
     def supervised_train(self, data_source: SupDataSource):
         pass
 

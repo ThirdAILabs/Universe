@@ -1,6 +1,6 @@
 #pragma once
 
-#include <search/src/InvertedIndex.h>
+#include <search/src/inverted_index/InvertedIndex.h>
 #include <unordered_map>
 
 namespace thirdai::search {
@@ -20,6 +20,13 @@ class FinetunableRetriever {
       size_t shard_size = InvertedIndex::DEFAULT_SHARD_SIZE);
 
   explicit FinetunableRetriever(const ar::Archive& archive);
+
+  static std::shared_ptr<FinetunableRetriever> trainFrom(
+      const std::shared_ptr<InvertedIndex>& index) {
+    auto retriever = std::make_shared<FinetunableRetriever>();
+    retriever->_doc_index = index;
+    return retriever;
+  }
 
   void index(const std::vector<DocId>& ids,
              const std::vector<std::string>& docs);

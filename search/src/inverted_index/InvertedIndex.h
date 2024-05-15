@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <archive/src/Archive.h>
+#include <search/src/inverted_index/Tokenizer.h>
 #include <utils/text/PorterStemmer.h>
 #include <utils/text/StringManipulation.h>
 #include <cstddef>
@@ -14,8 +15,6 @@
 namespace thirdai::search {
 
 using DocId = uint64_t;
-using Token = std::string;
-using Tokens = std::vector<Token>;
 
 using DocScore = std::pair<DocId, float>;
 
@@ -30,11 +29,12 @@ class InvertedIndex {
   static constexpr float DEFAULT_B = 0.75;
   static constexpr size_t DEFAULT_SHARD_SIZE = 10000000;
 
-  explicit InvertedIndex(size_t max_docs_to_score = DEFAULT_MAX_DOCS_TO_SCORE,
-                         float idf_cutoff_frac = DEFAULT_IDF_CUTOFF_FRAC,
-                         float k1 = DEFAULT_K1, float b = DEFAULT_B,
-                         bool stem = true, bool lowercase = true,
-                         size_t shard_size = DEFAULT_SHARD_SIZE);
+  explicit InvertedIndex(
+      size_t max_docs_to_score = DEFAULT_MAX_DOCS_TO_SCORE,
+      float idf_cutoff_frac = DEFAULT_IDF_CUTOFF_FRAC, float k1 = DEFAULT_K1,
+      float b = DEFAULT_B,
+      TokenizerPtr tokenizer = std::make_shared<DefaultTokenizer>(),
+      size_t shard_size = DEFAULT_SHARD_SIZE);
 
   explicit InvertedIndex(const ar::Archive& archive);
 
@@ -106,8 +106,6 @@ class InvertedIndex {
     return idf * num / denom;
   }
 
-  Tokens tokenizeText(std::string text) const;
-
   using TokenCountInfo = std::pair<DocId, uint32_t>;
 
   struct Shard {
@@ -151,7 +149,7 @@ class InvertedIndex {
   // Parameters for computing the BM25 score.
   float _k1, _b;
 
-  bool _stem, _lowercase;
+  TokenizerPtr _tokenizer;
 
   friend class cereal::access;
   template <class Archive>

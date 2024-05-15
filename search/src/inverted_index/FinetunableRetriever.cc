@@ -11,6 +11,17 @@
 
 namespace thirdai::search {
 
+/**
+ * Because of how bm25 is calculated, particularly the idf scores, the query
+ * index does not work will with only a couple of finetuning samples, for
+ * instance a single upvote/associate. Thus for a small number of finetuning
+ * samples we concatenate the query to the documents it maps to, this boosts the
+ * score for the document for that query maps to. The samples are still added to
+ * the query index, just the query index isn't used until this threshold of
+ * samples is reached.
+ */
+constexpr size_t QUERY_INDEX_THRESHOLD = 10;
+
 FinetunableRetriever::FinetunableRetriever(float lambda, uint32_t min_top_docs,
                                            uint32_t top_queries,
                                            size_t shard_size)
@@ -44,6 +55,18 @@ void FinetunableRetriever::finetune(
 
   _query_index->index(query_ids, queries);
 
+  if (_query_index->size() < QUERY_INDEX_THRESHOLD) {
+    std::vector<DocId> flattened_doc_ids;
+    std::vector<std::string> flattened_queries;
+    for (size_t i = 0; i < doc_ids.size(); i++) {
+      const auto& ids = doc_ids[i];
+      flattened_doc_ids.insert(flattened_doc_ids.end(), ids.begin(), ids.end());
+      flattened_queries.insert(flattened_queries.end(), ids.size(), queries[i]);
+    }
+
+    _doc_index->update(flattened_doc_ids, flattened_queries);
+  }
+
   _next_query_id += query_ids.size();
 }
 
@@ -68,7 +91,7 @@ void FinetunableRetriever::associate(const std::vector<std::string>& sources,
 
 std::vector<DocScore> FinetunableRetriever::query(const std::string& query,
                                                   uint32_t k) const {
-  if (_query_index->size() == 0) {
+  if (_query_index->size() < QUERY_INDEX_THRESHOLD) {
     return _doc_index->query(query, k);
   }
 
@@ -105,7 +128,7 @@ std::vector<std::vector<DocScore>> FinetunableRetriever::queryBatch(
 std::vector<DocScore> FinetunableRetriever::rank(
     const std::string& query, const std::unordered_set<DocId>& candidates,
     uint32_t k) const {
-  if (_query_index->size() == 0) {
+  if (_query_index->size() < QUERY_INDEX_THRESHOLD) {
     return _doc_index->rank(query, candidates, k);
   }
 
