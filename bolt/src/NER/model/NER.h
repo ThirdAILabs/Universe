@@ -73,6 +73,8 @@ class NER : public std::enable_shared_from_this<NER> {
     }
   }
 
+  bolt::ModelPtr getModel() { return _ner_backend_model->getBoltModel(); }
+
   metrics::History train(const dataset::DataSourcePtr& train_data,
                          float learning_rate, uint32_t epochs,
                          size_t batch_size,

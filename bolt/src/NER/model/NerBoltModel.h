@@ -57,7 +57,7 @@ class NerBoltModel final : public NerBackend {
 
   static std::shared_ptr<NerBoltModel> load_stream(std::istream& input_stream);
 
-  bolt::ModelPtr getBoltModel() { return _bolt_model; }
+  bolt::ModelPtr getBoltModel() final { return _bolt_model; }
 
   std::string getTokensColumn() const final { return _source_column; }
 

@@ -42,6 +42,7 @@ void addNERModels(py::module_& module) {
   py::class_<NER, std::shared_ptr<NER>>(module, "NER")
 #if THIRDAI_EXPOSE_ALL
       .def(py::init<std::shared_ptr<NerBackend>>(), py::arg("model"))
+      .def("_get_model", &NER::getModel)
 #endif
       .def(py::init<std::string, std::string,
                     std::unordered_map<std::string, uint32_t>,

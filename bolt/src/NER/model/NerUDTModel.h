@@ -57,7 +57,7 @@ class NerUDTModel final : public NerBackend {
 
   static std::shared_ptr<NerUDTModel> load_stream(std::istream& input_stream);
 
-  bolt::ModelPtr getBoltModel() { return _bolt_model; }
+  bolt::ModelPtr getBoltModel() final { return _bolt_model; }
 
   std::vector<dataset::TextTokenizerPtr> getTargetWordTokenizers() {
     return _target_word_tokenizers;
@@ -66,6 +66,8 @@ class NerUDTModel final : public NerBackend {
   std::string getTokensColumn() const final { return _tokens_column; }
 
   std::string getTagsColumn() const final { return _tags_column; }
+
+  bolt::ModelPtr get_model() { return _bolt_model; }
 
   NerUDTModel() = default;
   ~NerUDTModel() override = default;

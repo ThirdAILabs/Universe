@@ -40,5 +40,7 @@ class NerBackend {
   virtual std::string getTokensColumn() const = 0;
 
   virtual std::string getTagsColumn() const = 0;
+
+  virtual bolt::ModelPtr getBoltModel() = 0;
 };
 }  // namespace thirdai::bolt
