@@ -78,6 +78,12 @@ class NER : public std::enable_shared_from_this<NER> {
 
   static std::shared_ptr<NER> load_stream(std::istream& input_stream);
 
+  void setModel(const bolt::ModelPtr& model) {
+    _ner_backend_model->setModel(model);
+  }
+
+  bolt::ModelPtr getModel() { return _ner_backend_model->getModel(); }
+
  private:
   std::shared_ptr<NerBackend> _ner_backend_model;
 

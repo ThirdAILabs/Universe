@@ -50,6 +50,10 @@ class NerPretrainedModel final : public NerBackend {
 
   void save_stream(std::ostream& output_stream) const;
 
+  void setModel(const bolt::ModelPtr& model) { _bolt_model = model; }
+
+  bolt::ModelPtr getModel() { return _bolt_model; }
+
   static std::shared_ptr<NerPretrainedModel> load(const std::string& filename);
 
   static std::shared_ptr<NerPretrainedModel> load_stream(

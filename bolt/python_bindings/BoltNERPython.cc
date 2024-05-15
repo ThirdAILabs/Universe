@@ -59,6 +59,8 @@ void addNERModels(py::module_& module) {
            py::arg("train_metrics") = std::vector<std::string>{"loss"},
            py::arg("val_data") = nullptr,
            py::arg("val_metrics") = std::vector<std::string>{})
+      .def("set_model", &NER::setModel, py::arg("model"))
+      .def("get_model", &NER::getModel)
       .def("get_ner_tags", &NER::getNerTags, py::arg("tokens"),
            py::arg("top_k") = 1)
       .def("save", &NER::save)

@@ -45,6 +45,10 @@ class NerUDTModel final : public NerBackend {
 
   static std::shared_ptr<NerUDTModel> load_stream(std::istream& input_stream);
 
+  void setModel(const bolt::ModelPtr& model) { _bolt_model = model; }
+
+  bolt::ModelPtr getModel() { return _bolt_model; }
+
   NerUDTModel() = default;
   ~NerUDTModel() override = default;
 

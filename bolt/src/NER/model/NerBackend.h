@@ -34,5 +34,9 @@ class NerBackend {
   virtual std::string type() const = 0;
 
   virtual std::unordered_map<std::string, uint32_t> getTagToLabel() = 0;
+
+  virtual void setModel(const bolt::ModelPtr& model) = 0;
+
+  virtual bolt::ModelPtr getModel() = 0;
 };
 }  // namespace thirdai::bolt
