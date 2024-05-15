@@ -22,7 +22,7 @@ class NerUDTModel final : public NerBackend {
               std::unordered_map<std::string, uint32_t> tag_to_label,
               std::vector<dataset::TextTokenizerPtr> target_word_tokenizers);
 
-  NerUDTModel(std::shared_ptr<NerUDTModel> &pretrained_model,
+  NerUDTModel(std::shared_ptr<NerUDTModel>& pretrained_model,
               std::unordered_map<std::string, uint32_t> tag_to_label,
               std::string tokens_column, std::string tags_column);
 

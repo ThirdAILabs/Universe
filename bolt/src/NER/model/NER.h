@@ -31,10 +31,10 @@ class NER : public std::enable_shared_from_this<NER> {
   }
 
   explicit NER(std::unordered_map<std::string, uint32_t> tag_to_label,
-      std::vector<dataset::TextTokenizerPtr> target_word_tokenizers =
-          std::vector<dataset::TextTokenizerPtr>(
-              {std::make_shared<dataset::NaiveSplitTokenizer>(),
-               std::make_shared<dataset::CharKGramTokenizer>(4)})) {
+               std::vector<dataset::TextTokenizerPtr> target_word_tokenizers =
+                   std::vector<dataset::TextTokenizerPtr>(
+                       {std::make_shared<dataset::NaiveSplitTokenizer>(),
+                        std::make_shared<dataset::CharKGramTokenizer>(4)})) {
     auto model =
         std::make_shared<NerUDTModel>("tokens", "tags", std::move(tag_to_label),
                                       std::move(target_word_tokenizers));
