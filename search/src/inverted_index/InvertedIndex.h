@@ -41,6 +41,9 @@ class InvertedIndex {
   void index(const std::vector<DocId>& ids,
              const std::vector<std::string>& docs);
 
+  void update(const std::vector<DocId>& ids,
+              const std::vector<std::string>& extra_tokens);
+
   std::vector<std::vector<DocScore>> queryBatch(
       const std::vector<std::string>& queries, uint32_t k) const;
 
@@ -63,7 +66,13 @@ class InvertedIndex {
     computeIdfs();
   }
 
-  size_t size() const { return _doc_lengths.size(); }
+  size_t size() const {
+    size_t total_size = 0;
+    for (const auto& shard : _shards) {
+      total_size += shard.size();
+    }
+    return total_size;
+  }
 
   size_t nShards() const { return _shards.size(); }
 
@@ -85,10 +94,6 @@ class InvertedIndex {
   static std::shared_ptr<InvertedIndex> load_stream_cereal(
       std::istream& istream);
 
-  static std::vector<DocScore> parallelQuery(
-      const std::vector<std::shared_ptr<InvertedIndex>>& indices,
-      const std::string& query, uint32_t k);
-
  private:
   std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>>
   countTokenOccurences(const std::vector<std::string>& docs) const;
@@ -98,6 +103,8 @@ class InvertedIndex {
   std::unordered_map<Token, size_t> tokenCountsAcrossShards() const;
 
   void computeIdfs();
+
+  bool containsDoc(DocId doc_id) const;
 
   inline float bm25(float idf, uint32_t cnt_in_doc, uint64_t doc_len) const {
     const float num = cnt_in_doc * (_k1 + 1);
@@ -109,10 +116,19 @@ class InvertedIndex {
   using TokenCountInfo = std::pair<DocId, uint32_t>;
 
   struct Shard {
-    Shard() : n_docs(0) {}
-
     std::unordered_map<Token, std::vector<TokenCountInfo>> token_to_docs;
-    size_t n_docs;
+    std::unordered_map<DocId, uint64_t> doc_lens;
+
+    void insertDoc(DocId doc_id, uint64_t len,
+                   const std::unordered_map<std::string, uint32_t>& occurences);
+
+    void updateDoc(
+        DocId doc_id, uint64_t extra_len,
+        const std::unordered_map<std::string, uint32_t>& extra_occurences);
+
+    size_t size() const { return doc_lens.size(); }
+
+    bool contains(DocId doc_id) const { return doc_lens.count(doc_id); }
   };
 
   std::vector<std::pair<Token, float>> rankByIdf(
@@ -126,7 +142,6 @@ class InvertedIndex {
   size_t _shard_size;
 
   std::unordered_map<Token, float> _token_to_idf;
-  std::unordered_map<DocId, uint64_t> _doc_lengths;
 
   // Determines the maximum number of docs that will be scored for a given
   // query. This is to help reduce query time. The documents that are scored are

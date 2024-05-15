@@ -47,7 +47,7 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
   auto doc_lens_and_occurences = countTokenOccurences(docs);
 
   for (size_t i = 0; i < docs.size(); i++) {
-    if (_shards.back().n_docs == _shard_size) {
+    if (_shards.empty() || _shards.back().size() == _shard_size) {
       _shards.push_back(Shard());
     }
 
@@ -55,21 +55,32 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
     const size_t doc_len = doc_lens_and_occurences[i].first;
     const auto& occurences = doc_lens_and_occurences[i].second;
 
-    if (_doc_lengths.count(doc_id)) {
+    if (containsDoc(doc_id)) {
       throw std::runtime_error("Document with id " + std::to_string(doc_id) +
                                " is already in InvertedIndex.");
     }
 
-    for (const auto& [token, cnt] : occurences) {
-      _shards.back().token_to_docs[token].emplace_back(doc_id, cnt);
-    }
-    _shards.back().n_docs++;
+    _shards.back().insertDoc(doc_id, doc_len, occurences);
 
-    _doc_lengths[doc_id] = doc_len;
     _sum_doc_lens += doc_len;
   }
 
   recomputeMetadata();
+}
+
+void InvertedIndex::Shard::insertDoc(
+    DocId doc_id, uint64_t len,
+    const std::unordered_map<std::string, uint32_t>& occurences) {
+  for (const auto& [token, cnt] : occurences) {
+    token_to_docs[token].emplace_back(doc_id, cnt);
+  }
+  doc_lens[doc_id] = len;
+}
+
+bool InvertedIndex::containsDoc(DocId doc_id) const {
+  return std::any_of(
+      _shards.begin(), _shards.end(),
+      [doc_id](const Shard& shard) { return shard.contains(doc_id); });
 }
 
 std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>>
@@ -93,7 +104,7 @@ InvertedIndex::countTokenOccurences(
 
 void InvertedIndex::recomputeMetadata() {
   computeIdfs();
-  _avg_doc_length = static_cast<float>(_sum_doc_lens) / _doc_lengths.size();
+  _avg_doc_length = static_cast<float>(_sum_doc_lens) / size();
 }
 
 std::unordered_map<Token, size_t> InvertedIndex::tokenCountsAcrossShards()
@@ -119,7 +130,7 @@ inline float idf(size_t n_docs, size_t docs_w_token) {
 }
 
 void InvertedIndex::computeIdfs() {
-  const size_t n_docs = _doc_lengths.size();
+  const size_t n_docs = size();
 
   // We can calculate the idf of a hypothetical token that occured in the
   // specified fraction of the documents. We know that any idf less than this
@@ -141,6 +152,50 @@ void InvertedIndex::computeIdfs() {
       _token_to_idf[token] = idf_score;
     }
   }
+}
+
+void InvertedIndex::update(const std::vector<DocId>& ids,
+                           const std::vector<std::string>& extra_tokens) {
+  if (ids.size() != extra_tokens.size()) {
+    throw std::invalid_argument(
+        "Number of ids must match the number of docs in index.");
+  }
+
+  licensing::entitlements().verifyNoDataSourceRetrictions();
+
+  auto doc_lens_and_occurences = countTokenOccurences(extra_tokens);
+
+  for (size_t i = 0; i < ids.size(); i++) {
+    const DocId doc_id = ids[i];
+    const size_t extra_len = doc_lens_and_occurences[i].first;
+    const auto& extra_occurences = doc_lens_and_occurences[i].second;
+
+    for (auto& shard : _shards) {
+      if (shard.contains(doc_id)) {
+        shard.updateDoc(doc_id, extra_len, extra_occurences);
+        _sum_doc_lens += extra_len;
+      }
+    }
+  }
+
+  recomputeMetadata();
+}
+
+void InvertedIndex::Shard::updateDoc(
+    DocId doc_id, uint64_t extra_len,
+    const std::unordered_map<std::string, uint32_t>& extra_occurences) {
+  for (const auto& [token, cnt] : extra_occurences) {
+    auto& docs_w_token = token_to_docs[token];
+    auto it =
+        std::find_if(docs_w_token.begin(), docs_w_token.end(),
+                     [doc_id](const auto& a) { return a.first == doc_id; });
+    if (it != docs_w_token.end()) {
+      it->second += cnt;
+    } else {
+      docs_w_token.emplace_back(doc_id, cnt);
+    }
+  }
+  doc_lens[doc_id] += extra_len;
 }
 
 template <typename T>
@@ -179,7 +234,7 @@ std::unordered_map<DocId, float> InvertedIndex::scoreDocuments(
       continue;
     }
     for (const auto& [doc_id, cnt_in_doc] : shard.token_to_docs.at(token)) {
-      const uint64_t doc_len = _doc_lengths.at(doc_id);
+      const uint64_t doc_len = shard.doc_lens.at(doc_id);
 
       // Note: This bm25 score could be precomputed for each (token, doc)
       // pair. However it would mean that all scores would need to be
@@ -331,14 +386,14 @@ std::vector<std::vector<DocScore>> InvertedIndex::rankBatch(
 
 void InvertedIndex::remove(const std::vector<DocId>& ids) {
   for (DocId id : ids) {
-    if (!_doc_lengths.count(id)) {
-      continue;
-    }
-
-    _sum_doc_lens -= _doc_lengths.at(id);
-    _doc_lengths.erase(id);
-
     for (auto& shard : _shards) {
+      if (!shard.contains(id)) {
+        continue;
+      }
+
+      _sum_doc_lens -= shard.doc_lens.at(id);
+      shard.doc_lens.erase(id);
+
       for (auto& [token, docs] : shard.token_to_docs) {
         docs.erase(
             std::remove_if(docs.begin(), docs.end(),
@@ -374,7 +429,7 @@ ar::ConstArchivePtr InvertedIndex::toArchive() const {
                        ar::mapStrVecU64(std::move(token_to_docs)));
     shard_archive->set("token_to_doc_cnts",
                        ar::mapStrVecU64(std::move(token_to_doc_cnts)));
-    shard_archive->set("n_docs", ar::u64(shard.n_docs));
+    shard_archive->set("doc_lens", ar::mapU64U64(shard.doc_lens));
 
     shards->append(shard_archive);
   }
@@ -382,8 +437,6 @@ ar::ConstArchivePtr InvertedIndex::toArchive() const {
   map->set("shards", shards);
 
   map->set("shard_size", ar::u64(_shard_size));
-
-  map->set("doc_lengths", ar::mapU64U64(_doc_lengths));
 
   map->set("max_docs_to_score", ar::u64(_max_docs_to_score));
   map->set("idf_cutoff_frac", ar::f32(_idf_cutoff_frac));
@@ -400,7 +453,6 @@ ar::ConstArchivePtr InvertedIndex::toArchive() const {
 
 InvertedIndex::InvertedIndex(const ar::Archive& archive)
     : _shard_size(archive.getOr<ar::U64>("shard_size", DEFAULT_SHARD_SIZE)),
-      _doc_lengths(archive.getAs<ar::MapU64U64>("doc_lengths")),
       _max_docs_to_score(archive.u64("max_docs_to_score")),
       _idf_cutoff_frac(archive.f32("idf_cutoff_frac")),
       _sum_doc_lens(archive.u64("sum_doc_lens")),
@@ -421,7 +473,7 @@ InvertedIndex::InvertedIndex(const ar::Archive& archive)
 
     shard_archive->set("token_to_docs", archive.get("token_to_docs"));
     shard_archive->set("token_to_doc_cnts", archive.get("token_to_doc_cnts"));
-    shard_archive->set("n_docs", ar::u64(_doc_lengths.size()));
+    shard_archive->set("doc_lens", archive.get("doc_lengths"));
 
     shard_archives = ar::List::make({shard_archive});
   } else {
@@ -444,7 +496,8 @@ InvertedIndex::InvertedIndex(const ar::Archive& archive)
       }
       shard.token_to_docs[token] = std::move(token_counts);
     }
-    shard.n_docs = shard_archive->u64("n_docs");
+
+    shard.doc_lens = shard_archive->getAs<ar::MapU64U64>("doc_lens");
 
     _shards.emplace_back(std::move(shard));
   }
@@ -493,48 +546,16 @@ void InvertedIndex::serialize(Archive& archive) {
   bool stem, lowercase;
 
   std::unordered_map<Token, std::vector<TokenCountInfo>> token_to_docs;
-  archive(token_to_docs, _token_to_idf, _doc_lengths, _idf_cutoff_frac,
+  std::unordered_map<DocId, uint64_t> doc_lens;
+  archive(token_to_docs, _token_to_idf, doc_lens, _idf_cutoff_frac,
           _sum_doc_lens, _avg_doc_length, _k1, _b, stem, lowercase);
 
   _shards.push_back(Shard());
   _shards[0].token_to_docs = std::move(token_to_docs);
-  _shards[0].n_docs = _doc_lengths.size();
+  _shards[0].doc_lens = std::move(doc_lens);
   _max_docs_to_score = DEFAULT_MAX_DOCS_TO_SCORE;
 
   _tokenizer = std::make_shared<DefaultTokenizer>(stem, lowercase);
-}
-
-std::vector<DocScore> InvertedIndex::parallelQuery(
-    const std::vector<std::shared_ptr<InvertedIndex>>& indices,
-    const std::string& query, uint32_t k) {
-  std::vector<std::vector<DocScore>> scores(indices.size());
-
-#pragma omp parallel for default(none) shared(indices, query, k, scores)
-  for (size_t i = 0; i < indices.size(); i++) {
-    scores[i] = indices[i]->query(query, k, /*parallelize=*/false);
-  }
-
-  std::vector<DocScore> top_scores;
-  top_scores.reserve(k + 1);
-  const HighestScore<DocId> cmp;
-
-  for (const auto& doc_scores : scores) {
-    for (const auto& [doc, score] : doc_scores) {
-      if (top_scores.size() < k || top_scores.front().second < score) {
-        top_scores.emplace_back(doc, score);
-        std::push_heap(top_scores.begin(), top_scores.end(), cmp);
-      }
-
-      if (top_scores.size() > k) {
-        std::pop_heap(top_scores.begin(), top_scores.end(), cmp);
-        top_scores.pop_back();
-      }
-    }
-  }
-
-  std::sort_heap(top_scores.begin(), top_scores.end(), cmp);
-
-  return top_scores;
 }
 
 }  // namespace thirdai::search

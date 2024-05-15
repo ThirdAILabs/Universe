@@ -1,6 +1,7 @@
 #include "InvertedIndexTestUtils.h"
 #include <gtest/gtest.h>
 #include <search/src/inverted_index/InvertedIndex.h>
+#include <search/src/inverted_index/Tokenizer.h>
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <iterator>
@@ -14,8 +15,8 @@ InvertedIndex indexWithShardSize(size_t shard_size) {
       /*max_docs_to_score=*/InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE,
       /*idf_cutoff_frac=*/InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC,
       /*k1=*/InvertedIndex::DEFAULT_K1, /*b=*/InvertedIndex::DEFAULT_B,
-      /*stem=*/true,
-      /*lowercase=*/true, /*shard_size=*/shard_size);
+      /*tokenizer=*/std::make_shared<DefaultTokenizer>(),
+      /*shard_size=*/shard_size);
 }
 
 void runBasicRetrievalTest(InvertedIndex& index) {
