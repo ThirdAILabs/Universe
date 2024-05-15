@@ -328,7 +328,7 @@ set(THIRDAI_SOURCES
     bolt/src/layers/SamplingConfig.cc
     bolt/src/inference/EmbFcInference.cc
     bolt/src/NER/model/NerUDTModel.cc
-    bolt/src/NER/model/NerPretrainedModel.cc
+    bolt/src/NER/model/NerBoltModel.cc
     bolt/src/NER/model/NER.cc
     bolt/src/text_generation/ContextualModel.cc
     bolt/src/text_generation/DyadicModel.cc

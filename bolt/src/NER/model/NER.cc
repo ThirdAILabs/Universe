@@ -1,5 +1,5 @@
 #include "NER.h"
-#include <bolt/src/NER/model/NerPretrainedModel.h>
+#include <bolt/src/NER/model/NerBoltModel.h>
 #include <bolt/src/NER/model/NerUDTModel.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <archive/src/Archive.h>
@@ -65,13 +65,12 @@ ar::ConstArchivePtr NER::toArchive() const {
 std::shared_ptr<NER> NER::fromArchive(const ar::Archive& archive) {
   std::string type = archive.getAs<std::string>("type");
 
-  if (type == "pretrained_ner") {
+  if (type == "bolt_ner") {
     std::shared_ptr<bolt::NerBackend> ner_backend_model =
-        bolt::NerPretrainedModel::fromArchive(
-            *archive.get("ner_backend_model"));
+        bolt::NerBoltModel::fromArchive(*archive.get("ner_backend_model"));
     return std::make_shared<NER>(NER(ner_backend_model));
   }
-  if (type == "ner") {
+  if (type == "udt_ner") {
     std::shared_ptr<bolt::NerBackend> ner_backend_model =
         bolt::NerUDTModel::fromArchive(*archive.get("ner_backend_model"));
     return std::make_shared<NER>(NER(ner_backend_model));

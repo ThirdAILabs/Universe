@@ -12,13 +12,14 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <utility>
 
 namespace thirdai::bolt {
 
-void NerUDTModel::initialize() {
+void NerUDTModel::initializeNER() {
   auto train_transformation = thirdai::data::NerTokenizerUnigram(
       /*tokens_column=*/_tokens_column,
       /*featurized_sentence_column=*/_featurized_sentence_column,
@@ -47,6 +48,30 @@ void NerUDTModel::initialize() {
       data::OutputColumns(train_transformation.getFeaturizedIndicesColumn())};
 }
 
+bolt::ModelPtr NerUDTModel::initializeBoltModel(
+    uint32_t input_dim, uint32_t emb_dim, uint32_t output_dim,
+    std::optional<std::vector<std::vector<float>*>> pretrained_emb) {
+  auto input = bolt::Input::make(input_dim);
+
+  auto emb_op = bolt::Embedding::make(emb_dim, input_dim, "relu",
+                                      /* bias= */ true);
+  if (pretrained_emb) {
+    emb_op->setEmbeddings(pretrained_emb.value()[0]->data());
+    emb_op->setBiases(pretrained_emb.value()[1]->data());
+  }
+  auto hidden = emb_op->apply(input);
+
+  auto output =
+      bolt::FullyConnected::make(output_dim, hidden->dim(), 1, "softmax",
+                                 /* sampling= */ nullptr, /* use_bias= */ true)
+          ->apply(hidden);
+
+  auto labels = bolt::Input::make(output_dim);
+  auto loss = bolt::CategoricalCrossEntropy::make(output, labels);
+
+  return bolt::Model::make({input}, {output}, {loss});
+}
+
 NerUDTModel::NerUDTModel(
     bolt::ModelPtr model, std::string tokens_column, std::string tags_column,
     std::unordered_map<std::string, uint32_t> tag_to_label,
@@ -70,7 +95,7 @@ NerUDTModel::NerUDTModel(
       [](const auto& a, const auto& b) { return a.second < b.second; });
   _number_labels = maxPair->second + 1;
 
-  initialize();
+  initializeNER();
 }
 
 NerUDTModel::NerUDTModel(
@@ -87,22 +112,42 @@ NerUDTModel::NerUDTModel(
       [](const auto& a, const auto& b) { return a.second < b.second; });
   _number_labels = maxPair->second + 1;
 
-  auto input = bolt::Input::make(_fhr);
+  _bolt_model = initializeBoltModel(_fhr, 2000, _number_labels);
 
-  auto hidden = bolt::Embedding::make(2000, 100000, "relu",
-                                      /* bias= */ true)
-                    ->apply(input);
+  initializeNER();
+}
 
-  auto output =
-      bolt::FullyConnected::make(_number_labels, hidden->dim(), 1, "softmax",
-                                 /* sampling= */ nullptr, /* use_bias= */ true)
-          ->apply(hidden);
+NerUDTModel::NerUDTModel(std::shared_ptr<NerUDTModel> pretrained_model,
+                         std::unordered_map<std::string, uint32_t> tag_to_label,
+                         std::string tokens_column, std::string tags_column)
+    : _tokens_column(std::move(tokens_column)),
+      _tags_column(std::move(tags_column)),
+      _target_word_tokenizers(pretrained_model->getTargetWordTokenizers()),
+      _tag_to_label(tag_to_label),
+      _fhr(_fhr = pretrained_model->getBoltModel()->inputDims()[0]) {
+  auto maxPair = std::max_element(
+      tag_to_label.begin(), tag_to_label.end(),
+      [](const auto& a, const auto& b) { return a.second < b.second; });
+  _number_labels = maxPair->second + 1;
 
-  auto labels = bolt::Input::make(_number_labels);
-  auto loss = bolt::CategoricalCrossEntropy::make(output, labels);
+  auto ops = pretrained_model->getBoltModel()->ops();
+  bool found = std::any_of(ops.begin(), ops.end(), [](const bolt::OpPtr& op) {
+    return op->name() == "emb_1";
+  });
 
-  _bolt_model = bolt::Model::make({input}, {output}, {loss});
-  initialize();
+  if (!found) {
+    throw std::runtime_error(
+        "Error: No operation named 'emb_1' found in Pretrained Model");
+  }
+  auto emb = std::dynamic_pointer_cast<Embedding>(
+      pretrained_model->getBoltModel()->getOp("emb_1"));
+
+  if (!emb) {
+    throw std::runtime_error("Error casting 'emb_1' op to Embedding Op");
+  }
+  _bolt_model =
+      initializeBoltModel(_fhr, emb->dim(), _number_labels, emb->parameters());
+  initializeNER();
 }
 
 std::vector<PerTokenListPredictions> NerUDTModel::getTags(

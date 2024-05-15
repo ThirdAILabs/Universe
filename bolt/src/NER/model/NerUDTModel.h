@@ -4,12 +4,15 @@
 #include <bolt/src/nn/model/Model.h>
 #include <data/src/transformations/Pipeline.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
+#include <memory>
 
 namespace thirdai::bolt {
 
+class NerUDTModel;
+
 class NerUDTModel final : public NerBackend {
  public:
-  std::string type() const final { return "ner"; }
+  std::string type() const final { return "udt_ner"; }
   NerUDTModel(bolt::ModelPtr model, std::string tokens_column,
               std::string tags_column,
               std::unordered_map<std::string, uint32_t> tag_to_label,
@@ -18,6 +21,15 @@ class NerUDTModel final : public NerBackend {
   NerUDTModel(std::string tokens_column, std::string tags_column,
               std::unordered_map<std::string, uint32_t> tag_to_label,
               std::vector<dataset::TextTokenizerPtr> target_word_tokenizers);
+
+  NerUDTModel(std::shared_ptr<NerUDTModel> pretrained_model,
+              std::unordered_map<std::string, uint32_t> tag_to_label,
+              std::string tokens_column, std::string tags_column);
+
+  static bolt::ModelPtr initializeBoltModel(
+      uint32_t input_dim, uint32_t emb_dim, uint32_t output_dim,
+      std::optional<std::vector<std::vector<float>*>> pretrained_emb =
+          std::nullopt);
 
   std::vector<PerTokenListPredictions> getTags(
       std::vector<std::vector<std::string>> tokens, uint32_t top_k) final;
@@ -45,11 +57,19 @@ class NerUDTModel final : public NerBackend {
 
   static std::shared_ptr<NerUDTModel> load_stream(std::istream& input_stream);
 
+  bolt::ModelPtr getBoltModel() { return _bolt_model; }
+
+  std::vector<dataset::TextTokenizerPtr> getTargetWordTokenizers() {
+    return _target_word_tokenizers;
+  }
+
+  std::string getTokenColumn() const final { return _tokens_column; }
+
   NerUDTModel() = default;
   ~NerUDTModel() override = default;
 
  private:
-  void initialize();
+  void initializeNER();
 
   data::Loader getDataLoader(const dataset::DataSourcePtr& data,
                              size_t batch_size, bool shuffle);
@@ -64,7 +84,8 @@ class NerUDTModel final : public NerBackend {
   data::PipelinePtr _inference_transforms;
   data::OutputColumnsList _bolt_inputs;
 
-  uint32_t _fhr, _number_labels, _dyadic_num_intervals = 3;
+  uint32_t _number_labels, _dyadic_num_intervals = 3;
+  uint32_t _fhr = 100000;
 
   std::string _featurized_sentence_column =
       "featurized_sentence_for_" + _tokens_column;
