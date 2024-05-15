@@ -327,6 +327,9 @@ set(THIRDAI_SOURCES
     bolt/src/layers/LayerConfig.cc
     bolt/src/layers/SamplingConfig.cc
     bolt/src/inference/EmbFcInference.cc
+    bolt/src/NER/model/NerUDTModel.cc
+    bolt/src/NER/model/NerPretrainedModel.cc
+    bolt/src/NER/model/NER.cc
     bolt/src/text_generation/ContextualModel.cc
     bolt/src/text_generation/DyadicModel.cc
     bolt/src/text_generation/GenerativeModel.cc
@@ -336,8 +339,9 @@ set(THIRDAI_SOURCES
     search/src/MaxFlash.cc
     search/src/MaxFlashArray.cc
     search/src/Flash.cc
-    search/src/InvertedIndex.cc
-    search/src/FinetunableRetriever.cc
+    search/src/inverted_index/InvertedIndex.cc
+    search/src/inverted_index/FinetunableRetriever.cc
+    search/src/inverted_index/Tokenizer.cc
     hashing/src/DensifiedMinHash.cc
     hashing/src/DWTA.cc
     hashing/src/FastSRP.cc
@@ -407,6 +411,9 @@ set(THIRDAI_SOURCES
     data/src/transformations/DyadicInterval.cc
     data/src/transformations/NextWordPrediction.cc
     data/src/transformations/SpladeAugmentation.cc
+    data/src/transformations/NerTokenFromStringArray.cc
+    data/src/transformations/ner/NerTokenizationUnigram.cc
+    data/src/transformations/ner/UnigramDataProcessor.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
@@ -504,6 +511,7 @@ pybind11_add_module(
   bolt/python_bindings/BoltCompression.cc
   bolt/python_bindings/NumpyConversions.cc
   bolt/python_bindings/BoltTextGeneration.cc
+  bolt/python_bindings/BoltNERPython.cc
   bolt/python_bindings/Porting.cc
   bolt/src/seismic/SeismicBase.cc
   bolt/src/seismic/SeismicEmbedding.cc

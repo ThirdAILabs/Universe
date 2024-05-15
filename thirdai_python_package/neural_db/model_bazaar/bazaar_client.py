@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -10,6 +11,7 @@ from urllib.parse import urljoin
 from .bazaar_base import Bazaar, auth_header
 from .utils import (
     check_deployment_decorator,
+    construct_deployment_url,
     create_deployment_identifier,
     create_model_identifier,
     http_get_with_error,
@@ -60,11 +62,11 @@ class NeuralDBClient:
 
     Attributes:
         deployment_identifier (str): The identifier for the deployment.
-        base_url (str): The base URL for the deployed NeuralDB model.
+        deployment_id (str): The deployment ID for the deployed NeuralDB model.
         bazaar (thirdai.neural_db.ModelBazaar): The bazaar object corresponding to a NeuralDB Enterprise installation
 
     Methods:
-        __init__(self, deployment_identifier: str, base_url: str) -> None:
+        __init__(self, deployment_identifier: str, deployment_id: str, bazaar: ModelBazaar) -> None:
             Initializes a new instance of the NeuralDBClient.
 
         search(self, query, top_k=5, constraints: Optional[dict[str, dict[str, str]]]=None) -> List[dict]:
@@ -95,17 +97,21 @@ class NeuralDBClient:
             Gets the source names and ids of documents in the ndb model
     """
 
-    def __init__(self, deployment_identifier: str, base_url: str, bazaar: ModelBazaar):
+    def __init__(
+        self, deployment_identifier: str, deployment_id: str, bazaar: ModelBazaar
+    ):
         """
         Initializes a new instance of the NeuralDBClient.
 
         Args:
             deployment_identifier (str): The identifier for the deployment.
-            base_url (str): The base URL for the deployed NeuralDB model.
+            deployment_id (str): The deployment ID for the deployed NeuralDB model.
             bazaar (thirdai.neural_db.ModelBazaar): The bazaar object corresponding to a NeuralDB Enterprise installation
         """
         self.deployment_identifier = deployment_identifier
-        self.base_url = base_url
+        self.base_url = construct_deployment_url(
+            re.sub(r"api/$", "", bazaar._base_url), deployment_id
+        )
         self.bazaar = bazaar
 
     @check_deployment_decorator
@@ -262,6 +268,8 @@ class NeuralDBClient:
             files=files,
             headers=auth_header(self.bazaar._access_token),
         )
+
+        return json.loads(response.content)["data"]
 
     @check_deployment_decorator
     def delete(self, source_ids: List[str]):
@@ -831,7 +839,7 @@ class ModelBazaar(Bazaar):
                 deployment_name=deployment_name,
                 deployment_username=self._username,
             ),
-            base_url=response_data["endpoint"] + "/",
+            deployment_id=response_data["deployment_id"],
             bazaar=self,
         )
         if is_async:
@@ -940,7 +948,7 @@ class ModelBazaar(Bazaar):
             print("Connection obtained...")
             return NeuralDBClient(
                 deployment_identifier=deployment_identifier,
-                base_url=response_data["endpoint"] + "/",
+                deployment_id=response_data["deployment_id"],
                 bazaar=self,
             )
 

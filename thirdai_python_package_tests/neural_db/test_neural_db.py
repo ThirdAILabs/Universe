@@ -83,11 +83,21 @@ def all_methods_work(
     clear_sources_works(db)
 
 
-@pytest.mark.parametrize("use_inverted_index", [True, False])
+def test_neural_db_all_methods_work_finetunable_retriever(small_doc_set):
+    db = ndb.NeuralDB()
+    all_methods_work(
+        db,
+        docs=small_doc_set,
+        num_duplicate_docs=0,
+        assert_acc=False,
+    )
+
+
+@pytest.mark.parametrize("retriever", ["mach", "hybrid"])
 def test_neural_db_all_methods_work_on_new_model_with_inverted(
-    small_doc_set, use_inverted_index
+    small_doc_set, retriever
 ):
-    db = ndb.NeuralDB(use_inverted_index=use_inverted_index)
+    db = ndb.NeuralDB(retriever=retriever)
     all_methods_work(
         db,
         docs=small_doc_set,
@@ -110,12 +120,13 @@ def test_neural_db_all_methods_work_with_dask(doc_set, request):
 
 
 @pytest.mark.parametrize("num_shards", [1, 2])
-def test_neuralb_db_all_methods_work_on_new_mach_mixture(small_doc_set, num_shards):
+def test_neural_db_all_methods_work_on_new_mach_mixture(small_doc_set, num_shards):
     db = ndb.NeuralDB(
         num_shards=num_shards,
         num_models_per_shard=2,
         fhr=20_000,
         extreme_output_dim=2_000,
+        retriever="hybrid",
     )
     all_methods_work(
         db,
@@ -126,7 +137,7 @@ def test_neuralb_db_all_methods_work_on_new_mach_mixture(small_doc_set, num_shar
 
 
 def test_neural_db_constrained_search_with_single_constraint():
-    db = ndb.NeuralDB()
+    db = ndb.NeuralDB(retriever="mach")
     db.insert(docs_with_meta(), train=False)
     for constraint in metadata_constraints:
         # Since we always use the same query, we know that we're getting different
@@ -136,7 +147,7 @@ def test_neural_db_constrained_search_with_single_constraint():
         assert all([constraint == ref.metadata["meta"] for ref in references])
 
 
-@pytest.mark.parametrize("empty_neural_db", ([1, 2, "low_memory"]), indirect=True)
+@pytest.mark.parametrize("empty_neural_db", ([1, 2, "no_mach"]), indirect=True)
 def test_neural_db_constrained_search_with_multiple_constraints(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"language": "English", "county": "Harris"}),
@@ -163,7 +174,7 @@ def test_neural_db_constrained_search_with_multiple_constraints(empty_neural_db)
         )
 
 
-@pytest.mark.parametrize("empty_neural_db", ([1, 2, "low_memory"]), indirect=True)
+@pytest.mark.parametrize("empty_neural_db", ([1, 2, "no_mach"]), indirect=True)
 def test_neural_db_constrained_search_with_list_constraints(empty_neural_db):
     documents = [
         ndb.PDF(PDF_FILE, metadata={"groups": [1], "county": "Harris"}),
@@ -360,7 +371,7 @@ def test_neural_db_constrained_search_row_level_constraints(empty_neural_db, use
     assert any([r.metadata["date"] > "2000-01-01" for r in references])
 
 
-@pytest.mark.parametrize("empty_neural_db", ([1, 2]), indirect=True)
+@pytest.mark.parametrize("empty_neural_db", ([1, 2, "no_mach"]), indirect=True)
 def test_neural_db_delete_document(empty_neural_db):
     with open("ice_cream.csv", "w") as f:
         f.write("text,id\n")
@@ -441,7 +452,7 @@ def test_neural_db_delete_document(empty_neural_db):
     os.remove("pizza.csv")
 
 
-def test_neural_db_delete_document_with_inverted_index():
+def test_neural_db_delete_document_with_finetunable_retriever():
     # The other delete test is only returning 1 entity, so it will only return
     # the top result from mach, thus it doesn't test if the inverted index is
     # returning the result.
@@ -523,8 +534,8 @@ def descending_order(seq):
 
 
 def test_neural_db_reranking(all_local_docs):
-    db = ndb.NeuralDB("user", use_inverted_index=False)
-    db.insert(all_local_docs, train=True)
+    db = ndb.NeuralDB("user", retriever="mach")
+    db.insert(all_local_docs, train=True, epochs=1)
 
     query = "Lorem Ipsum"
 
@@ -564,8 +575,8 @@ def test_neural_db_reranking(all_local_docs):
 
 
 def test_neural_db_reranking_threshold(all_local_docs):
-    db = ndb.NeuralDB("user", use_inverted_index=False)
-    db.insert(all_local_docs, train=True)
+    db = ndb.NeuralDB("user", retriever="mach")
+    db.insert(all_local_docs, train=True, epochs=1)
 
     query = "agreement"
 
@@ -610,7 +621,7 @@ def test_neural_db_reranking_threshold(all_local_docs):
     )
 
 
-def test_inverted_index_improves_zero_shot():
+def test_finetunable_retriever_improves_zero_shot():
     docs = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "../../auto_ml/python_tests/texts.csv",
@@ -629,27 +640,23 @@ def test_inverted_index_improves_zero_shot():
 
         return correct / len(queries)
 
-    combined_db = ndb.NeuralDB(use_inverted_index=True)
+    combined_db = ndb.NeuralDB(retriever="hybrid")
     combined_db.insert(
         [ndb.CSV(docs, id_column="id", weak_columns=["text"])], train=False
     )
 
     assert compute_acc(combined_db) > 0.9
 
-    mach_only_db = ndb.NeuralDB(use_inverted_index=False)
+    mach_only_db = ndb.NeuralDB(retriever="mach")
     mach_only_db.insert(
         [ndb.CSV(docs, id_column="id", weak_columns=["text"])], train=False
     )
 
     assert compute_acc(mach_only_db) < 0.1
 
-    mach_only_db.build_inverted_index()
-
-    assert compute_acc(mach_only_db) > 0.9
-
 
 def test_neural_db_retriever_specification():
-    db = ndb.NeuralDB()
+    db = ndb.NeuralDB(retriever="hybrid")
 
     texts = [
         "apples are green",
@@ -677,10 +684,12 @@ def test_neural_db_retriever_specification():
     for res in mach_results:
         assert res.retriever == "mach"
 
-    index_results = db.search("carrots bananas", top_k=10, retriever="inverted_index")
+    index_results = db.search(
+        "carrots bananas", top_k=10, retriever="finetunable_retriever"
+    )
     assert len(index_results) > 0
     for res in index_results:
-        assert res.retriever == "inverted_index"
+        assert res.retriever == "finetunable_retriever"
 
 
 def test_result_merging():
@@ -705,7 +714,7 @@ def test_result_merging():
 
 
 def test_insert_callback(small_doc_set):
-    db = ndb.NeuralDB(user_id="test_coldstart_callback")
+    db = ndb.NeuralDB(user_id="test_coldstart_callback", retriever="mach")
 
     class EpochCheck(bolt.train.callbacks.Callback):
         def __init__(self):
@@ -723,8 +732,8 @@ def test_insert_callback(small_doc_set):
     assert epoch_count_callback.epochs_completed == epochs
 
 
-def test_neural_db_prioritizes_inverted_index_results():
-    db = ndb.NeuralDB()
+def test_neural_db_prioritizes_finetunable_retriever_results():
+    db = ndb.NeuralDB(retriever="hybrid")
 
     texts = [
         "apples are green",
@@ -739,5 +748,5 @@ def test_neural_db_prioritizes_inverted_index_results():
         train=False,
     )
 
-    assert db.search("carrots bananas", top_k=5)[0].retriever == "inverted_index"
+    assert db.search("carrots bananas", top_k=5)[0].retriever == "finetunable_retriever"
     assert db.search("carrots bananas", top_k=5, mach_first=True)[0].retriever == "mach"

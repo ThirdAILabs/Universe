@@ -726,14 +726,14 @@ class CSV(Document):
         return self.orig_to_assigned_id
 
     def strong_text_from_row(self, row) -> str:
-        return " ".join(row[col] for col in self.strong_columns)
+        return " ".join(str(row[col]) for col in self.strong_columns)
 
     def strong_text(self, element_id: int) -> str:
         row = self.table.row_as_dict(element_id)
         return self.strong_text_from_row(row)
 
     def weak_text_from_row(self, row) -> str:
-        return " ".join(row[col] for col in self.weak_columns)
+        return " ".join(str(row[col]) for col in self.weak_columns)
 
     def weak_text(self, element_id: int) -> str:
         row = self.table.row_as_dict(element_id)
@@ -1001,11 +1001,12 @@ class Extracted(Document):
     def load_meta(self, directory: Path):
         # Since we've moved the file to the provided directory, let's make
         # sure that we point to this file.
-        if hasattr(self, "doc_name"):
-            self.path = directory / self.doc_name
-        else:
-            # this else statement handles the deprecated attribute "path" in self, we can remove this soon
-            self.path = directory / self.path.name
+        if self.save_extra_info:
+            if hasattr(self, "doc_name"):
+                self.path = directory / self.doc_name
+            else:
+                # this else statement handles the deprecated attribute "path" in self, we can remove this soon
+                self.path = directory / self.path.name
 
         if not hasattr(self, "doc_metadata"):
             self.doc_metadata = {}
@@ -1084,11 +1085,17 @@ class PDF(Extracted):
         doc_keywords="",
         emphasize_section_titles=False,
         table_parsing=False,
+        save_extra_info=True,
     ):
         self.version = version
 
         if version == "v1":
-            super().__init__(path=path, metadata=metadata, on_disk=on_disk)
+            super().__init__(
+                path=path,
+                metadata=metadata,
+                on_disk=on_disk,
+                save_extra_info=save_extra_info,
+            )
             return
 
         if version != "v2":
@@ -1118,6 +1125,7 @@ class PDF(Extracted):
             },
             strong_column="emphasis",
             on_disk=on_disk,
+            save_extra_info=save_extra_info,
         )
 
     def process_data(

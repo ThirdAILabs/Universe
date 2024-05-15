@@ -3,15 +3,12 @@ import shutil
 from collections import defaultdict
 from pathlib import Path
 
-import nltk
 import pytest
-
-nltk.download("punkt")
 from ndb_utils import PDF_FILE, all_local_doc_getters, associate_works, upvote_works
 from thirdai import data
 from thirdai import neural_db as ndb
+from thirdai.neural_db.models.mach import Mach, ProgressUpdate
 from thirdai.neural_db.models.mach_mixture_model import MachMixture
-from thirdai.neural_db.models.models import Mach, ProgressUpdate
 from thirdai.neural_db.trainer.training_data_manager import (
     InsertDataManager,
     TrainingDataManager,
@@ -71,6 +68,7 @@ def train_neural_db_with_checkpoint(num_shards: int, num_models_per_shard: int):
         extreme_output_dim=OUTPUT_DIM,
         fhr=FHR,
         embedding_dimension=EMBEDDING_DIM,
+        retriever="hybrid",
     )
     # only training for the first two documents
 
@@ -136,6 +134,7 @@ def interrupted_insert(num_shards: int, num_models_per_shard: int, interrupt_fun
         extreme_output_dim=OUTPUT_DIM,
         fhr=FHR,
         embedding_dimension=EMBEDDING_DIM,
+        retriever="hybrid",
     )
 
     checkpoint_config = ndb.CheckpointConfig(
@@ -210,7 +209,7 @@ def interrupted_training(num_shards, num_models_per_shard, interrupt_function):
 
 
 def make_db_and_training_manager(num_models_per_shard=2, makes_checkpoint=True):
-    db = ndb.NeuralDB(num_models_per_shard=num_models_per_shard)
+    db = ndb.NeuralDB(num_models_per_shard=num_models_per_shard, retriever="hybrid")
     checkpoint_dir = Path(CHECKPOINT_DIR) / str(0)
 
     document_manager = db._savable_state.documents

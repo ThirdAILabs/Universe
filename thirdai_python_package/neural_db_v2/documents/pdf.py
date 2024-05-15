@@ -1,8 +1,6 @@
 from typing import Iterable
 
-import pandas as pd
-
-import thirdai_python_package.neural_db.parsing_utils.sliding_pdf_parse as pdf_parse
+import thirdai.neural_db.parsing_utils.sliding_pdf_parse as pdf_parse
 
 from ..core.documents import Document
 from ..core.types import NewChunkBatch

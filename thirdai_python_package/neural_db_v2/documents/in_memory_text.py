@@ -14,6 +14,7 @@ class InMemoryText(Document):
         text=[],
         chunk_metadata=None,
         doc_metadata=None,
+        custom_id=None,
     ):
         super().__init__()
 
@@ -23,6 +24,7 @@ class InMemoryText(Document):
             pd.DataFrame.from_records(chunk_metadata) if chunk_metadata else None
         )
         self.doc_metadata = doc_metadata
+        self.custom_id = custom_id
 
     def chunks(self) -> Iterable[NewChunkBatch]:
         metadata = join_metadata(
@@ -33,7 +35,7 @@ class InMemoryText(Document):
 
         return [
             NewChunkBatch(
-                custom_id=None,
+                custom_id=pd.Series(self.custom_id) if self.custom_id else None,
                 text=self.text,
                 keywords=series_from_value("", len(self.text)),
                 metadata=metadata,

@@ -1,4 +1,6 @@
 import operator
+import os
+import shutil
 import uuid
 from functools import reduce
 from typing import Dict, Iterable, List, Optional, Set
@@ -15,12 +17,12 @@ from sqlalchemy import (
     Table,
     create_engine,
     delete,
-    func,
     select,
     text,
 )
+from thirdai.neural_db.utils import pickle_to, unpickle_from
 
-from ..core.chunk_store import ChunkStore
+from ..core.chunk_store import ChunkStore, CustomIDType
 from ..core.types import (
     Chunk,
     ChunkBatch,
@@ -101,14 +103,11 @@ class SqlLiteIterator:
 
 
 class SQLiteChunkStore(ChunkStore):
-    def __init__(self, in_memory=True, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, **kwargs):
+        super().__init__()
 
-        if in_memory:
-            self.engine = create_engine(f"sqlite:///:memory:")
-        else:
-            self.db_name = f"{uuid.uuid4()}.db"
-            self.engine = create_engine(f"sqlite:///{self.db_name}")
+        self.db_name = f"{uuid.uuid4()}.db"
+        self.engine = create_engine(f"sqlite:///{self.db_name}")
 
         self.metadata = MetaData()
 
@@ -138,8 +137,10 @@ class SQLiteChunkStore(ChunkStore):
             index=False,
         )
 
-    def _create_custom_id_table(self, integer_custom_ids):
-        custom_id_dtype = Integer if integer_custom_ids else String
+    def _create_custom_id_table(self):
+        custom_id_dtype = (
+            Integer if self.custom_id_type == CustomIDType.Integer else String
+        )
         self.custom_id_table = Table(
             "neural_db_custom_ids",
             self.metadata,
@@ -148,22 +149,17 @@ class SQLiteChunkStore(ChunkStore):
         )
         self.metadata.create_all(self.engine)
 
-    def _store_custom_ids(self, custom_ids, chunk_ids):
-        batch_integer_custom_ids = custom_ids.dtype == int
-        if self.custom_id_table is None:
-            self._create_custom_id_table(integer_custom_ids=batch_integer_custom_ids)
+    def _update_custom_ids(self, custom_ids, chunk_ids):
+        self._set_or_validate_custom_id_type(custom_ids)
 
-        table_integer_custom_ids = isinstance(
-            self.custom_id_table.columns.custom_id.type, Integer
-        )
+        if custom_ids is not None:
+            if self.custom_id_table is None:
+                self._create_custom_id_table()
 
-        if table_integer_custom_ids != batch_integer_custom_ids:
-            raise ValueError(
-                "Custom ids must all have the same type. Found some custom ids with type int, and some with type str."
+            custom_id_df = pd.DataFrame(
+                {"custom_id": custom_ids, "chunk_id": chunk_ids}
             )
-
-        custom_id_df = pd.DataFrame({"custom_id": custom_ids, "chunk_id": chunk_ids})
-        self._write_to_table(df=custom_id_df, table=self.custom_id_table)
+            self._write_to_table(df=custom_id_df, table=self.custom_id_table)
 
     def _add_metadata_column(self, column: Column):
         column_name = column.compile(dialect=self.engine.dialect)
@@ -217,8 +213,7 @@ class SQLiteChunkStore(ChunkStore):
             chunk_df = batch.to_df()
             chunk_df["chunk_id"] = chunk_ids
 
-            if batch.custom_id is not None:
-                self._store_custom_ids(custom_ids=batch.custom_id, chunk_ids=chunk_ids)
+            self._update_custom_ids(custom_ids=batch.custom_id, chunk_ids=chunk_ids)
 
             if batch.metadata is not None:
                 self._store_metadata(batch.metadata, chunk_ids=chunk_ids)
@@ -237,28 +232,32 @@ class SQLiteChunkStore(ChunkStore):
 
         return inserted_chunks_iterator
 
-    def delete(self, chunk_ids: List[ChunkId], **kwargs):
-        delete_chunks = delete(self.chunk_table).where(
-            self.chunk_table.c.chunk_id.in_(chunk_ids)
-        )
-        delete_metadata = delete(self.metadata_table).where(
-            self.metadata_table.c.chunk_id.in_(chunk_ids)
-        )
+    def delete(self, chunk_ids: List[ChunkId]):
         with self.engine.begin() as conn:
+            delete_chunks = delete(self.chunk_table).where(
+                self.chunk_table.c.chunk_id.in_(chunk_ids)
+            )
             conn.execute(delete_chunks)
-            conn.execute(delete_metadata)
+
+            if self.metadata_table is not None:
+                delete_metadata = delete(self.metadata_table).where(
+                    self.metadata_table.c.chunk_id.in_(chunk_ids)
+                )
+                conn.execute(delete_metadata)
+
+            if self.custom_id_table is not None:
+                delete_chunk_ids = delete(self.custom_id_table).where(
+                    self.custom_id_table.c.chunk_id.in_(chunk_ids)
+                )
+                conn.execute(delete_chunk_ids)
 
     def get_chunks(self, chunk_ids: List[ChunkId], **kwargs) -> List[Chunk]:
-
         id_to_chunk = {}
 
-        chunk_stmt = select(self.chunk_table).where(
-            self.chunk_table.c.chunk_id.in_(chunk_ids)
-        )
-        metadata_stmt = select(self.metadata_table).where(
-            self.metadata_table.c.chunk_id.in_(chunk_ids)
-        )
         with self.engine.connect() as conn:
+            chunk_stmt = select(self.chunk_table).where(
+                self.chunk_table.c.chunk_id.in_(chunk_ids)
+            )
             for row in conn.execute(chunk_stmt).all():
                 id_to_chunk[row.chunk_id] = Chunk(
                     custom_id=row.custom_id,
@@ -268,10 +267,15 @@ class SQLiteChunkStore(ChunkStore):
                     chunk_id=row.chunk_id,
                     metadata=None,
                 )
-            for row in conn.execute(metadata_stmt).all():
-                metadata = row._asdict()
-                del metadata["chunk_id"]
-                id_to_chunk[row.chunk_id].metadata = metadata
+
+            if self.metadata_table is not None:
+                metadata_stmt = select(self.metadata_table).where(
+                    self.metadata_table.c.chunk_id.in_(chunk_ids)
+                )
+                for row in conn.execute(metadata_stmt).all():
+                    metadata = row._asdict()
+                    del metadata["chunk_id"]
+                    id_to_chunk[row.chunk_id].metadata = metadata
 
         chunks = []
         for chunk_id in chunk_ids:
@@ -286,6 +290,9 @@ class SQLiteChunkStore(ChunkStore):
     ) -> Set[ChunkId]:
         if not len(constraints):
             raise ValueError("Cannot call filter_chunk_ids with empty constraints.")
+
+        if self.metadata_table is None:
+            raise ValueError("Cannot filter constraints with no metadata.")
 
         condition = reduce(
             operator.and_,
@@ -309,6 +316,9 @@ class SQLiteChunkStore(ChunkStore):
     ) -> Iterable[SupervisedBatch]:
         remapped_batches = []
 
+        if self.custom_id_table is None:
+            raise ValueError(f"Chunk Store does not contain custom ids.")
+
         for batch in samples:
             chunk_ids = []
             with self.engine.connect() as conn:
@@ -331,3 +341,26 @@ class SQLiteChunkStore(ChunkStore):
             )
 
         return remapped_batches
+
+    def save(self, path: str):
+        os.makedirs(path)
+        db_target_path = os.path.join(path, self.db_name)
+        shutil.copyfile(self.db_name, db_target_path)
+
+        contents = {k: v for k, v in self.__dict__.items() if k != "engine"}
+        pickle_path = os.path.join(path, "object.pkl")
+        pickle_to(contents, pickle_path)
+
+    @classmethod
+    def load(cls, path: str):
+        pickle_path = os.path.join(path, "object.pkl")
+        contents = unpickle_from(pickle_path)
+
+        obj = cls.__new__(cls)
+        obj.__dict__.update(contents)
+
+        db_name = os.path.basename(obj.db_name)
+        obj.db_name = os.path.join(path, db_name)
+        obj.engine = create_engine(f"sqlite:///{obj.db_name}")
+
+        return obj
