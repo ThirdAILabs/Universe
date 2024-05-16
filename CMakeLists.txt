@@ -416,6 +416,7 @@ set(THIRDAI_SOURCES
     data/src/rca/ExplanationMap.cc
     mach/src/MachRetriever.cc
     mach/src/MachConfig.cc
+    mach/src/EnsembleSearch.cc
     archive/src/Archive.cc
     archive/src/Map.cc
     archive/src/List.cc

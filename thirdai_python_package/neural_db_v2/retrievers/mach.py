@@ -76,6 +76,7 @@ class Mach(Retriever):
         output_act: str = "sigmoid",
         emb_bias: bool = True,
         output_bias: bool = True,
+        n_hashes: Optional[int] = None,
         index_seed: Optional[int] = None,
         **kwargs,
     ):
@@ -94,6 +95,8 @@ class Mach(Retriever):
         )
         if index_seed:
             config = config.index_seed(index_seed)
+        if n_hashes:
+            config = config.n_hashes(n_hashes)
 
         self.model = config.build()
 
