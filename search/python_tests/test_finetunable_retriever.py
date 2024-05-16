@@ -44,13 +44,13 @@ def test_finetunable_retriever(download_scifact_dataset):
 
     supervised_samples = load_supervised_data(trn_supervised)
 
-    updates_ids, update_texts = [], []
+    sup_ids, sup_texts = [], []
     for _, row in supervised_samples.iterrows():
         for doc_id in row["DOC_ID"]:
-            updates_ids.append([doc_id])
-            update_texts.append(row["QUERY"])
+            sup_ids.append([doc_id])
+            sup_texts.append(row["QUERY"])
 
-    index.finetune(updates_ids, update_texts)
+    index.finetune(sup_ids, sup_texts)
 
     supervised_acc = evaluate(index, query_df)
 
