@@ -176,6 +176,7 @@ ar::ConstArchivePtr NerBoltModel::toArchive() const {
   }
   ner_bolt_model->set("tag_to_label", ar::mapStrU64(tag_to_label));
 
+
   return ner_bolt_model;
 }
 
