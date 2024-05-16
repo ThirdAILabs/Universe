@@ -1,13 +1,10 @@
-from .mach import Mach
-from ..core.retriever import Retriever
-from typing import List, Tuple, Optional, Iterable
-from ..core.types import (
-    ChunkId,
-    Score,
-    ChunkBatch,
-    SupervisedBatch,
-)
+from typing import Iterable, List, Optional, Tuple
+
 from thirdai import bolt, data
+
+from ..core.retriever import Retriever
+from ..core.types import ChunkBatch, ChunkId, Score, SupervisedBatch
+from .mach import Mach
 
 
 class MachEnsemble(Retriever):
