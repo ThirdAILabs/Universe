@@ -150,6 +150,19 @@ TEST(InvertedIndexTests, DocRemoval) {
   checkQuery(index, {"a b c d e"}, {1, 3, 5});
 }
 
+TEST(InvertedIndexTests, TestUpdate) {
+  InvertedIndex index = indexWithShardSize(2);
+
+  index.index({1, 2, 3, 4}, {"a b c d 1 2", "5 6", "7 8", "f g h 3 4"});
+  ASSERT_EQ(index.nShards(), 2);
+
+  checkQuery(index, "a b c d e f g h", {1, 4});
+
+  index.update({2, 4}, {"a h", "e f"});
+
+  checkQuery(index, "a b c d e f g h", {4, 1, 2});
+}
+
 void compareResults(std::vector<DocScore> a, std::vector<DocScore> b) {
   // For some queries two docs may have the same score. For different numbers of
   // shards the docs may have a different ordering when the score is the
