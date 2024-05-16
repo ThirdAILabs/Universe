@@ -23,8 +23,8 @@ class NerUDTModel final : public NerBackend {
               std::vector<dataset::TextTokenizerPtr> target_word_tokenizers);
 
   NerUDTModel(std::shared_ptr<NerUDTModel>& pretrained_model,
-              std::unordered_map<std::string, uint32_t> tag_to_label,
-              std::string tokens_column, std::string tags_column);
+              std::string tokens_column, std::string tags_column,
+              std::unordered_map<std::string, uint32_t> tag_to_label);
 
   static bolt::ModelPtr initializeBoltModel(
       uint32_t input_dim, uint32_t emb_dim, uint32_t output_dim,
@@ -57,13 +57,17 @@ class NerUDTModel final : public NerBackend {
 
   static std::shared_ptr<NerUDTModel> load_stream(std::istream& input_stream);
 
-  bolt::ModelPtr getBoltModel() { return _bolt_model; }
+  bolt::ModelPtr getBoltModel() final { return _bolt_model; }
 
   std::vector<dataset::TextTokenizerPtr> getTargetWordTokenizers() {
     return _target_word_tokenizers;
   }
 
-  std::string getTokenColumn() const final { return _tokens_column; }
+  std::string getTokensColumn() const final { return _tokens_column; }
+
+  std::string getTagsColumn() const final { return _tags_column; }
+
+  bolt::ModelPtr get_model() { return _bolt_model; }
 
   NerUDTModel() = default;
   ~NerUDTModel() override = default;
