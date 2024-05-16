@@ -12,10 +12,17 @@ from .mach import Mach
 class MachEnsemble(Retriever):
     retrievers: List[Mach]
 
-    def __init__(self, n_models, **kwargs):
-        if "index_seed" in kwargs:
-            del kwargs["index_seed"]
-        self.retrievers = [Mach(**kwargs, index_seed=i) for i in range(n_models)]
+    def __init__(self, n_models=None, retrievers=None, **kwargs):
+        if not n_models and not retrievers:
+            raise ValueError(
+                "When constructing MachEnsemble either n_models or retrievers must be specified."
+            )
+        if retrievers:
+            self.retrievers = retrievers
+        else:
+            if "index_seed" in kwargs:
+                del kwargs["index_seed"]
+            self.retrievers = [Mach(**kwargs, index_seed=i) for i in range(n_models)]
 
     def search(
         self, queries: List[str], top_k: int, **kwargs
@@ -115,10 +122,7 @@ class MachEnsemble(Retriever):
         retrievers = []
         for file in sorted(os.listdir(path)):
             if match := re.match(r"mach_(\d+)", file):
-                assert match.group(1) == len(retrievers)
+                assert int(match.group(1)) == len(retrievers)
                 retrievers.append(Mach.load(os.path.join(path, file)))
 
-        instance = cls()
-        instance.retrievers = retrievers
-
-        return instance
+        return MachEnsemble(retrievers=retrievers)

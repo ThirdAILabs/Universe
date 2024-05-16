@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import pandas as pd
 import pytest
@@ -95,13 +96,16 @@ def check_mach_supervised_train(retriever, load_chunks):
 
     model_path = "ndb_mach_retriever_for_test"
     retriever.save(model_path)
-    retriever = Mach.load(model_path)
+    retriever = type(retriever).load(model_path)
 
     after_load_accuracy = compute_accuracy(retriever, queries, load_chunks["id"])
 
     assert after_sup_accuracy == after_load_accuracy
 
-    os.remove(model_path)
+    if os.path.isdir(model_path):
+        shutil.rmtree(model_path)
+    else:
+        os.remove(model_path)
 
 
 def test_ndb_mach_retriever_supervised_train(build_mach_retriever, load_chunks):
