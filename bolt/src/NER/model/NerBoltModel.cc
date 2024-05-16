@@ -30,9 +30,12 @@
 
 namespace thirdai::bolt {
 NerBoltModel::NerBoltModel(
-    bolt::ModelPtr model,
+    bolt::ModelPtr model, std::string tokens_column, std::string tags_column,
     std::unordered_map<std::string, uint32_t> tag_to_label)
-    : _bolt_model(std::move(model)), _tag_to_label(std::move(tag_to_label)) {
+    : _bolt_model(std::move(model)),
+      _tag_to_label(std::move(tag_to_label)),
+      _source_column(std::move(tokens_column)),
+      _target_column(std::move(tags_column)) {
   _train_transforms = getTransformations(true);
   _inference_transforms = getTransformations(false);
   _bolt_inputs = {data::OutputColumns("tokens"),
@@ -40,12 +43,12 @@ NerBoltModel::NerBoltModel(
                   data::OutputColumns("token_behind")};
 }
 NerBoltModel::NerBoltModel(
-    std::shared_ptr<NerBoltModel>& pretrained_model,
-    std::unordered_map<std::string, uint32_t> tag_to_label,
-    std::string token_column, std::string tag_column)
+    std::shared_ptr<NerBoltModel>& pretrained_model, std::string tokens_column,
+    std::string tags_column,
+    std::unordered_map<std::string, uint32_t> tag_to_label)
     : _tag_to_label(tag_to_label),
-      _source_column(std::move(token_column)),
-      _target_column(std::move(tag_column)) {
+      _source_column(std::move(tokens_column)),
+      _target_column(std::move(tags_column)) {
   auto maxPair = std::max_element(
       tag_to_label.begin(), tag_to_label.end(),
       [](const auto& a, const auto& b) { return a.second < b.second; });
@@ -152,7 +155,7 @@ metrics::History NerBoltModel::train(
   auto train_dataset =
       getDataLoader(train_data, batch_size, /* shuffle= */ true).all();
 
-  bolt::LabeledDataset val_dataset;
+  std::optional<bolt::LabeledDataset> val_dataset = std::nullopt;
   if (val_data) {
     val_dataset =
         getDataLoader(val_data, batch_size, /* shuffle= */ false).all();
@@ -193,6 +196,9 @@ ar::ConstArchivePtr NerBoltModel::toArchive() const {
   }
   ner_bolt_model->set("tag_to_label", ar::mapStrU64(tag_to_label));
 
+  ner_bolt_model->set("source_column", ar::str(_source_column));
+  ner_bolt_model->set("target_column", ar::str(_target_column));
+
   return ner_bolt_model;
 }
 
@@ -204,7 +210,13 @@ std::shared_ptr<NerBoltModel> NerBoltModel::fromArchive(
   for (const auto& [k, v] : archive.getAs<ar::MapStrU64>("tag_to_label")) {
     tag_to_label[k] = v;
   }
-  return std::make_shared<NerBoltModel>(NerBoltModel(bolt_model, tag_to_label));
+
+  std::string source_column = archive.getAs<std::string>("source_column");
+  std::string target_column = archive.getAs<std::string>("target_column");
+
+  return std::make_shared<NerBoltModel>(NerBoltModel(
+      bolt_model, /*tokens_column=*/source_column,
+      /*tags_column=*/target_column, /*tag_to_label=*/tag_to_label));
 }
 
 void NerBoltModel::save(const std::string& filename) const {
