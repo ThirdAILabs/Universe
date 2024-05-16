@@ -17,7 +17,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
         (SQLiteChunkStore, FinetunableRetriever),
         (PandasChunkStore, FinetunableRetriever),
         (PandasChunkStore, Mach),
-        (PandasChunkStore, MachEnsemble),
+        (PandasChunkStore, lambda: MachEnsemble(n_models=2, n_buckets=10_000)),
     ],
 )
 def test_neural_db_v2_save_load_integration(chunk_store, retriever):
@@ -53,7 +53,7 @@ def test_neural_db_v2_save_load_integration(chunk_store, retriever):
     [
         (SQLiteChunkStore, FinetunableRetriever),
         (PandasChunkStore, Mach),
-        (PandasChunkStore, MachEnsemble),
+        (PandasChunkStore, lambda: MachEnsemble(n_models=2, n_buckets=10_000)),
     ],
 )
 def test_neural_db_v2_supervised_training(chunk_store, retriever, load_chunks):

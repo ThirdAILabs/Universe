@@ -4,6 +4,7 @@
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ValueColumns.h>
 #include <mach/src/MachRetriever.h>
+#include <exception>
 #include <stdexcept>
 #include <string>
 #include <unordered_set>
@@ -13,7 +14,7 @@ namespace thirdai::mach {
 bolt::TensorList EnsembleSearch::scoreBuckets(
     const std::vector<MachRetrieverPtr>& retrievers,
     std::vector<std::string> queries) {
-  data::ColumnMap columns(
+  const data::ColumnMap columns(
       {{retrievers[0]->_text_column,
         data::ValueColumn<std::string>::make(std::move(queries))}});
 
@@ -47,7 +48,7 @@ std::unordered_set<uint32_t> EnsembleSearch::aggregateCandidates(
     const auto& index = retrievers[ret]->index();
 
     while (!top_buckets.empty()) {
-      for (uint32_t id : index->getEntities(top_buckets.top().second)) {
+      for (const uint32_t id : index->getEntities(top_buckets.top().second)) {
         candidates[ret].insert(id);
       }
       top_buckets.pop();
@@ -68,20 +69,31 @@ void scoreCandidates(const std::vector<MachRetrieverPtr>& retrievers,
                      size_t index_in_batch) {
   std::vector<IdScores> retriever_scores(retrievers.size());
 
-#pragma omp parallel for default(none)                       \
-    shared(retrievers, candidates, retriever_scores, scores, \
-           index_in_batch) if (scores[0]->batchSize() == 1)
+  std::exception_ptr error;
+
+#pragma omp parallel for default(none)                                       \
+    shared(retrievers, candidates, retriever_scores, scores, index_in_batch, \
+           error) if (scores[0]->batchSize() == 1)
   for (size_t ret = 0; ret < retrievers.size(); ret++) {
-    retriever_scores[ret] = candidates;
+    try {
+      retriever_scores[ret] = candidates;
 
-    const auto& index = retrievers[ret]->index();
-    const BoltVector& vec = scores[ret]->getVector(index_in_batch);
+      const auto& index = retrievers[ret]->index();
+      const BoltVector& vec = scores[ret]->getVector(index_in_batch);
 
-    for (auto& [id, score] : retriever_scores[ret]) {
-      for (uint32_t hash : index->getHashes(id)) {
-        score += vec.activations[hash];
+      for (auto& [id, score] : retriever_scores[ret]) {
+        for (const uint32_t hash : index->getHashes(id)) {
+          score += vec.activations[hash];
+        }
       }
+    } catch (...) {
+#pragma omp critical
+      error = std::current_exception();
     }
+  }
+
+  if (error) {
+    std::rethrow_exception(error);
   }
 
   for (const auto& ret_scores : retriever_scores) {
@@ -105,25 +117,37 @@ std::vector<IdScores> EnsembleSearch::searchEnsemble(
 
   std::vector<IdScores> output(queries.size());
 
-#pragma omp parallel for default(none) \
-    shared(retrievers, queries, topk, scores, output) if (queries.size() > 1)
+  std::exception_ptr error;
+
+#pragma omp parallel for default(none) shared( \
+    retrievers, queries, topk, scores, output, error) if (queries.size() > 1)
   for (size_t i = 0; i < queries.size(); i++) {
-    auto candidates = aggregateCandidates(retrievers, scores, i);
+    try {
+      auto candidates = aggregateCandidates(retrievers, scores, i);
 
-    IdScores candidate_scores;
-    candidate_scores.reserve(candidates.size());
-    for (uint32_t candidate : candidates) {
-      candidate_scores.emplace_back(candidate, 0);
+      IdScores candidate_scores;
+      candidate_scores.reserve(candidates.size());
+      for (const uint32_t candidate : candidates) {
+        candidate_scores.emplace_back(candidate, 0);
+      }
+
+      scoreCandidates(retrievers, candidate_scores, scores, i);
+
+      std::sort(candidate_scores.begin(), candidate_scores.end(), BestScore{});
+      if (candidate_scores.size() > topk) {
+        candidate_scores.resize(topk);
+      }
+
+      output[i] = std::move(candidate_scores);
+
+    } catch (...) {
+#pragma omp critical
+      error = std::current_exception();
     }
+  }
 
-    scoreCandidates(retrievers, candidate_scores, scores, i);
-
-    std::sort(candidate_scores.begin(), candidate_scores.end(), BestScore{});
-    if (candidate_scores.size() > topk) {
-      candidate_scores.resize(topk);
-    }
-
-    output[i] = std::move(candidate_scores);
+  if (error) {
+    std::rethrow_exception(error);
   }
 
   return output;
@@ -142,24 +166,35 @@ std::vector<IdScores> EnsembleSearch::rankEnsemble(
 
   std::vector<IdScores> output(queries.size());
 
-#pragma omp parallel for default(none)                    \
-    shared(retrievers, queries, candidates, topk, scores, \
-           output) if (queries.size() > 1)
+  std::exception_ptr error;
+
+#pragma omp parallel for default(none)                            \
+    shared(retrievers, queries, candidates, topk, scores, output, \
+           error) if (queries.size() > 1)
   for (size_t i = 0; i < queries.size(); i++) {
-    IdScores candidate_scores;
-    candidate_scores.reserve(candidates[i].size());
-    for (uint32_t candidate : candidates[i]) {
-      candidate_scores.emplace_back(candidate, 0);
+    try {
+      IdScores candidate_scores;
+      candidate_scores.reserve(candidates[i].size());
+      for (const uint32_t candidate : candidates[i]) {
+        candidate_scores.emplace_back(candidate, 0);
+      }
+
+      scoreCandidates(retrievers, candidate_scores, scores, i);
+
+      std::sort(candidate_scores.begin(), candidate_scores.end(), BestScore{});
+      if (candidate_scores.size() > topk) {
+        candidate_scores.resize(topk);
+      }
+
+      output[i] = std::move(candidate_scores);
+    } catch (...) {
+#pragma omp critical
+      error = std::current_exception();
     }
+  }
 
-    scoreCandidates(retrievers, candidate_scores, scores, i);
-
-    std::sort(candidate_scores.begin(), candidate_scores.end(), BestScore{});
-    if (candidate_scores.size() > topk) {
-      candidate_scores.resize(topk);
-    }
-
-    output[i] = std::move(candidate_scores);
+  if (error) {
+    std::rethrow_exception(error);
   }
 
   return output;
