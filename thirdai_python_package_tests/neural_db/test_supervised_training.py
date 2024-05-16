@@ -48,6 +48,7 @@ def train_model_for_supervised_training_test(
         num_shards=num_shards,
         num_models_per_shard=num_models_per_shard,
         fhr=20_000,
+        retriever="hybrid",
     )
 
     with open("mock_unsup_1.csv", "w") as out:

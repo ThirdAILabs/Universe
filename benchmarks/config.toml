@@ -1,6 +1,0 @@
-# This is a TOML document.
-
-title = "Logging config information."
-
-[tracking]
-uri = "http://ec2-184-73-150-35.compute-1.amazonaws.com"

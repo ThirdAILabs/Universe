@@ -1,7 +1,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <search/src/InvertedIndex.h>
+#include <search/src/inverted_index/InvertedIndex.h>
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <random>

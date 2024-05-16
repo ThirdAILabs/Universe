@@ -7,6 +7,7 @@ modify_udt()
 modify_graph_udt()
 modify_mach_udt()
 
+
 try:
     # This is to prevent errors if torch or scipy are not installed.
     # They are used in the seismic model but not the main thirdai package.

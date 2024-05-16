@@ -5,7 +5,7 @@ from thirdai import neural_db
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 
-def test_neural_db_associate(create_simple_dataset):
+def test_neural_db_retrain(create_simple_dataset):
     filename = create_simple_dataset
     ndb = neural_db.NeuralDB("")
 

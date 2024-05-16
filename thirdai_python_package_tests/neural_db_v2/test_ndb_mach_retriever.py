@@ -1,9 +1,10 @@
+import os
+
 import pandas as pd
 import pytest
-from ndbv2_utils import load_chunks
+from ndbv2_utils import compute_accuracy, load_chunks
 from thirdai.neural_db_v2.core.types import ChunkBatch, SupervisedBatch
-from thirdai.neural_db_v2.retrievers.mach import Mach
-from thirdai.neural_db_v2.retrievers.mach_ensemble import MachEnsemble
+from thirdai.neural_db_v2.retrievers import Mach, MachEnsemble
 
 pytestmark = [pytest.mark.release]
 
@@ -77,28 +78,30 @@ def test_ndb_mach_ensemble_search(build_mach_ensemble, load_chunks):
     check_mach_search(retriever=build_mach_ensemble, load_chunks=load_chunks)
 
 
-def get_accuracy(retriever, queries, ids):
-    accuracy = 0
-    for query, id in zip(queries, ids):
-        results = retriever.search([query], top_k=1)
-        if results[0][0][0] == id:
-            accuracy += 1
-
-    return accuracy / len(queries)
-
-
 def check_mach_supervised_train(retriever, load_chunks):
-    queries = [str(chunk_id) for chunk_id in load_chunks["id"]]
+    queries = pd.Series([str(chunk_id) for chunk_id in load_chunks["id"]])
 
-    supervised_batch = SupervisedBatch(query=queries, chunk_id=load_chunks["id"])
+    supervised_batch = SupervisedBatch(
+        query=queries, chunk_id=load_chunks["id"].map(lambda id: [id])
+    )
 
-    before_accuracy = get_accuracy(retriever, queries, load_chunks["id"])
-    assert before_accuracy < 0.5
+    before_sup_accuracy = compute_accuracy(retriever, queries, load_chunks["id"])
+    assert before_sup_accuracy < 0.5
 
     retriever.supervised_train([supervised_batch], epochs=15, learning_rate=0.1)
 
-    after_accuracy = get_accuracy(retriever, queries, load_chunks["id"])
-    assert after_accuracy > 0.9
+    after_sup_accuracy = compute_accuracy(retriever, queries, load_chunks["id"])
+    assert after_sup_accuracy > 0.9
+
+    model_path = "ndb_mach_retriever_for_test"
+    retriever.save(model_path)
+    retriever = Mach.load(model_path)
+
+    after_load_accuracy = compute_accuracy(retriever, queries, load_chunks["id"])
+
+    assert after_sup_accuracy == after_load_accuracy
+
+    os.remove(model_path)
 
 
 def test_ndb_mach_retriever_supervised_train(build_mach_retriever, load_chunks):

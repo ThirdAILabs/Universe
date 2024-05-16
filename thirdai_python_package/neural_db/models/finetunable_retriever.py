@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Callable, List, Tuple
+from typing import Callable, List, Optional, Tuple
 
 from thirdai import search
 
@@ -9,13 +9,13 @@ from .models import InferSamples, Model, Predictions, add_retriever_tag
 
 
 class FinetunableRetriever(Model):
-    def __init__(self):
-        self.retriever = search.FinetunableRetriever()
+    def __init__(self, retriever: Optional[search.FinetunableRetriever] = None):
+        self.retriever = retriever or search.FinetunableRetriever()
 
     def index_from_start(
         self,
         intro_documents: DocumentDataSource,
-        on_progress: Callable = lambda **kwargs: None,
+        on_progress: Callable = lambda *args, **kwargs: None,
         batch_size=100000,
         **kwargs
     ):
@@ -100,3 +100,6 @@ class FinetunableRetriever(Model):
 
     def get_model(self):
         return None
+
+    def retrain(self, **kwargs):
+        pass

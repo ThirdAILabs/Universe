@@ -9,7 +9,7 @@ class Retriever(ABC):
     def search(
         self, queries: List[str], top_k: int, **kwargs
     ) -> List[List[Tuple[ChunkId, Score]]]:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def rank(
@@ -24,24 +24,33 @@ class Retriever(ABC):
         choices in memory. This function signature preempts the need to reshape
         these existing data structures.
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def upvote(self, queries: List[str], chunk_ids: List[ChunkId], **kwargs):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def associate(self, sources: List[str], targets: List[str], **kwargs):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def insert(self, chunks: Iterable[ChunkBatch], **kwargs):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def supervised_train(self, samples: Iterable[SupervisedBatch], **kwargs):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def delete(self, chunk_ids: List[ChunkId], **kwargs):
-        pass
+        raise NotImplementedError
+
+    @abstractmethod
+    def save(self, path: str):
+        raise NotImplementedError
+
+    @classmethod
+    @abstractmethod
+    def load(path: str):
+        raise NotImplementedError
