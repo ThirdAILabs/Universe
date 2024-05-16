@@ -1,3 +1,4 @@
+#pragma once
 
 #include <bolt/src/NER/model/utils.h>
 #include <bolt/src/nn/model/Model.h>
