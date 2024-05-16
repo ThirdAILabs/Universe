@@ -125,7 +125,7 @@ jobs:
           CIBW_BEFORE_BUILD_WINDOWS: python -m pip install delvewheel
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: 'delvewheel repair -w {dest_dir} {wheel}'
           CIBW_TEST_EXTRAS: "test"
-          CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
+          CIBW_TEST_COMMAND: python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0"; pytest {package} --ignore-glob={package}/deps -m release
           CIBW_TEST_COMMAND_WINDOWS: rem
 
           # Skip tests on windows
@@ -135,7 +135,7 @@ jobs:
           # Build both x86_64 and arm64 (apple silicon)
           CIBW_ARCHS_MACOS: ${{ matrix.archs }}
 
-          CIBW_ARCHS_LINUX: "x86_64 aarch64"
+          CIBW_ARCHS_LINUX: "auto aarch64"
 
           # Skip building on CPython <3.8 on the Mac
           # 3.11 (brought about by cibuildwheel upgrade to 2.9.0) is skipped as
