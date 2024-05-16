@@ -112,11 +112,6 @@ TEST(InvertedIndexTests, RepeatedTokensInQuery) {
   // All of the tokens in the query occur in 2 docs. Doc 4 has tokens "a" and
   // "q" from the query, doc 2 has tokens "a m" from the query. Doc 4 scores
   // higher because token "q" occurs more in the query than token "m".
-
-  for (auto res : index.query({"q a q m"}, 3)) {
-    std::cerr << res.first << " & " << res.second << std::endl;
-  }
-
   checkQuery(index, {"q a q m"}, {4, 2});
 }
 
@@ -225,6 +220,31 @@ TEST(InvertedIndexTests, SyntheticDataset) {
   ASSERT_EQ(results.size(), incremental_results.size());
   for (size_t i = 0; i < results.size(); i++) {
     compareResults(results[i], incremental_results[i]);
+  }
+}
+
+TEST(InvertedIndexTests, ShardedVsUnsharded) {
+  size_t vocab_size = 1000;
+  size_t n_docs = 100;
+  size_t topk = 10;
+
+  auto [ids, docs, queries] = makeDocsAndQueries(vocab_size, n_docs);
+
+  InvertedIndex unsharded_index;
+  unsharded_index.index(ids, docs);
+  ASSERT_EQ(unsharded_index.nShards(), 1);
+
+  auto unsharded_results = unsharded_index.queryBatch(queries, /*k=*/topk);
+
+  InvertedIndex sharded_index = indexWithShardSize(24);
+  sharded_index.index(ids, docs);
+  ASSERT_GT(sharded_index.nShards(), 1);
+
+  auto sharded_results = sharded_index.queryBatch(queries, /*k=*/topk);
+
+  ASSERT_EQ(unsharded_results.size(), sharded_results.size());
+  for (size_t i = 0; i < unsharded_results.size(); i++) {
+    compareResults(unsharded_results[i], sharded_results[i]);
   }
 }
 
