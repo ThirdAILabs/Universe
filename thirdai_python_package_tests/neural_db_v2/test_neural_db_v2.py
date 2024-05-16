@@ -6,7 +6,7 @@ import pytest
 from ndbv2_utils import CSV_FILE, PDF_FILE, clean_up_sql_lite_db, load_chunks
 from thirdai import neural_db_v2 as ndb
 from thirdai.neural_db_v2.chunk_stores import PandasChunkStore, SQLiteChunkStore
-from thirdai.neural_db_v2.retrievers import FinetunableRetriever, Mach
+from thirdai.neural_db_v2.retrievers import FinetunableRetriever, Mach, MachEnsemble
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -17,6 +17,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
         (SQLiteChunkStore, FinetunableRetriever),
         (PandasChunkStore, FinetunableRetriever),
         (PandasChunkStore, Mach),
+        (PandasChunkStore, MachEnsemble),
     ],
 )
 def test_neural_db_v2_save_load_integration(chunk_store, retriever):
@@ -52,6 +53,7 @@ def test_neural_db_v2_save_load_integration(chunk_store, retriever):
     [
         (SQLiteChunkStore, FinetunableRetriever),
         (PandasChunkStore, Mach),
+        (PandasChunkStore, MachEnsemble),
     ],
 )
 def test_neural_db_v2_supervised_training(chunk_store, retriever, load_chunks):
