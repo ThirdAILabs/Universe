@@ -1,3 +1,5 @@
+import os
+import re
 from typing import Iterable, List, Optional, Tuple
 
 from thirdai import bolt, data
@@ -102,3 +104,21 @@ class MachEnsemble(Retriever):
     def delete(self, chunk_ids: List[ChunkId], **kwargs):
         for retriever in self.retrievers:
             retriever.delete(chunk_ids=chunk_ids)
+
+    def save(self, path: str):
+        os.makedirs(path, exist_ok=True)
+        for i, retriever in enumerate(self.retrievers):
+            retriever.save(os.path.join(path, f"mach_{i}"))
+
+    @classmethod
+    def load(cls, path: str):
+        retrievers = []
+        for file in sorted(os.listdir(path)):
+            if match := re.match(r"mach_(\d+)", file):
+                assert match.group(1) == len(retrievers)
+                retrievers.append(Mach.load(os.path.join(path, file)))
+
+        instance = cls()
+        instance.retrievers = retrievers
+
+        return instance
