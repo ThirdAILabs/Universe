@@ -22,7 +22,7 @@ bolt::TensorList EnsembleSearch::scoreBuckets(
 #pragma omp parallel for default(none) \
     shared(retrievers, columns, scores) if (queries.size() == 1)
   for (size_t i = 0; i < retrievers.size(); i++) {
-    auto tensors = retrievers[0]->inputTensors(
+    auto tensors = retrievers[i]->inputTensors(
         retrievers[i]->_text_transform->apply(columns, *retrievers[i]->_state));
 
     scores[i] = retrievers[i]->_model->forward(tensors, false).at(0);
@@ -36,6 +36,9 @@ std::unordered_set<uint32_t> EnsembleSearch::aggregateCandidates(
     const bolt::TensorList& scores, size_t index_in_batch) {
   std::vector<std::unordered_set<uint32_t>> candidates(scores.size());
 
+#pragma omp parallel for default(none)                 \
+    shared(retrievers, candidates, candidates, scores, \
+           index_in_batch) if (scores[0]->batchSize() == 1)
   for (size_t ret = 0; ret < scores.size(); ret++) {
     auto top_buckets = scores[ret]
                            ->getVector(index_in_batch)
@@ -65,6 +68,9 @@ void scoreCandidates(const std::vector<MachRetrieverPtr>& retrievers,
                      size_t index_in_batch) {
   std::vector<IdScores> retriever_scores(retrievers.size());
 
+#pragma omp parallel for default(none)                       \
+    shared(retrievers, candidates, retriever_scores, scores, \
+           index_in_batch) if (scores[0]->batchSize() == 1)
   for (size_t ret = 0; ret < retrievers.size(); ret++) {
     retriever_scores[ret] = candidates;
 
@@ -99,6 +105,8 @@ std::vector<IdScores> EnsembleSearch::searchEnsemble(
 
   std::vector<IdScores> output(queries.size());
 
+#pragma omp parallel for default(none) \
+    shared(retrievers, queries, topk, scores, output) if (queries.size() > 1)
   for (size_t i = 0; i < queries.size(); i++) {
     auto candidates = aggregateCandidates(retrievers, scores, i);
 
@@ -134,6 +142,9 @@ std::vector<IdScores> EnsembleSearch::rankEnsemble(
 
   std::vector<IdScores> output(queries.size());
 
+#pragma omp parallel for default(none)                    \
+    shared(retrievers, queries, candidates, topk, scores, \
+           output) if (queries.size() > 1)
   for (size_t i = 0; i < queries.size(); i++) {
     IdScores candidate_scores;
     candidate_scores.reserve(candidates[i].size());
