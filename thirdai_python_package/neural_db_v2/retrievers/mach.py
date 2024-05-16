@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 from thirdai import bolt, data
 
@@ -76,6 +76,7 @@ class Mach(Retriever):
         output_act: str = "sigmoid",
         emb_bias: bool = True,
         output_bias: bool = True,
+        index_seed: Optional[int] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -91,6 +92,8 @@ class Mach(Retriever):
             .emb_bias(emb_bias)
             .output_bias(output_bias)
         )
+        if index_seed:
+            config = config.index_seed(index_seed)
 
         self.model = config.build()
 
@@ -106,7 +109,7 @@ class Mach(Retriever):
     def rank(
         self,
         queries: List[str],
-        choices: List[List[ChunkId]],
+        choices: List[Set[ChunkId]],
         top_k: int,
         sparse_inference: bool = False,
         **kwargs,

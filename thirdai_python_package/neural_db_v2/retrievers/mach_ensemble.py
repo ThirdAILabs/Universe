@@ -14,13 +14,18 @@ class MachEnsemble(Retriever):
     retrievers: List[Mach]
 
     def __init__(self, n_models, **kwargs):
-        # TODO(nicholas) seeds?
-        self.retrivers = [Mach(**kwargs) for _ in range(n_models)]
+        if "index_seed" in kwargs:
+            del kwargs["index_seed"]
+        self.retrivers = [Mach(**kwargs, index_seed=i) for i in range(n_models)]
 
     def search(
-        self, queries: List[str], top_k: int, sparse_inference: bool = False, **kwargs
+        self, queries: List[str], top_k: int, **kwargs
     ) -> List[List[Tuple[ChunkId, Score]]]:
-        pass
+        return bolt.Mach.ensemble_search(
+            retrievers=[retriever.model for retriever in self.retrievers],
+            queries=queries,
+            top_k=top_k,
+        )
 
     def rank(
         self,
@@ -30,7 +35,12 @@ class MachEnsemble(Retriever):
         sparse_inference: bool = False,
         **kwargs,
     ) -> List[List[Tuple[ChunkId, Score]]]:
-        pass
+        return bolt.Mach.ensemble_rank(
+            retrievers=[retriever.model for retriever in self.retrievers],
+            queries=queries,
+            candidates=choices,
+            top_k=top_k,
+        )
 
     def upvote(self, queries: List[str], chunk_ids: List[ChunkId], **kwargs):
         for retriever in self.retrievers:

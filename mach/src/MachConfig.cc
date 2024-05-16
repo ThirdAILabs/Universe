@@ -15,7 +15,10 @@ std::shared_ptr<MachRetriever> MachConfig::build() const {
 
 data::StatePtr MachConfig::state() const {
   return data::State::make(
-      dataset::mach::MachIndex::make(_n_buckets, _n_hashes),
+      dataset::mach::MachIndex::make(/*num_buckets=*/_n_buckets,
+                                     /*num_hashes=*/_n_hashes,
+                                     /*num_elements=*/0,
+                                     /*seed=*/_index_seed),
       data::MachMemory::make(input_indices_column, input_values_column,
                              getIdCol(), bucket_column, _max_memory_ids,
                              _max_memory_samples_per_id));

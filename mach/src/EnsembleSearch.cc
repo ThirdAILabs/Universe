@@ -4,6 +4,7 @@
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/ValueColumns.h>
 #include <mach/src/MachRetriever.h>
+#include <stdexcept>
 #include <string>
 #include <unordered_set>
 
@@ -104,6 +105,39 @@ std::vector<IdScores> EnsembleSearch::searchEnsemble(
     IdScores candidate_scores;
     candidate_scores.reserve(candidates.size());
     for (uint32_t candidate : candidates) {
+      candidate_scores.emplace_back(candidate, 0);
+    }
+
+    scoreCandidates(retrievers, candidate_scores, scores, i);
+
+    std::sort(candidate_scores.begin(), candidate_scores.end(), BestScore{});
+    if (candidate_scores.size() > topk) {
+      candidate_scores.resize(topk);
+    }
+
+    output[i] = std::move(candidate_scores);
+  }
+
+  return output;
+}
+
+std::vector<IdScores> EnsembleSearch::rankEnsemble(
+    const std::vector<MachRetrieverPtr>& retrievers,
+    const std::vector<std::string>& queries,
+    const std::vector<std::unordered_set<uint32_t>>& candidates,
+    uint32_t topk) {
+  if (queries.size() != candidates.size()) {
+    throw std::invalid_argument(
+        "Number of candidate sets and queries must match.");
+  }
+  auto scores = scoreBuckets(retrievers, queries);
+
+  std::vector<IdScores> output(queries.size());
+
+  for (size_t i = 0; i < queries.size(); i++) {
+    IdScores candidate_scores;
+    candidate_scores.reserve(candidates[i].size());
+    for (uint32_t candidate : candidates[i]) {
       candidate_scores.emplace_back(candidate, 0);
     }
 

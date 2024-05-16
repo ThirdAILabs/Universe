@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Iterable, List, Tuple
+from typing import Iterable, List, Set, Tuple
 
 from .types import ChunkBatch, ChunkId, Score, SupervisedBatch
 
@@ -13,7 +13,7 @@ class Retriever(ABC):
 
     @abstractmethod
     def rank(
-        self, queries: List[str], choices: List[List[ChunkId]], **kwargs
+        self, queries: List[str], choices: List[Set[ChunkId]], **kwargs
     ) -> List[List[Tuple[ChunkId, Score]]]:
         """For constrained search.
         Note on method signature:
