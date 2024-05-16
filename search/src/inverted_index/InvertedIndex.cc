@@ -289,6 +289,9 @@ std::vector<DocScore> InvertedIndex::query(const std::string& query, uint32_t k,
 #pragma omp parallel for default(none) \
     shared(tokens_and_idfs, shard_candidates, k) if (parallelize)
   for (size_t i = 0; i < _shards.size(); i++) {
+    // Because _max_docs_to_score is applied per shard, results can be slightly
+    // different for the same dataset depending on the number of shards if the
+    // size of the index is > _max_docs_to_score.
     auto top_docs = scoreDocuments(_shards[i], tokens_and_idfs);
     shard_candidates[i] = topk(top_docs, k);
   }
