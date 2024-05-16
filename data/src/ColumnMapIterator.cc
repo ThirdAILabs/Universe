@@ -4,14 +4,12 @@
 #include <data/src/columns/ValueColumns.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/utils/CsvParser.h>
-#include <nlohmann/json.hpp>
 #include <exception>
 #include <limits>
 #include <stdexcept>
 
 namespace thirdai::data {
 
-using json = nlohmann::json;
 
 ColumnMap makeColumnMap(std::vector<std::vector<std::string>>&& columns,
                         const std::vector<std::string>& column_names) {
@@ -109,26 +107,17 @@ JsonIterator::JsonIterator(DataSourcePtr data_source,
       _rows_per_load(rows_per_load),
       _column_names(std::move(column_names)) {}
 
-void JsonIterator::validateJsonRow(const std::string& row,
+void JsonIterator::validateJsonRow(const json &row,
                                    const std::string& column_name) {
-  try {
-    auto first_row = json::parse(row);
-
-    if (!first_row.is_object()) {
+    if (!row.is_object()) {
       throw std::invalid_argument(
-          "Expected row to be a JSON object but received '" + row + "'.");
+          "Expected row to be a JSON object");
     }
 
-    if (!first_row.contains(column_name)) {
+    if (!row.contains(column_name)) {
       throw std::invalid_argument("Expected row to contain key '" +
                                   column_name + "'.");
     }
-    std::cout << "Row is valid and contains the key '" << column_name << "'."
-              << std::endl;
-  } catch (const json::parse_error& e) {
-    throw std::invalid_argument("Failed to parse row: " +
-                                std::string(e.what()));
-  }
 }
 
 template <typename T>
@@ -141,7 +130,7 @@ void JsonIterator::extractColumnData(const std::vector<std::string>& rows,
   for (size_t row_idx = 0; row_idx < rows.size(); row_idx++) {
     try {
       auto row = json::parse(rows.at(row_idx));
-      validateJsonRow(rows[row_idx], column_name);
+      validateJsonRow(row, column_name);
       auto& cell = row.at(column_name);
       vec[row_idx] = cell.get<T>();
     } catch (const std::exception& e) {
