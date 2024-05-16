@@ -82,27 +82,25 @@ void createSearchSubmodule(py::module_& module) {
 
   py::class_<InvertedIndex, std::shared_ptr<InvertedIndex>>(search_submodule,
                                                             "InvertedIndex")
-      .def(py::init<size_t, float, float, float, TokenizerPtr>(),
+      .def(py::init<size_t, float, float, float, TokenizerPtr, size_t>(),
            py::arg("max_docs_to_score") =
                InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE,
            py::arg("idf_cutoff_frac") = InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC,
            py::arg("k1") = InvertedIndex::DEFAULT_K1,
            py::arg("b") = InvertedIndex::DEFAULT_B,
-           py::arg("tokenizer") = std::make_shared<DefaultTokenizer>())
+           py::arg("tokenizer") = std::make_shared<DefaultTokenizer>(),
+           py::arg("shard_size") = InvertedIndex::DEFAULT_SHARD_SIZE)
       .def("index", &InvertedIndex::index, py::arg("ids"), py::arg("docs"))
-      .def("update", &InvertedIndex::update, py::arg("ids"),
-           py::arg("extra_tokens"), py::arg("ignore_missing_ids") = true)
       .def("query", &InvertedIndex::queryBatch, py::arg("queries"),
            py::arg("k"))
-      .def("query", &InvertedIndex::query, py::arg("query"), py::arg("k"))
+      .def("query", &InvertedIndex::query, py::arg("query"), py::arg("k"),
+           py::arg("parallelize") = true)
       .def("rank", &InvertedIndex::rankBatch, py::arg("queries"),
            py::arg("candidates"), py::arg("k"))
       .def("rank", &InvertedIndex::rank, py::arg("query"),
-           py::arg("candidates"), py::arg("k"))
+           py::arg("candidates"), py::arg("k"), py::arg("parallelize") = true)
       .def("remove", &InvertedIndex::remove, py::arg("ids"))
       .def("size", &InvertedIndex::size)
-      .def_static("parallel_query", &InvertedIndex::parallelQuery,
-                  py::arg("indices"), py::arg("query"), py::arg("k"))
       .def("save", &InvertedIndex::save, py::arg("filename"))
       .def_static("load", &InvertedIndex::load, py::arg("filename"))
       .def(py::pickle(
@@ -135,10 +133,11 @@ void createSearchSubmodule(py::module_& module) {
 
   py::class_<FinetunableRetriever, std::shared_ptr<FinetunableRetriever>>(
       search_submodule, "FinetunableRetriever")
-      .def(py::init<float, uint32_t, uint32_t>(),
+      .def(py::init<float, uint32_t, uint32_t, size_t>(),
            py::arg("lambda") = FinetunableRetriever::DEFAULT_LAMBDA,
            py::arg("min_top_docs") = FinetunableRetriever::DEFAULT_MIN_TOP_DOCS,
-           py::arg("top_queries") = FinetunableRetriever::DEFAULT_TOP_QUERIES)
+           py::arg("top_queries") = FinetunableRetriever::DEFAULT_TOP_QUERIES,
+           py::arg("shard_size") = InvertedIndex::DEFAULT_SHARD_SIZE)
       .def("index", &FinetunableRetriever::index, py::arg("ids"),
            py::arg("docs"))
       .def("finetune", &FinetunableRetriever::finetune, py::arg("doc_ids"),
