@@ -1,6 +1,5 @@
 from typing import Dict, List, Optional, Tuple
 
-
 import thirdai
 import thirdai._thirdai.bolt as bolt
 from thirdai.dataset.bolt_ner_data_source import NerDataSource
