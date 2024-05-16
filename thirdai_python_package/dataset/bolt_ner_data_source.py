@@ -9,14 +9,16 @@ def tokenize_text(tokenizer, text):
 
 
 class NerDataSource(PyDataSource):
-    def __init__(self, ner_model, file_path = None):
+    def __init__(
+        self, model_type, tokens_column=None, tags_column=None, file_path=None
+    ):
         PyDataSource.__init__(self)
 
         self.file_path = file_path
-        
-        self.tokens_column = ner_model.tokens_column()
-        self.tags_column = ner_model.tags_column()
-        self.pretrained = ner_model.type() == "bolt_ner"
+
+        self.tokens_column = tokens_column
+        self.tags_column = tags_column
+        self.pretrained = model_type == "bolt_ner"
 
         if self.pretrained:
             try:
@@ -31,10 +33,17 @@ class NerDataSource(PyDataSource):
         self.restart()
 
     def _get_line_iterator(self):
-        
-        if (self.file_path) == None:
-            raise Exception("Cannot get data from a datasource with no file.")
-        
+
+        if self.file_path is None:
+            raise ValueError(
+                "The file path is None. Please provide a valid file path to access the data source."
+            )
+
+        if self.tags_column is None or self.tokens_column is None:
+            raise ValueError(
+                "Cannot load a datasource with either 'tokens_column' or 'tags_column' set to None. Please provide valid column names."
+            )
+
         with open(self.file_path, "r") as file:
             for line in file:
 
@@ -51,7 +60,7 @@ class NerDataSource(PyDataSource):
                         tokenize_text(self.tokenizer, token)
                         for token in json_obj[self.tokens_column]
                     ]
-                    
+
                 data = json.dumps(json_obj)
 
                 yield data
