@@ -43,7 +43,7 @@ def build_mach_ensemble(load_chunks):
             )
         )
 
-    retriever = MachEnsemble(n_models=5, n_hashes=1, n_buckets=10_000)
+    retriever = MachEnsemble(n_models=2, n_hashes=2, n_buckets=10_000)
 
     retriever.insert(chunk_batches)
 
