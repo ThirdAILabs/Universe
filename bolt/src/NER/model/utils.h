@@ -7,7 +7,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace thirdai::bolt {
+namespace thirdai::bolt::NER {
 using PerTokenPredictions = std::vector<std::pair<uint32_t, float>>;
 using PerTokenListPredictions = std::vector<PerTokenPredictions>;
 
@@ -72,4 +72,4 @@ inline uint32_t getMaxLabelFromTagToLabel(
       [](const auto& a, const auto& b) { return a.second < b.second; });
   return maxPair->second + 1;
 }
-}  // namespace thirdai::bolt
+}  // namespace thirdai::bolt::NER

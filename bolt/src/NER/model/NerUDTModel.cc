@@ -1,4 +1,5 @@
 #include "NerUDTModel.h"
+#include <bolt/src/NER/Defaults.h>
 #include <bolt/src/NER/model/NER.h>
 #include <bolt/src/NER/model/utils.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
@@ -17,7 +18,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace thirdai::bolt {
+namespace thirdai::bolt::NER {
 
 void NerUDTModel::initializeNER(uint32_t fhr, uint32_t number_labels) {
   auto train_transformation = thirdai::data::NerTokenizerUnigram(
@@ -108,9 +109,10 @@ NerUDTModel::NerUDTModel(
       _target_word_tokenizers(std::move(target_word_tokenizers)),
       _tag_to_label(std::move(tag_to_label)) {
   uint32_t number_labels = getMaxLabelFromTagToLabel(_tag_to_label);
-  _bolt_model = initializeBoltModel(100'000, 2000, number_labels);
+  _bolt_model = initializeBoltModel(defaults::UDT_FEATURE_HASH_RANGE,
+                                    defaults::UDT_EMB_DIM, number_labels);
 
-  initializeNER(100'000, number_labels);
+  initializeNER(defaults::UDT_FEATURE_HASH_RANGE, number_labels);
 }
 
 NerUDTModel::NerUDTModel(std::shared_ptr<NerUDTModel>& pretrained_model,
@@ -223,4 +225,4 @@ std::shared_ptr<NerUDTModel> NerUDTModel::load_stream(std::istream& input) {
   auto archive = ar::deserialize(input);
   return fromArchive(*archive);
 }
-}  // namespace thirdai::bolt
+}  // namespace thirdai::bolt::NER

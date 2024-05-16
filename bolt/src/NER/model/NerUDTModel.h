@@ -1,13 +1,14 @@
 #pragma once
 
 #include "NerClassifier.h"
+#include <bolt/src/NER/Defaults.h>
 #include <bolt/src/NER/model/NerBackend.h>
 #include <bolt/src/nn/model/Model.h>
 #include <data/src/transformations/Pipeline.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <memory>
 
-namespace thirdai::bolt {
+namespace thirdai::bolt::NER {
 
 class NerUDTModel;
 
@@ -80,11 +81,11 @@ class NerUDTModel final : public NerModelInterface {
 
   std::unordered_map<std::string, uint32_t> _tag_to_label;
 
-  uint32_t _dyadic_num_intervals = 3;
+  uint32_t _dyadic_num_intervals = defaults::UDT_DYADIC_NUM_INTERVALS;
 
   std::string _featurized_sentence_column =
       "featurized_sentence_for_" + _tokens_column;
 
   NerClassifierPtr _classifier;
 };
-}  // namespace thirdai::bolt
+}  // namespace thirdai::bolt::NER

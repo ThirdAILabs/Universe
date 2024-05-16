@@ -13,7 +13,7 @@
 #include <pybind11/detail/common.h>
 #include <pybind11/stl.h>
 
-namespace thirdai::bolt::python {
+namespace thirdai::bolt::NER::python {
 
 void addNERModels(py::module_& module) {
 #if THIRDAI_EXPOSE_ALL
@@ -79,4 +79,4 @@ void addNERModels(py::module_& module) {
       .def(thirdai::bolt::python::getPickleFunction<NER>());
 }
 
-}  // namespace thirdai::bolt::python
+}  // namespace thirdai::bolt::NER::python

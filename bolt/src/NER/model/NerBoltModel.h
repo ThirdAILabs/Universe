@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bolt/src/NER/Defaults.h>
 #include <bolt/src/NER/model/NerBackend.h>
 #include <bolt/src/NER/model/NerUDTModel.h>
 #include <bolt/src/nn/model/Model.h>
@@ -17,7 +18,7 @@
 #include <memory>
 #include <unordered_map>
 
-namespace thirdai::bolt {
+namespace thirdai::bolt::NER {
 
 class NerBoltModel;
 
@@ -81,7 +82,7 @@ class NerBoltModel final : public NerModelInterface {
   std::unordered_map<std::string, uint32_t> _tag_to_label;
 
   NerClassifierPtr _classifier;
-  size_t _vocab_size = 50257;
+  size_t _vocab_size = defaults::PRETRAINED_BOLT_VOCAB_SIZE;
 };
 
-}  // namespace thirdai::bolt
+}  // namespace thirdai::bolt::NER

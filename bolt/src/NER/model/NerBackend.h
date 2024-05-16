@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <utility>
 
-namespace thirdai::bolt {
+namespace thirdai::bolt::NER {
 using PerTokenPredictions = std::vector<std::pair<uint32_t, float>>;
 using PerTokenListPredictions = std::vector<PerTokenPredictions>;
 
@@ -43,4 +43,4 @@ class NerModelInterface {
 
   virtual bolt::ModelPtr getBoltModel() = 0;
 };
-}  // namespace thirdai::bolt
+}  // namespace thirdai::bolt::NER

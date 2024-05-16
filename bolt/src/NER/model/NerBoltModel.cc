@@ -28,7 +28,7 @@
 #include <utility>
 #include <vector>
 
-namespace thirdai::bolt {
+namespace thirdai::bolt::NER {
 
 bolt::ModelPtr NerBoltModel::initializeBoltModel(
     std::shared_ptr<NerBoltModel>& pretrained_model,
@@ -217,4 +217,4 @@ std::shared_ptr<NerBoltModel> NerBoltModel::load_stream(std::istream& input) {
   auto archive = ar::deserialize(input);
   return fromArchive(*archive);
 }
-}  // namespace thirdai::bolt
+}  // namespace thirdai::bolt::NER

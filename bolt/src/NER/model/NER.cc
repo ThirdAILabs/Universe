@@ -11,7 +11,7 @@
 #include <utility>
 #include <vector>
 
-namespace thirdai::bolt {
+namespace thirdai::bolt::NER {
 
 // need to use label tag as transform for label during training
 metrics::History NER::train(const dataset::DataSourcePtr& train_data,
@@ -66,13 +66,13 @@ std::shared_ptr<NER> NER::fromArchive(const ar::Archive& archive) {
   std::string type = archive.getAs<std::string>("type");
 
   if (type == "bolt_ner") {
-    std::shared_ptr<bolt::NerModelInterface> ner_backend_model =
-        bolt::NerBoltModel::fromArchive(*archive.get("ner_backend_model"));
+    std::shared_ptr<NerModelInterface> ner_backend_model =
+        NerBoltModel::fromArchive(*archive.get("ner_backend_model"));
     return std::make_shared<NER>(NER(ner_backend_model));
   }
   if (type == "udt_ner") {
-    std::shared_ptr<bolt::NerModelInterface> ner_backend_model =
-        bolt::NerUDTModel::fromArchive(*archive.get("ner_backend_model"));
+    std::shared_ptr<NerModelInterface> ner_backend_model =
+        NerUDTModel::fromArchive(*archive.get("ner_backend_model"));
     return std::make_shared<NER>(NER(ner_backend_model));
   }
   throw std::invalid_argument("Cannot load a NER backend of type: " + type);
@@ -99,4 +99,4 @@ std::shared_ptr<NER> NER::load_stream(std::istream& input) {
   return fromArchive(*archive);
 }
 
-}  // namespace thirdai::bolt
+}  // namespace thirdai::bolt::NER

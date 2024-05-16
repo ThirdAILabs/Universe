@@ -15,7 +15,7 @@
 #include <unordered_map>
 #include <utility>
 
-namespace thirdai::bolt {
+namespace thirdai::bolt::NER {
 
 class NER;
 
@@ -115,4 +115,4 @@ class NER : public std::enable_shared_from_this<NER> {
   NER() {}
 };
 
-}  // namespace thirdai::bolt
+}  // namespace thirdai::bolt::NER
