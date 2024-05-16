@@ -75,6 +75,13 @@ class JsonIterator final : public ColumnMapIterator {
     return _data_source->resourceName();
   }
 
+  template <typename T>
+  void extractColumnData(const std::vector<std::string>& rows,
+                         const std::string& column_name, std::vector<T>& vec);
+
+  static void validateJsonRow(const std::string& row,
+                              const std::string& column_name);
+
  private:
   DataSourcePtr _data_source;
   size_t _rows_per_load;
