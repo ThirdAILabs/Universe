@@ -146,7 +146,7 @@ NerUDTModel::NerUDTModel(std::shared_ptr<NerUDTModel>& pretrained_model,
 }
 
 std::vector<PerTokenListPredictions> NerUDTModel::getTags(
-    std::vector<std::vector<std::string>> tokens, uint32_t top_k) {
+    std::vector<std::vector<std::string>> tokens, uint32_t top_k) const {
   return _classifier->getTags(tokens, top_k);
 }
 

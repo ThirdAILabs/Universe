@@ -157,7 +157,7 @@ metrics::History NerBoltModel::train(
 }
 
 std::vector<PerTokenListPredictions> NerBoltModel::getTags(
-    std::vector<std::vector<std::string>> tokens, uint32_t top_k) {
+    std::vector<std::vector<std::string>> tokens, uint32_t top_k) const {
   return _classifier->getTags(tokens, top_k);
 }
 

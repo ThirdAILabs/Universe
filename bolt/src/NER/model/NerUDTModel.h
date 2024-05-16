@@ -34,7 +34,7 @@ class NerUDTModel final : public NerModelInterface {
           std::nullopt);
 
   std::vector<PerTokenListPredictions> getTags(
-      std::vector<std::vector<std::string>> tokens, uint32_t top_k) final;
+      std::vector<std::vector<std::string>> tokens, uint32_t top_k) const final;
 
   metrics::History train(const dataset::DataSourcePtr& train_data,
                          float learning_rate, uint32_t epochs,
