@@ -1,5 +1,6 @@
 #pragma once
 
+#include "NerClassifier.h"
 #include <bolt/src/NER/model/NerBackend.h>
 #include <bolt/src/nn/model/Model.h>
 #include <data/src/transformations/Pipeline.h>
@@ -10,7 +11,7 @@ namespace thirdai::bolt {
 
 class NerUDTModel;
 
-class NerUDTModel final : public NerBackend {
+class NerUDTModel final : public NerModelInterface {
  public:
   std::string type() const final { return "udt_ner"; }
   NerUDTModel(bolt::ModelPtr model, std::string tokens_column,
@@ -67,16 +68,11 @@ class NerUDTModel final : public NerBackend {
 
   std::string getTagsColumn() const final { return _tags_column; }
 
-  bolt::ModelPtr get_model() { return _bolt_model; }
-
   NerUDTModel() = default;
   ~NerUDTModel() override = default;
 
  private:
-  void initializeNER();
-
-  data::Loader getDataLoader(const dataset::DataSourcePtr& data,
-                             size_t batch_size, bool shuffle);
+  void initializeNER(uint32_t fhr, uint32_t number_labels);
 
   bolt::ModelPtr _bolt_model;
   std::string _tokens_column, _tags_column;
@@ -84,14 +80,11 @@ class NerUDTModel final : public NerBackend {
 
   std::unordered_map<std::string, uint32_t> _tag_to_label;
 
-  data::PipelinePtr _train_transforms;
-  data::PipelinePtr _inference_transforms;
-  data::OutputColumnsList _bolt_inputs;
-
-  uint32_t _number_labels, _dyadic_num_intervals = 3;
-  uint32_t _fhr = 100000;
+  uint32_t _dyadic_num_intervals = 3;
 
   std::string _featurized_sentence_column =
       "featurized_sentence_for_" + _tokens_column;
+
+  NerClassifierPtr _classifier;
 };
 }  // namespace thirdai::bolt

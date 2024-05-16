@@ -15,11 +15,11 @@ namespace thirdai::bolt {
 using PerTokenPredictions = std::vector<std::pair<uint32_t, float>>;
 using PerTokenListPredictions = std::vector<PerTokenPredictions>;
 
-class NerBackend;
+class NerModelInterface;
 
-class NerBackend {
+class NerModelInterface {
  public:
-  virtual ~NerBackend() = default;
+  virtual ~NerModelInterface() = default;
 
   virtual std::vector<PerTokenListPredictions> getTags(
       std::vector<std::vector<std::string>> tokens, uint32_t top_k) = 0;

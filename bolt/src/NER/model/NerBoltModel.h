@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/NER/model/NerBackend.h>
+#include <bolt/src/NER/model/NerUDTModel.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/text_generation/GenerativeModel.h>
 #include <bolt/src/train/trainer/Trainer.h>
@@ -20,7 +21,7 @@ namespace thirdai::bolt {
 
 class NerBoltModel;
 
-class NerBoltModel final : public NerBackend {
+class NerBoltModel final : public NerModelInterface {
  public:
   std::string type() const final { return "bolt_ner"; }
   NerBoltModel(bolt::ModelPtr model, std::string tokens_column,
@@ -59,28 +60,27 @@ class NerBoltModel final : public NerBackend {
 
   bolt::ModelPtr getBoltModel() final { return _bolt_model; }
 
-  std::string getTokensColumn() const final { return _source_column; }
+  std::string getTokensColumn() const final { return _tokens_column; }
 
-  std::string getTagsColumn() const final { return _target_column; }
+  std::string getTagsColumn() const final { return _tags_column; }
 
   NerBoltModel() = default;
   ~NerBoltModel() override = default;
 
  private:
-  data::Loader getDataLoader(const dataset::DataSourcePtr& data,
-                             size_t batch_size, bool shuffle);
+  static bolt::ModelPtr initializeBoltModel(
+      std::shared_ptr<NerBoltModel>& pretrained_model,
+      std::unordered_map<std::string, uint32_t> tag_to_label,
+      uint32_t vocab_size);
 
   data::PipelinePtr getTransformations(bool inference);
 
   bolt::ModelPtr _bolt_model;
-  data::PipelinePtr _train_transforms;
-  data::PipelinePtr _inference_transforms;
-  data::OutputColumnsList _bolt_inputs;
+  std::string _tokens_column;
+  std::string _tags_column;
   std::unordered_map<std::string, uint32_t> _tag_to_label;
 
-  std::string _source_column = "source";
-  std::string _target_column = "target";
-
+  NerClassifierPtr _classifier;
   size_t _vocab_size = 50257;
 };
 

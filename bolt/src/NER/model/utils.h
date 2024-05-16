@@ -1,13 +1,17 @@
 #pragma once
 
-#include <bolt/src/NER/model/NerBackend.h>
 #include <bolt/src/nn/model/Model.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/Pipeline.h>
+#include <string>
+#include <unordered_map>
 
 namespace thirdai::bolt {
-static std::vector<thirdai::bolt::PerTokenListPredictions> getTags(
+using PerTokenPredictions = std::vector<std::pair<uint32_t, float>>;
+using PerTokenListPredictions = std::vector<PerTokenPredictions>;
+
+static std::vector<PerTokenListPredictions> getTags(
     std::vector<std::vector<std::string>> tokens, uint32_t top_k,
     std::string tokens_column, const data::PipelinePtr& inference_transform,
     const data::OutputColumnsList& bolt_inputs,
@@ -59,5 +63,13 @@ static std::vector<thirdai::bolt::PerTokenListPredictions> getTags(
     }
   }
   return tags_and_scores;
+}
+
+inline uint32_t getMaxLabelFromTagToLabel(
+    std::unordered_map<std::string, uint32_t> tag_to_label) {
+  auto maxPair = std::max_element(
+      tag_to_label.begin(), tag_to_label.end(),
+      [](const auto& a, const auto& b) { return a.second < b.second; });
+  return maxPair->second + 1;
 }
 }  // namespace thirdai::bolt
