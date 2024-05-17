@@ -21,7 +21,7 @@
 namespace thirdai::bolt::NER {
 
 void NerUDTModel::initializeNER(uint32_t fhr, uint32_t number_labels) {
-  auto train_transformation = thirdai::data::NerTokenizerUnigram(
+  auto train_transformation = std::make_shared<thirdai::data::NerTokenizerUnigram>(
       /*tokens_column=*/_tokens_column,
       /*featurized_sentence_column=*/_featurized_sentence_column,
       /*target_column=*/_tags_column, /*target_dim=*/number_labels,
@@ -29,7 +29,7 @@ void NerUDTModel::initializeNER(uint32_t fhr, uint32_t number_labels) {
       /*target_word_tokenizers=*/_target_word_tokenizers,
       /*tag_to_label=*/_tag_to_label);
 
-  auto inference_transformation = thirdai::data::NerTokenizerUnigram(
+  auto inference_transformation = std::make_shared<thirdai::data::NerTokenizerUnigram>(
       /*tokens_column=*/_tokens_column,
       /*featurized_sentence_column=*/_featurized_sentence_column,
       /*target_column=*/std::nullopt, /*target_dim=*/std::nullopt,
@@ -37,13 +37,11 @@ void NerUDTModel::initializeNER(uint32_t fhr, uint32_t number_labels) {
       /*target_word_tokenizers=*/_target_word_tokenizers,
       /*tag_to_label=*/_tag_to_label);
 
-  auto train_transforms = data::Pipeline::make(
-      {std::make_shared<thirdai::data::NerTokenizerUnigram>(
-          train_transformation)});
-
+  auto train_transforms =  data::Pipeline::make(
+      {train_transformation});
   auto inference_transforms = data::Pipeline::make(
-      {std::make_shared<thirdai::data::NerTokenizerUnigram>(
-          inference_transformation)});
+      {inference_transformation});
+
 
   auto bolt_inputs = {
       data::OutputColumns(train_transformation.getFeaturizedIndicesColumn())};
@@ -51,6 +49,7 @@ void NerUDTModel::initializeNER(uint32_t fhr, uint32_t number_labels) {
   _classifier = std::make_shared<NerClassifier>(
       _bolt_model, bolt_inputs, train_transforms, inference_transforms,
       _tokens_column, _tags_column);
+
 }
 
 bolt::ModelPtr NerUDTModel::initializeBoltModel(

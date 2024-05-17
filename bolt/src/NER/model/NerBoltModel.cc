@@ -36,17 +36,9 @@ bolt::ModelPtr NerBoltModel::initializeBoltModel(
     uint32_t vocab_size) {
   auto num_labels = getMaxLabelFromTagToLabel(std::move(tag_to_label));
 
-  auto ops = pretrained_model->getBoltModel()->ops();
-  bool found = std::any_of(ops.begin(), ops.end(), [](const bolt::OpPtr& op) {
-    return op->name() == "emb_1";
-  });
-
-  if (!found) {
-    throw std::runtime_error(
-        "Error: No operation named 'emb_1' found in Pretrained Model");
-  }
-  auto emb = std::dynamic_pointer_cast<Embedding>(
-      pretrained_model->getBoltModel()->getOp("emb_1"));
+  auto emb_op_pretrained = 
+      pretrained_model->getBoltModel()->getOp("emb_1");
+  auto emb = std::dynamic_pointer_cast<Embedding>(emb_op_pretrained);
 
   if (!emb) {
     throw std::runtime_error("Error casting 'emb_1' op to Embedding Op");
