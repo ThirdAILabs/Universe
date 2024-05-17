@@ -550,7 +550,7 @@ py::object UDTMach::entityEmbedding(const Label& label) {
   std::copy(averaged_embedding.begin(), averaged_embedding.end(),
             np_weights.mutable_data());
 
-  return std::move(np_weights);
+  return py::object(std::move(np_weights));
 }
 
 void UDTMach::updateSamplingStrategy() {

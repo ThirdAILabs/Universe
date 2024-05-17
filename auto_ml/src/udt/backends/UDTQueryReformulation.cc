@@ -242,7 +242,7 @@ py::object UDTQueryReformulation::evaluate(
 
   py::dict py_metrics;
   py_metrics["val_recall"] = py::cast(std::vector<float>{recall});
-  return std::move(py_metrics);
+  return py::object(std::move(py_metrics));
 }
 
 py::object UDTQueryReformulation::predict(const MapInput& sample,

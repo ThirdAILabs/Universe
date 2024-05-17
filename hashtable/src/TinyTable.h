@@ -94,7 +94,7 @@ class TinyTable final {
     archive(_hash_range, _num_elements, _num_tables, _table_start, _index);
   }
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/
-  TinyTable<LABEL_T>(){};
+  TinyTable() {}
 
   // Techincally this is 16 + sizeof(LABEL_T) wasted bytes per table,
   // but it's fine for now

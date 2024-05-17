@@ -229,7 +229,7 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
     output[i] = text::join(all_predictions[i], {_target->delimiter});
   }
 
-  return std::move(output);
+  return py::object(std::move(output));
 }
 
 uint32_t UDTRecurrentClassifier::predictionAtStep(const BoltVector& output,

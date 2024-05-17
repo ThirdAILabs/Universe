@@ -29,7 +29,7 @@ class MaxFlash {
     archive(_hashtable);
   }
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/
-  MaxFlash<LABEL_T>() : _hashtable(0, 0, 0, std::vector<uint32_t>()){};
+  MaxFlash() : _hashtable(0, 0, 0, std::vector<uint32_t>()) {}
 
   hashtable::TinyTable<LABEL_T> _hashtable;
 };

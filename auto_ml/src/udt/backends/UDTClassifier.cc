@@ -420,7 +420,7 @@ py::object UDTClassifier::entityEmbedding(
 
   std::copy(weights.begin(), weights.end(), np_weights.mutable_data());
 
-  return std::move(np_weights);
+  return py::object(std::move(np_weights));
 }
 
 std::string UDTClassifier::className(uint32_t class_id) const {

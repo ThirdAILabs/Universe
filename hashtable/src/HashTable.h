@@ -63,7 +63,7 @@ class HashTable {
   /* Returns the range (number of buckets) of each table */
   virtual uint64_t tableRange() const = 0;
 
-  virtual ~HashTable<LABEL_T>(){};
+  virtual ~HashTable() {}
 
  protected:
   /** The default number of random pregenerated numbers to use for sampling */
