@@ -125,6 +125,10 @@ class UDTClassifier final : public UDTBackend {
 
   void saveCppClassifier(const std::string& save_path) const final;
 
+  TextDatasetConfig textDatasetConfig() const final {
+    return _featurizer->textDatasetConfig();
+  }
+
  private:
   data::TransformationPtr labelTransformation(
       const std::string& target_name, CategoricalDataTypePtr& target_config,
