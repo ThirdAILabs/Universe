@@ -66,6 +66,10 @@ jobs:
 
       - name: Install llvm clang and libomp for macosx-x86
         if: ${{ startsWith(matrix.runs-on, 'macos-12')}}
+        # We build libomp from source because homebrew only has the most recent version 
+        # of libomp available and it needs to match the llvm version in order for parallelism
+        # to work. Upgrading to llvm18+ causes an issue because SpdLog uses a C++ feature
+        # that is deprecated.
         run: |
           brew install llvm@17
           git clone -b release/17.x https://github.com/llvm/llvm-project
