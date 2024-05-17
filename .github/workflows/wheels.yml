@@ -111,8 +111,9 @@ jobs:
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
             yum install openssl11-devel -y &&
-            yum install -y libxslt-devel libxml2-devel
-          CIBW_BEFORE_BUILD_MACOS: brew install openssl
+            yum install -y libxslt-devel libxml2-devel &&
+            python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0"
+          CIBW_BEFORE_BUILD_MACOS: brew install openssl; python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0";
 
           # Online compile cpython wheels (pytorch does this too), no big 
           # advantage to JIT compilation of python since most of our processing
@@ -125,7 +126,7 @@ jobs:
           CIBW_BEFORE_BUILD_WINDOWS: python -m pip install delvewheel
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: 'delvewheel repair -w {dest_dir} {wheel}'
           CIBW_TEST_EXTRAS: "test"
-          CIBW_TEST_COMMAND: python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0"; pytest {package} --ignore-glob={package}/deps -m release
+          CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
           CIBW_TEST_COMMAND_WINDOWS: rem
 
           # Skip tests on windows
