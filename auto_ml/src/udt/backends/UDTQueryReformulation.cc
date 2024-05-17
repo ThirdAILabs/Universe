@@ -11,6 +11,7 @@
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <auto_ml/src/config/FlashConfig.h>
+#include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -44,7 +45,8 @@ UDTQueryReformulation::UDTQueryReformulation(
       _use_spell_checker(use_spell_checker),
       _delimiter(delimiter) {
   if (model_config) {
-    _flash_index = config::buildIndex(*model_config, user_args);
+    _flash_index = config::buildIndex(
+        json::parse(config::loadConfig(*model_config)), user_args);
   } else {
     _flash_index = defaultFlashIndex(dataset_size);
   }
