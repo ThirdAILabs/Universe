@@ -370,16 +370,11 @@ template void CastToArray<uint32_t>::serialize(cereal::BinaryOutputArchive&);
 template void CastToArray<float>::serialize(cereal::BinaryInputArchive&);
 template void CastToArray<float>::serialize(cereal::BinaryOutputArchive&);
 
-template void CastToArray<std::string>::serialize(cereal::BinaryInputArchive&);
-template void CastToArray<std::string>::serialize(cereal::BinaryOutputArchive&);
-
 template class CastToArray<uint32_t>;
 template class CastToArray<float>;
-template class CastToArray<std::string>;
 
 }  // namespace thirdai::data
 
 CEREAL_REGISTER_TYPE(thirdai::data::StringToToken)
-CEREAL_REGISTER_TYPE(thirdai::data::StringToTokenArray)
 CEREAL_REGISTER_TYPE(thirdai::data::StringToDecimal)
 CEREAL_REGISTER_TYPE(thirdai::data::StringToDecimalArray)
