@@ -217,6 +217,12 @@ TransformSeries categoricalTemporal(
   // This is just an additional check to ensure that we don't leak labels if
   // the tracked column is the labels.
   bool tracking_labels = categorical_temporal.column_name == label_column;
+  if (categorical_temporal.include_current_row && tracking_labels) {
+    std::cerr << "Warning: Ignoring 'include_current_row' for temporal tracker "
+                 "on column '"
+              << categorical_temporal.column_name
+              << "' since it is the target column." << std::endl;
+  }
   bool include_current_row =
       categorical_temporal.include_current_row && !tracking_labels;
 
@@ -224,6 +230,11 @@ TransformSeries categoricalTemporal(
       temporalItemIdsOutput(categorical_temporal.column_name);
 
   if (should_update_history || !tracking_labels) {
+    // The values of the tracked column will only be used if either 1) we are
+    // updating history or 2) if we are not tracking the label column, and thus
+    // the values could be used as an input. If we are not updating history and
+    // are tracking the label column, then this column will not be used (or
+    // likely will not even be present since it's the target column).
     auto item_hash = std::make_shared<data::StringHash>(
         categorical_temporal.column_name, item_column, std::nullopt,
         tracked_column->delimiter);
@@ -268,6 +279,12 @@ TransformSeries numericalTemporal(
   // This is just an additional check to ensure that we don't leak labels if
   // the tracked column is the labels.
   bool tracking_labels = numerical_temporal.column_name == label_column;
+  if (numerical_temporal.include_current_row && tracking_labels) {
+    std::cerr << "Warning: Ignoring 'include_current_row' for temporal tracker "
+                 "on column '"
+              << numerical_temporal.column_name
+              << "' since it is the target column." << std::endl;
+  }
   bool include_current_row =
       numerical_temporal.include_current_row && !tracking_labels;
 
