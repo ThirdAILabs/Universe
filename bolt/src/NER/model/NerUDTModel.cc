@@ -130,17 +130,9 @@ NerUDTModel::NerUDTModel(std::shared_ptr<NerUDTModel>& pretrained_model,
       [](const auto& a, const auto& b) { return a.second < b.second; });
   _number_labels = maxPair->second + 1;
 
-  auto ops = pretrained_model->getBoltModel()->ops();
-  bool found = std::any_of(ops.begin(), ops.end(), [](const bolt::OpPtr& op) {
-    return op->name() == "emb_1";
-  });
-
-  if (!found) {
-    throw std::runtime_error(
-        "Error: No operation named 'emb_1' found in Pretrained Model");
-  }
-  auto emb = std::dynamic_pointer_cast<Embedding>(
-      pretrained_model->getBoltModel()->getOp("emb_1"));
+  auto emb_op = 
+      pretrained_model->getBoltModel()->getOp("emb_1");
+  auto emb = std::dynamic_pointer_cast<Embedding>(emb_op);
 
   if (!emb) {
     throw std::runtime_error("Error casting 'emb_1' op to Embedding Op");
@@ -176,15 +168,11 @@ metrics::History NerUDTModel::train(
 
   Trainer trainer(_bolt_model);
 
-  // We cannot use train_with_dataset_loader, since it is using the older
-  // dataset::DatasetLoader while dyadic model is using data::Loader
-  for (uint32_t e = 0; e < epochs; e++) {
-    trainer.train_with_metric_names(
-        train_dataset, learning_rate, 1, train_metrics, val_dataset,
-        val_metrics, /* steps_per_validation= */ std::nullopt,
-        /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
-        /* autotune_rehash_rebuild= */ false, /* verbose= */ true);
-  }
+  trainer.train_with_metric_names(
+      train_dataset, learning_rate, epochs, train_metrics, val_dataset,
+      val_metrics, /* steps_per_validation= */ std::nullopt,
+      /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
+      /* autotune_rehash_rebuild= */ false, /* verbose= */ true);
   return trainer.getHistory();
 }
 

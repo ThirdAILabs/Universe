@@ -411,7 +411,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/DyadicInterval.cc
     data/src/transformations/NextWordPrediction.cc
     data/src/transformations/SpladeAugmentation.cc
-    data/src/transformations/NerTokenFromStringArray.cc
+    data/src/transformations/ner/NerTokenFromStringArray.cc
     data/src/transformations/ner/NerTokenizationUnigram.cc
     data/src/transformations/ner/UnigramDataProcessor.cc
     data/src/ColumnMap.cc

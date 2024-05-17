@@ -17,7 +17,7 @@
 #include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
-#include <data/src/transformations/NerTokenFromStringArray.h>
+#include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/utils/SafeFileIO.h>
@@ -38,9 +38,10 @@ NerBoltModel::NerBoltModel(
       _target_column(std::move(tags_column)) {
   _train_transforms = getTransformations(true);
   _inference_transforms = getTransformations(false);
+
   _bolt_inputs = {data::OutputColumns("tokens"),
-                  data::OutputColumns("token_front"),
-                  data::OutputColumns("token_behind")};
+                  data::OutputColumns("token_next"),
+                  data::OutputColumns("token_previous")};
 }
 NerBoltModel::NerBoltModel(
     std::shared_ptr<NerBoltModel>& pretrained_model, std::string tokens_column,
@@ -85,12 +86,12 @@ NerBoltModel::NerBoltModel(
   emb_op->setEmbeddings(pretrained_weights->data());
 
   auto tokens_embedding = emb_op->apply(inputs[0]);
-  auto token_front_embedding = emb_op->apply(inputs[1]);
-  auto token_behind_embedding = emb_op->apply(inputs[2]);
+  auto token_next_embedding = emb_op->apply(inputs[1]);
+  auto token_previous_embedding = emb_op->apply(inputs[2]);
 
   auto concat =
       bolt::Concatenate::make()->apply(std::vector<bolt::ComputationPtr>(
-          {token_front_embedding, token_behind_embedding}));
+          {token_next_embedding, token_previous_embedding}));
 
   auto weighted_sum = bolt::WeightedSum::make(2, emb->dim())->apply(concat);
 
@@ -110,8 +111,8 @@ NerBoltModel::NerBoltModel(
   _train_transforms = getTransformations(true);
   _inference_transforms = getTransformations(false);
   _bolt_inputs = {data::OutputColumns("tokens"),
-                  data::OutputColumns("token_front"),
-                  data::OutputColumns("token_behind")};
+                  data::OutputColumns("token_next"),
+                  data::OutputColumns("token_previous")};
 }
 
 data::PipelinePtr NerBoltModel::getTransformations(bool inference) {
@@ -119,20 +120,20 @@ data::PipelinePtr NerBoltModel::getTransformations(bool inference) {
   if (!inference) {
     transform =
         data::Pipeline::make({std::make_shared<data::NerTokenFromStringArray>(
-            _source_column, "tokens", "token_front", "token_behind",
+            _source_column, "tokens", "token_next", "token_previous",
             std::nullopt, std::nullopt)});
   } else {
     transform =
         data::Pipeline::make({std::make_shared<data::NerTokenFromStringArray>(
-            _source_column, "tokens", "token_front", "token_behind",
+            _source_column, "tokens", "token_next", "token_previous",
             _target_column, _tag_to_label)});
   }
   transform = transform->then(std::make_shared<data::StringToTokenArray>(
       "tokens", "tokens", ' ', _vocab_size));
   transform = transform->then(std::make_shared<data::StringToTokenArray>(
-      "token_front", "token_front", ' ', _vocab_size));
+      "token_next", "token_next", ' ', _vocab_size));
   transform = transform->then(std::make_shared<data::StringToTokenArray>(
-      "token_behind", "token_behind", ' ', _vocab_size));
+      "token_previous", "token_previous", ' ', _vocab_size));
   return transform;
 }
 
@@ -165,15 +166,12 @@ metrics::History NerBoltModel::train(
 
   Trainer trainer(_bolt_model);
 
-  // We cannot use train_with_dataset_loader, since it is using the older
-  // dataset::DatasetLoader while dyadic model is using data::Loader
-  for (uint32_t e = 0; e < epochs; e++) {
-    trainer.train_with_metric_names(
-        train_dataset, learning_rate, 1, train_metrics, val_dataset,
-        val_metrics, /* steps_per_validation= */ std::nullopt,
-        /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
-        /* autotune_rehash_rebuild= */ false, /* verbose= */ true);
-  }
+  trainer.train_with_metric_names(
+      train_dataset, learning_rate, epochs, train_metrics, val_dataset,
+      val_metrics, /* steps_per_validation= */ std::nullopt,
+      /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
+      /* autotune_rehash_rebuild= */ false, /* verbose= */ true);
+  
   return trainer.getHistory();
 }
 

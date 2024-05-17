@@ -9,17 +9,17 @@
 #include <vector>
 
 namespace thirdai::data {
-class SimpleDataProcessor : std::enable_shared_from_this<SimpleDataProcessor> {
+class NerDyadicDataProcessor : std::enable_shared_from_this<NerDyadicDataProcessor> {
  public:
-  explicit SimpleDataProcessor(
+  explicit NerDyadicDataProcessor(
       std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
       uint32_t dyadic_num_intervals);
 
-  explicit SimpleDataProcessor(const ar::Archive& archive);
+  explicit NerDyadicDataProcessor(const ar::Archive& archive);
 
   ar::ConstArchivePtr toArchive() const;
 
-  static std::shared_ptr<SimpleDataProcessor> make(
+  static std::shared_ptr<NerDyadicDataProcessor> make(
       std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
       uint32_t dyadic_num_intervals);
 
@@ -30,7 +30,7 @@ class SimpleDataProcessor : std::enable_shared_from_this<SimpleDataProcessor> {
                                     uint32_t index) const;
 
  private:
-  SimpleDataProcessor() {}
+  NerDyadicDataProcessor() {}
 
   std::vector<dataset::TextTokenizerPtr> _target_word_tokenizers;
   uint32_t _dyadic_num_intervals;

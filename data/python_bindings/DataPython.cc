@@ -13,7 +13,7 @@
 #include <data/src/transformations/DyadicInterval.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
-#include <data/src/transformations/NerTokenFromStringArray.h>
+#include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <data/src/transformations/NextWordPrediction.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/SpladeAugmentation.h>
@@ -562,7 +562,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                     std::optional<std::string>,
                     std::optional<std::unordered_map<std::string, uint32_t>>>(),
            py::arg("source_column"), py::arg("token_column"),
-           py::arg("token_front_column"), py::arg("token_behind_column"),
+           py::arg("token_next_column"), py::arg("token_previous_column"),
            py::arg("target_column"), py::arg("tag_to_label"));
 }
 
