@@ -208,7 +208,7 @@ class SignedLicense {
       return {};
     }
 
-    return path.u8string();
+    return path.string();
   }
 
   static std::optional<std::string> get_home_directory() {
