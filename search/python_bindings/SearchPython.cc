@@ -81,12 +81,12 @@ void createSearchSubmodule(py::module_& module) {
       .def(py::init<bool, bool>(), py::arg("stem") = true,
            py::arg("lowercase") = true);
 
-  py::class_<KgramTokenizer, Tokenizer, std::shared_ptr<KgramTokenizer>>(
-      search_submodule, "KgramTokenizer")
+  py::class_<WordKGrams, Tokenizer, std::shared_ptr<WordKGrams>>(
+      search_submodule, "WordKGrams")
       .def(py::init<uint32_t, bool, bool, bool, bool>(), py::arg("k") = 4,
            py::arg("soft_start") = true, py::arg("include_whole_words") = true,
            py::arg("stem") = true, py::arg("lowercase") = true)
-      .def("tokenize", &KgramTokenizer::tokenize, py::arg("input"));
+      .def("tokenize", &WordKGrams::tokenize, py::arg("input"));
 
   py::class_<InvertedIndex, std::shared_ptr<InvertedIndex>>(search_submodule,
                                                             "InvertedIndex")

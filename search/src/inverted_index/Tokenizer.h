@@ -56,26 +56,25 @@ class DefaultTokenizer final : public Tokenizer {
  * tokenize("chanel") -> ["c", "ch", "cha", "chan", "hane", "anel"]
  * This feature is useful for autocomplete use cases.
  */
-class KgramTokenizer final : public Tokenizer {
+class WordKGrams final : public Tokenizer {
  public:
-  explicit KgramTokenizer(uint32_t k = 4, bool soft_start = true,
-                          bool include_whole_words = true, bool stem = true,
-                          bool lowercase = true)
+  explicit WordKGrams(uint32_t k = 4, bool soft_start = true,
+                      bool include_whole_words = true, bool stem = true,
+                      bool lowercase = true)
       : _k(k),
         _soft_start(soft_start),
         _include_whole_words(include_whole_words),
         _default_tokenizer(stem, lowercase) {}
 
-  explicit KgramTokenizer(const ar::Archive& archive);
+  explicit WordKGrams(const ar::Archive& archive);
 
   Tokens tokenize(const std::string& input) const final;
 
   ar::ConstArchivePtr toArchive() const final;
 
-  static std::string type() { return "kgram"; }
+  static std::string type() { return "word_k_grams"; }
 
-  static std::shared_ptr<KgramTokenizer> fromArchive(
-      const ar::Archive& archive);
+  static std::shared_ptr<WordKGrams> fromArchive(const ar::Archive& archive);
 
  private:
   uint32_t _k;

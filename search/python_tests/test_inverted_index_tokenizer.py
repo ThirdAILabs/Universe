@@ -1,5 +1,5 @@
 import pytest
-from thirdai.search import InvertedIndex, KgramTokenizer
+from thirdai.search import InvertedIndex, WordKGrams
 
 
 @pytest.mark.unit
@@ -8,6 +8,6 @@ def test_inverted_index_kgram_tokenizer():
     tests are written in C++.
     """
 
-    index = InvertedIndex(tokenizer=KgramTokenizer())
+    index = InvertedIndex(tokenizer=WordKGrams())
     index.index(ids=[0, 1], docs=["Numero uno", "Numero dos"])
     assert index.query(query="Numero uno", k=1)[0][0] == 0

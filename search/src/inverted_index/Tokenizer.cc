@@ -13,8 +13,8 @@ std::shared_ptr<Tokenizer> Tokenizer::fromArchive(const ar::Archive& archive) {
     return DefaultTokenizer::fromArchive(archive);
   }
 
-  if (type == KgramTokenizer::type()) {
-    return KgramTokenizer::fromArchive(archive);
+  if (type == WordKGrams::type()) {
+    return WordKGrams::fromArchive(archive);
   }
 
   throw std::invalid_argument("Invalid tokenizer type '" + type + "'.");
@@ -62,7 +62,7 @@ DefaultTokenizer::DefaultTokenizer(const ar::Archive& archive)
     : _stem(archive.boolean("stem")),
       _lowercase(archive.boolean("lowercase")) {}
 
-Tokens KgramTokenizer::tokenize(const std::string& input) const {
+Tokens WordKGrams::tokenize(const std::string& input) const {
   auto tokens = _default_tokenizer.tokenize(input);
 
   auto k_grams = text::wordLevelCharKGrams(tokens, _k, /* min_word_length= */ 1,
@@ -77,7 +77,7 @@ Tokens KgramTokenizer::tokenize(const std::string& input) const {
   return tokens;
 }
 
-ar::ConstArchivePtr KgramTokenizer::toArchive() const {
+ar::ConstArchivePtr WordKGrams::toArchive() const {
   auto map = ar::Map::make();
 
   map->set("type", ar::str(type()));
@@ -89,15 +89,15 @@ ar::ConstArchivePtr KgramTokenizer::toArchive() const {
   return map;
 }
 
-KgramTokenizer::KgramTokenizer(const ar::Archive& archive)
+WordKGrams::WordKGrams(const ar::Archive& archive)
     : _k(archive.u64("k")),
       _soft_start(archive.boolean("soft_start")),
       _include_whole_words(archive.boolean("include_whole_words")),
       _default_tokenizer(DefaultTokenizer(*archive.get("default_tokenizer"))) {}
 
-std::shared_ptr<KgramTokenizer> KgramTokenizer::fromArchive(
+std::shared_ptr<WordKGrams> WordKGrams::fromArchive(
     const ar::Archive& archive) {
-  return std::make_shared<KgramTokenizer>(archive);
+  return std::make_shared<WordKGrams>(archive);
 }
 
 }  // namespace thirdai::search

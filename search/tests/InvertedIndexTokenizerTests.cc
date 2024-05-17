@@ -15,14 +15,14 @@ TokenSet toTokenSet(const Tokens& tokens) {
   return {tokens.begin(), tokens.end()};
 }
 
-TEST(InvertedIndexTokenizerTests, KgramTokenizerBehavior) {
+TEST(InvertedIndexTokenizerTests, WordKGramsBehavior) {
   // Separate closures so we can reuse the same variable names.
   // Test base kgram tokenizer behavior with all options set to false.
   {
-    KgramTokenizer tokenizer(/* k= */ 4, /* soft_start= */ false,
-                             /* include_whole_words= */ false,
-                             /* stem= */ false,
-                             /* lowercase= */ false);
+    WordKGrams tokenizer(/* k= */ 4, /* soft_start= */ false,
+                         /* include_whole_words= */ false,
+                         /* stem= */ false,
+                         /* lowercase= */ false);
 
     // words shorter than k are included in their entirety
     ASSERT_EQ(toTokenSet(tokenizer.tokenize("We agreed")),
@@ -30,9 +30,9 @@ TEST(InvertedIndexTokenizerTests, KgramTokenizerBehavior) {
   }
 
   {
-    KgramTokenizer tokenizer(/* k= */ 3, /* soft_start= */ true,
-                             /* include_whole_words= */ false, /* stem= */ true,
-                             /* lowercase= */ true);
+    WordKGrams tokenizer(/* k= */ 3, /* soft_start= */ true,
+                         /* include_whole_words= */ false, /* stem= */ true,
+                         /* lowercase= */ true);
 
     // Test soft_start
     ASSERT_EQ(toTokenSet(tokenizer.tokenize("chanel")),
@@ -48,9 +48,9 @@ TEST(InvertedIndexTokenizerTests, KgramTokenizerBehavior) {
   }
 
   {
-    KgramTokenizer tokenizer(/* k= */ 4, /* soft_start= */ false,
-                             /* include_whole_words= */ true, /* stem= */ false,
-                             /* lowercase= */ false);
+    WordKGrams tokenizer(/* k= */ 4, /* soft_start= */ false,
+                         /* include_whole_words= */ true, /* stem= */ false,
+                         /* lowercase= */ false);
 
     // Test include_whole words
     ASSERT_EQ(toTokenSet(tokenizer.tokenize("chanel")),
@@ -58,17 +58,17 @@ TEST(InvertedIndexTokenizerTests, KgramTokenizerBehavior) {
   }
 }
 
-TEST(InvertedIndexTokenizerTests, KgramTokenizerSerialization) {
+TEST(InvertedIndexTokenizerTests, WordKGramsSerialization) {
   // Arbitrary arguments
-  KgramTokenizer tokenizer1(/* k= */ 5, /* soft_start= */ true,
-                            /* include_whole_words= */ false,
-                            /* stem= */ true,
-                            /* lowercase= */ false);
+  WordKGrams tokenizer1(/* k= */ 5, /* soft_start= */ true,
+                        /* include_whole_words= */ false,
+                        /* stem= */ true,
+                        /* lowercase= */ false);
 
-  KgramTokenizer tokenizer2(/* k= */ 3, /* soft_start= */ false,
-                            /* include_whole_words= */ true,
-                            /* stem= */ false,
-                            /* lowercase= */ true);
+  WordKGrams tokenizer2(/* k= */ 3, /* soft_start= */ false,
+                        /* include_whole_words= */ true,
+                        /* stem= */ false,
+                        /* lowercase= */ true);
 
   // Results in different tokens if any of the arguments are changed.
   std::string sentence = "They Cared For The Aging Labrador";
@@ -78,8 +78,8 @@ TEST(InvertedIndexTokenizerTests, KgramTokenizerSerialization) {
 
   auto t1_archive = tokenizer1.toArchive();
   auto t2_archive = tokenizer2.toArchive();
-  auto t1_deserialized = KgramTokenizer::fromArchive(*t1_archive);
-  auto t2_deserialized = KgramTokenizer::fromArchive(*t2_archive);
+  auto t1_deserialized = WordKGrams::fromArchive(*t1_archive);
+  auto t2_deserialized = WordKGrams::fromArchive(*t2_archive);
 
   ASSERT_EQ(toTokenSet(tokenizer1.tokenize(sentence)),
             toTokenSet(t1_deserialized->tokenize(sentence)));
@@ -87,12 +87,12 @@ TEST(InvertedIndexTokenizerTests, KgramTokenizerSerialization) {
             toTokenSet(t2_deserialized->tokenize(sentence)));
 
   // Check that the serialization method is able to map the "type" field of the
-  // tokenizer to KgramTokenizer, by making sure it doesn't throw a
+  // tokenizer to WordKGrams, by making sure it doesn't throw a
   // deserialization error.
   InvertedIndex index(InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE,
                       InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC,
                       InvertedIndex::DEFAULT_K1, InvertedIndex::DEFAULT_B,
-                      std::make_shared<KgramTokenizer>());
+                      std::make_shared<WordKGrams>());
   auto index_archive = index.toArchive();
   InvertedIndex::fromArchive(*index_archive);
 }
