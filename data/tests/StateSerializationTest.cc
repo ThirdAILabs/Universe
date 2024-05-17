@@ -14,6 +14,10 @@ bool operator==(const ItemRecord& a, const ItemRecord& b) {
   return (a.item == b.item) && (a.timestamp == b.timestamp);
 }
 
+bool operator==(const CountRecord& a, const CountRecord& b) {
+  return (a.value == b.value) && (a.interval == b.interval);
+}
+
 }  // namespace thirdai::data
 
 namespace thirdai::data::tests {
@@ -68,16 +72,24 @@ TEST(StateSerializationTest, StateIsMaintained) {
   state.addVocab("vocab_b", dataset::ThreadSafeVocabulary::make(
                                 VocabMap(vocab_b), std::nullopt));
 
-  ItemHistoryTracker tracker_1{{{"user_1", {{10, 1001}, {12, 1002}}},
-                                {"user_2", {{40, 1}, {50, 2}, {60, 3}}}},
-                               100};
+  ItemHistoryTracker item_tracker_1{{{"user_1", {{10, 1001}, {12, 1002}}},
+                                     {"user_2", {{40, 1}, {50, 2}, {60, 3}}}}};
 
-  ItemHistoryTracker tracker_2{
-      {{"user_a", {{0, 10}}}, {"user_b", {{1, 2}, {3, 4}, {5, 6}, {7, 8}}}},
-      42};
+  ItemHistoryTracker item_tracker_2{
+      {{"user_a", {{0, 10}}}, {"user_b", {{1, 2}, {3, 4}, {5, 6}, {7, 8}}}}};
 
-  state.getItemHistoryTracker("tracker_1") = tracker_1;
-  state.getItemHistoryTracker("tracker_2") = tracker_2;
+  state.getItemHistoryTracker("tracker_1") = item_tracker_1;
+  state.getItemHistoryTracker("tracker_2") = item_tracker_2;
+
+  CountHistoryTracker count_tracker_1{
+      {{"user_11", {{10, 201}, {12, 202}}},
+       {"user_22", {{40, 11}, {50, 22}, {60, 33}}}}};
+
+  CountHistoryTracker count_tracker_2{
+      {{"user_c", {{0, 1}}}, {"user_d", {{7, 8}, {9, 10}, {11, 12}}}}};
+
+  state.getCountHistoryTracker("tracker_1") = count_tracker_1;
+  state.getCountHistoryTracker("tracker_2") = count_tracker_2;
 
   std::stringstream buffer;
   ar::serialize(state.toArchive(), buffer);
@@ -92,8 +104,11 @@ TEST(StateSerializationTest, StateIsMaintained) {
   compareVocab(vocab_a, 100, new_state->getVocab("vocab_a"));
   compareVocab(vocab_b, std::nullopt, new_state->getVocab("vocab_b"));
 
-  ASSERT_EQ(new_state->getItemHistoryTracker("tracker_1"), tracker_1);
-  ASSERT_EQ(new_state->getItemHistoryTracker("tracker_1"), tracker_1);
+  ASSERT_EQ(new_state->getItemHistoryTracker("tracker_1"), item_tracker_1);
+  ASSERT_EQ(new_state->getItemHistoryTracker("tracker_1"), item_tracker_1);
+
+  ASSERT_EQ(new_state->getCountHistoryTracker("tracker_1"), count_tracker_1);
+  ASSERT_EQ(new_state->getCountHistoryTracker("tracker_2"), count_tracker_2);
 
   compareGraphs(state.graph(), new_state->graph());
 }
