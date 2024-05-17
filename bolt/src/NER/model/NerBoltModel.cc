@@ -157,9 +157,7 @@ metrics::History NerBoltModel::train(
 std::vector<std::vector<std::vector<std::pair<std::string, float>>>>
 NerBoltModel::getTags(std::vector<std::vector<std::string>> tokens,
                       uint32_t top_k) const {
-  auto tags_and_scores = _classifier->getTags(tokens, top_k);
-  return thirdai::bolt::NER::getNerTagsFromTokens(_label_to_tag_map,
-                                                  tags_and_scores);
+  return _classifier->getTags(tokens, top_k, _label_to_tag_map);
 }
 
 ar::ConstArchivePtr NerBoltModel::toArchive() const {

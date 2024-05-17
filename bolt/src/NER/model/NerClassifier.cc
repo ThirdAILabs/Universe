@@ -1,4 +1,6 @@
 #include "NerClassifier.h"
+#include <cstdint>
+#include <unordered_map>
 
 namespace thirdai::bolt::NER {
 metrics::History NerClassifier::train(
@@ -41,10 +43,11 @@ data::Loader NerClassifier::getDataLoader(const dataset::DataSourcePtr& data,
 }
 
 std::vector<PerTokenListPredictions> NerClassifier::getTags(
-    std::vector<std::vector<std::string>> tokens, uint32_t top_k) const {
-  return thirdai::bolt::NER::getTags(std::move(tokens), top_k, _tokens_column,
-                                     _inference_transforms, _bolt_inputs,
-                                     _bolt_model);
+    std::vector<std::vector<std::string>> tokens, uint32_t top_k,
+    const std::unordered_map<uint32_t, std::string>& label_to_tag_map) const {
+  return thirdai::bolt::NER::getTags(label_to_tag_map, std::move(tokens), top_k,
+                                     _tokens_column, _inference_transforms,
+                                     _bolt_inputs, _bolt_model);
 }
 
 }  // namespace thirdai::bolt::NER

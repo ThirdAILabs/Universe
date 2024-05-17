@@ -6,7 +6,9 @@
 #include <data/src/TensorConversion.h>
 #include <data/src/transformations/Pipeline.h>
 #include <dataset/src/DataSource.h>
+#include <cstdint>
 #include <memory>
+#include <unordered_map>
 
 namespace thirdai::bolt::NER {
 class NerClassifier {
@@ -33,7 +35,8 @@ class NerClassifier {
                              size_t batch_size, bool shuffle) const;
 
   std::vector<PerTokenListPredictions> getTags(
-      std::vector<std::vector<std::string>> tokens, uint32_t top_k) const;
+      std::vector<std::vector<std::string>> tokens, uint32_t top_k,
+      const std::unordered_map<uint32_t, std::string>& label_to_tag_map) const;
 
  private:
   bolt::ModelPtr _bolt_model;
