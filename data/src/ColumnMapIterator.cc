@@ -10,7 +10,6 @@
 
 namespace thirdai::data {
 
-
 ColumnMap makeColumnMap(std::vector<std::vector<std::string>>&& columns,
                         const std::vector<std::string>& column_names) {
   std::unordered_map<std::string, ColumnPtr> column_map;
@@ -107,17 +106,16 @@ JsonIterator::JsonIterator(DataSourcePtr data_source,
       _rows_per_load(rows_per_load),
       _column_names(std::move(column_names)) {}
 
-void JsonIterator::validateJsonRow(const json &row,
+void JsonIterator::validateJsonRow(const json& row,
                                    const std::string& column_name) {
-    if (!row.is_object()) {
-      throw std::invalid_argument(
-          "Expected row to be a JSON object");
-    }
+  if (!row.is_object()) {
+    throw std::invalid_argument("Expected row to be a JSON object");
+  }
 
-    if (!row.contains(column_name)) {
-      throw std::invalid_argument("Expected row to contain key '" +
-                                  column_name + "'.");
-    }
+  if (!row.contains(column_name)) {
+    throw std::invalid_argument("Expected row to contain key '" + column_name +
+                                "'.");
+  }
 }
 
 template <typename T>

@@ -17,9 +17,9 @@
 #include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
-#include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/Transformation.h>
+#include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <cmath>
 #include <optional>
@@ -171,7 +171,7 @@ metrics::History NerBoltModel::train(
       val_metrics, /* steps_per_validation= */ std::nullopt,
       /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
       /* autotune_rehash_rebuild= */ false, /* verbose= */ true);
-  
+
   return trainer.getHistory();
 }
 

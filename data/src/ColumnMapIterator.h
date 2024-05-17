@@ -57,8 +57,8 @@ class CsvIterator final : public ColumnMapIterator {
 };
 
 class JsonIterator final : public ColumnMapIterator {
+  using json = nlohmann::json;
 
-using json = nlohmann::json;
  public:
   JsonIterator(DataSourcePtr data_source, std::vector<std::string> column_names,
                size_t rows_per_load = DEFAULT_ROWS_PER_LOAD);
@@ -82,8 +82,7 @@ using json = nlohmann::json;
   void extractColumnData(const std::vector<std::string>& rows,
                          const std::string& column_name, std::vector<T>& vec);
 
-  static void validateJsonRow(const json &row,
-                                   const std::string& column_name);
+  static void validateJsonRow(const json& row, const std::string& column_name);
 
  private:
   DataSourcePtr _data_source;

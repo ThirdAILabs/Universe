@@ -54,7 +54,7 @@ ColumnMap NerTokenFromStringArray::apply(ColumnMap columns,
       size_t sample_offset = sample_offsets[i];
 
       for (size_t target = 0; target < row_tokens.size(); target += 1) {
-        // 198 is \n token in GPT2Tokenizer 
+        // 198 is \n token in GPT2Tokenizer
         tokens_front[sample_offset] =
             (target + 1 < row_tokens.size()) ? row_tokens[target + 1] : "198";
         tokens_behind[sample_offset] =

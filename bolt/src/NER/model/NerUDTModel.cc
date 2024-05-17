@@ -130,8 +130,7 @@ NerUDTModel::NerUDTModel(std::shared_ptr<NerUDTModel>& pretrained_model,
       [](const auto& a, const auto& b) { return a.second < b.second; });
   _number_labels = maxPair->second + 1;
 
-  auto emb_op = 
-      pretrained_model->getBoltModel()->getOp("emb_1");
+  auto emb_op = pretrained_model->getBoltModel()->getOp("emb_1");
   auto emb = std::dynamic_pointer_cast<Embedding>(emb_op);
 
   if (!emb) {

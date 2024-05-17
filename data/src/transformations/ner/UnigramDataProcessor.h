@@ -9,7 +9,8 @@
 #include <vector>
 
 namespace thirdai::data {
-class NerDyadicDataProcessor : std::enable_shared_from_this<NerDyadicDataProcessor> {
+class NerDyadicDataProcessor
+    : std::enable_shared_from_this<NerDyadicDataProcessor> {
  public:
   explicit NerDyadicDataProcessor(
       std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,

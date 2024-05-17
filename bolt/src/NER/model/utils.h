@@ -7,7 +7,7 @@
 #include <data/src/transformations/Pipeline.h>
 
 namespace thirdai::bolt {
-  
+
 static std::vector<thirdai::bolt::PerTokenListPredictions> getTags(
     std::vector<std::vector<std::string>> tokens, uint32_t top_k,
     std::string tokens_column, const data::PipelinePtr& inference_transform,
