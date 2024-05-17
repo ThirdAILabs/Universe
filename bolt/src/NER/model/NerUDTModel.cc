@@ -1,7 +1,6 @@
 #include "NerUDTModel.h"
 #include <bolt/src/NER/Defaults.h>
 #include <bolt/src/NER/model/NER.h>
-#include <bolt/src/NER/model/utils.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
@@ -45,7 +44,7 @@ void NerUDTModel::initializeNER(uint32_t fhr, uint32_t number_labels) {
 
 
   auto bolt_inputs = {
-      data::OutputColumns(train_transformation.getFeaturizedIndicesColumn())};
+      data::OutputColumns(train_transformation->getFeaturizedIndicesColumn())};
 
   _classifier = std::make_shared<NerClassifier>(
       _bolt_model, bolt_inputs, train_transforms, inference_transforms,
@@ -97,6 +96,9 @@ NerUDTModel::NerUDTModel(
   uint32_t fhr = input_dims[0];
   uint32_t number_labels = getMaxLabelFromTagToLabel(_tag_to_label);
 
+  for (const auto& [k, v] : tag_to_label) {
+      _label_to_tag_map[v] = k;
+    }
   initializeNER(fhr, number_labels);
 }
 
@@ -112,6 +114,10 @@ NerUDTModel::NerUDTModel(
   _bolt_model = initializeBoltModel(defaults::UDT_FEATURE_HASH_RANGE,
                                     defaults::UDT_EMB_DIM, number_labels);
 
+
+  for (const auto& [k, v] : tag_to_label) {
+      _label_to_tag_map[v] = k;
+    }
   initializeNER(defaults::UDT_FEATURE_HASH_RANGE, number_labels);
 }
 
@@ -131,14 +137,19 @@ NerUDTModel::NerUDTModel(std::shared_ptr<NerUDTModel>& pretrained_model,
   if (!emb) {
     throw std::runtime_error("Error casting 'emb_1' op to Embedding Op");
   }
+
+  for (const auto& [k, v] : tag_to_label) {
+      _label_to_tag_map[v] = k;
+    }
   _bolt_model =
       initializeBoltModel(fhr, emb->dim(), number_labels, emb->parameters());
   initializeNER(fhr, number_labels);
 }
 
-std::vector<PerTokenListPredictions> NerUDTModel::getTags(
+std::vector<std::vector<std::vector<std::pair<std::string, float>>>> NerUDTModel::getTags(
     std::vector<std::vector<std::string>> tokens, uint32_t top_k) const {
-  return _classifier->getTags(tokens, top_k);
+  auto tags_and_scores = _classifier->getTags(tokens, top_k);
+  return thirdai::bolt::NER::getNerTagsFromTokens(_label_to_tag_map, tags_and_scores);
 }
 
 metrics::History NerUDTModel::train(

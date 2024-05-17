@@ -21,7 +21,7 @@ class NerModelInterface {
  public:
   virtual ~NerModelInterface() = default;
 
-  virtual std::vector<PerTokenListPredictions> getTags(
+  virtual std::vector<std::vector<std::vector<std::pair<std::string, float>>>> getTags(
       std::vector<std::vector<std::string>> tokens, uint32_t top_k) const = 0;
 
   virtual metrics::History train(

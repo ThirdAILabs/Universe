@@ -1,7 +1,6 @@
 #include "NerBoltModel.h"
 #include <cereal/archives/binary.hpp>
 #include <bolt/src/NER/model/NER.h>
-#include <bolt/src/NER/model/utils.h>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/model/Model.h>
@@ -32,7 +31,7 @@ namespace thirdai::bolt::NER {
 
 bolt::ModelPtr NerBoltModel::initializeBoltModel(
     std::shared_ptr<NerBoltModel>& pretrained_model,
-    std::unordered_map<std::string, uint32_t> tag_to_label,
+    std::unordered_map<std::string, uint32_t> &tag_to_label,
     uint32_t vocab_size) {
   auto num_labels = getMaxLabelFromTagToLabel(std::move(tag_to_label));
 
@@ -86,6 +85,10 @@ NerBoltModel::NerBoltModel(
       _tokens_column(std::move(tokens_column)),
       _tags_column(std::move(tags_column)),
       _tag_to_label(std::move(tag_to_label)) {
+  std::cout << "Printing tag_to_label in NerBoltModel[C1]" << std::endl;
+  for (const auto& [k, v] : tag_to_label) {
+      std::cout << v << " " << k << std::endl;
+    }
   auto train_transforms = getTransformations(/*inference=*/false);
   auto inference_transforms = getTransformations(/*inference=*/true);
   auto bolt_inputs = {data::OutputColumns("tokens"),
@@ -94,6 +97,10 @@ NerBoltModel::NerBoltModel(
   _classifier = std::make_shared<NerClassifier>(
       _bolt_model, bolt_inputs, train_transforms, inference_transforms,
       _tokens_column, _tags_column);
+
+  for (const auto& [k, v] : tag_to_label) {
+      _label_to_tag_map[v] = k;
+    }
 }
 
 NerBoltModel::NerBoltModel(
@@ -103,6 +110,10 @@ NerBoltModel::NerBoltModel(
     : _tokens_column(std::move(tokens_column)),
       _tags_column(std::move(tags_column)),
       _tag_to_label(std::move(tag_to_label)) {
+  std::cout << "Printing tag_to_label in NerBoltModel[C2]" << std::endl;
+  for (const auto& [k, v] : tag_to_label) {
+      std::cout << v << " " << k << std::endl;
+    }
   _bolt_model =
       initializeBoltModel(pretrained_model, _tag_to_label, _vocab_size);
   auto train_transforms = getTransformations(/*inference=*/false);
@@ -113,6 +124,11 @@ NerBoltModel::NerBoltModel(
   _classifier = std::make_shared<NerClassifier>(
       _bolt_model, bolt_inputs, train_transforms, inference_transforms,
       _tokens_column, _tags_column);
+
+  
+  for (const auto& [k, v] : tag_to_label) {
+      _label_to_tag_map[v] = k;
+    }
 }
 
 data::PipelinePtr NerBoltModel::getTransformations(bool inference) {
@@ -120,13 +136,13 @@ data::PipelinePtr NerBoltModel::getTransformations(bool inference) {
   if (inference) {
     transform =
         data::Pipeline::make({std::make_shared<data::NerTokenFromStringArray>(
-            _source_column, "tokens", "token_next", "token_previous",
+            _tokens_column, "tokens", "token_next", "token_previous",
             std::nullopt, std::nullopt)});
   } else {
     transform =
         data::Pipeline::make({std::make_shared<data::NerTokenFromStringArray>(
-            _source_column, "tokens", "token_next", "token_previous",
-            _target_column, _tag_to_label)});
+            _tokens_column, "tokens", "token_next", "token_previous",
+            _tags_column, _tag_to_label)});
   }
   transform = transform->then(std::make_shared<data::StringToTokenArray>(
       "tokens", "tokens", ' ', _vocab_size));
@@ -147,9 +163,10 @@ metrics::History NerBoltModel::train(
                             train_metrics, val_data, val_metrics);
 }
 
-std::vector<PerTokenListPredictions> NerBoltModel::getTags(
+std::vector<std::vector<std::vector<std::pair<std::string, float>>>> NerBoltModel::getTags(
     std::vector<std::vector<std::string>> tokens, uint32_t top_k) const {
-  return _classifier->getTags(tokens, top_k);
+  auto tags_and_scores = _classifier->getTags(tokens, top_k);
+  return thirdai::bolt::NER::getNerTagsFromTokens(_label_to_tag_map, tags_and_scores);
 }
 
 ar::ConstArchivePtr NerBoltModel::toArchive() const {

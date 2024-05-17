@@ -18,8 +18,6 @@ metrics::History NerClassifier::train(
   auto train_data_label = train_dataset.second;
 
   Trainer trainer(_bolt_model);
-  // We cannot use train_with_dataset_loader, since it is using the older
-  // dataset::DatasetLoader while dyadic model is using data::Loader
   for (uint32_t e = 0; e < epochs; e++) {
     trainer.train_with_metric_names(
         train_dataset, learning_rate, 1, train_metrics, val_dataset,
