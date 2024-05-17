@@ -5,9 +5,9 @@
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
-#include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
+#include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <stdexcept>
 #include <string>
@@ -70,7 +70,8 @@ class NerTokenizerUnigram final : public Transformation {
   std::optional<uint32_t> _target_dim;
 
   NerDyadicDataProcessor _processor;
-  std::string _featurized_tokens_indices_column = "featurized_tokens_indices_column";
+  std::string _featurized_tokens_indices_column =
+      "featurized_tokens_indices_column";
 
   // TODO(Shubh) : Add support for depuplicating the tokens by using indices and
   // values pair.

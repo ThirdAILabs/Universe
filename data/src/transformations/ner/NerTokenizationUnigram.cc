@@ -4,8 +4,8 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
-#include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <data/src/transformations/TextTokenizer.h>
+#include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <data/src/transformations/ner/UnigramDataProcessor.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
@@ -81,9 +81,9 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
       std::vector<std::string> row_token_vectors =
           text_tokens->row(i).toVector();
 
-#pragma omp parallel for default(none) shared(                          \
-    text_tokens, sample_offset, featurized_sentences, targets, tags, i, \
-    row_token_vectors, error) if (text_tokens->numRows() <= 1)
+#pragma omp parallel for default(none)                                         \
+    shared(text_tokens, sample_offset, featurized_sentences, targets, tags, i, \
+           row_token_vectors, error) if (text_tokens->numRows() <= 1)
       for (size_t target = 0; target < row_token_vectors.size(); target++) {
         try {
           size_t featurized_sentence_offset = sample_offset + target;

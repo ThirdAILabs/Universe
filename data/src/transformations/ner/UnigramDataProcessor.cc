@@ -65,8 +65,7 @@ std::string NerDyadicDataProcessor::generateDyadicWindows(
     prev_window.reserve(interval_size);
     next_window.reserve(interval_size);
 
-    for (size_t lower_index =
-             std::max(index - interval_size, 0U);
+    for (size_t lower_index = std::max(index - interval_size, 0U);
          lower_index < index; lower_index++) {
       prev_window.push_back(_dyadic_previous_prefix +
                             std::to_string(interval_id) + "_" +

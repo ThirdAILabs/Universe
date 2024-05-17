@@ -17,9 +17,9 @@
 #include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
-#include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/Transformation.h>
+#include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <cmath>
 #include <optional>

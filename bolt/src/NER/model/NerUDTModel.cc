@@ -125,8 +125,7 @@ NerUDTModel::NerUDTModel(std::shared_ptr<NerUDTModel>& pretrained_model,
   uint32_t fhr = (pretrained_model->getBoltModel()->inputDims()[0]);
   uint32_t number_labels = getMaxLabelFromTagToLabel(_tag_to_label);
 
-  auto emb_op = 
-      pretrained_model->getBoltModel()->getOp("emb_1");
+  auto emb_op = pretrained_model->getBoltModel()->getOp("emb_1");
   auto emb = std::dynamic_pointer_cast<Embedding>(emb_op);
 
   if (!emb) {
