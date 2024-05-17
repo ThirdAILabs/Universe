@@ -31,7 +31,7 @@ class NerBoltModel final : public NerBackend {
                std::string tokens_column, std::string tags_column,
                std::unordered_map<std::string, uint32_t> tag_to_label);
 
-  std::vector<PerTokenListPredictions> getTags(
+  std::vector<std::vector<std::vector<std::pair<std::string, float>>>> getTags(
       std::vector<std::vector<std::string>> tokens, uint32_t top_k) final;
 
   metrics::History train(const dataset::DataSourcePtr& train_data,
@@ -77,6 +77,7 @@ class NerBoltModel final : public NerBackend {
   data::PipelinePtr _inference_transforms;
   data::OutputColumnsList _bolt_inputs;
   std::unordered_map<std::string, uint32_t> _tag_to_label;
+  std::unordered_map<uint32_t, std::string> _label_to_tag_map;
 
   std::string _source_column = "source";
   std::string _target_column = "target";

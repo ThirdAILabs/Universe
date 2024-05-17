@@ -37,9 +37,13 @@ NerBoltModel::NerBoltModel(
       _source_column(std::move(tokens_column)),
       _target_column(std::move(tags_column)) {
   _vocab_size = _bolt_model->inputDims()[0];
-  
+
   _train_transforms = getTransformations(true);
   _inference_transforms = getTransformations(false);
+
+  for (const auto& [k, v] : tag_to_label) {
+    _label_to_tag_map[v] = k;
+  }
 
   _bolt_inputs = {data::OutputColumns("tokens"),
                   data::OutputColumns("token_next"),
@@ -52,13 +56,9 @@ NerBoltModel::NerBoltModel(
     : _tag_to_label(tag_to_label),
       _source_column(std::move(tokens_column)),
       _target_column(std::move(tags_column)) {
-  auto maxPair = std::max_element(
-      tag_to_label.begin(), tag_to_label.end(),
-      [](const auto& a, const auto& b) { return a.second < b.second; });
-  auto num_labels = maxPair->second + 1;
+  auto num_labels = getMaxValueInMap(tag_to_label) + 1;
 
-  auto emb_op_pretrained = 
-      pretrained_model->getBoltModel()->getOp("emb_1");
+  auto emb_op_pretrained = pretrained_model->getBoltModel()->getOp("emb_1");
   auto emb = std::dynamic_pointer_cast<Embedding>(emb_op_pretrained);
 
   if (!emb) {
@@ -107,6 +107,10 @@ NerBoltModel::NerBoltModel(
   _bolt_inputs = {data::OutputColumns("tokens"),
                   data::OutputColumns("token_next"),
                   data::OutputColumns("token_previous")};
+
+  for (const auto& [k, v] : tag_to_label) {
+    _label_to_tag_map[v] = k;
+  }
 }
 
 data::PipelinePtr NerBoltModel::getTransformations(bool inference) {
@@ -169,11 +173,14 @@ metrics::History NerBoltModel::train(
   return trainer.getHistory();
 }
 
-std::vector<PerTokenListPredictions> NerBoltModel::getTags(
-    std::vector<std::vector<std::string>> tokens, uint32_t top_k) {
-  return thirdai::bolt::getTags(tokens, top_k, _source_column,
-                                _inference_transforms, _bolt_inputs,
-                                _bolt_model);
+std::vector<std::vector<std::vector<std::pair<std::string, float>>>>
+NerBoltModel::getTags(std::vector<std::vector<std::string>> tokens,
+                      uint32_t top_k) {
+  auto predicted_labels =
+      thirdai::bolt::getTags(tokens, top_k, _source_column,
+                             _inference_transforms, _bolt_inputs, _bolt_model);
+  return thirdai::bolt::getNerTagsFromTokens(_label_to_tag_map,
+                                             predicted_labels);
 }
 
 ar::ConstArchivePtr NerBoltModel::toArchive() const {

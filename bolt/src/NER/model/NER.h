@@ -39,11 +39,6 @@ class NER : public std::enable_shared_from_this<NER> {
         std::move(tokens_column), std::move(tags_column),
         std::move(tag_to_label), std::move(target_word_tokenizers));
     _ner_backend_model = std::static_pointer_cast<NerBackend>(model);
-
-    auto tag_to_label_map = _ner_backend_model->getTagToLabel();
-    for (const auto& [k, v] : tag_to_label_map) {
-      _label_to_tag_map[v] = k;
-    }
   }
 
   NER(const std::string& model_path, std::string tokens_column,
@@ -65,11 +60,6 @@ class NER : public std::enable_shared_from_this<NER> {
           ner_udt_model, std::move(tokens_column), std::move(tags_column),
           std::move(tag_to_label));
       _ner_backend_model = std::static_pointer_cast<NerBackend>(model);
-    }
-
-    auto tag_to_label_map = _ner_backend_model->getTagToLabel();
-    for (const auto& [k, v] : tag_to_label_map) {
-      _label_to_tag_map[v] = k;
     }
   }
 
@@ -109,8 +99,6 @@ class NER : public std::enable_shared_from_this<NER> {
 
  private:
   std::shared_ptr<NerBackend> _ner_backend_model;
-
-  std::unordered_map<uint32_t, std::string> _label_to_tag_map;
 
   NER() {}
 };

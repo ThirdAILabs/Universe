@@ -31,7 +31,7 @@ class NerUDTModel final : public NerBackend {
       std::optional<std::vector<std::vector<float>*>> pretrained_emb =
           std::nullopt);
 
-  std::vector<PerTokenListPredictions> getTags(
+  std::vector<std::vector<std::vector<std::pair<std::string, float>>>> getTags(
       std::vector<std::vector<std::string>> tokens, uint32_t top_k) final;
 
   metrics::History train(const dataset::DataSourcePtr& train_data,
@@ -83,6 +83,7 @@ class NerUDTModel final : public NerBackend {
   std::vector<dataset::TextTokenizerPtr> _target_word_tokenizers;
 
   std::unordered_map<std::string, uint32_t> _tag_to_label;
+  std::unordered_map<uint32_t, std::string> _label_to_tag_map;
 
   data::PipelinePtr _train_transforms;
   data::PipelinePtr _inference_transforms;

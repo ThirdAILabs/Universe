@@ -20,27 +20,27 @@
 namespace thirdai::bolt {
 
 void NerUDTModel::initializeNER() {
-  auto train_transformation = std::make_shared<thirdai::data::NerTokenizerUnigram>(
-      /*tokens_column=*/_tokens_column,
-      /*featurized_sentence_column=*/_featurized_sentence_column,
-      /*target_column=*/_tags_column, /*target_dim=*/_number_labels,
-      /*fhr_dim=*/_fhr, /*dyadic_num_intervals=*/_dyadic_num_intervals,
-      /*target_word_tokenizers=*/_target_word_tokenizers,
-      /*tag_to_label=*/_tag_to_label);
+  auto train_transformation =
+      std::make_shared<thirdai::data::NerTokenizerUnigram>(
+          /*tokens_column=*/_tokens_column,
+          /*featurized_sentence_column=*/_featurized_sentence_column,
+          /*target_column=*/_tags_column, /*target_dim=*/_number_labels,
+          /*fhr_dim=*/_fhr, /*dyadic_num_intervals=*/_dyadic_num_intervals,
+          /*target_word_tokenizers=*/_target_word_tokenizers,
+          /*tag_to_label=*/_tag_to_label);
 
-  auto inference_transformation = std::make_shared<thirdai::data::NerTokenizerUnigram>(
-      /*tokens_column=*/_tokens_column,
-      /*featurized_sentence_column=*/_featurized_sentence_column,
-      /*target_column=*/std::nullopt, /*target_dim=*/std::nullopt,
-      /*fhr_dim=*/_fhr, /*dyadic_num_intervals=*/_dyadic_num_intervals,
-      /*target_word_tokenizers=*/_target_word_tokenizers,
-      /*tag_to_label=*/_tag_to_label);
+  auto inference_transformation =
+      std::make_shared<thirdai::data::NerTokenizerUnigram>(
+          /*tokens_column=*/_tokens_column,
+          /*featurized_sentence_column=*/_featurized_sentence_column,
+          /*target_column=*/std::nullopt, /*target_dim=*/std::nullopt,
+          /*fhr_dim=*/_fhr, /*dyadic_num_intervals=*/_dyadic_num_intervals,
+          /*target_word_tokenizers=*/_target_word_tokenizers,
+          /*tag_to_label=*/_tag_to_label);
 
-  _train_transforms = data::Pipeline::make(
-      {train_transformation});
+  _train_transforms = data::Pipeline::make({train_transformation});
 
-  _inference_transforms = data::Pipeline::make(
-      {inference_transformation});
+  _inference_transforms = data::Pipeline::make({inference_transformation});
 
   _bolt_inputs = {
       data::OutputColumns(train_transformation->getFeaturizedIndicesColumn())};
@@ -88,11 +88,10 @@ NerUDTModel::NerUDTModel(
   }
 
   _fhr = input_dims[0];
-  auto maxPair = std::max_element(
-      _tag_to_label.begin(), _tag_to_label.end(),
-      [](const auto& a, const auto& b) { return a.second < b.second; });
-  _number_labels = maxPair->second + 1;
-
+  _number_labels = getMaxValueInMap(_tag_to_label) + 1;
+  for (const auto& [k, v] : tag_to_label) {
+    _label_to_tag_map[v] = k;
+  }
   initializeNER();
 }
 
@@ -104,14 +103,12 @@ NerUDTModel::NerUDTModel(
       _tags_column(std::move(tags_column)),
       _target_word_tokenizers(std::move(target_word_tokenizers)),
       _tag_to_label(tag_to_label),
+      _number_labels(getMaxValueInMap(tag_to_label) + 1),
       _fhr(100000) {
-  auto maxPair = std::max_element(
-      tag_to_label.begin(), tag_to_label.end(),
-      [](const auto& a, const auto& b) { return a.second < b.second; });
-  _number_labels = maxPair->second + 1;
-
   _bolt_model = initializeBoltModel(_fhr, 2000, _number_labels);
-
+  for (const auto& [k, v] : tag_to_label) {
+    _label_to_tag_map[v] = k;
+  }
   initializeNER();
 }
 
@@ -122,12 +119,8 @@ NerUDTModel::NerUDTModel(std::shared_ptr<NerUDTModel>& pretrained_model,
       _tags_column(std::move(tags_column)),
       _target_word_tokenizers(pretrained_model->getTargetWordTokenizers()),
       _tag_to_label(tag_to_label),
+      _number_labels(getMaxValueInMap(tag_to_label) + 1),
       _fhr(pretrained_model->getBoltModel()->inputDims()[0]) {
-  auto maxPair = std::max_element(
-      tag_to_label.begin(), tag_to_label.end(),
-      [](const auto& a, const auto& b) { return a.second < b.second; });
-  _number_labels = maxPair->second + 1;
-
   auto emb_op = pretrained_model->getBoltModel()->getOp("emb_1");
   auto emb = std::dynamic_pointer_cast<Embedding>(emb_op);
 
@@ -139,11 +132,14 @@ NerUDTModel::NerUDTModel(std::shared_ptr<NerUDTModel>& pretrained_model,
   initializeNER();
 }
 
-std::vector<PerTokenListPredictions> NerUDTModel::getTags(
-    std::vector<std::vector<std::string>> tokens, uint32_t top_k) {
-  return thirdai::bolt::getTags(tokens, top_k, _tokens_column,
-                                _inference_transforms, _bolt_inputs,
-                                _bolt_model);
+std::vector<std::vector<std::vector<std::pair<std::string, float>>>>
+NerUDTModel::getTags(std::vector<std::vector<std::string>> tokens,
+                     uint32_t top_k) {
+  auto predicted_labels =
+      thirdai::bolt::getTags(tokens, top_k, _tokens_column,
+                             _inference_transforms, _bolt_inputs, _bolt_model);
+  return thirdai::bolt::getNerTagsFromTokens(_label_to_tag_map,
+                                             predicted_labels);
 }
 
 metrics::History NerUDTModel::train(
