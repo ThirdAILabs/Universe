@@ -155,6 +155,7 @@ neural_db_deps = [
     "PyTrie",
     "PyMuPDF==1.23.26",
     "langchain",
+    "langchain_community",
     "bs4",
     "trafilatura",
     "python-docx",
