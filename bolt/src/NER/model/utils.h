@@ -72,7 +72,7 @@ inline uint32_t getMaxLabelFromTagToLabel(
 // Clang-tidy wants this function inline, which shouldnt be inlined
 inline std::vector<std::vector<std::vector<std::pair<std::string, float>>>>
 getNerTagsFromTokens(
-    std::unordered_map<uint32_t, std::string> label_to_tag_map,  
+    std::unordered_map<uint32_t, std::string> label_to_tag_map,
     const std::vector<PerTokenListPredictions>& tags_and_scores) {
   std::vector<std::vector<std::vector<std::pair<std::string, float>>>>
       string_and_scores;

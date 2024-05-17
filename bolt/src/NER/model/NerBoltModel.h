@@ -71,7 +71,7 @@ class NerBoltModel final : public NerModelInterface {
  private:
   static bolt::ModelPtr initializeBoltModel(
       std::shared_ptr<NerBoltModel>& pretrained_model,
-      std::unordered_map<std::string, uint32_t> &tag_to_label,
+      std::unordered_map<std::string, uint32_t>& tag_to_label,
       uint32_t vocab_size);
 
   data::PipelinePtr getTransformations(bool inference);
