@@ -29,9 +29,18 @@ std::vector<std::string> tokenizeSentence(const std::string& sentence);
 
 std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k);
 
+/**
+ * The behavior enabled by the soft_start flag is best explained with an
+ * example:
+ * When soft_start is false,
+ * tokenize("chanel") -> ["chan", "hane", "anel"]
+ * When soft_start is true,
+ * tokenize("chanel") -> ["c", "ch", "cha", "chan", "hane", "anel"]
+ * This feature is useful for autocomplete use cases.
+ */
 std::vector<std::string> wordLevelCharKGrams(
     const std::vector<std::string>& words, uint32_t k,
-    size_t min_word_length = 4);
+    size_t min_word_length = 4, bool soft_start = false);
 
 std::string deleteRandomCharacters(const std::string& input,
                                    size_t num_to_delete, std::mt19937& rng);

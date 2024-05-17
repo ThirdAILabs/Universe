@@ -5,6 +5,7 @@
 #include <pybind11/stl.h>
 #include <search/src/inverted_index/FinetunableRetriever.h>
 #include <search/src/inverted_index/InvertedIndex.h>
+#include <search/src/inverted_index/Tokenizer.h>
 
 namespace thirdai::search::python {
 
@@ -79,6 +80,13 @@ void createSearchSubmodule(py::module_& module) {
       search_submodule, "DefaultTokenizer")
       .def(py::init<bool, bool>(), py::arg("stem") = true,
            py::arg("lowercase") = true);
+
+  py::class_<KgramTokenizer, Tokenizer, std::shared_ptr<KgramTokenizer>>(
+      search_submodule, "KgramTokenizer")
+      .def(py::init<uint32_t, bool, bool, bool, bool>(), py::arg("k") = 4,
+           py::arg("soft_start") = true, py::arg("include_whole_words") = true,
+           py::arg("stem") = true, py::arg("lowercase") = true)
+      .def("tokenize", &KgramTokenizer::tokenize, py::arg("input"));
 
   py::class_<InvertedIndex, std::shared_ptr<InvertedIndex>>(search_submodule,
                                                             "InvertedIndex")
