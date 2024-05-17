@@ -74,6 +74,8 @@ jobs:
           cmake -DCMAKE_C_COMPILER=$(brew --prefix llvm@17)/bin/clang -DCMAKE_CXX_COMPILER=$(brew --prefix llvm@17)/bin/clang++ -DCMAKE_BUILD_TYPE=Release ..
           make -j
           make install
+          cd ../../../
+          rm -rf llvm-project
 
       - name: Build and test wheels
         uses: pypa/cibuildwheel@v2.9.0
