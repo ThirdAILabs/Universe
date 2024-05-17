@@ -30,8 +30,6 @@ class DefaultTokenizer final : public Tokenizer {
   explicit DefaultTokenizer(bool stem = true, bool lowercase = true)
       : _stem(stem), _lowercase(lowercase) {}
 
-  explicit DefaultTokenizer(const ar::Archive& archive);
-
   Tokens tokenize(const std::string& input) const final;
 
   ar::ConstArchivePtr toArchive() const final;
@@ -64,9 +62,8 @@ class WordKGrams final : public Tokenizer {
       : _k(k),
         _soft_start(soft_start),
         _include_whole_words(include_whole_words),
-        _default_tokenizer(stem, lowercase) {}
-
-  explicit WordKGrams(const ar::Archive& archive);
+        _stem(stem),
+        _lowercase(lowercase) {}
 
   Tokens tokenize(const std::string& input) const final;
 
@@ -78,8 +75,7 @@ class WordKGrams final : public Tokenizer {
 
  private:
   uint32_t _k;
-  bool _soft_start, _include_whole_words;
-  DefaultTokenizer _default_tokenizer;
+  bool _soft_start, _include_whole_words, _stem, _lowercase;
 };
 
 }  // namespace thirdai::search

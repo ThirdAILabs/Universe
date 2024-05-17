@@ -55,15 +55,27 @@ ar::ConstArchivePtr DefaultTokenizer::toArchive() const {
 
 std::shared_ptr<DefaultTokenizer> DefaultTokenizer::fromArchive(
     const ar::Archive& archive) {
-  return std::make_shared<DefaultTokenizer>(archive);
+  return std::make_shared<DefaultTokenizer>(archive.boolean("stem"),
+                                            archive.boolean("lowercase"));
 }
 
-DefaultTokenizer::DefaultTokenizer(const ar::Archive& archive)
-    : _stem(archive.boolean("stem")),
-      _lowercase(archive.boolean("lowercase")) {}
-
 Tokens WordKGrams::tokenize(const std::string& input) const {
-  auto tokens = _default_tokenizer.tokenize(input);
+  std::string text = input;
+  for (char& c : text) {
+    if (std::ispunct(c)) {
+      c = ' ';
+    }
+  }
+
+  Tokens tokens = text::splitOnWhiteSpace(text);
+
+  if (_stem) {
+    tokens = text::porter_stemmer::stem(tokens, _lowercase);
+  } else if (_lowercase) {
+    for (auto& token : tokens) {
+      token = text::lower(token);
+    }
+  }
 
   auto k_grams = text::wordLevelCharKGrams(tokens, _k, /* min_word_length= */ 1,
                                            /* soft_start= */ _soft_start);
@@ -84,20 +96,18 @@ ar::ConstArchivePtr WordKGrams::toArchive() const {
   map->set("k", ar::u64(_k));
   map->set("soft_start", ar::boolean(_soft_start));
   map->set("include_whole_words", ar::boolean(_include_whole_words));
-  map->set("default_tokenizer", _default_tokenizer.toArchive());
+  map->set("stem", ar::boolean(_stem));
+  map->set("lowercase", ar::boolean(_lowercase));
 
   return map;
 }
 
-WordKGrams::WordKGrams(const ar::Archive& archive)
-    : _k(archive.u64("k")),
-      _soft_start(archive.boolean("soft_start")),
-      _include_whole_words(archive.boolean("include_whole_words")),
-      _default_tokenizer(DefaultTokenizer(*archive.get("default_tokenizer"))) {}
-
 std::shared_ptr<WordKGrams> WordKGrams::fromArchive(
     const ar::Archive& archive) {
-  return std::make_shared<WordKGrams>(archive);
+  return std::make_shared<WordKGrams>(
+      archive.u64("k"), archive.boolean("soft_start"),
+      archive.boolean("include_whole_words"), archive.boolean("stem"),
+      archive.boolean("lowercase"));
 }
 
 }  // namespace thirdai::search
