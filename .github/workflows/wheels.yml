@@ -66,7 +66,14 @@ jobs:
 
       - name: Install llvm clang and libomp for macosx-x86
         if: ${{ startsWith(matrix.runs-on, 'macos-12')}}
-        run: brew install llvm libomp
+        run: |
+          brew install llvm@17
+          git clone -b release/17.x https://github.com/llvm/llvm-project
+          cd llvm-project/openmp
+          mkdir build && cd build
+          cmake -DCMAKE_C_COMPILER=$(brew --prefix llvm@17)/bin/clang -DCMAKE_CXX_COMPILER=$(brew --prefix llvm@17)/bin/clang++ -DCMAKE_BUILD_TYPE=Release ..
+          make -j
+          make install
 
       - name: Build and test wheels
         uses: pypa/cibuildwheel@v2.9.0
@@ -95,8 +102,8 @@ jobs:
             OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
             OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
-            CXX="$(brew --prefix llvm)/bin/clang++"
-            CC="$(brew --prefix llvm)/bin/clang"
+            CXX="$(brew --prefix llvm@17)/bin/clang++"
+            CC="$(brew --prefix llvm@17)/bin/clang"
          
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
