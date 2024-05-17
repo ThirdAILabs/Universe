@@ -11,5 +11,3 @@ def test_inverted_index_kgram_tokenizer():
     index = InvertedIndex(tokenizer=KgramTokenizer())
     index.index(ids=[0, 1], docs=["Numero uno", "Numero dos"])
     assert index.query(query="Numero uno", k=1)[0][0] == 0
-
-
