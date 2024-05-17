@@ -162,7 +162,7 @@ neural_db_deps = [
     "nltk",
     "dask[complete]",
     "unidecode",
-    "pydantic<2.5",
+    "pydantic",
     "sortedcontainers",
     "SQLAlchemy>=2.0.0",
     "scikit-learn",
