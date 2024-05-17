@@ -5,7 +5,7 @@
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
-#include <data/src/transformations/NerTokenFromStringArray.h>
+#include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
@@ -47,7 +47,7 @@ class NerTokenizerUnigram final : public Transformation {
       throw std::logic_error("Tag to Label is None");
     }
     auto tag_map = _tag_to_label.value();
-    if (tag_map.find(tag) != tag_map.end()) {
+    if (tag_map.count(tag)) {
       return tag_map.at(tag);
     }
 
@@ -69,9 +69,8 @@ class NerTokenizerUnigram final : public Transformation {
   std::optional<std::string> _target_column;
   std::optional<uint32_t> _target_dim;
 
-  SimpleDataProcessor _processor;
-  std::string _featurized_tokens_indices_column =
-      _featurized_sentence_column + "_tokens";
+  NerDyadicDataProcessor _processor;
+  std::string _featurized_tokens_indices_column = "featurized_tokens_indices_column";
 
   // TODO(Shubh) : Add support for depuplicating the tokens by using indices and
   // values pair.

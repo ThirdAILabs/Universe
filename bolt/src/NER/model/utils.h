@@ -20,11 +20,7 @@ static std::vector<PerTokenListPredictions> getTags(
   tags_and_scores.reserve(tokens.size());
 
   for (const auto& sub_vector : tokens) {
-    PerTokenListPredictions predictions;
-    predictions.reserve(sub_vector.size());
-    for (size_t i = 0; i < sub_vector.size(); i++) {
-      predictions.push_back(PerTokenPredictions());
-    }
+    PerTokenListPredictions predictions(sub_vector.size());
     tags_and_scores.push_back(predictions);
   }
   data::ColumnMap data(

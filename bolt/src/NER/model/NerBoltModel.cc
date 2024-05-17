@@ -17,7 +17,7 @@
 #include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
-#include <data/src/transformations/NerTokenFromStringArray.h>
+#include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/utils/SafeFileIO.h>
@@ -65,12 +65,12 @@ bolt::ModelPtr NerBoltModel::initializeBoltModel(
   emb_op->setEmbeddings(pretrained_weights->data());
 
   auto tokens_embedding = emb_op->apply(inputs[0]);
-  auto token_front_embedding = emb_op->apply(inputs[1]);
-  auto token_behind_embedding = emb_op->apply(inputs[2]);
+  auto token_next_embedding = emb_op->apply(inputs[1]);
+  auto token_previous_embedding = emb_op->apply(inputs[2]);
 
   auto concat =
       bolt::Concatenate::make()->apply(std::vector<bolt::ComputationPtr>(
-          {token_front_embedding, token_behind_embedding}));
+          {token_next_embedding, token_previous_embedding}));
 
   auto weighted_sum = bolt::WeightedSum::make(2, emb->dim())->apply(concat);
 
@@ -129,20 +129,20 @@ data::PipelinePtr NerBoltModel::getTransformations(bool inference) {
   if (inference) {
     transform =
         data::Pipeline::make({std::make_shared<data::NerTokenFromStringArray>(
-            _tokens_column, "tokens", "token_front", "token_behind",
+            _source_column, "tokens", "token_next", "token_previous",
             std::nullopt, std::nullopt)});
   } else {
     transform =
         data::Pipeline::make({std::make_shared<data::NerTokenFromStringArray>(
-            _tokens_column, "tokens", "token_front", "token_behind",
-            _tags_column, _tag_to_label)});
+            _source_column, "tokens", "token_next", "token_previous",
+            _target_column, _tag_to_label)});
   }
   transform = transform->then(std::make_shared<data::StringToTokenArray>(
       "tokens", "tokens", ' ', _vocab_size));
   transform = transform->then(std::make_shared<data::StringToTokenArray>(
-      "token_front", "token_front", ' ', _vocab_size));
+      "token_next", "token_next", ' ', _vocab_size));
   transform = transform->then(std::make_shared<data::StringToTokenArray>(
-      "token_behind", "token_behind", ' ', _vocab_size));
+      "token_previous", "token_previous", ' ', _vocab_size));
   return transform;
 }
 

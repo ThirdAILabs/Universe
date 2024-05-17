@@ -125,17 +125,9 @@ NerUDTModel::NerUDTModel(std::shared_ptr<NerUDTModel>& pretrained_model,
   uint32_t fhr = (pretrained_model->getBoltModel()->inputDims()[0]);
   uint32_t number_labels = getMaxLabelFromTagToLabel(_tag_to_label);
 
-  auto ops = pretrained_model->getBoltModel()->ops();
-  bool found = std::any_of(ops.begin(), ops.end(), [](const bolt::OpPtr& op) {
-    return op->name() == "emb_1";
-  });
-
-  if (!found) {
-    throw std::runtime_error(
-        "Error: No operation named 'emb_1' found in Pretrained Model");
-  }
-  auto emb = std::dynamic_pointer_cast<Embedding>(
-      pretrained_model->getBoltModel()->getOp("emb_1"));
+  auto emb_op = 
+      pretrained_model->getBoltModel()->getOp("emb_1");
+  auto emb = std::dynamic_pointer_cast<Embedding>(emb_op);
 
   if (!emb) {
     throw std::runtime_error("Error casting 'emb_1' op to Embedding Op");

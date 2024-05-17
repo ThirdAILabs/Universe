@@ -4,7 +4,7 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
-#include <data/src/transformations/NerTokenFromStringArray.h>
+#include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/ner/UnigramDataProcessor.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
@@ -81,32 +81,31 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
       std::vector<std::string> row_token_vectors =
           text_tokens->row(i).toVector();
 
-      std::exception_ptr per_sample_error;
 #pragma omp parallel for default(none) shared(                          \
     text_tokens, sample_offset, featurized_sentences, targets, tags, i, \
-    row_token_vectors, per_sample_error) if (text_tokens->numRows() <= 1)
-      for (size_t start = 0; start < row_token_vectors.size(); start += 1) {
+    row_token_vectors, error) if (text_tokens->numRows() <= 1)
+      for (size_t target = 0; target < row_token_vectors.size(); target++) {
         try {
-          size_t featurized_sentence_offset = sample_offset + start;
+          size_t featurized_sentence_offset = sample_offset + target;
           featurized_sentences[featurized_sentence_offset] =
-              _processor.processToken(row_token_vectors, start);
+              _processor.processToken(row_token_vectors, target);
           if (_target_column) {
             if (_tag_to_label.has_value()) {
               targets[featurized_sentence_offset] =
-                  findTagValueForString(tags->row(i)[start]);
+                  findTagValueForString(tags->row(i)[target]);
             } else {
               targets[featurized_sentence_offset] =
-                  std::stoi(tags->row(i)[start]);
+                  std::stoi(tags->row(i)[target]);
             }
           }
         } catch (...) {
 #pragma omp critical
-          per_sample_error = std::current_exception();
+          error = std::current_exception();
         }
       }
 
-      if (per_sample_error) {
-        std::rethrow_exception(per_sample_error);
+      if (error) {
+        std::rethrow_exception(error);
       }
     } catch (...) {
 #pragma omp critical
@@ -151,7 +150,7 @@ NerTokenizerUnigram::NerTokenizerUnigram(const ar::Archive& archive)
     : _tokens_column(archive.str("tokens_column")),
       _featurized_sentence_column(archive.str("featurized_sentence_column")),
       _target_column(archive.getOpt<ar::Str>("target_column")),
-      _processor(SimpleDataProcessor(*archive.get("processor"))) {
+      _processor(NerDyadicDataProcessor(*archive.get("processor"))) {
   _tokenizer_transformation =
       TextTokenizer::fromArchive(*archive.get("tokenizer"));
 }
