@@ -39,17 +39,9 @@ class NER : public std::enable_shared_from_this<NER> {
   NER(const std::string& model_path, std::string tokens_column,
       std::string tags_column,
       std::unordered_map<std::string, uint32_t> tag_to_label) {
-    std::cout << "Printing tag_to_label in NER" << std::endl;
-    for (const auto& [k, v] : tag_to_label) {
-      std::cout << v << " " << k << std::endl;
-    }
     auto ner_model = load(model_path);
     auto ner_backend = ner_model->getBackend();
     if (ner_backend->type() == "bolt_ner") {
-      std::cout << "Passing tag_to_label" << std::endl;
-      for (const auto& [k, v] : tag_to_label) {
-        std::cout << v << " " << k << std::endl;
-      }
       auto ner_pretrained_model =
           std::dynamic_pointer_cast<NerBoltModel>(ner_backend);
       auto model = std::make_shared<NerBoltModel>(

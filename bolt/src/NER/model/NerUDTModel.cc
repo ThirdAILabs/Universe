@@ -94,7 +94,7 @@ NerUDTModel::NerUDTModel(
   uint32_t fhr = input_dims[0];
   uint32_t number_labels = getMaxLabelFromTagToLabel(_tag_to_label);
 
-  for (const auto& [k, v] : tag_to_label) {
+  for (const auto& [k, v] : _tag_to_label) {
     _label_to_tag_map[v] = k;
   }
   initializeNER(fhr, number_labels);
@@ -112,7 +112,7 @@ NerUDTModel::NerUDTModel(
   _bolt_model = initializeBoltModel(defaults::UDT_FEATURE_HASH_RANGE,
                                     defaults::UDT_EMB_DIM, number_labels);
 
-  for (const auto& [k, v] : tag_to_label) {
+  for (const auto& [k, v] : _tag_to_label) {
     _label_to_tag_map[v] = k;
   }
   initializeNER(defaults::UDT_FEATURE_HASH_RANGE, number_labels);
@@ -135,7 +135,7 @@ NerUDTModel::NerUDTModel(std::shared_ptr<NerUDTModel>& pretrained_model,
     throw std::runtime_error("Error casting 'emb_1' op to Embedding Op");
   }
 
-  for (const auto& [k, v] : tag_to_label) {
+  for (const auto& [k, v] : _tag_to_label) {
     _label_to_tag_map[v] = k;
   }
   _bolt_model =

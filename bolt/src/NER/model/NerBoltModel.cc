@@ -33,7 +33,7 @@ bolt::ModelPtr NerBoltModel::initializeBoltModel(
     std::shared_ptr<NerBoltModel>& pretrained_model,
     std::unordered_map<std::string, uint32_t>& tag_to_label,
     uint32_t vocab_size) {
-  auto num_labels = getMaxLabelFromTagToLabel(std::move(tag_to_label));
+  auto num_labels = getMaxLabelFromTagToLabel(tag_to_label);
 
   auto emb_op_pretrained = pretrained_model->getBoltModel()->getOp("emb_1");
   auto emb = std::dynamic_pointer_cast<Embedding>(emb_op_pretrained);
@@ -85,20 +85,16 @@ NerBoltModel::NerBoltModel(
       _tokens_column(std::move(tokens_column)),
       _tags_column(std::move(tags_column)),
       _tag_to_label(std::move(tag_to_label)) {
-  std::cout << "Printing tag_to_label in NerBoltModel[C1]" << std::endl;
-  for (const auto& [k, v] : tag_to_label) {
-    std::cout << v << " " << k << std::endl;
-  }
   auto train_transforms = getTransformations(/*inference=*/false);
   auto inference_transforms = getTransformations(/*inference=*/true);
   auto bolt_inputs = {data::OutputColumns("tokens"),
-                      data::OutputColumns("token_front"),
-                      data::OutputColumns("token_behind")};
+                      data::OutputColumns("token_next"),
+                      data::OutputColumns("token_previous")};
   _classifier = std::make_shared<NerClassifier>(
       _bolt_model, bolt_inputs, train_transforms, inference_transforms,
       _tokens_column, _tags_column);
 
-  for (const auto& [k, v] : tag_to_label) {
+  for (const auto& [k, v] : _tag_to_label) {
     _label_to_tag_map[v] = k;
   }
 }
@@ -110,22 +106,18 @@ NerBoltModel::NerBoltModel(
     : _tokens_column(std::move(tokens_column)),
       _tags_column(std::move(tags_column)),
       _tag_to_label(std::move(tag_to_label)) {
-  std::cout << "Printing tag_to_label in NerBoltModel[C2]" << std::endl;
-  for (const auto& [k, v] : tag_to_label) {
-    std::cout << v << " " << k << std::endl;
-  }
   _bolt_model =
       initializeBoltModel(pretrained_model, _tag_to_label, _vocab_size);
   auto train_transforms = getTransformations(/*inference=*/false);
   auto inference_transforms = getTransformations(/*inference=*/true);
   auto bolt_inputs = {data::OutputColumns("tokens"),
-                      data::OutputColumns("token_front"),
-                      data::OutputColumns("token_behind")};
+                      data::OutputColumns("token_next"),
+                      data::OutputColumns("token_previous")};
   _classifier = std::make_shared<NerClassifier>(
       _bolt_model, bolt_inputs, train_transforms, inference_transforms,
       _tokens_column, _tags_column);
 
-  for (const auto& [k, v] : tag_to_label) {
+  for (const auto& [k, v] : _tag_to_label) {
     _label_to_tag_map[v] = k;
   }
 }

@@ -23,16 +23,7 @@ NerTokenFromStringArray::NerTokenFromStringArray(
       _token_next_column(std::move(token_next_column)),
       _token_previous_column(std::move(token_previous_column)),
       _target_column(std::move(target_column)),
-      _tag_to_label(std::move(tag_to_label)) {
-  std::cout << "Printing tag_to_label in NerTokenFromStringArray" << std::endl;
-  if (_tag_to_label) {
-    for (const auto& [k, v] : *tag_to_label) {
-      std::cout << v << " " << k << std::endl;
-    }
-  } else {
-    std::cout << "No values" << std::endl;
-  }
-}
+      _tag_to_label(std::move(tag_to_label)) {}
 
 ColumnMap NerTokenFromStringArray::apply(ColumnMap columns,
                                          State& state) const {
