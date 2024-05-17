@@ -36,8 +36,7 @@ bolt::ModelPtr NerBoltModel::initializeBoltModel(
     uint32_t vocab_size) {
   auto num_labels = getMaxLabelFromTagToLabel(std::move(tag_to_label));
 
-  auto emb_op_pretrained = 
-      pretrained_model->getBoltModel()->getOp("emb_1");
+  auto emb_op_pretrained = pretrained_model->getBoltModel()->getOp("emb_1");
   auto emb = std::dynamic_pointer_cast<Embedding>(emb_op_pretrained);
 
   if (!emb) {

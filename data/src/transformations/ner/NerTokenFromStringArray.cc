@@ -89,11 +89,11 @@ ColumnMap NerTokenFromStringArray::apply(ColumnMap columns,
   output_columns[_token_previous_column] =
       ValueColumn<std::string>::make(std::move(tokens_behind));
   if (_target_column && _tag_to_label.has_value()) {
-    auto maxPair = std::max_element(
+    auto max_pair = std::max_element(
         _tag_to_label.value().begin(), _tag_to_label.value().end(),
         [](const auto& a, const auto& b) { return a.second < b.second; });
     output_columns[*_target_column] =
-        ValueColumn<uint32_t>::make(std::move(targets), maxPair->second + 1);
+        ValueColumn<uint32_t>::make(std::move(targets), max_pair->second + 1);
   }
 
   return ColumnMap(output_columns);

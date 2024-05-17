@@ -80,6 +80,7 @@ class NerBoltModel final : public NerModelInterface {
   std::string _tokens_column;
   std::string _tags_column;
   std::unordered_map<std::string, uint32_t> _tag_to_label;
+  std::unordered_map<uint32_t, std::string> _label_to_tag_map;
 
   NerClassifierPtr _classifier;
   size_t _vocab_size = defaults::PRETRAINED_BOLT_VOCAB_SIZE;

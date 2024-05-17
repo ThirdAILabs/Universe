@@ -21,26 +21,27 @@
 namespace thirdai::bolt::NER {
 
 void NerUDTModel::initializeNER(uint32_t fhr, uint32_t number_labels) {
-  auto train_transformation = std::make_shared<thirdai::data::NerTokenizerUnigram>(
-      /*tokens_column=*/_tokens_column,
-      /*featurized_sentence_column=*/_featurized_sentence_column,
-      /*target_column=*/_tags_column, /*target_dim=*/number_labels,
-      /*fhr_dim=*/fhr, /*dyadic_num_intervals=*/_dyadic_num_intervals,
-      /*target_word_tokenizers=*/_target_word_tokenizers,
-      /*tag_to_label=*/_tag_to_label);
+  auto train_transformation =
+      std::make_shared<thirdai::data::NerTokenizerUnigram>(
+          /*tokens_column=*/_tokens_column,
+          /*featurized_sentence_column=*/_featurized_sentence_column,
+          /*target_column=*/_tags_column, /*target_dim=*/number_labels,
+          /*fhr_dim=*/fhr, /*dyadic_num_intervals=*/_dyadic_num_intervals,
+          /*target_word_tokenizers=*/_target_word_tokenizers,
+          /*tag_to_label=*/_tag_to_label);
 
-  auto inference_transformation = std::make_shared<thirdai::data::NerTokenizerUnigram>(
-      /*tokens_column=*/_tokens_column,
-      /*featurized_sentence_column=*/_featurized_sentence_column,
-      /*target_column=*/std::nullopt, /*target_dim=*/std::nullopt,
-      /*fhr_dim=*/fhr, /*dyadic_num_intervals=*/_dyadic_num_intervals,
-      /*target_word_tokenizers=*/_target_word_tokenizers,
-      /*tag_to_label=*/_tag_to_label);
+  auto inference_transformation =
+      std::make_shared<thirdai::data::NerTokenizerUnigram>(
+          /*tokens_column=*/_tokens_column,
+          /*featurized_sentence_column=*/_featurized_sentence_column,
+          /*target_column=*/std::nullopt, /*target_dim=*/std::nullopt,
+          /*fhr_dim=*/fhr, /*dyadic_num_intervals=*/_dyadic_num_intervals,
+          /*target_word_tokenizers=*/_target_word_tokenizers,
+          /*tag_to_label=*/_tag_to_label);
 
-  auto train_transforms =  data::Pipeline::make(
-      {train_transformation});
-  auto inference_transforms = data::Pipeline::make(
-      {inference_transformation});
+  auto train_transforms = data::Pipeline::make({train_transformation});
+
+  auto inference_transforms = data::Pipeline::make({inference_transformation});
 
 
   auto bolt_inputs = {

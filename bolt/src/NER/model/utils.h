@@ -61,6 +61,7 @@ static std::vector<PerTokenListPredictions> getTags(
   return tags_and_scores;
 }
 
+<<<<<<< HEAD
 inline uint32_t getMaxLabelFromTagToLabel(
     std::unordered_map<std::string, uint32_t> tag_to_label) {
   auto maxPair = std::max_element(
@@ -69,3 +70,40 @@ inline uint32_t getMaxLabelFromTagToLabel(
   return maxPair->second + 1;
 }
 }  // namespace thirdai::bolt::NER
+=======
+// Clang-tidy wants this function inline, which shouldnt be inlined
+std::vector<std::vector<std::vector<std::pair<std::string, float>>>>
+getNerTagsFromTokens(
+    std::unordered_map<uint32_t, std::string> label_to_tag_map,  // NOLINT
+    const std::vector<PerTokenListPredictions>& tags_and_scores) {
+  std::vector<std::vector<std::vector<std::pair<std::string, float>>>>
+      string_and_scores;
+
+  for (const auto& sentence_tags_and_scores : tags_and_scores) {
+    std::vector<std::vector<std::pair<std::string, float>>>
+        sentence_string_tags_and_scores;
+    sentence_string_tags_and_scores.reserve(sentence_tags_and_scores.size());
+    for (const auto& tags_and_scores : sentence_tags_and_scores) {
+      std::vector<std::pair<std::string, float>> token_tags_and_scores;
+      token_tags_and_scores.reserve(tags_and_scores.size());
+      for (const auto& tag_and_score : tags_and_scores) {
+        token_tags_and_scores.push_back(
+            {label_to_tag_map[tag_and_score.first], tag_and_score.second});
+      }
+      sentence_string_tags_and_scores.push_back(token_tags_and_scores);
+    }
+    string_and_scores.push_back(sentence_string_tags_and_scores);
+  }
+  return string_and_scores;
+}
+
+inline uint32_t getMaxValueInMap(
+    std::unordered_map<std::string, uint32_t>& tag_to_label) {
+  auto max_pair = std::max_element(
+      tag_to_label.begin(), tag_to_label.end(),
+      [](const auto& a, const auto& b) { return a.second < b.second; });
+  return max_pair->second;
+}
+
+}  // namespace thirdai::bolt
+>>>>>>> 7a2d1778e (clean up)

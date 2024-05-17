@@ -80,6 +80,7 @@ class NerUDTModel final : public NerModelInterface {
   std::vector<dataset::TextTokenizerPtr> _target_word_tokenizers;
 
   std::unordered_map<std::string, uint32_t> _tag_to_label;
+  std::unordered_map<uint32_t, std::string> _label_to_tag_map;
 
   uint32_t _dyadic_num_intervals = defaults::UDT_DYADIC_NUM_INTERVALS;
 
