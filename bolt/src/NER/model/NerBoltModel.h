@@ -81,7 +81,7 @@ class NerBoltModel final : public NerBackend {
   std::string _source_column = "source";
   std::string _target_column = "target";
 
-  size_t _vocab_size = 50257;
+  size_t _vocab_size;
 };
 
 }  // namespace thirdai::bolt
