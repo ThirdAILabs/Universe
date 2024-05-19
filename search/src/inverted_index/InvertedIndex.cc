@@ -13,12 +13,14 @@
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <exception>
 #include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace thirdai::search {
@@ -46,23 +48,57 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
 
   auto doc_lens_and_occurences = countTokenOccurences(docs);
 
-  for (size_t i = 0; i < docs.size(); i++) {
-    if (_shards.empty() || _shards.back().size() == _shard_size) {
-      _shards.push_back(Shard());
+  // Compute how new docs will be split among shards
+
+  std::vector<size_t> doc_offsets({0});
+  size_t start_shard_id = _shards.size();
+  size_t n_new_shards = 0;
+
+  if (!_shards.empty() && _shards.back().size() < _shard_size) {
+    start_shard_id--;
+    size_t n_docs = std::min(docs.size(), _shard_size - _shards.back().size());
+    doc_offsets.push_back(n_docs);
+  }
+
+  for (size_t doc_offset = doc_offsets.back(); doc_offset < docs.size();
+       doc_offset += _shard_size) {
+    doc_offsets.push_back(doc_offset);
+    n_new_shards += 1;
+  }
+
+  doc_offsets.push_back(docs.size());
+  n_new_shards += 1;
+
+  // Allocate new shards
+  _shards.resize(_shards.size() + n_new_shards);
+  std::vector<size_t> doc_lens(doc_offsets.size() - 1);
+
+// Process shards in parallel
+#pragma omp parallel for default(none) \
+    shared(doc_offsets, doc_lens, doc_lens_and_occurrences)
+  for (size_t shard_id_offset = 0; shard_id_offset < doc_offsets.size() - 1;
+       shard_id_offset++) {
+    auto& shard = _shards[start_shard_id + shard_id_offset];
+    size_t doc_start = doc_offsets[shard_id_offset];
+    size_t doc_end = doc_offsets[shard_id_offset + 1];
+
+    for (size_t i = doc_start; i < doc_end; i++) {
+      const DocId doc_id = ids[i];
+      const size_t doc_len = doc_lens_and_occurences[i].first;
+      const auto& occurrences = doc_lens_and_occurences[i].second;
+
+      if (shard.contains(doc_id)) {
+        throw std::runtime_error("Document with id " + std::to_string(doc_id) +
+                                 " is already in InvertedIndex.");
+      }
+
+      shard.insertDoc(doc_id, doc_len, occurrences);
+      doc_lens[shard_id_offset] += doc_len;
     }
+  }
 
-    const DocId doc_id = ids[i];
-    const size_t doc_len = doc_lens_and_occurences[i].first;
-    const auto& occurences = doc_lens_and_occurences[i].second;
-
-    if (containsDoc(doc_id)) {
-      throw std::runtime_error("Document with id " + std::to_string(doc_id) +
-                               " is already in InvertedIndex.");
-    }
-
-    _shards.back().insertDoc(doc_id, doc_len, occurences);
-
-    _sum_doc_lens += doc_len;
+  for (size_t len : doc_lens) {
+    _sum_doc_lens += len;
   }
 
   recomputeMetadata();
@@ -75,12 +111,6 @@ void InvertedIndex::Shard::insertDoc(
     token_to_docs[token].emplace_back(doc_id, cnt);
   }
   doc_lens[doc_id] = len;
-}
-
-bool InvertedIndex::containsDoc(DocId doc_id) const {
-  return std::any_of(
-      _shards.begin(), _shards.end(),
-      [doc_id](const Shard& shard) { return shard.contains(doc_id); });
 }
 
 std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>>
