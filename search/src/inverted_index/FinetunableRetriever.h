@@ -64,6 +64,8 @@ class FinetunableRetriever {
 
   size_t size() const { return _doc_index->size(); }
 
+  std::shared_ptr<InvertedIndex> docIndex() { return _doc_index; }
+
   static std::shared_ptr<FinetunableRetriever> load(
       const std::string& filename);
 

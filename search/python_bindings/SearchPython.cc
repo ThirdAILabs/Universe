@@ -109,6 +109,8 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("candidates"), py::arg("k"), py::arg("parallelize") = true)
       .def("remove", &InvertedIndex::remove, py::arg("ids"))
       .def("size", &InvertedIndex::size)
+      .def("update_idf_cutoff", &InvertedIndex::updateIdfCutoff,
+           py::arg("cutoff"))
       .def("save", &InvertedIndex::save, py::arg("filename"))
       .def_static("load", &InvertedIndex::load, py::arg("filename"))
       .def(py::pickle(
@@ -162,6 +164,7 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("candidates"), py::arg("k"))
       .def("size", &FinetunableRetriever::size)
       .def("remove", &FinetunableRetriever::remove, py::arg("ids"))
+      .def("doc_index", &FinetunableRetriever::docIndex)
       .def_static("train_from", &FinetunableRetriever::trainFrom,
                   py::arg("index"))
       .def("save", &FinetunableRetriever::save, py::arg("filename"))
