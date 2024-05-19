@@ -74,8 +74,8 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
   std::vector<size_t> doc_lens(doc_offsets.size() - 1);
 
 // Process shards in parallel
-#pragma omp parallel for default(none) \
-    shared(doc_offsets, doc_lens, doc_lens_and_occurrences)
+#pragma omp parallel for default(none) shared( \
+    start_shard_id, ids, doc_offsets, doc_lens, doc_lens_and_occurences)
   for (size_t shard_id_offset = 0; shard_id_offset < doc_offsets.size() - 1;
        shard_id_offset++) {
     auto& shard = _shards[start_shard_id + shard_id_offset];
