@@ -59,10 +59,6 @@ class UDT {
                    TrainOptions options, const bolt::DistributedCommPtr& comm,
                    py::kwargs kwargs);
 
-  py::object trainBatch(const MapInputBatch& batch, float learning_rate);
-
-  void setOutputSparsity(float sparsity, bool rebuild_hash_tables);
-
   /**
    * Performs evaluate of the model on the given dataset and returns the
    * activations produced by the model by default. If return_predicted_class is
@@ -93,11 +89,6 @@ class UDT {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k);
 
-  py::object predictActivationsBatch(const MapInputBatch& samples,
-                                     bool sparse_inference) {
-    return _backend->predictActivationsBatch(samples, sparse_inference);
-  }
-
   /**
    * Performs inference on a batch of samples in parallel and returns the scores
    * for each of the provided output classes.
@@ -105,14 +96,6 @@ class UDT {
   py::object scoreBatch(const MapInputBatch& samples,
                         const std::vector<std::vector<Label>>& classes,
                         std::optional<uint32_t> top_k);
-
-  py::object outputCorrectness(const MapInputBatch& sample,
-                               const std::vector<uint32_t>& labels,
-                               bool sparse_inference,
-                               std::optional<uint32_t> num_hashes) {
-    return _backend->outputCorrectness(sample, labels, sparse_inference,
-                                       num_hashes);
-  }
 
   /**
    * Generates an explaination of the prediction for a given sample. Optional
@@ -144,14 +127,6 @@ class UDT {
    */
   py::object embedding(const MapInputBatch& sample) {
     return _backend->embedding(sample);
-  }
-
-  /**
-   * Returns an embedding for the given class (label) in the model. Optional
-   * method that is not supported by default for backends.
-   */
-  py::object entityEmbedding(const std::variant<uint32_t, std::string>& label) {
-    return _backend->entityEmbedding(label);
   }
 
   /**
@@ -263,42 +238,6 @@ class UDT {
   }
 
   /**
-   * Used in UDTMachClassifier. Introduces a single new document to the model
-   * from an in memory map input. Used in conjunction with coldstart.
-   */
-  void introduceDocument(const MapInput& document,
-                         const std::vector<std::string>& strong_column_names,
-                         const std::vector<std::string>& weak_column_names,
-                         const std::variant<uint32_t, std::string>& new_label,
-                         std::optional<uint32_t> num_buckets_to_sample,
-                         uint32_t num_random_hashes, bool load_balancing,
-                         bool sort_random_hashes) {
-    licensing::entitlements().verifyFullAccess();
-
-    _backend->introduceDocument(document, strong_column_names,
-                                weak_column_names, new_label,
-                                num_buckets_to_sample, num_random_hashes,
-                                load_balancing, sort_random_hashes);
-  }
-
-  /**
-   * Used in UDTMachClassifier. Introduces a new label to the model given a
-   * batch of representative samples of that label. Uses frequency aggregation
-   * based on the outputs of each sample and adds to the internal index.
-   */
-  void introduceLabel(const MapInputBatch& sample,
-                      const std::variant<uint32_t, std::string>& new_label,
-                      std::optional<uint32_t> num_buckets_to_sample,
-                      uint32_t num_random_hashes, bool load_balancing,
-                      bool sort_random_hashes) {
-    licensing::entitlements().verifyFullAccess();
-
-    _backend->introduceLabel(sample, new_label, num_buckets_to_sample,
-                             num_random_hashes, load_balancing,
-                             sort_random_hashes);
-  }
-
-  /**
    * Used in UDTMachClassifier to forget a given label such that it is
    * impossible to predict in the future.
    */
@@ -310,36 +249,6 @@ class UDT {
    * Used in UDTMachClassifier. Clears the internal index.
    */
   void clearIndex() { _backend->clearIndex(); }
-
-  /**
-   * Used in UDTMachClassifier, assumes each of the samples in the input batch
-   * has the target column mapping to space separated strings representing the
-   * actual output metaclasses to predict in mach.
-   */
-  py::object trainWithHashes(const MapInputBatch& batch, float learning_rate) {
-    licensing::entitlements().verifyFullAccess();
-
-    return _backend->trainWithHashes(batch, learning_rate);
-  }
-
-  /**
-   * Used in UDTMachClassifier, returns the predicted hashes from the input
-   * sample. If num_hashes is not provided, will return the number of hashes
-   * used in the index by default.
-   */
-  py::object predictHashes(const MapInput& sample, bool sparse_inference,
-                           bool force_non_empty,
-                           std::optional<uint32_t> num_hashes) {
-    return _backend->predictHashes(sample, sparse_inference, force_non_empty,
-                                   num_hashes);
-  }
-
-  py::object predictHashesBatch(const MapInputBatch& samples,
-                                bool sparse_inference, bool force_non_empty,
-                                std::optional<uint32_t> num_hashes) {
-    return _backend->predictHashesBatch(samples, sparse_inference,
-                                        force_non_empty, num_hashes);
-  }
 
   /**
    * Used for fine tuning in UDTMachClassifier. Predicts the outputs of the
@@ -391,54 +300,6 @@ class UDT {
 
     _backend->upvote(source_target_samples, n_upvote_samples,
                      n_balancing_samples, learning_rate, epochs, batch_size);
-  }
-
-  py::object associateTrain(
-      const dataset::DataSourcePtr& balancing_data,
-      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& metrics,
-      TrainOptions options) {
-    licensing::entitlements().verifyDataSource(balancing_data);
-
-    return _backend->associateTrain(balancing_data, rlhf_samples, n_buckets,
-                                    n_association_samples, learning_rate,
-                                    epochs, metrics, options);
-  }
-
-  py::object associateColdStart(
-      const dataset::DataSourcePtr& balancing_data,
-      const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names,
-      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& metrics,
-      TrainOptions options) {
-    licensing::entitlements().verifyDataSource(balancing_data);
-
-    return _backend->associateColdStart(
-        balancing_data, strong_column_names, weak_column_names, rlhf_samples,
-        n_buckets, n_association_samples, learning_rate, epochs, metrics,
-        options);
-  }
-
-  py::object coldStartWithBalancingSamples(
-      const dataset::DataSourcePtr& data,
-      const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& train_metrics,
-      const std::vector<CallbackPtr>& callbacks,
-      std::optional<uint32_t> batch_size, bool verbose,
-      const std::optional<data::VariableLengthConfig>& variable_length) {
-    licensing::entitlements().verifyDataSource(data);
-
-    TrainOptions options;
-    options.batch_size = batch_size;
-    options.verbose = verbose;
-
-    return _backend->coldStartWithBalancingSamples(
-        data, strong_column_names, weak_column_names, learning_rate, epochs,
-        train_metrics, callbacks, options, variable_length);
   }
 
   /**

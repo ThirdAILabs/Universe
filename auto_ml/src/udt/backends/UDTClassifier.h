@@ -43,15 +43,6 @@ class UDTClassifier final : public UDTBackend {
                    TrainOptions options, const bolt::DistributedCommPtr& comm,
                    py::kwargs kwargs) final;
 
-  py::object trainBatch(const MapInputBatch& batch, float learning_rate) final;
-
-  /**
-   * Modifies the sparsity of the output layer. If rebuild_hash_tables is true,
-   * then the hash tables and functions are rebuilt. Note that, model should be
-   * finetuned if rebuild_hash_tables is set to true.
-   */
-  void setOutputSparsity(float sparsity, bool rebuild_hash_tables) override;
-
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool verbose,
@@ -83,9 +74,6 @@ class UDTClassifier final : public UDTBackend {
       const bolt::DistributedCommPtr& comm, const py::kwargs& kwargs) final;
 
   py::object embedding(const MapInputBatch& sample) final;
-
-  py::object entityEmbedding(
-      const std::variant<uint32_t, std::string>& label) final;
 
   std::string className(uint32_t class_id) const final;
 

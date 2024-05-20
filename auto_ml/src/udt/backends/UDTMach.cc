@@ -199,33 +199,6 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
                             callbacks, options, comm);
 }
 
-py::object UDTMach::trainBatch(const MapInputBatch& batch,
-                               float learning_rate) {
-  auto& model = _classifier->model();
-
-  _featurizer->insertNewDocIds(data::ColumnMap::fromMapInputBatch(batch));
-  updateSamplingStrategy();
-
-  auto [inputs, labels] = _featurizer->featurizeTrainingBatch(batch);
-
-  model->trainOnBatch(inputs, labels);
-  model->updateParameters(learning_rate);
-
-  return py::none();
-}
-
-py::object UDTMach::trainWithHashes(const MapInputBatch& batch,
-                                    float learning_rate) {
-  auto& model = _classifier->model();
-
-  auto [inputs, labels] = _featurizer->featurizeTrainWithHashesBatch(batch);
-
-  model->trainOnBatch(inputs, labels);
-  model->updateParameters(learning_rate);
-
-  return py::none();
-}
-
 py::object UDTMach::evaluate(const dataset::DataSourcePtr& data,
                              const std::vector<std::string>& metrics,
                              bool sparse_inference, bool verbose,
@@ -254,14 +227,6 @@ py::object UDTMach::predictBatch(const MapInputBatch& samples,
                                  std::optional<uint32_t> top_k) {
   return py::cast(predictBatchImpl(samples, sparse_inference,
                                    return_predicted_class, top_k));
-}
-
-py::object UDTMach::predictActivationsBatch(const MapInputBatch& samples,
-                                            bool sparse_inference) {
-  return bolt::python::tensorToNumpy(
-      _classifier->model()
-          ->forward(_featurizer->featurizeInputBatch(samples), sparse_inference)
-          .at(0));
 }
 
 std::vector<std::vector<std::pair<uint32_t, double>>> UDTMach::predictBatchImpl(
@@ -341,22 +306,6 @@ py::object UDTMach::scoreBatch(const MapInputBatch& samples,
   return py::cast(scores);
 }
 
-py::object UDTMach::predictHashes(const MapInput& sample, bool sparse_inference,
-                                  bool force_non_empty,
-                                  std::optional<uint32_t> num_hashes) {
-  return py::cast(
-      predictHashesImpl({sample}, sparse_inference, force_non_empty, num_hashes)
-          .at(0));
-}
-
-py::object UDTMach::predictHashesBatch(const MapInputBatch& samples,
-                                       bool sparse_inference,
-                                       bool force_non_empty,
-                                       std::optional<uint32_t> num_hashes) {
-  return py::cast(predictHashesImpl(samples, sparse_inference, force_non_empty,
-                                    num_hashes));
-}
-
 std::vector<std::vector<uint32_t>> UDTMach::predictHashesImpl(
     const MapInputBatch& samples, bool sparse_inference, bool force_non_empty,
     std::optional<uint32_t> num_hashes) {
@@ -393,42 +342,6 @@ std::vector<std::vector<uint32_t>> UDTMach::predictHashesImpl(
   }
 
   return all_hashes;
-}
-
-py::object UDTMach::outputCorrectness(const MapInputBatch& samples,
-                                      const std::vector<uint32_t>& labels,
-                                      bool sparse_inference,
-                                      std::optional<uint32_t> num_hashes) {
-  std::vector<std::vector<uint32_t>> top_buckets = predictHashesImpl(
-      samples, sparse_inference, /* force_non_empty = */ true, num_hashes);
-
-  std::vector<uint32_t> matching_buckets(labels.size());
-  std::exception_ptr hashes_err;
-
-#pragma omp parallel for default(none) \
-    shared(labels, top_buckets, matching_buckets, hashes_err)
-  for (uint32_t i = 0; i < labels.size(); i++) {
-    try {
-      std::vector<uint32_t> hashes = getIndex()->getHashes(labels[i]);
-      uint32_t count = 0;
-      for (auto hash : hashes) {
-        if (std::count(top_buckets[i].begin(), top_buckets[i].end(), hash) >
-            0) {
-          count++;
-        }
-      }
-      matching_buckets[i] = count;
-    } catch (const std::exception& e) {
-#pragma omp critical
-      hashes_err = std::current_exception();
-    }
-  }
-
-  if (hashes_err) {
-    std::rethrow_exception(hashes_err);
-  }
-
-  return py::cast(matching_buckets);
 }
 
 void UDTMach::setModel(const ModelPtr& model) {
@@ -507,50 +420,6 @@ py::object UDTMach::coldstart(
 
 py::object UDTMach::embedding(const MapInputBatch& sample) {
   return _classifier->embedding(_featurizer->featurizeInputBatch(sample));
-}
-
-py::object UDTMach::entityEmbedding(const Label& label) {
-  std::vector<uint32_t> hashed_neurons =
-      getIndex()->getHashes(expectInteger(label));
-
-  auto outputs = _classifier->model()->outputs();
-
-  if (outputs.size() != 1) {
-    throw std::invalid_argument(
-        "This UDT architecture currently doesn't support getting entity "
-        "embeddings.");
-  }
-  auto fc = bolt::FullyConnected::cast(outputs.at(0)->op());
-  if (!fc) {
-    throw std::invalid_argument(
-        "This UDT architecture currently doesn't support getting entity "
-        "embeddings.");
-  }
-
-  auto fc_layer = fc->kernel();
-
-  std::vector<float> averaged_embedding(fc_layer->getInputDim());
-  for (uint32_t neuron_id : hashed_neurons) {
-    auto weights = fc_layer->getWeightsByNeuron(neuron_id);
-    if (weights.size() != averaged_embedding.size()) {
-      throw std::invalid_argument("Output dim mismatch.");
-    }
-    for (uint32_t i = 0; i < weights.size(); i++) {
-      averaged_embedding[i] += weights[i];
-    }
-  }
-
-  // TODO(david) try averaging and summing
-  for (float& weight : averaged_embedding) {
-    weight /= averaged_embedding.size();
-  }
-
-  NumpyArray<float> np_weights(averaged_embedding.size());
-
-  std::copy(averaged_embedding.begin(), averaged_embedding.end(),
-            np_weights.mutable_data());
-
-  return std::move(np_weights);
 }
 
 void UDTMach::updateSamplingStrategy() {
@@ -654,19 +523,6 @@ void UDTMach::introduceDocuments(
                       /*variable_length=*/std::nullopt);
 
   updateSamplingStrategy();
-}
-
-void UDTMach::introduceDocument(
-    const MapInput& document,
-    const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names, const Label& new_label,
-    std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
-    bool load_balancing, bool sort_random_hashes) {
-  auto samples = _featurizer->featurizeInputColdStart(
-      document, strong_column_names, weak_column_names);
-
-  introduceLabelHelper(samples, new_label, num_buckets_to_sample,
-                       num_random_hashes, load_balancing, sort_random_hashes);
 }
 
 struct BucketScore {
@@ -807,56 +663,6 @@ std::vector<uint32_t> UDTMach::topHashesForDoc(
   }
 
   return new_hashes;
-}
-
-void UDTMach::introduceLabel(const MapInputBatch& samples,
-                             const Label& new_label,
-                             std::optional<uint32_t> num_buckets_to_sample_opt,
-                             uint32_t num_random_hashes, bool load_balancing,
-                             bool sort_random_hashes) {
-  introduceLabelHelper(_featurizer->featurizeInputBatch(samples), new_label,
-                       num_buckets_to_sample_opt, num_random_hashes,
-                       load_balancing, sort_random_hashes);
-}
-
-void UDTMach::introduceLabelHelper(
-    const bolt::TensorList& samples, const Label& new_label,
-    std::optional<uint32_t> num_buckets_to_sample_opt,
-    uint32_t num_random_hashes, bool load_balancing, bool sort_random_hashes) {
-  // Note: using sparse inference here could cause issues because the
-  // mach index sampler will only return nonempty buckets, which could
-  // cause new docs to only be mapped to buckets already containing
-  // entities.
-  auto output =
-      _classifier->model()->forward(samples, /* use_sparsity = */ false).at(0);
-
-  uint32_t num_buckets_to_sample =
-      load_balancing
-          ? getIndex()->numBuckets()
-          : num_buckets_to_sample_opt.value_or(getIndex()->numHashes());
-
-  const auto& mach_index = getIndex();
-
-  std::vector<std::vector<ValueIndexPair>> top_ks;
-  for (uint32_t i = 0; i < output->batchSize(); i++) {
-    if (load_balancing) {
-      top_ks.push_back(output->getVector(i).valueIndexPairs());
-    } else {
-      top_ks.push_back(priorityQueueToVector(
-          output->getVector(i).topKNeurons(num_buckets_to_sample)));
-    }
-  }
-
-  uint32_t approx_num_hashes_per_bucket =
-      mach_index->approxNumHashesPerBucket(samples.size());
-
-  auto hashes = topHashesForDoc(std::move(top_ks), num_buckets_to_sample,
-                                approx_num_hashes_per_bucket, num_random_hashes,
-                                load_balancing, sort_random_hashes);
-
-  getIndex()->insert(expectInteger(new_label), hashes);
-
-  updateSamplingStrategy();
 }
 
 void UDTMach::forget(const Label& label) {
@@ -1006,123 +812,6 @@ std::vector<RlhfSample> UDTMach::getAssociateSamples(
   }
 
   return associate_samples;
-}
-
-py::object UDTMach::associateTrain(
-    const dataset::DataSourcePtr& balancing_data,
-    const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-    uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
-    uint32_t epochs, const std::vector<std::string>& metrics,
-    TrainOptions options) {
-  return associateColdStart(balancing_data, {}, {}, rlhf_samples, n_buckets,
-                            n_association_samples, learning_rate, epochs,
-                            metrics, options);
-}
-
-py::object UDTMach::associateColdStart(
-    const dataset::DataSourcePtr& balancing_data,
-    const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names,
-    const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-    uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
-    uint32_t epochs, const std::vector<std::string>& metrics,
-    TrainOptions options) {
-  insertNewDocIds(balancing_data);
-
-  warnOnNonHashBasedMetrics(metrics);
-
-  if (options.max_in_memory_batches) {
-    throw std::invalid_argument(
-        "Streaming is not supported for associate_train/associate_cold_start. "
-        "Please pass max_in_memory_batches=None.");
-  }
-
-  auto featurized_data = _featurizer->featurizeDataset(
-      balancing_data, strong_column_names, weak_column_names,
-      /*variable_length=*/std::nullopt);
-
-  auto associate_samples =
-      getAssociateSamples(rlhf_samples, n_buckets, n_association_samples);
-
-  auto featurized_rlhf_data =
-      _featurizer->featurizeRlhfSamples(associate_samples);
-
-  auto columns = featurized_data.concat(featurized_rlhf_data);
-  columns.shuffle();
-
-  auto dataset = _featurizer->columnsToTensors(columns, options.batchSize());
-
-  bolt::Trainer trainer(_classifier->model());
-
-  auto output_metrics =
-      trainer.train(/* train_data= */ dataset,
-                    /* learning_rate= */ learning_rate, /* epochs= */ epochs,
-                    /* train_metrics= */ getMetrics(metrics, "train_"),
-                    /* validation_data= */ {},
-                    /* validation_metrics= */ {},
-                    /* steps_per_validation= */ {},
-                    /* use_sparsity_in_validation= */ false,
-                    /* callbacks= */ {},
-                    /* autotune_rehash_rebuild= */ true,
-                    /* verbose= */ options.verbose,
-                    /* logging_interval= */ options.logging_interval);
-
-  return py::cast(output_metrics);
-}
-
-py::object UDTMach::coldStartWithBalancingSamples(
-    const dataset::DataSourcePtr& data,
-    const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names, float learning_rate,
-    uint32_t epochs, const std::vector<std::string>& train_metrics,
-    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const std::optional<data::VariableLengthConfig>& variable_length) {
-  insertNewDocIds(data);
-  requireRLHFSampler();
-
-  addBalancingSamples(data, strong_column_names, weak_column_names,
-                      variable_length);
-
-  warnOnNonHashBasedMetrics(train_metrics);
-
-  if (options.max_in_memory_batches) {
-    throw std::invalid_argument(
-        "Streaming is not supported for cold_start_with_balancing_samples. "
-        "Please pass max_in_memory_batches=None.");
-  }
-
-  auto featurized_data = _featurizer->featurizeDataset(
-      data, strong_column_names, weak_column_names, variable_length);
-
-  data::ColumnMap balancing_data({});
-  if (featurized_data.numRows() < _balancing_samples->totalBalancingSamples()) {
-    balancing_data =
-        _balancing_samples->balancingSamples(featurized_data.numRows());
-  } else {
-    balancing_data = _balancing_samples->allBalancingSamples();
-  }
-
-  auto columns = featurized_data.concat(balancing_data);
-  columns.shuffle();
-
-  auto dataset = _featurizer->columnsToTensors(columns, options.batchSize());
-
-  bolt::Trainer trainer(_classifier->model());
-
-  auto output_metrics =
-      trainer.train(/* train_data= */ dataset,
-                    /* learning_rate= */ learning_rate, /* epochs= */ epochs,
-                    /* train_metrics= */ getMetrics(train_metrics, "train_"),
-                    /* validation_data= */ {},
-                    /* validation_metrics= */ {},
-                    /* steps_per_validation= */ {},
-                    /* use_sparsity_in_validation= */ false,
-                    /* callbacks= */ callbacks,
-                    /* autotune_rehash_rebuild= */ true,
-                    /* verbose= */ options.verbose,
-                    /* logging_interval= */ options.logging_interval);
-
-  return py::cast(output_metrics);
 }
 
 void UDTMach::setDecodeParams(uint32_t top_k_to_return,

@@ -137,40 +137,6 @@ MachFeaturizer::featurizeForIntroduceDocuments(
   return batches;
 }
 
-std::pair<bolt::TensorList, bolt::TensorList>
-MachFeaturizer::featurizeTrainWithHashesBatch(const MapInputBatch& samples) {
-  auto columns = data::ColumnMap::fromMapInputBatch(samples);
-
-  columns = _input_transform->apply(columns, *_state);
-  columns = _prehashed_labels_transform->apply(columns, *_state);
-
-  addDummyDocIds(columns);
-
-  auto data = data::toTensors(columns, _bolt_input_columns);
-  auto labels = data::toTensors(columns, _bolt_label_columns);
-
-  return std::make_pair(std::move(data), std::move(labels));
-}
-
-data::ColumnMap MachFeaturizer::featurizeDataset(
-    const dataset::DataSourcePtr& data_source,
-    const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names,
-    const std::optional<data::VariableLengthConfig>& variable_length) {
-  data::ColumnMap columns = data::CsvIterator::all(data_source, _delimiter);
-
-  if (!strong_column_names.empty() || !weak_column_names.empty()) {
-    columns = coldStartTransform(strong_column_names, weak_column_names,
-                                 variable_length)
-                  ->apply(columns, *_state);
-  }
-
-  columns = _input_transform->apply(columns, *_state);
-  columns = _label_transform->apply(columns, *_state);
-
-  return removeIntermediateColumns(columns);
-}
-
 data::ColumnMap MachFeaturizer::featurizeRlhfSamples(
     const std::vector<RlhfSample>& samples) {
   if (!_text_dataset) {

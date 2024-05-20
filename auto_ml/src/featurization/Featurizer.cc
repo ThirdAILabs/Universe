@@ -186,20 +186,6 @@ bolt::TensorList Featurizer::featurizeInputColdStart(
   return data::toTensors(columns, _bolt_input_columns);
 }
 
-std::pair<bolt::TensorList, bolt::TensorList>
-Featurizer::featurizeTrainingBatch(const MapInputBatch& samples) {
-  auto columns = data::ColumnMap::fromMapInputBatch(samples);
-
-  columns = _input_transform->apply(columns, *_state);
-  columns = _label_transform->apply(columns, *_state);
-
-  auto data = data::toTensors(columns, _bolt_input_columns);
-
-  auto labels = data::toTensors(columns, _bolt_label_columns);
-
-  return std::make_pair(std::move(data), std::move(labels));
-}
-
 data::TransformationPtr Featurizer::coldStartTransform(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,

@@ -87,9 +87,6 @@ class Featurizer {
       MapInput sample, const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names);
 
-  std::pair<bolt::TensorList, bolt::TensorList> featurizeTrainingBatch(
-      const MapInputBatch& samples);
-
   data::ExplanationMap explain(const data::ColumnMap& columns) {
     return _const_input_transform->explain(columns, *_state);
   }

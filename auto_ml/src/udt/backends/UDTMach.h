@@ -50,11 +50,6 @@ class UDTMach final : public UDTBackend {
                    TrainOptions options, const bolt::DistributedCommPtr& comm,
                    py::kwargs kwargs) final;
 
-  py::object trainBatch(const MapInputBatch& batch, float learning_rate) final;
-
-  py::object trainWithHashes(const MapInputBatch& batch,
-                             float learning_rate) final;
-
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool verbose,
@@ -72,25 +67,9 @@ class UDTMach final : public UDTBackend {
       const MapInputBatch& samples, bool sparse_inference,
       bool return_predicted_class, std::optional<uint32_t> top_k);
 
-  py::object predictActivationsBatch(const MapInputBatch& samples,
-                                     bool sparse_inference) final;
-
-  py::object predictHashes(const MapInput& sample, bool sparse_inference,
-                           bool force_non_empty,
-                           std::optional<uint32_t> num_hashes) final;
-
-  py::object predictHashesBatch(const MapInputBatch& samples,
-                                bool sparse_inference, bool force_non_empty,
-                                std::optional<uint32_t> num_hashes) final;
-
   py::object scoreBatch(const MapInputBatch& samples,
                         const std::vector<std::vector<Label>>& classes,
                         std::optional<uint32_t> top_k) final;
-
-  py::object outputCorrectness(const MapInputBatch& samples,
-                               const std::vector<uint32_t>& labels,
-                               bool sparse_inference,
-                               std::optional<uint32_t> num_hashes) final;
 
   ModelPtr model() const final { return _classifier->model(); }
 
@@ -112,13 +91,6 @@ class UDTMach final : public UDTBackend {
 
   py::object embedding(const MapInputBatch& sample) final;
 
-  /**
-   * This method is still experimental, we should test to see when these
-   * embeddings are useful and which tweaks like summing vs averaging and tanh
-   * vs reul make a difference.
-   */
-  py::object entityEmbedding(const Label& label) final;
-
   TextDatasetConfig textDatasetConfig() const final {
     return _featurizer->textDatasetConfig();
   }
@@ -132,19 +104,6 @@ class UDTMach final : public UDTBackend {
                           uint32_t num_random_hashes, bool load_balancing,
                           bool fast_approximation, bool verbose,
                           bool sort_random_hashes) final;
-
-  void introduceDocument(const MapInput& document,
-                         const std::vector<std::string>& strong_column_names,
-                         const std::vector<std::string>& weak_column_names,
-                         const Label& new_label,
-                         std::optional<uint32_t> num_buckets_to_sample,
-                         uint32_t num_random_hashes, bool load_balancing,
-                         bool sort_random_hashes) final;
-
-  void introduceLabel(const MapInputBatch& samples, const Label& new_label,
-                      std::optional<uint32_t> num_buckets_to_sample,
-                      uint32_t num_random_hashes, bool load_balancing,
-                      bool sort_random_hashes) final;
 
   void forget(const Label& label) final;
 
@@ -167,30 +126,6 @@ class UDTMach final : public UDTBackend {
   void upvote(const std::vector<std::pair<std::string, uint32_t>>& rlhf_samples,
               uint32_t n_upvote_samples, uint32_t n_balancing_samples,
               float learning_rate, uint32_t epochs, size_t batch_size) final;
-
-  py::object associateTrain(
-      const dataset::DataSourcePtr& balancing_data,
-      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& metrics,
-      TrainOptions options) final;
-
-  py::object associateColdStart(
-      const dataset::DataSourcePtr& balancing_data,
-      const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names,
-      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& metrics,
-      TrainOptions options) final;
-
-  py::object coldStartWithBalancingSamples(
-      const dataset::DataSourcePtr& data,
-      const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& train_metrics,
-      const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-      const std::optional<data::VariableLengthConfig>& variable_length) final;
 
   void setDecodeParams(uint32_t top_k_to_return,
                        uint32_t num_buckets_to_eval) final;
@@ -226,12 +161,6 @@ class UDTMach final : public UDTBackend {
       const MapInputBatch& samples, bool sparse_inference,
       bool force_non_empty = true,
       std::optional<uint32_t> num_hashes = std::nullopt);
-
-  void introduceLabelHelper(const bolt::TensorList& samples,
-                            const Label& new_label,
-                            std::optional<uint32_t> num_buckets_to_sample_opt,
-                            uint32_t num_random_hashes, bool load_balancing,
-                            bool sort_random_hashes);
 
   void teach(const std::vector<RlhfSample>& rlhf_samples,
              uint32_t n_balancing_samples, float learning_rate, uint32_t epochs,

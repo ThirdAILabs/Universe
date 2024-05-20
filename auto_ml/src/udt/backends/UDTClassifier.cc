@@ -248,45 +248,6 @@ py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
                             callbacks, options, comm);
 }
 
-py::object UDTClassifier::trainBatch(const MapInputBatch& batch,
-                                     float learning_rate) {
-  auto& model = _classifier->model();
-
-  auto [inputs, labels] = _featurizer->featurizeTrainingBatch(batch);
-
-  model->trainOnBatch(inputs, labels);
-  model->updateParameters(learning_rate);
-
-  return py::none();
-}
-
-void UDTClassifier::setOutputSparsity(float sparsity,
-                                      bool rebuild_hash_tables) {
-  bolt::ComputationList output_computations = _classifier->model()->outputs();
-
-  /**
-   * The method is supported only for models that have a single output
-   * computation with the computation being a fully connected layer.
-   */
-  if (output_computations.size() != 1) {
-    throw notSupported(
-        "The method is only supported for classifiers that have a single "
-        "fully "
-        "connected layer output.");
-  }
-
-  auto fc_computation =
-      bolt::FullyConnected::cast(output_computations[0]->op());
-  if (fc_computation) {
-    fc_computation->setSparsity(sparsity, rebuild_hash_tables,
-                                /*experimental_autotune=*/false);
-  } else {
-    throw notSupported(
-        "The method is only supported for classifiers that have a single "
-        "fully connected layer output.");
-  }
-}
-
 py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
                                    const std::vector<std::string>& metrics,
                                    bool sparse_inference, bool verbose,
@@ -394,33 +355,6 @@ py::object UDTClassifier::coldstart(
 
 py::object UDTClassifier::embedding(const MapInputBatch& sample) {
   return _classifier->embedding(_featurizer->featurizeInputBatch(sample));
-}
-
-py::object UDTClassifier::entityEmbedding(
-    const std::variant<uint32_t, std::string>& label) {
-  uint32_t neuron_id = labelToNeuronId(label);
-
-  auto outputs = _classifier->model()->outputs();
-
-  if (outputs.size() != 1) {
-    throw std::invalid_argument(
-        "This UDT architecture currently doesn't support getting entity "
-        "embeddings.");
-  }
-  auto fc = bolt::FullyConnected::cast(outputs.at(0)->op());
-  if (!fc) {
-    throw std::invalid_argument(
-        "This UDT architecture currently doesn't support getting entity "
-        "embeddings.");
-  }
-
-  auto weights = fc->kernel()->getWeightsByNeuron(neuron_id);
-
-  NumpyArray<float> np_weights(weights.size());
-
-  std::copy(weights.begin(), weights.end(), np_weights.mutable_data());
-
-  return std::move(np_weights);
 }
 
 std::string UDTClassifier::className(uint32_t class_id) const {

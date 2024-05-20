@@ -61,19 +61,6 @@ class UDTBackend {
                            const bolt::DistributedCommPtr& comm,
                            py::kwargs kwargs) = 0;
 
-  virtual py::object trainBatch(const MapInputBatch& batch,
-                                float learning_rate) {
-    (void)batch;
-    (void)learning_rate;
-    throw notSupported("train_batch");
-  }
-
-  virtual void setOutputSparsity(float sparsity, bool rebuild_hash_tables) {
-    (void)sparsity;
-    (void)rebuild_hash_tables;
-    throw notSupported("Method not supported for the model");
-  }
-
   virtual py::object evaluate(const dataset::DataSourcePtr& data,
                               const std::vector<std::string>& metrics,
                               bool sparse_inference, bool verbose,
@@ -90,13 +77,6 @@ class UDTBackend {
 
   virtual ar::ConstArchivePtr toArchive(bool with_optimizer) const = 0;
 
-  virtual py::object predictActivationsBatch(const MapInputBatch& samples,
-                                             bool sparse_inference) {
-    (void)samples;
-    (void)sparse_inference;
-    throw notSupported("predict_activations_batch");
-  }
-
   virtual py::object scoreBatch(const MapInputBatch& samples,
                                 const std::vector<std::vector<Label>>& classes,
                                 std::optional<uint32_t> top_k) {
@@ -104,17 +84,6 @@ class UDTBackend {
     (void)classes;
     (void)top_k;
     throw notSupported("scoring");
-  }
-
-  virtual py::object outputCorrectness(const MapInputBatch& sample,
-                                       const std::vector<uint32_t>& labels,
-                                       bool sparse_inference,
-                                       std::optional<uint32_t> num_hashes) {
-    (void)sample;
-    (void)labels;
-    (void)sparse_inference;
-    (void)num_hashes;
-    throw notSupported("output correctness");
   }
 
   virtual ModelPtr model() const {
@@ -172,12 +141,6 @@ class UDTBackend {
     throw notSupported("embedding");
   }
 
-  virtual py::object entityEmbedding(
-      const std::variant<uint32_t, std::string>& label) {
-    (void)label;
-    throw notSupported("entity_embedding");
-  }
-
   virtual std::string className(uint32_t class_id) const {
     (void)class_id;
     throw notSupported("class_name");
@@ -225,72 +188,12 @@ class UDTBackend {
     throw notSupported("introduce_documents");
   }
 
-  virtual void introduceDocument(
-      const MapInput& document,
-      const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names,
-      const std::variant<uint32_t, std::string>& new_label,
-      std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
-      bool load_balancing, bool sort_random_hashes) {
-    (void)document;
-    (void)strong_column_names;
-    (void)weak_column_names;
-    (void)new_label;
-    (void)num_buckets_to_sample;
-    (void)num_random_hashes;
-    (void)load_balancing;
-    (void)sort_random_hashes;
-    throw notSupported("introduce_document");
-  }
-
-  virtual void introduceLabel(
-      const MapInputBatch& sample,
-      const std::variant<uint32_t, std::string>& new_label,
-      std::optional<uint32_t> num_buckets_to_sample, uint32_t num_random_hashes,
-      bool load_balancing, bool sort_random_hashes) {
-    (void)sample;
-    (void)new_label;
-    (void)num_buckets_to_sample;
-    (void)num_random_hashes;
-    (void)load_balancing;
-    (void)sort_random_hashes;
-    throw notSupported("introduce_label");
-  }
-
   virtual void forget(const std::variant<uint32_t, std::string>& label) {
     (void)label;
     throw notSupported("forget");
   }
 
   virtual void clearIndex() { throw notSupported("clear_index"); }
-
-  virtual py::object trainWithHashes(const MapInputBatch& batch,
-                                     float learning_rate) {
-    (void)batch;
-    (void)learning_rate;
-    throw notSupported("train_with_hashes");
-  }
-
-  virtual py::object predictHashes(const MapInput& sample,
-                                   bool sparse_inference, bool force_non_empty,
-                                   std::optional<uint32_t> num_hashes) {
-    (void)sample;
-    (void)sparse_inference;
-    (void)force_non_empty;
-    (void)num_hashes;
-    throw notSupported("predict_hashes");
-  }
-
-  virtual py::object predictHashesBatch(const MapInputBatch& samples,
-                                        bool sparse_inference,
-                                        bool force_non_empty,
-                                        std::optional<uint32_t> num_hashes) {
-    (void)samples;
-    (void)sparse_inference;
-    (void)force_non_empty;
-    (void)num_hashes;
-    throw notSupported("predict_hashes_batch");
-  }
 
   virtual void associate(
       const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
@@ -319,63 +222,6 @@ class UDTBackend {
     (void)epochs;
     (void)batch_size;
     throw notSupported("upvote");
-  }
-
-  virtual py::object associateTrain(
-      const dataset::DataSourcePtr& balancing_data,
-      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& metrics,
-      TrainOptions options) {
-    (void)balancing_data;
-    (void)rlhf_samples;
-    (void)n_buckets;
-    (void)n_association_samples;
-    (void)learning_rate;
-    (void)epochs;
-    (void)metrics;
-    (void)options;
-    throw notSupported("associate_train");
-  }
-
-  virtual py::object associateColdStart(
-      const dataset::DataSourcePtr& balancing_data,
-      const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names,
-      const std::vector<std::pair<std::string, std::string>>& rlhf_samples,
-      uint32_t n_buckets, uint32_t n_association_samples, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& metrics,
-      TrainOptions options) {
-    (void)balancing_data;
-    (void)strong_column_names;
-    (void)weak_column_names;
-    (void)rlhf_samples;
-    (void)n_buckets;
-    (void)n_association_samples;
-    (void)learning_rate;
-    (void)epochs;
-    (void)metrics;
-    (void)options;
-    throw notSupported("associate_cold_start");
-  }
-
-  virtual py::object coldStartWithBalancingSamples(
-      const dataset::DataSourcePtr& data,
-      const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names, float learning_rate,
-      uint32_t epochs, const std::vector<std::string>& train_metrics,
-      const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-      const std::optional<data::VariableLengthConfig>& variable_length) {
-    (void)data;
-    (void)strong_column_names;
-    (void)weak_column_names;
-    (void)learning_rate;
-    (void)epochs;
-    (void)train_metrics;
-    (void)callbacks;
-    (void)options;
-    (void)variable_length;
-    throw notSupported("cold_start_with_balancing_samples");
   }
 
   virtual void enableRlhf(uint32_t num_balancing_docs,

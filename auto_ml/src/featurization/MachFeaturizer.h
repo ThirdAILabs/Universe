@@ -44,15 +44,6 @@ class MachFeaturizer final : public Featurizer {
       const std::vector<std::string>& weak_column_names,
       bool fast_approximation, size_t batch_size);
 
-  std::pair<bolt::TensorList, bolt::TensorList> featurizeTrainWithHashesBatch(
-      const MapInputBatch& samples);
-
-  data::ColumnMap featurizeDataset(
-      const dataset::DataSourcePtr& data_source,
-      const std::vector<std::string>& strong_column_names,
-      const std::vector<std::string>& weak_column_names,
-      const std::optional<data::VariableLengthConfig>& variable_length);
-
   data::ColumnMap featurizeRlhfSamples(const std::vector<RlhfSample>& samples);
 
   bolt::LabeledDataset columnsToTensors(const data::ColumnMap& columns,

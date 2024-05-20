@@ -177,26 +177,6 @@ py::object UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
   return output;
 }
 
-py::object UDT::trainBatch(const MapInputBatch& batch, float learning_rate) {
-  licensing::entitlements().verifyFullAccess();
-
-  bolt::utils::Timer timer;
-
-  auto output = _backend->trainBatch(batch, learning_rate);
-
-  timer.stop();
-
-  telemetry::client.trackTraining(
-      /* training_time_seconds = */ timer.elapsed<std::chrono::nanoseconds>() /
-      1000000000.0);
-
-  return output;
-}
-
-void UDT::setOutputSparsity(float sparsity, bool rebuild_hash_tables) {
-  _backend->setOutputSparsity(sparsity, rebuild_hash_tables);
-}
-
 py::object UDT::evaluate(const dataset::DataSourcePtr& data,
                          const std::vector<std::string>& metrics,
                          bool sparse_inference, bool verbose,
