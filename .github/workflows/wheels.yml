@@ -26,18 +26,18 @@ jobs:
         # See https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs#expanding-or-adding-matrix-configurations
         # for the semantics of using the matrix and the includes.
         include:
-          - name: linux-x86
-            runs-on: ubuntu-latest-8-cores
-          - name: windows
-            runs-on: windows-2022
-          - name: macos-x86_64
-            runs-on: macos-12
-            archs: x86_64
-            deployment_target: "10.15"
-          - name: macos-arm64
-            archs: arm64
-            runs-on: [self-hosted, macOS, ARM64]
-            deployment_target: "11.0"
+          # - name: linux-x86
+          #   runs-on: ubuntu-latest-8-cores
+          # - name: windows
+          #   runs-on: windows-2022
+          # - name: macos-x86_64
+          #   runs-on: macos-12
+          #   archs: x86_64
+          #   deployment_target: "10.15"
+          # - name: macos-arm64
+          #   archs: arm64
+          #   runs-on: [self-hosted, macOS, ARM64]
+          #   deployment_target: "11.0"
           - name: linux-arm64
             runs-on: ubuntu-latest-8-cores
     
@@ -139,7 +139,7 @@ jobs:
           CIBW_BEFORE_BUILD_WINDOWS: python -m pip install delvewheel
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: 'delvewheel repair -w {dest_dir} {wheel}'
           CIBW_TEST_EXTRAS: "test"
-          CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
+          CIBW_TEST_COMMAND: python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0"; pytest {package} --ignore-glob={package}/deps -m release
           CIBW_TEST_COMMAND_WINDOWS: rem
 
           # Skip tests on windows
