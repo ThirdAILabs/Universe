@@ -5,6 +5,8 @@
 #include <bolt/src/NER/model/NerBackend.h>
 #include <bolt/src/nn/model/Model.h>
 #include <data/src/transformations/Pipeline.h>
+#include <data/src/transformations/Transformation.h>
+#include <data/src/transformations/ner/NerTokenizationUnigram.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <memory>
 
@@ -27,6 +29,41 @@ class NerUDTModel final : public NerModelInterface {
   NerUDTModel(std::shared_ptr<NerUDTModel>& pretrained_model,
               std::string tokens_column, std::string tags_column,
               std::unordered_map<std::string, uint32_t> tag_to_label);
+
+  data::TransformationPtr getTransformations(bool inference, size_t fhr,
+                                             size_t num_label) {
+    data::PipelinePtr transform;
+    if (inference) {
+      transform = data::Pipeline::make(
+          {std::make_shared<thirdai::data::NerTokenizerUnigram>(
+              /*tokens_column=*/_tokens_column,
+              /*featurized_sentence_column=*/_featurized_sentence_column,
+              /*target_column=*/std::nullopt, /*target_dim=*/std::nullopt,
+              /*dyadic_num_intervals=*/_dyadic_num_intervals,
+              /*target_word_tokenizers=*/_target_word_tokenizers,
+              /*tag_to_label=*/_tag_to_label)});
+    } else {
+      transform = data::Pipeline::make(
+          {std::make_shared<thirdai::data::NerTokenizerUnigram>(
+              /*tokens_column=*/_tokens_column,
+              /*featurized_sentence_column=*/_featurized_sentence_column,
+              /*target_column=*/_tags_column, /*target_dim=*/num_label,
+              /*dyadic_num_intervals=*/_dyadic_num_intervals,
+              /*target_word_tokenizers=*/_target_word_tokenizers,
+              /*tag_to_label=*/_tag_to_label)});
+    }
+    transform = transform->then(std::make_shared<data::TextTokenizer>(
+        /*input_column=*/_featurized_sentence_column,
+        /*output_indices=*/_featurized_tokens_indices_column,
+        /*output_values=*/std::nullopt,
+        /*tokenizer=*/
+        std::make_shared<dataset::NaiveSplitTokenizer>(
+            dataset::NaiveSplitTokenizer()),
+        /*encoder=*/
+        std::make_shared<dataset::NGramEncoder>(dataset::NGramEncoder(1)),
+        false, fhr));
+    return transform;
+  }
 
   static bolt::ModelPtr initializeBoltModel(
       uint32_t input_dim, uint32_t emb_dim, uint32_t output_dim,
@@ -51,14 +88,6 @@ class NerUDTModel final : public NerModelInterface {
 
   static std::shared_ptr<NerUDTModel> fromArchive(const ar::Archive& archive);
 
-  void save(const std::string& filename) const;
-
-  void save_stream(std::ostream& output_stream) const;
-
-  static std::shared_ptr<NerUDTModel> load(const std::string& filename);
-
-  static std::shared_ptr<NerUDTModel> load_stream(std::istream& input_stream);
-
   bolt::ModelPtr getBoltModel() final { return _bolt_model; }
 
   std::vector<dataset::TextTokenizerPtr> getTargetWordTokenizers() {
@@ -82,10 +111,12 @@ class NerUDTModel final : public NerModelInterface {
   std::unordered_map<std::string, uint32_t> _tag_to_label;
   std::unordered_map<uint32_t, std::string> _label_to_tag_map;
 
+  const std::string _featurized_tokens_indices_column =
+      "featurized_tokens_indices_column";
+
   uint32_t _dyadic_num_intervals = defaults::UDT_DYADIC_NUM_INTERVALS;
 
-  std::string _featurized_sentence_column =
-      "featurized_sentence_for_" + _tokens_column;
+  std::string _featurized_sentence_column;
 
   NerClassifierPtr _classifier;
 };

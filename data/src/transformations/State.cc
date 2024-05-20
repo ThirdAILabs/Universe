@@ -34,6 +34,31 @@ ar::ConstArchivePtr itemHistoryTrackerToArchive(
   return map;
 }
 
+ar::ConstArchivePtr countHistoryTrackerToArchive(
+    const CountHistoryTracker& history) {
+  auto values = ar::Map::make();
+  auto timestamps = ar::Map::make();
+
+  for (const auto& [id, item_timestamps] : history) {
+    std::vector<float> id_values;
+    std::vector<int64_t> id_timestamps;
+
+    for (const auto& [value, timestamp] : item_timestamps) {
+      id_values.push_back(value);
+      id_timestamps.push_back(timestamp);
+    }
+
+    values->set(id, ar::vecF32(std::move(id_values)));
+    timestamps->set(id, ar::vecI64(std::move(id_timestamps)));
+  }
+
+  auto map = ar::Map::make();
+  map->set("values", values);
+  map->set("timestamps", timestamps);
+
+  return map;
+}
+
 ar::ConstArchivePtr State::toArchive() const {
   auto map = ar::Map::make();
 
@@ -51,11 +76,17 @@ ar::ConstArchivePtr State::toArchive() const {
   }
   map->set("vocabs", vocabs);
 
-  auto trackers = ar::Map::make();
+  auto item_trackers = ar::Map::make();
   for (const auto& [k, v] : _item_history_trackers) {
-    trackers->set(k, itemHistoryTrackerToArchive(v));
+    item_trackers->set(k, itemHistoryTrackerToArchive(v));
   }
-  map->set("item_history_trackers", trackers);
+  map->set("item_history_trackers", item_trackers);
+
+  auto count_trackers = ar::Map::make();
+  for (const auto& [k, v] : _count_history_trackers) {
+    count_trackers->set(k, countHistoryTrackerToArchive(v));
+  }
+  map->set("count_history_trackers", count_trackers);
 
   if (_graph) {
     map->set("graph", _graph->toArchive());
@@ -90,6 +121,32 @@ ItemHistoryTracker itemHistoryTrackerFromArchive(const ar::Archive& archive) {
   return history;
 }
 
+CountHistoryTracker countHistoryTrackerFromArchive(const ar::Archive& archive) {
+  CountHistoryTracker history;
+
+  const auto& values = archive.get("values")->map();
+  const auto& timestamps = archive.get("timestamps")->map();
+
+  for (const auto& [id, ar_id_values] : values) {
+    const auto& id_items = ar_id_values->as<ar::VecF32>();
+    const auto& id_timestamps = timestamps.getAs<ar::VecI64>(id);
+
+    if (id_items.size() != id_timestamps.size()) {
+      throw std::invalid_argument(
+          "Mismatch between item size and timestamp size deserializing history "
+          "tracker.");
+    }
+
+    std::deque<CountRecord> item_records;
+    for (size_t i = 0; i < id_items.size(); i++) {
+      item_records.push_back({id_items[i], id_timestamps[i]});
+    }
+    history[id] = std::move(item_records);
+  }
+
+  return history;
+}
+
 std::shared_ptr<State> State::fromArchive(const ar::Archive& archive) {
   return std::make_shared<State>(archive);
 }
@@ -109,6 +166,12 @@ State::State(const ar::Archive& archive) {
 
   for (const auto& [k, v] : archive.get("item_history_trackers")->map()) {
     _item_history_trackers[k] = itemHistoryTrackerFromArchive(*v);
+  }
+
+  if (archive.contains("count_history_trackers")) {
+    for (const auto& [k, v] : archive.get("count_history_trackers")->map()) {
+      _count_history_trackers[k] = countHistoryTrackerFromArchive(*v);
+    }
   }
 
   if (archive.contains("graph")) {

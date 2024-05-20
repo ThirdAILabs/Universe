@@ -51,14 +51,6 @@ class NerBoltModel final : public NerModelInterface {
 
   static std::shared_ptr<NerBoltModel> fromArchive(const ar::Archive& archive);
 
-  void save(const std::string& filename) const;
-
-  void save_stream(std::ostream& output_stream) const;
-
-  static std::shared_ptr<NerBoltModel> load(const std::string& filename);
-
-  static std::shared_ptr<NerBoltModel> load_stream(std::istream& input_stream);
-
   bolt::ModelPtr getBoltModel() final { return _bolt_model; }
 
   std::string getTokensColumn() const final { return _tokens_column; }
@@ -74,7 +66,7 @@ class NerBoltModel final : public NerModelInterface {
       std::unordered_map<std::string, uint32_t>& tag_to_label,
       uint32_t vocab_size);
 
-  data::PipelinePtr getTransformations(bool inference);
+  data::TransformationPtr getTransformations(bool inference);
 
   bolt::ModelPtr _bolt_model;
   std::string _tokens_column;
@@ -83,7 +75,7 @@ class NerBoltModel final : public NerModelInterface {
   std::unordered_map<uint32_t, std::string> _label_to_tag_map;
 
   NerClassifierPtr _classifier;
-  size_t _vocab_size = defaults::PRETRAINED_BOLT_VOCAB_SIZE;
+  size_t _vocab_size;
 };
 
 }  // namespace thirdai::bolt::NER

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "UnigramDataProcessor.h"
+#include "NerDyadicDataProcessor.h"
 #include <archive/src/Archive.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/Column.h>
@@ -19,8 +19,7 @@ class NerTokenizerUnigram final : public Transformation {
   NerTokenizerUnigram(
       std::string tokens_column, std::string featurized_sentence_column,
       std::optional<std::string> target_column,
-      std::optional<uint32_t> target_dim, uint32_t fhr_dim,
-      uint32_t dyadic_num_intervals,
+      std::optional<uint32_t> target_dim, uint32_t dyadic_num_intervals,
       std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
       std::optional<std::unordered_map<std::string, uint32_t>> tag_to_label =
           std::nullopt);
@@ -76,7 +75,6 @@ class NerTokenizerUnigram final : public Transformation {
   // TODO(Shubh) : Add support for depuplicating the tokens by using indices and
   // values pair.
 
-  TransformationPtr _tokenizer_transformation;
   std::optional<std::unordered_map<std::string, uint32_t>> _tag_to_label;
 };
 }  // namespace thirdai::data

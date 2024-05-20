@@ -400,6 +400,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/StringCast.cc
     data/src/transformations/StringIDLookup.cc
     data/src/transformations/CategoricalTemporal.cc
+    data/src/transformations/NumericalTemporal.cc
     data/src/transformations/Tabular.cc
     data/src/transformations/Date.cc
     data/src/transformations/CrossColumnPairgrams.cc
@@ -414,7 +415,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/SpladeAugmentation.cc
     data/src/transformations/ner/NerTokenFromStringArray.cc
     data/src/transformations/ner/NerTokenizationUnigram.cc
-    data/src/transformations/ner/UnigramDataProcessor.cc
+    data/src/transformations/ner/NerDyadicDataProcessor.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc

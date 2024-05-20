@@ -20,30 +20,11 @@
 namespace thirdai::bolt::NER {
 
 void NerUDTModel::initializeNER(uint32_t fhr, uint32_t number_labels) {
-  auto train_transformation =
-      std::make_shared<thirdai::data::NerTokenizerUnigram>(
-          /*tokens_column=*/_tokens_column,
-          /*featurized_sentence_column=*/_featurized_sentence_column,
-          /*target_column=*/_tags_column, /*target_dim=*/number_labels,
-          /*fhr_dim=*/fhr, /*dyadic_num_intervals=*/_dyadic_num_intervals,
-          /*target_word_tokenizers=*/_target_word_tokenizers,
-          /*tag_to_label=*/_tag_to_label);
+  auto train_transforms = getTransformations(false, fhr, number_labels);
 
-  auto inference_transformation =
-      std::make_shared<thirdai::data::NerTokenizerUnigram>(
-          /*tokens_column=*/_tokens_column,
-          /*featurized_sentence_column=*/_featurized_sentence_column,
-          /*target_column=*/std::nullopt, /*target_dim=*/std::nullopt,
-          /*fhr_dim=*/fhr, /*dyadic_num_intervals=*/_dyadic_num_intervals,
-          /*target_word_tokenizers=*/_target_word_tokenizers,
-          /*tag_to_label=*/_tag_to_label);
+  auto inference_transforms = getTransformations(true, fhr, number_labels);
 
-  auto train_transforms = data::Pipeline::make({train_transformation});
-
-  auto inference_transforms = data::Pipeline::make({inference_transformation});
-
-  auto bolt_inputs = {
-      data::OutputColumns(train_transformation->getFeaturizedIndicesColumn())};
+  auto bolt_inputs = {data::OutputColumns(_featurized_tokens_indices_column)};
 
   _classifier = std::make_shared<NerClassifier>(
       _bolt_model, bolt_inputs, train_transforms, inference_transforms,
@@ -82,7 +63,8 @@ NerUDTModel::NerUDTModel(
       _tokens_column(std::move(tokens_column)),
       _tags_column(std::move(tags_column)),
       _target_word_tokenizers(std::move(target_word_tokenizers)),
-      _tag_to_label(std::move(tag_to_label)) {
+      _tag_to_label(std::move(tag_to_label)),
+      _featurized_sentence_column("featurized_sentence_for_" + tokens_column) {
   auto input_dims = _bolt_model->inputDims();
   if (input_dims.size() != 1) {
     throw std::logic_error(
@@ -107,7 +89,8 @@ NerUDTModel::NerUDTModel(
     : _tokens_column(std::move(tokens_column)),
       _tags_column(std::move(tags_column)),
       _target_word_tokenizers(std::move(target_word_tokenizers)),
-      _tag_to_label(std::move(tag_to_label)) {
+      _tag_to_label(std::move(tag_to_label)),
+      _featurized_sentence_column("featurized_sentence_for_" + tokens_column) {
   uint32_t number_labels = getMaxLabelFromTagToLabel(_tag_to_label);
   _bolt_model = initializeBoltModel(defaults::UDT_FEATURE_HASH_RANGE,
                                     defaults::UDT_EMB_DIM, number_labels);
@@ -124,7 +107,8 @@ NerUDTModel::NerUDTModel(std::shared_ptr<NerUDTModel>& pretrained_model,
     : _tokens_column(std::move(tokens_column)),
       _tags_column(std::move(tags_column)),
       _target_word_tokenizers(pretrained_model->getTargetWordTokenizers()),
-      _tag_to_label(std::move(tag_to_label)) {
+      _tag_to_label(std::move(tag_to_label)),
+      _featurized_sentence_column("featurized_sentence_for_" + tokens_column) {
   uint32_t fhr = (pretrained_model->getBoltModel()->inputDims()[0]);
   uint32_t number_labels = getMaxLabelFromTagToLabel(_tag_to_label);
 
@@ -202,26 +186,5 @@ std::shared_ptr<NerUDTModel> NerUDTModel::fromArchive(
   return std::make_shared<NerUDTModel>(NerUDTModel(bolt_model, tokens_column,
                                                    tags_column, tag_to_label,
                                                    target_word_tokenizers));
-}
-
-void NerUDTModel::save(const std::string& filename) const {
-  std::ofstream filestream =
-      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  save_stream(filestream);
-}
-
-void NerUDTModel::save_stream(std::ostream& output) const {
-  ar::serialize(toArchive(), output);
-}
-
-std::shared_ptr<NerUDTModel> NerUDTModel::load(const std::string& filename) {
-  std::ifstream filestream =
-      dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-  return load_stream(filestream);
-}
-
-std::shared_ptr<NerUDTModel> NerUDTModel::load_stream(std::istream& input) {
-  auto archive = ar::deserialize(input);
-  return fromArchive(*archive);
 }
 }  // namespace thirdai::bolt::NER

@@ -14,6 +14,7 @@
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/NextWordPrediction.h>
+#include <data/src/transformations/NumericalTemporal.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/StringCast.h>
@@ -24,9 +25,9 @@
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/cold_start/ColdStartText.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
+#include <data/src/transformations/ner/NerDyadicDataProcessor.h>
 #include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
-#include <data/src/transformations/ner/UnigramDataProcessor.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
@@ -406,6 +407,17 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("should_update_history") = true,
            py::arg("include_current_row") = false, py::arg("time_lag") = 0);
 
+  py::class_<NumericalTemporal, Transformation,
+             std::shared_ptr<NumericalTemporal>>(transformations_submodule,
+                                                 "NumericalTemporal")
+      .def(py::init<std::string, std::string, std::string, std::string,
+                    std::string, size_t, int64_t, bool, bool, int64_t>(),
+           py::arg("user_column"), py::arg("value_column"),
+           py::arg("timestamp_column"), py::arg("output_column"),
+           py::arg("tracker_key"), py::arg("history_len"),
+           py::arg("interval_len"), py::arg("should_update_history") = true,
+           py::arg("include_current_row") = false, py::arg("interval_lag") = 0);
+
   py::class_<Date, Transformation, std::shared_ptr<Date>>(
       transformations_submodule, "Date")
       .def(py::init<std::string, std::string, std::string>(),
@@ -519,11 +531,11 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
              std::shared_ptr<NerTokenizerUnigram>>(transformations_submodule,
                                                    "NerTokenizerUnigram")
       .def(py::init<std::string, std::string, std::optional<std::string>,
-                    std::optional<uint32_t>, uint32_t, uint32_t,
+                    std::optional<uint32_t>, uint32_t,
                     std::vector<dataset::TextTokenizerPtr>,
                     std::optional<std::unordered_map<std::string, uint32_t>>>(),
            py::arg("tokens_column"), py::arg("featurized_sentence_column"),
-           py::arg("target_column"), py::arg("target_dim"), py::arg("fhr_dim"),
+           py::arg("target_column"), py::arg("target_dim"),
            py::arg("dyadic_num_intervals"), py::arg("target_word_tokenizers"),
            py::arg("tag_to_label"))
       .def("process_token", &NerTokenizerUnigram::processToken,

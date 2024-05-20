@@ -24,7 +24,6 @@ def sample_training_data():
             tokens = sentence.split()
             data = {"source": tokens, "target": tags}
             json_line = json.dumps(data)
-            print(json_line)
             file.write(json_line + "\n")
     return filename
 
@@ -118,7 +117,6 @@ def test_udt_ner_backend(sample_training_data):
 @pytest.mark.unit
 def test_pretrained_ner_bolt_backend(sample_training_data, bolt_pretrained):
     pretrained_path = bolt_pretrained
-    print("TAG MAP: ", TAG_MAP)
     bolt_ner_model = bolt.UniversalDeepTransformer.NER.from_pretrained(
         pretrained_path,
         "source",

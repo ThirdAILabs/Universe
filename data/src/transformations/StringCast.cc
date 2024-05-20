@@ -370,6 +370,8 @@ template void CastToArray<uint32_t>::serialize(cereal::BinaryOutputArchive&);
 template void CastToArray<float>::serialize(cereal::BinaryInputArchive&);
 template void CastToArray<float>::serialize(cereal::BinaryOutputArchive&);
 
+template void CastToArray<std::string>::serialize(cereal::BinaryInputArchive&);
+
 template class CastToArray<uint32_t>;
 template class CastToArray<float>;
 

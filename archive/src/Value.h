@@ -55,6 +55,7 @@ class Value final : public Archive {
   EXPR(char)                                                   \
   EXPR(std::string)                                            \
   EXPR(std::vector<uint32_t>)                                  \
+  EXPR(std::vector<float>)                                     \
   EXPR(std::vector<uint64_t>)                                  \
   EXPR(std::vector<int64_t>)                                   \
   EXPR(std::vector<std::string>)                               \

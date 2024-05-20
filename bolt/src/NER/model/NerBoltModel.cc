@@ -16,6 +16,7 @@
 #include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/ner/NerTokenFromStringArray.h>
@@ -84,7 +85,8 @@ NerBoltModel::NerBoltModel(
     : _bolt_model(std::move(model)),
       _tokens_column(std::move(tokens_column)),
       _tags_column(std::move(tags_column)),
-      _tag_to_label(std::move(tag_to_label)) {
+      _tag_to_label(std::move(tag_to_label)),
+      _vocab_size(_bolt_model->inputDims()[0]) {
   auto train_transforms = getTransformations(/*inference=*/false);
   auto inference_transforms = getTransformations(/*inference=*/true);
   auto bolt_inputs = {data::OutputColumns("tokens"),
@@ -105,7 +107,8 @@ NerBoltModel::NerBoltModel(
     std::unordered_map<std::string, uint32_t> tag_to_label)
     : _tokens_column(std::move(tokens_column)),
       _tags_column(std::move(tags_column)),
-      _tag_to_label(std::move(tag_to_label)) {
+      _tag_to_label(std::move(tag_to_label)),
+      _vocab_size(pretrained_model->getBoltModel()->inputDims()[0]) {
   _bolt_model =
       initializeBoltModel(pretrained_model, _tag_to_label, _vocab_size);
   auto train_transforms = getTransformations(/*inference=*/false);
@@ -122,7 +125,7 @@ NerBoltModel::NerBoltModel(
   }
 }
 
-data::PipelinePtr NerBoltModel::getTransformations(bool inference) {
+data::TransformationPtr NerBoltModel::getTransformations(bool inference) {
   data::PipelinePtr transform;
   if (inference) {
     transform =
@@ -196,24 +199,4 @@ std::shared_ptr<NerBoltModel> NerBoltModel::fromArchive(
                    /*tags_column=*/tags_column, /*tag_to_label=*/tag_to_label));
 }
 
-void NerBoltModel::save(const std::string& filename) const {
-  std::ofstream filestream =
-      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  save_stream(filestream);
-}
-
-void NerBoltModel::save_stream(std::ostream& output) const {
-  ar::serialize(toArchive(), output);
-}
-
-std::shared_ptr<NerBoltModel> NerBoltModel::load(const std::string& filename) {
-  std::ifstream filestream =
-      dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-  return load_stream(filestream);
-}
-
-std::shared_ptr<NerBoltModel> NerBoltModel::load_stream(std::istream& input) {
-  auto archive = ar::deserialize(input);
-  return fromArchive(*archive);
-}
 }  // namespace thirdai::bolt::NER
