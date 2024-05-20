@@ -14,7 +14,8 @@ using PerTokenListPredictions = std::vector<PerTokenPredictions>;
 
 static std::vector<PerTokenListPredictions> getTags(
     std::vector<std::vector<std::string>> tokens, uint32_t top_k,
-    std::string tokens_column, const data::TransformationPtr& inference_transform,
+    std::string tokens_column,
+    const data::TransformationPtr& inference_transform,
     const data::OutputColumnsList& bolt_inputs,
     const bolt::ModelPtr& bolt_model) {
   std::vector<PerTokenListPredictions> tags_and_scores;
