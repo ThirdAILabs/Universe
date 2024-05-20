@@ -26,19 +26,20 @@ jobs:
         # See https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs#expanding-or-adding-matrix-configurations
         # for the semantics of using the matrix and the includes.
         include:
-          # - name: linux-x86
-          #   runs-on: ubuntu-latest-8-cores
-          # - name: windows
-          #   runs-on: windows-2022
-          # - name: macos-x86_64
-          #   runs-on: macos-12
-          #   archs: x86_64
-          #   deployment_target: "10.15"
-          # - name: macos-arm64
-          #   archs: arm64
-          #   runs-on: [self-hosted, macOS, ARM64]
-          #   deployment_target: "11.0"
+          - name: linux-x86
+            runs-on: ubuntu-latest-8-cores
+          - name: windows
+            runs-on: windows-2022
+          - name: macos-x86_64
+            runs-on: macos-12
+            archs: x86_64
+            deployment_target: "10.15"
+          - name: macos-arm64
+            archs: arm64
+            runs-on: [self-hosted, macOS, ARM64]
+            deployment_target: "11.0"
           - name: linux-arm64
+            archs: aarch64
             runs-on: ubuntu-latest-8-cores
     
     runs-on: ${{ matrix.runs-on }}
@@ -52,8 +53,8 @@ jobs:
       # We cross compile linux-arm64 with emulation. See:
       # https://cibuildwheel.pypa.io/en/stable/faq/#emulation
       - name: Set up QEMU
-        if: ${{ startsWith(matrix.name, 'linux-arm64')}}
-        uses: docker/setup-qemu-action@v3
+        if: matrix.name == 'linux-arm64'
+        uses: docker/setup-qemu-action@v2
         with:
           platforms: arm64
 
@@ -149,8 +150,7 @@ jobs:
           # Build both x86_64 and arm64 (apple silicon)
           CIBW_ARCHS_MACOS: ${{ matrix.archs }}
 
-          CIBW_ARCHS_LINUX: "aarch64"
-          CIBW_CONTAINER_ENGINE: "docker; create_args: --platform linux/arm64/v8"
+          CIBW_ARCHS_LINUX: ${{ matrix.archs }}
 
           # Skip building on CPython <3.8 on the Mac
           # 3.11 (brought about by cibuildwheel upgrade to 2.9.0) is skipped as
