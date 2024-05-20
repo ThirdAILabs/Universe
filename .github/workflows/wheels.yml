@@ -126,7 +126,12 @@ jobs:
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
             yum install openssl11-devel -y &&
-            yum install -y libxslt-devel libxml2-devel &&
+            yum install -y libxslt-devel libxml2-devel wget tar gcc make &&
+            wget https://www.openssl.org/source/openssl-1.1.1o.tar.gz && 
+            tar -xzf openssl-1.1.1o.tar.gz &&
+            cd openssl-1.1.1o &&
+            ./config --prefix=/usr/local/openssl-1.1.1 --openssldir=/usr/local/openssl-1.1.1 shared zlib &&
+            make && make install && cd .. &&
             python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0"
           CIBW_BEFORE_BUILD_MACOS: brew install openssl; python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0";
 
