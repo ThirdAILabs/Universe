@@ -459,14 +459,14 @@ def test_load_balancing():
     model = train_simple_mach_udt()
     num_hashes = 8
     half_num_hashes = 4
-    sample = {"text": "tomato"}
+    sample = "tomato"
 
     # Set the index so that we know that the number of hashes is 8.
     model.set_index(
         dataset.MachIndex({}, output_range=OUTPUT_DIM, num_hashes=num_hashes)
     )
 
-    introduce(model, sample["text"], 0)
+    introduce(model, sample, 0)
 
     # This gives the top 8 locations where the new sample will end up.
     hash_locs = model.get_index().get_entity_hashes(0)
