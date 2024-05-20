@@ -1,6 +1,6 @@
 #pragma once
 
-#include "UnigramDataProcessor.h"
+#include "NerDyadicDataProcessor.h"
 #include <archive/src/Archive.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/Column.h>

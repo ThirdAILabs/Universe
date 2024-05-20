@@ -24,9 +24,9 @@
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/cold_start/ColdStartText.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
+#include <data/src/transformations/ner/NerDyadicDataProcessor.h>
 #include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
-#include <data/src/transformations/ner/UnigramDataProcessor.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/utils/TokenEncoding.h>

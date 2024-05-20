@@ -5,8 +5,8 @@
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/TextTokenizer.h>
+#include <data/src/transformations/ner/NerDyadicDataProcessor.h>
 #include <data/src/transformations/ner/NerTokenFromStringArray.h>
-#include <data/src/transformations/ner/UnigramDataProcessor.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <cstdint>

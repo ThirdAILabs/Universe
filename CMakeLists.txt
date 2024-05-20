@@ -414,7 +414,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/SpladeAugmentation.cc
     data/src/transformations/ner/NerTokenFromStringArray.cc
     data/src/transformations/ner/NerTokenizationUnigram.cc
-    data/src/transformations/ner/UnigramDataProcessor.cc
+    data/src/transformations/ner/NerDyadicDataProcessor.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
