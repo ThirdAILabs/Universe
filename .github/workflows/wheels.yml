@@ -150,6 +150,7 @@ jobs:
           CIBW_ARCHS_MACOS: ${{ matrix.archs }}
 
           CIBW_ARCHS_LINUX: "aarch64"
+          CIBW_CONTAINER_ENGINE: "docker; create_args: --platform linux/arm64/v8"
 
           # Skip building on CPython <3.8 on the Mac
           # 3.11 (brought about by cibuildwheel upgrade to 2.9.0) is skipped as
