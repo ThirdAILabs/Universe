@@ -46,17 +46,27 @@ class BoltFullyConnectedRunner(Runner):
 def define_fully_connected_bolt_model(config: BoltBenchmarkConfig):
     input_layer = bolt.nn.Input(dim=config.input_dim)
 
-    hidden_layer = get_fc_layer(
-        config=config.hidden_node,
-        input_dim=config.input_dim,
-        rebuild_hash_tables=config.rebuild_hash_tables,
-        reconstruct_hash_functions=config.reconstruct_hash_functions,
-        batch_size=config.batch_size,
-    )(input_layer)
+    for node_id, hidden_node in enumerate(config.hidden_node):
+        if node_id == 0:
+            hidden_layer = get_fc_layer(
+                config=hidden_node,
+                input_dim=config.input_dim,
+                rebuild_hash_tables=config.rebuild_hash_tables,
+                reconstruct_hash_functions=config.reconstruct_hash_functions,
+                batch_size=config.batch_size,
+            )(input_layer)
+        else:
+            hidden_layer = get_fc_layer(
+                config=hidden_node,
+                input_dim=config.hidden_node[node_id - 1]["dim"],
+                rebuild_hash_tables=config.rebuild_hash_tables,
+                reconstruct_hash_functions=config.reconstruct_hash_functions,
+                batch_size=config.batch_size,
+            )(hidden_layer)
 
     output_layer = get_fc_layer(
         config=config.output_node,
-        input_dim=config.hidden_node["dim"],
+        input_dim=config.hidden_node[-1]["dim"],
         rebuild_hash_tables=config.rebuild_hash_tables,
         reconstruct_hash_functions=config.reconstruct_hash_functions,
         batch_size=config.batch_size,

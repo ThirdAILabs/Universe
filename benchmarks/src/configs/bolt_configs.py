@@ -9,7 +9,7 @@ class BoltBenchmarkConfig(ABC):
     dataset_name = None
 
     input_dim = None
-    hidden_node = {}
+    hidden_node = [{}]
     output_node = {}
     loss_fn = "CategoricalCrossEntropyLoss"
     rebuild_hash_tables = None
@@ -38,7 +38,11 @@ class Amazon670kConfig(BoltBenchmarkConfig):
     dataset_name = "amazon_670k"
 
     input_dim = 135909
-    hidden_node = {"dim": 256, "activation": "ReLU"}
+    hidden_node = [
+        {"dim": 256, "activation": "ReLU"},
+        {"dim": 256, "activation": "ReLU"},
+        {"dim": 256, "activation": "ReLU"},
+    ]
     output_node = {"dim": 670091, "sparsity": 0.005, "activation": "Softmax"}
     rebuild_hash_tables = 6400
     reconstruct_hash_functions = 128000
@@ -69,7 +73,11 @@ class AmazonPolarityConfig(BoltBenchmarkConfig):
     dataset_name = "amazon_polarity"
 
     input_dim = 100000
-    hidden_node = {"dim": 10000, "sparsity": 0.005, "activation": "ReLU"}
+    hidden_node = [
+        {"dim": 10000, "sparsity": 0.005, "activation": "ReLU"},
+        {"dim": 1024, "activation": "ReLU"},
+        {"dim": 1024, "activation": "ReLU"},
+    ]
     output_node = {"dim": 2, "activation": "Softmax"}
     rebuild_hash_tables = 6400
     reconstruct_hash_functions = 128000
@@ -96,7 +104,11 @@ class WayfairConfig(BoltBenchmarkConfig):
     dataset_name = "wayfair"
 
     input_dim = 100000
-    hidden_node = {"dim": 1024, "activation": "ReLU"}
+    hidden_node = [
+        {"dim": 1024, "activation": "ReLU"},
+        {"dim": 1024, "activation": "ReLU"},
+        {"dim": 1024, "activation": "ReLU"},
+    ]
     output_node = {
         "dim": 931,
         "sparsity": 0.1,
