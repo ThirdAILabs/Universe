@@ -15,12 +15,11 @@ struct TabularOptions {
   uint32_t feature_hash_range = udt::defaults::FEATURE_HASH_RANGE;
   char delimiter = udt::defaults::CSV_DELIMITER;
 
-  int64_t timeLag() const {
-    dataset::QuantityTrackingGranularity granularity =
-        dataset::stringToGranularity(time_granularity);
+  int64_t timeLag() const { return lookahead * granularity(); }
 
-    return lookahead *
-           dataset::QuantityHistoryTracker::granularityToSeconds(granularity);
+  int64_t granularity() const {
+    return dataset::QuantityHistoryTracker::granularityToSeconds(
+        dataset::stringToGranularity(time_granularity));
   }
 
  private:

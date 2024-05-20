@@ -71,7 +71,7 @@ def run_udt_telemetry_test(telemetry_start_method: Tuple[str, str]):
     import time
 
     # For push based tests (files and s3), we need to call telemetry.stop()
-    # after we finish the udt calls to make sure the writing is flushed. For
+    # after we finish the udt calls to make sure the writing is flushed. Forbin/
     # the port check test, we instead want to wait until the end of the method
     # to kill telemetry, since the prometheus client will only host telemetry
     # on the port until stop is called.
@@ -83,7 +83,7 @@ def run_udt_telemetry_test(telemetry_start_method: Tuple[str, str]):
     batch_predict_count = 15
 
     train_start = time.time()
-    udt_model = make_simple_trained_model()
+    udt_model = make_simple_trained_model(numerical_temporal=False)
     train_duration = time.time() - train_start
 
     eval_start = time.time()

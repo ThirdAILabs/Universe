@@ -46,6 +46,11 @@ std::string Value<std::vector<uint32_t>>::typeName() {
 }
 
 template <>
+std::string Value<std::vector<float>>::typeName() {
+  return "Value[std::vector<float>]";
+}
+
+template <>
 std::string Value<std::vector<uint64_t>>::typeName() {
   return "Value[std::vector<uint64_t>]";
 }

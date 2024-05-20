@@ -13,6 +13,7 @@
 #include <data/src/transformations/Graph.h>
 #include <data/src/transformations/MachLabel.h>
 #include <data/src/transformations/NextWordPrediction.h>
+#include <data/src/transformations/NumericalTemporal.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/Recurrence.h>
 #include <data/src/transformations/RegressionBinning.h>
@@ -43,6 +44,7 @@ TransformationPtr Transformation::fromArchive(const ar::Archive& archive) {
 
   HANDLE_TYPE(BinningTransformation)
   HANDLE_TYPE(CategoricalTemporal)
+  HANDLE_TYPE(NumericalTemporal)
   HANDLE_TYPE(CountTokens)
   HANDLE_TYPE(CrossColumnPairgrams)
   HANDLE_TYPE(Date)
