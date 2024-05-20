@@ -533,29 +533,6 @@ class MachMixture(Model):
                 epochs=epochs,
             )
 
-    def retrain(
-        self,
-        balancing_data: DocumentDataSource,
-        source_target_pairs: List[Tuple[str, str]],
-        n_buckets: int,
-        learning_rate: float,
-        epochs: int,
-    ):
-        balancing_data_shards = shard_data_source(
-            data_source=balancing_data,
-            number_shards=self.num_shards,
-            label_to_segment_map=self.label_to_segment_map,
-            update_segment_map=False,
-        )
-        for ensemble, shard in zip(self.ensembles, balancing_data_shards):
-            ensemble.retrain(
-                balancing_data=shard,
-                source_target_pairs=source_target_pairs,
-                n_buckets=n_buckets,
-                learning_rate=learning_rate,
-                epochs=epochs,
-            )
-
     def __setstate__(self, state):
         if "model_config" not in state:
             # Add model_config field if an older model is being loaded.

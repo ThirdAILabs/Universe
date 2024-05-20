@@ -46,10 +46,6 @@ class UDT {
       const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
-  UDT(const std::string& file_format, uint32_t n_target_classes,
-      uint32_t input_dim, const std::optional<std::string>& model_config,
-      const config::ArgumentMap& user_args);
-
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
                    const std::vector<std::string>& train_metrics,

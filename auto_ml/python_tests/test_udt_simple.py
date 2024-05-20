@@ -216,42 +216,6 @@ def test_embedding_representation_returns_correct_dimension():
         assert (embedding != 0).any()
 
 
-@pytest.mark.unit
-@pytest.mark.parametrize(
-    "embedding_dim, integer_label",
-    [(128, True), (128, False), (256, True), (256, False)],
-)
-def test_entity_embedding(embedding_dim, integer_label):
-    model = make_simple_trained_model(
-        embedding_dim=embedding_dim, integer_label=integer_label
-    )
-
-    if integer_label:
-        output_labels = [0, 1, 2]
-        labels_to_neurons = output_labels
-    else:
-        output_labels = ["0", "1", "4"]
-        labels_to_neurons = {model.class_name(n): n for n in range(3)}
-
-    for output_label in output_labels:
-        embedding = model.get_entity_embedding(output_label)
-        assert embedding.shape == (embedding_dim,)
-        weights = model._get_model().ops()[1].weights
-
-        assert (weights[labels_to_neurons[output_label]] == embedding).all()
-
-
-@pytest.mark.release
-def test_entity_embedding_fails_on_large_label():
-    model = make_simple_trained_model(embedding_dim=100, integer_label=True)
-
-    with pytest.raises(
-        ValueError,
-        match=r"Passed in neuron_id too large for this layer. Should be less than the output dim of 3.",
-    ):
-        embedding = model.get_entity_embedding(100000)
-
-
 @pytest.mark.release
 def test_explanations_total_percentage():
     model = make_simple_trained_model(integer_label=False, numerical_temporal=False)
@@ -395,35 +359,6 @@ def test_udt_override_input_dim():
     input_dim = udt_model._get_model().ops()[0].weights.shape[0]
 
     assert input_dim == 200
-
-
-def test_udt_train_batch():
-    import numpy as np
-
-    model = bolt.UniversalDeepTransformer(
-        data_types={
-            "query": bolt.types.text(),
-            "target": bolt.types.categorical(),
-        },
-        target="target",
-        n_target_classes=3,
-        integer_target=True,
-    )
-
-    samples = [
-        {"query": "this is zero", "target": "0"},
-        {"query": "this is one", "target": "1"},
-        {"query": "this is two", "target": "2"},
-    ] * 1000
-
-    for _ in range(3):
-        model.train_batch(samples, learning_rate=0.1)
-
-    scores = model.predict_batch(samples)
-
-    predictions = np.argmax(scores, axis=0)
-
-    assert (predictions == np.array([0, 1, 2])).all()
 
 
 def test_model_dims_regular_udt():

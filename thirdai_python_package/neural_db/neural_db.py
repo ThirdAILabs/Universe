@@ -1040,24 +1040,3 @@ class NeuralDB:
         text_to_result_batch() samples from NeuralDB logs.
         """
         return self.get_associate_samples() + self.get_upvote_samples()
-
-    def retrain(
-        self,
-        text_pairs: List[Tuple[str, str]] = [],
-        learning_rate: float = 0.0001,
-        epochs: int = 3,
-        strength: Strength = Strength.Strong,
-    ):
-        """Train NeuralDB on all inserted documents and logged RLHF samples."""
-        doc_manager = self._savable_state.documents
-
-        if not text_pairs:
-            text_pairs = self.get_rlhf_samples()
-
-        self._savable_state.model.retrain(
-            balancing_data=doc_manager.get_data_source(),
-            source_target_pairs=text_pairs,
-            n_buckets=self._get_associate_top_k(strength),
-            learning_rate=learning_rate,
-            epochs=epochs,
-        )

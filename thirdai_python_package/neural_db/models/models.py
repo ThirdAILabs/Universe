@@ -125,16 +125,6 @@ class Model:
     ):
         raise NotImplementedError()
 
-    def retrain(
-        self,
-        balancing_data: DocumentDataSource,
-        source_target_pairs: List[Tuple[str, str]],
-        n_buckets: int,
-        learning_rate: float,
-        epochs: int,
-    ):
-        raise NotImplementedError()
-
     def train_on_supervised_data_source(
         self,
         supervised_data_source: SupDataSource,

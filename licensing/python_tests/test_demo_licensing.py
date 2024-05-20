@@ -109,26 +109,6 @@ def test_introduce_document_fails_on_demo_license():
             temp_filename, strong_column_names=[], weak_column_names=["query"]
         )
 
-    with pytest.raises(
-        RuntimeError,
-        match="The license was found to be invalid: You must have a full license to perform this operation.",
-    ):
-        model.introduce_document(
-            {"text": "some text"},
-            strong_column_names=[],
-            weak_column_names=["text"],
-            label=1000,
-        )
-
-    with pytest.raises(
-        RuntimeError,
-        match="The license was found to be invalid: You must have a full license to perform this operation.",
-    ):
-        model.introduce_label(
-            [{"text": "some text"}],
-            label=1000,
-        )
-
 
 def test_introduce_documents_works_on_clinc(download_clinc_dataset):
     thirdai.licensing.activate(CLINC_DATASET_KEY)

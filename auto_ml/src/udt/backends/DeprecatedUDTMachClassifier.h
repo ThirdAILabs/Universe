@@ -204,9 +204,6 @@ class UDTMachClassifier final : public UDTBackend {
   InputMetrics getMetrics(const std::vector<std::string>& metric_names,
                           const std::string& prefix);
 
-  static void warnOnNonHashBasedMetrics(
-      const std::vector<std::string>& metrics);
-
   // Mach requires two sets of labels. The buckets for each doc/class for
   // computing losses when training, and also the original doc/class ids for
   // computing metrics. In some methods like trainWithHashes, or trainOnBatch we

@@ -98,32 +98,6 @@ def test_associate_acronyms():
     assert acc_after_associate >= 0.9
 
 
-def test_associate_train_acronyms():
-    model = train_model()
-
-    correct_labels, acronym_samples, associations = get_association_samples()
-
-    acc_before_associate = compare_predictions(model, correct_labels, acronym_samples)
-    print(acc_before_associate)
-    assert acc_before_associate <= 0.5
-
-    model.associate_train(
-        filename=QUERY_FILE,
-        source_target_samples=associations,
-        n_buckets=4,
-        n_association_samples=4,
-        epochs=20,  # We need more epochs in this test because we don't do the same sample replication
-        learning_rate=0.01,
-        verbose=False,
-        batch_size=100,
-    )
-
-    acc_after_associate = compare_predictions(model, correct_labels, acronym_samples)
-
-    print(acc_after_associate)  # Accuracy should be around 0.98-1.0
-    assert acc_after_associate >= 0.9
-
-
 def get_upvote_samples():
     df = pd.read_csv(QUERY_FILE)
     df["acronym"] = df["text"].map(lambda s: "".join(w[0] for w in s.split()))

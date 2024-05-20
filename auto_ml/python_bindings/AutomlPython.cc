@@ -135,12 +135,6 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("callbacks") = std::vector<udt::CallbackPtr>{},
            py::arg("options") = udt::TrainOptions(), py::arg("comm") = nullptr,
            bolt::python::OutputRedirect())
-      .def("train_batch", &udt::UDT::trainBatch, py::arg("batch"),
-           py::arg("learning_rate") = 0.001, bolt::python::OutputRedirect(),
-           docs::UDT_TRAIN_BATCH)
-      .def("set_output_sparsity", &udt::UDT::setOutputSparsity,
-           py::arg("sparsity"), py::arg("rebuild_hash_tables") = false,
-           bolt::python::OutputRedirect())
       .def("evaluate", &udt::UDT::evaluate, py::arg("data"),
            py::arg("metrics") = std::vector<std::string>{},
            py::arg("sparse_inference") = false, py::arg("verbose") = true,
@@ -153,8 +147,6 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false,
            py::arg("top_k") = std::nullopt, docs::UDT_PREDICT_BATCH)
-      .def("predict_activations_batch", &udt::UDT::predictActivationsBatch,
-           py::arg("samples"), py::arg("sparse_inference") = false)
       .def("score_batch", &udt::UDT::scoreBatch, py::arg("samples"),
            py::arg("classes"), py::arg("top_k") = std::nullopt)
       .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
@@ -164,14 +156,8 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("train_metrics"), py::arg("val_data"),
            py::arg("val_metrics"), py::arg("callbacks"), py::arg("options"),
            py::arg("comm") = nullptr, bolt::python::OutputRedirect())
-      .def("output_correctness", &udt::UDT::outputCorrectness,
-           py::arg("samples"), py::arg("labels"),
-           py::arg("sparse_inference") = false,
-           py::arg("num_hashes") = std::nullopt)
       .def("embedding_representation", &udt::UDT::embedding,
            py::arg("input_sample"), docs::UDT_EMBEDDING_REPRESENTATION)
-      .def("get_entity_embedding", &udt::UDT::entityEmbedding,
-           py::arg("label_id"), docs::UDT_ENTITY_EMBEDDING)
       .def("index", &udt::UDT::updateTemporalTrackers, py::arg("input_sample"),
            docs::UDT_INDEX)
       .def("index_batch", &udt::UDT::updateTemporalTrackersBatch,
@@ -191,28 +177,8 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("num_random_hashes") = 0, py::arg("load_balancing") = false,
            py::arg("fast_approximation") = false, py::arg("verbose") = true,
            py::arg("sort_random_hashes") = false)
-      .def("introduce_document", &udt::UDT::introduceDocument,
-           py::arg("document"), py::arg("strong_column_names"),
-           py::arg("weak_column_names"), py::arg("label"),
-           py::arg("num_buckets_to_sample") = std::nullopt,
-           py::arg("num_random_hashes") = 0, py::arg("load_balancing") = false,
-           py::arg("sort_random_hashes") = false)
-      .def("introduce_label", &udt::UDT::introduceLabel, py::arg("input_batch"),
-           py::arg("label"), py::arg("num_buckets_to_sample") = std::nullopt,
-           py::arg("num_random_hashes") = 0, py::arg("load_balancing") = false,
-           py::arg("sort_random_hashes") = false)
       .def("forget", &udt::UDT::forget, py::arg("label"))
       .def("clear_index", &udt::UDT::clearIndex)
-      .def("train_with_hashes", &udt::UDT::trainWithHashes, py::arg("batch"),
-           py::arg("learning_rate") = 0.001)
-      .def("predict_hashes", &udt::UDT::predictHashes, py::arg("sample"),
-           py::arg("sparse_inference") = false,
-           py::arg("force_non_empty") = true,
-           py::arg("num_hashes") = std::nullopt)
-      .def("predict_hashes_batch", &udt::UDT::predictHashesBatch,
-           py::arg("samples"), py::arg("sparse_inference") = false,
-           py::arg("force_non_empty") = true,
-           py::arg("num_hashes") = std::nullopt)
       .def("associate", &udt::UDT::associate, py::arg("source_target_samples"),
            py::arg("n_buckets"),
            py::arg("n_association_samples") =
@@ -230,25 +196,6 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("learning_rate") = udt::defaults::RLHF_LEARNING_RATE,
            py::arg("epochs") = udt::defaults::RLHF_EPOCHS,
            py::arg("batch_size") = udt::defaults::RLHF_BATCH_SIZE)
-      .def("associate_train_data_source", &udt::UDT::associateTrain,
-           py::arg("balancing_data"), py::arg("source_target_samples"),
-           py::arg("n_buckets"), py::arg("n_association_samples"),
-           py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
-           py::arg("options"))
-      .def("associate_cold_start_data_source", &udt::UDT::associateColdStart,
-           py::arg("balancing_data"), py::arg("strong_column_names"),
-           py::arg("weak_column_names"), py::arg("source_target_samples"),
-           py::arg("n_buckets"), py::arg("n_association_samples"),
-           py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
-           py::arg("options"))
-      .def("cold_start_with_balancing_samples",
-           &udt::UDT::coldStartWithBalancingSamples, py::arg("data"),
-           py::arg("strong_column_names"), py::arg("weak_column_names"),
-           py::arg("learning_rate"), py::arg("epochs"),
-           py::arg("train_metrics") = std::vector<std::string>{},
-           py::arg("callbacks") = std::vector<bolt::callbacks::CallbackPtr>{},
-           py::arg("batch_size") = std::nullopt, py::arg("verbose") = true,
-           py::arg("variable_length") = data::VariableLengthConfig())
       .def("enable_rlhf", &udt::UDT::enableRlhf,
            py::arg("num_balancing_docs") = udt::defaults::MAX_BALANCING_DOCS,
            py::arg("num_balancing_samples_per_doc") =

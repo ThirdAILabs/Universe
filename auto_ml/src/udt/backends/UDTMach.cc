@@ -897,18 +897,6 @@ InputMetrics UDTMach::getMetrics(const std::vector<std::string>& metric_names,
   return metrics;
 }
 
-void UDTMach::warnOnNonHashBasedMetrics(
-    const std::vector<std::string>& metrics) {
-  for (const auto& metric : metrics) {
-    if (!std::regex_match(metric, std::regex("((hash_)|(loss)).*"))) {
-      std::cerr << "Warning: using precision/recall with associate_train can "
-                   "cause skewed results since the association samples may not "
-                   "have a true label."
-                << std::endl;
-    }
-  }
-}
-
 bolt::TensorPtr UDTMach::placeholderDocIds(uint32_t batch_size) {
   return bolt::Tensor::sparse(batch_size, std::numeric_limits<uint32_t>::max(),
                               /* nonzeros= */ 1);

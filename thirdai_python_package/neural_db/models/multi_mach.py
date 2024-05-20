@@ -201,23 +201,6 @@ class MultiMach:
                 epochs=epochs,
             )
 
-    def retrain(
-        self,
-        balancing_data: DocumentDataSource,
-        source_target_pairs: List[Tuple[str, str]],
-        n_buckets: int,
-        learning_rate: float,
-        epochs: int,
-    ):
-        for model in self.models:
-            model.retrain(
-                balancing_data=balancing_data,
-                source_target_pairs=source_target_pairs,
-                n_buckets=n_buckets,
-                learning_rate=learning_rate,
-                epochs=epochs,
-            )
-
     def supervised_training_impl(
         self,
         supervised_progress_managers: List[TrainingProgressManager],

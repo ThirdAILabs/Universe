@@ -53,6 +53,7 @@ def create_udt_checkpoint():
         options={"fhr": 1000, "embedding_dimension": 200},
     )
 
+    # TODO(REMOVED)
     model.train_batch([{"text": "some text", "id": "8"}])
 
     model.checkpoint("./old_udt_checkpoint")

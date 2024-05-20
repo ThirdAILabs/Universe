@@ -83,16 +83,6 @@ def test_udt_text_classification_predict_batch(
     assert acc >= ACCURACY_THRESHOLD
 
 
-def test_udt_text_classification_set_output_sparsity(train_udt_text_classification):
-    model = train_udt_text_classification
-
-    # We divide by 2 so that we know that final_output_sparsity is always valid as x \in [0,1] -> x/2 is also \in [0,1]
-    output_fc_computation = model._get_model().ops()[-1]
-    final_output_sparsity = output_fc_computation.get_sparsity() / 2
-    model.set_output_sparsity(sparsity=final_output_sparsity)
-    assert final_output_sparsity == output_fc_computation.get_sparsity()
-
-
 def test_udt_text_classification_model_migration(
     train_udt_text_classification, download_clinc_dataset
 ):

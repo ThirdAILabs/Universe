@@ -100,6 +100,3 @@ class FinetunableRetriever(Model):
 
     def get_model(self):
         return None
-
-    def retrain(self, **kwargs):
-        pass

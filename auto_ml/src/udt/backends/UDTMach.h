@@ -193,9 +193,6 @@ class UDTMach final : public UDTBackend {
   InputMetrics getMetrics(const std::vector<std::string>& metric_names,
                           const std::string& prefix);
 
-  static void warnOnNonHashBasedMetrics(
-      const std::vector<std::string>& metrics);
-
   static std::vector<ValueIndexPair> priorityQueueToVector(
       TopKActivationsQueue pq) {
     std::vector<ValueIndexPair> vec;

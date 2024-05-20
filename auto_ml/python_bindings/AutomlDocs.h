@@ -161,18 +161,6 @@ Example:
         )
 )pbdoc";
 
-const char* const UDT_TRAIN_BATCH = R"pbdoc(
-Trains the model on the given training batch. 
-
-Args:
-    batch (List[Dict[str, str]]): The raw data comprising the training batch. This should 
-        be in the form {"column_name": "column_value"} for each column the model expects.
-    learning_rate (float): Optional, uses default if not provided.
-
-Returns: 
-    None
-)pbdoc";
-
 const char* const UDT_EVALUATE = R"pbdoc(
 Evaluates the model on the given dataset using the provided metrics. 
 
@@ -344,19 +332,6 @@ Notes:
       for details.
 
 
-)pbdoc";
-
-const char* const UDT_ENTITY_EMBEDDING = R"pbdoc(
-Returns an embedding representation for a given output entity, an entity being 
-the name of a class predicted as output.
-
-Args:
-    label_id (Union[int, str]): The the name of the entity to get an embedding for.
-    If integer_target=True, this function should take in an integer from 0 to 
-    n_target_classes - 1 instead of a string.
-
-Returns:
-    A 1D numpy array of floats representing a dense embedding of that entity.
 )pbdoc";
 
 const char* const UDT_CLASS_NAME = R"pbdoc(

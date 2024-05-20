@@ -28,8 +28,6 @@ ___
 
 .. automethod:: thirdai.bolt.UniversalDeepTransformer.embedding_representation
 
-.. automethod:: thirdai.bolt.UniversalDeepTransformer.get_entity_embedding
-
 .. automethod:: thirdai.bolt.UniversalDeepTransformer.class_name
 
 .. automethod:: thirdai.bolt.UniversalDeepTransformer.index

@@ -33,7 +33,6 @@ class InsertTrainState:
     batch_size: int
     freeze_after_epoch: int
     freeze_after_acc: float
-    balancing_samples: bool
     semantic_enhancement: bool
     semantic_model_cache_dir: str
 

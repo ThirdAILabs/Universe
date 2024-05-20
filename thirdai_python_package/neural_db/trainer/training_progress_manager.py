@@ -172,7 +172,6 @@ class TrainingProgressManager:
         train_args["freeze_after_acc"] = kwargs.get(
             "freeze_after_acc", 0.80 if "freeze_after_epoch" not in kwargs else 1
         )
-        train_args["balancing_samples"] = kwargs.get("balancing_samples", False)
         train_args["semantic_enhancement"] = kwargs.get("semantic_enhancement", False)
         train_args["semantic_model_cache_dir"] = kwargs.get(
             "semantic_model_cache_dir", ".cache/neural_db_semantic_model"

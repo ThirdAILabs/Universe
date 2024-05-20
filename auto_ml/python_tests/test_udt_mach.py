@@ -221,15 +221,6 @@ def test_mach_udt_on_scifact_model_porting(
     assert model.predict_batch(batch) == new_model.predict_batch(batch)
 
 
-@pytest.mark.parametrize("embedding_dim", [128, 256])
-def test_mach_udt_entity_embedding(embedding_dim):
-    model = train_simple_mach_udt(embedding_dim=embedding_dim)
-    output_labels = [0, 1]
-    for output_id, output_label in enumerate(output_labels):
-        embedding = model.get_entity_embedding(output_label)
-        assert embedding.shape == (embedding_dim,)
-
-
 def test_mach_udt_embedding():
     model = train_simple_mach_udt()
 
@@ -357,17 +348,6 @@ def test_mach_udt_min_num_eval_results_adjusts_on_forget():
     assert len(model.predict({"text": "something"})) == 2
 
 
-def test_mach_udt_introduce_document():
-    model = train_simple_mach_udt()
-
-    model.introduce_document(
-        {"title": "this is a title", "description": "this is a description"},
-        strong_column_names=["title"],
-        weak_column_names=["description"],
-        label=1000,
-    )
-
-
 @pytest.mark.parametrize("fast_approximation", [True, False])
 def test_mach_udt_introduce_documents(fast_approximation):
     model = train_simple_mach_udt()
@@ -386,99 +366,6 @@ def test_mach_udt_introduce_documents(fast_approximation):
     )
 
     os.remove(new_docs)
-
-
-def test_mach_udt_hash_based_methods():
-    # Set mach_sampling_threshold = 1.0 to ensure that we use MACH index for
-    # active neuron selection.
-    model = train_simple_mach_udt(mach_sampling_threshold=1.0)
-
-    hashes = model.predict_hashes(
-        {"text": "testing hash based methods"},
-        sparse_inference=False,
-        force_non_empty=False,
-    )
-    assert len(hashes) == 7
-
-    # All hashes in new_hash_set represent non-empty buckets since they are
-    # the hashes of an entity. This is important since we're using MACH index
-    # for active neuron selection.
-    model.introduce_label([{"text": "text that will map to different buckets"}], 1000)
-    new_hash_set = set(model.get_index().get_entity_hashes(1000))
-    assert hashes != new_hash_set
-
-    for _ in range(5):
-        model.train_with_hashes(
-            [
-                {
-                    "text": "testing hash based methods",
-                    "label": " ".join(map(str, new_hash_set)),
-                }
-            ],
-            learning_rate=0.01,
-        )
-
-    new_hashes = model.predict_hashes({"text": "testing hash based methods"})
-    assert set(new_hashes) == new_hash_set
-
-    # Now set mach_sampling_threshold = 0.0 to ensure that we use LSH index for
-    # active neuron selection.
-    model = train_simple_mach_udt(mach_sampling_threshold=0.0)
-
-    hashes = model.predict_hashes({"text": "testing hash based methods"})
-    assert len(hashes) == 7
-
-    # Hashes are empty buckets. This is fine since we are using LSH index for
-    # active neuron selection.
-    empty_hashes = [
-        i for i in range(100) if len(model.get_index().get_hash_to_entities(i)) == 0
-    ]
-    new_hash_set = set(empty_hashes[:7])
-    assert hashes != new_hash_set
-
-    for _ in range(10):
-        model.train_with_hashes(
-            [
-                {
-                    "text": "testing hash based methods",
-                    "label": " ".join(map(str, new_hash_set)),
-                }
-            ],
-            learning_rate=0.01,
-        )
-
-    new_hashes = model.predict_hashes(
-        {"text": "testing hash based methods"},
-        sparse_inference=False,
-        force_non_empty=False,
-    )
-    assert set(new_hashes) == new_hash_set
-
-
-def test_mach_output_correctness():
-    model = train_simple_mach_udt(output_dim=50)
-
-    # Suppose the label corresponding to the given text is 2.
-    predicted_hashes = model.predict_hashes(
-        {"text": "testing output correctness"},
-        force_non_empty=True,
-    )
-
-    mach_index = model.get_index()
-
-    original_hashes = mach_index.get_entity_hashes(2)
-
-    expected_ratio = len(set(predicted_hashes) & set(original_hashes)) / len(
-        original_hashes
-    )
-
-    num_correct_buckets = model.output_correctness(
-        [{"text": "testing output correctness"}], labels=[2]
-    )[0]
-
-    current_ratio = num_correct_buckets / (mach_index.num_hashes())
-
-    assert expected_ratio == current_ratio
 
 
 def test_mach_save_load_get_set_index():
@@ -701,46 +588,6 @@ def test_mach_sparse_inference():
     assert output.activations.shape == (1, OUTPUT_DIM)
 
 
-def test_associate():
-    model = train_simple_mach_udt(
-        rlhf_args={
-            "rlhf": True,
-            "rlhf_balancing_docs": 100,
-            "rlhf_balancing_samples_per_doc": 10,
-        }
-    )
-
-    target_sample = {"text": "random sample text"}
-    model.introduce_label([target_sample], label=200)
-    target_hashes = set(model.predict_hashes(target_sample))
-
-    different_hashes = list(set(range(OUTPUT_DIM)).difference(target_hashes))
-    different_hashes = random.choices(different_hashes, k=7)
-    different_hashes = " ".join([str(x) for x in different_hashes])
-
-    source_sample = {"text": "tomato", "label": different_hashes}
-    target_sample["label"] = " ".join([str(x) for x in target_hashes])
-    for _ in range(100):
-        model.train_with_hashes([source_sample, target_sample], 0.001)
-    del source_sample["label"]
-
-    target_hashes = set(model.predict_hashes(target_sample))
-
-    model.introduce_label([source_sample], label=100)
-    source_hashes = set(model.predict_hashes(source_sample))
-
-    original_intersection = len(target_hashes.intersection(source_hashes))
-
-    for _ in range(100):
-        model.associate([(source_sample["text"], target_sample["text"])], n_buckets=7)
-
-    new_target_hashes = set(model.predict_hashes(target_sample))
-    new_source_hashes = set(model.predict_hashes(source_sample))
-
-    new_intersection = len(new_target_hashes.intersection(new_source_hashes))
-
-    assert new_intersection > original_intersection
-
 
 def test_enable_rlhf():
     model = train_simple_mach_udt()
@@ -800,12 +647,6 @@ def test_introduce_hash_regularization():
     assert np.sum(load > 0) > NUM_HASHES
 
 
-def test_udt_mach_train_batch():
-    model = train_simple_mach_udt()
-
-    model.train_batch([{"text": "some text", "label": "2"}], learning_rate=0.001)
-
-
 def test_udt_mach_num_buckets_to_sample_and_switching_index_num_hashes():
     model = train_simple_mach_udt()
 
@@ -845,35 +686,6 @@ def test_udt_mach_fast_approximation_handles_commas():
     os.remove("temp.csv")
 
 
-@pytest.mark.parametrize("softmax", [True, False])
-def test_udt_softmax_activations(softmax):
-    model = bolt.UniversalDeepTransformer(
-        data_types={
-            "text": bolt.types.text(contextual_encoding="local"),
-            "label": bolt.types.categorical(),
-        },
-        target="label",
-        n_target_classes=3,
-        integer_target=True,
-        options={
-            "extreme_classification": True,
-            "embedding_dimension": 100,
-            "extreme_output_dim": 100,
-            "softmax": softmax,
-        },
-    )
-
-    output = model.predict_activations_batch(
-        [{"text": "some text"}, {"text": "some text"}]
-    )[0]
-
-    sum_to_one = np.isclose(
-        sum(output),
-        1,
-    )
-    assert sum_to_one == softmax
-
-
 def test_doc_not_found_unless_trained_on():
     model = bolt.UniversalDeepTransformer(
         data_types={
@@ -897,6 +709,7 @@ def test_doc_not_found_unless_trained_on():
 
     os.remove(SIMPLE_TEST_FILE)
 
+    # TODO(Removed)
     model.get_entity_embedding(1)
 
     model.get_index().get_entity_hashes(2)

@@ -160,7 +160,6 @@ def unsupervised_train_on_docs(
     max_in_memory_batches: int,
     variable_length: Optional[data.transformations.VariableLengthConfig],
     training_progress_callback: Optional[TrainingProgressCallback],
-    balancing_samples=False,
     semantic_enhancement=False,
     semantic_model_cache_dir=".cache/neural_db_semantic_model",
     coldstart_callbacks: List[bolt.train.callbacks.Callback] = None,
@@ -208,32 +207,19 @@ def unsupervised_train_on_docs(
     if semantic_enhancement:
         splade_config = download_semantic_enhancement_model(semantic_model_cache_dir)
 
-    if balancing_samples:
-        model.cold_start_with_balancing_samples(
-            data=documents,
-            strong_column_names=[documents.strong_column],
-            weak_column_names=[documents.weak_column],
-            batch_size=batch_size,
-            learning_rate=learning_rate,
-            epochs=max_epochs,
-            train_metrics=[metric],
-            callbacks=callbacks,
-            variable_length=variable_length,
-        )
-    else:
-        model.cold_start_on_data_source(
-            data_source=documents,
-            strong_column_names=[documents.strong_column],
-            weak_column_names=[documents.weak_column],
-            batch_size=batch_size,
-            learning_rate=learning_rate,
-            epochs=max_epochs,
-            metrics=[metric],
-            callbacks=callbacks,
-            max_in_memory_batches=max_in_memory_batches,
-            variable_length=variable_length,
-            splade_config=splade_config,
-        )
+    model.cold_start_on_data_source(
+        data_source=documents,
+        strong_column_names=[documents.strong_column],
+        weak_column_names=[documents.weak_column],
+        batch_size=batch_size,
+        learning_rate=learning_rate,
+        epochs=max_epochs,
+        metrics=[metric],
+        callbacks=callbacks,
+        max_in_memory_batches=max_in_memory_batches,
+        variable_length=variable_length,
+        splade_config=splade_config,
+    )
 
 
 def make_balancing_samples(documents: DocumentDataSource):
@@ -643,27 +629,6 @@ class Mach(Model):
 
         if self.finetunable_retriever:
             self.finetunable_retriever.upvote(pairs)
-
-    def retrain(
-        self,
-        balancing_data: DocumentDataSource,
-        source_target_pairs: List[Tuple[str, str]],
-        n_buckets: int,
-        learning_rate: float,
-        epochs: int,
-    ):
-        self.model.associate_cold_start_data_source(
-            balancing_data=balancing_data,
-            strong_column_names=[balancing_data.strong_column],
-            weak_column_names=[balancing_data.weak_column],
-            source_target_samples=self._format_associate_samples(source_target_pairs),
-            n_buckets=n_buckets,
-            n_association_samples=1,
-            learning_rate=learning_rate,
-            epochs=epochs,
-            metrics=["hash_precision@5"],
-            options=bolt.TrainOptions(),
-        )
 
     def __setstate__(self, state):
         if "model_config" not in state:
