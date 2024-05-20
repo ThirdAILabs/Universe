@@ -64,11 +64,6 @@ std::shared_ptr<udt::UDT> makeQueryReformulationTargetOnly(
     bool use_spell_checker, char delimiter,
     const std::optional<std::string>& model_config, const py::dict& options);
 
-std::shared_ptr<udt::UDT> makeSvmClassifier(
-    const std::string& file_format, uint32_t n_target_classes,
-    uint32_t input_dim, const std::optional<std::string>& model_config,
-    const py::dict& options);
-
 void defineAutomlInModule(py::module_& module) {
   py::class_<ValidationOptions>(module, "Validation")
       .def(py::init<std::string, std::vector<std::string>,
@@ -123,10 +118,6 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("use_spell_checker") = false, py::arg("delimiter") = ',',
            py::arg("model_config") = std::nullopt,
            py::arg("options") = py::dict(), docs::UDT_QUERY_REFORMULATION_INIT)
-      .def(py::init(&makeSvmClassifier), py::arg("file_format"),
-           py::arg("n_target_classes"), py::arg("input_dim"),
-           py::arg("model_config") = std::nullopt,
-           py::arg("options") = py::dict())
       .def("train", &udt::UDT::train, py::arg("data"), py::arg("learning_rate"),
            py::arg("epochs"),
            py::arg("train_metrics") = std::vector<std::string>{},
@@ -441,14 +432,6 @@ std::shared_ptr<udt::UDT> makeQueryReformulationTargetOnly(
       /** use spell checker = */ use_spell_checker,
       /* delimiter = */ delimiter, /* model_config = */ model_config,
       /* user_args= */ createArgumentMap(options));
-}
-
-std::shared_ptr<udt::UDT> makeSvmClassifier(
-    const std::string& file_format, uint32_t n_target_classes,
-    uint32_t input_dim, const std::optional<std::string>& model_config,
-    const py::dict& options) {
-  return std::make_shared<udt::UDT>(file_format, n_target_classes, input_dim,
-                                    model_config, createArgumentMap(options));
 }
 
 }  // namespace thirdai::automl::python
