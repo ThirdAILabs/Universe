@@ -125,7 +125,6 @@ jobs:
          
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
-            yum install openssl11-devel -y &&
             yum install -y libxslt-devel libxml2-devel wget tar gcc make &&
             wget https://www.openssl.org/source/openssl-1.1.1o.tar.gz && 
             tar -xzf openssl-1.1.1o.tar.gz &&
@@ -139,7 +138,7 @@ jobs:
           # advantage to JIT compilation of python since most of our processing
           # happens in C++ (it can actually make it slower!). Also, on some
           # platforms numpy isn't available so our tests don't work.
-          # CIBW_BUILD: "cp*macosx_x86_64 cp*manylinux_x86_64 cp*win_amd64 cp*macosx_arm64"
+          CIBW_BUILD: "cp*macosx_x86_64 cp*manylinux_x86_64 cp*win_amd64 cp*macosx_arm64 cp*manylinux_aarch64"
           CIBW_BUILD_VERBOSITY: 3
 
           CIBW_BEFORE_TEST_LINUX: yum install golang libreoffice -y
