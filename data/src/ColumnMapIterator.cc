@@ -160,7 +160,7 @@ std::optional<ColumnMap> JsonIterator::next() {
       std::vector<uint32_t> all_ints(rows->size());
       extractColumnData(rows.value(), column_name, all_ints);
       column_map[column_name] =
-          ValueColumn<uint32_t>::make(std::move(all_ints));
+          ValueColumn<uint32_t>::make(std::move(all_ints), std::nullopt);
     } else if (first_cell.is_array() && !first_cell.empty()) {
       if (first_cell[0].is_number_integer()) {
         std::vector<std::vector<uint32_t>> all_vec_ints(rows->size());
