@@ -35,3 +35,15 @@ class PyDataSource(DataSource):
 
     def restart(self) -> None:
         self._line_iterator = self._get_line_iterator()
+
+
+class InMemoryDataSource(PyDataSource):
+    def __init__(self, lines):
+        DataSource.__init__(self)
+        self.lines = lines
+
+    def _get_line_iterator(self):
+        return self.lines.__iter__()
+
+    def resource_name(self) -> str:
+        raise "in-memory-data-source"

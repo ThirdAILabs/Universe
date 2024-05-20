@@ -277,6 +277,24 @@ def test_mach_udt_topk_predict():
         model.predict({"text": "something"}, top_k=4)
 
 
+def introduce(
+    model,
+    sample,
+    label,
+    load_balancing=False,
+    num_random_hashes=0,
+    num_buckets_to_sample=None,
+):
+    model.introduce_documents_on_data_source(
+        dataset.InMemoryDataSource(["text,label", f"{sample},{label}"]),
+        strong_column_names=["text"],
+        weak_column_names=[],
+        load_balancing=load_balancing,
+        num_random_hashes=num_random_hashes,
+        num_buckets_to_sample=num_buckets_to_sample,
+    )
+
+
 def test_mach_udt_introduce_and_forget():
     model = train_simple_mach_udt()
 
@@ -284,7 +302,7 @@ def test_mach_udt_introduce_and_forget():
 
     sample = {"text": "something or another with lots of words"}
     assert model.predict(sample)[0][0] != label
-    model.introduce_label([sample], label)
+    introduce(model, sample, label)
     assert model.predict(sample)[0][0] == label
     model.forget(label)
     assert model.predict(sample)[0][0] != label
@@ -297,7 +315,7 @@ def test_mach_udt_introduce_existing_class():
         ValueError,
         match=r"Manually adding a previously seen label: 0. Please use a new label for any new insertions.",
     ):
-        model.introduce_label([{"text": "something"}], 0)
+        introduce(model, "something", 0)
 
 
 def test_mach_udt_forget_non_existing_class():
@@ -419,8 +437,8 @@ def test_mach_manual_index_creation():
     model.train(SIMPLE_TEST_FILE, learning_rate=0.01, epochs=10)
 
     for label, sample in samples.items():
-        new_hashes = model.predict_hashes({"text": sample})
-        assert set(new_hashes) == set(entity_to_hashes[label])
+        pred = model.predict({"text": sample})[0][0]
+        assert pred == label
 
 
 def test_mach_without_bias():
@@ -448,8 +466,10 @@ def test_load_balancing():
         dataset.MachIndex({}, output_range=OUTPUT_DIM, num_hashes=num_hashes)
     )
 
+    introduce(model, sample["text"], 0)
+
     # This gives the top 8 locations where the new sample will end up.
-    hash_locs = model.predict_hashes(sample, force_non_empty=False)
+    hash_locs = model.get_index().get_entity_hashes(0)
 
     # Create a new index with 4 hashes, with elements to 4 of the 8 top locations
     # for the new element.
@@ -463,21 +483,14 @@ def test_load_balancing():
     # Insert an id for the same sample without load balancing to ensure that
     # it goes to different locations than with load balancing
     label_without_load_balancing = 9999
-    model.introduce_label(
-        input_batch=[sample],
-        label=label_without_load_balancing,
-    )
+    introduce(model, sample, label_without_load_balancing)
 
     # We are sampling 8 locations, this should be the top 8 locations we determined
     # earlier. However since we have inserted elements in the index in 4 of these
     # top 8 locations it should insert the new element in the other 4 locations
     # due to the load balancing constraint.
     label_with_load_balancing = 10000
-    model.introduce_label(
-        input_batch=[sample],
-        label=label_with_load_balancing,
-        load_balancing=True,
-    )
+    introduce(model, sample, label_with_load_balancing, load_balancing=True)
 
     hashes_with_load_balancing = model.get_index().get_entity_hashes(
         label_with_load_balancing
@@ -502,16 +515,10 @@ def test_load_balancing_disjoint():
     # # Insert an id for the same sample without load balancing to ensure that
     # # it goes to different locations than with load balancing
     label_without_load_balancing = 9999
-    model.introduce_label(
-        input_batch=[sample],
-        label=label_without_load_balancing,
-    )
+    introduce(model, sample, label_without_load_balancing)
+
     label_with_load_balancing = 10000
-    model.introduce_label(
-        input_batch=[sample],
-        label=label_with_load_balancing,
-        load_balancing=True,
-    )
+    introduce(model, sample, label_with_load_balancing, load_balancing=True)
 
     hashes_with_load_balancing = model.get_index().get_entity_hashes(
         label_with_load_balancing
@@ -588,7 +595,6 @@ def test_mach_sparse_inference():
     assert output.activations.shape == (1, OUTPUT_DIM)
 
 
-
 def test_enable_rlhf():
     model = train_simple_mach_udt()
 
@@ -614,12 +620,7 @@ def regularized_introduce_helper(model, num_random_hashes):
     introducing three identical samples"""
 
     for label in range(3):
-        model.introduce_label(
-            [{"text": "some text"}],
-            label,
-            num_buckets_to_sample=None,
-            num_random_hashes=num_random_hashes,
-        )
+        introduce(model, "some text", label, num_random_hashes=num_random_hashes)
 
     index = model.get_index()
     load = np.zeros(OUTPUT_DIM, dtype=np.int32)
@@ -654,17 +655,13 @@ def test_udt_mach_num_buckets_to_sample_and_switching_index_num_hashes():
         ValueError,
         match=r"Sampling from fewer buckets than num_hashes is not supported. If you'd like to introduce using fewer hashes, please reset the number of hashes for the index.",
     ):
-        model.introduce_label(
-            [{"text": "some text"}], 0, num_buckets_to_sample=NUM_HASHES - 1
-        )
+        introduce(model, "some text", 0, num_buckets_to_sample=NUM_HASHES - 1)
 
     new_index = dataset.MachIndex(num_hashes=NUM_HASHES - 1, output_range=OUTPUT_DIM)
 
     model.set_index(new_index)
 
-    model.introduce_label(
-        [{"text": "some text"}], 0, num_buckets_to_sample=NUM_HASHES - 1
-    )
+    introduce(model, "some text", 0, num_buckets_to_sample=NUM_HASHES - 1)
 
 
 def test_udt_mach_fast_approximation_handles_commas():
@@ -709,13 +706,9 @@ def test_doc_not_found_unless_trained_on():
 
     os.remove(SIMPLE_TEST_FILE)
 
-    # TODO(Removed)
-    model.get_entity_embedding(1)
+    model.get_index().get_entity_hashes(0)
 
     model.get_index().get_entity_hashes(2)
-
-    with pytest.raises(ValueError, match="Invalid entity in index: 7."):
-        model.get_entity_embedding(7)
 
     with pytest.raises(ValueError, match="Invalid entity in index: 8."):
         model.get_index().get_entity_hashes(8)

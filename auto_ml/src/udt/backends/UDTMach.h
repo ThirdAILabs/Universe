@@ -33,8 +33,7 @@ class UDTMach final : public UDTBackend {
       const UserProvidedTemporalRelationships& temporal_tracking_relationships,
       const std::string& target_name, const CategoricalDataTypePtr& target,
       uint32_t n_target_classes, bool integer_target,
-      const TabularOptions& tabular_options,
-      config::ArgumentMap user_args);
+      const TabularOptions& tabular_options, config::ArgumentMap user_args);
 
   explicit UDTMach(const ar::Archive& archive);
 
