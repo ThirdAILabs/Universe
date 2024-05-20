@@ -75,7 +75,7 @@ class NerBoltModel final : public NerModelInterface {
   std::unordered_map<uint32_t, std::string> _label_to_tag_map;
 
   NerClassifierPtr _classifier;
-  size_t _vocab_size = defaults::PRETRAINED_BOLT_VOCAB_SIZE;
+  size_t _vocab_size;
 };
 
 }  // namespace thirdai::bolt::NER

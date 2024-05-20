@@ -85,7 +85,8 @@ NerBoltModel::NerBoltModel(
     : _bolt_model(std::move(model)),
       _tokens_column(std::move(tokens_column)),
       _tags_column(std::move(tags_column)),
-      _tag_to_label(std::move(tag_to_label)) {
+      _tag_to_label(std::move(tag_to_label)),
+      _vocab_size(_bolt_model->inputDims()[0]) {
   auto train_transforms = getTransformations(/*inference=*/false);
   auto inference_transforms = getTransformations(/*inference=*/true);
   auto bolt_inputs = {data::OutputColumns("tokens"),
@@ -106,7 +107,8 @@ NerBoltModel::NerBoltModel(
     std::unordered_map<std::string, uint32_t> tag_to_label)
     : _tokens_column(std::move(tokens_column)),
       _tags_column(std::move(tags_column)),
-      _tag_to_label(std::move(tag_to_label)) {
+      _tag_to_label(std::move(tag_to_label)),
+      _vocab_size(pretrained_model->getBoltModel()->inputDims()[0]) {
   _bolt_model =
       initializeBoltModel(pretrained_model, _tag_to_label, _vocab_size);
   auto train_transforms = getTransformations(/*inference=*/false);
