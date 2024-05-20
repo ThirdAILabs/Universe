@@ -101,7 +101,7 @@ jobs:
           # CentOS base image). See
           # https://github.com/facebook/folly/issues/1762
           CIBW_ENVIRONMENT_LINUX: >
-            CMAKE_ARGS="-DOPENSSL_ROOT_DIR:PATH=/usr/lib64/openssl11;/usr/include/openssl11"
+            CMAKE_ARGS="-DOPENSSL_ROOT_DIR:PATH=/usr/local/openssl-1.1.1 -DOPENSSL_LIBRARIES=/usr/local/openssl-1.1.1/lib"
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
           # The following is to relax the discovery timeout (from a default 5) so that
           # cibuildwheel GitHub workflow does not timeout on test-discovery.
