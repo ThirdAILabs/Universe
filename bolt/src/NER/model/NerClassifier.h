@@ -12,8 +12,8 @@ namespace thirdai::bolt::NER {
 class NerClassifier {
  public:
   NerClassifier(bolt::ModelPtr model, data::OutputColumnsList bolt_inputs,
-                data::PipelinePtr train_transforms,
-                data::PipelinePtr inference_transforms,
+                data::TransformationPtr train_transforms,
+                data::TransformationPtr inference_transforms,
                 std::string tokens_column, std::string tags_column)
       : _bolt_model(std::move(model)),
         _train_transforms(std::move(train_transforms)),
@@ -37,7 +37,7 @@ class NerClassifier {
 
  private:
   bolt::ModelPtr _bolt_model;
-  data::PipelinePtr _train_transforms, _inference_transforms;
+  data::TransformationPtr _train_transforms, _inference_transforms;
   data::OutputColumnsList _bolt_inputs;
   std::string _tokens_column;
   std::string _tags_column;

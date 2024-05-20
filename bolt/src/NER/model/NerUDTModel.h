@@ -51,14 +51,6 @@ class NerUDTModel final : public NerModelInterface {
 
   static std::shared_ptr<NerUDTModel> fromArchive(const ar::Archive& archive);
 
-  void save(const std::string& filename) const;
-
-  void save_stream(std::ostream& output_stream) const;
-
-  static std::shared_ptr<NerUDTModel> load(const std::string& filename);
-
-  static std::shared_ptr<NerUDTModel> load_stream(std::istream& input_stream);
-
   bolt::ModelPtr getBoltModel() final { return _bolt_model; }
 
   std::vector<dataset::TextTokenizerPtr> getTargetWordTokenizers() {

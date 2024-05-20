@@ -205,25 +205,4 @@ std::shared_ptr<NerUDTModel> NerUDTModel::fromArchive(
                                                    tags_column, tag_to_label,
                                                    target_word_tokenizers));
 }
-
-void NerUDTModel::save(const std::string& filename) const {
-  std::ofstream filestream =
-      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  save_stream(filestream);
-}
-
-void NerUDTModel::save_stream(std::ostream& output) const {
-  ar::serialize(toArchive(), output);
-}
-
-std::shared_ptr<NerUDTModel> NerUDTModel::load(const std::string& filename) {
-  std::ifstream filestream =
-      dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-  return load_stream(filestream);
-}
-
-std::shared_ptr<NerUDTModel> NerUDTModel::load_stream(std::istream& input) {
-  auto archive = ar::deserialize(input);
-  return fromArchive(*archive);
-}
 }  // namespace thirdai::bolt::NER

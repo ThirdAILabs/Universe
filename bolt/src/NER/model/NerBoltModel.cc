@@ -16,6 +16,7 @@
 #include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
+#include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/ner/NerTokenFromStringArray.h>
@@ -122,7 +123,7 @@ NerBoltModel::NerBoltModel(
   }
 }
 
-data::PipelinePtr NerBoltModel::getTransformations(bool inference) {
+data::TransformationPtr NerBoltModel::getTransformations(bool inference) {
   data::PipelinePtr transform;
   if (inference) {
     transform =
@@ -198,24 +199,4 @@ std::shared_ptr<NerBoltModel> NerBoltModel::fromArchive(
                    /*tags_column=*/tags_column, /*tag_to_label=*/tag_to_label));
 }
 
-void NerBoltModel::save(const std::string& filename) const {
-  std::ofstream filestream =
-      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  save_stream(filestream);
-}
-
-void NerBoltModel::save_stream(std::ostream& output) const {
-  ar::serialize(toArchive(), output);
-}
-
-std::shared_ptr<NerBoltModel> NerBoltModel::load(const std::string& filename) {
-  std::ifstream filestream =
-      dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-  return load_stream(filestream);
-}
-
-std::shared_ptr<NerBoltModel> NerBoltModel::load_stream(std::istream& input) {
-  auto archive = ar::deserialize(input);
-  return fromArchive(*archive);
-}
 }  // namespace thirdai::bolt::NER
