@@ -160,6 +160,8 @@ class FullyConnectedLayer final {
 
   ~FullyConnectedLayer() = default;
 
+  void useTorchInitialization();
+
  private:
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;

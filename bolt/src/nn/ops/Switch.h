@@ -108,6 +108,8 @@ class Switch final : public Op, public std::enable_shared_from_this<Switch> {
 
   static std::string type() { return "switch"; }
 
+  void useTorchInitialization() final{};
+
  private:
   Switch(uint32_t n_layers, uint32_t dim, uint32_t input_dim, float sparsity,
          const std::string& activation, const SamplingConfigPtr& sampling,

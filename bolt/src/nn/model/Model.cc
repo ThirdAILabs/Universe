@@ -34,7 +34,7 @@ namespace thirdai::bolt {
 Model::Model(ComputationList inputs, ComputationList outputs,
              std::vector<LossPtr> losses,
              const ComputationList& expected_labels,
-             OptimizerFactoryPtr optimizer)
+             OptimizerFactoryPtr optimizer, bool use_torch_initialization)
     : _inputs(std::move(inputs)),
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
@@ -82,16 +82,22 @@ Model::Model(ComputationList inputs, ComputationList outputs,
   matchOutputFullyConnectedLayersWithLabels();
 
   verifyAllowedOutputDim();
+
+  if (use_torch_initialization) {
+    std::for_each(_ops.begin(), _ops.end(),
+                  [](const auto& op) { op->useTorchInitialization(); });
+  }
 }
 
 std::shared_ptr<Model> Model::make(ComputationList inputs,
                                    ComputationList outputs,
                                    std::vector<LossPtr> losses,
                                    const ComputationList& expected_labels,
-                                   OptimizerFactoryPtr optimizer) {
-  auto model = std::shared_ptr<Model>(
-      new Model(std::move(inputs), std::move(outputs), std::move(losses),
-                expected_labels, std::move(optimizer)));
+                                   OptimizerFactoryPtr optimizer,
+                                   bool use_torch_initialization) {
+  auto model = std::shared_ptr<Model>(new Model(
+      std::move(inputs), std::move(outputs), std::move(losses), expected_labels,
+      std::move(optimizer), use_torch_initialization));
 
   // This has to be done here because we need the model to be allocated using a
   // shared_ptr in order to use shared_from_this() to get a valid reference.

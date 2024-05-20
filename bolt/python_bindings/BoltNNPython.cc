@@ -106,7 +106,8 @@ void createBoltNNSubmodule(py::module_& module) {
        */
       .def(py::init(&Model::make), py::arg("inputs"), py::arg("outputs"),
            py::arg("losses"), py::arg("expected_labels") = ComputationList{},
-           py::arg("optimizer") = AdamFactory::make())
+           py::arg("optimizer") = AdamFactory::make(),
+           py::arg("use_torch_initialization") = false)
       .def("train_on_batch", &Model::trainOnBatch, py::arg("inputs"),
            py::arg("labels"))
       .def("forward",

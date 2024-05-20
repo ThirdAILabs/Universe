@@ -144,6 +144,8 @@ class FullyConnected final
 
   static std::string type() { return "fc"; }
 
+  void useTorchInitialization() final { _kernel->useTorchInitialization(); }
+
  private:
   FullyConnected(
       uint32_t dim, uint32_t input_dim, float sparsity,

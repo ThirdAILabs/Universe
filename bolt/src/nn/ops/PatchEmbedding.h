@@ -83,6 +83,8 @@ class PatchEmbedding final
 
   static std::string type() { return "patch_emb"; }
 
+  void useTorchInitialization() final { _kernel->useTorchInitialization(); }
+
  private:
   size_t patchNonzeros(bool use_sparsity) const;
 

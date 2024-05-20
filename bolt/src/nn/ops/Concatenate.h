@@ -54,6 +54,8 @@ class Concatenate final : public Op,
 
   static std::string type() { return "concat"; }
 
+  void useTorchInitialization() final{};
+
  private:
   Concatenate();
 
