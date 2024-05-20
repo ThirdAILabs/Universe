@@ -12,11 +12,6 @@
 #include <utility>
 
 namespace thirdai::bolt::NER {
-using PerTokenPredictions = std::vector<std::pair<std::string, float>>;
-using PerTokenListPredictions = std::vector<PerTokenPredictions>;
-
-class NerModelInterface;
-
 class NerModelInterface {
  public:
   virtual ~NerModelInterface() = default;

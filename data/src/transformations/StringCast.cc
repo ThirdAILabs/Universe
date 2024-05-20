@@ -374,6 +374,7 @@ template void CastToArray<std::string>::serialize(cereal::BinaryInputArchive&);
 
 template class CastToArray<uint32_t>;
 template class CastToArray<float>;
+template class CastToArray<std::string>;
 
 }  // namespace thirdai::data
 

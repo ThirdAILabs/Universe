@@ -17,8 +17,6 @@
 
 namespace thirdai::bolt::NER {
 
-class NER;
-
 class NER : public std::enable_shared_from_this<NER> {
  public:
   explicit NER(std::shared_ptr<NerModelInterface> model)
@@ -30,10 +28,9 @@ class NER : public std::enable_shared_from_this<NER> {
                    std::vector<dataset::TextTokenizerPtr>(
                        {std::make_shared<dataset::NaiveSplitTokenizer>(),
                         std::make_shared<dataset::CharKGramTokenizer>(4)})) {
-    auto model = std::make_shared<NerUDTModel>(
+    _ner_backend_model = std::make_shared<NerUDTModel>(
         std::move(tokens_column), std::move(tags_column),
         std::move(tag_to_label), std::move(target_word_tokenizers));
-    _ner_backend_model = std::static_pointer_cast<NerModelInterface>(model);
   }
 
   NER(const std::string& model_path, std::string tokens_column,
@@ -44,17 +41,14 @@ class NER : public std::enable_shared_from_this<NER> {
     if (ner_backend->type() == "bolt_ner") {
       auto ner_pretrained_model =
           std::dynamic_pointer_cast<NerBoltModel>(ner_backend);
-      auto model = std::make_shared<NerBoltModel>(
+      _ner_backend_model = std::make_shared<NerBoltModel>(
           ner_pretrained_model, std::move(tokens_column),
           std::move(tags_column), std::move(tag_to_label));
-      _ner_backend_model = std::static_pointer_cast<NerModelInterface>(model);
-
     } else {
       auto ner_udt_model = std::dynamic_pointer_cast<NerUDTModel>(ner_backend);
-      auto model = std::make_shared<NerUDTModel>(
+      _ner_backend_model = std::make_shared<NerUDTModel>(
           ner_udt_model, std::move(tokens_column), std::move(tags_column),
           std::move(tag_to_label));
-      _ner_backend_model = std::static_pointer_cast<NerModelInterface>(model);
     }
   }
 

@@ -11,6 +11,10 @@
 #include <unordered_map>
 
 namespace thirdai::bolt::NER {
+
+using PerTokenPredictions = std::vector<std::pair<std::string, float>>;
+using PerTokenListPredictions = std::vector<PerTokenPredictions>;
+
 class NerClassifier {
  public:
   NerClassifier(bolt::ModelPtr model, data::OutputColumnsList bolt_inputs,
@@ -47,4 +51,5 @@ class NerClassifier {
 };
 
 using NerClassifierPtr = std::shared_ptr<NerClassifier>;
+
 }  // namespace thirdai::bolt::NER
