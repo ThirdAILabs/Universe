@@ -48,14 +48,12 @@ UDTClassifier::UDTClassifier(
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
     const std::string& target_name, CategoricalDataTypePtr target,
     uint32_t n_target_classes, bool integer_target,
-    const TabularOptions& tabular_options,
-    const std::optional<std::string>& model_config,
-    const config::ArgumentMap& user_args)
+    const TabularOptions& tabular_options, const config::ArgumentMap& user_args)
     : _classifier(utils::Classifier::make(
           utils::buildModel(
               /* input_dim= */ tabular_options.feature_hash_range,
               /* output_dim= */ n_target_classes,
-              /* args= */ user_args, /* model_config= */ model_config,
+              /* args= */ user_args,
               /* use_sigmoid_bce = */
               user_args.get<bool>("sigmoid_bce", "boolean",
                                   defaults::USE_SIGMOID_BCE)),

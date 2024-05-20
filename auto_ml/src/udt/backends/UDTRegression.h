@@ -16,7 +16,6 @@ class UDTRegression final : public UDTBackend {
       const UserProvidedTemporalRelationships& temporal_tracking_relationships,
       const std::string& target_name, const NumericalDataTypePtr& target,
       std::optional<uint32_t> num_bins, const TabularOptions& tabular_options,
-      const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
   explicit UDTRegression(const ar::Archive& archive);

@@ -37,7 +37,6 @@ class MachMixture(Model):
         extreme_num_hashes: int = 8,
         tokenizer="char-4",
         hidden_bias=False,
-        model_config=None,
         hybrid=True,
         label_to_segment_map: defaultdict = None,
         seed_for_sharding: int = 0,
@@ -71,7 +70,6 @@ class MachMixture(Model):
                 tokenizer=tokenizer,
                 hidden_bias=hidden_bias,
                 hybrid=hybrid,
-                model_config=model_config,
                 mach_index_seed_offset=j * 341,
             )
             for j in range(self.num_shards)
@@ -534,9 +532,6 @@ class MachMixture(Model):
             )
 
     def __setstate__(self, state):
-        if "model_config" not in state:
-            # Add model_config field if an older model is being loaded.
-            state["model_config"] = None
         self.__dict__.update(state)
 
     def _resume_supervised(

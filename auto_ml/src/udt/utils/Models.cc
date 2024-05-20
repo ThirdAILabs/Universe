@@ -9,7 +9,6 @@
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
-#include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <limits>
 #include <stdexcept>
@@ -17,12 +16,8 @@
 namespace thirdai::automl::udt::utils {
 
 ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
-                    const config::ArgumentMap& args,
-                    const std::optional<std::string>& model_config,
-                    bool use_sigmoid_bce, bool mach) {
-  if (model_config) {
-    return utils::loadModel({input_dim}, output_dim, *model_config, mach);
-  }
+                    const config::ArgumentMap& args, bool use_sigmoid_bce,
+                    bool mach) {
   uint32_t hidden_dim = args.get<uint32_t>("embedding_dimension", "integer",
                                            defaults::HIDDEN_DIM);
   bool use_tanh = args.get<bool>("use_tanh", "bool", defaults::USE_TANH);
@@ -100,28 +95,6 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
   }
 
   auto model = bolt::Model::make({input}, {output}, {loss}, additional_labels);
-
-  return model;
-}
-
-ModelPtr loadModel(const std::vector<uint32_t>& input_dims,
-                   uint32_t specified_output_dim,
-                   const std::string& config_path, bool mach) {
-  config::ArgumentMap parameters;
-  parameters.insert("output_dim", specified_output_dim);
-
-  auto json_config = json::parse(config::loadConfig(config_path));
-
-  auto model = config::buildModel(json_config, parameters, input_dims, mach);
-
-  uint32_t actual_output_dim = model->outputs().at(0)->dim();
-  if (actual_output_dim != specified_output_dim) {
-    throw std::invalid_argument(
-        "Expected model with output dim " +
-        std::to_string(specified_output_dim) +
-        ", but the model config yielded a model with output dim " +
-        std::to_string(actual_output_dim) + ".");
-  }
 
   return model;
 }

@@ -63,9 +63,7 @@ UDTMach::UDTMach(
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
     const std::string& target_name, const CategoricalDataTypePtr& target_config,
     uint32_t n_target_classes, bool integer_target,
-    const TabularOptions& tabular_options,
-    const std::optional<std::string>& model_config,
-    config::ArgumentMap user_args)
+    const TabularOptions& tabular_options, config::ArgumentMap user_args)
     : _default_top_k_to_return(defaults::MACH_TOP_K_TO_RETURN),
       _num_buckets_to_eval(defaults::MACH_NUM_BUCKETS_TO_EVAL) {
   (void)target_config;
@@ -93,8 +91,8 @@ UDTMach::UDTMach(
   _classifier = utils::Classifier::make(
       utils::buildModel(
           /* input_dim= */ input_dim, /* output_dim= */ num_buckets,
-          /* args= */ user_args, /* model_config= */ model_config,
-          /* use_sigmoid_bce = */ !softmax, /* mach= */ true),
+          /* args= */ user_args, /* use_sigmoid_bce = */ !softmax,
+          /* mach= */ true),
       user_args.get<bool>("freeze_hash_tables", "boolean",
                           defaults::FREEZE_HASH_TABLES));
 

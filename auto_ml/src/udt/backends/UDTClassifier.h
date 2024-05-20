@@ -25,7 +25,6 @@ class UDTClassifier final : public UDTBackend {
       const std::string& target_name, CategoricalDataTypePtr target,
       uint32_t n_target_classes, bool integer_target,
       const TabularOptions& tabular_options,
-      const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
   UDTClassifier(const ColumnDataTypes& data_types, uint32_t n_target_classes,

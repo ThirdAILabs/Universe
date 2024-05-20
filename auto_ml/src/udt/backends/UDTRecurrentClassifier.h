@@ -20,7 +20,6 @@ class UDTRecurrentClassifier final : public UDTBackend {
       const UserProvidedTemporalRelationships& temporal_tracking_relationships,
       const std::string& target_name, const SequenceDataTypePtr& target,
       uint32_t n_target_classes, const TabularOptions& tabular_options,
-      const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
   explicit UDTRecurrentClassifier(const ar::Archive& archive);

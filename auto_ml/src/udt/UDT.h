@@ -36,8 +36,7 @@ class UDT {
       const UserProvidedTemporalRelationships& temporal_tracking_relationships,
       const std::string& target_col, std::optional<uint32_t> n_target_classes,
       bool integer_target, std::string time_granularity, uint32_t lookahead,
-      char delimiter, const std::optional<std::string>& model_config,
-      const PretrainedBasePtr& pretrained_model,
+      char delimiter, const PretrainedBasePtr& pretrained_model,
       const config::ArgumentMap& user_args);
 
   UDT(std::optional<std::string> incorrect_column_name,

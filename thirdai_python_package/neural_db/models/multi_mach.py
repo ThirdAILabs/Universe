@@ -40,7 +40,6 @@ class MultiMach:
         tokenizer: int,
         hidden_bias: bool,
         hybrid: bool,
-        model_config,
         mach_index_seed_offset: int,
     ):
         if number_models < 1:
@@ -59,7 +58,6 @@ class MultiMach:
                 extreme_num_hashes=extreme_num_hashes,
                 tokenizer=tokenizer,
                 hidden_bias=hidden_bias,
-                model_config=model_config,
                 hybrid=(
                     hybrid if j == 0 else False
                 ),  # retriever will be the same for all models in the ensemble

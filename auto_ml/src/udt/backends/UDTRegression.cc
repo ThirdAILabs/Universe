@@ -31,14 +31,12 @@ UDTRegression::UDTRegression(
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
     const std::string& target_name, const NumericalDataTypePtr& target,
     std::optional<uint32_t> num_bins, const TabularOptions& tabular_options,
-    const std::optional<std::string>& model_config,
     const config::ArgumentMap& user_args) {
   uint32_t output_bins = num_bins.value_or(defaults::REGRESSION_BINS);
 
   _model = utils::buildModel(
       /* input_dim= */ tabular_options.feature_hash_range,
-      /* output_dim= */ output_bins, /* args= */ user_args,
-      /* model_config= */ model_config);
+      /* output_dim= */ output_bins, /* args= */ user_args);
 
   auto cast = std::make_shared<data::StringToDecimal>(target_name, target_name);
 

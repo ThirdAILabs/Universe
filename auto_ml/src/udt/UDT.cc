@@ -41,8 +41,7 @@ UDT::UDT(
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
     const std::string& target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
-    char delimiter, const std::optional<std::string>& model_config,
-    const PretrainedBasePtr& pretrained_model,
+    char delimiter, const PretrainedBasePtr& pretrained_model,
     const config::ArgumentMap& user_args) {
   if (pretrained_model) {
     if (!n_target_classes) {
@@ -105,27 +104,27 @@ UDT::UDT(
         _backend = std::make_unique<UDTMachClassifier>(
             data_types, temporal_tracking_relationships, target_col,
             as_categorical, n_target_classes.value(), integer_target,
-            tabular_options, model_config, user_args);
+            tabular_options, user_args);
       } else {
         _backend = std::make_unique<UDTMach>(
             data_types, temporal_tracking_relationships, target_col,
             as_categorical, n_target_classes.value(), integer_target,
-            tabular_options, model_config, user_args);
+            tabular_options, user_args);
       }
     } else {
       _backend = std::make_unique<UDTClassifier>(
           data_types, temporal_tracking_relationships, target_col,
           as_categorical, n_target_classes.value(), integer_target,
-          tabular_options, model_config, user_args);
+          tabular_options, user_args);
     }
   } else if (as_numerical && !has_graph_inputs) {
     _backend = std::make_unique<UDTRegression>(
         data_types, temporal_tracking_relationships, target_col, as_numerical,
-        n_target_classes, tabular_options, model_config, user_args);
+        n_target_classes, tabular_options, user_args);
   } else if (as_sequence && !has_graph_inputs) {
     _backend = std::make_unique<UDTRecurrentClassifier>(
         data_types, temporal_tracking_relationships, target_col, as_sequence,
-        n_target_classes.value(), tabular_options, model_config, user_args);
+        n_target_classes.value(), tabular_options, user_args);
   } else {
     throwUnsupportedUDTConfigurationError(as_categorical, as_numerical,
                                           as_sequence, has_graph_inputs);

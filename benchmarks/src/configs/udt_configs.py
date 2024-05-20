@@ -23,7 +23,7 @@ class UDTBenchmarkConfig(ABC):
     n_target_classes = None
     temporal_relationships = {}
     delimiter = ","
-    model_config = None
+    custom_model = None
     options = {}
 
     learning_rate = None
@@ -211,6 +211,32 @@ class FraudDetectionUDTBenchmark(UDTBenchmarkConfig):
         }
 
 
+def build_wayfair_model():
+    INPUT_DIM = 100_000
+    N_CLASSES = 931
+    input_ = bolt.nn.Input(INPUT_DIM)
+    # emb = bolt.nn.FullyConnected(dim=1024, input_dim=INPUT_DIM, activation="relu")(input_)
+    emb = bolt.nn.Embedding(dim=1024, input_dim=INPUT_DIM, activation="relu")(input_)
+    out = bolt.nn.FullyConnected(
+        N_CLASSES,
+        input_dim=1024,
+        sparsity=0.1,
+        activation="sigmoid",
+        sampling_config=bolt.nn.DWTASamplingConfig(
+            num_tables=64,
+            hashes_per_table=4,
+            range_pow=12,
+            binsize=8,
+            reservoir_size=64,
+            permutations=8,
+        ),
+    )(emb)
+
+    loss = bolt.nn.losses.BinaryCrossEntropy(out, bolt.nn.Input(N_CLASSES))
+
+    return bolt.nn.Model([input_], [out], [loss])
+
+
 class WayfairUDTConfig(UDTBenchmarkConfig):
     config_name = "wayfair_udt"
     dataset_name = "wayfair"
@@ -221,36 +247,8 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
     target = "labels"
     n_target_classes = 931
     delimiter = "\t"
-    model_config = {
-        "inputs": ["input"],
-        "nodes": [
-            {
-                "name": "hidden",
-                "type": "embedding",
-                "dim": 1024,
-                "activation": "relu",
-                "predecessor": "input",
-            },
-            {
-                "name": "output",
-                "type": "fully_connected",
-                "dim": {"param_name": "output_dim"},
-                "sparsity": 0.1,
-                "activation": "sigmoid",
-                "sampling_config": {
-                    "num_tables": 64,
-                    "hashes_per_table": 4,
-                    "range_pow": 12,
-                    "binsize": 8,
-                    "reservoir_size": 64,
-                    "permutations": 8,
-                },
-                "predecessor": "hidden",
-            },
-        ],
-        "output": "output",
-        "loss": "BinaryCrossEntropyLoss",
-    }
+
+    custom_model = build_wayfair_model
 
     @staticmethod
     def get_data_types(path_prefix):
@@ -294,7 +292,6 @@ class BlackFridayUDTBenchmark(UDTBenchmarkConfig):
     target = "Purchase"
     n_target_classes = None
     delimiter = ","
-    model_config = None
     options = {"contextual_columns": True}
 
     learning_rate = 0.001

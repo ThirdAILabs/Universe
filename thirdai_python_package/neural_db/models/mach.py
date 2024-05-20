@@ -244,7 +244,6 @@ class Mach(Model):
         extreme_num_hashes=8,
         tokenizer="char-4",
         hidden_bias=False,
-        model_config=None,
         hybrid=True,
         mach_index_seed: int = 341,
         index_max_shard_size=8_000_000,
@@ -262,7 +261,6 @@ class Mach(Model):
         self.n_ids = 0
         self.model = None
         self.balancing_samples = []
-        self.model_config = model_config
         self.mach_index_seed = mach_index_seed
 
         if hybrid:
@@ -291,7 +289,6 @@ class Mach(Model):
         self.n_ids = new_model.n_ids
         self.model = new_model.model
         self.balancing_samples = new_model.balancing_samples
-        self.model_config = new_model.model_config
         self.finetunable_retriever = new_model.finetunable_retriever
 
     def save(self, path: Path):
@@ -503,7 +500,6 @@ class Mach(Model):
                 "rlhf": True,
                 "mach_index_seed": self.mach_index_seed,
             },
-            model_config=self.model_config,
         )
         model.insert_new_doc_ids(documents)
         return model
@@ -631,9 +627,6 @@ class Mach(Model):
             self.finetunable_retriever.upvote(pairs)
 
     def __setstate__(self, state):
-        if "model_config" not in state:
-            # Add model_config field if an older model is being loaded.
-            state["model_config"] = None
         if "finetunable_retriever" not in state:
             state["finetunable_retriever"] = None
         if "inverted_index" in state:

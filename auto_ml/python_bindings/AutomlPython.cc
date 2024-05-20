@@ -51,8 +51,8 @@ std::shared_ptr<udt::UDT> makeUDT(
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
     const std::string& target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
-    char delimiter, const std::optional<std::string>& model_config,
-    const PretrainedBasePtr& pretrained_model, const py::dict& options);
+    char delimiter, const PretrainedBasePtr& pretrained_model,
+    const py::dict& options);
 
 std::shared_ptr<udt::UDT> makeQueryReformulation(
     std::string source_column, std::string target_column,
@@ -104,8 +104,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("target"), py::arg("n_target_classes") = std::nullopt,
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
-           py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
-           py::arg("pretrained_model") = nullptr,
+           py::arg("delimiter") = ',', py::arg("pretrained_model") = nullptr,
            py::arg("options") = py::dict(), docs::UDT_INIT,
            bolt::python::OutputRedirect())
       .def(py::init(&makeQueryReformulation), py::arg("source_column"),
@@ -393,8 +392,8 @@ std::shared_ptr<udt::UDT> makeUDT(
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
     const std::string& target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
-    char delimiter, const std::optional<std::string>& model_config,
-    const PretrainedBasePtr& pretrained_model, const py::dict& options) {
+    char delimiter, const PretrainedBasePtr& pretrained_model,
+    const py::dict& options) {
   return std::make_shared<udt::UDT>(
       /* data_types = */ std::move(data_types),
       /* temporal_tracking_relationships = */ temporal_tracking_relationships,
@@ -403,7 +402,6 @@ std::shared_ptr<udt::UDT> makeUDT(
       /* integer_target = */ integer_target,
       /* time_granularity = */ std::move(time_granularity),
       /* lookahead = */ lookahead, /* delimiter = */ delimiter,
-      /* model_config= */ model_config,
       /* pretrained_model= */ pretrained_model,
       /* options = */ createArgumentMap(options));
 }
