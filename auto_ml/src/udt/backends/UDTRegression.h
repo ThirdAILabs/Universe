@@ -45,6 +45,8 @@ class UDTRegression final : public UDTBackend {
 
   ModelPtr model() const final { return _model; }
 
+  FeaturizerPtr featurizer() const final { return _featurizer; }
+
   ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
 
   static std::unique_ptr<UDTRegression> fromArchive(const ar::Archive& archive);

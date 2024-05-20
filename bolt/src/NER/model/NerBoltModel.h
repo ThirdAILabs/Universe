@@ -23,12 +23,13 @@ class NerBoltModel;
 class NerBoltModel final : public NerBackend {
  public:
   std::string type() const final { return "bolt_ner"; }
-  NerBoltModel(bolt::ModelPtr model,
+  NerBoltModel(bolt::ModelPtr model, std::string tokens_column,
+               std::string tags_column,
                std::unordered_map<std::string, uint32_t> tag_to_label);
 
   NerBoltModel(std::shared_ptr<NerBoltModel>& pretrained_model,
-               std::unordered_map<std::string, uint32_t> tag_to_label,
-               std::string token_column, std::string tag_column);
+               std::string tokens_column, std::string tags_column,
+               std::unordered_map<std::string, uint32_t> tag_to_label);
 
   std::vector<PerTokenListPredictions> getTags(
       std::vector<std::vector<std::string>> tokens, uint32_t top_k) final;
@@ -56,9 +57,11 @@ class NerBoltModel final : public NerBackend {
 
   static std::shared_ptr<NerBoltModel> load_stream(std::istream& input_stream);
 
-  bolt::ModelPtr getBoltModel() { return _bolt_model; }
+  bolt::ModelPtr getBoltModel() final { return _bolt_model; }
 
-  std::string getTokenColumn() const final { return _source_column; }
+  std::string getTokensColumn() const final { return _source_column; }
+
+  std::string getTagsColumn() const final { return _target_column; }
 
   NerBoltModel() = default;
   ~NerBoltModel() override = default;

@@ -1,6 +1,7 @@
 #include "InvertedIndexTestUtils.h"
 #include <gtest/gtest.h>
 #include <search/src/inverted_index/InvertedIndex.h>
+#include <search/src/inverted_index/Tokenizer.h>
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <iterator>
@@ -9,9 +10,16 @@
 
 namespace thirdai::search::tests {
 
-TEST(InvertedIndexTests, BasicRetrieval) {
-  InvertedIndex index;
+InvertedIndex indexWithShardSize(size_t shard_size) {
+  return InvertedIndex(
+      /*max_docs_to_score=*/InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE,
+      /*idf_cutoff_frac=*/InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC,
+      /*k1=*/InvertedIndex::DEFAULT_K1, /*b=*/InvertedIndex::DEFAULT_B,
+      /*tokenizer=*/std::make_shared<DefaultTokenizer>(),
+      /*shard_size=*/shard_size);
+}
 
+void runBasicRetrievalTest(InvertedIndex& index) {
   index.index({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, {{"a b c d e g"},
                                                         {"a b c d"},
                                                         {"1 2 3"},
@@ -42,6 +50,18 @@ TEST(InvertedIndexTests, BasicRetrieval) {
   // These candidates are a subset of the original results plus docs 5 & 2 which
   // score 0 are added to test they are not returned.
   checkRank(index, {"f g"}, {8, 5, 6, 2, 7}, {7, 6, 8});
+}
+
+TEST(InvertedIndexTests, BasicRetrieval) {
+  InvertedIndex index;
+  runBasicRetrievalTest(index);
+  ASSERT_EQ(index.nShards(), 1);
+}
+
+TEST(InvertedIndexTests, BasicRetrievalSharded) {
+  InvertedIndex index = indexWithShardSize(3);
+  runBasicRetrievalTest(index);
+  ASSERT_EQ(index.nShards(), 4);
 }
 
 TEST(InvertedIndexTests, LessFrequentTokensScoreHigher) {
@@ -87,7 +107,7 @@ TEST(InvertedIndexTests, RepeatedTokensInQuery) {
 
   index.index(
       {1, 2, 3, 4, 5},
-      {{"y r q z"}, {"c a z m"}, {"e c c m"}, {"a b q d"}, {"l b f h"}});
+      {{"y r q z"}, {"c a z m"}, {"e c c m"}, {"a b q d"}, {"l b f h q"}});
 
   // All of the tokens in the query occur in 2 docs. Doc 4 has tokens "a" and
   // "q" from the query, doc 2 has tokens "a m" from the query. Doc 4 scores
@@ -125,22 +145,63 @@ TEST(InvertedIndexTests, DocRemoval) {
   checkQuery(index, {"a b c d e"}, {1, 3, 5});
 }
 
+TEST(InvertedIndexTests, TestUpdate) {
+  InvertedIndex index = indexWithShardSize(2);
+
+  index.index({1, 2, 3, 4}, {"a b c d 1 2", "5 6", "7 8", "f g h 3 4"});
+  ASSERT_EQ(index.nShards(), 2);
+
+  checkQuery(index, "a b c d e f g h", {1, 4});
+
+  index.update({2, 4}, {"a h", "e f"});
+
+  checkQuery(index, "a b c d e f g h", {4, 1, 2});
+}
+
+void compareResults(std::vector<DocScore> a, std::vector<DocScore> b) {
+  // For some queries two docs may have the same score. For different numbers of
+  // shards the docs may have a different ordering when the score is the
+  // same. Sorting by doc ids if the scores are the same solves this, it only
+  // doesn't handle if a doc doesn't make the topk cuttoff because of this.
+  // Removing the last item by allowing the end to differ as long as the prior
+  // results match.
+
+  auto sort = [](auto& vec) {
+    std::sort(vec.begin(), vec.end(), [](const auto& x, const auto& y) {
+      if (x.second == y.second) {
+        return x.first < y.first;
+      }
+      return x.second > y.second;
+    });
+  };
+
+  sort(a);
+  sort(b);
+
+  a.pop_back();
+  b.pop_back();
+
+  ASSERT_EQ(a, b);
+}
+
 TEST(InvertedIndexTests, SyntheticDataset) {
   size_t vocab_size = 10000;
   size_t n_docs = 1000;
+  size_t topk = 10;
 
   auto [ids, docs, queries] = makeDocsAndQueries(vocab_size, n_docs);
 
-  InvertedIndex index;
+  InvertedIndex index = indexWithShardSize(240);
   index.index(ids, docs);
+  ASSERT_GT(index.nShards(), 1);
 
-  auto results = index.queryBatch(queries, /*k=*/5);
+  auto results = index.queryBatch(queries, /*k=*/topk);
 
   for (size_t i = 0; i < queries.size(); i++) {
     // i-th query goes to i-th doc.
     ASSERT_EQ(results[i][0].first, i);
     // Check single query vs batch query consistency.
-    ASSERT_EQ(index.query(queries[i], /*k=*/5), results[i]);
+    ASSERT_EQ(index.query(queries[i], /*k=*/topk), results[i]);
   }
 
   // Check that building index incrementally gets the same results.
@@ -154,9 +215,37 @@ TEST(InvertedIndexTests, SyntheticDataset) {
                             {docs.begin() + start, docs.begin() + end});
   }
 
-  auto incremental_results = incremental_index.queryBatch(queries, /*k=*/5);
+  auto incremental_results = incremental_index.queryBatch(queries, /*k=*/topk);
 
-  ASSERT_EQ(results, incremental_results);
+  ASSERT_EQ(results.size(), incremental_results.size());
+  for (size_t i = 0; i < results.size(); i++) {
+    compareResults(results[i], incremental_results[i]);
+  }
+}
+
+TEST(InvertedIndexTests, ShardedVsUnsharded) {
+  size_t vocab_size = 1000;
+  size_t n_docs = 100;
+  size_t topk = 10;
+
+  auto [ids, docs, queries] = makeDocsAndQueries(vocab_size, n_docs);
+
+  InvertedIndex unsharded_index;
+  unsharded_index.index(ids, docs);
+  ASSERT_EQ(unsharded_index.nShards(), 1);
+
+  auto unsharded_results = unsharded_index.queryBatch(queries, /*k=*/topk);
+
+  InvertedIndex sharded_index = indexWithShardSize(24);
+  sharded_index.index(ids, docs);
+  ASSERT_GT(sharded_index.nShards(), 1);
+
+  auto sharded_results = sharded_index.queryBatch(queries, /*k=*/topk);
+
+  ASSERT_EQ(unsharded_results.size(), sharded_results.size());
+  for (size_t i = 0; i < unsharded_results.size(); i++) {
+    compareResults(unsharded_results[i], sharded_results[i]);
+  }
 }
 
 TEST(InvertedIndexTests, SaveLoad) {
@@ -165,9 +254,13 @@ TEST(InvertedIndexTests, SaveLoad) {
 
   auto [ids, docs, queries] = makeDocsAndQueries(vocab_size, n_docs);
 
-  InvertedIndex index;
+  InvertedIndex index = indexWithShardSize(24);
+
   index.index({ids.begin(), ids.begin() + n_docs / 2},
               {docs.begin(), docs.begin() + n_docs / 2});
+
+  ASSERT_GT(index.nShards(), 1);
+
   auto original_partial_results = index.queryBatch(queries, /*k=*/5);
 
   std::string save_path = "./test_partial_index";

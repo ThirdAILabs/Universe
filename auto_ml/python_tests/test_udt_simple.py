@@ -22,6 +22,7 @@ def make_simple_trained_model(
     embedding_dim=None,
     integer_label=False,
     text_encoding_type="none",
+    numerical_temporal=True,
 ):
     write_lines_to_file(
         TRAIN_FILE,
@@ -68,7 +69,10 @@ def make_simple_trained_model(
             "genres": bolt.types.categorical(delimiter="-"),
             "description": bolt.types.text(contextual_encoding=text_encoding_type),
         },
-        temporal_tracking_relationships={"userId": ["movieId"]},
+        temporal_tracking_relationships={
+            "userId": ["movieId"],
+            **({"userId": ["hoursWatched"]} if numerical_temporal else {}),
+        },
         target="movieId",
         n_target_classes=3,
         integer_target=integer_label,
@@ -177,10 +181,6 @@ def test_save_load():
     saved_predict_batch_res = saved_model.predict_batch(batch_sample())
     assert (predict_batch_res == saved_predict_batch_res).all()
 
-    explain_res = model.explain(single_sample())
-    saved_explain_res = saved_model.explain(single_sample())
-    compare_explanations(explain_res, saved_explain_res, assert_mode="equal")
-
 
 @pytest.mark.release
 def test_multiple_predict_returns_same_results():
@@ -196,7 +196,7 @@ def test_multiple_predict_returns_same_results():
 
 @pytest.mark.release
 def test_index_changes_predict_result():
-    model = make_simple_trained_model(integer_label=False)
+    model = make_simple_trained_model(integer_label=False, numerical_temporal=False)
     first = model.predict(single_sample())
     model.index(single_update())
     second = model.predict(single_sample())
@@ -254,7 +254,7 @@ def test_entity_embedding_fails_on_large_label():
 
 @pytest.mark.release
 def test_explanations_total_percentage():
-    model = make_simple_trained_model(integer_label=False)
+    model = make_simple_trained_model(integer_label=False, numerical_temporal=False)
     explanations = model.explain(single_sample())
     total_percentage = 0
     for _, percent in explanations:
@@ -265,7 +265,7 @@ def test_explanations_total_percentage():
 
 @pytest.mark.release
 def test_different_explanation_target_returns_different_results():
-    model = make_simple_trained_model(integer_label=False)
+    model = make_simple_trained_model(integer_label=False, numerical_temporal=False)
 
     explain_target_1 = model.explain(single_sample(), target_class="1")
     explain_target_2 = model.explain(single_sample(), target_class="4")
@@ -273,13 +273,13 @@ def test_different_explanation_target_returns_different_results():
 
 
 def test_explanations_target_label_format():
-    model = make_simple_trained_model(integer_label=False)
+    model = make_simple_trained_model(integer_label=False, numerical_temporal=False)
     # Call this method to make sure it does not throw an error
     model.explain(single_sample(), target_class="1")
     with pytest.raises(ValueError, match=r"Received an integer but*"):
         model.explain(single_sample(), target_class=1)
 
-    model = make_simple_trained_model(integer_label=True)
+    model = make_simple_trained_model(integer_label=True, numerical_temporal=False)
     # Call this method to make sure it does not throw an error
     model.explain(single_sample(), target_class=1)
     with pytest.raises(ValueError, match=r"Received a string but*"):

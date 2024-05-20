@@ -170,6 +170,7 @@ using F32 = float;
 using Char = char;
 using Str = std::string;
 using VecU32 = std::vector<uint32_t>;
+using VecF32 = std::vector<float>;
 using VecU64 = std::vector<uint64_t>;
 using VecI64 = std::vector<int64_t>;
 using VecStr = std::vector<std::string>;
@@ -197,6 +198,8 @@ ConstArchivePtr character(char val);
 ConstArchivePtr str(std::string val);
 
 ConstArchivePtr vecU32(std::vector<uint32_t> val);
+
+ConstArchivePtr vecF32(std::vector<float> val);
 
 ConstArchivePtr vecU64(std::vector<uint64_t> val);
 

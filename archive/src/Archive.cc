@@ -164,6 +164,10 @@ ConstArchivePtr vecU32(std::vector<uint32_t> val) {
   return Value<std::vector<uint32_t>>::make(std::move(val));
 }
 
+ConstArchivePtr vecF32(std::vector<float> val) {
+  return Value<std::vector<float>>::make(std::move(val));
+}
+
 ConstArchivePtr vecU64(std::vector<uint64_t> val) {
   return Value<std::vector<uint64_t>>::make(std::move(val));
 }
