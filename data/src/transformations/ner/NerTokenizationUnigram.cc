@@ -20,8 +20,7 @@ namespace thirdai::data {
 NerTokenizerUnigram::NerTokenizerUnigram(
     std::string tokens_column, std::string featurized_sentence_column,
     std::optional<std::string> target_column,
-    std::optional<uint32_t> target_dim, uint32_t fhr_dim,
-    uint32_t dyadic_num_intervals,
+    std::optional<uint32_t> target_dim, uint32_t dyadic_num_intervals,
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
     std::optional<std::unordered_map<std::string, uint32_t>> tag_to_label)
     : _tokens_column(std::move(tokens_column)),
@@ -29,22 +28,7 @@ NerTokenizerUnigram::NerTokenizerUnigram(
       _target_column(std::move(target_column)),
       _target_dim(target_dim),
       _processor(std::move(target_word_tokenizers), dyadic_num_intervals),
-      _tag_to_label(std::move(tag_to_label)) {
-  /*
-   * Target Word Tokenizers are used to tokenize the target token. They are used
-   * for generating extra features for the target token.
-   */
-  _tokenizer_transformation = std::make_shared<TextTokenizer>(
-      /*input_column=*/_featurized_sentence_column,
-      /*output_indices=*/_featurized_tokens_indices_column,
-      /*output_values=*/std::nullopt,
-      /*tokenizer=*/
-      std::make_shared<dataset::NaiveSplitTokenizer>(
-          dataset::NaiveSplitTokenizer()),
-      /*encoder=*/
-      std::make_shared<dataset::NGramEncoder>(dataset::NGramEncoder(1)), false,
-      fhr_dim);
-}
+      _tag_to_label(std::move(tag_to_label)) {}
 
 ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
   (void)state;
@@ -119,7 +103,7 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
 
   output_columns[_featurized_sentence_column] =
       ValueColumn<std::string>::make(std::move(featurized_sentences));
-  if (_target_column) {
+  if (_target_column && _target_dim) {
     output_columns[*_target_column] =
         ValueColumn<uint32_t>::make(std::move(targets), _target_dim.value());
   }
@@ -128,7 +112,7 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
 
   // this applies inplace transformation to the column map and tokenizes the
   // sentences into indices and values array pairs.
-  return _tokenizer_transformation->apply(processed_column_map, state);
+  return processed_column_map;
 }
 
 ar::ConstArchivePtr NerTokenizerUnigram::toArchive() const {
@@ -142,7 +126,6 @@ ar::ConstArchivePtr NerTokenizerUnigram::toArchive() const {
   }
 
   map->set("processor", _processor.toArchive());
-  map->set("tokenizer", _tokenizer_transformation->toArchive());
   return map;
 }
 
@@ -150,8 +133,5 @@ NerTokenizerUnigram::NerTokenizerUnigram(const ar::Archive& archive)
     : _tokens_column(archive.str("tokens_column")),
       _featurized_sentence_column(archive.str("featurized_sentence_column")),
       _target_column(archive.getOpt<ar::Str>("target_column")),
-      _processor(NerDyadicDataProcessor(*archive.get("processor"))) {
-  _tokenizer_transformation =
-      TextTokenizer::fromArchive(*archive.get("tokenizer"));
-}
+      _processor(NerDyadicDataProcessor(*archive.get("processor"))) {}
 }  // namespace thirdai::data
