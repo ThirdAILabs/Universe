@@ -95,11 +95,6 @@ std::string getNumericalFeatures(const std::string& input) {
   if (strippedInput.size() >= 1) {
     return "CONTAINS_NUMBER";
   }
-
-  if (containsAlphabets(input)) {
-    return "IS_ALPHANUMERIC ";
-  }
-
   return "";
 }
 
@@ -147,11 +142,11 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
     extra_features += "CONTAINS_LOCATION_WORDS ";
   }
 
-  if (_extra_features_config->organization_features &&
-      containsKeywordInRange(lower_cased_tokens, start, end,
-                             organization_keywords)) {
-    extra_features += "CONTAINS_ORGANIZATION_WORDS ";
-  }
+  // if (_extra_features_config->organization_features &&
+  //     containsKeywordInRange(lower_cased_tokens, start, end,
+  //                            organization_keywords)) {
+  //   extra_features += "CONTAINS_ORGANIZATION_WORDS ";
+  // }
 
   if (_extra_features_config->numerical_features) {
     extra_features += getNumericalFeatures(current_token);
@@ -239,8 +234,9 @@ std::string NerDyadicDataProcessor::processToken(
 
   repr += generateDyadicWindows(tokens, index);
 
-  repr += " " + getExtraFeatures(tokens, index);
-
+  if (_extra_features_config->case_features) {
+    repr += " " + getExtraFeatures(tokens, index);
+  }
   return repr;
 }
 
