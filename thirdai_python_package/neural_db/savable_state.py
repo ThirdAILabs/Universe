@@ -121,7 +121,7 @@ class State:
             on_progress(6 / total_steps)
 
         except AttributeError as e:
-            if "Can't get attribute 'Mach'" in str(e):
+            if "thirdai.neural_db.models.models" in str(e):
                 # This is a backwards compatibility feature to handle a change
                 # in the NeuralDB code where the thirdai.neural_db.models.models
                 # module was refactored
