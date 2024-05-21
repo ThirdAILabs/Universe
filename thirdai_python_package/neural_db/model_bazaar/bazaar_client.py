@@ -310,6 +310,18 @@ class NeuralDBClient:
 
         print("Successfully saved the model.")
 
+        content = response.json()["data"]
+
+        if content["new_model_id"]:
+            return Model(
+                model_identifier=create_model_identifier(
+                    model_name, self.bazaar._username
+                ),
+                model_id=content["new_model_id"],
+            )
+
+        return None
+
     @check_deployment_decorator
     def upvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]):
         """
