@@ -37,10 +37,9 @@ def test_udt_classifier_csv_parsing(write_data):
     model = bolt.UniversalDeepTransformer(
         data_types={
             "text": bolt.types.text(),
-            "class": bolt.types.categorical(),
+            "class": bolt.types.categorical(n_classes=n_lines),
         },
         target="class",
-        n_target_classes=n_lines,
     )
 
     batch_counter = CountCallback()

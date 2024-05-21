@@ -30,13 +30,11 @@ def build_dummy_pretrained_model(two_layer):
 def test_udt_with_pretrained(two_layer, emb_only):
     model = bolt.UniversalDeepTransformer(
         data_types={
-            "category": bolt.types.categorical(),
+            "category": bolt.types.categorical(type="int", n_classes=25),
             "text": bolt.types.text(),
         },
         target="category",
         pretrained_model=build_dummy_pretrained_model(two_layer=two_layer),
-        integer_target=True,
-        n_target_classes=25,
         options={"emb_only": emb_only},
     )
 

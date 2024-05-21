@@ -49,10 +49,10 @@ class ValidationOptions {
 std::shared_ptr<udt::UDT> makeUDT(
     ColumnDataTypes data_types,
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
-    const std::string& target_col, std::optional<uint32_t> n_target_classes,
-    bool integer_target, std::string time_granularity, uint32_t lookahead,
-    char delimiter, const std::optional<std::string>& model_config,
-    const PretrainedBasePtr& pretrained_model, const py::dict& options);
+    const std::string& target_col, char delimiter,
+    const std::optional<std::string>& model_config,
+    const PretrainedBasePtr& pretrained_model, const py::dict& options,
+    const py::kwargs& kwargs);
 
 std::shared_ptr<udt::UDT> makeQueryReformulation(
     std::string source_column, std::string target_column,
@@ -106,10 +106,8 @@ void defineAutomlInModule(py::module_& module) {
       .def(py::init(&makeUDT), py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
                UserProvidedTemporalRelationships(),
-           py::arg("target"), py::arg("n_target_classes") = std::nullopt,
-           py::arg("integer_target") = false,
-           py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
-           py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
+           py::arg("target"), py::arg("delimiter") = ',',
+           py::arg("model_config") = std::nullopt,
            py::arg("pretrained_model") = nullptr,
            py::arg("options") = py::dict(), docs::UDT_INIT,
            bolt::python::OutputRedirect())
@@ -331,17 +329,22 @@ void createUDTTypesSubmodule(py::module_& module) {
 
   py::class_<CategoricalDataType, DataType, CategoricalDataTypePtr>(
       udt_types_submodule, "categorical")
-      .def(py::init<std::optional<char>, CategoricalMetadataConfigPtr>(),
+      .def(py::init<std::optional<size_t>, std::string, std::optional<char>,
+                    CategoricalMetadataConfigPtr>(),
+           py::arg("n_classses") = std::nullopt, py::arg("type") = "str",
            py::arg("delimiter") = std::nullopt, py::arg("metadata") = nullptr,
-           docs::UDT_CATEGORICAL_TEMPORAL)
+           docs::UDT_CATEGORICAL_TYPE)
       .def_property_readonly("delimiter", [](CategoricalDataType& categorical) {
         return categorical.delimiter;
       });
 
   py::class_<NumericalDataType, DataType, NumericalDataTypePtr>(
       udt_types_submodule, "numerical")
-      .def(py::init<std::pair<double, double>, std::string>(), py::arg("range"),
-           py::arg("granularity") = "m", docs::UDT_NUMERICAL_TYPE);
+      .def(py::init<std::pair<double, double>, std::string,
+                    std::optional<size_t>>(),
+           py::arg("range"), py::arg("granularity") = "m",
+           py::arg("explicit_granularity") = std::nullopt,
+           docs::UDT_NUMERICAL_TYPE);
 
   py::class_<TextDataType, DataType, TextDataTypePtr>(udt_types_submodule,
                                                       "text")
@@ -360,9 +363,9 @@ void createUDTTypesSubmodule(py::module_& module) {
 
   py::class_<SequenceDataType, DataType, SequenceDataTypePtr>(
       udt_types_submodule, "sequence")
-      .def(py::init<char, std::optional<uint32_t>>(),
-           py::arg("delimiter") = ' ', py::arg("max_length") = std::nullopt,
-           docs::UDT_SEQUENCE_TYPE);
+      .def(py::init<std::optional<size_t>, char, std::optional<uint32_t>>(),
+           py::arg("n_classes") = std::nullopt, py::arg("delimiter") = ' ',
+           py::arg("max_length") = std::nullopt, docs::UDT_SEQUENCE_TYPE);
 }
 
 void createUDTTemporalSubmodule(py::module_& module) {
@@ -453,18 +456,40 @@ config::ArgumentMap createArgumentMap(const py::dict& input_args) {
 std::shared_ptr<udt::UDT> makeUDT(
     ColumnDataTypes data_types,
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
-    const std::string& target_col, std::optional<uint32_t> n_target_classes,
-    bool integer_target, std::string time_granularity, uint32_t lookahead,
-    char delimiter, const std::optional<std::string>& model_config,
-    const PretrainedBasePtr& pretrained_model, const py::dict& options) {
+    const std::string& target_col, char delimiter,
+    const std::optional<std::string>& model_config,
+    const PretrainedBasePtr& pretrained_model, const py::dict& options,
+    const py::kwargs& kwargs) {
+  if (kwargs.contains("integer_target")) {
+    throw std::invalid_argument(
+        "Argument 'integer_target' is deprecated. Please use "
+        "bolt.types.categorical(type='int'), or type='str' for the target data "
+        "type.");
+  }
+
+  if (kwargs.contains("n_target_classes")) {
+    throw std::invalid_argument(
+        "Argument 'n_target_classes' is deprecated. Please use "
+        "bolt.types.categorical(n_classes=10) for the target data type.");
+  }
+
+  if (kwargs.contains("lookahead")) {
+    throw std::invalid_argument(
+        "Argument 'lookahead' is deprecated. Please use pass 'lookahead' arg "
+        "in the 'options' field.");
+  }
+
+  if (kwargs.contains("time_granularity")) {
+    throw std::invalid_argument(
+        "Argument 'time_granularity' is deprecated. Please use pass "
+        "'time_granularity' arg in the 'options' field.");
+  }
+
   return std::make_shared<udt::UDT>(
       /* data_types = */ std::move(data_types),
       /* temporal_tracking_relationships = */ temporal_tracking_relationships,
       /* target_col = */ target_col,
-      /* n_target_classes = */ n_target_classes,
-      /* integer_target = */ integer_target,
-      /* time_granularity = */ std::move(time_granularity),
-      /* lookahead = */ lookahead, /* delimiter = */ delimiter,
+      /* delimiter = */ delimiter,
       /* model_config= */ model_config,
       /* pretrained_model= */ pretrained_model,
       /* options = */ createArgumentMap(options));

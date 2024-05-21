@@ -38,7 +38,7 @@ def download_and_split_catalog_dataset(download_amazon_kaggle_product_catalog_sa
     if not os.path.exists(path):
         os.makedirs(path)
 
-    catalog_file, n_target_classes = download_amazon_kaggle_product_catalog_sampled
+    catalog_file, n_classes = download_amazon_kaggle_product_catalog_sampled
 
     if not os.path.exists(f"{path}/part1") or not os.path.exists(f"{path}/part2"):
         split_into_2(
@@ -47,7 +47,7 @@ def download_and_split_catalog_dataset(download_amazon_kaggle_product_catalog_sa
             destination_file_2=f"{path}/part2",
             with_header=True,
         )
-    return n_target_classes
+    return n_classes
 
 
 def download_and_split_scifact_dataset(download_scifact_dataset):
@@ -61,7 +61,7 @@ def download_and_split_scifact_dataset(download_scifact_dataset):
         unsupervised_file,
         supervised_trn,
         supervised_tst,
-        n_target_classes,
+        n_classes,
     ) = download_scifact_dataset
 
     if not os.path.exists(f"{path}/unsupervised_part1") or not os.path.exists(
@@ -84,32 +84,30 @@ def download_and_split_scifact_dataset(download_scifact_dataset):
             with_header=True,
         )
 
-    return os.path.join(os.getcwd(), supervised_tst), n_target_classes
+    return os.path.join(os.getcwd(), supervised_tst), n_classes
 
 
-def get_udt_scifact_mach_model(n_target_classes):
+def get_udt_scifact_mach_model(n_classes):
     model = bolt.UniversalDeepTransformer(
         data_types={
             "QUERY": bolt.types.text(contextual_encoding="local"),
-            "DOC_ID": bolt.types.categorical(delimiter=":"),
+            "DOC_ID": bolt.types.categorical(
+                delimiter=":", n_classes=n_classes, type="int"
+            ),
         },
         target="DOC_ID",
-        n_target_classes=n_target_classes,
-        integer_target=True,
         options={"extreme_classification": True, "embedding_dimension": 1024},
     )
     return model
 
 
-def get_clinc_udt_model(integer_target=False, embedding_dimension=128):
+def get_clinc_udt_model(target_type="str", embedding_dimension=128):
     udt_model = bolt.UniversalDeepTransformer(
         data_types={
-            "category": bolt.types.categorical(),
+            "category": bolt.types.categorical(n_classes=151, type=target_type),
             "text": bolt.types.text(),
         },
         target="category",
-        n_target_classes=151,
-        integer_target=integer_target,
         options={"embedding_dimension": embedding_dimension},
     )
     return udt_model
@@ -117,13 +115,13 @@ def get_clinc_udt_model(integer_target=False, embedding_dimension=128):
 
 @pytest.mark.distributed
 def test_udt_coldstart_distributed(download_amazon_kaggle_product_catalog_sampled):
-    n_target_classes = download_and_split_catalog_dataset(
+    n_classes = download_and_split_catalog_dataset(
         download_amazon_kaggle_product_catalog_sampled
     )
 
     def udt_coldstart_loop_per_worker(config):
-        n_target_classes = config.get("n_target_classes")
-        udt_model = get_udt_cold_start_model(n_target_classes)
+        n_classes = config.get("n_classes")
+        udt_model = get_udt_cold_start_model(n_classes)
 
         copy_file_or_folder(
             os.path.join(
@@ -159,7 +157,7 @@ def test_udt_coldstart_distributed(download_amazon_kaggle_product_catalog_sample
     trainer = dist.BoltTrainer(
         train_loop_per_worker=udt_coldstart_loop_per_worker,
         train_loop_config={
-            "n_target_classes": n_target_classes,
+            "n_classes": n_classes,
             "cur_dir": os.path.abspath(os.getcwd()),
         },
         scaling_config=scaling_config,
@@ -180,7 +178,7 @@ def test_udt_train_distributed():
     def udt_training_loop_per_worker(config):
         thirdai.logging.setup(log_to_stderr=False, path="log.txt", level="info")
 
-        udt_model = get_clinc_udt_model(integer_target=True)
+        udt_model = get_clinc_udt_model(target_type="int")
 
         udt_model = dist.prepare_model(udt_model)
         copy_file_or_folder(
@@ -235,7 +233,7 @@ def test_udt_train_distributed():
 def test_udt_mach_distributed(download_scifact_dataset):
     all_docs, _, _, _ = download_scifact_dataset
 
-    supervised_tst, n_target_classes = download_and_split_scifact_dataset(
+    supervised_tst, n_classes = download_and_split_scifact_dataset(
         download_scifact_dataset
     )
 
@@ -296,7 +294,7 @@ def test_udt_mach_distributed(download_scifact_dataset):
     # We need to specify `storage_path` in `RunConfig` which must be a networked file system or cloud storage path accessible by all workers. (Ray 2.7.0 onwards)
     run_config = train.RunConfig(storage_path="~/ray_results")
 
-    udt_model = get_udt_scifact_mach_model(n_target_classes)
+    udt_model = get_udt_scifact_mach_model(n_classes)
     udt_model.insert_new_doc_ids(dataset.FileDataSource(all_docs))
 
     trainer = dist.BoltTrainer(
@@ -330,7 +328,7 @@ def test_udt_licensed_training():
         # here is just for checking whether license works.
         config.get("licensing_lambda")()
 
-        udt_model = get_clinc_udt_model(integer_target=True)
+        udt_model = get_clinc_udt_model(target_type="int")
         udt_model = dist.prepare_model(udt_model)
 
         train.report(
@@ -385,7 +383,7 @@ def test_udt_licensed_fail():
             RuntimeError,
             match=r"The license was found to be invalid: Please first call either licensing.set_path, licensing.start_heartbeat, or licensing.activate with a valid license.",
         ):
-            udt_model = get_clinc_udt_model(integer_target=True)
+            udt_model = get_clinc_udt_model(target_type="int")
 
         train.report(
             {"demo_metric": 1},

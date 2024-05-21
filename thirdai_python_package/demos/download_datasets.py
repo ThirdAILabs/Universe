@@ -625,7 +625,7 @@ def download_yelp_chi_dataset(seed=42):
             col_name: bolt.types.numerical(col_range)
             for col_range, col_name in zip(numerical_col_ranges, numerical_col_names)
         },
-        "target": bolt.types.categorical(),
+        "target": bolt.types.categorical(n_classes=2, type="int"),
         "neighbors": bolt.types.neighbors(),
     }
 
@@ -640,9 +640,9 @@ def download_amazon_kaggle_product_catalog_sampled():
         )
 
     df = pd.read_csv(f"{os.getcwd()}/{TRAIN_FILE}")
-    n_target_classes = df.shape[0]
+    n_classes = df.shape[0]
 
-    return TRAIN_FILE, n_target_classes
+    return TRAIN_FILE, n_classes
 
 
 def download_agnews_dataset(corpus_file):
@@ -672,7 +672,7 @@ def download_beir_dataset(dataset):
     # we remap doc ids from 0 to N-1 so we can specify integer target in UDT
     # coldstart only works with integer target for now
     doc_ids_to_integers = remap_doc_ids(corpus)
-    n_target_classes = len(doc_ids_to_integers)
+    n_classes = len(doc_ids_to_integers)
 
     # Not all of the beir datasets come with a train split, some only have a test
     # split. In cases without a train split, we won't write a new supervised train file.
@@ -705,5 +705,5 @@ def download_beir_dataset(dataset):
         f"{dataset}/unsupervised.csv",
         trn_supervised,
         f"{dataset}/tst_supervised.csv",
-        n_target_classes,
+        n_classes,
     )

@@ -17,7 +17,6 @@ class MovieLensUDTBenchmark(TemporalBenchmarkConfig):
     test_file = "movielens1m/test.csv"
 
     target = "movieId"
-    n_target_classes = 3706
     temporal_relationships = {
         "userId": [
             bolt.temporal.categorical(column_name="movieId", track_last_n=length)
@@ -33,7 +32,7 @@ class MovieLensUDTBenchmark(TemporalBenchmarkConfig):
     def get_data_types(path_prefix):
         return {
             "userId": bolt.types.categorical(),
-            "movieId": bolt.types.categorical(delimiter=" "),
+            "movieId": bolt.types.categorical(delimiter=" ", n_classes=3706),
             "timestamp": bolt.types.date(),
         }
 
@@ -46,7 +45,6 @@ class AmazonGamesUDTBenchmark(TemporalBenchmarkConfig):
     test_file = "amazon_games/test.csv"
 
     target = "gameId"
-    n_target_classes = 33388
     temporal_relationships = {
         "userId": [
             bolt.temporal.categorical(column_name="gameId", track_last_n=length)
@@ -62,7 +60,7 @@ class AmazonGamesUDTBenchmark(TemporalBenchmarkConfig):
     def get_data_types(path_prefix):
         return {
             "userId": bolt.types.categorical(),
-            "gameId": bolt.types.categorical(delimiter=" "),
+            "gameId": bolt.types.categorical(delimiter=" ", n_classes=33388),
             "timestamp": bolt.types.date(),
         }
 
@@ -77,7 +75,6 @@ class NetflixUDTBenchmark(TemporalBenchmarkConfig):
     test_file = "netflix/netflix_one_fifth_user_subset_test.csv"
 
     target = "movie"
-    n_target_classes = 17770
     temporal_relationships = {
         "user": [
             bolt.temporal.categorical(column_name="movie", track_last_n=length)
@@ -94,6 +91,6 @@ class NetflixUDTBenchmark(TemporalBenchmarkConfig):
     def get_data_types(path_prefix):
         return {
             "user": bolt.types.categorical(),
-            "movie": bolt.types.categorical(delimiter=" "),
+            "movie": bolt.types.categorical(delimiter=" ", n_classes=17770),
             "date": bolt.types.date(),
         }

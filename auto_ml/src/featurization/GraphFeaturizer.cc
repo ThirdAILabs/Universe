@@ -19,7 +19,7 @@ namespace thirdai::automl {
 
 GraphFeaturizer::GraphFeaturizer(const ColumnDataTypes& data_types,
                                  const std::string& target_col,
-                                 uint32_t n_target_classes,
+                                 uint32_t n_classes,
                                  const TabularOptions& options)
     : _delimiter(options.delimiter) {
   auto [input_transforms, output_cols] =
@@ -47,7 +47,7 @@ GraphFeaturizer::GraphFeaturizer(const ColumnDataTypes& data_types,
       data::OutputColumns(nbr_ids_output)};
 
   _label_transform = std::make_shared<data::StringToToken>(
-      target_col, FEATURIZED_LABELS, n_target_classes);
+      target_col, FEATURIZED_LABELS, n_classes);
 
   _bolt_label_columns = {data::OutputColumns(FEATURIZED_LABELS)};
 

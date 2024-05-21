@@ -28,10 +28,9 @@ def test_too_many_cols_in_train():
         data_types={
             "a": bolt.types.text(),
             "b": bolt.types.text(),
-            "c": bolt.types.categorical(),
+            "c": bolt.types.categorical(n_classes=2),
         },
         target="c",
-        n_target_classes=2,
     )
 
     with pytest.raises(
@@ -57,10 +56,9 @@ def test_too_few_cols_in_train():
         data_types={
             "a": bolt.types.text(),
             "b": bolt.types.text(),
-            "c": bolt.types.categorical(),
+            "c": bolt.types.categorical(n_classes=2),
         },
         target="c",
-        n_target_classes=2,
     )
 
     with pytest.raises(
@@ -80,10 +78,9 @@ def test_header_missing_cols():
         data_types={
             "a": bolt.types.text(),
             "b": bolt.types.text(),
-            "c": bolt.types.categorical(),
+            "c": bolt.types.categorical(n_classes=2),
         },
         target="c",
-        n_target_classes=2,
     )
 
     # TODO(Nicholas): Is it ok to display the intermediate column names?
@@ -106,10 +103,9 @@ def test_target_not_in_data_types():
         bolt.UniversalDeepTransformer(
             data_types={
                 "text_col": bolt.types.text(),
-                "some_random_name": bolt.types.categorical(),
+                "some_random_name": bolt.types.categorical(n_classes=2),
             },
             target="target",
-            n_target_classes=2,
         )
 
 
@@ -118,11 +114,9 @@ def test_invalid_column_name_in_udt_predict(mach):
     model = bolt.UniversalDeepTransformer(
         data_types={
             "text_col": bolt.types.text(contextual_encoding="local"),
-            "target": bolt.types.categorical(),
+            "target": bolt.types.categorical(n_classes=10, type="int"),
         },
         target="target",
-        n_target_classes=10,
-        integer_target=True,
         options={
             "extreme_classification": mach,
         },

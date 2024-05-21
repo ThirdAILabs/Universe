@@ -36,11 +36,9 @@ def train_udt_binary_classification(download_internet_ads_dataset):
     for i in range(3, 1558):
         col_types[str(i)] = bolt.types.categorical()
 
-    col_types["label"] = bolt.types.categorical()
+    col_types["label"] = bolt.types.categorical(n_classes=2)
 
-    model = bolt.UniversalDeepTransformer(
-        data_types=col_types, target="label", n_target_classes=2
-    )
+    model = bolt.UniversalDeepTransformer(data_types=col_types, target="label")
 
     model.train(
         train_filename, learning_rate=0.001, epochs=1, metrics=["categorical_accuracy"]

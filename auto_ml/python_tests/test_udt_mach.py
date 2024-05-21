@@ -39,11 +39,9 @@ def train_simple_mach_udt(
     model = bolt.UniversalDeepTransformer(
         data_types={
             "text": bolt.types.text(contextual_encoding="local"),
-            "label": bolt.types.categorical(),
+            "label": bolt.types.categorical(n_classes=3, type="int"),
         },
         target="label",
-        n_target_classes=3,
-        integer_target=True,
         options={
             "extreme_classification": True,
             "embedding_dimension": embedding_dim,
@@ -110,15 +108,15 @@ def evaluate_model(model, supervised_tst):
     return precision
 
 
-def scifact_model(n_target_classes):
+def scifact_model(n_classes):
     model = bolt.UniversalDeepTransformer(
         data_types={
             "QUERY": bolt.types.text(contextual_encoding="local"),
-            "DOC_ID": bolt.types.categorical(delimiter=":"),
+            "DOC_ID": bolt.types.categorical(
+                delimiter=":", n_clases=n_classes, type="int"
+            ),
         },
         target="DOC_ID",
-        n_target_classes=n_target_classes,
-        integer_target=True,
         options={"extreme_classification": True, "embedding_dimension": 1024},
     )
     return model
@@ -129,10 +127,10 @@ def train_on_scifact(download_scifact_dataset, coldstart):
         unsupervised_file,
         supervised_trn,
         supervised_tst,
-        n_target_classes,
+        n_classes,
     ) = download_scifact_dataset
 
-    model = scifact_model(n_target_classes=n_target_classes)
+    model = scifact_model(n_classes=n_classes)
 
     if coldstart:
         metrics = model.cold_start(
@@ -204,7 +202,7 @@ def test_mach_udt_on_scifact_model_porting(
 
     before_porting_precision = evaluate_model(model, supervised_tst)
 
-    new_model = scifact_model(n_target_classes=n_classes)
+    new_model = scifact_model(n_classes=n_classes)
 
     new_bolt_model = bolt.nn.Model.from_params(model._get_model().params())
     new_model._set_model(new_bolt_model)
@@ -850,11 +848,9 @@ def test_udt_softmax_activations(softmax):
     model = bolt.UniversalDeepTransformer(
         data_types={
             "text": bolt.types.text(contextual_encoding="local"),
-            "label": bolt.types.categorical(),
+            "label": bolt.types.categorical(n_classes=3, type="int"),
         },
         target="label",
-        n_target_classes=3,
-        integer_target=True,
         options={
             "extreme_classification": True,
             "embedding_dimension": 100,
@@ -878,11 +874,9 @@ def test_doc_not_found_unless_trained_on():
     model = bolt.UniversalDeepTransformer(
         data_types={
             "text": bolt.types.text(contextual_encoding="local"),
-            "label": bolt.types.categorical(),
+            "label": bolt.types.categorical(n_classes=10, type="int"),
         },
         target="label",
-        n_target_classes=10,
-        integer_target=True,
         options={
             "extreme_classification": True,
             "fhr": 1000,

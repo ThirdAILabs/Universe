@@ -500,13 +500,15 @@ class Mach(Model):
         model = bolt.UniversalDeepTransformer(
             data_types={
                 self.query_col: bolt.types.text(tokenizer=self.tokenizer),
-                self.id_col: bolt.types.categorical(delimiter=self.id_delimiter),
+                self.id_col: bolt.types.categorical(
+                    n_classes=(
+                        documents.size if number_classes is None else number_classes
+                    ),
+                    delimiter=self.id_delimiter,
+                    type="int",
+                ),
             },
             target=self.id_col,
-            n_target_classes=(
-                documents.size if number_classes is None else number_classes
-            ),
-            integer_target=True,
             options={
                 "extreme_classification": True,
                 "extreme_output_dim": self.extreme_output_dim,

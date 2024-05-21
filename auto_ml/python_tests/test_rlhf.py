@@ -12,10 +12,11 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 def train_model():
     model = bolt.UniversalDeepTransformer(
-        data_types={"text": bolt.types.text(), "id": bolt.types.categorical()},
+        data_types={
+            "text": bolt.types.text(),
+            "id": bolt.types.categorical(type="int", n_classes=100),
+        },
         target="id",
-        integer_target=True,
-        n_target_classes=100,
         options={
             "extreme_classification": True,
             "extreme_output_dim": 10000,

@@ -48,12 +48,44 @@ struct DataType {
 using DataTypePtr = std::shared_ptr<DataType>;
 
 struct CategoricalDataType final : public DataType {
-  explicit CategoricalDataType(std::optional<char> delimiter = std::nullopt,
+  explicit CategoricalDataType(std::optional<size_t> n_classes = std::nullopt,
+                               std::string type = "str",
+                               std::optional<char> delimiter = std::nullopt,
                                CategoricalMetadataConfigPtr metadata = nullptr)
-      : delimiter(delimiter), metadata_config(std::move(metadata)) {}
+      : n_classes(n_classes),
+        type(std::move(type)),
+        delimiter(delimiter),
+        metadata_config(std::move(metadata)) {}
 
+  std::optional<size_t> n_classes;
+  std::string type;
   std::optional<char> delimiter;
   CategoricalMetadataConfigPtr metadata_config;
+
+  bool isInteger() const {
+    std::string type_lower = text::lower(type);
+    if (type_lower == "str" || type_lower == "string") {
+      return false;
+    }
+
+    if (type_lower == "int" || type_lower == "integer") {
+      return true;
+    }
+
+    throw std::invalid_argument(
+        "Invalid categorical type. Must be either 'int' or 'str'.");
+  }
+
+  size_t expectNClasses() const {
+    if (!n_classes) {
+      throw std::invalid_argument(
+          "For classification tasks the target catagorical type must have the "
+          "n_classes attribute specified. For example 'target': "
+          "bolt.types.categorical(n_classes=10).");
+    }
+
+    return n_classes.value();
+  }
 
   std::string toString() const final {
     if (delimiter.has_value()) {
@@ -110,15 +142,19 @@ struct TextDataType final : public DataType {
 using TextDataTypePtr = std::shared_ptr<TextDataType>;
 
 struct NumericalDataType final : public DataType {
-  explicit NumericalDataType(std::pair<double, double> _range,
-                             std::string _granularity = "m")
-      : range(std::move(_range)), granularity(std::move(_granularity)) {}
+  explicit NumericalDataType(
+      std::pair<double, double> _range, std::string _granularity = "m",
+      std::optional<size_t> explicit_granularity = std::nullopt)
+      : range(std::move(_range)),
+        granularity(std::move(_granularity)),
+        explicit_granularity(explicit_granularity) {}
 
   NumericalDataType(double start, double end, std::string _granularity = "m")
       : range(start, end), granularity(std::move(_granularity)) {}
 
   std::pair<double, double> range;
   std::string granularity;
+  std::optional<size_t> explicit_granularity;
 
   NumericalDataType() {}
 
@@ -154,16 +190,29 @@ struct DateDataType final : public DataType {
 using DateDataTypePtr = std::shared_ptr<DateDataType>;
 
 struct SequenceDataType final : public DataType {
-  explicit SequenceDataType(char delimiter = ' ',
+  explicit SequenceDataType(std::optional<size_t> n_classes = std::nullopt,
+                            char delimiter = ' ',
                             std::optional<uint32_t> max_length = std::nullopt)
-      : delimiter(delimiter), max_length(max_length) {
+      : n_classes(n_classes), delimiter(delimiter), max_length(max_length) {
     if (max_length && max_length.value() == 0) {
       throw std::invalid_argument("Sequence max_length cannot be 0.");
     }
   }
 
+  std::optional<size_t> n_classes;
   char delimiter;
   std::optional<uint32_t> max_length;
+
+  size_t expectNClasses() const {
+    if (!n_classes) {
+      throw std::invalid_argument(
+          "For classification tasks the target catagorical type must have the "
+          "n_classes attribute specified. For example 'target': "
+          "bolt.types.categorical(n_classes=10).");
+    }
+
+    return n_classes.value();
+  }
 
   std::string toString() const final { return R"({"type": "sequence"})"; }
 

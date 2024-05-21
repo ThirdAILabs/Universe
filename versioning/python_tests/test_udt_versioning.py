@@ -17,10 +17,9 @@ def build_udt_model():
     model = bolt.UniversalDeepTransformer(
         data_types={
             "input": bolt.types.text(),
-            "output": bolt.types.categorical(),
+            "output": bolt.types.categorical(n_classes=2),
         },
         target="output",
-        n_target_classes=2,
         options={
             "input_dim": 10,
             "embedding_dimension": 10,
@@ -47,9 +46,11 @@ def create_udt_checkpoint():
     this test was created from commit 13c7c646eec95acec94062dd56107a5b4cfccfcd.
     """
     model = bolt.UniversalDeepTransformer(
-        data_types={"text": bolt.types.text(), "id": bolt.types.categorical()},
+        data_types={
+            "text": bolt.types.text(),
+            "id": bolt.types.categorical(n_classes=100),
+        },
         target="id",
-        n_target_classes=100,
         options={"fhr": 1000, "embedding_dimension": 200},
     )
 

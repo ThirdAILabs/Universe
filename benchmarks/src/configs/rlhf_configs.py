@@ -55,11 +55,11 @@ class WayfairRlhfConfig(RlhfConfig):
         model = bolt.UniversalDeepTransformer(
             data_types={
                 "QUERY": bolt.types.text(),
-                "PRODUCT_ID": bolt.types.categorical(delimiter=";"),
+                "PRODUCT_ID": bolt.types.categorical(
+                    delimiter=";", n_classes=931, type="int"
+                ),
             },
             target="PRODUCT_ID",
-            n_target_classes=931,
-            integer_target=True,
             options={
                 "extreme_classification": True,
                 "extreme_output_dim": 10000,
@@ -163,11 +163,9 @@ class CuadRlhfConfig(RlhfConfig):
         model = bolt.UniversalDeepTransformer(
             data_types={
                 "text": bolt.types.text(),
-                "id": bolt.types.categorical(delimiter=";"),
+                "id": bolt.types.categorical(delimiter=";", n_classes=41, type="int"),
             },
             target="id",
-            n_target_classes=41,
-            integer_target=True,
             options={
                 "extreme_classification": True,
                 "extreme_output_dim": 2000,
