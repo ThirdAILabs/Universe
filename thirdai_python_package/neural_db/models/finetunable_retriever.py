@@ -5,7 +5,7 @@ from thirdai import search
 
 from ..documents import DocumentDataSource
 from ..supervised_datasource import SupDataSource
-from .models import InferSamples, Model, Predictions, add_retriever_tag
+from .model_interface import InferSamples, Model, Predictions, add_retriever_tag
 
 
 class FinetunableRetriever(Model):
