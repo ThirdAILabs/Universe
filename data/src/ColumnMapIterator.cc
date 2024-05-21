@@ -108,8 +108,7 @@ JsonIterator::JsonIterator(DataSourcePtr data_source,
       _rows_per_load(rows_per_load),
       _column_names(std::move(column_names)) {}
 
-void validateJsonRow(const json& row,
-                                   const std::string& column_name) {
+void validateJsonRow(const json& row, const std::string& column_name) {
   if (!row.is_object()) {
     throw std::invalid_argument("Expected row to be a JSON object");
   }
@@ -122,8 +121,7 @@ void validateJsonRow(const json& row,
 
 template <typename T>
 void extractColumnData(const std::vector<std::string>& rows,
-                                     const std::string& column_name,
-                                     std::vector<T>& vec) {
+                       const std::string& column_name, std::vector<T>& vec) {
   std::exception_ptr error;
 
 #pragma omp parallel for default(none) shared(rows, vec, column_name, error)

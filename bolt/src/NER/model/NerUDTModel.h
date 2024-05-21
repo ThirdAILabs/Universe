@@ -30,8 +30,11 @@ class NerUDTModel final : public NerModelInterface {
 
   data::TransformationPtr getTransformations(bool inference, size_t fhr,
                                              size_t num_label) {
-    std::optional<std::string> target_column = inference ? std::optional<std::string>{} : std::optional<std::string>{_tags_column};
-    std::optional<size_t> target_dim = inference ? std::optional<size_t>{} : std::optional<size_t>{num_label};
+    std::optional<std::string> target_column =
+        inference ? std::optional<std::string>{}
+                  : std::optional<std::string>{_tags_column};
+    std::optional<size_t> target_dim =
+        inference ? std::optional<size_t>{} : std::optional<size_t>{num_label};
 
     auto transform = data::Pipeline::make(
         {std::make_shared<thirdai::data::NerTokenizerUnigram>(
@@ -42,16 +45,16 @@ class NerUDTModel final : public NerModelInterface {
             /*dyadic_num_intervals=*/_dyadic_num_intervals,
             /*target_word_tokenizers=*/_target_word_tokenizers,
             /*tag_to_label=*/_tag_to_label)});
-        transform = transform->then(std::make_shared<data::TextTokenizer>(
-            /*input_column=*/_featurized_sentence_column,
-            /*output_indices=*/_featurized_tokens_indices_column,
-            /*output_values=*/std::nullopt,
-            /*tokenizer=*/
-            std::make_shared<dataset::NaiveSplitTokenizer>(
-                dataset::NaiveSplitTokenizer()),
-            /*encoder=*/
-            std::make_shared<dataset::NGramEncoder>(dataset::NGramEncoder(1)),
-            false, fhr));
+    transform = transform->then(std::make_shared<data::TextTokenizer>(
+        /*input_column=*/_featurized_sentence_column,
+        /*output_indices=*/_featurized_tokens_indices_column,
+        /*output_values=*/std::nullopt,
+        /*tokenizer=*/
+        std::make_shared<dataset::NaiveSplitTokenizer>(
+            dataset::NaiveSplitTokenizer()),
+        /*encoder=*/
+        std::make_shared<dataset::NGramEncoder>(dataset::NGramEncoder(1)),
+        false, fhr));
     return transform;
   }
 

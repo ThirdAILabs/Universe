@@ -57,7 +57,6 @@ class CsvIterator final : public ColumnMapIterator {
 };
 
 class JsonIterator final : public ColumnMapIterator {
-
  public:
   JsonIterator(DataSourcePtr data_source, std::vector<std::string> column_names,
                size_t rows_per_load = DEFAULT_ROWS_PER_LOAD);

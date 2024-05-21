@@ -127,17 +127,18 @@ NerBoltModel::NerBoltModel(
 
 data::TransformationPtr NerBoltModel::getTransformations(bool inference) {
   data::PipelinePtr transform;
-  std::optional<std::string> target_column = inference ? std::optional<std::string>{} : std::optional<std::string>{_tags_column};
-  std::optional<std::unordered_map<std::string, uint32_t>> tag_to_label = inference ? std::optional<std::unordered_map<std::string, uint32_t>>{} : std::optional<std::unordered_map<std::string, uint32_t>>{_tag_to_label};
+  std::optional<std::string> target_column =
+      inference ? std::optional<std::string>{}
+                : std::optional<std::string>{_tags_column};
+  std::optional<std::unordered_map<std::string, uint32_t>> tag_to_label =
+      inference ? std::optional<std::unordered_map<std::string, uint32_t>>{}
+                : std::optional<std::unordered_map<std::string, uint32_t>>{
+                      _tag_to_label};
 
-  transform = data::Pipeline::make(
-      {std::make_shared<data::NerTokenFromStringArray>(
-          _tokens_column,
-          "tokens",
-          "token_next",
-          "token_previous",
-          target_column,
-          tag_to_label)});
+  transform =
+      data::Pipeline::make({std::make_shared<data::NerTokenFromStringArray>(
+          _tokens_column, "tokens", "token_next", "token_previous",
+          target_column, tag_to_label)});
 
   transform = transform->then(std::make_shared<data::StringToTokenArray>(
       "tokens", "tokens", ' ', _vocab_size));
