@@ -187,4 +187,5 @@ std::shared_ptr<NerUDTModel> NerUDTModel::fromArchive(
                                                    tags_column, tag_to_label,
                                                    target_word_tokenizers));
 }
+
 }  // namespace thirdai::bolt::NER

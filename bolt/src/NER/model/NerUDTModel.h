@@ -12,8 +12,6 @@
 
 namespace thirdai::bolt::NER {
 
-class NerUDTModel;
-
 class NerUDTModel final : public NerModelInterface {
  public:
   std::string type() const final { return "udt_ner"; }
@@ -32,36 +30,28 @@ class NerUDTModel final : public NerModelInterface {
 
   data::TransformationPtr getTransformations(bool inference, size_t fhr,
                                              size_t num_label) {
-    data::PipelinePtr transform;
-    if (inference) {
-      transform = data::Pipeline::make(
-          {std::make_shared<thirdai::data::NerTokenizerUnigram>(
-              /*tokens_column=*/_tokens_column,
-              /*featurized_sentence_column=*/_featurized_sentence_column,
-              /*target_column=*/std::nullopt, /*target_dim=*/std::nullopt,
-              /*dyadic_num_intervals=*/_dyadic_num_intervals,
-              /*target_word_tokenizers=*/_target_word_tokenizers,
-              /*tag_to_label=*/_tag_to_label)});
-    } else {
-      transform = data::Pipeline::make(
-          {std::make_shared<thirdai::data::NerTokenizerUnigram>(
-              /*tokens_column=*/_tokens_column,
-              /*featurized_sentence_column=*/_featurized_sentence_column,
-              /*target_column=*/_tags_column, /*target_dim=*/num_label,
-              /*dyadic_num_intervals=*/_dyadic_num_intervals,
-              /*target_word_tokenizers=*/_target_word_tokenizers,
-              /*tag_to_label=*/_tag_to_label)});
-    }
-    transform = transform->then(std::make_shared<data::TextTokenizer>(
-        /*input_column=*/_featurized_sentence_column,
-        /*output_indices=*/_featurized_tokens_indices_column,
-        /*output_values=*/std::nullopt,
-        /*tokenizer=*/
-        std::make_shared<dataset::NaiveSplitTokenizer>(
-            dataset::NaiveSplitTokenizer()),
-        /*encoder=*/
-        std::make_shared<dataset::NGramEncoder>(dataset::NGramEncoder(1)),
-        false, fhr));
+    std::optional<std::string> target_column = inference ? std::optional<std::string>{} : std::optional<std::string>{_tags_column};
+    std::optional<size_t> target_dim = inference ? std::optional<size_t>{} : std::optional<size_t>{num_label};
+
+    auto transform = data::Pipeline::make(
+        {std::make_shared<thirdai::data::NerTokenizerUnigram>(
+            /*tokens_column=*/_tokens_column,
+            /*featurized_sentence_column=*/_featurized_sentence_column,
+            /*target_column=*/target_column,
+            /*target_dim=*/target_dim,
+            /*dyadic_num_intervals=*/_dyadic_num_intervals,
+            /*target_word_tokenizers=*/_target_word_tokenizers,
+            /*tag_to_label=*/_tag_to_label)});
+        transform = transform->then(std::make_shared<data::TextTokenizer>(
+            /*input_column=*/_featurized_sentence_column,
+            /*output_indices=*/_featurized_tokens_indices_column,
+            /*output_values=*/std::nullopt,
+            /*tokenizer=*/
+            std::make_shared<dataset::NaiveSplitTokenizer>(
+                dataset::NaiveSplitTokenizer()),
+            /*encoder=*/
+            std::make_shared<dataset::NGramEncoder>(dataset::NGramEncoder(1)),
+            false, fhr));
     return transform;
   }
 
@@ -120,4 +110,5 @@ class NerUDTModel final : public NerModelInterface {
 
   NerClassifierPtr _classifier;
 };
+
 }  // namespace thirdai::bolt::NER

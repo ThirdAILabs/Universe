@@ -87,10 +87,6 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
           error = std::current_exception();
         }
       }
-
-      if (error) {
-        std::rethrow_exception(error);
-      }
     } catch (...) {
 #pragma omp critical
       error = std::current_exception();

@@ -20,8 +20,6 @@
 
 namespace thirdai::bolt::NER {
 
-class NerBoltModel;
-
 class NerBoltModel final : public NerModelInterface {
  public:
   std::string type() const final { return "bolt_ner"; }

@@ -39,4 +39,5 @@ class NerModelInterface {
 
   virtual bolt::ModelPtr getBoltModel() = 0;
 };
+
 }  // namespace thirdai::bolt::NER

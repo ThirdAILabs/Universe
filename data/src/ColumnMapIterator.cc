@@ -10,6 +10,8 @@
 
 namespace thirdai::data {
 
+using json = nlohmann::json;
+
 ColumnMap makeColumnMap(std::vector<std::vector<std::string>>&& columns,
                         const std::vector<std::string>& column_names) {
   std::unordered_map<std::string, ColumnPtr> column_map;
@@ -106,7 +108,7 @@ JsonIterator::JsonIterator(DataSourcePtr data_source,
       _rows_per_load(rows_per_load),
       _column_names(std::move(column_names)) {}
 
-void JsonIterator::validateJsonRow(const json& row,
+void validateJsonRow(const json& row,
                                    const std::string& column_name) {
   if (!row.is_object()) {
     throw std::invalid_argument("Expected row to be a JSON object");
@@ -119,7 +121,7 @@ void JsonIterator::validateJsonRow(const json& row,
 }
 
 template <typename T>
-void JsonIterator::extractColumnData(const std::vector<std::string>& rows,
+void extractColumnData(const std::vector<std::string>& rows,
                                      const std::string& column_name,
                                      std::vector<T>& vec) {
   std::exception_ptr error;
