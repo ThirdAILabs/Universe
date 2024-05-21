@@ -6,6 +6,7 @@ import zipfile
 
 import numpy as np
 import pandas as pd
+import requests
 from thirdai._thirdai import bolt
 
 from .beir_download_utils import (
@@ -18,9 +19,17 @@ from .beir_download_utils import (
 )
 
 
+def download_file(url, output_path):
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
+    with open(output_path, "wb") as file:
+        for chunk in response.iter_content(chunk_size=8192):
+            file.write(chunk)
+
+
 def _download_dataset(url, zip_file, check_existence, output_dir):
     if not os.path.exists(zip_file):
-        os.system(f"curl {url} --output {zip_file}")
+        download_file(url, zip_file)
 
     if any([not os.path.exists(must_exist) for must_exist in check_existence]):
         with zipfile.ZipFile(zip_file, "r") as zip_ref:
