@@ -54,16 +54,6 @@ std::shared_ptr<udt::UDT> makeUDT(
     const PretrainedBasePtr& pretrained_model, const py::dict& options,
     const py::kwargs& kwargs);
 
-std::shared_ptr<udt::UDT> makeQueryReformulation(
-    std::string source_column, std::string target_column,
-    const std::string& dataset_size, bool use_spell_checker, char delimiter,
-    const std::optional<std::string>& model_config, const py::dict& options);
-
-std::shared_ptr<udt::UDT> makeQueryReformulationTargetOnly(
-    std::string target_column, const std::string& dataset_size,
-    bool use_spell_checker, char delimiter,
-    const std::optional<std::string>& model_config, const py::dict& options);
-
 std::shared_ptr<udt::UDT> makeSvmClassifier(
     const std::string& file_format, uint32_t n_target_classes,
     uint32_t input_dim, const std::optional<std::string>& model_config,
@@ -111,16 +101,6 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("pretrained_model") = nullptr,
            py::arg("options") = py::dict(), docs::UDT_INIT,
            bolt::python::OutputRedirect())
-      .def(py::init(&makeQueryReformulation), py::arg("source_column"),
-           py::arg("target_column"), py::arg("dataset_size"),
-           py::arg("use_spell_checker") = false, py::arg("delimiter") = ',',
-           py::arg("model_config") = std::nullopt,
-           py::arg("options") = py::dict(), docs::UDT_QUERY_REFORMULATION_INIT)
-      .def(py::init(&makeQueryReformulationTargetOnly),
-           py::arg("target_column"), py::arg("dataset_size"),
-           py::arg("use_spell_checker") = false, py::arg("delimiter") = ',',
-           py::arg("model_config") = std::nullopt,
-           py::arg("options") = py::dict(), docs::UDT_QUERY_REFORMULATION_INIT)
       .def(py::init(&makeSvmClassifier), py::arg("file_format"),
            py::arg("n_target_classes"), py::arg("input_dim"),
            py::arg("model_config") = std::nullopt,
@@ -331,7 +311,7 @@ void createUDTTypesSubmodule(py::module_& module) {
       udt_types_submodule, "categorical")
       .def(py::init<std::optional<size_t>, std::string, std::optional<char>,
                     CategoricalMetadataConfigPtr>(),
-           py::arg("n_classses") = std::nullopt, py::arg("type") = "str",
+           py::arg("n_classes") = std::nullopt, py::arg("type") = "str",
            py::arg("delimiter") = std::nullopt, py::arg("metadata") = nullptr,
            docs::UDT_CATEGORICAL_TYPE)
       .def_property_readonly("delimiter", [](CategoricalDataType& categorical) {
@@ -485,6 +465,18 @@ std::shared_ptr<udt::UDT> makeUDT(
         "'time_granularity' arg in the 'options' field.");
   }
 
+  if (kwargs.contains("use_spell_checker")) {
+    throw std::invalid_argument(
+        "Argument 'use_spell_checker' is deprecated. Please use pass "
+        "'use_spell_checker' arg in the 'options' field.");
+  }
+
+  if (kwargs.contains("dataset_size")) {
+    throw std::invalid_argument(
+        "Argument 'dataset_size' is deprecated. Please use pass "
+        "'dataset_size' arg in the 'options' field.");
+  }
+
   return std::make_shared<udt::UDT>(
       /* data_types = */ std::move(data_types),
       /* temporal_tracking_relationships = */ temporal_tracking_relationships,
@@ -493,32 +485,6 @@ std::shared_ptr<udt::UDT> makeUDT(
       /* model_config= */ model_config,
       /* pretrained_model= */ pretrained_model,
       /* options = */ createArgumentMap(options));
-}
-
-std::shared_ptr<udt::UDT> makeQueryReformulation(
-    std::string source_column, std::string target_column,
-    const std::string& dataset_size, bool use_spell_checker, char delimiter,
-    const std::optional<std::string>& model_config, const py::dict& options) {
-  return std::make_shared<udt::UDT>(
-      /* incorrect_column_name = */ std::move(source_column),
-      /* correct_column_name = */ std::move(target_column),
-      /* dataset_size = */ dataset_size,
-      /** use spell checker = */ use_spell_checker,
-      /* delimiter = */ delimiter, /* model_config = */ model_config,
-      /* user_args= */ createArgumentMap(options));
-}
-
-std::shared_ptr<udt::UDT> makeQueryReformulationTargetOnly(
-    std::string target_column, const std::string& dataset_size,
-    bool use_spell_checker, char delimiter,
-    const std::optional<std::string>& model_config, const py::dict& options) {
-  return std::make_shared<udt::UDT>(
-      /* incorrect_column_name = */ std::nullopt,
-      /* correct_column_name = */ std::move(target_column),
-      /* dataset_size = */ dataset_size,
-      /** use spell checker = */ use_spell_checker,
-      /* delimiter = */ delimiter, /* model_config = */ model_config,
-      /* user_args= */ createArgumentMap(options));
 }
 
 std::shared_ptr<udt::UDT> makeSvmClassifier(

@@ -39,12 +39,6 @@ class UDT {
       const PretrainedBasePtr& pretrained_model,
       const config::ArgumentMap& user_args);
 
-  UDT(std::optional<std::string> incorrect_column_name,
-      std::string correct_column_name, const std::string& dataset_size,
-      bool use_spell_checker, char delimiter,
-      const std::optional<std::string>& model_config,
-      const config::ArgumentMap& user_args);
-
   UDT(const std::string& file_format, uint32_t n_target_classes,
       uint32_t input_dim, const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);

@@ -80,6 +80,7 @@ UDT::UDT(ColumnDataTypes data_types,
   auto as_categorical = asCategorical(data_types.at(target));
   auto as_numerical = asNumerical(data_types.at(target));
   auto as_sequence = asSequence(data_types.at(target));
+  auto as_text = asText(data_types.at(target));
 
   if (as_categorical && has_graph_inputs) {
     // TODO(Any): Add support for model config and user args
@@ -115,20 +116,13 @@ UDT::UDT(ColumnDataTypes data_types,
     _backend = std::make_unique<UDTRecurrentClassifier>(
         data_types, temporal_relationships, target, as_sequence,
         tabular_options, model_config, user_args);
+  } else if (as_text) {
+    _backend = std::make_unique<UDTQueryReformulation>(
+        data_types, target, delimiter, model_config, user_args);
   } else {
     throwUnsupportedUDTConfigurationError(as_categorical, as_numerical,
                                           as_sequence, has_graph_inputs);
   }
-}
-
-UDT::UDT(std::optional<std::string> incorrect_column_name,
-         std::string correct_column_name, const std::string& dataset_size,
-         bool use_spell_checker, char delimiter,
-         const std::optional<std::string>& model_config,
-         const config::ArgumentMap& user_args) {
-  _backend = std::make_unique<UDTQueryReformulation>(
-      std::move(incorrect_column_name), std::move(correct_column_name),
-      dataset_size, use_spell_checker, delimiter, model_config, user_args);
 }
 
 UDT::UDT(const std::string& file_format, uint32_t n_target_classes,
