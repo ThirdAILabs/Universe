@@ -49,7 +49,7 @@ class Amazon670kConfig(BoltBenchmarkConfig):
 
     batch_size = 256
     learning_rate = 1e-4
-    num_epochs = 5
+    num_epochs = 10
 
     def load_datasets(path_prefix: str):
         train_dataset_path = os.path.join(
@@ -84,7 +84,7 @@ class AmazonPolarityConfig(BoltBenchmarkConfig):
 
     batch_size = 256
     learning_rate = 1e-04
-    num_epochs = 5
+    num_epochs = 10
 
     def load_datasets(path_prefix: str):
         train_dataset_path = os.path.join(path_prefix, "amazon_polarity/svm_train.txt")
@@ -128,7 +128,7 @@ class WayfairConfig(BoltBenchmarkConfig):
 
     batch_size = 2048
     learning_rate = 1e-04
-    num_epochs = 5
+    num_epochs = 10
     metrics = ["categorical_accuracy", "f_measure(0.95)"]
 
     def _load_wayfair_dataset(filename, batch_size, output_dim, shuffle=True):

@@ -55,6 +55,7 @@ def define_fully_connected_bolt_model(config: BoltBenchmarkConfig):
                 reconstruct_hash_functions=config.reconstruct_hash_functions,
                 batch_size=config.batch_size,
             )(input_layer)
+            hidden_layer = bolt.nn.LayerNorm()(hidden_layer)
         else:
             hidden_layer = get_fc_layer(
                 config=hidden_node,
@@ -63,6 +64,7 @@ def define_fully_connected_bolt_model(config: BoltBenchmarkConfig):
                 reconstruct_hash_functions=config.reconstruct_hash_functions,
                 batch_size=config.batch_size,
             )(hidden_layer)
+            hidden_layer = bolt.nn.LayerNorm()(hidden_layer)
 
     output_layer = get_fc_layer(
         config=config.output_node,
@@ -81,7 +83,12 @@ def define_fully_connected_bolt_model(config: BoltBenchmarkConfig):
     else:
         raise ValueError("Invalid loss function in config.")
 
-    model = bolt.nn.Model(inputs=[input_layer], outputs=[output_layer], losses=[loss])
+    model = bolt.nn.Model(
+        inputs=[input_layer],
+        outputs=[output_layer],
+        losses=[loss],
+        use_torch_initialization=True,
+    )
     model.summary()
 
     return model
