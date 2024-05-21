@@ -11,6 +11,10 @@ from ..supervised_datasource import SupDataSource
 from ..trainer.checkpoint_config import CheckpointConfig
 from ..utils import clean_text
 
+# This is needed for backwards compatibility when Mach used
+# to be in this file.
+from .mach import Mach
+
 InferSamples = List
 Predictions = Sequence
 TrainLabels = List
