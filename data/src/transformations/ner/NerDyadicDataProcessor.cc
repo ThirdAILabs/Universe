@@ -4,8 +4,10 @@
 #include <data/src/transformations/TextTokenizer.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <algorithm>
+#include <cctype>
 #include <cstddef>
 #include <cstdint>
+#include <regex>
 #include <unordered_set>
 
 namespace thirdai::data {
@@ -75,11 +77,23 @@ std::string getNumericalFeatures(const std::string& input) {
     if (luhnCheck(strippedInput)) {
       return "IS_ACCOUNT_NUMBER ";
     }
-    if ((strippedInput.size() >= 9 && strippedInput.size() <= 11) ||
-        input[0] == '+') {
+    if ((strippedInput.size() >= 9 && strippedInput.size() <= 12) ||
+        input[0] == '+' || input[0] == '(') {
       return "MAYBE_PHONE ";
     }
-    return "IS_NUMBER ";
+
+    if ((strippedInput.size() <= 2 && std::stoi(strippedInput) <= 31) ||
+        strippedInput.size() == 4) {
+      return "A_DATE ";
+    }
+
+    if (strippedInput.size() == input.size()) {
+      return "IS_NUMBER ";
+    }
+  }
+
+  if (strippedInput.size() >= 1) {
+    return "CONTAINS_NUMBER";
   }
 
   if (containsAlphabets(input)) {
@@ -87,6 +101,26 @@ std::string getNumericalFeatures(const std::string& input) {
   }
 
   return "";
+}
+
+bool isValidEmail(const std::string& email) {
+  const std::regex email_regex(
+      R"((^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$))");
+  const std::regex email_with_at_regex(
+      R"((^[a-zA-Z0-9_.+-]+at[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$))");
+
+  return std::regex_match(email, email_regex) ||
+         std::regex_match(email, email_with_at_regex);
+}
+
+bool isValidDate(const std::string& token) {
+  // Check if the token matches the regex pattern
+  const std::regex format1(R"((^\d{4}[-/.]\d{2}[-/.]\d{2}$))");
+  const std::regex format2(R"((^\d{2}[-/.]\d{2}[-/.]\d{4}$))");
+  const std::regex format3(
+      R"((^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|January|February|March|April|May|June|July|August|September|October|November|December)))");
+  return std::regex_match(token, format1) || std::regex_match(token, format2) ||
+         std::regex_match(token, format3);
 }
 
 std::string NerDyadicDataProcessor::getExtraFeatures(
@@ -127,6 +161,30 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
     if (index >= 1 &&
         std::isupper(static_cast<unsigned char>(current_token[0]))) {
       extra_features += "IS_CAPS_LOCK ";
+    }
+
+    if (index >= 1) {
+      if (std::islower(static_cast<unsigned char>(tokens[index - 1][0]))) {
+        extra_features += "PREVIOUS_LOWER ";
+      } else {
+        extra_features += "PREVIOUS_UPPER ";
+      }
+    }
+
+    if (index < tokens.size() - 1) {
+      if (std::islower(static_cast<unsigned char>(tokens[index + 1][0]))) {
+        extra_features += "NEXT_LOWER ";
+      } else {
+        extra_features += "NEXT_UPPER ";
+      }
+    }
+
+    if (isValidEmail(current_token)) {
+      extra_features += "IS_VALID_EMAIL ";
+    }
+
+    if (isValidDate(current_token)) {
+      extra_features += "A_VALID_DATE ";
     }
   }
   return extra_features;
@@ -170,8 +228,9 @@ std::string NerDyadicDataProcessor::processToken(
   }
 
   /*
-   * We do not perform deduplication over the tokens returned by the tokenizers.
-   * Hence, same tokens can be appended to the string multiple times.
+   * We do not perform deduplication over the tokens returned by the
+   * tokenizers. Hence, same tokens can be appended to the string multiple
+   * times.
    */
   std::string repr;
   for (const auto& tok : tokenized_target_token) {

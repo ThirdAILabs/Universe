@@ -17,13 +17,15 @@ struct FeatureEnhancementConfig {
   bool organization_features = false;
   bool case_features = false;
   bool numerical_features = false;
+  bool find_emails = false;
 
   explicit FeatureEnhancementConfig(bool set_all_true)
       : enhance_names(set_all_true),
         location_features(set_all_true),
         organization_features(set_all_true),
         case_features(set_all_true),
-        numerical_features(set_all_true) {}
+        numerical_features(set_all_true),
+        find_emails(set_all_true) {}
 
   FeatureEnhancementConfig() = default;
 };
