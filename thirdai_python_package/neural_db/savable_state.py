@@ -1,5 +1,6 @@
 import datetime
 import os
+import sys
 from pathlib import Path
 from typing import Callable, List
 
@@ -96,27 +97,49 @@ class State:
 
     @staticmethod
     def load(location: Path, on_progress: Callable = lambda *args, **kwargs: None):
-        total_steps = 6
+        try:
+            total_steps = 6
 
-        # load model
-        model = unpickle_from(State.model_pkl_path(location))
-        on_progress(1 / total_steps)
-        model.load_meta(State.model_meta_path(location))
-        on_progress(2 / total_steps)
+            # load model
+            model = unpickle_from(State.model_pkl_path(location))
+            on_progress(1 / total_steps)
+            model.load_meta(State.model_meta_path(location))
+            on_progress(2 / total_steps)
 
-        # load logger
-        logger = unpickle_from(State.logger_pkl_path(location))
-        on_progress(3 / total_steps)
-        logger.load_meta(State.logger_meta_path(location))
-        on_progress(4 / total_steps)
+            # load logger
+            logger = unpickle_from(State.logger_pkl_path(location))
+            on_progress(3 / total_steps)
+            logger.load_meta(State.logger_meta_path(location))
+            on_progress(4 / total_steps)
 
-        state = State(model=model, logger=logger)
+            state = State(model=model, logger=logger)
 
-        # load documents
-        state.documents = unpickle_from(State.documents_pkl_path(location))
-        on_progress(5 / total_steps)
-        state.documents.load_meta(State.documents_meta_path(location))
-        on_progress(6 / total_steps)
+            # load documents
+            state.documents = unpickle_from(State.documents_pkl_path(location))
+            on_progress(5 / total_steps)
+            state.documents.load_meta(State.documents_meta_path(location))
+            on_progress(6 / total_steps)
+
+        except AttributeError as e:
+            if "Can't get attribute 'Mach'" in str(e):
+                # This is a backwards compatibility feature to handle a change
+                # in the NeuralDB code where the thirdai.neural_db.models.models
+                # module was refactored
+
+                from . import models as new_models_module
+
+                old_module_path = "thirdai.neural_db.models.models"
+                sys.modules[old_module_path] = new_models_module
+                old_models_module = sys.modules.get(old_module_path, None)
+
+                state = State.load(location, on_progress)
+
+                sys.modules[old_module_path] = old_models_module
+
+                return state
+
+            else:
+                raise e
 
         return state
 
