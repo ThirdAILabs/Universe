@@ -129,8 +129,8 @@ class State:
                 from . import models as new_models_module
 
                 old_module_path = "thirdai.neural_db.models.models"
-                sys.modules[old_module_path] = new_models_module
                 old_models_module = sys.modules.get(old_module_path, None)
+                sys.modules[old_module_path] = new_models_module
 
                 state = State.load(location, on_progress)
 
