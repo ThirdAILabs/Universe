@@ -3,14 +3,142 @@
 #include <archive/src/List.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <unordered_set>
 
 namespace thirdai::data {
 
+std::vector<std::string> toLowerCaseTokens(
+    const std::vector<std::string>& tokens) {
+  std::vector<std::string> lower_tokens(tokens.size());
+  std::transform(tokens.begin(), tokens.end(), lower_tokens.begin(),
+                 [](const std::string& token) {
+                   std::string lower_token;
+                   lower_token.reserve(token.size());
+                   std::transform(token.begin(), token.end(),
+                                  std::back_inserter(lower_token), ::tolower);
+                   return lower_token;
+                 });
+  return lower_tokens;
+}
+
+bool containsKeywordInRange(const std::vector<std::string>& tokens,
+                            size_t start, size_t end,
+                            const std::unordered_set<std::string>& keywords) {
+  return std::any_of(tokens.begin() + start, tokens.begin() + end,
+                     [&keywords](const std::string& token) {
+                       return keywords.find(token) != keywords.end();
+                     });
+}
+
+std::string stripNonDigits(const std::string& input) {
+  std::string digits;
+  for (char ch : input) {
+    if (std::isdigit(ch)) {
+      digits += ch;
+    }
+  }
+  return digits;
+}
+
+bool isAllDigits(const std::string& input) {
+  return std::all_of(input.begin(), input.end(), ::isdigit);
+}
+
+bool containsAlphabets(const std::string& input) {
+  return std::any_of(input.begin(), input.end(), ::isalpha);
+}
+
+bool luhnCheck(const std::string& number) {
+  int sum = 0;
+  bool alternate = false;
+  for (int i = number.size() - 1; i >= 0; --i) {
+    int n = number[i] - '0';
+    if (alternate) {
+      n *= 2;
+      if (n > 9) {
+        n -= 9;
+      }
+    }
+    sum += n;
+    alternate = !alternate;
+  }
+  return (sum % 10 == 0);
+}
+
+std::string getNumericalFeatures(const std::string& input) {
+  std::string strippedInput = stripNonDigits(input);
+
+  if (!strippedInput.empty() && isAllDigits(strippedInput)) {
+    if (luhnCheck(strippedInput)) {
+      return "IS_ACCOUNT_NUMBER ";
+    }
+    if ((strippedInput.size() >= 9 && strippedInput.size() <= 11) ||
+        input[0] == '+') {
+      return "MAYBE_PHONE ";
+    }
+    return "IS_NUMBER ";
+  }
+
+  if (containsAlphabets(input)) {
+    return "IS_ALPHANUMERIC ";
+  }
+
+  return "";
+}
+
+std::string NerDyadicDataProcessor::getExtraFeatures(
+    const std::vector<std::string>& tokens, uint32_t index) const {
+  if (!_extra_features_config.has_value()) {
+    return "";
+  }
+  std::string extra_features;
+
+  std::string current_token = tokens[index];
+  auto lower_cased_tokens = toLowerCaseTokens(tokens);
+
+  size_t start = (index > 1) ? (index - 2) : 0;
+  size_t end = std::min(tokens.size(), static_cast<size_t>(index + 3));
+
+  if (_extra_features_config->enhance_names &&
+      containsKeywordInRange(lower_cased_tokens, start, end, name_keywords)) {
+    extra_features += "CONTAINS_NAMED_WORDS ";
+  }
+
+  if (_extra_features_config->location_features &&
+      containsKeywordInRange(lower_cased_tokens, start, end,
+                             location_keywords)) {
+    extra_features += "CONTAINS_LOCATION_WORDS ";
+  }
+
+  if (_extra_features_config->organization_features &&
+      containsKeywordInRange(lower_cased_tokens, start, end,
+                             organization_keywords)) {
+    extra_features += "CONTAINS_ORGANIZATION_WORDS ";
+  }
+
+  if (_extra_features_config->numerical_features) {
+    extra_features += getNumericalFeatures(current_token);
+  }
+
+  if (_extra_features_config->case_features) {
+    if (index >= 1 &&
+        std::isupper(static_cast<unsigned char>(current_token[0]))) {
+      extra_features += "IS_CAPS_LOCK ";
+    }
+  }
+  return extra_features;
+}
+
 NerDyadicDataProcessor::NerDyadicDataProcessor(
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
-    uint32_t dyadic_num_intervals)
+    uint32_t dyadic_num_intervals,
+    std::optional<FeatureEnhancementConfig> extra_features_config)
     : _target_word_tokenizers(std::move(target_word_tokenizers)),
-      _dyadic_num_intervals(dyadic_num_intervals) {}
+      _dyadic_num_intervals(dyadic_num_intervals),
+      _extra_features_config((extra_features_config)) {}
 
 std::shared_ptr<NerDyadicDataProcessor> NerDyadicDataProcessor::make(
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
@@ -51,6 +179,9 @@ std::string NerDyadicDataProcessor::processToken(
   }
 
   repr += generateDyadicWindows(tokens, index);
+
+  repr += " " + getExtraFeatures(tokens, index);
+
   return repr;
 }
 

@@ -31,13 +31,14 @@ void addNERModels(py::module_& module) {
       module, "NerUDTModel")
       .def(py::init<bolt::ModelPtr, std::string, std::string,
                     std::unordered_map<std::string, uint32_t>,
-                    std::vector<dataset::TextTokenizerPtr>>(),
+                    std::vector<dataset::TextTokenizerPtr>, bool>(),
            py::arg("model"), py ::arg("tokens_column"), py::arg("tags_column"),
            py::arg("tag_to_label"),
            py::arg("target_word_tokenizers") =
                std::vector<dataset::TextTokenizerPtr>(
                    {std::make_shared<dataset::NaiveSplitTokenizer>(),
-                    std::make_shared<dataset::CharKGramTokenizer>(4)}));
+                    std::make_shared<dataset::CharKGramTokenizer>(4)}),
+           py::arg("add_extra_features") = false);
 #endif
 
   py::class_<NER, std::shared_ptr<NER>>(module, "NER")
@@ -47,13 +48,14 @@ void addNERModels(py::module_& module) {
 #endif
       .def(py::init<std::string, std::string,
                     std::unordered_map<std::string, uint32_t>,
-                    std::vector<dataset::TextTokenizerPtr>>(),
+                    std::vector<dataset::TextTokenizerPtr>, bool>(),
            py::arg("tokens_column"), py::arg("tags_column"),
            py::arg("tag_to_label"),
            py::arg("target_word_tokenizers") =
                std::vector<dataset::TextTokenizerPtr>(
                    {std::make_shared<dataset::NaiveSplitTokenizer>(),
-                    std::make_shared<dataset::CharKGramTokenizer>(4)}))
+                    std::make_shared<dataset::CharKGramTokenizer>(4)}),
+           py::arg("add_extra_features") = false)
       .def_static(
           "from_pretrained",
           [](const std::string& model_path, const std::string& tokens_column,

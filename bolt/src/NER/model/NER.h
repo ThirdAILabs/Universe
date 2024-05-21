@@ -27,10 +27,12 @@ class NER : public std::enable_shared_from_this<NER> {
                std::vector<dataset::TextTokenizerPtr> target_word_tokenizers =
                    std::vector<dataset::TextTokenizerPtr>(
                        {std::make_shared<dataset::NaiveSplitTokenizer>(),
-                        std::make_shared<dataset::CharKGramTokenizer>(4)})) {
+                        std::make_shared<dataset::CharKGramTokenizer>(4)}),
+               bool add_extra_features = false) {
     _ner_backend_model = std::make_shared<NerUDTModel>(
         std::move(tokens_column), std::move(tags_column),
-        std::move(tag_to_label), std::move(target_word_tokenizers));
+        std::move(tag_to_label), std::move(target_word_tokenizers),
+        add_extra_features);
   }
 
   NER(const std::string& model_path, std::string tokens_column,

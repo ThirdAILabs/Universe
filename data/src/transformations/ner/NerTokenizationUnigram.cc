@@ -11,7 +11,6 @@
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <cstdint>
 #include <exception>
-#include <memory>
 #include <optional>
 #include <utility>
 
@@ -22,13 +21,21 @@ NerTokenizerUnigram::NerTokenizerUnigram(
     std::optional<std::string> target_column,
     std::optional<uint32_t> target_dim, uint32_t dyadic_num_intervals,
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
+    bool add_extra_features,
     std::optional<std::unordered_map<std::string, uint32_t>> tag_to_label)
     : _tokens_column(std::move(tokens_column)),
       _featurized_sentence_column(std::move(featurized_sentence_column)),
       _target_column(std::move(target_column)),
       _target_dim(target_dim),
-      _processor(std::move(target_word_tokenizers), dyadic_num_intervals),
-      _tag_to_label(std::move(tag_to_label)) {}
+      _processor(std::move(target_word_tokenizers), dyadic_num_intervals,
+                 FeatureEnhancementConfig(add_extra_features)),
+      _tag_to_label(std::move(tag_to_label)) {
+  if (add_extra_features) {
+    std::cout << "Adds Extra Features" << std::endl;
+  } else {
+    std::cout << "No extra features" << std::endl;
+  }
+}
 
 ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
   (void)state;

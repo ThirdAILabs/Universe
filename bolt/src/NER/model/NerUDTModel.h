@@ -20,11 +20,13 @@ class NerUDTModel final : public NerModelInterface {
   NerUDTModel(bolt::ModelPtr model, std::string tokens_column,
               std::string tags_column,
               std::unordered_map<std::string, uint32_t> tag_to_label,
-              std::vector<dataset::TextTokenizerPtr> target_word_tokenizers);
+              std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
+              bool add_extra_features);
 
   NerUDTModel(std::string tokens_column, std::string tags_column,
               std::unordered_map<std::string, uint32_t> tag_to_label,
-              std::vector<dataset::TextTokenizerPtr> target_word_tokenizers);
+              std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
+              bool add_extra_features);
 
   NerUDTModel(std::shared_ptr<NerUDTModel>& pretrained_model,
               std::string tokens_column, std::string tags_column,
@@ -41,6 +43,7 @@ class NerUDTModel final : public NerModelInterface {
               /*target_column=*/std::nullopt, /*target_dim=*/std::nullopt,
               /*dyadic_num_intervals=*/_dyadic_num_intervals,
               /*target_word_tokenizers=*/_target_word_tokenizers,
+              /*add_extra_features=*/_add_extra_features,
               /*tag_to_label=*/_tag_to_label)});
     } else {
       transform = data::Pipeline::make(
@@ -50,6 +53,7 @@ class NerUDTModel final : public NerModelInterface {
               /*target_column=*/_tags_column, /*target_dim=*/num_label,
               /*dyadic_num_intervals=*/_dyadic_num_intervals,
               /*target_word_tokenizers=*/_target_word_tokenizers,
+              /*add_extra_features=*/_add_extra_features,
               /*tag_to_label=*/_tag_to_label)});
     }
     transform = transform->then(std::make_shared<data::TextTokenizer>(
@@ -119,5 +123,7 @@ class NerUDTModel final : public NerModelInterface {
   std::string _featurized_sentence_column;
 
   NerClassifierPtr _classifier;
+
+  bool _add_extra_features;
 };
 }  // namespace thirdai::bolt::NER
