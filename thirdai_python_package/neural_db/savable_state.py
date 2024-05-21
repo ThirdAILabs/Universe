@@ -136,8 +136,6 @@ class State:
 
                 sys.modules[old_module_path] = old_models_module
 
-                return state
-
             else:
                 raise e
 
