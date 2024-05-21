@@ -35,7 +35,7 @@ namespace thirdai::automl::udt {
 
 std::optional<std::string> inputColumnName(ColumnDataTypes data_types,
                                            const std::string& target_col) {
-  if (data_types.size() != 1 || data_types.size() != 2) {
+  if (data_types.size() != 1 && data_types.size() != 2) {
     throw std::invalid_argument(
         "Only either target or source/target columns must be supplied to "
         "QueryReformulation.");
