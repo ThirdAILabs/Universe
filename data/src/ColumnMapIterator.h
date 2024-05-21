@@ -3,7 +3,6 @@
 #include <data/src/ColumnMap.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/DataSource.h>
-#include <nlohmann/json.hpp>
 
 namespace thirdai::data {
 

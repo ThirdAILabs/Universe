@@ -4,6 +4,7 @@
 #include <data/src/columns/ValueColumns.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/utils/CsvParser.h>
+#include <nlohmann/json.hpp>
 #include <exception>
 #include <limits>
 #include <stdexcept>
