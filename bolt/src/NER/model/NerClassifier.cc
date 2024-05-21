@@ -22,13 +22,11 @@ metrics::History NerClassifier::train(
   auto train_data_label = train_dataset.second;
 
   Trainer trainer(_bolt_model);
-  for (uint32_t e = 0; e < epochs; e++) {
-    trainer.train_with_metric_names(
-        train_dataset, learning_rate, 1, train_metrics, val_dataset,
-        val_metrics, /* steps_per_validation= */ std::nullopt,
-        /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
-        /* autotune_rehash_rebuild= */ false, /* verbose= */ true);
-  }
+  trainer.train_with_metric_names(
+      train_dataset, learning_rate, epochs, train_metrics, val_dataset,
+      val_metrics, /* steps_per_validation= */ std::nullopt,
+      /* use_sparsity_in_validation= */ false, /* callbacks= */ {},
+      /* autotune_rehash_rebuild= */ false, /* verbose= */ true);
   return trainer.getHistory();
 }
 
