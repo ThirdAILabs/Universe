@@ -13,19 +13,23 @@
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/Transformation.h>
 #include <dataset/src/DataSource.h>
+#include <memory>
 #include <unordered_map>
 
 namespace thirdai::bolt {
 
-class NerPretrainedModel final : public NerBackend {
- public:
-  std::string type() const final { return "pretrained_ner"; }
-  NerPretrainedModel(bolt::ModelPtr model,
-                     std::unordered_map<std::string, uint32_t> tag_to_label);
+class NerBoltModel;
 
-  NerPretrainedModel(std::string& pretrained_model_path,
-                     std::string token_column, std::string tag_column,
-                     std::unordered_map<std::string, uint32_t> tag_to_label);
+class NerBoltModel final : public NerBackend {
+ public:
+  std::string type() const final { return "bolt_ner"; }
+  NerBoltModel(bolt::ModelPtr model, std::string tokens_column,
+               std::string tags_column,
+               std::unordered_map<std::string, uint32_t> tag_to_label);
+
+  NerBoltModel(std::shared_ptr<NerBoltModel>& pretrained_model,
+               std::string tokens_column, std::string tags_column,
+               std::unordered_map<std::string, uint32_t> tag_to_label);
 
   std::vector<PerTokenListPredictions> getTags(
       std::vector<std::vector<std::string>> tokens, uint32_t top_k) final;
@@ -43,20 +47,24 @@ class NerPretrainedModel final : public NerBackend {
     return _tag_to_label;
   }
 
-  static std::shared_ptr<NerPretrainedModel> fromArchive(
-      const ar::Archive& archive);
+  static std::shared_ptr<NerBoltModel> fromArchive(const ar::Archive& archive);
 
   void save(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;
 
-  static std::shared_ptr<NerPretrainedModel> load(const std::string& filename);
+  static std::shared_ptr<NerBoltModel> load(const std::string& filename);
 
-  static std::shared_ptr<NerPretrainedModel> load_stream(
-      std::istream& input_stream);
+  static std::shared_ptr<NerBoltModel> load_stream(std::istream& input_stream);
 
-  NerPretrainedModel() = default;
-  ~NerPretrainedModel() override = default;
+  bolt::ModelPtr getBoltModel() final { return _bolt_model; }
+
+  std::string getTokensColumn() const final { return _source_column; }
+
+  std::string getTagsColumn() const final { return _target_column; }
+
+  NerBoltModel() = default;
+  ~NerBoltModel() override = default;
 
  private:
   data::Loader getDataLoader(const dataset::DataSourcePtr& data,
@@ -73,7 +81,7 @@ class NerPretrainedModel final : public NerBackend {
   std::string _source_column = "source";
   std::string _target_column = "target";
 
-  const size_t _vocab_size = 50257;
+  size_t _vocab_size = 50257;
 };
 
 }  // namespace thirdai::bolt

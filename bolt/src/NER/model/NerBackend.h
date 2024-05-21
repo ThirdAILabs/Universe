@@ -15,6 +15,8 @@ namespace thirdai::bolt {
 using PerTokenPredictions = std::vector<std::pair<uint32_t, float>>;
 using PerTokenListPredictions = std::vector<PerTokenPredictions>;
 
+class NerBackend;
+
 class NerBackend {
  public:
   virtual ~NerBackend() = default;
@@ -34,5 +36,11 @@ class NerBackend {
   virtual std::string type() const = 0;
 
   virtual std::unordered_map<std::string, uint32_t> getTagToLabel() = 0;
+
+  virtual std::string getTokensColumn() const = 0;
+
+  virtual std::string getTagsColumn() const = 0;
+
+  virtual bolt::ModelPtr getBoltModel() = 0;
 };
 }  // namespace thirdai::bolt

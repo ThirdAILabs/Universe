@@ -1,4 +1,4 @@
-#include "NerPretrainedModel.h"
+#include "NerBoltModel.h"
 #include <cereal/archives/binary.hpp>
 #include <bolt/src/NER/model/NER.h>
 #include <bolt/src/NER/model/utils.h>
@@ -29,35 +29,32 @@
 #include <vector>
 
 namespace thirdai::bolt {
-NerPretrainedModel::NerPretrainedModel(
-    bolt::ModelPtr model,
+NerBoltModel::NerBoltModel(
+    bolt::ModelPtr model, std::string tokens_column, std::string tags_column,
     std::unordered_map<std::string, uint32_t> tag_to_label)
-    : _bolt_model(std::move(model)), _tag_to_label(std::move(tag_to_label)) {
+    : _bolt_model(std::move(model)),
+      _tag_to_label(std::move(tag_to_label)),
+      _source_column(std::move(tokens_column)),
+      _target_column(std::move(tags_column)) {
   _train_transforms = getTransformations(true);
   _inference_transforms = getTransformations(false);
   _bolt_inputs = {data::OutputColumns("tokens"),
                   data::OutputColumns("token_front"),
                   data::OutputColumns("token_behind")};
 }
-NerPretrainedModel::NerPretrainedModel(
-    std::string& pretrained_model_path, std::string token_column,
-    std::string tag_column,
+NerBoltModel::NerBoltModel(
+    std::shared_ptr<NerBoltModel>& pretrained_model, std::string tokens_column,
+    std::string tags_column,
     std::unordered_map<std::string, uint32_t> tag_to_label)
     : _tag_to_label(tag_to_label),
-      _source_column(std::move(token_column)),
-      _target_column(std::move(tag_column)) {
-  auto pretrained_model = bolt::Model::load(pretrained_model_path);
-  if (pretrained_model->inputs()[0]->dim() != 50257) {
-    throw std::invalid_argument(
-        "Model input should have same vocab as GPT2Tokenizer");
-  }
-
+      _source_column(std::move(tokens_column)),
+      _target_column(std::move(tags_column)) {
   auto maxPair = std::max_element(
       tag_to_label.begin(), tag_to_label.end(),
       [](const auto& a, const auto& b) { return a.second < b.second; });
   auto num_labels = maxPair->second + 1;
 
-  auto ops = pretrained_model->ops();
+  auto ops = pretrained_model->getBoltModel()->ops();
   bool found = std::any_of(ops.begin(), ops.end(), [](const bolt::OpPtr& op) {
     return op->name() == "emb_1";
   });
@@ -66,8 +63,14 @@ NerPretrainedModel::NerPretrainedModel(
     throw std::runtime_error(
         "Error: No operation named 'emb_1' found in Pretrained Model");
   }
-  auto emb =
-      std::dynamic_pointer_cast<Embedding>(pretrained_model->getOp("emb_1"));
+  auto emb = std::dynamic_pointer_cast<Embedding>(
+      pretrained_model->getBoltModel()->getOp("emb_1"));
+
+  if (!emb) {
+    throw std::runtime_error("Error casting 'emb_1' op to Embedding Op");
+  }
+
+  _vocab_size = emb->inputDim();
 
   auto emb_weights = emb->parameters();
 
@@ -75,15 +78,12 @@ NerPretrainedModel::NerPretrainedModel(
       {bolt::Input::make(_vocab_size), bolt::Input::make(_vocab_size),
        bolt::Input::make(_vocab_size)});
 
-  auto emb_op = bolt::Embedding::make(6000, _vocab_size, "relu",
+  auto emb_op = bolt::Embedding::make(emb->dim(), _vocab_size, "relu",
                                       /* bias= */ false);
   auto* pretrained_weights = emb_weights[0];
 
-  if (pretrained_weights->size() == 6000 * _vocab_size) {
-    emb_op->setEmbeddings(pretrained_weights->data());
-  } else {
-    throw std::runtime_error("Size mismatch in embeddings vector.");
-  }
+  emb_op->setEmbeddings(pretrained_weights->data());
+
   auto tokens_embedding = emb_op->apply(inputs[0]);
   auto token_front_embedding = emb_op->apply(inputs[1]);
   auto token_behind_embedding = emb_op->apply(inputs[2]);
@@ -92,7 +92,7 @@ NerPretrainedModel::NerPretrainedModel(
       bolt::Concatenate::make()->apply(std::vector<bolt::ComputationPtr>(
           {token_front_embedding, token_behind_embedding}));
 
-  auto weighted_sum = bolt::WeightedSum::make(2, 6000)->apply(concat);
+  auto weighted_sum = bolt::WeightedSum::make(2, emb->dim())->apply(concat);
 
   concat = bolt::Concatenate::make()->apply(
       std::vector<bolt::ComputationPtr>({tokens_embedding, weighted_sum}));
@@ -114,7 +114,7 @@ NerPretrainedModel::NerPretrainedModel(
                   data::OutputColumns("token_behind")};
 }
 
-data::PipelinePtr NerPretrainedModel::getTransformations(bool inference) {
+data::PipelinePtr NerBoltModel::getTransformations(bool inference) {
   data::PipelinePtr transform;
   if (!inference) {
     transform =
@@ -136,8 +136,8 @@ data::PipelinePtr NerPretrainedModel::getTransformations(bool inference) {
   return transform;
 }
 
-data::Loader NerPretrainedModel::getDataLoader(
-    const dataset::DataSourcePtr& data, size_t batch_size, bool shuffle) {
+data::Loader NerBoltModel::getDataLoader(const dataset::DataSourcePtr& data,
+                                         size_t batch_size, bool shuffle) {
   auto data_iter =
       data::JsonIterator::make(data, {_source_column, _target_column}, 1000);
   return data::Loader(data_iter, _train_transforms, nullptr, _bolt_inputs,
@@ -146,7 +146,7 @@ data::Loader NerPretrainedModel::getDataLoader(
                       /* shuffle= */ shuffle, /* verbose= */ true,
                       /* shuffle_buffer_size= */ 20000);
 }
-metrics::History NerPretrainedModel::train(
+metrics::History NerBoltModel::train(
     const dataset::DataSourcePtr& train_data, float learning_rate,
     uint32_t epochs, size_t batch_size,
     const std::vector<std::string>& train_metrics,
@@ -155,7 +155,7 @@ metrics::History NerPretrainedModel::train(
   auto train_dataset =
       getDataLoader(train_data, batch_size, /* shuffle= */ true).all();
 
-  bolt::LabeledDataset val_dataset;
+  std::optional<bolt::LabeledDataset> val_dataset = std::nullopt;
   if (val_data) {
     val_dataset =
         getDataLoader(val_data, batch_size, /* shuffle= */ false).all();
@@ -177,14 +177,14 @@ metrics::History NerPretrainedModel::train(
   return trainer.getHistory();
 }
 
-std::vector<PerTokenListPredictions> NerPretrainedModel::getTags(
+std::vector<PerTokenListPredictions> NerBoltModel::getTags(
     std::vector<std::vector<std::string>> tokens, uint32_t top_k) {
   return thirdai::bolt::getTags(tokens, top_k, _source_column,
                                 _inference_transforms, _bolt_inputs,
                                 _bolt_model);
 }
 
-ar::ConstArchivePtr NerPretrainedModel::toArchive() const {
+ar::ConstArchivePtr NerBoltModel::toArchive() const {
   auto ner_bolt_model = ar::Map::make();
 
   ner_bolt_model->set("bolt_model",
@@ -196,10 +196,13 @@ ar::ConstArchivePtr NerPretrainedModel::toArchive() const {
   }
   ner_bolt_model->set("tag_to_label", ar::mapStrU64(tag_to_label));
 
+  ner_bolt_model->set("source_column", ar::str(_source_column));
+  ner_bolt_model->set("target_column", ar::str(_target_column));
+
   return ner_bolt_model;
 }
 
-std::shared_ptr<NerPretrainedModel> NerPretrainedModel::fromArchive(
+std::shared_ptr<NerBoltModel> NerBoltModel::fromArchive(
     const ar::Archive& archive) {
   bolt::ModelPtr bolt_model =
       bolt::Model::fromArchive(*archive.get("bolt_model"));
@@ -207,29 +210,32 @@ std::shared_ptr<NerPretrainedModel> NerPretrainedModel::fromArchive(
   for (const auto& [k, v] : archive.getAs<ar::MapStrU64>("tag_to_label")) {
     tag_to_label[k] = v;
   }
-  return std::make_shared<NerPretrainedModel>(
-      NerPretrainedModel(bolt_model, tag_to_label));
+
+  std::string source_column = archive.getAs<std::string>("source_column");
+  std::string target_column = archive.getAs<std::string>("target_column");
+
+  return std::make_shared<NerBoltModel>(NerBoltModel(
+      bolt_model, /*tokens_column=*/source_column,
+      /*tags_column=*/target_column, /*tag_to_label=*/tag_to_label));
 }
 
-void NerPretrainedModel::save(const std::string& filename) const {
+void NerBoltModel::save(const std::string& filename) const {
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   save_stream(filestream);
 }
 
-void NerPretrainedModel::save_stream(std::ostream& output) const {
+void NerBoltModel::save_stream(std::ostream& output) const {
   ar::serialize(toArchive(), output);
 }
 
-std::shared_ptr<NerPretrainedModel> NerPretrainedModel::load(
-    const std::string& filename) {
+std::shared_ptr<NerBoltModel> NerBoltModel::load(const std::string& filename) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
   return load_stream(filestream);
 }
 
-std::shared_ptr<NerPretrainedModel> NerPretrainedModel::load_stream(
-    std::istream& input) {
+std::shared_ptr<NerBoltModel> NerBoltModel::load_stream(std::istream& input) {
   auto archive = ar::deserialize(input);
   return fromArchive(*archive);
 }
