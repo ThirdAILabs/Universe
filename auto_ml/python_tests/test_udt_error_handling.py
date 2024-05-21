@@ -98,7 +98,7 @@ def test_header_missing_cols():
 def test_target_not_in_data_types():
     with pytest.raises(
         ValueError,
-        match="Target column provided was not found in data_types.",
+        match="Target column 'target' not found in data types.",
     ):
         bolt.UniversalDeepTransformer(
             data_types={
@@ -138,10 +138,8 @@ def test_set_output_sparsity_throws_error_on_unsupported_backend():
     set_output_sparsity is enabled only for UDTClassifier Backend hence, this should throw an error.
     """
     model = bolt.UniversalDeepTransformer(
-        source_column="source",
-        target_column="target",
-        dataset_size="medium",
-        delimiter="\t",
+        data_types={"source": bolt.types.text(), "target": bolt.types.text()},
+        target="target",
     )
 
     with pytest.raises(

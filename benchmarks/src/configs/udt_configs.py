@@ -250,7 +250,7 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
     @staticmethod
     def get_data_types(path_prefix):
         return {
-            "labels": bolt.types.categorical(delimiter=",", n_classes=2),
+            "labels": bolt.types.categorical(delimiter=",", n_classes=931),
             "query": bolt.types.text(),
         }
 

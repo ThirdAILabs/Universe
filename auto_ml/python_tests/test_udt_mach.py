@@ -113,7 +113,7 @@ def scifact_model(n_classes):
         data_types={
             "QUERY": bolt.types.text(contextual_encoding="local"),
             "DOC_ID": bolt.types.categorical(
-                delimiter=":", n_clases=n_classes, type="int"
+                delimiter=":", n_classes=n_classes, type="int"
             ),
         },
         target="DOC_ID",

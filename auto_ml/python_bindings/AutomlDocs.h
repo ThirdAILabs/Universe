@@ -199,7 +199,7 @@ Examples:
                 "user_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
                 "special_event": bolt.types.categorical(),
-                "movie_title": bolt.types.categorical(n_clases=500)
+                "movie_title": bolt.types.categorical(n_classes=500)
             },
             temporal_tracking_relationships={
                 "user_id": ["movie_title"]

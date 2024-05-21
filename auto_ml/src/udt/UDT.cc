@@ -44,7 +44,7 @@ UDT::UDT(ColumnDataTypes data_types,
          const PretrainedBasePtr& pretrained_model,
          const config::ArgumentMap& user_args) {
   if (!data_types.count(target)) {
-    throw std::invalid_argument("Target '" + target +
+    throw std::invalid_argument("Target column '" + target +
                                 "' not found in data types.");
   }
 
