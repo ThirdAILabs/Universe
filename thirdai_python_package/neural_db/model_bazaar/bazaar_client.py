@@ -300,6 +300,17 @@ class NeuralDBClient:
         )
 
     @check_deployment_decorator
+    def save_model(self, override: bool = True, model_name: Optional[str] = None):
+
+        response = http_post_with_error(
+            urljoin(self.base_url, "save"),
+            json={"override": override, "model_name": model_name},
+            headers=auth_header(self.bazaar._access_token),
+        )
+
+        print("Successfully saved the model.")
+
+    @check_deployment_decorator
     def upvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]):
         """
         Upvote response with 'reference_id' corresponding to 'query_text' in the ndb model.
