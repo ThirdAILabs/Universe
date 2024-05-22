@@ -22,10 +22,13 @@ def this_should_require_a_license_search():
 def this_should_require_a_license_query_reformulation():
     from thirdai import bolt
 
-    bolt.UniversalDeepTransformer(
-        source_column="source_queries",
-        target_column="target_queries",
-        dataset_size="medium",
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "query": bolt.types.text(),
+            "label": bolt.types.text(),
+        },
+        target="label",
+        options={"dataset_size": "small"},
     )
 
 

@@ -63,9 +63,12 @@ def test_census_demo_key_fails_on_query_reformulation():
         file.writelines(["query,label\n", "input1,output1\n", "input2,output2\n"])
 
     model = bolt.UniversalDeepTransformer(
-        source_column="query",
-        target_column="label",
-        dataset_size="small",
+        data_types={
+            "query": bolt.types.text(),
+            "label": bolt.types.text(),
+        },
+        target="label",
+        options={"dataset_size": "small"},
     )
 
     with pytest.raises(
