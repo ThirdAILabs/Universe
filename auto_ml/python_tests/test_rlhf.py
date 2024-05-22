@@ -17,11 +17,9 @@ def train_model():
             "id": bolt.types.categorical(type="int", n_classes=100),
         },
         target="id",
-        options={
-            "extreme_classification": True,
-            "extreme_output_dim": 10000,
-            "rlhf": True,
-        },
+        extreme_classification=True,
+        extreme_output_dim=10000,
+        rlhf=True,
     )
 
     model.train(QUERY_FILE, metrics=["precision@1"], verbose=False)

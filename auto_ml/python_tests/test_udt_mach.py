@@ -42,15 +42,13 @@ def train_simple_mach_udt(
             "label": bolt.types.categorical(n_classes=3, type="int"),
         },
         target="label",
-        options={
-            "extreme_classification": True,
-            "embedding_dimension": embedding_dim,
-            "extreme_output_dim": output_dim,
-            "hidden_bias": use_bias,
-            "output_bias": use_bias,
-            **rlhf_args,
-            "mach_sampling_threshold": mach_sampling_threshold,
-        },
+        extreme_classification=True,
+        embedding_dimension=embedding_dim,
+        extreme_output_dim=output_dim,
+        hidden_bias=use_bias,
+        output_bias=use_bias,
+        **rlhf_args,
+        mach_sampling_threshold=mach_sampling_threshold,
     )
 
     model.train(
@@ -117,7 +115,8 @@ def scifact_model(n_classes):
             ),
         },
         target="DOC_ID",
-        options={"extreme_classification": True, "embedding_dimension": 1024},
+        extreme_classification=True,
+        embedding_dimension=1024,
     )
     return model
 
@@ -851,12 +850,10 @@ def test_udt_softmax_activations(softmax):
             "label": bolt.types.categorical(n_classes=3, type="int"),
         },
         target="label",
-        options={
-            "extreme_classification": True,
-            "embedding_dimension": 100,
-            "extreme_output_dim": 100,
-            "softmax": softmax,
-        },
+        extreme_classification=True,
+        embedding_dimension=100,
+        extreme_output_dim=100,
+        softmax=softmax,
     )
 
     output = model.predict_activations_batch(
@@ -877,12 +874,10 @@ def test_doc_not_found_unless_trained_on():
             "label": bolt.types.categorical(n_classes=10, type="int"),
         },
         target="label",
-        options={
-            "extreme_classification": True,
-            "fhr": 1000,
-            "embedding_dimension": 20,
-            "extreme_output_dim": 100,
-        },
+        extreme_classification=True,
+        fhr=1000,
+        embedding_dimension=20,
+        extreme_output_dim=100,
     )
 
     make_simple_test_file()

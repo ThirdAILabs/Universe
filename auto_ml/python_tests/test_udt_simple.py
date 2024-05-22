@@ -76,7 +76,7 @@ def make_simple_trained_model(
             **({"userId": ["hoursWatched"]} if numerical_temporal else {}),
         },
         target="movieId",
-        options={"embedding_dimension": embedding_dim} if embedding_dim else {},
+        **({"embedding_dimension": embedding_dim} if embedding_dim else {}),
     )
 
     model.train(TRAIN_FILE, epochs=2, learning_rate=0.01, batch_size=2048)
@@ -388,7 +388,7 @@ def test_udt_override_input_dim():
     udt_model = bolt.UniversalDeepTransformer(
         data_types={"col": bolt.types.categorical(n_classes=40)},
         target="col",
-        options={"input_dim": 200},
+        input_dim=200,
     )
 
     input_dim = udt_model._get_model().ops()[0].weights.shape[0]
@@ -427,7 +427,8 @@ def test_model_dims_regular_udt():
     model = bolt.UniversalDeepTransformer(
         data_types={"col": bolt.types.categorical(n_classes=2)},
         target="col",
-        options={"input_dim": 8, "embedding_dimension": 4},
+        input_dim=8,
+        embedding_dimension=4,
     )
 
     assert model.model_dims() == [8, 4, 2]
@@ -437,13 +438,11 @@ def test_model_dims_mach():
     model = bolt.UniversalDeepTransformer(
         data_types={"col": bolt.types.categorical(n_classes=20, type="int")},
         target="col",
-        options={
-            "input_dim": 8,
-            "embedding_dimension": 4,
-            "extreme_classification": True,
-            "extreme_num_hashes": 1,
-            "extreme_output_dim": 2,
-        },
+        input_dim=8,
+        embedding_dimension=4,
+        extreme_classification=True,
+        extreme_num_hashes=1,
+        extreme_output_dim=2,
     )
 
     assert model.model_dims() == [8, 4, 2]

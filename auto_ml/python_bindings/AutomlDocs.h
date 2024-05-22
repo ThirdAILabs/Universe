@@ -86,10 +86,8 @@ Examples:
                 ]
             },
             target="sales_performance",
-            options={
-                time_granularity="weekly",
-                lookahead=2 # predict 2 weeks ahead
-            }
+            time_granularity="weekly",
+            lookahead=2 # predict 2 weeks ahead
         )
     >>> # Alternatively suppose our data has the following columns: "user_id", "movie_id", "hours_watched", "timestamp"
     >>> # We want to build a movie recommendation system.

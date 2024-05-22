@@ -20,10 +20,8 @@ def build_udt_model():
             "output": bolt.types.categorical(n_classes=2),
         },
         target="output",
-        options={
-            "input_dim": 10,
-            "embedding_dimension": 10,
-        },
+        input_dim=10,
+        embedding_dimension=10,
     )
 
     return model
@@ -51,7 +49,8 @@ def create_udt_checkpoint():
             "id": bolt.types.categorical(n_classes=100),
         },
         target="id",
-        options={"fhr": 1000, "embedding_dimension": 200},
+        fhr=1000,
+        embedding_dimension=200,
     )
 
     model.train_batch([{"text": "some text", "id": "8"}])

@@ -45,7 +45,7 @@ class Runner(ABC):
             temporal_tracking_relationships=config.temporal_relationships,
             delimiter=config.delimiter,
             model_config=model_config_path,
-            options=config.options,
+            **config.options,
         )
 
         if model_config_path:

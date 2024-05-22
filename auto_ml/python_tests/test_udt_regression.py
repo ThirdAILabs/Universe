@@ -31,7 +31,7 @@ def train_udt_regression(download_brazilian_houses_dataset):
             "totalBRL": bolt.types.numerical(range=(6, 14)),
         },
         target="totalBRL",
-        options={"embedding_dimension": 100},
+        embedding_dimension=100,
     )
 
     model.train(train_filename, epochs=20, learning_rate=0.01)

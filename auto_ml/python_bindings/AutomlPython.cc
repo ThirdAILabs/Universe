@@ -51,13 +51,7 @@ std::shared_ptr<udt::UDT> makeUDT(
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
     const std::string& target_col, char delimiter,
     const std::optional<std::string>& model_config,
-    const PretrainedBasePtr& pretrained_model, const py::dict& options,
-    const py::kwargs& kwargs);
-
-std::shared_ptr<udt::UDT> makeSvmClassifier(
-    const std::string& file_format, uint32_t n_target_classes,
-    uint32_t input_dim, const std::optional<std::string>& model_config,
-    const py::dict& options);
+    const PretrainedBasePtr& pretrained_model, const py::kwargs& kwargs);
 
 void defineAutomlInModule(py::module_& module) {
   py::class_<ValidationOptions>(module, "Validation")
@@ -98,13 +92,8 @@ void defineAutomlInModule(py::module_& module) {
                UserProvidedTemporalRelationships(),
            py::arg("target"), py::arg("delimiter") = ',',
            py::arg("model_config") = std::nullopt,
-           py::arg("pretrained_model") = nullptr,
-           py::arg("options") = py::dict(), docs::UDT_INIT,
+           py::arg("pretrained_model") = nullptr, docs::UDT_INIT,
            bolt::python::OutputRedirect())
-      .def(py::init(&makeSvmClassifier), py::arg("file_format"),
-           py::arg("n_target_classes"), py::arg("input_dim"),
-           py::arg("model_config") = std::nullopt,
-           py::arg("options") = py::dict())
       .def("train", &udt::UDT::train, py::arg("data"), py::arg("learning_rate"),
            py::arg("epochs"),
            py::arg("train_metrics") = std::vector<std::string>{},
@@ -438,8 +427,7 @@ std::shared_ptr<udt::UDT> makeUDT(
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
     const std::string& target_col, char delimiter,
     const std::optional<std::string>& model_config,
-    const PretrainedBasePtr& pretrained_model, const py::dict& options,
-    const py::kwargs& kwargs) {
+    const PretrainedBasePtr& pretrained_model, const py::kwargs& kwargs) {
   if (kwargs.contains("integer_target")) {
     throw std::invalid_argument(
         "Argument 'integer_target' is deprecated. Please use "
@@ -453,28 +441,10 @@ std::shared_ptr<udt::UDT> makeUDT(
         "bolt.types.categorical(n_classes=10) for the target data type.");
   }
 
-  if (kwargs.contains("lookahead")) {
+  if (kwargs.contains("options")) {
     throw std::invalid_argument(
-        "Argument 'lookahead' is deprecated. Please use pass 'lookahead' arg "
-        "in the 'options' field.");
-  }
-
-  if (kwargs.contains("time_granularity")) {
-    throw std::invalid_argument(
-        "Argument 'time_granularity' is deprecated. Please use pass "
-        "'time_granularity' arg in the 'options' field.");
-  }
-
-  if (kwargs.contains("use_spell_checker")) {
-    throw std::invalid_argument(
-        "Argument 'use_spell_checker' is deprecated. Please use pass "
-        "'use_spell_checker' arg in the 'options' field.");
-  }
-
-  if (kwargs.contains("dataset_size")) {
-    throw std::invalid_argument(
-        "Argument 'dataset_size' is deprecated. Please use pass "
-        "'dataset_size' arg in the 'options' field.");
+        "Argument 'lookahead' is deprecated. Please use pass any args from "
+        "options as regular kwargs to UDT.");
   }
 
   return std::make_shared<udt::UDT>(
@@ -484,15 +454,7 @@ std::shared_ptr<udt::UDT> makeUDT(
       /* delimiter = */ delimiter,
       /* model_config= */ model_config,
       /* pretrained_model= */ pretrained_model,
-      /* options = */ createArgumentMap(options));
-}
-
-std::shared_ptr<udt::UDT> makeSvmClassifier(
-    const std::string& file_format, uint32_t n_target_classes,
-    uint32_t input_dim, const std::optional<std::string>& model_config,
-    const py::dict& options) {
-  return std::make_shared<udt::UDT>(file_format, n_target_classes, input_dim,
-                                    model_config, createArgumentMap(options));
+      /* options = */ createArgumentMap(kwargs));
 }
 
 }  // namespace thirdai::automl::python

@@ -28,7 +28,7 @@ def this_should_require_a_license_query_reformulation():
             "label": bolt.types.text(),
         },
         target="label",
-        options={"dataset_size": "small"},
+        dataset_size="small",
     )
 
 

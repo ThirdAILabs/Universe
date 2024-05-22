@@ -24,7 +24,7 @@ def train_udt_on_yelp_chi(download_yelp_chi_dataset):
         data_types=data_types,
         target="target",
         # Turn off pairgrams to make the test fast (~1 min on my m1)
-        options={"contextual_columns": False},
+        contextual_columns=False,
     )
 
     # We need to index these nodes because the model needs to know about them

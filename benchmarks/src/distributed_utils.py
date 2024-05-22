@@ -62,11 +62,9 @@ def create_udt_model(n_classes, output_dim, num_hashes, embedding_dimension):
             ),
         },
         target="DOC_ID",
-        options={
-            "embedding_dimension": embedding_dimension,
-            "extreme_output_dim": output_dim,
-            "extreme_num_hashes": num_hashes,
-        },
+        embedding_dimension=embedding_dimension,
+        extreme_output_dim=output_dim,
+        extreme_num_hashes=num_hashes,
     )
     return model
 

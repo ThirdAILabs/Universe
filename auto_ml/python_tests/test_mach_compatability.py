@@ -12,11 +12,9 @@ def clinc_model():
             "text": bolt.types.text(),
         },
         target="category",
-        options={
-            "extreme_classification": True,
-            "extreme_output_dim": 1000,
-            "v1": True,
-        },
+        extreme_classification=True,
+        extreme_output_dim=1000,
+        v1=True,
     )
 
     return model

@@ -60,11 +60,9 @@ class WayfairRlhfConfig(RlhfConfig):
                 ),
             },
             target="PRODUCT_ID",
-            options={
-                "extreme_classification": True,
-                "extreme_output_dim": 10000,
-                "rlhf": True,
-            },
+            extreme_classification=True,
+            extreme_output_dim=10000,
+            rlhf=True,
         )
 
         model.cold_start(
@@ -166,11 +164,9 @@ class CuadRlhfConfig(RlhfConfig):
                 "id": bolt.types.categorical(delimiter=";", n_classes=41, type="int"),
             },
             target="id",
-            options={
-                "extreme_classification": True,
-                "extreme_output_dim": 2000,
-                "rlhf": True,
-            },
+            extreme_classification=True,
+            extreme_output_dim=2000,
+            rlhf=True,
         )
 
         model.cold_start(

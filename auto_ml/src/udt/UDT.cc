@@ -13,7 +13,6 @@
 #include <auto_ml/src/udt/backends/UDTQueryReformulation.h>
 #include <auto_ml/src/udt/backends/UDTRecurrentClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
-#include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/CheckLicense.h>
@@ -122,18 +121,6 @@ UDT::UDT(ColumnDataTypes data_types,
   } else {
     throwUnsupportedUDTConfigurationError(as_categorical, as_numerical,
                                           as_sequence, has_graph_inputs);
-  }
-}
-
-UDT::UDT(const std::string& file_format, uint32_t n_target_classes,
-         uint32_t input_dim, const std::optional<std::string>& model_config,
-         const config::ArgumentMap& user_args) {
-  if (text::lower(file_format) == "svm") {
-    _backend = std::make_unique<UDTSVMClassifier>(n_target_classes, input_dim,
-                                                  model_config, user_args);
-  } else {
-    throw std::invalid_argument("File format " + file_format +
-                                " is not supported.");
   }
 }
 
@@ -360,9 +347,6 @@ std::unique_ptr<UDTBackend> backendFromArchive(const ar::Archive& archive) {
   }
   if (type == UDTRegression::type()) {
     return UDTRegression::fromArchive(archive);
-  }
-  if (type == UDTSVMClassifier::type()) {
-    return UDTSVMClassifier::fromArchive(archive);
   }
   throw std::invalid_argument("Invalid backend type '" + type + "'.");
 }

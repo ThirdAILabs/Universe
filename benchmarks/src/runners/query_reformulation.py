@@ -60,9 +60,7 @@ class QueryReformulationRunner(Runner):
                 config.target_column: bolt.types.text(),
             },
             target=config.target_column,
-            options={
-                "dataset_size": config.dataset_size,
-            },
+            dataset_size=config.dataset_size,
         )
 
         if model_config_path:

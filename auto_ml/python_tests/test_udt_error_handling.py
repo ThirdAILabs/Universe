@@ -117,9 +117,7 @@ def test_invalid_column_name_in_udt_predict(mach):
             "target": bolt.types.categorical(n_classes=10, type="int"),
         },
         target="target",
-        options={
-            "extreme_classification": mach,
-        },
+        extreme_classification=mach,
     )
 
     with pytest.raises(

@@ -96,7 +96,8 @@ def get_udt_scifact_mach_model(n_classes):
             ),
         },
         target="DOC_ID",
-        options={"extreme_classification": True, "embedding_dimension": 1024},
+        extreme_classification=True,
+        embedding_dimension=1024,
     )
     return model
 
@@ -108,7 +109,7 @@ def get_clinc_udt_model(target_type="str", embedding_dimension=128):
             "text": bolt.types.text(),
         },
         target="category",
-        options={"embedding_dimension": embedding_dimension},
+        embedding_dimension=embedding_dimension,
     )
     return udt_model
 

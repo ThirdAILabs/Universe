@@ -35,7 +35,7 @@ def test_udt_with_pretrained(two_layer, emb_only):
         },
         target="category",
         pretrained_model=build_dummy_pretrained_model(two_layer=two_layer),
-        options={"emb_only": emb_only},
+        emb_only=emb_only,
     )
 
     assert len(model._get_model().ops()) == (3 if two_layer and not emb_only else 2)

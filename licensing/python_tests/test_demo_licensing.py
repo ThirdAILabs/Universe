@@ -68,7 +68,7 @@ def test_census_demo_key_fails_on_query_reformulation():
             "label": bolt.types.text(),
         },
         target="label",
-        options={"dataset_size": "small"},
+        dataset_size="small",
     )
 
     with pytest.raises(
@@ -87,7 +87,8 @@ def simple_mach_model(target_column="label"):
             target_column: bolt.types.categorical(n_classes=10, type="int"),
         },
         target=target_column,
-        options={"extreme_classification": True, "extreme_output_dim": 100},
+        extreme_classification=True,
+        extreme_output_dim=100,
     )
 
 
