@@ -73,7 +73,7 @@ bool luhnCheck(const std::string& number) {
 std::string getNumericalFeatures(const std::string& input) {
   std::string strippedInput = stripNonDigits(input);
 
-  if (!strippedInput.empty() && isAllDigits(strippedInput)) {
+  if (!strippedInput.empty()) {
     if (luhnCheck(strippedInput)) {
       return "IS_ACCOUNT_NUMBER ";
     }
@@ -83,39 +83,32 @@ std::string getNumericalFeatures(const std::string& input) {
     }
 
     if ((strippedInput.size() <= 2 && std::stoi(strippedInput) <= 31) ||
-        strippedInput.size() == 4) {
+        strippedInput.size() == 4 || strippedInput.size() == 8) {
       return "A_DATE ";
     }
 
-    if (strippedInput.size() == input.size()) {
-      return "IS_NUMBER ";
+    if (strippedInput.size() == input.size() || strippedInput.size() >= 9) {
+      return "IS_NUMBER_OR_UIN ";
     }
   }
 
-  if (strippedInput.size() >= 1) {
-    return "CONTAINS_NUMBER";
-  }
   return "";
 }
 
 bool isValidEmail(const std::string& email) {
   const std::regex email_regex(
       R"((^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$))");
-  const std::regex email_with_at_regex(
-      R"((^[a-zA-Z0-9_.+-]+at[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$))");
+  // const std::regex email_with_at_regex(
+  //     R"((^[a-zA-Z0-9_.+-]+at[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$))");
 
-  return std::regex_match(email, email_regex) ||
-         std::regex_match(email, email_with_at_regex);
+  return std::regex_match(email, email_regex);
 }
 
 bool isValidDate(const std::string& token) {
   // Check if the token matches the regex pattern
-  const std::regex format1(R"((^\d{4}[-/.]\d{2}[-/.]\d{2}$))");
-  const std::regex format2(R"((^\d{2}[-/.]\d{2}[-/.]\d{4}$))");
   const std::regex format3(
-      R"((^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|January|February|March|April|May|June|July|August|September|October|November|December)))");
-  return std::regex_match(token, format1) || std::regex_match(token, format2) ||
-         std::regex_match(token, format3);
+      R"((^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|may|june|july|august|september|october|november|december)))");
+  return std::regex_match(token, format3);
 }
 
 std::string NerDyadicDataProcessor::getExtraFeatures(
@@ -128,20 +121,6 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
   std::string current_token = tokens[index];
   auto lower_cased_tokens = toLowerCaseTokens(tokens);
 
-  size_t start = (index > 1) ? (index - 2) : 0;
-  size_t end = std::min(tokens.size(), static_cast<size_t>(index + 3));
-
-  if (_extra_features_config->enhance_names &&
-      containsKeywordInRange(lower_cased_tokens, start, end, name_keywords)) {
-    extra_features += "CONTAINS_NAMED_WORDS ";
-  }
-
-  if (_extra_features_config->location_features &&
-      containsKeywordInRange(lower_cased_tokens, start, end,
-                             location_keywords)) {
-    extra_features += "CONTAINS_LOCATION_WORDS ";
-  }
-
   // if (_extra_features_config->organization_features &&
   //     containsKeywordInRange(lower_cased_tokens, start, end,
   //                            organization_keywords)) {
@@ -149,7 +128,21 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
   // }
 
   if (_extra_features_config->numerical_features) {
-    extra_features += getNumericalFeatures(current_token);
+    auto numerical_features = getNumericalFeatures(current_token);
+    if (!numerical_features.empty()) {
+      extra_features += numerical_features;
+      return extra_features;
+    }
+  }
+
+  if (isValidEmail(lower_cased_tokens[index])) {
+    extra_features += "IS_VALID_EMAIL ";
+    return extra_features;
+  }
+
+  if (isValidDate(lower_cased_tokens[index])) {
+    extra_features += "A_VALID_DATE ";
+    return extra_features;
   }
 
   if (_extra_features_config->case_features) {
@@ -173,14 +166,22 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
         extra_features += "NEXT_UPPER ";
       }
     }
+  }
 
-    if (isValidEmail(current_token)) {
-      extra_features += "IS_VALID_EMAIL ";
-    }
+  size_t start = (index > 1) ? (index - 2) : 0;
+  size_t end = std::min(tokens.size(), static_cast<size_t>(index + 3));
 
-    if (isValidDate(current_token)) {
-      extra_features += "A_VALID_DATE ";
-    }
+  if (_extra_features_config->enhance_names &&
+      containsKeywordInRange(lower_cased_tokens, start, end, name_keywords)) {
+    extra_features += "CONTAINS_NAMED_WORDS ";
+    return extra_features;
+  }
+
+  if (_extra_features_config->location_features &&
+      containsKeywordInRange(lower_cased_tokens, start, end,
+                             location_keywords)) {
+    extra_features += "CONTAINS_LOCATION_WORDS ";
+    return extra_features;
   }
   return extra_features;
 }
