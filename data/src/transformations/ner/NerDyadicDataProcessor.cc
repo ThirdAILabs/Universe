@@ -77,8 +77,14 @@ std::string getNumericalFeatures(const std::string& input) {
     if (luhnCheck(strippedInput)) {
       return "IS_ACCOUNT_NUMBER ";
     }
+
+    if (containsAlphabets(input)) {
+      return "MAYBE_UIN";
+    }
+
     if ((strippedInput.size() >= 9 && strippedInput.size() <= 12) ||
-        input[0] == '+' || input[0] == '(') {
+        input[0] == '+' || input[0] == '(' || input.back() == ')' ||
+        input.find('-') != std::string::npos) {  // NOLINT
       return "MAYBE_PHONE ";
     }
 
@@ -89,6 +95,10 @@ std::string getNumericalFeatures(const std::string& input) {
 
     if (strippedInput.size() == input.size() || strippedInput.size() >= 9) {
       return "IS_NUMBER_OR_UIN ";
+    }
+
+    if (strippedInput.size() <= 6 && strippedInput.size() >= 5) {
+      return "MAYBE_ZIP_CODE";
     }
   }
 
@@ -106,9 +116,12 @@ bool isValidEmail(const std::string& email) {
 
 bool isValidDate(const std::string& token) {
   // Check if the token matches the regex pattern
-  const std::regex format3(
+  const std::regex yyyymmdd(R"((^\d{4}[-/.]\d{2}[-/.]\d{2}$))");
+  const std::regex mmddyy(R"((^\d{2}[-/.]\d{2}[-/.]\d{4}$))");
+  const std::regex month(
       R"((^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|may|june|july|august|september|october|november|december)))");
-  return std::regex_match(token, format3);
+  return std::regex_match(token, yyyymmdd) || std::regex_match(token, mmddyy) ||
+         std::regex_match(token, month);
 }
 
 std::string NerDyadicDataProcessor::getExtraFeatures(
