@@ -201,18 +201,17 @@ std::shared_ptr<NerUDTModel> NerUDTModel::fromArchive(
     tag_to_label[k] = v;
   }
 
+  std::optional<data::FeatureEnhancementConfig> feature_enhancement_config =
+      std::nullopt;
+
   if (archive.contains("feature_enhancement_config")) {
-    auto feature_enhancement_config = data::FeatureEnhancementConfig(
+    feature_enhancement_config = data::FeatureEnhancementConfig(
         *archive.get("feature_enhancement_config"));
-  } else {
-    auto feature_enhancement_config = data::FeatureEnhancementConfig();
   }
 
   return std::make_shared<NerUDTModel>(
       NerUDTModel(bolt_model, tokens_column, tags_column, tag_to_label,
-                  target_word_tokenizers,
-                  archive.getOpt<data::FeatureEnhancementConfig>(
-                      "feature_enhancement_config")));
+                  target_word_tokenizers, feature_enhancement_config));
 }
 
 }  // namespace thirdai::bolt::NER

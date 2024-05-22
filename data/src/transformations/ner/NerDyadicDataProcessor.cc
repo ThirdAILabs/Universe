@@ -7,6 +7,7 @@
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <regex>
 #include <unordered_set>
 
@@ -108,14 +109,13 @@ bool isValidEmail(const std::string& email) {
 
 bool isValidDate(const std::string& token) {
   // Check if the token matches the regex pattern
+
+  const std::regex yyyymmdd(R"((^\d{4}[-/.]\d{2}[-/.]\d{2}$))");
+  const std::regex mmddyy(R"((^\d{2}[-/.]\d{2}[-/.]\d{4}$))");
   const std::regex month(
       R"((^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|may|june|july|august|september|october|november|december)))");
-
-  std::regex format_mmddyyyy(
-      R"(\b(0[1-9]|1[0-2])/(0[1-9]|1\d|2\d|3[01])/\d{4}\b)");
-
-  return (std::regex_match(token, month) ||
-          std::regex_match(token, format_mmddyyyy));
+  return std::regex_match(token, yyyymmdd) || std::regex_match(token, mmddyy) ||
+         std::regex_match(token, month);
 }
 
 std::string NerDyadicDataProcessor::getExtraFeatures(
@@ -214,7 +214,13 @@ NerDyadicDataProcessor::NerDyadicDataProcessor(
     std::optional<FeatureEnhancementConfig> feature_enhancement_config)
     : _target_word_tokenizers(std::move(target_word_tokenizers)),
       _dyadic_num_intervals(dyadic_num_intervals),
-      _feature_enhancement_config(std::move(feature_enhancement_config)) {}
+      _feature_enhancement_config(std::move(feature_enhancement_config)) {
+  if (_feature_enhancement_config.has_value()) {
+    std::cout << "Feature Enhancement On" << std::endl;
+  } else {
+    std::cout << "Feature Enhancement Off" << std::endl;
+  }
+}
 
 std::shared_ptr<NerDyadicDataProcessor> NerDyadicDataProcessor::make(
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
@@ -331,7 +337,7 @@ NerDyadicDataProcessor::NerDyadicDataProcessor(const ar::Archive& archive) {
     _feature_enhancement_config =
         FeatureEnhancementConfig(*archive.get("feature_enhancement_config"));
   } else {
-    _feature_enhancement_config = FeatureEnhancementConfig();
+    _feature_enhancement_config = std::nullopt;
   }
 }
 }  // namespace thirdai::data
