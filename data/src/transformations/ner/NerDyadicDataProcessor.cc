@@ -85,13 +85,13 @@ std::string getNumericalFeatures(const std::string& input) {
       return "MAYBE_PHONE ";
     }
 
+    if (strippedInput.size() == input.size() || strippedInput.size() >= 9) {
+      return "IS_NUMBER_OR_UIN ";
+    }
+
     if ((strippedInput.size() <= 2 && std::stoi(strippedInput) <= 31) ||
         strippedInput.size() == 4 || strippedInput.size() == 8) {
       return "A_DATE ";
-    }
-
-    if (strippedInput.size() == input.size() || strippedInput.size() >= 9) {
-      return "IS_NUMBER_OR_UIN ";
     }
 
     if (strippedInput.size() <= 6 && strippedInput.size() >= 5) {
