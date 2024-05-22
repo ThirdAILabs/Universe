@@ -20,7 +20,7 @@ from ..trainer.training_progress_manager import (
 from ..utils import clean_text, pickle_to
 from .finetunable_retriever import FinetunableRetriever
 from .mach_defaults import acc_to_stop, metric_to_track
-from .models import (
+from .model_interface import (
     CancelState,
     InferSamples,
     Model,
