@@ -78,7 +78,8 @@ std::string getNumericalFeatures(const std::string& input) {
       return "IS_ACCOUNT_NUMBER ";
     }
     if ((strippedInput.size() >= 9 && strippedInput.size() <= 12) ||
-        input[0] == '+' || input[0] == '(') {
+        input[0] == '+' || input[0] == '(' || input.back() == ')' ||
+        input.find('-') != std::string::npos) {
       return "MAYBE_PHONE ";
     }
 
@@ -108,7 +109,11 @@ bool isValidDate(const std::string& token) {
   // Check if the token matches the regex pattern
   const std::regex format3(
       R"((^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|may|june|july|august|september|october|november|december)))");
-  return std::regex_match(token, format3);
+
+  std::regex format_mmddyyyy(
+      R"(\b(0[1-9]|1[0-2])/(0[1-9]|1\d|2\d|3[01])/\d{4}\b)");
+  return (std::regex_match(token, format3) ||
+          std::regex_match(token, format_mmddyyyy));
 }
 
 std::string NerDyadicDataProcessor::getExtraFeatures(
@@ -169,6 +174,7 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
   }
 
   size_t start = (index > 1) ? (index - 2) : 0;
+  size_t start_long = (index > 5) ? (index - 6) : 0;
   size_t end = std::min(tokens.size(), static_cast<size_t>(index + 3));
 
   if (_extra_features_config->enhance_names &&
@@ -181,6 +187,18 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
       containsKeywordInRange(lower_cased_tokens, start, end,
                              location_keywords)) {
     extra_features += "CONTAINS_LOCATION_WORDS ";
+    return extra_features;
+  }
+  if (_extra_features_config->phone_features &&
+      containsKeywordInRange(lower_cased_tokens, start, end,
+                             contact_keywords)) {
+    extra_features += "CONTAINS_PHONE_WORDS ";
+    return extra_features;
+  }
+  if (_extra_features_config->phone_features &&
+      containsKeywordInRange(lower_cased_tokens, start_long, end,
+                             contact_keywords)) {
+    extra_features += "CONTAINS_PHONE_WORDS_LONG ";
     return extra_features;
   }
   return extra_features;

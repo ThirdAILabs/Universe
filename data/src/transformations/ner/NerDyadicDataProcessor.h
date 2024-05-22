@@ -17,6 +17,7 @@ struct FeatureEnhancementConfig {
   bool organization_features = false;
   bool case_features = false;
   bool numerical_features = false;
+  bool phone_features = false;
   bool find_emails = false;
 
   explicit FeatureEnhancementConfig(bool set_all_true)
@@ -25,6 +26,7 @@ struct FeatureEnhancementConfig {
         organization_features(set_all_true),
         case_features(set_all_true),
         numerical_features(set_all_true),
+        phone_features(set_all_true),
         find_emails(set_all_true) {}
 
   FeatureEnhancementConfig() = default;
@@ -73,6 +75,9 @@ class NerDyadicDataProcessor
 
   std::unordered_set<std::string> location_keywords = {
       "lives", "live", "lived", "located", "moved", "near", "adjacent"};
+
+  std::unordered_set<std::string> contact_keywords = {
+      "call", "contact", "dial", "mobile", "phone", "number"};
 
   std::unordered_set<std::string> organization_keywords = {
       "works", "work", "employed",    "announced",
