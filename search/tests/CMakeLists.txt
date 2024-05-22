@@ -2,7 +2,7 @@ enable_testing()
 include(GoogleTest)
 
 set(SEARCH_TESTS MaxFlashArrayTest FlashIndexTest InvertedIndexTests
-                 FinetunableRetrieverTests)
+                 FinetunableRetrieverTests InvertedIndexTokenizerTests)
 
 foreach(SEARCH_TEST IN LISTS SEARCH_TESTS)
   add_executable(${SEARCH_TEST} ${SEARCH_TEST}.cc)
