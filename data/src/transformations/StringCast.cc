@@ -379,3 +379,5 @@ template class CastToArray<std::string>;
 CEREAL_REGISTER_TYPE(thirdai::data::StringToToken)
 CEREAL_REGISTER_TYPE(thirdai::data::StringToTokenArray)
 CEREAL_REGISTER_TYPE(thirdai::data::StringToDecimal)
+CEREAL_REGISTER_TYPE(thirdai::data::StringToDecimalArray)
+CEREAL_REGISTER_TYPE(thirdai::data::StringToTimestamp)
