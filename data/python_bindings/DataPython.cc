@@ -533,14 +533,29 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       .def(py::init<std::string, std::string, std::optional<std::string>,
                     std::optional<uint32_t>, uint32_t,
                     std::vector<dataset::TextTokenizerPtr>,
+                    std::optional<FeatureEnhancementConfig>,
                     std::optional<std::unordered_map<std::string, uint32_t>>>(),
            py::arg("tokens_column"), py::arg("featurized_sentence_column"),
            py::arg("target_column"), py::arg("target_dim"),
            py::arg("dyadic_num_intervals"), py::arg("target_word_tokenizers"),
-           py::arg("tag_to_label"))
+           py::arg("feature_enhancement_config") = std::nullopt,
+           py::arg("tag_to_label") = std::nullopt)
       .def("process_token", &NerTokenizerUnigram::processToken,
            py::arg("tokens"), py::arg("index"));
 #endif
+
+#if THIRDAI_EXPOSE_ALL
+  py::class_<FeatureEnhancementConfig,
+             std::shared_ptr<FeatureEnhancementConfig>>(
+      transformations_submodule, "NerFeatureEnhancementConfig")
+      .def(py::init<bool, bool, bool, bool, bool, bool, bool>(),
+           py::arg("enhance_names"), py::arg("enhance_location_features"),
+           py::arg("enhance_organization_features"),
+           py::arg("enhance_case_features"),
+           py::arg("enhance_numerical_features"), py::arg("find_emails"),
+           py::arg("find_phonenumbers"))
+#endif
+      .def(py::init<>());
 
   py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>>(
       transformations_submodule, "SpladeConfig")

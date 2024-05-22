@@ -11,6 +11,7 @@
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/Pipeline.h>
+#include <data/src/transformations/ner/NerDyadicDataProcessor.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
 #include <memory>
 #include <optional>
@@ -58,12 +59,14 @@ bolt::ModelPtr NerUDTModel::initializeBoltModel(
 NerUDTModel::NerUDTModel(
     bolt::ModelPtr model, std::string tokens_column, std::string tags_column,
     std::unordered_map<std::string, uint32_t> tag_to_label,
-    std::vector<dataset::TextTokenizerPtr> target_word_tokenizers)
+    std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
+    std::optional<data::FeatureEnhancementConfig> feature_enhancement_config)
     : _bolt_model(std::move(model)),
       _tokens_column(std::move(tokens_column)),
       _tags_column(std::move(tags_column)),
       _target_word_tokenizers(std::move(target_word_tokenizers)),
       _tag_to_label(std::move(tag_to_label)),
+      _feature_enhancement_config(std::move(feature_enhancement_config)),
       _featurized_sentence_column("featurized_sentence_for_" + tokens_column) {
   auto input_dims = _bolt_model->inputDims();
   if (input_dims.size() != 1) {
@@ -85,11 +88,13 @@ NerUDTModel::NerUDTModel(
 NerUDTModel::NerUDTModel(
     std::string tokens_column, std::string tags_column,
     std::unordered_map<std::string, uint32_t> tag_to_label,
-    std::vector<dataset::TextTokenizerPtr> target_word_tokenizers)
+    std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
+    std::optional<data::FeatureEnhancementConfig> feature_enhancement_config)
     : _tokens_column(std::move(tokens_column)),
       _tags_column(std::move(tags_column)),
       _target_word_tokenizers(std::move(target_word_tokenizers)),
       _tag_to_label(std::move(tag_to_label)),
+      _feature_enhancement_config(std::move(feature_enhancement_config)),
       _featurized_sentence_column("featurized_sentence_for_" + tokens_column) {
   uint32_t number_labels = getMaxLabelFromTagToLabel(_tag_to_label);
   _bolt_model = initializeBoltModel(defaults::UDT_FEATURE_HASH_RANGE,
@@ -103,12 +108,19 @@ NerUDTModel::NerUDTModel(
 
 NerUDTModel::NerUDTModel(std::shared_ptr<NerUDTModel>& pretrained_model,
                          std::string tokens_column, std::string tags_column,
-                         std::unordered_map<std::string, uint32_t> tag_to_label)
+                         std::unordered_map<std::string, uint32_t> tag_to_label,
+                         const std::optional<data::FeatureEnhancementConfig>&
+                             feature_enhancement_config)
     : _tokens_column(std::move(tokens_column)),
       _tags_column(std::move(tags_column)),
       _target_word_tokenizers(pretrained_model->getTargetWordTokenizers()),
       _tag_to_label(std::move(tag_to_label)),
       _featurized_sentence_column("featurized_sentence_for_" + tokens_column) {
+  if (feature_enhancement_config.has_value()) {
+    _feature_enhancement_config = feature_enhancement_config;
+  } else {
+    _feature_enhancement_config = pretrained_model->_feature_enhancement_config;
+  }
   uint32_t fhr = (pretrained_model->getBoltModel()->inputDims()[0]);
   uint32_t number_labels = getMaxLabelFromTagToLabel(_tag_to_label);
 
@@ -130,7 +142,7 @@ NerUDTModel::NerUDTModel(std::shared_ptr<NerUDTModel>& pretrained_model,
 std::vector<std::vector<std::vector<std::pair<std::string, float>>>>
 NerUDTModel::getTags(std::vector<std::vector<std::string>> tokens,
                      uint32_t top_k) const {
-  return _classifier->getTags(tokens, top_k, _label_to_tag_map);
+  return _classifier->getTags(tokens, top_k, _label_to_tag_map, _tag_to_label);
 }
 
 metrics::History NerUDTModel::train(
@@ -163,6 +175,11 @@ ar::ConstArchivePtr NerUDTModel::toArchive() const {
   }
   map->set("tag_to_label", ar::mapStrU64(tag_to_label));
 
+  if (_feature_enhancement_config.has_value()) {
+    map->set("feature_enhancement_config",
+             _feature_enhancement_config->toArchive());
+  }
+
   return map;
 }
 
@@ -183,9 +200,19 @@ std::shared_ptr<NerUDTModel> NerUDTModel::fromArchive(
   for (const auto& [k, v] : archive.getAs<ar::MapStrU64>("tag_to_label")) {
     tag_to_label[k] = v;
   }
-  return std::make_shared<NerUDTModel>(NerUDTModel(bolt_model, tokens_column,
-                                                   tags_column, tag_to_label,
-                                                   target_word_tokenizers));
+
+  if (archive.contains("feature_enhancement_config")) {
+    auto feature_enhancement_config = data::FeatureEnhancementConfig(
+        *archive.get("feature_enhancement_config"));
+  } else {
+    auto feature_enhancement_config = data::FeatureEnhancementConfig();
+  }
+
+  return std::make_shared<NerUDTModel>(
+      NerUDTModel(bolt_model, tokens_column, tags_column, tag_to_label,
+                  target_word_tokenizers,
+                  archive.getOpt<data::FeatureEnhancementConfig>(
+                      "feature_enhancement_config")));
 }
 
 }  // namespace thirdai::bolt::NER
