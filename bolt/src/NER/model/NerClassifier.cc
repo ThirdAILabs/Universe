@@ -46,7 +46,8 @@ data::Loader NerClassifier::getDataLoader(const dataset::DataSourcePtr& data,
 
 std::vector<PerTokenListPredictions> NerClassifier::getTags(
     std::vector<std::vector<std::string>> tokens, uint32_t top_k,
-    const std::unordered_map<uint32_t, std::string>& label_to_tag_map) const {
+    const std::unordered_map<uint32_t, std::string>& label_to_tag_map,
+    const std::unordered_map<std::string, uint32_t>& tag_to_label_map) const {
   std::vector<PerTokenListPredictions> tags_and_scores;
   tags_and_scores.reserve(tokens.size());
 
@@ -73,7 +74,8 @@ std::vector<PerTokenListPredictions> NerClassifier::getTags(
         token_index = 0;
         sub_vector_index++;
       }
-      auto token_level_predictions = outputs->getVector(i).topKNeurons(top_k);
+      auto token_level_predictions =
+          outputs->getVector(i).topKNeurons(top_k + 1);
       while (!token_level_predictions.empty()) {
         float score = token_level_predictions.top().first;
         uint32_t tag = token_level_predictions.top().second;
@@ -81,9 +83,26 @@ std::vector<PerTokenListPredictions> NerClassifier::getTags(
             {label_to_tag_map.at(tag), score});
         token_level_predictions.pop();
       }
+
+      bool removed_highest = false;
+
+      auto highest_tag_act =
+          tags_and_scores[sub_vector_index][token_index].back();
+
+      if (tag_to_label_map.at(highest_tag_act.first) == 0 &&
+          highest_tag_act.second < 0.9) {
+        tags_and_scores[sub_vector_index][token_index].pop_back();
+        removed_highest = true;
+      }
+
       // topkactivation is a min heap hence, reverse it
       std::reverse(tags_and_scores[sub_vector_index][token_index].begin(),
                    tags_and_scores[sub_vector_index][token_index].end());
+
+      if (!removed_highest) {
+        tags_and_scores[sub_vector_index][token_index].pop_back();
+      }
+
       if (sub_vector_index >= tags_and_scores.size()) {
         throw std::runtime_error("tags indices not matching");
       }

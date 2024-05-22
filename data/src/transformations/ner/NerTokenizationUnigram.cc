@@ -29,13 +29,7 @@ NerTokenizerUnigram::NerTokenizerUnigram(
       _target_dim(target_dim),
       _processor(std::move(target_word_tokenizers), dyadic_num_intervals,
                  FeatureEnhancementConfig(add_extra_features)),
-      _tag_to_label(std::move(tag_to_label)) {
-  if (add_extra_features) {
-    std::cout << "Adds Extra Features" << std::endl;
-  } else {
-    std::cout << "No extra features" << std::endl;
-  }
-}
+      _tag_to_label(std::move(tag_to_label)) {}
 
 ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
   (void)state;

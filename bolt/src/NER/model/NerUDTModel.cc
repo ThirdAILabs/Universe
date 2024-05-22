@@ -135,7 +135,7 @@ NerUDTModel::NerUDTModel(std::shared_ptr<NerUDTModel>& pretrained_model,
 std::vector<std::vector<std::vector<std::pair<std::string, float>>>>
 NerUDTModel::getTags(std::vector<std::vector<std::string>> tokens,
                      uint32_t top_k) const {
-  return _classifier->getTags(tokens, top_k, _label_to_tag_map);
+  return _classifier->getTags(tokens, top_k, _label_to_tag_map, _tag_to_label);
 }
 
 metrics::History NerUDTModel::train(
