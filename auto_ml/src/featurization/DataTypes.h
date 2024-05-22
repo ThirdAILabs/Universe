@@ -24,6 +24,7 @@
 #include <regex>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 
@@ -223,6 +224,18 @@ struct NodeIDDataType : DataType {
     archive(cereal::base_class<DataType>(this));
   }
 };
+
+struct TokenTagsDataType : DataType {
+  explicit TokenTagsDataType(std::vector<std::string> tags)
+      : tags(std::move(tags)) {}
+
+  std::string toString() const final { return R"({"type": "token tags"})"; }
+
+  std::vector<std::string> tags;
+  std::vector<dataset::TextTokenizerPtr> target_word_tokenizers;
+};
+
+using TokenTagsDataTypePtr = std::shared_ptr<TokenTagsDataType>;
 
 using NodeIDDataTypePtr = std::shared_ptr<NodeIDDataType>;
 
