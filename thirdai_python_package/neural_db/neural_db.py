@@ -14,7 +14,7 @@ from .documents import CSV, Document, DocumentManager, Reference
 from .models.finetunable_retriever import FinetunableRetriever
 from .models.mach import Mach
 from .models.mach_mixture_model import MachMixture
-from .models.models import CancelState
+from .models.model_interface import CancelState
 from .savable_state import (
     State,
     load_checkpoint,

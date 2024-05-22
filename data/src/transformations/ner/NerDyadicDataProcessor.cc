@@ -1,24 +1,25 @@
-#include "UnigramDataProcessor.h"
+#include "NerDyadicDataProcessor.h"
 #include <archive/src/Archive.h>
 #include <archive/src/List.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 
 namespace thirdai::data {
-SimpleDataProcessor::SimpleDataProcessor(
+
+NerDyadicDataProcessor::NerDyadicDataProcessor(
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
     uint32_t dyadic_num_intervals)
     : _target_word_tokenizers(std::move(target_word_tokenizers)),
       _dyadic_num_intervals(dyadic_num_intervals) {}
 
-std::shared_ptr<SimpleDataProcessor> SimpleDataProcessor::make(
+std::shared_ptr<NerDyadicDataProcessor> NerDyadicDataProcessor::make(
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
     uint32_t dyadic_num_intervals) {
-  return std::make_shared<SimpleDataProcessor>(
+  return std::make_shared<NerDyadicDataProcessor>(
       std::move(target_word_tokenizers), dyadic_num_intervals);
 }
 
-std::string SimpleDataProcessor::processToken(
+std::string NerDyadicDataProcessor::processToken(
     const std::vector<std::string>& tokens, uint32_t index) const {
   /*
    * Returns a featurized string for the target token and it's context in the
@@ -53,7 +54,7 @@ std::string SimpleDataProcessor::processToken(
   return repr;
 }
 
-std::string SimpleDataProcessor::generateDyadicWindows(
+std::string NerDyadicDataProcessor::generateDyadicWindows(
     std::vector<std::string> tokens, uint32_t index) const {
   std::vector<std::vector<std::string>> dyadic_windows;
   for (size_t interval_id = 0; interval_id < _dyadic_num_intervals;
@@ -64,8 +65,7 @@ std::string SimpleDataProcessor::generateDyadicWindows(
     prev_window.reserve(interval_size);
     next_window.reserve(interval_size);
 
-    for (size_t lower_index =
-             std::max(index - interval_size, static_cast<uint32_t>(0));
+    for (size_t lower_index = std::max(index - interval_size, 0U);
          lower_index < index; lower_index++) {
       prev_window.push_back(_dyadic_previous_prefix +
                             std::to_string(interval_id) + "_" +
@@ -92,7 +92,7 @@ std::string SimpleDataProcessor::generateDyadicWindows(
   return repr;
 }
 
-ar::ConstArchivePtr SimpleDataProcessor::toArchive() const {
+ar::ConstArchivePtr NerDyadicDataProcessor::toArchive() const {
   auto map = ar::Map::make();
   auto tokenizers = ar::List::make();
   for (const auto& t : _target_word_tokenizers) {
@@ -105,7 +105,7 @@ ar::ConstArchivePtr SimpleDataProcessor::toArchive() const {
   return map;
 }
 
-SimpleDataProcessor::SimpleDataProcessor(const ar::Archive& archive) {
+NerDyadicDataProcessor::NerDyadicDataProcessor(const ar::Archive& archive) {
   for (const auto& t : archive.get("target_word_tokenizers")->list()) {
     _target_word_tokenizers.push_back(dataset::TextTokenizer::fromArchive(*t));
   }

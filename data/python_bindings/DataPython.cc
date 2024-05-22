@@ -13,7 +13,6 @@
 #include <data/src/transformations/DyadicInterval.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
-#include <data/src/transformations/NerTokenFromStringArray.h>
 #include <data/src/transformations/NextWordPrediction.h>
 #include <data/src/transformations/NumericalTemporal.h>
 #include <data/src/transformations/Pipeline.h>
@@ -26,8 +25,9 @@
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/cold_start/ColdStartText.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
+#include <data/src/transformations/ner/NerDyadicDataProcessor.h>
+#include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
-#include <data/src/transformations/ner/UnigramDataProcessor.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
@@ -531,11 +531,11 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
              std::shared_ptr<NerTokenizerUnigram>>(transformations_submodule,
                                                    "NerTokenizerUnigram")
       .def(py::init<std::string, std::string, std::optional<std::string>,
-                    std::optional<uint32_t>, uint32_t, uint32_t,
+                    std::optional<uint32_t>, uint32_t,
                     std::vector<dataset::TextTokenizerPtr>,
                     std::optional<std::unordered_map<std::string, uint32_t>>>(),
            py::arg("tokens_column"), py::arg("featurized_sentence_column"),
-           py::arg("target_column"), py::arg("target_dim"), py::arg("fhr_dim"),
+           py::arg("target_column"), py::arg("target_dim"),
            py::arg("dyadic_num_intervals"), py::arg("target_word_tokenizers"),
            py::arg("tag_to_label"))
       .def("process_token", &NerTokenizerUnigram::processToken,
@@ -574,7 +574,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                     std::optional<std::string>,
                     std::optional<std::unordered_map<std::string, uint32_t>>>(),
            py::arg("source_column"), py::arg("token_column"),
-           py::arg("token_front_column"), py::arg("token_behind_column"),
+           py::arg("token_next_column"), py::arg("token_previous_column"),
            py::arg("target_column"), py::arg("tag_to_label"));
 }
 
