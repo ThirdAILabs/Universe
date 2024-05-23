@@ -22,7 +22,7 @@ class NerTokenFromStringArray final : public Transformation {
  public:
   NerTokenFromStringArray(
       std::string source_column, std::string token_column,
-      std::string token_front_column, std::string token_behind_column,
+      std::string token_next_column, std::string token_previous_column,
       std::optional<std::string> target_column = std::nullopt,
       std::optional<std::unordered_map<std::string, uint32_t>> tag_to_label =
           std::nullopt);
@@ -38,8 +38,8 @@ class NerTokenFromStringArray final : public Transformation {
  private:
   std::string _source_column;
   std::string _token_column;
-  std::string _token_front_column;
-  std::string _token_behind_column;
+  std::string _token_next_column;
+  std::string _token_previous_column;
   std::optional<std::string> _target_column;
   std::optional<std::unordered_map<std::string, uint32_t>> _tag_to_label;
 };

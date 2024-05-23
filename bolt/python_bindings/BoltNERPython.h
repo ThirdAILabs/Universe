@@ -4,8 +4,8 @@
 
 namespace py = pybind11;
 
-namespace thirdai::bolt::python {
+namespace thirdai::bolt::NER::python {
 
 void addNERModels(py::module_& module);
 
-}  // namespace thirdai::bolt::python
+}  // namespace thirdai::bolt::NER::python
