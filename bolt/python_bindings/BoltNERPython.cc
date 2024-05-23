@@ -64,10 +64,10 @@ void addNERModels(py::module_& module) {
           [](const std::string& model_path, const std::string& tokens_column,
              const std::string& tags_column,
              const std::unordered_map<std::string, uint32_t>& tag_to_label,
-             std::optional<data::FeatureEnhancementConfig>
+             const std::optional<data::FeatureEnhancementConfig>&
                  feature_enhancement_config) {
             return NER(model_path, tokens_column, tags_column, tag_to_label,
-                       std::move(feature_enhancement_config));
+                       feature_enhancement_config);
           },
           py::arg("model_path"), py::arg("tokens_column"),
           py::arg("tags_column"), py::arg("tag_to_label"),
