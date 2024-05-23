@@ -209,13 +209,7 @@ NerDyadicDataProcessor::NerDyadicDataProcessor(
     std::optional<FeatureEnhancementConfig> feature_enhancement_config)
     : _target_word_tokenizers(std::move(target_word_tokenizers)),
       _dyadic_num_intervals(dyadic_num_intervals),
-      _feature_enhancement_config(std::move(feature_enhancement_config)) {
-  if (_feature_enhancement_config.has_value()) {
-    std::cout << "Feature Enhancement On" << std::endl;
-  } else {
-    std::cout << "Feature Enhancement Off" << std::endl;
-  }
-}
+      _feature_enhancement_config(std::move(feature_enhancement_config)) {}
 
 std::shared_ptr<NerDyadicDataProcessor> NerDyadicDataProcessor::make(
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
