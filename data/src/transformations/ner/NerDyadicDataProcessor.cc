@@ -220,14 +220,14 @@ std::shared_ptr<NerDyadicDataProcessor> NerDyadicDataProcessor::make(
       std::move(feature_enhancement_config));
 }
 
-std::string trimPunctuation(const std::string& str) {
+std::string trimPunctuation(const std::string& token_str) {
   const std::string punctuation = ".,?-!;:";
-  size_t start = str.find_first_not_of(punctuation);
+  size_t start = token_str.find_first_not_of(punctuation);
   if (start == std::string::npos) {
-    return "";
+    return token_str;
   }
-  size_t end = str.find_last_not_of(punctuation);
-  return str.substr(start, end - start + 1);
+  size_t end = token_str.find_last_not_of(punctuation);
+  return token_str.substr(start, end - start + 1);
 }
 
 std::string NerDyadicDataProcessor::processToken(
