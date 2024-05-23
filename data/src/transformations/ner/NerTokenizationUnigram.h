@@ -21,7 +21,7 @@ class NerTokenizerUnigram final : public Transformation {
       std::optional<std::string> target_column,
       std::optional<uint32_t> target_dim, uint32_t dyadic_num_intervals,
       std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
-      std::optional<FeatureEnhancementConfig> feature_enhancement_config,
+      std::optional<NerFeatureConfig> ner_feature_config,
       std::optional<std::unordered_map<std::string, uint32_t>> tag_to_label =
           std::nullopt);
 

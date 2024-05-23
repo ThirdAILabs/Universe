@@ -22,14 +22,14 @@ NerTokenizerUnigram::NerTokenizerUnigram(
     std::optional<std::string> target_column,
     std::optional<uint32_t> target_dim, uint32_t dyadic_num_intervals,
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
-    std::optional<FeatureEnhancementConfig> feature_enhancement_config,
+    std::optional<NerFeatureConfig> ner_feature_config,
     std::optional<std::unordered_map<std::string, uint32_t>> tag_to_label)
     : _tokens_column(std::move(tokens_column)),
       _featurized_sentence_column(std::move(featurized_sentence_column)),
       _target_column(std::move(target_column)),
       _target_dim(target_dim),
       _processor(std::move(target_word_tokenizers), dyadic_num_intervals,
-                 std::move(feature_enhancement_config)),
+                 std::move(ner_feature_config)),
       _tag_to_label(std::move(tag_to_label)) {}
 
 ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {

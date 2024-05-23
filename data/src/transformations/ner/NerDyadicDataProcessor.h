@@ -10,7 +10,7 @@
 #include <vector>
 
 namespace thirdai::data {
-struct FeatureEnhancementConfig {
+struct NerFeatureConfig {
   bool enhance_names = true;
   bool enhance_location_features = true;
   bool enhance_organization_features = true;
@@ -32,13 +32,12 @@ struct FeatureEnhancementConfig {
   std::unordered_set<std::string> contact_keywords = {
       "call", "contact", "dial", "mobile", "phone", "number"};
 
-  FeatureEnhancementConfig() = default;
+  NerFeatureConfig() = default;
 
-  FeatureEnhancementConfig(bool enhance_names, bool enhance_location_features,
-                           bool enhance_organization_features,
-                           bool enhance_case_features,
-                           bool enhance_numerical_features, bool find_emails,
-                           bool find_phonenumbers)
+  NerFeatureConfig(bool enhance_names, bool enhance_location_features,
+                   bool enhance_organization_features,
+                   bool enhance_case_features, bool enhance_numerical_features,
+                   bool find_emails, bool find_phonenumbers)
       : enhance_names(enhance_names),
         enhance_location_features(enhance_location_features),
         enhance_organization_features(enhance_organization_features),
@@ -47,7 +46,7 @@ struct FeatureEnhancementConfig {
         find_emails(find_emails),
         find_phonenumbers(find_phonenumbers) {}
 
-  explicit FeatureEnhancementConfig(const ar::Archive& archive) {
+  explicit NerFeatureConfig(const ar::Archive& archive) {
     enhance_names = archive.getOr<bool>("enhance_names", true);
     enhance_location_features =
         archive.getOr<bool>("enhance_location_features", true);
@@ -82,7 +81,7 @@ class NerDyadicDataProcessor
   explicit NerDyadicDataProcessor(
       std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
       uint32_t dyadic_num_intervals,
-      std::optional<FeatureEnhancementConfig> feature_enhancement_config);
+      std::optional<NerFeatureConfig> ner_feature_config);
 
   explicit NerDyadicDataProcessor(const ar::Archive& archive);
 
@@ -91,7 +90,7 @@ class NerDyadicDataProcessor
   static std::shared_ptr<NerDyadicDataProcessor> make(
       std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
       uint32_t dyadic_num_intervals,
-      std::optional<FeatureEnhancementConfig> feature_enhancement_config);
+      std::optional<NerFeatureConfig> ner_feature_config);
 
   std::string processToken(const std::vector<std::string>& tokens,
                            uint32_t index) const;
@@ -107,7 +106,7 @@ class NerDyadicDataProcessor
 
   std::vector<dataset::TextTokenizerPtr> _target_word_tokenizers;
   uint32_t _dyadic_num_intervals;
-  std::optional<FeatureEnhancementConfig> _feature_enhancement_config;
+  std::optional<NerFeatureConfig> _ner_feature_config;
 
   std::string _target_prefix = "t_";
   std::string _dyadic_previous_prefix = "pp_";

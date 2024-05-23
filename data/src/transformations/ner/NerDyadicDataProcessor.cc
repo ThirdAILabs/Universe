@@ -115,7 +115,7 @@ bool isValidDate(const std::string& token) {
 
 std::string NerDyadicDataProcessor::getExtraFeatures(
     const std::vector<std::string>& tokens, uint32_t index) const {
-  if (!_feature_enhancement_config.has_value()) {
+  if (!_ner_feature_config.has_value()) {
     return "";
   }
 
@@ -129,14 +129,14 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
     return extra_features;
   }
 
-  if (_feature_enhancement_config->find_emails) {
+  if (_ner_feature_config->find_emails) {
     if (isValidEmail(lower_cased_tokens[index])) {
       extra_features += "IS_VALID_EMAIL ";
       return extra_features;
     }
   }
 
-  if (_feature_enhancement_config->enhance_numerical_features) {
+  if (_ner_feature_config->enhance_numerical_features) {
     auto numerical_features = getNumericalFeatures(current_token);
     if (!numerical_features.empty()) {
       extra_features += numerical_features;
@@ -144,7 +144,7 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
     }
   }
 
-  if (_feature_enhancement_config->enhance_case_features) {
+  if (_ner_feature_config->enhance_case_features) {
     if (index >= 1 &&
         std::isupper(static_cast<unsigned char>(current_token[0]))) {
       extra_features += "IS_CAPS_LOCK ";
@@ -170,32 +170,31 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
   size_t start = (index > 1) ? (index - 2) : 0;
   size_t end = std::min(tokens.size(), static_cast<size_t>(index + 3));
 
-  if (_feature_enhancement_config->enhance_names &&
+  if (_ner_feature_config->enhance_names &&
       containsKeywordInRange(lower_cased_tokens, start, end,
-                             _feature_enhancement_config->name_keywords)) {
+                             _ner_feature_config->name_keywords)) {
     extra_features += "CONTAINS_NAMED_WORDS ";
     return extra_features;
   }
 
-  if (_feature_enhancement_config->enhance_location_features &&
+  if (_ner_feature_config->enhance_location_features &&
       containsKeywordInRange(lower_cased_tokens, start, end,
-                             _feature_enhancement_config->location_keywords)) {
+                             _ner_feature_config->location_keywords)) {
     extra_features += "CONTAINS_LOCATION_WORDS ";
     return extra_features;
   }
 
-  if (_feature_enhancement_config->enhance_organization_features &&
-      containsKeywordInRange(
-          lower_cased_tokens, start, end,
-          _feature_enhancement_config->organization_keywords)) {
+  if (_ner_feature_config->enhance_organization_features &&
+      containsKeywordInRange(lower_cased_tokens, start, end,
+                             _ner_feature_config->organization_keywords)) {
     extra_features += "CONTAINS_ORGANIZATION_WORDS ";
   }
 
   size_t start_long =
       (index > 5) ? (index - 6) : 0;  // we need more context for phone numbers
-  if (_feature_enhancement_config->find_phonenumbers &&
+  if (_ner_feature_config->find_phonenumbers &&
       containsKeywordInRange(lower_cased_tokens, start_long, end,
-                             _feature_enhancement_config->contact_keywords)) {
+                             _ner_feature_config->contact_keywords)) {
     extra_features += "CONTAINS_PHONE_WORDS_LONG ";
     return extra_features;
   }
@@ -206,18 +205,18 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
 NerDyadicDataProcessor::NerDyadicDataProcessor(
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
     uint32_t dyadic_num_intervals,
-    std::optional<FeatureEnhancementConfig> feature_enhancement_config)
+    std::optional<NerFeatureConfig> ner_feature_config)
     : _target_word_tokenizers(std::move(target_word_tokenizers)),
       _dyadic_num_intervals(dyadic_num_intervals),
-      _feature_enhancement_config(std::move(feature_enhancement_config)) {}
+      _ner_feature_config(std::move(ner_feature_config)) {}
 
 std::shared_ptr<NerDyadicDataProcessor> NerDyadicDataProcessor::make(
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
     uint32_t dyadic_num_intervals,
-    std::optional<FeatureEnhancementConfig> feature_enhancement_config) {
+    std::optional<NerFeatureConfig> ner_feature_config) {
   return std::make_shared<NerDyadicDataProcessor>(
       std::move(target_word_tokenizers), dyadic_num_intervals,
-      std::move(feature_enhancement_config));
+      std::move(ner_feature_config));
 }
 
 std::string trimPunctuation(const std::string& token_str) {
@@ -263,7 +262,7 @@ std::string NerDyadicDataProcessor::processToken(
 
   repr += generateDyadicWindows(tokens, index);
 
-  if (_feature_enhancement_config.has_value()) {
+  if (_ner_feature_config.has_value()) {
     repr += " " + getExtraFeatures(tokens, index);
   }
 
@@ -318,9 +317,8 @@ ar::ConstArchivePtr NerDyadicDataProcessor::toArchive() const {
   map->set("target_word_tokenizers", tokenizers);
   map->set("dyadic_num_intervals", ar::u64(_dyadic_num_intervals));
 
-  if (_feature_enhancement_config.has_value()) {
-    map->set("feature_enhancement_config",
-             _feature_enhancement_config->toArchive());
+  if (_ner_feature_config.has_value()) {
+    map->set("ner_feature_config", _ner_feature_config->toArchive());
   }
 
   return map;
@@ -332,11 +330,10 @@ NerDyadicDataProcessor::NerDyadicDataProcessor(const ar::Archive& archive) {
   }
   _dyadic_num_intervals = archive.u64("dyadic_num_intervals");
 
-  if (archive.contains("feature_enhancement_config")) {
-    _feature_enhancement_config =
-        FeatureEnhancementConfig(*archive.get("feature_enhancement_config"));
+  if (archive.contains("ner_feature_config")) {
+    _ner_feature_config = NerFeatureConfig(*archive.get("ner_feature_config"));
   } else {
-    _feature_enhancement_config = std::nullopt;
+    _ner_feature_config = std::nullopt;
   }
 }
 }  // namespace thirdai::data

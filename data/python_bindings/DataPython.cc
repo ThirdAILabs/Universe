@@ -533,12 +533,12 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       .def(py::init<std::string, std::string, std::optional<std::string>,
                     std::optional<uint32_t>, uint32_t,
                     std::vector<dataset::TextTokenizerPtr>,
-                    std::optional<FeatureEnhancementConfig>,
+                    std::optional<NerFeatureConfig>,
                     std::optional<std::unordered_map<std::string, uint32_t>>>(),
            py::arg("tokens_column"), py::arg("featurized_sentence_column"),
            py::arg("target_column"), py::arg("target_dim"),
            py::arg("dyadic_num_intervals"), py::arg("target_word_tokenizers"),
-           py::arg("feature_enhancement_config") = std::nullopt,
+           py::arg("ner_feature_config") = std::nullopt,
            py::arg("tag_to_label") = std::nullopt)
       .def("process_token", &NerTokenizerUnigram::processToken,
            py::arg("tokens"), py::arg("index"));
@@ -546,14 +546,14 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
 
   // We expose this so that users can see their labels and pass the appropriate
   // boolean for the featurizer to handle the inputs more effectively.
-  py::class_<FeatureEnhancementConfig,
-             std::shared_ptr<FeatureEnhancementConfig>>(
+  py::class_<NerFeatureConfig, std::shared_ptr<NerFeatureConfig>>(
       transformations_submodule, "NerFeatureConfig")
       .def(py::init<bool, bool, bool, bool, bool, bool, bool>(),
-           py::arg("names"), py::arg("location_features"),
-           py::arg("organization_features"), py::arg("case_features"),
-           py::arg("numerical_features"), py::arg("emails"),
-           py::arg("phone_numbers"));
+           py::arg("names") = true, py::arg("location_features") = true,
+           py::arg("organization_features") = true,
+           py::arg("case_features") = true,
+           py::arg("numerical_features") = true, py::arg("emails") = true,
+           py::arg("phone_numbers") = true);
 
   py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>>(
       transformations_submodule, "SpladeConfig")

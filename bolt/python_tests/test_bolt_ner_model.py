@@ -71,7 +71,20 @@ def udt_pretrained():
 
 @pytest.mark.unit
 def test_udt_ner_backend(sample_training_data):
-    udt_ner_model = bolt.UniversalDeepTransformer.NER("source", "target", TAG_MAP)
+    udt_ner_model = bolt.UniversalDeepTransformer.NER(
+        "source",
+        "target",
+        TAG_MAP,
+        ner_feature_config=data.transformations.NerFeatureConfig(
+            names=True,
+            location_features=True,
+            organization_features=True,
+            case_features=True,
+            numerical_features=False,
+            emails=False,
+            phone_numbers=False,
+        ),
+    )
     train_file = sample_training_data
 
     udt_ner_model.train(
@@ -172,10 +185,19 @@ def test_pretrained_ner_bolt_backend(sample_training_data, bolt_pretrained):
 def test_pretrained_ner_udt_backend(sample_training_data, udt_pretrained):
     pretrained_path = udt_pretrained
     udt_ner_model = bolt.UniversalDeepTransformer.NER.from_pretrained(
-        pretrained_path,
-        "source",
-        "target",
-        TAG_MAP,
+        model_path=pretrained_path,
+        tokens_column="source",
+        tags_column="target",
+        tag_to_label=TAG_MAP,
+        ner_feature_config=data.transformations.NerFeatureConfig(
+            names=True,
+            location_features=True,
+            organization_features=True,
+            case_features=True,
+            numerical_features=False,
+            emails=False,
+            phone_numbers=False,
+        ),
     )
     train_file = sample_training_data
 
