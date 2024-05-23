@@ -142,13 +142,20 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
       extra_features += numerical_features;
 
       if (index >= 1) {
-        extra_features +=
-            " " + getNumericalFeatures(lower_cased_tokens[index - 1]);
+        auto previous_numerical_features =
+            getNumericalFeatures(lower_cased_tokens[index - 1]);
+        if (!previous_numerical_features.empty()) {
+          extra_features +=
+              " PREVIOUS_NUMERICAL_" + previous_numerical_features;
+        }
       }
 
       if (index < tokens.size() - 1) {
-        extra_features +=
-            " " + getNumericalFeatures(lower_cased_tokens[index + 1]);
+        auto next_numerical_features =
+            getNumericalFeatures(lower_cased_tokens[index + 1]);
+        if (!next_numerical_features.empty()) {
+          extra_features += " PREVIOUS_NUMERICAL_" + next_numerical_features;
+        }
       }
       return extra_features;
     }
