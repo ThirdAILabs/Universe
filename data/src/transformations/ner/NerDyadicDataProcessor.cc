@@ -240,8 +240,7 @@ std::string NerDyadicDataProcessor::processToken(
    * 3. Combine everything into a single string and return it.
    */
 
-  std::string current_token_raw = tokens[index];
-  std::string target_token = trimPunctuation(current_token_raw);
+  std::string target_token = trimPunctuation(tokens[index]);
 
   std::vector<std::string> tokenized_target_token;
 
