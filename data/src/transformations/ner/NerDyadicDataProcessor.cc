@@ -113,6 +113,16 @@ bool isValidDate(const std::string& token) {
   return std::regex_match(token, month);
 }
 
+std::string trimPunctuation(const std::string& str) {
+  const std::string punctuation = ".,?-!;:";
+  size_t start = str.find_first_not_of(punctuation);
+  if (start == std::string::npos) {
+    return str;
+  }
+  size_t end = str.find_last_not_of(punctuation);
+  return str.substr(start, end - start + 1);
+}
+
 std::string NerDyadicDataProcessor::getExtraFeatures(
     const std::vector<std::string>& tokens, uint32_t index) const {
   if (!_feature_enhancement_config.has_value()) {
@@ -121,7 +131,7 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
 
   std::string extra_features;
 
-  std::string current_token = tokens[index];
+  std::string current_token = trimPunctuation(tokens[index]);
   auto lower_cased_tokens = toLowerCaseTokens(tokens);
 
   if (isValidDate(lower_cased_tokens[index])) {
