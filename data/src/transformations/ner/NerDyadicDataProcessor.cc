@@ -75,17 +75,16 @@ std::string getNumericalFeatures(const std::string& input) {
       return "IS_ACCOUNT_NUMBER ";
     }
 
-    if (containsAlphabets(input)) {
+    if (containsAlphabets(input) && input.size() >= 6) {
       return "MAYBE_UIN";
     }
 
     if ((strippedInput.size() >= 9 && strippedInput.size() <= 12) ||
-        input[0] == '+' || input[0] == '(' || input.back() == ')' ||
-        input.find('-') != std::string::npos) {  // NOLINT
+        input[0] == '+' || input[0] == '(' || input.back() == ')') {  // NOLINT
       return "MAYBE_PHONE ";
     }
 
-    if (strippedInput.size() == input.size() || strippedInput.size() >= 9) {
+    if (strippedInput.size() == input.size() && strippedInput.size() >= 5) {
       return "IS_NUMBER_OR_UIN ";
     }
 
@@ -103,20 +102,14 @@ std::string getNumericalFeatures(const std::string& input) {
 
 bool isValidEmail(const std::string& email) {
   const std::regex email_regex(
-      R"((^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$))");
+      R"((^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z,.]{2,}$))");
   return std::regex_match(email, email_regex);
 }
 
 bool isValidDate(const std::string& token) {
   // Check if the token matches the regex pattern
-
-  // const std::regex yyyymmdd(R"((^\d{4}[-/.]\d{2}[-/.]\d{2}$))");
-  // const std::regex mmddyy(R"((^\d{2}[-/.]\d{2}[-/.]\d{4}$))");
   const std::regex month(
       R"((^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|may|june|july|august|september|october|november|december)))");
-  // return std::regex_match(token, yyyymmdd) || std::regex_match(token, mmddyy)
-  // ||
-  //        std::regex_match(token, month);
   return std::regex_match(token, month);
 }
 
@@ -136,17 +129,17 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
     return extra_features;
   }
 
-  if (_feature_enhancement_config->enhance_numerical_features) {
-    auto numerical_features = getNumericalFeatures(current_token);
-    if (!numerical_features.empty()) {
-      extra_features += numerical_features;
+  if (_feature_enhancement_config->find_emails) {
+    if (isValidEmail(lower_cased_tokens[index])) {
+      extra_features += "IS_VALID_EMAIL ";
       return extra_features;
     }
   }
 
-  if (_feature_enhancement_config->find_emails) {
-    if (isValidEmail(lower_cased_tokens[index])) {
-      extra_features += "IS_VALID_EMAIL ";
+  if (_feature_enhancement_config->enhance_numerical_features) {
+    auto numerical_features = getNumericalFeatures(current_token);
+    if (!numerical_features.empty()) {
+      extra_features += numerical_features;
       return extra_features;
     }
   }
