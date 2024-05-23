@@ -113,6 +113,17 @@ bool isValidDate(const std::string& token) {
   return std::regex_match(token, month);
 }
 
+
+std::string trimPunctuation(const std::string& token_str) {
+  const std::string punctuation = ".,?-!;:";
+  size_t start = token_str.find_first_not_of(punctuation);
+  if (start == std::string::npos) {
+    return token_str;
+  }
+  size_t end = token_str.find_last_not_of(punctuation);
+  return token_str.substr(start, end - start + 1);
+}
+
 std::string NerDyadicDataProcessor::getExtraFeatures(
     const std::vector<std::string>& tokens, uint32_t index) const {
   if (!_ner_feature_config.has_value()) {
@@ -121,7 +132,9 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
 
   std::string extra_features;
 
-  std::string current_token = tokens[index];
+
+  const std::string& current_token_raw = tokens[index];
+  std::string current_token = trimPunctuation(current_token_raw);
   auto lower_cased_tokens = toLowerCaseTokens(tokens);
 
   if (isValidDate(lower_cased_tokens[index])) {
@@ -219,15 +232,6 @@ std::shared_ptr<NerDyadicDataProcessor> NerDyadicDataProcessor::make(
       std::move(ner_feature_config));
 }
 
-std::string trimPunctuation(const std::string& token_str) {
-  const std::string punctuation = ".,?-!;:";
-  size_t start = token_str.find_first_not_of(punctuation);
-  if (start == std::string::npos) {
-    return token_str;
-  }
-  size_t end = token_str.find_last_not_of(punctuation);
-  return token_str.substr(start, end - start + 1);
-}
 
 std::string NerDyadicDataProcessor::processToken(
     const std::vector<std::string>& tokens, uint32_t index) const {
