@@ -1,6 +1,7 @@
 #include "NerClassifier.h"
 #include <data/src/columns/ArrayColumns.h>
 #include <cstdint>
+#include <optional>
 #include <unordered_map>
 
 namespace thirdai::bolt::NER {
@@ -13,7 +14,8 @@ metrics::History NerClassifier::train(
     const std::vector<std::string>& val_metrics) const {
   auto train_dataset =
       getDataLoader(train_data, batch_size, /* shuffle= */ true).all();
-  bolt::LabeledDataset val_dataset;
+
+  std::optional<bolt::LabeledDataset> val_dataset = std::nullopt;
   if (val_data) {
     val_dataset =
         getDataLoader(val_data, batch_size, /* shuffle= */ false).all();
