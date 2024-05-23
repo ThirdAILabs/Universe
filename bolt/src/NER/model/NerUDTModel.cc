@@ -119,7 +119,7 @@ NerUDTModel::NerUDTModel(std::shared_ptr<NerUDTModel>& pretrained_model,
   if (feature_enhancement_config.has_value()) {
     _feature_enhancement_config = feature_enhancement_config;
   } else {
-    _feature_enhancement_config = pretrained_model->_feature_enhancement_config;
+    _feature_enhancement_config = pretrained_model->getFeatureEnhancementConfig();
   }
   uint32_t fhr = (pretrained_model->getBoltModel()->inputDims()[0]);
   uint32_t number_labels = getMaxLabelFromTagToLabel(_tag_to_label);

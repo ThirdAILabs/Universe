@@ -100,6 +100,10 @@ class NerUDTModel final : public NerModelInterface {
   NerUDTModel() = default;
   ~NerUDTModel() override = default;
 
+  std::optional<data::FeatureEnhancementConfig> getFeatureEnhancementConfig(){
+    return _feature_enhancement_config;
+  }
+
  private:
   void initializeNER(uint32_t fhr, uint32_t number_labels);
 

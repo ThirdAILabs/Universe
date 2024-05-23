@@ -82,24 +82,27 @@ std::vector<PerTokenListPredictions> NerClassifier::getTags(
         token_level_predictions.pop();
       }
 
-      bool removed_highest = false;
 
       auto highest_tag_act =
           tags_and_scores[sub_vector_index][token_index].back();
 
+      // If the 'Other' tag (assumed to be 0) has a probability 
+      // less than 90%, select the next highest predicted tag.
       if (tag_to_label_map.at(highest_tag_act.first) == 0 &&
           highest_tag_act.second < 0.9) {
         tags_and_scores[sub_vector_index][token_index].pop_back();
-        removed_highest = true;
-      }
-
       // topkactivation is a min heap hence, reverse it
       std::reverse(tags_and_scores[sub_vector_index][token_index].begin(),
                    tags_and_scores[sub_vector_index][token_index].end());
-
-      if (!removed_highest) {
+      }else{
+      // topkactivation is a min heap hence, reverse it
+      std::reverse(tags_and_scores[sub_vector_index][token_index].begin(),
+                   tags_and_scores[sub_vector_index][token_index].end());
         tags_and_scores[sub_vector_index][token_index].pop_back();
       }
+
+
+      
 
       if (sub_vector_index >= tags_and_scores.size()) {
         throw std::runtime_error("tags indices not matching");
