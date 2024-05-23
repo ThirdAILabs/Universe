@@ -140,6 +140,16 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
     auto numerical_features = getNumericalFeatures(current_token);
     if (!numerical_features.empty()) {
       extra_features += numerical_features;
+
+      if (index >= 1) {
+        extra_features +=
+            " " + getNumericalFeatures(lower_cased_tokens[index - 1]);
+      }
+
+      if (index < tokens.size() - 1) {
+        extra_features +=
+            " " + getNumericalFeatures(lower_cased_tokens[index + 1]);
+      }
       return extra_features;
     }
   }
@@ -197,6 +207,13 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
       containsKeywordInRange(lower_cased_tokens, start_long, end,
                              _feature_enhancement_config->contact_keywords)) {
     extra_features += "CONTAINS_PHONE_WORDS_LONG ";
+    return extra_features;
+  }
+
+  if (_feature_enhancement_config->find_phonenumbers &&
+      containsKeywordInRange(lower_cased_tokens, start, end,
+                             _feature_enhancement_config->contact_keywords)) {
+    extra_features += "CONTAINS_PHONE_WORDS_SHORT ";
     return extra_features;
   }
 
