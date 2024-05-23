@@ -40,7 +40,7 @@ void addNERModels(py::module_& module) {
                std::vector<dataset::TextTokenizerPtr>(
                    {std::make_shared<dataset::NaiveSplitTokenizer>(),
                     std::make_shared<dataset::CharKGramTokenizer>(4)}),
-           py::arg("feature_enhancement_config") = std::nullopt);
+           py::arg("feature_config") = std::nullopt);
 #endif
 
   py::class_<NER, std::shared_ptr<NER>>(module, "NER")
@@ -58,7 +58,7 @@ void addNERModels(py::module_& module) {
                std::vector<dataset::TextTokenizerPtr>(
                    {std::make_shared<dataset::NaiveSplitTokenizer>(),
                     std::make_shared<dataset::CharKGramTokenizer>(4)}),
-           py::arg("feature_enhancement_config") = std::nullopt)
+           py::arg("feature_config") = std::nullopt)
       .def_static(
           "from_pretrained",
           [](const std::string& model_path, const std::string& tokens_column,
@@ -71,7 +71,7 @@ void addNERModels(py::module_& module) {
           },
           py::arg("model_path"), py::arg("tokens_column"),
           py::arg("tags_column"), py::arg("tag_to_label"),
-          py::arg("feature_enhancement_config") = std::nullopt)
+          py::arg("feature_config") = std::nullopt)
       .def("train", &NER::train, py::arg("train_data"),
            py::arg("learning_rate") = 1e-5, py::arg("epochs") = 5,
            py::arg("batch_size") = 2000,

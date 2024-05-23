@@ -544,18 +544,15 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("tokens"), py::arg("index"));
 #endif
 
-#if THIRDAI_EXPOSE_ALL
   py::class_<FeatureEnhancementConfig,
              std::shared_ptr<FeatureEnhancementConfig>>(
-      transformations_submodule, "NerFeatureEnhancementConfig")
+      transformations_submodule, "NerFeatureConfig")
       .def(py::init<bool, bool, bool, bool, bool, bool, bool>(),
-           py::arg("enhance_names"), py::arg("enhance_location_features"),
-           py::arg("enhance_organization_features"),
-           py::arg("enhance_case_features"),
-           py::arg("enhance_numerical_features"), py::arg("find_emails"),
-           py::arg("find_phonenumbers"))
-#endif
-      .def(py::init<>());
+           py::arg("names"), py::arg("location_features"),
+           py::arg("organization_features"),
+           py::arg("case_features"),
+           py::arg("numerical_features"), py::arg("emails"),
+           py::arg("phone_numbers"));
 
   py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>>(
       transformations_submodule, "SpladeConfig")
