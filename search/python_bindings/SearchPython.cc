@@ -5,6 +5,7 @@
 #include <pybind11/stl.h>
 #include <search/src/inverted_index/FinetunableRetriever.h>
 #include <search/src/inverted_index/InvertedIndex.h>
+#include <search/src/inverted_index/Tokenizer.h>
 
 namespace thirdai::search::python {
 
@@ -80,6 +81,13 @@ void createSearchSubmodule(py::module_& module) {
       .def(py::init<bool, bool>(), py::arg("stem") = true,
            py::arg("lowercase") = true);
 
+  py::class_<WordKGrams, Tokenizer, std::shared_ptr<WordKGrams>>(
+      search_submodule, "WordKGrams")
+      .def(py::init<uint32_t, bool, bool, bool, bool>(), py::arg("k") = 4,
+           py::arg("soft_start") = true, py::arg("include_whole_words") = true,
+           py::arg("stem") = true, py::arg("lowercase") = true)
+      .def("tokenize", &WordKGrams::tokenize, py::arg("input"));
+
   py::class_<InvertedIndex, std::shared_ptr<InvertedIndex>>(search_submodule,
                                                             "InvertedIndex")
       .def(py::init<size_t, float, float, float, TokenizerPtr, size_t>(),
@@ -101,6 +109,8 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("candidates"), py::arg("k"), py::arg("parallelize") = true)
       .def("remove", &InvertedIndex::remove, py::arg("ids"))
       .def("size", &InvertedIndex::size)
+      .def("update_idf_cutoff", &InvertedIndex::updateIdfCutoff,
+           py::arg("cutoff"))
       .def("save", &InvertedIndex::save, py::arg("filename"))
       .def_static("load", &InvertedIndex::load, py::arg("filename"))
       .def(py::pickle(
@@ -154,6 +164,7 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("candidates"), py::arg("k"))
       .def("size", &FinetunableRetriever::size)
       .def("remove", &FinetunableRetriever::remove, py::arg("ids"))
+      .def("doc_index", &FinetunableRetriever::docIndex)
       .def_static("train_from", &FinetunableRetriever::trainFrom,
                   py::arg("index"))
       .def("save", &FinetunableRetriever::save, py::arg("filename"))
