@@ -40,8 +40,8 @@ class NER : public std::enable_shared_from_this<NER> {
   NER(const std::string& model_path, std::string tokens_column,
       std::string tags_column,
       std::unordered_map<std::string, uint32_t> tag_to_label,
-      const std::optional<data::FeatureEnhancementConfig> &feature_enhancement_config =
-          std::nullopt) {
+      const std::optional<data::FeatureEnhancementConfig>&
+          feature_enhancement_config = std::nullopt) {
     auto ner_model = load(model_path);
     auto ner_backend = ner_model->getBackend();
     if (ner_backend->type() == "bolt_ner") {

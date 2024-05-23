@@ -100,7 +100,7 @@ class NerUDTModel final : public NerModelInterface {
   NerUDTModel() = default;
   ~NerUDTModel() override = default;
 
-  std::optional<data::FeatureEnhancementConfig> getFeatureEnhancementConfig(){
+  std::optional<data::FeatureEnhancementConfig> getFeatureEnhancementConfig() {
     return _feature_enhancement_config;
   }
 

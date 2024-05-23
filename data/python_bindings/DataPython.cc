@@ -544,18 +544,16 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("tokens"), py::arg("index"));
 #endif
 
-// We expose this so that users can see their labels and pass the appropriate boolean
-// for the featurizer to handle the inputs more effectively.
-py::class_<FeatureEnhancementConfig,
-          std::shared_ptr<FeatureEnhancementConfig>>(
-     transformations_submodule, "NerFeatureConfig")
-     .def(py::init<bool, bool, bool, bool, bool, bool, bool>(),
-          py::arg("names"), py::arg("location_features"),
-          py::arg("organization_features"),
-          py::arg("case_features"),
-          py::arg("numerical_features"), py::arg("emails"),
-          py::arg("phone_numbers"));
-
+  // We expose this so that users can see their labels and pass the appropriate
+  // boolean for the featurizer to handle the inputs more effectively.
+  py::class_<FeatureEnhancementConfig,
+             std::shared_ptr<FeatureEnhancementConfig>>(
+      transformations_submodule, "NerFeatureConfig")
+      .def(py::init<bool, bool, bool, bool, bool, bool, bool>(),
+           py::arg("names"), py::arg("location_features"),
+           py::arg("organization_features"), py::arg("case_features"),
+           py::arg("numerical_features"), py::arg("emails"),
+           py::arg("phone_numbers"));
 
   py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>>(
       transformations_submodule, "SpladeConfig")
