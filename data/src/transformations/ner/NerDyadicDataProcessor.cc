@@ -220,6 +220,16 @@ std::shared_ptr<NerDyadicDataProcessor> NerDyadicDataProcessor::make(
       std::move(feature_enhancement_config));
 }
 
+std::string trimPunctuation(const std::string& str) {
+  const std::string punctuation = ".,?-!;:";
+  size_t start = str.find_first_not_of(punctuation);
+  if (start == std::string::npos) {
+    return "";
+  }
+  size_t end = str.find_last_not_of(punctuation);
+  return str.substr(start, end - start + 1);
+}
+
 std::string NerDyadicDataProcessor::processToken(
     const std::vector<std::string>& tokens, uint32_t index) const {
   /*
@@ -230,7 +240,8 @@ std::string NerDyadicDataProcessor::processToken(
    * 3. Combine everything into a single string and return it.
    */
 
-  const std::string& target_token = tokens[index];
+  std::string current_token_raw = tokens[index];
+  std::string current_token = trimPunctuation(current_token_raw);
 
   std::vector<std::string> tokenized_target_token;
 
