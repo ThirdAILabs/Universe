@@ -366,7 +366,7 @@ void createUDTTypesSubmodule(py::module_& module) {
            docs::UDT_SEQUENCE_TYPE);
 
   py::class_<TokenTagsDataType, DataType, TokenTagsDataTypePtr>(
-      udt_types_submodule, "TokenTags")
+      udt_types_submodule, "token_tags")
       .def(
           py::init<std::vector<std::string>,
                    std::vector<dataset::TextTokenizerPtr>>(),

@@ -16,6 +16,7 @@
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
+#include <pybind11/stl.h>
 #include <utils/text/StringManipulation.h>
 #include <optional>
 #include <stdexcept>
@@ -108,7 +109,8 @@ std::string tokensColumn(ColumnDataTypes data_types,
 UDTNer::UDTNer(const ColumnDataTypes& data_types,
                const TokenTagsDataTypePtr& target,
                const std::string& target_name, const config::ArgumentMap& args)
-    : _tokens_column(tokensColumn(data_types, target_name)),
+    : _bolt_inputs({data::OutputColumns(NER_FEATURIZED_SENTENCE)}),
+      _tokens_column(tokensColumn(data_types, target_name)),
       _tags_column(target_name),
       _label_to_tag(target->tags) {
   uint32_t input_dim =
@@ -131,8 +133,6 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
       /*inference=*/true, _tags_column, _tokens_column, _label_to_tag,
       input_dim, defaults::NER_DYADIC_INTERVALS, target->target_tokenizers,
       target->feature_config);
-
-  _bolt_inputs = {data::OutputColumns(_tokens_column)};
 }
 
 py::object UDTNer::train(const dataset::DataSourcePtr& data,
@@ -279,6 +279,8 @@ std::vector<SentenceTags> UDTNer::predictTags(
 
 data::LoaderPtr UDTNer::getDataLoader(const dataset::DataSourcePtr& data,
                                       size_t batch_size, bool shuffle) const {
+  std::cerr << "tokens: " << _tokens_column << " tags: " << _tags_column
+            << std::endl;
   auto data_iter =
       data::JsonIterator::make(data, {_tokens_column, _tags_column}, 1000);
   return data::Loader::make(data_iter, _supervised_transform, nullptr,
