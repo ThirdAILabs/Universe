@@ -1,6 +1,7 @@
 import json
 
 from thirdai.dataset.data_source import PyDataSource
+from thirdai import data, dataset
 
 
 def tokenize_text(tokenizer, text):
@@ -22,6 +23,21 @@ class NerDataSource(PyDataSource):
 
         if self.pretrained:
             try:
+                CONFIG = data.transformations.NerFeatureConfig(
+                    True, True, True, True, True, True, True
+                )
+                target_word_tokenizers = [
+                    dataset.NaiveSplitTokenizer(" "),
+                ]
+                self.transform = data.transformations.NerTokenizerUnigram(
+                    tokens_column="text",
+                    featurized_sentence_column="fsc",
+                    target_column="target",
+                    target_dim=10,
+                    dyadic_num_intervals=2,
+                    target_word_tokenizers=target_word_tokenizers,
+                    feature_enhancement_config=CONFIG,
+                )
                 from transformers import AutoTokenizer
 
                 self.tokenizer = AutoTokenizer.from_pretrained(
@@ -59,7 +75,9 @@ class NerDataSource(PyDataSource):
                     )
                 if self.pretrained:
                     json_obj[self.tokens_column] = [
-                        tokenize_text(self.tokenizer, token)
+                        tokenize_text(
+                            self.tokenizer, self.transform.process_token([token], 0)[2:]
+                        )
                         for token in json_obj[self.tokens_column]
                     ]
 
@@ -70,7 +88,12 @@ class NerDataSource(PyDataSource):
     def inference_featurizer(self, sentence_tokens_list):
         if self.pretrained:
             return [
-                [tokenize_text(self.tokenizer, token) for token in sentence_tokens]
+                [
+                    tokenize_text(
+                        self.tokenizer, self.transform.process_token([token], 0)[2:]
+                    )
+                    for token in sentence_tokens
+                ]
                 for sentence_tokens in sentence_tokens_list
             ]
         return sentence_tokens_list
