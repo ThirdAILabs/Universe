@@ -22,9 +22,11 @@ class NerDataSource(PyDataSource):
 
         if self.pretrained:
             try:
-                from transformers import GPT2Tokenizer
+                from transformers import AutoTokenizer
 
-                self.tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+                self.tokenizer = AutoTokenizer.from_pretrained(
+                    "meta-llama/Meta-Llama-3-8B"
+                )
             except ImportError:
                 raise ImportError(
                     "transformers library is not installed. Please install it to use LLMDataSource."
