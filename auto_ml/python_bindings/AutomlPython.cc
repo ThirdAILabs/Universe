@@ -8,6 +8,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
+#include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/numpy.h>
@@ -363,6 +364,16 @@ void createUDTTypesSubmodule(py::module_& module) {
       .def(py::init<char, std::optional<uint32_t>>(),
            py::arg("delimiter") = ' ', py::arg("max_length") = std::nullopt,
            docs::UDT_SEQUENCE_TYPE);
+
+  py::class_<TokenTagsDataType, DataType, TokenTagsDataTypePtr>(
+      udt_types_submodule, "TokenTags")
+      .def(
+          py::init<std::vector<std::string>,
+                   std::vector<dataset::TextTokenizerPtr>>(),
+          py::arg("tags"),
+          py::arg("target_tokenizers") = std::vector<dataset::TextTokenizerPtr>{
+              std::make_shared<dataset::NaiveSplitTokenizer>(),
+              std::make_shared<dataset::CharKGramTokenizer>(4)});
 }
 
 void createUDTTemporalSubmodule(py::module_& module) {

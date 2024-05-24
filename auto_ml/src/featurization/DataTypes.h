@@ -11,6 +11,7 @@
 #include <cereal/types/utility.hpp>
 #include <cereal/types/variant.hpp>
 #include <cereal/types/vector.hpp>
+#include <data/src/transformations/ner/NerTokenizationUnigram.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/blocks/text/WordpieceTokenizer.h>
@@ -226,13 +227,22 @@ struct NodeIDDataType : DataType {
 };
 
 struct TokenTagsDataType : DataType {
-  explicit TokenTagsDataType(std::vector<std::string> tags)
-      : tags(std::move(tags)) {}
+  explicit TokenTagsDataType(
+      std::vector<std::string> tags,
+      std::vector<dataset::TextTokenizerPtr> target_tokenizers =
+          {std::make_shared<dataset::NaiveSplitTokenizer>(),
+           std::make_shared<dataset::CharKGramTokenizer>(4)},
+      std::optional<data::FeatureEnhancementConfig> feature_config =
+          data::FeatureEnhancementConfig())
+      : tags(std::move(tags)),
+        target_tokenizers(std::move(target_tokenizers)),
+        feature_config(std::move(feature_config)) {}
 
   std::string toString() const final { return R"({"type": "token tags"})"; }
 
   std::vector<std::string> tags;
-  std::vector<dataset::TextTokenizerPtr> target_word_tokenizers;
+  std::vector<dataset::TextTokenizerPtr> target_tokenizers;
+  std::optional<data::FeatureEnhancementConfig> feature_config;
 };
 
 using TokenTagsDataTypePtr = std::shared_ptr<TokenTagsDataType>;
@@ -252,6 +262,8 @@ SequenceDataTypePtr asSequence(const DataTypePtr& data_type);
 NeighborsDataTypePtr asNeighbors(const DataTypePtr& data_type);
 
 NodeIDDataTypePtr asNodeID(const DataTypePtr& data_type);
+
+TokenTagsDataTypePtr asTokenTags(const DataTypePtr& data_type);
 
 using ColumnDataTypes = std::map<std::string, DataTypePtr>;
 

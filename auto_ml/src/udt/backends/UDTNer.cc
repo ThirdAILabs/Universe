@@ -6,13 +6,16 @@
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <archive/src/Archive.h>
+#include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/Pipeline.h>
+#include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
+#include <dataset/src/blocks/text/TextTokenizer.h>
 #include <utils/text/StringManipulation.h>
 #include <optional>
 #include <stdexcept>
@@ -45,11 +48,12 @@ bolt::ModelPtr buildModel(
   return bolt::Model::make({input}, {output}, {loss});
 }
 
-data::TransformationPtr getTransformations(bool inference,
-                                           const std::string& tags_column,
-                                           const std::string& tokens_column,
-                                           const std::vector<std::string>& tags,
-                                           size_t input_dim) {
+data::TransformationPtr makeTransformation(
+    bool inference, const std::string& tags_column,
+    const std::string& tokens_column, const std::vector<std::string>& tags,
+    size_t input_dim, uint32_t dyadic_num_intervals,
+    const std::vector<dataset::TextTokenizerPtr>& target_word_tokenizers,
+    const std::optional<data::FeatureEnhancementConfig>& feature_config) {
   std::optional<std::string> target_column = tags_column;
   std::optional<size_t> target_dim = tags.size();
   if (inference) {
@@ -62,14 +66,15 @@ data::TransformationPtr getTransformations(bool inference,
     tag_to_label[tags[i]] = i;
   }
 
-  auto transform = data::Pipeline::make(
-      {std::make_shared<thirdai::data::NerTokenizerUnigram>(
+  auto transform =
+      data::Pipeline::make({std::make_shared<data::NerTokenizerUnigram>(
           /*tokens_column=*/tokens_column,
           /*featurized_sentence_column=*/NER_FEATURIZED_SENTENCE,
           /*target_column=*/target_column,
           /*target_dim=*/target_dim,
-          /*dyadic_num_intervals=*/_dyadic_num_intervals,
-          /*target_word_tokenizers=*/_target_word_tokenizers,
+          /*dyadic_num_intervals=*/dyadic_num_intervals,
+          /*target_word_tokenizers=*/target_word_tokenizers,
+          /*feature_enhancement_config=*/feature_config,
           /*tag_to_label=*/tag_to_label)});
   transform = transform->then(std::make_shared<data::TextTokenizer>(
       /*input_column=*/NER_FEATURIZED_SENTENCE,
@@ -84,10 +89,51 @@ data::TransformationPtr getTransformations(bool inference,
   return transform;
 }
 
+std::string tokensColumn(ColumnDataTypes data_types,
+                         const std::string& target) {
+  if (!data_types.count(target)) {
+    throw std::invalid_argument(
+        "Target column must be specified in the data types.");
+  }
+  data_types.erase(target);
+
+  if (data_types.size() != 1 || !asText(data_types.begin()->second)) {
+    throw std::invalid_argument(
+        "Token classification models must have a single text input.");
+  }
+
+  return data_types.begin()->first;
+}
+
 UDTNer::UDTNer(const ColumnDataTypes& data_types,
                const TokenTagsDataTypePtr& target,
-               const std::string& target_name,
-               const config::ArgumentMap& args) {}
+               const std::string& target_name, const config::ArgumentMap& args)
+    : _tokens_column(tokensColumn(data_types, target_name)),
+      _tags_column(target_name),
+      _label_to_tag(target->tags) {
+  uint32_t input_dim =
+      args.get<uint32_t>("input_dim", "integer", defaults::FEATURE_HASH_RANGE);
+  if (args.contains("fhr")) {
+    input_dim = args.get<uint32_t>("fhr", "integer");
+  }
+
+  uint32_t emb_dim = args.get<uint32_t>("embedding_dimension", "integer",
+                                        defaults::HIDDEN_DIM);
+
+  _model = buildModel(input_dim, emb_dim, target->tags.size(), std::nullopt);
+
+  _supervised_transform = makeTransformation(
+      /*inference=*/false, _tags_column, _tokens_column, _label_to_tag,
+      input_dim, defaults::NER_DYADIC_INTERVALS, target->target_tokenizers,
+      target->feature_config);
+
+  _inference_transform = makeTransformation(
+      /*inference=*/true, _tags_column, _tokens_column, _label_to_tag,
+      input_dim, defaults::NER_DYADIC_INTERVALS, target->target_tokenizers,
+      target->feature_config);
+
+  _bolt_inputs = {data::OutputColumns(_tokens_column)};
+}
 
 py::object UDTNer::train(const dataset::DataSourcePtr& data,
                          float learning_rate, uint32_t epochs,
@@ -259,5 +305,16 @@ ar::ConstArchivePtr UDTNer::toArchive(bool with_optimizer) const {
 
   return map;
 }
+
+UDTNer::UDTNer(const ar::Archive& archive)
+    : _model(bolt::Model::fromArchive(*archive.get("model"))),
+      _supervised_transform(data::Transformation::fromArchive(
+          *archive.get("supervised_transform"))),
+      _inference_transform(data::Transformation::fromArchive(
+          *archive.get("inference_transform"))),
+      _bolt_inputs(data::outputColumnsFromArchive(*archive.get("bolt_inputs"))),
+      _tokens_column(archive.str("tokens_column")),
+      _tags_column(archive.str("tags_column")),
+      _label_to_tag(archive.getAs<ar::VecStr>("label_to_tag")) {}
 
 }  // namespace thirdai::automl::udt

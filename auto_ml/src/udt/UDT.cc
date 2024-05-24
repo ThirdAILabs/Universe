@@ -10,6 +10,7 @@
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
 #include <auto_ml/src/udt/backends/UDTGraphClassifier.h>
 #include <auto_ml/src/udt/backends/UDTMach.h>
+#include <auto_ml/src/udt/backends/UDTNer.h>
 #include <auto_ml/src/udt/backends/UDTQueryReformulation.h>
 #include <auto_ml/src/udt/backends/UDTRecurrentClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
@@ -82,6 +83,7 @@ UDT::UDT(
   auto as_categorical = asCategorical(target);
   auto as_numerical = asNumerical(target);
   auto as_sequence = asSequence(target);
+  auto as_tags = asTokenTags(target);
 
   if (as_categorical || as_sequence) {
     if (!n_target_classes.has_value()) {
@@ -127,6 +129,9 @@ UDT::UDT(
     _backend = std::make_unique<UDTRecurrentClassifier>(
         data_types, temporal_tracking_relationships, target_col, as_sequence,
         n_target_classes.value(), tabular_options, model_config, user_args);
+  } else if (as_tags) {
+    _backend =
+        std::make_unique<UDTNer>(data_types, as_tags, target_col, user_args);
   } else {
     throwUnsupportedUDTConfigurationError(as_categorical, as_numerical,
                                           as_sequence, has_graph_inputs);

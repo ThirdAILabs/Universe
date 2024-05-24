@@ -1,5 +1,6 @@
 #pragma once
 
+#include <archive/src/Archive.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <string>
@@ -14,6 +15,8 @@ class UDTNer final : public UDTBackend {
  public:
   UDTNer(const ColumnDataTypes& data_types, const TokenTagsDataTypePtr& target,
          const std::string& target_name, const config::ArgumentMap& args);
+
+  explicit UDTNer(const ar::Archive& archive);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
@@ -49,7 +52,8 @@ class UDTNer final : public UDTBackend {
 
   bolt::ModelPtr _model;
 
-  data::TransformationPtr _supervised_transform, _inference_transform;
+  data::TransformationPtr _supervised_transform;
+  data::TransformationPtr _inference_transform;
 
   data::OutputColumnsList _bolt_inputs;
 
