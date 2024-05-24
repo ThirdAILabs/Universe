@@ -1,13 +1,13 @@
 #pragma once
 
-#include "UnigramDataProcessor.h"
+#include "NerDyadicDataProcessor.h"
 #include <archive/src/Archive.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
-#include <data/src/transformations/NerTokenFromStringArray.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
+#include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <stdexcept>
 #include <string>
@@ -19,9 +19,9 @@ class NerTokenizerUnigram final : public Transformation {
   NerTokenizerUnigram(
       std::string tokens_column, std::string featurized_sentence_column,
       std::optional<std::string> target_column,
-      std::optional<uint32_t> target_dim, uint32_t fhr_dim,
-      uint32_t dyadic_num_intervals,
+      std::optional<uint32_t> target_dim, uint32_t dyadic_num_intervals,
       std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
+      std::optional<FeatureEnhancementConfig> feature_enhancement_config,
       std::optional<std::unordered_map<std::string, uint32_t>> tag_to_label =
           std::nullopt);
 
@@ -47,7 +47,7 @@ class NerTokenizerUnigram final : public Transformation {
       throw std::logic_error("Tag to Label is None");
     }
     auto tag_map = _tag_to_label.value();
-    if (tag_map.find(tag) != tag_map.end()) {
+    if (tag_map.count(tag)) {
       return tag_map.at(tag);
     }
 
@@ -69,14 +69,13 @@ class NerTokenizerUnigram final : public Transformation {
   std::optional<std::string> _target_column;
   std::optional<uint32_t> _target_dim;
 
-  SimpleDataProcessor _processor;
+  NerDyadicDataProcessor _processor;
   std::string _featurized_tokens_indices_column =
-      _featurized_sentence_column + "_tokens";
+      "featurized_tokens_indices_column";
 
   // TODO(Shubh) : Add support for depuplicating the tokens by using indices and
   // values pair.
 
-  TransformationPtr _tokenizer_transformation;
   std::optional<std::unordered_map<std::string, uint32_t>> _tag_to_label;
 };
 }  // namespace thirdai::data
