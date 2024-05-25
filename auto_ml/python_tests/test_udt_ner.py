@@ -6,6 +6,8 @@ import string
 import pytest
 from thirdai import bolt
 
+pytestmark = [pytest.mark.unit, pytest.mark.release]
+
 TOKENS = "tokens"
 TAGS = "tags"
 
