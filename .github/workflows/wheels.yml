@@ -146,7 +146,7 @@ jobs:
               then sudo apt update && 
               sudo apt install -y libreoffice && 
               wget https://golang.org/dl/go1.20.4.linux-arm64.tar.gz && 
-              sudo tar -C /usr/local -xzf go1.20.4.linux-arm64.tar.gz && echo 'export PATH=$PATH:/usr/local/go/bin' >> $GITHUB_ENV; 
+              tar -xzf go1.20.4.linux-arm64.tar.gz && echo 'export PATH=$PATH:/go/bin' >> $GITHUB_ENV; 
             else 
               yum install -y golang libreoffice; 
             fi
