@@ -4,14 +4,19 @@ from thirdai.dataset.data_source import PyDataSource
 from thirdai import data, dataset
 
 
-def tokenize_text(tokenizer, text):
-    tokens = tokenizer.encode(text)
-    return " ".join(map(str, tokens))
+def tokenize_text(tokenizer, texts):
+    text_tokens = tokenizer(texts)["input_ids"]
+    return [" ".join(map(str, tokens)) for tokens in text_tokens]
 
 
 class NerDataSource(PyDataSource):
     def __init__(
-        self, model_type, tokens_column=None, tags_column=None, file_path=None
+        self,
+        model_type,
+        tokens_column=None,
+        tags_column=None,
+        file_path=None,
+        tokenizer=None,
     ):
         PyDataSource.__init__(self)
 
@@ -38,16 +43,15 @@ class NerDataSource(PyDataSource):
                     target_word_tokenizers=target_word_tokenizers,
                     feature_enhancement_config=CONFIG,
                 )
-                from transformers import AutoTokenizer
+                from transformers import GPT2Tokenizer
 
-                self.tokenizer = AutoTokenizer.from_pretrained(
-                    "meta-llama/Meta-Llama-3-8B"
-                )
+                self.tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
             except ImportError:
                 raise ImportError(
                     "transformers library is not installed. Please install it to use LLMDataSource."
                 )
-
+        if tokenizer:
+            self.tokenizer = tokenizer
         self.restart()
 
     def _get_line_iterator(self):
@@ -74,12 +78,13 @@ class NerDataSource(PyDataSource):
                         f"{self.tags_column} or {self.tokens_column} doesn't exist in the column, line: {line}"
                     )
                 if self.pretrained:
-                    json_obj[self.tokens_column] = [
-                        tokenize_text(
-                            self.tokenizer, self.transform.process_token([token], 0)[2:]
-                        )
+                    transformed_token = [
+                        self.transform.process_token([token], 0)[2:]
                         for token in json_obj[self.tokens_column]
                     ]
+                    json_obj[self.tokens_column] = tokenize_text(
+                        self.tokenizer, transformed_token
+                    )
 
                 data = json.dumps(json_obj)
 
@@ -87,14 +92,15 @@ class NerDataSource(PyDataSource):
 
     def inference_featurizer(self, sentence_tokens_list):
         if self.pretrained:
-            return [
+            transformed_tokens = [
                 [
-                    tokenize_text(
-                        self.tokenizer, self.transform.process_token([token], 0)[2:]
-                    )
+                    self.transform.process_token([token], 0)[2:]
                     for token in sentence_tokens
                 ]
                 for sentence_tokens in sentence_tokens_list
+            ]
+            return [
+                tokenize_text(self.tokenizer, tokens) for tokens in transformed_tokens
             ]
         return sentence_tokens_list
 

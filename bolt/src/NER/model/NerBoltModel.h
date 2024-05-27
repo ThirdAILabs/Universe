@@ -29,7 +29,8 @@ class NerBoltModel final : public NerModelInterface {
 
   NerBoltModel(std::shared_ptr<NerBoltModel>& pretrained_model,
                std::string tokens_column, std::string tags_column,
-               std::unordered_map<std::string, uint32_t> tag_to_label);
+               std::unordered_map<std::string, uint32_t> tag_to_label,
+               bool is_emb_trainable);
 
   std::vector<std::vector<std::vector<std::pair<std::string, float>>>> getTags(
       std::vector<std::vector<std::string>> tokens, uint32_t top_k) const final;
@@ -62,7 +63,7 @@ class NerBoltModel final : public NerModelInterface {
   static bolt::ModelPtr initializeBoltModel(
       std::shared_ptr<NerBoltModel>& pretrained_model,
       std::unordered_map<std::string, uint32_t>& tag_to_label,
-      uint32_t vocab_size);
+      uint32_t vocab_size, bool is_emb_trainable);
 
   data::TransformationPtr getTransformations(bool inference);
 

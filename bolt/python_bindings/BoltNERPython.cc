@@ -65,14 +65,14 @@ void addNERModels(py::module_& module) {
              const std::string& tags_column,
              const std::unordered_map<std::string, uint32_t>& tag_to_label,
              const std::optional<data::FeatureEnhancementConfig>&
-                 feature_enhancement_config) {
+                 feature_enhancement_config, bool is_emb_trainable) {
             return NER(model_path, tokens_column, tags_column, tag_to_label,
-                       feature_enhancement_config);
+                       feature_enhancement_config, is_emb_trainable);
           },
           py::arg("model_path"), py::arg("tokens_column"),
           py::arg("tags_column"), py::arg("tag_to_label"),
-          py::arg("feature_config") = std::nullopt)
-      .def("train", &NER::train, py::arg("train_data"),
+          py::arg("feature_config") = std::nullopt, py::arg("is_emb_trainable") = true)
+      .def("train_on_data_source", &NER::train, py::arg("train_data"),
            py::arg("learning_rate") = 1e-5, py::arg("epochs") = 5,
            py::arg("batch_size") = 2000,
            py::arg("train_metrics") = std::vector<std::string>{"loss"},

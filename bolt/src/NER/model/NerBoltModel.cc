@@ -33,7 +33,7 @@ namespace thirdai::bolt::NER {
 bolt::ModelPtr NerBoltModel::initializeBoltModel(
     std::shared_ptr<NerBoltModel>& pretrained_model,
     std::unordered_map<std::string, uint32_t>& tag_to_label,
-    uint32_t vocab_size) {
+    uint32_t vocab_size, bool is_emb_trainable) {
   auto num_labels = getMaxLabelFromTagToLabel(tag_to_label);
 
   auto emb_op_pretrained = pretrained_model->getBoltModel()->getOp("emb_1");
@@ -54,6 +54,7 @@ bolt::ModelPtr NerBoltModel::initializeBoltModel(
   auto* pretrained_weights = emb_weights[0];
 
   emb_op->setEmbeddings(pretrained_weights->data());
+  emb_op->setTrainable(is_emb_trainable);
 
   auto tokens_embedding = emb_op->apply(inputs[0]);
   auto token_next_embedding = emb_op->apply(inputs[1]);
@@ -104,13 +105,14 @@ NerBoltModel::NerBoltModel(
 NerBoltModel::NerBoltModel(
     std::shared_ptr<NerBoltModel>& pretrained_model, std::string tokens_column,
     std::string tags_column,
-    std::unordered_map<std::string, uint32_t> tag_to_label)
+    std::unordered_map<std::string, uint32_t> tag_to_label,
+    bool is_emb_trainable)
     : _tokens_column(std::move(tokens_column)),
       _tags_column(std::move(tags_column)),
       _tag_to_label(std::move(tag_to_label)),
       _vocab_size(pretrained_model->getBoltModel()->inputDims()[0]) {
   _bolt_model =
-      initializeBoltModel(pretrained_model, _tag_to_label, _vocab_size);
+      initializeBoltModel(pretrained_model, _tag_to_label, _vocab_size, is_emb_trainable);
   auto train_transforms = getTransformations(/*inference=*/false);
   auto inference_transforms = getTransformations(/*inference=*/true);
   auto bolt_inputs = {data::OutputColumns("tokens"),

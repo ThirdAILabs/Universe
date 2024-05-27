@@ -6,7 +6,7 @@ from thirdai.dataset.bolt_ner_data_source import NerDataSource
 
 
 def modify_ner():
-    original_train = bolt.NER.train
+    original_train = bolt.NER.train_on_data_source
     original_get_tags = bolt.NER.get_ner_tags
 
     def wrapped_train(
@@ -47,18 +47,22 @@ def modify_ner():
             val_metrics=val_metrics,
         )
 
-    def wrapped_predict_batch(self, tokens: List[List[str]], top_k: int = 1):
-        inference_source = NerDataSource(self.type())
+    def wrapped_predict_batch(
+        self, tokens: List[List[str]], top_k: int = 1, inference_source=None
+    ):
+        if not inference_source:
+            inference_source = NerDataSource(self.type())
         featurized_tokens = inference_source.inference_featurizer(tokens)
         return original_get_tags(self, featurized_tokens, top_k)
 
-    def wrapped_predict(self, tokens: List[str], top_k: int = 1):
-        inference_source = NerDataSource(self.type())
+    def wrapped_predict(self, tokens: List[str], top_k: int = 1, inference_source=None):
+        if not inference_source:
+            inference_source = NerDataSource(self.type())
         featurized_tokens = inference_source.inference_featurizer([tokens])
         return original_get_tags(self, featurized_tokens, top_k)[0]
 
     delattr(bolt.NER, "get_ner_tags")
-    delattr(bolt.NER, "train")
+    delattr(bolt.NER, "train_on_data_source")
 
     bolt.NER.train = wrapped_train
     bolt.NER.predict_batch = wrapped_predict_batch

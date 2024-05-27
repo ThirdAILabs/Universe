@@ -41,7 +41,8 @@ class NER : public std::enable_shared_from_this<NER> {
       std::string tags_column,
       std::unordered_map<std::string, uint32_t> tag_to_label,
       const std::optional<data::FeatureEnhancementConfig>&
-          feature_enhancement_config = std::nullopt) {
+          feature_enhancement_config = std::nullopt,
+          bool is_emb_trainable=false) {
     auto ner_model = load(model_path);
     auto ner_backend = ner_model->getBackend();
     if (ner_backend->type() == "bolt_ner") {
@@ -49,7 +50,7 @@ class NER : public std::enable_shared_from_this<NER> {
           std::dynamic_pointer_cast<NerBoltModel>(ner_backend);
       _ner_backend_model = std::make_shared<NerBoltModel>(
           ner_pretrained_model, std::move(tokens_column),
-          std::move(tags_column), std::move(tag_to_label));
+          std::move(tags_column), std::move(tag_to_label), is_emb_trainable);
     } else {
       auto ner_udt_model = std::dynamic_pointer_cast<NerUDTModel>(ner_backend);
       _ner_backend_model = std::make_shared<NerUDTModel>(
