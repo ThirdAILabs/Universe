@@ -103,3 +103,6 @@ class FinetunableRetriever(Model):
 
     def retrain(self, **kwargs):
         pass
+
+    def saves_optimizer(self, with_optimizer: bool):
+        pass
