@@ -1,6 +1,7 @@
 #include "NWS.h"
 #include <cstdint>
 #include <algorithm>
+#include <iostream>
 
 namespace thirdai::automl {
 
@@ -193,11 +194,13 @@ void NadarayaWatsonSketch::trainParallel(
 std::vector<std::vector<float>> NadarayaWatsonSketch::predict(
     const std::vector<std::vector<float>>& inputs) const {
   std::vector<std::vector<float>> outputs(inputs.size());
-#pragma omp parallel for default(none) shared(inputs, outputs)
+#pragma omp parallel for default(none) shared(inputs, outputs, std::cout)
   for (size_t i = 0; i < inputs.size(); i++) {
     outputs[i] = std::vector<float>(_top.valDim());
+    auto top = _top.query(inputs[i]);
+    auto bottom = _bottom.query(inputs[i]);
     for (uint32_t j = 0; j < _top.valDim(); j++) {
-      outputs[i][j] = _top.query(inputs[i])[j] / _bottom.query(inputs[i])[j];
+      outputs[i][j] = bottom[j] ? top[j] / bottom[j] : 0;
     }
   }
   return outputs;

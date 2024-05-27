@@ -10,7 +10,7 @@ def mae(truth, approx):
 
 
 def mape(truth, approx):
-    return np.mean(np.abs((np.array(truth) - np.array(approx)) / np.array(truth)))
+    return np.mean(np.nan_to_num(np.abs((np.array(truth) - np.array(approx)) / np.array(truth))))
 
 
 def train_and_predict_nws(h: Hash, train_inputs: np.array, train_outputs: np.array, test_inputs: np.array):

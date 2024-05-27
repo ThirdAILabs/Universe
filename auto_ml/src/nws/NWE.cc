@@ -1,4 +1,6 @@
 #include "NWE.h"
+#include <cmath>
+#include <iostream>
 
 namespace thirdai::automl {
 
@@ -12,7 +14,9 @@ float SRPKernel::on(const std::vector<float>& a, const std::vector<float>& b) co
   }
   l2_a = std::sqrt(l2_a);
   l2_b = std::sqrt(l2_b);
-  const float theta = std::acos(dot / (l2_a * l2_b));
+  // Avoid rounding errors.
+  const float arg = std::min<float>(std::max<float>(dot / (l2_a * l2_b), -1.0), 1.0);
+  const float theta = std::acos(arg);
   return std::pow(1 - (theta / pi), _power);
 }
 
@@ -36,7 +40,7 @@ void NadarayaWatsonEstimator::train(std::vector<std::vector<float>> inputs, std:
 
 std::vector<float> NadarayaWatsonEstimator::predict(const std::vector<std::vector<float>>& inputs) const {
     std::vector<float> outputs(inputs.size());
-#pragma omp parallel for default(none) shared(inputs, outputs)
+#pragma omp parallel for default(none) shared(inputs, outputs, std::cout)
     for (size_t i = 0; i < inputs.size(); i++) {
       float num = 0, denom = 0;
       for (size_t j = 0; j < _train_inputs.size(); j++) {
@@ -44,7 +48,7 @@ std::vector<float> NadarayaWatsonEstimator::predict(const std::vector<std::vecto
         num += sim * _train_outputs[j];
         denom += sim;
       }
-      outputs[i] = num / denom;
+      outputs[i] = denom ? num / denom : 0;
     }
     return outputs;
   }
