@@ -167,11 +167,11 @@ class Reference:
     @property
     def id(self):
         return self._id
-    
+
     @property
     def id_in_document(self):
         return self._id_in_document
-    
+
     @property
     def upvote_ids(self):
         return self._upvote_ids
