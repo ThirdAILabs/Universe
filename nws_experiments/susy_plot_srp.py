@@ -20,11 +20,11 @@ hash_factories = [
     for rows in (
         list(range(10, 100, 10)) +
         list(range(100, 1000, 50)) +
-        list(range(1000, 10_000, 500))
+        list(range(1000, 5500, 500))
     )
 ]
 
-TRAIN_SIZE = 10_000
+TRAIN_SIZE = 100_000
 TEST_SIZE = 10_000
 
 df = pd.read_csv("/Users/benitogeordie/Grad School Prep/NWS Paper/experiments/physics/supersymmetry_dataset_shuffled.csv", nrows=TRAIN_SIZE + TEST_SIZE)
