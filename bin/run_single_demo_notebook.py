@@ -16,7 +16,9 @@ def get_notebook_path(temp_dir, relative_notebook_path):
     # Collect all of the jupyter notebooks in the Demos repo
     subprocess.call(["git", "clone", DEMO_URL], cwd=temp_dir)
     subprocess.call(["git", "fetch"], cwd=f"{temp_dir}/Demos")
-    subprocess.call(["git", "checkout", "fix-demos"], cwd=f"{temp_dir}/Demos")
+    subprocess.call(
+        ["git", "checkout", "remove-langchain-community"], cwd=f"{temp_dir}/Demos"
+    )
     return os.path.join(temp_dir, "Demos", relative_notebook_path)
 
 
