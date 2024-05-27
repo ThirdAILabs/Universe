@@ -459,9 +459,7 @@ def create_table(df, on_disk):
     Table = (
         SQLiteTable
         if on_disk
-        else DaskDataFrameTable
-        if isinstance(df, dd.DataFrame)
-        else DataFrameTable
+        else DaskDataFrameTable if isinstance(df, dd.DataFrame) else DataFrameTable
     )
     return Table(df)
 
