@@ -3,7 +3,7 @@
 #include <cereal/access.hpp>
 #include <bolt/src/nn/loss/ComparativeLoss.h>
 
-namespace thirdai::bolt::nn::loss {
+namespace thirdai::bolt {
 
 /**
  * Categorical cross entropy loss function. Same as standard implementation of
@@ -13,11 +13,19 @@ namespace thirdai::bolt::nn::loss {
  */
 class CategoricalCrossEntropy final : public ComparativeLoss {
  public:
-  explicit CategoricalCrossEntropy(autograd::ComputationPtr output,
-                                   autograd::ComputationPtr labels);
+  explicit CategoricalCrossEntropy(ComputationPtr output,
+                                   ComputationPtr labels);
 
-  static std::shared_ptr<CategoricalCrossEntropy> make(
-      autograd::ComputationPtr output, autograd::ComputationPtr labels);
+  static std::shared_ptr<CategoricalCrossEntropy> make(ComputationPtr output,
+                                                       ComputationPtr labels);
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::shared_ptr<CategoricalCrossEntropy> fromArchive(
+      const ar::Archive& archive,
+      const std::unordered_map<std::string, ComputationPtr>& computations);
+
+  static std::string type() { return "categorical_cross_entropy"; }
 
  private:
   float singleGradient(float activation, float label,
@@ -34,4 +42,4 @@ class CategoricalCrossEntropy final : public ComparativeLoss {
 
 using CategoricalCrossEntropyPtr = std::shared_ptr<CategoricalCrossEntropy>;
 
-}  // namespace thirdai::bolt::nn::loss
+}  // namespace thirdai::bolt

@@ -54,7 +54,8 @@ def test_large_column():
 
 
 def test_reusing_vocab():
-    ROWS = 10
+    ROWS = 1000
+
     strings = [f"str_{i}" for i in range(ROWS)]
 
     columns = data.ColumnMap({"strings": data.columns.StringColumn(strings)})
@@ -73,7 +74,8 @@ def test_reusing_vocab():
         {"strings": data.columns.StringColumn(strings[ROWS // 2 :])}
     )
 
-    columns = transformation(columns, state)
+    new_transformation = data.transformations.deserialize(transformation.serialize())
+    columns = new_transformation(columns, state)
 
     new_ids = columns["ids"].data()
 

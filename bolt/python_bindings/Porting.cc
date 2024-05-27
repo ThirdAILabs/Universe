@@ -6,6 +6,7 @@
 #include <bolt/src/nn/loss/BinaryCrossEntropy.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/Loss.h>
+#include <bolt/src/nn/ops/Activation.h>
 #include <bolt/src/nn/ops/Concatenate.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
@@ -13,7 +14,6 @@
 #include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/ops/RobeZ.h>
-#include <bolt/src/nn/ops/Tanh.h>
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <pybind11/numpy.h>
@@ -31,7 +31,7 @@
 
 namespace py = pybind11;
 
-namespace thirdai::bolt::nn::python {
+namespace thirdai::bolt::python {
 
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
@@ -64,14 +64,14 @@ bool shapeMatches(const NumpyArray<float>& arr,
   return true;
 }
 
-using OpApplyFunc = std::function<autograd::ComputationPtr(
-    const ops::OpPtr& op, const autograd::ComputationList& inputs)>;
+using OpApplyFunc = std::function<ComputationPtr(
+    const OpPtr& op, const ComputationList& inputs)>;
 
 class OpConverter {
  public:
-  virtual std::optional<py::dict> toParams(const ops::OpPtr& op) const = 0;
+  virtual std::optional<py::dict> toParams(const OpPtr& op) const = 0;
 
-  virtual std::pair<ops::OpPtr, OpApplyFunc> fromParams(
+  virtual std::pair<OpPtr, OpApplyFunc> fromParams(
       const py::dict& op) const = 0;
 
   virtual std::string opType() const = 0;
@@ -80,8 +80,7 @@ class OpConverter {
 
   template <typename OP_TYPE>
   static OpApplyFunc getUnaryApplyFunc() {
-    auto apply_func = [](const ops::OpPtr& op,
-                         const autograd::ComputationList& inputs) {
+    auto apply_func = [](const OpPtr& op, const ComputationList& inputs) {
       auto concrete_op = std::dynamic_pointer_cast<OP_TYPE>(op);
       if (!concrete_op) {
         throw std::runtime_error("Op type mismatch in apply func.");
@@ -102,8 +101,8 @@ class OpConverter {
 
 class FullyConnectedOpConverter final : public OpConverter {
  public:
-  std::optional<py::dict> toParams(const ops::OpPtr& op) const final {
-    auto fc = ops::FullyConnected::cast(op);
+  std::optional<py::dict> toParams(const OpPtr& op) const final {
+    auto fc = FullyConnected::cast(op);
     if (!fc) {
       return std::nullopt;
     }
@@ -142,8 +141,7 @@ class FullyConnectedOpConverter final : public OpConverter {
     return params;
   }
 
-  std::pair<ops::OpPtr, OpApplyFunc> fromParams(
-      const py::dict& params) const final {
+  std::pair<OpPtr, OpApplyFunc> fromParams(const py::dict& params) const final {
     size_t dim = params["dim"].cast<size_t>();
     size_t input_dim = params["input_dim"].cast<size_t>();
     float sparsity = params["sparsity"].cast<float>();
@@ -164,9 +162,9 @@ class FullyConnectedOpConverter final : public OpConverter {
       sampling = std::make_shared<RandomSamplingConfig>();
     }
 
-    auto fc = ops::FullyConnected::make(dim, input_dim, sparsity, activation,
-                                        sampling, use_bias, rebuild_hash_tables,
-                                        reconstruct_hash_functions);
+    auto fc = FullyConnected::make(dim, input_dim, sparsity, activation,
+                                   sampling, use_bias, rebuild_hash_tables,
+                                   reconstruct_hash_functions);
 
     if (!shapeMatches(weights, {dim, input_dim})) {
       throw std::invalid_argument(
@@ -195,7 +193,7 @@ class FullyConnectedOpConverter final : public OpConverter {
       }
     }
 
-    return {fc, getUnaryApplyFunc<ops::FullyConnected>()};
+    return {fc, getUnaryApplyFunc<FullyConnected>()};
   }
 
   std::string opType() const final { return "fully_connected"; }
@@ -203,8 +201,8 @@ class FullyConnectedOpConverter final : public OpConverter {
 
 class EmbeddingOpConverter final : public OpConverter {
  public:
-  std::optional<py::dict> toParams(const ops::OpPtr& op) const final {
-    auto emb = ops::Embedding::cast(op);
+  std::optional<py::dict> toParams(const OpPtr& op) const final {
+    auto emb = Embedding::cast(op);
     if (!emb) {
       return std::nullopt;
     }
@@ -225,8 +223,7 @@ class EmbeddingOpConverter final : public OpConverter {
     return params;
   }
 
-  std::pair<ops::OpPtr, OpApplyFunc> fromParams(
-      const py::dict& params) const final {
+  std::pair<OpPtr, OpApplyFunc> fromParams(const py::dict& params) const final {
     size_t dim = params["dim"].cast<size_t>();
     size_t input_dim = params["input_dim"].cast<size_t>();
     std::string activation = params["activation"].cast<std::string>();
@@ -235,7 +232,7 @@ class EmbeddingOpConverter final : public OpConverter {
     auto embeddings = params["embeddings"].cast<NumpyArray<float>>();
     auto biases = params["biases"].cast<NumpyArray<float>>();
 
-    auto emb = ops::Embedding::make(dim, input_dim, activation, use_bias);
+    auto emb = Embedding::make(dim, input_dim, activation, use_bias);
 
     if (!shapeMatches(embeddings, {input_dim, dim})) {
       throw std::invalid_argument(
@@ -252,7 +249,7 @@ class EmbeddingOpConverter final : public OpConverter {
     emb->setEmbeddings(embeddings.data());
     emb->setBiases(biases.data());
 
-    return {emb, getUnaryApplyFunc<ops::Embedding>()};
+    return {emb, getUnaryApplyFunc<Embedding>()};
   }
 
   std::string opType() const final { return "embedding"; }
@@ -260,8 +257,8 @@ class EmbeddingOpConverter final : public OpConverter {
 
 class RobeZOpConverter final : public OpConverter {
  public:
-  std::optional<py::dict> toParams(const ops::OpPtr& op) const final {
-    auto emb = std::dynamic_pointer_cast<ops::RobeZ>(op);
+  std::optional<py::dict> toParams(const OpPtr& op) const final {
+    auto emb = std::dynamic_pointer_cast<RobeZ>(op);
     if (!emb) {
       return std::nullopt;
     }
@@ -288,8 +285,7 @@ class RobeZOpConverter final : public OpConverter {
     return params;
   }
 
-  std::pair<ops::OpPtr, OpApplyFunc> fromParams(
-      const py::dict& params) const final {
+  std::pair<OpPtr, OpApplyFunc> fromParams(const py::dict& params) const final {
     size_t num_embedding_lookups =
         params["num_embedding_lookups"].cast<size_t>();
     size_t lookup_size = params["lookup_size"].cast<size_t>();
@@ -303,9 +299,9 @@ class RobeZOpConverter final : public OpConverter {
 
     auto embedding_block = params["embedding_block"].cast<NumpyArray<float>>();
 
-    auto emb = ops::RobeZ::make(
-        num_embedding_lookups, lookup_size, log_embedding_block_size, reduction,
-        num_tokens_per_input, update_chunk_size, hash_seed);
+    auto emb = RobeZ::make(num_embedding_lookups, lookup_size,
+                           log_embedding_block_size, reduction,
+                           num_tokens_per_input, update_chunk_size, hash_seed);
 
     size_t embedding_block_size = emb->kernel()->getRawEmbeddingBlock().size();
     if (!shapeMatches(embedding_block, {embedding_block_size})) {
@@ -318,7 +314,7 @@ class RobeZOpConverter final : public OpConverter {
               embedding_block.data() + embedding_block_size,
               emb->kernel()->getRawEmbeddingBlock().data());
 
-    return {emb, getUnaryApplyFunc<ops::RobeZ>()};
+    return {emb, getUnaryApplyFunc<RobeZ>()};
   }
 
   std::string opType() const final { return "robe_z"; }
@@ -326,8 +322,8 @@ class RobeZOpConverter final : public OpConverter {
 
 class LayerNormOpConverter final : public OpConverter {
  public:
-  std::optional<py::dict> toParams(const ops::OpPtr& op) const final {
-    auto norm = std::dynamic_pointer_cast<ops::LayerNorm>(op);
+  std::optional<py::dict> toParams(const OpPtr& op) const final {
+    auto norm = std::dynamic_pointer_cast<LayerNorm>(op);
     if (!norm) {
       return std::nullopt;
     }
@@ -342,8 +338,7 @@ class LayerNormOpConverter final : public OpConverter {
     return params;
   }
 
-  std::pair<ops::OpPtr, OpApplyFunc> fromParams(
-      const py::dict& params) const final {
+  std::pair<OpPtr, OpApplyFunc> fromParams(const py::dict& params) const final {
     auto gamma = params["gamma"].cast<NumpyArray<float>>();
     auto beta = params["beta"].cast<NumpyArray<float>>();
 
@@ -353,9 +348,9 @@ class LayerNormOpConverter final : public OpConverter {
           "Expected gamma and beta to be 1D arrays of the same size.");
     }
 
-    auto op = ops::LayerNorm::make(gamma.data(), beta.data(), gamma.shape(0));
+    auto op = LayerNorm::make(gamma.data(), beta.data(), gamma.shape(0));
 
-    return {op, getUnaryApplyFunc<ops::LayerNorm>()};
+    return {op, getUnaryApplyFunc<LayerNorm>()};
   }
 
   std::string opType() const final { return "layer_norm"; }
@@ -363,23 +358,21 @@ class LayerNormOpConverter final : public OpConverter {
 
 class ConcatenateOpConverter final : public OpConverter {
  public:
-  std::optional<py::dict> toParams(const ops::OpPtr& op) const final {
-    if (!std::dynamic_pointer_cast<ops::Concatenate>(op)) {
+  std::optional<py::dict> toParams(const OpPtr& op) const final {
+    if (!std::dynamic_pointer_cast<Concatenate>(op)) {
       return std::nullopt;
     }
 
     return emptyParams();
   }
 
-  std::pair<ops::OpPtr, OpApplyFunc> fromParams(
-      const py::dict& params) const final {
+  std::pair<OpPtr, OpApplyFunc> fromParams(const py::dict& params) const final {
     (void)params;
 
-    auto op = ops::Concatenate::make();
+    auto op = Concatenate::make();
 
-    auto apply_func = [](const ops::OpPtr& op,
-                         const autograd::ComputationList& inputs) {
-      auto concrete_op = std::dynamic_pointer_cast<ops::Concatenate>(op);
+    auto apply_func = [](const OpPtr& op, const ComputationList& inputs) {
+      auto concrete_op = std::dynamic_pointer_cast<Concatenate>(op);
       if (!concrete_op) {
         throw std::runtime_error("Op type mismatch in apply func.");
       }
@@ -395,21 +388,20 @@ class ConcatenateOpConverter final : public OpConverter {
 
 class TanhOpConverter final : public OpConverter {
  public:
-  std::optional<py::dict> toParams(const ops::OpPtr& op) const final {
-    if (!std::dynamic_pointer_cast<ops::Tanh>(op)) {
+  std::optional<py::dict> toParams(const OpPtr& op) const final {
+    if (!std::dynamic_pointer_cast<Tanh>(op)) {
       return std::nullopt;
     }
 
     return emptyParams();
   }
 
-  std::pair<ops::OpPtr, OpApplyFunc> fromParams(
-      const py::dict& params) const final {
+  std::pair<OpPtr, OpApplyFunc> fromParams(const py::dict& params) const final {
     (void)params;
 
-    auto op = ops::Tanh::make();
+    auto op = Tanh::make();
 
-    return {op, getUnaryApplyFunc<ops::Tanh>()};
+    return {op, getUnaryApplyFunc<Tanh>()};
   }
 
   std::string opType() const final { return "tanh"; }
@@ -424,7 +416,7 @@ std::vector<std::shared_ptr<OpConverter>> op_converters = {
     std::make_shared<TanhOpConverter>(),
 };
 
-py::list exportPlaceholders(const autograd::ComputationList& placeholders) {
+py::list exportPlaceholders(const ComputationList& placeholders) {
   py::list placeholder_infos;
   for (const auto& placeholder : placeholders) {
     py::dict placeholder_info;
@@ -436,7 +428,7 @@ py::list exportPlaceholders(const autograd::ComputationList& placeholders) {
   return placeholder_infos;
 }
 
-py::dict exportOps(const model::ModelPtr& model) {
+py::dict exportOps(const ModelPtr& model) {
   py::dict ops;
   for (const auto& op : model->ops()) {
     bool found_converter = false;
@@ -456,7 +448,7 @@ py::dict exportOps(const model::ModelPtr& model) {
   return ops;
 }
 
-py::list exportComputations(const model::ModelPtr& model) {
+py::list exportComputations(const ModelPtr& model) {
   py::list computations;
   for (const auto& comp : model->computationOrderWithoutInputs()) {
     py::dict comp_info;
@@ -475,7 +467,7 @@ py::list exportComputations(const model::ModelPtr& model) {
   return computations;
 }
 
-py::list exportOutputs(const model::ModelPtr& model) {
+py::list exportOutputs(const ModelPtr& model) {
   py::list outputs;
 
   for (const auto& output : model->outputs()) {
@@ -485,16 +477,16 @@ py::list exportOutputs(const model::ModelPtr& model) {
   return outputs;
 }
 
-py::list exportLosses(const model::ModelPtr& model) {
+py::list exportLosses(const ModelPtr& model) {
   py::list losses;
   for (const auto& loss : model->losses()) {
     py::dict loss_info;
 
-    if (std::dynamic_pointer_cast<loss::CategoricalCrossEntropy>(loss)) {
+    if (std::dynamic_pointer_cast<CategoricalCrossEntropy>(loss)) {
       loss_info["name"] = "categorical_cross_entropy";
       loss_info["output"] = loss->outputsUsed().at(0)->name();
       loss_info["label"] = loss->labels().at(0)->name();
-    } else if (std::dynamic_pointer_cast<loss::BinaryCrossEntropy>(loss)) {
+    } else if (std::dynamic_pointer_cast<BinaryCrossEntropy>(loss)) {
       loss_info["name"] = "binary_cross_entropy";
       loss_info["output"] = loss->outputsUsed().at(0)->name();
       loss_info["label"] = loss->labels().at(0)->name();
@@ -504,7 +496,7 @@ py::list exportLosses(const model::ModelPtr& model) {
   return losses;
 }
 
-py::dict modelParams(const model::ModelPtr& model) {
+py::dict modelParams(const ModelPtr& model) {
   py::dict model_params;
   model_params["ops"] = exportOps(model);
   model_params["inputs"] = exportPlaceholders(model->inputs());
@@ -517,16 +509,16 @@ py::dict modelParams(const model::ModelPtr& model) {
   return model_params;
 }
 
-autograd::ComputationList importPlaceholders(
+ComputationList importPlaceholders(
     const py::list& placeholder_infos,
-    std::unordered_map<std::string, autograd::ComputationPtr>& computations) {
-  autograd::ComputationList placeholders;
+    std::unordered_map<std::string, ComputationPtr>& computations) {
+  ComputationList placeholders;
   for (const auto& placeholder_info : placeholder_infos) {
     std::string name = placeholder_info["name"].cast<std::string>();
     if (!computations.count(name)) {
       size_t dim = placeholder_info["dim"].cast<size_t>();
 
-      auto placeholder = ops::Input::make(dim);
+      auto placeholder = Input::make(dim);
       computations[name] = placeholder;
       placeholders.push_back(placeholder);
     }
@@ -535,11 +527,9 @@ autograd::ComputationList importPlaceholders(
   return placeholders;
 }
 
-using OpMap =
-    std::unordered_map<std::string, std::pair<ops::OpPtr, OpApplyFunc>>;
+using OpMap = std::unordered_map<std::string, std::pair<OpPtr, OpApplyFunc>>;
 
-using ComputationMap =
-    std::unordered_map<std::string, autograd::ComputationPtr>;
+using ComputationMap = std::unordered_map<std::string, ComputationPtr>;
 
 OpMap importOps(const py::dict& params) {
   std::unordered_map<std::string, std::shared_ptr<OpConverter>> converter_map;
@@ -574,7 +564,7 @@ void importComputationGraph(const py::dict& params, const OpMap& ops,
     std::string name = comp["name"].cast<std::string>();
     auto [op, apply_func] = ops.at(comp["op"].cast<std::string>());
 
-    autograd::ComputationList inputs;
+    ComputationList inputs;
     for (const auto input : comp["inputs"]) {
       inputs.push_back(computations[input.cast<std::string>()]);
     }
@@ -583,23 +573,23 @@ void importComputationGraph(const py::dict& params, const OpMap& ops,
   }
 }
 
-std::vector<loss::LossPtr> importLosses(const py::dict& params,
-                                        const ComputationMap& computations) {
-  std::vector<loss::LossPtr> losses;
+std::vector<LossPtr> importLosses(const py::dict& params,
+                                  const ComputationMap& computations) {
+  std::vector<LossPtr> losses;
   for (const auto& loss : params["losses"]) {
     std::string loss_name = loss["name"].cast<std::string>();
 
     if (loss_name == "categorical_cross_entropy") {
       auto output = loss["output"].cast<std::string>();
       auto label = loss["label"].cast<std::string>();
-      auto loss = loss::CategoricalCrossEntropy::make(computations.at(output),
-                                                      computations.at(label));
+      auto loss = CategoricalCrossEntropy::make(computations.at(output),
+                                                computations.at(label));
       losses.push_back(loss);
     } else if (loss_name == "binary_cross_entropy") {
       auto output = loss["output"].cast<std::string>();
       auto label = loss["label"].cast<std::string>();
-      auto loss = loss::BinaryCrossEntropy::make(computations.at(output),
-                                                 computations.at(label));
+      auto loss = BinaryCrossEntropy::make(computations.at(output),
+                                           computations.at(label));
       losses.push_back(loss);
     } else {
       throw std::invalid_argument("Unexpected loss '" + loss_name + "'.");
@@ -609,9 +599,9 @@ std::vector<loss::LossPtr> importLosses(const py::dict& params,
   return losses;
 }
 
-autograd::ComputationList importOutputs(const py::dict& params,
-                                        const ComputationMap& computations) {
-  autograd::ComputationList comps;
+ComputationList importOutputs(const py::dict& params,
+                              const ComputationMap& computations) {
+  ComputationList comps;
   for (const auto& output : params["outputs"]) {
     comps.push_back(computations.at(output.cast<std::string>()));
   }
@@ -619,7 +609,7 @@ autograd::ComputationList importOutputs(const py::dict& params,
   return comps;
 }
 
-model::ModelPtr modelFromParams(const py::dict& params) {
+ModelPtr modelFromParams(const py::dict& params) {
   OpMap ops = importOps(params);
 
   ComputationMap computations;
@@ -642,12 +632,12 @@ model::ModelPtr modelFromParams(const py::dict& params) {
     }
   }
 
-  auto model = model::Model::make(inputs, outputs, losses,
-                                  /* additional_labels= */ labels);
+  auto model = Model::make(inputs, outputs, losses,
+                           /* additional_labels= */ labels);
 
   model->overrideTrainSteps(params["train_steps"].cast<size_t>());
 
   return model;
 }
 
-}  // namespace thirdai::bolt::nn::python
+}  // namespace thirdai::bolt::python

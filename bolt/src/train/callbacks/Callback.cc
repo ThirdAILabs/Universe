@@ -1,9 +1,9 @@
 #include "Callback.h"
 #include <stdexcept>
 
-namespace thirdai::bolt::train::callbacks {
+namespace thirdai::bolt::callbacks {
 
-void Callback::setModel(nn::model::ModelPtr model) {
+void Callback::setModel(ModelPtr model) {
   if (this->model && this->model != model) {
     throw std::runtime_error("Cannot bind callback to new model.");
   }
@@ -18,8 +18,7 @@ void Callback::setHistory(metrics::HistoryPtr history) {
   this->history = std::move(history);
 }
 
-CallbackList::CallbackList(std::vector<CallbackPtr> callbacks,
-                           nn::model::ModelPtr& model,
+CallbackList::CallbackList(std::vector<CallbackPtr> callbacks, ModelPtr& model,
                            TrainStatePtr& train_state,
                            metrics::HistoryPtr& history)
     : _callbacks(std::move(callbacks)) {
@@ -66,4 +65,10 @@ void CallbackList::onBatchEnd() {
   }
 }
 
-}  // namespace thirdai::bolt::train::callbacks
+void CallbackList::beforeUpdate() {
+  for (auto& callback : _callbacks) {
+    callback->beforeUpdate();
+  }
+}
+
+}  // namespace thirdai::bolt::callbacks

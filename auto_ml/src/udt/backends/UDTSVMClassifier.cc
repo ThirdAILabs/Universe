@@ -33,7 +33,9 @@ py::object UDTSVMClassifier::train(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::train::DistributedCommPtr& comm) {
+    const bolt::DistributedCommPtr& comm, py::kwargs kwargs) {
+  (void)kwargs;
+
   auto featurizer = std::make_shared<dataset::SvmFeaturizer>();
   auto train_dataset_loader = svmDatasetLoader(
       data, /* shuffle= */ true, /* shuffle_config= */ options.shuffle_config);
@@ -51,8 +53,8 @@ py::object UDTSVMClassifier::train(
 py::object UDTSVMClassifier::evaluate(const dataset::DataSourcePtr& data,
                                       const std::vector<std::string>& metrics,
                                       bool sparse_inference, bool verbose,
-                                      std::optional<uint32_t> top_k) {
-  (void)top_k;
+                                      py::kwargs kwargs) {
+  (void)kwargs;
 
   auto dataset = svmDatasetLoader(data, /* shuffle= */ false);
 
@@ -63,9 +65,9 @@ py::object UDTSVMClassifier::predict(const MapInput& sample,
                                      bool sparse_inference,
                                      bool return_predicted_class,
                                      std::optional<uint32_t> top_k) {
-  auto inputs = bolt::train::convertVectors(
-      {dataset::SvmDatasetLoader::toSparseVector(sample)},
-      _classifier->model()->inputDims());
+  auto inputs =
+      bolt::convertVectors({dataset::SvmDatasetLoader::toSparseVector(sample)},
+                           _classifier->model()->inputDims());
   return _classifier->predict(inputs, sparse_inference, return_predicted_class,
                               /* single= */ true, top_k);
 }
@@ -74,12 +76,26 @@ py::object UDTSVMClassifier::predictBatch(const MapInputBatch& samples,
                                           bool sparse_inference,
                                           bool return_predicted_class,
                                           std::optional<uint32_t> top_k) {
-  auto inputs = bolt::train::convertBatch(
-      {dataset::SvmDatasetLoader::toSparseVectors(samples)},
-      _classifier->model()->inputDims());
+  auto inputs =
+      bolt::convertBatch({dataset::SvmDatasetLoader::toSparseVectors(samples)},
+                         _classifier->model()->inputDims());
   return _classifier->predict(inputs, sparse_inference, return_predicted_class,
                               /* single= */ false, top_k);
 }
+
+ar::ConstArchivePtr UDTSVMClassifier::toArchive(bool with_optimizer) const {
+  auto map = _classifier->toArchive(with_optimizer);
+  map->set("type", ar::str(type()));
+  return map;
+}
+
+std::unique_ptr<UDTSVMClassifier> UDTSVMClassifier::fromArchive(
+    const ar::Archive& archive) {
+  return std::make_unique<UDTSVMClassifier>(archive);
+}
+
+UDTSVMClassifier::UDTSVMClassifier(const ar::Archive& archive)
+    : _classifier(utils::Classifier::fromArchive(archive)) {}
 
 template void UDTSVMClassifier::serialize(cereal::BinaryInputArchive&,
                                           const uint32_t version);

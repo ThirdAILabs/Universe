@@ -1,10 +1,15 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <cereal/types/deque.hpp>
 #include <cereal/types/memory.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <data/src/transformations/MachMemory.h>
 #include <dataset/src/mach/MachIndex.h>
+#include <dataset/src/utils/GraphInfo.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <limits>
+#include <memory>
 #include <stdexcept>
 #include <unordered_map>
 
@@ -16,12 +21,24 @@ using dataset::mach::MachIndexPtr;
 struct ItemRecord {
   uint32_t item;
   int64_t timestamp;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(item, timestamp);
+  }
 };
 
-struct ItemHistoryTracker {
-  std::unordered_map<std::string, std::deque<ItemRecord>> trackers;
-  int64_t last_timestamp = std::numeric_limits<int64_t>::min();
+using ItemHistoryTracker =
+    std::unordered_map<std::string, std::deque<ItemRecord>>;
+
+struct CountRecord {
+  float value;
+  int64_t interval;
 };
+
+using CountHistoryTracker =
+    std::unordered_map<std::string, std::deque<CountRecord>>;
 
 /**
  * The purpose of this state object is to have a central location where stateful
@@ -51,8 +68,21 @@ struct ItemHistoryTracker {
  */
 class State {
  public:
-  explicit State(MachIndexPtr mach_index)
-      : _mach_index(std::move(mach_index)) {}
+  explicit State(MachIndexPtr mach_index, MachMemoryPtr mach_memory = nullptr)
+      : _mach_index(std::move(mach_index)),
+        _mach_memory(std::move(mach_memory)) {}
+
+  static auto make(MachIndexPtr mach_index, MachMemoryPtr mach_memory) {
+    return std::make_shared<State>(std::move(mach_index),
+                                   std::move(mach_memory));
+  }
+
+  explicit State(automl::GraphInfoPtr graph) : _graph(std::move(graph)) {}
+
+  State(MachIndexPtr mach_index, automl::GraphInfoPtr graph)
+      : _mach_index(std::move(mach_index)), _graph(std::move(graph)) {}
+
+  explicit State(const ar::Archive& archive);
 
   State() {}
 
@@ -76,6 +106,25 @@ class State {
     _mach_index = std::move(new_index);
   }
 
+  bool hasMachMemory() { return !!_mach_memory; }
+
+  MachMemory& machMemory() {
+    if (!_mach_memory) {
+      throw std::invalid_argument(
+          "Transformation state does not contain MachMemory.");
+    }
+    return *_mach_memory;
+  }
+
+  void setMachMemory(MachMemoryPtr mach_memory) {
+    if (_mach_memory) {
+      std::cout << "Transformation state already contains MachMemory."
+                << std::endl;
+      return;
+    }
+    _mach_memory = std::move(mach_memory);
+  }
+
   bool containsVocab(const std::string& key) const {
     return _vocabs.count(key);
   }
@@ -95,17 +144,44 @@ class State {
     return _item_history_trackers[tracker_key];
   }
 
+  CountHistoryTracker& getCountHistoryTracker(const std::string& tracker_key) {
+    return _count_history_trackers[tracker_key];
+  }
+
+  void clearHistoryTrackers() {
+    _item_history_trackers.clear();
+    _count_history_trackers.clear();
+  }
+
+  const auto& graph() const {
+    if (!_graph) {
+      throw std::invalid_argument(
+          "Transformation state does not contain Graph object.");
+    }
+    return _graph;
+  }
+
+  ar::ConstArchivePtr toArchive() const;
+
+  static std::shared_ptr<State> fromArchive(const ar::Archive& archive);
+
  private:
   MachIndexPtr _mach_index = nullptr;
+
+  MachMemoryPtr _mach_memory = nullptr;
 
   std::unordered_map<std::string, ThreadSafeVocabularyPtr> _vocabs;
 
   std::unordered_map<std::string, ItemHistoryTracker> _item_history_trackers;
 
+  std::unordered_map<std::string, CountHistoryTracker> _count_history_trackers;
+
+  automl::GraphInfoPtr _graph;
+
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_mach_index);
+    archive(_mach_index, _vocabs, _item_history_trackers, _graph);
   }
 };
 

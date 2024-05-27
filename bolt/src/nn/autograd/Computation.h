@@ -2,7 +2,7 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 
-namespace thirdai::bolt::nn::autograd {
+namespace thirdai::bolt {
 
 class Computation;
 using ComputationPtr = std::shared_ptr<Computation>;
@@ -17,15 +17,15 @@ using ComputationList = std::vector<ComputationPtr>;
  */
 class Computation {
  public:
-  Computation(ops::OpPtr op, ComputationList inputs);
+  Computation(OpPtr op, ComputationList inputs);
 
-  static ComputationPtr make(ops::OpPtr op, ComputationList inputs);
+  static ComputationPtr make(OpPtr op, ComputationList inputs);
 
   /**
    * Returns the op which operates on the inputs and output of the
    * computation.
    */
-  ops::OpPtr op() const;
+  OpPtr op() const;
 
   /**
    * Returns the inputs to the computation.
@@ -35,7 +35,7 @@ class Computation {
   /**
    * Returns the output of the computation.
    */
-  tensor::TensorPtr& tensor();
+  TensorPtr& tensor();
 
   /**
    * Computes the activations of the neurons in the output of the computation
@@ -91,7 +91,7 @@ class Computation {
    * inject data into the computation graph, for example the inputs and labels
    * during training.
    */
-  void setTensor(tensor::TensorPtr tensor);
+  void setTensor(TensorPtr tensor);
 
   /**
    * Outputs a summary of the computation to the given output stream.
@@ -105,12 +105,14 @@ class Computation {
 
   void setName(const std::string& name);
 
+  std::vector<std::string> inputNames() const;
+
  private:
-  ops::OpPtr _op;
+  OpPtr _op;
 
   ComputationList _inputs;
 
-  tensor::TensorPtr _output;
+  TensorPtr _output;
 
   std::string _name;
 
@@ -124,4 +126,4 @@ class Computation {
   void serialize(Archive& archive);  // NOLINT
 };
 
-}  // namespace thirdai::bolt::nn::autograd
+}  // namespace thirdai::bolt

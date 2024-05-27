@@ -4,16 +4,20 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
+#include <archive/src/ParameterReference.h>
 #include <cstring>
 #include <memory>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 std::string nextFullyConnectedOpName() {
   static uint32_t constructed = 0;
@@ -50,9 +54,8 @@ std::shared_ptr<FullyConnected> FullyConnected::make(
       rebuild_hash_tables, reconstruct_hash_functions));
 }
 
-void FullyConnected::forward(const autograd::ComputationList& inputs,
-                             tensor::TensorPtr& output, uint32_t index_in_batch,
-                             bool training) {
+void FullyConnected::forward(const ComputationList& inputs, TensorPtr& output,
+                             uint32_t index_in_batch, bool training) {
   assert(inputs.size() == 1 || inputs.size() == 2);
   // If the op is an output pass in labels during training to ensure labels are
   // in active neuron set.
@@ -64,8 +67,7 @@ void FullyConnected::forward(const autograd::ComputationList& inputs,
                    output->getVector(index_in_batch), labels);
 }
 
-void FullyConnected::backpropagate(autograd::ComputationList& inputs,
-                                   tensor::TensorPtr& output,
+void FullyConnected::backpropagate(ComputationList& inputs, TensorPtr& output,
                                    uint32_t index_in_batch) {
   assert(inputs.size() == 1 || inputs.size() == 2);
 
@@ -80,7 +82,7 @@ void FullyConnected::backpropagate(autograd::ComputationList& inputs,
 
 void FullyConnected::updateParameters(float learning_rate,
                                       uint32_t train_steps) {
-  _kernel->updateParameters(learning_rate, train_steps, BETA1, BETA2, EPS);
+  _kernel->updateParameters(learning_rate, train_steps);
 
   if (++_updates_since_reconstruct_hash_functions ==
       _reconstruct_hash_functions) {
@@ -94,10 +96,15 @@ void FullyConnected::updateParameters(float learning_rate,
   }
 }
 
+void FullyConnected::initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                                   bool replace_existing_optimizer) {
+  _kernel->initOptimizer(optimizer_factory, replace_existing_optimizer);
+}
+
 uint32_t FullyConnected::dim() const { return _kernel->getDim(); }
 
-std::optional<uint32_t> FullyConnected::nonzeros(
-    const autograd::ComputationList& inputs, bool use_sparsity) const {
+std::optional<uint32_t> FullyConnected::nonzeros(const ComputationList& inputs,
+                                                 bool use_sparsity) const {
   // The number of output nonzeros for a FullyConnected op do not depend on its
   // inputs.
   (void)inputs;
@@ -123,9 +130,75 @@ std::vector<std::vector<float>*> FullyConnected::parameters() {
   return {&_kernel->weights(), &_kernel->biases()};
 }
 
+ComputationPtr FullyConnected::applyToInputs(const ComputationList& inputs) {
+  // Can have a second input for labels if the output layer. This is only passed
+  // into the apply method when rebuilding the computation graph after
+  // deserialization. We can just ignore it here because the model will match
+  // the sparse output layer with the corresponding labels.
+  if (inputs.size() != 1 && inputs.size() != 2) {
+    throw std::invalid_argument(
+        "Expected FullyConnected op to have one or input.");
+  }
+  return apply(inputs.at(0));
+}
+
+ar::ConstArchivePtr FullyConnected::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = baseArchive();
+  map->set("type", ar::str(type()));
+
+  map->set("dim", ar::u64(dim()));
+  map->set("input_dim", ar::u64(inputDim()));
+  map->set("sparsity", ar::f32(_kernel->_sparsity));
+  map->set("activation", ar::str(activationFunctionToStr(_kernel->_act_func)));
+  map->set("use_bias", ar::boolean(_kernel->_use_bias));
+
+  map->set("weights",
+           ar::ParameterReference::make(_kernel->_weights, shared_from_this()));
+  map->set("biases",
+           ar::ParameterReference::make(_kernel->_biases, shared_from_this()));
+
+  if (auto neuron_index = _kernel->neuronIndex()) {
+    map->set("neuron_index", neuron_index->toArchive());
+  }
+  map->set("index_frozen", ar::boolean(_kernel->_index_frozen));
+  map->set("rebuild_hash_tables", ar::u64(_rebuild_hash_tables));
+  map->set("reconstruct_hash_functions", ar::u64(_reconstruct_hash_functions));
+
+  if (with_optimizer && _kernel->_weight_optimizer &&
+      _kernel->_bias_optimizer) {
+    map->set("wieght_optimizer",
+             _kernel->_weight_optimizer->toArchive(shared_from_this()));
+
+    map->set("bias_optimizer",
+             _kernel->_bias_optimizer->toArchive(shared_from_this()));
+  }
+
+  map->set("disable_sparse_parameter_updates",
+           ar::boolean(_kernel->_disable_sparse_parameter_updates));
+
+  return map;
+}
+
+std::shared_ptr<FullyConnected> FullyConnected::fromArchive(
+    const ar::Archive& archive) {
+  return std::shared_ptr<FullyConnected>(new FullyConnected(archive));
+}
+
+FullyConnected::FullyConnected(const ar::Archive& archive)
+    : Op(archive.str("name")),
+      _kernel(std::make_shared<FullyConnectedLayer>(archive)),
+      _rebuild_hash_tables(archive.u64("rebuild_hash_tables")),
+      _reconstruct_hash_functions(archive.u64("reconstruct_hash_functions")),
+      _updates_since_rebuild_hash_tables(0),
+      _updates_since_reconstruct_hash_functions(0) {
+  assertOpType(archive, type());
+}
+
 void FullyConnected::summary(std::ostream& summary,
-                             const autograd::ComputationList& inputs,
-                             const autograd::Computation* output) const {
+                             const ComputationList& inputs,
+                             const Computation* output) const {
   summary << "FullyConnected(" << name() << "): " << inputs[0]->name() << " -> "
           << output->name();
   summary << " [dim=" << _kernel->getDim()
@@ -149,8 +222,7 @@ void FullyConnected::setSerializeOptimizer(bool should_serialize_optimizer) {
 }
 
 void FullyConnected::reBuildHashFunction() { _kernel->reBuildHashFunction(); }
-void FullyConnected::registerModel(
-    const std::weak_ptr<model::Model>& new_model) {
+void FullyConnected::registerModel(const std::weak_ptr<Model>& new_model) {
   bool found = false;
 
   // This adds the new model to the list of models that the fully connected
@@ -171,7 +243,26 @@ void FullyConnected::registerModel(
   }
 }
 
-autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
+std::vector<std::pair<std::string, double>>
+FullyConnected::parameterAndGradNorms() const {
+  std::vector<std::pair<std::string, double>> all_norms;
+
+  computeNorms(_kernel->weights(), "weight", all_norms);
+  if (_kernel->hasOptimizers()) {
+    computeNorms(_kernel->weightsGradient(), "weight_grad", all_norms);
+  }
+
+  if (_kernel->useBias()) {
+    computeNorms(_kernel->biases(), "bias", all_norms);
+    if (_kernel->hasOptimizers()) {
+      computeNorms(_kernel->biasGradient(), "bias_grad", all_norms);
+    }
+  }
+
+  return all_norms;
+}
+
+ComputationPtr FullyConnected::apply(ComputationPtr input) {
   if (input->dim() != _kernel->getInputDim()) {
     std::stringstream error;
     error << "Cannot apply FullyConnected op with weight matrix of shape ("
@@ -180,7 +271,7 @@ autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
 
     throw std::invalid_argument(error.str());
   }
-  return autograd::Computation::make(shared_from_this(), {std::move(input)});
+  return Computation::make(shared_from_this(), {std::move(input)});
 }
 
 uint32_t FullyConnected::inputDim() const { return _kernel->getInputDim(); }
@@ -251,40 +342,17 @@ void FullyConnected::setSparsity(float sparsity, bool rebuild_hash_tables,
   }
 }
 
-template void FullyConnected::save(cereal::BinaryOutputArchive&) const;
+template void FullyConnected::serialize(cereal::BinaryInputArchive&);
+template void FullyConnected::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
-void FullyConnected::save(Archive& archive) const {
+void FullyConnected::serialize(Archive& archive) {
   archive(cereal::base_class<Op>(this), _kernel, _rebuild_hash_tables,
           _reconstruct_hash_functions, _updates_since_rebuild_hash_tables,
           _updates_since_reconstruct_hash_functions);
 }
 
-template void FullyConnected::load(cereal::BinaryInputArchive&);
+}  // namespace thirdai::bolt
 
-template <class Archive>
-void FullyConnected::load(Archive& archive) {
-  archive(cereal::base_class<Op>(this), _kernel, _rebuild_hash_tables,
-          _reconstruct_hash_functions, _updates_since_rebuild_hash_tables,
-          _updates_since_reconstruct_hash_functions);
-
-  _kernel->initOptimizer();
-}
-
-}  // namespace thirdai::bolt::nn::ops
-
-namespace cereal {
-
-/**
- * This is because the Op base class only uses a serialize function, whereas
- * this Op uses a load/save pair. This tells cereal to use the load save pair
- * instead of the serialize method of the parent class. See docs here:
- * https://uscilab.github.io/cereal/serialization_functions.html#inheritance
- */
-template <class Archive>
-struct specialize<Archive, thirdai::bolt::nn::ops::FullyConnected,
-                  cereal::specialization::member_load_save> {};
-
-}  // namespace cereal
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::FullyConnected)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::FullyConnected,
+                               "thirdai::bolt::nn::ops::FullyConnected")

@@ -4,15 +4,20 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
 #include <bolt/src/layers/LayerUtils.h>
-#include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/autograd/Computation.h>
+#include <bolt/src/nn/optimizers/Adam.h>
+#include <bolt/src/utils/Timer.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
+#include <archive/src/ParameterReference.h>
 #include <algorithm>
+#include <chrono>
 #include <ios>
 #include <random>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 std::string nextEmbeddingOpName() {
   static uint32_t constructed = 0;
@@ -39,43 +44,42 @@ Embedding::Embedding(size_t dim, size_t input_dim,
   if (_bias) {
     std::generate(_biases.begin(), _biases.end(), gen);
   }
-
-  _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
-  _bias_optimizer = AdamOptimizer(_dim);
 }
 
-void Embedding::forward(const autograd::ComputationList& inputs,
-                        tensor::TensorPtr& output, uint32_t index_in_batch,
-                        bool training) {
+void Embedding::forward(const ComputationList& inputs, TensorPtr& output,
+                        uint32_t index_in_batch, bool training) {
   (void)training;
 
-  assert(inputs.size() == 2);
+  assert(inputs.size() == 1);
 
   const BoltVector& tokens = inputs.at(0)->tensor()->getVector(index_in_batch);
   BoltVector& output_vec = output->getVector(index_in_batch);
   assert(output_vec.isDense());
 
+  forward(tokens, output_vec.activations);
+}
+
+void Embedding::forward(const BoltVector& tokens, float* output) const {
   if (_bias) {
-    std::copy(_biases.begin(), _biases.end(), output_vec.activations);
+    std::copy(_biases.begin(), _biases.end(), output);
   } else {
-    std::fill_n(output_vec.activations, output_vec.len, 0.F);
+    std::fill_n(output, _dim, 0.F);
   }
 
   for (size_t n = 0; n < tokens.len; n++) {
     float weight = tokens.activations[n];
     const float* emb = embedding(tokens.active_neurons[n]);
     for (size_t i = 0; i < _dim; i++) {
-      output_vec.activations[i] += weight * emb[i];
+      output[i] += weight * emb[i];
     }
   }
 
-  applyActivationFunction(output_vec.activations);
+  applyActivationFunction(output);
 }
 
-void Embedding::backpropagate(autograd::ComputationList& inputs,
-                              tensor::TensorPtr& output,
+void Embedding::backpropagate(ComputationList& inputs, TensorPtr& output,
                               uint32_t index_in_batch) {
-  assert(inputs.size() == 2);
+  assert(inputs.size() == 1);
 
   const BoltVector& tokens = inputs.at(0)->tensor()->getVector(index_in_batch);
   BoltVector& output_vec = output->getVector(index_in_batch);
@@ -104,7 +108,7 @@ void Embedding::backpropagate(autograd::ComputationList& inputs,
 
   if (_bias) {
     for (size_t i = 0; i < _dim; i++) {
-      _bias_optimizer->gradients[i] += output_vec.gradients[i];
+      _bias_gradients[i] += output_vec.gradients[i];
     }
   }
 }
@@ -131,7 +135,7 @@ void softmax(float* activations, size_t dim) {
   }
 }
 
-void Embedding::applyActivationFunction(float* activations) {
+inline void Embedding::applyActivationFunction(float* activations) const {
   switch (_act_func) {
     case ActivationFunction::ReLU:
       for (size_t i = 0; i < _dim; i++) {
@@ -166,131 +170,171 @@ void Embedding::applyActivationFunctionGrad(const float* activations,
   }
 }
 
-constexpr float momentumUpdate(float curr_momentum, float grad) {
-  return BETA1 * curr_momentum + (1 - BETA1) * grad;
-}
-
-constexpr float velocityUpdate(float curr_velocity, float grad) {
-  return BETA2 * curr_velocity + (1 - BETA2) * grad * grad;
-}
-
-inline float adam(float momentum, float velocity, float learning_rate,
-                  float b1_corrected, float b2_corrected) {
-  return learning_rate * (momentum / b1_corrected) /
-         (std::sqrt(velocity / b2_corrected) + EPS);
-}
-
 void Embedding::updateParameters(float learning_rate, uint32_t train_steps) {
   if (_disable_sparse_parameter_updates) {
-    _embedding_optimizer->applyUpdate(_embeddings, learning_rate, train_steps);
+    _embedding_optimizer->updateDense(_embeddings, _embedding_gradients,
+                                      learning_rate, train_steps);
   } else {
-    sparseEmbeddingUpdate(learning_rate, train_steps);
+    _embedding_optimizer->updateSparseRows(
+        _embeddings, _embedding_gradients, _embeddings_used, learning_rate,
+        train_steps, /* reset_rows_used= */ true);
   }
 
   if (_bias) {
-    _bias_optimizer->applyUpdate(_biases, learning_rate, train_steps);
+    _bias_optimizer->updateDense(_biases, _bias_gradients, learning_rate,
+                                 train_steps);
   }
 }
 
-void Embedding::sparseEmbeddingUpdate(float learning_rate,
-                                      uint32_t train_steps) {
-  float B1_bias_corrected = static_cast<float>(1 - pow(BETA1, train_steps));
-  float B2_bias_corrected = static_cast<float>(1 - pow(BETA2, train_steps));
+void Embedding::initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                              bool replace_existing_optimizer) {
+  // The optimizer may be saved (to preserve state in optimizers like Adam)
+  // but the gradients are never saved. Thus we only initialize the optimizer
+  // if it's not present, but always initialize the gradients, in case we are
+  // initializing the optimizer for a loaded model.
 
-#pragma omp parallel for default(none) \
-    shared(B1_bias_corrected, B2_bias_corrected, learning_rate)
-  for (size_t n = 0; n < _input_dim; n++) {
-    if (!_embeddings_used[n]) {
-      continue;
-    }
-    _embeddings_used[n] = false;
-    for (size_t i = 0; i < _dim; i++) {
-      size_t index = n * _dim + i;
-      float grad = _embedding_optimizer->gradients[index];
+  if (!_embedding_optimizer || !_bias_optimizer || replace_existing_optimizer) {
+    _embedding_optimizer = optimizer_factory->makeOptimizer(_input_dim, _dim);
+    _bias_optimizer = optimizer_factory->makeOptimizer(_dim, /*cols=*/1);
+  }
 
-      _embedding_optimizer->momentum[index] =
-          momentumUpdate(_embedding_optimizer->momentum[index], grad);
+  _embedding_gradients.assign(_embeddings.size(), 0.0);
+  _bias_gradients.assign(_biases.size(), 0.0);
+  _embeddings_used.assign(_input_dim, false);
+}
 
-      _embedding_optimizer->velocity[index] =
-          velocityUpdate(_embedding_optimizer->velocity[index], grad);
+ComputationPtr Embedding::applyToInputs(const ComputationList& inputs) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("Expected Embedding op to have one input.");
+  }
+  return apply(inputs.at(0));
+}
 
-      assert(!std::isnan(_embedding_optimizer->momentum[index]));
-      assert(!std::isnan(_embedding_optimizer->velocity[index]));
+ar::ConstArchivePtr Embedding::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
 
-      _embeddings[index] +=
-          adam(_embedding_optimizer->momentum[index],
-               _embedding_optimizer->velocity[index], learning_rate,
-               B1_bias_corrected, B2_bias_corrected);
+  auto map = baseArchive();
+  map->set("type", ar::str(type()));
+  map->set("dim", ar::u64(_dim));
+  map->set("input_dim", ar::u64(_input_dim));
+  map->set("activation", ar::str(activationFunctionToStr(_act_func)));
+  map->set("use_bias", ar::boolean(_bias));
 
-      assert(!std::isnan(_embeddings[index]));
+  map->set("embeddings",
+           ar::ParameterReference::make(_embeddings, shared_from_this()));
+  map->set("biases", ar::ParameterReference::make(_biases, shared_from_this()));
 
-      _embedding_optimizer->gradients[index] = 0;
-    }
+  if (with_optimizer && _embedding_optimizer && _bias_optimizer) {
+    map->set("embedding_optimizer",
+             _embedding_optimizer->toArchive(shared_from_this()));
+
+    map->set("bias_optimizer", _bias_optimizer->toArchive(shared_from_this()));
+  }
+
+  map->set("disable_sparse_parameter_updates",
+           ar::boolean(_disable_sparse_parameter_updates));
+
+  return map;
+}
+
+std::shared_ptr<Embedding> Embedding::fromArchive(const ar::Archive& archive) {
+  return std::shared_ptr<Embedding>(new Embedding(archive));
+}
+
+Embedding::Embedding(const ar::Archive& archive)
+    : Op(archive.str("name")),
+      _dim(archive.u64("dim")),
+      _input_dim(archive.u64("input_dim")),
+      _bias(archive.boolean("use_bias")),
+      _act_func(getActivationFunction(archive.str("activation"))),
+      _embeddings(archive.get("embeddings")->param().moveLoadedParameter()),
+      _biases(archive.get("biases")->param().moveLoadedParameter()),
+      _disable_sparse_parameter_updates(
+          archive.boolean("disable_sparse_parameter_updates")),
+      _embeddings_used(archive.u64("input_dim"), false) {
+  assertOpType(archive, type());
+
+  if (archive.contains("embedding_optimizer")) {
+    _embedding_optimizer =
+        Optimizer::fromArchive(*archive.get("embedding_optimizer"));
+  }
+  if (archive.contains("bias_optimizer")) {
+    _bias_optimizer = Optimizer::fromArchive(*archive.get("bias_optimizer"));
   }
 }
 
-void Embedding::summary(std::ostream& summary,
-                        const autograd::ComputationList& inputs,
-                        const autograd::Computation* output) const {
+void Embedding::summary(std::ostream& summary, const ComputationList& inputs,
+                        const Computation* output) const {
   summary << "Embedding(" << name() << "): " << inputs.at(0)->name() << " -> "
           << output->name() << " [dim=" << _dim
           << ", activation=" << activationFunctionToStr(_act_func)
           << ", bias=" << std::boolalpha << _bias << "]";
 }
 
-autograd::ComputationPtr Embedding::apply(autograd::ComputationPtr input) {
+std::vector<std::pair<std::string, double>> Embedding::parameterAndGradNorms()
+    const {
+  std::vector<std::pair<std::string, double>> all_norms;
+
+  computeNorms(_embeddings, "embeddings", all_norms);
+  if (_embedding_optimizer) {
+    computeNorms(_embedding_gradients, "embeddings_grad", all_norms);
+  }
+
+  if (_bias) {
+    computeNorms(_biases, "bias", all_norms);
+    if (_bias_optimizer) {
+      computeNorms(_bias_gradients, "bias_grad", all_norms);
+    }
+  }
+
+  return all_norms;
+}
+
+ComputationPtr Embedding::apply(ComputationPtr input) {
   if (input->dim() != _input_dim) {
     throw std::invalid_argument(
         "Input has too large of a dimension for embedding.");
   }
 
-  return autograd::Computation::make(shared_from_this(), {std::move(input)});
+  return Computation::make(shared_from_this(), {std::move(input)});
 }
 
-template void Embedding::save(cereal::BinaryOutputArchive&) const;
+template void Embedding::serialize(cereal::BinaryInputArchive&);
+template void Embedding::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
-void Embedding::save(Archive& archive) const {
+void Embedding::serialize(Archive& archive) {
+  if (!std::is_same_v<Archive, cereal::BinaryInputArchive>) {
+    throw std::runtime_error(
+        "This serialize method should only be used for loading old models, "
+        "not saving new ones.");
+  }
+
   archive(cereal::base_class<Op>(this), _dim, _input_dim, _bias, _act_func,
           _embeddings, _biases, _disable_sparse_parameter_updates,
           _should_serialize_optimizer);
 
   if (_should_serialize_optimizer) {
-    archive(_embedding_optimizer, _bias_optimizer, _embeddings_used);
+    std::optional<AdamOptimizer> embedding_optimizer;
+    std::optional<AdamOptimizer> bias_optimizer;
+    std::vector<bool> embeddings_used;  // For compatability
+
+    archive(embedding_optimizer, bias_optimizer, embeddings_used);
+
+    _embedding_optimizer = Adam::fromOldOptimizer(
+        std::move(*embedding_optimizer), _input_dim, _dim);
+
+    _bias_optimizer =
+        Adam::fromOldOptimizer(std::move(*bias_optimizer), _dim, 1);
+
+    _embedding_gradients.assign(_embeddings.size(), 0.0);
+    _bias_gradients.assign(_biases.size(), 0.0);
   }
+
+  _embeddings_used.assign(_input_dim, false);
 }
 
-template void Embedding::load(cereal::BinaryInputArchive&);
+}  // namespace thirdai::bolt
 
-template <class Archive>
-void Embedding::load(Archive& archive) {
-  archive(cereal::base_class<Op>(this), _dim, _input_dim, _bias, _act_func,
-          _embeddings, _biases, _disable_sparse_parameter_updates,
-          _should_serialize_optimizer);
-
-  if (_should_serialize_optimizer) {
-    archive(_embedding_optimizer, _bias_optimizer, _embeddings_used);
-  } else {
-    _embedding_optimizer = AdamOptimizer(_dim * _input_dim);
-    _bias_optimizer = AdamOptimizer(_dim);
-    _embeddings_used.assign(_input_dim, false);
-  }
-}
-
-}  // namespace thirdai::bolt::nn::ops
-
-namespace cereal {
-
-/**
- * This is because the Op base class only uses a serialize function, whereas
- * this Op uses a load/save pair. This tells cereal to use the load save pair
- * instead of the serialize method of the parent class. See docs here:
- * https://uscilab.github.io/cereal/serialization_functions.html#inheritance
- */
-template <class Archive>
-struct specialize<Archive, thirdai::bolt::nn::ops::Embedding,
-                  cereal::specialization::member_load_save> {};
-
-}  // namespace cereal
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::Embedding)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::Embedding,
+                               "thirdai::bolt::nn::ops::Embedding")

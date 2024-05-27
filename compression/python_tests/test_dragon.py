@@ -3,7 +3,7 @@ import pytest
 pytestmark = [pytest.mark.unit]
 
 import numpy as np
-from thirdai import bolt_v2 as bolt
+from thirdai import bolt
 
 from utils import compressed_training
 

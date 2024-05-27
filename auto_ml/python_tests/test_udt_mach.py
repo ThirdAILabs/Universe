@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from download_dataset_fixtures import download_scifact_dataset
-from thirdai import bolt, bolt_v2, dataset
+from thirdai import bolt, dataset
 
 pytestmark = [pytest.mark.unit]
 
@@ -21,7 +21,7 @@ def make_simple_test_file(invalid_data=False):
         f.write("text,label\n")
         f.write("haha one time,0\n")
         f.write("haha two times,1\n")
-        f.write("haha thrice occurances,2\n")
+        f.write("haha thrice occurrences,2\n")
         if invalid_data:
             f.write("haha,3\n")
 
@@ -206,7 +206,7 @@ def test_mach_udt_on_scifact_model_porting(
 
     new_model = scifact_model(n_target_classes=n_classes)
 
-    new_bolt_model = bolt_v2.nn.Model.from_params(model._get_model().params())
+    new_bolt_model = bolt.nn.Model.from_params(model._get_model().params())
     new_model._set_model(new_bolt_model)
 
     new_model.set_index(model.get_index())
@@ -221,14 +221,6 @@ def test_mach_udt_on_scifact_model_porting(
     assert model.predict_batch(batch) == new_model.predict_batch(batch)
 
 
-def test_mach_udt_label_too_large():
-    with pytest.raises(
-        ValueError,
-        match=r"Invalid entity in index: 3.",
-    ):
-        train_simple_mach_udt(invalid_data=True)
-
-
 @pytest.mark.parametrize("embedding_dim", [128, 256])
 def test_mach_udt_entity_embedding(embedding_dim):
     model = train_simple_mach_udt(embedding_dim=embedding_dim)
@@ -241,9 +233,15 @@ def test_mach_udt_entity_embedding(embedding_dim):
 def test_mach_udt_embedding():
     model = train_simple_mach_udt()
 
-    embedding = model.embedding_representation({"text": "some sample query"})
+    embedding = model.embedding_representation([{"text": "some sample query"}])
 
     assert embedding.shape == (256,)
+
+    embedding = model.embedding_representation(
+        [{"text": "some sample query"}, {"text": "some sample query"}]
+    )
+
+    assert embedding.shape == (2, 256)
 
 
 def test_mach_udt_decode_params():
@@ -513,7 +511,7 @@ def test_mach_manual_index_creation():
     samples = {
         0: "haha one time",
         1: "haha two times",
-        2: "haha thrice occurances",
+        2: "haha thrice occurrences",
     }
 
     entity_to_hashes = {
@@ -591,7 +589,7 @@ def test_load_balancing():
     model.introduce_label(
         input_batch=[sample],
         label=label_with_load_balancing,
-        num_buckets_to_sample=num_hashes,
+        load_balancing=True,
     )
 
     hashes_with_load_balancing = model.get_index().get_entity_hashes(
@@ -607,6 +605,43 @@ def test_load_balancing():
     # Check that the buckets it inserts into with load balancing is different
     # than the buckets it inserts into without load balancing
     assert set(hashes_with_load_balancing) != set(hashes_without_load_balancing)
+
+
+def test_load_balancing_disjoint():
+    model = train_simple_mach_udt()
+
+    sample = {"text": "tomato"}
+
+    # # Insert an id for the same sample without load balancing to ensure that
+    # # it goes to different locations than with load balancing
+    label_without_load_balancing = 9999
+    model.introduce_label(
+        input_batch=[sample],
+        label=label_without_load_balancing,
+    )
+    label_with_load_balancing = 10000
+    model.introduce_label(
+        input_batch=[sample],
+        label=label_with_load_balancing,
+        load_balancing=True,
+    )
+
+    hashes_with_load_balancing = model.get_index().get_entity_hashes(
+        label_with_load_balancing
+    )
+    hashes_without_load_balancing = model.get_index().get_entity_hashes(
+        label_without_load_balancing
+    )
+
+    # # Check that the two sets of hashes obtained are disjoint
+    assert (
+        len(
+            set(hashes_without_load_balancing).intersection(
+                set(hashes_with_load_balancing)
+            )
+        )
+        == 0
+    )
 
 
 def test_mach_sparse_inference():
@@ -628,7 +663,7 @@ def test_mach_sparse_inference():
         )
     )
 
-    input_vec = bolt_v2.nn.Tensor(dataset.make_sparse_vector([0], [1.0]), 100_000)
+    input_vec = bolt.nn.Tensor(dataset.make_sparse_vector([0], [1.0]), 100_000)
 
     output = model._get_model().forward([input_vec], use_sparsity=True)[0]
     assert set(output.active_neurons[0]) == set([10, 20, 30])
@@ -697,7 +732,7 @@ def test_associate():
     original_intersection = len(target_hashes.intersection(source_hashes))
 
     for _ in range(100):
-        model.associate([(source_sample, target_sample)], n_buckets=7)
+        model.associate([(source_sample["text"], target_sample["text"])], n_buckets=7)
 
     new_target_hashes = set(model.predict_hashes(target_sample))
     new_source_hashes = set(model.predict_hashes(source_sample))
@@ -707,39 +742,6 @@ def test_associate():
     assert new_intersection > original_intersection
 
 
-def test_upvote():
-    model = train_simple_mach_udt(
-        rlhf_args={
-            "rlhf": True,
-            "rlhf_balancing_docs": 100,
-            "rlhf_balancing_samples_per_doc": 10,
-        }
-    )
-
-    target_sample = {"text": "random sample text"}
-    model.introduce_label([target_sample], label=200)
-
-    source_sample = {"text": "tomato"}
-    model.introduce_label([source_sample], label=300)
-
-    predicted_label = model.predict(source_sample)[0][0]
-    for _ in range(10):
-        model.upvote([(source_sample, 300)], learning_rate=0.01)
-        predicted_label = model.predict(source_sample)[0][0]
-        if predicted_label != 200:
-            break
-
-    assert predicted_label != 200
-
-    for _ in range(10):
-        model.upvote([(source_sample, 200)], learning_rate=0.01)
-        predicted_label = model.predict(source_sample)[0][0]
-        if predicted_label == 200:
-            break
-
-    assert predicted_label == 200
-
-
 def test_enable_rlhf():
     model = train_simple_mach_udt()
 
@@ -747,7 +749,7 @@ def test_enable_rlhf():
         RuntimeError,
         match=r"This model was not configured to support rlhf. Please pass {'rlhf': True} in the model options or call enable_rlhf().",
     ):
-        model.associate([({"text": "text"}, {"text": "text"})], n_buckets=7)
+        model.associate([("text", "text")], n_buckets=7)
 
     model.enable_rlhf(num_balancing_docs=100, num_balancing_samples_per_doc=10)
 
@@ -757,7 +759,7 @@ def test_enable_rlhf():
         SIMPLE_TEST_FILE, epochs=5, learning_rate=0.001, shuffle_reservoir_size=32000
     )
 
-    model.associate([({"text": "text"}, {"text": "text"})], n_buckets=7)
+    model.associate([("text", "text")], n_buckets=7)
 
 
 def regularized_introduce_helper(model, num_random_hashes):
@@ -822,3 +824,85 @@ def test_udt_mach_num_buckets_to_sample_and_switching_index_num_hashes():
     model.introduce_label(
         [{"text": "some text"}], 0, num_buckets_to_sample=NUM_HASHES - 1
     )
+
+
+def test_udt_mach_fast_approximation_handles_commas():
+    model = train_simple_mach_udt()
+    model.clear_index()
+
+    with open("temp.csv", "w") as out:
+        out.write("strong,weak,label\n")
+        out.write('"a string, with, commas","another, one",0\n')
+
+    # We only care that it doesn't throw an error
+    model.introduce_documents(
+        "temp.csv",
+        strong_column_names=["strong"],
+        weak_column_names=["weak"],
+        fast_approximation=True,
+    )
+
+    os.remove("temp.csv")
+
+
+@pytest.mark.parametrize("softmax", [True, False])
+def test_udt_softmax_activations(softmax):
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "text": bolt.types.text(contextual_encoding="local"),
+            "label": bolt.types.categorical(),
+        },
+        target="label",
+        n_target_classes=3,
+        integer_target=True,
+        options={
+            "extreme_classification": True,
+            "embedding_dimension": 100,
+            "extreme_output_dim": 100,
+            "softmax": softmax,
+        },
+    )
+
+    output = model.predict_activations_batch(
+        [{"text": "some text"}, {"text": "some text"}]
+    )[0]
+
+    sum_to_one = np.isclose(
+        sum(output),
+        1,
+    )
+    assert sum_to_one == softmax
+
+
+def test_doc_not_found_unless_trained_on():
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "text": bolt.types.text(contextual_encoding="local"),
+            "label": bolt.types.categorical(),
+        },
+        target="label",
+        n_target_classes=10,
+        integer_target=True,
+        options={
+            "extreme_classification": True,
+            "fhr": 1000,
+            "embedding_dimension": 20,
+            "extreme_output_dim": 100,
+        },
+    )
+
+    make_simple_test_file()
+
+    model.train(SIMPLE_TEST_FILE, epochs=1)
+
+    os.remove(SIMPLE_TEST_FILE)
+
+    model.get_entity_embedding(1)
+
+    model.get_index().get_entity_hashes(2)
+
+    with pytest.raises(ValueError, match="Invalid entity in index: 7."):
+        model.get_entity_embedding(7)
+
+    with pytest.raises(ValueError, match="Invalid entity in index: 8."):
+        model.get_index().get_entity_hashes(8)

@@ -150,51 +150,7 @@ if(MSVC)
   add_library(OpenMP::OpenMP_CXX ALIAS _thirdai_windows_llvm_openmp)
 else()
 
-  find_package(OpenMP)
-  if(NOT OpenMP_FOUND)
-
-    # In this case, we were not able to find OpenMP. We are choosing to build
-    # openmp from scratch here, using the LLVM standalone OpenMP source.
-    #
-    # In practice, this is intended for use for cross-compiling M1 (arm64)
-    # wheels on MacOS GitHub runners (x86_64), where the possibility to use the
-    # host's libomp is missing, and the library needs to be cross compiled for
-    # target.
-
-    # The following works with only newer CMake versions (Download), but we get
-    # here only after all else has failed, and only for purposes of CI.
-
-    # This block needs to happen before all the compile-options are added to
-    # escape -Wall and -Werror being enforced on OpenMP library.
-
-    set(LLVM_OPENMP_VERSION "13.0.1")
-    set(LLVM_OPENMP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/openmp")
-
-    if(NOT EXISTS ${LLVM_OPENMP_SOURCE_DIR})
-      message(
-        "Downloading openmp-${LLVM_OPENMP_VERSION} into ${LLVM_OPENMP_SOURCE_DIR}"
-      )
-      set(LLVM_OPENMP_DOWNLOAD_URL
-          "https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_OPENMP_VERSION}/openmp-${LLVM_OPENMP_VERSION}.src.tar.xz"
-      )
-      file(
-        DOWNLOAD
-        ${LLVM_OPENMP_DOWNLOAD_URL} # URL
-        "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.tar.bz2" # FILE
-      )
-      file(ARCHIVE_EXTRACT INPUT
-           "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.tar.bz2"
-           DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-      file(RENAME
-           "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.src"
-           "${LLVM_OPENMP_SOURCE_DIR}")
-    endif()
-
-    set(OPENMP_STANDALONE_BUILD ON)
-    add_subdirectory(${LLVM_OPENMP_SOURCE_DIR} EXCLUDE_FROM_ALL)
-    add_library(OpenMP::OpenMP_CXX ALIAS omp)
-
-  endif(NOT OpenMP_FOUND)
+  find_package(OpenMP REQUIRED)
 
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -309,6 +265,8 @@ add_subdirectory(dataset)
 add_subdirectory(search)
 add_subdirectory(hashing)
 add_subdirectory(hashtable)
+add_subdirectory(mach)
+add_subdirectory(archive)
 add_subdirectory(compression)
 add_subdirectory(utils)
 
@@ -322,19 +280,34 @@ set(THIRDAI_SOURCES
     bolt/src/nn/autograd/ComputationGraph.cc
     bolt/src/nn/model/AllocationManager.cc
     bolt/src/nn/model/Model.cc
+    bolt/src/nn/ops/Op.cc
     bolt/src/nn/ops/FullyConnected.cc
     bolt/src/nn/ops/Embedding.cc
     bolt/src/nn/ops/RobeZ.cc
     bolt/src/nn/ops/Concatenate.cc
     bolt/src/nn/ops/Input.cc
     bolt/src/nn/ops/LayerNorm.cc
-    bolt/src/nn/ops/Tanh.cc
+    bolt/src/nn/ops/Switch.cc
+    bolt/src/nn/ops/Activation.cc
     bolt/src/nn/ops/DlrmAttention.cc
+    bolt/src/nn/ops/DotProduct.cc
+    bolt/src/nn/ops/CosineSimilarity.cc
+    bolt/src/nn/ops/PatchEmbedding.cc
+    bolt/src/nn/ops/PatchSum.cc
+    bolt/src/nn/ops/WeightedSum.cc
+    bolt/src/nn/ops/MaxPool1D.cc
+    bolt/src/nn/ops/QuantileMixing.cc
     bolt/src/nn/tensor/Tensor.cc
+    bolt/src/nn/loss/Loss.cc
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
     bolt/src/nn/loss/BinaryCrossEntropy.cc
     bolt/src/nn/loss/EuclideanContrastive.cc
+    bolt/src/nn/loss/ExternalLoss.cc
+    bolt/src/nn/optimizers/Optimizer.cc
+    bolt/src/nn/optimizers/Adam.cc
+    bolt/src/nn/optimizers/SGD.cc
+    bolt/src/neuron_index/NeuronIndex.cc
     bolt/src/neuron_index/LshIndex.cc
     bolt/src/neuron_index/RandomSampler.cc
     bolt/src/neuron_index/MachNeuronIndex.cc
@@ -349,30 +322,27 @@ set(THIRDAI_SOURCES
     bolt/src/train/metrics/MachRecall.cc
     bolt/src/train/trainer/Trainer.cc
     bolt/src/train/trainer/Dataset.cc
-    bolt/src/graph/Graph.cc
-    bolt/src/graph/ExecutionConfig.cc
-    bolt/src/graph/nodes/FullyConnected.cc
-    bolt/src/graph/DatasetContext.cc
-    bolt/src/graph/Node.cc
-    bolt/src/graph/nodes/Switch.cc
-    bolt/src/graph/nodes/Concatenate.cc
-    bolt/src/graph/nodes/DlrmAttention.cc
-    bolt/src/graph/nodes/DotProduct.cc
-    bolt/src/graph/nodes/Embedding.cc
-    bolt/src/graph/nodes/FullyConnected.cc
-    bolt/src/graph/nodes/LayerNorm.cc
-    bolt/src/graph/nodes/Input.cc
-    bolt/src/graph/InferenceOutputTracker.cc
     bolt/src/layers/EmbeddingLayer.cc
     bolt/src/layers/FullyConnectedLayer.cc
     bolt/src/layers/LayerConfig.cc
     bolt/src/layers/SamplingConfig.cc
-    bolt/src/loss_functions/LossFunctions.cc
-    bolt/src/metrics/Metric.cc
+    bolt/src/inference/EmbFcInference.cc
+    bolt/src/NER/model/NerUDTModel.cc
+    bolt/src/NER/model/NerBoltModel.cc
+    bolt/src/NER/model/NerClassifier.cc
+    bolt/src/NER/model/NER.cc
+    bolt/src/text_generation/ContextualModel.cc
+    bolt/src/text_generation/DyadicModel.cc
+    bolt/src/text_generation/GenerativeModel.cc
     bolt/src/root_cause_analysis/RCA.cc
+    bolt/src/metrics/Metric.cc
+    bolt/src/seismic/SeismicLabels.cc
     search/src/MaxFlash.cc
     search/src/MaxFlashArray.cc
     search/src/Flash.cc
+    search/src/inverted_index/InvertedIndex.cc
+    search/src/inverted_index/FinetunableRetriever.cc
+    search/src/inverted_index/Tokenizer.cc
     hashing/src/DensifiedMinHash.cc
     hashing/src/DWTA.cc
     hashing/src/FastSRP.cc
@@ -403,43 +373,87 @@ set(THIRDAI_SOURCES
     dataset/src/blocks/RecurrenceAugmentation.cc
     dataset/src/blocks/Sequence.cc
     dataset/src/blocks/text/Text.cc
+    dataset/src/blocks/TabularHashFeatures.cc
     dataset/src/blocks/text/WordpieceTokenizer.cc
+    dataset/src/blocks/text/TextTokenizer.cc
     dataset/src/mach/MachIndex.cc
     dataset/src/mach/MachBlock.cc
+    dataset/src/ranking/KeywordOverlapRanker.cc
     dataset/src/utils/GraphInfo.cc
     telemetry/src/PrometheusClient.cc
+    data/src/transformations/Transformation.cc
+    data/src/transformations/State.cc
     data/src/transformations/Binning.cc
     data/src/transformations/StringHash.cc
     data/src/transformations/TextTokenizer.cc
-    data/src/transformations/ColdStartText.cc
+    data/src/transformations/TextCompat.cc
+    data/src/transformations/cold_start/TextAugmentationUtils.cc
+    data/src/transformations/cold_start/ColdStartText.cc
+    data/src/transformations/cold_start/VariableLengthColdStart.cc
     data/src/transformations/FeatureHash.cc
-    data/src/transformations/TransformationList.cc
+    data/src/transformations/Tabular.cc
+    data/src/transformations/Pipeline.cc
     data/src/transformations/MachLabel.cc
+    data/src/transformations/MachMemory.cc
+    data/src/transformations/AddMachMemorySamples.cc
     data/src/transformations/StringConcat.cc
     data/src/transformations/StringCast.cc
     data/src/transformations/StringIDLookup.cc
     data/src/transformations/CategoricalTemporal.cc
+    data/src/transformations/NumericalTemporal.cc
+    data/src/transformations/Tabular.cc
     data/src/transformations/Date.cc
+    data/src/transformations/CrossColumnPairgrams.cc
+    data/src/transformations/DeduplicateTokens.cc
+    data/src/transformations/EncodePosition.cc
+    data/src/transformations/Recurrence.cc
+    data/src/transformations/CountTokens.cc
+    data/src/transformations/Graph.cc
+    data/src/transformations/RegressionBinning.cc
+    data/src/transformations/DyadicInterval.cc
+    data/src/transformations/NextWordPrediction.cc
+    data/src/transformations/SpladeAugmentation.cc
+    data/src/transformations/ner/NerTokenFromStringArray.cc
+    data/src/transformations/ner/NerTokenizationUnigram.cc
+    data/src/transformations/ner/NerDyadicDataProcessor.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
     data/src/TensorConversion.cc
     data/src/Loader.cc
     data/src/ColumnMapIterator.cc
+    data/src/rca/ExplanationMap.cc
+    mach/src/MachRetriever.cc
+    mach/src/MachConfig.cc
+    archive/src/Archive.cc
+    archive/src/Map.cc
+    archive/src/List.cc
+    archive/src/Value.cc
+    archive/src/ParameterReference.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/featurization/DataTypes.cc
-    auto_ml/src/featurization/TabularBlockComposer.cc
-    auto_ml/src/featurization/TabularDatasetFactory.cc
-    auto_ml/src/featurization/RecurrentDatasetFactory.cc
-    auto_ml/src/featurization/GraphDatasetManager.cc
+    auto_ml/src/featurization/TabularTransformations.cc
+    auto_ml/src/featurization/Featurizer.cc
+    auto_ml/src/featurization/MachFeaturizer.cc
+    auto_ml/src/featurization/GraphFeaturizer.cc
+    auto_ml/src/featurization/RecurrentFeaturizer.cc
+    auto_ml/src/featurization/ReservedColumns.cc
+    auto_ml/src/featurization/TabularBlockComposer.cc # Deprecate
+    auto_ml/src/featurization/TabularDatasetFactory.cc # Deprecate
+    auto_ml/src/cold_start/ColdStartUtils.cc # Deprecate
+    auto_ml/src/pretrained/PretrainedBase.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
-    auto_ml/src/cold_start/ColdStartUtils.cc
-    auto_ml/src/rlhf/RLHFSampler.cc
+    auto_ml/src/rlhf/BalancingSamples.cc
+    auto_ml/src/rlhf/RLHFSampler.cc # Deprecate
+    auto_ml/src/cpp_classifier/CppClassifier.cc
+    utils/src/SymSpellBackend/symspell.cc
+    utils/src/SymSpellCpp/SymSpell.cc
+    utils/text/PorterStemmer.cc
     utils/Logging.cc
-    utils/StringManipulation.cc
+    utils/text/StringManipulation.cc
     utils/UUID.cc
     utils/Random.cc
     licensing/src/entitlements/RestrictionTree.cc
@@ -474,6 +488,17 @@ endif()
 
 target_link_libraries(thirdai PUBLIC nlohmann_json::nlohmann_json)
 
+add_library(thirdai_core SHARED ${THIRDAI_SOURCES})
+target_link_libraries(
+  thirdai_core
+  PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal prometheus-cpp::pull
+         utf8proc nlohmann_json::nlohmann_json)
+
+if(${LICENSE_BUILD_FLAG_FOUND})
+  target_link_libraries(thirdai_core PUBLIC cryptopp::cryptopp OpenSSL::Crypto
+                                            OpenSSL::SSL)
+endif()
+
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
 # builds, but not our ASan builds. This means that for now we can't run ASan
 # from python, but honestly this is more trouble than it's worth so for now this
@@ -483,32 +508,37 @@ pybind11_add_module(
   _thirdai
   python_bindings/thirdai.cc
   bolt/python_bindings/PybindUtils.cc
-  bolt/python_bindings/BoltPython.cc
   bolt/python_bindings/BoltNNPython.cc
-  bolt/python_bindings/CallbacksPython.cc
-  bolt/python_bindings/BoltV2NNPython.cc
-  bolt/python_bindings/BoltV2Compression.cc
-  bolt/python_bindings/BoltV2TrainPython.cc
+  bolt/python_bindings/BoltTrainPython.cc
+  bolt/python_bindings/BoltCompression.cc
   bolt/python_bindings/NumpyConversions.cc
+  bolt/python_bindings/BoltTextGeneration.cc
+  bolt/python_bindings/BoltNERPython.cc
   bolt/python_bindings/Porting.cc
+  bolt/src/seismic/SeismicBase.cc
+  bolt/src/seismic/SeismicEmbedding.cc
+  bolt/src/seismic/SeismicClassifier.cc
+  bolt/python_bindings/BoltSeismic.cc
   dataset/python_bindings/DatasetPython.cc
-  dataset/src/blocks/TabularHashFeatures.cc
   data/python_bindings/DataPython.cc
   search/python_bindings/SearchPython.cc
   search/python_bindings/BeamSearch.cc
   hashing/python_bindings/HashingPython.cc
   auto_ml/python_bindings/AutomlPython.cc
+  auto_ml/python_bindings/PretrainedBasePython.cc
   auto_ml/src/udt/UDT.cc
   auto_ml/src/udt/utils/Models.cc
   auto_ml/src/udt/utils/Classifier.cc
   auto_ml/src/udt/backends/UDTClassifier.cc
-  auto_ml/src/udt/backends/UDTMachClassifier.cc
+  auto_ml/src/udt/backends/UDTMach.cc
+  auto_ml/src/udt/backends/DeprecatedUDTMachClassifier.cc # Deprecate
   auto_ml/src/udt/backends/UDTRecurrentClassifier.cc
   auto_ml/src/udt/backends/UDTRegression.cc
   auto_ml/src/udt/backends/UDTQueryReformulation.cc
   auto_ml/src/udt/backends/UDTSVMClassifier.cc
   auto_ml/src/udt/backends/UDTGraphClassifier.cc
   auto_ml/src/udt/utils/Classifier.cc
+  mach/python_bindings/MachPython.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)
 

@@ -1,6 +1,8 @@
 #include "MachLabel.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <exception>
 
@@ -21,7 +23,7 @@ ColumnMap MachLabel::apply(ColumnMap columns, State& state) const {
   std::exception_ptr error;
 
 #pragma omp parallel for default(none) \
-    shared(entities_column, hashes, index, error)
+    shared(entities_column, hashes, index, error) if (columns.numRows() > 1)
   for (size_t i = 0; i < entities_column->numRows(); i++) {
     for (uint32_t entity : entities_column->row(i)) {
       try {
@@ -47,6 +49,20 @@ ColumnMap MachLabel::apply(ColumnMap columns, State& state) const {
 
   return columns;
 }
+
+ar::ConstArchivePtr MachLabel::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("input_column", ar::str(_input_column_name));
+  map->set("output_column", ar::str(_output_column_name));
+
+  return map;
+}
+
+MachLabel::MachLabel(const ar::Archive& archive)
+    : _input_column_name(archive.str("input_column")),
+      _output_column_name(archive.str("output_column")) {}
 
 template void MachLabel::serialize(cereal::BinaryInputArchive&);
 template void MachLabel::serialize(cereal::BinaryOutputArchive&);

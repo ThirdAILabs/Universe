@@ -2,7 +2,7 @@ import os
 
 import pytest
 from download_dataset_fixtures import download_amazon_kaggle_product_catalog_sampled
-from thirdai import bolt
+from thirdai import bolt, data
 
 pytestmark = [pytest.mark.unit]
 
@@ -36,7 +36,9 @@ def test_udt_cold_start_kaggle(download_amazon_kaggle_product_catalog_sampled):
     assert metrics["train_categorical_accuracy"][-1] > 0.5
 
 
-def setup_testing_file(missing_values, bad_csv_line, integer_target=False):
+def setup_testing_file(
+    missing_values, bad_csv_line, integer_target=False, quoted_newline=False
+):
     filename = "DUMMY_COLDSTART.csv"
     with open(filename, "w") as outfile:
         outfile.write("category,strong,weak1,weak2\n")
@@ -51,6 +53,9 @@ def setup_testing_file(missing_values, bad_csv_line, integer_target=False):
         if not integer_target:
             outfile.write("LMFAO,this is not an integer,,\n")
 
+        if quoted_newline:
+            outfile.write('1,"strong\nstrong\n","weak\nweak\n",')
+
     return filename
 
 
@@ -62,8 +67,12 @@ def run_coldstart(
     bad_csv_line=False,
     epochs=5,
     integer_target=True,
+    variable_length=data.transformations.VariableLengthConfig(),
+    quoted_newline=False,
 ):
-    filename = setup_testing_file(missing_values, bad_csv_line, integer_target)
+    filename = setup_testing_file(
+        missing_values, bad_csv_line, integer_target, quoted_newline
+    )
 
     model = bolt.UniversalDeepTransformer(
         data_types={
@@ -82,6 +91,7 @@ def run_coldstart(
         learning_rate=0.01,
         epochs=epochs,
         validation=validation,
+        variable_length=variable_length,
     )
 
     os.remove(filename)
@@ -126,13 +136,18 @@ def test_coldstart_missing_values():
 
 
 def test_coldstart_bad_csv_line():
-    with pytest.raises(
-        ValueError,
-        match=r"Received a row with a different number of entries than in the header. Expected 4 entries but received 3 entries. Line: 1,theres a new line,",
-    ):
+    with pytest.raises(ValueError, match=r"Expected 4 columns. But received row.*"):
         run_coldstart(bad_csv_line=True)
 
 
 @pytest.mark.parametrize("integer_target", [True, False])
 def test_coldstart_target_type(integer_target):
     run_coldstart(integer_target=integer_target)
+
+
+@pytest.mark.parametrize(
+    "variable_length",
+    [None, data.transformations.VariableLengthConfig()],
+)
+def test_coldstart_variable_length(variable_length):
+    run_coldstart(variable_length=variable_length, quoted_newline=True)

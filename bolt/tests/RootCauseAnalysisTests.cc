@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <iterator>
 
-namespace thirdai::bolt::nn::tests {
+namespace thirdai::bolt::tests {
 
 constexpr uint32_t N_CLASSES = 50;
 
@@ -26,23 +26,23 @@ uint32_t largestGrad(const rca::RCAGradients& grads) {
   return argmax;
 }
 
-void testRootCauseAnalysis(const train::LabeledDataset& train_data,
-                           const train::LabeledDataset& test_data) {
-  auto input = ops::Input::make(/* dim= */ N_CLASSES);
+void testRootCauseAnalysis(const LabeledDataset& train_data,
+                           const LabeledDataset& test_data) {
+  auto input = Input::make(/* dim= */ N_CLASSES);
 
   auto output =
-      ops::FullyConnected::make(
+      FullyConnected::make(
           /* dim= */ 50, /* input_dim= */ N_CLASSES, /* sparsity= */ 1.0,
           /* activation*/ "softmax")
           ->apply(input);
 
-  auto labels = ops::Input::make(/* dim= */ N_CLASSES);
+  auto labels = Input::make(/* dim= */ N_CLASSES);
 
-  auto loss = loss::CategoricalCrossEntropy::make(output, labels);
+  auto loss = CategoricalCrossEntropy::make(output, labels);
 
-  auto model = model::Model::make({input}, {output}, {loss});
+  auto model = Model::make({input}, {output}, {loss});
 
-  train::Trainer trainer(model);
+  Trainer trainer(model);
 
   auto metrics = trainer.train_with_metric_names(
       /* train_data= */ train_data, /* learning_rate= */ 0.01, /* epochs= */ 5,
@@ -90,4 +90,4 @@ TEST(RootCauseAnalysisTests, SparseInput) {
   testRootCauseAnalysis(train_data, test_data);
 }
 
-}  // namespace thirdai::bolt::nn::tests
+}  // namespace thirdai::bolt::tests

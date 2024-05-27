@@ -1,6 +1,7 @@
 #include "BoltLayerTestUtils.h"
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/layers/LayerConfig.h>
+#include <bolt/src/nn/optimizers/Adam.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <cstddef>
@@ -44,7 +45,9 @@ class FullyConnectedLayerTestFixture : public testing::Test {
                                              /* binsize=*/8,
                                              /* reservoir_size= */ 10,
                                              /* permutations=*/8)},
-               INPUT_DIM) {}
+               INPUT_DIM) {
+    _layer.initOptimizer(AdamFactory::make(), true);
+  }
 
   void SetUp() override {
     // Initialize the weights and biases to random values. Use decimal powers of
@@ -62,11 +65,11 @@ class FullyConnectedLayerTestFixture : public testing::Test {
   }
 
   const std::vector<float>& getWeightGradients() {
-    return _layer._weight_optimizer->gradients;
+    return _layer._weight_gradients;
   }
 
   const std::vector<float>& getBiasGradients() {
-    return _layer._bias_optimizer->gradients;
+    return _layer._bias_gradients;
   }
 
   std::vector<uint32_t> genRandomIndices(uint32_t len, uint32_t max) {

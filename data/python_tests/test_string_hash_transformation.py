@@ -13,7 +13,7 @@ def get_two_col_hashed_string_dataset(col_length, output_range):
 
     columns = data.ColumnMap({"column1": column1, "column2": column2})
 
-    featurizer = data.transformations.TransformationList(
+    featurizer = data.transformations.Pipeline(
         transformations=[
             data.transformations.StringHash(
                 input_column=column_name,
@@ -58,3 +58,50 @@ def test_string_hash_distribution():
     expected_count = col_length / output_range
     for count in hash_counts:
         assert count / expected_count < 2 and count / expected_count > 0.5
+
+
+def test_string_hash_with_delimiter():
+    ROWS = 100
+    columns = data.ColumnMap(
+        {
+            "col": data.columns.StringColumn(
+                [f"{i}-{i+1}-{i}-{i+1}" for i in range(ROWS)]
+            )
+        }
+    )
+
+    str_hash = data.transformations.StringHash(
+        input_column="col",
+        output_column=f"hashes",
+        delimiter="-",
+        output_range=10000,
+    )
+
+    columns = str_hash(columns)
+
+    hashes = columns["hashes"].data()
+
+    for i, row in enumerate(hashes):
+        assert row[0] == row[2]
+        assert row[1] == row[3]
+        assert row[0] != row[1]
+
+        if i < len(hashes) - 1:
+            assert row[1] == hashes[i + 1][0]
+
+
+def test_string_hash_serialization():
+    N = 20
+    columns = data.ColumnMap(
+        {"str": data.columns.StringColumn([f"val_{i % N}" for i in range(2 * N)])}
+    )
+
+    transformation = data.transformations.StringHash("str", "hashes", output_range=1000)
+
+    transformation_copy = data.transformations.deserialize(transformation.serialize())
+
+    output1 = transformation(columns)
+    output2 = transformation_copy(columns)
+
+    assert output1["hashes"].data() == output2["hashes"].data()
+    assert output2["hashes"].data()[:N] == output2["hashes"].data()[N:]

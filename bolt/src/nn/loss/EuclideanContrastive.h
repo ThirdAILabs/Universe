@@ -3,7 +3,7 @@
 #include "Loss.h"
 #include <bolt/src/nn/ops/Op.h>
 
-namespace thirdai::bolt::nn::loss {
+namespace thirdai::bolt {
 
 /**
  * Contrastive loss function:
@@ -14,23 +14,29 @@ namespace thirdai::bolt::nn::loss {
  */
 class EuclideanContrastive final : public Loss {
  public:
-  explicit EuclideanContrastive(autograd::ComputationPtr output_1,
-                                autograd::ComputationPtr output_2,
-                                autograd::ComputationPtr labels,
+  explicit EuclideanContrastive(ComputationPtr output_1,
+                                ComputationPtr output_2, ComputationPtr labels,
                                 float dissimilar_cutoff_distance);
 
   static std::shared_ptr<EuclideanContrastive> make(
-      const autograd::ComputationPtr& output_1,
-      const autograd::ComputationPtr& output_2,
-      const autograd::ComputationPtr& labels, float dissimilar_cutoff_distance);
+      const ComputationPtr& output_1, const ComputationPtr& output_2,
+      const ComputationPtr& labels, float dissimilar_cutoff_distance);
 
   void gradients(uint32_t index_in_batch, uint32_t batch_size) const final;
 
   float loss(uint32_t index_in_batch) const final;
 
-  autograd::ComputationList outputsUsed() const final;
+  ComputationList outputsUsed() const final;
 
-  autograd::ComputationList labels() const final;
+  ComputationList labels() const final;
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::shared_ptr<EuclideanContrastive> fromArchive(
+      const ar::Archive& archive,
+      const std::unordered_map<std::string, ComputationPtr>& computations);
+
+  static std::string type() { return "euclidean_contrastive"; }
 
  private:
   float euclideanDistanceSquared(uint32_t index_in_batch) const;
@@ -41,10 +47,10 @@ class EuclideanContrastive final : public Loss {
 
   EuclideanContrastive(){};
 
-  autograd::ComputationPtr _output_1, _output_2, _labels;
+  ComputationPtr _output_1, _output_2, _labels;
   float _dissimilar_cutoff_distance;
 };
 
 using EuclideanContrastivePtr = std::shared_ptr<EuclideanContrastive>;
 
-}  // namespace thirdai::bolt::nn::loss
+}  // namespace thirdai::bolt

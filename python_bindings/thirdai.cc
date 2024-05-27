@@ -1,15 +1,17 @@
 // Code to create thirdai modules
+#include <bolt/python_bindings/BoltCompression.h>
+#include <bolt/python_bindings/BoltNERPython.h>
 #include <bolt/python_bindings/BoltNNPython.h>
-#include <bolt/python_bindings/BoltPython.h>
-#include <bolt/python_bindings/BoltV2Compression.h>
-#include <bolt/python_bindings/BoltV2NNPython.h>
-#include <bolt/python_bindings/BoltV2TrainPython.h>
-#include <bolt/python_bindings/CallbacksPython.h>
+#include <bolt/python_bindings/BoltSeismic.h>
+#include <bolt/python_bindings/BoltTextGeneration.h>
+#include <bolt/python_bindings/BoltTrainPython.h>
 #include <hashing/python_bindings/HashingPython.h>
 #include <auto_ml/python_bindings/AutomlPython.h>
+#include <auto_ml/python_bindings/PretrainedBasePython.h>
 #include <data/python_bindings/DataPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <licensing/python_bindings/LicensingPython.h>
+#include <mach/python_bindings/MachPython.h>
 #include <search/python_bindings/DocSearchPython.h>
 #include <telemetry/python_bindings/TelemetryPython.h>
 #include <utils/Logging.h>
@@ -118,9 +120,8 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   thirdai::dataset::python::createDatasetSubmodule(m);
 
   // Licensing Submodule
-#if THIRDAI_CHECK_LICENSE
+  // Licensing methods will be noops if THIRDAI_CHECK_LICENSE is false.
   thirdai::licensing::python::createLicensingSubmodule(m);
-#endif
 
   // Telemetry submodule
   thirdai::telemetry::python::createTelemetrySubmodule(m);
@@ -134,13 +135,18 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
   // Bolt Submodule
   auto bolt_submodule = m.def_submodule("bolt");
-  thirdai::bolt::python::createBoltSubmodule(bolt_submodule);
   thirdai::bolt::python::createBoltNNSubmodule(bolt_submodule);
-  thirdai::bolt::python::createCallbacksSubmodule(bolt_submodule);
+  thirdai::bolt::python::createBoltTrainSubmodule(bolt_submodule);
+  thirdai::bolt::compression::python::createCompressionSubmodule(
+      bolt_submodule);
+  thirdai::bolt::python::addTextGenerationModels(bolt_submodule);
+  thirdai::bolt::seismic::python::createSeismicSubmodule(bolt_submodule);
+  thirdai::bolt::NER::python::addNERModels(bolt_submodule);
 
   // Automl in Bolt
   thirdai::automl::python::defineAutomlInModule(bolt_submodule);
-  thirdai::automl::python::createModelsSubmodule(bolt_submodule);
+  thirdai::automl::python::addPretrainedBaseModule(bolt_submodule);
+  thirdai::mach::python::defineMach(bolt_submodule);
 
   thirdai::automl::python::createUDTTypesSubmodule(bolt_submodule);
   thirdai::automl::python::createUDTTemporalSubmodule(bolt_submodule);
@@ -150,11 +156,4 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
   // Deployment submodule
   thirdai::automl::python::createDeploymentSubmodule(m);
-
-  // Bolt V2
-  auto bolt_v2_submodule = m.def_submodule("bolt_v2");
-  thirdai::bolt::nn::python::createBoltV2NNSubmodule(bolt_v2_submodule);
-  thirdai::bolt::train::python::createBoltV2TrainSubmodule(bolt_v2_submodule);
-  thirdai::bolt::compression::python::createCompressionSubmodule(
-      bolt_v2_submodule);
 }

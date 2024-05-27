@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cstdint>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
 // There are issues including <cmath> to get M_PI on visual studio.
@@ -12,7 +13,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>  // NOLINT (clang-tidy wants <cmath>)
 
-namespace thirdai::bolt::train::callbacks {
+namespace thirdai::bolt::callbacks {
 
 /**
  * @brief This callback is intended to schedule learning rate changes during
@@ -132,44 +133,60 @@ class MultiStepLR final : public LearningRateScheduler {
 
 class CosineAnnealingWarmRestart final : public LearningRateScheduler {
  public:
-  explicit CosineAnnealingWarmRestart(
-      uint32_t initial_restart_iter = 4,
-      uint32_t iter_restart_multiplicative_factor = 1, float min_lr = 0.0,
-      bool batch_per_step = false)
-      : LearningRateScheduler(batch_per_step),
-        _current_restart_iter(initial_restart_iter),
-        _current_iter(0),
-        _iter_restart_multiplicative_factor(iter_restart_multiplicative_factor),
-        _min_lr(min_lr) {
-    assert(initial_restart_iter > 0 &&
-           iter_restart_multiplicative_factor >= 1 && min_lr >= 0);
+  CosineAnnealingWarmRestart(float min_lr, float max_lr,
+                             uint32_t steps_until_restart,
+                             uint32_t linear_warmup_steps = 0,
+                             uint32_t steps_until_restart_scaling_factor = 1,
+                             bool batch_level_steps = true)
+      : LearningRateScheduler(batch_level_steps),
+        _min_lr(min_lr),
+        _max_lr(max_lr),
+        _steps(0),
+        _steps_until_restart(steps_until_restart),
+        _steps_until_restart_scaling_factor(steps_until_restart_scaling_factor),
+        _linear_warmup_steps(linear_warmup_steps) {
+    if (max_lr <= min_lr) {
+      throw std::invalid_argument(
+          "max lr should be greater than min lr in Cosine LR schedule.");
+    }
+
+    if (_steps_until_restart == 0 || _steps_until_restart_scaling_factor == 0) {
+      throw std::invalid_argument(
+          "steps_until_restart and steps_until_restart_scaling_factor must be "
+          "nonzero.");
+    }
   }
 
   float getNextLR(float current_learning_rate, uint32_t step) final {
-    if (step == 0) {
-      // base learning rate will be the maximum learning rate.
-      _base_learning_rate = current_learning_rate;
+    (void)current_learning_rate, (void)step;
+
+    if (_linear_warmup_steps > 0) {
+      float next_lr = _min_lr + static_cast<float>(_steps) /
+                                    _linear_warmup_steps * (_max_lr - _min_lr);
+      _steps++;
+      if (_steps == _linear_warmup_steps) {
+        _linear_warmup_steps = 0;
+        _steps = 0;
+      }
+      return next_lr;
     }
 
-    float cosine_factor = std::pow(
-        std::cos((static_cast<float>(_current_iter) / _current_restart_iter) *
-                 M_PI / 2),
-        2);
+    float cosine_factor =
+        1 + std::cos(static_cast<float>(_steps) / _steps_until_restart * M_PI);
+    float next_lr = _min_lr + (_max_lr - _min_lr) * cosine_factor / 2;
 
-    float nextLR = _min_lr + (_base_learning_rate - _min_lr) * cosine_factor;
-
-    _current_iter++;
-    if (_current_iter == _current_restart_iter) {
-      _current_iter = 0;
-      _current_restart_iter *= _iter_restart_multiplicative_factor;
+    _steps++;
+    if (_steps == _steps_until_restart) {
+      _steps = 0;
+      _steps_until_restart *= _steps_until_restart_scaling_factor;
     }
 
-    return nextLR;
+    return next_lr;
   }
 
  private:
-  uint32_t _current_restart_iter, _current_iter,
-      _iter_restart_multiplicative_factor;
-  float _min_lr, _base_learning_rate;
+  float _min_lr, _max_lr;
+  uint32_t _steps, _steps_until_restart, _steps_until_restart_scaling_factor,
+      _linear_warmup_steps;
 };
-}  // namespace thirdai::bolt::train::callbacks
+}  // namespace thirdai::bolt::callbacks

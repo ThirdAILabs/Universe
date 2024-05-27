@@ -1,7 +1,8 @@
 enable_testing()
 include(GoogleTest)
 
-set(AUTOML_TESTS ConfigParameterTests)
+set(AUTOML_TESTS ConfigParameterTests TabularTransformationTests
+                 BalancingSamplesSerializationTest)
 
 foreach(AUTOML_TEST IN LISTS AUTOML_TESTS)
   add_executable(${AUTOML_TEST} ${AUTOML_TEST}.cc)

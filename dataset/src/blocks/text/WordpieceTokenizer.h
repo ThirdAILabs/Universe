@@ -5,9 +5,9 @@
 #include <cereal/types/polymorphic.hpp>
 #include "TextTokenizer.h"
 #include <dataset/src/utils/SafeFileIO.h>
-#include <iostream>
+#include <utils/text/StringManipulation.h>
 #include <memory>
-#include <sstream>
+#include <string>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
@@ -24,6 +24,8 @@ class WordpieceTokenizer : public TextTokenizer {
   explicit WordpieceTokenizer(const std::string& vocab_fpath,
                               bool to_lower = true);
 
+  explicit WordpieceTokenizer(const ar::Archive& archive);
+
   static std::shared_ptr<TextTokenizer> make(const std::string& vocab_file,
                                              bool lowercase = true) {
     return std::make_shared<WordpieceTokenizer>(vocab_file, lowercase);
@@ -34,11 +36,26 @@ class WordpieceTokenizer : public TextTokenizer {
   std::vector<std::wstring> tokenizeToStrings(
       const std::string& sentence) const;
 
+  std::vector<std::string> toStrings(const std::string& input) final {
+    auto wstring_tokens = tokenizeToStrings(input);
+    std::vector<std::string> str_tokens;
+    str_tokens.reserve(wstring_tokens.size());
+
+    for (const auto& tok : wstring_tokens) {
+      str_tokens.emplace_back(text::fromUnicode(tok));
+    }
+    return str_tokens;
+  }
+
   std::string decode(const std::vector<uint32_t>& token_ids) const;
 
   uint32_t id(const std::string& token) const;
 
+  std::string token(uint32_t id) const;
+
   uint32_t size() const { return _token_to_id.size(); }
+
+  size_t vocabSize() const { return _id_to_token.size(); }
 
   uint32_t unkId() const { return _token_to_id.at(L"[UNK]"); }
 
@@ -50,6 +67,10 @@ class WordpieceTokenizer : public TextTokenizer {
     // TODO(david): should we take the whole word here instead of the subword
     return decode({source_token});
   }
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "wordpiece"; }
 
  private:
   /**

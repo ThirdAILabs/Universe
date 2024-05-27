@@ -3,7 +3,7 @@
 #include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/HashFunction.h>
 #include <hashing/src/MinHash.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 
 namespace thirdai::automl::config {
 
@@ -24,8 +24,8 @@ std::shared_ptr<hashing::HashFunction> getHashFunction(
       "DensifiedMinHash, MinHash.");
 }
 
-std::unique_ptr<search::Flash<uint32_t>> buildIndex(const json& config,
-                                                    const ArgumentMap& args) {
+std::unique_ptr<search::Flash> buildIndex(const json& config,
+                                          const ArgumentMap& args) {
   uint32_t num_tables = integerParameter(config, "num_tables", args);
   uint32_t hashes_per_table =
       integerParameter(config, "hashes_per_table", args);
@@ -39,10 +39,10 @@ std::unique_ptr<search::Flash<uint32_t>> buildIndex(const json& config,
   if (config.contains("reservoir_size")) {
     uint32_t reservoir_size = integerParameter(config, "reservoir_size", args);
 
-    return std::make_unique<search::Flash<uint32_t>>(hash_fn, reservoir_size);
+    return std::make_unique<search::Flash>(hash_fn, reservoir_size);
   }
 
-  return std::make_unique<search::Flash<uint32_t>>(hash_fn);
+  return std::make_unique<search::Flash>(hash_fn);
 }
 
 }  // namespace thirdai::automl::config

@@ -12,18 +12,132 @@
 #include <stdexcept>
 #include <utility>
 
-namespace thirdai::bolt::train {
+namespace thirdai::bolt {
 
 constexpr uint32_t DEFAULT_BATCH_SIZE = 2048;
 
-Trainer::Trainer(nn::model::ModelPtr model,
+Trainer::Trainer(ModelPtr model,
                  std::optional<uint32_t> freeze_hash_tables_epoch,
+                 uint32_t gradient_update_interval,
                  InterruptCheck interrupt_check)
     : _model(std::move(model)),
-      _epoch(0),
       _freeze_hash_tables_epoch(freeze_hash_tables_epoch),
+      _gradient_update_interval(gradient_update_interval),
       _interrupt_check(std::move(interrupt_check)) {
   _history = std::make_shared<metrics::History>();
+}
+
+void Trainer::trainOnBatches(
+    const LabeledDataset& train_data, const TrainStatePtr& train_state,
+    metrics::MetricCollection& train_metrics,
+    callbacks::CallbackList& callbacks,
+    const std::optional<LabeledDataset>& validation_data,
+    const metrics::InputMetrics& validation_metrics,
+    const std::optional<uint32_t>& steps_per_validation,
+    bool use_sparsity_in_validation, bool autotune_rehash_rebuild,
+    const std::optional<uint32_t>& logging_interval, bool verbose,
+    const DistributedCommPtr& comm) {
+  verifyNumBatchesMatch(train_data);
+  if (validation_data) {
+    verifyNumBatchesMatch(*validation_data);
+  }
+
+  if (autotune_rehash_rebuild) {
+    autotuneRehashRebuild(train_data.first.size(),
+                          train_data.first.at(0).at(0)->batchSize());
+  }
+  uint32_t num_batches = train_data.first.size();
+  if (comm) {
+    num_batches = comm->minNumBatches(num_batches);
+  }
+  if (_gradient_update_interval > num_batches) {
+    std::string error_message = fmt::format(
+        "Error: gradient_update_interval ({}) exceeds num_batches ({}). "
+        "Model parameters will not be updated under this condition.",
+        _gradient_update_interval, num_batches);
+
+    throw std::runtime_error(error_message);
+  }
+  auto bar = ProgressBar::makeOptional(verbose, "train", num_batches);
+
+  utils::Timer max_batch_timer;
+  for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
+    bool is_update_interval_reached =
+        ((batch_idx + 1) % _gradient_update_interval == 0);
+    callbacks.onBatchBegin();
+
+    const TensorList& inputs = train_data.first.at(batch_idx);
+    const TensorList& labels = train_data.second.at(batch_idx);
+
+    utils::Timer train_on_batch_timer;
+    _model->trainOnBatch(inputs, labels);
+
+    train_on_batch_timer.stop();
+    std::string train_on_batch_log = formatFuncCallLogLine(
+        "train_on_batch", batch_idx, train_on_batch_timer.milliseconds());
+    logging::info(train_on_batch_log);
+    if (comm && is_update_interval_reached) {
+      comm->communicate(_model);
+    }
+
+    if (is_update_interval_reached) {
+      callbacks.beforeUpdate();
+
+      utils::Timer update_param_timer;
+      _model->updateParameters(train_state->learningRate());
+      update_param_timer.stop();
+
+      std::string update_parameter_log = formatFuncCallLogLine(
+          "update_parameter", batch_idx, update_param_timer.milliseconds());
+      logging::info(update_parameter_log);
+      train_metrics.recordBatch(inputs.at(0)->batchSize());
+    }
+
+    callbacks.onBatchEnd();
+
+    if (bar) {
+      bar->increment();
+    }
+
+    train_state->incrementStepsSinceVal();
+    if (steps_per_validation &&
+        train_state->compareStepsSinceVal(*steps_per_validation)) {
+      validate(*validation_data, validation_metrics,
+               use_sparsity_in_validation);
+      train_state->resetStepsSinceVal();
+    }
+
+    if (logging_interval && (_model->trainSteps() % *logging_interval) == 0) {
+      logging::info(
+          formatIntermediateLogLine(train_metrics.summarizeLastStep()));
+    }
+
+    if (train_state->isTrainingStopped()) {
+      // TODO(Nicholas): Print stuff and have more graceful termination
+      return;
+    }
+
+    checkInterrupt();
+  }
+  std::vector<std::pair<std::string, float>> metrics_at_rank_0;
+  if (comm && train_metrics.hasMetrics()) {
+    metrics_at_rank_0 =
+        comm->broadcastMetrics(train_metrics.getFlattenedMetrics());
+  }
+
+  train_metrics.updateHistory(*_history);
+
+  if (comm && train_metrics.hasMetrics()) {
+    train_metrics.setFlattenedMetrics(*_history, metrics_at_rank_0);
+  }
+
+  std::string log_line =
+      formatTrainLogLine(train_metrics.summarizeLastStep(), num_batches,
+                         max_batch_timer.seconds());
+  logging::info(log_line);
+  if (bar) {
+    bar->close(log_line);
+  }
 }
 
 metrics::History Trainer::train(
@@ -36,17 +150,7 @@ metrics::History Trainer::train(
     const std::vector<callbacks::CallbackPtr>& callbacks_in,
     bool autotune_rehash_rebuild, bool verbose,
     std::optional<uint32_t> logging_interval, const DistributedCommPtr& comm) {
-  verifyNumBatchesMatch(train_data);
-  if (validation_data) {
-    verifyNumBatchesMatch(*validation_data);
-  }
-
-  if (autotune_rehash_rebuild) {
-    autotuneRehashRebuild(train_data.first.size(),
-                          train_data.first.at(0).at(0)->batchSize());
-  }
-
-  auto train_state = TrainState::make(learning_rate, train_data.first.size());
+  auto train_state = TrainState::make(learning_rate);
 
   metrics::MetricCollection train_metrics(train_metrics_in);
 
@@ -55,108 +159,42 @@ metrics::History Trainer::train(
 
   callbacks.onTrainBegin();
 
-  uint32_t steps_since_validation = 0;
-
-  uint32_t num_epochs = _epoch + epochs;
-  for (; _epoch < num_epochs; _epoch++) {
-    if (_freeze_hash_tables_epoch && _epoch == *_freeze_hash_tables_epoch) {
+  uint32_t num_epochs = _model->epochs() + epochs;
+  for (; _model->epochs() < num_epochs; _model->incrementEpochs()) {
+    if (_freeze_hash_tables_epoch &&
+        _model->epochs() == *_freeze_hash_tables_epoch) {
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
     }
 
     callbacks.onEpochBegin();
 
-    uint32_t num_batches = train_data.first.size();
-    if (comm) {
-      num_batches = comm->minNumBatches(num_batches);
-    }
-    auto bar = ProgressBar::makeOptional(verbose, "train", num_batches);
-
     utils::Timer epoch_timer;
 
-    for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
-      callbacks.onBatchBegin();
-
-      const nn::tensor::TensorList& inputs = train_data.first.at(batch_idx);
-      const nn::tensor::TensorList& labels = train_data.second.at(batch_idx);
-
-      utils::Timer train_on_batch_timer;
-      _model->trainOnBatch(inputs, labels);
-
-      train_on_batch_timer.stop();
-      std::string train_on_batch_log = formatFuncCallLogLine(
-          "train_on_batch", batch_idx, train_on_batch_timer.milliseconds());
-      logging::info(train_on_batch_log);
-
-      if (comm) {
-        comm->communicate(_model);
-      }
-
-      utils::Timer update_param_timer;
-      _model->updateParameters(train_state->learningRate());
-
-      update_param_timer.stop();
-
-      std::string update_parameter_log = formatFuncCallLogLine(
-          "update_parameter", batch_idx, update_param_timer.milliseconds());
-      logging::info(update_parameter_log);
-
-      train_metrics.recordBatch(inputs.at(0)->batchSize());
-
-      callbacks.onBatchEnd();
-
-      if (bar) {
-        bar->increment();
-      }
-
-      ++steps_since_validation;
-      if (steps_per_validation &&
-          steps_since_validation == *steps_per_validation) {
-        validate(*validation_data, validation_metrics,
-                 use_sparsity_in_validation);
-        steps_since_validation = 0;
-      }
-
-      if (logging_interval && (_model->trainSteps() % *logging_interval) == 0) {
-        logging::info(
-            formatIntermediateLogLine(train_metrics.summarizeLastStep()));
-      }
-
-      if (train_state->isTrainingStopped()) {
-        // TODO(Nicholas): Print stuff and have more graceful termination
-        return *_history;
-      }
-      checkInterrupt();
-    }
+    trainOnBatches(train_data, train_state, train_metrics, callbacks,
+                   validation_data, validation_metrics, steps_per_validation,
+                   use_sparsity_in_validation, autotune_rehash_rebuild,
+                   logging_interval, verbose, comm);
 
     epoch_timer.stop();
 
-    train_metrics.updateHistory(*_history);
-
     (*_history)["epoch_times"].push_back(epoch_timer.seconds());
-
-    std::string log_line = formatTrainLogLine(
-        train_metrics.summarizeLastStep(), num_batches, epoch_timer.seconds());
-    logging::info(log_line);
-
-    if (bar) {
-      bar->close(log_line);
-    }
 
     train_metrics.reset();
 
     // This condition ensures that if steps_per_validation coincides with the
     // end of the epoch that we don't validate twice: once above when we reach
     // the validation interval and once when we reach the end of the epoch.
-    if (validation_data && steps_since_validation != 0) {
+    if (validation_data && !train_state->compareStepsSinceVal(0)) {
       validate(*validation_data, validation_metrics,
                use_sparsity_in_validation);
-      steps_since_validation = 0;
+      train_state->resetStepsSinceVal();
     }
 
     callbacks.onEpochEnd();
 
     if (train_state->isTrainingStopped()) {
       // TODO(Nicholas): Print stuff and have more graceful termination
+      _model->incrementEpochs();
       return *_history;
     }
   }
@@ -194,12 +232,12 @@ metrics::History Trainer::train_with_dataset_loader(
     const dataset::DatasetLoaderPtr& train_data_loader, float learning_rate,
     uint32_t epochs, uint32_t batch_size,
     std::optional<uint32_t> max_in_memory_batches,
-    const metrics::InputMetrics& train_metrics,
+    const metrics::InputMetrics& train_metrics_in,
     const dataset::DatasetLoaderPtr& validation_data_loader,
     const metrics::InputMetrics& validation_metrics,
     std::optional<uint32_t> steps_per_validation,
     bool use_sparsity_in_validation,
-    const std::vector<callbacks::CallbackPtr>& callbacks,
+    const std::vector<callbacks::CallbackPtr>& callbacks_in,
     bool autotune_rehash_rebuild, bool verbose,
     std::optional<uint32_t> logging_interval, const DistributedCommPtr& comm) {
   if (!max_in_memory_batches) {
@@ -211,10 +249,10 @@ metrics::History Trainer::train_with_dataset_loader(
           loadAllWrapper(validation_data_loader, batch_size, verbose);
     }
 
-    return train(train_data, learning_rate, epochs, train_metrics,
+    return train(train_data, learning_rate, epochs, train_metrics_in,
                  validation_data, validation_metrics, steps_per_validation,
-                 use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
-                 verbose, logging_interval, comm);
+                 use_sparsity_in_validation, callbacks_in,
+                 autotune_rehash_rebuild, verbose, logging_interval, comm);
   }
 
   // We have duplicate code here for loading validation data because for
@@ -228,18 +266,131 @@ metrics::History Trainer::train_with_dataset_loader(
         loadAllWrapper(validation_data_loader, batch_size, verbose);
   }
 
-  for (uint32_t e = 0; e < epochs; e++) {
+  auto train_state = TrainState::make(learning_rate);
+
+  metrics::MetricCollection train_metrics(train_metrics_in);
+
+  callbacks::CallbackList callbacks(callbacks_in, _model, train_state,
+                                    _history);
+
+  callbacks.onTrainBegin();
+
+  uint32_t num_epochs = _model->epochs() + epochs;
+
+  for (; _model->epochs() < num_epochs; _model->incrementEpochs()) {
+    if (_freeze_hash_tables_epoch &&
+        _model->epochs() == *_freeze_hash_tables_epoch) {
+      _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
+    }
+    callbacks.onEpochBegin();
+    utils::Timer epoch_timer;
     while (auto train_chunk =
                loadSomeWrapper(train_data_loader, batch_size,
                                *max_in_memory_batches, verbose)) {
-      train(train_chunk.value(), learning_rate, /* epochs= */ 1, train_metrics,
-            validation_data, validation_metrics, steps_per_validation,
-            use_sparsity_in_validation, callbacks, autotune_rehash_rebuild,
-            verbose, logging_interval, comm);
+      trainOnBatches(train_chunk.value(), train_state, train_metrics, callbacks,
+                     validation_data, validation_metrics, steps_per_validation,
+                     use_sparsity_in_validation, autotune_rehash_rebuild,
+                     logging_interval, verbose, comm);
+    }
+    epoch_timer.stop();
+    (*_history)["epoch_times"].push_back(epoch_timer.seconds());
+
+    train_metrics.reset();
+    callbacks.onEpochEnd();
+    if (validation_data && !train_state->compareStepsSinceVal(0)) {
+      validate(*validation_data, validation_metrics,
+               use_sparsity_in_validation);
+      train_state->resetStepsSinceVal();
+    }
+
+    if (train_state->isTrainingStopped()) {
+      // TODO(Nicholas): Print stuff and have more graceful termination
+      return *_history;
     }
     train_data_loader->restart();
   }
 
+  callbacks.onTrainEnd();
+  return *_history;
+}
+
+metrics::History Trainer::train_with_data_loader(
+    const data::LoaderPtr& train_data_loader, float learning_rate,
+    uint32_t epochs, std::optional<size_t> max_in_memory_batches,
+    const metrics::InputMetrics& train_metrics_in,
+    const data::LoaderPtr& validation_data_loader,
+    const metrics::InputMetrics& validation_metrics,
+    std::optional<uint32_t> steps_per_validation,
+    bool use_sparsity_in_validation,
+    const std::vector<callbacks::CallbackPtr>& callbacks_in,
+    bool autotune_rehash_rebuild, bool verbose,
+    std::optional<uint32_t> logging_interval, const DistributedCommPtr& comm) {
+  if (!max_in_memory_batches) {
+    auto train_data = train_data_loader->all();
+
+    std::optional<LabeledDataset> validation_data = std::nullopt;
+    if (validation_data_loader) {
+      validation_data = validation_data_loader->all();
+    }
+
+    return train(train_data, learning_rate, epochs, train_metrics_in,
+                 validation_data, validation_metrics, steps_per_validation,
+                 use_sparsity_in_validation, callbacks_in,
+                 autotune_rehash_rebuild, verbose, logging_interval, comm);
+  }
+
+  // We have duplicate code here for loading validation data because for
+  // Temporal transformations loading the validation data after the training
+  // data is important. We do not do this for the streaming case because it
+  // would require doing a first pass over the training data before loading the
+  // validation data.
+  std::optional<LabeledDataset> validation_data = std::nullopt;
+  if (validation_data_loader) {
+    validation_data = validation_data_loader->all();
+  }
+
+  auto train_state = TrainState::make(learning_rate);
+
+  metrics::MetricCollection train_metrics(train_metrics_in);
+
+  callbacks::CallbackList callbacks(callbacks_in, _model, train_state,
+                                    _history);
+
+  callbacks.onTrainBegin();
+
+  uint32_t num_epochs = _model->epochs() + epochs;
+
+  for (; _model->epochs() < num_epochs; _model->incrementEpochs()) {
+    if (_freeze_hash_tables_epoch &&
+        _model->epochs() == *_freeze_hash_tables_epoch) {
+      _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
+    }
+    callbacks.onEpochBegin();
+    utils::Timer epoch_timer;
+    while (auto train_chunk = train_data_loader->next(*max_in_memory_batches)) {
+      trainOnBatches(train_chunk.value(), train_state, train_metrics, callbacks,
+                     validation_data, validation_metrics, steps_per_validation,
+                     use_sparsity_in_validation, autotune_rehash_rebuild,
+                     logging_interval, verbose, comm);
+    }
+    epoch_timer.stop();
+    (*_history)["epoch_times"].push_back(epoch_timer.seconds());
+
+    train_metrics.reset();
+    callbacks.onEpochEnd();
+    if (validation_data && !train_state->compareStepsSinceVal(0)) {
+      validate(*validation_data, validation_metrics,
+               use_sparsity_in_validation);
+      train_state->resetStepsSinceVal();
+    }
+
+    if (train_state->isTrainingStopped()) {
+      // TODO(Nicholas): Print stuff and have more graceful termination
+      return *_history;
+    }
+    train_data_loader->restart();
+  }
+  callbacks.onTrainEnd();
   return *_history;
 }
 
@@ -254,8 +405,8 @@ metrics::History Trainer::validate(const LabeledDataset& data,
   utils::Timer val_timer;
 
   for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
-    const nn::tensor::TensorList& inputs = data.first.at(batch_idx);
-    const nn::tensor::TensorList& labels = data.second.at(batch_idx);
+    const TensorList& inputs = data.first.at(batch_idx);
+    const TensorList& labels = data.second.at(batch_idx);
 
     _model->forward(inputs, labels, /* use_sparsity= */ use_sparsity);
 
@@ -306,6 +457,13 @@ metrics::History Trainer::validate_with_dataset_loader(
       /* verbose= */ verbose);
 }
 
+metrics::History Trainer::validate_with_data_loader(
+    const data::LoaderPtr& data, const metrics::InputMetrics& metrics,
+    bool use_sparsity, bool verbose) {
+  return validate(/* data= */ data->all(), /* metrics= */ metrics,
+                  /* use_sparsity= */ use_sparsity, /* verbose= */ verbose);
+}
+
 void Trainer::verifyNumBatchesMatch(const LabeledDataset& data) {
   if (data.first.size() != data.second.size()) {
     throw std::invalid_argument(
@@ -314,10 +472,11 @@ void Trainer::verifyNumBatchesMatch(const LabeledDataset& data) {
 }
 
 std::string Trainer::formatTrainLogLine(const std::string& metric_summary,
-                                        uint32_t batches, int64_t time) {
+                                        uint32_t batches, double time) {
   std::string logline = fmt::format(
-      "train | epoch {} | train_steps {} | {} | train_batches {} | time {}s",
-      _epoch, _model->trainSteps(), metric_summary, batches, time);
+      "train | epoch {} | train_steps {} | {} | train_batches {} | time "
+      "{:.3f}s",
+      _model->epochs(), _model->trainSteps(), metric_summary, batches, time);
 
   return logline;
 }
@@ -326,7 +485,7 @@ std::string Trainer::formatFuncCallLogLine(const std::string& func_call,
                                            uint32_t batches, int64_t time) {
   std::string logline = fmt::format(
       "func {} | epoch {} | train_steps {} | train_batches {} | time {} ms",
-      func_call, _epoch, _model->trainSteps(), batches, time);
+      func_call, _model->epochs(), _model->trainSteps(), batches, time);
 
   return logline;
 }
@@ -334,24 +493,25 @@ std::string Trainer::formatFuncCallLogLine(const std::string& func_call,
 std::string Trainer::formatIntermediateLogLine(
     const std::string& metric_summary) {
   std::string logline =
-      fmt::format("train | epoch {} | train_steps {} | {}", _epoch,
+      fmt::format("train | epoch {} | train_steps {} | {}", _model->epochs(),
                   _model->trainSteps(), metric_summary);
 
   return logline;
 }
 
 std::string Trainer::formatValidateLogLine(const std::string& metric_summary,
-                                           uint32_t batches, int64_t time) {
+                                           uint32_t batches, double time) {
   std::string logline = fmt::format(
-      "validate | epoch {} | train_steps {} | {} | val_batches {} | time {}s",
-      _epoch, _model->trainSteps(), metric_summary, batches, time);
+      "validate | epoch {} | train_steps {} | {} | val_batches {} | time "
+      "{:.3f}s",
+      _model->epochs(), _model->trainSteps(), metric_summary, batches, time);
 
   return logline;
 }
 
 void Trainer::autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size) {
   for (const auto& op : _model->ops()) {
-    if (auto fc = std::dynamic_pointer_cast<nn::ops::FullyConnected>(op)) {
+    if (auto fc = FullyConnected::cast(op)) {
       fc->autotuneRehashRebuild(/* num_batches= */ num_batches,
                                 /* batch_size= */ batch_size);
     }
@@ -399,4 +559,4 @@ std::optional<LabeledDataset> Trainer::loadSomeWrapper(
       convertDatasets(label_datasets, label_dims, /* copy= */ false));
 }
 
-}  // namespace thirdai::bolt::train
+}  // namespace thirdai::bolt

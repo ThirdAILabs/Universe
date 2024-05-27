@@ -2,6 +2,7 @@
 #include "ColumnUtils.h"
 #include <data/src/columns/Column.h>
 #include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -15,30 +16,48 @@ void ArrayColumn<T>::shuffle(const std::vector<size_t>& permutation) {
 
 template class ArrayColumn<uint32_t>;
 template class ArrayColumn<float>;
+template class ArrayColumn<std::string>;
 
 template <typename T>
 ColumnPtr ArrayColumn<T>::concat(ColumnPtr&& other) {
-  if (_dimension != other->dimension()) {
+  if (dim() != other->dim()) {
     throw std::invalid_argument(
         "Can only concatenate columns with the same dimension.");
   }
 
-  auto other_concrete = std::dynamic_pointer_cast<ArrayColumn<T>>(other);
-  if (!other_concrete) {
+  auto other_array_col = ArrayColumnBase<T>::cast(other);
+  if (!other_array_col) {
     throw std::invalid_argument(
-        "Can only concatenate value columns of the same type.");
+        "Can only concatenate array columns of the same type.");
   }
 
-  auto new_data =
-      concatVectors(std::move(_data), std::move(other_concrete->_data));
+  // If the other column is an ArrayColumn, we can make use of the common
+  // storage type to avoid copies.
+  if (auto other_concrete = std::dynamic_pointer_cast<ArrayColumn<T>>(other)) {
+    auto new_data =
+        concatVectors(std::move(_data), std::move(other_concrete->_data));
 
-  auto new_column =
-      ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(new_data), _dimension));
+    auto dim = _dim;
+    _dim.reset();
+    other_concrete->_dim.reset();
 
-  _dimension.reset();
-  other_concrete->_dimension.reset();
+    return ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(new_data), dim));
+  }
 
-  return new_column;
+  // If the other column only inherits from ArrayColumnBase, we need to copy
+  // it's data.
+  std::vector<std::vector<T>> new_data = std::move(_data);
+  new_data.reserve(numRows() + other_array_col->numRows());
+
+  for (size_t i = 0; i < other->numRows(); i++) {
+    auto row = other_array_col->row(i);
+    new_data.emplace_back(row.begin(), row.end());
+  }
+
+  auto dim = _dim;
+  _dim.reset();
+
+  return ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(new_data), dim));
 }
 
 template <typename T>
@@ -46,11 +65,10 @@ std::pair<ColumnPtr, ColumnPtr> ArrayColumn<T>::split(size_t starting_offset) {
   auto [front, back] = splitVector(std::move(_data), starting_offset);
 
   auto front_col =
-      ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(front), _dimension));
-  auto back_col =
-      ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(back), _dimension));
+      ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(front), dim()));
+  auto back_col = ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(back), dim()));
 
-  _dimension.reset();
+  _dim.reset();
 
   return {front_col, back_col};
 }
@@ -71,13 +89,12 @@ ArrayColumnPtr<uint32_t> ArrayColumn<uint32_t>::make(
   }
 
   return ArrayColumnPtr<uint32_t>(
-      new ArrayColumn<uint32_t>(std::move(data), ColumnDimension::sparse(dim)));
+      new ArrayColumn<uint32_t>(std::move(data), dim));
 }
 
 template <>
 ArrayColumnPtr<float> ArrayColumn<float>::make(
     std::vector<std::vector<float>>&& data, std::optional<size_t> dim) {
-  std::optional<ColumnDimension> dimension = std::nullopt;
   if (dim) {
     bool all_dims_match = std::all_of(
         data.begin(), data.end(),
@@ -87,12 +104,23 @@ ArrayColumnPtr<float> ArrayColumn<float>::make(
       throw std::invalid_argument(
           "Not all rows in DecimalArray column match provided dimension.");
     }
-
-    dimension = ColumnDimension::dense(*dim);
   }
 
-  return ArrayColumnPtr<float>(
-      new ArrayColumn<float>(std::move(data), dimension));
+  return ArrayColumnPtr<float>(new ArrayColumn<float>(std::move(data), dim));
+}
+
+template <>
+ArrayColumnPtr<std::string> ArrayColumn<std::string>::make(
+    std::vector<std::vector<std::string>>&& data, std::optional<size_t> dim) {
+  return ArrayColumnPtr<std::string>(
+      new ArrayColumn<std::string>(std::move(data), dim));
+}
+
+template <typename T>
+ColumnPtr ArrayColumn<T>::permute(
+    const std::vector<size_t>& permutation) const {
+  auto new_data = permuteVector(_data, permutation);
+  return ArrayColumnPtr<T>(new ArrayColumn<T>(std::move(new_data), _dim));
 }
 
 }  // namespace thirdai::data

@@ -3,12 +3,11 @@
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/TrainState.h>
 
-namespace thirdai::bolt::train::tests {
+namespace thirdai::bolt::tests {
 
 void runLRScheduleTest(float threshold, bool relative_threshold) {
   auto history = std::make_shared<metrics::History>();
-  auto train_state =
-      TrainState::make(/* learning_rate= */ 10, /* batches_in_dataset= */ 1);
+  auto train_state = TrainState::make(/* learning_rate= */ 10);
 
   callbacks::ReduceLROnPlateau callback(
       /* metric= */ "acc", /* patience= */ 2, /* cooldown= */ 1,
@@ -37,4 +36,4 @@ TEST(ReduceLROnPlateauTests, TestAbsoluteThreshold) {
   runLRScheduleTest(/* threshold= */ 2, /* relative_threshold= */ false);
 }
 
-}  // namespace thirdai::bolt::train::tests
+}  // namespace thirdai::bolt::tests

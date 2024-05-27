@@ -1,7 +1,11 @@
 #include <cereal/archives/binary.hpp>
 #include <bolt_vector/src/BoltVector.h>
+#include <hashing/src/DWTA.h>
+#include <hashing/src/MinHash.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <hashtable/src/VectorHashTable.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <dataset/src/InMemoryDataset.h>
 #include <search/src/Flash.h>
 #include <utils/Logging.h>
@@ -14,33 +18,19 @@
 
 namespace thirdai::search {
 
-template <typename LABEL_T>
-Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> hash_function)
+Flash::Flash(std::shared_ptr<hashing::HashFunction> hash_function,
+             std::optional<uint64_t> reservoir_size)
     : _hash_function(std::move(hash_function)),
-      _num_tables(_hash_function->numTables()),
-      _range(_hash_function->range()),
       _total_samples_indexed(0),
-      _hashtable(std::make_shared<hashtable::VectorHashTable<LABEL_T, false>>(
-          _num_tables, _range)) {
+      _hashtable(std::make_shared<hashtable::VectorHashTable>(
+          _hash_function->numTables(), _hash_function->range(),
+          reservoir_size)) {
   thirdai::licensing::checkLicense();
 }
 
-template <typename LABEL_T>
-Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> hash_function,
-                      uint32_t reservoir_size)
-    : _hash_function(std::move(hash_function)),
-      _num_tables(_hash_function->numTables()),
-      _range(_hash_function->range()),
-      _total_samples_indexed(0),
-      _hashtable(std::make_shared<hashtable::VectorHashTable<LABEL_T, true>>(
-          _num_tables, reservoir_size, _range)) {
-  thirdai::licensing::checkLicense();
-}
-
-template <typename LABEL_T>
-void Flash<LABEL_T>::addBatch(const BoltBatch& batch,
-                              const std::vector<LABEL_T>& labels,
-                              licensing::TrainPermissionsToken token) {
+void Flash::addBatch(const BoltBatch& batch,
+                     const std::vector<uint32_t>& labels,
+                     licensing::TrainPermissionsToken token) {
   _total_samples_indexed += batch.getBatchSize();
   licensing::entitlements().verifyAllowedNumberOfTrainingSamples(
       _total_samples_indexed);
@@ -57,30 +47,29 @@ void Flash<LABEL_T>::addBatch(const BoltBatch& batch,
 
   std::vector<uint32_t> hashes = hashBatch(batch);
 
-  assert(hashes.size() == batch.getBatchSize() * _num_tables);
+  assert(hashes.size() == batch.getBatchSize() * _hash_function->numTables());
 
   _hashtable->insert(batch.getBatchSize(), labels.data(), hashes.data());
 }
 
-template <typename LABEL_T>
-std::vector<uint32_t> Flash<LABEL_T>::hashBatch(const BoltBatch& batch) const {
+std::vector<uint32_t> Flash::hashBatch(const BoltBatch& batch) const {
   auto hashes = _hash_function->hashBatchParallel(batch);
   return hashes;
 }
 
-template <typename LABEL_T>
-std::pair<std::vector<std::vector<LABEL_T>>, std::vector<std::vector<float>>>
-Flash<LABEL_T>::queryBatch(const BoltBatch& batch, uint32_t top_k,
-                           bool pad_zeros) const {
-  std::vector<std::vector<LABEL_T>> results(batch.getBatchSize());
+std::pair<std::vector<std::vector<uint32_t>>, std::vector<std::vector<float>>>
+Flash::queryBatch(const BoltBatch& batch, uint32_t top_k,
+                  bool pad_zeros) const {
+  std::vector<std::vector<uint32_t>> results(batch.getBatchSize());
   std::vector<std::vector<float>> scores(batch.getBatchSize());
   auto hashes = hashBatch(batch);
 
+  uint32_t num_tables = _hashtable->numTables();
 #pragma omp parallel for default(none) \
-    shared(batch, top_k, results, scores, hashes, pad_zeros)
+    shared(batch, top_k, results, scores, hashes, pad_zeros, num_tables)
   for (uint64_t vec_id = 0; vec_id < batch.getBatchSize(); vec_id++) {
-    std::vector<LABEL_T> query_result;
-    _hashtable->queryByVector(hashes.data() + vec_id * _num_tables,
+    std::vector<uint32_t> query_result;
+    _hashtable->queryByVector(hashes.data() + vec_id * num_tables,
                               query_result);
 
     auto [result, score] = getTopKUsingPriorityQueue(query_result, top_k);
@@ -99,16 +88,15 @@ Flash<LABEL_T>::queryBatch(const BoltBatch& batch, uint32_t top_k,
   return {results, scores};
 }
 
-template <typename LABEL_T>
-std::pair<std::vector<LABEL_T>, std::vector<float>>
-Flash<LABEL_T>::getTopKUsingPriorityQueue(std::vector<LABEL_T>& query_result,
-                                          uint32_t top_k) const {
+std::pair<std::vector<uint32_t>, std::vector<float>>
+Flash::getTopKUsingPriorityQueue(std::vector<uint32_t>& query_result,
+                                 uint32_t top_k) const {
   // We sort so counting is easy
   std::sort(query_result.begin(), query_result.end());
 
-  std::priority_queue<std::pair<int32_t, LABEL_T>,
-                      std::vector<std::pair<int32_t, LABEL_T>>,
-                      std::greater<std::pair<int32_t, LABEL_T>>>
+  std::priority_queue<std::pair<int32_t, uint32_t>,
+                      std::vector<std::pair<int32_t, uint32_t>>,
+                      std::greater<std::pair<int32_t, uint32_t>>>
       queue;
 
   if (!query_result.empty()) {
@@ -134,11 +122,12 @@ Flash<LABEL_T>::getTopKUsingPriorityQueue(std::vector<LABEL_T>& query_result,
 
   // Create and save results, scores vector
 
-  std::vector<LABEL_T> result;
+  std::vector<uint32_t> result;
   std::vector<float> scores;
+  uint32_t num_tables = _hashtable->numTables();
   while (!queue.empty()) {
     result.push_back(queue.top().second);
-    scores.push_back(static_cast<float>(queue.top().first) / _num_tables);
+    scores.push_back(static_cast<float>(queue.top().first) / num_tables);
     queue.pop();
   }
   std::reverse(result.begin(), result.end());
@@ -146,20 +135,43 @@ Flash<LABEL_T>::getTopKUsingPriorityQueue(std::vector<LABEL_T>& query_result,
   return {result, scores};
 }
 
-template void Flash<uint32_t>::serialize(cereal::BinaryInputArchive&);
-template void Flash<uint32_t>::serialize(cereal::BinaryOutputArchive&);
-template void Flash<uint64_t>::serialize(cereal::BinaryInputArchive&);
-template void Flash<uint64_t>::serialize(cereal::BinaryOutputArchive&);
+ar::ConstArchivePtr Flash::toArchive() const {
+  auto map = ar::Map::make();
 
-template <typename LABEL_T>
-template <class Archive>
-void Flash<LABEL_T>::serialize(Archive& archive) {
-  licensing::entitlements().verifySaveLoad();
-  archive(_hash_function, _num_tables, _range, _hashtable,
-          _total_samples_indexed);
+  map->set("hash_function", _hash_function->toArchive());
+  map->set("hashtable", _hashtable->toArchive());
+  map->set("total_samples_indexed", ar::u64(_total_samples_indexed));
+
+  return map;
 }
 
-template class Flash<uint32_t>;
-template class Flash<uint64_t>;
+std::unique_ptr<Flash> Flash::fromArchive(const ar::Archive& archive) {
+  return std::make_unique<Flash>(archive);
+}
+
+Flash::Flash(const ar::Archive& archive)
+    : _total_samples_indexed(archive.u64("total_samples_indexed")),
+      _hashtable(
+          hashtable::VectorHashTable::fromArchive(*archive.get("hashtable"))) {
+  auto hash_function = archive.get("hash_function");
+  std::string hash_fn_type = hash_function->str("type");
+  if (hash_fn_type == hashing::MinHash::type()) {
+    _hash_function = hashing::MinHash::fromArchive(*hash_function);
+  } else if (hash_fn_type == hashing::DWTAHashFunction::type()) {
+    _hash_function = hashing::DWTAHashFunction::fromArchive(*hash_function);
+  } else {
+    throw std::invalid_argument("Invalid hash function type '" + hash_fn_type +
+                                "'.");
+  }
+}
+
+template void Flash::serialize(cereal::BinaryInputArchive&);
+template void Flash::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void Flash::serialize(Archive& archive) {
+  licensing::entitlements().verifySaveLoad();
+  archive(_hash_function, _hashtable, _total_samples_indexed);
+}
 
 }  // namespace thirdai::search

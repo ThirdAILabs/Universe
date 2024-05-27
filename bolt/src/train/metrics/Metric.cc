@@ -8,7 +8,7 @@
 #include <regex>
 #include <stdexcept>
 
-namespace thirdai::bolt::train::metrics {
+namespace thirdai::bolt::metrics {
 
 void Metric::incrementAtomicFloat(std::atomic<float>& value, float increment) {
   float curr_val = value.load(std::memory_order_relaxed);
@@ -51,13 +51,39 @@ std::string MetricCollection::summarizeLastStep() const {
   return summary.str();
 }
 
+std::vector<std::pair<std::string, float>>
+MetricCollection::getFlattenedMetrics() const {
+  std::vector<std::pair<std::string, float>> metric_values;
+
+  for (const auto& metric : _metrics) {
+    metric_values.push_back(std::make_pair(metric->name(), metric->value()));
+  }
+
+  return metric_values;
+}
+
+void MetricCollection::setFlattenedMetrics(
+    History& history,
+    std::vector<std::pair<std::string, float>>& metric_values) {
+  if (_metrics.size() != metric_values.size()) {
+    throw std::invalid_argument(
+        "The number of metric values must match the number of metrics.");
+  }
+
+  for (const auto& [name, value] : metric_values) {
+    history[name].back() = value;
+  }
+}
+
+bool MetricCollection::hasMetrics() { return !_metrics.empty(); }
+
 void MetricCollection::reset() {
   for (auto& metric : _metrics) {
     metric->reset();
   }
 }
 
-InputMetrics fromMetricNames(const nn::model::ModelPtr& model,
+InputMetrics fromMetricNames(const ModelPtr& model,
                              const std::vector<std::string>& metric_names,
                              const std::string& prefix) {
   if (model->losses().size() != 1 ||
@@ -68,9 +94,9 @@ InputMetrics fromMetricNames(const nn::model::ModelPtr& model,
         "loss function which is applied to a single output/label.");
   }
 
-  nn::autograd::ComputationPtr output = model->outputs().front();
-  nn::autograd::ComputationPtr labels = model->labels().front();
-  nn::loss::LossPtr loss = model->losses().front();
+  ComputationPtr output = model->outputs().front();
+  ComputationPtr labels = model->labels().front();
+  LossPtr loss = model->losses().front();
 
   InputMetrics metrics;
 
@@ -114,7 +140,7 @@ float divideTwoAtomicIntegers(const std::atomic_uint64_t& numerator,
 
 uint32_t truePositivesInTopK(const BoltVector& output, const BoltVector& label,
                              const uint32_t& k) {
-  TopKActivationsQueue top_k_predictions = output.findKLargestActivations(k);
+  TopKActivationsQueue top_k_predictions = output.topKNeurons(k);
 
   uint32_t true_positives = 0;
   while (!top_k_predictions.empty()) {
@@ -128,4 +154,4 @@ uint32_t truePositivesInTopK(const BoltVector& output, const BoltVector& label,
   return true_positives;
 }
 
-}  // namespace thirdai::bolt::train::metrics
+}  // namespace thirdai::bolt::metrics

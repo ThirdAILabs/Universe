@@ -6,11 +6,12 @@
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <archive/src/Map.h>
 #include <memory>
 #include <numeric>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 std::string nextConcatenateOpName() {
   static uint32_t constructed = 0;
@@ -23,11 +24,10 @@ std::shared_ptr<Concatenate> Concatenate::make() {
   return std::shared_ptr<Concatenate>(new Concatenate());
 }
 
-void Concatenate::forward(const autograd::ComputationList& inputs,
-                          tensor::TensorPtr& output, uint32_t index_in_batch,
-                          bool training) {
+void Concatenate::forward(const ComputationList& inputs, TensorPtr& output,
+                          uint32_t index_in_batch, bool training) {
   (void)training;
-  assert(inputs.size() >= 1);
+  assert(!inputs.empty());
 
   BoltVector& output_vector = output->getVector(index_in_batch);
 
@@ -61,10 +61,9 @@ void Concatenate::forward(const autograd::ComputationList& inputs,
   assert(current_offset_in_output == output_vector.len);
 }
 
-void Concatenate::backpropagate(autograd::ComputationList& inputs,
-                                tensor::TensorPtr& output,
+void Concatenate::backpropagate(ComputationList& inputs, TensorPtr& output,
                                 uint32_t index_in_batch) {
-  assert(inputs.size() >= 1);
+  assert(!inputs.empty());
 
   BoltVector& output_vector = output->getVector(index_in_batch);
 
@@ -92,8 +91,8 @@ uint32_t Concatenate::dim() const {
   return total_dim;
 }
 
-std::optional<uint32_t> Concatenate::nonzeros(
-    const autograd::ComputationList& inputs, bool use_sparsity) const {
+std::optional<uint32_t> Concatenate::nonzeros(const ComputationList& inputs,
+                                              bool use_sparsity) const {
   uint32_t total_num_nonzeros = 0;
   for (const auto& input : inputs) {
     if (auto num_nonzeros = input->nonzeros(use_sparsity)) {
@@ -107,9 +106,29 @@ std::optional<uint32_t> Concatenate::nonzeros(
   return total_num_nonzeros;
 }
 
-void Concatenate::summary(std::ostream& summary,
-                          const autograd::ComputationList& inputs,
-                          const autograd::Computation* output) const {
+ComputationPtr Concatenate::applyToInputs(const ComputationList& inputs) {
+  return apply(inputs);
+}
+
+ar::ConstArchivePtr Concatenate::toArchive(bool with_optimizer) const {
+  (void)with_optimizer;
+
+  auto map = baseArchive();
+  map->set("type", ar::str(type()));
+  return map;
+}
+
+std::shared_ptr<Concatenate> Concatenate::fromArchive(
+    const ar::Archive& archive) {
+  assertOpType(archive, type());
+
+  auto op = Concatenate::make();
+  op->setName(archive.str("name"));
+  return op;
+}
+
+void Concatenate::summary(std::ostream& summary, const ComputationList& inputs,
+                          const Computation* output) const {
   summary << "Concatenate(" << name() << "): (";
   for (uint32_t i = 0; i < inputs.size(); i++) {
     summary << inputs[i]->name();
@@ -120,8 +139,7 @@ void Concatenate::summary(std::ostream& summary,
   summary << ") -> " << output->name();
 }
 
-autograd::ComputationPtr Concatenate::apply(
-    const autograd::ComputationList& inputs) {
+ComputationPtr Concatenate::apply(const ComputationList& inputs) {
   if (_input_dims.empty()) {
     uint32_t current_neuron_offset = 0;
     for (const auto& input : inputs) {
@@ -148,7 +166,7 @@ autograd::ComputationPtr Concatenate::apply(
     }
   }
 
-  return autograd::Computation::make(shared_from_this(), inputs);
+  return Computation::make(shared_from_this(), inputs);
 }
 
 template void Concatenate::serialize(cereal::BinaryInputArchive&);
@@ -159,6 +177,7 @@ void Concatenate::serialize(Archive& archive) {
   archive(cereal::base_class<Op>(this), _input_dims, _neuron_offsets);
 }
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::Concatenate)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::Concatenate,
+                               "thirdai::bolt::nn::ops::Concatenate")

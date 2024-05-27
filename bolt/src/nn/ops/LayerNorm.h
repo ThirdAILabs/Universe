@@ -1,11 +1,11 @@
 #pragma once
 
 #include <cereal/access.hpp>
-#include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <memory>
+#include <vector>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 class LayerNorm final : public Op,
                         public std::enable_shared_from_this<LayerNorm> {
@@ -15,18 +15,20 @@ class LayerNorm final : public Op,
   static std::shared_ptr<LayerNorm> make(const float* gamma, const float* beta,
                                          size_t dim);
 
-  void forward(const autograd::ComputationList& inputs,
-               tensor::TensorPtr& output, uint32_t index_in_batch,
-               bool training) final;
+  void forward(const ComputationList& inputs, TensorPtr& output,
+               uint32_t index_in_batch, bool training) final;
 
-  void backpropagate(autograd::ComputationList& inputs,
-                     tensor::TensorPtr& output, uint32_t index_in_batch) final;
+  void backpropagate(ComputationList& inputs, TensorPtr& output,
+                     uint32_t index_in_batch) final;
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
+  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                     bool replace_existing_optimizer) final;
+
   uint32_t dim() const final;
 
-  std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
+  std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
   void disableSparseParameterUpdates() final;
@@ -37,17 +39,27 @@ class LayerNorm final : public Op,
 
   std::vector<std::vector<float>*> parameters() final;
 
-  void summary(std::ostream& summary, const autograd::ComputationList& inputs,
-               const autograd::Computation* output) const final;
+  ComputationPtr applyToInputs(const ComputationList& inputs) final;
 
-  autograd::ComputationPtr apply(const autograd::ComputationPtr& input);
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
+  static std::shared_ptr<LayerNorm> fromArchive(const ar::Archive& archive);
+
+  void summary(std::ostream& summary, const ComputationList& inputs,
+               const Computation* output) const final;
+
+  ComputationPtr apply(const ComputationPtr& input);
 
   const auto& gamma() const { return _gamma; }
 
   const auto& beta() const { return _beta; }
 
+  static std::string type() { return "layer_norm"; }
+
  private:
   LayerNorm();
+
+  explicit LayerNorm(const ar::Archive& archive);
 
   LayerNorm(const float* gamma, const float* beta, size_t dim);
 
@@ -64,8 +76,11 @@ class LayerNorm final : public Op,
   std::vector<float> _gamma;
   std::vector<float> _beta;
 
-  AdamOptimizer _gamma_optimizer;
-  AdamOptimizer _beta_optimizer;
+  std::vector<float> _gamma_gradients;
+  std::vector<float> _beta_gradients;
+
+  OptimizerPtr _gamma_optimizer;
+  OptimizerPtr _beta_optimizer;
 
   friend class cereal::access;
   template <class Archive>
@@ -74,4 +89,4 @@ class LayerNorm final : public Op,
 
 using LayerNormPtr = std::shared_ptr<LayerNorm>;
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt

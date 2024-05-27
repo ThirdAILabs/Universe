@@ -7,12 +7,12 @@
 #include <optional>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::tests {
+namespace thirdai::bolt::tests {
 
 // Helper function. Fills the active neurons and activations for each vector
 // with the index of the vector in the tensor and the gradients with 2 * the
 // index of the vector in the tensor.
-void fillTensor(tensor::TensorPtr& tensor) {
+void fillTensor(TensorPtr& tensor) {
   for (uint32_t i = 0; i < tensor->batchSize(); i++) {
     auto& vec = tensor->getVector(i);
 
@@ -28,7 +28,7 @@ void fillTensor(tensor::TensorPtr& tensor) {
 
 // Helper function. Checks that the pointers returned by the tensor point to
 // memory that matches the result of call fillTensor on the tensor.
-void checkTensorContents(const tensor::TensorPtr& tensor) {
+void checkTensorContents(const TensorPtr& tensor) {
   uint32_t nonzeros = tensor->nonzeros().value();
   for (uint32_t i = 0; i < tensor->batchSize(); i++) {
     for (uint32_t j = 0; j < nonzeros; j++) {
@@ -47,7 +47,7 @@ void checkTensorContents(const tensor::TensorPtr& tensor) {
 }
 
 TEST(TensorTests, DenseTensor) {
-  auto tensor = tensor::Tensor::dense(/* batch_size= */ 4, /* dim= */ 10);
+  auto tensor = Tensor::dense(/* batch_size= */ 4, /* dim= */ 10);
 
   EXPECT_EQ(tensor->batchSize(), 4);
   EXPECT_EQ(tensor->dim(), 10);
@@ -63,8 +63,8 @@ TEST(TensorTests, DenseTensor) {
 }
 
 TEST(TensorTests, SparseTensor) {
-  auto tensor = tensor::Tensor::sparse(/* batch_size= */ 4, /* dim= */ 10,
-                                       /* nonzeros= */ 5);
+  auto tensor = Tensor::sparse(/* batch_size= */ 4, /* dim= */ 10,
+                               /* nonzeros= */ 5);
 
   EXPECT_EQ(tensor->batchSize(), 4);
   EXPECT_EQ(tensor->dim(), 10);
@@ -88,8 +88,8 @@ TEST(TensorTests, SparseTensorFromIndicesValues) {
 
   std::vector<size_t> lens = {5, 3, 4};
   auto lens_copy = lens;
-  auto tensor = tensor::Tensor::sparse(std::move(indices), std::move(values),
-                                       std::move(lens_copy), /* dim= */ 12);
+  auto tensor = Tensor::sparse(std::move(indices), std::move(values),
+                               std::move(lens_copy), /* dim= */ 12);
 
   EXPECT_EQ(tensor->batchSize(), 3);
   EXPECT_EQ(tensor->dim(), 12);
@@ -116,6 +116,31 @@ TEST(TensorTests, SparseTensorFromIndicesValues) {
   }
 }
 
+TEST(TensorTests, TensorFromArray) {
+  std::vector<uint32_t> indices = {2, 1, 8, 7, 4, 6, 0, 9, 3, 5, 1, 4};
+  std::vector<float> values = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+
+  auto tensor = Tensor::fromArray(indices.data(), values.data(), 4, 10, 3,
+                                  /* with_grad= */ false);
+
+  EXPECT_EQ(tensor->batchSize(), 4);
+  EXPECT_EQ(tensor->dim(), 10);
+  EXPECT_TRUE(tensor->nonzeros().has_value());
+  EXPECT_EQ(tensor->nonzeros().value(), 3);
+
+  std::vector<BoltVector> expected_vecs = {
+      BoltVector::makeSparseVector({2, 1, 8}, {1, 2, 3}),
+      BoltVector::makeSparseVector({7, 4, 6}, {4, 5, 6}),
+      BoltVector::makeSparseVector({0, 9, 3}, {7, 8, 9}),
+      BoltVector::makeSparseVector({5, 1, 4}, {10, 11, 12}),
+  };
+
+  for (size_t i = 0; i < 4; i++) {
+    thirdai::tests::BoltVectorTestUtils::assertBoltVectorsAreEqual(
+        tensor->getVector(i), expected_vecs[i]);
+  }
+}
+
 TEST(TensorTests, ConvertDenseBoltBatchToTensor) {
   std::vector<BoltVector> vectors = {
       BoltVector::makeDenseVector({1.0, 2.0, 3.0, 4.0}),
@@ -125,7 +150,7 @@ TEST(TensorTests, ConvertDenseBoltBatchToTensor) {
   auto vectors_copy = vectors;
   BoltBatch batch(std::move(vectors_copy));
 
-  auto tensor = tensor::Tensor::convert(std::move(batch), 4);
+  auto tensor = Tensor::convert(std::move(batch), 4);
 
   EXPECT_EQ(tensor->batchSize(), 3);
   EXPECT_EQ(tensor->dim(), 4);
@@ -150,7 +175,7 @@ TEST(TensorTests, CopyDenseBoltBatchToTensor) {
   auto vectors_copy = vectors;
   BoltBatch batch(std::move(vectors_copy));
 
-  auto tensor = tensor::Tensor::copy(batch, 4);
+  auto tensor = Tensor::copy(batch, 4);
 
   EXPECT_EQ(tensor->batchSize(), 3);
   EXPECT_EQ(tensor->dim(), 4);
@@ -182,7 +207,7 @@ TEST(TensorTests, ConvertSparseBoltBatchToTensor) {
   auto vectors_copy = vectors;
   BoltBatch batch(std::move(vectors_copy));
 
-  auto tensor = tensor::Tensor::convert(std::move(batch), 8);
+  auto tensor = Tensor::convert(std::move(batch), 8);
 
   EXPECT_EQ(tensor->batchSize(), 3);
   EXPECT_EQ(tensor->dim(), 8);
@@ -207,7 +232,7 @@ TEST(TensorTests, CopySparseBoltBatchToTensor) {
   auto vectors_copy = vectors;
   BoltBatch batch(std::move(vectors_copy));
 
-  auto tensor = tensor::Tensor::copy(batch, 8);
+  auto tensor = Tensor::copy(batch, 8);
 
   EXPECT_EQ(tensor->batchSize(), 3);
   EXPECT_EQ(tensor->dim(), 8);
@@ -239,24 +264,21 @@ TEST(TensorTests, MismatchedSparseDenseVectorsError) {
   BoltBatch batch({BoltVector::makeSparseVector({1}, {1.0}),
                    BoltVector::makeDenseVector({1.0, 2.0})});
   // NOLINTNEXTLINE
-  ASSERT_THROW(tensor::Tensor::convert(std::move(batch), 2),
-               std::invalid_argument);
+  ASSERT_THROW(Tensor::convert(std::move(batch), 2), std::invalid_argument);
 }
 
 TEST(TensorTests, DenseVectorDimMismatch) {
   BoltBatch batch({BoltVector::makeDenseVector({1.0, 2.0})});
 
   // NOLINTNEXTLINE
-  ASSERT_THROW(tensor::Tensor::convert(std::move(batch), 3),
-               std::invalid_argument);
+  ASSERT_THROW(Tensor::convert(std::move(batch), 3), std::invalid_argument);
 }
 
 TEST(TensorTests, SparseVectorDimMismatch) {
   BoltBatch batch({BoltVector::makeSparseVector({1, 4}, {1.0, 1.0})});
 
   // NOLINTNEXTLINE
-  ASSERT_THROW(tensor::Tensor::convert(std::move(batch), 2),
-               std::invalid_argument);
+  ASSERT_THROW(Tensor::convert(std::move(batch), 2), std::invalid_argument);
 }
 
-}  // namespace thirdai::bolt::nn::tests
+}  // namespace thirdai::bolt::tests

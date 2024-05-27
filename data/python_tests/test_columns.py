@@ -19,8 +19,7 @@ def test_token_column():
 
     for column in columns:
         assert column.data() == tokens
-        assert column.dimension().dim == ROWS
-        assert not column.dimension().is_dense
+        assert column.dim() == ROWS
         assert len(column) == ROWS
 
         for i, token in enumerate(tokens):
@@ -38,8 +37,7 @@ def test_decimal_column():
 
     for column in columns:
         assert np.allclose(column.data(), decimals)
-        assert column.dimension().dim == 1
-        assert column.dimension().is_dense
+        assert column.dim() == 1
         assert len(column) == ROWS
 
         for i, decimal in enumerate(decimals):
@@ -55,7 +53,7 @@ def test_string_column():
     column = data.columns.StringColumn(strings)
 
     assert column.data() == strings
-    assert column.dimension() == None
+    assert column.dim() == None
     assert len(column) == ROWS
 
     for i, s in enumerate(strings):
@@ -69,7 +67,7 @@ def test_timestamp_column():
     column = data.columns.TimestampColumn(timestamps)
 
     assert column.data() == timestamps
-    assert column.dimension() == None
+    assert column.dim() == None
     assert len(column) == ROWS
     for i, t in enumerate(timestamps):
         assert column[i] == t
@@ -88,8 +86,7 @@ def test_token_array_column():
 
     for column in columns:
         assert column.data() == tokens
-        assert column.dimension().dim == ROWS * COLS
-        assert not column.dimension().is_dense
+        assert column.dim() == ROWS * COLS
         assert len(column) == ROWS
 
         for i, row in enumerate(tokens):
@@ -104,8 +101,7 @@ def test_token_array_column_non_uniform():
     column = data.columns.TokenArrayColumn(tokens, dim=ROWS * ROWS)
 
     assert column.data() == tokens
-    assert column.dimension().dim == ROWS * ROWS
-    assert not column.dimension().is_dense
+    assert column.dim() == ROWS * ROWS
     assert len(column) == ROWS
 
     for i, row in enumerate(tokens):
@@ -125,8 +121,7 @@ def test_decimal_array_column():
 
     for column in columns:
         assert np.allclose(column.data(), decimals)
-        assert column.dimension().dim == COLS
-        assert column.dimension().is_dense
+        assert column.dim() == COLS
         assert len(column) == ROWS
 
         for i, row in enumerate(decimals):
@@ -141,7 +136,7 @@ def test_decimal_array_column_non_uniform():
     column = data.columns.DecimalArrayColumn(decimals)
 
     assert column.data() == decimals
-    assert column.dimension() == None
+    assert column.dim() == None
     assert len(column) == ROWS
 
     for i, row in enumerate(decimals):
@@ -149,13 +144,13 @@ def test_decimal_array_column_non_uniform():
 
 
 def test_token_columns_without_dimension():
-    assert data.columns.TokenColumn([1, 2, 3]).dimension() == None
+    assert data.columns.TokenColumn([1, 2, 3]).dim() == None
 
-    assert data.columns.TokenArrayColumn([[1], [2], [3]]).dimension() == None
+    assert data.columns.TokenArrayColumn([[1], [2], [3]]).dim() == None
 
 
 def test_decimal_array_column_without_dimension():
-    assert data.columns.DecimalArrayColumn([[1.0], [2.0], [3.0]]).dimension() == None
+    assert data.columns.DecimalArrayColumn([[1.0], [2.0], [3.0]]).dim() == None
 
 
 def test_token_columns_with_invalid_token():

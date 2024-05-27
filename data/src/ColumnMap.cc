@@ -1,4 +1,5 @@
 #include "ColumnMap.h"
+#include <data/src/columns/Column.h>
 #include <data/src/columns/ValueColumns.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
@@ -56,7 +57,7 @@ ColumnMap ColumnMap::fromMapInputBatch(const automl::MapInputBatch& samples) {
 
 template <typename T>
 ArrayColumnBasePtr<T> ColumnMap::getArrayColumn(const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<ArrayColumnBase<T>>(getColumn(name));
+  auto column = ArrayColumnBase<T>::cast(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to ArrayColumn.");
@@ -73,7 +74,7 @@ template ArrayColumnBasePtr<std::string> ColumnMap::getArrayColumn(
 
 template <typename T>
 ValueColumnBasePtr<T> ColumnMap::getValueColumn(const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<ValueColumnBase<T>>(getColumn(name));
+  auto column = ValueColumnBase<T>::cast(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to ValueColumn.");
@@ -112,12 +113,30 @@ void ColumnMap::setColumn(const std::string& name, ColumnPtr column) {
   _columns[name] = std::move(column);
 }
 
+void ColumnMap::dropColumn(const std::string& name) {
+  if (!containsColumn(name)) {
+    throw std::runtime_error("Cannot drop column '" + name +
+                             "' from column map with columns " +
+                             formatColumnNames() + ".");
+  }
+  _columns.erase(name);
+}
+
 std::vector<std::string> ColumnMap::columns() const {
   std::vector<std::string> columns;
   for (auto const& map_entry : _columns) {
     columns.push_back(map_entry.first);
   }
   return columns;
+}
+
+ColumnMap ColumnMap::selectColumns(
+    const std::vector<std::string>& columns) const {
+  std::unordered_map<std::string, ColumnPtr> new_columns;
+  for (const auto& name : columns) {
+    new_columns[name] = getColumn(name);
+  }
+  return ColumnMap(std::move(new_columns));
 }
 
 void ColumnMap::shuffle(uint32_t seed) {
@@ -128,6 +147,14 @@ void ColumnMap::shuffle(uint32_t seed) {
   for (auto& [_, column] : _columns) {
     column->shuffle(permutation);
   }
+}
+
+ColumnMap ColumnMap::permute(const std::vector<size_t>& permutation) const {
+  std::unordered_map<std::string, ColumnPtr> new_columns;
+  for (auto [name, column] : _columns) {
+    new_columns[name] = column->permute(permutation);
+  }
+  return ColumnMap(std::move(new_columns));
 }
 
 ColumnMap ColumnMap::concat(ColumnMap& other) {
@@ -146,6 +173,11 @@ ColumnMap ColumnMap::concat(ColumnMap& other) {
   std::unordered_map<std::string, ColumnPtr> new_columns;
 
   for (auto& [name, column] : _columns) {
+    if (column->dim() != other.getColumn(name)->dim()) {
+      throw std::invalid_argument(
+          "Cannot concatenate column '" + name +
+          "'. The dimensions don't match between column maps.");
+    }
     new_columns[name] = column->concat(other.getColumn(name));
   }
 
@@ -236,8 +268,10 @@ std::string ColumnMap::formatColumnNames() const {
   for (const auto& [name, _] : _columns) {
     column_names += "'" + name + "', ";
   }
-  column_names.pop_back();  // remove last space
-  column_names.pop_back();  // remove last commas
+  if (column_names.size() > 2) {
+    column_names.pop_back();  // remove last space
+    column_names.pop_back();  // remove last comma
+  }
 
   column_names += "]";
 

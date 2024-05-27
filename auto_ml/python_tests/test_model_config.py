@@ -4,6 +4,7 @@ import re
 import textwrap
 
 import pytest
+import thirdai
 from thirdai import bolt
 
 
@@ -38,12 +39,18 @@ def get_config(have_user_specified_parameters: bool = False):
                 "use_bias": False,
             },
             {
+                "name": "tanh",
+                "type": "activation",
+                "activation": "tanh",
+                "predecessor": "fc_1",
+            },
+            {
                 "name": "fc_2",
                 "type": "fully_connected",
                 "dim": 30,
                 "sparsity": 0.3,
                 "activation": layer_3_activation,
-                "predecessor": "fc_1",
+                "predecessor": "tanh",
             },
             {
                 "name": "fc_3",
@@ -107,13 +114,16 @@ def verify_model_summary(config, params, input_dims, expected_summary):
 def test_load_model_from_config():
     config = get_config(have_user_specified_parameters=True)
 
-    expected_summary = """
+    expected_summary = f"""
     ===================== Model =====================
-    Input(input_NUM) -> tensor_NUM
+    Input -> tensor_NUM [dim=100]
     Embedding(emb_NUM): tensor_NUM -> tensor_NUM [dim=10, activation=Tanh, bias=true]
     FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=20, sparsity=0.25, activation=ReLU, bias=false, sampling=(random, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    Tanh(tanh_NUM): tensor_NUM -> tensor_NUM
     FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=30, sparsity=0.3, activation=Tanh, sampling=(hash_function=DWTA, permutations= 185, binsize= 8, hashes_per_table= 3, num_tables=154, range=512, reservoir_size=4, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
     FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=50, sparsity=0.1, activation=Softmax, sampling=(hash_function=DWTA, permutations= 8, binsize= 8, hashes_per_table= 2, num_tables=4, range=64, reservoir_size=10, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    Total Paramters: 3410
+    thirdai Version: {thirdai.__version__}
     =================================================
     """
 
@@ -153,11 +163,13 @@ def test_robez_layer_config():
         "loss": "CategoricalCrossEntropyLoss",
     }
 
-    expected_summary = """
+    expected_summary = f"""
     ===================== Model =====================
-    Input(input_NUM) -> tensor_NUM
+    Input -> tensor_NUM [dim=100]
     RobeZ(robez_NUM): tensor_NUM -> tensor_NUM [ num_embedding_lookups=4, lookup_size=8, log_embedding_block_size=10, reduction=concat, num_tokens_per_input=5]
     FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=10, sparsity=1, activation=Softmax]
+    Total Paramters: 2642
+    thirdai Version: {thirdai.__version__}
     =================================================
     """
 
@@ -185,17 +197,58 @@ def test_udt_model_config_override():
     )
     os.remove(CONFIG_FILE)
 
-    expected_summary = """
+    expected_summary = f"""
     ===================== Model =====================
-    Input(input_NUM) -> tensor_NUM
+    Input -> tensor_NUM [dim=100000]
     Embedding(emb_NUM): tensor_NUM -> tensor_NUM [dim=10, activation=Tanh, bias=true]
     FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=20, sparsity=0.5, activation=ReLU, bias=false, sampling=(random, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    Tanh(tanh_NUM): tensor_NUM -> tensor_NUM
     FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=30, sparsity=0.3, activation=ReLU, sampling=(hash_function=DWTA, permutations= 185, binsize= 8, hashes_per_table= 3, num_tables=154, range=512, reservoir_size=4, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
     FullyConnected(fc_NUM): tensor_NUM -> tensor_NUM [dim=40, sparsity=0.1, activation=Softmax, sampling=(hash_function=DWTA, permutations= 8, binsize= 8, hashes_per_table= 2, num_tables=4, range=64, reservoir_size=10, rebuild_hash_tables=4, reconstruct_hash_functions=100)]
+    Total Paramters: 1002100
+    thirdai Version: {thirdai.__version__}
     =================================================
     """
 
     compare_summaries(udt_model._get_model(), expected_summary)
+
+
+@pytest.mark.unit
+def test_model_config_output_dim_mismatch():
+    from thirdai import deployment
+
+    config = {
+        "inputs": ["input"],
+        "nodes": [
+            {
+                "name": "fc",
+                "type": "fully_connected",
+                "dim": 10,
+                "sparsity": 1.0,
+                "activation": "softmax",
+                "predecessor": "input",
+            },
+        ],
+        "output": "fc",
+        "loss": "CategoricalCrossEntropyLoss",
+    }
+
+    BAD_CONFIG_FILE = "./bad_model_config"
+
+    deployment.dump_config(json.dumps(config), BAD_CONFIG_FILE)
+
+    with pytest.raises(
+        ValueError,
+        match="Expected model with output dim 40, but the model config yielded a model with output dim 10.",
+    ):
+        bolt.UniversalDeepTransformer(
+            data_types={"col": bolt.types.categorical()},
+            target="col",
+            n_target_classes=40,
+            model_config=BAD_CONFIG_FILE,
+        )
+
+    os.remove(BAD_CONFIG_FILE)
 
 
 @pytest.mark.unit

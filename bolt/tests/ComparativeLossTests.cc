@@ -3,9 +3,10 @@
 #include <bolt/src/nn/loss/ComparativeLoss.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <cstddef>
 #include <set>
 
-namespace thirdai::bolt::nn::tests {
+namespace thirdai::bolt::tests {
 
 /**
  * These tests check the correctness of the ComparativeLoss class in iterating
@@ -18,15 +19,16 @@ namespace thirdai::bolt::nn::tests {
  * gradient.
  */
 
-class LossTracker final : public loss::ComparativeLoss {
+class LossTracker final : public ComparativeLoss {
  public:
-  explicit LossTracker(autograd::ComputationPtr activations,
-                       autograd::ComputationPtr labels)
-      : loss::ComparativeLoss(std::move(activations), std::move(labels)) {}
+  explicit LossTracker(ComputationPtr activations, ComputationPtr labels)
+      : ComparativeLoss(std::move(activations), std::move(labels)) {}
 
   const auto& lossCalledWith() const { return _loss_called_with; }
 
   const auto& gradientCalledWith() const { return _gradient_called_with; }
+
+  ar::ConstArchivePtr toArchive() const final { return nullptr; }
 
  private:
   float singleLoss(float activation, float label) const override {
@@ -55,9 +57,9 @@ BoltVector denseLabel() {
   return BoltVector::makeDenseVector({0.0, 1.0, 0.0, 0.0, 2.0, 0.0, 3.0, 0.0});
 }
 
-tensor::TensorPtr sparseOutput() {
-  auto output = tensor::Tensor::sparse(/* batch_size= */ 1, /* dim= */ 8,
-                                       /* nonzeros= */ 4);
+TensorPtr sparseOutput() {
+  auto output = Tensor::sparse(/* batch_size= */ 1, /* dim= */ 8,
+                               /* nonzeros= */ 4);
 
   std::vector<uint32_t> indices = {0, 1, 4, 7};
   std::vector<float> values = {0.0, 4.0, 5.0, 6.0};
@@ -71,8 +73,8 @@ tensor::TensorPtr sparseOutput() {
   return output;
 }
 
-tensor::TensorPtr denseOutput() {
-  auto output = tensor::Tensor::dense(/* batch_size= */ 1, /* dim= */ 8);
+TensorPtr denseOutput() {
+  auto output = Tensor::dense(/* batch_size= */ 1, /* dim= */ 8);
 
   std::vector<float> values = {0.0, 4.0, 0.0, 0.0, 5.0, 0.0, 0.0, 6.0};
 
@@ -86,14 +88,13 @@ void runTest(bool output_sparse, bool label_sparse, bool test_loss,
              const std::set<std::pair<float, float>>& expected_called_with) {
   auto output_tensor = output_sparse ? sparseOutput() : denseOutput();
 
-  auto output = ops::Input::make(/* dim= */ 8);
+  auto output = Input::make(/* dim= */ 8);
   output->setTensor(output_tensor);
 
   BoltVector label_vector = label_sparse ? sparseLabel() : denseLabel();
-  auto label_tensor =
-      tensor::Tensor::convert(BoltBatch({label_vector}), /* dim= */ 8);
+  auto label_tensor = Tensor::convert(BoltBatch({label_vector}), /* dim= */ 8);
 
-  auto label = ops::Input::make(/* dim= */ 8);
+  auto label = Input::make(/* dim= */ 8);
 
   LossTracker loss(output, label);
 
@@ -179,4 +180,4 @@ TEST(ComparativeLossTests, GradientSparseOutputSparseLabels) {
           /* test_loss= */ false, expected_called_with);
 }
 
-}  // namespace thirdai::bolt::nn::tests
+}  // namespace thirdai::bolt::tests

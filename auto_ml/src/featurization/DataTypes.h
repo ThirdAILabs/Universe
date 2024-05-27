@@ -15,7 +15,7 @@
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/blocks/text/WordpieceTokenizer.h>
 #include <utils/Logging.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <iostream>
 #include <limits>
 #include <map>
@@ -27,7 +27,7 @@
 #include <utility>
 #include <variant>
 
-namespace thirdai::automl::data {
+namespace thirdai::automl {
 
 struct CategoricalMetadataConfig;
 using CategoricalMetadataConfigPtr = std::shared_ptr<CategoricalMetadataConfig>;
@@ -78,7 +78,7 @@ dataset::TextTokenizerPtr getTextTokenizerFromString(const std::string& string);
 dataset::TextEncoderPtr getTextEncoderFromString(const std::string& string);
 
 struct TextDataType final : public DataType {
-  explicit TextDataType(const std::string& tokenizer = "words",
+  explicit TextDataType(const std::string& tokenizer = "char-4",
                         const std::string& contextual_encoding = "none",
                         bool use_lowercase = true)
       : tokenizer(getTextTokenizerFromString(tokenizer)),
@@ -114,6 +114,9 @@ struct NumericalDataType final : public DataType {
                              std::string _granularity = "m")
       : range(std::move(_range)), granularity(std::move(_granularity)) {}
 
+  NumericalDataType(double start, double end, std::string _granularity = "m")
+      : range(start, end), granularity(std::move(_granularity)) {}
+
   std::pair<double, double> range;
   std::string granularity;
 
@@ -124,6 +127,8 @@ struct NumericalDataType final : public DataType {
         R"({{"type": "numerical", "range": [{}, {}], "granularity": "{}"}})",
         range.first, range.second, granularity);
   }
+
+  uint32_t numBins() const;
 
  private:
   friend class cereal::access;
@@ -350,4 +355,4 @@ using UserProvidedTemporalRelationships =
 using TemporalRelationships =
     std::map<std::string, std::vector<TemporalConfig>>;
 
-}  // namespace thirdai::automl::data
+}  // namespace thirdai::automl

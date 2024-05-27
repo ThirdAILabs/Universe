@@ -1,10 +1,9 @@
 import os
 from typing import TYPE_CHECKING, Callable, Dict, Optional, Union
 
-from ray.air.checkpoint import Checkpoint
-from ray.air.config import RunConfig, ScalingConfig
+from ray.train import Checkpoint, DataConfig, RunConfig, ScalingConfig
 from ray.train.data_parallel_trainer import DataParallelTrainer
-from thirdai._thirdai import logging
+from ray.train.trainer import GenDataset
 
 if TYPE_CHECKING:
     from ray.data.preprocessor import Preprocessor
@@ -32,7 +31,7 @@ class BoltTrainer(DataParallelTrainer):
                 use_sparsity=False,
             )
 
-            session.report(
+            train.report(
                 history,
                 checkpoint=dist.BoltCheckPoint.from_model(trainer.model),
             )
@@ -57,7 +56,7 @@ class BoltTrainer(DataParallelTrainer):
         preprocessor: A ``ray.data.Preprocessor`` to preprocess the
             provided datasets.
         resume_from_checkpoint: A checkpoint to resume training from. It can be acessed in the
-            training-loop function with `session.get_checkpoint`.
+            training-loop function with `train.get_checkpoint`.
     """
 
     def __init__(
@@ -67,7 +66,9 @@ class BoltTrainer(DataParallelTrainer):
         backend_config=None,
         train_loop_config: Optional[Dict] = None,
         scaling_config: Optional[ScalingConfig] = None,
+        dataset_config: Optional[DataConfig] = None,
         run_config: Optional[RunConfig] = None,
+        datasets: Optional[Dict[str, GenDataset]] = None,
         resume_from_checkpoint: Optional[Checkpoint] = None,
     ):
         super(BoltTrainer, self).__init__(
@@ -75,6 +76,8 @@ class BoltTrainer(DataParallelTrainer):
             train_loop_config=train_loop_config,
             backend_config=backend_config,
             scaling_config=scaling_config,
+            dataset_config=dataset_config,
             run_config=run_config,
+            datasets=datasets,
             resume_from_checkpoint=resume_from_checkpoint,
         )

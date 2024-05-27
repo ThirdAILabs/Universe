@@ -7,10 +7,10 @@
 
 namespace py = pybind11;
 
-namespace thirdai::bolt::nn::python {
+namespace thirdai::bolt::python {
 
-py::dict modelParams(const model::ModelPtr& model);
+py::dict modelParams(const ModelPtr& model);
 
-model::ModelPtr modelFromParams(const py::dict& params);
+ModelPtr modelFromParams(const py::dict& params);
 
-}  // namespace thirdai::bolt::nn::python
+}  // namespace thirdai::bolt::python

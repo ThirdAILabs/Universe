@@ -5,8 +5,9 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
+#include <random>
 
-namespace thirdai::bolt::nn {
+namespace thirdai::bolt {
 
 MachNeuronIndex::MachNeuronIndex(dataset::mach::MachIndexPtr mach_index)
     : _mach_index(std::move(mach_index)) {}
@@ -23,18 +24,16 @@ void MachNeuronIndex::query(const BoltVector& input, BoltVector& output,
   if (nonempty_buckets.size() < output.len) {
     // Hack to intepret the float as an integer without doing a conversion.
     uint32_t seed = *reinterpret_cast<uint32_t*>(&input.activations[0]);
+    std::mt19937 rng(seed);
 
     // Since the sparsity is set based off of the number of nonempty buckets, we
     // should never have more than one random neuron thus, we can avoid storing
     // a precomputed random neurons set like in the LSH neuron index.
-    while (nonempty_buckets.size() < output.len) {
-      // This is because rand() is not threadsafe and because we want to make
-      // the output more deterministic.
-      uint64_t random_neuron =
-          hashing::simpleIntegerHash(seed) % _mach_index->numBuckets();
+    uint32_t n_buckets = _mach_index->numBuckets();
 
-      nonempty_buckets.insert(random_neuron);
-      seed = random_neuron;
+    for (uint32_t i = rng() % (n_buckets - output.len);
+         i < n_buckets && nonempty_buckets.size() < output.len; i++) {
+      nonempty_buckets.insert(i);
     }
   }
 
@@ -55,6 +54,7 @@ void MachNeuronIndex::serialize(Archive& archive) {
   archive(cereal::base_class<NeuronIndex>(this), _mach_index);
 }
 
-}  // namespace thirdai::bolt::nn
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::MachNeuronIndex)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::MachNeuronIndex,
+                               "thirdai::bolt::nn::MachNeuronIndex")

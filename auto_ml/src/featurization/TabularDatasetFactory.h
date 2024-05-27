@@ -18,9 +18,7 @@
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <optional>
 
-namespace thirdai::automl::data {
-
-using bolt::nn::tensor::TensorList;
+namespace thirdai::automl {
 
 class TabularDatasetFactory {
  public:
@@ -50,22 +48,16 @@ class TabularDatasetFactory {
   dataset::DatasetLoaderPtr getUnLabeledDatasetLoader(
       const dataset::DataSourcePtr& data_source);
 
-  TensorList featurizeInput(const MapInput& input) {
-    for (const auto& [column_name, _] : input) {
-      if (!_data_types.count(column_name)) {
-        throw std::invalid_argument("Input column name '" + column_name +
-                                    "' not found in data_types.");
-      }
-    }
+  bolt::TensorList featurizeInput(const MapInput& input) {
+    verifyValidColNames(input);
     dataset::MapSampleRef input_ref(input);
-    return bolt::train::convertVectors(
-        _inference_featurizer->featurize(input_ref),
-        _inference_featurizer->getDimensions());
+    return bolt::convertVectors(_inference_featurizer->featurize(input_ref),
+                                _inference_featurizer->getDimensions());
   }
 
-  TensorList featurizeInputBatch(const MapInputBatch& inputs);
+  bolt::TensorList featurizeInputBatch(const MapInputBatch& inputs);
 
-  std::pair<TensorList, TensorList> featurizeTrainingBatch(
+  std::pair<bolt::TensorList, bolt::TensorList> featurizeTrainingBatch(
       const MapInputBatch& batch);
 
   void updateTemporalTrackers(const MapInput& input) {
@@ -135,6 +127,8 @@ class TabularDatasetFactory {
   static std::shared_ptr<TabularDatasetFactory> load_stream(
       std::istream& input_stream);
 
+  const auto& featurizer() const { return _labeled_featurizer; }
+
  private:
   dataset::TabularFeaturizerPtr makeFeaturizer(
       const TemporalRelationships& temporal_relationships,
@@ -166,6 +160,21 @@ class TabularDatasetFactory {
     }
   }
 
+  void verifyValidColNames(const MapInput& input) {
+    for (const auto& [column_name, _] : input) {
+      if (!_data_types.count(column_name)) {
+        throw std::invalid_argument("Input column name '" + column_name +
+                                    "' not found in data_types.");
+      }
+    }
+  }
+
+  void verifyValidColNames(const MapInputBatch& inputs) {
+    for (const auto& input : inputs) {
+      verifyValidColNames(input);
+    }
+  }
+
   TabularDatasetFactory() {}
 
   friend cereal::access;
@@ -192,4 +201,4 @@ class TabularDatasetFactory {
 
 using TabularDatasetFactoryPtr = std::shared_ptr<TabularDatasetFactory>;
 
-}  // namespace thirdai::automl::data
+}  // namespace thirdai::automl

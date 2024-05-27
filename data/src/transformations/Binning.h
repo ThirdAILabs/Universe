@@ -4,6 +4,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/string.hpp>
+#include <archive/src/Archive.h>
 #include <data/src/transformations/Transformation.h>
 #include <exception>
 #include <optional>
@@ -28,7 +29,16 @@ class BinningTransformation final : public Transformation {
         _binsize((exclusive_max_value - inclusive_min_value) / num_bins),
         _num_bins(num_bins) {}
 
+  explicit BinningTransformation(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  void buildExplanationMap(const ColumnMap& input, State& state,
+                           ExplanationMap& explanations) const final;
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "binning"; }
 
  private:
   // Private constructor for cereal.

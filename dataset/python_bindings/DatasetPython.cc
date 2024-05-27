@@ -22,6 +22,8 @@
 #include <dataset/src/featurizers/llm/TextClassificationFeaturizer.h>
 #include <dataset/src/featurizers/llm/TextGenerationFeaturizer.h>
 #include <dataset/src/mach/MachIndex.h>
+#include <dataset/src/ranking/KeywordOverlapRanker.h>
+#include <dataset/src/ranking/QueryDocumentRanker.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
@@ -34,8 +36,11 @@
 #include <sys/types.h>
 #include <utils/Random.h>
 #include <chrono>
+#include <exception>
 #include <limits>
+#include <memory>
 #include <optional>
+#include <stdexcept>
 #include <type_traits>
 #include <unordered_map>
 
@@ -107,17 +112,64 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<mach::MachIndex, mach::MachIndexPtr>(  // NOLINT
       dataset_submodule, "MachIndex")
+#if THIRDAI_EXPOSE_ALL
       .def(py::init<std::unordered_map<uint32_t, std::vector<uint32_t>>,
                     uint32_t, uint32_t>(),
            py::arg("entity_to_hashes"), py::arg("output_range"),
            py::arg("num_hashes"))
       .def(py::init<uint32_t, uint32_t>(), py::arg("output_range"),
            py::arg("num_hashes"))
-      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("output_range"),
-           py::arg("num_hashes"), py::arg("num_elements"))
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
+           py::arg("output_range"), py::arg("num_hashes"),
+           py::arg("num_elements"), py::arg("seed") = 341)
       .def("get_entity_hashes", &mach::MachIndex::getHashes, py::arg("entity"))
       .def("get_hash_to_entities", &mach::MachIndex::getEntities,
            py::arg("hash"))
+      .def("buckets", &mach::MachIndex::buckets)
+      .def("entity_to_hashes", &mach::MachIndex::entityToHashes)
+      .def(
+          "decode_batch",
+          [](const mach::MachIndex& index, NumpyArray<float>& bucket_scores,
+             uint32_t top_k, uint32_t num_buckets_to_eval) {
+            if (bucket_scores.ndim() != 2) {
+              throw std::invalid_argument("Expected bucket scores to be 2d.");
+            }
+
+            if (bucket_scores.shape(1) != index.numBuckets()) {
+              throw std::invalid_argument(
+                  "Expected bucket scores shape[1] to be equal to num hashes.");
+            }
+
+            std::vector<std::vector<std::pair<uint32_t, double>>> output(
+                bucket_scores.shape(0));
+
+            std::exception_ptr error;
+#pragma omp parallel for default(none) \
+    shared(bucket_scores, index, output, top_k, num_buckets_to_eval, error)
+            for (int64_t i = 0; i < bucket_scores.shape(0); i++) {
+              try {
+                float* scores = bucket_scores.mutable_data(i);
+                BoltVector vec(
+                    /* an= */ nullptr, /* a= */ scores, /* g= */ nullptr,
+                    /* l= */ index.numBuckets());
+
+                output[i] = index.decode(vec, top_k, num_buckets_to_eval);
+              } catch (...) {
+#pragma omp critical
+                error = std::current_exception();
+              }
+            }
+
+            if (error) {
+              std::rethrow_exception(error);
+            }
+
+            return output;
+          },
+          py::arg("bucket_scores"), py::arg("top_k"),
+          py::arg("num_buckets_to_eval"))
+#endif
+      .def("num_entities", &mach::MachIndex::numEntities)
       .def("num_hashes", &mach::MachIndex::numHashes)
       .def("output_range", &mach::MachIndex::numBuckets)
       .def("save", &mach::MachIndex::save, py::arg("filename"))
@@ -281,9 +333,10 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<TextGenerationFeaturizer, Featurizer,
              std::shared_ptr<TextGenerationFeaturizer>>(
       dataset_submodule, "TextGenerationFeaturizer")
-      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, bool, bool>(),
            py::arg("lrc_len"), py::arg("irc_len"), py::arg("src_len"),
-           py::arg("vocab_size"))
+           py::arg("vocab_size"), py::arg("include_position") = false,
+           py::arg("featurize_in_chunks") = true)
       .def("featurize_for_inference",
            &TextGenerationFeaturizer::featurizeInferenceSample,
            py::arg("prompt"), py::arg("context"))
@@ -338,6 +391,13 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<FileDataSource, DataSource, std::shared_ptr<FileDataSource>>(
       dataset_submodule, "FileDataSource")
       .def(py::init<const std::string&>(), py::arg("filename"));
+
+  py::class_<UnifiedDataSource, DataSource, std::shared_ptr<UnifiedDataSource>>(
+      dataset_submodule, "UnifiedDataSource")
+      .def(py::init<std::vector<DataSourcePtr>, const std::vector<double>&,
+                    uint32_t, uint32_t>(),
+           py::arg("data_sources"), py::arg("probabilities"),
+           py::arg("stop_data_source_id"), py::arg("seed") = 42);
 
   dataset_submodule.def("make_sparse_vector",
                         py::overload_cast<const std::vector<uint32_t>&,
@@ -498,6 +558,17 @@ void createDatasetSubmodule(py::module_& module) {
       py::arg("dataset1"), py::arg("dataset2"),
       "Checks whether the given bolt datasets have the same values. "
       "For testing purposes only.");
+
+  py::class_<ranking::QueryDocumentRanker>(  // NOLINT
+      dataset_submodule, "QueryDocumentRanker");
+
+  py::class_<ranking::KeywordOverlapRanker, ranking::QueryDocumentRanker>(
+      dataset_submodule, "KeywordOverlapRanker")
+      .def(py::init<bool, bool, uint32_t, size_t>(),
+           py::arg("lowercase") = true, py::arg("replace_punct") = true,
+           py::arg("k_gram_length") = 4, py::arg("min_word_length") = 5)
+      .def("rank", &ranking::KeywordOverlapRanker::rank, py::arg("query"),
+           py::arg("documents"));
 }
 
 bool denseBoltDatasetMatchesDenseMatrix(

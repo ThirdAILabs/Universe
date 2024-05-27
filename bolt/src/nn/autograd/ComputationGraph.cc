@@ -4,11 +4,11 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace thirdai::bolt::nn::autograd {
+namespace thirdai::bolt {
 
 ComputationList getComputationOrder(const ComputationList& inputs,
                                     const ComputationList& outputs,
-                                    const std::vector<loss::LossPtr>& losses) {
+                                    const std::vector<LossPtr>& losses) {
   checkLossesOnlyApplyToTerminalOutputs(losses);
 
   auto out_degrees = countDependentComputations(losses);
@@ -71,7 +71,7 @@ ComputationList getComputationOrder(const ComputationList& inputs,
 }
 
 std::unordered_map<ComputationPtr, uint32_t> countDependentComputations(
-    const std::vector<loss::LossPtr>& losses) {
+    const std::vector<LossPtr>& losses) {
   std::unordered_map<ComputationPtr, uint32_t> out_degrees;
 
   std::unordered_set<ComputationPtr> visited;
@@ -98,8 +98,8 @@ std::unordered_map<ComputationPtr, uint32_t> countDependentComputations(
   return out_degrees;
 }
 
-autograd::ComputationList computationsUsedInLossFunctions(
-    const std::vector<loss::LossPtr>& losses) {
+ComputationList computationsUsedInLossFunctions(
+    const std::vector<LossPtr>& losses) {
   std::unordered_set<ComputationPtr> comps;
 
   for (const auto& loss : losses) {
@@ -115,9 +115,8 @@ autograd::ComputationList computationsUsedInLossFunctions(
   return {comps.begin(), comps.end()};
 }
 
-void checkLossesOnlyApplyToTerminalOutputs(
-    const std::vector<loss::LossPtr>& losses) {
-  auto out_degrees = autograd::countDependentComputations(losses);
+void checkLossesOnlyApplyToTerminalOutputs(const std::vector<LossPtr>& losses) {
+  auto out_degrees = countDependentComputations(losses);
 
   for (const auto& output : computationsUsedInLossFunctions(losses)) {
     if (out_degrees.count(output)) {
@@ -142,4 +141,4 @@ void checkAllOutputsInComputationOrder(const ComputationList& computation_order,
   }
 }
 
-}  // namespace thirdai::bolt::nn::autograd
+}  // namespace thirdai::bolt

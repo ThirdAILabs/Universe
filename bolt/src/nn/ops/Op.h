@@ -1,25 +1,24 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <bolt/src/layers/Optimizer.h>
+#include <bolt/src/nn/optimizers/Optimizer.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <memory>
+#include <string>
+#include <unordered_map>
+#include <valarray>
 
-namespace thirdai::bolt::nn::autograd {
+namespace thirdai::bolt {
 
 class Computation;
 
 using ComputationPtr = std::shared_ptr<Computation>;
 using ComputationList = std::vector<ComputationPtr>;
 
-}  // namespace thirdai::bolt::nn::autograd
-
-namespace thirdai::bolt::nn::model {
-
 class Model;
-
-}  // namespace thirdai::bolt::nn::model
-
-namespace thirdai::bolt::nn::ops {
 
 /**
  * Represents a operation in a model which takes in one or more inputs and
@@ -46,9 +45,8 @@ class Op {
    * function should be thread safe to being called with different values for
    * index_in_batch at the same time.
    */
-  virtual void forward(const autograd::ComputationList& inputs,
-                       tensor::TensorPtr& output, uint32_t index_in_batch,
-                       bool training) = 0;
+  virtual void forward(const ComputationList& inputs, TensorPtr& output,
+                       uint32_t index_in_batch, bool training) = 0;
 
   /**
    * Computes the gradients of any parameters in the op and with respect to the
@@ -64,9 +62,15 @@ class Op {
    * with different values for index_in_batch at the same time (though benign
    * race conditions to e.g. weight array are sometimes okay for performance).
    */
-  virtual void backpropagate(autograd::ComputationList& inputs,
-                             tensor::TensorPtr& output,
+  virtual void backpropagate(ComputationList& inputs, TensorPtr& output,
                              uint32_t index_in_batch) = 0;
+
+  virtual void updateTrainableParameters(float learning_rate,
+                                         uint32_t train_steps) {
+    if (_trainable) {
+      updateParameters(learning_rate, train_steps);
+    }
+  }
 
   /**
    * Performs a parameter update on any parameters in the op. The parameter
@@ -77,8 +81,15 @@ class Op {
   virtual void updateParameters(float learning_rate, uint32_t train_steps) = 0;
 
   /**
-   * Returns the output dimension of the op. Does not include batch size. For
-   * instance a fully connected layer op will return its number of neurons.
+   * Initializes the optimizer for the op.
+   */
+  virtual void initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                             bool replace_existing_optimizer) = 0;
+
+  /**
+   * Returns the output dimension of the op. Does not include batch size.
+   * For instance a fully connected layer op will return its number of
+   * neurons.
    */
   virtual uint32_t dim() const = 0;
 
@@ -94,8 +105,8 @@ class Op {
    * sparse inputs, then if sparsity is being used the number of nonzeros in the
    * output will depend on the number of nonzeros in the inputs.
    */
-  virtual std::optional<uint32_t> nonzeros(
-      const autograd::ComputationList& inputs, bool use_sparsity) const = 0;
+  virtual std::optional<uint32_t> nonzeros(const ComputationList& inputs,
+                                           bool use_sparsity) const = 0;
 
   /**
    * Disables sparse parameter updates for updateParameters in the op. This is
@@ -122,14 +133,19 @@ class Op {
    */
   virtual std::vector<std::vector<float>*> parameters() = 0;
 
+  virtual ComputationPtr applyToInputs(const ComputationList& inputs) = 0;
+
+  virtual ar::ConstArchivePtr toArchive(bool with_optimizer) const = 0;
+
+  static std::shared_ptr<Op> fromArchive(const ar::Archive& archive);
+
   /**
    * Appends a line to the summary to describe the op when applied to the given
    * inputs and yielding the given output. Ideally this should be in the form:
    * OpType(op name): input(s) -> output(s) [op parameters]
    */
-  virtual void summary(std::ostream& summary,
-                       const autograd::ComputationList& inputs,
-                       const autograd::Computation* output) const = 0;
+  virtual void summary(std::ostream& summary, const ComputationList& inputs,
+                       const Computation* output) const = 0;
 
   /**
    * Controls if the op should save the optimizer along with the parameters.
@@ -138,8 +154,11 @@ class Op {
     (void)setSerializeOptimizer;
   }
 
-  virtual void registerModel(const std::weak_ptr<model::Model>& model) {
-    (void)model;
+  virtual void registerModel(const std::weak_ptr<Model>& model) { (void)model; }
+
+  virtual std::vector<std::pair<std::string, double>> parameterAndGradNorms()
+      const {
+    return {};
   }
 
   /**
@@ -150,13 +169,48 @@ class Op {
 
   void setName(std::string name) { _name = std::move(name); }
 
+  void setTrainable(bool flag) { _trainable = flag; }
+
+  bool isTrainable() const { return _trainable; }
+
   virtual ~Op() = default;
 
  protected:
   Op() : Op("unnamed-op") {}
 
+  std::shared_ptr<ar::Map> baseArchive() const {
+    auto map = ar::Map::make();
+    map->set("name", ar::str(name()));
+    return map;
+  }
+
+  static std::tuple<double, double, double> norms(const float* data,
+                                                  size_t len) {
+    double l1_norm = 0;
+    double l2_norm = 0;
+    double l_inf_norm = 0;
+
+    for (size_t i = 0; i < len; i++) {
+      l1_norm += std::abs(data[i]);
+      l2_norm += data[i] * data[i];
+      l_inf_norm = std::max<double>(l_inf_norm, std::abs(data[i]));
+    }
+
+    return {l1_norm, std::sqrt(l2_norm), l_inf_norm};
+  }
+
+  static void computeNorms(
+      const std::vector<float>& data, const std::string& prefix,
+      std::vector<std::pair<std::string, double>>& all_norms) {
+    auto [l1_norm, l2_norm, l_inf_norm] = norms(data.data(), data.size());
+    all_norms.emplace_back(prefix + "_l1_norm", l1_norm);
+    all_norms.emplace_back(prefix + "_l2_norm", l2_norm);
+    all_norms.emplace_back(prefix + "_l_inf_norm", l_inf_norm);
+  }
+
  private:
   std::string _name;
+  bool _trainable = true;
 
   friend class cereal::access;
   template <class Archive>
@@ -165,6 +219,8 @@ class Op {
   }
 };
 
+void assertOpType(const ar::Archive& archive, const std::string& expected_type);
+
 using OpPtr = std::shared_ptr<Op>;
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt

@@ -4,7 +4,7 @@
 #include <bolt/src/train/metrics/Metric.h>
 #include <dataset/src/mach/MachIndex.h>
 
-namespace thirdai::bolt::train::metrics {
+namespace thirdai::bolt::metrics {
 
 /**
  * Computes the precision@k for the given output. Using the mach index to
@@ -17,9 +17,8 @@ namespace thirdai::bolt::train::metrics {
 class MachPrecision final : public Metric {
  public:
   MachPrecision(dataset::mach::MachIndexPtr mach_index,
-                uint32_t num_buckets_to_eval,
-                nn::autograd::ComputationPtr outputs,
-                nn::autograd::ComputationPtr labels, uint32_t k);
+                uint32_t num_buckets_to_eval, ComputationPtr outputs,
+                ComputationPtr labels, uint32_t k);
 
   void record(uint32_t index_in_batch) final;
 
@@ -35,12 +34,12 @@ class MachPrecision final : public Metric {
   dataset::mach::MachIndexPtr _mach_index;
   uint32_t _num_buckets_to_eval;
 
-  nn::autograd::ComputationPtr _outputs;
-  nn::autograd::ComputationPtr _labels;
+  ComputationPtr _outputs;
+  ComputationPtr _labels;
 
   std::atomic_uint64_t _num_correct_predicted = 0;
   std::atomic_uint64_t _num_predicted = 0;
   uint32_t _k;
 };
 
-}  // namespace thirdai::bolt::train::metrics
+}  // namespace thirdai::bolt::metrics

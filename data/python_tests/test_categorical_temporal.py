@@ -34,16 +34,16 @@ def make_column_map(users, items, timestamps):
 @pytest.mark.parametrize("include_current_row", [True, False])
 def test_categorical_temporal_ascending_item_ids(include_current_row):
     N_USERS = 20
-    OCCURENCES_PER_USER = 10
-    users = [str(i) for i in range(N_USERS)] * OCCURENCES_PER_USER
+    occurrences_PER_USER = 10
+    users = [str(i) for i in range(N_USERS)] * occurrences_PER_USER
     random.shuffle(users)
     timestamps = list(range(len(users)))
     items = []
-    user_occurences = defaultdict(int)
+    user_occurrences = defaultdict(int)
     for user in users:
-        item_id = int(user) * OCCURENCES_PER_USER * 2 + user_occurences[user]
+        item_id = int(user) * occurrences_PER_USER * 2 + user_occurrences[user]
         items.append([item_id, item_id + 1])
-        user_occurences[user] += 2
+        user_occurrences[user] += 2
 
     columns = make_column_map(users, items, timestamps)
 
@@ -59,12 +59,12 @@ def test_categorical_temporal_ascending_item_ids(include_current_row):
     assert len(user_histories) == N_USERS
 
     for user, histories in user_histories.items():
-        assert len(histories) == OCCURENCES_PER_USER
+        assert len(histories) == occurrences_PER_USER
 
         # Because we group the samples by user, and the timestamps are strictly
         # increasing we can make assertions about what items are in each sample.
         for i, h in enumerate(histories):
-            user_start = int(user) * OCCURENCES_PER_USER * 2
+            user_start = int(user) * occurrences_PER_USER * 2
             curr_start = user_start + i * 2
             if include_current_row:
                 expected = list(
@@ -77,8 +77,11 @@ def test_categorical_temporal_ascending_item_ids(include_current_row):
             assert h == expected
 
 
-@pytest.mark.parametrize("include_current_row", [True, False])
-def test_without_updating_history(include_current_row):
+@pytest.mark.parametrize(
+    "include_current_row, serialize",
+    [(True, True), (True, False), (False, True), (False, False)],
+)
+def test_without_updating_history(include_current_row, serialize):
     users = ["user_1", "user_2", "user_2", "user_1"]
     items = [[0, 1], [10, 11], [12, 13], [2, 3]]
     timestamps = [0, 1, 2, 3]
@@ -90,6 +93,16 @@ def test_without_updating_history(include_current_row):
     nonupdating_transformation = categorical_temporal(
         include_current_row, should_update_history=False
     )
+
+    if serialize:
+        # State is not stored in the transformations, and apply is const, so we
+        # serialize before applying the transformation.
+        updating_transformation = data.transformations.deserialize(
+            updating_transformation.serialize()
+        )
+        nonupdating_transformation = data.transformations.deserialize(
+            nonupdating_transformation.serialize()
+        )
 
     state = data.transformations.State()
 
@@ -116,16 +129,17 @@ def test_without_updating_history(include_current_row):
 
 
 def test_non_increasing_timestamps():
-    users = ["user_1", "user_2", "user_1"]
-    items = [[0, 1], [10, 11], [12, 13]]
-    timestamps = [2, 3, 1]
+    users = ["user_1", "user_2", "user_2", "user_1"]
+    items = [[0, 1], [10, 11], [12, 13], [2, 3]]
+    timestamps = [4, 1, 2, 3]
 
     columns = make_column_map(users, items, timestamps)
 
     transformation = categorical_temporal(include_current_row=True)
 
     with pytest.raises(
-        ValueError, match="Expected increasing timestamps in column 'timestamps'."
+        ValueError,
+        match="Expected increasing timestamps for each tracking key. Found timestamp 3 after seeing timestamp 4 for tracking key 'user_1'.",
     ):
         transformation(columns)
 

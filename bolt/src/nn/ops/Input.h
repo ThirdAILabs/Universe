@@ -6,25 +6,27 @@
 #include <limits>
 #include <memory>
 
-namespace thirdai::bolt::nn::ops {
+namespace thirdai::bolt {
 
 class Input final : public Op, public std::enable_shared_from_this<Input> {
  public:
   // TODO(Nicholas) add nonzeros as option.
-  static autograd::ComputationPtr make(uint32_t dim);
+  static ComputationPtr make(uint32_t dim);
 
-  void forward(const autograd::ComputationList& inputs,
-               tensor::TensorPtr& output, uint32_t index_in_batch,
-               bool training) final;
+  void forward(const ComputationList& inputs, TensorPtr& output,
+               uint32_t index_in_batch, bool training) final;
 
-  void backpropagate(autograd::ComputationList& inputs,
-                     tensor::TensorPtr& output, uint32_t index_in_batch) final;
+  void backpropagate(ComputationList& inputs, TensorPtr& output,
+                     uint32_t index_in_batch) final;
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
+  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                     bool replace_existing_optimizer) final;
+
   uint32_t dim() const final;
 
-  std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
+  std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final;
 
   void disableSparseParameterUpdates() final;
@@ -35,8 +37,12 @@ class Input final : public Op, public std::enable_shared_from_this<Input> {
 
   std::vector<std::vector<float>*> parameters() final { return {}; };
 
-  void summary(std::ostream& summary, const autograd::ComputationList& inputs,
-               const autograd::Computation* output) const final;
+  ComputationPtr applyToInputs(const ComputationList& inputs) final;
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
+  void summary(std::ostream& summary, const ComputationList& inputs,
+               const Computation* output) const final;
 
  private:
   Input(uint32_t dim, std::optional<uint32_t> nonzeros);
@@ -53,4 +59,4 @@ class Input final : public Op, public std::enable_shared_from_this<Input> {
 
 using InputPtr = std::shared_ptr<Input>;
 
-}  // namespace thirdai::bolt::nn::ops
+}  // namespace thirdai::bolt

@@ -4,7 +4,7 @@
 #include <cmath>
 #include <stdexcept>
 
-namespace thirdai::bolt::tests {
+namespace thirdai::bolt_v1::tests {
 
 float cross_entropy(const std::vector<float>& dense_output,
                     const std::vector<float>& dense_labels) {
@@ -87,4 +87,4 @@ TEST(LossFunctionMetrics, CategoricalCrossEntropyOutliers) {
   xent.reset();
 }
 
-}  // namespace thirdai::bolt::tests
+}  // namespace thirdai::bolt_v1::tests

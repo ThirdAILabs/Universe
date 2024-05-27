@@ -4,7 +4,7 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/ops/Op.h>
 
-namespace thirdai::bolt::nn::autograd {
+namespace thirdai::bolt {
 
 /**
  * Returns all non input computations in the order that they should be executed
@@ -18,7 +18,7 @@ namespace thirdai::bolt::nn::autograd {
  */
 ComputationList getComputationOrder(const ComputationList& inputs,
                                     const ComputationList& outputs,
-                                    const std::vector<loss::LossPtr>& losses);
+                                    const std::vector<LossPtr>& losses);
 
 /**
  * Returns a map of computations to how many computations they are used in. This
@@ -28,21 +28,20 @@ ComputationList getComputationOrder(const ComputationList& inputs,
  * the computations they are applied to and works backward through the graph.
  */
 std::unordered_map<ComputationPtr, uint32_t> countDependentComputations(
-    const std::vector<loss::LossPtr>& losses);
+    const std::vector<LossPtr>& losses);
 
 /**
  * Returns all the computations that are used in loss functions. Throws if a
  * computation is used by multiple loss functions.
  */
-autograd::ComputationList computationsUsedInLossFunctions(
-    const std::vector<loss::LossPtr>& losses);
+ComputationList computationsUsedInLossFunctions(
+    const std::vector<LossPtr>& losses);
 
 /**
  * Checks that loss functions only apply to computations that have no dependent
  * computations. Called in getComputationOrder.
  */
-void checkLossesOnlyApplyToTerminalOutputs(
-    const std::vector<loss::LossPtr>& losses);
+void checkLossesOnlyApplyToTerminalOutputs(const std::vector<LossPtr>& losses);
 
 /**
  * Check that the user specifed outputs of hte model are all present in the
@@ -51,4 +50,4 @@ void checkLossesOnlyApplyToTerminalOutputs(
 void checkAllOutputsInComputationOrder(const ComputationList& computation_order,
                                        const ComputationList& outputs);
 
-}  // namespace thirdai::bolt::nn::autograd
+}  // namespace thirdai::bolt

@@ -10,7 +10,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace thirdai::automl::data {
+namespace thirdai::automl {
 
 class TemporalContext {
  public:
@@ -62,4 +62,4 @@ class TemporalContext {
 
 using TemporalContextPtr = std::shared_ptr<TemporalContext>;
 
-}  // namespace thirdai::automl::data
+}  // namespace thirdai::automl

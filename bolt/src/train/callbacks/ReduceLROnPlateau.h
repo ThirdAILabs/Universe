@@ -4,7 +4,7 @@
 #include <limits>
 #include <stdexcept>
 
-namespace thirdai::bolt::train::callbacks {
+namespace thirdai::bolt::callbacks {
 
 /**
  * This callback scales the learning at the end of each epoch after a
@@ -129,4 +129,4 @@ class ReduceLROnPlateau final : public Callback {
   float _best_metric;
 };
 
-}  // namespace thirdai::bolt::train::callbacks
+}  // namespace thirdai::bolt::callbacks

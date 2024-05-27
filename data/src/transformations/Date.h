@@ -9,7 +9,16 @@ class Date final : public Transformation {
   Date(std::string input_column_name, std::string output_column_name,
        std::string format = "%Y-%m-%d");
 
+  explicit Date(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  void buildExplanationMap(const ColumnMap& input, State& state,
+                           ExplanationMap& explanation) const final;
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "date"; }
 
  private:
   std::string _input_column_name;

@@ -5,7 +5,7 @@
 
 namespace thirdai::automl::udt::utils {
 
-using bolt::nn::model::ModelPtr;
+using bolt::ModelPtr;
 
 ModelPtr buildModel(uint32_t input_dim, uint32_t output_dim,
                     const config::ArgumentMap& args,
@@ -20,7 +20,8 @@ ModelPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
 
 float autotuneSparsity(uint32_t dim);
 
-ModelPtr loadModel(const std::vector<uint32_t>& input_dims, uint32_t output_dim,
+ModelPtr loadModel(const std::vector<uint32_t>& input_dims,
+                   uint32_t specified_output_dim,
                    const std::string& config_path, bool mach = false);
 
 void verifyCanSetModel(const ModelPtr& curr_model, const ModelPtr& new_model);

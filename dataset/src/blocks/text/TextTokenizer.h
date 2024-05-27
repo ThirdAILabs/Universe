@@ -3,8 +3,10 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <dataset/src/utils/TokenEncoding.h>
-#include <utils/StringManipulation.h>
+#include <utils/text/StringManipulation.h>
 #include <string>
 
 namespace thirdai::dataset {
@@ -15,6 +17,12 @@ class TextTokenizer {
 
   virtual std::string getResponsibleWord(const std::string& input,
                                          uint32_t source_token) = 0;
+
+  virtual ar::ConstArchivePtr toArchive() const = 0;
+
+  virtual std::vector<std::string> toStrings(const std::string& input) = 0;
+
+  static std::shared_ptr<TextTokenizer> fromArchive(const ar::Archive& archive);
 
   virtual ~TextTokenizer() = default;
 
@@ -40,6 +48,10 @@ class NaiveSplitTokenizer : public TextTokenizer {
     return token_encoding::hashTokens(text::split(input, _delimiter));
   }
 
+  std::vector<std::string> toStrings(const std::string& input) final {
+    return text::split(input, _delimiter);
+  }
+
   std::string getResponsibleWord(const std::string& input,
                                  uint32_t source_token) final {
     auto map = token_encoding::buildUnigramHashToWordMap(
@@ -51,6 +63,15 @@ class NaiveSplitTokenizer : public TextTokenizer {
     }
     return map.at(source_token);
   }
+
+  ar::ConstArchivePtr toArchive() const final {
+    auto map = ar::Map::make();
+    map->set("type", ar::str(type()));
+    map->set("delimiter", ar::character(_delimiter));
+    return map;
+  }
+
+  static std::string type() { return "naive_split"; }
 
  private:
   char _delimiter;
@@ -72,6 +93,10 @@ class WordPunctTokenizer : public TextTokenizer {
     return token_encoding::hashTokens(text::tokenizeSentence(input));
   }
 
+  std::vector<std::string> toStrings(const std::string& input) final {
+    return text::tokenizeSentence(input);
+  }
+
   std::string getResponsibleWord(const std::string& input,
                                  uint32_t source_token) final {
     auto map = token_encoding::buildUnigramHashToWordMap(
@@ -83,6 +108,14 @@ class WordPunctTokenizer : public TextTokenizer {
     }
     return map.at(source_token);
   }
+
+  ar::ConstArchivePtr toArchive() const final {
+    auto map = ar::Map::make();
+    map->set("type", ar::str(type()));
+    return map;
+  }
+
+  static std::string type() { return "word_punct"; }
 
  private:
   friend class cereal::access;
@@ -104,6 +137,10 @@ class CharKGramTokenizer : public TextTokenizer {
     return token_encoding::hashTokens(text::charKGrams(input, _k));
   }
 
+  std::vector<std::string> toStrings(const std::string& input) final {
+    return text::charKGrams(input, _k);
+  }
+
   std::string getResponsibleWord(const std::string& input,
                                  uint32_t source_token) final {
     auto map =
@@ -115,6 +152,15 @@ class CharKGramTokenizer : public TextTokenizer {
     }
     return map.at(source_token);
   }
+
+  ar::ConstArchivePtr toArchive() const final {
+    auto map = ar::Map::make();
+    map->set("type", ar::str(type()));
+    map->set("k", ar::u64(_k));
+    return map;
+  }
+
+  static std::string type() { return "char_k_gram"; }
 
  private:
   uint32_t _k;

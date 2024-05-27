@@ -11,9 +11,7 @@ class Timer {
 
   void stop() { _end = Clock::now(); }
 
-  double seconds() {
-    return static_cast<double>(elapsed<std::chrono::seconds>());
-  }
+  double seconds() { return milliseconds() / 1000; }
 
   double milliseconds() {
     return static_cast<double>(elapsed<std::chrono::milliseconds>());

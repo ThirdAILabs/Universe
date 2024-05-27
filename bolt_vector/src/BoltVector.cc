@@ -4,6 +4,9 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/cereal.hpp>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace thirdai {
 
@@ -149,6 +152,20 @@ BoltVector BoltVector::makeDenseVectorWithGradients(
   return vector;
 }
 
+std::vector<ValueIndexPair> BoltVector::valueIndexPairs() const {
+  std::vector<ValueIndexPair> pairs;
+  if (isDense()) {
+    for (uint32_t i = 0; i < len; i++) {
+      pairs.emplace_back(activations[i], i);
+    }
+  } else {
+    for (uint32_t i = 0; i < len; i++) {
+      pairs.emplace_back(activations[i], active_neurons[i]);
+    }
+  }
+  return pairs;
+}
+
 BoltVector BoltVector::copy() const {
   BoltVector vec;
   vec.len = this->len;
@@ -267,6 +284,28 @@ void BoltVector::zeroOutGradients() {  // NOLINT clang-tidy thinks this should
   std::fill_n(gradients, len, 0.0);
 }
 
+BoltVector BoltVector::viewChunk(size_t chunk_idx, size_t chunk_size) const {
+  if ((chunk_idx + 1) * chunk_size > len) {
+    throw std::invalid_argument(
+        "Cannot access chunk " + std::to_string(chunk_idx) +
+        " with chunk size " + std::to_string(chunk_size) +
+        " in vector of length " + std::to_string(len) + ".");
+  }
+  uint32_t* chunk_active_neurons = nullptr;
+  if (!isDense()) {
+    chunk_active_neurons = active_neurons + chunk_idx * chunk_size;
+  }
+  float* chunk_activations = activations + chunk_idx * chunk_size;
+
+  float* chunk_gradients = nullptr;
+  if (hasGradients()) {
+    chunk_gradients = gradients + chunk_idx * chunk_size;
+  }
+
+  return BoltVector(chunk_active_neurons, chunk_activations, chunk_gradients,
+                    chunk_size);
+}
+
 /**
  * Finds the position and activation (value) of an active neuron.
  * Whether or not the vector is dense is templated because this is
@@ -329,7 +368,7 @@ std::vector<uint32_t> BoltVector::getThresholdedNeurons(
   return thresholded;
 }
 
-TopKActivationsQueue BoltVector::findKLargestActivations(uint32_t k) const {
+TopKActivationsQueue BoltVector::topKNeurons(uint32_t k) const {
   TopKActivationsQueue top_k;
   for (uint32_t pos = 0; pos < std::min(k, len); pos++) {
     uint32_t idx = isDense() ? pos : active_neurons[pos];
@@ -345,6 +384,16 @@ TopKActivationsQueue BoltVector::findKLargestActivations(uint32_t k) const {
     }
   }
   return top_k;
+}
+
+std::vector<ValueIndexPair> BoltVector::topKNeuronsAsVector(uint32_t k) const {
+  auto pq = topKNeurons(k);
+  std::vector<ValueIndexPair> vec;
+  while (!pq.empty()) {
+    vec.push_back(pq.top());
+    pq.pop();
+  }
+  return vec;
 }
 
 bool BoltVector::hasGradients() const { return gradients != nullptr; }

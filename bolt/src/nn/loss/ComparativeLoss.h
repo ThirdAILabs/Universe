@@ -4,7 +4,7 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
 
-namespace thirdai::bolt::nn::loss {
+namespace thirdai::bolt {
 
 /**
  * Subclass of Loss for loss functions that consist only of an elementwise
@@ -15,21 +15,19 @@ namespace thirdai::bolt::nn::loss {
  */
 class ComparativeLoss : public Loss {
  public:
-  ComparativeLoss(autograd::ComputationPtr output,
-                  autograd::ComputationPtr labels);
+  ComparativeLoss(ComputationPtr output, ComputationPtr labels);
 
   float loss(uint32_t index_in_batch) const final;
 
   void gradients(uint32_t index_in_batch, uint32_t batch_size) const final;
 
-  autograd::ComputationList outputsUsed() const final;
+  ComputationList outputsUsed() const final;
 
-  autograd::ComputationList labels() const final;
+  ComputationList labels() const final;
 
  protected:
   ComparativeLoss() {}
 
- private:
   /**
    * Helper functions to iterate over the activations and labels depending on
    * their sparsities.
@@ -54,12 +52,12 @@ class ComparativeLoss : public Loss {
   virtual float singleGradient(float activation, float label,
                                uint32_t batch_size) const = 0;
 
-  autograd::ComputationPtr _output;
-  autograd::ComputationPtr _labels;
+  ComputationPtr _output;
+  ComputationPtr _labels;
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive);
 };
 
-}  // namespace thirdai::bolt::nn::loss
+}  // namespace thirdai::bolt

@@ -19,7 +19,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   run_demo_notebooks:
-    runs-on: self-hosted
+    runs-on: [self-hosted, Linux]
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
@@ -36,9 +36,12 @@ jobs:
       - name: Build docker
         run: docker build -t thirdai/run_demos_build -f docker/demos/Dockerfile .
 
-      - name: Build Package and Run Benchmark
-        run: docker run thirdai/run_demos_build bash -c "python3 run_demo_notebooks.py"
-
+      - name: Run Demos
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          THIRDAI_KEY: ${{ secrets.SECRET_DEMO_LICENSE }}
+        run: python3 bin/run_demo_notebooks.py
+        
       - name: Delete Container
         run: sudo docker system prune -a -f
         

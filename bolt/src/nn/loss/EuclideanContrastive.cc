@@ -5,16 +5,18 @@
 #include <cereal/types/polymorphic.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <bolt_vector/src/BoltVectorUtils.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <cmath>
 #include <stdexcept>
 #include <string>
 #include <utility>
 
-namespace thirdai::bolt::nn::loss {
+namespace thirdai::bolt {
 
-EuclideanContrastive::EuclideanContrastive(autograd::ComputationPtr output_1,
-                                           autograd::ComputationPtr output_2,
-                                           autograd::ComputationPtr labels,
+EuclideanContrastive::EuclideanContrastive(ComputationPtr output_1,
+                                           ComputationPtr output_2,
+                                           ComputationPtr labels,
                                            float dissimilar_cutoff_distance)
     : _output_1(std::move(output_1)),
       _output_2(std::move(output_2)),
@@ -41,9 +43,8 @@ EuclideanContrastive::EuclideanContrastive(autograd::ComputationPtr output_1,
 }
 
 std::shared_ptr<EuclideanContrastive> EuclideanContrastive::make(
-    const autograd::ComputationPtr& output_1,
-    const autograd::ComputationPtr& output_2,
-    const autograd::ComputationPtr& labels, float dissimilar_cutoff_distance) {
+    const ComputationPtr& output_1, const ComputationPtr& output_2,
+    const ComputationPtr& labels, float dissimilar_cutoff_distance) {
   return std::make_shared<EuclideanContrastive>(output_1, output_2, labels,
                                                 dissimilar_cutoff_distance);
 }
@@ -106,13 +107,11 @@ float EuclideanContrastive::loss(uint32_t index_in_batch) const {
          (1 - label) * cutoff_distance_squared;
 }
 
-autograd::ComputationList EuclideanContrastive::outputsUsed() const {
+ComputationList EuclideanContrastive::outputsUsed() const {
   return {_output_1, _output_2};
 }
 
-autograd::ComputationList EuclideanContrastive::labels() const {
-  return {_labels};
-}
+ComputationList EuclideanContrastive::labels() const { return {_labels}; }
 
 float EuclideanContrastive::euclideanDistanceSquared(
     uint32_t index_in_batch) const {
@@ -130,12 +129,35 @@ float EuclideanContrastive::euclideanDistanceSquared(
   return euclidean_distance_squared;
 }
 
+ar::ConstArchivePtr EuclideanContrastive::toArchive() const {
+  auto map = ar::Map::make();
+  map->set("type", ar::str(type()));
+  map->set("output_1", ar::str(_output_1->name()));
+  map->set("output_2", ar::str(_output_2->name()));
+  map->set("labels", ar::str(_labels->name()));
+  map->set("cutoff", ar::f32(_dissimilar_cutoff_distance));
+
+  return map;
+}
+
+std::shared_ptr<EuclideanContrastive> EuclideanContrastive::fromArchive(
+    const ar::Archive& archive,
+    const std::unordered_map<std::string, ComputationPtr>& computations) {
+  assertLossType(archive, type());
+
+  return EuclideanContrastive::make(computations.at(archive.str("output_1")),
+                                    computations.at(archive.str("output_2")),
+                                    computations.at(archive.str("labels")),
+                                    archive.getAs<ar::F32>("cutoff"));
+}
+
 template <class Archive>
 void EuclideanContrastive::serialize(Archive& archive) {
   archive(cereal::base_class<Loss>(this), _output_1, _output_2, _labels,
           _dissimilar_cutoff_distance);
 }
 
-}  // namespace thirdai::bolt::nn::loss
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::loss::EuclideanContrastive)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::EuclideanContrastive,
+                               "thirdai::bolt::nn::loss::EuclideanContrastive")

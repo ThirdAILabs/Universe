@@ -1,11 +1,11 @@
 #include "MachPrecision.h"
 
-namespace thirdai::bolt::train::metrics {
+namespace thirdai::bolt::metrics {
 
 MachPrecision::MachPrecision(dataset::mach::MachIndexPtr mach_index,
                              uint32_t num_buckets_to_eval,
-                             nn::autograd::ComputationPtr outputs,
-                             nn::autograd::ComputationPtr labels, uint32_t k)
+                             ComputationPtr outputs, ComputationPtr labels,
+                             uint32_t k)
     : _mach_index(std::move(mach_index)),
       _num_buckets_to_eval(num_buckets_to_eval),
       _outputs(std::move(outputs)),
@@ -44,4 +44,4 @@ float MachPrecision::worst() const { return 0.0; }
 
 bool MachPrecision::betterThan(float a, float b) const { return a > b; }
 
-}  // namespace thirdai::bolt::train::metrics
+}  // namespace thirdai::bolt::metrics

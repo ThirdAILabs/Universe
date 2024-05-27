@@ -2,8 +2,7 @@ import os
 
 import numpy as np
 import thirdai
-from thirdai._thirdai import bolt as old_bolt
-from thirdai._thirdai import bolt_v2 as bolt
+from thirdai._thirdai import bolt
 
 from .utils import check_torch_installed, timed
 
@@ -25,11 +24,11 @@ class Communication(bolt.train.Communication):
     def communicate(self, model):
         import torch
         import torch.distributed as dist
-        from ray.air import session
+        from ray import train
 
         self.synchronize_workers()
 
-        num_workers = session.get_world_size()
+        num_workers = train.get_context().get_world_size()
         gradients = torch.from_numpy(np.array(model.get_gradients()))
 
         dist.all_reduce(gradients)
@@ -46,6 +45,15 @@ class Communication(bolt.train.Communication):
         all_reduce_num_batches = torch.tensor(num_batches)
         dist.all_reduce(all_reduce_num_batches, op=dist.ReduceOp.MIN)
         return all_reduce_num_batches
+
+    @timed
+    def broadcast_metrics(self, train_metrics):
+        import torch.distributed as dist
+
+        dist.barrier()
+        dist.broadcast_object_list(train_metrics, src=0)
+
+        return train_metrics
 
 
 # Note: We need to disable sparse updates neural network updates as after allreduce
@@ -75,7 +83,7 @@ def adds_distributed_to_bolt():
 
         return metrics
 
-    old_bolt.UniversalDeepTransformer.train_distributed = udt_train_distributed
+    bolt.UniversalDeepTransformer.train_distributed = udt_train_distributed
 
     def udt_coldstart_distributed(self, *args, **kwargs):
         self._get_model().disable_sparse_parameter_updates()
@@ -87,4 +95,30 @@ def adds_distributed_to_bolt():
 
         return metrics
 
-    old_bolt.UniversalDeepTransformer.coldstart_distributed = udt_coldstart_distributed
+    def udt_coldstart_distributed_on_data_source(self, *args, **kwargs):
+        self._get_model().disable_sparse_parameter_updates()
+
+        kwargs["comm"] = Communication()
+        metrics = self.cold_start_on_data_source(*args, **kwargs)
+
+        self._get_model().enable_sparse_parameter_updates()
+
+        return metrics
+
+    bolt.UniversalDeepTransformer.coldstart_distributed = udt_coldstart_distributed
+
+    bolt.UniversalDeepTransformer.coldstart_distributed_on_data_source = (
+        udt_coldstart_distributed_on_data_source
+    )
+
+    def generative_model_train_distributed(self, *args, **kwargs):
+        self.model.disable_sparse_parameter_updates()
+
+        kwargs["comm"] = Communication()
+        metrics = self.train(*args, **kwargs)
+
+        self.model.enable_sparse_parameter_updates()
+
+        return metrics
+
+    bolt.GenerativeModel.train_distributed = generative_model_train_distributed

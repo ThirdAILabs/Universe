@@ -9,11 +9,11 @@
 
 namespace thirdai::bolt {
 
-nn::NeuronIndexPtr DWTASamplingConfig::getNeuronIndex(
-    uint32_t layer_dim, uint32_t input_dim) const {
+NeuronIndexPtr DWTASamplingConfig::getNeuronIndex(uint32_t layer_dim,
+                                                  uint32_t input_dim) const {
   auto hash_fn = getHashFunction(input_dim);
   auto hash_table = getHashTable();
-  return nn::LshIndex::make(layer_dim, hash_fn, hash_table);
+  return LshIndex::make(layer_dim, hash_fn, hash_table);
 }
 
 hashing::HashFunctionPtr DWTASamplingConfig::getHashFunction(
@@ -177,11 +177,18 @@ std::shared_ptr<DWTASamplingConfig> DWTASamplingConfig::autotune(
   return oldAutotune(layer_dim, sparsity);
 }
 
-nn::NeuronIndexPtr FastSRPSamplingConfig::getNeuronIndex(
-    uint32_t layer_dim, uint32_t input_dim) const {
+size_t DWTASamplingConfig::estimateHashTableSize(uint32_t dim, float sparsity) {
+  auto config = autotune(dim, sparsity, false);
+
+  return config->_num_tables * config->_reservoir_size *
+         (1 << config->_range_pow) * 4;
+}
+
+NeuronIndexPtr FastSRPSamplingConfig::getNeuronIndex(uint32_t layer_dim,
+                                                     uint32_t input_dim) const {
   auto hash_fn = getHashFunction(input_dim);
   auto hash_table = getHashTable();
-  return nn::LshIndex::make(layer_dim, hash_fn, hash_table);
+  return LshIndex::make(layer_dim, hash_fn, hash_table);
 }
 
 hashing::HashFunctionPtr FastSRPSamplingConfig::getHashFunction(

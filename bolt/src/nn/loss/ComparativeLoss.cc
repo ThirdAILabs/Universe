@@ -11,10 +11,9 @@
 #include <sstream>
 #include <stdexcept>
 
-namespace thirdai::bolt::nn::loss {
+namespace thirdai::bolt {
 
-ComparativeLoss::ComparativeLoss(autograd::ComputationPtr output,
-                                 autograd::ComputationPtr labels)
+ComparativeLoss::ComparativeLoss(ComputationPtr output, ComputationPtr labels)
     : _output(std::move(output)), _labels(std::move(labels)) {
   if (_output->dim() != _labels->dim()) {
     std::stringstream error;
@@ -68,11 +67,9 @@ void ComparativeLoss::gradients(uint32_t index_in_batch,
   }
 }
 
-autograd::ComputationList ComparativeLoss::outputsUsed() const {
-  return {_output};
-}
+ComputationList ComparativeLoss::outputsUsed() const { return {_output}; }
 
-autograd::ComputationList ComparativeLoss::labels() const { return {_labels}; }
+ComputationList ComparativeLoss::labels() const { return {_labels}; }
 
 template <bool ACT_DENSE, bool LABEL_DENSE>
 float ComparativeLoss::loss(const BoltVector& activations,
@@ -121,6 +118,7 @@ void ComparativeLoss::serialize(Archive& archive) {
   archive(cereal::base_class<Loss>(this), _output, _labels);
 }
 
-}  // namespace thirdai::bolt::nn::loss
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::loss::ComparativeLoss)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::ComparativeLoss,
+                               "thirdai::bolt::nn::loss::ComparativeLoss")

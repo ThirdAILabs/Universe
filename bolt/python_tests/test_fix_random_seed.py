@@ -1,8 +1,7 @@
 import numpy as np
 import pytest
 import thirdai
-from thirdai import bolt_v2 as bolt
-from thirdai import dataset
+from thirdai import bolt, dataset
 
 
 def build_model(fix_seed):

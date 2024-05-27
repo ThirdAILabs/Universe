@@ -1,6 +1,5 @@
 #pragma once
-#include <bolt/src/graph/Graph.h>
-#include <bolt/src/graph/nodes/Input.h>
+
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>

@@ -92,7 +92,7 @@ constexpr bool EXPERIMENTAL_HIDDEN_LAYER_CONFIG = false;
 
 // Maximum number of samples to take from a dataset to use as balancing samples
 // for rlhf.
-constexpr uint32_t MAX_BALANCING_SAMPLES = 10000;
+constexpr uint32_t MAX_BALANCING_SAMPLES_TO_LOAD = 100000;
 
 // Max documents to store samples from for rlhf balancing.
 constexpr uint32_t MAX_BALANCING_DOCS = 1000;
@@ -103,7 +103,38 @@ constexpr uint32_t MAX_BALANCING_SAMPLES_PER_DOC = 10;
 // n-grams to use for query reformulation
 const std::vector<uint32_t> N_GRAMS_FOR_GENERATOR = {3, 4};
 
-// Batch size to use during associate.
-constexpr uint32_t ASSOCIATE_BATCH_SIZE = 200;
+// Batch size to use during associates/upvotes.
+constexpr uint32_t RLHF_BATCH_SIZE = 200;
 
+// balancing samples to use during associates/upvotes.
+constexpr uint32_t RLHF_N_BALANCING_SAMPLES = 50;
+
+// duplication multiplier for associate/upvote queries
+constexpr uint32_t RLHF_N_FEEDBACK_SAMPLES = 16;
+
+// learning rate for associates/upvotes.
+constexpr float RLHF_LEARNING_RATE = 0.001;
+
+// epochs for associates/upvotes.
+constexpr uint32_t RLHF_EPOCHS = 3;
+
+// Edit distance to be used in SpellChecker
+constexpr uint32_t MAX_EDIT_DISTANCE = 3;
+
+// Prefix length to be used in SpellChecker
+constexpr uint32_t PREFIX_LENGTH = 7;
+
+// initial capacity of symspell dictionary
+constexpr uint32_t SYMSPELL_DICT_INITIAL_CAPACITY = 50000;
+
+// Use Word Segmentation in SymSpell
+constexpr bool USE_WORD_SEGMENTATION = false;
+
+// predictions per token for symspell
+constexpr bool PREDICTIONS_PER_TOKEN = 2;
+
+// beam search width for symspell
+constexpr bool BEAM_SEARCH_WIDTH = 3;
+
+constexpr bool STOP_IF_FOUND = false;
 }  // namespace thirdai::automl::udt::defaults

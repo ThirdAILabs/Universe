@@ -4,7 +4,7 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
 
-namespace thirdai::bolt::nn::rca {
+namespace thirdai::bolt::rca {
 
 /**
  * Stores the input gradients returned by RCA explainability methods. The
@@ -21,8 +21,7 @@ struct RCAGradients {
  * what changes in the input would make the activation of the predicted neuron
  * closer to 1.0.
  */
-RCAGradients explainPrediction(model::ModelPtr& model,
-                               const tensor::TensorList& input_vec);
+RCAGradients explainPrediction(ModelPtr& model, const TensorList& input_vec);
 
 /**
  * Computes the gradients w.r.t the inputs by assigning a label of 1.0 to the
@@ -30,8 +29,7 @@ RCAGradients explainPrediction(model::ModelPtr& model,
  * represent what changes in the input would make the activation of the given
  * neuron closer to 1.0.
  */
-RCAGradients explainNeuron(model::ModelPtr& model,
-                           const tensor::TensorList& input_vec,
+RCAGradients explainNeuron(ModelPtr& model, const TensorList& input_vec,
                            uint32_t neuron);
 
-}  // namespace thirdai::bolt::nn::rca
+}  // namespace thirdai::bolt::rca

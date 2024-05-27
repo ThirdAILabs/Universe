@@ -5,7 +5,7 @@
 
 namespace py = pybind11;
 
-namespace thirdai::bolt::train::python {
+namespace thirdai::bolt::python {
 
 struct CtrlCCheck {
   void operator()() {
@@ -17,4 +17,4 @@ struct CtrlCCheck {
   }
 };
 
-}  // namespace thirdai::bolt::train::python
+}  // namespace thirdai::bolt::python

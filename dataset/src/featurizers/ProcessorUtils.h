@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dataset/src/utils/SafeFileIO.h>
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <string>

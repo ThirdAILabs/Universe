@@ -1,5 +1,6 @@
 #include "TextGenerationFeaturizer.h"
 #include <cereal/archives/binary.hpp>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/HashUtils.h>
 #include <dataset/src/utils/SafeFileIO.h>
@@ -20,7 +21,11 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
 
 #pragma omp parallel for default(none) shared(lines, featurized_samples)
   for (uint32_t i = 0; i < lines.size(); i++) {
-    featurized_samples[i] = featurizeText(lines[i]);
+    if (_featurize_in_chunks) {
+      featurized_samples[i] = featurizeTextChunks(lines[i]);
+    } else {
+      featurized_samples[i] = featurizeTextSlidingWindow(lines[i]);
+    }
   }
 
   std::vector<std::vector<BoltVector>> data(5);
@@ -44,25 +49,59 @@ std::string getStringField(const json& json_object, const std::string& name) {
   return json_object[name].get<std::string>();
 }
 
-std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
+std::vector<std::vector<BoltVector>>
+TextGenerationFeaturizer::featurizeTextChunks(const std::string& line) const {
+  auto line_content = json::parse(line);
+  if (!line_content.is_object()) {
+    throw std::invalid_argument("Expected line to be a json object.");
+  }
+
+  auto [tokens, _] = getAllTokens(line_content, /* with_context= */ false);
+
+  BoltVector prompt = promptContext(getPrompt(line_content));
+
+  std::vector<std::vector<BoltVector>> vectors;
+
+  size_t chunk_size = _context_featurizer.contextSize() + 1;
+
+  for (size_t chunk_start = 0; chunk_start < tokens.size();
+       chunk_start += chunk_size) {
+    size_t chunk_end = std::min(tokens.size(), chunk_start + chunk_size);
+
+    for (size_t i = chunk_start + 1; i < chunk_end; i++) {
+      BoltVector label = BoltVector::singleElementSparseVector(tokens[i]);
+      vectors.push_back({prompt,
+                         _context_featurizer.lrcContext(tokens, chunk_start, i),
+                         _context_featurizer.ircContext(tokens, chunk_start, i),
+                         _context_featurizer.srcContext(tokens, chunk_start, i),
+                         std::move(label)});
+    }
+  }
+
+  return vectors;
+}
+
+std::vector<std::vector<BoltVector>>
+TextGenerationFeaturizer::featurizeTextSlidingWindow(
     const std::string& line) const {
   auto line_content = json::parse(line);
   if (!line_content.is_object()) {
     throw std::invalid_argument("Expected line to be a json object.");
   }
 
-  auto [tokens, predict_start] = getContext(line_content);
+  auto [tokens, context_size] =
+      getAllTokens(line_content, /* with_context= */ true);
 
   BoltVector prompt = promptContext(getPrompt(line_content));
 
   std::vector<std::vector<BoltVector>> vectors;
 
-  for (uint32_t i = predict_start; i < tokens.size(); i++) {
+  for (size_t i = std::max<size_t>(context_size, 1); i < tokens.size(); i++) {
     BoltVector label = BoltVector::singleElementSparseVector(tokens[i]);
 
-    vectors.push_back({prompt, _context_featurizer.lrcContext(tokens, i),
-                       _context_featurizer.ircContext(tokens, i),
-                       _context_featurizer.srcContext(tokens, i),
+    vectors.push_back({prompt, _context_featurizer.lrcContext(tokens, 0, i),
+                       _context_featurizer.ircContext(tokens, 0, i),
+                       _context_featurizer.srcContext(tokens, 0, i),
                        std::move(label)});
   }
 
@@ -91,8 +130,41 @@ std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
           _context_featurizer.srcContext(context)};
 }
 
-std::pair<std::vector<uint32_t>, uint32_t> TextGenerationFeaturizer::getContext(
-    const json& line_content) {
+bool hasPrompt(const std::vector<uint32_t>& dims) { return dims.size() <= 3; }
+
+bolt::TensorList TextGenerationFeaturizer::featurizeInputBatch(
+    const std::vector<uint32_t>& prompt,
+    const std::vector<std::vector<uint32_t>>& tokens,
+    const std::vector<uint32_t>& dims) const {
+  std::vector<BoltVector> lrc;
+  lrc.reserve(tokens.size());
+  std::vector<BoltVector> irc;
+  irc.reserve(tokens.size());
+  std::vector<BoltVector> src;
+  src.reserve(tokens.size());
+  std::vector<BoltVector> prompts;
+  prompts.reserve(tokens.size());
+
+  for (const auto& sample : tokens) {
+    lrc.emplace_back(_context_featurizer.lrcContext(sample));
+    irc.emplace_back(_context_featurizer.ircContext(sample));
+    src.emplace_back(_context_featurizer.srcContext(sample));
+    prompts.emplace_back(promptContext(prompt));
+  }
+  if (hasPrompt(dims)) {
+    return bolt::convertBatch(
+        {BoltBatch(std::move(lrc)), BoltBatch(std::move(irc)),
+         BoltBatch(std::move(src))},
+        dims);
+  }
+  return bolt::convertBatch(
+      {BoltBatch(std::move(prompts)), BoltBatch(std::move(lrc)),
+       BoltBatch(std::move(irc)), BoltBatch(std::move(src))},
+      dims);
+}
+
+std::pair<std::vector<uint32_t>, size_t> TextGenerationFeaturizer::getAllTokens(
+    const json& line_content, bool with_context) {
   if (!line_content.contains("target")) {
     throw std::invalid_argument("Expected field 'target' in json object'");
   }
@@ -100,21 +172,19 @@ std::pair<std::vector<uint32_t>, uint32_t> TextGenerationFeaturizer::getContext(
   std::vector<uint32_t> target_tokens =
       token_encoding::tokenIds(getStringField(line_content, "target"));
 
-  if (line_content.contains("context")) {
+  if (line_content.contains("context") && with_context) {
     std::vector<uint32_t> context_tokens =
         token_encoding::tokenIds(getStringField(line_content, "context"));
 
-    // The predict start is 1 after the end of the context because there will be
-    // a [CLS] token.
-    uint32_t predict_start = context_tokens.size() + 1;
+    size_t context_size = context_tokens.size();
 
     context_tokens.insert(context_tokens.end(), target_tokens.begin(),
                           target_tokens.end());
 
-    return {std::move(context_tokens), predict_start};
+    return {std::move(context_tokens), context_size};
   }
 
-  return {std::move(target_tokens), 1};
+  return {std::move(target_tokens), 0};
 }
 
 std::vector<uint32_t> TextGenerationFeaturizer::getPrompt(

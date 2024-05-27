@@ -1,6 +1,6 @@
 #pragma once
 
-#include <auto_ml/src/featurization/GraphDatasetManager.h>
+#include <auto_ml/src/featurization/GraphFeaturizer.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <stdexcept>
@@ -9,9 +9,11 @@ namespace thirdai::automl::udt {
 
 class UDTGraphClassifier final : public UDTBackend {
  public:
-  UDTGraphClassifier(const data::ColumnDataTypes& data_types,
+  UDTGraphClassifier(const ColumnDataTypes& data_types,
                      const std::string& target_col, uint32_t n_target_classes,
-                     bool integer_target, const data::TabularOptions& options);
+                     bool integer_target, const TabularOptions& options);
+
+  explicit UDTGraphClassifier(const ar::Archive& archive);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
@@ -19,18 +21,18 @@ class UDTGraphClassifier final : public UDTBackend {
                    const dataset::DataSourcePtr& val_data,
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
-                   TrainOptions options,
-                   const bolt::train::DistributedCommPtr& comm) final;
+                   TrainOptions options, const bolt::DistributedCommPtr& comm,
+                   py::kwargs kwargs) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool verbose,
-                      std::optional<uint32_t> top_k) final;
+                      py::kwargs kwargs) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
                      bool return_predicted_class,
                      std::optional<uint32_t> top_k) final {
-    return _classifier->predict(_dataset_manager->featurizeInput(sample),
+    return _classifier->predict(_featurizer->featurizeInput(sample),
                                 sparse_inference, return_predicted_class,
                                 /* single= */ true, top_k);
   }
@@ -38,28 +40,30 @@ class UDTGraphClassifier final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final {
-    return _classifier->predict(_dataset_manager->featurizeInputBatch(samples),
+    return _classifier->predict(_featurizer->featurizeInputBatch(samples),
                                 sparse_inference, return_predicted_class,
                                 /* single= */ false, top_k);
   }
 
   void indexNodes(const dataset::DataSourcePtr& source) final {
-    _dataset_manager->index(source);
+    _featurizer->index(source);
   }
 
-  void clearGraph() final { _dataset_manager->clearGraph(); }
+  void clearGraph() final { _featurizer->clearGraph(); }
 
   ModelPtr model() const final { return _classifier->model(); }
 
-  data::ColumnDataTypes dataTypes() const final {
-    return _dataset_manager->dataTypes();
-  }
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
+
+  static std::unique_ptr<UDTGraphClassifier> fromArchive(
+      const ar::Archive& archive);
+
+  static std::string type() { return "udt_graph"; }
 
  private:
   UDTGraphClassifier() {}
 
-  static ModelPtr createGNN(std::vector<uint32_t> input_dims,
-                            uint32_t output_dim);
+  static ModelPtr createGNN(uint32_t output_dim);
 
   friend cereal::access;
 
@@ -67,7 +71,8 @@ class UDTGraphClassifier final : public UDTBackend {
   void serialize(Archive& archive, uint32_t version);
 
   utils::ClassifierPtr _classifier;
-  data::GraphDatasetManagerPtr _dataset_manager;
+
+  GraphFeaturizerPtr _featurizer;
 };
 
 }  // namespace thirdai::automl::udt

@@ -3,17 +3,18 @@
 #include <cereal/details/helpers.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <archive/src/Map.h>
 #include <cmath>
 #include <optional>
 
-namespace thirdai::bolt::nn::loss {
+namespace thirdai::bolt {
 
-CategoricalCrossEntropy::CategoricalCrossEntropy(
-    autograd::ComputationPtr output, autograd::ComputationPtr labels)
+CategoricalCrossEntropy::CategoricalCrossEntropy(ComputationPtr output,
+                                                 ComputationPtr labels)
     : ComparativeLoss(std::move(output), std::move(labels)) {}
 
 std::shared_ptr<CategoricalCrossEntropy> CategoricalCrossEntropy::make(
-    autograd::ComputationPtr output, autograd::ComputationPtr labels) {
+    ComputationPtr output, ComputationPtr labels) {
   return std::make_shared<CategoricalCrossEntropy>(std::move(output),
                                                    std::move(labels));
 }
@@ -38,6 +39,24 @@ float CategoricalCrossEntropy::singleGradient(float activation, float label,
   return (label - activation) / batch_size;
 }
 
+ar::ConstArchivePtr CategoricalCrossEntropy::toArchive() const {
+  auto map = ar::Map::make();
+  map->set("type", ar::str(type()));
+  map->set("output", ar::str(_output->name()));
+  map->set("labels", ar::str(_labels->name()));
+
+  return map;
+}
+
+std::shared_ptr<CategoricalCrossEntropy> CategoricalCrossEntropy::fromArchive(
+    const ar::Archive& archive,
+    const std::unordered_map<std::string, ComputationPtr>& computations) {
+  assertLossType(archive, type());
+
+  return CategoricalCrossEntropy::make(computations.at(archive.str("output")),
+                                       computations.at(archive.str("labels")));
+}
+
 template void CategoricalCrossEntropy::serialize(cereal::BinaryInputArchive&);
 template void CategoricalCrossEntropy::serialize(cereal::BinaryOutputArchive&);
 
@@ -46,6 +65,8 @@ void CategoricalCrossEntropy::serialize(Archive& archive) {
   archive(cereal::base_class<ComparativeLoss>(this));
 }
 
-}  // namespace thirdai::bolt::nn::loss
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::loss::CategoricalCrossEntropy)
+CEREAL_REGISTER_TYPE_WITH_NAME(
+    thirdai::bolt::CategoricalCrossEntropy,
+    "thirdai::bolt::nn::loss::CategoricalCrossEntropy")

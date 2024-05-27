@@ -5,11 +5,15 @@
 #include <cereal/types/vector.hpp>
 #include <bolt/src/layers/SamplingConfig.h>
 #include <hashing/src/HashUtils.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <utils/Random.h>
 #include <algorithm>
+#include <memory>
 #include <random>
+#include <stdexcept>
 
-namespace thirdai::bolt::nn {
+namespace thirdai::bolt {
 
 LshIndex::LshIndex(uint32_t layer_dim, hashing::HashFunctionPtr hash_fn,
                    hashtable::SampledHashTablePtr hash_table)
@@ -29,7 +33,7 @@ void LshIndex::query(const BoltVector& input, BoltVector& output,
 
   std::unordered_set<uint32_t> selected_neurons;
 
-  uint32_t label_len = labels != nullptr ? labels->len : 0;
+  uint32_t label_len = labels == nullptr || labels->isDense() ? 0 : labels->len;
   for (uint32_t i = 0; i < label_len; i++) {
     selected_neurons.insert(labels->active_neurons[i]);
   }
@@ -136,6 +140,39 @@ void LshIndex::summarize(std::ostream& summary) const {
   _hash_table->summarize(summary);
 }
 
+ar::ConstArchivePtr LshIndex::toArchive() const {
+  auto map = ar::Map::make();
+
+  map->set("type", ar::str(type()));
+  map->set("hash_fn", _hash_fn->toArchive());
+  map->set("hash_table", _hash_table->toArchive());
+  map->set("rand_neurons", ar::vecU32(_rand_neurons));
+  map->set("insert_labels_when_not_found",
+           ar::boolean(_insert_labels_when_not_found));
+
+  return map;
+}
+
+std::shared_ptr<LshIndex> LshIndex::fromArchive(const ar::Archive& archive) {
+  return std::make_shared<LshIndex>(archive);
+}
+
+LshIndex::LshIndex(const ar::Archive& archive)
+    : _hash_table(
+          hashtable::SampledHashTable::fromArchive(*archive.get("hash_table"))),
+      _rand_neurons(archive.getAs<ar::VecU32>("rand_neurons")),
+      _insert_labels_when_not_found(
+          archive.boolean("insert_labels_when_not_found")) {
+  std::string hash_fn_type = archive.get("hash_fn")->str("type");
+
+  if (hash_fn_type == hashing::DWTAHashFunction::type()) {
+    _hash_fn = hashing::DWTAHashFunction::fromArchive(*archive.get("hash_fn"));
+  } else {
+    throw std::invalid_argument("Unsupported hash function type '" +
+                                hash_fn_type + "'.");
+  }
+}
+
 template void LshIndex::serialize(cereal::BinaryInputArchive&);
 template void LshIndex::serialize(cereal::BinaryOutputArchive&);
 
@@ -145,6 +182,7 @@ void LshIndex::serialize(Archive& archive) {
           _rand_neurons, _insert_labels_when_not_found);
 }
 
-}  // namespace thirdai::bolt::nn
+}  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::nn::LshIndex)
+CEREAL_REGISTER_TYPE_WITH_NAME(thirdai::bolt::LshIndex,
+                               "thirdai::bolt::nn::LshIndex")

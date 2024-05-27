@@ -10,7 +10,16 @@ class StringIDLookup final : public Transformation {
                  std::string vocab_key, std::optional<size_t> max_vocab_size,
                  std::optional<char> delimiter);
 
+  explicit StringIDLookup(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  void buildExplanationMap(const ColumnMap& input, State& state,
+                           ExplanationMap& explanations) const final;
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  static std::string type() { return "string_id_lookup"; }
 
  private:
   std::string _input_column_name;
@@ -19,6 +28,12 @@ class StringIDLookup final : public Transformation {
 
   std::optional<size_t> _max_vocab_size;
   std::optional<char> _delimiter;
+
+  StringIDLookup() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

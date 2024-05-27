@@ -21,11 +21,26 @@ class FeatureHash final : public Transformation {
               std::string output_indices_column,
               std::string output_values_columns, size_t hash_range);
 
+  explicit FeatureHash(const ar::Archive& archive);
+
   ColumnMap apply(ColumnMap columns, State& state) const final;
+
+  void buildExplanationMap(const ColumnMap& input, State& state,
+                           ExplanationMap& explanations) const final;
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  const auto& inputColumns() const { return _input_columns; }
+
+  static std::string type() { return "feature_hash"; }
 
  private:
   inline uint32_t hash(uint32_t index, uint32_t column_salt) const {
     return hashing::combineHashes(index, column_salt) % _hash_range;
+  }
+
+  static uint32_t columnSalt(const std::string& name) {
+    return hashing::MurmurHash(name.data(), name.size(), 932042);
   }
 
   size_t _hash_range;
@@ -33,6 +48,12 @@ class FeatureHash final : public Transformation {
   std::vector<std::string> _input_columns;
   std::string _output_indices_column;
   std::string _output_values_column;
+
+  FeatureHash() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::data

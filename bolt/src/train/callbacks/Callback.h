@@ -5,7 +5,7 @@
 #include <bolt/src/train/trainer/TrainState.h>
 #include <memory>
 
-namespace thirdai::bolt::train::callbacks {
+namespace thirdai::bolt::callbacks {
 
 /**
  * Base class for a callback. When a callback is first passed into the train
@@ -38,7 +38,9 @@ class Callback {
   // Called after each training batch.
   virtual void onBatchEnd() {}
 
-  bolt::nn::model::ModelPtr& getModel() { return model; }
+  virtual void beforeUpdate() {}
+
+  ModelPtr& getModel() { return model; }
 
   TrainStatePtr& getTrainState() { return train_state; }
 
@@ -49,7 +51,7 @@ class Callback {
    * called more than once on a given callback object, i.e. a callback cannot be
    * used for multiple models.
    */
-  void setModel(nn::model::ModelPtr model);
+  void setModel(ModelPtr model);
 
   /**
    * Sets the current train state the callback can access.
@@ -72,7 +74,7 @@ class Callback {
    * bound to, the current train state for the trainer, and the history of the
    * trainer for that model respectively.
    */
-  nn::model::ModelPtr model;
+  ModelPtr model;
   TrainStatePtr train_state;
   metrics::HistoryPtr history;
 };
@@ -86,7 +88,7 @@ using CallbackPtr = std::shared_ptr<Callback>;
  */
 class CallbackList {
  public:
-  CallbackList(std::vector<CallbackPtr> callbacks, nn::model::ModelPtr& model,
+  CallbackList(std::vector<CallbackPtr> callbacks, ModelPtr& model,
                TrainStatePtr& train_state, metrics::HistoryPtr& history);
 
   void onTrainBegin();
@@ -101,8 +103,10 @@ class CallbackList {
 
   void onBatchEnd();
 
+  void beforeUpdate();
+
  private:
   std::vector<CallbackPtr> _callbacks;
 };
 
-}  // namespace thirdai::bolt::train::callbacks
+}  // namespace thirdai::bolt::callbacks

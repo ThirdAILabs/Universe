@@ -10,7 +10,7 @@ pytestmark = [pytest.mark.unit]
 
 def test_text_tokenizer_unigrams():
     featurizer = data.transformations.Text(
-        input_column="input", output_column="output", dim=0xFFFFFFFF
+        input_column="input", output_indices="output", dim=0xFFFFFFFF
     )
 
     input_col = data.columns.StringColumn(["aa bb cc dd", "dd cc bb aa", "xx aa bb cc"])
@@ -52,7 +52,7 @@ def test_text_tokenizer_wordpiece(download_bert_base_uncased):
 
     featurizer = data.transformations.Text(
         input_column="input",
-        output_column="output",
+        output_indices="output",
         tokenizer=tokenizer,
         dim=0xFFFFFFFF,
     )
@@ -67,3 +67,78 @@ def test_text_tokenizer_wordpiece(download_bert_base_uncased):
     for text, tokens in zip(TEXT_SAMPLES, tokens):
         hf_tokens = huggingface_tokenizer.encode(text, add_special_tokens=False)
         assert np.array_equal(np.array(hf_tokens), tokens)
+
+
+def test_token_deduplication():
+    columns = data.ColumnMap(
+        {"input": data.columns.StringColumn(["a", "b", "c", "a b a a c b", ""])}
+    )
+
+    transformation = data.transformations.Text(
+        input_column="input",
+        output_indices="indices",
+        output_values="values",
+        dim=0xFFFFFFFF,
+    )
+
+    columns = transformation(columns)
+
+    indices = columns["indices"].data()
+
+    values = columns["values"].data()
+
+    a_token = indices[0][0]
+    b_token = indices[1][0]
+    c_token = indices[2][0]
+
+    counts = {k: v for k, v in zip(indices[3], values[3])}
+    expected_counts = {a_token: 3.0, b_token: 2.0, c_token: 1.0}
+
+    assert counts == expected_counts
+
+    assert len(indices[-1]) == 0
+    assert len(values[-1]) == 0
+
+
+def check_text_tokenizer_serialization(tokenizer, encoder, dedup_tokens):
+    transformation = data.transformations.Text(
+        input_column="input",
+        output_indices="tokens",
+        output_values="counts" if dedup_tokens else None,
+        tokenizer=tokenizer,
+        encoder=encoder,
+        dim=0xFFFFFFFF,
+    )
+
+    transformation_copy = data.transformations.deserialize(transformation.serialize())
+
+    columns = data.ColumnMap({"input": data.columns.StringColumn(TEXT_SAMPLES)})
+
+    output1 = transformation(columns)
+    output2 = transformation_copy(columns)
+
+    assert output1["tokens"].data() == output2["tokens"].data()
+    if dedup_tokens:
+        assert output1["counts"].data() == output2["counts"].data()
+
+
+def test_wordpiece_tokenizer_serialization(download_bert_base_uncased):
+    BERT_VOCAB_PATH = download_bert_base_uncased
+    tokenizer = dataset.WordpieceTokenizer(BERT_VOCAB_PATH)
+    encoder = dataset.NGramEncoder(n=1)
+
+    check_text_tokenizer_serialization(tokenizer, encoder, dedup_tokens=True)
+    check_text_tokenizer_serialization(tokenizer, encoder, dedup_tokens=False)
+
+
+@pytest.mark.parametrize(
+    "tokenizer, encoder",
+    [
+        (dataset.CharKGramTokenizer(k=3), dataset.NGramEncoder(n=1)),
+        (dataset.NaiveSplitTokenizer(delimiter=" "), dataset.NGramEncoder(n=2)),
+        (dataset.WordPunctTokenizer(), dataset.PairGramEncoder()),
+    ],
+)
+def test_text_tokenizer_serialization(tokenizer, encoder):
+    check_text_tokenizer_serialization(tokenizer, encoder, dedup_tokens=True)
+    check_text_tokenizer_serialization(tokenizer, encoder, dedup_tokens=False)

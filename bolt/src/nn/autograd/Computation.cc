@@ -5,21 +5,22 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
-namespace thirdai::bolt::nn::autograd {
+namespace thirdai::bolt {
 
-Computation::Computation(ops::OpPtr op, ComputationList inputs)
+Computation::Computation(OpPtr op, ComputationList inputs)
     : _op(std::move(op)), _inputs(std::move(inputs)) {}
 
-ComputationPtr Computation::make(ops::OpPtr op, ComputationList inputs) {
+ComputationPtr Computation::make(OpPtr op, ComputationList inputs) {
   return std::make_shared<Computation>(std::move(op), std::move(inputs));
 }
 
-ops::OpPtr Computation::op() const { return _op; }
+OpPtr Computation::op() const { return _op; }
 
 const ComputationList& Computation::inputs() const { return _inputs; }
 
-tensor::TensorPtr& Computation::tensor() {
+TensorPtr& Computation::tensor() {
   assert(_output);
   return _output;
 }
@@ -48,9 +49,9 @@ void Computation::allocate(uint32_t batch_size, bool use_sparsity) {
   }
 
   if (*nonzeros < dim && use_sparsity) {
-    _output = tensor::Tensor::sparse(batch_size, dim, *nonzeros);
+    _output = Tensor::sparse(batch_size, dim, *nonzeros);
   } else {
-    _output = tensor::Tensor::dense(batch_size, dim);
+    _output = Tensor::dense(batch_size, dim);
   }
 }
 
@@ -58,11 +59,12 @@ void Computation::addInput(ComputationPtr input) {
   _inputs.push_back(std::move(input));
 }
 
-void Computation::setTensor(tensor::TensorPtr tensor) {
+void Computation::setTensor(TensorPtr tensor) {
   if (tensor->dim() != dim()) {
     throw std::invalid_argument(
         "Cannot set tensor with dimension " + std::to_string(tensor->dim()) +
-        " to computation with output dim " + std::to_string(dim()) + ".");
+        " to computation with output dim " + std::to_string(dim()) +
+        ". Op: " + _op->name() + " Computation: " + name());
   }
   _output = std::move(tensor);
 }
@@ -88,6 +90,14 @@ void Computation::setName(const std::string& name) {
   _name = name;
 }
 
+std::vector<std::string> Computation::inputNames() const {
+  std::vector<std::string> input_names;
+  for (const auto& input : _inputs) {
+    input_names.push_back(input->name());
+  }
+  return input_names;
+}
+
 template void Computation::serialize(cereal::BinaryInputArchive&);
 template void Computation::serialize(cereal::BinaryOutputArchive&);
 
@@ -99,4 +109,4 @@ void Computation::serialize(Archive& archive) {
   archive(_op, _inputs, _name);  // NOLINT
 }
 
-}  // namespace thirdai::bolt::nn::autograd
+}  // namespace thirdai::bolt

@@ -15,12 +15,8 @@ concurrency:
 on: 
   push: 
     branches: [main]
-
-  release:
-    types:
-      - published
+    tags: [ 'v*.*.*' ]
   workflow_dispatch:  
-
 
 jobs:
   build_wheels:
@@ -29,21 +25,21 @@ jobs:
       matrix:
         # See https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs#expanding-or-adding-matrix-configurations
         # for the semantics of using the matrix and the includes.
-        os: [ubuntu-latest-8-cores, windows-2022]
         include:
+          - name: linux-x86
+            runs-on: ubuntu-latest-8-cores
+          - name: windows
+            runs-on: windows-2022
           - name: macos-x86_64
-            os: macos-12
+            runs-on: macos-12
             archs: x86_64
             deployment_target: "10.15"
-            cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=OFF"
           - name: macos-arm64
-            os: macos-12
             archs: arm64
+            runs-on: [self-hosted, macOS, ARM64]
             deployment_target: "11.0"
-            cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=ON -DOPENSSL_CROSS_COMPILE_MACOSX_ARM=ON"
-
-    name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    
+    runs-on: ${{ matrix.runs-on }}
 
     steps:
       - uses: actions/checkout@v2
@@ -56,6 +52,7 @@ jobs:
         shell: bash
         run: |-
           echo "THIRDAI_BUILD_IDENTIFIER=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
       - name: Install dependencies with vcpkg
         if: ${{ startsWith(runner.os, 'windows') }}
         working-directory: C:\vcpkg
@@ -66,6 +63,23 @@ jobs:
           .\vcpkg install zlib:x64-windows-static openssl:x64-windows-static
           .\vcpkg upgrade --no-dry-run # In case there are new builds available after cache restoration
         shell: powershell
+
+      - name: Install llvm clang and libomp for macosx-x86
+        if: ${{ startsWith(matrix.runs-on, 'macos-12')}}
+        # We build libomp from source because homebrew only has the most recent version 
+        # of libomp available and it needs to match the llvm version in order for parallelism
+        # to work. Upgrading to llvm18+ causes an issue because SpdLog uses a C++ feature
+        # that is deprecated.
+        run: |
+          brew install llvm@17
+          git clone -b release/17.x https://github.com/llvm/llvm-project
+          cd llvm-project/openmp
+          mkdir build && cd build
+          cmake -DCMAKE_C_COMPILER=$(brew --prefix llvm@17)/bin/clang -DCMAKE_CXX_COMPILER=$(brew --prefix llvm@17)/bin/clang++ -DCMAKE_BUILD_TYPE=Release ..
+          make -j
+          make install
+          cd ../../../
+          rm -rf llvm-project
 
       - name: Build and test wheels
         uses: pypa/cibuildwheel@v2.9.0
@@ -90,11 +104,12 @@ jobs:
               KMP_DUPLICATE_LIB_OK=TRUE
               THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
           CIBW_ENVIRONMENT_MACOS:
-            CMAKE_ARGS='${{ matrix.cmake_additional_args }}'
             MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
             OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
             OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
+            CXX="$(brew --prefix llvm@17)/bin/clang++"
+            CC="$(brew --prefix llvm@17)/bin/clang"
          
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
@@ -109,7 +124,7 @@ jobs:
           CIBW_BUILD: "cp*macosx_x86_64 cp*manylinux_x86_64 cp*win_amd64 cp*macosx_arm64"
           CIBW_BUILD_VERBOSITY: 3
 
-          CIBW_BEFORE_TEST_LINUX: yum install golang -y
+          CIBW_BEFORE_TEST_LINUX: yum install golang libreoffice -y
           CIBW_BEFORE_BUILD_WINDOWS: python -m pip install delvewheel
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: 'delvewheel repair -w {dest_dir} {wheel}'
           CIBW_TEST_EXTRAS: "test"
@@ -152,7 +167,7 @@ jobs:
     name: Upload to test pypi
     needs: [build_wheels]
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
 
     steps:
     - uses: actions/setup-python@v2
@@ -182,7 +197,7 @@ jobs:
     name: Upload to real pypi
     needs: [upload_to_test_pypi]
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
 
     steps:
     - uses: actions/setup-python@v2

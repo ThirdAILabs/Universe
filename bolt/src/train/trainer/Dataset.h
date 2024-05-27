@@ -4,9 +4,9 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Datasets.h>
 
-namespace thirdai::bolt::train {
+namespace thirdai::bolt {
 
-using Dataset = std::vector<nn::tensor::TensorList>;
+using Dataset = std::vector<TensorList>;
 
 using LabeledDataset = std::pair<Dataset, Dataset>;
 
@@ -16,10 +16,10 @@ Dataset convertDatasets(const std::vector<dataset::BoltDatasetPtr>& datasets,
 Dataset convertDataset(const dataset::BoltDatasetPtr& dataset, uint32_t dim,
                        bool copy = true);
 
-nn::tensor::TensorList convertBatch(std::vector<BoltBatch>&& batches,
-                                    const std::vector<uint32_t>& dims);
+TensorList convertBatch(std::vector<BoltBatch>&& batches,
+                        const std::vector<uint32_t>& dims);
 
-nn::tensor::TensorList convertVectors(std::vector<BoltVector>&& vectors,
-                                      const std::vector<uint32_t>& dims);
+TensorList convertVectors(std::vector<BoltVector>&& vectors,
+                          const std::vector<uint32_t>& dims);
 
-}  // namespace thirdai::bolt::train
+}  // namespace thirdai::bolt

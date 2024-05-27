@@ -2,10 +2,12 @@
 
 #include <cereal/access.hpp>
 #include <bolt_vector/src/BoltVector.h>
+#include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <memory>
 #include <unordered_set>
 
-namespace thirdai::bolt::nn {
+namespace thirdai::bolt {
 
 class NeuronIndex {
  public:
@@ -23,6 +25,14 @@ class NeuronIndex {
 
   virtual void summarize(std::ostream& summary) const = 0;
 
+  virtual ar::ConstArchivePtr toArchive() const {
+    auto map = ar::Map::make();
+    map->set("type", ar::str("none"));
+    return map;
+  }
+
+  static std::shared_ptr<NeuronIndex> fromArchive(const ar::Archive& archive);
+
   virtual ~NeuronIndex() = default;
 
  private:
@@ -35,4 +45,4 @@ class NeuronIndex {
 
 using NeuronIndexPtr = std::shared_ptr<NeuronIndex>;
 
-}  // namespace thirdai::bolt::nn
+}  // namespace thirdai::bolt

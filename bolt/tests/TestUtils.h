@@ -3,13 +3,15 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <archive/src/Archive.h>
+#include <cstddef>
 
-namespace thirdai::bolt::nn::tests {
+namespace thirdai::bolt::tests {
 
-class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
+class Noop final : public Op, public std::enable_shared_from_this<Noop> {
  private:
   explicit Noop(std::string name, uint32_t dim, uint32_t num_nonzeros)
-      : ops::Op(std::move(name)), _dim(dim), _num_nonzeros(num_nonzeros) {}
+      : Op(std::move(name)), _dim(dim), _num_nonzeros(num_nonzeros) {}
 
  public:
   static auto make(std::string name, uint32_t dim = 1,
@@ -17,21 +19,29 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
     return std::shared_ptr<Noop>(new Noop(std::move(name), dim, num_nonzeros));
   }
 
-  autograd::ComputationPtr apply(const autograd::ComputationList& inputs) {
-    return autograd::Computation::make(shared_from_this(), inputs);
+  ComputationPtr apply(const ComputationList& inputs) {
+    return Computation::make(shared_from_this(), inputs);
   }
 
-  void forward(const autograd::ComputationList& inputs,
-               tensor::TensorPtr& output, uint32_t index_in_batch,
-               bool training) final {
+  ComputationPtr applyToInputs(const ComputationList& inputs) final {
+    return apply(inputs);
+  }
+
+  ar::ConstArchivePtr toArchive(bool with_optimizer) const final {
+    (void)with_optimizer;
+    return nullptr;
+  }
+
+  void forward(const ComputationList& inputs, TensorPtr& output,
+               uint32_t index_in_batch, bool training) final {
     (void)inputs;
     (void)output;
     (void)index_in_batch;
     (void)training;
   }
 
-  void backpropagate(autograd::ComputationList& inputs,
-                     tensor::TensorPtr& output, uint32_t index_in_batch) final {
+  void backpropagate(ComputationList& inputs, TensorPtr& output,
+                     uint32_t index_in_batch) final {
     (void)inputs;
     (void)output;
     (void)index_in_batch;
@@ -42,9 +52,15 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
     (void)t;
   }
 
+  void initOptimizer(const OptimizerFactoryPtr& optimizer_factory,
+                     bool replace_existing_optimizer) final {
+    (void)optimizer_factory;
+    (void)replace_existing_optimizer;
+  }
+
   uint32_t dim() const final { return _dim; }
 
-  std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
+  std::optional<uint32_t> nonzeros(const ComputationList& inputs,
                                    bool use_sparsity) const final {
     (void)inputs;
     if (use_sparsity) {
@@ -61,8 +77,8 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
 
   std::vector<std::vector<float>*> parameters() final { return {}; }
 
-  void summary(std::ostream& summary, const autograd::ComputationList& inputs,
-               const autograd::Computation* output) const final {
+  void summary(std::ostream& summary, const ComputationList& inputs,
+               const Computation* output) const final {
     (void)inputs;
     (void)output;
     summary << "Noop";
@@ -76,12 +92,12 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
   uint32_t _dim, _num_nonzeros;
 };
 
-class MockLoss final : public loss::Loss {
+class MockLoss final : public Loss {
  public:
-  explicit MockLoss(autograd::ComputationList outputs_used)
+  explicit MockLoss(ComputationList outputs_used)
       : _outputs_used(std::move(outputs_used)) {}
 
-  static auto make(autograd::ComputationList outputs_used) {
+  static auto make(ComputationList outputs_used) {
     return std::make_shared<MockLoss>(std::move(outputs_used));
   }
 
@@ -95,16 +111,16 @@ class MockLoss final : public loss::Loss {
     (void)batch_size;
   }
 
-  autograd::ComputationList outputsUsed() const final { return _outputs_used; }
+  ComputationList outputsUsed() const final { return _outputs_used; }
 
-  autograd::ComputationList labels() const final { return {}; }
+  ComputationList labels() const final { return {}; }
+
+  ar::ConstArchivePtr toArchive() const final { return nullptr; }
 
  private:
-  autograd::ComputationList _outputs_used;
+  ComputationList _outputs_used;
 };
 
-inline autograd::ComputationPtr emptyInput() {
-  return ops::Input::make(/* dim= */ 1);
-}
+inline ComputationPtr emptyInput() { return Input::make(/* dim= */ 1); }
 
-}  // namespace thirdai::bolt::nn::tests
+}  // namespace thirdai::bolt::tests
