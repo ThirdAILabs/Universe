@@ -18,12 +18,14 @@ def modify_ner():
         train_metrics: List[str] = ["loss"],
         validation_file: Optional[str] = None,
         val_metrics: List[str] = [],
+        tokenizer=None,
     ):
         train_data_source = NerDataSource(
             model_type=self.type(),
             tokens_column=self.tokens_column(),
             tags_column=self.tags_column(),
             file_path=filename,
+            tokenizer=tokenizer,
         )
 
         if validation_file:
@@ -32,6 +34,7 @@ def modify_ner():
                 tokens_column=self.tokens_column(),
                 tags_column=self.tags_column(),
                 file_path=validation_file,
+                tokenizer=tokenizer,
             )
         else:
             validation_data_source = None
