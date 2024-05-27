@@ -37,6 +37,7 @@ class MachMixture(Model):
         extreme_num_hashes: int = 8,
         tokenizer="char-4",
         hidden_bias=False,
+        optimizer: str = "adam",
         model_config=None,
         hybrid=True,
         label_to_segment_map: defaultdict = None,
@@ -58,6 +59,8 @@ class MachMixture(Model):
 
         self.seed_for_sharding = seed_for_sharding
 
+        self.assert_supported_optimizer(optimizer)
+
         self.ensembles: List[MultiMach] = [
             MultiMach(
                 number_models=num_models_per_shard,
@@ -70,9 +73,11 @@ class MachMixture(Model):
                 extreme_num_hashes=extreme_num_hashes,
                 tokenizer=tokenizer,
                 hidden_bias=hidden_bias,
+                optimizer=optimizer,
                 hybrid=hybrid,
                 model_config=model_config,
                 mach_index_seed_offset=j * 341,
+                kwargs=kwargs,
             )
             for j in range(self.num_shards)
         ]
@@ -119,6 +124,12 @@ class MachMixture(Model):
         self.label_to_segment_map, self.seed_for_sharding = unpickle_from(
             directory / "segment_map_and_seed.pkl"
         )
+
+    def saves_optimizer(self, with_optimizer: bool):
+        ensembles = self.get_model()
+        if ensembles is not None:
+            for ensemble in ensembles:
+                ensemble.saves_optimizer(with_optimizer)
 
     def get_query_col(self) -> str:
         return self.query_col

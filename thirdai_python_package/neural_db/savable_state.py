@@ -59,6 +59,7 @@ class State:
     def save(
         self,
         location=default_checkpoint_name(),
+        with_optimizer: bool = False,
         on_progress: Callable = lambda *args, **kwargs: None,
     ) -> str:
         total_steps = 7
@@ -69,6 +70,7 @@ class State:
         on_progress(1 / total_steps)
 
         # pickle model
+        self.model.saves_optimizer(with_optimizer)
         pickle_to(self.model, State.model_pkl_path(directory))
         on_progress(2 / total_steps)
         # save model meta

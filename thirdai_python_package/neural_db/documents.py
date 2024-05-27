@@ -118,9 +118,7 @@ class Document:
     def row_iterator(self):
         for i in range(self.size):
             yield DocumentRow(
-                element_id=i,
-                strong=self.strong_text(i),
-                weak=self.weak_text(i),
+                element_id=i, strong=self.strong_text(i), weak=self.weak_text(i)
             )
 
     def save(self, directory: str):
@@ -358,9 +356,10 @@ class DocumentManager:
             doc, start_id = self.registry[doc_hash]
             train.add(doc, start_id)
 
-        return IntroAndTrainDocuments(intro=intro, train=train), [
-            doc.hash for doc in documents
-        ]
+        return (
+            IntroAndTrainDocuments(intro=intro, train=train),
+            [doc.hash for doc in documents],
+        )
 
     def delete(self, source_ids):
         # TODO(Geordie): Error handling
@@ -898,10 +897,7 @@ class Extracted(Document):
                 f"Strong column '{self.strong_column}' not found in the dataframe."
             )
 
-    def process_data(
-        self,
-        path: str,
-    ) -> pd.DataFrame:
+    def process_data(self, path: str) -> pd.DataFrame:
         raise NotImplementedError()
 
     @property
@@ -1133,10 +1129,7 @@ class PDF(Extracted):
             save_extra_info=save_extra_info,
         )
 
-    def process_data(
-        self,
-        path: str,
-    ) -> pd.DataFrame:
+    def process_data(self, path: str) -> pd.DataFrame:
         if not hasattr(self, "version") or self.version == "v1":
             return process_pdf(path)
         return sliding_pdf_parse.make_df(
@@ -1163,10 +1156,7 @@ class DOCX(Extracted):
     def __init__(self, path: str, metadata=None, on_disk=False):
         super().__init__(path=path, metadata=metadata, on_disk=on_disk)
 
-    def process_data(
-        self,
-        path: str,
-    ) -> pd.DataFrame:
+    def process_data(self, path: str) -> pd.DataFrame:
         return process_docx(path)
 
 
@@ -1185,10 +1175,7 @@ class Unstructured(Extracted):
             on_disk=on_disk,
         )
 
-    def process_data(
-        self,
-        path: str,
-    ) -> pd.DataFrame:
+    def process_data(self, path: str) -> pd.DataFrame:
         if path.endswith(".pdf") or path.endswith(".docx"):
             raise NotImplementedError(
                 "For PDF and DOCX FileTypes, use neuraldb.PDF and neuraldb.DOCX "
@@ -1783,11 +1770,7 @@ class SharePoint(DocumentConnector):
 
         print(f"Found {num_files} supported files")
         self._meta_table = pd.DataFrame(
-            columns=[
-                "internal_doc_id",
-                "server_relative_url",
-                "page",
-            ]
+            columns=["internal_doc_id", "server_relative_url", "page"]
         )
         self._meta_table = pd.concat(
             [
@@ -1829,10 +1812,7 @@ class SharePoint(DocumentConnector):
                 else ""
             ),
             source=self.source + "/" + filename,
-            metadata={
-                **self.meta_table.loc[element_id].to_dict(),
-                **self.doc_metadata,
-            },
+            metadata={**self.meta_table.loc[element_id].to_dict(), **self.doc_metadata},
         )
 
     @property
@@ -2104,10 +2084,7 @@ class SalesForce(DocumentConnector):
             element_id=element_id,
             text=text,
             source=self.source,
-            metadata={
-                "object_name": self.object_name,
-                **self.doc_metadata,
-            },
+            metadata={"object_name": self.object_name, **self.doc_metadata},
         )
 
     @property
@@ -2290,10 +2267,7 @@ class SentenceLevelExtracted(Extracted):
             if SentenceLevelExtracted.not_just_punctuation(sentence)
         ]
 
-    def parse_sentences(
-        self,
-        df: pd.DataFrame,
-    ) -> pd.DataFrame:
+    def parse_sentences(self, df: pd.DataFrame) -> pd.DataFrame:
         df["sentences"] = df["para"].apply(SentenceLevelExtracted.get_sentences)
 
         num_sents_cum_sum = np.cumsum(df["sentences"].apply(lambda sents: len(sents)))
@@ -2324,10 +2298,7 @@ class SentenceLevelExtracted(Extracted):
         df.drop("id_offsets", axis=1, inplace=True)
         return df
 
-    def process_data(
-        self,
-        path: str,
-    ) -> pd.DataFrame:
+    def process_data(self, path: str) -> pd.DataFrame:
         raise NotImplementedError()
 
     @property
@@ -2431,10 +2402,7 @@ class SentenceLevelPDF(SentenceLevelExtracted):
     def __init__(self, path: str, metadata=None, on_disk=False):
         super().__init__(path=path, metadata=metadata, on_disk=on_disk)
 
-    def process_data(
-        self,
-        path: str,
-    ) -> pd.DataFrame:
+    def process_data(self, path: str) -> pd.DataFrame:
         return process_pdf(path)
 
 
@@ -2456,10 +2424,7 @@ class SentenceLevelDOCX(SentenceLevelExtracted):
     def __init__(self, path: str, metadata=None, on_disk=False):
         super().__init__(path=path, metadata=metadata, on_disk=on_disk)
 
-    def process_data(
-        self,
-        path: str,
-    ) -> pd.DataFrame:
+    def process_data(self, path: str) -> pd.DataFrame:
         return process_docx(path)
 
 

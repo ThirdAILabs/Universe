@@ -258,10 +258,10 @@ class Mach(Model):
         extreme_num_hashes=8,
         tokenizer="char-4",
         hidden_bias=False,
+        optimizer: str = "adam",
         model_config=None,
         hybrid=True,
         mach_index_seed: int = 341,
-        index_max_shard_size=8_000_000,
         **kwargs,
     ):
         self.id_col = id_col
@@ -283,6 +283,10 @@ class Mach(Model):
             self.finetunable_retriever = FinetunableRetriever()
         else:
             self.finetunable_retriever = None
+
+        self.assert_supported_optimizer(optimizer)
+        self.optimizer = optimizer
+        self.kwargs = kwargs
 
     def set_mach_sampling_threshold(self, threshold: float):
         if self.model is None:
@@ -310,6 +314,9 @@ class Mach(Model):
 
     def save(self, path: Path):
         pickle_to(self, filepath=path)
+
+    def saves_optimizer(self, with_optimizer: bool):
+        self.get_model().saves_optimizer = with_optimizer
 
     def get_model(self) -> bolt.UniversalDeepTransformer:
         return self.model
@@ -519,6 +526,13 @@ class Mach(Model):
             },
             model_config=self.model_config,
         )
+
+        optimizer_params = self.kwargs.get("optimizer_params", {})
+        if self.optimizer == "adam":
+            model_optimizer = bolt.nn.optimizers.Adam(**optimizer_params)
+        else:
+            model_optimizer = bolt.nn.optimizers.SGD(**optimizer_params)
+        model._get_model().change_optimizer(model_optimizer)
         model.insert_new_doc_ids(documents)
         return model
 

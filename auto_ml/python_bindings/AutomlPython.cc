@@ -269,6 +269,8 @@ void defineAutomlInModule(py::module_& module) {
           [](const std::shared_ptr<udt::UDT>& udt,
              const std::string& filename) { udt->save(filename); },
           py::arg("filename"), docs::UDT_SAVE_CHECKPOINT)
+      .def_property("saves_optimizer", &udt::UDT::isOptimizerSavable,
+                    &udt::UDT::setOptimizerSavable)
       .def("checkpoint", &udt::UDT::checkpoint, py::arg("filename"),
            docs::UDT_SAVE_CHECKPOINT)
       .def_static(

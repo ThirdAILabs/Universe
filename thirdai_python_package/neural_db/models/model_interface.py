@@ -148,6 +148,18 @@ class Model:
     ):
         raise NotImplementedError()
 
+    def saves_optimizer(self, with_optimizer: bool):
+        raise NotImplementedError()
+
+    def supported_optimizers(self):
+        return ["sgd", "adam"]
+
+    def assert_supported_optimizer(self, optimizer: str):
+        if optimizer not in self.supported_optimizers():
+            raise AttributeError(
+                f"Unsupported Optimizer: {optimizer}. Supported Optimizers: {self.supported_optimizers()}"
+            )
+
 
 def normalize_scores(results):
     if len(results) == 0:

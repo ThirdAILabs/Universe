@@ -123,9 +123,7 @@ class NeuralDB:
 
     @staticmethod
     def from_checkpoint(
-        checkpoint_path: str,
-        user_id: str = "user",
-        on_progress: Callable = no_op,
+        checkpoint_path: str, user_id: str = "user", on_progress: Callable = no_op
     ):
         """
         Constructs a NeuralDB from a checkpoint. This can be used save and reload
@@ -432,8 +430,13 @@ class NeuralDB:
         """
         return self._savable_state.documents.sources()
 
-    def save(self, save_to: Union[str, Path], on_progress: Callable = no_op) -> str:
-        return self._savable_state.save(Path(save_to), on_progress)
+    def save(
+        self,
+        save_to: Union[str, Path],
+        with_optimizer: bool = False,
+        on_progress: Callable = no_op,
+    ) -> str:
+        return self._savable_state.save(Path(save_to), with_optimizer, on_progress)
 
     def _resume(
         self,
@@ -580,9 +583,7 @@ class NeuralDB:
             )
 
         self._savable_state.logger.log(
-            session_id=self._user_id,
-            action="Train",
-            args={"files": resource_name},
+            session_id=self._user_id, action="Train", args={"files": resource_name}
         )
 
         if checkpoint_config:
@@ -650,9 +651,7 @@ class NeuralDB:
 
     @staticmethod
     def _split_references_for_reranking(
-        references,
-        rerank_threshold,
-        average_top_k_scores,
+        references, rerank_threshold, average_top_k_scores
     ):
         if rerank_threshold is None:
             rerank_start = 0

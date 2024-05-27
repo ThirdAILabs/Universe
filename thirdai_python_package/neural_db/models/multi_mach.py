@@ -39,9 +39,11 @@ class MultiMach:
         extreme_num_hashes: int,
         tokenizer: int,
         hidden_bias: bool,
+        optimizer: str,
         hybrid: bool,
         model_config,
         mach_index_seed_offset: int,
+        **kwargs,
     ):
         if number_models < 1:
             raise ValueError(
@@ -59,11 +61,13 @@ class MultiMach:
                 extreme_num_hashes=extreme_num_hashes,
                 tokenizer=tokenizer,
                 hidden_bias=hidden_bias,
+                optimizer=optimizer,
                 model_config=model_config,
                 hybrid=(
                     hybrid if j == 0 else False
                 ),  # retriever will be the same for all models in the ensemble
                 mach_index_seed=(mach_index_seed_offset + j * 17),
+                kwargs=kwargs,
             )
             for j in range(number_models)
         ]
@@ -91,6 +95,12 @@ class MultiMach:
 
     def load_meta(self, directory: Path):
         pass
+
+    def saves_optimizer(self, with_optimizer: bool):
+        models = self.get_model()
+        if models is not None:
+            for model in models:
+                model.saves_optimizer = with_optimizer
 
     def index_documents_impl(
         self,

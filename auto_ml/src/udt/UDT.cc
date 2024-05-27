@@ -305,7 +305,6 @@ void UDT::save(const std::string& filename) const {
 }
 
 void UDT::save_stream(std::ostream& output) const {
-  const_cast<UDT*>(this)->_save_optimizer = false;
   cereal::BinaryOutputArchive oarchive(output);
   oarchive(*this);
 }
