@@ -1,0 +1,249 @@
+rows=10 hashes_per_row=10 range=1024
+Construction time (s): 0.00010323524475097656
+Training time (s): 5.9018638134002686
+Prediction time (s): 1.2190449237823486
+Accuracy: 0.717576
+
+rows=10 hashes_per_row=13 range=8192
+Construction time (s): 0.0001919269561767578
+Training time (s): 7.400481939315796
+Prediction time (s): 1.4389898777008057
+Accuracy: 0.729599
+
+rows=10 hashes_per_row=16 range=65536
+Construction time (s): 0.0009620189666748047
+Training time (s): 8.280411005020142
+Prediction time (s): 1.6104130744934082
+Accuracy: 0.730152
+
+rows=10 hashes_per_row=19 range=524288
+Construction time (s): 0.0031261444091796875
+Training time (s): 9.613311052322388
+Prediction time (s): 1.7775728702545166
+Accuracy: 0.739611
+
+rows=20 hashes_per_row=10 range=1024
+Construction time (s): 0.00014209747314453125
+Training time (s): 10.118650913238525
+Prediction time (s): 2.0469961166381836
+Accuracy: 0.716149
+
+rows=20 hashes_per_row=13 range=8192
+Construction time (s): 0.0005030632019042969
+Training time (s): 12.630933284759521
+Prediction time (s): 2.4528942108154297
+Accuracy: 0.728988
+
+rows=20 hashes_per_row=16 range=65536
+Construction time (s): 0.0008602142333984375
+Training time (s): 14.863316059112549
+Prediction time (s): 2.8383982181549072
+Accuracy: 0.735896
+
+rows=20 hashes_per_row=19 range=524288
+Construction time (s): 0.006799936294555664
+Training time (s): 18.11474370956421
+Prediction time (s): 3.4518752098083496
+Accuracy: 0.742947
+
+rows=50 hashes_per_row=10 range=1024
+Construction time (s): 0.002676248550415039
+Training time (s): 23.195040941238403
+Prediction time (s): 4.419881105422974
+Accuracy: 0.717534
+
+rows=50 hashes_per_row=13 range=8192
+Construction time (s): 0.00074005126953125
+Training time (s): 29.19613003730774
+Prediction time (s): 5.533649921417236
+Accuracy: 0.726374
+
+rows=50 hashes_per_row=16 range=65536
+Construction time (s): 0.002187013626098633
+Training time (s): 35.488136768341064
+Prediction time (s): 6.649444103240967
+Accuracy: 0.733804
+
+rows=50 hashes_per_row=19 range=524288
+Construction time (s): 0.018487930297851562
+Training time (s): 42.6796658039093
+Prediction time (s): 7.9248621463775635
+Accuracy: 0.739914
+
+rows=100 hashes_per_row=10 range=1024
+Construction time (s): 0.004769086837768555
+Training time (s): 45.091190814971924
+Prediction time (s): 8.767645835876465
+Accuracy: 0.717299
+
+rows=100 hashes_per_row=13 range=8192
+Construction time (s): 0.0011641979217529297
+Training time (s): 62.567330837249756
+Prediction time (s): 11.584391832351685
+Accuracy: 0.723847
+
+rows=100 hashes_per_row=16 range=65536
+Construction time (s): 0.004913806915283203
+Training time (s): 74.61779880523682
+Prediction time (s): 14.309884786605835
+Accuracy: 0.731298
+
+rows=100 hashes_per_row=19 range=524288
+Construction time (s): 0.0789186954498291
+Training time (s): 91.77454280853271
+Prediction time (s): 16.60651206970215
+Accuracy: 0.737395
+
+rows=20 hashes_per_row=22 range=1000000
+Construction time (s): 0.012542009353637695
+Training time (s): 21.31102418899536
+Prediction time (s): 4.104963064193726
+Accuracy: 0.743315
+
+rows=20 hashes_per_row=25 range=1000000
+Construction time (s): 0.011920928955078125
+Training time (s): 25.039735078811646
+Prediction time (s): 5.081528902053833
+Accuracy: 0.749868
+
+rows=20 hashes_per_row=28 range=1000000
+Construction time (s): 0.010881185531616211
+Training time (s): 28.362210988998413
+Prediction time (s): 5.1997082233428955
+Accuracy: 0.753161
+
+rows=100 hashes_per_row=22 range=1000000
+Construction time (s): 0.14512205123901367
+Training time (s): 421.7673091888428
+Prediction time (s): 18.744733095169067
+Accuracy: 0.741442
+
+rows=100 hashes_per_row=25 range=1000000
+Construction time (s): 0.0738680362701416
+Training time (s): 639.0500957965851
+Prediction time (s): 21.80245614051819
+Accuracy: 0.747669
+
+rows=100 hashes_per_row=28 range=1000000
+Construction time (s): 0.0739278793334961
+Training time (s): 685.6106388568878
+Prediction time (s): 23.199618101119995
+Accuracy: 0.750574
+
+rows=20 hashes_per_row=30 range=6000000
+Construction time (s): 0.2579810619354248
+Training time (s): 124.64066410064697
+Prediction time (s): 5.332464933395386
+Accuracy: 0.757123
+
+rows=20 hashes_per_row=30 range=1000000
+Construction time (s): 0.013665914535522461
+Training time (s): 28.481401920318604
+Prediction time (s): 5.298238039016724
+Accuracy: 0.755274
+
+rows=20 hashes_per_row=30 range=1000000
+Construction time (s): 0.012563943862915039
+Training time (s): 28.5522620677948
+Prediction time (s): 5.5232648849487305
+Accuracy: 0.55799
+
+rows=20 hashes_per_row=30 range=1000000
+Construction time (s): 0.01254415512084961
+Training time (s): 29.397046089172363
+Prediction time (s): 5.4325950145721436
+Accuracy: 0.75499
+
+rows=20 hashes_per_row=22 range=1000000
+Construction time (s): 0.012238025665283203
+Training time (s): 23.14665913581848
+Prediction time (s): 4.344145059585571
+Accuracy: 0.687143
+
+rows=20 hashes_per_row=22 range=1000000
+Construction time (s): 0.01230001449584961
+Training time (s): 21.89753293991089
+Prediction time (s): 4.31457781791687
+Accuracy: 0.543205
+
+rows=20 hashes_per_row=19 range=200000
+Construction time (s): 0.0026602745056152344
+Training time (s): 19.07805895805359
+Prediction time (s): 3.7402751445770264
+Accuracy: 0.679283
+
+rows=20 hashes_per_row=19 range=1000000
+Construction time (s): 0.006585836410522461
+Training time (s): 19.36163592338562
+Prediction time (s): 3.692030191421509
+Accuracy: 0.684014
+
+rows=20 hashes_per_row=19 range=1000000
+Construction time (s): 0.006459951400756836
+Training time (s): 18.098639011383057
+Prediction time (s): 3.4699740409851074
+Accuracy: 0.743042
+
+rows=20 hashes_per_row=32 range=1000000
+rows=20 hashes_per_row=31 range=1000000
+Construction time (s): 0.013647794723510742
+Training time (s): 30.837560892105103
+Prediction time (s): 5.499118804931641
+Accuracy: 0.755935
+
+rows=20 hashes_per_row=31 range=10000000
+Construction time (s): 0.22160577774047852
+Training time (s): 52.79362082481384
+Prediction time (s): 23.323529958724976
+rows=20 hashes_per_row=31 range=10000000
+Construction time (s): 0.24664592742919922
+Training time (s): 197.1791388988495
+Prediction time (s): 5.382219076156616
+rows=100 hashes_per_row=31 range=10000000
+Construction time (s): 1.2612683773040771
+rows=100 hashes_per_row=31 range=5000000
+Construction time (s): 0.7060251235961914
+Training time (s): 1781.2646760940552
+Prediction time (s): 29.836027145385742
+Accuracy: 0.7544
+
+rows=20 hashes_per_row=22 range=314
+Construction time (s): 0.09399771690368652
+Training time (s): 20.805588006973267
+Prediction time (s): 4.513469934463501
+rows=20 hashes_per_row=22 range=314
+Construction time (s): 0.14466094970703125
+Training time (s): 14.743613958358765
+Prediction time (s): 3.7049179077148438
+rows=20 hashes_per_row=22 range=314
+Construction time (s): 0.16798090934753418
+Training time (s): 14.150392055511475
+Prediction time (s): 3.6676909923553467
+Accuracy: 0.759188
+
+rows=50 hashes_per_row=22 range=314
+Construction time (s): 0.36310696601867676
+Training time (s): 251.67920684814453
+Prediction time (s): 6.290582656860352
+Accuracy: 0.761204
+
+rows=50 hashes_per_row=25 range=314
+Construction time (s): 2.1347920894622803
+rows=50 hashes_per_row=22
+Construction time (s): 0.3282628059387207
+Training time (s): 288.87618494033813
+Prediction time (s): 6.5664989948272705
+Accuracy: 0.760146
+
+rows=50 hashes_per_row=23
+Construction time (s): 0.681920051574707
+Training time (s): 475.72369718551636
+Prediction time (s): 5.116347789764404
+Accuracy: 0.763013
+
+rows=100 hashes_per_row=19
+Construction time (s): 0.08734774589538574
+Training time (s): 37.118263959884644
+Prediction time (s): 9.382561683654785
+Accuracy: 0.75485
+

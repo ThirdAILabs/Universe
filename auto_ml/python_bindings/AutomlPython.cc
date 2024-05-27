@@ -4,16 +4,20 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/featurization/DataTypes.h>
+#include <auto_ml/src/nws/NWE.h>
+#include <auto_ml/src/nws/NWS.h>
 #include <auto_ml/src/udt/UDT.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 
@@ -100,6 +104,57 @@ void defineAutomlInModule(py::module_& module) {
       .def_property_readonly("label_column", &TextDatasetConfig::labelColumn)
       .def_property_readonly("label_delimiter",
                              &TextDatasetConfig::labelDelimiter);
+
+  py::class_<Hash, std::shared_ptr<Hash>>(module, "Hash")
+      .def("__str__", &Hash::name)
+      .def("hash", &Hash::hash, py::arg("input"))
+      .def("rows", &Hash::rows)
+      .def("range", &Hash::range);
+
+  py::class_<SRP, Hash, std::shared_ptr<SRP>>(module, "SRP")
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
+           py::arg("input_dim"), py::arg("hashes_per_row"), py::arg("rows"), py::arg("seed"))
+      .def("hash", &SRP::hash, py::arg("input"));
+
+  py::class_<L2, Hash, std::shared_ptr<L2>>(module, "L2")
+      .def(py::init<uint32_t, uint32_t, uint32_t, float, uint32_t, uint32_t>(),
+           py::arg("input_dim"), py::arg("hashes_per_row"), py::arg("rows"), py::arg("scale"),
+           py::arg("range"), py::arg("seed"))
+      .def("hash", &L2::hash, py::arg("input"));
+
+  py::class_<RACE, std::shared_ptr<RACE>>(module, "RACE")
+      .def(py::init<const std::shared_ptr<Hash>&, uint32_t>(), py::arg("hash"), py::arg("val_dim"))
+      .def("update", &RACE::update, py::arg("key"),
+           py::arg("value"))
+      .def("query", &RACE::query, py::arg("key"))
+      .def("print", &RACE::print);
+
+  py::class_<NadarayaWatsonSketch, std::shared_ptr<NadarayaWatsonSketch>>(
+      module, "NWS")
+      .def(py::init<const std::shared_ptr<Hash>&, uint32_t>(), py::arg("hash"), py::arg("val_dim"))
+      .def("train", &NadarayaWatsonSketch::train, py::arg("inputs"),
+           py::arg("outputs"))
+      .def("train_parallel", &NadarayaWatsonSketch::trainParallel,
+           py::arg("inputs"), py::arg("outputs"), py::arg("threads"))
+      .def("predict", &NadarayaWatsonSketch::predict, py::arg("inputs"))
+      .def("predict_debug", &NadarayaWatsonSketch::predictDebug, py::arg("inputs"));
+
+  py::class_<Kernel, std::shared_ptr<Kernel>>(module, "Kernel")
+      .def("on", &Kernel::on, py::arg("a"), py::arg("b"));
+
+  py::class_<SRPKernel, Kernel, std::shared_ptr<SRPKernel>>(module, "SRPKernel")
+      .def(py::init<uint32_t>(), py::arg("power"));
+
+  py::class_<ExponentialKernel, Kernel, std::shared_ptr<ExponentialKernel>>(module, "ExponentialKernel")
+      .def(py::init<float, float, uint32_t>(),
+           py::arg("cls"), py::arg("stdev"), py::arg("power"));
+
+  py::class_<NadarayaWatsonEstimator, std::shared_ptr<NadarayaWatsonEstimator>>(
+      module, "NWE")
+      .def(py::init<const std::shared_ptr<Kernel>>(), py::arg("kernel"))
+      .def("train", &NadarayaWatsonEstimator::train, py::arg("inputs"),
+           py::arg("outputs"))
+      .def("predict", &NadarayaWatsonEstimator::predict, py::arg("inputs"));
 
   py::class_<udt::UDT, std::shared_ptr<udt::UDT>>(module,
                                                   "UniversalDeepTransformer")
