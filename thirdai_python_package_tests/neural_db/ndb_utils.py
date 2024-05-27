@@ -39,7 +39,7 @@ def create_simple_dataset():
 @pytest.fixture
 def train_simple_neural_db(create_simple_dataset):
     filename = create_simple_dataset
-    db = ndb.NeuralDB()
+    db = ndb.NeuralDB(retriever="hybrid")
 
     doc = ndb.CSV(
         filename,
@@ -61,6 +61,7 @@ CSV_FILE = os.path.join(BASE_DIR, "lorem_ipsum.csv")
 URL_LINK = "https://en.wikipedia.org/wiki/Rice_University"
 PDF_FILE = os.path.join(BASE_DIR, "mutual_nda.pdf")
 PRIAXOR_PDF_FILE = os.path.join(BASE_DIR, "Priaxor.pdf")
+CITI_PDF_FILE = os.path.join(BASE_DIR, "Citi_3Q23.pdf")
 DOCX_FILE = os.path.join(BASE_DIR, "four_english_words.docx")
 PPTX_FILE = os.path.join(BASE_DIR, "quantum_mechanics.pptx")
 TXT_FILE = os.path.join(BASE_DIR, "nature.txt")
@@ -353,12 +354,20 @@ def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document], num_duplicate_docs)
     db.insert(docs, train=True)
     assert len(db.sources()) == len(docs) - num_duplicate_docs
 
-    assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
+    if not isinstance(
+        db._savable_state.model, ndb.models.finetunable_retriever.FinetunableRetriever
+    ):
+        # train=True doesn't do anything for finetunable retriever
+        assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
 
     db.insert(docs, train=True, batch_size=1, learning_rate=0.0002)
     assert len(db.sources()) == len(docs) - num_duplicate_docs
 
-    assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
+    if not isinstance(
+        db._savable_state.model, ndb.models.finetunable_retriever.FinetunableRetriever
+    ):
+        # train=True doesn't do anything for finetunable retriever
+        assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
 
 
 def upvote_works(db: ndb.NeuralDB):
@@ -477,8 +486,13 @@ def empty_neural_db(request):
     """Initializes an empty NeuralDB once per test session to speed up tests.
     Best used for tests that don't assert accuracy.
     """
-    num_models_per_shard = request.param
-    db = ndb.NeuralDB(num_shards=1, num_models_per_shard=num_models_per_shard)
+    if request.param == "no_mach":
+        db = ndb.NeuralDB()
+    else:
+        num_models_per_shard = request.param
+        db = ndb.NeuralDB(
+            num_shards=1, num_models_per_shard=num_models_per_shard, retriever="hybrid"
+        )
     # db.insert() initializes the mach model so this only happens once per
     # test session. Clear the sources so it's back to being empty.
     db.insert([ndb.CSV(CSV_FILE)], train=False)

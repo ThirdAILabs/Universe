@@ -13,7 +13,8 @@ from ..trainer.checkpoint_config import (
 )
 from ..trainer.training_progress_manager import TrainingProgressManager
 from ..utils import clean_text, pickle_to, requires_condition, unpickle_from
-from .models import CancelState, Mach, Model, add_retriever_tag, merge_results
+from .mach import Mach
+from .model_interface import CancelState, Model, add_retriever_tag, merge_results
 from .multi_mach import MultiMach, aggregate_ensemble_results
 
 InferSamples = List
@@ -36,12 +37,12 @@ class MachMixture(Model):
         extreme_num_hashes: int = 8,
         tokenizer="char-4",
         hidden_bias=False,
+        optimizer: str = "adam",
         model_config=None,
-        use_inverted_index=True,
-        optimizer : str = "adam",
+        hybrid=True,
         label_to_segment_map: defaultdict = None,
         seed_for_sharding: int = 0,
-        **kwargs
+        **kwargs,
     ):
         self.id_col = id_col
         self.id_delimiter = id_delimiter
@@ -58,6 +59,8 @@ class MachMixture(Model):
 
         self.seed_for_sharding = seed_for_sharding
 
+        self.assert_supported_optimizer(optimizer)
+
         self.ensembles: List[MultiMach] = [
             MultiMach(
                 number_models=num_models_per_shard,
@@ -70,11 +73,11 @@ class MachMixture(Model):
                 extreme_num_hashes=extreme_num_hashes,
                 tokenizer=tokenizer,
                 hidden_bias=hidden_bias,
-                use_inverted_index=use_inverted_index,
-                optimizer = optimizer,
-                optimizer_params = kwargs.get("optimizer_params", {}),
+                optimizer=optimizer,
+                hybrid=hybrid,
                 model_config=model_config,
                 mach_index_seed_offset=j * 341,
+                kwargs=kwargs,
             )
             for j in range(self.num_shards)
         ]
@@ -121,6 +124,12 @@ class MachMixture(Model):
         self.label_to_segment_map, self.seed_for_sharding = unpickle_from(
             directory / "segment_map_and_seed.pkl"
         )
+
+    def saves_optimizer(self, with_optimizer: bool):
+        ensembles = self.get_model()
+        if ensembles is not None:
+            for ensemble in ensembles:
+                ensemble.saves_optimizer(with_optimizer)
 
     def get_query_col(self) -> str:
         return self.query_col
@@ -334,7 +343,8 @@ class MachMixture(Model):
         for ensemble in self.ensembles:
             for model in ensemble.models:
                 model.model.set_decode_params(
-                    min(self.n_ids, n_results), min(self.n_ids, 100)
+                    min(model.n_ids, n_results),
+                    min(model.n_ids, 100),
                 )
 
         if not label_probing or self.ensembles[0].models[0].extreme_num_hashes != 1:
@@ -362,20 +372,17 @@ class MachMixture(Model):
             tag="mach",
         )
 
-    def query_inverted_index(self, samples, n_results):
-        inverted_index_results = []
+    def query_finetunable_retriever(self, samples, n_results):
+        results = []
         for ensemble in self.ensembles:
-            ensemble_result = ensemble.query_inverted_index(samples, n_results)
+            ensemble_result = ensemble.query_finetunable_retriever(samples, n_results)
             if ensemble_result:
-                inverted_index_results.append(ensemble_result)
+                results.append(ensemble_result)
 
-        if not inverted_index_results:
+        if not results:
             return None
 
-        return add_retriever_tag(
-            self.aggregate_results(inverted_index_results, n_results),
-            tag="inverted_index",
-        )
+        return self.aggregate_results(results, n_results)
 
     def infer_labels(
         self,
@@ -383,19 +390,27 @@ class MachMixture(Model):
         n_results: int,
         retriever=None,
         label_probing=True,
+        mach_first=False,
         **kwargs,
     ) -> Predictions:
         if not retriever:
-            index_results = self.query_inverted_index(samples, n_results=n_results)
-            if not index_results:
+            retriever_results = self.query_finetunable_retriever(
+                samples, n_results=n_results
+            )
+            if not retriever_results:
                 retriever = "mach"
             else:
                 mach_results = self.query_mach(
                     samples, n_results=n_results, label_probing=label_probing
                 )
                 return [
-                    merge_results(mach_res, index_res, n_results)
-                    for mach_res, index_res in zip(mach_results, index_results)
+                    (
+                        merge_results(mach_res, retriever_res, n_results)
+                        if mach_first
+                        # Prioritize retriever_results.
+                        else merge_results(retriever_res, mach_res, n_results)
+                    )
+                    for mach_res, retriever_res in zip(mach_results, retriever_results)
                 ]
 
         if retriever == "mach":
@@ -403,16 +418,18 @@ class MachMixture(Model):
                 samples=samples, n_results=n_results, label_probing=label_probing
             )
 
-        if retriever == "inverted_index":
-            results = self.query_inverted_index(samples=samples, n_results=n_results)
+        if retriever == "finetunable_retriever":
+            results = self.query_finetunable_retriever(
+                samples=samples, n_results=n_results
+            )
             if not results:
                 raise ValueError(
-                    "Cannot use retriever 'inverted_index' since the index is None."
+                    "Cannot use retriever 'finetunable_retriever' since the retriever is None."
                 )
             return results
 
         raise ValueError(
-            f"Invalid retriever '{retriever}'. Please use 'mach', 'inverted_index', "
+            f"Invalid retriever '{retriever}'. Please use 'mach', 'finetunable_retriever', "
             "or pass None to allow the model to autotune which is used."
         )
 
@@ -606,7 +623,7 @@ class MachMixture(Model):
         max_in_memory_batches,
         metrics,
         callbacks,
-        disable_inverted_index,
+        disable_finetunable_retriever,
         checkpoint_config,
     ):
 
@@ -638,7 +655,7 @@ class MachMixture(Model):
                         batch_size=batch_size,
                         max_in_memory_batches=max_in_memory_batches,
                         metrics=metrics,
-                        disable_inverted_index=disable_inverted_index,
+                        disable_finetunable_retriever=disable_finetunable_retriever,
                         checkpoint_config=config[model_id],
                     )
                 )
@@ -660,7 +677,7 @@ class MachMixture(Model):
         max_in_memory_batches: Optional[int],
         metrics: List[str],
         callbacks: List[bolt.train.callbacks.Callback],
-        disable_inverted_index: bool,
+        disable_finetunable_retriever: bool,
         checkpoint_config: Optional[CheckpointConfig] = None,
     ):
         if (
@@ -675,13 +692,10 @@ class MachMixture(Model):
                 max_in_memory_batches=max_in_memory_batches,
                 metrics=metrics,
                 callbacks=callbacks,
-                disable_inverted_index=disable_inverted_index,
+                disable_finetunable_retriever=disable_finetunable_retriever,
                 checkpoint_config=checkpoint_config,
             )
         else:
             self._resume_supervised(
                 checkpoint_config=checkpoint_config, callbacks=callbacks
             )
-
-    def build_inverted_index(self, documents):
-        raise ValueError("This method is not supported on this type of model.")

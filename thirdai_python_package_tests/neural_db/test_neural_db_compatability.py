@@ -29,13 +29,14 @@ def create_ndb():
     db.save(save_path())
 
 
-def count_correct(db, queries, ids):
+def count_correct(db, queries, ids, retriever=None):
     correct = 0
     for query, id in zip(queries, ids):
-        result = db.search(query, top_k=1)[0]
-
+        result = db.search(query, top_k=1, retriever=retriever)[0]
         if result.id == id:
             correct += 1
+        if retriever:
+            assert result.retriever == retriever
 
     return correct
 
@@ -45,7 +46,15 @@ def test_saved_ndb_accuracy():
 
     df = pd.read_csv(query_file())
 
-    assert count_correct(db=db, queries=df["text"], ids=df["id"]) == len(df)
+    mach_correct = count_correct(
+        db=db, queries=df["text"], ids=df["id"], retriever="mach"
+    )
+    assert mach_correct == len(df)
+
+    finetunable_retriever_correct = count_correct(
+        db=db, queries=df["text"], ids=df["id"], retriever="finetunable_retriever"
+    )
+    assert finetunable_retriever_correct == len(df)
 
 
 def test_saved_ndb_associate():
@@ -58,13 +67,17 @@ def test_saved_ndb_associate():
     # with the full text.
     df["acronym"] = df["text"].map(lambda s: "".join(w[0] for w in s.split()))
 
-    correct_before_associate = count_correct(db=db, queries=df["acronym"], ids=df["id"])
+    correct_before_associate = count_correct(
+        db=db, queries=df["acronym"], ids=df["id"], retriever="mach"
+    )
     assert correct_before_associate < 0.1 * len(df)
 
     association_samples = list(zip(df["acronym"], df["text"]))
     db.associate_batch(association_samples)
 
-    correct_after_associate = count_correct(db=db, queries=df["acronym"], ids=df["id"])
+    correct_after_associate = count_correct(
+        db=db, queries=df["acronym"], ids=df["id"], retriever="mach"
+    )
     assert correct_after_associate > 0.9 * len(df)
 
 

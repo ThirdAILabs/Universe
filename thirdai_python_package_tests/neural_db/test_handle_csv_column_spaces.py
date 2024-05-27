@@ -34,3 +34,12 @@ def test_handle_csv_column_spaces(explicit_cols):
     # Ensure that constraints work with original column names
     assert len(db.search("query", 1, constraints={"doc query": "query 0"})) == 1
     assert len(db.search("query", 1, constraints={"doc_query": "query_1"})) == 1
+
+    # Ensure that references display original column names
+    result = db.search("query", 1, constraints={"doc query": "query 0"})[0]
+    assert "doc query: query 0" in result.text
+    assert "doc_query: query_0" in result.text
+    assert result.metadata["doc query"] == "query 0"
+    assert result.metadata["doc_query"] == "query_0"
+    assert "doc query: query 0" in result.context(0)
+    assert "doc_query: query_0" in result.context(0)

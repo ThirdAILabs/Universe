@@ -49,6 +49,10 @@ std::string temporalItemIdsOutput(const std::string& input_column_name) {
   return outputColumnName(input_column_name, "item_ids");
 }
 
+std::string temporalNumericalValueOutput(const std::string& input_column_name) {
+  return outputColumnName(input_column_name, "numerical_value");
+}
+
 std::string temporalTrackingOutput(uint32_t temporal_id) {
   return "__categorical_temporal_" + std::to_string(temporal_id) + "__";
 }

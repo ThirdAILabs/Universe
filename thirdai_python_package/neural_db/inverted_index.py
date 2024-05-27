@@ -49,40 +49,21 @@ class InvertedIndex:
         if curr_index.size() > 0:
             self.indexes.append(curr_index)
 
+    def export(self):
+        if len(self.indexes) != 1:
+            raise ValueError(
+                "Checkpoint is not compatible with this version of thirdai."
+            )
+        return self.indexes[0]
+
     def supervised_train(self, data_source: SupDataSource):
-        queries = []
-        ids = []
-        for sup in data_source.data:
-            for query, labels in zip(sup.queries, data_source._labels(sup)):
-                for label in labels:
-                    queries.append(query)
-                    ids.append(int(label))
-        for index in self.indexes:
-            index.update(ids, queries, ignore_missing_ids=len(self.indexes) > 1)
+        pass
 
     def upvote(self, pairs: List[Tuple[str, int]]) -> None:
-        ids = [x[1] for x in pairs]
-        phrases = [x[0] for x in pairs]
-        for index in self.indexes:
-            index.update(ids, phrases, ignore_missing_ids=len(self.indexes) > 1)
+        pass
 
     def associate(self, pairs: List[Tuple[str, str]]) -> None:
-        sources = [x[0] for x in pairs]
-        targets = [x[1] for x in pairs]
-
-        for index in self.indexes:
-            top_results = index.query(targets, k=3)
-
-            update_texts = []
-            update_ids = []
-            for source, results in zip(sources, top_results):
-                for result in results:
-                    update_texts.append(source)
-                    update_ids.append(result[0])
-
-            index.update(
-                update_ids, update_texts, ignore_missing_ids=len(self.indexes) > 1
-            )
+        pass
 
     def query(self, queries: str, k: int):
         if len(self.indexes) == 0:

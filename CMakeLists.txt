@@ -327,6 +327,10 @@ set(THIRDAI_SOURCES
     bolt/src/layers/LayerConfig.cc
     bolt/src/layers/SamplingConfig.cc
     bolt/src/inference/EmbFcInference.cc
+    bolt/src/NER/model/NerUDTModel.cc
+    bolt/src/NER/model/NerBoltModel.cc
+    bolt/src/NER/model/NerClassifier.cc
+    bolt/src/NER/model/NER.cc
     bolt/src/text_generation/ContextualModel.cc
     bolt/src/text_generation/DyadicModel.cc
     bolt/src/text_generation/GenerativeModel.cc
@@ -336,7 +340,9 @@ set(THIRDAI_SOURCES
     search/src/MaxFlash.cc
     search/src/MaxFlashArray.cc
     search/src/Flash.cc
-    search/src/InvertedIndex.cc
+    search/src/inverted_index/InvertedIndex.cc
+    search/src/inverted_index/FinetunableRetriever.cc
+    search/src/inverted_index/Tokenizer.cc
     hashing/src/DensifiedMinHash.cc
     hashing/src/DWTA.cc
     hashing/src/FastSRP.cc
@@ -394,6 +400,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/StringCast.cc
     data/src/transformations/StringIDLookup.cc
     data/src/transformations/CategoricalTemporal.cc
+    data/src/transformations/NumericalTemporal.cc
     data/src/transformations/Tabular.cc
     data/src/transformations/Date.cc
     data/src/transformations/CrossColumnPairgrams.cc
@@ -404,7 +411,11 @@ set(THIRDAI_SOURCES
     data/src/transformations/Graph.cc
     data/src/transformations/RegressionBinning.cc
     data/src/transformations/DyadicInterval.cc
+    data/src/transformations/NextWordPrediction.cc
     data/src/transformations/SpladeAugmentation.cc
+    data/src/transformations/ner/NerTokenFromStringArray.cc
+    data/src/transformations/ner/NerTokenizationUnigram.cc
+    data/src/transformations/ner/NerDyadicDataProcessor.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
@@ -431,6 +442,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/featurization/TabularBlockComposer.cc # Deprecate
     auto_ml/src/featurization/TabularDatasetFactory.cc # Deprecate
     auto_ml/src/cold_start/ColdStartUtils.cc # Deprecate
+    auto_ml/src/pretrained/PretrainedBase.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
@@ -501,6 +513,7 @@ pybind11_add_module(
   bolt/python_bindings/BoltCompression.cc
   bolt/python_bindings/NumpyConversions.cc
   bolt/python_bindings/BoltTextGeneration.cc
+  bolt/python_bindings/BoltNERPython.cc
   bolt/python_bindings/Porting.cc
   bolt/src/seismic/SeismicBase.cc
   bolt/src/seismic/SeismicEmbedding.cc
@@ -512,6 +525,7 @@ pybind11_add_module(
   search/python_bindings/BeamSearch.cc
   hashing/python_bindings/HashingPython.cc
   auto_ml/python_bindings/AutomlPython.cc
+  auto_ml/python_bindings/PretrainedBasePython.cc
   auto_ml/src/udt/UDT.cc
   auto_ml/src/udt/utils/Models.cc
   auto_ml/src/udt/utils/Classifier.cc

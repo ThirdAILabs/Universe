@@ -8,7 +8,8 @@ from ..documents import DocumentDataSource
 from ..supervised_datasource import SupDataSource
 from ..trainer.training_progress_manager import TrainingProgressManager
 from ..utils import clean_text
-from .models import CancelState, Mach
+from .mach import Mach
+from .model_interface import CancelState
 
 
 def aggregate_ensemble_results(results):
@@ -38,11 +39,11 @@ class MultiMach:
         extreme_num_hashes: int,
         tokenizer: int,
         hidden_bias: bool,
-        use_inverted_index: bool,
         optimizer: str,
-        optimizer_params: dict,
+        hybrid: bool,
         model_config,
         mach_index_seed_offset: int,
+        **kwargs,
     ):
         if number_models < 1:
             raise ValueError(
@@ -60,13 +61,13 @@ class MultiMach:
                 extreme_num_hashes=extreme_num_hashes,
                 tokenizer=tokenizer,
                 hidden_bias=hidden_bias,
+                optimizer=optimizer,
                 model_config=model_config,
-                use_inverted_index=(
-                    use_inverted_index if j == 0 else False
-                ),  # inverted index will be the same for all models in the ensemble
-                optimizer = optimizer,
-                optimizer_params = optimizer_params,
+                hybrid=(
+                    hybrid if j == 0 else False
+                ),  # retriever will be the same for all models in the ensemble
                 mach_index_seed=(mach_index_seed_offset + j * 17),
+                kwargs=kwargs,
             )
             for j in range(number_models)
         ]
@@ -95,6 +96,12 @@ class MultiMach:
     def load_meta(self, directory: Path):
         pass
 
+    def saves_optimizer(self, with_optimizer: bool):
+        models = self.get_model()
+        if models is not None:
+            for model in models:
+                model.saves_optimizer = with_optimizer
+
     def index_documents_impl(
         self,
         training_progress_managers: List[TrainingProgressManager],
@@ -122,14 +129,11 @@ class MultiMach:
     def searchable(self) -> bool:
         return self.n_ids != 0
 
-    def query_inverted_index(self, samples, n_results):
-        # only the first model in the ensemble can have inverted index
+    def query_finetunable_retriever(self, samples, n_results):
+        # only the first model in the ensemble can have the retriever
         model = self.models[0]
-        if model.inverted_index:
-            single_index_results = model.inverted_index.query(
-                samples, k=min(n_results, model.n_ids)
-            )
-            return single_index_results
+        if model.finetunable_retriever:
+            model.query_finetunable_retriever(samples=samples, n_results=n_results)
         else:
             return None
 

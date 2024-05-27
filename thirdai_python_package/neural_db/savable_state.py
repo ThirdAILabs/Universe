@@ -5,7 +5,7 @@ from typing import Callable, List
 
 from .documents import DocumentManager
 from .loggers import Logger
-from .models.models import Model
+from .models.model_interface import Model
 from .trainer.checkpoint_config import CheckpointConfig
 from .utils import delete_file, delete_folder, pickle_to, unpickle_from
 
@@ -70,7 +70,7 @@ class State:
         on_progress(1 / total_steps)
 
         # pickle model
-        self.model.save_optimizer(with_optimizer)
+        self.model.saves_optimizer(with_optimizer)
         pickle_to(self.model, State.model_pkl_path(directory))
         on_progress(2 / total_steps)
         # save model meta

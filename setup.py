@@ -155,22 +155,27 @@ neural_db_deps = [
     "PyTrie",
     "PyMuPDF==1.23.26",
     "langchain",
+    "langchain_community",
     "bs4",
     "trafilatura",
     "python-docx",
     "url-normalize",
     "nltk",
+    "dask[complete]",
     "unidecode",
-    "pydantic<2.5",
+    "pydantic",
     "sortedcontainers",
     "SQLAlchemy>=2.0.0",
     "scikit-learn",
     "Office365-REST-Python-Client==2.5.1",
     "simple-salesforce==1.12.5",
     "ipython",
+    "pdfplumber",
     # lxml is a dependency of trafilatura. We install lxml[html_clean] to fix
     # this error https://github.com/adbar/trafilatura/issues/532
     "lxml[html_clean]",
+    "openai",
+    "tqdm",
 ]
 
 neural_db_v2_deps = ["pandas", "pandera"]
@@ -232,7 +237,6 @@ setup(
             "s3fs",
             "mock",
             "scikit-learn",
-            "beir",
             "pyOpenSSL>22.1.0",
             "ray",
             "grpcio",

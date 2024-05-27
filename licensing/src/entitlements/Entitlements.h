@@ -27,6 +27,8 @@ class Entitlements {
 
   void verifyDataSource(const dataset::DataSourcePtr& source) const;
 
+  void verifyNoDataSourceRetrictions() const;
+
  private:
   std::optional<ModelRestrictions> getModelRestrictions() const;
 

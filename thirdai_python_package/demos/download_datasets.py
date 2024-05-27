@@ -6,9 +6,12 @@ import zipfile
 
 import numpy as np
 import pandas as pd
+import requests
 from thirdai._thirdai import bolt
 
 from .beir_download_utils import (
+    GenericDataLoader,
+    download_and_unzip,
     remap_doc_ids,
     remap_query_answers,
     write_supervised_file,
@@ -16,9 +19,17 @@ from .beir_download_utils import (
 )
 
 
+def download_file(url, output_path):
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
+    with open(output_path, "wb") as file:
+        for chunk in response.iter_content(chunk_size=8192):
+            file.write(chunk)
+
+
 def _download_dataset(url, zip_file, check_existence, output_dir):
     if not os.path.exists(zip_file):
-        os.system(f"curl {url} --output {zip_file}")
+        download_file(url, zip_file)
 
     if any([not os.path.exists(must_exist) for must_exist in check_existence]):
         with zipfile.ZipFile(zip_file, "r") as zip_ref:
@@ -210,9 +221,7 @@ def prep_fraud_dataset(dataset_path, seed=42):
 
 
 def download_census_income(num_inference_samples=5, return_labels=False):
-    CENSUS_INCOME_BASE_DOWNLOAD_URL = (
-        "https://archive.ics.uci.edu/static/public/2/adult.zip"
-    )
+    CENSUS_INCOME_BASE_DOWNLOAD_URL = "https://www.dropbox.com/scl/fi/xg5jld8rj2h3yciduts6l/census-income.zip?rlkey=xo2zs5mtvbl917kgevok4fk1q&st=ehrcbkzo&dl=1"
     CENSUS_INCOME_ZIP = "./adult.zip"
     CENSUS_INCOME_DIR = "./adult"
     TRAIN_FILE = "./census_income_train.csv"
@@ -414,7 +423,7 @@ def prepare_query_reformulation_data(seed=42):
 def download_clinc_dataset(
     num_training_files=1, clinc_small=False, file_prefix="clinc"
 ):
-    CLINC_URL = "https://archive.ics.uci.edu/static/public/570/clinc150.zip"
+    CLINC_URL = "https://www.dropbox.com/scl/fi/doxyeurqxvgyperfqwk0r/clinc150.zip?rlkey=s4jfwbjzfwdfro2f82vnatldp&st=u0txk4xx&dl=1"
     CLINC_ZIP = "./clinc150_uci.zip"
     CLINC_DIR = "./clinc"
     MAIN_FILE = CLINC_DIR + "/clinc150_uci/data_full.json"
@@ -511,9 +520,7 @@ def download_brazilian_houses_dataset():
 def download_internet_ads_dataset(seed=42):
     random.seed(seed)
 
-    INTERNET_ADS_DOWNLOAD_URL = (
-        "https://archive.ics.uci.edu/static/public/51/internet+advertisements.zip"
-    )
+    INTERNET_ADS_DOWNLOAD_URL = "https://www.dropbox.com/scl/fi/ze6h56r9a2uy8mzpo14yf/internet-advertisements.zip?rlkey=lmgo50xhugjb4wrwblnynye1a&st=2dil84zs&dl=1"
     INTERNET_ADS_ZIP = "./internet+advertisements.zip"
     INTERNET_ADS_DIR = "./internet+advertisements"
     _download_dataset(
@@ -653,11 +660,8 @@ def download_agnews_dataset(corpus_file):
 
 
 def download_beir_dataset(dataset):
-    from beir import util
-    from beir.datasets.data_loader import GenericDataLoader
-
     url = f"https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/{dataset}.zip"
-    data_path = util.download_and_unzip(url, ".")
+    data_path = download_and_unzip(url, ".")
 
     corpus, queries_test, qrels_test = GenericDataLoader(data_folder=data_path).load(
         split="test"

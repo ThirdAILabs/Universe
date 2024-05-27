@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import json
+import os
+import re
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urljoin
 
 from .bazaar_base import Bazaar, auth_header
 from .utils import (
     check_deployment_decorator,
+    construct_deployment_url,
     create_deployment_identifier,
     create_model_identifier,
     http_get_with_error,
@@ -59,17 +62,17 @@ class NeuralDBClient:
 
     Attributes:
         deployment_identifier (str): The identifier for the deployment.
-        base_url (str): The base URL for the deployed NeuralDB model.
+        deployment_id (str): The deployment ID for the deployed NeuralDB model.
         bazaar (thirdai.neural_db.ModelBazaar): The bazaar object corresponding to a NeuralDB Enterprise installation
 
     Methods:
-        __init__(self, deployment_identifier: str, base_url: str) -> None:
+        __init__(self, deployment_identifier: str, deployment_id: str, bazaar: ModelBazaar) -> None:
             Initializes a new instance of the NeuralDBClient.
 
-        search(self, query: str, top_k: int = 10, constraints: Optional[Dict[str, str]] = None) -> List[dict]:
+        search(self, query, top_k=5, constraints: Optional[dict[str, dict[str, str]]]=None) -> List[dict]:
             Searches the ndb model for relevant search results.
 
-        insert(self, files: List[str], urls: List[str]) -> None:
+        insert(self, documents: list[dict[str, Any]]) -> None:
             Inserts documents into the ndb model.
 
         delete(self, source_ids: List[str]) -> None:
@@ -84,37 +87,80 @@ class NeuralDBClient:
         downvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]) -> None:
             Downvotes a response in the ndb model.
 
+        chat(self, user_input: str, session_id: str) -> Dict[str, str]:
+            Returns a reply given the user_input and the chat history associated with session_id
+
+        get_chat_history(self, session_id: str) -> Dict[List[Dict[str, str]]]:
+            Returns chat history associated with session_id
+
         sources(self) -> List[Dict[str, str]]:
             Gets the source names and ids of documents in the ndb model
     """
 
-    def __init__(self, deployment_identifier: str, base_url: str, bazaar: ModelBazaar):
+    def __init__(
+        self, deployment_identifier: str, deployment_id: str, bazaar: ModelBazaar
+    ):
         """
         Initializes a new instance of the NeuralDBClient.
 
         Args:
             deployment_identifier (str): The identifier for the deployment.
-            base_url (str): The base URL for the deployed NeuralDB model.
+            deployment_id (str): The deployment ID for the deployed NeuralDB model.
             bazaar (thirdai.neural_db.ModelBazaar): The bazaar object corresponding to a NeuralDB Enterprise installation
         """
         self.deployment_identifier = deployment_identifier
-        self.base_url = base_url
+        self.base_url = construct_deployment_url(
+            re.sub(r"api/$", "", bazaar._base_url), deployment_id
+        )
         self.bazaar = bazaar
 
     @check_deployment_decorator
-    def search(self, query, top_k=10, constraints: Optional[Dict[str, str]] = None):
+    def search(
+        self, query, top_k=5, constraints: Optional[dict[str, dict[str, str]]] = None
+    ):
         """
         Searches the ndb model for similar queries.
 
         Args:
             query (str): The query to search for.
             top_k (int): The number of top results to retrieve (default is 10).
-            constraints (Optional[Dict[str, str]]): Constraints to filter the search by
+            constraints (Optional[dict[str, dict[str, str]]]): Constraints to filter the search result metadata by.
+                These constraints must be in the following format:
+                {"FIELD_NAME": {"constraint_type": "CONSTRAINT_NAME", **kwargs}} where
+                "FIELD_NAME" is the field that you want to filter over, and "CONSTRAINT_NAME"
+                is one of the following: "AnyOf", "EqualTo", "InRange", "GreaterThan", and "LessThan".
+                The kwargs for the above constraints are shown below:
+
+                class AnyOf(BaseModel):
+                    constraint_type: Literal["AnyOf"]
+                    values: Iterable[Any]
+
+                class EqualTo(BaseModel):
+                    constraint_type: Literal["EqualTo"]
+                    value: Any
+
+                class InRange(BaseModel):
+                    constraint_type: Literal["InRange"]
+                    minimum: Any
+                    maximum: Any
+                    inclusive_min: bool = True
+                    inclusive_max: bool = True
+
+                class GreaterThan(BaseModel):
+                    constraint_type: Literal["GreaterThan"]
+                    minimum: Any
+                    include_equal: bool = False
+
+                class LessThan(BaseModel):
+                    constraint_type: Literal["LessThan"]
+                    maximum: Any
+                    include_equal: bool = False
 
         Returns:
             Dict: A dict of search results containing keys: `query_text` and `references`.
         """
-        response = http_get_with_error(
+
+        response = http_post_with_error(
             urljoin(self.base_url, "predict"),
             params={"query_text": query, "top_k": top_k},
             json=constraints,
@@ -124,28 +170,106 @@ class NeuralDBClient:
         return json.loads(response.content)["data"]
 
     @check_deployment_decorator
-    def insert(
-        self, files: Optional[List[str]] = None, urls: Optional[List[str]] = None
-    ):
+    def insert(self, documents: list[dict[str, Any]]):
         """
         Inserts documents into the ndb model.
 
         Args:
-            files (List[str]): A list of file paths to be inserted into the ndb model.
-            urls (List[str]): A list of URLs to be inserted into the ndb model.
+            documents (List[dict[str, Any]]): A list of dictionaries that represent documents to be inserted to the ndb model.
+                The document dictionaries must be in the following format:
+                {"document_type": "DOCUMENT_TYPE", **kwargs} where "DOCUMENT_TYPE" is one of the following:
+                "PDF", "CSV", "DOCX", "URL", "SentenceLevelPDF", "SentenceLevelDOCX", "Unstructured", "InMemoryText".
+                The kwargs for each document type are shown below:
+
+                class PDF(Document):
+                    document_type: Literal["PDF"]
+                    path: str
+                    metadata: Optional[dict[str, Any]] = None
+                    on_disk: bool = False
+                    version: str = "v1"
+                    chunk_size: int = 100
+                    stride: int = 40
+                    emphasize_first_words: int = 0
+                    ignore_header_footer: bool = True
+                    ignore_nonstandard_orientation: bool = True
+
+                class CSV(Document):
+                    document_type: Literal["CSV"]
+                    path: str
+                    id_column: Optional[str] = None
+                    strong_columns: Optional[List[str]] = None
+                    weak_columns: Optional[List[str]] = None
+                    reference_columns: Optional[List[str]] = None
+                    save_extra_info: bool = True
+                    metadata: Optional[dict[str, Any]] = None
+                    has_offset: bool = False
+                    on_disk: bool = False
+
+                class DOCX(Document):
+                    document_type: Literal["DOCX"]
+                    path: str
+                    metadata: Optional[dict[str, Any]] = None
+                    on_disk: bool = False
+
+                class URL(Document):
+                    document_type: Literal["URL"]
+                    url: str
+                    save_extra_info: bool = True
+                    title_is_strong: bool = False
+                    metadata: Optional[dict[str, Any]] = None
+                    on_disk: bool = False
+
+                class SentenceLevelPDF(Document):
+                    document_type: Literal["SentenceLevelPDF"]
+                    path: str
+                    metadata: Optional[dict[str, Any]] = None
+                    on_disk: bool = False
+
+                class SentenceLevelDOCX(Document):
+                    document_type: Literal["SentenceLevelDOCX"]
+                    path: str
+                    metadata: Optional[dict[str, Any]] = None
+                    on_disk: bool = False
+
+                class Unstructured(Document):
+                    document_type: Literal["Unstructured"]
+                    path: str
+                    save_extra_info: bool = True
+                    metadata: Optional[dict[str, Any]] = None
+                    on_disk: bool = False
+
+                class InMemoryText(Document):
+                    document_type: Literal["InMemoryText"]
+                    name: str
+                    texts: list[str]
+                    metadatas: Optional[list[dict[str, Any]]] = None
+                    global_metadata: Optional[dict[str, Any]] = None
+                    on_disk: bool = False
+
+                For Document types with the arg "path", ensure that the path exists on your local machine.
         """
-        if not files and not urls:
-            raise ValueError("Files and urls cannot both be empty.")
-        if files is not None:
-            files = [("files", open(file_path, "rb")) for file_path in files]
+
+        if not documents:
+            raise ValueError("Documents cannot be empty.")
+
+        files = []
+        for doc in documents:
+            if "path" in doc and ("location" not in doc or doc["location"] == "local"):
+                if not os.path.exists(doc["path"]):
+                    raise ValueError(
+                        f"Path {doc['path']} was provided but doesn't exist on the machine."
+                    )
+                files.append(("files", open(doc["path"], "rb")))
+
+        files.append(("documents", (None, json.dumps(documents), "application/json")))
+
         response = http_post_with_error(
             urljoin(self.base_url, "insert"),
             files=files,
-            data={"urls": urls},
             headers=auth_header(self.bazaar._access_token),
         )
 
-        print(json.loads(response.content)["message"])
+        return json.loads(response.content)["data"]
 
     @check_deployment_decorator
     def delete(self, source_ids: List[str]):
@@ -161,8 +285,6 @@ class NeuralDBClient:
             headers=auth_header(self.bazaar._access_token),
         )
 
-        print(json.loads(response.content)["message"])
-
     @check_deployment_decorator
     def associate(self, text_pairs: List[Dict[str, str]]):
         """
@@ -176,6 +298,29 @@ class NeuralDBClient:
             json={"text_pairs": text_pairs},
             headers=auth_header(self.bazaar._access_token),
         )
+
+    @check_deployment_decorator
+    def save_model(self, override: bool = True, model_name: Optional[str] = None):
+
+        response = http_post_with_error(
+            urljoin(self.base_url, "save"),
+            json={"override": override, "model_name": model_name},
+            headers=auth_header(self.bazaar._access_token),
+        )
+
+        print("Successfully saved the model.")
+
+        content = response.json()["data"]
+
+        if content["new_model_id"]:
+            return Model(
+                model_identifier=create_model_identifier(
+                    model_name, self.bazaar._username
+                ),
+                model_id=content["new_model_id"],
+            )
+
+        return None
 
     @check_deployment_decorator
     def upvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]):
@@ -208,6 +353,39 @@ class NeuralDBClient:
         )
 
         print("Successfully downvoted the specified search result.")
+
+    @check_deployment_decorator
+    def chat(self, user_input: str, session_id: str) -> Dict[str, str]:
+        """
+        Returns a reply given the user_input and the chat history associated with session_id
+
+        Args:
+            user_input (str): The user input for the chatbot to respond to
+            session_id (str): The session id corresponding to a specific chat session
+        """
+        response = http_post_with_error(
+            urljoin(self.base_url, "chat"),
+            json={"user_input": user_input, "session_id": session_id},
+            headers=auth_header(self.bazaar._access_token),
+        )
+
+        return response.json()["data"]
+
+    @check_deployment_decorator
+    def get_chat_history(self, session_id: str) -> Dict[List[Dict[str, str]]]:
+        """
+        Returns chat history associated with session_id
+
+        Args:
+            session_id (str): The session id corresponding to a specific chat session
+        """
+        response = http_post_with_error(
+            urljoin(self.base_url, "get-chat-hisory"),
+            json={"session_id": session_id},
+            headers=auth_header(self.bazaar._access_token),
+        )
+
+        return response.json()["data"]
 
     @check_deployment_decorator
     def sources(self) -> List[Dict[str, str]]:
@@ -266,6 +444,18 @@ class ModelBazaar(Bazaar):
 
         await_train(self, model: Model) -> None:
             Waits for the training of a model to complete.
+
+        test(self,
+            model_identifier: str,
+            test_doc: str,
+            doc_type: str = "local",
+            test_extra_options: dict = {},
+            is_async: bool = False,
+        ) -> str:
+            Starts the Model testing on given test file.
+
+        await_test(self, model_identifier: str, test_id: str) -> None:
+            Waits for the testing of a model on that test_id to complete.
 
         deploy(self, model_identifier: str, deployment_name: str, is_async: bool = False) -> NeuralDBClient:
             Deploys a model and returns a NeuralDBClient instance.
@@ -500,13 +690,26 @@ class ModelBazaar(Bazaar):
         test_extra_options: dict = {},
         is_async: bool = False,
     ):
+        """
+        Initiates testing for a model and returns the test_id (unique identifier for this test)
+
+        Args:
+            model_identifier (str): The identifier of the model.
+            test_doc (str): A path to a test file for evaluating the trained NeuralDB.
+            doc_type (str): Specifies document location type : "local"(default), "nfs" or "s3".
+            test_extra_options: (Optional[dict])
+            is_async (bool): Whether testing should be asynchronous (default is False).
+
+        Returns:
+            str: The test_id which is unique for given testing.
+        """
         url = urljoin(self._base_url, f"test/test")
 
         files = [
             (
                 ("file", open(test_doc, "rb"))
                 if doc_type == "local"
-                else ("files", (test_doc, "don't care"))
+                else ("file", (test_doc, "don't care"))
             )
         ]
         if test_extra_options:
@@ -659,7 +862,7 @@ class ModelBazaar(Bazaar):
                 deployment_name=deployment_name,
                 deployment_username=self._username,
             ),
-            base_url=response_data["endpoint"] + "/",
+            deployment_id=response_data["deployment_id"],
             bazaar=self,
         )
         if is_async:
@@ -768,7 +971,7 @@ class ModelBazaar(Bazaar):
             print("Connection obtained...")
             return NeuralDBClient(
                 deployment_identifier=deployment_identifier,
-                base_url=response_data["endpoint"] + "/",
+                deployment_id=response_data["deployment_id"],
                 bazaar=self,
             )
 

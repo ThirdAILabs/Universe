@@ -148,6 +148,20 @@ def get_lines_with_first_n_words(lines, n):
     return " ".join(line["text"] for line in lines[:end])
 
 
+def estimate_section_titles(lines):
+    text_size_freq = defaultdict(int)
+    for line in lines:
+        for span in line["spans"]:
+            text_size_freq[int(span["size"])] += 1
+    most_common_text_size = sorted(text_size_freq.items(), key=lambda x: x[1])[-1][0]
+    current_section_title = ""
+    for i in range(len(lines)):
+        if lines[i]["spans"][0]["size"] > most_common_text_size:
+            current_section_title = lines[i]["text"]
+        lines[i]["section_title"] = current_section_title
+    return lines
+
+
 def process_tables(filename, lines):
     pdf = pdfplumber.open(filename)
     tables_by_page = [page.find_tables() for page in pdf.pages]
@@ -184,8 +198,8 @@ def process_tables(filename, lines):
                     )
                     new_lines.append(
                         {
+                            **line,
                             "text": table_as_text,
-                            "page_num": line["page_num"],
                             "bbox": table.bbox,
                             "table": extracted_rows,
                         }
@@ -201,6 +215,7 @@ def get_chunks_from_lines(lines, chunk_words, stride_words):
     chunk_start = 0
     chunks = []
     chunk_boxes = []
+    section_titles = []
     display = []
     while chunk_start < len(lines):
         chunk_end = chunk_start
@@ -213,10 +228,19 @@ def get_chunks_from_lines(lines, chunk_words, stride_words):
         while stride_size < stride_words and stride_end < len(lines):
             stride_size += lines[stride_end]["word_count"]
             stride_end += 1
+        # combine the chunks
         chunks.append(" ".join(line["text"] for line in lines[chunk_start:chunk_end]))
+        # metadata for highlighting
         chunk_boxes.append(
             [(line["page_num"], line["bbox"]) for line in lines[chunk_start:chunk_end]]
         )
+        # combine unique section titles
+        if "section_title" in lines[0]:
+            unique_section_titles = set(
+                [line["section_title"] for line in lines[chunk_start:chunk_end]]
+            )
+            section_titles.append(" ".join(unique_section_titles))
+        # formulate display text (separating out tables)
         display.append(
             " ".join(
                 [
@@ -226,7 +250,7 @@ def get_chunks_from_lines(lines, chunk_words, stride_words):
             )
         )
         chunk_start = stride_end
-    return chunks, chunk_boxes, display
+    return chunks, chunk_boxes, display, section_titles
 
 
 def clean_encoding(text):
@@ -240,6 +264,7 @@ def get_chunks(
     emphasize_first_n_words,
     ignore_header_footer,
     ignore_nonstandard_orientation,
+    emphasize_section_titles,
     table_parsing,
 ):
     blocks = get_fitz_blocks(filename)
@@ -251,15 +276,18 @@ def get_chunks(
     blocks = remove_empty_blocks(blocks)
     lines = get_lines(blocks)
     lines = set_line_text(lines)
+    if emphasize_section_titles:
+        lines = estimate_section_titles(lines)
     if table_parsing:
         lines = process_tables(filename, lines)
     lines = set_line_word_counts(lines)
-    emphasis = get_lines_with_first_n_words(lines, emphasize_first_n_words)
-    chunks, chunk_boxes, display = get_chunks_from_lines(
+    first_n_words = get_lines_with_first_n_words(lines, emphasize_first_n_words)
+    chunks, chunk_boxes, display, section_titles = get_chunks_from_lines(
         lines, chunk_words, stride_words
     )
     chunks = [clean_encoding(text) for text in chunks]
-    return chunks, chunk_boxes, display, emphasis
+    section_titles = [clean_encoding(section_title) for section_title in section_titles]
+    return chunks, chunk_boxes, display, first_n_words, section_titles
 
 
 def make_df(
@@ -269,6 +297,8 @@ def make_df(
     emphasize_first_n_words,
     ignore_header_footer,
     ignore_nonstandard_orientation,
+    doc_keywords,
+    emphasize_section_titles,
     table_parsing,
 ):
     """Arguments:
@@ -280,20 +310,33 @@ def make_df(
         like file titles or introductory paragraphs.
     table_parsing: Whether to enable separate parsing of tables
     """
-    chunks, chunk_boxes, display, emphasis = get_chunks(
+    chunks, chunk_boxes, display, first_n_words, section_titles = get_chunks(
         filename,
         chunk_words,
         stride_words,
         emphasize_first_n_words,
         ignore_header_footer,
         ignore_nonstandard_orientation,
+        emphasize_section_titles,
         table_parsing,
     )
+
+    emphasis = [
+        (
+            first_n_words
+            + " "
+            + doc_keywords
+            + " "
+            + (section_titles[i] if emphasize_section_titles else "")
+        )
+        for i in range(len(chunks))
+    ]
+
     return pd.DataFrame(
         {
             "para": [c.lower() for c in chunks],
             "display": display,
-            "emphasis": [emphasis for _ in chunks],
+            "emphasis": emphasis,
             # chunk_boxes is a list of lists of (page_num, bbox) pairs
             "chunk_boxes": [str(chunk_box) for chunk_box in chunk_boxes],
             # get the first element of the first pair in the list of

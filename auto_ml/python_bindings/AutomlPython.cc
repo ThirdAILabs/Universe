@@ -52,7 +52,7 @@ std::shared_ptr<udt::UDT> makeUDT(
     const std::string& target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
-    const py::dict& options);
+    const PretrainedBasePtr& pretrained_model, const py::dict& options);
 
 std::shared_ptr<udt::UDT> makeQueryReformulation(
     std::string source_column, std::string target_column,
@@ -110,6 +110,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
+           py::arg("pretrained_model") = nullptr,
            py::arg("options") = py::dict(), docs::UDT_INIT,
            bolt::python::OutputRedirect())
       .def(py::init(&makeQueryReformulation), py::arg("source_column"),
@@ -213,15 +214,21 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("force_non_empty") = true,
            py::arg("num_hashes") = std::nullopt)
       .def("associate", &udt::UDT::associate, py::arg("source_target_samples"),
-           py::arg("n_buckets"), py::arg("n_association_samples") = 16,
-           py::arg("n_balancing_samples") = 50,
-           py::arg("learning_rate") = 0.001, py::arg("epochs") = 3,
+           py::arg("n_buckets"),
+           py::arg("n_association_samples") =
+               udt::defaults::RLHF_N_FEEDBACK_SAMPLES,
+           py::arg("n_balancing_samples") =
+               udt::defaults::RLHF_N_BALANCING_SAMPLES,
+           py::arg("learning_rate") = udt::defaults::RLHF_LEARNING_RATE,
+           py::arg("epochs") = udt::defaults::RLHF_EPOCHS,
            py::arg("force_non_empty") = true,
            py::arg("batch_size") = udt::defaults::RLHF_BATCH_SIZE)
       .def("upvote", &udt::UDT::upvote, py::arg("source_target_samples"),
-           py::arg("n_upvote_samples") = 16,
-           py::arg("n_balancing_samples") = 50,
-           py::arg("learning_rate") = 0.001, py::arg("epochs") = 3,
+           py::arg("n_upvote_samples") = udt::defaults::RLHF_N_FEEDBACK_SAMPLES,
+           py::arg("n_balancing_samples") =
+               udt::defaults::RLHF_N_BALANCING_SAMPLES,
+           py::arg("learning_rate") = udt::defaults::RLHF_LEARNING_RATE,
+           py::arg("epochs") = udt::defaults::RLHF_EPOCHS,
            py::arg("batch_size") = udt::defaults::RLHF_BATCH_SIZE)
       .def("associate_train_data_source", &udt::UDT::associateTrain,
            py::arg("balancing_data"), py::arg("source_target_samples"),
@@ -262,7 +269,7 @@ void defineAutomlInModule(py::module_& module) {
           [](const std::shared_ptr<udt::UDT>& udt,
              const std::string& filename) { udt->save(filename); },
           py::arg("filename"), docs::UDT_SAVE_CHECKPOINT)
-      .def_property("save_optimizer", &udt::UDT::isOptimizerSavable,
+      .def_property("saves_optimizer", &udt::UDT::isOptimizerSavable,
                     &udt::UDT::setOptimizerSavable)
       .def("checkpoint", &udt::UDT::checkpoint, py::arg("filename"),
            docs::UDT_SAVE_CHECKPOINT)
@@ -294,7 +301,9 @@ void defineAutomlInModule(py::module_& module) {
       .def_static("label_probe_multiple_mach",
                   &udt::UDT::labelProbeMultipleMach, py::arg("models"),
                   py::arg("batch"), py::arg("sparse_inference") = false,
-                  py::arg("top_k") = std::nullopt);
+                  py::arg("top_k") = std::nullopt)
+      .def_static("estimate_hash_table_size", &udt::UDT::estimateHashTableSize,
+                  py::arg("output_dim"), py::arg("sparsity") = std::nullopt);
 }
 
 void createUDTTypesSubmodule(py::module_& module) {
@@ -449,7 +458,7 @@ std::shared_ptr<udt::UDT> makeUDT(
     const std::string& target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
-    const py::dict& options) {
+    const PretrainedBasePtr& pretrained_model, const py::dict& options) {
   return std::make_shared<udt::UDT>(
       /* data_types = */ std::move(data_types),
       /* temporal_tracking_relationships = */ temporal_tracking_relationships,
@@ -459,6 +468,7 @@ std::shared_ptr<udt::UDT> makeUDT(
       /* time_granularity = */ std::move(time_granularity),
       /* lookahead = */ lookahead, /* delimiter = */ delimiter,
       /* model_config= */ model_config,
+      /* pretrained_model= */ pretrained_model,
       /* options = */ createArgumentMap(options));
 }
 

@@ -18,7 +18,7 @@ class SupervisedTrainState:
     batch_size: int
     max_in_memory_batches: int
     metrics: List[int]
-    disable_inverted_index: bool
+    disable_finetunable_retriever: bool
 
 
 @dataclass
