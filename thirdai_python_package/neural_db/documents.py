@@ -154,6 +154,7 @@ class Reference:
         retriever: str = None,
     ):
         self._id = element_id
+        self._id_in_document = element_id
         self._upvote_ids = upvote_ids if upvote_ids is not None else [element_id]
         self._text = text
         self._source = source
@@ -166,7 +167,11 @@ class Reference:
     @property
     def id(self):
         return self._id
-
+    
+    @property
+    def id_in_document(self):
+        return self._id_in_document
+    
     @property
     def upvote_ids(self):
         return self._upvote_ids
