@@ -12,6 +12,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/backends/MachPorting.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
+#include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -46,8 +47,8 @@ class UDTMach final : public UDTBackend {
                    const dataset::DataSourcePtr& val_data,
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
-                   TrainOptions options,
-                   const bolt::DistributedCommPtr& comm) final;
+                   TrainOptions options, const bolt::DistributedCommPtr& comm,
+                   py::kwargs kwargs) final;
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate) final;
 
@@ -57,7 +58,7 @@ class UDTMach final : public UDTBackend {
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool verbose,
-                      std::optional<uint32_t> top_k) final;
+                      py::kwargs kwargs) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
                      bool return_predicted_class,
@@ -106,8 +107,8 @@ class UDTMach final : public UDTBackend {
       const std::vector<std::string>& train_metrics,
       const dataset::DataSourcePtr& val_data,
       const std::vector<std::string>& val_metrics,
-      const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-      const bolt::DistributedCommPtr& comm) final;
+      const std::vector<CallbackPtr>& callbacks_in, TrainOptions options,
+      const bolt::DistributedCommPtr& comm, const py::kwargs& kwargs) final;
 
   py::object embedding(const MapInputBatch& sample) final;
 
@@ -183,6 +184,14 @@ class UDTMach final : public UDTBackend {
       uint32_t epochs, const std::vector<std::string>& metrics,
       TrainOptions options) final;
 
+  py::object coldStartWithBalancingSamples(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& train_metrics,
+      const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+      const std::optional<data::VariableLengthConfig>& variable_length) final;
+
   void setDecodeParams(uint32_t top_k_to_return,
                        uint32_t num_buckets_to_eval) final;
 
@@ -207,6 +216,10 @@ class UDTMach final : public UDTBackend {
   static std::unique_ptr<UDTMach> fromArchive(const ar::Archive& archive);
 
   static std::string type() { return "udt_mach"; }
+
+  uint32_t defaultTopKToReturn() const { return _default_top_k_to_return; }
+
+  uint32_t numBucketsToEval() const { return _num_buckets_to_eval; }
 
  private:
   std::vector<std::vector<uint32_t>> predictHashesImpl(

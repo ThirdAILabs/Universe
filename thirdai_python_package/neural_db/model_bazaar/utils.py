@@ -6,10 +6,10 @@ import sys
 import time
 from functools import wraps
 from pathlib import Path
+from urllib.parse import urljoin
 
 import requests
 from IPython.display import clear_output
-from tqdm import tqdm
 
 
 def print_progress_dots(duration: int):
@@ -28,6 +28,10 @@ def create_deployment_identifier(
     model_identifier: str, deployment_name: str, deployment_username: str
 ):
     return model_identifier + ":" + deployment_username + "/" + deployment_name
+
+
+def construct_deployment_url(host, deployment_id):
+    return urljoin(host, deployment_id) + "/"
 
 
 def check_deployment_decorator(func):
@@ -96,6 +100,7 @@ def check_response(response):
         )
 
     content = json.loads(response.content)
+    print(content)
 
     status = content["status"]
 

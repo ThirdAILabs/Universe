@@ -6,6 +6,8 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Generator, List, Tuple
 
+import dask.dataframe as dd
+
 # Libraries
 import pandas as pd
 
@@ -67,6 +69,61 @@ class Table(ABC):
         pass
 
 
+class DaskDataFrameTable(Table):
+    def __init__(self, df: dd.DataFrame):
+        self.df = df_with_index_name(df)
+        self.row_id_to_dict = (
+            {}
+        )  # store row_id_to_dict before hand for quick retrieval in future
+        index_name = self.df.index.name
+        meta = pd.DataFrame({"data": pd.Series(dtype="object")})
+        results = self.df.map_partitions(self._partition_to_dicts, meta=meta)
+        row_id = 0  # We are maintaining a global row_id because each partition will have it's local index
+        for batch in results.compute():
+            for row_dict in batch:
+                row_dict[index_name] = row_id
+                self.row_id_to_dict[row_id] = row_dict
+                row_id += 1
+
+    @property
+    def columns(self) -> List[str]:
+        return [col for col in self.df.columns if col != self.df.index.name]
+
+    @property
+    def size(self) -> int:
+        # For Dask, compute() is required to get the actual size
+        return int(self.df.shape[0].compute())
+
+    @property
+    def ids(self) -> List[int]:
+        # Dask requires computation to convert index to a list
+        return self.df.index.compute().to_list()
+
+    def field(self, row_id: int, column: str):
+        # For Dask, use .compute() to get actual values
+        return self.df.loc[row_id][column].compute()
+
+    def row_as_dict(self, row_id: int) -> dict:
+        return self.row_id_to_dict[row_id]
+
+    def range_rows_as_dicts(self, from_row_id: int, to_row_id: int) -> List[dict]:
+        return self.row_id_to_dict[from_row_id:to_row_id]
+
+    def _partition_to_dicts(self, df_partition):
+        dicts = []
+        for row in df_partition.itertuples(index=True):
+            row_dict = row._asdict()
+            dicts.append(row_dict)
+        return dicts
+
+    def iter_rows_as_dicts(self) -> Generator[Tuple[int, dict], None, None]:
+        for row_id, row_dict in self.row_id_to_dict.items():
+            yield (row_id, row_dict)
+
+    def apply_filter(self, table_filter: TableFilter):
+        return table_filter.filter_df_ids(self.df)
+
+
 class DataFrameTable(Table):
     def __init__(self, df: pd.DataFrame):
         """The index of the dataframe is assumed to be the ID column.
@@ -104,8 +161,9 @@ class DataFrameTable(Table):
         )
 
     def iter_rows_as_dicts(self) -> Generator[Tuple[int, dict], None, None]:
-        for row_id, row in self.df.iterrows():
-            row_dict = row.to_dict()
+        for row in self.df.itertuples(index=True):
+            row_id = row.Index
+            row_dict = row._asdict()
             row_dict[self.df.index.name] = row_id
             yield (row_id, row_dict)
 

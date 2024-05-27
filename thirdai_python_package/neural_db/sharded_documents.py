@@ -108,15 +108,20 @@ class DataLoadMultiplexer:
             label_to_segment_map,
         )
 
+    def update_label_segment_map(self, data_source, label_to_segment_map):
+        indices = data_source.indices()
+        random.seed(self.seed)
+        random.shuffle(indices)
+        for randomised_index in indices:
+            label_to_segment_map[randomised_index].append(
+                randomised_index % self.num_segments
+            )
+
     def create_segments_with_data_source(
         self, data_source, label_to_segment_map, update_index
     ):
         if update_index:
-            indices = list(range(data_source.size))
-            random.seed(self.seed)
-            random.shuffle(indices)
-            for index, randomised_index in enumerate(indices):
-                label_to_segment_map[index].append(randomised_index % self.num_segments)
+            self.update_label_segment_map(data_source, label_to_segment_map)
         else:
             if len(label_to_segment_map) == 0:
                 raise Exception("label_to_segment_map is empty")
@@ -168,7 +173,7 @@ def transform_shard_to_datasource(
         sup = Sup(
             csv=shard_path,
             query_column=original_data_source.query_col,
-            id_column=original_data_source.doc_manager.id_column,
+            id_column=original_data_source.id_column,
             id_delimiter=original_data_source.id_delimiter,
             uses_db_id=True,
         )
@@ -178,6 +183,7 @@ def transform_shard_to_datasource(
             query_col=original_data_source.query_col,
             data=[sup],
             id_delimiter=original_data_source.id_delimiter,
+            id_column=original_data_source.id_column,
         )
 
 
@@ -199,6 +205,7 @@ def shard_data_source(
             map of label id to shard id
         number_shards : int
             number of shards to shard the dataset into
+            If number_shards is 1, then returns the datasource as it is.
         update_segment_map : bool
             If set to True, then we first randomly shard the data_source, and update the label_to_segment_map.
             If set to False, then the data_source is sharded using the label_to_segment_map provided by the user.
@@ -217,6 +224,14 @@ def shard_data_source(
     data_load_multiplexer = DataLoadMultiplexer(
         number_shards, flush_frequency=flush_frequency
     )
+
+    if number_shards == 1:
+        if update_segment_map:
+            data_load_multiplexer.update_label_segment_map(
+                data_source, label_to_segment_map
+            )
+        return [data_source]
+
     (
         shard_names,
         shard_objects,

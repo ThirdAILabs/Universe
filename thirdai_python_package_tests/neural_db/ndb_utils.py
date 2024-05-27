@@ -39,7 +39,7 @@ def create_simple_dataset():
 @pytest.fixture
 def train_simple_neural_db(create_simple_dataset):
     filename = create_simple_dataset
-    db = ndb.NeuralDB()
+    db = ndb.NeuralDB(retriever="hybrid")
 
     doc = ndb.CSV(
         filename,
@@ -60,6 +60,8 @@ BASE_DIR = os.path.join(
 CSV_FILE = os.path.join(BASE_DIR, "lorem_ipsum.csv")
 URL_LINK = "https://en.wikipedia.org/wiki/Rice_University"
 PDF_FILE = os.path.join(BASE_DIR, "mutual_nda.pdf")
+PRIAXOR_PDF_FILE = os.path.join(BASE_DIR, "Priaxor.pdf")
+CITI_PDF_FILE = os.path.join(BASE_DIR, "Citi_3Q23.pdf")
 DOCX_FILE = os.path.join(BASE_DIR, "four_english_words.docx")
 PPTX_FILE = os.path.join(BASE_DIR, "quantum_mechanics.pptx")
 TXT_FILE = os.path.join(BASE_DIR, "nature.txt")
@@ -352,28 +354,41 @@ def insert_works(db: ndb.NeuralDB, docs: List[ndb.Document], num_duplicate_docs)
     db.insert(docs, train=True)
     assert len(db.sources()) == len(docs) - num_duplicate_docs
 
-    assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
+    if not isinstance(
+        db._savable_state.model, ndb.models.finetunable_retriever.FinetunableRetriever
+    ):
+        # train=True doesn't do anything for finetunable retriever
+        assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
 
     db.insert(docs, train=True, batch_size=1, learning_rate=0.0002)
     assert len(db.sources()) == len(docs) - num_duplicate_docs
 
-    assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
+    if not isinstance(
+        db._savable_state.model, ndb.models.finetunable_retriever.FinetunableRetriever
+    ):
+        # train=True doesn't do anything for finetunable retriever
+        assert [r.score for r in db.search(ARBITRARY_QUERY, top_k=5)] != initial_scores
 
 
 def upvote_works(db: ndb.NeuralDB):
     # We have more than 10 indexed entities.
     target_id = get_upvote_target_id(db, ARBITRARY_QUERY, top_k=10)
 
-    number_models = (
-        db._savable_state.model.number_models
-        if hasattr(db._savable_state.model, "number_models")
+    num_models_per_shard = (
+        db._savable_state.model.num_models_per_shard
+        if hasattr(db._savable_state.model, "num_models_per_shard")
+        else 1
+    )
+    num_shards = (
+        db._savable_state.model.num_shards
+        if hasattr(db._savable_state.model, "num_shards")
         else 1
     )
 
     # TODO(Shubh) : For mach mixture, it is not necessary that upvoting alone will
     # boost the label enough to be predicted at once. Look at a better solution than
     # upvoting multiple times.
-    times_to_upvote = 3 if number_models > 1 else 5
+    times_to_upvote = 3 if (num_models_per_shard > 1 or num_shards > 1) else 5
     for i in range(times_to_upvote):
         db.text_to_result(ARBITRARY_QUERY, target_id)
     assert target_id in [r.id for r in db.search(ARBITRARY_QUERY, top_k=10)]
@@ -467,11 +482,17 @@ def clear_sources_works(db: ndb.NeuralDB):
 
 
 @pytest.fixture(scope="session")
-def empty_neural_db():
+def empty_neural_db(request):
     """Initializes an empty NeuralDB once per test session to speed up tests.
     Best used for tests that don't assert accuracy.
     """
-    db = ndb.NeuralDB()
+    if request.param == "no_mach":
+        db = ndb.NeuralDB()
+    else:
+        num_models_per_shard = request.param
+        db = ndb.NeuralDB(
+            num_shards=1, num_models_per_shard=num_models_per_shard, retriever="hybrid"
+        )
     # db.insert() initializes the mach model so this only happens once per
     # test session. Clear the sources so it's back to being empty.
     db.insert([ndb.CSV(CSV_FILE)], train=False)

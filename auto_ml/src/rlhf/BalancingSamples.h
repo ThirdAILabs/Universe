@@ -56,6 +56,8 @@ class BalancingSamples {
 
   data::ColumnMap balancingSamples(size_t num_samples);
 
+  data::ColumnMap allBalancingSamples();
+
   void addSamples(const data::ColumnMap& data);
 
   void clear() {
@@ -72,7 +74,20 @@ class BalancingSamples {
 
   const auto& samplesPerDoc() const { return _samples_per_doc; }
 
+  size_t totalBalancingSamples() const {
+    size_t total_size = 0;
+    for (const auto& [_, samples] : _samples_per_doc) {
+      total_size += samples.size();
+    }
+    return total_size;
+  }
+
  private:
+  data::ColumnMap createColumnMap(std::vector<std::vector<uint32_t>>&& indices,
+                                  std::vector<std::vector<float>>&& values,
+                                  std::vector<std::vector<uint32_t>>&& labels,
+                                  std::vector<uint32_t>&& doc_ids);
+
   void addSample(uint32_t doc_id, BalancingSample sample);
 
   static constexpr uint32_t RNG_SEED = 7240924;

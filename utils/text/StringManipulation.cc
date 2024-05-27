@@ -53,6 +53,27 @@ std::vector<std::string> split(const std::string_view& string, char delimiter) {
   return words;
 }
 
+std::vector<std::string> splitOnWhiteSpace(const std::string& text) {
+  std::vector<std::string> words;
+
+  bool last_is_word = false;
+  size_t word_start;
+  for (size_t i = 0; i < text.size(); i++) {
+    bool is_word = !std::isspace(text[i]);
+    if (!last_is_word && is_word) {
+      word_start = i;
+    } else if (last_is_word && !is_word) {
+      words.push_back(text.substr(word_start, i - word_start));
+    }
+    last_is_word = is_word;
+  }
+  if (last_is_word) {
+    words.push_back(text.substr(word_start));
+  }
+
+  return words;
+}
+
 std::vector<std::string> tokenizeSentenceUnicodeUnsafe(
     const std::string& sentence) {
   // A-Za-zÀ-ÖØ-öø-ÿ0-9 : alphanumeric characters, including accents.
@@ -139,12 +160,19 @@ std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
 }
 
 std::vector<std::string> wordLevelCharKGrams(
-    const std::vector<std::string>& words, uint32_t k, size_t min_word_length) {
+    const std::vector<std::string>& words, uint32_t k, size_t min_word_length,
+    bool soft_start) {
   utils::validateGreaterThanZero(min_word_length, "min_word_length");
 
   std::vector<std::string> all_char_k_grams;
   for (const auto& word : words) {
     if (word.size() >= min_word_length) {
+      if (soft_start) {
+        uint32_t max_len = std::min<size_t>(word.size(), k - 1);
+        for (uint32_t len = min_word_length; len <= max_len; len++) {
+          all_char_k_grams.push_back(word.substr(0, len));
+        }
+      }
       auto word_k_grams = charKGrams(word, k);
       all_char_k_grams.insert(all_char_k_grams.end(), word_k_grams.begin(),
                               word_k_grams.end());

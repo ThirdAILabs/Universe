@@ -7,6 +7,7 @@
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/Featurizer.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -57,7 +58,8 @@ class UDTBackend {
                            const std::vector<std::string>& val_metrics,
                            const std::vector<CallbackPtr>& callbacks,
                            TrainOptions options,
-                           const bolt::DistributedCommPtr& comm) = 0;
+                           const bolt::DistributedCommPtr& comm,
+                           py::kwargs kwargs) = 0;
 
   virtual py::object trainBatch(const MapInputBatch& batch,
                                 float learning_rate) {
@@ -75,7 +77,7 @@ class UDTBackend {
   virtual py::object evaluate(const dataset::DataSourcePtr& data,
                               const std::vector<std::string>& metrics,
                               bool sparse_inference, bool verbose,
-                              std::optional<uint32_t> top_k) = 0;
+                              py::kwargs kwargs) = 0;
 
   virtual py::object predict(const MapInput& sample, bool sparse_inference,
                              bool return_predicted_class,
@@ -148,7 +150,7 @@ class UDTBackend {
       const dataset::DataSourcePtr& val_data,
       const std::vector<std::string>& val_metrics,
       const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-      const bolt::DistributedCommPtr& comm) {
+      const bolt::DistributedCommPtr& comm, const py::kwargs& kwargs) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
@@ -161,6 +163,7 @@ class UDTBackend {
     (void)options;
     (void)comm;
     (void)variable_length;
+    (void)kwargs;
     throw notSupported("cold_start");
   }
 
@@ -356,6 +359,25 @@ class UDTBackend {
     throw notSupported("associate_cold_start");
   }
 
+  virtual py::object coldStartWithBalancingSamples(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& train_metrics,
+      const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+      const std::optional<data::VariableLengthConfig>& variable_length) {
+    (void)data;
+    (void)strong_column_names;
+    (void)weak_column_names;
+    (void)learning_rate;
+    (void)epochs;
+    (void)train_metrics;
+    (void)callbacks;
+    (void)options;
+    (void)variable_length;
+    throw notSupported("cold_start_with_balancing_samples");
+  }
+
   virtual void enableRlhf(uint32_t num_balancing_docs,
                           uint32_t num_balancing_samples_per_doc) {
     (void)num_balancing_docs;
@@ -390,6 +412,23 @@ class UDTBackend {
   static std::runtime_error notSupported(const std::string& name) {
     return std::runtime_error("Method '" + name +
                               "' is not supported for this type of model.");
+  }
+
+  static std::optional<data::SpladeConfig> getSpladeConfig(
+      const py::kwargs& kwargs) {
+    if (!kwargs.contains("splade_config") ||
+        kwargs["splade_config"].is_none()) {
+      return std::nullopt;
+    }
+    return kwargs["splade_config"].cast<data::SpladeConfig>();
+  }
+
+  static bool getSpladeValidationOption(const py::kwargs& kwargs) {
+    if (kwargs.contains("use_splade_in_validation") &&
+        !kwargs["use_splade_in_validation"].is_none()) {
+      return kwargs["use_splade_in_validation"].cast<bool>();
+    }
+    return false;
   }
 
  private:

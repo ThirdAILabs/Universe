@@ -52,6 +52,7 @@ jobs:
         shell: bash
         run: |-
           echo "THIRDAI_BUILD_IDENTIFIER=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
       - name: Install dependencies with vcpkg
         if: ${{ startsWith(runner.os, 'windows') }}
         working-directory: C:\vcpkg
@@ -62,6 +63,23 @@ jobs:
           .\vcpkg install zlib:x64-windows-static openssl:x64-windows-static
           .\vcpkg upgrade --no-dry-run # In case there are new builds available after cache restoration
         shell: powershell
+
+      - name: Install llvm clang and libomp for macosx-x86
+        if: ${{ startsWith(matrix.runs-on, 'macos-12')}}
+        # We build libomp from source because homebrew only has the most recent version 
+        # of libomp available and it needs to match the llvm version in order for parallelism
+        # to work. Upgrading to llvm18+ causes an issue because SpdLog uses a C++ feature
+        # that is deprecated.
+        run: |
+          brew install llvm@17
+          git clone -b release/17.x https://github.com/llvm/llvm-project
+          cd llvm-project/openmp
+          mkdir build && cd build
+          cmake -DCMAKE_C_COMPILER=$(brew --prefix llvm@17)/bin/clang -DCMAKE_CXX_COMPILER=$(brew --prefix llvm@17)/bin/clang++ -DCMAKE_BUILD_TYPE=Release ..
+          make -j
+          make install
+          cd ../../../
+          rm -rf llvm-project
 
       - name: Build and test wheels
         uses: pypa/cibuildwheel@v2.9.0
@@ -90,6 +108,8 @@ jobs:
             OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
             OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
+            CXX="$(brew --prefix llvm@17)/bin/clang++"
+            CC="$(brew --prefix llvm@17)/bin/clang"
          
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&

@@ -5,6 +5,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/Featurizer.h>
+#include <auto_ml/src/pretrained/PretrainedBase.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <auto_ml/src/udt/utils/Models.h>
@@ -27,6 +28,10 @@ class UDTClassifier final : public UDTBackend {
       const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
+  UDTClassifier(const ColumnDataTypes& data_types, uint32_t n_target_classes,
+                bool integer_target, const PretrainedBasePtr& pretrained_model,
+                char delimiter, const config::ArgumentMap& user_args);
+
   explicit UDTClassifier(const ar::Archive& archive);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
@@ -35,8 +40,8 @@ class UDTClassifier final : public UDTBackend {
                    const dataset::DataSourcePtr& val_data,
                    const std::vector<std::string>& val_metrics,
                    const std::vector<CallbackPtr>& callbacks,
-                   TrainOptions options,
-                   const bolt::DistributedCommPtr& comm) final;
+                   TrainOptions options, const bolt::DistributedCommPtr& comm,
+                   py::kwargs kwargs) final;
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate) final;
 
@@ -50,7 +55,7 @@ class UDTClassifier final : public UDTBackend {
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool verbose,
-                      std::optional<uint32_t> top_k) final;
+                      py::kwargs kwargs) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
                      bool return_predicted_class,
@@ -75,7 +80,7 @@ class UDTClassifier final : public UDTBackend {
       const dataset::DataSourcePtr& val_data,
       const std::vector<std::string>& val_metrics,
       const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-      const bolt::DistributedCommPtr& comm) final;
+      const bolt::DistributedCommPtr& comm, const py::kwargs& kwargs) final;
 
   py::object embedding(const MapInputBatch& sample) final;
 

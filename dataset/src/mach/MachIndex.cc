@@ -17,15 +17,15 @@
 namespace thirdai::dataset::mach {
 
 MachIndex::MachIndex(uint32_t num_buckets, uint32_t num_hashes,
-                     uint32_t num_elements)
-    : _buckets(num_buckets), _num_hashes(num_hashes) {
+                     uint32_t num_elements, uint32_t seed)
+    : _buckets(num_buckets), _num_hashes(num_hashes), _seed(seed) {
   if (num_hashes == 0) {
     throw std::invalid_argument("Cannot have num_hashes=0.");
   }
   if (num_hashes > num_buckets) {
     throw std::invalid_argument("Can't have more hashes than buckets");
   }
-  std::mt19937 mt(341);
+  std::mt19937 mt(_seed);
   std::uniform_int_distribution<uint32_t> dist(0, num_buckets - 1);
   for (uint32_t element = 0; element < num_elements; element++) {
     std::vector<uint32_t> hashes(num_hashes);
@@ -42,8 +42,8 @@ MachIndex::MachIndex(uint32_t num_buckets, uint32_t num_hashes,
 
 MachIndex::MachIndex(
     const std::unordered_map<uint32_t, std::vector<uint32_t>>& entity_to_hashes,
-    uint32_t num_buckets, uint32_t num_hashes)
-    : _buckets(num_buckets), _num_hashes(num_hashes) {
+    uint32_t num_buckets, uint32_t num_hashes, uint32_t seed)
+    : _buckets(num_buckets), _num_hashes(num_hashes), _seed(seed) {
   for (auto [entity, hashes] : entity_to_hashes) {
     insert(entity, hashes);
   }
@@ -82,7 +82,7 @@ void MachIndex::insertNewEntities(const std::unordered_set<uint32_t>& new_ids) {
     }
 
     std::mt19937 rng(hashing::MurmurHash(reinterpret_cast<const char*>(&entity),
-                                         sizeof(entity), 341));
+                                         sizeof(entity), _seed));
 
     std::vector<uint32_t> hashes(_num_hashes);
     for (uint32_t i = 0; i < _num_hashes; i++) {
@@ -180,6 +180,7 @@ ar::ConstArchivePtr MachIndex::toArchive() const {
   map->set("entity_to_hashes", ar::mapU64VecU64(std::move(entity_to_hashes)));
   map->set("num_buckets", ar::u64(numBuckets()));
   map->set("num_hashes", ar::u64(numHashes()));
+  map->set("seed", ar::u64(_seed));
 
   return map;
 }
@@ -195,9 +196,9 @@ std::shared_ptr<MachIndex> MachIndex::fromArchive(const ar::Archive& archive) {
     entity_to_hashes[k] = {v.begin(), v.end()};
   }
 
-  return std::make_shared<MachIndex>(std::move(entity_to_hashes),
-                                     archive.u64("num_buckets"),
-                                     archive.u64("num_hashes"));
+  return std::make_shared<MachIndex>(
+      std::move(entity_to_hashes), archive.u64("num_buckets"),
+      archive.u64("num_hashes"), archive.getOr<uint64_t>("seed", DEFAULT_SEED));
 }
 
 TopKActivationsQueue MachIndex::topKNonEmptyBuckets(const BoltVector& output,

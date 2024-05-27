@@ -84,6 +84,8 @@ void defineOptimizers(py::module_& nn);
 void createBoltNNSubmodule(py::module_& module) {
   auto nn = module.def_submodule("nn");
 
+  defineOptimizers(nn);
+
 #if THIRDAI_EXPOSE_ALL
   defineTensor(nn);
 
@@ -91,7 +93,6 @@ void createBoltNNSubmodule(py::module_& module) {
 
   defineLosses(nn);
 
-  defineOptimizers(nn);
 #endif
 
   py::class_<Model, ModelPtr>(nn, "Model")
@@ -119,18 +120,19 @@ void createBoltNNSubmodule(py::module_& module) {
       .def("computation", &Model::getComputation, py::arg("name"))
       .def("outputs", &Model::outputs)
       .def("labels", &Model::labels)
-      .def("change_optimizer", &Model::changeOptimizer, py::arg("optimizer"))
       .def("summary", &Model::summary, py::arg("print") = true)
       .def("get_parameters", &getParameters,
            py::return_value_policy::reference_internal)
       .def("set_parameters", &setParameters, py::arg("new_values"))
       .def("train_steps", &Model::trainSteps)
+      .def("epochs", &Model::epochs)
       .def("override_train_steps", &Model::overrideTrainSteps,
            py::arg("train_steps"))
       .def("params", &modelParams)
       .def("norms", &Model::getNorms)
       .def_static("from_params", &modelFromParams, py::arg("params"))
 #endif
+      .def("change_optimizer", &Model::changeOptimizer, py::arg("optimizer"))
       // The next three functions are used for distributed training.
       .def("disable_sparse_parameter_updates",
            &Model::disableSparseParameterUpdates)

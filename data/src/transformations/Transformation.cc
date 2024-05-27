@@ -1,5 +1,6 @@
 #include "Transformation.h"
 #include <archive/src/Archive.h>
+#include <data/src/transformations/AddMachMemorySamples.h>
 #include <data/src/transformations/Binning.h>
 #include <data/src/transformations/CategoricalTemporal.h>
 #include <data/src/transformations/CountTokens.h>
@@ -11,6 +12,8 @@
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/Graph.h>
 #include <data/src/transformations/MachLabel.h>
+#include <data/src/transformations/NextWordPrediction.h>
+#include <data/src/transformations/NumericalTemporal.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/Recurrence.h>
 #include <data/src/transformations/RegressionBinning.h>
@@ -19,6 +22,7 @@
 #include <data/src/transformations/StringHash.h>
 #include <data/src/transformations/StringIDLookup.h>
 #include <data/src/transformations/Tabular.h>
+#include <data/src/transformations/TextCompat.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
 #include <memory>
@@ -40,6 +44,7 @@ TransformationPtr Transformation::fromArchive(const ar::Archive& archive) {
 
   HANDLE_TYPE(BinningTransformation)
   HANDLE_TYPE(CategoricalTemporal)
+  HANDLE_TYPE(NumericalTemporal)
   HANDLE_TYPE(CountTokens)
   HANDLE_TYPE(CrossColumnPairgrams)
   HANDLE_TYPE(Date)
@@ -65,8 +70,12 @@ TransformationPtr Transformation::fromArchive(const ar::Archive& archive) {
   HANDLE_TYPE(StringIDLookup)
   HANDLE_TYPE(Tabular)
   HANDLE_TYPE(TextTokenizer)
+  HANDLE_TYPE(AddMachMemorySamples)
+  HANDLE_TYPE(NextWordPrediction)
+  HANDLE_TYPE(TextCompat)
 
-  throw std::runtime_error("Invalid transformation type in fromProto.");
+  throw std::runtime_error("Invalid transformation type '" + type +
+                           "' in fromArchive.");
 }
 
 std::string Transformation::serialize() const {

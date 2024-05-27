@@ -7,7 +7,7 @@ from nltk.tokenize import sent_tokenize
 
 from . import utils
 from .loggers import Logger
-from .models import Model
+from .models.model_interface import Model
 
 
 def associate(
@@ -34,8 +34,9 @@ def upvote(
     logger: Logger,
     user_id: str,
     query_id_para: List[Tuple[str, int, str]],
+    **kwargs,
 ):
-    model.upvote([(query, _id) for query, _id, para in query_id_para])
+    model.upvote([(query, _id) for query, _id, para in query_id_para], **kwargs)
     logger.log(
         session_id=user_id,
         action="upvote",

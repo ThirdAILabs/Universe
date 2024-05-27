@@ -150,51 +150,7 @@ if(MSVC)
   add_library(OpenMP::OpenMP_CXX ALIAS _thirdai_windows_llvm_openmp)
 else()
 
-  find_package(OpenMP)
-  if(NOT OpenMP_FOUND)
-
-    # In this case, we were not able to find OpenMP. We are choosing to build
-    # openmp from scratch here, using the LLVM standalone OpenMP source.
-    #
-    # In practice, this is intended for use for cross-compiling M1 (arm64)
-    # wheels on MacOS GitHub runners (x86_64), where the possibility to use the
-    # host's libomp is missing, and the library needs to be cross compiled for
-    # target.
-
-    # The following works with only newer CMake versions (Download), but we get
-    # here only after all else has failed, and only for purposes of CI.
-
-    # This block needs to happen before all the compile-options are added to
-    # escape -Wall and -Werror being enforced on OpenMP library.
-
-    set(LLVM_OPENMP_VERSION "13.0.1")
-    set(LLVM_OPENMP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/openmp")
-
-    if(NOT EXISTS ${LLVM_OPENMP_SOURCE_DIR})
-      message(
-        "Downloading openmp-${LLVM_OPENMP_VERSION} into ${LLVM_OPENMP_SOURCE_DIR}"
-      )
-      set(LLVM_OPENMP_DOWNLOAD_URL
-          "https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_OPENMP_VERSION}/openmp-${LLVM_OPENMP_VERSION}.src.tar.xz"
-      )
-      file(
-        DOWNLOAD
-        ${LLVM_OPENMP_DOWNLOAD_URL} # URL
-        "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.tar.bz2" # FILE
-      )
-      file(ARCHIVE_EXTRACT INPUT
-           "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.tar.bz2"
-           DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-      file(RENAME
-           "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.src"
-           "${LLVM_OPENMP_SOURCE_DIR}")
-    endif()
-
-    set(OPENMP_STANDALONE_BUILD ON)
-    add_subdirectory(${LLVM_OPENMP_SOURCE_DIR} EXCLUDE_FROM_ALL)
-    add_library(OpenMP::OpenMP_CXX ALIAS omp)
-
-  endif(NOT OpenMP_FOUND)
+  find_package(OpenMP REQUIRED)
 
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -309,6 +265,7 @@ add_subdirectory(dataset)
 add_subdirectory(search)
 add_subdirectory(hashing)
 add_subdirectory(hashtable)
+add_subdirectory(mach)
 add_subdirectory(archive)
 add_subdirectory(compression)
 add_subdirectory(utils)
@@ -370,6 +327,10 @@ set(THIRDAI_SOURCES
     bolt/src/layers/LayerConfig.cc
     bolt/src/layers/SamplingConfig.cc
     bolt/src/inference/EmbFcInference.cc
+    bolt/src/NER/model/NerUDTModel.cc
+    bolt/src/NER/model/NerBoltModel.cc
+    bolt/src/NER/model/NerClassifier.cc
+    bolt/src/NER/model/NER.cc
     bolt/src/text_generation/ContextualModel.cc
     bolt/src/text_generation/DyadicModel.cc
     bolt/src/text_generation/GenerativeModel.cc
@@ -379,7 +340,9 @@ set(THIRDAI_SOURCES
     search/src/MaxFlash.cc
     search/src/MaxFlashArray.cc
     search/src/Flash.cc
-    search/src/InvertedIndex.cc
+    search/src/inverted_index/InvertedIndex.cc
+    search/src/inverted_index/FinetunableRetriever.cc
+    search/src/inverted_index/Tokenizer.cc
     hashing/src/DensifiedMinHash.cc
     hashing/src/DWTA.cc
     hashing/src/FastSRP.cc
@@ -431,10 +394,13 @@ set(THIRDAI_SOURCES
     data/src/transformations/Tabular.cc
     data/src/transformations/Pipeline.cc
     data/src/transformations/MachLabel.cc
+    data/src/transformations/MachMemory.cc
+    data/src/transformations/AddMachMemorySamples.cc
     data/src/transformations/StringConcat.cc
     data/src/transformations/StringCast.cc
     data/src/transformations/StringIDLookup.cc
     data/src/transformations/CategoricalTemporal.cc
+    data/src/transformations/NumericalTemporal.cc
     data/src/transformations/Tabular.cc
     data/src/transformations/Date.cc
     data/src/transformations/CrossColumnPairgrams.cc
@@ -445,6 +411,11 @@ set(THIRDAI_SOURCES
     data/src/transformations/Graph.cc
     data/src/transformations/RegressionBinning.cc
     data/src/transformations/DyadicInterval.cc
+    data/src/transformations/NextWordPrediction.cc
+    data/src/transformations/SpladeAugmentation.cc
+    data/src/transformations/ner/NerTokenFromStringArray.cc
+    data/src/transformations/ner/NerTokenizationUnigram.cc
+    data/src/transformations/ner/NerDyadicDataProcessor.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
@@ -452,6 +423,8 @@ set(THIRDAI_SOURCES
     data/src/Loader.cc
     data/src/ColumnMapIterator.cc
     data/src/rca/ExplanationMap.cc
+    mach/src/MachRetriever.cc
+    mach/src/MachConfig.cc
     archive/src/Archive.cc
     archive/src/Map.cc
     archive/src/List.cc
@@ -469,6 +442,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/featurization/TabularBlockComposer.cc # Deprecate
     auto_ml/src/featurization/TabularDatasetFactory.cc # Deprecate
     auto_ml/src/cold_start/ColdStartUtils.cc # Deprecate
+    auto_ml/src/pretrained/PretrainedBase.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
@@ -539,6 +513,7 @@ pybind11_add_module(
   bolt/python_bindings/BoltCompression.cc
   bolt/python_bindings/NumpyConversions.cc
   bolt/python_bindings/BoltTextGeneration.cc
+  bolt/python_bindings/BoltNERPython.cc
   bolt/python_bindings/Porting.cc
   bolt/src/seismic/SeismicBase.cc
   bolt/src/seismic/SeismicEmbedding.cc
@@ -550,6 +525,7 @@ pybind11_add_module(
   search/python_bindings/BeamSearch.cc
   hashing/python_bindings/HashingPython.cc
   auto_ml/python_bindings/AutomlPython.cc
+  auto_ml/python_bindings/PretrainedBasePython.cc
   auto_ml/src/udt/UDT.cc
   auto_ml/src/udt/utils/Models.cc
   auto_ml/src/udt/utils/Classifier.cc
@@ -562,6 +538,7 @@ pybind11_add_module(
   auto_ml/src/udt/backends/UDTSVMClassifier.cc
   auto_ml/src/udt/backends/UDTGraphClassifier.cc
   auto_ml/src/udt/utils/Classifier.cc
+  mach/python_bindings/MachPython.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)
 

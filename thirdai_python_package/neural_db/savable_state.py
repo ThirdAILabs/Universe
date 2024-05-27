@@ -5,9 +5,9 @@ from typing import Callable, List
 
 from .documents import DocumentManager
 from .loggers import Logger
-from .models import Model
+from .models.model_interface import Model
 from .trainer.checkpoint_config import CheckpointConfig
-from .utils import delete_folder, pickle_to, unpickle_from
+from .utils import delete_file, delete_folder, pickle_to, unpickle_from
 
 
 def default_checkpoint_name():
@@ -125,16 +125,15 @@ class State:
 
 def load_checkpoint(checkpoint_config: CheckpointConfig):
     try:
-        state = State.load(checkpoint_config.ndb_checkpoint_path)
-        ids, resource_name = unpickle_from(
-            checkpoint_config.pickled_ids_resource_name_path
+        documents, ids, resource_name = unpickle_from(
+            checkpoint_config.pickled_documents_ids_resource_name_path
         )
-        return state, ids, resource_name
+        return documents, ids, resource_name
     except:
         raise Exception(
             "Failed to load"
-            f" '{checkpoint_config.checkpoint_dir / 'checkpoint.ndb'}'."
-            " Please verify it's a valid checkpoint and the training is"
+            f" '{checkpoint_config.pickled_documents_ids_resource_name_path}'."
+            " Please verify it's a valid document manager checkpoint and the training is"
             " incomplete."
         )
 
@@ -145,12 +144,16 @@ def make_preinsertion_checkpoint(
     resource_name: str,
     checkpoint_config: CheckpointConfig,
 ):
-    delete_folder(checkpoint_config.ndb_checkpoint_path)
-    savable_state.save(checkpoint_config.ndb_checkpoint_path)
-    pickle_to((ids, resource_name), checkpoint_config.pickled_ids_resource_name_path)
+    checkpoint_config.checkpoint_dir.mkdir(exist_ok=True, parents=True)
+    # saving the state of the document manager
+    pickle_to(
+        (savable_state.documents, ids, resource_name),
+        checkpoint_config.pickled_documents_ids_resource_name_path,
+    )
 
 
 def make_training_checkpoint(savable_state: State, checkpoint_config: CheckpointConfig):
+    # removing last trained ndb
     delete_folder(checkpoint_config.ndb_trained_path)
     savable_state.save(location=checkpoint_config.ndb_trained_path)
-    delete_folder(checkpoint_config.ndb_checkpoint_path)
+    delete_file(checkpoint_config.pickled_documents_ids_resource_name_path)

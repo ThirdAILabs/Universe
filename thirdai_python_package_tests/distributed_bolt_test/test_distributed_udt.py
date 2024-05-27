@@ -130,10 +130,7 @@ def test_udt_coldstart_distributed(download_amazon_kaggle_product_catalog_sample
                 config.get("cur_dir"),
                 f"amazon_product_catalog/part{train.get_context().get_world_rank()+1}",
             ),
-            os.path.join(
-                train.get_context().get_trial_dir(),
-                f"rank_{train.get_context().get_world_rank()}-part{train.get_context().get_world_rank()+1}",
-            ),
+            f"rank_{train.get_context().get_world_rank()}-part{train.get_context().get_world_rank()+1}",
         )
 
         metrics = udt_model.coldstart_distributed(
@@ -191,10 +188,7 @@ def test_udt_train_distributed():
                 config.get("cur_dir"),
                 f"clinc_train_{train.get_context().get_world_rank()}.csv",
             ),
-            os.path.join(
-                train.get_context().get_trial_dir(),
-                f"rank_{train.get_context().get_world_rank()}-clinc_train_{train.get_context().get_world_rank()}.csv",
-            ),
+            f"rank_{train.get_context().get_world_rank()}-clinc_train_{train.get_context().get_world_rank()}.csv",
         )
         udt_model.train_distributed(
             f"rank_{train.get_context().get_world_rank()}-clinc_train_{train.get_context().get_world_rank()}.csv",
@@ -257,10 +251,7 @@ def test_udt_mach_distributed(download_scifact_dataset):
                 config.get("cur_dir"),
                 "scifact",
             ),
-            os.path.join(
-                train.get_context().get_trial_dir(),
-                f"rank_{train.get_context().get_world_rank()}-scifact",
-            ),
+            f"rank_{train.get_context().get_world_rank()}-scifact",
         )
         model.coldstart_distributed(
             filename=f"rank_{train.get_context().get_world_rank()}-scifact/unsupervised_part{train.get_context().get_world_rank()+1}",

@@ -22,6 +22,8 @@ std::string dateOutputColumn(const std::string& input_column_name);
 
 std::string temporalItemIdsOutput(const std::string& input_column_name);
 
+std::string temporalNumericalValueOutput(const std::string& input_column_name);
+
 std::string temporalTrackingOutput(uint32_t temporal_id);
 
 const std::string TABULAR_COLUMNS_OUTPUT = "__tabular_columns__";
@@ -43,5 +45,7 @@ const std::string GRAPH_NBR_FEATURES = "__graph_nbr_features__";
 const std::string GRAPH_NBR_IDS = "__graph_nbr_ids__";
 
 const std::string RECURRENT_SEQUENCE = "__sequential_target__";
+
+const std::string SPLADE_TOKENS = "__splade_tokens__";
 
 }  // namespace thirdai::automl

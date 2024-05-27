@@ -12,6 +12,7 @@ from ndb_utils import (
     EML_FILE,
     PDF_FILE,
     PPTX_FILE,
+    PRIAXOR_PDF_FILE,
     TXT_FILE,
     URL_LINK,
     create_simple_dataset,
@@ -202,7 +203,8 @@ def test_document_data_source(prepare_documents_test):
 
 
 @pytest.mark.unit
-def test_sharded_data_source(prepare_documents_test):
+@pytest.mark.parametrize("number_shards", [1, 3])
+def test_sharded_data_source(prepare_documents_test, number_shards):
     (
         _,
         id_column,
@@ -227,17 +229,20 @@ def test_sharded_data_source(prepare_documents_test):
     assert data_source.size == first_size + second_size
 
     label_to_segment_map = defaultdict(list)
-    number_shards = 3
+    number_shards = number_shards
     sharded_data_sources = shard_data_source(
         data_source=data_source,
         number_shards=number_shards,
         label_to_segment_map=label_to_segment_map,
         update_segment_map=True,
     )
-
     assert len(sharded_data_sources) == number_shards
     assert sum(shard.size for shard in sharded_data_sources) == first_size + second_size
     assert all(shard.size > 0 for shard in sharded_data_sources)
+    assert set(value[0] for value in label_to_segment_map.values()) == set(
+        range(number_shards)
+    )
+    assert sorted(data_source.indices()) == sorted(label_to_segment_map.keys())
 
     df = pd.concat([data_source_to_df(shard) for shard in sharded_data_sources])
     df = df.sort_values(id_column)
@@ -566,3 +571,29 @@ def test_document_throws_when_user_passes_source_metadata(doc_factory):
         match=r"Document metadata cannot contain the key 'source'. 'source' is a reserved key.",
     ):
         doc_factory()
+
+
+@pytest.mark.unit
+def test_pdf_section_titles():
+    pdf = neural_db.PDF(PRIAXOR_PDF_FILE, version="v2", emphasize_section_titles=True)
+
+    def find_strong_words(pdf, strong_words):
+        found_words = False
+        for _, row in pdf.table.df.iterrows():
+            if strong_words in row["emphasis"]:
+                found_words = True
+        assert found_words
+
+    find_strong_words(pdf, "Restrictions and Limitations")
+    find_strong_words(pdf, "Groundwater Advisory")
+    find_strong_words(pdf, "Information on Droplet Size")
+    find_strong_words(pdf, "AGRICULTURAL USE REQUIREMENTS")
+    find_strong_words(pdf, "Environmental Hazards")
+
+
+@pytest.mark.unit
+def test_pdf_keywords():
+    pdf = neural_db.PDF(PRIAXOR_PDF_FILE, version="v2", doc_keywords="ThirdAI BOLT UDT")
+
+    for _, row in pdf.table.df.iterrows():
+        assert "ThirdAI BOLT UDT" in row["emphasis"]

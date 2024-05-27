@@ -4,6 +4,11 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <bolt/python_bindings/NumpyConversions.h>
+#include <bolt/src/layers/FullyConnectedLayer.h>
+#include <bolt/src/layers/LayerUtils.h>
+#include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
+#include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
@@ -76,6 +81,144 @@ UDTClassifier::UDTClassifier(
       bolt_labels, tabular_options);
 }
 
+std::pair<std::string, TextDataTypePtr> textDataType(
+    const ColumnDataTypes& data_types) {
+  if (data_types.size() != 2) {
+    throw std::invalid_argument(
+        "Expected only a text input and categorial output to use pretrained "
+        "classifier.");
+  }
+
+  for (const auto& [name, type] : data_types) {
+    if (auto text = asText(type)) {
+      return {name, text};
+    }
+  }
+
+  throw std::invalid_argument(
+      "Expected only a text input and categorial output to use pretrained "
+      "classifier.");
+}
+
+std::pair<std::string, CategoricalDataTypePtr> categoricalDataType(
+    const ColumnDataTypes& data_types) {
+  if (data_types.size() != 2) {
+    throw std::invalid_argument(
+        "Expected only a text input and categorial output to use pretrained "
+        "classifier.");
+  }
+
+  for (const auto& [name, type] : data_types) {
+    if (auto cat = asCategorical(type)) {
+      return {name, cat};
+    }
+  }
+
+  throw std::invalid_argument(
+      "Expected only a text input and categorial output to use pretrained "
+      "classifier.");
+}
+
+bolt::EmbeddingPtr getEmbeddingLayer(const bolt::ModelPtr& model) {
+  if (model->opExecutionOrder().empty()) {
+    throw std::invalid_argument("Invalid base pretrained model.");
+  }
+
+  auto emb = bolt::Embedding::cast(model->opExecutionOrder()[0]);
+  if (!emb) {
+    throw std::invalid_argument("Invalid base pretrained model.");
+  }
+
+  if (model->opExecutionOrder().size() == 1) {
+    emb->swapActivation(bolt::ActivationFunction::ReLU);
+  }
+
+  return emb;
+}
+
+bolt::FullyConnectedPtr getFcLayer(const bolt::ModelPtr& model) {
+  if (model->opExecutionOrder().size() != 2) {
+    return nullptr;
+  }
+
+  auto fc = bolt::FullyConnected::cast(model->opExecutionOrder()[1]);
+  if (fc) {
+    fc->kernel()->swapActivation(bolt::ActivationFunction::ReLU);
+  }
+
+  return fc;
+}
+
+bolt::ModelPtr buildModel(const bolt::EmbeddingPtr& emb,
+                          const bolt::FullyConnectedPtr& fc,
+                          uint32_t n_target_classes,
+                          bool disable_hidden_sparsity) {
+  auto input = bolt::Input::make(emb->inputDim());
+  auto hidden = emb->apply(input);
+  if (fc) {
+    if (disable_hidden_sparsity) {
+      fc->setSparsity(1.0, false, false);
+    }
+    hidden = fc->apply(hidden);
+  }
+
+  auto out = bolt::FullyConnected::make(
+      n_target_classes, hidden->dim(),
+      utils::autotuneSparsity(n_target_classes), "softmax");
+  out->setName("output");
+
+  auto output = out->apply(hidden);
+
+  auto loss = bolt::CategoricalCrossEntropy::make(
+      output, bolt::Input::make(output->dim()));
+
+  return bolt::Model::make({input}, {output}, {loss});
+}
+
+UDTClassifier::UDTClassifier(const ColumnDataTypes& data_types,
+                             uint32_t n_target_classes, bool integer_target,
+                             const PretrainedBasePtr& pretrained_model,
+                             char delimiter,
+                             const config::ArgumentMap& user_args) {
+  auto emb = getEmbeddingLayer(pretrained_model->model());
+
+  bool emb_only = user_args.get<bool>("emb_only", "boolean", true);
+  auto fc = !emb_only ? getFcLayer(pretrained_model->model()) : nullptr;
+
+  auto model = buildModel(
+      emb, fc, n_target_classes,
+      user_args.get<bool>("disable_hidden_sparsity", "boolean", true));
+
+  _classifier = std::make_shared<utils::Classifier>(
+      model, user_args.get<bool>("freeze_hash_tables", "boolean",
+                                 defaults::FREEZE_HASH_TABLES));
+
+  auto [text_col, text_type] = textDataType(data_types);
+  auto [target_col, target_type] = categoricalDataType(data_types);
+
+  auto tokenizer = std::make_shared<data::TextTokenizer>(
+      text_col, FEATURIZED_INDICES, FEATURIZED_VALUES,
+      pretrained_model->tokenizer()->tokenizer(),
+      pretrained_model->tokenizer()->encoder(),
+      pretrained_model->tokenizer()->lowercase(),
+      pretrained_model->tokenizer()->dim());
+
+  auto base_model = pretrained_model->model();
+
+  _featurizer = std::make_shared<Featurizer>(
+      tokenizer, tokenizer,
+      labelTransformation(target_col, target_type, n_target_classes,
+                          integer_target),
+      data::OutputColumnsList{
+          data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)},
+      data::OutputColumnsList{data::OutputColumns(
+          FEATURIZED_LABELS, utils::hasSoftmaxOutput(_classifier->model())
+                                 ? data::ValueFillType::SumToOne
+                                 : data::ValueFillType::Ones)},
+      delimiter, std::make_shared<data::State>(),
+      TextDatasetConfig(text_col, target_col, target_type->delimiter));
+}
+
 py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
                                 float learning_rate, uint32_t epochs,
                                 const std::vector<std::string>& train_metrics,
@@ -83,16 +226,21 @@ py::object UDTClassifier::train(const dataset::DataSourcePtr& data,
                                 const std::vector<std::string>& val_metrics,
                                 const std::vector<CallbackPtr>& callbacks,
                                 TrainOptions options,
-                                const bolt::DistributedCommPtr& comm) {
-  auto train_data_loader =
-      _featurizer->getDataLoader(data, options.batchSize(), /* shuffle= */ true,
-                                 options.verbose, options.shuffle_config);
+                                const bolt::DistributedCommPtr& comm,
+                                py::kwargs kwargs) {
+  auto splade_config = getSpladeConfig(kwargs);
+  bool splade_in_val = getSpladeValidationOption(kwargs);
+
+  auto train_data_loader = _featurizer->getDataLoader(
+      data, options.batchSize(), /* shuffle= */ true, options.verbose,
+      splade_config, options.shuffle_config);
 
   data::LoaderPtr val_data_loader;
   if (val_data) {
-    val_data_loader =
-        _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
-                                   /* shuffle= */ false, options.verbose);
+    val_data_loader = _featurizer->getDataLoader(
+        val_data, defaults::BATCH_SIZE,
+        /* shuffle= */ false, options.verbose,
+        splade_in_val ? splade_config : std::nullopt);
   }
 
   return _classifier->train(train_data_loader, learning_rate, epochs,
@@ -142,11 +290,12 @@ void UDTClassifier::setOutputSparsity(float sparsity,
 py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
                                    const std::vector<std::string>& metrics,
                                    bool sparse_inference, bool verbose,
-                                   std::optional<uint32_t> top_k) {
-  (void)top_k;
+                                   py::kwargs kwargs) {
+  auto splade_config = getSpladeConfig(kwargs);
 
-  auto dataset = _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
-                                            /* shuffle= */ false, verbose);
+  auto dataset =
+      _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
+                                 /* shuffle= */ false, verbose, splade_config);
 
   return _classifier->evaluate(dataset, metrics, sparse_inference, verbose);
 }
@@ -220,17 +369,22 @@ py::object UDTClassifier::coldstart(
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
     const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::DistributedCommPtr& comm) {
+    const bolt::DistributedCommPtr& comm, const py::kwargs& kwargs) {
+  auto splade_config = getSpladeConfig(kwargs);
+  auto splade_in_val = getSpladeValidationOption(kwargs);
+
   auto train_data_loader = _featurizer->getColdStartDataLoader(
       data, strong_column_names, weak_column_names, variable_length,
-      /* fast_approximation= */ false, options.batchSize(),
-      /* shuffle= */ true, options.verbose, options.shuffle_config);
+      /*splade_config=*/splade_config, /* fast_approximation= */ false,
+      options.batchSize(), /* shuffle= */ true, options.verbose,
+      options.shuffle_config);
 
   data::LoaderPtr val_data_loader;
   if (val_data) {
-    val_data_loader =
-        _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
-                                   /* shuffle= */ false, options.verbose);
+    val_data_loader = _featurizer->getDataLoader(
+        val_data, defaults::BATCH_SIZE,
+        /* shuffle= */ false, options.verbose,
+        splade_in_val ? splade_config : std::nullopt);
   }
 
   return _classifier->train(train_data_loader, learning_rate, epochs,

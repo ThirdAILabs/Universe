@@ -6,6 +6,7 @@
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/udt/UDT.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/detail/common.h>
@@ -51,7 +52,7 @@ std::shared_ptr<udt::UDT> makeUDT(
     const std::string& target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
-    const py::dict& options);
+    const PretrainedBasePtr& pretrained_model, const py::dict& options);
 
 std::shared_ptr<udt::UDT> makeQueryReformulation(
     std::string source_column, std::string target_column,
@@ -109,6 +110,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
+           py::arg("pretrained_model") = nullptr,
            py::arg("options") = py::dict(), docs::UDT_INIT,
            bolt::python::OutputRedirect())
       .def(py::init(&makeQueryReformulation), py::arg("source_column"),
@@ -142,7 +144,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("evaluate", &udt::UDT::evaluate, py::arg("data"),
            py::arg("metrics") = std::vector<std::string>{},
            py::arg("sparse_inference") = false, py::arg("verbose") = true,
-           py::arg("top_k") = std::nullopt, bolt::python::OutputRedirect())
+           bolt::python::OutputRedirect())
       .def("predict", &udt::UDT::predict, py::arg("sample"),
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false,
@@ -212,15 +214,21 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("force_non_empty") = true,
            py::arg("num_hashes") = std::nullopt)
       .def("associate", &udt::UDT::associate, py::arg("source_target_samples"),
-           py::arg("n_buckets"), py::arg("n_association_samples") = 16,
-           py::arg("n_balancing_samples") = 50,
-           py::arg("learning_rate") = 0.001, py::arg("epochs") = 3,
+           py::arg("n_buckets"),
+           py::arg("n_association_samples") =
+               udt::defaults::RLHF_N_FEEDBACK_SAMPLES,
+           py::arg("n_balancing_samples") =
+               udt::defaults::RLHF_N_BALANCING_SAMPLES,
+           py::arg("learning_rate") = udt::defaults::RLHF_LEARNING_RATE,
+           py::arg("epochs") = udt::defaults::RLHF_EPOCHS,
            py::arg("force_non_empty") = true,
            py::arg("batch_size") = udt::defaults::RLHF_BATCH_SIZE)
       .def("upvote", &udt::UDT::upvote, py::arg("source_target_samples"),
-           py::arg("n_upvote_samples") = 16,
-           py::arg("n_balancing_samples") = 50,
-           py::arg("learning_rate") = 0.001, py::arg("epochs") = 3,
+           py::arg("n_upvote_samples") = udt::defaults::RLHF_N_FEEDBACK_SAMPLES,
+           py::arg("n_balancing_samples") =
+               udt::defaults::RLHF_N_BALANCING_SAMPLES,
+           py::arg("learning_rate") = udt::defaults::RLHF_LEARNING_RATE,
+           py::arg("epochs") = udt::defaults::RLHF_EPOCHS,
            py::arg("batch_size") = udt::defaults::RLHF_BATCH_SIZE)
       .def("associate_train_data_source", &udt::UDT::associateTrain,
            py::arg("balancing_data"), py::arg("source_target_samples"),
@@ -233,6 +241,14 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("n_buckets"), py::arg("n_association_samples"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
            py::arg("options"))
+      .def("cold_start_with_balancing_samples",
+           &udt::UDT::coldStartWithBalancingSamples, py::arg("data"),
+           py::arg("strong_column_names"), py::arg("weak_column_names"),
+           py::arg("learning_rate"), py::arg("epochs"),
+           py::arg("train_metrics") = std::vector<std::string>{},
+           py::arg("callbacks") = std::vector<bolt::callbacks::CallbackPtr>{},
+           py::arg("batch_size") = std::nullopt, py::arg("verbose") = true,
+           py::arg("variable_length") = data::VariableLengthConfig())
       .def("enable_rlhf", &udt::UDT::enableRlhf,
            py::arg("num_balancing_docs") = udt::defaults::MAX_BALANCING_DOCS,
            py::arg("num_balancing_samples_per_doc") =
@@ -277,7 +293,17 @@ void defineAutomlInModule(py::module_& module) {
       .def_static("parallel_inference", &udt::UDT::parallelInference,
                   py::arg("models"), py::arg("batch"),
                   py::arg("sparse_inference") = false,
-                  py::arg("top_k") = std::nullopt);
+                  py::arg("top_k") = std::nullopt)
+      .def_static("label_probe_multiple_shards",
+                  &udt::UDT::labelProbeMultipleShards, py::arg("shards"),
+                  py::arg("batch"), py::arg("sparse_inference") = false,
+                  py::arg("top_k") = std::nullopt)
+      .def_static("label_probe_multiple_mach",
+                  &udt::UDT::labelProbeMultipleMach, py::arg("models"),
+                  py::arg("batch"), py::arg("sparse_inference") = false,
+                  py::arg("top_k") = std::nullopt)
+      .def_static("estimate_hash_table_size", &udt::UDT::estimateHashTableSize,
+                  py::arg("output_dim"), py::arg("sparsity") = std::nullopt);
 }
 
 void createUDTTypesSubmodule(py::module_& module) {
@@ -432,7 +458,7 @@ std::shared_ptr<udt::UDT> makeUDT(
     const std::string& target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
-    const py::dict& options) {
+    const PretrainedBasePtr& pretrained_model, const py::dict& options) {
   return std::make_shared<udt::UDT>(
       /* data_types = */ std::move(data_types),
       /* temporal_tracking_relationships = */ temporal_tracking_relationships,
@@ -442,6 +468,7 @@ std::shared_ptr<udt::UDT> makeUDT(
       /* time_granularity = */ std::move(time_granularity),
       /* lookahead = */ lookahead, /* delimiter = */ delimiter,
       /* model_config= */ model_config,
+      /* pretrained_model= */ pretrained_model,
       /* options = */ createArgumentMap(options));
 }
 

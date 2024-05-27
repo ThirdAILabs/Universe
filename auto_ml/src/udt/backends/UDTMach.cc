@@ -6,6 +6,7 @@
 #include <bolt/src/neuron_index/MachNeuronIndex.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <bolt/src/train/callbacks/LambdaOnStoppedCallback.h>
 #include <bolt/src/train/metrics/LossMetric.h>
 #include <bolt/src/train/metrics/MachPrecision.h>
 #include <bolt/src/train/metrics/MachRecall.h>
@@ -37,6 +38,7 @@
 #include <limits>
 #include <optional>
 #include <random>
+#include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -105,6 +107,10 @@ UDTMach::UDTMach(
   dataset::mach::MachIndexPtr mach_index = dataset::mach::MachIndex::make(
       /* num_buckets = */ num_buckets, /* num_hashes = */ num_hashes);
 
+  if (user_args.contains("mach_index_seed")) {
+    mach_index->setSeed(user_args.get<uint32_t>("mach_index_seed", "integer"));
+  }
+
   auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
       input_data_types, temporal_tracking_relationships,
       tabular_options.lookahead);
@@ -167,19 +173,24 @@ py::object UDTMach::train(const dataset::DataSourcePtr& data,
                           const std::vector<std::string>& val_metrics,
                           const std::vector<CallbackPtr>& callbacks,
                           TrainOptions options,
-                          const bolt::DistributedCommPtr& comm) {
+                          const bolt::DistributedCommPtr& comm,
+                          py::kwargs kwargs) {
   insertNewDocIds(data);
 
   addBalancingSamples(data);
 
-  auto train_data_loader =
-      _featurizer->getDataLoader(data, options.batchSize(), /* shuffle= */ true,
-                                 options.verbose, options.shuffle_config);
+  auto splade_config = getSpladeConfig(kwargs);
+  bool splade_in_val = getSpladeValidationOption(kwargs);
+
+  auto train_data_loader = _featurizer->getDataLoader(
+      data, options.batchSize(), /* shuffle= */ true, options.verbose,
+      splade_config, options.shuffle_config);
 
   data::LoaderPtr val_data_loader;
   if (val_data) {
     val_data_loader = _featurizer->getDataLoader(
-        val_data, defaults::BATCH_SIZE, /* shuffle= */ false, options.verbose);
+        val_data, defaults::BATCH_SIZE, /* shuffle= */ false, options.verbose,
+        splade_in_val ? splade_config : std::nullopt);
   }
 
   return _classifier->train(train_data_loader, learning_rate, epochs,
@@ -218,11 +229,12 @@ py::object UDTMach::trainWithHashes(const MapInputBatch& batch,
 py::object UDTMach::evaluate(const dataset::DataSourcePtr& data,
                              const std::vector<std::string>& metrics,
                              bool sparse_inference, bool verbose,
-                             std::optional<uint32_t> top_k) {
-  (void)top_k;
+                             py::kwargs kwargs) {
+  auto splade_config = getSpladeConfig(kwargs);
 
-  auto data_loader = _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
-                                                /* shuffle= */ false, verbose);
+  auto data_loader =
+      _featurizer->getDataLoader(data, defaults::BATCH_SIZE,
+                                 /* shuffle= */ false, verbose, splade_config);
 
   return _classifier->evaluate(data_loader, getMetrics(metrics, "val_"),
                                sparse_inference, verbose);
@@ -365,7 +377,7 @@ std::vector<std::vector<uint32_t>> UDTMach::predictHashesImpl(
     if (force_non_empty) {
       heap = getIndex()->topKNonEmptyBuckets(output, k);
     } else {
-      heap = output.findKLargestActivations(k);
+      heap = output.topKNeurons(k);
     }
 
     std::vector<uint32_t> hashes;
@@ -436,27 +448,43 @@ py::object UDTMach::coldstart(
     const std::vector<std::string>& train_metrics,
     const dataset::DataSourcePtr& val_data,
     const std::vector<std::string>& val_metrics,
-    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
-    const bolt::DistributedCommPtr& comm) {
+    const std::vector<CallbackPtr>& callbacks_in, TrainOptions options,
+    const bolt::DistributedCommPtr& comm, const py::kwargs& kwargs) {
   insertNewDocIds(data);
 
   addBalancingSamples(data, strong_column_names, weak_column_names,
                       variable_length);
 
+  auto splade_config = getSpladeConfig(kwargs);
+  auto splade_in_val = getSpladeValidationOption(kwargs);
+
   data::LoaderPtr val_data_loader;
   if (val_data) {
-    val_data_loader =
-        _featurizer->getDataLoader(val_data, defaults::BATCH_SIZE,
-                                   /* shuffle= */ false, options.verbose);
+    val_data_loader = _featurizer->getDataLoader(
+        val_data, defaults::BATCH_SIZE,
+        /* shuffle= */ false, options.verbose,
+        /*splade_config=*/splade_in_val ? splade_config : std::nullopt);
   }
 
+  bool stopped = false;
+
+  auto callbacks = callbacks_in;
+  callbacks.push_back(
+      std::make_shared<bolt::callbacks::LambdaOnStoppedCallback>(
+          bolt::callbacks::LambdaOnStoppedCallback(
+              [&stopped]() { stopped = true; })));
+
+  // TODO(Nicholas): make it so that the spade augmentation is only run once
+  // rather than for every epoch if variable length cold start is used.
   uint32_t epoch_step = variable_length.has_value() ? 1 : epochs;
+
   py::object history;
   for (uint32_t e = 0; e < epochs; e += epoch_step) {
     auto train_data_loader = _featurizer->getColdStartDataLoader(
         data, strong_column_names, weak_column_names,
-        /* variable_length= */ variable_length, /* fast_approximation= */
-        false, options.batchSize(), /* shuffle= */ true, options.verbose,
+        /* variable_length= */ variable_length,
+        /*splade_config=*/splade_config, /* fast_approximation= */ false,
+        options.batchSize(), /* shuffle= */ true, options.verbose,
         options.shuffle_config);
 
     history = _classifier->train(
@@ -467,6 +495,10 @@ py::object UDTMach::coldstart(
     data->restart();
     if (val_data_loader) {
       val_data_loader->restart();
+    }
+
+    if (stopped) {
+      break;
     }
   }
 
@@ -598,9 +630,8 @@ void UDTMach::introduceDocuments(
       if (load_balancing) {
         top_k_per_doc[label].push_back(scores->getVector(i).valueIndexPairs());
       } else {
-        top_k_per_doc[label].push_back(
-            priorityQueueToVector(scores->getVector(i).findKLargestActivations(
-                num_buckets_to_sample)));
+        top_k_per_doc[label].push_back(priorityQueueToVector(
+            scores->getVector(i).topKNeurons(num_buckets_to_sample)));
       }
     }
 
@@ -812,7 +843,7 @@ void UDTMach::introduceLabelHelper(
       top_ks.push_back(output->getVector(i).valueIndexPairs());
     } else {
       top_ks.push_back(priorityQueueToVector(
-          output->getVector(i).findKLargestActivations(num_buckets_to_sample)));
+          output->getVector(i).topKNeurons(num_buckets_to_sample)));
     }
   }
 
@@ -1000,10 +1031,15 @@ py::object UDTMach::associateColdStart(
 
   warnOnNonHashBasedMetrics(metrics);
 
-  // TODO(nicholas): make sure max_in_memory_batches is none
+  if (options.max_in_memory_batches) {
+    throw std::invalid_argument(
+        "Streaming is not supported for associate_train/associate_cold_start. "
+        "Please pass max_in_memory_batches=None.");
+  }
 
   auto featurized_data = _featurizer->featurizeDataset(
-      balancing_data, strong_column_names, weak_column_names);
+      balancing_data, strong_column_names, weak_column_names,
+      /*variable_length=*/std::nullopt);
 
   auto associate_samples =
       getAssociateSamples(rlhf_samples, n_buckets, n_association_samples);
@@ -1027,6 +1063,61 @@ py::object UDTMach::associateColdStart(
                     /* steps_per_validation= */ {},
                     /* use_sparsity_in_validation= */ false,
                     /* callbacks= */ {},
+                    /* autotune_rehash_rebuild= */ true,
+                    /* verbose= */ options.verbose,
+                    /* logging_interval= */ options.logging_interval);
+
+  return py::cast(output_metrics);
+}
+
+py::object UDTMach::coldStartWithBalancingSamples(
+    const dataset::DataSourcePtr& data,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& train_metrics,
+    const std::vector<CallbackPtr>& callbacks, TrainOptions options,
+    const std::optional<data::VariableLengthConfig>& variable_length) {
+  insertNewDocIds(data);
+  requireRLHFSampler();
+
+  addBalancingSamples(data, strong_column_names, weak_column_names,
+                      variable_length);
+
+  warnOnNonHashBasedMetrics(train_metrics);
+
+  if (options.max_in_memory_batches) {
+    throw std::invalid_argument(
+        "Streaming is not supported for cold_start_with_balancing_samples. "
+        "Please pass max_in_memory_batches=None.");
+  }
+
+  auto featurized_data = _featurizer->featurizeDataset(
+      data, strong_column_names, weak_column_names, variable_length);
+
+  data::ColumnMap balancing_data({});
+  if (featurized_data.numRows() < _balancing_samples->totalBalancingSamples()) {
+    balancing_data =
+        _balancing_samples->balancingSamples(featurized_data.numRows());
+  } else {
+    balancing_data = _balancing_samples->allBalancingSamples();
+  }
+
+  auto columns = featurized_data.concat(balancing_data);
+  columns.shuffle();
+
+  auto dataset = _featurizer->columnsToTensors(columns, options.batchSize());
+
+  bolt::Trainer trainer(_classifier->model());
+
+  auto output_metrics =
+      trainer.train(/* train_data= */ dataset,
+                    /* learning_rate= */ learning_rate, /* epochs= */ epochs,
+                    /* train_metrics= */ getMetrics(train_metrics, "train_"),
+                    /* validation_data= */ {},
+                    /* validation_metrics= */ {},
+                    /* steps_per_validation= */ {},
+                    /* use_sparsity_in_validation= */ false,
+                    /* callbacks= */ callbacks,
                     /* autotune_rehash_rebuild= */ true,
                     /* verbose= */ options.verbose,
                     /* logging_interval= */ options.logging_interval);

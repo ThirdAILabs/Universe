@@ -1,5 +1,6 @@
 #include "DataPython.h"
 #include <bolt/python_bindings/PybindUtils.h>
+#include <data/python_bindings/PyColumnMapIterator.h>
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/Loader.h>
 #include <data/src/TensorConversion.h>
@@ -12,7 +13,10 @@
 #include <data/src/transformations/DyadicInterval.h>
 #include <data/src/transformations/FeatureHash.h>
 #include <data/src/transformations/MachLabel.h>
+#include <data/src/transformations/NextWordPrediction.h>
+#include <data/src/transformations/NumericalTemporal.h>
 #include <data/src/transformations/Pipeline.h>
+#include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/StringConcat.h>
 #include <data/src/transformations/StringHash.h>
@@ -21,7 +25,11 @@
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/cold_start/ColdStartText.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
+#include <data/src/transformations/ner/NerDyadicDataProcessor.h>
+#include <data/src/transformations/ner/NerTokenFromStringArray.h>
+#include <data/src/transformations/ner/NerTokenizationUnigram.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
+#include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <pybind11/attr.h>
 #include <pybind11/detail/common.h>
@@ -35,6 +43,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 
 namespace thirdai::data::python {
 
@@ -69,14 +78,21 @@ void createDataSubmodule(py::module_& dataset_submodule) {
 
   createTransformationsSubmodule(dataset_submodule);
 
-  py::class_<ColumnMapIterator, ColumnMapIteratorPtr>(dataset_submodule,
-                                                      "ColumnMapIterator")
-      .def("next", &ColumnMapIterator::next);
+  py::class_<ColumnMapIterator, PyColumnMapIterator,
+             std::shared_ptr<ColumnMapIterator>>(dataset_submodule,
+                                                 "ColumnMapIterator")
+      .def(py::init<>())
+      .def("next", &ColumnMapIterator::next)
+      .def("resource_name", &ColumnMapIterator::resourceName)
+      .def("restart", &ColumnMapIterator::restart);
 
   py::class_<CsvIterator, std::shared_ptr<CsvIterator>, ColumnMapIterator>(
       dataset_submodule, "CsvIterator")
+      .def(py::init<const std::string&, char, size_t>(), py::arg("filename"),
+           py::arg("delimiter") = ',',
+           py::arg("rows_per_load") = ColumnMapIterator::DEFAULT_ROWS_PER_LOAD)
       .def(py::init<DataSourcePtr, char, size_t>(), py::arg("data_source"),
-           py::arg("delimiter"),
+           py::arg("delimiter") = ',',
            py::arg("rows_per_load") = ColumnMapIterator::DEFAULT_ROWS_PER_LOAD)
       .def_static("all", &CsvIterator::all, py::arg("data_source"),
                   py::arg("delimiter"));
@@ -86,6 +102,12 @@ void createDataSubmodule(py::module_& dataset_submodule) {
       .def(py::init<DataSourcePtr, std::vector<std::string>, size_t>(),
            py::arg("data_source"), py::arg("columns"),
            py::arg("rows_per_load") = ColumnMapIterator::DEFAULT_ROWS_PER_LOAD);
+
+  py::class_<TransformedIterator, std::shared_ptr<TransformedIterator>,
+             ColumnMapIterator>(dataset_submodule, "TransformedIterator")
+      .def(py::init<ColumnMapIteratorPtr, TransformationPtr, StatePtr>(),
+           py::arg("iter"), py::arg("transformation"),
+           py::arg("state") = nullptr);
 
   py::enum_<ValueFillType>(dataset_submodule, "ValueFillType")
       .value("Ones", ValueFillType::Ones)
@@ -181,6 +203,8 @@ auto decimalArrayColumnFromNumpy(const NumpyArray<float>& array,
 void createColumnsSubmodule(py::module_& dataset_submodule) {
   auto columns_submodule = dataset_submodule.def_submodule("columns");
 
+  columns_submodule.attr("MAX_DIM") = std::numeric_limits<uint32_t>::max();
+
   py::class_<Column, ColumnPtr>(columns_submodule, "Column")
       .def("dim", &Column::dim)
       .def("__len__", &Column::numRows);
@@ -232,6 +256,19 @@ void createColumnsSubmodule(py::module_& dataset_submodule) {
            py::return_value_policy::reference_internal)
       .def("data", &ArrayColumn<uint32_t>::data);
 
+  py::class_<ArrayColumn<std::string>, Column, ArrayColumnPtr<std::string>>(
+      columns_submodule, "StringArrayColumn")
+      .def(py::init(&ArrayColumn<std::string>::make), py::arg("data"),
+           py::arg("dim") = std::nullopt)
+      .def(
+          "__getitem__",
+          [](ArrayColumn<std::string>& self, size_t n) {
+            // Fetch row as vector of strings and return it directly
+            return self.row(n).toVector();
+          },
+          py::return_value_policy::reference_internal, py::arg("n"))
+      .def("data", &ArrayColumn<std::string>::data);
+
   py::class_<ArrayColumn<float>, Column, ArrayColumnPtr<float>>(
       columns_submodule, "DecimalArrayColumn")
       .def(py::init(&ArrayColumn<float>::make), py::arg("data"),
@@ -278,6 +315,13 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   py::class_<StringToTokenArray, Transformation,
              std::shared_ptr<StringToTokenArray>>(transformations_submodule,
                                                   "ToTokenArrays")
+      .def(py::init<std::string, std::string, char, std::optional<uint32_t>>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("delimiter"), py::arg("dim") = std::nullopt);
+
+  py::class_<StringToStringArray, Transformation,
+             std::shared_ptr<StringToStringArray>>(transformations_submodule,
+                                                   "ToStringArrays")
       .def(py::init<std::string, std::string, char, std::optional<uint32_t>>(),
            py::arg("input_column"), py::arg("output_column"),
            py::arg("delimiter"), py::arg("dim") = std::nullopt);
@@ -363,6 +407,17 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("should_update_history") = true,
            py::arg("include_current_row") = false, py::arg("time_lag") = 0);
 
+  py::class_<NumericalTemporal, Transformation,
+             std::shared_ptr<NumericalTemporal>>(transformations_submodule,
+                                                 "NumericalTemporal")
+      .def(py::init<std::string, std::string, std::string, std::string,
+                    std::string, size_t, int64_t, bool, bool, int64_t>(),
+           py::arg("user_column"), py::arg("value_column"),
+           py::arg("timestamp_column"), py::arg("output_column"),
+           py::arg("tracker_key"), py::arg("history_len"),
+           py::arg("interval_len"), py::arg("should_update_history") = true,
+           py::arg("include_current_row") = false, py::arg("interval_lag") = 0);
+
   py::class_<Date, Transformation, std::shared_ptr<Date>>(
       transformations_submodule, "Date")
       .def(py::init<std::string, std::string, std::string>(),
@@ -403,6 +458,13 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("row_id_salt") = global_random::nextSeed())
       .def("augment_map_input", &ColdStartTextAugmentation::augmentMapInput,
            py::arg("document"));
+
+  py::class_<NextWordPrediction, Transformation,
+             std::shared_ptr<NextWordPrediction>>(transformations_submodule,
+                                                  "NextWordPrediction")
+      .def(py::init<std::string, std::string, std::string>(),
+           py::arg("input_column"), py::arg("context_column"),
+           py::arg("target_column"));
 #endif
 
   py::class_<VariableLengthConfig,
@@ -464,7 +526,67 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("n_intervals"), py::arg("is_bidirectional") = false)
       .def("inference_featurization", &DyadicInterval::inferenceFeaturization,
            py::arg("columns"));
+
+  py::class_<NerTokenizerUnigram, Transformation,
+             std::shared_ptr<NerTokenizerUnigram>>(transformations_submodule,
+                                                   "NerTokenizerUnigram")
+      .def(py::init<std::string, std::string, std::optional<std::string>,
+                    std::optional<uint32_t>, uint32_t,
+                    std::vector<dataset::TextTokenizerPtr>,
+                    std::optional<FeatureEnhancementConfig>,
+                    std::optional<std::unordered_map<std::string, uint32_t>>>(),
+           py::arg("tokens_column"), py::arg("featurized_sentence_column"),
+           py::arg("target_column"), py::arg("target_dim"),
+           py::arg("dyadic_num_intervals"), py::arg("target_word_tokenizers"),
+           py::arg("feature_enhancement_config") = std::nullopt,
+           py::arg("tag_to_label") = std::nullopt)
+      .def("process_token", &NerTokenizerUnigram::processToken,
+           py::arg("tokens"), py::arg("index"));
 #endif
+
+  py::class_<FeatureEnhancementConfig,
+             std::shared_ptr<FeatureEnhancementConfig>>(
+      transformations_submodule, "NerFeatureConfig")
+      .def(py::init<bool, bool, bool, bool, bool, bool, bool>(),
+           py::arg("names"), py::arg("location_features"),
+           py::arg("organization_features"), py::arg("case_features"),
+           py::arg("numerical_features"), py::arg("emails"),
+           py::arg("phone_numbers"));
+
+  py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>>(
+      transformations_submodule, "SpladeConfig")
+      .def(py::init<std::string, std::string, std::optional<size_t>,
+                    std::optional<float>, bool, size_t, bool,
+                    std::optional<uint32_t>>(),
+           py::arg("model_checkpoint"), py::arg("tokenizer_vocab"),
+           py::arg("n_augmented_tokens") = 100,
+           py::arg("augmentation_frac") = std::nullopt,
+           py::arg("filter_tokens") = true, py::arg("batch_size") = 4096,
+           py::arg("lowercase") = true, py::arg("strong_sample_override") = 7)
+      .def(bolt::python::getPickleFunction<SpladeConfig>());
+
+  py::class_<SpladeAugmentation, Transformation,
+             std::shared_ptr<SpladeAugmentation>>(transformations_submodule,
+                                                  "SpladeAugmentation")
+      .def(py::init<std::string, std::string, const SpladeConfig&>(),
+           py::arg("input_column"), py::arg("output_column"), py::arg("config"))
+      .def(py::init<std::string, std::string, bolt::ModelPtr,
+                    dataset::WordpieceTokenizerPtr, std::optional<size_t>,
+                    std::optional<float>, bool, size_t>(),
+           py::arg("input_column"), py::arg("output_column"), py::arg("model"),
+           py::arg("tokenizer"), py::arg("n_augmented_tokens") = 100,
+           py::arg("augmentation_frac") = std::nullopt,
+           py::arg("filter_tokens") = true, py::arg("batch_size") = 4096);
+
+  py::class_<NerTokenFromStringArray, Transformation,
+             std::shared_ptr<NerTokenFromStringArray>>(
+      transformations_submodule, "NerTokenFromStringArray")
+      .def(py::init<std::string, std::string, std::string, std::string,
+                    std::optional<std::string>,
+                    std::optional<std::unordered_map<std::string, uint32_t>>>(),
+           py::arg("source_column"), py::arg("token_column"),
+           py::arg("token_next_column"), py::arg("token_previous_column"),
+           py::arg("target_column"), py::arg("tag_to_label"));
 }
 
 }  // namespace thirdai::data::python
