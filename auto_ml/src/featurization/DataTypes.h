@@ -11,6 +11,7 @@
 #include <cereal/types/utility.hpp>
 #include <cereal/types/variant.hpp>
 #include <cereal/types/vector.hpp>
+#include <data/src/transformations/ner/NerDyadicDataProcessor.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
@@ -232,11 +233,12 @@ struct TokenTagsDataType : DataType {
       std::vector<dataset::TextTokenizerPtr> target_tokenizers =
           {std::make_shared<dataset::NaiveSplitTokenizer>(),
            std::make_shared<dataset::CharKGramTokenizer>(4)},
-      std::optional<data::FeatureEnhancementConfig> feature_config =
-          data::FeatureEnhancementConfig())
-      : tags(std::move(tags)),
-        target_tokenizers(std::move(target_tokenizers)),
-        feature_config(std::move(feature_config)) {}
+      bool enhancement = true)
+      : tags(std::move(tags)), target_tokenizers(std::move(target_tokenizers)) {
+    if (enhancement) {
+      feature_config = data::FeatureEnhancementConfig();
+    }
+  }
 
   std::string toString() const final { return R"({"type": "token tags"})"; }
 
