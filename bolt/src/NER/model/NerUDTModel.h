@@ -100,7 +100,7 @@ class NerUDTModel final : public NerModelInterface {
   NerUDTModel() = default;
   ~NerUDTModel() override = default;
 
- private:
+//  private:
   void initializeNER(uint32_t fhr, uint32_t number_labels);
 
   bolt::ModelPtr _bolt_model;
