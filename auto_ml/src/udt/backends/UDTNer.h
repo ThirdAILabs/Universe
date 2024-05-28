@@ -42,6 +42,10 @@ class UDTNer final : public UDTBackend {
 
   ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
 
+  static std::unique_ptr<UDTNer> fromArchive(const ar::Archive& archive);
+
+  static std::string type() { return "udt_ner"; }
+
  private:
   data::LoaderPtr getDataLoader(const dataset::DataSourcePtr& data,
                                 size_t batch_size, bool shuffle) const;

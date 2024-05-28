@@ -293,6 +293,8 @@ data::LoaderPtr UDTNer::getDataLoader(const dataset::DataSourcePtr& data,
 ar::ConstArchivePtr UDTNer::toArchive(bool with_optimizer) const {
   auto map = ar::Map::make();
 
+  map->set("type", ar::str(type()));
+
   map->set("model", _model->toArchive(with_optimizer));
 
   map->set("supervised_transform", _supervised_transform->toArchive());
@@ -306,6 +308,10 @@ ar::ConstArchivePtr UDTNer::toArchive(bool with_optimizer) const {
   map->set("label_to_tag", ar::vecStr(_label_to_tag));
 
   return map;
+}
+
+std::unique_ptr<UDTNer> UDTNer::fromArchive(const ar::Archive& archive) {
+  return std::make_unique<UDTNer>(archive);
 }
 
 UDTNer::UDTNer(const ar::Archive& archive)
