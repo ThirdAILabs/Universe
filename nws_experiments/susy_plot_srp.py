@@ -1,9 +1,10 @@
-from thirdai.bolt import SRPKernel, SRP
+from thirdai.bolt import SRPKernel, SRP, Theta
 from exp_utils import run
 import pandas as pd
 
 power = 1
 kernel = SRPKernel(power=power)
+distance = Theta()
 
 def make_hash_factory(rows):
     def factory(input_dim):
@@ -40,4 +41,4 @@ train_outputs = outputs[:TRAIN_SIZE]
 
 test_inputs = inputs[TRAIN_SIZE:]
 
-run(hash_factories, kernel, train_inputs, train_outputs, test_inputs)
+run(hash_factories, kernel, distance, train_inputs, train_outputs, test_inputs)

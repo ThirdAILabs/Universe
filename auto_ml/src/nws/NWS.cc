@@ -14,7 +14,7 @@ std::vector<uint32_t> SRP::hash(const std::vector<float>& input) const {
   return output;
 }
 
-std::vector<uint32_t> L2::hash(const std::vector<float> &input) const {
+std::vector<uint32_t> L2Hash::hash(const std::vector<float> &input) const {
   std::vector<uint32_t> hashes(_rows);
   for (uint32_t row = 0; row < _rows; row++) {
     std::vector<uint32_t> row_hashes(_hashes_per_row, 0);
@@ -35,7 +35,7 @@ std::vector<uint32_t> L2::hash(const std::vector<float> &input) const {
   return hashes;
 }
 
-std::vector<std::vector<float>> L2::make_projections(uint32_t input_dim, uint32_t hashes_per_row, uint32_t rows, uint32_t seed) {
+std::vector<std::vector<float>> L2Hash::make_projections(uint32_t input_dim, uint32_t hashes_per_row, uint32_t rows, uint32_t seed) {
   std::mt19937 rng;
   rng.seed(seed);
   std::normal_distribution<float> distribution(/* mean= */ 0.0, /* stddev= */ 1.0);
@@ -50,7 +50,7 @@ std::vector<std::vector<float>> L2::make_projections(uint32_t input_dim, uint32_
   return projections;
 }
 
-std::vector<float> L2::make_biases(uint32_t hashes_per_row, uint32_t rows, float scale, uint32_t seed) {
+std::vector<float> L2Hash::make_biases(uint32_t hashes_per_row, uint32_t rows, float scale, uint32_t seed) {
   std::mt19937 rng;
   rng.seed(seed * 3);  // Just so that it uses a different seed than the projections.
   std::uniform_real_distribution<float> distribution(/* min= */ 0, /* max= */ scale);
@@ -63,7 +63,7 @@ std::vector<float> L2::make_biases(uint32_t hashes_per_row, uint32_t rows, float
   return biases;
 }
 
-float L2::dot(const std::vector<float>& a, const std::vector<float>& b) {
+float L2Hash::dot(const std::vector<float>& a, const std::vector<float>& b) {
   assert(a.size() == b.size());
   float prod = 0;
   for (uint32_t i = 0; i < a.size(); i++) {

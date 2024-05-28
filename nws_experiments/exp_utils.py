@@ -1,6 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from thirdai.bolt import NWS, NWE, Hash, Kernel
+from thirdai.bolt import NWS, NWE, SKA, Hash, Kernel, Distance
 import typing as tp
 from tqdm import tqdm
 
@@ -36,7 +36,13 @@ def train_and_predict_rs(kernel: Kernel, train_inputs: np.array, train_outputs: 
     return train_and_predict_nwe(kernel, train_inputs, train_outputs, test_inputs)
 
 
-def run(hash_factories: tp.List[tp.Callable[[int], Hash]], kernel: Kernel, train_inputs: np.array, train_outputs: np.array, test_inputs: np.array):
+def train_and_predict_ska(ska: SKA, kernel: Kernel, test_inputs: np.array, num_samples: int):
+    ska.use(num_samples)
+    train_inputs, train_outputs = ska.used_samples()
+    return train_and_predict_nwe(kernel, train_inputs, train_outputs, test_inputs)
+
+
+def run(hash_factories: tp.List[tp.Callable[[int], Hash]], kernel: Kernel, distance: Distance, train_inputs: np.array, train_outputs: np.array, test_inputs: np.array):
     input_dim = train_inputs.shape[-1]
     print("Input dim:", input_dim)
 
@@ -48,17 +54,24 @@ def run(hash_factories: tp.List[tp.Callable[[int], Hash]], kernel: Kernel, train
     # 4 = 4 bytes in a float, 2 = number of race sketches in NWS
     mems = [h.rows() * h.range() * 4 * 2 for h in hashes]
     
-    print("Approximating truth with random samples")
+    print("Approximating truth with random samples...")
     # +1 for output
     num_samples_for_mems = [int(mem / 4 / (input_dim + 1)) for mem in mems]
     random_approxes = [train_and_predict_rs(kernel, train_inputs, train_outputs, test_inputs, num_samples) for num_samples in num_samples_for_mems]
     random_mems = [min(num_rows, len(train_inputs)) * 4 * (input_dim + 1) for num_rows in num_samples_for_mems]
+
+    print("Approximating truth with SKA samples...")
+    ska = SKA(distance, train_inputs, train_outputs)
+    ska_approxes = [train_and_predict_ska(ska, kernel, test_inputs, num_samples) for num_samples in tqdm(num_samples_for_mems)]
+    ska_mems = [min(num_rows, len(train_inputs)) * 4 * (input_dim + 1) for num_rows in num_samples_for_mems]
     
     print("Plotting...")
     maes = [mae(truth, approx) for approx in approxes]
     random_maes = [mae(truth, random_approx) for random_approx in random_approxes]
+    ska_maes = [mae(truth, ska_approx) for ska_approx in ska_approxes]
     plt.plot(mems, maes, '.-', label="NWS")
     plt.plot(random_mems, random_maes, '.-', label="Random Sampling")
+    plt.plot(ska_mems, ska_maes, '.-', label="Sparse Kernel Approximation")
     plt.xlabel("Memory (Bytes)")
     plt.ylabel("MAE")
     plt.legend()
@@ -66,6 +79,7 @@ def run(hash_factories: tp.List[tp.Callable[[int], Hash]], kernel: Kernel, train
     
     plt.plot(mems, maes, '.-', label="NWS")
     plt.plot(random_mems, random_maes, '.-', label="Random Sampling")
+    plt.plot(ska_mems, ska_maes, '.-', label="Sparse Kernel Approximation")
     plt.xlabel("Memory (Bytes)")
     plt.ylabel("Log MAE")
     plt.yscale("log")
@@ -74,8 +88,10 @@ def run(hash_factories: tp.List[tp.Callable[[int], Hash]], kernel: Kernel, train
     
     mapes = [mape(truth, approx) for approx in approxes]
     random_mapes = [mape(truth, random_approx) for random_approx in random_approxes]
+    ska_mapes = [mape(truth, ska_approx) for ska_approx in ska_approxes]
     plt.plot(mems, mapes, '.-', label="NWS")
     plt.plot(random_mems, random_mapes, '.-', label="Random Sampling")
+    plt.plot(ska_mems, ska_mapes, '.-', label="Sparse Kernel Approximation")
     plt.xlabel("Memory (Bytes)")
     plt.ylabel("MAPE")
     plt.legend()
@@ -83,6 +99,7 @@ def run(hash_factories: tp.List[tp.Callable[[int], Hash]], kernel: Kernel, train
     
     plt.plot(mems, mapes, '.-', label="NWS")
     plt.plot(random_mems, random_mapes, '.-', label="Random Sampling")
+    plt.plot(ska_mems, ska_mapes, '.-', label="Sparse Kernel Approximation")
     plt.xlabel("Memory (Bytes)")
     plt.ylabel("Log MAPE")
     plt.yscale("log")
