@@ -257,10 +257,12 @@ std::string Model::summary(bool print) const {
   summary << "\n===================== Model =====================\n";
   for (const auto& input : _inputs) {
     input->summary(summary);
+    summary << " [Trainable=" << input->op()->isTrainable() << "]";
     summary << "\n";
   }
   for (const auto& comp : _computation_order) {
     comp->summary(summary);
+    summary << " [Trainable=" << comp->op()->isTrainable() << "]";
     summary << "\n";
   }
   summary << "Total Paramters: " << numParams() << "\n";

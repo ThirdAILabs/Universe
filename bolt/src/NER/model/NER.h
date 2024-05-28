@@ -42,7 +42,7 @@ class NER : public std::enable_shared_from_this<NER> {
       std::unordered_map<std::string, uint32_t> tag_to_label,
       const std::optional<data::FeatureEnhancementConfig>&
           feature_enhancement_config = std::nullopt,
-          bool is_emb_trainable=false) {
+      bool is_emb_trainable = false) {
     auto ner_model = load(model_path);
     auto ner_backend = ner_model->getBackend();
     if (ner_backend->type() == "bolt_ner") {

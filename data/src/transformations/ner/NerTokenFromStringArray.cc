@@ -60,6 +60,12 @@ ColumnMap NerTokenFromStringArray::apply(ColumnMap columns,
             (target + 1 < row_tokens.size()) ? row_tokens[target + 1] : "198";
         tokens_behind[sample_offset] =
             (target > 0) ? row_tokens[target - 1] : "198";
+        for(uint32_t cur=target+2; cur<std::min(row_tokens.size(),target+5); cur+=1){
+          tokens_front[sample_offset] = tokens_front[sample_offset] + " " + row_tokens[cur];
+        }
+        for(uint32_t cur=target-2; cur>std::max(static_cast<size_t>(0),target-5); cur-=1){
+          tokens_front[sample_offset] = row_tokens[cur] + " " + tokens_front[sample_offset];
+        }
         tokens[sample_offset] = row_tokens[target];
         if (_target_column && _tag_to_label.has_value()) {
           const auto& tag_label_map = _tag_to_label.value();

@@ -111,8 +111,8 @@ NerBoltModel::NerBoltModel(
       _tags_column(std::move(tags_column)),
       _tag_to_label(std::move(tag_to_label)),
       _vocab_size(pretrained_model->getBoltModel()->inputDims()[0]) {
-  _bolt_model =
-      initializeBoltModel(pretrained_model, _tag_to_label, _vocab_size, is_emb_trainable);
+  _bolt_model = initializeBoltModel(pretrained_model, _tag_to_label,
+                                    _vocab_size, is_emb_trainable);
   auto train_transforms = getTransformations(/*inference=*/false);
   auto inference_transforms = getTransformations(/*inference=*/true);
   auto bolt_inputs = {data::OutputColumns("tokens"),

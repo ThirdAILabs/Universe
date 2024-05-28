@@ -78,12 +78,12 @@ class NerDataSource(PyDataSource):
                         f"{self.tags_column} or {self.tokens_column} doesn't exist in the column, line: {line}"
                     )
                 if self.pretrained:
-                    transformed_token = [
-                        self.transform.process_token([token], 0)[2:]
-                        for token in json_obj[self.tokens_column]
-                    ]
+                    # transformed_token = [
+                    #     self.transform.process_token([token], 0)[2:]
+                    #     for token in json_obj[self.tokens_column]
+                    # ]
                     json_obj[self.tokens_column] = tokenize_text(
-                        self.tokenizer, transformed_token
+                        self.tokenizer, json_obj[self.tokens_column]
                     )
 
                 data = json.dumps(json_obj)
@@ -92,15 +92,15 @@ class NerDataSource(PyDataSource):
 
     def inference_featurizer(self, sentence_tokens_list):
         if self.pretrained:
-            transformed_tokens = [
-                [
-                    self.transform.process_token([token], 0)[2:]
-                    for token in sentence_tokens
-                ]
-                for sentence_tokens in sentence_tokens_list
-            ]
+            # transformed_tokens = [
+            #     [
+            #         self.transform.process_token([token], 0)[2:]
+            #         for token in sentence_tokens
+            #     ]
+            #     for sentence_tokens in sentence_tokens_list
+            # ]
             return [
-                tokenize_text(self.tokenizer, tokens) for tokens in transformed_tokens
+                tokenize_text(self.tokenizer, tokens) for tokens in sentence_tokens_list
             ]
         return sentence_tokens_list
 
