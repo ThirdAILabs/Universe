@@ -279,8 +279,6 @@ std::vector<SentenceTags> UDTNer::predictTags(
 
 data::LoaderPtr UDTNer::getDataLoader(const dataset::DataSourcePtr& data,
                                       size_t batch_size, bool shuffle) const {
-  std::cerr << "tokens: " << _tokens_column << " tags: " << _tags_column
-            << std::endl;
   auto data_iter =
       data::JsonIterator::make(data, {_tokens_column, _tags_column}, 1000);
   return data::Loader::make(data_iter, _supervised_transform, nullptr,

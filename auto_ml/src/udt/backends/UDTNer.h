@@ -5,6 +5,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <string>
 #include <unordered_map>
+#include <auto_ml/src/udt/utils/Models.h>
 
 namespace thirdai::automl::udt {
 
@@ -39,6 +40,16 @@ class UDTNer final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
+
+  ModelPtr model() const final { return _model; }
+
+  void setModel(const ModelPtr& model) final {
+    ModelPtr& curr_model = _model;
+
+    utils::verifyCanSetModel(curr_model, model);
+
+    curr_model = model;
+  }
 
   ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
 
