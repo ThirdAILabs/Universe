@@ -120,7 +120,7 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
   }
 
   uint32_t emb_dim = args.get<uint32_t>("embedding_dimension", "integer",
-                                        defaults::HIDDEN_DIM);
+                                        defaults::NER_EMB_DIM);
 
   _model = buildModel(input_dim, emb_dim, target->tags.size(), std::nullopt);
 

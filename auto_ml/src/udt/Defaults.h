@@ -139,4 +139,7 @@ constexpr bool BEAM_SEARCH_WIDTH = 3;
 constexpr bool STOP_IF_FOUND = false;
 
 constexpr uint32_t NER_DYADIC_INTERVALS = 3;
+
+constexpr uint32_t NER_EMB_DIM = 2000;
+
 }  // namespace thirdai::automl::udt::defaults
