@@ -125,14 +125,20 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
   _model = buildModel(input_dim, emb_dim, target->tags.size(), std::nullopt);
 
   _supervised_transform = makeTransformation(
-      /*inference=*/false, _tags_column, _tokens_column, _label_to_tag,
-      input_dim, defaults::NER_DYADIC_INTERVALS, target->target_tokenizers,
-      target->feature_config);
+      /*inference=*/false, /*tags_column=*/_tags_column,
+      /*tokens_column=*/_tokens_column, _label_to_tag,
+      /*input_dim=*/input_dim,
+      /*dyadic_num_intervals=*/defaults::NER_DYADIC_INTERVALS,
+      /*target_word_tokenizers=*/target->target_tokenizers,
+      /*feature_config=*/target->feature_config);
 
   _inference_transform = makeTransformation(
-      /*inference=*/true, _tags_column, _tokens_column, _label_to_tag,
-      input_dim, defaults::NER_DYADIC_INTERVALS, target->target_tokenizers,
-      target->feature_config);
+      /*inference=*/true, /*tags_column=*/_tags_column,
+      /*tokens_column=*/_tokens_column, _label_to_tag,
+      /*input_dim=*/input_dim,
+      /*dyadic_num_intervals=*/defaults::NER_DYADIC_INTERVALS,
+      /*target_word_tokenizers=*/target->target_tokenizers,
+      /*feature_config=*/target->feature_config);
 }
 
 py::object UDTNer::train(const dataset::DataSourcePtr& data,
