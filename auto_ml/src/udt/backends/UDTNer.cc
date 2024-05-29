@@ -69,25 +69,26 @@ data::TransformationPtr makeTransformation(
   }
 
   auto transform =
-      data::Pipeline::make({std::make_shared<data::NerTokenizerUnigram>(
-          /*tokens_column=*/tokens_column,
-          /*featurized_sentence_column=*/NER_FEATURIZED_SENTENCE,
-          /*target_column=*/target_column,
-          /*target_dim=*/target_dim,
-          /*dyadic_num_intervals=*/dyadic_num_intervals,
-          /*target_word_tokenizers=*/target_word_tokenizers,
-          /*feature_enhancement_config=*/feature_config,
-          /*tag_to_label=*/tag_to_label)});
-  transform = transform->then(std::make_shared<data::TextTokenizer>(
-      /*input_column=*/NER_FEATURIZED_SENTENCE,
-      /*output_indices=*/NER_FEATURIZED_SENTENCE,
-      /*output_values=*/std::nullopt,
-      /*tokenizer=*/
-      std::make_shared<dataset::NaiveSplitTokenizer>(
-          dataset::NaiveSplitTokenizer()),
-      /*encoder=*/
-      std::make_shared<dataset::NGramEncoder>(dataset::NGramEncoder(1)), false,
-      input_dim));
+      data::Pipeline::make()
+          ->then(std::make_shared<data::NerTokenizerUnigram>(
+              /*tokens_column=*/tokens_column,
+              /*featurized_sentence_column=*/NER_FEATURIZED_SENTENCE,
+              /*target_column=*/target_column,
+              /*target_dim=*/target_dim,
+              /*dyadic_num_intervals=*/dyadic_num_intervals,
+              /*target_word_tokenizers=*/target_word_tokenizers,
+              /*feature_enhancement_config=*/feature_config,
+              /*tag_to_label=*/tag_to_label))
+          ->then(std::make_shared<data::TextTokenizer>(
+              /*input_column=*/NER_FEATURIZED_SENTENCE,
+              /*output_indices=*/NER_FEATURIZED_SENTENCE,
+              /*output_values=*/std::nullopt,
+              /*tokenizer=*/
+              std::make_shared<dataset::NaiveSplitTokenizer>(
+                  dataset::NaiveSplitTokenizer()),
+              /*encoder=*/std::make_shared<dataset::NGramEncoder>(1),
+              /*lowercase=*/false, /*dim=*/input_dim));
+
   return transform;
 }
 
