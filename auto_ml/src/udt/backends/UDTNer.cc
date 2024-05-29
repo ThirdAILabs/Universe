@@ -50,46 +50,46 @@ bolt::ModelPtr buildModel(
   return bolt::Model::make({input}, {output}, {loss});
 }
 
-// data::TransformationPtr makeTransformation(
-//     bool inference, const std::string& tags_column,
-//     const std::string& tokens_column, const std::vector<std::string>& tags,
-//     size_t input_dim, uint32_t dyadic_num_intervals,
-//     const std::vector<dataset::TextTokenizerPtr>& target_word_tokenizers,
-//     const std::optional<data::FeatureEnhancementConfig>& feature_config) {
-//   std::optional<std::string> target_column = tags_column;
-//   std::optional<size_t> target_dim = tags.size();
-//   if (inference) {
-//     target_column = std::nullopt;
-//     target_dim = std::nullopt;
-//   }
+data::TransformationPtr makeTransformation(
+    bool inference, const std::string& tags_column,
+    const std::string& tokens_column, const std::vector<std::string>& tags,
+    size_t input_dim, uint32_t dyadic_num_intervals,
+    const std::vector<dataset::TextTokenizerPtr>& target_word_tokenizers,
+    const std::optional<data::FeatureEnhancementConfig>& feature_config) {
+  std::optional<std::string> target_column = tags_column;
+  std::optional<size_t> target_dim = tags.size();
+  if (inference) {
+    target_column = std::nullopt;
+    target_dim = std::nullopt;
+  }
 
-//   std::unordered_map<std::string, uint32_t> tag_to_label;
-//   for (size_t i = 0; i < tags.size(); i++) {
-//     tag_to_label[tags[i]] = i;
-//   }
+  std::unordered_map<std::string, uint32_t> tag_to_label;
+  for (size_t i = 0; i < tags.size(); i++) {
+    tag_to_label[tags[i]] = i;
+  }
 
-//   auto transform =
-//       data::Pipeline::make({std::make_shared<data::NerTokenizerUnigram>(
-//           /*tokens_column=*/tokens_column,
-//           /*featurized_sentence_column=*/NER_FEATURIZED_SENTENCE,
-//           /*target_column=*/target_column,
-//           /*target_dim=*/target_dim,
-//           /*dyadic_num_intervals=*/dyadic_num_intervals,
-//           /*target_word_tokenizers=*/target_word_tokenizers,
-//           /*feature_enhancement_config=*/feature_config,
-//           /*tag_to_label=*/tag_to_label)});
-//   transform = transform->then(std::make_shared<data::TextTokenizer>(
-//       /*input_column=*/NER_FEATURIZED_SENTENCE,
-//       /*output_indices=*/NER_FEATURIZED_SENTENCE,
-//       /*output_values=*/std::nullopt,
-//       /*tokenizer=*/
-//       std::make_shared<dataset::NaiveSplitTokenizer>(
-//           dataset::NaiveSplitTokenizer()),
-//       /*encoder=*/
-//       std::make_shared<dataset::NGramEncoder>(dataset::NGramEncoder(1)),
-//       false, input_dim));
-//   return transform;
-// }
+  auto transform =
+      data::Pipeline::make({std::make_shared<data::NerTokenizerUnigram>(
+          /*tokens_column=*/tokens_column,
+          /*featurized_sentence_column=*/NER_FEATURIZED_SENTENCE,
+          /*target_column=*/target_column,
+          /*target_dim=*/target_dim,
+          /*dyadic_num_intervals=*/dyadic_num_intervals,
+          /*target_word_tokenizers=*/target_word_tokenizers,
+          /*feature_enhancement_config=*/feature_config,
+          /*tag_to_label=*/tag_to_label)});
+  transform = transform->then(std::make_shared<data::TextTokenizer>(
+      /*input_column=*/NER_FEATURIZED_SENTENCE,
+      /*output_indices=*/NER_FEATURIZED_SENTENCE,
+      /*output_values=*/std::nullopt,
+      /*tokenizer=*/
+      std::make_shared<dataset::NaiveSplitTokenizer>(
+          dataset::NaiveSplitTokenizer()),
+      /*encoder=*/
+      std::make_shared<dataset::NGramEncoder>(dataset::NGramEncoder(1)), false,
+      input_dim));
+  return transform;
+}
 
 std::string tokensColumn(ColumnDataTypes data_types,
                          const std::string& target) {
@@ -130,28 +130,28 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
     tag_to_label[target->tags[i]] = i;
   }
 
-  bolt::NER::NerUDTModel old(_tokens_column, _tags_column, tag_to_label,
-                             target->target_tokenizers, target->feature_config);
+  // bolt::NER::NerUDTModel old(_tokens_column, _tags_column, tag_to_label,
+  //  target->target_tokenizers, target->feature_config);
 
-  _supervised_transform = old._classifier->_train_transforms;
-  _inference_transform = old._classifier->_inference_transforms;
+  // _supervised_transform = old._classifier->_train_transforms;
+  // _inference_transform = old._classifier->_inference_transforms;
 
-  _bolt_inputs = old._classifier->_bolt_inputs;
-  // _supervised_transform = makeTransformation(
-  //     /*inference=*/false, /*tags_column=*/_tags_column,
-  //     /*tokens_column=*/_tokens_column, _label_to_tag,
-  //     /*input_dim=*/input_dim,
-  //     /*dyadic_num_intervals=*/defaults::NER_DYADIC_INTERVALS,
-  //     /*target_word_tokenizers=*/target->target_tokenizers,
-  //     /*feature_config=*/target->feature_config);
+  // _bolt_inputs = old._classifier->_bolt_inputs;
+  _supervised_transform = makeTransformation(
+      /*inference=*/false, /*tags_column=*/_tags_column,
+      /*tokens_column=*/_tokens_column, _label_to_tag,
+      /*input_dim=*/input_dim,
+      /*dyadic_num_intervals=*/defaults::NER_DYADIC_INTERVALS,
+      /*target_word_tokenizers=*/target->target_tokenizers,
+      /*feature_config=*/target->feature_config);
 
-  // _inference_transform = makeTransformation(
-  //     /*inference=*/true, /*tags_column=*/_tags_column,
-  //     /*tokens_column=*/_tokens_column, _label_to_tag,
-  //     /*input_dim=*/input_dim,
-  //     /*dyadic_num_intervals=*/defaults::NER_DYADIC_INTERVALS,
-  //     /*target_word_tokenizers=*/target->target_tokenizers,
-  //     /*feature_config=*/target->feature_config);
+  _inference_transform = makeTransformation(
+      /*inference=*/true, /*tags_column=*/_tags_column,
+      /*tokens_column=*/_tokens_column, _label_to_tag,
+      /*input_dim=*/input_dim,
+      /*dyadic_num_intervals=*/defaults::NER_DYADIC_INTERVALS,
+      /*target_word_tokenizers=*/target->target_tokenizers,
+      /*feature_config=*/target->feature_config);
 }
 
 py::object UDTNer::train(const dataset::DataSourcePtr& data,
