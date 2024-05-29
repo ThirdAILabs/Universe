@@ -30,6 +30,12 @@ void NerUDTModel::initializeNER(uint32_t fhr, uint32_t number_labels) {
   _classifier = std::make_shared<NerClassifier>(
       _bolt_model, bolt_inputs, train_transforms, inference_transforms,
       _tokens_column, _tags_column);
+
+  if (_feature_enhancement_config.has_value()) {
+    std::cout << "has feature enhancement config" << std::endl;
+  } else {
+    std::cout << "does not have feature enhancement config" << std::endl;
+  }
 }
 
 bolt::ModelPtr NerUDTModel::initializeBoltModel(

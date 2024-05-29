@@ -1,4 +1,5 @@
 #include "NerDyadicDataProcessor.h"
+#include "utils.h"
 #include <archive/src/Archive.h>
 #include <archive/src/List.h>
 #include <data/src/transformations/TextTokenizer.h>
@@ -9,119 +10,8 @@
 #include <cstdint>
 #include <optional>
 #include <regex>
-#include <unordered_set>
 
 namespace thirdai::data {
-
-std::vector<std::string> toLowerCaseTokens(
-    const std::vector<std::string>& tokens) {
-  std::vector<std::string> lower_tokens(tokens.size());
-  std::transform(tokens.begin(), tokens.end(), lower_tokens.begin(),
-                 [](const std::string& token) {
-                   std::string lower_token;
-                   lower_token.reserve(token.size());
-                   std::transform(token.begin(), token.end(),
-                                  std::back_inserter(lower_token), ::tolower);
-                   return lower_token;
-                 });
-  return lower_tokens;
-}
-
-bool containsKeywordInRange(const std::vector<std::string>& tokens,
-                            size_t start, size_t end,
-                            const std::unordered_set<std::string>& keywords) {
-  return std::any_of(tokens.begin() + start, tokens.begin() + end,
-                     [&keywords](const std::string& token) {
-                       return keywords.find(token) != keywords.end();
-                     });
-}
-
-std::string stripNonDigits(const std::string& input) {
-  std::string digits;
-  for (char ch : input) {
-    if (std::isdigit(ch)) {
-      digits += ch;
-    }
-  }
-  return digits;
-}
-
-bool containsAlphabets(const std::string& input) {
-  return std::any_of(input.begin(), input.end(), ::isalpha);
-}
-
-bool luhnCheck(const std::string& number) {
-  int sum = 0;
-  bool alternate = false;
-  for (int i = number.size() - 1; i >= 0; --i) {
-    int n = number[i] - '0';
-    if (alternate) {
-      n *= 2;
-      if (n > 9) {
-        n -= 9;
-      }
-    }
-    sum += n;
-    alternate = !alternate;
-  }
-  return (sum % 10 == 0);
-}
-
-std::string getNumericalFeatures(const std::string& input) {
-  std::string strippedInput = stripNonDigits(input);
-
-  if (!strippedInput.empty()) {
-    if (luhnCheck(strippedInput)) {
-      return "IS_ACCOUNT_NUMBER ";
-    }
-
-    if (containsAlphabets(input) && input.size() >= 6) {
-      return "MAYBE_UIN";
-    }
-
-    if ((strippedInput.size() >= 9 && strippedInput.size() <= 12) ||
-        input[0] == '+' || input[0] == '(' || input.back() == ')') {  // NOLINT
-      return "MAYBE_PHONE ";
-    }
-
-    if (strippedInput.size() == input.size() && strippedInput.size() >= 5) {
-      return "IS_NUMBER_OR_UIN ";
-    }
-
-    if ((strippedInput.size() <= 2 && std::stoi(strippedInput) <= 31) ||
-        strippedInput.size() == 4 || strippedInput.size() == 8) {
-      return "A_DATE ";
-    }
-
-    if (strippedInput.size() <= 6 && strippedInput.size() >= 5) {
-      return "MAYBE_ZIP_CODE";
-    }
-  }
-  return "";
-}
-
-bool isValidEmail(const std::string& email) {
-  const std::regex email_regex(
-      R"((^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z,.]{2,}$))");
-  return std::regex_match(email, email_regex);
-}
-
-bool isValidDate(const std::string& token) {
-  // Check if the token matches the regex pattern
-  const std::regex month(
-      R"((^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|may|june|july|august|september|october|november|december)))");
-  return std::regex_match(token, month);
-}
-
-std::string trimPunctuation(const std::string& str) {
-  const std::string punctuation = ".,?-!;:";
-  size_t start = str.find_first_not_of(punctuation);
-  if (start == std::string::npos) {
-    return str;
-  }
-  size_t end = str.find_last_not_of(punctuation);
-  return str.substr(start, end - start + 1);
-}
 
 std::string NerDyadicDataProcessor::getExtraFeatures(
     const std::vector<std::string>& tokens, uint32_t index) const {
@@ -134,24 +24,44 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
   std::string current_token = trimPunctuation(tokens[index]);
   auto lower_cased_tokens = toLowerCaseTokens(tokens);
 
-  if (isValidDate(lower_cased_tokens[index])) {
+  size_t start = (index > 1) ? (index - 2) : 0;
+  size_t end = std::min(tokens.size(), static_cast<size_t>(index + 3));
+  size_t start_long =
+      (index > 5) ? (index - 6)
+                  : 0;  // we need more context for phone numbers or uins
+
+  if (std::regex_match(lower_cased_tokens[index],
+                       _feature_enhancement_config->month_regex) ||
+      std::regex_match(lower_cased_tokens[index],
+                       _feature_enhancement_config->date_regex)) {
     extra_features += "A_VALID_DATE ";
     return extra_features;
   }
 
   if (_feature_enhancement_config->find_emails) {
-    if (isValidEmail(lower_cased_tokens[index])) {
+    if (std::regex_match(lower_cased_tokens[index],
+                         _feature_enhancement_config->email_regex)) {
       extra_features += "IS_VALID_EMAIL ";
       return extra_features;
     }
   }
 
   if (_feature_enhancement_config->enhance_numerical_features) {
-    auto numerical_features = getNumericalFeatures(current_token);
-    if (!numerical_features.empty()) {
-      extra_features += numerical_features;
+    std::string surrounding_numbers =
+        find_contiguous_numbers(lower_cased_tokens, index);
+    if (!surrounding_numbers.empty()) {
+      extra_features = getNumericalFeatures(surrounding_numbers);
+    } else {
+      auto numerical_features = getNumericalFeatures(current_token);
+      if (!numerical_features.empty()) {
+        extra_features += numerical_features;
+      }
+    }
+
+    if (extra_features == "IS_ACCOUNT_NUMBER" || extra_features == "IS_PHONE") {
       return extra_features;
     }
+    extra_features += " ";
   }
 
   if (_feature_enhancement_config->enhance_case_features) {
@@ -177,21 +87,24 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
     }
   }
 
-  size_t start = (index > 1) ? (index - 2) : 0;
-  size_t end = std::min(tokens.size(), static_cast<size_t>(index + 3));
+  if (containsKeywordInRange(
+          lower_cased_tokens, start_long, end,
+          _feature_enhancement_config->identification_keywords)) {
+    extra_features += "CONTAINS_IDENTIFICATION_KEYWORDS ";
+  }
 
   if (_feature_enhancement_config->enhance_names &&
       containsKeywordInRange(lower_cased_tokens, start, end,
                              _feature_enhancement_config->name_keywords)) {
     extra_features += "CONTAINS_NAMED_WORDS ";
-    return extra_features;
+    // return extra_features;
   }
 
   if (_feature_enhancement_config->enhance_location_features &&
       containsKeywordInRange(lower_cased_tokens, start, end,
                              _feature_enhancement_config->location_keywords)) {
     extra_features += "CONTAINS_LOCATION_WORDS ";
-    return extra_features;
+    // return extra_features;
   }
 
   if (_feature_enhancement_config->enhance_organization_features &&
@@ -200,14 +113,10 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
           _feature_enhancement_config->organization_keywords)) {
     extra_features += "CONTAINS_ORGANIZATION_WORDS ";
   }
-
-  size_t start_long =
-      (index > 5) ? (index - 6) : 0;  // we need more context for phone numbers
   if (_feature_enhancement_config->find_phonenumbers &&
       containsKeywordInRange(lower_cased_tokens, start_long, end,
                              _feature_enhancement_config->contact_keywords)) {
     extra_features += "CONTAINS_PHONE_WORDS_LONG ";
-    return extra_features;
   }
 
   return extra_features;
