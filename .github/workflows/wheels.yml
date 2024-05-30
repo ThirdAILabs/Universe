@@ -86,7 +86,7 @@ jobs:
           rm -rf llvm-project
 
       - name: Build and test wheels
-        uses: pypa/cibuildwheel@v2.9.0
+        uses: pypa/cibuildwheel@v2.18.0
         env:
 
           # We need this to get Openssl1.1 working on Manylinux (which has a 
@@ -177,13 +177,6 @@ jobs:
 
     steps:
     - uses: actions/setup-python@v2
-      with:
-        python-version: |
-            3.8
-            3.9
-            3.10
-            3.11
-            3.12
 
     - uses: actions/download-artifact@v2
       with:
