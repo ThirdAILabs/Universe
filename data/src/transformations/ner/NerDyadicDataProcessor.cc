@@ -167,7 +167,9 @@ std::string getNumericalFeatures(const std::string& input) {
     }
 
     if ((strippedInput.size() <= 2 && std::stoi(strippedInput) <= 31) ||
-        strippedInput.size() == 4) {
+        (strippedInput.size() == 4 &&
+         (std::stoi(strippedInput.substr(0, 2)) <= 21 ||
+          std::stoi(strippedInput.substr(0, 2)) >= 18))) {
       return "A_DATE";
     }
 
