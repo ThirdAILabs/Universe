@@ -1,5 +1,4 @@
 #include "UDTNer.h"
-#include <bolt/src/NER/model/NerUDTModel.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
@@ -131,13 +130,6 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
     tag_to_label[target->tags[i]] = i;
   }
 
-  // bolt::NER::NerUDTModel old(_tokens_column, _tags_column, tag_to_label,
-  //  target->target_tokenizers, target->feature_config);
-
-  // _supervised_transform = old._classifier->_train_transforms;
-  // _inference_transform = old._classifier->_inference_transforms;
-
-  // _bolt_inputs = old._classifier->_bolt_inputs;
   _supervised_transform = makeTransformation(
       /*inference=*/false, /*tags_column=*/_tags_column,
       /*tokens_column=*/_tokens_column, _label_to_tag,

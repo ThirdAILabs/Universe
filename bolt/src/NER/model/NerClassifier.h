@@ -43,7 +43,7 @@ class NerClassifier {
       const std::unordered_map<uint32_t, std::string>& label_to_tag_map,
       const std::unordered_map<std::string, uint32_t>& tag_to_label_map) const;
 
-//  private:
+ private:
   bolt::ModelPtr _bolt_model;
   data::TransformationPtr _train_transforms, _inference_transforms;
   data::OutputColumnsList _bolt_inputs;
