@@ -1,0 +1,156 @@
+name: Build Linux x86_64 Wheels
+
+# Kills old jobs from the same pr if we push a new commit
+# See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# Run on pushes and releases. The actual upload will only happen on a 
+# release.
+# Note this action does not ever upload to the main Pypi repo. For now, do that
+# by downloading the build artifacts and doing it manually. See 
+# https://www.notion.so/Deploy-our-package-to-pypi-60d3c539e4fd4250897af043a329d08f
+# for more details.
+on: 
+  push: 
+    branches: [main]
+    tags: [ 'v*.*.*' ]
+  workflow_dispatch:  
+
+jobs:
+  build_wheels:
+    runs-on: ubuntu-latest-8-cores
+
+    steps:
+      - uses: actions/checkout@v2
+        with:           
+          submodules: 'recursive'
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+
+      - name: Inject local version identifier for non tag builds
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        shell: bash
+        run: |-
+          echo "THIRDAI_BUILD_IDENTIFIER=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Build and test wheels
+        uses: pypa/cibuildwheel@v2.9.0
+        env:
+
+          # We need this to get Openssl1.1 working on Manylinux (which has a 
+          # CentOS base image). See
+          # https://github.com/facebook/folly/issues/1762
+          CIBW_ENVIRONMENT_LINUX: >
+            CMAKE_ARGS="-DOPENSSL_ROOT_DIR:PATH=/usr/lib64/openssl11;/usr/include/openssl11"
+            THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
+         
+          CIBW_BEFORE_BUILD_LINUX: >
+            yum update -y && yum clean all &&
+            yum install openssl11-devel -y &&
+            yum install -y libxslt-devel libxml2-devel
+
+          # Online compile cpython wheels (pytorch does this too), no big 
+          # advantage to JIT compilation of python since most of our processing
+          # happens in C++ (it can actually make it slower!). Also, on some
+          # platforms numpy isn't available so our tests don't work.
+          CIBW_BUILD: "cp*manylinux_x86_64"
+          CIBW_BUILD_VERBOSITY: 3
+
+          CIBW_BEFORE_TEST_LINUX: yum install golang libreoffice -y
+          CIBW_TEST_EXTRAS: "test"
+          CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
+
+          # Skip building on CPython <3.8 on the Mac
+          # 3.11 (brought about by cibuildwheel upgrade to 2.9.0) is skipped as
+          # of now because ray is unsupported. We expect ray to be present to
+          # test our distributed pipeline.
+          #
+          # TODO(any): A more future proof solution when stuff starts working.
+          CIBW_SKIP: "cp36-* cp37-*"
+
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v2
+        with:
+          path: ./wheelhouse/*.whl
+      
+      - name: Notify slack fail
+        if: failure() && github.event_name == 'release' && github.event.action == 'published'
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel_id: pypi_package_releases
+          status: FAILED
+          color: danger
+
+
+  upload_to_test_pypi:
+    name: Upload to test pypi
+    needs: [build_wheels]
+    runs-on: ubuntu-latest
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+
+    steps:
+    - uses: actions/setup-python@v2
+
+    - uses: actions/download-artifact@v2
+      with:
+        name: artifact
+        path: dist
+
+    - uses: pypa/gh-action-pypi-publish@v1.5.0
+      with:
+        user: __token__
+        password: ${{ secrets.TEST_PYPI_TOKEN }}
+        repository_url: https://test.pypi.org/legacy/
+    
+    - name: Notify slack fail
+      if: failure()
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@v1
+      with:
+        channel_id: pypi_package_releases
+        status: FAILED
+        color: danger
+
+  upload_to_real_pypi:
+    name: Upload to real pypi
+    needs: [upload_to_test_pypi]
+    runs-on: ubuntu-latest
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+
+    steps:
+    - uses: actions/setup-python@v2
+
+    - uses: actions/download-artifact@v2
+      with:
+        name: artifact
+        path: dist
+
+    - uses: pypa/gh-action-pypi-publish@v1.5.0
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_TOKEN }}
+
+    - name: Notify slack success  # Ref: https://github.com/marketplace/actions/slack-notify-build
+      if: success()
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@v1
+      with:
+        channel_id: pypi_package_releases
+        status: SUCCESS
+        color: good
+
+    - name: Notify slack fail
+      if: failure()
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@v1
+      with:
+        channel_id: pypi_package_releases
+        status: FAILED
+        color: danger
