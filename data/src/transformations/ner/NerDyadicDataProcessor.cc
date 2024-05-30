@@ -23,8 +23,11 @@ inline std::string trimPunctuation(const std::string& str) {
   return str.substr(start, end - start + 1);
 }
 
-inline std::vector<std::string> toLowerCaseTokens(
+inline std::vector<std::string> cleanAndLowerCase(
     const std::vector<std::string>& tokens) {
+  /*
+   * Converts the tokens to lower case and trims punctuations.
+   */
   std::vector<std::string> lower_tokens(tokens.size());
   std::transform(tokens.begin(), tokens.end(), lower_tokens.begin(),
                  [](const std::string& token) {
@@ -68,6 +71,10 @@ inline bool is_number(const std::string& s) {
 }
 
 inline bool luhnCheck(const std::string& number) {
+  /*
+   * Checks whether the number being passed satisifies the luhn's check. This is
+   * useful for detecting credit card numbers.
+   */
   int sum = 0;
   bool alternate = false;
   for (int i = number.size() - 1; i >= 0; --i) {
@@ -86,6 +93,11 @@ inline bool luhnCheck(const std::string& number) {
 
 inline std::string find_contiguous_numbers(const std::vector<std::string>& v,
                                            uint32_t index, uint32_t k = 3) {
+  /*
+   * Returns the surrounding numbers around the target token as a space
+   * seperated string. This is useful when we have tokens of the form 1234 5678
+   * 9101.
+   */
   if (index >= static_cast<uint32_t>(v.size())) {
     return "";
   }
@@ -128,11 +140,6 @@ inline std::string find_contiguous_numbers(const std::vector<std::string>& v,
     result += s;
   }
 
-  // Remove trailing space
-  if (!result.empty()) {
-    result.pop_back();
-  }
-
   return result;
 }
 
@@ -141,6 +148,9 @@ inline std::string getNumericalFeatures(const std::string& input) {
 
   if (!strippedInput.empty()) {
     if (luhnCheck(strippedInput) || strippedInput.size() > 12) {
+      /*
+       * Useful for credit cards or iban numbers or other account numbers.
+       */
       return "IS_ACCOUNT_NUMBER";
     }
 
@@ -177,8 +187,9 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
 
   std::string extra_features;
 
+  // clean the tokens to be able to match regex and apply heuristics
   std::string current_token = trimPunctuation(tokens[index]);
-  auto lower_cased_tokens = toLowerCaseTokens(tokens);
+  auto lower_cased_tokens = cleanAndLowerCase(tokens);
 
   size_t start = (index > 1) ? (index - 2) : 0;
   size_t end = std::min(tokens.size(), static_cast<size_t>(index + 3));
@@ -253,14 +264,12 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
       containsKeywordInRange(lower_cased_tokens, start, end,
                              _feature_enhancement_config->name_keywords)) {
     extra_features += "CONTAINS_NAMED_WORDS ";
-    // return extra_features;
   }
 
   if (_feature_enhancement_config->enhance_location_features &&
       containsKeywordInRange(lower_cased_tokens, start, end,
                              _feature_enhancement_config->location_keywords)) {
     extra_features += "CONTAINS_LOCATION_WORDS ";
-    // return extra_features;
   }
 
   if (_feature_enhancement_config->enhance_organization_features &&
