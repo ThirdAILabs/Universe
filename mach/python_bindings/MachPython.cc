@@ -7,6 +7,7 @@
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
+#include <mach/src/EnsembleSearch.h>
 #include <mach/src/MachConfig.h>
 #include <mach/src/MachRetriever.h>
 #include <pybind11/pytypes.h>
@@ -179,7 +180,8 @@ void defineMach(py::module_& module) {
       .def("mach_memory_params", &MachConfig::machMemoryParams,
            py::arg("max_memory_ids"), py::arg("max_memory_samples_per_id"))
       .def("freeze_hash_tables_epoch", &MachConfig::freezeHashTablesEpoch,
-           py::arg("epoch"));
+           py::arg("epoch"))
+      .def("index_seed", &MachConfig::indexSeed, py::arg("seed"));
 
   py::class_<MachRetriever, MachRetrieverPtr>(module, "MachRetriever")
 #if THIRDAI_EXPOSE_ALL
@@ -260,7 +262,12 @@ void defineMach(py::module_& module) {
            py::arg("batch_size") = defaults::RLHF_BATCH_SIZE)
       .def("save", &MachRetriever::save, py::arg("filename"),
            py::arg("with_optimizer") = false)
-      .def_static("load", &MachRetriever::load, py::arg("filename"));
+      .def_static("load", &MachRetriever::load, py::arg("filename"))
+      .def_static("ensemble_search", &EnsembleSearch::searchEnsemble,
+                  py::arg("retrievers"), py::arg("queries"), py::arg("top_k"))
+      .def_static("ensemble_rank", &EnsembleSearch::rankEnsemble,
+                  py::arg("retrievers"), py::arg("queries"),
+                  py::arg("candidates"), py::arg("top_k"));
 }
 
 }  // namespace thirdai::mach::python

@@ -48,7 +48,11 @@ struct EvaluateOptions {
   bool use_sparsity = false;
 };
 
+class EnsembleSearch;
+
 class MachRetriever {
+  friend EnsembleSearch;
+
  public:
   explicit MachRetriever(const MachConfig& config);
 
