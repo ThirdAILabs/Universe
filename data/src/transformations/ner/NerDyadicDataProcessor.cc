@@ -1,5 +1,4 @@
 #include "NerDyadicDataProcessor.h"
-#include "utils.h"
 #include <archive/src/Archive.h>
 #include <archive/src/List.h>
 #include <data/src/transformations/TextTokenizer.h>
