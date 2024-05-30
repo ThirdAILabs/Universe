@@ -14,7 +14,7 @@ concurrency:
 # for more details.
 on: 
   push: 
-    branches: [main]
+    branches: [main, split-wheel-building]
     tags: [ 'v*.*.*' ]
   workflow_dispatch:  
 
