@@ -112,8 +112,6 @@ class NerDyadicDataProcessor
   std::string _target_prefix = "t_";
   std::string _dyadic_previous_prefix = "pp_";
   std::string _dyadic_next_prefix = "np_";
-
-  dataset::TextTokenizerPtr _sentence_tokenizer =
-      std::make_shared<dataset::NaiveSplitTokenizer>(' ');
 };
+
 }  // namespace thirdai::data

@@ -38,10 +38,6 @@ class NerTokenizerUnigram final : public Transformation {
     return _processor.processToken(tokens, index);
   }
 
-  std::string getFeaturizedIndicesColumn() const {
-    return _featurized_tokens_indices_column;
-  }
-
   uint32_t findTagValueForString(const std::string& tag) const {
     if (!_tag_to_label.has_value()) {
       throw std::logic_error("Tag to Label is None");
@@ -59,8 +55,6 @@ class NerTokenizerUnigram final : public Transformation {
    * _tokens_column : the column containing the string tokens
    * _target_column : the column containing the target tags
    * _target_dim : the number of total different labels
-   * _featurized_tokens_indices_column : this column contains the tokens after
-   * tokenizing the _featurized_sentence_column
    * _tokenization_transformation : the transformation used to tokenize the
    * featurized sentences
    */
@@ -70,12 +64,8 @@ class NerTokenizerUnigram final : public Transformation {
   std::optional<uint32_t> _target_dim;
 
   NerDyadicDataProcessor _processor;
-  std::string _featurized_tokens_indices_column =
-      "featurized_tokens_indices_column";
-
-  // TODO(Shubh) : Add support for depuplicating the tokens by using indices and
-  // values pair.
 
   std::optional<std::unordered_map<std::string, uint32_t>> _tag_to_label;
 };
+
 }  // namespace thirdai::data

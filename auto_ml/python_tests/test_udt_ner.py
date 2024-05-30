@@ -92,9 +92,9 @@ def test_udt_ner(ner_dataset):
 
     assert metrics["val_categorical_accuracy"][-1] >= 0.9
 
-    acc = evaluate(model, test)
-    print(f"before save {acc=}")
-    assert acc > 0.9
+    acc_before_save = evaluate(model, test)
+    print(f"{acc_before_save=}")
+    assert acc_before_save > 0.9
 
     save_path = "udt_ner_model.bolt"
     model.save(save_path)
@@ -102,12 +102,12 @@ def test_udt_ner(ner_dataset):
     model = bolt.UniversalDeepTransformer.load(save_path)
     os.remove(save_path)
 
-    acc = evaluate(model, test)
-    print(f"after load {acc=}")
-    assert acc > 0.9
+    acc_after_load = evaluate(model, test)
+    print(f"{acc_after_load=}")
+    assert acc_after_load > 0.9
 
     model.train(test, epochs=1, learning_rate=0.001)
 
-    acc = evaluate(model, test)
-    print(f"after finetune {acc=}")
-    assert acc > 0.9
+    acc_after_finetune = evaluate(model, test)
+    print(f"{acc_after_finetune=}")
+    assert acc_after_finetune > 0.9

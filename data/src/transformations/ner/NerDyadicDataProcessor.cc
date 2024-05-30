@@ -323,6 +323,10 @@ ar::ConstArchivePtr NerDyadicDataProcessor::toArchive() const {
              _feature_enhancement_config->toArchive());
   }
 
+  map->set("target_prefix", ar::str(_target_prefix));
+  map->set("dyadic_previous_prefix", ar::str(_dyadic_previous_prefix));
+  map->set("dyadic_next_prefix", ar::str(_dyadic_next_prefix));
+
   return map;
 }
 
@@ -338,5 +342,10 @@ NerDyadicDataProcessor::NerDyadicDataProcessor(const ar::Archive& archive) {
   } else {
     _feature_enhancement_config = std::nullopt;
   }
+
+  _target_prefix = archive.str("target_prefix");
+  _dyadic_previous_prefix = archive.str("dyadic_previous_prefix");
+  _dyadic_next_prefix = archive.str("dyadic_next_prefix");
 }
+
 }  // namespace thirdai::data
