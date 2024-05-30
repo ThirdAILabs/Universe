@@ -127,8 +127,8 @@ class MachEnsemble(Retriever):
 
         retrievers.sort(key=lambda x: x[0])
 
-        ids, retrievers = list(zip(*retrievers))
+        ids, retrievers = tuple(zip(*retrievers))
 
-        assert ids == list(range(len(ids))), "Malformed retriever ids in ensemble."
+        assert ids == tuple(range(len(ids))), "Malformed retriever ids in ensemble."
 
         return MachEnsemble(retrievers=retrievers)
