@@ -12,7 +12,7 @@
 
 namespace thirdai::data {
 
-inline std::string trimPunctuation(const std::string& str) {
+std::string trimPunctuation(const std::string& str) {
   const std::string punctuation = ".,?-!;:";
   size_t start = str.find_first_not_of(punctuation);
   if (start == std::string::npos) {
@@ -22,7 +22,7 @@ inline std::string trimPunctuation(const std::string& str) {
   return str.substr(start, end - start + 1);
 }
 
-inline std::vector<std::string> cleanAndLowerCase(
+std::vector<std::string> cleanAndLowerCase(
     const std::vector<std::string>& tokens) {
   /*
    * Converts the tokens to lower case and trims punctuations.
@@ -42,16 +42,16 @@ inline std::vector<std::string> cleanAndLowerCase(
   return lower_tokens;
 }
 
-inline bool containsKeywordInRange(
-    const std::vector<std::string>& tokens, size_t start, size_t end,
-    const std::unordered_set<std::string>& keywords) {
+bool containsKeywordInRange(const std::vector<std::string>& tokens,
+                            size_t start, size_t end,
+                            const std::unordered_set<std::string>& keywords) {
   return std::any_of(tokens.begin() + start, tokens.begin() + end,
                      [&keywords](const std::string& token) {
                        return keywords.find(token) != keywords.end();
                      });
 }
 
-inline std::string stripNonDigits(const std::string& input) {
+std::string stripNonDigits(const std::string& input) {
   std::string digits;
   for (char ch : input) {
     if (std::isdigit(ch)) {
@@ -61,15 +61,15 @@ inline std::string stripNonDigits(const std::string& input) {
   return digits;
 }
 
-inline bool containsAlphabets(const std::string& input) {
+bool containsAlphabets(const std::string& input) {
   return std::any_of(input.begin(), input.end(), ::isalpha);
 }
 
-inline bool is_number(const std::string& s) {
+bool is_number(const std::string& s) {
   return std::all_of(s.begin(), s.end(), ::isdigit);
 }
 
-inline bool luhnCheck(const std::string& number) {
+bool luhnCheck(const std::string& number) {
   /*
    * Checks whether the number being passed satisifies the luhn's check. This is
    * useful for detecting credit card numbers.
@@ -90,8 +90,8 @@ inline bool luhnCheck(const std::string& number) {
   return (sum % 10 == 0);
 }
 
-inline std::string find_contiguous_numbers(const std::vector<std::string>& v,
-                                           uint32_t index, uint32_t k = 3) {
+std::string find_contiguous_numbers(const std::vector<std::string>& v,
+                                    uint32_t index, uint32_t k = 3) {
   /*
    * Returns the surrounding numbers around the target token as a space
    * seperated string. This is useful when we have tokens of the form 1234 5678
@@ -142,7 +142,7 @@ inline std::string find_contiguous_numbers(const std::vector<std::string>& v,
   return result;
 }
 
-inline std::string getNumericalFeatures(const std::string& input) {
+std::string getNumericalFeatures(const std::string& input) {
   std::string strippedInput = stripNonDigits(input);
 
   if (!strippedInput.empty()) {
