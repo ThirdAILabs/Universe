@@ -122,7 +122,13 @@ class MachEnsemble(Retriever):
         retrievers = []
         for file in sorted(os.listdir(path)):
             if match := re.match(r"mach_(\d+)", file):
-                assert int(match.group(1)) == len(retrievers)
-                retrievers.append(Mach.load(os.path.join(path, file)))
+                retriever_id = int(match.group(1))
+                retrievers.append((retriever_id, Mach.load(os.path.join(path, file))))
+
+        retrievers.sort(key=lambda x: x[0])
+
+        ids, retrievers = list(zip(*retrievers))
+
+        assert ids == list(range(len(ids))), "Malformed retriever ids in ensemble."
 
         return MachEnsemble(retrievers=retrievers)
