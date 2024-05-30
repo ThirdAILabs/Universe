@@ -56,6 +56,25 @@ def ner_dataset():
             os.remove(file)
 
 
+def evaluate(model, test):
+    correct = 0
+    total = 0
+    for line in open(test):
+        data = json.loads(line)
+
+        predicted_tags = model.predict({TOKENS: " ".join(data[TOKENS])})
+        predicted_tags = [x[0][0] for x in predicted_tags]
+
+        assert len(predicted_tags) == len(data[TAGS])
+        for tag, expected_tag in zip(predicted_tags, data[TAGS]):
+            if expected_tag != "0":
+                if tag == expected_tag:
+                    correct += 1
+                total += 1
+
+    return correct / total
+
+
 def test_udt_ner(ner_dataset):
     train, test = ner_dataset
 
@@ -73,21 +92,22 @@ def test_udt_ner(ner_dataset):
 
     assert metrics["val_categorical_accuracy"][-1] >= 0.9
 
-    correct = 0
-    total = 0
-    for line in open(test):
-        data = json.loads(line)
+    acc = evaluate(model, test)
+    print(f"before save {acc=}")
+    assert acc > 0.9
 
-        predicted_tags = model.predict({TOKENS: " ".join(data[TOKENS])})
-        predicted_tags = [x[0][0] for x in predicted_tags]
+    save_path = "udt_ner_model.bolt"
+    model.save(save_path)
 
-        assert len(predicted_tags) == len(data[TAGS])
-        for tag, expected_tag in zip(predicted_tags, data[TAGS]):
-            if expected_tag != "0":
-                if tag == expected_tag:
-                    correct += 1
-                total += 1
+    model = bolt.UniversalDeepTransformer.load(save_path)
+    os.remove(save_path)
 
-    acc = correct / total
-    print(f"{acc=}")
+    acc = evaluate(model, test)
+    print(f"after load {acc=}")
+    assert acc > 0.9
+
+    model.train(test, epochs=1, learning_rate=0.001)
+
+    acc = evaluate(model, test)
+    print(f"after finetune {acc=}")
     assert acc > 0.9
