@@ -9,12 +9,24 @@
 #include <cstdint>
 #include <optional>
 #include <regex>
-#include <unordered_set>
 
 namespace thirdai::data {
 
-std::vector<std::string> toLowerCaseTokens(
+std::string trimPunctuation(const std::string& str) {
+  const std::string punctuation = ".,?-!;:";
+  size_t start = str.find_first_not_of(punctuation);
+  if (start == std::string::npos) {
+    return str;
+  }
+  size_t end = str.find_last_not_of(punctuation);
+  return str.substr(start, end - start + 1);
+}
+
+std::vector<std::string> cleanAndLowerCase(
     const std::vector<std::string>& tokens) {
+  /*
+   * Converts the tokens to lower case and trims punctuations.
+   */
   std::vector<std::string> lower_tokens(tokens.size());
   std::transform(tokens.begin(), tokens.end(), lower_tokens.begin(),
                  [](const std::string& token) {
@@ -24,6 +36,9 @@ std::vector<std::string> toLowerCaseTokens(
                                   std::back_inserter(lower_token), ::tolower);
                    return lower_token;
                  });
+  for (auto& token : lower_tokens) {
+    token = trimPunctuation(token);
+  }
   return lower_tokens;
 }
 
@@ -50,7 +65,15 @@ bool containsAlphabets(const std::string& input) {
   return std::any_of(input.begin(), input.end(), ::isalpha);
 }
 
+bool is_number(const std::string& s) {
+  return std::all_of(s.begin(), s.end(), ::isdigit);
+}
+
 bool luhnCheck(const std::string& number) {
+  /*
+   * Checks whether the number being passed satisifies the luhn's check. This is
+   * useful for detecting credit card numbers.
+   */
   int sum = 0;
   bool alternate = false;
   for (int i = number.size() - 1; i >= 0; --i) {
@@ -67,30 +90,87 @@ bool luhnCheck(const std::string& number) {
   return (sum % 10 == 0);
 }
 
+std::string find_contiguous_numbers(const std::vector<std::string>& v,
+                                    uint32_t index, uint32_t k = 3) {
+  /*
+   * Returns the surrounding numbers around the target token as a space
+   * seperated string. This is useful when we have tokens of the form 1234 5678
+   * 9101.
+   */
+  if (index >= static_cast<uint32_t>(v.size())) {
+    return "";
+  }
+
+  if (!is_number(v[index])) {
+    return "";
+  }
+
+  int start = index > k ? index - k : 0;
+  int end = std::min(static_cast<uint32_t>(v.size()) - 1, index + k);
+
+  std::vector<std::string> left_window, right_window;
+  for (int i = index - 1; i >= start; --i) {
+    if (is_number(v[i])) {
+      left_window.push_back(v[i]);
+    } else {
+      break;
+    }
+  }
+
+  std::reverse(left_window.begin(), left_window.end());
+
+  for (int i = index + 1; i <= end; ++i) {
+    if (is_number(v[i])) {
+      right_window.push_back(v[i]);
+    } else {
+      break;
+    }
+  }
+  if (left_window.empty() && right_window.empty()) {
+    return "";
+  }
+
+  std::string result;
+  for (const auto& s : left_window) {
+    result += s;
+  }
+  result += v[index];
+  for (const auto& s : right_window) {
+    result += s;
+  }
+
+  return result;
+}
+
 std::string getNumericalFeatures(const std::string& input) {
   std::string strippedInput = stripNonDigits(input);
 
   if (!strippedInput.empty()) {
-    if (luhnCheck(strippedInput)) {
-      return "IS_ACCOUNT_NUMBER ";
+    if (luhnCheck(strippedInput) || strippedInput.size() > 12) {
+      /*
+       * Useful for credit cards or iban numbers or other account numbers.
+       */
+      return "IS_ACCOUNT_NUMBER";
     }
 
     if (containsAlphabets(input) && input.size() >= 6) {
-      return "MAYBE_UIN";
+      return "IS_UIN";
     }
 
     if ((strippedInput.size() >= 9 && strippedInput.size() <= 12) ||
         input[0] == '+' || input[0] == '(' || input.back() == ')') {  // NOLINT
-      return "MAYBE_PHONE ";
+      return "MAYBE_PHONE";
     }
 
     if (strippedInput.size() == input.size() && strippedInput.size() >= 5) {
-      return "IS_NUMBER_OR_UIN ";
+      return "IS_NUMBER_OR_UIN";
     }
 
     if ((strippedInput.size() <= 2 && std::stoi(strippedInput) <= 31) ||
-        strippedInput.size() == 4 || strippedInput.size() == 8) {
-      return "A_DATE ";
+        (strippedInput.size() == 4 &&
+         (std::stoi(strippedInput.substr(0, 2)) <= 21 ||
+          std::stoi(strippedInput.substr(0, 2)) >= 18))) {
+      return "A_DATE";
     }
 
     if (strippedInput.size() <= 6 && strippedInput.size() >= 5) {
@@ -98,29 +178,6 @@ std::string getNumericalFeatures(const std::string& input) {
     }
   }
   return "";
-}
-
-bool isValidEmail(const std::string& email) {
-  const std::regex email_regex(
-      R"((^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z,.]{2,}$))");
-  return std::regex_match(email, email_regex);
-}
-
-bool isValidDate(const std::string& token) {
-  // Check if the token matches the regex pattern
-  const std::regex month(
-      R"((^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|may|june|july|august|september|october|november|december)))");
-  return std::regex_match(token, month);
-}
-
-std::string trimPunctuation(const std::string& str) {
-  const std::string punctuation = ".,?-!;:";
-  size_t start = str.find_first_not_of(punctuation);
-  if (start == std::string::npos) {
-    return str;
-  }
-  size_t end = str.find_last_not_of(punctuation);
-  return str.substr(start, end - start + 1);
 }
 
 std::string NerDyadicDataProcessor::getExtraFeatures(
@@ -131,27 +188,64 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
 
   std::string extra_features;
 
+  // clean the tokens to be able to match regex and apply heuristics
   std::string current_token = trimPunctuation(tokens[index]);
-  auto lower_cased_tokens = toLowerCaseTokens(tokens);
+  auto lower_cased_tokens = cleanAndLowerCase(tokens);
 
-  if (isValidDate(lower_cased_tokens[index])) {
+  /*
+   * start, end, start_long are indices in the vector that mark the boundary of
+   * the context for a token. for a token, we search for certain keywords within
+   * this context and add a feature if the keyword is found. ex : tokens = [His,
+   * name, is, John], index = 3 since name is in the context of John, we will
+   * add feature CONTAINS_NAMED_WORDS to extra_features.
+   */
+  size_t start = (index > 1) ? (index - 2) : 0;
+  size_t end = std::min(tokens.size(), static_cast<size_t>(index + 3));
+  size_t start_long =
+      (index > 5) ? (index - 6)
+                  : 0;  // we need more context for phone numbers or uins
+
+  if (std::regex_match(lower_cased_tokens[index],
+                       _feature_enhancement_config->month_regex) ||
+      std::regex_match(lower_cased_tokens[index],
+                       _feature_enhancement_config->date_regex)) {
     extra_features += "A_VALID_DATE ";
     return extra_features;
   }
 
   if (_feature_enhancement_config->find_emails) {
-    if (isValidEmail(lower_cased_tokens[index])) {
+    if (std::regex_match(lower_cased_tokens[index],
+                         _feature_enhancement_config->email_regex)) {
       extra_features += "IS_VALID_EMAIL ";
       return extra_features;
     }
   }
 
   if (_feature_enhancement_config->enhance_numerical_features) {
-    auto numerical_features = getNumericalFeatures(current_token);
-    if (!numerical_features.empty()) {
-      extra_features += numerical_features;
+    /*
+     * If the current token is a number and has surrounding tokens that are also
+     * numbers, they probably form a single entity.
+     */
+    std::string surrounding_numbers =
+        find_contiguous_numbers(lower_cased_tokens, index);
+    if (!surrounding_numbers.empty()) {
+      auto numerical_features = getNumericalFeatures(surrounding_numbers);
+      if (!numerical_features.empty()) {
+        extra_features = "CONTIGUOUS_NUMBER_" + numerical_features;
+      }
+    } else {
+      auto numerical_features = getNumericalFeatures(current_token);
+      if (!numerical_features.empty()) {
+        extra_features += numerical_features;
+      }
+    }
+
+    if (extra_features == "CONTIGUOUS_NUMBER_IS_ACCOUNT_NUMBER" ||
+        extra_features == "CONTIGUOUS_NUMBER_IS_PHONE" ||
+        extra_features == "IS_ACCOUNT_NUMBER" || extra_features == "IS_PHONE") {
       return extra_features;
     }
+    extra_features += " ";
   }
 
   if (_feature_enhancement_config->enhance_case_features) {
@@ -177,21 +271,22 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
     }
   }
 
-  size_t start = (index > 1) ? (index - 2) : 0;
-  size_t end = std::min(tokens.size(), static_cast<size_t>(index + 3));
+  if (containsKeywordInRange(
+          lower_cased_tokens, start_long, end,
+          _feature_enhancement_config->identification_keywords)) {
+    extra_features += "CONTAINS_IDENTIFICATION_KEYWORDS ";
+  }
 
   if (_feature_enhancement_config->enhance_names &&
       containsKeywordInRange(lower_cased_tokens, start, end,
                              _feature_enhancement_config->name_keywords)) {
     extra_features += "CONTAINS_NAMED_WORDS ";
-    return extra_features;
   }
 
   if (_feature_enhancement_config->enhance_location_features &&
       containsKeywordInRange(lower_cased_tokens, start, end,
                              _feature_enhancement_config->location_keywords)) {
     extra_features += "CONTAINS_LOCATION_WORDS ";
-    return extra_features;
   }
 
   if (_feature_enhancement_config->enhance_organization_features &&
@@ -200,14 +295,10 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
           _feature_enhancement_config->organization_keywords)) {
     extra_features += "CONTAINS_ORGANIZATION_WORDS ";
   }
-
-  size_t start_long =
-      (index > 5) ? (index - 6) : 0;  // we need more context for phone numbers
   if (_feature_enhancement_config->find_phonenumbers &&
       containsKeywordInRange(lower_cased_tokens, start_long, end,
                              _feature_enhancement_config->contact_keywords)) {
     extra_features += "CONTAINS_PHONE_WORDS_LONG ";
-    return extra_features;
   }
 
   return extra_features;

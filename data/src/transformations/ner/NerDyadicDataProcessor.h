@@ -6,7 +6,9 @@
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <cstdint>
 #include <memory>
+#include <regex>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace thirdai::data {
@@ -27,10 +29,23 @@ struct FeatureEnhancementConfig {
       "inc",   "corp", "corporation", "incorporation"};
 
   std::unordered_set<std::string> name_keywords = {"name", "called", "i'm",
-                                                   "am"};
+                                                   "am", "named"};
 
   std::unordered_set<std::string> contact_keywords = {
-      "call", "contact", "dial", "mobile", "phone", "number"};
+      "call", "contact", "dial", "mobile", "phone", "cellphone", "cell"};
+
+  std::unordered_set<std::string> identification_keywords = {
+      "id",     "identity", "identification", "license",
+      "number", "code",     "identifier"};
+
+  std::regex email_regex =
+      std::regex(R"((^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z,.]{2,}$))");
+
+  std::regex month_regex = std::regex(
+      R"((^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|may|june|july|august|september|october|november|december)))");
+
+  std::regex date_regex = std::regex(
+      R"((\d{1,2}[-/.:|]\d{1,2}[-/.:|]\d{2,4})|(\d{4}[-/.:|]\d{2}[-/.:|]\d{2}))");
 
   FeatureEnhancementConfig() = default;
 
