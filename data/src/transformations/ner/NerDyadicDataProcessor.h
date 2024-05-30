@@ -29,10 +29,10 @@ struct FeatureEnhancementConfig {
       "inc",   "corp", "corporation", "incorporation"};
 
   std::unordered_set<std::string> name_keywords = {"name", "called", "i'm",
-                                                   "am"};
+                                                   "am", "named"};
 
-  std::unordered_set<std::string> contact_keywords = {"call", "contact", "dial",
-                                                      "mobile", "phone"};
+  std::unordered_set<std::string> contact_keywords = {
+      "call", "contact", "dial", "mobile", "phone", "cellphone", "cell"};
 
   std::unordered_set<std::string> identification_keywords = {
       "id",     "identity", "identification", "license",

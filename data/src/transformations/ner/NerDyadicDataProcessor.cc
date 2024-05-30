@@ -192,6 +192,13 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
   std::string current_token = trimPunctuation(tokens[index]);
   auto lower_cased_tokens = cleanAndLowerCase(tokens);
 
+  /*
+   * start, end, start_long are indices in the vector that mark the boundary of
+   * the context for a token. for a token, we search for certain keywords within
+   * this context and add a feature if the keyword is found. ex : tokens = [His,
+   * name, is, John], index = 3 since name is in the context of John, we will
+   * add feature CONTAINS_NAMED_WORDS to extra_features.
+   */
   size_t start = (index > 1) ? (index - 2) : 0;
   size_t end = std::min(tokens.size(), static_cast<size_t>(index + 3));
   size_t start_long =
@@ -215,10 +222,17 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
   }
 
   if (_feature_enhancement_config->enhance_numerical_features) {
+    /*
+     * If the current token is a number and has surrounding tokens that are also
+     * numbers, they probably form a single entity.
+     */
     std::string surrounding_numbers =
         find_contiguous_numbers(lower_cased_tokens, index);
     if (!surrounding_numbers.empty()) {
-      extra_features = getNumericalFeatures(surrounding_numbers);
+      auto numerical_features = getNumericalFeatures(surrounding_numbers);
+      if (!numerical_features.empty()) {
+        extra_features = "CONTIGUOUS_NUMBER_" + numerical_features;
+      }
     } else {
       auto numerical_features = getNumericalFeatures(current_token);
       if (!numerical_features.empty()) {
@@ -226,7 +240,9 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
       }
     }
 
-    if (extra_features == "IS_ACCOUNT_NUMBER" || extra_features == "IS_PHONE") {
+    if (extra_features == "CONTIGUOUS_NUMBER_IS_ACCOUNT_NUMBER" ||
+        extra_features == "CONTIGUOUS_NUMBER_IS_PHONE" ||
+        extra_features == "IS_ACCOUNT_NUMBER" || extra_features == "IS_PHONE") {
       return extra_features;
     }
     extra_features += " ";
