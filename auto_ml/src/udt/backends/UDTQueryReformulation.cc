@@ -49,7 +49,7 @@ std::optional<std::string> inputColumnName(ColumnDataTypes data_types,
 
   if (!asText(data_types.begin()->second)) {
     throw std::invalid_argument(
-        "Source column should be bolt.types.text() in QueryReformulation.");
+        "Non target column should be bolt.types.text() in QueryReformulation.");
   }
 
   return data_types.begin()->first;
@@ -61,14 +61,14 @@ UDTQueryReformulation::UDTQueryReformulation(
     const config::ArgumentMap& user_args)
     : _incorrect_column_name(inputColumnName(data_types, target_column)),
       _correct_column_name(std::move(target_column)),
-      _use_spell_checker(
-          user_args.get<bool>("use_spell_checker", "boolean", false)),
+      _use_spell_checker(user_args.get<bool>("use_spell_checker", "boolean",
+                                             defaults::USE_SPELL_CHECKER)),
       _delimiter(delimiter) {
   if (model_config) {
     _flash_index = config::buildIndex(*model_config, user_args);
   } else {
-    _flash_index = defaultFlashIndex(
-        user_args.get<std::string>("dataset_size", "string", "medium"));
+    _flash_index = defaultFlashIndex(user_args.get<std::string>(
+        "dataset_size", "string", defaults::QUERY_REFORMULATION_SIZE));
   }
 
   if (_use_spell_checker) {

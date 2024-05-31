@@ -443,7 +443,7 @@ std::shared_ptr<udt::UDT> makeUDT(
 
   if (kwargs.contains("options")) {
     throw std::invalid_argument(
-        "Argument 'lookahead' is deprecated. Please use pass any args from "
+        "Argument 'options' is deprecated. Please use pass any args from "
         "options as regular kwargs to UDT.");
   }
 

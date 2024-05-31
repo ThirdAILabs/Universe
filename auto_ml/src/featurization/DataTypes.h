@@ -79,7 +79,7 @@ struct CategoricalDataType final : public DataType {
   size_t expectNClasses() const {
     if (!n_classes) {
       throw std::invalid_argument(
-          "For classification tasks the target catagorical type must have the "
+          "For classification tasks the target categorical type must have the "
           "n_classes attribute specified. For example 'target': "
           "bolt.types.categorical(n_classes=10).");
     }
@@ -206,7 +206,7 @@ struct SequenceDataType final : public DataType {
   size_t expectNClasses() const {
     if (!n_classes) {
       throw std::invalid_argument(
-          "For classification tasks the target catagorical type must have the "
+          "For classification tasks the target categorical type must have the "
           "n_classes attribute specified. For example 'target': "
           "bolt.types.categorical(n_classes=10).");
     }
