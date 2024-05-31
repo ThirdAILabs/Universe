@@ -48,11 +48,13 @@ def modify_ner():
         )
 
     def wrapped_predict_batch(self, tokens: List[List[str]], top_k: int = 1):
+        assert top_k > 0
         inference_source = NerDataSource(self.type())
         featurized_tokens = inference_source.inference_featurizer(tokens)
         return original_get_tags(self, featurized_tokens, top_k)
 
     def wrapped_predict(self, tokens: List[str], top_k: int = 1):
+        assert top_k > 0
         inference_source = NerDataSource(self.type())
         featurized_tokens = inference_source.inference_featurizer([tokens])
         return original_get_tags(self, featurized_tokens, top_k)[0]
