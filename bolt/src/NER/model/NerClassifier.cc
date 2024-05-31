@@ -125,7 +125,7 @@ std::vector<PerTokenListPredictions> NerClassifier::getTags(
 
       if (tag_to_label_map.at(highest_tag_act.first) == 0 &&
           highest_tag_act.second < 0.9 &&
-          second_highest_tag_act.second >= 0.5) {
+          second_highest_tag_act.second >= 0.05) {
         tags_and_scores[sub_vector_index][token_index].pop_back();
         removed_highest = true;
       }
