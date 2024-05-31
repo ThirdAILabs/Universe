@@ -110,17 +110,6 @@ std::vector<PerTokenListPredictions> NerClassifier::getTags(
             {label_to_tag_map.at(tag), score});
         token_level_predictions.pop();
       }
-      // std::cout << "Applying punct filter" << std::endl;
-      // std::cout << "Size of current token predictions: "
-      //           << tags_and_scores[sub_vector_index][token_index].size()
-      //           << std::endl;
-      // std::cout << "sub_vector_index: " << sub_vector_index
-      //           << " token_index: " << token_index << std::endl;
-      // std::cout << "current token: "
-      //           << data.getArrayColumn<std::string>(_tokens_column)
-      //                  ->row(sub_vector_index)[token_index]
-      //           << std::endl;
-
       applyPunctFilter(data.getArrayColumn<std::string>(_tokens_column)
                            ->row(sub_vector_index)[token_index],
                        tags_and_scores[sub_vector_index][token_index],
