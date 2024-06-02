@@ -42,10 +42,10 @@ class SRP final : public Hash {
   hashing::SignedRandomProjection _srp;
 };
 
-class L2 final : public Hash {
+class L2Hash final : public Hash {
  public:
-  L2(uint32_t input_dim, uint32_t hashes_per_row, uint32_t rows, float scale,
-     uint32_t range, uint32_t seed)
+  L2Hash(uint32_t input_dim, uint32_t hashes_per_row, uint32_t rows,
+         float scale, uint32_t range, uint32_t seed)
       : _projections(make_projections(input_dim, hashes_per_row, rows, seed)),
         _biases(make_biases(hashes_per_row, rows, scale, seed)),
         _hashes_per_row(hashes_per_row),

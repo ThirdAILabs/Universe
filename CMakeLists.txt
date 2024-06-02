@@ -450,6 +450,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/cpp_classifier/CppClassifier.cc
     auto_ml/src/nws/NWS.cc
     auto_ml/src/nws/NWE.cc
+    auto_ml/src/nws/SKA.cc
     utils/src/SymSpellBackend/symspell.cc
     utils/src/SymSpellCpp/SymSpell.cc
     utils/text/PorterStemmer.cc

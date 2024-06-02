@@ -6,6 +6,7 @@
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/nws/NWE.h>
 #include <auto_ml/src/nws/NWS.h>
+#include <auto_ml/src/nws/SKA.h>
 #include <auto_ml/src/udt/UDT.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
@@ -116,11 +117,11 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("input_dim"), py::arg("hashes_per_row"), py::arg("rows"), py::arg("seed"))
       .def("hash", &SRP::hash, py::arg("input"));
 
-  py::class_<L2, Hash, std::shared_ptr<L2>>(module, "L2")
+  py::class_<L2Hash, Hash, std::shared_ptr<L2Hash>>(module, "L2Hash")
       .def(py::init<uint32_t, uint32_t, uint32_t, float, uint32_t, uint32_t>(),
            py::arg("input_dim"), py::arg("hashes_per_row"), py::arg("rows"), py::arg("scale"),
            py::arg("range"), py::arg("seed"))
-      .def("hash", &L2::hash, py::arg("input"));
+      .def("hash", &L2Hash::hash, py::arg("input"));
 
   py::class_<RACE, std::shared_ptr<RACE>>(module, "RACE")
       .def(py::init<const std::shared_ptr<Hash>&, uint32_t>(), py::arg("hash"), py::arg("val_dim"))
@@ -155,6 +156,22 @@ void defineAutomlInModule(py::module_& module) {
       .def("train", &NadarayaWatsonEstimator::train, py::arg("inputs"),
            py::arg("outputs"))
       .def("predict", &NadarayaWatsonEstimator::predict, py::arg("inputs"));
+
+  py::class_<Distance, std::shared_ptr<Distance>>(module, "Distance")
+      .def("between", &Distance::between, py::arg("a"), py::arg("b"));
+
+  py::class_<Theta, Distance, std::shared_ptr<Theta>>(module, "Theta")
+      .def(py::init<>());
+
+  py::class_<L2Distance, Distance, std::shared_ptr<L2Distance>>(module, "L2Distance")
+      .def(py::init<>());
+
+  py::class_<SparseKernelApproximation, std::shared_ptr<SparseKernelApproximation>>(
+      module, "SKA")
+      .def(py::init<const std::shared_ptr<Distance>, std::vector<std::vector<float>>, std::vector<float>>(),
+          py::arg("distance"), py::arg("train_inputs"), py::arg("train_outputs"))
+      .def("use", &SparseKernelApproximation::use, py::arg("k"))
+      .def("used_samples", &SparseKernelApproximation::usedSamples);
 
   py::class_<udt::UDT, std::shared_ptr<udt::UDT>>(module,
                                                   "UniversalDeepTransformer")
