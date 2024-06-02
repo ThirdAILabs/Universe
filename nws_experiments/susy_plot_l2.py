@@ -7,7 +7,8 @@ kernel = ExponentialKernel(
     cls=1.0,
     stdev=1.0,
     power=power)
-distance = L2Distance()
+# distance = L2Distance()
+distance = None
 
 def make_hash_factory(rows):
     def factory(input_dim):
@@ -15,8 +16,8 @@ def make_hash_factory(rows):
             input_dim=input_dim,
             hashes_per_row=power,
             rows=rows,
-            scale=2.0,
-            range=100,
+            scale=0.05,
+            range=10000,
             seed=314,
         )
     return factory
@@ -44,4 +45,4 @@ train_inputs = inputs[:TRAIN_SIZE]
 train_outputs = outputs[:TRAIN_SIZE]
 test_inputs = inputs[TRAIN_SIZE:]
 
-run(hash_factories, kernel, distance, train_inputs, train_outputs, test_inputs)
+run(hash_factories, kernel, distance, train_inputs, train_outputs, test_inputs, random_sampling=False)
