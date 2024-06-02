@@ -57,7 +57,7 @@ std::vector<std::string> splitOnWhiteSpace(const std::string& text) {
   std::vector<std::string> words;
 
   bool last_is_word = false;
-  size_t word_start;
+  size_t word_start = 0;
   for (size_t i = 0; i < text.size(); i++) {
     bool is_word = !std::isspace(text[i]);
     if (!last_is_word && is_word) {

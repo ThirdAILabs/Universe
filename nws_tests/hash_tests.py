@@ -1,0 +1,123 @@
+import numpy as np
+import math
+from thirdai.bolt import SRP, L2
+from matplotlib import pyplot as plt
+import os
+from pathlib import Path
+
+
+CUR_DIR = Path(os.path.dirname(__file__))
+
+
+def make_sweeping_theta_vectors(num_vectors, dim):
+    angles = np.linspace(0, 2 * math.pi, num_vectors)
+    matrix = np.array([np.cos(angles), np.sin(angles)]).transpose()
+    projection = np.random.randn(dim, dim)
+    return np.dot(
+        np.pad(matrix, [(0, 0), (0, dim - 2)]),
+        projection,
+    )
+
+
+def compute_theoretical_srp_probabilities(vector, matrix):
+    """Assumes that all vectors"""
+    dots = np.dot(matrix, vector)
+    cos_thetas = dots / (np.linalg.norm(vector) * np.linalg.norm(matrix, axis=1))
+    cos_thetas = np.clip(cos_thetas, a_min=-1, a_max=1)  # Avoid precision errors
+    return np.ones((matrix.shape[0],)) - (np.arccos(cos_thetas) / math.pi)
+
+
+def percent_collisions(hashes_a, hashes_b):
+    assert len(hashes_a) == len(hashes_b)
+    collide = 0
+    for a, b in zip(hashes_a, hashes_b):
+        if a == b:
+            collide += 1
+    return collide / len(hashes_a)
+
+
+def test_srp():
+    np.random.seed(8630)
+    input_dim = 100
+    # Generate N random key vectors
+    key_vectors = make_sweeping_theta_vectors(
+        num_vectors=10_000,
+        dim=input_dim,
+    )
+    # Use one of them as a query vector
+    query_vector = key_vectors[0]
+    # Add negative of query vector to key vectors
+    key_vectors = np.concatenate([key_vectors, np.array([query_vector * -1])], axis=0)
+    # Compute theta between query vector and all key vectors
+    theoreticals = compute_theoretical_srp_probabilities(query_vector, key_vectors)
+    # Cheap sanity check
+    # 1e-7 instead of 0 to account for floating point precision issues
+    assert (1.0 - theoreticals[0]) < 1e-7
+    assert theoreticals[-1] < 1e-7
+    # Get SRP hashes
+    for hashes_per_row in [1, 2]:
+        for rows in [10, 30, 100, 1000]:
+            srp = SRP(
+                input_dim=input_dim,
+                hashes_per_row=hashes_per_row,
+                rows=rows,
+                seed=8630,
+            )
+            query_hashes = srp.hash(query_vector)
+            collisions = [
+                percent_collisions(query_hashes, srp.hash(key)) for key in key_vectors
+            ]
+            plt.scatter(theoreticals, collisions, label=f"{hashes_per_row=} {rows=}")
+        plt.legend()
+        plt.savefig(CUR_DIR / f"assets/srp-pow{hashes_per_row}.png")
+        plt.clf()
+
+
+def make_sweeping_l2_distance_vectors(num_vectors, dim):
+    distances = np.linspace(0, 5.0, num_vectors)
+    delta = np.random.randn(dim)
+    unit_delta = delta / np.linalg.norm(delta)
+    start = np.random.randn(dim)
+    return np.array([start + dist * unit_delta for dist in distances])
+
+
+def compute_l2_distances(vector, matrix):
+    diffs = matrix - np.repeat(vector.reshape(1, -1), repeats=len(matrix), axis=0)
+    return np.linalg.norm(diffs, axis=1)
+
+
+def test_l2hash():
+    np.random.seed(8630)
+    input_dim = 100
+    # Generate N random key vectors
+    key_vectors = make_sweeping_l2_distance_vectors(num_vectors=10_000, dim=input_dim)
+    # Use one of them as a query vector
+    query_vector = key_vectors[0]
+    l2_distances = compute_l2_distances(query_vector, key_vectors)
+
+    for hashes_per_row in [1, 2]:
+        for scale in [0.5, 1.0, 2.0]:
+            for rows in [10, 30, 100, 1000]:
+                l2hash = L2(
+                    input_dim=input_dim,
+                    hashes_per_row=hashes_per_row,
+                    rows=rows,
+                    scale=scale,
+                    range=2**31,
+                    seed=314,
+                )
+                query_hashes = l2hash.hash(query_vector)
+                collisions = [
+                    percent_collisions(query_hashes, l2hash.hash(key))
+                    for key in key_vectors
+                ]
+                plt.scatter(
+                    l2_distances, collisions, label=f"{hashes_per_row=} {rows=}"
+                )
+            plt.legend()
+            plt.savefig(CUR_DIR / f"assets/l2-scale{scale}-pow{hashes_per_row}.png")
+            plt.clf()
+
+
+test_srp()
+test_l2hash()

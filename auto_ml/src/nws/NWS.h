@@ -44,14 +44,15 @@ class SRP final : public Hash {
 
 class L2 final : public Hash {
  public:
-  L2(uint32_t input_dim, uint32_t hashes_per_row, uint32_t rows, float scale, uint32_t range, uint32_t seed)
-  : _projections(make_projections(input_dim, hashes_per_row, rows, seed)),
-    _biases(make_biases(hashes_per_row, rows, scale, seed)),
-    _hashes_per_row(hashes_per_row),
-    _rows(rows),
-    _range(range),
-    _scale(scale) {}
-  
+  L2(uint32_t input_dim, uint32_t hashes_per_row, uint32_t rows, float scale,
+     uint32_t range, uint32_t seed)
+      : _projections(make_projections(input_dim, hashes_per_row, rows, seed)),
+        _biases(make_biases(hashes_per_row, rows, scale, seed)),
+        _hashes_per_row(hashes_per_row),
+        _rows(rows),
+        _range(range),
+        _scale(scale) {}
+
   std::vector<uint32_t> hash(const std::vector<float>& input) const final;
 
   std::string name() const final { return "L2"; }
@@ -61,9 +62,12 @@ class L2 final : public Hash {
   uint32_t range() const final { return _range; }
 
  private:
-  static std::vector<std::vector<float>> make_projections(uint32_t input_dim, uint32_t hashes_per_row, uint32_t rows, uint32_t seed);
+  static std::vector<std::vector<float>> make_projections(
+      uint32_t input_dim, uint32_t hashes_per_row, uint32_t rows,
+      uint32_t seed);
 
-  static std::vector<float> make_biases(uint32_t hashes_per_row, uint32_t rows, float scale, uint32_t seed);
+  static std::vector<float> make_biases(uint32_t hashes_per_row, uint32_t rows,
+                                        float scale, uint32_t seed);
 
   static float dot(const std::vector<float>& a, const std::vector<float>& b);
 
@@ -76,7 +80,9 @@ class L2 final : public Hash {
 class RACE {
  public:
   explicit RACE(std::shared_ptr<Hash> hash, uint32_t val_dim)
-      : _arrays(hash->rows() * hash->range() * val_dim), _hash(std::move(hash)), _val_dim(val_dim) {}
+      : _arrays(hash->rows() * hash->range() * val_dim),
+        _hash(std::move(hash)),
+        _val_dim(val_dim) {}
 
   void update(const std::vector<float>& key, const std::vector<float>& value);
 
@@ -100,14 +106,16 @@ class RACE {
 
 class NadarayaWatsonSketch {
  public:
-  explicit NadarayaWatsonSketch(const std::shared_ptr<Hash>& hash, uint32_t val_dim)
+  explicit NadarayaWatsonSketch(const std::shared_ptr<Hash>& hash,
+                                uint32_t val_dim)
       : _top(hash, val_dim), _bottom(hash, val_dim) {}
 
   void train(const std::vector<std::vector<float>>& inputs,
              const std::vector<std::vector<float>>& outputs);
 
   void trainParallel(const std::vector<std::vector<float>>& inputs,
-                     const std::vector<std::vector<float>>& outputs, uint32_t threads);
+                     const std::vector<std::vector<float>>& outputs,
+                     uint32_t threads);
 
   std::vector<std::vector<float>> predict(
       const std::vector<std::vector<float>>& inputs) const;
