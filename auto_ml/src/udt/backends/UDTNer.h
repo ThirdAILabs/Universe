@@ -66,6 +66,12 @@ class UDTNer final : public UDTBackend {
       const std::vector<std::string>& sentences, bool sparse_inference,
       uint32_t top_k);
 
+  struct NerOptions;
+
+  static NerOptions fromPretrained(const UDTNer* pretrained_model);
+
+  static NerOptions fromScratch(const config::ArgumentMap& args);
+
   bolt::ModelPtr _model;
 
   data::TransformationPtr _supervised_transform;
