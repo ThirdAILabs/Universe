@@ -1,4 +1,5 @@
 #include "UDTNer.h"
+#include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
@@ -19,6 +20,7 @@
 #include <pybind11/stl.h>
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -26,17 +28,24 @@
 
 namespace thirdai::automl::udt {
 
-bolt::ModelPtr buildModel(
-    uint32_t input_dim, uint32_t emb_dim, uint32_t output_dim,
-    std::optional<std::vector<std::vector<float>*>> pretrained_emb) {
+bolt::ModelPtr buildModel(uint32_t input_dim, uint32_t emb_dim,
+                          uint32_t output_dim,
+                          const bolt::EmbeddingPtr& pretrained_emb) {
   auto input = bolt::Input::make(input_dim);
 
-  auto emb_op = bolt::Embedding::make(emb_dim, input_dim, "relu",
-                                      /* bias= */ true);
+  bolt::EmbeddingPtr emb_op;
   if (pretrained_emb) {
-    emb_op->setEmbeddings(pretrained_emb.value()[0]->data());
-    emb_op->setBiases(pretrained_emb.value()[1]->data());
+    emb_op = bolt::Embedding::make(
+        pretrained_emb->dim(), pretrained_emb->inputDim(),
+        bolt::activationFunctionToStr(pretrained_emb->activation()),
+        pretrained_emb->useBias());
+    emb_op->setEmbeddings(pretrained_emb->embeddingsPtr());
+    emb_op->setBiases(pretrained_emb->biasesPtr());
+  } else {
+    emb_op = bolt::Embedding::make(emb_dim, input_dim, "relu",
+                                   /* bias= */ true);
   }
+
   auto hidden = emb_op->apply(input);
 
   auto output =
@@ -124,34 +133,63 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
       _tokens_column(tokensColumn(data_types, target_name)),
       _tags_column(target_name),
       _label_to_tag(prependDefaultTag(target->default_tag, target->tags)) {
-  uint32_t input_dim =
-      args.get<uint32_t>("input_dim", "integer", defaults::FEATURE_HASH_RANGE);
-  if (args.contains("fhr")) {
-    input_dim = args.get<uint32_t>("fhr", "integer");
+  uint32_t input_dim;
+  int32_t emb_dim;
+  uint32_t dyadic_num_intervals;
+  std::vector<dataset::TextTokenizerPtr> target_tokenizers;
+  std::optional<data::FeatureEnhancementConfig> feature_config;
+  bolt::EmbeddingPtr pretrained_emb;
+
+  std::unique_ptr<UDTNer> pretrained_model;
+  if (pretrained_model) {
+    pretrained_emb = bolt::Embedding::cast(
+        pretrained_model->_model->opExecutionOrder().at(0));
+    if (!pretrained_emb) {
+      throw std::invalid_argument("Invalid pretrained model for NER task.");
+    }
+
+    input_dim = pretrained_emb->inputDim();
+    emb_dim = pretrained_emb->dim();
+
+    auto input_transform = std::dynamic_pointer_cast<data::NerTokenizerUnigram>(
+        pretrained_model->_supervised_transform);
+    if (!input_transform) {
+      throw std::invalid_argument("Invalid pretrained model for NER task.");
+    }
+
+    dyadic_num_intervals = input_transform->processor().nDyadicIntervals();
+
+    target_tokenizers = input_transform->processor().targetWordTokenizers();
+
+    feature_config = input_transform->processor().featureConfig();
+
+  } else {
+    input_dim = args.get<uint32_t>("input_dim", "integer",
+                                   defaults::FEATURE_HASH_RANGE);
+    if (args.contains("fhr")) {
+      input_dim = args.get<uint32_t>("fhr", "integer");
+    }
+
+    emb_dim = args.get<uint32_t>("embedding_dimension", "integer",
+                                 defaults::NER_EMB_DIM);
+
+    dyadic_num_intervals = defaults::NER_DYADIC_INTERVALS;
+
+    // TODO(Nicholas): Get these from the options
+    target_tokenizers = {std::make_shared<dataset::NaiveSplitTokenizer>(),
+                         std::make_shared<dataset::CharKGramTokenizer>(4)};
+    feature_config = data::FeatureEnhancementConfig();
+
+    pretrained_emb = nullptr;
   }
 
-  uint32_t emb_dim = args.get<uint32_t>("embedding_dimension", "integer",
-                                        defaults::NER_EMB_DIM);
-
-  _model = buildModel(input_dim, emb_dim, _label_to_tag.size(), std::nullopt);
-
-  std::unordered_map<std::string, uint32_t> tag_to_label;
-  for (size_t i = 0; i < _label_to_tag.size(); i++) {
-    tag_to_label[_label_to_tag[i]] = i;
-  }
-
-  // TODO(Nicholas): Get these from the options
-  std::vector<dataset::TextTokenizerPtr> target_tokenizers = {
-      std::make_shared<dataset::NaiveSplitTokenizer>(),
-      std::make_shared<dataset::CharKGramTokenizer>(4)};
-  std::optional<data::FeatureEnhancementConfig> feature_config =
-      data::FeatureEnhancementConfig();
+  _model = buildModel(input_dim, emb_dim, _label_to_tag.size(), nullptr);
 
   _supervised_transform = makeTransformation(
       /*inference=*/false, /*tags_column=*/_tags_column,
       /*tokens_column=*/_tokens_column, _label_to_tag,
       /*input_dim=*/input_dim,
-      /*dyadic_num_intervals=*/defaults::NER_DYADIC_INTERVALS,
+      /*dyadic_num_intervals=*/dyadic_num_intervals,
       /*target_word_tokenizers=*/target_tokenizers,
       /*feature_config=*/feature_config);
 
@@ -159,7 +197,7 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
       /*inference=*/true, /*tags_column=*/_tags_column,
       /*tokens_column=*/_tokens_column, _label_to_tag,
       /*input_dim=*/input_dim,
-      /*dyadic_num_intervals=*/defaults::NER_DYADIC_INTERVALS,
+      /*dyadic_num_intervals=*/dyadic_num_intervals,
       /*target_word_tokenizers=*/target_tokenizers,
       /*feature_config=*/feature_config);
 }

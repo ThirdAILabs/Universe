@@ -50,6 +50,8 @@ class NerTokenizerUnigram final : public Transformation {
     throw std::out_of_range("String not found in the label map: " + tag);
   }
 
+  const auto& processor() const { return _processor; }
+
  private:
   /*
    * _tokens_column : the column containing the string tokens

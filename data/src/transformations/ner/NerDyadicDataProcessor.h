@@ -114,6 +114,12 @@ class NerDyadicDataProcessor
   std::string generateDyadicWindows(std::vector<std::string> tokens,
                                     uint32_t index) const;
 
+  const auto& targetWordTokenizers() const { return _target_word_tokenizers; }
+
+  uint32_t nDyadicIntervals() const { return _dyadic_num_intervals; }
+
+  const auto& featureConfig() const { return _feature_enhancement_config; }
+
  private:
   NerDyadicDataProcessor() {}
 
