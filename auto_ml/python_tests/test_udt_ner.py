@@ -1,10 +1,11 @@
 import json
 import os
 import random
+import re
 import string
 
 import pytest
-from thirdai import bolt
+from thirdai import bolt, data, dataset
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -111,3 +112,50 @@ def test_udt_ner(ner_dataset):
     acc_after_finetune = evaluate(model, test)
     print(f"{acc_after_finetune=}")
     assert acc_after_finetune > 0.9
+
+
+def test_udt_ner_target_tokenizer_arg():
+    bolt.UniversalDeepTransformer(
+        data_types={
+            TOKENS: bolt.types.text(),
+            TAGS: bolt.types.token_tags(tags=["0", "email", "credit_card"]),
+        },
+        target=TAGS,
+        target_tokenizers=[dataset.CharKGramTokenizer(3)],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Invalid type for argument 'target_tokenizers'. Must be either List[int] or List[dataset.Tokenizer]."
+        ),
+    ):
+        bolt.UniversalDeepTransformer(
+            data_types={
+                TOKENS: bolt.types.text(),
+                TAGS: bolt.types.token_tags(tags=["0", "email", "credit_card"]),
+            },
+            target=TAGS,
+            target_tokenizers=[dataset.NGramEncoder(2)],
+        )
+
+
+def test_udt_ner_feature_config_arg():
+    bolt.UniversalDeepTransformer(
+        data_types={
+            TOKENS: bolt.types.text(),
+            TAGS: bolt.types.token_tags(tags=["0", "email", "credit_card"]),
+        },
+        target=TAGS,
+        feature_config=data.transformations.NerFeatureConfig(*([True] * 7)),
+    )
+
+    with pytest.raises(ValueError, match="Invalid type .*"):
+        bolt.UniversalDeepTransformer(
+            data_types={
+                TOKENS: bolt.types.text(),
+                TAGS: bolt.types.token_tags(tags=["0", "email", "credit_card"]),
+            },
+            target=TAGS,
+            feature_config={"email": True},
+        )

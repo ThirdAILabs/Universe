@@ -410,13 +410,27 @@ config::ArgumentMap createArgumentMap(const py::dict& input_args) {
       std::string value = v.cast<std::string>();
       args.insert(name, value);
     } else if (py::isinstance<py::list>(v)) {
+      bool success = false;
       try {
         std::vector<int32_t> value = v.cast<std::vector<int32_t>>();
         args.insert(name, value);
+        success = true;
       } catch (...) {
-        throw std::invalid_argument(
-            "List argument must contain only integers.");
       }
+      try {
+        auto value = v.cast<std::vector<dataset::TextTokenizerPtr>>();
+        args.insert(name, value);
+        success = true;
+      } catch (...) {
+      }
+      if (!success) {
+        throw std::invalid_argument(
+            "Invalid type for argument '" + name +
+            "'. Must be either List[int] or List[dataset.Tokenizer].");
+      }
+    } else if (py::isinstance<data::FeatureEnhancementConfig>(v)) {
+      auto value = v.cast<data::FeatureEnhancementConfig>();
+      args.insert(name, value);
     } else {
       throw std::invalid_argument(
           "Invalid type '" + py::str(v.get_type()).cast<std::string>() +

@@ -175,10 +175,13 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
 
     dyadic_num_intervals = defaults::NER_DYADIC_INTERVALS;
 
-    // TODO(Nicholas): Get these from the options
-    target_tokenizers = {std::make_shared<dataset::NaiveSplitTokenizer>(),
-                         std::make_shared<dataset::CharKGramTokenizer>(4)};
-    feature_config = data::FeatureEnhancementConfig();
+    target_tokenizers = args.get<std::vector<dataset::TextTokenizerPtr>>(
+        "target_tokenizers", "List[Tokenizer]",
+        {{std::make_shared<dataset::NaiveSplitTokenizer>(),
+          std::make_shared<dataset::CharKGramTokenizer>(4)}});
+
+    feature_config = args.get<data::FeatureEnhancementConfig>(
+        "feature_config", "FeatureConfig", data::FeatureEnhancementConfig());
 
     pretrained_emb = nullptr;
   }
