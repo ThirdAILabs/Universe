@@ -20,21 +20,18 @@ void applyPunctAndStopWordFilter(
   // assumes that the highest activation vector is at the end
   if (isAllPunctuation(token) ||
       text::stop_words.count(thirdai::text::lower(token)) > 0) {
-    int index_of_o = -1;
     for (int i = predicted_tags.size() - 1; i >= 0; --i) {
       if (tag_to_label_map.at(predicted_tags[i].first) == 0) {
-        index_of_o = i;
+        predicted_tags[i].second = 1;
+        std::rotate(predicted_tags.begin() + i, predicted_tags.begin() + i + 1,
+                    predicted_tags.end());
+        return;
       }
     }
-    if (index_of_o != -1) {
-      predicted_tags[index_of_o].second = 1;
-      std::rotate(predicted_tags.begin() + index_of_o,
-                  predicted_tags.begin() + index_of_o + 1,
-                  predicted_tags.end());
-    } else {
-      predicted_tags.push_back({label_to_tag_map.at(0), 1});
-      predicted_tags.erase(predicted_tags.begin());
-    }
+    // If the tag 'O' is not found, then we erase the lowest activation tag and
+    // insert 'O' as the highest activation tag.
+    predicted_tags.push_back({label_to_tag_map.at(0), 1});
+    predicted_tags.erase(predicted_tags.begin());
   }
 }
 
