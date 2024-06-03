@@ -49,15 +49,6 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr error;
 
-  /*
-   * This a nested pragma loop. The outer loop parallelizes over the different
-   * sentences and the inner loop performs parallelization over the tokens in a
-   * sentence. The inner loop only activates when there is a single sentence in
-   * the column map.
-   * TODO(Shubh) : Convert to a single for loop by using offsets
-   * for the tokens inside samples.
-   */
-
 #pragma omp parallel for default(none)                                       \
     shared(text_tokens, sample_offsets, featurized_sentences, targets, tags, \
            error) if (text_tokens->numRows() > 1)
@@ -66,27 +57,18 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
       size_t sample_offset = sample_offsets[i];
       std::vector<std::string> row_token_vectors =
           text_tokens->row(i).toVector();
-
-#pragma omp parallel for default(none)                                         \
-    shared(text_tokens, sample_offset, featurized_sentences, targets, tags, i, \
-           row_token_vectors, error) if (text_tokens->numRows() <= 1)
       for (size_t target = 0; target < row_token_vectors.size(); target++) {
-        try {
-          size_t featurized_sentence_offset = sample_offset + target;
-          featurized_sentences[featurized_sentence_offset] =
-              _processor.processToken(row_token_vectors, target);
-          if (_target_column) {
-            if (_tag_to_label.has_value()) {
-              targets[featurized_sentence_offset] =
-                  findTagValueForString(tags->row(i)[target]);
-            } else {
-              targets[featurized_sentence_offset] =
-                  std::stoi(tags->row(i)[target]);
-            }
+        size_t featurized_sentence_offset = sample_offset + target;
+        featurized_sentences[featurized_sentence_offset] =
+            _processor.processToken(row_token_vectors, target);
+        if (_target_column) {
+          if (_tag_to_label.has_value()) {
+            targets[featurized_sentence_offset] =
+                findTagValueForString(tags->row(i)[target]);
+          } else {
+            targets[featurized_sentence_offset] =
+                std::stoi(tags->row(i)[target]);
           }
-        } catch (...) {
-#pragma omp critical
-          error = std::current_exception();
         }
       }
     } catch (...) {
@@ -106,11 +88,7 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
         ValueColumn<uint32_t>::make(std::move(targets), _target_dim.value());
   }
 
-  ColumnMap processed_column_map = ColumnMap(output_columns);
-
-  // this applies inplace transformation to the column map and tokenizes the
-  // sentences into indices and values array pairs.
-  return processed_column_map;
+  return ColumnMap(output_columns);
 }
 
 ar::ConstArchivePtr NerTokenizerUnigram::toArchive() const {

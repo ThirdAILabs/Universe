@@ -55,8 +55,6 @@ class NerTokenizerUnigram final : public Transformation {
    * _tokens_column : the column containing the string tokens
    * _target_column : the column containing the target tags
    * _target_dim : the number of total different labels
-   * _tokenization_transformation : the transformation used to tokenize the
-   * featurized sentences
    */
   std::string _tokens_column;
   std::string _featurized_sentence_column;

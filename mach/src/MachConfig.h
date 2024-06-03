@@ -106,6 +106,11 @@ class MachConfig {
     return *this;
   }
 
+  MachConfig indexSeed(uint32_t seed) {
+    _index_seed = seed;
+    return *this;
+  }
+
   data::StatePtr state() const;
 
   bolt::ModelPtr model() const;
@@ -170,6 +175,7 @@ class MachConfig {
   size_t _n_buckets_to_eval = 25;
   size_t _max_memory_ids = 1000;
   size_t _max_memory_samples_per_id = 10;
+  uint32_t _index_seed = dataset::mach::DEFAULT_SEED;
 
   // Other
   std::optional<uint32_t> _freeze_hash_tables_epoch = 1;
