@@ -1,5 +1,7 @@
 #include "NerClassifier.h"
+#include <bolt/src/NER/Defaults.h>
 #include <data/src/columns/ArrayColumns.h>
+#include <cctype>
 #include <cstdint>
 #include <unordered_map>
 #include <utility>
@@ -10,12 +12,13 @@ bool isAllPunctuation(const std::string& str) {
   return !str.empty() && std::all_of(str.begin(), str.end(), ::ispunct);
 }
 
-void applyPunctFilter(
+void applyPunctAndStopWordFilter(
     const std::string& token, PerTokenPredictions& predicted_tags,
     const std::unordered_map<std::string, uint32_t>& tag_to_label_map,
     const std::unordered_map<uint32_t, std::string>& label_to_tag_map) {
   // assumes that the highest activation vector is at the end
-  if (isAllPunctuation(token)) {
+  if (isAllPunctuation(token) ||
+      defaults::UDT_STOPWORDS.count(thirdai::text::lower(token)) > 0) {
     int index_of_o = -1;
     for (int i = predicted_tags.size() - 1; i >= 0; --i) {
       if (tag_to_label_map.at(predicted_tags[i].first) == 0) {
@@ -110,10 +113,11 @@ std::vector<PerTokenListPredictions> NerClassifier::getTags(
             {label_to_tag_map.at(tag), score});
         token_level_predictions.pop();
       }
-      applyPunctFilter(data.getArrayColumn<std::string>(_tokens_column)
-                           ->row(sub_vector_index)[token_index],
-                       tags_and_scores[sub_vector_index][token_index],
-                       tag_to_label_map, label_to_tag_map);
+      applyPunctAndStopWordFilter(
+          data.getArrayColumn<std::string>(_tokens_column)
+              ->row(sub_vector_index)[token_index],
+          tags_and_scores[sub_vector_index][token_index], tag_to_label_map,
+          label_to_tag_map);
 
       bool removed_highest = false;
 
