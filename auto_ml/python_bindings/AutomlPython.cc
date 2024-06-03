@@ -367,14 +367,8 @@ void createUDTTypesSubmodule(py::module_& module) {
 
   py::class_<TokenTagsDataType, DataType, TokenTagsDataTypePtr>(
       udt_types_submodule, "token_tags")
-      .def(py::init<std::vector<std::string>,
-                    std::vector<dataset::TextTokenizerPtr>, bool>(),
-           py::arg("tags"),
-           py::arg("target_tokenizers") =
-               std::vector<dataset::TextTokenizerPtr>{
-                   std::make_shared<dataset::NaiveSplitTokenizer>(),
-                   std::make_shared<dataset::CharKGramTokenizer>(4)},
-           py::arg("enhancment") = true);
+      .def(py::init<std::vector<std::string>, std::string>(), py::arg("tags"),
+           py::arg("default_tag") = "O");
 }
 
 void createUDTTemporalSubmodule(py::module_& module) {

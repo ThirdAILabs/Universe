@@ -228,23 +228,14 @@ struct NodeIDDataType : DataType {
 };
 
 struct TokenTagsDataType : DataType {
-  explicit TokenTagsDataType(
-      std::vector<std::string> tags,
-      std::vector<dataset::TextTokenizerPtr> target_tokenizers =
-          {std::make_shared<dataset::NaiveSplitTokenizer>(),
-           std::make_shared<dataset::CharKGramTokenizer>(4)},
-      bool enhancement = true)
-      : tags(std::move(tags)), target_tokenizers(std::move(target_tokenizers)) {
-    if (enhancement) {
-      feature_config = data::FeatureEnhancementConfig();
-    }
-  }
+  explicit TokenTagsDataType(std::vector<std::string> tags,
+                             std::string default_tag = "O")
+      : tags(std::move(tags)), default_tag(std::move(default_tag)) {}
 
   std::string toString() const final { return R"({"type": "token tags"})"; }
 
   std::vector<std::string> tags;
-  std::vector<dataset::TextTokenizerPtr> target_tokenizers;
-  std::optional<data::FeatureEnhancementConfig> feature_config;
+  std::string default_tag;
 };
 
 using TokenTagsDataTypePtr = std::shared_ptr<TokenTagsDataType>;

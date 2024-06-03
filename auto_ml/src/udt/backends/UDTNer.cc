@@ -18,6 +18,7 @@
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <pybind11/stl.h>
 #include <utils/text/StringManipulation.h>
+#include <algorithm>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -81,6 +82,8 @@ data::TransformationPtr makeTransformation(
           ->then(std::make_shared<data::TextTokenizer>(
               /*input_column=*/NER_FEATURIZED_SENTENCE,
               /*output_indices=*/NER_FEATURIZED_SENTENCE,
+              // TODO(Any): Should we specify output_values so that tokens are
+              // deduplicated?
               /*output_values=*/std::nullopt,
               /*tokenizer=*/
               std::make_shared<dataset::NaiveSplitTokenizer>(
@@ -107,13 +110,20 @@ std::string tokensColumn(ColumnDataTypes data_types,
   return data_types.begin()->first;
 }
 
+std::vector<std::string> prependDefaultTag(
+    const std::string& default_tag, const std::vector<std::string>& tags) {
+  std::vector<std::string> all_tags = {default_tag};
+  all_tags.insert(all_tags.end(), tags.begin(), tags.end());
+  return all_tags;
+}
+
 UDTNer::UDTNer(const ColumnDataTypes& data_types,
                const TokenTagsDataTypePtr& target,
                const std::string& target_name, const config::ArgumentMap& args)
     : _bolt_inputs({data::OutputColumns(NER_FEATURIZED_SENTENCE)}),
       _tokens_column(tokensColumn(data_types, target_name)),
       _tags_column(target_name),
-      _label_to_tag(target->tags) {
+      _label_to_tag(prependDefaultTag(target->default_tag, target->tags)) {
   uint32_t input_dim =
       args.get<uint32_t>("input_dim", "integer", defaults::FEATURE_HASH_RANGE);
   if (args.contains("fhr")) {
@@ -123,28 +133,35 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
   uint32_t emb_dim = args.get<uint32_t>("embedding_dimension", "integer",
                                         defaults::NER_EMB_DIM);
 
-  _model = buildModel(input_dim, emb_dim, target->tags.size(), std::nullopt);
+  _model = buildModel(input_dim, emb_dim, _label_to_tag.size(), std::nullopt);
 
   std::unordered_map<std::string, uint32_t> tag_to_label;
-  for (size_t i = 0; i < target->tags.size(); i++) {
-    tag_to_label[target->tags[i]] = i;
+  for (size_t i = 0; i < _label_to_tag.size(); i++) {
+    tag_to_label[_label_to_tag[i]] = i;
   }
+
+  // TODO(Nicholas): Get these from the options
+  std::vector<dataset::TextTokenizerPtr> target_tokenizers = {
+      std::make_shared<dataset::NaiveSplitTokenizer>(),
+      std::make_shared<dataset::CharKGramTokenizer>(4)};
+  std::optional<data::FeatureEnhancementConfig> feature_config =
+      data::FeatureEnhancementConfig();
 
   _supervised_transform = makeTransformation(
       /*inference=*/false, /*tags_column=*/_tags_column,
       /*tokens_column=*/_tokens_column, _label_to_tag,
       /*input_dim=*/input_dim,
       /*dyadic_num_intervals=*/defaults::NER_DYADIC_INTERVALS,
-      /*target_word_tokenizers=*/target->target_tokenizers,
-      /*feature_config=*/target->feature_config);
+      /*target_word_tokenizers=*/target_tokenizers,
+      /*feature_config=*/feature_config);
 
   _inference_transform = makeTransformation(
       /*inference=*/true, /*tags_column=*/_tags_column,
       /*tokens_column=*/_tokens_column, _label_to_tag,
       /*input_dim=*/input_dim,
       /*dyadic_num_intervals=*/defaults::NER_DYADIC_INTERVALS,
-      /*target_word_tokenizers=*/target->target_tokenizers,
-      /*feature_config=*/target->feature_config);
+      /*target_word_tokenizers=*/target_tokenizers,
+      /*feature_config=*/feature_config);
 }
 
 py::object UDTNer::train(const dataset::DataSourcePtr& data,
@@ -269,7 +286,7 @@ std::vector<SentenceTags> UDTNer::predictTags(
         token_index = 0;
       }
 
-      auto top_labels = scores->getVector(i).topKNeurons(top_k);
+      auto top_labels = scores->getVector(i).topKNeurons(top_k + 1);
 
       TokenTags tags;
       while (!top_labels.empty()) {
@@ -278,7 +295,16 @@ std::vector<SentenceTags> UDTNer::predictTags(
         top_labels.pop();
         tags.emplace_back(tag, score);
       }
-      std::reverse(tags.begin(), tags.end());
+
+      // If the default tag is the the top prediction but has a score < 0.9 then
+      // using the next top prediction improves accuracy.
+      if (tags.back().first == _label_to_tag[0] && tags.back().second < 0.9) {
+        tags.pop_back();
+        std::reverse(tags.begin(), tags.end());
+      } else {
+        std::reverse(tags.begin(), tags.end());
+        tags.pop_back();
+      }
 
       output_tags[sentence_index].push_back(tags);
 
