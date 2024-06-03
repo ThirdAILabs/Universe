@@ -11,6 +11,8 @@
 #include <cereal/types/utility.hpp>
 #include <cereal/types/variant.hpp>
 #include <cereal/types/vector.hpp>
+#include <data/src/transformations/ner/NerDyadicDataProcessor.h>
+#include <data/src/transformations/ner/NerTokenizationUnigram.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/blocks/text/WordpieceTokenizer.h>
@@ -24,6 +26,7 @@
 #include <regex>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 
@@ -273,6 +276,19 @@ struct NodeIDDataType : DataType {
   }
 };
 
+struct TokenTagsDataType : DataType {
+  explicit TokenTagsDataType(std::vector<std::string> tags,
+                             std::string default_tag = "O")
+      : tags(std::move(tags)), default_tag(std::move(default_tag)) {}
+
+  std::string toString() const final { return R"({"type": "token tags"})"; }
+
+  std::vector<std::string> tags;
+  std::string default_tag;
+};
+
+using TokenTagsDataTypePtr = std::shared_ptr<TokenTagsDataType>;
+
 using NodeIDDataTypePtr = std::shared_ptr<NodeIDDataType>;
 
 CategoricalDataTypePtr asCategorical(const DataTypePtr& data_type);
@@ -288,6 +304,8 @@ SequenceDataTypePtr asSequence(const DataTypePtr& data_type);
 NeighborsDataTypePtr asNeighbors(const DataTypePtr& data_type);
 
 NodeIDDataTypePtr asNodeID(const DataTypePtr& data_type);
+
+TokenTagsDataTypePtr asTokenTags(const DataTypePtr& data_type);
 
 using ColumnDataTypes = std::map<std::string, DataTypePtr>;
 

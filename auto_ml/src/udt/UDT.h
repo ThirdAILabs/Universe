@@ -36,8 +36,7 @@ class UDT {
       const UserProvidedTemporalRelationships& temporal_relationships,
       const std::string& target, char delimiter,
       const std::optional<std::string>& model_config,
-      const PretrainedBasePtr& pretrained_model,
-      const config::ArgumentMap& user_args);
+      const py::object& pretrained_model, const config::ArgumentMap& user_args);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,

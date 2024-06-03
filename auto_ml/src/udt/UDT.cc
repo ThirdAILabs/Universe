@@ -5,11 +5,13 @@
 #include <bolt/src/utils/Timer.h>
 #include <archive/src/Archive.h>
 #include <auto_ml/src/featurization/DataTypes.h>
+#include <auto_ml/src/pretrained/PretrainedBase.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/backends/DeprecatedUDTMachClassifier.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
 #include <auto_ml/src/udt/backends/UDTGraphClassifier.h>
 #include <auto_ml/src/udt/backends/UDTMach.h>
+#include <auto_ml/src/udt/backends/UDTNer.h>
 #include <auto_ml/src/udt/backends/UDTQueryReformulation.h>
 #include <auto_ml/src/udt/backends/UDTRecurrentClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
@@ -40,22 +42,34 @@ UDT::UDT(ColumnDataTypes data_types,
          const UserProvidedTemporalRelationships& temporal_relationships,
          const std::string& target, char delimiter,
          const std::optional<std::string>& model_config,
-         const PretrainedBasePtr& pretrained_model,
+         const py::object& pretrained_model,
          const config::ArgumentMap& user_args) {
   if (!data_types.count(target)) {
     throw std::invalid_argument("Target column '" + target +
                                 "' not found in data types.");
   }
 
-  if (pretrained_model) {
+  if (!pretrained_model.is_none()) {
     if (auto categorical = asCategorical(data_types.at(target))) {
       _backend = std::make_unique<UDTClassifier>(
           data_types, categorical->expectNClasses(), categorical->isInteger(),
-          pretrained_model, delimiter, user_args);
+          pretrained_model.cast<PretrainedBasePtr>(), delimiter, user_args);
       return;
     }
+    if (auto tags = asTokenTags(data_types.at(target))) {
+      auto udt = pretrained_model.cast<std::shared_ptr<UDT>>();
+      if (auto* udt_ner = dynamic_cast<UDTNer*>(udt->_backend.get())) {
+        _backend = std::make_unique<UDTNer>(data_types, tags, target, udt_ner,
+                                            user_args);
+        return;
+      }
+      throw std::invalid_argument(
+          "Only UDT NER models can be used as the base pretrained model for "
+          "NER tasks.");
+    }
     throw std::invalid_argument(
-        "Pretrained models are only supported for classification tasks.");
+        "Pretrained models are only supported for classification or NER "
+        "tasks.");
   }
 
   TabularOptions tabular_options;
@@ -79,6 +93,7 @@ UDT::UDT(ColumnDataTypes data_types,
   auto as_categorical = asCategorical(data_types.at(target));
   auto as_numerical = asNumerical(data_types.at(target));
   auto as_sequence = asSequence(data_types.at(target));
+  auto as_tags = asTokenTags(data_types.at(target));
   auto as_text = asText(data_types.at(target));
 
   if (as_categorical && has_graph_inputs) {
@@ -115,6 +130,9 @@ UDT::UDT(ColumnDataTypes data_types,
     _backend = std::make_unique<UDTRecurrentClassifier>(
         data_types, temporal_relationships, target, as_sequence,
         tabular_options, model_config, user_args);
+  } else if (as_tags) {
+    _backend = std::make_unique<UDTNer>(data_types, as_tags, target, nullptr,
+                                        user_args);
   } else if (as_text) {
     _backend = std::make_unique<UDTQueryReformulation>(
         data_types, target, delimiter, model_config, user_args);
@@ -347,6 +365,9 @@ std::unique_ptr<UDTBackend> backendFromArchive(const ar::Archive& archive) {
   }
   if (type == UDTRegression::type()) {
     return UDTRegression::fromArchive(archive);
+  }
+  if (type == UDTNer::type()) {
+    return UDTNer::fromArchive(archive);
   }
   throw std::invalid_argument("Invalid backend type '" + type + "'.");
 }

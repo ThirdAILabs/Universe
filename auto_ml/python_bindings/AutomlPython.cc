@@ -8,6 +8,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
+#include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/numpy.h>
@@ -51,7 +52,7 @@ std::shared_ptr<udt::UDT> makeUDT(
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
     const std::string& target_col, char delimiter,
     const std::optional<std::string>& model_config,
-    const PretrainedBasePtr& pretrained_model, const py::kwargs& kwargs);
+    const py::object& pretrained_model, const py::kwargs& kwargs);
 
 void defineAutomlInModule(py::module_& module) {
   py::class_<ValidationOptions>(module, "Validation")
@@ -92,7 +93,7 @@ void defineAutomlInModule(py::module_& module) {
                UserProvidedTemporalRelationships(),
            py::arg("target"), py::arg("delimiter") = ',',
            py::arg("model_config") = std::nullopt,
-           py::arg("pretrained_model") = nullptr, docs::UDT_INIT,
+           py::arg("pretrained_model") = py::none(), docs::UDT_INIT,
            bolt::python::OutputRedirect())
       .def("train", &udt::UDT::train, py::arg("data"), py::arg("learning_rate"),
            py::arg("epochs"),
@@ -335,6 +336,11 @@ void createUDTTypesSubmodule(py::module_& module) {
       .def(py::init<std::optional<size_t>, char, std::optional<uint32_t>>(),
            py::arg("n_classes") = std::nullopt, py::arg("delimiter") = ' ',
            py::arg("max_length") = std::nullopt, docs::UDT_SEQUENCE_TYPE);
+
+  py::class_<TokenTagsDataType, DataType, TokenTagsDataTypePtr>(
+      udt_types_submodule, "token_tags")
+      .def(py::init<std::vector<std::string>, std::string>(), py::arg("tags"),
+           py::arg("default_tag"));
 }
 
 void createUDTTemporalSubmodule(py::module_& module) {
@@ -404,13 +410,27 @@ config::ArgumentMap createArgumentMap(const py::dict& input_args) {
       std::string value = v.cast<std::string>();
       args.insert(name, value);
     } else if (py::isinstance<py::list>(v)) {
+      bool success = false;
       try {
         std::vector<int32_t> value = v.cast<std::vector<int32_t>>();
         args.insert(name, value);
+        success = true;  // NOLINT (clang-tidy thinks this is unused)
       } catch (...) {
-        throw std::invalid_argument(
-            "List argument must contain only integers.");
       }
+      try {
+        auto value = v.cast<std::vector<dataset::TextTokenizerPtr>>();
+        args.insert(name, value);
+        success = true;  // NOLINT (clang-tidy thinks this is unused)
+      } catch (...) {
+      }
+      if (!success) {
+        throw std::invalid_argument(
+            "Invalid type for argument '" + name +
+            "'. Must be either List[int] or List[dataset.Tokenizer].");
+      }
+    } else if (py::isinstance<data::FeatureEnhancementConfig>(v)) {
+      auto value = v.cast<data::FeatureEnhancementConfig>();
+      args.insert(name, value);
     } else {
       throw std::invalid_argument(
           "Invalid type '" + py::str(v.get_type()).cast<std::string>() +
@@ -427,7 +447,7 @@ std::shared_ptr<udt::UDT> makeUDT(
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
     const std::string& target_col, char delimiter,
     const std::optional<std::string>& model_config,
-    const PretrainedBasePtr& pretrained_model, const py::kwargs& kwargs) {
+    const py::object& pretrained_model, const py::kwargs& kwargs) {
   if (kwargs.contains("integer_target")) {
     throw std::invalid_argument(
         "Argument 'integer_target' is deprecated. Please use "
