@@ -23,12 +23,11 @@ class UDTClassifier final : public UDTBackend {
       const ColumnDataTypes& input_data_types,
       const UserProvidedTemporalRelationships& temporal_tracking_relationships,
       const std::string& target_name, CategoricalDataTypePtr target,
-      uint32_t n_target_classes, bool integer_target,
       const TabularOptions& tabular_options,
       const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
-  UDTClassifier(const ColumnDataTypes& data_types, uint32_t n_target_classes,
+  UDTClassifier(const ColumnDataTypes& data_types, uint32_t n_classes,
                 bool integer_target, const PretrainedBasePtr& pretrained_model,
                 char delimiter, const config::ArgumentMap& user_args);
 
@@ -105,8 +104,9 @@ class UDTClassifier final : public UDTBackend {
     if (!integerTarget()) {
       throw std::invalid_argument(
           "UDT with a categorical target cannot be trained in distributed "
-          "setting without integer_target=True. Please convert the categorical "
-          "target column into an integer target to train UDT in a distributed "
+          "setting without type='int' for the target. Please convert the "
+          "categorical target column into an integer target to train UDT in a "
+          "distributed "
           "setting.");
     }
 
@@ -128,7 +128,7 @@ class UDTClassifier final : public UDTBackend {
  private:
   data::TransformationPtr labelTransformation(
       const std::string& target_name, CategoricalDataTypePtr& target_config,
-      uint32_t n_target_classes, bool integer_target) const;
+      uint32_t n_classes, bool integer_target) const;
 
   uint32_t labelToNeuronId(
       const std::variant<uint32_t, std::string>& label) const;

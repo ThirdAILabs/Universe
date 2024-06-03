@@ -42,12 +42,10 @@ class Runner(ABC):
         model = bolt.UniversalDeepTransformer(
             data_types=data_types,
             target=config.target,
-            integer_target=config.integer_target,
-            n_target_classes=config.n_target_classes,
             temporal_tracking_relationships=config.temporal_relationships,
             delimiter=config.delimiter,
             model_config=model_config_path,
-            options=config.options,
+            **config.options,
         )
 
         if model_config_path:

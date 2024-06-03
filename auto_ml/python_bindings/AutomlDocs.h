@@ -56,19 +56,6 @@ Args:
         See bolt.temporal for details.
     target (str): Name of the column that contains the value to be predicted by
         UDT. The target column has to be a categorical column.
-    n_target_classes (int): Number of target classes.
-    integer_target (bool): Whether the target classes are integers in the range 0 to n_target_classes - 1.
-    time_granularity (str): Optional. Either `"daily"`/`"d"`, `"weekly"`/`"w"`, `"biweekly"`/`"b"`, 
-        or `"monthly"`/`"m"`. Interval of time that UDT should use for temporal features. Temporal numerical 
-        features are clubbed according to this time granularity. E.g. if 
-        `time_granularity="w"` and the numerical values on days 1 and 2 are
-        345.25 and 201.1 respectively, then UDT captures a single numerical 
-        value of 546.26 for the week instead of individual values for the two days.
-        Defaults to "daily".
-    lookahead (str): Optional. How far into the future the model should predict. This length of
-        time is in terms of time_granularity. E.g. 'time_granularity="daily"` and 
-        `lookahead=5` means that the model should learn to predict 5 days into the future. Defaults to 0
-        (predict the current value of the target).
     delimiter (str): Optional. Defaults to ','. A single character 
         (length-1 string) that separates the columns of the CSV training / validation dataset.
     model_config (Optional[str]): This overwrites the autotuned model with a custom model 
@@ -84,7 +71,7 @@ Examples:
                 "timestamp": bolt.types.date(),
                 "ad_spend": bolt.types.numerical(range=(0, 10000)),
                 "sales_quantity": bolt.types.numerical(range=(0, 20)),
-                "sales_performance": bolt.types.categorical(),
+                "sales_performance": bolt.types.categorical(n_classes=5),
             },
             temporal_tracking_relationships={
                 "product_id": [
@@ -99,7 +86,6 @@ Examples:
                 ]
             },
             target="sales_performance",
-            n_target_classes=5,
             time_granularity="weekly",
             lookahead=2 # predict 2 weeks ahead
         )
@@ -110,7 +96,7 @@ Examples:
             data_types={
                 "user_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
-                "movie_id": bolt.types.categorical(),
+                "movie_id": bolt.types.categorical(n_classes=3000),
                 "hours_watched": bolt.types.numerical(range=(0, 25)),
             },
             temporal_tracking_relationships={
@@ -120,7 +106,6 @@ Examples:
                 ]
             },
             target="movie_id",
-            n_target_classes=3000
         )
 
 Notes:
@@ -212,13 +197,12 @@ Examples:
                 "user_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
                 "special_event": bolt.types.categorical(),
-                "movie_title": bolt.types.categorical()
+                "movie_title": bolt.types.categorical(n_classes=500)
             },
             temporal_tracking_relationships={
                 "user_id": ["movie_title"]
             },
             target="movie_title",
-            n_target_classes=500
         )
     >>> # Make a single prediction
     >>> activations = model.predict(
@@ -315,13 +299,12 @@ Examples:
                 "user_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
                 "special_event": bolt.types.categorical(),
-                "movie_title": bolt.types.categorical()
+                "movie_title": bolt.types.categorical(n_classes=500)
             },
             temporal_tracking_relationships={
                 "user_id": ["movie_title"]
             },
             target="movie_title",
-            n_target_classes=500,
         )
     >>> # Get an embedding representation
     >>> embedding = model.embedding_representation(
@@ -352,8 +335,8 @@ the name of a class predicted as output.
 
 Args:
     label_id (Union[int, str]): The the name of the entity to get an embedding for.
-    If integer_target=True, this function should take in an integer from 0 to 
-    n_target_classes - 1 instead of a string.
+    If type='int' for the target, this function should take in an integer from 0 to 
+    n_classes - 1 instead of a string.
 
 Returns:
     A 1D numpy array of floats representing a dense embedding of that entity.
@@ -402,13 +385,12 @@ Example:
                 "user_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
                 "special_event": bolt.types.categorical(),
-                "movie_title": bolt.types.categorical()
+                "movie_title": bolt.types.categorical(n_classes=500)
             },
             temporal_tracking_relationships={
                 "user_id": ["movie_title"]
             },
             target="movie_title",
-            n_target_classes=500,
         )
     >>> # We then deploy the model for inference. Inference is performed by calling model.predict()
     >>> activations = model.predict(
@@ -443,13 +425,12 @@ Example:
                 "user_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
                 "special_event": bolt.types.categorical(),
-                "movie_title": bolt.types.categorical()
+                "movie_title": bolt.types.categorical(n_classes=500)
             },
             temporal_tracking_relationships={
                 "user_id": ["movie_title"]
             },
             target="movie_title",
-            n_target_classes=500,
         )
     >>> # We then deploy the model for inference. Inference is performed by calling model.predict()
     >>> activations = model.predict(
@@ -514,13 +495,12 @@ Example:
                 "user_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
                 "special_event": bolt.types.categorical(),
-                "movie_title": bolt.types.categorical()
+                "movie_title": bolt.types.categorical(n_classes=500)
             },
             temporal_tracking_relationships={
                 "user_id": "movie_title"
             },
             target="movie_title",
-            n_target_classes=500,
         )
     >>> # Make a single prediction
     >>> explanations = model.explain(
@@ -726,6 +706,14 @@ data (each unique value is treated as a class). Examples include user IDs,
 movie titles, or age groups.
 
 Args:
+    n_classes (Optiona[int]): Optional, defaults to None. If the data type is for the 
+        target column in a classification task then this must be specified to indicate 
+        how many classes are present in the dataset.
+    type (str): Optional, defaults to "str". How the categories are represented in the
+         dataset, i.e. are they stored as strings or integers. This is primarily relevant
+         for target columns since string categories will be mapped to integers to 
+         correspond to output neurons, however if the categories are already represented
+         as integers then they can be used for labels directly. 
     delimiter (str): Optional. Defaults to None. A single character 
         (length-1 string) that separates multiple values in the same 
         column. This can only be used for the target column. If not 
@@ -820,10 +808,9 @@ const char* const UDT_SEQUENCE_TYPE = R"pbdoc(
      >>> bolt.UniversalDeepTransformer(
              data_types: {
                  "input_sequence": bolt.types.sequence(delimiter='\t')
-                 "output_sequence": bolt.types.sequence(max_length=30) # max_length must be provided for target sequence.
+                 "output_sequence": bolt.types.sequence(n_classes=26, max_length=30) # max_length must be provided for target sequence.
              },
              target="output_sequence",
-             n_target_classes=26
              ...
          )
  )pbdoc";

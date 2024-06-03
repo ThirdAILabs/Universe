@@ -22,10 +22,13 @@ def this_should_require_a_license_search():
 def this_should_require_a_license_query_reformulation():
     from thirdai import bolt
 
-    bolt.UniversalDeepTransformer(
-        source_column="source_queries",
-        target_column="target_queries",
-        dataset_size="medium",
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "query": bolt.types.text(),
+            "label": bolt.types.text(),
+        },
+        target="label",
+        dataset_size="small",
     )
 
 
@@ -136,13 +139,13 @@ def test_restricted_output_dim_license():
     import thirdai
 
     thirdai.licensing.set_path(str(max_output_dim_100_license_path))
-    run_udt_training_routine(n_target_classes=2)
+    run_udt_training_routine(n_classes=2)
 
     with pytest.raises(
         Exception,
         match=r"This model's output dim is too large to be allowed under this license",
     ):
-        run_udt_training_routine(n_target_classes=102)
+        run_udt_training_routine(n_classes=102)
 
 
 def test_max_train_samples_license():

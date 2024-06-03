@@ -15,7 +15,6 @@ class RecurrentFeaturizer {
   RecurrentFeaturizer(const ColumnDataTypes& data_types,
                       const std::string& target_name,
                       const SequenceDataTypePtr& target,
-                      uint32_t n_target_classes,
                       const TabularOptions& tabular_options);
 
   explicit RecurrentFeaturizer(const ar::Archive& archive);
@@ -49,7 +48,6 @@ class RecurrentFeaturizer {
   makeTransformation(const ColumnDataTypes& data_types,
                      const std::string& target_name,
                      const SequenceDataTypePtr& target,
-                     uint32_t n_target_classes,
                      const TabularOptions& tabular_options,
                      bool add_recurrence_augmentation) const;
 

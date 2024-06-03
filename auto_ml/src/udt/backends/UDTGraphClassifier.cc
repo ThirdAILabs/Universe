@@ -14,21 +14,20 @@
 
 namespace thirdai::automl::udt {
 
-UDTGraphClassifier::UDTGraphClassifier(const ColumnDataTypes& data_types,
-                                       const std::string& target_col,
-                                       uint32_t n_target_classes,
-                                       bool integer_target,
-                                       const TabularOptions& options) {
-  if (!integer_target) {
+UDTGraphClassifier::UDTGraphClassifier(
+    const ColumnDataTypes& data_types,
+    const CategoricalDataTypePtr& target_type, const std::string& target_col,
+    const TabularOptions& options) {
+  if (!target_type->isInteger()) {
     throw exceptions::NotImplemented(
         "We do not yet support non integer classes on graphs.");
   }
 
-  _featurizer = std::make_shared<GraphFeaturizer>(data_types, target_col,
-                                                  n_target_classes, options);
+  _featurizer = std::make_shared<GraphFeaturizer>(
+      data_types, target_col, target_type->expectNClasses(), options);
 
   // TODO(Any): Add customization/autotuning like in UDTClassifier
-  auto model = createGNN(n_target_classes);
+  auto model = createGNN(target_type->expectNClasses());
 
   _classifier =
       utils::Classifier::make(model, /* freeze_hash_tables = */ false);

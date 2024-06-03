@@ -55,8 +55,11 @@ class QueryReformulationRunner(Runner):
             model_config_path = None
 
         model = bolt.UniversalDeepTransformer(
-            source_column=config.source_column,
-            target_column=config.target_column,
+            data_types={
+                config.source_column: bolt.types.text(),
+                config.target_column: bolt.types.text(),
+            },
+            target=config.target_column,
             dataset_size=config.dataset_size,
         )
 

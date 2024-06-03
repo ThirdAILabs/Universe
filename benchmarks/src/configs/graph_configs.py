@@ -12,8 +12,6 @@ class YelpChiUDTBenchmark(UDTBenchmarkConfig):
     test_file = "yelp_chi/yelp_test.csv"
 
     target = "target"
-    integer_target = True
-    n_target_classes = 2
     delimiter = ","
 
     num_epochs = 15
@@ -31,7 +29,7 @@ class YelpChiUDTBenchmark(UDTBenchmarkConfig):
         return {
             "node_id": bolt.types.node_id(),
             **{f"col_{i}": bolt.types.numerical([0, 1]) for i in range(32)},
-            "target": bolt.types.categorical(),
+            "target": bolt.types.categorical(n_classes=2, type="int"),
             "neighbors": bolt.types.neighbors(),
         }
 
@@ -44,8 +42,6 @@ class PokecUDTBenchmark(UDTBenchmarkConfig):
     test_file = "pokec/test.csv"
 
     target = "target"
-    integer_target = True
-    n_target_classes = 2
     delimiter = ","
 
     num_epochs = 15
@@ -69,6 +65,6 @@ class PokecUDTBenchmark(UDTBenchmarkConfig):
                 f"col_{col_name}": bolt.types.numerical(col_range)
                 for col_name, col_range in enumerate(pokec_col_ranges)
             },
-            "target": bolt.types.categorical(),
+            "target": bolt.types.categorical(n_classes=2, type="int"),
             "neighbors": bolt.types.neighbors(),
         }
