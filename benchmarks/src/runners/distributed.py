@@ -16,7 +16,6 @@ class DistributedRunner(Runner):
 
     def training_loop_per_worker(config):
         model = create_udt_model(
-            n_target_classes=config["n_target_classes"],
             output_dim=config["output_dim"],
             num_hashes=config["num_hashes"],
             embedding_dimension=config["embedding_dimension"],

@@ -33,20 +33,42 @@
 
 namespace thirdai::automl::udt {
 
+std::optional<std::string> inputColumnName(ColumnDataTypes data_types,
+                                           const std::string& target_col) {
+  if (data_types.size() != 1 && data_types.size() != 2) {
+    throw std::invalid_argument(
+        "Only either target or source/target columns must be supplied to "
+        "QueryReformulation.");
+  }
+
+  data_types.erase(target_col);
+
+  if (data_types.empty()) {
+    return std::nullopt;
+  }
+
+  if (!asText(data_types.begin()->second)) {
+    throw std::invalid_argument(
+        "Non target column should be bolt.types.text() in QueryReformulation.");
+  }
+
+  return data_types.begin()->first;
+}
+
 UDTQueryReformulation::UDTQueryReformulation(
-    std::optional<std::string> incorrect_column_name,
-    std::string correct_column_name, const std::string& dataset_size,
-    bool use_spell_checker, char delimiter,
-    const std::optional<std::string>& model_config,
+    const ColumnDataTypes& data_types, std::string target_column,
+    char delimiter, const std::optional<std::string>& model_config,
     const config::ArgumentMap& user_args)
-    : _incorrect_column_name(std::move(incorrect_column_name)),
-      _correct_column_name(std::move(correct_column_name)),
-      _use_spell_checker(use_spell_checker),
+    : _incorrect_column_name(inputColumnName(data_types, target_column)),
+      _correct_column_name(std::move(target_column)),
+      _use_spell_checker(user_args.get<bool>("use_spell_checker", "boolean",
+                                             defaults::USE_SPELL_CHECKER)),
       _delimiter(delimiter) {
   if (model_config) {
     _flash_index = config::buildIndex(*model_config, user_args);
   } else {
-    _flash_index = defaultFlashIndex(dataset_size);
+    _flash_index = defaultFlashIndex(user_args.get<std::string>(
+        "dataset_size", "string", defaults::QUERY_REFORMULATION_SIZE));
   }
 
   if (_use_spell_checker) {

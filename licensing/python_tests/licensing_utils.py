@@ -7,22 +7,21 @@ import pytest
 # This function builds a UDT model, trains the model, saves it, and run a
 # prediction on it. It is primarily used for testing licenses, and the arguments
 # allow the training to be tweaked to fit within more restrictive licenses.
-def run_udt_training_routine(do_save_load=True, n_target_classes=2, num_data_points=2):
+def run_udt_training_routine(do_save_load=True, n_classes=2, num_data_points=2):
     from thirdai import bolt
 
     model = bolt.UniversalDeepTransformer(
         data_types={
-            "col_1": bolt.types.categorical(),
+            "col_1": bolt.types.categorical(n_classes=n_classes),
             "col_2": bolt.types.categorical(),
         },
         target="col_1",
-        n_target_classes=n_target_classes,
     )
 
     df = pd.DataFrame(
         {
-            "col_1": [i % n_target_classes for i in range(num_data_points)],
-            "col_2": [i % n_target_classes for i in range(num_data_points)],
+            "col_1": [i % n_classes for i in range(num_data_points)],
+            "col_2": [i % n_classes for i in range(num_data_points)],
         }
     )
     df.to_csv("temp_training.csv")

@@ -14,7 +14,7 @@ namespace thirdai::automl {
 class GraphFeaturizer {
  public:
   GraphFeaturizer(const ColumnDataTypes& data_types,
-                  const std::string& target_col, uint32_t n_target_classes,
+                  const std::string& target_col, uint32_t n_classes,
                   const TabularOptions& options);
 
   explicit GraphFeaturizer(const ar::Archive& archive);

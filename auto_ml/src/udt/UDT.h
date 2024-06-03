@@ -33,21 +33,10 @@ namespace thirdai::automl::udt {
 class UDT {
  public:
   UDT(ColumnDataTypes data_types,
-      const UserProvidedTemporalRelationships& temporal_tracking_relationships,
-      const std::string& target_col, std::optional<uint32_t> n_target_classes,
-      bool integer_target, std::string time_granularity, uint32_t lookahead,
-      char delimiter, const std::optional<std::string>& model_config,
-      const PretrainedBasePtr& pretrained_model,
-      const config::ArgumentMap& user_args);
-
-  UDT(std::optional<std::string> incorrect_column_name,
-      std::string correct_column_name, const std::string& dataset_size,
-      bool use_spell_checker, char delimiter,
+      const UserProvidedTemporalRelationships& temporal_relationships,
+      const std::string& target, char delimiter,
       const std::optional<std::string>& model_config,
-      const config::ArgumentMap& user_args);
-
-  UDT(const std::string& file_format, uint32_t n_target_classes,
-      uint32_t input_dim, const std::optional<std::string>& model_config,
+      const PretrainedBasePtr& pretrained_model,
       const config::ArgumentMap& user_args);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,

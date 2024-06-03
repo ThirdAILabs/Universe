@@ -17,12 +17,10 @@ pytestmark = [pytest.mark.unit]
 def clinc_model():
     model = bolt.UniversalDeepTransformer(
         data_types={
-            "category": bolt.types.categorical(),
+            "category": bolt.types.categorical(n_classes=150, type="int"),
             "text": bolt.types.text(),
         },
         target="category",
-        n_target_classes=150,
-        integer_target=True,
     )
 
     return model

@@ -164,11 +164,9 @@ udt_cold_start_doc = """
         >>> model = bolt.UniversalDeepTransformer(
                 data_types={
                     "query": bolt.types.text(), 
-                    "product": bolt.types.categorical(),
+                    "product": bolt.types.categorical(n_classes=1000),
                 }
                 target="product",
-                n_target_classes=1000,
-                integer_target=True,
             )
         >>> model.cold_start(
                 filename="product_catalog.csv",

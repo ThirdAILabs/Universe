@@ -59,10 +59,9 @@ def test_char_k_text_tokenizer():
     model = bolt.UniversalDeepTransformer(
         data_types={
             "text": bolt.types.text(tokenizer="char-3"),
-            "category": bolt.types.categorical(),
+            "category": bolt.types.categorical(n_classes=2),
         },
         target="category",
-        n_target_classes=2,
     )
 
     eval_accuracy_and_cleanup(model)
@@ -79,10 +78,9 @@ def test_words_punct_text_tokenizer():
     model = bolt.UniversalDeepTransformer(
         data_types={
             "text": bolt.types.text(tokenizer="words-punct"),
-            "category": bolt.types.categorical(),
+            "category": bolt.types.categorical(n_classes=2),
         },
         target="category",
-        n_target_classes=2,
     )
 
     eval_accuracy_and_cleanup(model)
@@ -99,10 +97,9 @@ def test_lowercasing_for_udt_text_type():
     model = bolt.UniversalDeepTransformer(
         data_types={
             "text": bolt.types.text(lowercase=True),
-            "category": bolt.types.categorical(),
+            "category": bolt.types.categorical(n_classes=2),
         },
         target="category",
-        n_target_classes=2,
     )
 
     eval_accuracy_and_cleanup(model)
@@ -118,10 +115,9 @@ def test_tokenizer_from_vocabulary(download_bert_base_uncased):
     model = bolt.UniversalDeepTransformer(
         data_types={
             "text": bolt.types.text(tokenizer=tokenizer),
-            "category": bolt.types.categorical(),
+            "category": bolt.types.categorical(n_classes=2),
         },
         target="category",
-        n_target_classes=2,
     )
 
     eval_accuracy_and_cleanup(model)
@@ -138,10 +134,9 @@ def test_invalid_text_tokenizers():
         bolt.UniversalDeepTransformer(
             data_types={
                 "text_col": bolt.types.text(tokenizer=invalid_tokenizer),
-                "some_random_name": bolt.types.categorical(),
+                "some_random_name": bolt.types.categorical(n_classes=2),
             },
             target="target",
-            n_target_classes=2,
         )
 
 
@@ -156,10 +151,9 @@ def test_contextual_text_encodings():
         bolt.UniversalDeepTransformer(
             data_types={
                 "text_col": bolt.types.text(contextual_encoding=invalid_encoding),
-                "some_random_name": bolt.types.categorical(),
+                "some_random_name": bolt.types.categorical(n_classes=2),
             },
             target="target",
-            n_target_classes=2,
         )
 
 
@@ -176,10 +170,9 @@ def test_invalid_char_k_tokenizer(invalid_tokenizer):
         bolt.UniversalDeepTransformer(
             data_types={
                 "text_col": bolt.types.text(tokenizer=invalid_tokenizer),
-                "some_random_name": bolt.types.categorical(),
+                "some_random_name": bolt.types.categorical(n_classes=2),
             },
             target="target",
-            n_target_classes=2,
         )
 
 
@@ -194,10 +187,9 @@ def test_invalid_ngram_encoder(invalid_ngram):
         bolt.UniversalDeepTransformer(
             data_types={
                 "text_col": bolt.types.text(contextual_encoding=invalid_ngram),
-                "some_random_name": bolt.types.categorical(),
+                "some_random_name": bolt.types.categorical(n_classes=2),
             },
             target="target",
-            n_target_classes=2,
         )
 
 
@@ -210,8 +202,7 @@ def test_invalid_ngram_encoder_n_equals_0():
         bolt.UniversalDeepTransformer(
             data_types={
                 "text_col": bolt.types.text(contextual_encoding=invalid_ngram),
-                "some_random_name": bolt.types.categorical(),
+                "some_random_name": bolt.types.categorical(n_classes=2),
             },
             target="target",
-            n_target_classes=2,
         )
