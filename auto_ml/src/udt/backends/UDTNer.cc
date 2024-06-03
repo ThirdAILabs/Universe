@@ -126,9 +126,24 @@ std::vector<std::string> prependDefaultTag(
   return all_tags;
 }
 
+std::shared_ptr<data::NerTokenizerUnigram> extractInputTransform(
+    const data::TransformationPtr& transform) {
+  if (auto pipeline = std::dynamic_pointer_cast<data::Pipeline>(transform)) {
+    if (pipeline->transformations().empty()) {
+      return nullptr;
+    }
+
+    return std::dynamic_pointer_cast<data::NerTokenizerUnigram>(
+        pipeline->transformations()[0]);
+  }
+
+  return nullptr;
+}
+
 UDTNer::UDTNer(const ColumnDataTypes& data_types,
                const TokenTagsDataTypePtr& target,
-               const std::string& target_name, const config::ArgumentMap& args)
+               const std::string& target_name, const UDTNer* pretrained_model,
+               const config::ArgumentMap& args)
     : _bolt_inputs({data::OutputColumns(NER_FEATURIZED_SENTENCE)}),
       _tokens_column(tokensColumn(data_types, target_name)),
       _tags_column(target_name),
@@ -140,7 +155,6 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
   std::optional<data::FeatureEnhancementConfig> feature_config;
   bolt::EmbeddingPtr pretrained_emb;
 
-  std::unique_ptr<UDTNer> pretrained_model;
   if (pretrained_model) {
     pretrained_emb = bolt::Embedding::cast(
         pretrained_model->_model->opExecutionOrder().at(0));
@@ -151,8 +165,8 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
     input_dim = pretrained_emb->inputDim();
     emb_dim = pretrained_emb->dim();
 
-    auto input_transform = std::dynamic_pointer_cast<data::NerTokenizerUnigram>(
-        pretrained_model->_supervised_transform);
+    auto input_transform =
+        extractInputTransform(pretrained_model->_supervised_transform);
     if (!input_transform) {
       throw std::invalid_argument("Invalid pretrained model for NER task.");
     }

@@ -15,7 +15,8 @@ using SentenceTags = std::vector<TokenTags>;
 class UDTNer final : public UDTBackend {
  public:
   UDTNer(const ColumnDataTypes& data_types, const TokenTagsDataTypePtr& target,
-         const std::string& target_name, const config::ArgumentMap& args);
+         const std::string& target_name, const UDTNer* pretrained_model,
+         const config::ArgumentMap& args);
 
   explicit UDTNer(const ar::Archive& archive);
 

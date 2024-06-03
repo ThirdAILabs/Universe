@@ -52,7 +52,7 @@ std::shared_ptr<udt::UDT> makeUDT(
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
     const std::string& target_col, char delimiter,
     const std::optional<std::string>& model_config,
-    const PretrainedBasePtr& pretrained_model, const py::kwargs& kwargs);
+    const py::object& pretrained_model, const py::kwargs& kwargs);
 
 void defineAutomlInModule(py::module_& module) {
   py::class_<ValidationOptions>(module, "Validation")
@@ -93,7 +93,7 @@ void defineAutomlInModule(py::module_& module) {
                UserProvidedTemporalRelationships(),
            py::arg("target"), py::arg("delimiter") = ',',
            py::arg("model_config") = std::nullopt,
-           py::arg("pretrained_model") = nullptr, docs::UDT_INIT,
+           py::arg("pretrained_model") = py::none(), docs::UDT_INIT,
            bolt::python::OutputRedirect())
       .def("train", &udt::UDT::train, py::arg("data"), py::arg("learning_rate"),
            py::arg("epochs"),
@@ -447,7 +447,7 @@ std::shared_ptr<udt::UDT> makeUDT(
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
     const std::string& target_col, char delimiter,
     const std::optional<std::string>& model_config,
-    const PretrainedBasePtr& pretrained_model, const py::kwargs& kwargs) {
+    const py::object& pretrained_model, const py::kwargs& kwargs) {
   if (kwargs.contains("integer_target")) {
     throw std::invalid_argument(
         "Argument 'integer_target' is deprecated. Please use "

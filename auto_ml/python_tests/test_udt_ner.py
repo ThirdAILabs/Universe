@@ -85,6 +85,7 @@ def test_udt_ner(ner_dataset):
             TAGS: bolt.types.token_tags(tags=["0", "email", "credit_card"]),
         },
         target=TAGS,
+        embedding_dimension=500,
     )
 
     model.train(train, epochs=1, learning_rate=0.001, metrics=["categorical_accuracy"])
@@ -112,6 +113,36 @@ def test_udt_ner(ner_dataset):
     acc_after_finetune = evaluate(model, test)
     print(f"{acc_after_finetune=}")
     assert acc_after_finetune > 0.9
+
+
+def test_udt_ner_from_pretrained(ner_dataset):
+    train, test = ner_dataset
+
+    pretrained_model = bolt.UniversalDeepTransformer(
+        data_types={
+            TOKENS: bolt.types.text(),
+            TAGS: bolt.types.token_tags(tags=["0", "email", "credit_card"]),
+        },
+        target=TAGS,
+        embedding_dimension=450,
+    )
+
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            TOKENS: bolt.types.text(),
+            TAGS: bolt.types.token_tags(tags=["0", "email", "credit_card"]),
+        },
+        target=TAGS,
+        pretrained_model=pretrained_model,
+    )
+
+    assert model.model_dims()[1] == 450
+
+    model.train(train, epochs=1, learning_rate=0.001, metrics=["categorical_accuracy"])
+
+    metrics = model.evaluate(test, metrics=["categorical_accuracy"])
+
+    assert metrics["val_categorical_accuracy"][-1] >= 0.9
 
 
 def test_udt_ner_target_tokenizer_arg():
