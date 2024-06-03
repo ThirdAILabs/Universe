@@ -29,10 +29,10 @@ def generate_data(filename, n_rows):
     with open(filename, "w") as file:
         for _ in range(n_rows):
             email_tokens = ["email", "is", random_email(), "for", "work"]
-            email_tags = ["0", "0", "email", "0", "0"]
+            email_tags = ["O", "O", "email", "O", "O"]
 
             credit_card_tokens = ["credit", "card", "is", random_credit_card()]
-            credit_card_tags = ["0", "0", "0", "credit_card"]
+            credit_card_tags = ["O", "O", "O", "credit_card"]
 
             sample = {
                 TOKENS: email_tokens + credit_card_tokens,
@@ -68,7 +68,7 @@ def evaluate(model, test):
 
         assert len(predicted_tags) == len(data[TAGS])
         for tag, expected_tag in zip(predicted_tags, data[TAGS]):
-            if expected_tag != "0":
+            if expected_tag != "O":
                 if tag == expected_tag:
                     correct += 1
                 total += 1
@@ -82,7 +82,7 @@ def test_udt_ner(ner_dataset):
     model = bolt.UniversalDeepTransformer(
         data_types={
             TOKENS: bolt.types.text(),
-            TAGS: bolt.types.token_tags(tags=["0", "email", "credit_card"]),
+            TAGS: bolt.types.token_tags(tags=["email", "credit_card"], default_tag="O"),
         },
         target=TAGS,
         embedding_dimension=500,
@@ -121,7 +121,7 @@ def test_udt_ner_from_pretrained(ner_dataset):
     pretrained_model = bolt.UniversalDeepTransformer(
         data_types={
             TOKENS: bolt.types.text(),
-            TAGS: bolt.types.token_tags(tags=["0", "email", "credit_card"]),
+            TAGS: bolt.types.token_tags(tags=["email", "credit_card"], default_tag="O"),
         },
         target=TAGS,
         embedding_dimension=450,
@@ -130,7 +130,7 @@ def test_udt_ner_from_pretrained(ner_dataset):
     model = bolt.UniversalDeepTransformer(
         data_types={
             TOKENS: bolt.types.text(),
-            TAGS: bolt.types.token_tags(tags=["0", "email", "credit_card"]),
+            TAGS: bolt.types.token_tags(tags=["email", "credit_card"], default_tag="O"),
         },
         target=TAGS,
         pretrained_model=pretrained_model,
@@ -149,7 +149,7 @@ def test_udt_ner_target_tokenizer_arg():
     bolt.UniversalDeepTransformer(
         data_types={
             TOKENS: bolt.types.text(),
-            TAGS: bolt.types.token_tags(tags=["0", "email", "credit_card"]),
+            TAGS: bolt.types.token_tags(tags=["email", "credit_card"], default_tag="O"),
         },
         target=TAGS,
         target_tokenizers=[dataset.CharKGramTokenizer(3)],
@@ -164,7 +164,9 @@ def test_udt_ner_target_tokenizer_arg():
         bolt.UniversalDeepTransformer(
             data_types={
                 TOKENS: bolt.types.text(),
-                TAGS: bolt.types.token_tags(tags=["0", "email", "credit_card"]),
+                TAGS: bolt.types.token_tags(
+                    tags=["email", "credit_card"], default_tag="O"
+                ),
             },
             target=TAGS,
             target_tokenizers=[dataset.NGramEncoder(2)],
@@ -175,7 +177,7 @@ def test_udt_ner_feature_config_arg():
     bolt.UniversalDeepTransformer(
         data_types={
             TOKENS: bolt.types.text(),
-            TAGS: bolt.types.token_tags(tags=["0", "email", "credit_card"]),
+            TAGS: bolt.types.token_tags(tags=["email", "credit_card"], default_tag="O"),
         },
         target=TAGS,
         feature_config=data.transformations.NerFeatureConfig(*([True] * 7)),
@@ -185,7 +187,9 @@ def test_udt_ner_feature_config_arg():
         bolt.UniversalDeepTransformer(
             data_types={
                 TOKENS: bolt.types.text(),
-                TAGS: bolt.types.token_tags(tags=["0", "email", "credit_card"]),
+                TAGS: bolt.types.token_tags(
+                    tags=["email", "credit_card"], default_tag="O"
+                ),
             },
             target=TAGS,
             feature_config={"email": True},

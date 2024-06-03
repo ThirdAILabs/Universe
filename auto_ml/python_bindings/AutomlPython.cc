@@ -340,7 +340,7 @@ void createUDTTypesSubmodule(py::module_& module) {
   py::class_<TokenTagsDataType, DataType, TokenTagsDataTypePtr>(
       udt_types_submodule, "token_tags")
       .def(py::init<std::vector<std::string>, std::string>(), py::arg("tags"),
-           py::arg("default_tag") = "O");
+           py::arg("default_tag"));
 }
 
 void createUDTTemporalSubmodule(py::module_& module) {
