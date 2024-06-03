@@ -12,6 +12,13 @@
 #include <vector>
 
 namespace thirdai::data {
+
+inline bool isAllPunctuation(const std::string& str) {
+  return !str.empty() && std::all_of(str.begin(), str.end(), ::ispunct);
+}
+
+std::string trimPunctuation(const std::string& str);
+
 struct FeatureEnhancementConfig {
   bool enhance_names = true;
   bool enhance_location_features = true;
