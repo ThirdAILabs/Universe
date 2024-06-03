@@ -1,5 +1,7 @@
 #pragma once
 
+#include <data/src/transformations/ner/NerDyadicDataProcessor.h>
+#include <dataset/src/blocks/text/TextTokenizer.h>
 #include <cstdint>
 #include <optional>
 #include <stdexcept>
@@ -47,7 +49,9 @@ class ArgumentMap {
  private:
   std::unordered_map<
       std::string,
-      std::variant<bool, uint32_t, float, std::string, std::vector<int32_t>>>
+      std::variant<bool, uint32_t, float, std::string, std::vector<int32_t>,
+                   data::FeatureEnhancementConfig,
+                   std::vector<dataset::TextTokenizerPtr>>>
       _arguments;
 };
 

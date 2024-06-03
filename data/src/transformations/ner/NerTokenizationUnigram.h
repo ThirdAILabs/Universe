@@ -50,13 +50,13 @@ class NerTokenizerUnigram final : public Transformation {
     throw std::out_of_range("String not found in the label map: " + tag);
   }
 
+  const auto& processor() const { return _processor; }
+
  private:
   /*
    * _tokens_column : the column containing the string tokens
    * _target_column : the column containing the target tags
    * _target_dim : the number of total different labels
-   * _featurized_tokens_indices_column : this column contains the tokens after
-   * tokenizing the _featurized_sentence_column
    */
   std::string _tokens_column;
   std::string _featurized_sentence_column;
@@ -67,4 +67,5 @@ class NerTokenizerUnigram final : public Transformation {
 
   std::optional<std::unordered_map<std::string, uint32_t>> _tag_to_label;
 };
+
 }  // namespace thirdai::data

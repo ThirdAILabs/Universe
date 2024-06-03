@@ -23,10 +23,8 @@ def train_udt_on_yelp_chi(download_yelp_chi_dataset):
     model = bolt.UniversalDeepTransformer(
         data_types=data_types,
         target="target",
-        n_target_classes=2,
-        integer_target=True,
         # Turn off pairgrams to make the test fast (~1 min on my m1)
-        options={"contextual_columns": False},
+        contextual_columns=False,
     )
 
     # We need to index these nodes because the model needs to know about them
@@ -105,13 +103,11 @@ def get_no_features_gnn(num_classes):
     return bolt.UniversalDeepTransformer(
         data_types={
             "node_id": bolt.types.node_id(),
-            "target": bolt.types.categorical(),
+            "target": bolt.types.categorical(n_classes=num_classes, type="int"),
             "neighbors": bolt.types.neighbors(),
             "feature": bolt.types.numerical(range=(0, 2)),
         },
         target="target",
-        n_target_classes=num_classes,
-        integer_target=True,
     )
 
 

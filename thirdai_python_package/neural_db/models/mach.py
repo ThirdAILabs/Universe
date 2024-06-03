@@ -500,23 +500,23 @@ class Mach(Model):
         model = bolt.UniversalDeepTransformer(
             data_types={
                 self.query_col: bolt.types.text(tokenizer=self.tokenizer),
-                self.id_col: bolt.types.categorical(delimiter=self.id_delimiter),
+                self.id_col: bolt.types.categorical(
+                    n_classes=(
+                        documents.size if number_classes is None else number_classes
+                    ),
+                    delimiter=self.id_delimiter,
+                    type="int",
+                ),
             },
             target=self.id_col,
-            n_target_classes=(
-                documents.size if number_classes is None else number_classes
-            ),
-            integer_target=True,
-            options={
-                "extreme_classification": True,
-                "extreme_output_dim": self.extreme_output_dim,
-                "fhr": self.fhr,
-                "embedding_dimension": self.embedding_dimension,
-                "extreme_num_hashes": self.extreme_num_hashes,
-                "hidden_bias": self.hidden_bias,
-                "rlhf": True,
-                "mach_index_seed": self.mach_index_seed,
-            },
+            extreme_classification=True,
+            extreme_output_dim=self.extreme_output_dim,
+            fhr=self.fhr,
+            embedding_dimension=self.embedding_dimension,
+            extreme_num_hashes=self.extreme_num_hashes,
+            hidden_bias=self.hidden_bias,
+            rlhf=True,
+            mach_index_seed=self.mach_index_seed,
             model_config=self.model_config,
         )
         model.insert_new_doc_ids(documents)

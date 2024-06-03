@@ -28,10 +28,9 @@ def test_too_many_cols_in_train():
         data_types={
             "a": bolt.types.text(),
             "b": bolt.types.text(),
-            "c": bolt.types.categorical(),
+            "c": bolt.types.categorical(n_classes=2),
         },
         target="c",
-        n_target_classes=2,
     )
 
     with pytest.raises(
@@ -57,10 +56,9 @@ def test_too_few_cols_in_train():
         data_types={
             "a": bolt.types.text(),
             "b": bolt.types.text(),
-            "c": bolt.types.categorical(),
+            "c": bolt.types.categorical(n_classes=2),
         },
         target="c",
-        n_target_classes=2,
     )
 
     with pytest.raises(
@@ -80,10 +78,9 @@ def test_header_missing_cols():
         data_types={
             "a": bolt.types.text(),
             "b": bolt.types.text(),
-            "c": bolt.types.categorical(),
+            "c": bolt.types.categorical(n_classes=2),
         },
         target="c",
-        n_target_classes=2,
     )
 
     # TODO(Nicholas): Is it ok to display the intermediate column names?
@@ -101,15 +98,14 @@ def test_header_missing_cols():
 def test_target_not_in_data_types():
     with pytest.raises(
         ValueError,
-        match="Target column provided was not found in data_types.",
+        match="Target column 'target' not found in data types.",
     ):
         bolt.UniversalDeepTransformer(
             data_types={
                 "text_col": bolt.types.text(),
-                "some_random_name": bolt.types.categorical(),
+                "some_random_name": bolt.types.categorical(n_classes=2),
             },
             target="target",
-            n_target_classes=2,
         )
 
 
@@ -118,14 +114,10 @@ def test_invalid_column_name_in_udt_predict(mach):
     model = bolt.UniversalDeepTransformer(
         data_types={
             "text_col": bolt.types.text(contextual_encoding="local"),
-            "target": bolt.types.categorical(),
+            "target": bolt.types.categorical(n_classes=10, type="int"),
         },
         target="target",
-        n_target_classes=10,
-        integer_target=True,
-        options={
-            "extreme_classification": mach,
-        },
+        extreme_classification=mach,
     )
 
     with pytest.raises(
@@ -144,10 +136,8 @@ def test_set_output_sparsity_throws_error_on_unsupported_backend():
     set_output_sparsity is enabled only for UDTClassifier Backend hence, this should throw an error.
     """
     model = bolt.UniversalDeepTransformer(
-        source_column="source",
-        target_column="target",
-        dataset_size="medium",
-        delimiter="\t",
+        data_types={"source": bolt.types.text(), "target": bolt.types.text()},
+        target="target",
     )
 
     with pytest.raises(
