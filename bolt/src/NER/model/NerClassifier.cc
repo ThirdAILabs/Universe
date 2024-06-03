@@ -1,6 +1,7 @@
 #include "NerClassifier.h"
 #include <bolt/src/NER/Defaults.h>
 #include <data/src/columns/ArrayColumns.h>
+#include <utils/text/Stopwords.h>
 #include <cctype>
 #include <cstdint>
 #include <unordered_map>
@@ -18,7 +19,7 @@ void applyPunctAndStopWordFilter(
     const std::unordered_map<uint32_t, std::string>& label_to_tag_map) {
   // assumes that the highest activation vector is at the end
   if (isAllPunctuation(token) ||
-      defaults::UDT_STOPWORDS.count(thirdai::text::lower(token)) > 0) {
+      text::stop_words.count(thirdai::text::lower(token)) > 0) {
     int index_of_o = -1;
     for (int i = predicted_tags.size() - 1; i >= 0; --i) {
       if (tag_to_label_map.at(predicted_tags[i].first) == 0) {
