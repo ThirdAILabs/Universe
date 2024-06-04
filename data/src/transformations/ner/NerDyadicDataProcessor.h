@@ -12,6 +12,8 @@
 #include <vector>
 
 namespace thirdai::data {
+std::string trimPunctuation(const std::string& str);
+
 struct FeatureEnhancementConfig {
   bool enhance_names = true;
   bool enhance_location_features = true;
