@@ -93,14 +93,15 @@ std::vector<PerTokenListPredictions> NerClassifier::getTags(
   size_t sub_vector_index = 0;
   size_t token_index = 0;
 
-  for (const auto& batch : tensors) {
-    auto outputs = _bolt_model->forward(batch).at(0);
+  for (size_t batch_id = 0; batch_id < tensors.size(); batch_id++) {
+    auto outputs = _bolt_model->forward(tensors[batch_id]).at(0);
     // std::cout << "new batch size: " << outputs->batchSize() << std::endl;
 
     for (size_t i = 0;
          i < outputs->batchSize() ||
          (sub_vector_index < tags_and_scores.size() &&
-          token_index < tags_and_scores[sub_vector_index].size());) {
+          token_index < tags_and_scores[sub_vector_index].size() &&
+          batch_id == tensors.size() - 1);) {
       if (token_index >= tags_and_scores[sub_vector_index].size()) {
         token_index = 0;
         sub_vector_index++;
