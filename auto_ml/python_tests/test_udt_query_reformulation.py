@@ -110,14 +110,21 @@ def test_query_reformulation(train_test_data, supervised, use_spell_checker):
 
     if supervised:
         model = bolt.UniversalDeepTransformer(
-            source_column="incorrect_query",
-            target_column="correct_query",
+            data_types={
+                "incorrect_query": bolt.types.text(),
+                "correct_query": bolt.types.text(),
+            },
+            target="correct_query",
             dataset_size="small",
             use_spell_checker=use_spell_checker,
         )
     else:
         model = bolt.UniversalDeepTransformer(
-            target_column="correct_query", dataset_size="small"
+            data_types={
+                "correct_query": bolt.types.text(),
+            },
+            target="correct_query",
+            dataset_size="small",
         )
 
     model.train(train_file)
@@ -145,13 +152,14 @@ def test_query_reformulation_save_load(query_reformulation_dataset, use_spell_ch
     query_reformulation_dataset[0].to_csv(filename, columns=ALL_COLUMNS, index=False)
 
     model = bolt.UniversalDeepTransformer(
-        source_column="incorrect_query",
-        target_column="correct_query",
+        data_types={
+            "incorrect_query": bolt.types.text(),
+            "correct_query": bolt.types.text(),
+        },
+        target="correct_query",
         dataset_size="small",
         use_spell_checker=use_spell_checker,
-        options={
-            "n_grams": [2, 3, 4]
-        },  # using n_grams option to make sure that archive function is correct
+        n_grams=[2, 3, 4],
     )
 
     model.train(filename)
@@ -187,12 +195,16 @@ def test_query_reformulation_n_grams(query_reformulation_dataset, use_spell_chec
     query_reformulation_dataset[0].to_csv(filename, columns=ALL_COLUMNS, index=False)
 
     model = bolt.UniversalDeepTransformer(
-        source_column="incorrect_query",
-        target_column="correct_query",
+        data_types={
+            "incorrect_query": bolt.types.text(),
+            "correct_query": bolt.types.text(),
+        },
+        target="correct_query",
         dataset_size="small",
         use_spell_checker=use_spell_checker,
-        options={"n_grams": [2, 3]},
+        n_grams=[2, 3],
     )
+
     model.train(filename)
 
     old_metrics = model.evaluate(filename, top_k=1)
@@ -209,11 +221,14 @@ def test_query_reformulation_throws_error_wrong_argument(use_spell_checker):
         match=re.escape(f"n_grams argument must contain only positive integers"),
     ):
         model = bolt.UniversalDeepTransformer(
-            source_column="incorrect_query",
-            target_column="correct_query",
+            data_types={
+                "incorrect_query": bolt.types.text(),
+                "correct_query": bolt.types.text(),
+            },
+            target="correct_query",
             dataset_size="small",
             use_spell_checker=use_spell_checker,
-            options={"n_grams": [-1, 3]},
+            n_grams=[-1, 3],
         )
 
     with pytest.raises(
@@ -221,9 +236,12 @@ def test_query_reformulation_throws_error_wrong_argument(use_spell_checker):
         match=re.escape(f"Expected parameter 'n_grams' to have type List[int]."),
     ):
         model = bolt.UniversalDeepTransformer(
-            source_column="incorrect_query",
-            target_column="correct_query",
+            data_types={
+                "incorrect_query": bolt.types.text(),
+                "correct_query": bolt.types.text(),
+            },
+            target="correct_query",
             dataset_size="small",
             use_spell_checker=use_spell_checker,
-            options={"n_grams": 1},
+            n_grams=1,
         )

@@ -8,16 +8,14 @@ pytestmark = [pytest.mark.unit]
 
 
 def test_udt_cold_start_kaggle(download_amazon_kaggle_product_catalog_sampled):
-    catalog_file, n_target_classes = download_amazon_kaggle_product_catalog_sampled
+    catalog_file, n_classes = download_amazon_kaggle_product_catalog_sampled
 
     model = bolt.UniversalDeepTransformer(
         data_types={
             "QUERY": bolt.types.text(),
-            "PRODUCT_ID": bolt.types.categorical(),
+            "PRODUCT_ID": bolt.types.categorical(type="int", n_classes=n_classes),
         },
         target="PRODUCT_ID",
-        n_target_classes=n_target_classes,
-        integer_target=True,
     )
 
     metrics = model.cold_start(
@@ -37,7 +35,7 @@ def test_udt_cold_start_kaggle(download_amazon_kaggle_product_catalog_sampled):
 
 
 def setup_testing_file(
-    missing_values, bad_csv_line, integer_target=False, quoted_newline=False
+    missing_values, bad_csv_line, target_type="str", quoted_newline=False
 ):
     filename = "DUMMY_COLDSTART.csv"
     with open(filename, "w") as outfile:
@@ -50,7 +48,7 @@ def setup_testing_file(
         if bad_csv_line:
             outfile.write("1,theres a new line,\n,")
 
-        if not integer_target:
+        if target_type == "str":
             outfile.write("LMFAO,this is not an integer,,\n")
 
         if quoted_newline:
@@ -66,22 +64,20 @@ def run_coldstart(
     missing_values=False,
     bad_csv_line=False,
     epochs=5,
-    integer_target=True,
+    target_type="int",
     variable_length=data.transformations.VariableLengthConfig(),
     quoted_newline=False,
 ):
     filename = setup_testing_file(
-        missing_values, bad_csv_line, integer_target, quoted_newline
+        missing_values, bad_csv_line, target_type, quoted_newline
     )
 
     model = bolt.UniversalDeepTransformer(
         data_types={
-            "category": bolt.types.categorical(),
+            "category": bolt.types.categorical(n_classes=3, type=target_type),
             "text": bolt.types.text(),
         },
         target="category",
-        n_target_classes=3,
-        integer_target=integer_target,
     )
 
     model.cold_start(
@@ -140,9 +136,9 @@ def test_coldstart_bad_csv_line():
         run_coldstart(bad_csv_line=True)
 
 
-@pytest.mark.parametrize("integer_target", [True, False])
-def test_coldstart_target_type(integer_target):
-    run_coldstart(integer_target=integer_target)
+@pytest.mark.parametrize("target_type", ["str", "int"])
+def test_coldstart_target_type(target_type):
+    run_coldstart(target_type=target_type)
 
 
 @pytest.mark.parametrize(

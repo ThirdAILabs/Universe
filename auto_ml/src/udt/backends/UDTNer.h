@@ -1,21 +1,24 @@
 #pragma once
 
-#include <bolt/src/nn/model/Model.h>
+#include <archive/src/Archive.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/UDTBackend.h>
-#include <auto_ml/src/udt/utils/Classifier.h>
 #include <auto_ml/src/udt/utils/Models.h>
-#include <dataset/src/DataSource.h>
+#include <string>
+#include <unordered_map>
 
 namespace thirdai::automl::udt {
 
-class UDTSVMClassifier final : public UDTBackend {
- public:
-  UDTSVMClassifier(uint32_t n_target_classes, uint32_t input_dim,
-                   const std::optional<std::string>& model_config,
-                   const config::ArgumentMap& user_args);
+using TokenTags = std::vector<std::pair<std::string, float>>;
+using SentenceTags = std::vector<TokenTags>;
 
-  explicit UDTSVMClassifier(const ar::Archive& archive);
+class UDTNer final : public UDTBackend {
+ public:
+  UDTNer(const ColumnDataTypes& data_types, const TokenTagsDataTypePtr& target,
+         const std::string& target_name, const UDTNer* pretrained_model,
+         const config::ArgumentMap& args);
+
+  explicit UDTNer(const ar::Archive& archive);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
@@ -39,35 +42,47 @@ class UDTSVMClassifier final : public UDTBackend {
                           bool return_predicted_class,
                           std::optional<uint32_t> top_k) final;
 
-  ModelPtr model() const final { return _classifier->model(); }
+  ModelPtr model() const final { return _model; }
 
   void setModel(const ModelPtr& model) final {
-    ModelPtr& curr_model = _classifier->model();
+    ModelPtr& curr_model = _model;
+
     utils::verifyCanSetModel(curr_model, model);
+
     curr_model = model;
   }
 
   ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
 
-  static std::unique_ptr<UDTSVMClassifier> fromArchive(
-      const ar::Archive& archive);
+  static std::unique_ptr<UDTNer> fromArchive(const ar::Archive& archive);
 
-  static std::string type() { return "udt_svm"; }
+  static std::string type() { return "udt_ner"; }
 
  private:
-  static dataset::DatasetLoaderPtr svmDatasetLoader(
-      dataset::DataSourcePtr data_source, bool shuffle,
-      dataset::DatasetShuffleConfig shuffle_config =
-          dataset::DatasetShuffleConfig());
+  data::LoaderPtr getDataLoader(const dataset::DataSourcePtr& data,
+                                size_t batch_size, bool shuffle) const;
 
-  UDTSVMClassifier() {}
+  std::vector<SentenceTags> predictTags(
+      const std::vector<std::string>& sentences, bool sparse_inference,
+      uint32_t top_k);
 
-  friend cereal::access;
+  struct NerOptions;
 
-  template <class Archive>
-  void serialize(Archive& archive, uint32_t version);
+  static NerOptions fromPretrained(const UDTNer* pretrained_model);
 
-  utils::ClassifierPtr _classifier;
+  static NerOptions fromScratch(const config::ArgumentMap& args);
+
+  bolt::ModelPtr _model;
+
+  data::TransformationPtr _supervised_transform;
+  data::TransformationPtr _inference_transform;
+
+  data::OutputColumnsList _bolt_inputs;
+
+  std::string _tokens_column;
+  std::string _tags_column;
+
+  std::vector<std::string> _label_to_tag;
 };
 
 }  // namespace thirdai::automl::udt

@@ -130,14 +130,24 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
 ar::ConstArchivePtr NerTokenizerUnigram::toArchive() const {
   auto map = ar::Map::make();
   map->set("type", ar::str(type()));
+
   map->set("tokens_column", ar::str(_tokens_column));
   map->set("featurized_sentence_column", ar::str(_featurized_sentence_column));
 
   if (_target_column) {
     map->set("target_column", ar::str(*_target_column));
   }
+  if (_target_dim) {
+    map->set("target_dim", ar::u64(*_target_dim));
+  }
 
   map->set("processor", _processor.toArchive());
+
+  if (_tag_to_label) {
+    map->set("tag_to_label",
+             ar::mapStrU64({_tag_to_label->begin(), _tag_to_label->end()}));
+  }
+
   return map;
 }
 
@@ -145,5 +155,12 @@ NerTokenizerUnigram::NerTokenizerUnigram(const ar::Archive& archive)
     : _tokens_column(archive.str("tokens_column")),
       _featurized_sentence_column(archive.str("featurized_sentence_column")),
       _target_column(archive.getOpt<ar::Str>("target_column")),
-      _processor(NerDyadicDataProcessor(*archive.get("processor"))) {}
+      _target_dim(archive.getOpt<ar::U64>("target_dim")),
+      _processor(NerDyadicDataProcessor(*archive.get("processor"))) {
+  if (archive.contains("tag_to_label")) {
+    const auto& tag_to_label = archive.getAs<ar::MapStrU64>("tag_to_label");
+    _tag_to_label = {tag_to_label.begin(), tag_to_label.end()};
+  }
+}
+
 }  // namespace thirdai::data

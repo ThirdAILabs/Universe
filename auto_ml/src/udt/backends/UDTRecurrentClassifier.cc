@@ -25,7 +25,7 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
     const ColumnDataTypes& input_data_types,
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
     const std::string& target_name, const SequenceDataTypePtr& target,
-    uint32_t n_target_classes, const TabularOptions& tabular_options,
+    const TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
     const config::ArgumentMap& user_args)
     : _target_name(target_name), _target(target) {
@@ -36,7 +36,7 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
   }
 
   _featurizer = std::make_shared<RecurrentFeaturizer>(
-      input_data_types, target_name, target, n_target_classes, tabular_options);
+      input_data_types, target_name, target, tabular_options);
 
   uint32_t output_dim = _featurizer->vocabSize() * target->max_length.value();
   if (model_config) {
@@ -291,12 +291,14 @@ std::unique_ptr<UDTRecurrentClassifier> UDTRecurrentClassifier::fromArchive(
 
 UDTRecurrentClassifier::UDTRecurrentClassifier(const ar::Archive& archive)
     : _target_name(archive.str("target_name")),
-      _target(std::make_shared<SequenceDataType>(
-          archive.getAs<ar::Char>("target_delimiter"),
-          archive.getOpt<ar::U64>("max_length"))),
       _model(bolt::Model::fromArchive(*archive.get("model"))),
       _featurizer(RecurrentFeaturizer::fromArchive(*archive.get("featurizer"))),
-      _freeze_hash_tables(archive.boolean("freeze_hash_tables")) {}
+      _freeze_hash_tables(archive.boolean("freeze_hash_tables")) {
+  _target = std::make_shared<SequenceDataType>(
+      _model->outputs().at(0)->dim(),
+      archive.getAs<ar::Char>("target_delimiter"),
+      archive.getOpt<ar::U64>("max_length"));
+}
 
 template void UDTRecurrentClassifier::serialize(cereal::BinaryInputArchive&,
                                                 const uint32_t version);

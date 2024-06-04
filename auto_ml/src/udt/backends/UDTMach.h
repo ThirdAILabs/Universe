@@ -32,7 +32,6 @@ class UDTMach final : public UDTBackend {
       const ColumnDataTypes& input_data_types,
       const UserProvidedTemporalRelationships& temporal_tracking_relationships,
       const std::string& target_name, const CategoricalDataTypePtr& target,
-      uint32_t n_target_classes, bool integer_target,
       const TabularOptions& tabular_options,
       const std::optional<std::string>& model_config,
       config::ArgumentMap user_args);
@@ -284,18 +283,18 @@ class UDTMach final : public UDTBackend {
   // an empty placeholder to pass to the model.
   static bolt::TensorPtr placeholderDocIds(uint32_t batch_size);
 
-  static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
+  static uint32_t autotuneMachOutputDim(uint32_t n_classes) {
     // TODO(david) update this
-    if (n_target_classes < defaults::MACH_MIN_TARGET_CLASSES) {
-      return n_target_classes;
+    if (n_classes < defaults::MACH_MIN_TARGET_CLASSES) {
+      return n_classes;
     }
-    return n_target_classes / defaults::MACH_DEFAULT_OUTPUT_RANGE_SCALEDOWN;
+    return n_classes / defaults::MACH_DEFAULT_OUTPUT_RANGE_SCALEDOWN;
   }
 
-  static uint32_t autotuneMachNumHashes(uint32_t n_target_classes,
+  static uint32_t autotuneMachNumHashes(uint32_t n_classes,
                                         uint32_t output_range) {
     // TODO(david) update this
-    (void)n_target_classes;
+    (void)n_classes;
     (void)output_range;
     return defaults::MACH_DEFAULT_NUM_REPETITIONS;
   }

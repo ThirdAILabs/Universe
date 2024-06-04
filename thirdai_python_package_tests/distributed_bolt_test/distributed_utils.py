@@ -7,15 +7,13 @@ from thirdai import bolt, dataset
 from thirdai.demos import download_mnist_dataset
 
 
-def get_udt_cold_start_model(n_target_classes):
+def get_udt_cold_start_model(n_classes):
     model = bolt.UniversalDeepTransformer(
         data_types={
             "QUERY": bolt.types.text(),
-            "PRODUCT_ID": bolt.types.categorical(),
+            "PRODUCT_ID": bolt.types.categorical(n_classes=n_classes, type="int"),
         },
         target="PRODUCT_ID",
-        n_target_classes=n_target_classes,
-        integer_target=True,
     )
     return model
 

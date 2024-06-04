@@ -63,7 +63,9 @@ def make_simple_trained_model(
     model = bolt.UniversalDeepTransformer(
         data_types={
             "userId": bolt.types.categorical(),
-            "movieId": bolt.types.categorical(),
+            "movieId": bolt.types.categorical(
+                n_classes=3, type="int" if integer_label else "str"
+            ),
             "timestamp": bolt.types.date(),
             "hoursWatched": bolt.types.numerical(range=(0, 5)),
             "genres": bolt.types.categorical(delimiter="-"),
@@ -74,9 +76,7 @@ def make_simple_trained_model(
             **({"userId": ["hoursWatched"]} if numerical_temporal else {}),
         },
         target="movieId",
-        n_target_classes=3,
-        integer_target=integer_label,
-        options={"embedding_dimension": embedding_dim} if embedding_dim else {},
+        **({"embedding_dimension": embedding_dim} if embedding_dim else {}),
     )
 
     model.train(TRAIN_FILE, epochs=2, learning_rate=0.01, batch_size=2048)
@@ -135,10 +135,12 @@ def test_temporal_not_in_data_type_throws():
         match=r"Tracking key column 'user' is not specified in data_types.",
     ):
         bolt.UniversalDeepTransformer(
-            data_types={"date": bolt.types.date(), "item": bolt.types.categorical()},
+            data_types={
+                "date": bolt.types.date(),
+                "item": bolt.types.categorical(n_classes=3),
+            },
             temporal_tracking_relationships={"user": ["item"]},
             target="item",
-            n_target_classes=3,
         )
 
     with pytest.raises(
@@ -149,11 +151,10 @@ def test_temporal_not_in_data_type_throws():
             data_types={
                 "date": bolt.types.date(),
                 "user": bolt.types.categorical(),
-                "item": bolt.types.categorical(),
+                "item": bolt.types.categorical(n_classes=3),
             },
             temporal_tracking_relationships={"user": ["other_item"]},
             target="item",
-            n_target_classes=3,
         )
 
 
@@ -341,12 +342,11 @@ def test_works_without_temporal_relationships():
     model = bolt.UniversalDeepTransformer(
         data_types={
             "userId": bolt.types.categorical(),
-            "movieId": bolt.types.categorical(),
+            "movieId": bolt.types.categorical(n_classes=3),
             "hoursWatched": bolt.types.numerical(range=(0, 5)),
             "genres": bolt.types.categorical(delimiter="-"),
         },
         target="movieId",
-        n_target_classes=3,
     )
 
     model.train(TRAIN_FILE, epochs=2, learning_rate=0.01, batch_size=2048)
@@ -386,10 +386,9 @@ def test_return_train_metrics_streamed():
 
 def test_udt_override_input_dim():
     udt_model = bolt.UniversalDeepTransformer(
-        data_types={"col": bolt.types.categorical()},
+        data_types={"col": bolt.types.categorical(n_classes=40)},
         target="col",
-        n_target_classes=40,
-        options={"input_dim": 200},
+        input_dim=200,
     )
 
     input_dim = udt_model._get_model().ops()[0].weights.shape[0]
@@ -403,11 +402,9 @@ def test_udt_train_batch():
     model = bolt.UniversalDeepTransformer(
         data_types={
             "query": bolt.types.text(),
-            "target": bolt.types.categorical(),
+            "target": bolt.types.categorical(n_classes=3, type="int"),
         },
         target="target",
-        n_target_classes=3,
-        integer_target=True,
     )
 
     samples = [
@@ -428,10 +425,10 @@ def test_udt_train_batch():
 
 def test_model_dims_regular_udt():
     model = bolt.UniversalDeepTransformer(
-        data_types={"col": bolt.types.categorical()},
+        data_types={"col": bolt.types.categorical(n_classes=2)},
         target="col",
-        n_target_classes=2,
-        options={"input_dim": 8, "embedding_dimension": 4},
+        input_dim=8,
+        embedding_dimension=4,
     )
 
     assert model.model_dims() == [8, 4, 2]
@@ -439,17 +436,13 @@ def test_model_dims_regular_udt():
 
 def test_model_dims_mach():
     model = bolt.UniversalDeepTransformer(
-        data_types={"col": bolt.types.categorical()},
+        data_types={"col": bolt.types.categorical(n_classes=20, type="int")},
         target="col",
-        n_target_classes=20,
-        integer_target=True,
-        options={
-            "input_dim": 8,
-            "embedding_dimension": 4,
-            "extreme_classification": True,
-            "extreme_num_hashes": 1,
-            "extreme_output_dim": 2,
-        },
+        input_dim=8,
+        embedding_dimension=4,
+        extreme_classification=True,
+        extreme_num_hashes=1,
+        extreme_output_dim=2,
     )
 
     assert model.model_dims() == [8, 4, 2]

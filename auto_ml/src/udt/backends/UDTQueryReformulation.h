@@ -21,10 +21,8 @@ namespace thirdai::automl::udt {
 
 class UDTQueryReformulation final : public UDTBackend {
  public:
-  UDTQueryReformulation(std::optional<std::string> incorrect_column_name,
-                        std::string correct_column_name,
-                        const std::string& dataset_size, bool use_spell_checker,
-                        char delimiter,
+  UDTQueryReformulation(const ColumnDataTypes& data_types,
+                        std::string target_column, char delimiter,
                         const std::optional<std::string>& model_config,
                         const config::ArgumentMap& user_args);
 

@@ -63,8 +63,11 @@ def test_census_demo_key_fails_on_query_reformulation():
         file.writelines(["query,label\n", "input1,output1\n", "input2,output2\n"])
 
     model = bolt.UniversalDeepTransformer(
-        source_column="query",
-        target_column="label",
+        data_types={
+            "query": bolt.types.text(),
+            "label": bolt.types.text(),
+        },
+        target="label",
         dataset_size="small",
     )
 
@@ -81,12 +84,11 @@ def simple_mach_model(target_column="label"):
     return bolt.UniversalDeepTransformer(
         data_types={
             "query": bolt.types.text(),
-            target_column: bolt.types.categorical(),
+            target_column: bolt.types.categorical(n_classes=10, type="int"),
         },
         target=target_column,
-        n_target_classes=10,
-        integer_target=True,
-        options={"extreme_classification": True, "extreme_output_dim": 100},
+        extreme_classification=True,
+        extreme_output_dim=100,
     )
 
 

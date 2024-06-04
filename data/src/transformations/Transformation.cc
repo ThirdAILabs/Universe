@@ -25,6 +25,7 @@
 #include <data/src/transformations/TextCompat.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
+#include <data/src/transformations/ner/NerTokenizationUnigram.h>
 #include <memory>
 #include <optional>
 #include <sstream>
@@ -72,6 +73,7 @@ TransformationPtr Transformation::fromArchive(const ar::Archive& archive) {
   HANDLE_TYPE(TextTokenizer)
   HANDLE_TYPE(AddMachMemorySamples)
   HANDLE_TYPE(NextWordPrediction)
+  HANDLE_TYPE(NerTokenizerUnigram)
   HANDLE_TYPE(TextCompat)
 
   throw std::runtime_error("Invalid transformation type '" + type +
