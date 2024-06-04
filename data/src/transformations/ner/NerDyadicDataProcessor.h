@@ -12,6 +12,7 @@
 #include <vector>
 
 namespace thirdai::data {
+
 std::string trimPunctuation(const std::string& str);
 
 struct FeatureEnhancementConfig {

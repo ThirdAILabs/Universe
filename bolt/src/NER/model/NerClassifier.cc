@@ -14,15 +14,14 @@ bool isAllPunctuation(const std::string& str) {
   return !str.empty() && std::all_of(str.begin(), str.end(), ::ispunct);
 }
 
-void applyPunctAndStopWordFilter(
-    const std::string& token, PerTokenPredictions& predicted_tags,
-    const std::unordered_map<std::string, uint32_t>& tag_to_label_map,
-    const std::unordered_map<uint32_t, std::string>& label_to_tag_map) {
+void applyPunctAndStopWordFilter(const std::string& token,
+                                 PerTokenPredictions& predicted_tags,
+                                 const std::string& default_tag) {
   // assumes that the highest activation vector is at the end
   if (isAllPunctuation(token) || text::stop_words.count(data::trimPunctuation(
                                      thirdai::text::lower(token))) > 0) {
     for (int i = predicted_tags.size() - 1; i >= 0; --i) {
-      if (tag_to_label_map.at(predicted_tags[i].first) == 0) {
+      if (predicted_tags[i].first == default_tag) {
         predicted_tags[i].second = 1;
         std::rotate(predicted_tags.begin() + i, predicted_tags.begin() + i + 1,
                     predicted_tags.end());
@@ -31,7 +30,7 @@ void applyPunctAndStopWordFilter(
     }
     // If the tag 'O' is not found, then we erase the lowest activation tag and
     // insert 'O' as the highest activation tag.
-    predicted_tags.push_back({label_to_tag_map.at(0), 1});
+    predicted_tags.push_back({default_tag, 1});
     predicted_tags.erase(predicted_tags.begin());
   }
 }
@@ -115,8 +114,8 @@ std::vector<PerTokenListPredictions> NerClassifier::getTags(
       applyPunctAndStopWordFilter(
           data.getArrayColumn<std::string>(_tokens_column)
               ->row(sub_vector_index)[token_index],
-          tags_and_scores[sub_vector_index][token_index], tag_to_label_map,
-          label_to_tag_map);
+          tags_and_scores[sub_vector_index][token_index],
+          label_to_tag_map.at(0));
 
       bool removed_highest = false;
 
