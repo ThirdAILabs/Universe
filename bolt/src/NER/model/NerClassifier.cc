@@ -2,37 +2,13 @@
 #include <bolt/src/NER/Defaults.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/ner/NerDyadicDataProcessor.h>
+#include <utils/text/Stopwords.h>
 #include <cctype>
 #include <cstdint>
 #include <unordered_map>
 #include <utility>
 
 namespace thirdai::bolt::NER {
-
-void applyPunctAndStopWordFilter(
-    const std::string& token, PerTokenPredictions& predicted_tags,
-    const std::unordered_map<std::string, uint32_t>& tag_to_label_map,
-    const std::unordered_map<uint32_t, std::string>& label_to_tag_map) {
-  // assumes that the highest activation vector is at the end
-  if (data::isAllPunctuation(token) ||
-      defaults::UDT_STOPWORDS.count(thirdai::text::lower(token)) > 0) {
-    int index_of_o = -1;
-    for (int i = predicted_tags.size() - 1; i >= 0; --i) {
-      if (tag_to_label_map.at(predicted_tags[i].first) == 0) {
-        index_of_o = i;
-      }
-    }
-    if (index_of_o != -1) {
-      predicted_tags[index_of_o].second = 1;
-      std::rotate(predicted_tags.begin() + index_of_o,
-                  predicted_tags.begin() + index_of_o + 1,
-                  predicted_tags.end());
-    } else {
-      predicted_tags.push_back({label_to_tag_map.at(0), 1});
-      predicted_tags.erase(predicted_tags.begin());
-    }
-  }
-}
 
 metrics::History NerClassifier::train(
     const dataset::DataSourcePtr& train_data, float learning_rate,
@@ -129,6 +105,11 @@ std::vector<PerTokenListPredictions> NerClassifier::getTags(
             {label_to_tag_map.at(tag), score});
         token_level_predictions.pop();
       }
+      applyPunctAndStopWordFilter(
+          data.getArrayColumn<std::string>(_tokens_column)
+              ->row(sub_vector_index)[token_index],
+          tags_and_scores[sub_vector_index][token_index],
+          label_to_tag_map.at(0));
 
       bool removed_highest = false;
 

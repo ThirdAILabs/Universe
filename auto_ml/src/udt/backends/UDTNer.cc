@@ -1,4 +1,5 @@
 #include "UDTNer.h"
+#include <bolt/src/NER/model/NerClassifier.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/ops/Embedding.h>
@@ -372,16 +373,23 @@ std::vector<SentenceTags> UDTNer::predictTags(
         tags.emplace_back(tag, score);
       }
 
+      bolt::NER::applyPunctAndStopWordFilter(
+          data.getArrayColumn<std::string>(_tokens_column)
+              ->row(sentence_index)[token_index],
+          tags, _label_to_tag[0]);
+
       // If the default tag is the the top prediction but has a score < 0.9 then
       // using the next top prediction improves accuracy.
-      if (tags.back().first == _label_to_tag[0] && tags.back().second < 0.9) {
+      float second_highest_tag_act = top_k > 0 ? tags[top_k - 1].second : 0;
+
+      if (tags.back().first == _label_to_tag[0] && tags.back().second < 0.9 &&
+          second_highest_tag_act > 0.05) {
         tags.pop_back();
         std::reverse(tags.begin(), tags.end());
       } else {
         std::reverse(tags.begin(), tags.end());
         tags.pop_back();
       }
-
       output_tags[sentence_index].push_back(tags);
 
       token_index++;
