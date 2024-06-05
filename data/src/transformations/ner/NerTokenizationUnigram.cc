@@ -10,6 +10,7 @@
 #include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
+#include <utils/text/Stopwords.h>
 #include <utils/text/StringManipulation.h>
 #include <cstdint>
 #include <exception>
@@ -52,10 +53,9 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr error;
 
-#pragma omp parallel for default(none)                                       \
-    shared(text_tokens, sample_offsets, featurized_sentences, targets, tags, \
-           error, bolt::NER::defaults::UDT_STOPWORDS,                        \
-           skipped_indices) if (text_tokens->numRows() > 1)
+#pragma omp parallel for default(none) shared(                               \
+    text_tokens, sample_offsets, featurized_sentences, targets, tags, error, \
+    text::stop_words, skipped_indices) if (text_tokens->numRows() > 1)
   for (size_t i = 0; i < text_tokens->numRows(); i += 1) {
     try {
       size_t sample_offset = sample_offsets[i];
@@ -65,7 +65,7 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
       for (size_t target = 0; target < row_token_vectors.size(); target++) {
         size_t featurized_sentence_offset = sample_offset + target;
 
-        if (bolt::NER::defaults::UDT_STOPWORDS.count(
+        if (text::stop_words.count(
                 trimPunctuation(text::lower(row_token_vectors[target]))) > 0 ||
             isAllPunctuation(row_token_vectors[target])) {
           skipped_indices[i][target] = 0;
