@@ -104,11 +104,6 @@ std::vector<PerTokenListPredictions> NerClassifier::getTags(
             {label_to_tag_map.at(tag), score});
         token_level_predictions.pop();
       }
-      applyPunctAndStopWordFilter(
-          data.getArrayColumn<std::string>(_tokens_column)
-              ->row(sub_vector_index)[token_index],
-          tags_and_scores[sub_vector_index][token_index],
-          label_to_tag_map.at(0));
 
       bool removed_highest = false;
 
