@@ -86,10 +86,9 @@ std::vector<PerTokenListPredictions> NerClassifier::getTags(
       if (data::isAllPunctuation(
               data.getArrayColumn<std::string>(_tokens_column)
                   ->row(sub_vector_index)[token_index]) ||
-          defaults::UDT_STOPWORDS.count(
-              data::trimPunctuation(thirdai::text::lower(
-                  data.getArrayColumn<std::string>(_tokens_column)
-                      ->row(sub_vector_index)[token_index])))) {
+          text::stop_words.count(data::trimPunctuation(thirdai::text::lower(
+              data.getArrayColumn<std::string>(_tokens_column)
+                  ->row(sub_vector_index)[token_index])))) {
         tags_and_scores[sub_vector_index][token_index] =
             PerTokenPredictions(top_k, {label_to_tag_map.at(0), 1});
         token_index++;
