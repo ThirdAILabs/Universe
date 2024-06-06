@@ -515,10 +515,8 @@ class UDT {
 
   static bool hasGraphInputs(const ColumnDataTypes& data_types);
 
-  static void throwUnsupportedUDTConfigurationError(
-      const CategoricalDataTypePtr& target_as_categorical,
-      const NumericalDataTypePtr& target_as_numerical,
-      const SequenceDataTypePtr& target_as_sequence, bool has_graph_inputs);
+  static void throwUnsupportedUDTConfigurationError(const DataTypePtr& target,
+                                                    bool has_graph_inputs);
 
   friend class cereal::access;
 
