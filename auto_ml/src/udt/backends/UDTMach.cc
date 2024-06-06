@@ -137,6 +137,10 @@ UDTMach::UDTMach(
 
     enableRlhf(num_balancing_docs, num_balancing_samples_per_doc);
   }
+
+  std::cout
+      << "Initialized a UniversalDeepTransformer for Extreme Classification"
+      << std::endl;
 }
 
 UDTMach::UDTMach(const MachInfo& mach_info)

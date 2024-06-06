@@ -53,6 +53,9 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
 
   _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
                                             defaults::FREEZE_HASH_TABLES);
+  std::cout
+      << "Initialized a UniversalDeepTransformer for Recurrence Classification"
+      << std::endl;
 }
 
 py::object UDTRecurrentClassifier::train(

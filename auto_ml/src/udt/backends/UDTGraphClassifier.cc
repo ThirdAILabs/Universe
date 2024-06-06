@@ -31,6 +31,9 @@ UDTGraphClassifier::UDTGraphClassifier(
 
   _classifier =
       utils::Classifier::make(model, /* freeze_hash_tables = */ false);
+  std::cout
+      << "Initialized a UniversalDeepTransformer for Extreme Classification"
+      << std::endl;
 }
 
 py::object UDTGraphClassifier::train(
