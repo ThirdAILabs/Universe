@@ -166,4 +166,37 @@ TEST(NerRuleTests, Cvv) {
   testRule(rule, {"cvc:", "something", "1234", "something"}, 2, "CVV", 0);
 }
 
+TEST(NerRuleTests, DefaultRule) {
+  auto rule = defaultRule();
+
+  std::vector<std::string> tokens = {"my",    "ssn",        "is", "123-24-0340",
+                                     "and",   "9249242001", "is", "my",
+                                     "phone", "number"};
+
+  auto results = rule->apply(tokens);
+
+  auto verify_tags = [](const std::vector<std::vector<MatchResult>>& tags) {
+    std::vector<std::vector<std::string>> entities = {
+        {}, {}, {}, {"SSN"}, {}, {"PHONE", "BANK_NUMBER"}, {}, {}, {}, {}};
+
+    ASSERT_EQ(tags.size(), entities.size());
+
+    for (size_t i = 0; i < tags.size(); i++) {
+      ASSERT_EQ(tags.at(i).size(), entities.at(i).size());
+
+      for (size_t j = 0; j < tags.at(i).size(); j++) {
+        ASSERT_EQ(tags.at(i).at(j).entity, entities.at(i).at(j));
+      }
+    }
+  };
+
+  verify_tags(results);
+
+  auto batch_results = rule->applyBatch({tokens, tokens, tokens});
+
+  for (const auto& res : batch_results) {
+    verify_tags(res);
+  }
+}
+
 }  // namespace thirdai::data::ner::tests

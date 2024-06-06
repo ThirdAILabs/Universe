@@ -22,6 +22,9 @@ class Rule {
   std::vector<std::vector<MatchResult>> apply(
       const std::vector<std::string>& tokens) const;
 
+  std::vector<std::vector<std::vector<MatchResult>>> applyBatch(
+      const std::vector<std::vector<std::string>>& batch) const;
+
   static std::vector<std::string> cleanTokens(
       const std::vector<std::string>& tokens);
 

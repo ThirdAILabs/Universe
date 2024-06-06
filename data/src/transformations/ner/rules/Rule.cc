@@ -44,9 +44,25 @@ std::vector<std::vector<MatchResult>> Rule::apply(
 
   std::vector<std::vector<MatchResult>> results(processed_tokens.size());
 
-// #pragma omp parallel for default(none) shared(processed_tokens, results)
+#pragma omp parallel for default(none) shared(processed_tokens, results)
   for (size_t i = 0; i < processed_tokens.size(); i++) {
     results[i] = apply(processed_tokens, i);
+  }
+
+  return results;
+}
+
+std::vector<std::vector<std::vector<MatchResult>>> Rule::applyBatch(
+    const std::vector<std::vector<std::string>>& batch) const {
+  std::vector<std::vector<std::vector<MatchResult>>> results(batch.size());
+
+#pragma omp parallel for default(none) shared(batch, results)
+  for (size_t i = 0; i < batch.size(); i++) {
+    auto processed_tokens = cleanTokens(batch[i]);
+
+    for (size_t j = 0; j < processed_tokens.size(); j++) {
+      results[i].push_back(apply(processed_tokens, j));
+    }
   }
 
   return results;

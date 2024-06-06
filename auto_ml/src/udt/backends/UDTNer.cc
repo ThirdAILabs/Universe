@@ -16,6 +16,7 @@
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
+#include <data/src/transformations/ner/rules/CommonRules.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <pybind11/stl.h>
 #include <utils/text/StringManipulation.h>
@@ -209,7 +210,8 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
                const TokenTagsDataTypePtr& target,
                const std::string& target_name, const UDTNer* pretrained_model,
                const config::ArgumentMap& args)
-    : _bolt_inputs({data::OutputColumns(NER_FEATURIZED_SENTENCE)}),
+    : _rule(data::ner::defaultRule()),
+      _bolt_inputs({data::OutputColumns(NER_FEATURIZED_SENTENCE)}),
       _tokens_column(tokensColumn(data_types, target_name)),
       _tags_column(target_name),
       _label_to_tag(prependDefaultTag(target->default_tag, target->tags)) {
@@ -351,6 +353,8 @@ std::vector<SentenceTags> UDTNer::predictTags(
   size_t sentence_index = 0;
   size_t token_index = 0;
 
+  auto rule_results = _rule->applyBatch(tokens);
+
   std::vector<SentenceTags> output_tags(sentences.size());
 
   for (const auto& batch : tensors) {
@@ -362,24 +366,32 @@ std::vector<SentenceTags> UDTNer::predictTags(
         token_index = 0;
       }
 
-      auto top_labels = scores->getVector(i).topKNeurons(top_k + 1);
-
       TokenTags tags;
-      while (!top_labels.empty()) {
-        float score = top_labels.top().first;
-        auto tag = _label_to_tag.at(top_labels.top().second);
-        top_labels.pop();
-        tags.emplace_back(tag, score);
-      }
+      if (!rule_results.at(sentence_index).at(token_index).empty()) {
+        for (const auto& tag :
+             rule_results.at(sentence_index).at(token_index)) {
+          tags.emplace_back(tag.entity, tag.score);
+        }
 
-      // If the default tag is the the top prediction but has a score < 0.9 then
-      // using the next top prediction improves accuracy.
-      if (tags.back().first == _label_to_tag[0] && tags.back().second < 0.9) {
-        tags.pop_back();
-        std::reverse(tags.begin(), tags.end());
       } else {
-        std::reverse(tags.begin(), tags.end());
-        tags.pop_back();
+        auto top_labels = scores->getVector(i).topKNeurons(top_k + 1);
+
+        while (!top_labels.empty()) {
+          float score = top_labels.top().first;
+          auto tag = _label_to_tag.at(top_labels.top().second);
+          top_labels.pop();
+          tags.emplace_back(tag, score);
+        }
+
+        // If the default tag is the the top prediction but has a score < 0.9
+        // then using the next top prediction improves accuracy.
+        if (tags.back().first == _label_to_tag[0] && tags.back().second < 0.9) {
+          tags.pop_back();
+          std::reverse(tags.begin(), tags.end());
+        } else {
+          std::reverse(tags.begin(), tags.end());
+          tags.pop_back();
+        }
       }
 
       output_tags[sentence_index].push_back(tags);
