@@ -476,7 +476,7 @@ std::shared_ptr<udt::UDT> makeUDT(
   return std::make_shared<udt::UDT>(
       /* data_types = */ std::move(data_types),
       /* temporal_tracking_relationships = */ temporal_tracking_relationships,
-      /* target_col = */ target_col,
+      /* target_col = */ target_col.value(),
       /* delimiter = */ delimiter,
       /* model_config= */ model_config,
       /* pretrained_model= */ pretrained_model,
