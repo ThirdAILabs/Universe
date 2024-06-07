@@ -3,6 +3,7 @@
 #include <archive/src/List.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
+#include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
@@ -331,7 +332,7 @@ std::string NerDyadicDataProcessor::processToken(
    * 3. Combine everything into a single string and return it.
    */
 
-  const std::string& target_token = tokens[index];
+  const std::string target_token = text::lower(tokens[index]);
 
   std::vector<std::string> tokenized_target_token;
 
