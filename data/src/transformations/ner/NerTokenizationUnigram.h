@@ -47,7 +47,8 @@ class NerTokenizerUnigram final : public Transformation {
       return tag_map.at(tag);
     }
 
-    throw std::out_of_range("String not found in the label map: " + tag);
+    throw std::out_of_range("String '" + tag +
+                            "' not found in the specified tags list.");
   }
 
   const auto& processor() const { return _processor; }
