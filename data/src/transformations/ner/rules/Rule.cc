@@ -1,6 +1,7 @@
 #include "Rule.h"
 #include <utils/text/StringManipulation.h>
 #include <regex>
+#include <unordered_set>
 
 namespace thirdai::data::ner {
 
@@ -86,6 +87,15 @@ std::vector<MatchResult> RuleCollection::apply(
   std::sort(results.begin(), results.end(), MatchCmp{});
 
   return results;
+}
+
+std::vector<std::string> RuleCollection::entities() const {
+  std::unordered_set<std::string> entities;
+  for (const auto& rule : _rules) {
+    auto rule_entities = rule->entities();
+    entities.insert(rule_entities.begin(), rule_entities.end());
+  }
+  return {entities.begin(), entities.end()};
 }
 
 }  // namespace thirdai::data::ner

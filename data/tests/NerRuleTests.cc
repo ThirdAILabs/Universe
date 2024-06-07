@@ -56,27 +56,27 @@ TEST(NerRuleTests, CreditCard) {
   auto rule = creditCardRule();
 
   testRule(rule, {"my", "card", "number", "is", "371449635398431", "and", "my"},
-           4, "CREDIT_CARD", 1.0);
+           4, "CREDITCARDNUMBER", 1.0);
 
   testRule(rule,
            {"my", "card", "number", "is", "3714-4963-539-8431", "and", "my"}, 4,
-           "CREDIT_CARD", 1.0);
+           "CREDITCARDNUMBER", 1.0);
 
   testRule(
       rule,
       {"my", "card", "number", "is", "3714", "4963", "539-8431", "and", "my"},
-      5, "CREDIT_CARD", 1.0);
+      5, "CREDITCARDNUMBER", 1.0);
 
   testRule(rule,
            {"my", "number", "is", "3714", "4963", "539-8431", "and", "my"}, 5,
-           "CREDIT_CARD", 0.8);
+           "CREDITCARDNUMBER", 0.8);
 
   testRule(rule,
            {"my", "number", "is", "3714", "4663", "539-8431", "and", "my"}, 5,
-           "CREDIT_CARD", 0.0);
+           "CREDITCARDNUMBER", 0.0);
 
   testRule(rule, {"my", "card", "number", "is", "232", "and", "my"}, 4,
-           "CREDIT_CARD", 0.0);
+           "CREDITCARDNUMBER", 0.0);
 }
 
 TEST(NerRuleTests, Email) {
@@ -100,18 +100,19 @@ TEST(NerRuleTests, Phone) {
   auto rule = phoneRule();
 
   testRule(rule, {"for", "contacting", "(924)", "024-2400", "is", "my", "cell"},
-           3, "PHONE", 0.9);
+           3, "PHONENUMBER", 0.9);
 
   testRule(rule, {"for", "reaching", "+1(924)", "024-2400", "is", "my", "cell"},
-           3, "PHONE", 0.8);
+           3, "PHONENUMBER", 0.8);
 
-  testRule(rule, {"9240242400"}, 0, "PHONE", 0.6);
+  testRule(rule, {"9240242400"}, 0, "PHONENUMBER", 0.6);
 
-  testRule(rule, {"940242400"}, 0, "PHONE", 0.0);
+  testRule(rule, {"940242400"}, 0, "PHONENUMBER", 0.0);
 
-  testRule(rule, {"+1 9402412400"}, 0, "PHONE", 0.6);
+  testRule(rule, {"+1 9402412400"}, 0, "PHONENUMBER", 0.6);
 
-  testRule(rule, {"+1 940.242-4200", "is", "my", "number"}, 0, "PHONE", 0.8);
+  testRule(rule, {"+1 940.242-4200", "is", "my", "number"}, 0, "PHONENUMBER",
+           0.8);
 }
 
 TEST(NerRuleTests, MedicalLicense) {
@@ -154,16 +155,19 @@ TEST(NerRuleTests, Ssn) {
            "SSN", 0);
 }
 
-TEST(NerRuleTests, Cvv) {
+TEST(NerRuleTests, CREDITCARDCVV) {
   auto rule = cvvRule();
 
-  testRule(rule, {"something", "123", "something"}, 1, "CVV", 0.2);
+  testRule(rule, {"something", "123", "something"}, 1, "CREDITCARDCVV", 0.2);
 
-  testRule(rule, {"cvv:", "something", "123", "something"}, 2, "CVV", 0.8);
+  testRule(rule, {"cvv:", "something", "123", "something"}, 2, "CREDITCARDCVV",
+           0.8);
 
-  testRule(rule, {"something", "123", "cvc:", "something"}, 1, "CVV", 0.8);
+  testRule(rule, {"something", "123", "cvc:", "something"}, 1, "CREDITCARDCVV",
+           0.8);
 
-  testRule(rule, {"cvc:", "something", "1234", "something"}, 2, "CVV", 0);
+  testRule(rule, {"cvc:", "something", "1234", "something"}, 2, "CREDITCARDCVV",
+           0);
 }
 
 TEST(NerRuleTests, DefaultRule) {
@@ -177,7 +181,8 @@ TEST(NerRuleTests, DefaultRule) {
 
   auto verify_tags = [](const std::vector<std::vector<MatchResult>>& tags) {
     std::vector<std::vector<std::string>> entities = {
-        {}, {}, {}, {"SSN"}, {}, {"PHONE", "BANK_NUMBER"}, {}, {}, {}, {}};
+        {}, {}, {}, {"SSN"}, {}, {"PHONENUMBER", "BANK_NUMBER"},
+        {}, {}, {}, {}};
 
     ASSERT_EQ(tags.size(), entities.size());
 

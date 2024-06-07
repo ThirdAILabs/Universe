@@ -14,6 +14,8 @@ RulePtr medicalLicenseRule();
 
 RulePtr bankNumberRule();
 
+RulePtr ibanRule();
+
 RulePtr ssnRule();
 
 RulePtr cvvRule();

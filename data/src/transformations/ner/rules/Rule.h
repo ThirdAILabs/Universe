@@ -19,6 +19,8 @@ class Rule {
   virtual std::vector<MatchResult> apply(const std::vector<std::string>& tokens,
                                          size_t index) const = 0;
 
+  virtual std::vector<std::string> entities() const = 0;
+
   std::vector<std::vector<MatchResult>> apply(
       const std::vector<std::string>& tokens) const;
 
@@ -44,6 +46,8 @@ class RuleCollection final : public Rule {
 
   std::vector<MatchResult> apply(const std::vector<std::string>& tokens,
                                  size_t index) const final;
+
+  std::vector<std::string> entities() const final;
 
  private:
   std::vector<std::shared_ptr<Rule>> _rules;

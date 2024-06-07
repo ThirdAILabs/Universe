@@ -21,6 +21,7 @@
 #include <pybind11/stl.h>
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -342,8 +343,8 @@ std::vector<SentenceTags> UDTNer::predictTags(
     tokens.push_back(text::split(phrase, ' '));
   }
 
-  auto sentence_tokens =
-      data::ArrayColumn<std::string>::make(std::move(tokens));
+  auto sentence_tokens = data::ArrayColumn<std::string>::make(
+      std::vector<std::vector<std::string>>{tokens});
   auto data = data::ColumnMap({{_tokens_column, sentence_tokens}});
 
   auto featurized = _inference_transform->applyStateless(data);
@@ -353,7 +354,11 @@ std::vector<SentenceTags> UDTNer::predictTags(
   size_t sentence_index = 0;
   size_t token_index = 0;
 
-  auto rule_results = _rule->applyBatch(tokens);
+  std::vector<std::vector<std::vector<thirdai::data::ner::MatchResult>>>
+      rule_results;
+  if (_rule) {
+    rule_results = _rule->applyBatch(tokens);
+  }
 
   std::vector<SentenceTags> output_tags(sentences.size());
 
@@ -367,14 +372,20 @@ std::vector<SentenceTags> UDTNer::predictTags(
       }
 
       TokenTags tags;
-      if (!rule_results.at(sentence_index).at(token_index).empty()) {
+      if (_rule && !rule_results.at(sentence_index).at(token_index).empty()) {
         for (const auto& tag :
              rule_results.at(sentence_index).at(token_index)) {
           tags.emplace_back(tag.entity, tag.score);
         }
 
       } else {
-        auto top_labels = scores->getVector(i).topKNeurons(top_k + 1);
+        auto& vec = scores->getVector(i);
+
+        for (const auto& neuron : _model_ignore) {
+          vec.activations[neuron] = 0;
+        }
+
+        auto top_labels = vec.topKNeurons(top_k + 1);
 
         while (!top_labels.empty()) {
           float score = top_labels.top().first;
@@ -440,6 +451,7 @@ std::unique_ptr<UDTNer> UDTNer::fromArchive(const ar::Archive& archive) {
 
 UDTNer::UDTNer(const ar::Archive& archive)
     : _model(bolt::Model::fromArchive(*archive.get("model"))),
+      _rule(data::ner::defaultRule()),
       _supervised_transform(data::Transformation::fromArchive(
           *archive.get("supervised_transform"))),
       _inference_transform(data::Transformation::fromArchive(
@@ -447,6 +459,17 @@ UDTNer::UDTNer(const ar::Archive& archive)
       _bolt_inputs(data::outputColumnsFromArchive(*archive.get("bolt_inputs"))),
       _tokens_column(archive.str("tokens_column")),
       _tags_column(archive.str("tags_column")),
-      _label_to_tag(archive.getAs<ar::VecStr>("label_to_tag")) {}
+      _label_to_tag(archive.getAs<ar::VecStr>("label_to_tag")) {
+  if (_rule) {
+    for (const auto& entity : _rule->entities()) {
+      auto loc = std::find(_label_to_tag.begin(), _label_to_tag.end(), entity);
+      if (loc == _label_to_tag.end()) {
+        throw std::invalid_argument("Invalid tag: " + entity);
+      }
+
+      _model_ignore.push_back(std::distance(_label_to_tag.begin(), loc));
+    }
+  }
+}
 
 }  // namespace thirdai::automl::udt

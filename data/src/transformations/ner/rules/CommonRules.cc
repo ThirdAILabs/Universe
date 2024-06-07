@@ -58,9 +58,9 @@ bool medicalLicenseLuhnCheck(const std::string& number) {
 
 RulePtr creditCardRule() {
   return Pattern::make(
-      /*entity=*/"CREDIT_CARD",
+      /*entity=*/"CREDITCARDNUMBER",
       /*pattern=*/
-      R"((([4613]\d{3})|(5[0-5]\d{2}))[- ]?(\d{3,4})[- ]?(\d{3,4})[- ]?(\d{3,5}))",
+      R"(\b(([4613]\d{3})|(5[0-5]\d{2}))[- ]?(\d{3,4})[- ]?(\d{3,4})[- ]?(\d{3,5})\b)",
       /*pattern_score=*/0.8,
       /*context_keywords=*/
       {
@@ -70,6 +70,7 @@ RulePtr creditCardRule() {
           {"mastercard", 0.2},
           {"discover", 0.2},
           {"amex", 0.2},
+          {"debit", 0.2},
       },
       /*validator=*/creditCardLuhnCheck);
 }
@@ -78,7 +79,7 @@ RulePtr emailRule() {
   return Pattern::make(
       /*entity=*/"EMAIL",
       /*pattern=*/
-      R"(((([!#$%&'*+\-/=?^_`{|}~\w])|([!#$%&'*+\-/=?^_`{|}~\w][!#$%&'*+\-/=?^_`{|}~\.\w]{0,}[!#$%&'*+\-/=?^_`{|}~\w]))[@]\w+([-.]\w+)*\.\w+([-.]\w+)*))",
+      R"(\b((([!#$%&'*+\-/=?^_`{|}~\w])|([!#$%&'*+\-/=?^_`{|}~\w][!#$%&'*+\-/=?^_`{|}~\.\w]{0,}[!#$%&'*+\-/=?^_`{|}~\w]))[@]\w+([-.]\w+)*\.\w+([-.]\w+)*)\b)",
       /*pattern_score=*/0.6,
       /*context_keywords=*/
       {
@@ -90,9 +91,9 @@ RulePtr emailRule() {
 
 RulePtr phoneRule() {
   return Pattern::make(
-      /*entity=*/"PHONE",
+      /*entity=*/"PHONENUMBER",
       /*pattern=*/
-      R"((\+?\d+[\.\- ]?)?\(?\d{3}\)?[\.\- ]?\d{3}[\.\- ]?\d{4})",
+      R"(\b(\+?\d+[\.\- ]?)?\(?\d{3}\)?[\.\- ]?\d{3}[\.\- ]?\d{4}\b)",
       /*pattern_score=*/0.6,
       /*context_keywords=*/
       {
@@ -109,11 +110,37 @@ RulePtr phoneRule() {
       });
 }
 
+RulePtr phoneWithoutAreaCodeRule() {
+  /**
+   * This rule is separate because it is really just a match on 7 consecutive
+   * numbers, and so with only the pattern match the score is lower, but it can
+   * still score highly with keyword matches in the context.
+   */
+  return Pattern::make(
+      /*entity=*/"PHONENUMBER",
+      /*pattern=*/
+      R"(\b\d{3}[\.\- ]?\d{4}\b)",
+      /*pattern_score=*/0.3,
+      /*context_keywords=*/
+      {
+          {"phone", 0.4},
+          {"cell", 0.4},
+          {"mobile", 0.4},
+          {"number", 0.4},
+          {"tele", 0.4},
+          {"telephone", 0.4},
+          {"cellphone", 0.4},
+          {"call", 0.3},
+          {"text", 0.3},
+          {"contact", 0.3},
+      });
+}
+
 RulePtr medicalLicenseRule() {
   return Pattern::make(
       /*entity=*/"MEDICAL_LICENSE",
       /*pattern=*/
-      R"([abcdefghjklmprstuxABCDEFGHJKLMPRSTUX][a-zA-Z]\d{7}|[abcdefghjklmprstuxABCDEFGHJKLMPRSTUX]9\d{7})",
+      R"(\b[abcdefghjklmprstuxABCDEFGHJKLMPRSTUX][a-zA-Z]\d{7}|[abcdefghjklmprstuxABCDEFGHJKLMPRSTUX]9\d{7}\b)",
       /*pattern_score=*/0.3,
       /*context_keywords=*/
       {
@@ -128,7 +155,7 @@ RulePtr medicalLicenseRule() {
 RulePtr bankNumberRule() {
   return Pattern::make(
       /*entity=*/"BANK_NUMBER",
-      /*pattern=*/R"([0-9]{8,17})",
+      /*pattern=*/R"(\b[0-9]{8,17}\b)",
       /*pattern_score=*/0.3,
       /*context_keywords=*/
       {
@@ -146,7 +173,7 @@ RulePtr ssnRule() {
   return Pattern::make(
       /*entity=*/"SSN",
       /*pattern=*/
-      R"(([0-9]{3})([- ]?)([0-9]{2})([- ]?)([0-9]{4}))",
+      R"(\b([0-9]{3})([- ]?)([0-9]{2})([- ]?)([0-9]{4})\b)",
       /*pattern_score=*/0.4,
       /*context_keywords=*/
       {
@@ -159,15 +186,24 @@ RulePtr ssnRule() {
 
 RulePtr cvvRule() {
   return Pattern::make(
-      /*entity=*/"CVV",
+      /*entity=*/"CREDITCARDCVV",
       /*pattern=*/
-      R"([0-9]{3})",
-      /*pattern_score=*/0.2,
+      // TODO(Any): does \b make sense here or should it just be [^0-9] (i.e.
+      // non digit)? For example CVV102
+      R"(\b[0-9]{3}\b)",
+      /*pattern_score=*/0.0,
       /*context_keywords=*/
       {
-          {"cvv", 0.6},
-          {"cvc", 0.6},
-          {"card", 0.3},
+          {"cvv", 0.9},
+          {"cvc", 0.9},
+          {"cvn", 0.9},
+          {"credit", 0.6},
+          {"card", 0.6},
+          {"visa", 0.6},
+          {"mastercard", 0.6},
+          {"discover", 0.6},
+          {"amex", 0.6},
+          {"debit", 0.6},
       });
 }
 
@@ -176,9 +212,11 @@ std::shared_ptr<Rule> defaultRule() {
       creditCardRule(),
       emailRule(),
       phoneRule(),
-      medicalLicenseRule(),
-      bankNumberRule(),
-      ssnRule(),
+      phoneWithoutAreaCodeRule(),
+      // ibanRule(),
+      // medicalLicenseRule(),
+      // bankNumberRule(),
+      // ssnRule(),
       cvvRule(),
   });
 }

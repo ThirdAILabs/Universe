@@ -1,5 +1,4 @@
 #include "Pattern.h"
-#include <iostream>
 #include <regex>
 
 namespace thirdai::data::ner {
@@ -25,8 +24,22 @@ std::shared_ptr<Pattern> Pattern::make(
 
 std::vector<MatchResult> Pattern::apply(const std::vector<std::string>& tokens,
                                         size_t index) const {
-  if (!std::regex_match(tokens[index], _pattern) ||
-      (_validator && !_validator(tokens.at(index)))) {
+  /**
+   * We use regex_search instead of regex_match because the tokenization may not
+   * fully seperate the PII information. For example the token 'cvv:102' should
+   * still match the cvv regex. The regex patterns should use '\b' to ensure
+   * that that there is some punctuation or delimiter that seperates the
+   * possible sub token of interest from the rest of the phrase. For example the
+   * cvv regex is '\b[0-9]{3}\b' instead of just '[0-9]{3}' because we want
+   * something like '123.' to match, but not '1234'.
+   */
+
+  std::smatch pattern_match;
+  if (!std::regex_search(tokens[index], pattern_match, _pattern)) {
+    return {};
+  }
+
+  if (_validator && !_validator(pattern_match.str())) {
     return {};
   }
 
@@ -39,9 +52,6 @@ std::vector<MatchResult> Pattern::apply(const std::vector<std::string>& tokens,
   float score = _pattern_score;
 
   for (size_t i = context_start; i < context_end; i++) {
-    if (i == index) {
-      continue;
-    }
     const std::string& token = tokens[i];
 
     for (const auto& [keyword, score_incr] : _context_keywords) {
@@ -49,6 +59,10 @@ std::vector<MatchResult> Pattern::apply(const std::vector<std::string>& tokens,
         score += score_incr;
       }
     }
+  }
+
+  if (score == 0) {
+    return {};
   }
 
   return {MatchResult(_entity, std::min(score, 1.F))};
