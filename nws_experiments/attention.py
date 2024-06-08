@@ -3,20 +3,30 @@ import numpy as np
 import time
 import math
 
+
 def normalize(a):
-        l2_norms = np.linalg.norm(a, axis=1, keepdims=True)
-        return a / l2_norms
+    l2_norms = np.linalg.norm(a, axis=1, keepdims=True)
+    return a / l2_norms
+
 
 def create_qkv(num_clusters, samples_per_cluster, num_columns, noise):
     # Step 1: Generate a random 2D array with positive values
-    random_array = np.random.randn(num_clusters, num_columns)  # Generates values between 0 and 1
+    random_array = np.random.randn(
+        num_clusters, num_columns
+    )  # Generates values between 0 and 1
     q_noisy_arrays = []
     k_noisy_arrays = []
     v_noisy_arrays = []
     for _ in range(samples_per_cluster):
-        q_noisy_arrays.append(random_array + noise * np.random.rand(num_clusters, num_columns))
-        k_noisy_arrays.append(random_array + noise * np.random.rand(num_clusters, num_columns))
-        v_noisy_arrays.append(random_array + noise * np.random.rand(num_clusters, num_columns))
+        q_noisy_arrays.append(
+            random_array + noise * np.random.rand(num_clusters, num_columns)
+        )
+        k_noisy_arrays.append(
+            random_array + noise * np.random.rand(num_clusters, num_columns)
+        )
+        v_noisy_arrays.append(
+            random_array + noise * np.random.rand(num_clusters, num_columns)
+        )
     q = np.concatenate(q_noisy_arrays)
     k = np.concatenate(k_noisy_arrays)
     v = np.concatenate(v_noisy_arrays)
@@ -36,7 +46,7 @@ def what_race_wants_to_be(queries, keys, values, mean_coeff, coeff_pow_pairs):
     results = []
     results_bottom = []
     for query in queries:
-        results.append(np.zeros((values.shape[-1],) , np.float32))
+        results.append(np.zeros((values.shape[-1],), np.float32))
         results_bottom.append([0.0])
         for key, value in zip(keys, values):
             theta = np.arccos(np.dot(query, key))
@@ -47,6 +57,7 @@ def what_race_wants_to_be(queries, keys, values, mean_coeff, coeff_pow_pairs):
             results[-1] += mult * value
             results_bottom[-1] += mult
     return np.array(results) / np.array(results_bottom)
+
 
 def race_attention(queries, keys, values, race_rows, mean_coeff, coeff_pow_pairs):
     final_top = np.zeros((len(queries), values.shape[-1]), np.float32)
@@ -62,14 +73,8 @@ def race_attention(queries, keys, values, race_rows, mean_coeff, coeff_pow_pairs
         for key, val in zip(keys, values):
             top.update(key, val)
             bottom.update(key, [1])
-        top_results = np.array([
-            top.query(query)
-            for query in queries
-        ])
-        bottom_results = np.array([
-            bottom.query(query)
-            for query in queries
-        ])
+        top_results = np.array([top.query(query) for query in queries])
+        bottom_results = np.array([bottom.query(query) for query in queries])
         final_top += coeff * top_results
         final_bottom += coeff * bottom_results
     final_top += mean_coeff * np.mean(values, axis=0)
@@ -90,7 +95,9 @@ def evaluate(nclusters, samples_per_cluster, ncols, race_rows, noise):
     print(f"What race wants to be finished in {end_truth - start_truth} seconds.")
     # Approx attention
     start_race = time.time()
-    approx = race_attention(queries, keys, values, race_rows, mean_coeff, coeff_pow_pairs)
+    approx = race_attention(
+        queries, keys, values, race_rows, mean_coeff, coeff_pow_pairs
+    )
     # approx = what_race_wants_to_be(queries, keys, values, mean_coeff, coeff_pow_pairs)
     end_race = time.time()
     print(f"RACE attention finished in {end_race - start_race} seconds.")
@@ -108,12 +115,64 @@ def evaluate(nclusters, samples_per_cluster, ncols, race_rows, noise):
     true_l2 = np.linalg.norm(truth, axis=1)
     approx_l2 = np.linalg.norm(approx, axis=1)
     avg_l2 = np.linalg.norm(avg, axis=1)
-    print("sim", np.mean(np.sum(truth * approx, axis=1) / true_l2 / approx_l2 * ((true_l2 - np.abs(true_l2 - approx_l2)) / true_l2)))
-    print("sim avg", np.mean(np.sum(truth * avg, axis=1) / true_l2 / avg_l2 * ((true_l2 - np.abs(true_l2 - avg_l2)) / true_l2)))
-    print("THETA", np.mean(np.arccos(np.sum(truth * approx, axis=1) / np.linalg.norm(truth, axis=1) / np.linalg.norm(approx, axis=1))))
-    print("THETA median", np.median(np.arccos(np.sum(truth * approx, axis=1) / np.linalg.norm(truth, axis=1) / np.linalg.norm(approx, axis=1))))
-    print("THETA AVG", np.mean(np.arccos(np.sum(truth * avg, axis=1) / np.linalg.norm(truth, axis=1) / np.linalg.norm(avg, axis=1))))
-    print("THETA median AVG", np.median(np.arccos(np.sum(truth * avg, axis=1) / np.linalg.norm(truth, axis=1) / np.linalg.norm(avg, axis=1))))
+    print(
+        "sim",
+        np.mean(
+            np.sum(truth * approx, axis=1)
+            / true_l2
+            / approx_l2
+            * ((true_l2 - np.abs(true_l2 - approx_l2)) / true_l2)
+        ),
+    )
+    print(
+        "sim avg",
+        np.mean(
+            np.sum(truth * avg, axis=1)
+            / true_l2
+            / avg_l2
+            * ((true_l2 - np.abs(true_l2 - avg_l2)) / true_l2)
+        ),
+    )
+    print(
+        "THETA",
+        np.mean(
+            np.arccos(
+                np.sum(truth * approx, axis=1)
+                / np.linalg.norm(truth, axis=1)
+                / np.linalg.norm(approx, axis=1)
+            )
+        ),
+    )
+    print(
+        "THETA median",
+        np.median(
+            np.arccos(
+                np.sum(truth * approx, axis=1)
+                / np.linalg.norm(truth, axis=1)
+                / np.linalg.norm(approx, axis=1)
+            )
+        ),
+    )
+    print(
+        "THETA AVG",
+        np.mean(
+            np.arccos(
+                np.sum(truth * avg, axis=1)
+                / np.linalg.norm(truth, axis=1)
+                / np.linalg.norm(avg, axis=1)
+            )
+        ),
+    )
+    print(
+        "THETA median AVG",
+        np.median(
+            np.arccos(
+                np.sum(truth * avg, axis=1)
+                / np.linalg.norm(truth, axis=1)
+                / np.linalg.norm(avg, axis=1)
+            )
+        ),
+    )
     dif = np.mean(np.linalg.norm(truth - approx, axis=1))
     dif_median = np.median(np.linalg.norm(truth - approx, axis=1))
     print("DIF", dif, dif / np.mean(np.linalg.norm(truth, axis=1)))
@@ -121,11 +180,18 @@ def evaluate(nclusters, samples_per_cluster, ncols, race_rows, noise):
     dif_avg = np.mean(np.linalg.norm(truth - avg, axis=1))
     dif_median_avg = np.median(np.linalg.norm(truth - avg, axis=1))
     print("DIF AVG", dif_avg, dif_avg / np.mean(np.linalg.norm(truth, axis=1)))
-    print("DIF median AVG", dif_median_avg, dif_median_avg / np.mean(np.linalg.norm(truth, axis=1)))
+    print(
+        "DIF median AVG",
+        dif_median_avg,
+        dif_median_avg / np.mean(np.linalg.norm(truth, axis=1)),
+    )
     print("Mean error:", np.mean(np.abs(approx - truth)))
-    print("Mean percentage error:", np.mean(np.abs(approx - truth) / np.abs(truth)) * 100)
-    print("Mean percentage error avg:", np.mean(np.abs(avg - truth) / np.abs(truth)) * 100)
-
+    print(
+        "Mean percentage error:", np.mean(np.abs(approx - truth) / np.abs(truth)) * 100
+    )
+    print(
+        "Mean percentage error avg:", np.mean(np.abs(avg - truth) / np.abs(truth)) * 100
+    )
 
 
 evaluate(10, 100, 1000, 50, 0.001)

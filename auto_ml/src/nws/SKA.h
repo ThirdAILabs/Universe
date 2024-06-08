@@ -10,7 +10,8 @@ namespace thirdai::automl {
 
 class Distance {
  public:
-  virtual float between(const std::vector<float>& a, const std::vector<float>& b) const = 0;
+  virtual float between(const std::vector<float>& a,
+                        const std::vector<float>& b) const = 0;
   virtual ~Distance() {}
 };
 
@@ -30,8 +31,12 @@ class L2Distance final : public Distance {
 
 class SparseKernelApproximation {
  public:
-  SparseKernelApproximation(std::shared_ptr<Distance> distance, std::vector<std::vector<float>> train_inputs, std::vector<float> train_outputs)
-  : _distance(std::move(distance)), _train_inputs(toMap(std::move(train_inputs))), _train_outputs(toMap(std::move(train_outputs))) {
+  SparseKernelApproximation(std::shared_ptr<Distance> distance,
+                            std::vector<std::vector<float>> train_inputs,
+                            std::vector<float> train_outputs)
+      : _distance(std::move(distance)),
+        _train_inputs(toMap(std::move(train_inputs))),
+        _train_outputs(toMap(std::move(train_outputs))) {
     assert(_train_inputs.size() == _train_outputs.size());
   }
 
@@ -58,7 +63,6 @@ class SparseKernelApproximation {
   std::unordered_map<uint32_t, float> _train_outputs;
   std::vector<std::vector<float>> _used_train_inputs;
   std::vector<float> _used_train_outputs;
-
 };
 
-} // namespace thirdai::automl
+}  // namespace thirdai::automl

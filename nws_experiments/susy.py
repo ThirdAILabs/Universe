@@ -4,7 +4,9 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import normalize
 
-df = pd.read_csv("/Users/benitogeordie/Grad School Prep/NWS Paper/experiments/physics/supersymmetry_dataset.csv")
+df = pd.read_csv(
+    "/Users/benitogeordie/Grad School Prep/NWS Paper/experiments/physics/supersymmetry_dataset.csv"
+)
 df = df.sample(frac=1)
 
 input_columns = list(df.columns)
@@ -28,14 +30,15 @@ train_inputs = normalize(train_inputs, axis=1, norm="l2").tolist()
 test_inputs = normalize(test_inputs, axis=1, norm="l2").tolist()
 
 with open("susy.out", "a", buffering=1) as w:
+
     def log(string):
         w.write(string + "\n")
         print(string, flush=True)
-    
+
     for rows in [100]:
         for hashes_per_row in [19]:
             log(f"{rows=} {hashes_per_row=}")
-            
+
             start = time.time()
             srp = SRP(
                 input_dim=len(input_columns),
@@ -54,21 +57,17 @@ with open("susy.out", "a", buffering=1) as w:
             )
             end = time.time()
             log(f"Training time (s): {end - start}")
-            
+
             start = time.time()
             predictions = nws.predict(inputs=test_inputs)
             end = time.time()
             log(f"Prediction time (s): {end - start}")
-            
-            correct = sum([
-                round(predicted) == int(expected)
-                for [predicted], [expected]
-                in zip(predictions, test_outputs)
-            ])
+
+            correct = sum(
+                [
+                    round(predicted) == int(expected)
+                    for [predicted], [expected] in zip(predictions, test_outputs)
+                ]
+            )
 
             log(f"Accuracy: {correct / len(test_outputs)}\n")
-            
-                
-                
-
-

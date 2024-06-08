@@ -22,16 +22,22 @@ float SRPKernel::on(const std::vector<float>& a,
   return std::pow(1 - (theta / pi), _power);
 }
 
-float ExponentialKernel::on(const std::vector<float>& a,
-                            const std::vector<float>& b) const {
+const float sqrt2 = std::sqrt(2);
+const float sqrt2perpi = std::sqrt(2 / pi);
+
+float L2Kernel::on(const std::vector<float>& a,
+                   const std::vector<float>& b) const {
   assert(a.size() == b.size());
-  float r = 0;
+  float norm = 0.0;
   for (size_t i = 0; i < a.size(); i++) {
-    const float diff = a[i] - b[i];
-    r += diff * diff;
+    const float dif = a[i] - b[i];
+    norm += dif * dif;
   }
-  r = std::sqrt(r);
-  const float kernel = _stdev_sq * std::exp(-r / _cls);
+  norm = std::sqrt(norm);
+  const float erf = std::erf(_bandwidth / (norm * sqrt2));
+  const float exp = std::exp(-_bandwidth * _bandwidth / (2 * norm * norm));
+  const float exp_factor = norm * sqrt2perpi / _bandwidth;
+  const float kernel = erf - exp_factor * (1 - exp);
   return std::pow(kernel, _power);
 }
 

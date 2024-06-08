@@ -112,33 +112,41 @@ void defineAutomlInModule(py::module_& module) {
       .def("rows", &Hash::rows)
       .def("range", &Hash::range);
 
+  py::class_<MockHash, Hash, std::shared_ptr<MockHash>>(module, "MockHash")
+      .def(py::init<std::vector<
+               std::pair<std::vector<float>, std::vector<uint32_t>>>&&>(),
+           py::arg("registered_hashes"))
+      .def("hash", &MockHash::hash, py::arg("input"));
+
   py::class_<SRP, Hash, std::shared_ptr<SRP>>(module, "SRP")
       .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
-           py::arg("input_dim"), py::arg("hashes_per_row"), py::arg("rows"), py::arg("seed"))
+           py::arg("input_dim"), py::arg("hashes_per_row"), py::arg("rows"),
+           py::arg("seed"))
       .def("hash", &SRP::hash, py::arg("input"));
 
   py::class_<L2Hash, Hash, std::shared_ptr<L2Hash>>(module, "L2Hash")
-      .def(py::init<uint32_t, uint32_t, uint32_t, float, uint32_t, uint32_t>(),
-           py::arg("input_dim"), py::arg("hashes_per_row"), py::arg("rows"), py::arg("scale"),
-           py::arg("range"), py::arg("seed"))
+      .def(py::init<uint32_t, uint32_t, uint32_t, float, uint32_t,
+                    std::optional<uint32_t>>(),
+           py::arg("input_dim"), py::arg("hashes_per_row"), py::arg("rows"),
+           py::arg("scale"), py::arg("seed"), py::arg("range") = std::nullopt)
       .def("hash", &L2Hash::hash, py::arg("input"));
 
   py::class_<RACE, std::shared_ptr<RACE>>(module, "RACE")
-      .def(py::init<const std::shared_ptr<Hash>&, uint32_t>(), py::arg("hash"), py::arg("val_dim"))
-      .def("update", &RACE::update, py::arg("key"),
-           py::arg("value"))
+      .def(py::init<const std::shared_ptr<Hash>&>(), py::arg("hash"))
+      .def("update", &RACE::update, py::arg("key"), py::arg("value"))
       .def("query", &RACE::query, py::arg("key"))
       .def("print", &RACE::print);
 
   py::class_<NadarayaWatsonSketch, std::shared_ptr<NadarayaWatsonSketch>>(
       module, "NWS")
-      .def(py::init<const std::shared_ptr<Hash>&, uint32_t>(), py::arg("hash"), py::arg("val_dim"))
+      .def(py::init<const std::shared_ptr<Hash>&>(), py::arg("hash"))
       .def("train", &NadarayaWatsonSketch::train, py::arg("inputs"),
            py::arg("outputs"))
       .def("train_parallel", &NadarayaWatsonSketch::trainParallel,
            py::arg("inputs"), py::arg("outputs"), py::arg("threads"))
       .def("predict", &NadarayaWatsonSketch::predict, py::arg("inputs"))
-      .def("predict_debug", &NadarayaWatsonSketch::predictDebug, py::arg("inputs"));
+      .def("predict_debug", &NadarayaWatsonSketch::predictDebug,
+           py::arg("inputs"));
 
   py::class_<Kernel, std::shared_ptr<Kernel>>(module, "Kernel")
       .def("on", &Kernel::on, py::arg("a"), py::arg("b"));
@@ -146,9 +154,8 @@ void defineAutomlInModule(py::module_& module) {
   py::class_<SRPKernel, Kernel, std::shared_ptr<SRPKernel>>(module, "SRPKernel")
       .def(py::init<uint32_t>(), py::arg("power"));
 
-  py::class_<ExponentialKernel, Kernel, std::shared_ptr<ExponentialKernel>>(module, "ExponentialKernel")
-      .def(py::init<float, float, uint32_t>(),
-           py::arg("cls"), py::arg("stdev"), py::arg("power"));
+  py::class_<L2Kernel, Kernel, std::shared_ptr<L2Kernel>>(module, "L2Kernel")
+      .def(py::init<float, uint32_t>(), py::arg("bandwidth"), py::arg("power"));
 
   py::class_<NadarayaWatsonEstimator, std::shared_ptr<NadarayaWatsonEstimator>>(
       module, "NWE")
@@ -163,13 +170,16 @@ void defineAutomlInModule(py::module_& module) {
   py::class_<Theta, Distance, std::shared_ptr<Theta>>(module, "Theta")
       .def(py::init<>());
 
-  py::class_<L2Distance, Distance, std::shared_ptr<L2Distance>>(module, "L2Distance")
+  py::class_<L2Distance, Distance, std::shared_ptr<L2Distance>>(module,
+                                                                "L2Distance")
       .def(py::init<>());
 
-  py::class_<SparseKernelApproximation, std::shared_ptr<SparseKernelApproximation>>(
-      module, "SKA")
-      .def(py::init<const std::shared_ptr<Distance>, std::vector<std::vector<float>>, std::vector<float>>(),
-          py::arg("distance"), py::arg("train_inputs"), py::arg("train_outputs"))
+  py::class_<SparseKernelApproximation,
+             std::shared_ptr<SparseKernelApproximation>>(module, "SKA")
+      .def(py::init<const std::shared_ptr<Distance>,
+                    std::vector<std::vector<float>>, std::vector<float>>(),
+           py::arg("distance"), py::arg("train_inputs"),
+           py::arg("train_outputs"))
       .def("use", &SparseKernelApproximation::use, py::arg("k"))
       .def("used_samples", &SparseKernelApproximation::usedSamples);
 

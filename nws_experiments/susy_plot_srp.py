@@ -7,6 +7,7 @@ power = 1
 kernel = SRPKernel(power=power)
 distance = Theta()
 
+
 def make_hash_factory(rows):
     def factory(input_dim):
         return SRP(
@@ -15,7 +16,9 @@ def make_hash_factory(rows):
             rows=rows,
             seed=314,
         )
+
     return factory
+
 
 hash_factories = [
     make_hash_factory(rows)
@@ -30,7 +33,10 @@ hash_factories = [
 TRAIN_SIZE = 10_000
 TEST_SIZE = 10_000
 
-df = pd.read_csv("/Users/benitogeordie/Grad School Prep/NWS Paper/experiments/physics/supersymmetry_dataset_shuffled.csv", nrows=TRAIN_SIZE + TEST_SIZE)
+df = pd.read_csv(
+    "/Users/benitogeordie/Grad School Prep/NWS Paper/experiments/physics/supersymmetry_dataset_shuffled.csv",
+    nrows=TRAIN_SIZE + TEST_SIZE,
+)
 
 input_columns = list(df.columns)
 input_columns.remove("SUSY")
@@ -46,4 +52,12 @@ train_outputs = outputs[:TRAIN_SIZE]
 
 test_inputs = inputs[TRAIN_SIZE:]
 
-run(hash_factories, kernel, distance, train_inputs, train_outputs, test_inputs, random_sampling=True)
+run(
+    hash_factories,
+    kernel,
+    distance,
+    train_inputs,
+    train_outputs,
+    test_inputs,
+    random_sampling=True,
+)

@@ -1,5 +1,6 @@
 # Random Sampling
 
+
 def test_rs_srp_kernel_unweighted():
     """Use RS purely as a point sampler. Points are not weighted to match
     true local KDE.

@@ -5,11 +5,10 @@ from thirdai.bolt import NWE, SRPKernel
 import numpy as np
 import os
 
-os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+# os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 
 def compute_srp_kernels(vector, matrix):
-    """Assumes that all vectors"""
     dots = np.dot(matrix, vector)
     cos_thetas = dots / (np.linalg.norm(vector) * np.linalg.norm(matrix, axis=1))
     cos_thetas = np.clip(cos_thetas, a_min=-1, a_max=1)  # Avoid precision errors
