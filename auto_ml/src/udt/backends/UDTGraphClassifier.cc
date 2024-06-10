@@ -20,7 +20,7 @@ UDTGraphClassifier::UDTGraphClassifier(
     const TabularOptions& options) {
   if (!target_type->isInteger()) {
     throw exceptions::NotImplemented(
-        "We do not yet support non integer classes on graphs.");
+        "Graph Classification requires integer typed target.");
   }
 
   _featurizer = std::make_shared<GraphFeaturizer>(
