@@ -2,6 +2,7 @@
 
 #include <data/src/transformations/ner/rules/Rule.h>
 #include <functional>
+#include <optional>
 #include <regex>
 #include <vector>
 
@@ -9,14 +10,16 @@ namespace thirdai::data::ner {
 
 class Pattern final : public Rule {
  public:
+  using ValidatorFn = std::function<bool(const std::string&)>;
+
   Pattern(std::string entity, const std::string& pattern, float pattern_score,
           std::vector<std::pair<std::string, float>> context_keywords,
-          std::function<bool(const std::string&)> validator);
+          ValidatorFn validator);
 
   static std::shared_ptr<Pattern> make(
       std::string entity, const std::string& pattern, float pattern_score,
       std::vector<std::pair<std::string, float>> context_keywords = {},
-      std::function<bool(const std::string&)> validator = nullptr);
+      ValidatorFn validator = nullptr);
 
   std::vector<MatchResult> apply(const std::string& phrase) const final;
 
@@ -30,7 +33,7 @@ class Pattern final : public Rule {
 
   std::vector<std::pair<std::string, float>> _context_keywords;
 
-  std::function<bool(const std::string&)> _validator;
+  ValidatorFn _validator;
 };
 
 }  // namespace thirdai::data::ner

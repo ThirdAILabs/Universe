@@ -95,7 +95,7 @@ RulePtr phoneRule() {
   return Pattern::make(
       /*entity=*/"PHONENUMBER",
       /*pattern=*/
-      R"((\+?\d+[\.\- ]?)?\(?\d{3}\)?[\.\- ]?\d{3}[\.\- ]?\d{4}\b)",
+      R"((([\+\b]\d{1,3}[\.\- ])|\b)\(?\d{3}\)?[\.\- ]?\d{3}[\.\- ]?\d{4}\b)",
       /*pattern_score=*/0.6,
       /*context_keywords=*/
       {
@@ -215,9 +215,9 @@ std::shared_ptr<Rule> defaultRule() {
       emailRule(),
       phoneRule(),
       phoneWithoutAreaCodeRule(),
-      // ibanRule(),
+      ibanRule(),
       // bankNumberRule(),
-      ssnRule(),
+      // ssnRule(),
       cvvRule(),
   });
 }

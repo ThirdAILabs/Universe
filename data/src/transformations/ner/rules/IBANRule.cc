@@ -1,4 +1,5 @@
 #include <data/src/transformations/ner/rules/Pattern.h>
+#include <utils/text/StringManipulation.h>
 #include <cctype>
 #include <regex>
 #include <stdexcept>
@@ -31,18 +32,19 @@ std::regex buildRegex(const std::string& country_code,
         "Invalid IBAN country code. Must be 2 capital letters.");
   }
 
-  std::string pattern = country_code + "([0-9]{2}( )?)";
+  std::string pattern = "(" + country_code + "|" + text::lower(country_code) +
+                        R"()([0-9]{2}( )?))";
 
   for (const auto& [len, type] : format) {
     switch (type) {
       case BBANCharType::Alpha:
-        pattern += "([a-zA-Z]( )?){" + std::to_string(len) + "}";
+        pattern += R"(([a-zA-Z]( )?){)" + std::to_string(len) + "}";
         break;
       case BBANCharType::Numeric:
-        pattern += "([0-9]( )?){" + std::to_string(len) + "}";
+        pattern += R"(([0-9]( )?){)" + std::to_string(len) + "}";
         break;
       case BBANCharType::AlphaNumeric:
-        pattern += "([a-zA-Z0-9]( )?){" + std::to_string(len) + "}";
+        pattern += R"(([a-zA-Z0-9]( )?){)" + std::to_string(len) + "}";
         break;
     }
   }
@@ -152,15 +154,28 @@ const std::unordered_map<std::string, std::regex> COUNTRY_FORMATS = buildMap();
 
 bool ibanChecksum(const std::string& token) {
   std::string country_code = token.substr(0, 2);
+  for (char& c : country_code) {
+    c = std::toupper(c);
+  }
+
   if (!COUNTRY_FORMATS.count(country_code)) {
     return false;
   }
 
   const auto& format = COUNTRY_FORMATS.at(country_code);
 
-  if (!std::regex_match(token, format)) {
+  /**
+   * Because the main IBAN regex pattern matches on the range of lengths, it is
+   * possible that if there are extra characters at the end of the IBAN number
+   * they are still present here, this prunes them away leaving just the
+   * relevant part of the value.
+   */
+  std::smatch match;
+  if (!std::regex_search(token, match, format)) {
     return false;
   }
+
+  std::string number = match.str();
 
   /**
    * Steps to Compute Checksum:
@@ -174,7 +189,7 @@ bool ibanChecksum(const std::string& token) {
    *    large.
    */
   uint64_t value = 0;
-  for (char c : token.substr(4) + token.substr(0, 4)) {
+  for (char c : number.substr(4) + number.substr(0, 4)) {
     if (std::isdigit(c)) {
       value = value * 10 + (c - '0');
     } else if ('a' <= c && c <= 'z') {
@@ -191,6 +206,7 @@ bool ibanChecksum(const std::string& token) {
 }
 
 RulePtr ibanRule() {
+  size_t min_len = 100000000;
   size_t max_len = 0;
   for (const auto& [country, format] : COUNTRY_FORMAT_TABLE) {
     size_t len = 0;
@@ -200,12 +216,15 @@ RulePtr ibanRule() {
     if (len > max_len) {
       max_len = len;
     }
+    if (len < min_len) {
+      min_len = len;
+    }
   }
 
   return Pattern::make(
       /*entity=*/"IBAN",
-      /*pattern=*/"\b[A-Z]{2}([0-9]( )?){2}([a-zA-Z0-9]( )?){" +
-          std::to_string(max_len) + "}\b",
+      /*pattern=*/R"(\b[a-zA-Z]{2}([0-9]( )?){2}([a-zA-Z0-9]( )?){)" +
+          std::to_string(min_len) + "," + std::to_string(max_len) + R"(}\b)",
       /*pattern_score=*/0.9,
       /*context_keywords=*/
       {

@@ -1,4 +1,5 @@
 #include "Pattern.h"
+#include <iostream>
 #include <regex>
 #include <string_view>
 
@@ -7,7 +8,7 @@ namespace thirdai::data::ner {
 Pattern::Pattern(std::string entity, const std::string& pattern,
                  float pattern_score,
                  std::vector<std::pair<std::string, float>> context_keywords,
-                 std::function<bool(const std::string&)> validator)
+                 ValidatorFn validator)
     : _entity(std::move(entity)),
       _pattern(pattern),
       _pattern_score(pattern_score),
@@ -17,7 +18,7 @@ Pattern::Pattern(std::string entity, const std::string& pattern,
 std::shared_ptr<Pattern> Pattern::make(
     std::string entity, const std::string& pattern, float pattern_score,
     std::vector<std::pair<std::string, float>> context_keywords,
-    std::function<bool(const std::string&)> validator) {
+    ValidatorFn validator) {
   return std::make_shared<Pattern>(std::move(entity), pattern, pattern_score,
                                    std::move(context_keywords),
                                    std::move(validator));
@@ -41,7 +42,7 @@ std::vector<MatchResult> Pattern::apply(const std::string& phrase) const {
 
   for (auto match_iter = begin; match_iter != end; ++match_iter) {
     if (_validator && !_validator(match_iter->str())) {
-      return {};
+      continue;
     }
 
     const int64_t context_radius = 30;

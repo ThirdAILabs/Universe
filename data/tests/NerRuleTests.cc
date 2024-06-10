@@ -138,6 +138,21 @@ TEST(NerRuleTests, Cvv) {
   checkNoMatch(rule, "cvc: something 1234 something");
 }
 
+TEST(NerRuleTests, Iban) {
+  auto rule = ibanRule();
+
+  checkMatch(rule, "my iban is DE89 3704 0044 0532 0130 00.", "IBAN", 1.0,
+             "DE89 3704 0044 0532 0130 00");
+
+  checkMatch(rule, "my num is DE89 3704 0044 0532 0130 00,more text", "IBAN",
+             0.9, "DE89 3704 0044 0532 0130 00");
+
+  checkMatch(rule, "my num is DE89 3704 0044 0532 0130 00abc", "IBAN", 0.9,
+             "DE89 3704 0044 0532 0130 00abc");
+
+  checkNoMatch(rule, "my iban is DE82 3704 0044 0532 0130 00.");
+}
+
 TEST(NerRuleTests, MultipleRules) {
   RulePtr rule = RuleCollection::make({
       creditCardRule(),
