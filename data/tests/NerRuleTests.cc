@@ -68,8 +68,11 @@ TEST(NerRuleTests, Phone) {
   checkMatch(rule, "for contacting (924) 024-2400 is my cell", "PHONENUMBER",
              0.9, "(924) 024-2400");
 
-  checkMatch(rule, "for reaching +1(924) 024-2400 is my cell", "PHONENUMBER",
+  checkMatch(rule, "for reaching +1 (924) 024-2400 is my cell", "PHONENUMBER",
              0.8, "+1 (924) 024-2400");
+
+  checkMatch(rule, "for reaching +1(924) 024-2400 is my cell", "PHONENUMBER",
+             0.8, "+1(924) 024-2400");
 
   checkMatch(rule, "9240242400", "PHONENUMBER", 0.6, "9240242400");
 
@@ -79,7 +82,7 @@ TEST(NerRuleTests, Phone) {
              0.6, "+1 9402412400");
 
   checkMatch(rule, "+1 940.242-4200 is my number", "PHONENUMBER", 0.8,
-             "+1 940.242-4200 ");
+             "+1 940.242-4200");
 }
 
 TEST(NerRuleTests, MedicalLicense) {
