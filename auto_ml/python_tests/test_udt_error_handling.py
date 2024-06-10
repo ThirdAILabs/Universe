@@ -154,7 +154,7 @@ def test_invalid_cast_string_to_int():
     model = bolt.UniversalDeepTransformer(
         data_types={
             "text": bolt.types.text(),
-            "id": bolt.types.categorical(n_classes=2, type="str"),
+            "id": bolt.types.categorical(n_classes=2, type="str", delimiter=" "),
         },
         target="id",
     )
