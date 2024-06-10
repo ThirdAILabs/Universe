@@ -166,3 +166,20 @@ def test_invalid_cast_string_to_int():
         ),
     ):
         model.train("train.csv")
+
+
+def test_invalid_target_column_type():
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            """Target data type node_id is not valid for a UniversalDeepTransformer model with graph classification.
+The following target types are supported to initialize a UniversalDeepTransformer:"""
+        ),
+    ):
+        model = bolt.UniversalDeepTransformer(
+            data_types={
+                "node_id": bolt.types.node_id(),
+                "neighbors": bolt.types.neighbors(),
+            },
+            target="node_id",
+        )

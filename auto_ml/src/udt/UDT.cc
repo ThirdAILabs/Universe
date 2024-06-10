@@ -342,7 +342,12 @@ bool UDT::hasGraphInputs(const ColumnDataTypes& data_types) {
       "learning problem) or 0 of both (for a non-graph learning problem). "
       "Instead, found " +
       std::to_string(neighbor_col_count) + " neighbor data types and " +
-      std::to_string(node_id_col_count) + " node id data types.");
+      std::to_string(node_id_col_count) +
+      " node id data types.\nRefer to "
+      "https://github.com/ThirdAILabs/Demos/blob/main/"
+      "universal_deep_transformer/graph_neural_networks/"
+      "GraphNodeClassification.ipynb for more details on how to use a "
+      "UniversalDeepTransformer for a Graph Classification Problem.");
 }
 
 std::unique_ptr<UDTBackend> backendFromArchive(const ar::Archive& archive) {
