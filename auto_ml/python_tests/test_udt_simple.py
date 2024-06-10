@@ -457,3 +457,54 @@ def test_top_k_predictions():
             [predictions[i] == topk_predictions[1][i] for i in range(topk)]
         )
         assert check_equal
+
+
+def test_udt_datetime_before1970():
+    with open("test.csv", "w") as f:
+        f.write("target,date\n")
+        f.write("0,1969-12-20")
+
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "target": bolt.types.categorical(type="int", n_classes=10),
+            "date": bolt.types.date(),
+        },
+        target="target",
+    )
+
+    model.train("test.csv")
+
+    os.remove("test.csv")
+
+
+def test_udt_negative_graph_columns():
+    with open("test.csv", "w") as f:
+        f.write("target,node_id,neighbors\n")
+        f.write("0,1,-1")
+
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "target": bolt.types.categorical(type="int", n_classes=10),
+            "node_id": bolt.types.node_id(),
+            "neighbors": bolt.types.neighbors(),
+        },
+        target="target",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=r"Invalid row '-1' in column 'neighbors'.",
+    ):
+        model.train("test.csv")
+
+    with open("test.csv", "w") as f:
+        f.write("target,node_id,neighbors\n")
+        f.write("0,-1,1")
+
+    with pytest.raises(
+        ValueError,
+        match=r"Invalid row '-1' in column 'node_id'.",
+    ):
+        model.train("test.csv")
+
+    os.remove("test.csv")

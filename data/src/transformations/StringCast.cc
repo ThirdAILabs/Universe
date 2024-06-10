@@ -127,6 +127,11 @@ CastToValue<T>::CastToValue(const ar::Archive& archive)
 
 template <>
 uint32_t CastToValue<uint32_t>::parse(const std::string& row) const {
+  if (std::stol(row) < 0) {
+    throw std::invalid_argument(
+        "Negative numbers not supported for this column type.");
+  }
+
   return std::stoul(row);
 }
 
@@ -287,6 +292,11 @@ CastToArray<T>::CastToArray(const ar::Archive& archive)
 
 template <>
 uint32_t CastToArray<uint32_t>::parse(const std::string& row) const {
+  if (std::stol(row) < 0) {
+    throw std::invalid_argument(
+        "Negative numbers not supported for this column type.");
+  }
+
   return std::stoul(row);
 }
 
