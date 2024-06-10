@@ -121,10 +121,15 @@ std::string tokensColumn(ColumnDataTypes data_types,
   return data_types.begin()->first;
 }
 
-std::vector<std::string> prependDefaultTag(
-    const std::string& default_tag, const std::vector<std::string>& tags) {
+std::vector<std::string> mapTagsToNeurons(
+    const std::string& default_tag, const std::vector<std::string>& tags,
+    const std::vector<std::string>& rule_tags = {}) {
   std::vector<std::string> all_tags = {default_tag};
-  all_tags.insert(all_tags.end(), tags.begin(), tags.end());
+  for (const auto& tag : tags) {
+    if (std::find(rule_tags.begin(), rule_tags.end(), tag) == rule_tags.end()) {
+      all_tags.push_back(tag);
+    }
+  }
   return all_tags;
 }
 
@@ -211,16 +216,23 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
                const TokenTagsDataTypePtr& target,
                const std::string& target_name, const UDTNer* pretrained_model,
                const config::ArgumentMap& args)
-    : _rule(data::ner::defaultRule()),
-      _bolt_inputs({data::OutputColumns(NER_FEATURIZED_SENTENCE)}),
+    : _bolt_inputs({data::OutputColumns(NER_FEATURIZED_SENTENCE)}),
       _tokens_column(tokensColumn(data_types, target_name)),
-      _tags_column(target_name),
-      _label_to_tag(prependDefaultTag(target->default_tag, target->tags)) {
+      _tags_column(target_name) {
   NerOptions options;
   if (pretrained_model) {
     options = fromPretrained(pretrained_model);
   } else {
     options = fromScratch(args);
+  }
+
+  if (args.get<bool>("rules", "boolean", false)) {
+    _rule = data::ner::getRuleForEntities(
+        {"EMAIL", "PHONENUMBER", "CREDITCARDNUMBER", "CREDITCARDCVV", "IBAN"});
+    _label_to_tag =
+        mapTagsToNeurons(target->default_tag, target->tags, _rule->entities());
+  } else {
+    _label_to_tag = mapTagsToNeurons(target->default_tag, target->tags);
   }
 
   _model = buildModel(options.input_dim, options.emb_dim, _label_to_tag.size(),
@@ -376,10 +388,6 @@ std::vector<SentenceTags> UDTNer::predictTags(
       } else {
         auto& vec = scores->getVector(i);
 
-        for (const auto& neuron : _model_ignore) {
-          vec.activations[neuron] = 0;
-        }
-
         auto top_labels = vec.topKNeurons(top_k + 1);
 
         while (!top_labels.empty()) {
@@ -437,6 +445,10 @@ ar::ConstArchivePtr UDTNer::toArchive(bool with_optimizer) const {
 
   map->set("label_to_tag", ar::vecStr(_label_to_tag));
 
+  if (_rule) {
+    map->set("use_rules_for", ar::vecStr(_rule->entities()));
+  }
+
   return map;
 }
 
@@ -446,7 +458,6 @@ std::unique_ptr<UDTNer> UDTNer::fromArchive(const ar::Archive& archive) {
 
 UDTNer::UDTNer(const ar::Archive& archive)
     : _model(bolt::Model::fromArchive(*archive.get("model"))),
-      _rule(data::ner::defaultRule()),
       _supervised_transform(data::Transformation::fromArchive(
           *archive.get("supervised_transform"))),
       _inference_transform(data::Transformation::fromArchive(
@@ -455,15 +466,9 @@ UDTNer::UDTNer(const ar::Archive& archive)
       _tokens_column(archive.str("tokens_column")),
       _tags_column(archive.str("tags_column")),
       _label_to_tag(archive.getAs<ar::VecStr>("label_to_tag")) {
-  if (_rule) {
-    for (const auto& entity : _rule->entities()) {
-      auto loc = std::find(_label_to_tag.begin(), _label_to_tag.end(), entity);
-      if (loc == _label_to_tag.end()) {
-        throw std::invalid_argument("Invalid tag: " + entity);
-      }
-
-      _model_ignore.push_back(std::distance(_label_to_tag.begin(), loc));
-    }
+  if (archive.contains("use_rules_for")) {
+    _rule = data::ner::getRuleForEntities(
+        archive.getAs<ar::VecStr>("use_rules_for"));
   }
 }
 

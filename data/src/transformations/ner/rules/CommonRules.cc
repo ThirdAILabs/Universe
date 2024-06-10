@@ -1,6 +1,7 @@
 #include "CommonRules.h"
 #include <data/src/transformations/ner/rules/Pattern.h>
 #include <optional>
+#include <stdexcept>
 
 namespace thirdai::data::ner {
 
@@ -227,17 +228,44 @@ RulePtr cvvRule() {
       });
 }
 
-std::shared_ptr<Rule> defaultRule() {
-  return RuleCollection::make({
-      creditCardRule(),
-      emailRule(),
-      phoneRule(),
-      // phoneWithoutAreaCodeRule(),
-      ibanRule(),
-      // bankNumberRule(),
-      // ssnRule(),
-      cvvRule(),
-  });
+RulePtr getRuleForEntity(const std::string& entity) {
+  if (entity == "CREDITCARDNUMBER") {
+    return creditCardRule();
+  }
+  if (entity == "EMAIL") {
+    return emailRule();
+  }
+  if (entity == "PHONENUMBER") {
+    return phoneRule();
+  }
+  if (entity == "MEDICAL_LICENSE") {
+    return medicalLicenseRule();
+  }
+  if (entity == "BANK_NUMBER") {
+    return bankNumberRule();
+  }
+  if (entity == "SSN") {
+    return ssnRule();
+  }
+  if (entity == "IBAN") {
+    return ibanRule();
+  }
+  if (entity == "CREDITCARDCVV") {
+    return cvvRule();
+  }
+
+  throw std::invalid_argument("No rule for entity '" + entity + "'.");
+}
+
+RulePtr getRuleForEntities(const std::vector<std::string>& entities) {
+  std::vector<RulePtr> rules;
+  rules.reserve(entities.size());
+
+  for (const auto& entity : entities) {
+    rules.push_back(getRuleForEntity(entity));
+  }
+
+  return RuleCollection::make(rules);
 }
 
 }  // namespace thirdai::data::ner

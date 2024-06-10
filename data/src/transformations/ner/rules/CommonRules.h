@@ -20,6 +20,8 @@ RulePtr ssnRule();
 
 RulePtr cvvRule();
 
-RulePtr defaultRule();
+RulePtr getRuleForEntity(const std::string& entity);
+
+RulePtr getRuleForEntities(const std::vector<std::string>& entities);
 
 }  // namespace thirdai::data::ner
