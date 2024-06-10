@@ -1,8 +1,10 @@
 import re
 
 import pytest
-from thirdai import data
 import thirdai
+from thirdai import data
+
+pytestmark = [pytest.mark.unit]
 
 TAG_MAP = {
     "O": 0,
@@ -13,7 +15,7 @@ TAG_MAP = {
 target_tokenizer = thirdai.dataset.NaiveSplitTokenizer(" ")
 
 
-def test_inequal_number_of_tokens():
+def test_inequal_number_of_tokens_and_tags():
     ner_transformation = data.transformations.NerTokenizerUnigram(
         "source",
         "featurized_sentence",
@@ -64,6 +66,6 @@ def test_label_not_in_tag_map():
 
     with pytest.raises(
         IndexError,
-        match=re.escape("String not found in the label map: RANDOM"),
+        match=re.escape("String 'RANDOM' not found in the specified tags list."),
     ):
         transformed_columns = ner_transformation(columns)
