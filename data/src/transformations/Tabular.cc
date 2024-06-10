@@ -19,7 +19,6 @@
 namespace thirdai::data {
 
 inline float parseFloat(const std::string& str) {
-  std::cout << "Inside here" << std::endl;
   if (str.empty()) {
     return 0.0;
   }

@@ -24,7 +24,7 @@ std::exception_ptr formatParseError(const std::string& row,
                                     const std::string& type) {
   return std::make_exception_ptr(
       std::invalid_argument("Invalid row '" + row + "' in column '" + column +
-                            "'. Cannot cast '" + row + "' to an " + type));
+                            "'. Cannot cast '" + row + "' to " + type));
 }
 
 template <>
@@ -45,6 +45,11 @@ std::string typeName<int64_t>() {
 template <>
 std::string typeName<std::string>() {
   return "str";
+}
+
+template <typename T>
+std::string arrayTypeName() {
+  return typeName<T>() + " array";
 }
 
 template <>
@@ -253,7 +258,7 @@ ColumnMap CastToArray<T>::apply(ColumnMap columns, State& state) const {
     } catch (...) {
 #pragma omp critical
       error = formatParseError(str_column->value(i), _input_column_name,
-                               typeName<T>());
+                               arrayTypeName<T>());
     }
   }
 

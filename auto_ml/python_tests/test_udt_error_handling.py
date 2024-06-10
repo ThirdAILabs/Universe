@@ -144,3 +144,25 @@ def test_set_output_sparsity_throws_error_on_unsupported_backend():
         RuntimeError, match=re.escape(f"Method not supported for the model")
     ):
         model.set_output_sparsity(sparsity=0.2, rebuild_hash_tables=False)
+
+
+def test_invalid_cast_string_to_int():
+    with open("train.csv", "w") as f:
+        f.write("text,id\n")
+        f.write("abcd,ab ef gh")
+
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "text": bolt.types.text(),
+            "id": bolt.types.categorical(n_classes=2, type="str"),
+        },
+        target="id",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Cannot assign id to a new string 'gfh'. The buffer has reached its maximum size of 2."
+        ),
+    ):
+        model.train("train.csv")

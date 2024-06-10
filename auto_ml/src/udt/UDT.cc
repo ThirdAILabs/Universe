@@ -421,44 +421,42 @@ void UDT::throwUnsupportedUDTConfigurationError(const DataTypePtr& target,
 
   if (has_graph_inputs) {
     error_msg
-        << " for a UniversalDeepTransformer model with graph classification.";
-  } else {
-    error_msg << ". \nThe following target types are supported to initialize a "
-                 "UniversalDeepTransformer: "
-              << std::endl
-              << std::endl;
-    error_msg << "* Graph Classification -> bolt.types.categorical(type='int', "
-                 "n_classes=<num_classes>)"
-              << std::endl;
-    error_msg
-        << "* Extreme Classification -> bolt.types.categorical(type='int', "
-           "n_classes=<num_classes>)"
-        << std::endl;
-    error_msg << "* Text or Tabular Classification -> "
-                 "bolt.types.categorical(type='int' or 'str', "
-                 "n_classes=<num_classes>)"
-              << std::endl;
-    error_msg << "* Regression -> "
-                 "bolt.types.numerical(range=(<expected_lower_limit>, "
-                 "<expected_upper_limit>))"
-              << std::endl;
-    error_msg << "* RecurrentClassifier -> "
-                 "bolt.types.sequence(n_classes=<num_classes>, "
-                 "max_length=<maximum_labels_in_sequence>)"
-              << std::endl;
-    error_msg << "* Named Entity Recognition -> "
-                 "bolt.types.token_tags(tags=<list_of_tag_strings>, "
-                 "default_tag=<ordinary_entity_tag>)"
-              << std::endl;
-    error_msg << "* Query Reformulation -> bolt.types.text()" << std::endl
-              << std::endl
-              << std::endl;
-
-    error_msg << "Refer to https://thirdailabs.github.io/thirdaibolt.html for "
-                 "more details on how to use a UniversalDeepTransformer model "
-                 "for a specific task."
-              << std::endl;
+        << " for a UniversalDeepTransformer model with graph classification";
   }
+  error_msg << ".\nThe following target types are supported to initialize a "
+               "UniversalDeepTransformer: "
+            << std::endl
+            << std::endl;
+  error_msg << "* Graph Classification -> bolt.types.categorical(type='int', "
+               "n_classes=<num_classes>)"
+            << std::endl;
+  error_msg << "* Text or Tabular Classification -> "
+               "bolt.types.categorical(type='int' or 'str', "
+               "n_classes=<num_classes>)"
+            << std::endl;
+  error_msg << "* Extreme Classification -> bolt.types.categorical(type='int', "
+               "n_classes=<num_classes>)"
+            << std::endl;
+  error_msg << "* Regression -> "
+               "bolt.types.numerical(range=(<expected_lower_limit>, "
+               "<expected_upper_limit>))"
+            << std::endl;
+  error_msg << "* RecurrentClassifier -> "
+               "bolt.types.sequence(n_classes=<num_classes>, "
+               "max_length=<maximum_labels_in_sequence>)"
+            << std::endl;
+  error_msg << "* Named Entity Recognition -> "
+               "bolt.types.token_tags(tags=<list_of_tag_strings>, "
+               "default_tag=<ordinary_entity_tag>)"
+            << std::endl;
+  error_msg << "* Query Reformulation -> bolt.types.text()" << std::endl
+            << std::endl
+            << std::endl;
+
+  error_msg << "Refer to https://thirdailabs.github.io/thirdaibolt.html for "
+               "more details on how to use a UniversalDeepTransformer model "
+               "for a specific task."
+            << std::endl;
 
   throw std::invalid_argument(error_msg.str());
 }

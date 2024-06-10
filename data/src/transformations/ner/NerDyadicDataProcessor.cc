@@ -332,7 +332,7 @@ std::string NerDyadicDataProcessor::processToken(
    * 3. Combine everything into a single string and return it.
    */
 
-  const std::string target_token = text::lower(tokens[index]);
+  const std::string& target_token = tokens[index];
 
   std::vector<std::string> tokenized_target_token;
 
