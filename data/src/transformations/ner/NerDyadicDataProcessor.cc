@@ -3,7 +3,6 @@
 #include <archive/src/List.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
-#include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
