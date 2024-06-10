@@ -162,7 +162,7 @@ def test_invalid_cast_string_to_int():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Cannot assign id to a new string 'gfh'. The buffer has reached its maximum size of 2."
+            "Cannot assign id to a new string 'gh'. The buffer has reached its maximum size of 2."
         ),
     ):
         model.train("train.csv")
