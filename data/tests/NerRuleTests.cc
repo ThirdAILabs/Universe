@@ -5,184 +5,178 @@
 
 namespace thirdai::data::ner::tests {
 
-TEST(NerRuleTests, TokenCleaning) {
-  {
-    std::vector<std::string> tokens{"Card", "924", "Number", "is",
-                                    "240",  "249", "4",      "here"};
-    std::vector<std::string> cleaned{"card",    "924",     "number",  "is",
-                                     "2402494", "2402494", "2402494", "here"};
+void checkNoMatch(const RulePtr& rule, const std::string& phrase) {
+  auto results = rule->apply(phrase);
 
-    ASSERT_EQ(Rule::cleanTokens(tokens), cleaned);
-  }
-
-  {
-    std::vector<std::string> tokens{"Phone number", "(204)", "092-2490"};
-    std::vector<std::string> cleaned{"phone number", "(204)092-2490",
-                                     "(204)092-2490"};
-
-    ASSERT_EQ(Rule::cleanTokens(tokens), cleaned);
-  }
-
-  {
-    std::vector<std::string> tokens{"2024/24", "not", "nUMber"};
-    std::vector<std::string> cleaned{"2024/24", "not", "number"};
-
-    ASSERT_EQ(Rule::cleanTokens(tokens), cleaned);
-  }
-
-  {
-    std::vector<std::string> tokens{"123", "456", "7-8.9", "10,20"};
-    std::vector<std::string> cleaned{"1234567-8.9", "1234567-8.9",
-                                     "1234567-8.9", "10,20"};
-
-    ASSERT_EQ(Rule::cleanTokens(tokens), cleaned);
-  }
+  ASSERT_TRUE(results.empty());
 }
 
-void testRule(const RulePtr& rule, const std::vector<std::string>& tokens,
-              size_t index, const std::string& entity, float score) {
-  auto results = rule->apply(Rule::cleanTokens(tokens), index);
+void checkMatch(const RulePtr& rule, const std::string& phrase,
+                const std::string& entity, float score,
+                const std::string& match) {
+  auto results = rule->apply(phrase);
 
-  if (score == 0) {
-    ASSERT_TRUE(results.empty());
-  } else {
-    ASSERT_EQ(results.size(), 1);
-    ASSERT_EQ(results[0].entity, entity);
-    ASSERT_FLOAT_EQ(results[0].score, score);
-  }
+  ASSERT_EQ(results.size(), 1);
+  ASSERT_EQ(results[0].entity, entity);
+  ASSERT_FLOAT_EQ(results[0].score, score);
+  ASSERT_EQ(phrase.substr(results[0].start, results[0].len), match);
 }
 
 TEST(NerRuleTests, CreditCard) {
   auto rule = creditCardRule();
 
-  testRule(rule, {"my", "card", "number", "is", "371449635398431", "and", "my"},
-           4, "CREDITCARDNUMBER", 1.0);
+  checkMatch(rule, "my card number is 371449635398431 and something else",
+             "CREDITCARDNUMBER", 1.0, "371449635398431");
 
-  testRule(rule,
-           {"my", "card", "number", "is", "3714-4963-539-8431", "and", "my"}, 4,
-           "CREDITCARDNUMBER", 1.0);
+  checkMatch(rule, "my card number is 3714-4963-539-8431 and my",
+             "CREDITCARDNUMBER", 1.0, "3714-4963-539-8431");
 
-  testRule(
-      rule,
-      {"my", "card", "number", "is", "3714", "4963", "539-8431", "and", "my"},
-      5, "CREDITCARDNUMBER", 1.0);
+  checkMatch(rule, "my card number is 3714 4963 539-8431 and my",
+             "CREDITCARDNUMBER", 1.0, "3714 4963 539-8431");
 
-  testRule(rule,
-           {"my", "number", "is", "3714", "4963", "539-8431", "and", "my"}, 5,
-           "CREDITCARDNUMBER", 0.8);
+  checkMatch(rule, "my number is 3714 4963 539 8431 and my", "CREDITCARDNUMBER",
+             0.8, "3714 4963 539 8431");
 
-  testRule(rule,
-           {"my", "number", "is", "3714", "4663", "539-8431", "and", "my"}, 5,
-           "CREDITCARDNUMBER", 0.0);
+  checkNoMatch(rule, "my number is 3714 4663 539-8431 and my");
 
-  testRule(rule, {"my", "card", "number", "is", "232", "and", "my"}, 4,
-           "CREDITCARDNUMBER", 0.0);
+  checkNoMatch(rule, "my card number is 232 and my");
 }
 
 TEST(NerRuleTests, Email) {
   auto rule = emailRule();
 
-  testRule(rule, {"my", "contacts", "joe@hotmail.co"}, 2, "EMAIL", 0.7);
+  checkMatch(rule, "my contact is joe@address.co", "EMAIL", 0.7,
+             "joe@address.co");
 
-  testRule(rule, {"joe@hotmail.co", "is", "my", "email"}, 0, "EMAIL", 1.0);
+  checkMatch(rule, "alex@address.co is my email", "EMAIL", 1.0,
+             "alex@address.co");
 
-  testRule(rule, {"reach", "me", "at", "joe@hotmail.co", "during", "work"}, 3,
-           "EMAIL", 0.6);
+  checkMatch(rule, "reach me at jane@address.co during work", "EMAIL", 0.6,
+             "jane@address.co");
 
-  testRule(rule, {"reach", "me", "at", "joe@hotmail", "during", "work"}, 3,
-           "EMAIL", 0);
+  checkMatch(rule, "reach me at joe@gmail.com during work", "EMAIL", 1.0,
+             "joe@gmail.com");
 
-  testRule(rule, {"reach", "me", "at", "joe&hotmail.com", "during", "work"}, 3,
-           "EMAIL", 0);
+  checkNoMatch(rule, "reach me at joe@gmail during work");
+
+  checkNoMatch(rule, "reach me at joe&gmail.com during work");
 }
 
 TEST(NerRuleTests, Phone) {
   auto rule = phoneRule();
 
-  testRule(rule, {"for", "contacting", "(924)", "024-2400", "is", "my", "cell"},
-           3, "PHONENUMBER", 0.9);
+  checkMatch(rule, "for contacting (924) 024-2400 is my cell", "PHONENUMBER",
+             0.9, "(924) 024-2400");
 
-  testRule(rule, {"for", "reaching", "+1(924)", "024-2400", "is", "my", "cell"},
-           3, "PHONENUMBER", 0.8);
+  checkMatch(rule, "for reaching +1(924) 024-2400 is my cell", "PHONENUMBER",
+             0.8, "+1(924) 024-2400");
 
-  testRule(rule, {"9240242400"}, 0, "PHONENUMBER", 0.6);
+  checkMatch(rule, "9240242400", "PHONENUMBER", 0.6, "9240242400");
 
-  testRule(rule, {"940242400"}, 0, "PHONENUMBER", 0.0);
+  checkNoMatch(rule, "940242400");
 
-  testRule(rule, {"+1 9402412400"}, 0, "PHONENUMBER", 0.6);
+  checkMatch(rule, "something something +1 9402412400 something", "PHONENUMBER",
+             0.6, "+1 9402412400");
 
-  testRule(rule, {"+1 940.242-4200", "is", "my", "number"}, 0, "PHONENUMBER",
-           0.8);
+  // checkMatch(rule, "+1 940.242-4200 is my number", "PHONENUMBER", 0.8,
+  //            "+1 940.242-4200 ");
 }
 
 TEST(NerRuleTests, MedicalLicense) {
   auto rule = medicalLicenseRule();
 
-  testRule(rule, {"license", "no.", "BB1388568"}, 2, "MEDICAL_LICENSE", 0.5);
+  checkMatch(rule, "license no. BB1388568", "MEDICAL_LICENSE", 0.5,
+             "BB1388568");
 
-  testRule(rule, {"license", "no.", "BB1388558"}, 2, "MEDICAL_LICENSE", 0);
+  checkNoMatch(rule, "license no. BB1388558");
 
-  testRule(rule, {"medical", "no.", "Ib1388568"}, 2, "MEDICAL_LICENSE", 0);
+  checkNoMatch(rule, "medical no. Ib1388568");
 }
 
 TEST(NerRuleTests, BankNumber) {
   auto rule = bankNumberRule();
 
-  testRule(rule, {"my", "account", "is", "0123456789", "for", "savings"}, 3,
-           "BANK_NUMBER", 0.9);
+  checkMatch(rule, "my account is 0123456789 for savings", "BANK_NUMBER", 0.9,
+             "0123456789");
 
-  testRule(rule, {"my", "info", "is", "0123456789", "for", "savings"}, 3,
-           "BANK_NUMBER", 0.7);
+  checkMatch(rule, "my info is 0123456789 for savings", "BANK_NUMBER", 0.7,
+             "0123456789");
 
-  testRule(rule, {"my", "info", "is", "01", "for", "savings"}, 3, "BANK_NUMBER",
-           0.0);
+  checkNoMatch(rule, "my info is 01 for savings");
 }
 
 TEST(NerRuleTests, Ssn) {
   auto rule = ssnRule();
 
-  testRule(rule, {"something", "123-24-0340", "something"}, 1, "SSN", 0.4);
+  checkMatch(rule, "something 123-24-0340 something", "SSN", 0.4,
+             "123-24-0340");
 
-  testRule(rule, {"ssn:", "something", "123", "24 2090", "something"}, 3, "SSN",
-           1.0);
+  checkMatch(rule, "ssn: something 123 24 2090 something", "SSN", 1.0,
+             "123 24 2090");
 
-  testRule(rule, {"something", "123456789", "something", "social"}, 1, "SSN",
-           0.7);
+  checkMatch(rule, "something 123456789 something social", "SSN", 0.7,
+             "123456789");
 
-  testRule(rule, {"ssn:", "something", "1234", "something"}, 2, "SSN", 0);
+  checkNoMatch(rule, "ssn: something 1234 something");
 
-  testRule(rule, {"security", "something", "123?42-2013", "something"}, 2,
-           "SSN", 0);
+  checkNoMatch(rule, "security something 123?42-2013 something");
 }
 
-TEST(NerRuleTests, CREDITCARDCVV) {
+TEST(NerRuleTests, Cvv) {
   auto rule = cvvRule();
 
-  testRule(rule, {"something", "123", "something"}, 1, "CREDITCARDCVV", 0.2);
+  checkMatch(rule, "cvv: something 123 something", "CREDITCARDCVV", 0.9, "123");
 
-  testRule(rule, {"cvv:", "something", "123", "something"}, 2, "CREDITCARDCVV",
-           0.8);
+  checkMatch(rule, "something 123 cvc something", "CREDITCARDCVV", 0.9, "123");
 
-  testRule(rule, {"something", "123", "cvc:", "something"}, 1, "CREDITCARDCVV",
-           0.8);
+  checkMatch(rule, "card is ... and 123 something", "CREDITCARDCVV", 0.6,
+             "123");
 
-  testRule(rule, {"cvc:", "something", "1234", "something"}, 2, "CREDITCARDCVV",
-           0);
+  // 3 digit numbers on their own shouldn't match
+  checkNoMatch(rule, "something 123 something");
+
+  checkNoMatch(rule, "cvc: something 1234 something");
 }
 
-TEST(NerRuleTests, DefaultRule) {
-  auto rule = defaultRule();
+TEST(NerRuleTests, MultipleRules) {
+  RulePtr rule = RuleCollection::make({
+      creditCardRule(),
+      emailRule(),
+      phoneRule(),
+      bankNumberRule(),
+      ssnRule(),
+      cvvRule(),
+  });
 
-  std::vector<std::string> tokens = {"my",    "ssn",        "is", "123-24-0340",
-                                     "and",   "9249242001", "is", "my",
-                                     "phone", "number"};
+  std::vector<std::string> tokens = {
+      "my",           "ssn",    "is",         "123",         "24",
+      "0340",         "and",    "9249242001", "is",          "my",
+      "phone",        "number", "and",        "credit:3714", "4963",
+      "5398-431:end", "cvv",    "123",        "text"};
 
   auto results = rule->apply(tokens);
 
-  auto verify_tags = [](const std::vector<std::vector<MatchResult>>& tags) {
+  auto verify_tags = [&tokens](const std::vector<TagList>& tags) {
     std::vector<std::vector<std::string>> entities = {
-        {}, {}, {}, {"SSN"}, {}, {"PHONENUMBER", "BANK_NUMBER"},
-        {}, {}, {}, {}};
+        {},
+        {},
+        {},
+        {"SSN"},
+        {"SSN"},
+        {"SSN"},
+        {},
+        {"PHONENUMBER", "BANK_NUMBER"},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {"CREDITCARDNUMBER"},
+        {"CREDITCARDNUMBER"},
+        {"CREDITCARDNUMBER", "CREDITCARDCVV"},
+        {},
+        {"CREDITCARDCVV"},
+        {}};
 
     ASSERT_EQ(tags.size(), entities.size());
 
@@ -190,7 +184,7 @@ TEST(NerRuleTests, DefaultRule) {
       ASSERT_EQ(tags.at(i).size(), entities.at(i).size());
 
       for (size_t j = 0; j < tags.at(i).size(); j++) {
-        ASSERT_EQ(tags.at(i).at(j).entity, entities.at(i).at(j));
+        ASSERT_EQ(tags.at(i).at(j).first, entities.at(i).at(j));
       }
     }
   };

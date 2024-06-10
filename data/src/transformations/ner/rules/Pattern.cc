@@ -1,5 +1,6 @@
 #include "Pattern.h"
 #include <regex>
+#include <string_view>
 
 namespace thirdai::data::ner {
 
@@ -22,8 +23,7 @@ std::shared_ptr<Pattern> Pattern::make(
                                    std::move(validator));
 }
 
-std::vector<MatchResult> Pattern::apply(const std::vector<std::string>& tokens,
-                                        size_t index) const {
+std::vector<MatchResult> Pattern::apply(const std::string& phrase) const {
   /**
    * We use regex_search instead of regex_match because the tokenization may not
    * fully seperate the PII information. For example the token 'cvv:102' should
@@ -34,38 +34,43 @@ std::vector<MatchResult> Pattern::apply(const std::vector<std::string>& tokens,
    * something like '123.' to match, but not '1234'.
    */
 
-  std::smatch pattern_match;
-  if (!std::regex_search(tokens[index], pattern_match, _pattern)) {
-    return {};
-  }
+  auto begin = std::sregex_iterator(phrase.begin(), phrase.end(), _pattern);
+  auto end = std::sregex_iterator();
 
-  if (_validator && !_validator(pattern_match.str())) {
-    return {};
-  }
+  std::vector<MatchResult> results;
 
-  const size_t context_radius = 5;
+  for (auto match_iter = begin; match_iter != end; ++match_iter) {
+    if (_validator && !_validator(match_iter->str())) {
+      return {};
+    }
 
-  const size_t context_start =
-      index > context_radius ? index - context_radius : 0;
-  const size_t context_end = std::min(tokens.size(), index + context_radius);
+    const int64_t context_radius = 30;
 
-  float score = _pattern_score;
+    const int64_t context_start =
+        std::max<int64_t>(match_iter->position() - context_radius, 0);
 
-  for (size_t i = context_start; i < context_end; i++) {
-    const std::string& token = tokens[i];
+    const int64_t context_end = std::min<int64_t>(
+        phrase.size(),
+        match_iter->position() + match_iter->length() + context_radius);
+
+    float score = _pattern_score;
+
+    std::string_view context_view(phrase.data() + context_start,
+                                  context_end - context_start);
 
     for (const auto& [keyword, score_incr] : _context_keywords) {
-      if (token.find(keyword) != std::string::npos) {
+      if (context_view.find(keyword) != std::string::npos) {
         score += score_incr;
       }
     }
+
+    if (score != 0) {
+      results.emplace_back(_entity, std::min(score, 1.F),
+                           match_iter->position(), match_iter->length());
+    }
   }
 
-  if (score == 0) {
-    return {};
-  }
-
-  return {MatchResult(_entity, std::min(score, 1.F))};
+  return results;
 }
 
 }  // namespace thirdai::data::ner

@@ -7,28 +7,27 @@
 namespace thirdai::data::ner {
 
 struct MatchResult {
-  MatchResult(std::string entity, float score)
-      : entity(std::move(entity)), score(score) {}
+  MatchResult(std::string entity, float score, size_t start, size_t len)
+      : entity(std::move(entity)), score(score), start(start), len(len) {}
 
   std::string entity;
   float score;
+
+  size_t start, len;
 };
+
+using TagList = std::vector<std::pair<std::string, float>>;
 
 class Rule {
  public:
-  virtual std::vector<MatchResult> apply(const std::vector<std::string>& tokens,
-                                         size_t index) const = 0;
+  virtual std::vector<MatchResult> apply(const std::string& phrase) const = 0;
 
   virtual std::vector<std::string> entities() const = 0;
 
-  std::vector<std::vector<MatchResult>> apply(
-      const std::vector<std::string>& tokens) const;
+  std::vector<TagList> apply(const std::vector<std::string>& tokens) const;
 
-  std::vector<std::vector<std::vector<MatchResult>>> applyBatch(
+  std::vector<std::vector<TagList>> applyBatch(
       const std::vector<std::vector<std::string>>& batch) const;
-
-  static std::vector<std::string> cleanTokens(
-      const std::vector<std::string>& tokens);
 
   virtual ~Rule() = default;
 };
@@ -44,8 +43,7 @@ class RuleCollection final : public Rule {
     return std::make_shared<RuleCollection>(std::move(rules));
   }
 
-  std::vector<MatchResult> apply(const std::vector<std::string>& tokens,
-                                 size_t index) const final;
+  std::vector<MatchResult> apply(const std::string& phrase) const final;
 
   std::vector<std::string> entities() const final;
 

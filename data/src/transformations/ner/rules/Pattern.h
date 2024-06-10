@@ -18,8 +18,7 @@ class Pattern final : public Rule {
       std::vector<std::pair<std::string, float>> context_keywords = {},
       std::function<bool(const std::string&)> validator = nullptr);
 
-  std::vector<MatchResult> apply(const std::vector<std::string>& tokens,
-                                 size_t index) const final;
+  std::vector<MatchResult> apply(const std::string& phrase) const final;
 
   std::vector<std::string> entities() const final { return {_entity}; }
 

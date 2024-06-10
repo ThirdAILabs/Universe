@@ -1,69 +1,55 @@
 #include "Rule.h"
 #include <utils/text/StringManipulation.h>
+#include <algorithm>
+#include <iterator>
 #include <regex>
 #include <unordered_set>
 
 namespace thirdai::data::ner {
 
-std::vector<std::string> Rule::cleanTokens(
-    const std::vector<std::string>& tokens) {
-  std::vector<std::string> processed_tokens;
-  processed_tokens.reserve(tokens.size());
+std::vector<TagList> Rule::apply(const std::vector<std::string>& tokens) const {
+  std::string phrase;
+  std::vector<size_t> token_ends;
   for (const auto& token : tokens) {
-    processed_tokens.push_back(text::lower(token));
+    if (!phrase.empty()) {
+      phrase.push_back(' ');
+    }
+    phrase.append(text::lower(token));
+    token_ends.push_back(phrase.size());
   }
 
-  std::regex numerical(R"([0-9\(\)\-\.\+ ]+)");
+  auto results = apply(phrase);
 
-  size_t i = 0;
-  while (i < processed_tokens.size()) {
-    if (std::regex_match(processed_tokens[i], numerical)) {
-      std::string merged_numerical = processed_tokens[i];
+  std::vector<std::vector<std::pair<std::string, float>>> token_tags(
+      tokens.size());
 
-      size_t end = i + 1;
-      for (; end < processed_tokens.size() &&
-             std::regex_match(processed_tokens[end], numerical);
-           end++) {
-        merged_numerical.append(processed_tokens[end]);
+  for (const auto& match : results) {
+    auto start =
+        std::upper_bound(token_ends.begin(), token_ends.end(), match.start);
+
+    auto start_token = std::distance(token_ends.begin(), start);
+
+    for (size_t i = start_token; i < tokens.size(); i++) {
+      size_t token_start = token_ends.at(i) - tokens.at(i).size();
+      if (match.start + match.len > token_start) {
+        token_tags.at(i).emplace_back(match.entity, match.score);
+      } else {
+        break;
       }
-
-      for (size_t j = i; j < end; j++) {
-        processed_tokens[j] = merged_numerical;
-      }
-      i = end;
-    } else {
-      i++;
     }
   }
 
-  return processed_tokens;
+  return token_tags;
 }
 
-std::vector<std::vector<MatchResult>> Rule::apply(
-    const std::vector<std::string>& tokens) const {
-  std::vector<std::string> processed_tokens = cleanTokens(tokens);
-
-  std::vector<std::vector<MatchResult>> results(processed_tokens.size());
-
-#pragma omp parallel for default(none) shared(processed_tokens, results)
-  for (size_t i = 0; i < processed_tokens.size(); i++) {
-    results[i] = apply(processed_tokens, i);
-  }
-
-  return results;
-}
-
-std::vector<std::vector<std::vector<MatchResult>>> Rule::applyBatch(
-    const std::vector<std::vector<std::string>>& batch) const {
-  std::vector<std::vector<std::vector<MatchResult>>> results(batch.size());
+std::vector<std::vector<std::vector<std::pair<std::string, float>>>>
+Rule::applyBatch(const std::vector<std::vector<std::string>>& batch) const {
+  std::vector<std::vector<std::vector<std::pair<std::string, float>>>> results(
+      batch.size());
 
 #pragma omp parallel for default(none) shared(batch, results)
   for (size_t i = 0; i < batch.size(); i++) {
-    auto processed_tokens = cleanTokens(batch[i]);
-
-    for (size_t j = 0; j < processed_tokens.size(); j++) {
-      results[i].push_back(apply(processed_tokens, j));
-    }
+    results[i] = apply(batch[i]);
   }
 
   return results;
@@ -76,11 +62,11 @@ struct MatchCmp {
 };
 
 std::vector<MatchResult> RuleCollection::apply(
-    const std::vector<std::string>& tokens, size_t index) const {
+    const std::string& phrase) const {
   std::vector<MatchResult> results;
 
   for (const auto& rule : _rules) {
-    auto rule_results = rule->apply(tokens, index);
+    auto rule_results = rule->apply(phrase);
     results.insert(results.end(), rule_results.begin(), rule_results.end());
   }
 

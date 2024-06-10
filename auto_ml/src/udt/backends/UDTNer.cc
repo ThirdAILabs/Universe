@@ -354,8 +354,7 @@ std::vector<SentenceTags> UDTNer::predictTags(
   size_t sentence_index = 0;
   size_t token_index = 0;
 
-  std::vector<std::vector<std::vector<thirdai::data::ner::MatchResult>>>
-      rule_results;
+  std::vector<std::vector<data::ner::TagList>> rule_results;
   if (_rule) {
     rule_results = _rule->applyBatch(tokens);
   }
@@ -373,11 +372,7 @@ std::vector<SentenceTags> UDTNer::predictTags(
 
       TokenTags tags;
       if (_rule && !rule_results.at(sentence_index).at(token_index).empty()) {
-        for (const auto& tag :
-             rule_results.at(sentence_index).at(token_index)) {
-          tags.emplace_back(tag.entity, tag.score);
-        }
-
+        tags = rule_results.at(sentence_index).at(token_index);
       } else {
         auto& vec = scores->getVector(i);
 
