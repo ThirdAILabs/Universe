@@ -1,6 +1,7 @@
 #include <data/src/transformations/ner/rules/Pattern.h>
 #include <utils/text/StringManipulation.h>
 #include <cctype>
+#include <optional>
 #include <regex>
 #include <stdexcept>
 #include <string>
@@ -152,14 +153,15 @@ std::unordered_map<std::string, std::regex> buildMap() {
 
 const std::unordered_map<std::string, std::regex> COUNTRY_FORMATS = buildMap();
 
-bool ibanChecksum(const std::string& token) {
+std::optional<Pattern::ValidatorSubMatch> ibanChecksum(
+    const std::string& token) {
   std::string country_code = token.substr(0, 2);
   for (char& c : country_code) {
     c = std::toupper(c);
   }
 
   if (!COUNTRY_FORMATS.count(country_code)) {
-    return false;
+    return std::nullopt;
   }
 
   const auto& format = COUNTRY_FORMATS.at(country_code);
@@ -172,7 +174,7 @@ bool ibanChecksum(const std::string& token) {
    */
   std::smatch match;
   if (!std::regex_search(token, match, format)) {
-    return false;
+    return std::nullopt;
   }
 
   std::string number = match.str();
@@ -202,7 +204,11 @@ bool ibanChecksum(const std::string& token) {
     }
   }
 
-  return (value % 97) == 1;
+  if (value % 97 == 1) {
+    return Pattern::ValidatorSubMatch(match.position(), match.length());
+  }
+
+  return std::nullopt;
 }
 
 RulePtr ibanRule() {

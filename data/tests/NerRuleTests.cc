@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <data/src/transformations/ner/rules/CommonRules.h>
 #include <data/src/transformations/ner/rules/Rule.h>
+#include <utils/text/StringManipulation.h>
 #include <string>
 
 namespace thirdai::data::ner::tests {
@@ -151,9 +152,25 @@ TEST(NerRuleTests, Iban) {
              0.9, "DE89 3704 0044 0532 0130 00");
 
   checkMatch(rule, "my num is DE89 3704 0044 0532 0130 00abc", "IBAN", 0.9,
-             "DE89 3704 0044 0532 0130 00abc");
+             "DE89 3704 0044 0532 0130 00");
 
   checkNoMatch(rule, "my iban is DE82 3704 0044 0532 0130 00.");
+}
+
+TEST(NerRuleTests, CHECK) {
+  std::vector<std::string> tokens = text::splitOnWhiteSpace(
+      "r our next appointment, please bring your insurance card FYI. We will "
+      "also need payments via GB52UFZO00292406008003 or 1935894883729634.");
+
+  auto res = ibanRule()->apply(tokens);
+
+  for (size_t i = 0; i < tokens.size(); i++) {
+    std::cerr << "Token: " << tokens.at(i) << ": ";
+    for (const auto& tag : res.at(i)) {
+      std::cerr << tag.first << " ";
+    }
+    std::cerr << std::endl;
+  }
 }
 
 TEST(NerRuleTests, MultipleRules) {

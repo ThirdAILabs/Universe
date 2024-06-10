@@ -1,9 +1,11 @@
 #include "CommonRules.h"
 #include <data/src/transformations/ner/rules/Pattern.h>
+#include <optional>
 
 namespace thirdai::data::ner {
 
-bool creditCardLuhnCheck(const std::string& number) {
+std::optional<Pattern::ValidatorSubMatch> creditCardLuhnCheck(
+    const std::string& number) {
   /*
    * Checks whether the number being passed satisifies the luhn's check. This is
    * useful for detecting credit card numbers.
@@ -13,6 +15,10 @@ bool creditCardLuhnCheck(const std::string& number) {
     if (std::isdigit(c)) {
       cleaned.push_back(c);
     }
+  }
+
+  if (cleaned.size() > 19 || cleaned.size() < 12) {
+    return std::nullopt;
   }
 
   int sum = 0;
@@ -28,10 +34,15 @@ bool creditCardLuhnCheck(const std::string& number) {
     sum += n;
     alternate = !alternate;
   }
-  return sum % 10 == 0;
+
+  if (sum % 10 == 0) {
+    return {{0, number.size()}};
+  }
+  return std::nullopt;
 }
 
-bool medicalLicenseLuhnCheck(const std::string& number) {
+std::optional<Pattern::ValidatorSubMatch> medicalLicenseLuhnCheck(
+    const std::string& number) {
   /*
    * Checks whether the number being passed satisifies the luhn's check. This is
    * useful for detecting credit card numbers.
@@ -43,7 +54,7 @@ bool medicalLicenseLuhnCheck(const std::string& number) {
     }
   }
   if (cleaned.empty()) {
-    return false;
+    return std::nullopt;
   }
 
   int sum = -(cleaned[cleaned.size() - 1] - '0');
@@ -53,13 +64,20 @@ bool medicalLicenseLuhnCheck(const std::string& number) {
     sum += alternate ? 2 * n : n;
     alternate = !alternate;
   }
-  return sum % 10 == 0;
+
+  if (sum % 10 == 0) {
+    return {{0, number.size()}};
+  }
+  return std::nullopt;
 }
 
 RulePtr creditCardRule() {
+  // https://baymard.com/checkout-usability/credit-card-patterns
+  // https://en.wikipedia.org/wiki/Payment_card_number
   return Pattern::make(
       /*entity=*/"CREDITCARDNUMBER",
       /*pattern=*/
+      // R"(\b([0-9]{4})([- ]?[0-9]{3,6}){1,3}[- ]?[0-9]{3,5}\b)",
       R"(\b(([4613]\d{3})|(5[0-5]\d{2}))[- ]?(\d{3,4})[- ]?(\d{3,4})[- ]?(\d{3,5})\b)",
       /*pattern_score=*/0.8,
       /*context_keywords=*/
@@ -204,6 +222,8 @@ RulePtr cvvRule() {
           {"discover", 0.6},
           {"amex", 0.6},
           {"debit", 0.6},
+          {"security", 0.3},
+          {"code", 0.3},
       });
 }
 
@@ -212,7 +232,7 @@ std::shared_ptr<Rule> defaultRule() {
       creditCardRule(),
       emailRule(),
       phoneRule(),
-      phoneWithoutAreaCodeRule(),
+      // phoneWithoutAreaCodeRule(),
       ibanRule(),
       // bankNumberRule(),
       // ssnRule(),

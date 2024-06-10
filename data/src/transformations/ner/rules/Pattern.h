@@ -10,7 +10,14 @@ namespace thirdai::data::ner {
 
 class Pattern final : public Rule {
  public:
-  using ValidatorFn = std::function<bool(const std::string&)>;
+  struct ValidatorSubMatch {
+    ValidatorSubMatch(size_t offset, size_t len) : offset(offset), len(len) {}
+
+    const size_t offset, len;
+  };
+
+  using ValidatorFn =
+      std::function<std::optional<ValidatorSubMatch>(const std::string&)>;
 
   Pattern(std::string entity, const std::string& pattern, float pattern_score,
           std::vector<std::pair<std::string, float>> context_keywords,

@@ -41,18 +41,25 @@ std::vector<MatchResult> Pattern::apply(const std::string& phrase) const {
   std::vector<MatchResult> results;
 
   for (auto match_iter = begin; match_iter != end; ++match_iter) {
-    if (_validator && !_validator(match_iter->str())) {
-      continue;
+    int64_t match_start = match_iter->position();
+    int64_t match_len = match_iter->length();
+
+    if (_validator) {
+      if (auto submatch = _validator(match_iter->str())) {
+        match_start += submatch->offset;
+        match_len = submatch->len;
+      } else {
+        continue;
+      }
     }
 
     const int64_t context_radius = 30;
 
     const int64_t context_start =
-        std::max<int64_t>(match_iter->position() - context_radius, 0);
+        std::max<int64_t>(match_start - context_radius, 0);
 
     const int64_t context_end = std::min<int64_t>(
-        phrase.size(),
-        match_iter->position() + match_iter->length() + context_radius);
+        phrase.size(), match_start + match_len + context_radius);
 
     float score = _pattern_score;
 
@@ -66,8 +73,8 @@ std::vector<MatchResult> Pattern::apply(const std::string& phrase) const {
     }
 
     if (score != 0) {
-      results.emplace_back(_entity, std::min(score, 1.F),
-                           match_iter->position(), match_iter->length());
+      results.emplace_back(_entity, std::min(score, 1.F), match_start,
+                           match_len);
     }
   }
 
