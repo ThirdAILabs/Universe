@@ -104,8 +104,6 @@ RulePtr phoneRule() {
           {"mobile", 0.2},
           {"number", 0.2},
           {"tele", 0.2},
-          {"telephone", 0.2},
-          {"cellphone", 0.2},
           {"call", 0.2},
           {"text", 0.1},
           {"contact", 0.1},
