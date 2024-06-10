@@ -92,6 +92,7 @@ RulePtr emailRule() {
 }
 
 RulePtr phoneRule() {
+  // TODO(Nicholas): support +1(924) 024-2400 instead of just +1 (924) 024-2400
   return Pattern::make(
       /*entity=*/"PHONENUMBER",
       /*pattern=*/
