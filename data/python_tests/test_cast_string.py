@@ -131,3 +131,21 @@ def test_cast_string_to_timestamp(serialize):
         assert (
             columns["timestamps"][i] - columns["timestamps"][i - 1] == SECONDS_IN_A_DAY
         )
+
+
+def test_negative_token_value_cast():
+    string_col = data.columns.StringColumn([str(i) for i in range(-1, 10)])
+    columns = data.ColumnMap({"strings": string_col})
+    transformation = data.transformations.ToTokens("strings", "tokens")
+    with pytest.raises(ValueError, match=r"Invalid row '-1' in column 'strings'."):
+        columns = transformation(columns)
+
+
+def test_negative_token_array_cast():
+    string_col = data.columns.StringColumn([str(i) for i in range(-1, 10)])
+    columns = data.ColumnMap({"strings": string_col})
+    transformation = data.transformations.ToTokenArrays(
+        "strings", "tokens", delimiter=" "
+    )
+    with pytest.raises(ValueError, match=r"Invalid row '-1' in column 'strings'."):
+        columns = transformation(columns)

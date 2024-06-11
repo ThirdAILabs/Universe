@@ -18,7 +18,14 @@ static constexpr uint32_t WEEKS_IN_YEAR = 53;
 using dataset::TimeObject;
 
 uint32_t dayOfWeek(const TimeObject& time) {
-  return (time.secondsSinceEpoch() / TimeObject::SECONDS_IN_DAY) % 7;
+  int64_t val = (time.secondsSinceEpoch() / TimeObject::SECONDS_IN_DAY) % 7;
+  // In C++, taking the mod of a negative number keeps the number negative,
+  // Example: -12 % 7 => -5 but we want 2 (like python would give)
+  // Thus we do this conversion
+  if (val < 0) {
+    val += 7;
+  }
+  return val;
 }
 
 uint32_t weekOfMonth(const TimeObject& time) {
