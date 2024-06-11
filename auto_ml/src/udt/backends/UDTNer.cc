@@ -239,6 +239,9 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
       /*dyadic_num_intervals=*/options.dyadic_num_intervals,
       /*target_word_tokenizers=*/options.target_tokenizers,
       /*feature_config=*/options.feature_config);
+
+  std::cout << "Initialized a UniversalDeepTransformer for Token Classification"
+            << std::endl;
 }
 
 py::object UDTNer::train(const dataset::DataSourcePtr& data,

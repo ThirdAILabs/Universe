@@ -94,6 +94,9 @@ UDTQueryReformulation::UDTQueryReformulation(
   }
   _inference_featurizer =
       dataset::TabularFeaturizer::make({ngramBlockList("phrase", _n_grams)});
+
+  std::cout << "Initialized a UniversalDeepTransformer for Query Reformulation"
+            << std::endl;
 }
 
 py::object UDTQueryReformulation::train(

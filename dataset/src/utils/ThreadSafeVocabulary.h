@@ -150,8 +150,9 @@ class ThreadSafeVocabulary {
   uint32_t getExistingUid(const std::string& string) {
     if (!_string_to_uid.count(string)) {
       std::stringstream error_ss;
-      error_ss << "[ThreadSafeVocabulary] Seeing a new string '" << string
-               << "' after seeing max_vocab_size strings.";
+      error_ss << "StringBufferOverflow: Cannot assign id to a new string '"
+               << string << "'. The buffer has reached its maximum size of "
+               << _max_vocab_size.value() << ".";
       throw std::invalid_argument(error_ss.str());
     }
     return _string_to_uid.at(string);

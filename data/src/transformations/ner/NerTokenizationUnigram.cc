@@ -13,6 +13,7 @@
 #include <exception>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <utility>
 
 namespace thirdai::data {
@@ -62,6 +63,16 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
         featurized_sentences[featurized_sentence_offset] =
             _processor.processToken(row_token_vectors, target);
         if (_target_column) {
+          if (row_token_vectors.size() != tags->row(i).size()) {
+            std::stringstream error_message;
+            error_message
+                << "Mismatch between the number of tokens and tags in row " << i
+                << ":\n"
+                << "  - Number of tokens: " << row_token_vectors.size() << "\n"
+                << "  - Number of tags: " << tags->row(i).size() << "\n"
+                << "Please ensure each token has a corresponding tag.";
+            throw std::out_of_range(error_message.str());
+          }
           if (_tag_to_label.has_value()) {
             targets[featurized_sentence_offset] =
                 findTagValueForString(tags->row(i)[target]);

@@ -10,6 +10,9 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/columns/Column.h>
 #include <data/src/transformations/Transformation.h>
+#include <exception>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -23,7 +26,14 @@ inline float parseFloat(const std::string& str) {
 }
 
 inline uint32_t NumericalColumn::encode(const std::string& str_val) const {
-  float val = parseFloat(str_val);
+  float val;
+  try {
+    val = parseFloat(str_val);
+  } catch (...) {
+    std::stringstream error;
+    error << "Cannot cast '" << str_val << "' to a float";
+    throw std::invalid_argument(error.str());
+  }
 
   uint32_t bin;
   if (val <= _min) {
@@ -65,27 +75,38 @@ ColumnMap Tabular::apply(ColumnMap columns, State& state) const {
     str_cols.push_back(columns.getValueColumn<std::string>(col.name));
   }
 
+  std::exception_ptr error;
+
 #pragma omp parallel for default(none) \
-    shared(tokens, str_cols) if (num_rows > 1)
+    shared(tokens, str_cols, error) if (num_rows > 1)
   for (size_t i = 0; i < tokens.size(); i++) {
-    size_t col_idx = 0;
+    try {
+      size_t col_idx = 0;
 
-    std::vector<uint32_t> row_tokens;
-    row_tokens.reserve(str_cols.size());
+      std::vector<uint32_t> row_tokens;
+      row_tokens.reserve(str_cols.size());
 
-    for (const auto& num_col : _numerical_columns) {
-      row_tokens.push_back(num_col.encode(str_cols[col_idx++]->value(i)));
+      for (const auto& num_col : _numerical_columns) {
+        row_tokens.push_back(num_col.encode(str_cols[col_idx++]->value(i)));
+      }
+
+      for (const auto& cat_col : _categorical_columns) {
+        row_tokens.push_back(cat_col.encode(str_cols[col_idx++]->value(i)));
+      }
+
+      if (_cross_column_pairgrams) {
+        tokens[i] = dataset::token_encoding::pairgrams(row_tokens);
+      } else {
+        tokens[i] = std::move(row_tokens);
+      }
+    } catch (...) {
+#pragma omp critical
+      error = std::current_exception();
     }
+  }
 
-    for (const auto& cat_col : _categorical_columns) {
-      row_tokens.push_back(cat_col.encode(str_cols[col_idx++]->value(i)));
-    }
-
-    if (_cross_column_pairgrams) {
-      tokens[i] = dataset::token_encoding::pairgrams(row_tokens);
-    } else {
-      tokens[i] = std::move(row_tokens);
-    }
+  if (error) {
+    std::rethrow_exception(error);
   }
 
   columns.setColumn(_output_column,

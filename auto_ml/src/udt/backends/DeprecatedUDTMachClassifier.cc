@@ -171,6 +171,10 @@ UDTMachClassifier::UDTMachClassifier(
     _rlhf_sampler = std::make_optional<RLHFSampler>(
         num_balancing_docs, num_balancing_samples_per_doc);
   }
+
+  std::cout
+      << "Initialized a UniversalDeepTransformer for Extreme Classification"
+      << std::endl;
 }
 
 py::object UDTMachClassifier::train(
