@@ -50,7 +50,7 @@ class ValidationOptions {
 std::shared_ptr<udt::UDT> makeUDT(
     ColumnDataTypes data_types,
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
-    const std::string& target_col, char delimiter,
+    const std::optional<std::string>& target_col, char delimiter,
     const std::optional<std::string>& model_config,
     const py::object& pretrained_model, const py::kwargs& kwargs);
 
@@ -91,7 +91,7 @@ void defineAutomlInModule(py::module_& module) {
       .def(py::init(&makeUDT), py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
                UserProvidedTemporalRelationships(),
-           py::arg("target"), py::arg("delimiter") = ',',
+           py::arg("target") = std::nullopt, py::arg("delimiter") = ',',
            py::arg("model_config") = std::nullopt,
            py::arg("pretrained_model") = py::none(), docs::UDT_INIT,
            bolt::python::OutputRedirect())
@@ -445,7 +445,7 @@ config::ArgumentMap createArgumentMap(const py::dict& input_args) {
 std::shared_ptr<udt::UDT> makeUDT(
     ColumnDataTypes data_types,
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
-    const std::string& target_col, char delimiter,
+    const std::optional<std::string>& target_col, char delimiter,
     const std::optional<std::string>& model_config,
     const py::object& pretrained_model, const py::kwargs& kwargs) {
   if (kwargs.contains("integer_target")) {
@@ -467,10 +467,16 @@ std::shared_ptr<udt::UDT> makeUDT(
         "options as regular kwargs to UDT.");
   }
 
+  if (!target_col.has_value()) {
+    throw std::invalid_argument(
+        "The 'target' parameter is required but was not specified. Please "
+        "provide a valid column name.");
+  }
+
   return std::make_shared<udt::UDT>(
       /* data_types = */ std::move(data_types),
       /* temporal_tracking_relationships = */ temporal_tracking_relationships,
-      /* target_col = */ target_col,
+      /* target_col = */ target_col.value(),
       /* delimiter = */ delimiter,
       /* model_config= */ model_config,
       /* pretrained_model= */ pretrained_model,

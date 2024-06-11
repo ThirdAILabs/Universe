@@ -38,6 +38,8 @@ using CategoricalMetadataConfigPtr = std::shared_ptr<CategoricalMetadataConfig>;
 struct DataType {
   virtual std::string toString() const = 0;
 
+  virtual std::string typeName() const = 0;
+
   virtual ~DataType() = default;
 
  private:
@@ -98,6 +100,8 @@ struct CategoricalDataType final : public DataType {
     return fmt::format(R"({{"type": "categorical"}})");
   }
 
+  std::string typeName() const final { return "categorical"; }
+
  private:
   friend class cereal::access;
   template <class Archive>
@@ -134,6 +138,8 @@ struct TextDataType final : public DataType {
 
   std::string toString() const final { return R"({"type": "text"})"; }
 
+  std::string typeName() const final { return "text"; }
+
  private:
   friend class cereal::access;
   template <class Archive>
@@ -169,6 +175,8 @@ struct NumericalDataType final : public DataType {
 
   uint32_t numBins() const;
 
+  std::string typeName() const final { return "numerical"; }
+
  private:
   friend class cereal::access;
   template <class Archive>
@@ -181,6 +189,8 @@ using NumericalDataTypePtr = std::shared_ptr<NumericalDataType>;
 
 struct DateDataType final : public DataType {
   std::string toString() const final { return R"({"type": "date"})"; }
+
+  std::string typeName() const final { return "date"; }
 
  private:
   friend class cereal::access;
@@ -219,6 +229,8 @@ struct SequenceDataType final : public DataType {
 
   std::string toString() const final { return R"({"type": "sequence"})"; }
 
+  std::string typeName() const final { return "sequence"; }
+
  private:
   friend class cereal::access;
   template <class Archive>
@@ -244,6 +256,8 @@ using SequenceDataTypePtr = std::shared_ptr<SequenceDataType>;
 struct NeighborsDataType : DataType {
   std::string toString() const final { return R"({"type": "neighbors"})"; }
 
+  std::string typeName() const final { return "neighbours"; }
+
  private:
   friend class cereal::access;
   template <class Archive>
@@ -268,6 +282,8 @@ using NeighborsDataTypePtr = std::shared_ptr<NeighborsDataType>;
 struct NodeIDDataType : DataType {
   std::string toString() const final { return R"({"type": "node id"})"; }
 
+  std::string typeName() const final { return "node_id"; }
+
  private:
   friend class cereal::access;
   template <class Archive>
@@ -282,6 +298,8 @@ struct TokenTagsDataType : DataType {
       : tags(std::move(tags)), default_tag(std::move(default_tag)) {}
 
   std::string toString() const final { return R"({"type": "token tags"})"; }
+
+  std::string typeName() const final { return "token_tags"; }
 
   std::vector<std::string> tags;
   std::string default_tag;
