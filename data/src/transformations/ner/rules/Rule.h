@@ -16,7 +16,7 @@ struct MatchResult {
   size_t start, len;
 };
 
-using TagList = std::vector<std::pair<std::string, float>>;
+using TagsAndScores = std::vector<std::pair<std::string, float>>;
 
 class Rule {
  public:
@@ -24,9 +24,10 @@ class Rule {
 
   virtual std::vector<std::string> entities() const = 0;
 
-  std::vector<TagList> apply(const std::vector<std::string>& tokens) const;
+  std::vector<TagsAndScores> apply(
+      const std::vector<std::string>& tokens) const;
 
-  std::vector<std::vector<TagList>> applyBatch(
+  std::vector<std::vector<TagsAndScores>> applyBatch(
       const std::vector<std::vector<std::string>>& batch) const;
 
   virtual ~Rule() = default;

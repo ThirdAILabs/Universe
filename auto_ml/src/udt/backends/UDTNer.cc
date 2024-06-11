@@ -17,7 +17,7 @@
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
-#include <data/src/transformations/ner/rules/CommonRules.h>
+#include <data/src/transformations/ner/rules/CommonPatterns.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <pybind11/stl.h>
 #include <utils/text/StringManipulation.h>
@@ -122,7 +122,7 @@ std::string tokensColumn(ColumnDataTypes data_types,
   return data_types.begin()->first;
 }
 
-std::vector<std::string> mapTagsToNeurons(
+std::vector<std::string> mapTagsToLabels(
     const std::string& default_tag, const std::vector<std::string>& tags,
     const std::vector<std::string>& rule_tags = {}) {
   std::vector<std::string> all_tags = {default_tag};
@@ -228,12 +228,11 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
   }
 
   if (args.get<bool>("rules", "boolean", false)) {
-    _rule = data::ner::getRuleForEntities(
-        {"EMAIL", "PHONENUMBER", "CREDITCARDNUMBER", "CREDITCARDCVV", "IBAN"});
+    _rule = data::ner::getRuleForEntities(defaults::NER_RULE_BASED_ENTITIES);
     _label_to_tag =
-        mapTagsToNeurons(target->default_tag, target->tags, _rule->entities());
+        mapTagsToLabels(target->default_tag, target->tags, _rule->entities());
   } else {
-    _label_to_tag = mapTagsToNeurons(target->default_tag, target->tags);
+    _label_to_tag = mapTagsToLabels(target->default_tag, target->tags);
   }
 
   _model = buildModel(options.input_dim, options.emb_dim, _label_to_tag.size(),
@@ -370,7 +369,7 @@ std::vector<SentenceTags> UDTNer::predictTags(
   size_t sentence_index = 0;
   size_t token_index = 0;
 
-  std::vector<std::vector<data::ner::TagList>> rule_results;
+  std::vector<SentenceTags> rule_results;
   if (_rule) {
     rule_results = _rule->applyBatch(tokens);
   }

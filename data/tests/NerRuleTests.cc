@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <data/src/transformations/ner/rules/CommonRules.h>
+#include <data/src/transformations/ner/rules/CommonPatterns.h>
 #include <data/src/transformations/ner/rules/Rule.h>
 #include <utils/text/StringManipulation.h>
 #include <string>
@@ -24,7 +24,7 @@ void checkMatch(const RulePtr& rule, const std::string& phrase,
 }
 
 TEST(NerRuleTests, CreditCard) {
-  auto rule = creditCardRule();
+  auto rule = creditCardPattern();
 
   checkMatch(rule, "my card number is 371449635398431 and something else",
              "CREDITCARDNUMBER", 1.0, "371449635398431");
@@ -44,7 +44,7 @@ TEST(NerRuleTests, CreditCard) {
 }
 
 TEST(NerRuleTests, Email) {
-  auto rule = emailRule();
+  auto rule = emailPattern();
 
   checkMatch(rule, "my contact is joe@address.co", "EMAIL", 0.7,
              "joe@address.co");
@@ -64,7 +64,7 @@ TEST(NerRuleTests, Email) {
 }
 
 TEST(NerRuleTests, Phone) {
-  auto rule = phoneRule();
+  auto rule = phonePattern();
 
   checkMatch(rule, "for contacting (924) 024-2400 is my cell", "PHONENUMBER",
              0.9, "(924) 024-2400");
@@ -87,7 +87,7 @@ TEST(NerRuleTests, Phone) {
 }
 
 TEST(NerRuleTests, MedicalLicense) {
-  auto rule = medicalLicenseRule();
+  auto rule = medicalLicensePattern();
 
   checkMatch(rule, "license no. BB1388568", "MEDICAL_LICENSE", 0.5,
              "BB1388568");
@@ -98,7 +98,7 @@ TEST(NerRuleTests, MedicalLicense) {
 }
 
 TEST(NerRuleTests, BankNumber) {
-  auto rule = bankNumberRule();
+  auto rule = bankNumberPattern();
 
   checkMatch(rule, "my account is 0123456789 for savings", "BANK_NUMBER", 0.9,
              "0123456789");
@@ -110,7 +110,7 @@ TEST(NerRuleTests, BankNumber) {
 }
 
 TEST(NerRuleTests, Ssn) {
-  auto rule = ssnRule();
+  auto rule = ssnPattern();
 
   checkMatch(rule, "something 123-24-0340 something", "SSN", 0.4,
              "123-24-0340");
@@ -127,7 +127,7 @@ TEST(NerRuleTests, Ssn) {
 }
 
 TEST(NerRuleTests, Cvv) {
-  auto rule = cvvRule();
+  auto rule = cvvPattern();
 
   checkMatch(rule, "cvv: something 123 something", "CREDITCARDCVV", 0.9, "123");
 
@@ -143,7 +143,7 @@ TEST(NerRuleTests, Cvv) {
 }
 
 TEST(NerRuleTests, Iban) {
-  auto rule = ibanRule();
+  auto rule = ibanPattern();
 
   checkMatch(rule, "my iban is DE89 3704 0044 0532 0130 00.", "IBAN", 1.0,
              "DE89 3704 0044 0532 0130 00");
@@ -157,30 +157,14 @@ TEST(NerRuleTests, Iban) {
   checkNoMatch(rule, "my iban is DE82 3704 0044 0532 0130 00.");
 }
 
-TEST(NerRuleTests, CHECK) {
-  std::vector<std::string> tokens = text::splitOnWhiteSpace(
-      "r our next appointment, please bring your insurance card FYI. We will "
-      "also need payments via GB52UFZO00292406008003 or 1935894883729634.");
-
-  auto res = ibanRule()->apply(tokens);
-
-  for (size_t i = 0; i < tokens.size(); i++) {
-    std::cerr << "Token: " << tokens.at(i) << ": ";
-    for (const auto& tag : res.at(i)) {
-      std::cerr << tag.first << " ";
-    }
-    std::cerr << std::endl;
-  }
-}
-
 TEST(NerRuleTests, MultipleRules) {
   RulePtr rule = RuleCollection::make({
-      creditCardRule(),
-      emailRule(),
-      phoneRule(),
-      bankNumberRule(),
-      ssnRule(),
-      cvvRule(),
+      creditCardPattern(),
+      emailPattern(),
+      phonePattern(),
+      bankNumberPattern(),
+      ssnPattern(),
+      cvvPattern(),
   });
 
   std::vector<std::string> tokens = {
@@ -191,7 +175,7 @@ TEST(NerRuleTests, MultipleRules) {
 
   auto results = rule->apply(tokens);
 
-  auto verify_tags = [&tokens](const std::vector<TagList>& tags) {
+  auto verify_tags = [&tokens](const std::vector<TagsAndScores>& tags) {
     std::vector<std::vector<std::string>> entities = {
         {},
         {},

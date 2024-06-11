@@ -7,7 +7,8 @@
 
 namespace thirdai::data::ner {
 
-std::vector<TagList> Rule::apply(const std::vector<std::string>& tokens) const {
+std::vector<TagsAndScores> Rule::apply(
+    const std::vector<std::string>& tokens) const {
   std::string phrase;
   std::vector<size_t> token_ends;
   for (const auto& token : tokens) {
