@@ -12,6 +12,7 @@
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <limits>
+#include <sstream>
 #include <stdexcept>
 
 namespace thirdai::automl::udt::utils {
@@ -110,9 +111,17 @@ ModelPtr loadModel(const std::vector<uint32_t>& input_dims,
   config::ArgumentMap parameters;
   parameters.insert("output_dim", specified_output_dim);
 
-  auto json_config = json::parse(config::loadConfig(config_path));
+  bolt::ModelPtr model;
 
-  auto model = config::buildModel(json_config, parameters, input_dims, mach);
+  try {
+    auto json_config = json::parse(config::loadConfig(config_path));
+    model = config::buildModel(json_config, parameters, input_dims, mach);
+  } catch (const std::exception& e) {
+    std::stringstream error;
+    error << "Invalid model config found at the path: " << config_path
+          << std::endl;
+    throw std::invalid_argument(error.str());
+  }
 
   uint32_t actual_output_dim = model->outputs().at(0)->dim();
   if (actual_output_dim != specified_output_dim) {

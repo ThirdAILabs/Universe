@@ -1,9 +1,39 @@
 #include "NerClassifier.h"
+#include <bolt/src/NER/Defaults.h>
 #include <data/src/columns/ArrayColumns.h>
+#include <data/src/transformations/ner/NerDyadicDataProcessor.h>
+#include <utils/text/Stopwords.h>
+#include <cctype>
 #include <cstdint>
 #include <unordered_map>
+#include <utility>
 
 namespace thirdai::bolt::NER {
+
+bool isAllPunctuation(const std::string& str) {
+  return !str.empty() && std::all_of(str.begin(), str.end(), ::ispunct);
+}
+
+void applyPunctAndStopWordFilter(const std::string& token,
+                                 PerTokenPredictions& predicted_tags,
+                                 const std::string& default_tag) {
+  // assumes that the highest activation vector is at the end
+  if (isAllPunctuation(token) || text::stop_words.count(data::trimPunctuation(
+                                     thirdai::text::lower(token))) > 0) {
+    for (int i = predicted_tags.size() - 1; i >= 0; --i) {
+      if (predicted_tags[i].first == default_tag) {
+        predicted_tags[i].second = 1;
+        std::rotate(predicted_tags.begin() + i, predicted_tags.begin() + i + 1,
+                    predicted_tags.end());
+        return;
+      }
+    }
+    // If the tag 'O' is not found, then we erase the lowest activation tag and
+    // insert 'O' as the highest activation tag.
+    predicted_tags.push_back({default_tag, 1});
+    predicted_tags.erase(predicted_tags.begin());
+  }
+}
 
 metrics::History NerClassifier::train(
     const dataset::DataSourcePtr& train_data, float learning_rate,
@@ -81,14 +111,23 @@ std::vector<PerTokenListPredictions> NerClassifier::getTags(
             {label_to_tag_map.at(tag), score});
         token_level_predictions.pop();
       }
+      applyPunctAndStopWordFilter(
+          data.getArrayColumn<std::string>(_tokens_column)
+              ->row(sub_vector_index)[token_index],
+          tags_and_scores[sub_vector_index][token_index],
+          label_to_tag_map.at(0));
 
       bool removed_highest = false;
 
       auto highest_tag_act =
           tags_and_scores[sub_vector_index][token_index].back();
 
+      auto second_highest_tag_act =
+          tags_and_scores[sub_vector_index][token_index][top_k - 1];
+
       if (tag_to_label_map.at(highest_tag_act.first) == 0 &&
-          highest_tag_act.second < 0.9) {
+          highest_tag_act.second < 0.9 &&
+          second_highest_tag_act.second >= 0.05) {
         tags_and_scores[sub_vector_index][token_index].pop_back();
         removed_highest = true;
       }

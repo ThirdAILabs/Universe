@@ -78,6 +78,9 @@ UDTClassifier::UDTClassifier(
   _featurizer = std::make_shared<Featurizer>(
       input_data_types, temporal_relationships, target_name, label_transform,
       bolt_labels, tabular_options);
+
+  std::cout << "Initialized a UniversalDeepTransformer for Classification"
+            << std::endl;
 }
 
 std::pair<std::string, TextDataTypePtr> textDataType(

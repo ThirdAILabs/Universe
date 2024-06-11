@@ -15,6 +15,10 @@ namespace thirdai::bolt::NER {
 using PerTokenPredictions = std::vector<std::pair<std::string, float>>;
 using PerTokenListPredictions = std::vector<PerTokenPredictions>;
 
+void applyPunctAndStopWordFilter(const std::string& token,
+                                 PerTokenPredictions& predicted_tags,
+                                 const std::string& default_tag);
+
 class NerClassifier {
  public:
   NerClassifier(bolt::ModelPtr model, data::OutputColumnsList bolt_inputs,
