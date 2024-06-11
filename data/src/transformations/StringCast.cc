@@ -129,7 +129,7 @@ template <>
 uint32_t CastToValue<uint32_t>::parse(const std::string& row) const {
   if (std::stol(row) < 0) {
     throw std::invalid_argument(
-        "Negative numbers not supported for this column type.");
+        "Value '" + row + "' cannot be cast to type uint32.");
   }
 
   return std::stoul(row);
@@ -294,7 +294,7 @@ template <>
 uint32_t CastToArray<uint32_t>::parse(const std::string& row) const {
   if (std::stol(row) < 0) {
     throw std::invalid_argument(
-        "Negative numbers not supported for this column type.");
+        "Value '" + row + "' cannot be cast to type uint32.");
   }
 
   return std::stoul(row);
