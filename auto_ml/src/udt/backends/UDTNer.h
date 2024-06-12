@@ -76,6 +76,7 @@ class UDTNer final : public UDTBackend {
   bolt::ModelPtr _model;
 
   data::ner::RulePtr _rule;
+  bool _deny_rules;
 
   data::TransformationPtr _supervised_transform;
   data::TransformationPtr _inference_transform;

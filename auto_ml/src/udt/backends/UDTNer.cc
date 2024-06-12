@@ -218,7 +218,9 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
                const TokenTagsDataTypePtr& target,
                const std::string& target_name, const UDTNer* pretrained_model,
                const config::ArgumentMap& args)
-    : _bolt_inputs({data::OutputColumns(NER_FEATURIZED_SENTENCE)}),
+    : _deny_rules(
+          args.get<bool>("deny_rules", "boolean", defaults::NER_DENY_RULES)),
+      _bolt_inputs({data::OutputColumns(NER_FEATURIZED_SENTENCE)}),
       _tokens_column(tokensColumn(data_types, target_name)),
       _tags_column(target_name) {
   NerOptions options;
@@ -398,7 +400,7 @@ std::vector<SentenceTags> UDTNer::predictTags(
           float score = top_labels.top().first;
           auto tag = _label_to_tag.at(top_labels.top().second);
           top_labels.pop();
-          if (data::ner::allowed(token, tag)) {
+          if (!_deny_rules || data::ner::allowed(token, tag)) {
             tags.emplace_back(tag, score);
           }
         }
@@ -467,6 +469,8 @@ ar::ConstArchivePtr UDTNer::toArchive(bool with_optimizer) const {
     map->set("use_rules_for", ar::vecStr(_rule->entities()));
   }
 
+  map->set("deny_rules", ar::boolean(_deny_rules));
+
   return map;
 }
 
@@ -476,6 +480,7 @@ std::unique_ptr<UDTNer> UDTNer::fromArchive(const ar::Archive& archive) {
 
 UDTNer::UDTNer(const ar::Archive& archive)
     : _model(bolt::Model::fromArchive(*archive.get("model"))),
+      _deny_rules(archive.getOr("deny_rules", false)),
       _supervised_transform(data::Transformation::fromArchive(
           *archive.get("supervised_transform"))),
       _inference_transform(data::Transformation::fromArchive(
