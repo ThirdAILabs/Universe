@@ -403,6 +403,10 @@ std::vector<SentenceTags> UDTNer::predictTags(
           }
         }
 
+        if (tags.empty()) {
+          tags.emplace_back(_label_to_tag[0], 0.9);
+        }
+
         bolt::NER::applyPunctAndStopWordFilter(
             data.getArrayColumn<std::string>(_tokens_column)
                 ->row(sentence_index)[token_index],
