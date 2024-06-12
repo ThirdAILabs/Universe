@@ -143,8 +143,6 @@ constexpr uint32_t NER_DYADIC_INTERVALS = 3;
 
 constexpr uint32_t NER_EMB_DIM = 2000;
 
-const std::vector<int> NERSLFJ = {23, 4, 24};
-
 const std::vector<std::string> NER_RULE_BASED_ENTITIES = {
     "EMAIL", "PHONENUMBER", "CREDITCARDNUMBER", "CREDITCARDCVV", "IBAN"};
 
