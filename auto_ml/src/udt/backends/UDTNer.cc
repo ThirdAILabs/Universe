@@ -412,27 +412,8 @@ std::vector<SentenceTags> UDTNer::predictTags(
           tags.pop_back();
           std::reverse(tags.begin(), tags.end());
         } else {
-          auto& vec = scores->getVector(i);
-
-          auto top_labels = vec.topKNeurons(top_k + 1);
-
-          while (!top_labels.empty()) {
-            float score = top_labels.top().first;
-            auto tag = _label_to_tag.at(top_labels.top().second);
-            top_labels.pop();
-            tags.emplace_back(tag, score);
-          }
-
-          // If the default tag is the the top prediction but has a score < 0.9
-          // then using the next top prediction improves accuracy.
-          if (tags.back().first == _label_to_tag[0] &&
-              tags.back().second < 0.9) {
-            tags.pop_back();
-            std::reverse(tags.begin(), tags.end());
-          } else {
-            std::reverse(tags.begin(), tags.end());
-            tags.pop_back();
-          }
+          std::reverse(tags.begin(), tags.end());
+          tags.pop_back();
         }
       }
       output_tags[sentence_index].push_back(tags);
