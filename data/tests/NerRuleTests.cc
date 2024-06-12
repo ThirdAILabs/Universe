@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <data/src/transformations/ner/rules/CommonPatterns.h>
+#include <data/src/transformations/ner/rules/DenyPatterns.h>
 #include <data/src/transformations/ner/rules/Rule.h>
 #include <utils/text/StringManipulation.h>
 #include <string>
@@ -215,6 +216,44 @@ TEST(NerRuleTests, MultipleRules) {
   for (const auto& res : batch_results) {
     verify_tags(res);
   }
+}
+
+TEST(NerRuleTests, DenyPatterns) {
+  ASSERT_TRUE(allowed("A02409", "UIN"));
+  ASSERT_TRUE(allowed("8247", "UIN"));
+  ASSERT_FALSE(allowed("ALKFJB", "UIN"));
+
+  ASSERT_TRUE(allowed("Z249KLF", "VEHICLEUIN"));
+  ASSERT_FALSE(allowed("Z?LF", "VEHICLEUIN"));
+  ASSERT_FALSE(allowed("banana", "VEHICLEUIN"));
+
+  ASSERT_TRUE(allowed("19", "AGE"));
+  ASSERT_FALSE(allowed("years", "AGE"));
+
+  ASSERT_TRUE(allowed("4'9\"", "HEIGHT"));
+  ASSERT_TRUE(allowed("4ft9in", "HEIGHT"));
+  ASSERT_TRUE(allowed("19ft", "HEIGHT"));
+  ASSERT_TRUE(allowed("29in", "HEIGHT"));
+  ASSERT_TRUE(allowed("19'", "HEIGHT"));
+  ASSERT_TRUE(allowed("29\"", "HEIGHT"));
+  ASSERT_TRUE(allowed("80cm", "HEIGHT"));
+  ASSERT_TRUE(allowed("1.409m", "HEIGHT"));
+  ASSERT_TRUE(allowed("24.209", "HEIGHT"));
+  ASSERT_TRUE(allowed("24.209feet", "HEIGHT"));
+  ASSERT_FALSE(allowed("apple", "HEIGHT"));
+
+  ASSERT_TRUE(allowed("A02409", "ACCOUNTNUMBER"));
+  ASSERT_TRUE(allowed("8247", "ACCOUNTNUMBER"));
+  ASSERT_FALSE(allowed("ALKFJB", "ACCOUNTNUMBER"));
+
+  ASSERT_TRUE(allowed("2049", "PIN"));
+  ASSERT_FALSE(allowed("2AZ9", "PIN"));
+
+  ASSERT_TRUE(allowed("$24.02", "AMOUNT"));
+  ASSERT_TRUE(allowed("$24k", "AMOUNT"));
+  ASSERT_TRUE(allowed("£24", "AMOUNT"));
+  ASSERT_TRUE(allowed("9824.42", "AMOUNT"));
+  ASSERT_FALSE(allowed("apple", "AMOUNT"));
 }
 
 }  // namespace thirdai::data::ner::tests

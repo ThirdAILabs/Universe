@@ -420,6 +420,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/ner/rules/Pattern.cc
     data/src/transformations/ner/rules/CommonPatterns.cc
     data/src/transformations/ner/rules/IBANPattern.cc
+    data/src/transformations/ner/rules/DenyPatterns.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc

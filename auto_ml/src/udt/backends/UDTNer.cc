@@ -18,6 +18,7 @@
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
 #include <data/src/transformations/ner/rules/CommonPatterns.h>
+#include <data/src/transformations/ner/rules/DenyPatterns.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <pybind11/stl.h>
 #include <utils/text/StringManipulation.h>
@@ -391,11 +392,15 @@ std::vector<SentenceTags> UDTNer::predictTags(
       } else {
         auto top_labels = scores->getVector(i).topKNeurons(top_k + 1);
 
+        const auto& token = tokens.at(sentence_index).at(token_index);
+
         while (!top_labels.empty()) {
           float score = top_labels.top().first;
           auto tag = _label_to_tag.at(top_labels.top().second);
           top_labels.pop();
-          tags.emplace_back(tag, score);
+          if (data::ner::allowed(token, tag)) {
+            tags.emplace_back(tag, score);
+          }
         }
 
         bolt::NER::applyPunctAndStopWordFilter(
