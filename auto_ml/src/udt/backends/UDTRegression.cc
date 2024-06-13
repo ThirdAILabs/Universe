@@ -132,9 +132,11 @@ py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
 
 py::object UDTRegression::predict(const MapInput& sample, bool sparse_inference,
                                   bool return_predicted_class,
-                                  std::optional<uint32_t> top_k) {
+                                  std::optional<uint32_t> top_k,
+                                  const py::kwargs& kwargs) {
   (void)return_predicted_class;  // No classes to return in regression;
   (void)top_k;
+  (void)kwargs;
 
   auto output =
       _model->forward(_featurizer->featurizeInput(sample), sparse_inference);
@@ -145,9 +147,11 @@ py::object UDTRegression::predict(const MapInput& sample, bool sparse_inference,
 py::object UDTRegression::predictBatch(const MapInputBatch& samples,
                                        bool sparse_inference,
                                        bool return_predicted_class,
-                                       std::optional<uint32_t> top_k) {
+                                       std::optional<uint32_t> top_k,
+                                       const py::kwargs& kwargs) {
   (void)return_predicted_class;  // No classes to return in regression;
   (void)top_k;
+  (void)kwargs;
 
   auto outputs = _model->forward(_featurizer->featurizeInputBatch(samples),
                                  sparse_inference);

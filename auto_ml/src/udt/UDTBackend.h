@@ -81,12 +81,14 @@ class UDTBackend {
 
   virtual py::object predict(const MapInput& sample, bool sparse_inference,
                              bool return_predicted_class,
-                             std::optional<uint32_t> top_k) = 0;
+                             std::optional<uint32_t> top_k,
+                             const py::kwargs& kwargs) = 0;
 
   virtual py::object predictBatch(const MapInputBatch& sample,
                                   bool sparse_inference,
                                   bool return_predicted_class,
-                                  std::optional<uint32_t> top_k) = 0;
+                                  std::optional<uint32_t> top_k,
+                                  const py::kwargs& kwargs) = 0;
 
   virtual ar::ConstArchivePtr toArchive(bool with_optimizer) const = 0;
 

@@ -247,16 +247,19 @@ py::object UDTMach::evaluate(const dataset::DataSourcePtr& data,
 
 py::object UDTMach::predict(const MapInput& sample, bool sparse_inference,
                             bool return_predicted_class,
-                            std::optional<uint32_t> top_k) {
-  auto output =
-      predictBatch({sample}, sparse_inference, return_predicted_class, top_k);
+                            std::optional<uint32_t> top_k,
+                            const py::kwargs& kwargs) {
+  auto output = predictBatch({sample}, sparse_inference, return_predicted_class,
+                             top_k, kwargs);
   return output.cast<py::list>()[0];
 }
 
 py::object UDTMach::predictBatch(const MapInputBatch& samples,
                                  bool sparse_inference,
                                  bool return_predicted_class,
-                                 std::optional<uint32_t> top_k) {
+                                 std::optional<uint32_t> top_k,
+                                 const py::kwargs& kwargs) {
+  (void)kwargs;
   return py::cast(predictBatchImpl(samples, sparse_inference,
                                    return_predicted_class, top_k));
 }

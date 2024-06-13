@@ -60,12 +60,13 @@ class UDTMach final : public UDTBackend {
                       py::kwargs kwargs) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
-                     bool return_predicted_class,
-                     std::optional<uint32_t> top_k) final;
+                     bool return_predicted_class, std::optional<uint32_t> top_k,
+                     const py::kwargs& kwargs) final;
 
   py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
                           bool return_predicted_class,
-                          std::optional<uint32_t> top_k) final;
+                          std::optional<uint32_t> top_k,
+                          const py::kwargs& kwargs) final;
 
   std::vector<std::vector<std::pair<uint32_t, double>>> predictBatchImpl(
       const MapInputBatch& samples, bool sparse_inference,

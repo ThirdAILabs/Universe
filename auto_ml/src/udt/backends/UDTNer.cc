@@ -11,6 +11,7 @@
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/ReservedColumns.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <auto_ml/src/udt/utils/KwargUtils.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
@@ -313,7 +314,8 @@ py::object UDTNer::evaluate(const dataset::DataSourcePtr& data,
 
 py::object UDTNer::predict(const MapInput& sample, bool sparse_inference,
                            bool return_predicted_class,
-                           std::optional<uint32_t> top_k) {
+                           std::optional<uint32_t> top_k,
+                           const py::kwargs& kwargs) {
   (void)return_predicted_class;
 
   if (!sample.count(_tokens_column)) {
@@ -321,8 +323,11 @@ py::object UDTNer::predict(const MapInput& sample, bool sparse_inference,
                                 _tokens_column + "'.");
   }
 
+  float o_threshold =
+      floatArg(kwargs, "threshold").value_or(defaults::NER_O_THRESHOLD);
+
   auto tags = predictTags({sample.at(_tokens_column)}, sparse_inference,
-                          top_k.value_or(1));
+                          top_k.value_or(1), o_threshold);
 
   return py::cast(tags[0]);
 }
@@ -330,7 +335,8 @@ py::object UDTNer::predict(const MapInput& sample, bool sparse_inference,
 py::object UDTNer::predictBatch(const MapInputBatch& samples,
                                 bool sparse_inference,
                                 bool return_predicted_class,
-                                std::optional<uint32_t> top_k) {
+                                std::optional<uint32_t> top_k,
+                                const py::kwargs& kwargs) {
   (void)return_predicted_class;
 
   std::vector<std::string> sentences(samples.size());
@@ -343,14 +349,18 @@ py::object UDTNer::predictBatch(const MapInputBatch& samples,
     sentences.push_back(sample.at(_tokens_column));
   }
 
-  auto tags = predictTags(sentences, sparse_inference, top_k.value_or(1));
+  float o_threshold =
+      floatArg(kwargs, "threshold").value_or(defaults::NER_O_THRESHOLD);
+
+  auto tags =
+      predictTags(sentences, sparse_inference, top_k.value_or(1), o_threshold);
 
   return py::cast(tags);
 }
 
 std::vector<SentenceTags> UDTNer::predictTags(
     const std::vector<std::string>& sentences, bool sparse_inference,
-    uint32_t top_k) {
+    uint32_t top_k, float o_threshold) {
   std::vector<std::vector<std::string>> tokens;
   tokens.reserve(sentences.size());
 
@@ -407,8 +417,8 @@ std::vector<SentenceTags> UDTNer::predictTags(
         // then using the next top prediction improves accuracy.
         float second_highest_tag_act = top_k > 0 ? tags[top_k - 1].second : 0;
 
-        if (tags.back().first == _label_to_tag[0] && tags.back().second < 0.9 &&
-            second_highest_tag_act > 0.05) {
+        if (tags.back().first == _label_to_tag[0] &&
+            tags.back().second < o_threshold && second_highest_tag_act > 0.05) {
           tags.pop_back();
           std::reverse(tags.begin(), tags.end());
         } else {
