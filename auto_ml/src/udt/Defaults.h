@@ -146,6 +146,8 @@ constexpr uint32_t NER_EMB_DIM = 2000;
 const std::vector<std::string> NER_RULE_BASED_ENTITIES = {
     "EMAIL", "PHONENUMBER", "CREDITCARDNUMBER", "CREDITCARDCVV", "IBAN"};
 
+constexpr float NER_O_THRESHOLD = 0.75;
+
 // Whether or not to use the spell checker in QueryReformulation
 constexpr bool USE_SPELL_CHECKER = false;
 

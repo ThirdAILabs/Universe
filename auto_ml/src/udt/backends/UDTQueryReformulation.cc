@@ -273,13 +273,14 @@ py::object UDTQueryReformulation::evaluate(
 py::object UDTQueryReformulation::predict(const MapInput& sample,
                                           bool sparse_inference,
                                           bool return_predicted_class,
-                                          std::optional<uint32_t> top_k) {
+                                          std::optional<uint32_t> top_k,
+                                          const py::kwargs& kwargs) {
   (void)sample;
   (void)sparse_inference;
   (void)return_predicted_class;
   (void)top_k;
-  return predictBatch({sample}, sparse_inference, return_predicted_class,
-                      top_k);
+  return predictBatch({sample}, sparse_inference, return_predicted_class, top_k,
+                      kwargs);
 }
 
 IdScorePairs UDTQueryReformulation::queryBatchResults(
@@ -331,9 +332,11 @@ IdScorePairs UDTQueryReformulation::queryBatchResults(
 py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
                                                bool sparse_inference,
                                                bool return_predicted_class,
-                                               std::optional<uint32_t> top_k) {
+                                               std::optional<uint32_t> top_k,
+                                               const py::kwargs& kwargs) {
   (void)sparse_inference;
   (void)return_predicted_class;
+  (void)kwargs;
 
   requireTopK(top_k);
 

@@ -201,11 +201,12 @@ py::object UDT::evaluate(const dataset::DataSourcePtr& data,
 
 py::object UDT::predict(const MapInput& sample, bool sparse_inference,
                         bool return_predicted_class,
-                        std::optional<uint32_t> top_k) {
+                        std::optional<uint32_t> top_k,
+                        const py::kwargs& kwargs) {
   bolt::utils::Timer timer;
 
   auto result = _backend->predict(sample, sparse_inference,
-                                  return_predicted_class, top_k);
+                                  return_predicted_class, top_k, kwargs);
 
   timer.stop();
   telemetry::client.trackPrediction(
@@ -216,11 +217,12 @@ py::object UDT::predict(const MapInput& sample, bool sparse_inference,
 
 py::object UDT::predictBatch(const MapInputBatch& sample, bool sparse_inference,
                              bool return_predicted_class,
-                             std::optional<uint32_t> top_k) {
+                             std::optional<uint32_t> top_k,
+                             const py::kwargs& kwargs) {
   bolt::utils::Timer timer;
 
   auto result = _backend->predictBatch(sample, sparse_inference,
-                                       return_predicted_class, top_k);
+                                       return_predicted_class, top_k, kwargs);
 
   timer.stop();
   telemetry::client.trackBatchPredictions(
