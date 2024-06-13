@@ -17,10 +17,12 @@
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
+#include <data/src/transformations/ner/rules/CommonPatterns.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <pybind11/stl.h>
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -120,10 +122,15 @@ std::string tokensColumn(ColumnDataTypes data_types,
   return data_types.begin()->first;
 }
 
-std::vector<std::string> prependDefaultTag(
-    const std::string& default_tag, const std::vector<std::string>& tags) {
+std::vector<std::string> mapTagsToLabels(
+    const std::string& default_tag, const std::vector<std::string>& tags,
+    const std::vector<std::string>& rule_tags = {}) {
   std::vector<std::string> all_tags = {default_tag};
-  all_tags.insert(all_tags.end(), tags.begin(), tags.end());
+  for (const auto& tag : tags) {
+    if (std::find(rule_tags.begin(), rule_tags.end(), tag) == rule_tags.end()) {
+      all_tags.push_back(tag);
+    }
+  }
   return all_tags;
 }
 
@@ -212,13 +219,20 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
                const config::ArgumentMap& args)
     : _bolt_inputs({data::OutputColumns(NER_FEATURIZED_SENTENCE)}),
       _tokens_column(tokensColumn(data_types, target_name)),
-      _tags_column(target_name),
-      _label_to_tag(prependDefaultTag(target->default_tag, target->tags)) {
+      _tags_column(target_name) {
   NerOptions options;
   if (pretrained_model) {
     options = fromPretrained(pretrained_model);
   } else {
     options = fromScratch(args);
+  }
+
+  if (args.get<bool>("rules", "boolean", false)) {
+    _rule = data::ner::getRuleForEntities(defaults::NER_RULE_BASED_ENTITIES);
+    _label_to_tag =
+        mapTagsToLabels(target->default_tag, target->tags, _rule->entities());
+  } else {
+    _label_to_tag = mapTagsToLabels(target->default_tag, target->tags);
   }
 
   _model = buildModel(options.input_dim, options.emb_dim, _label_to_tag.size(),
@@ -344,8 +358,8 @@ std::vector<SentenceTags> UDTNer::predictTags(
     tokens.push_back(text::split(phrase, ' '));
   }
 
-  auto sentence_tokens =
-      data::ArrayColumn<std::string>::make(std::move(tokens));
+  auto sentence_tokens = data::ArrayColumn<std::string>::make(
+      std::vector<std::vector<std::string>>{tokens});
   auto data = data::ColumnMap({{_tokens_column, sentence_tokens}});
 
   auto featurized = _inference_transform->applyStateless(data);
@@ -354,6 +368,11 @@ std::vector<SentenceTags> UDTNer::predictTags(
 
   size_t sentence_index = 0;
   size_t token_index = 0;
+
+  std::vector<SentenceTags> rule_results;
+  if (_rule) {
+    rule_results = _rule->applyBatch(tokens);
+  }
 
   std::vector<SentenceTags> output_tags(sentences.size());
 
@@ -366,32 +385,36 @@ std::vector<SentenceTags> UDTNer::predictTags(
         token_index = 0;
       }
 
-      auto top_labels = scores->getVector(i).topKNeurons(top_k + 1);
-
       TokenTags tags;
-      while (!top_labels.empty()) {
-        float score = top_labels.top().first;
-        auto tag = _label_to_tag.at(top_labels.top().second);
-        top_labels.pop();
-        tags.emplace_back(tag, score);
-      }
-
-      bolt::NER::applyPunctAndStopWordFilter(
-          data.getArrayColumn<std::string>(_tokens_column)
-              ->row(sentence_index)[token_index],
-          tags, _label_to_tag[0]);
-
-      // If the default tag is the the top prediction but has a score < 0.9 then
-      // using the next top prediction improves accuracy.
-      float second_highest_tag_act = top_k > 0 ? tags[top_k - 1].second : 0;
-
-      if (tags.back().first == _label_to_tag[0] && tags.back().second < 0.9 &&
-          second_highest_tag_act > 0.05) {
-        tags.pop_back();
-        std::reverse(tags.begin(), tags.end());
+      if (_rule && !rule_results.at(sentence_index).at(token_index).empty()) {
+        tags = rule_results.at(sentence_index).at(token_index);
       } else {
-        std::reverse(tags.begin(), tags.end());
-        tags.pop_back();
+        auto top_labels = scores->getVector(i).topKNeurons(top_k + 1);
+
+        while (!top_labels.empty()) {
+          float score = top_labels.top().first;
+          auto tag = _label_to_tag.at(top_labels.top().second);
+          top_labels.pop();
+          tags.emplace_back(tag, score);
+        }
+
+        bolt::NER::applyPunctAndStopWordFilter(
+            data.getArrayColumn<std::string>(_tokens_column)
+                ->row(sentence_index)[token_index],
+            tags, _label_to_tag[0]);
+
+        // If the default tag is the the top prediction but has a score < 0.9
+        // then using the next top prediction improves accuracy.
+        float second_highest_tag_act = top_k > 0 ? tags[top_k - 1].second : 0;
+
+        if (tags.back().first == _label_to_tag[0] && tags.back().second < 0.9 &&
+            second_highest_tag_act > 0.05) {
+          tags.pop_back();
+          std::reverse(tags.begin(), tags.end());
+        } else {
+          std::reverse(tags.begin(), tags.end());
+          tags.pop_back();
+        }
       }
       output_tags[sentence_index].push_back(tags);
 
@@ -430,6 +453,10 @@ ar::ConstArchivePtr UDTNer::toArchive(bool with_optimizer) const {
 
   map->set("label_to_tag", ar::vecStr(_label_to_tag));
 
+  if (_rule) {
+    map->set("use_rules_for", ar::vecStr(_rule->entities()));
+  }
+
   return map;
 }
 
@@ -446,6 +473,11 @@ UDTNer::UDTNer(const ar::Archive& archive)
       _bolt_inputs(data::outputColumnsFromArchive(*archive.get("bolt_inputs"))),
       _tokens_column(archive.str("tokens_column")),
       _tags_column(archive.str("tags_column")),
-      _label_to_tag(archive.getAs<ar::VecStr>("label_to_tag")) {}
+      _label_to_tag(archive.getAs<ar::VecStr>("label_to_tag")) {
+  if (archive.contains("use_rules_for")) {
+    _rule = data::ner::getRuleForEntities(
+        archive.getAs<ar::VecStr>("use_rules_for"));
+  }
+}
 
 }  // namespace thirdai::automl::udt

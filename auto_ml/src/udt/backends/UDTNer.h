@@ -4,6 +4,7 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
+#include <data/src/transformations/ner/rules/Rule.h>
 #include <string>
 #include <unordered_map>
 
@@ -73,6 +74,8 @@ class UDTNer final : public UDTBackend {
   static NerOptions fromScratch(const config::ArgumentMap& args);
 
   bolt::ModelPtr _model;
+
+  data::ner::RulePtr _rule;
 
   data::TransformationPtr _supervised_transform;
   data::TransformationPtr _inference_transform;
