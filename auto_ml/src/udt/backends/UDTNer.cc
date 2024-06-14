@@ -16,6 +16,7 @@
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
+#include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
@@ -372,7 +373,11 @@ std::vector<SentenceTags> UDTNer::predictTags(
 
   auto sentence_tokens = data::ArrayColumn<std::string>::make(
       std::vector<std::vector<std::string>>{tokens});
-  auto data = data::ColumnMap({{_tokens_column, sentence_tokens}});
+
+  auto sentence_columns =
+      data::ValueColumn<std::string>::make(std::vector<std::string>{sentences});
+
+  auto data = data::ColumnMap({{_tokens_column, sentence_columns}});
 
   auto featurized = _inference_transform->applyStateless(data);
   auto tensors =
