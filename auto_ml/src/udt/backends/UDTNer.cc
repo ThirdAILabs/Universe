@@ -339,7 +339,8 @@ py::object UDTNer::predictBatch(const MapInputBatch& samples,
                                 const py::kwargs& kwargs) {
   (void)return_predicted_class;
 
-  std::vector<std::string> sentences(samples.size());
+  std::vector<std::string> sentences;
+  sentences.reserve(samples.size());
   for (const auto& sample : samples) {
     if (!sample.count(_tokens_column)) {
       throw std::invalid_argument("Expected input to contain column '" +

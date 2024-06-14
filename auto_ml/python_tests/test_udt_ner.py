@@ -48,7 +48,7 @@ def ner_dataset():
     test_file = "simple_ner_test.jsonl"
 
     generate_data(train_file, 10000)
-    generate_data(test_file, 20)
+    generate_data(test_file, 100)
 
     yield train_file, test_file
 
@@ -57,23 +57,63 @@ def ner_dataset():
             os.remove(file)
 
 
-def evaluate(model, test):
-    correct = 0
-    total = 0
+def load_eval_samples(test):
+    samples = []
+    labels = []
     for line in open(test):
         data = json.loads(line)
+        samples.append({TOKENS: " ".join(data[TOKENS])})
+        labels.append(data[TAGS])
+    return samples, labels
 
-        predicted_tags = model.predict({TOKENS: " ".join(data[TOKENS])})
+
+def evaluate_predict(model, test):
+    correct = 0
+    total = 0
+
+    samples, labels = load_eval_samples(test)
+    for sample, expected_tags in zip(samples, labels):
+        predicted_tags = model.predict(sample)
         predicted_tags = [x[0][0] for x in predicted_tags]
 
-        assert len(predicted_tags) == len(data[TAGS])
-        for tag, expected_tag in zip(predicted_tags, data[TAGS]):
+        assert len(predicted_tags) == len(expected_tags)
+        for tag, expected_tag in zip(predicted_tags, expected_tags):
             if expected_tag != "O":
                 if tag == expected_tag:
                     correct += 1
                 total += 1
 
     return correct / total
+
+
+def evaluate_predict_batch(model, test):
+    correct = 0
+    total = 0
+
+    samples, labels = load_eval_samples(test)
+
+    all_predicted_tags = model.predict_batch(samples)
+
+    for predicted_tags, expected_tags in zip(all_predicted_tags, labels):
+        predicted_tags = [x[0][0] for x in predicted_tags]
+
+        assert len(predicted_tags) == len(expected_tags)
+        for tag, expected_tag in zip(predicted_tags, expected_tags):
+            if expected_tag != "O":
+                if tag == expected_tag:
+                    correct += 1
+                total += 1
+
+    return correct / total
+
+
+def evaluate(model, test):
+    predict_acc = evaluate_predict(model, test)
+    predict_batch_acc = evaluate_predict_batch(model, test)
+
+    assert predict_acc == predict_batch_acc
+
+    return predict_acc
 
 
 def test_udt_ner(ner_dataset):
