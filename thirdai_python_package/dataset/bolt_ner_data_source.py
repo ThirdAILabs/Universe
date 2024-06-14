@@ -28,24 +28,11 @@ class NerDataSource(PyDataSource):
 
         if self.pretrained:
             try:
-                CONFIG = data.transformations.NerFeatureConfig(
-                    True, True, True, True, True, True, True
-                )
-                target_word_tokenizers = [
-                    dataset.NaiveSplitTokenizer(" "),
-                ]
-                self.transform = data.transformations.NerTokenizerUnigram(
-                    tokens_column="text",
-                    featurized_sentence_column="fsc",
-                    target_column="target",
-                    target_dim=10,
-                    dyadic_num_intervals=2,
-                    target_word_tokenizers=target_word_tokenizers,
-                    feature_enhancement_config=CONFIG,
-                )
-                from transformers import GPT2Tokenizer
+                from transformers import AutoTokenizer
 
-                self.tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+                self.tokenizer = AutoTokenizer.from_pretrained(
+                    "meta-llama/Meta-Llama-3-8B"
+                )
             except ImportError:
                 raise ImportError(
                     "transformers library is not installed. Please install it to use LLMDataSource."
