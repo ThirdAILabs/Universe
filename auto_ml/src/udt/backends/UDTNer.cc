@@ -13,6 +13,7 @@
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/utils/KwargUtils.h>
 #include <data/src/ColumnMap.h>
+#include <data/src/ColumnMapIterator.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/Pipeline.h>
@@ -438,9 +439,8 @@ std::vector<SentenceTags> UDTNer::predictTags(
 
 data::LoaderPtr UDTNer::getDataLoader(const dataset::DataSourcePtr& data,
                                       size_t batch_size, bool shuffle) const {
-  auto data_iter =
-      data::JsonIterator::make(data, {_tokens_column, _tags_column}, 1000);
-  return data::Loader::make(data_iter, _supervised_transform, nullptr,
+  auto csv_iter = data::CsvIterator::make(data, ',', 1000);
+  return data::Loader::make(csv_iter, _supervised_transform, nullptr,
                             _bolt_inputs, {data::OutputColumns(_tags_column)},
                             /* batch_size= */ batch_size,
                             /* shuffle= */ shuffle, /* verbose= */ true,
