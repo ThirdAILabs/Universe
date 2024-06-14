@@ -1,8 +1,8 @@
-from thirdai.bolt import MockHash, RACE
+from thirdai.bolt import MockHash, NWS
 from collections import defaultdict
 
 
-def test_race(sparse):
+def test_nws(sparse):
     inputs_hashes_weights = [
         ([0.0, 1.0, 2.0], [2, 1, 0], 0.3),
         ([1.0, 2.0, 3.0], [0, 0, 1], 0.6),
@@ -14,26 +14,31 @@ def test_race(sparse):
         ([7.0, 8.0, 9.0], [0, 0, 1], 2.4),
     ]
 
+    row_to_hash_to_weight = defaultdict(lambda: defaultdict(float))
     row_to_hash_to_count = defaultdict(lambda: defaultdict(float))
 
     for _, hashes, weight in inputs_hashes_weights:
         for row, row_hash in enumerate(hashes):
-            row_to_hash_to_count[row][row_hash] += weight
+            row_to_hash_to_weight[row][row_hash] += weight
+            row_to_hash_to_count[row][row_hash] += 1.0
 
     expectations = [
-        sum(row_to_hash_to_count[row][row_hash] for row, row_hash in enumerate(hashes))
-        / len(hashes)
+        sum(row_to_hash_to_weight[row][row_hash] for row, row_hash in enumerate(hashes))
+        / sum(row_to_hash_to_count[row][row_hash] for row, row_hash in enumerate(hashes))
         for _, hashes, _ in inputs_hashes_weights
     ]
 
+    print(expectations)
+
     hasher = MockHash([(inputs, hashes) for inputs, hashes, _ in inputs_hashes_weights])
 
-    race = RACE(hasher, sparse)
+    nws = NWS(hasher, sparse)
     inputs, _, weights = zip(*inputs_hashes_weights)
-    race.update(inputs, weights)
+    nws.train(inputs, weights)
     for input_vec, expectation in zip(inputs, expectations):
-        assert abs(race.query(list(input_vec)) - expectation) < 1e-6
+        print(nws.predict([list(input_vec)])[0])
+        assert abs(nws.predict([list(input_vec)])[0] - expectation) < 1e-6
 
 
-test_race(sparse=False)
-test_race(sparse=True)
+test_nws(sparse=False)
+test_nws(sparse=True)

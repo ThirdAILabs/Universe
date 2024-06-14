@@ -3,7 +3,7 @@ from exp_utils import run
 import pandas as pd
 import numpy as np
 
-bandwidth = 1
+bandwidth = 1.0
 power = 1
 kernel = L2Kernel(bandwidth=bandwidth, power=power)
 # distance = L2Distance()
@@ -26,11 +26,11 @@ def make_hash_factory(rows):
 hash_factories = [
     make_hash_factory(rows)
     # for rows in (list(range(10, 100, 10)) + list(range(100, 1000, 50)))
-    for rows in [r * r for r in range(1, 34, 6)]
+    for rows in [r * r for r in range(1, 34, 2)]
     # for rows in [1000]
 ]
 
-TRAIN_SIZE = 1_000_000
+TRAIN_SIZE = 10_000
 TEST_SIZE = 10_000
 # TRAIN_SIZE = 100
 # TEST_SIZE = 100

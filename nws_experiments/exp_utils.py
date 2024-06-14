@@ -1,6 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from thirdai.bolt import NWS, NWE, SKA, Hash, Kernel, Distance
+from thirdai.bolt import NWS, NWE, SKA, Hash, Kernel, Distance, RACE
 import typing as tp
 from tqdm import tqdm
 import math
@@ -8,6 +8,12 @@ import math
 import matplotlib.scale as mscale
 import matplotlib.transforms as mtransforms
 import matplotlib.ticker as ticker
+import os
+from pathlib import Path
+
+
+CUR_DIR = Path(os.path.dirname(__file__))
+
 
 
 class SquareRootScale(mscale.ScaleBase):
@@ -68,18 +74,26 @@ def mae(truth, approx):
 
 
 def mape(truth, approx):
-    errors = np.nan_to_num(
-        np.abs((np.array(truth) - np.array(approx)) / np.array(truth)), nan=1.0
-    )
+    # errors = np.nan_to_num(
+    #     np.abs((np.array(truth) - np.array(approx)) / np.array(truth)), nan=1.0
+    # )
+    print(truth)
+    print(approx)
+    min_idx = np.argmin(truth)
+    print("min truth", truth[min_idx], "vs min approx", approx[min_idx])
+    max_idx = np.argmax(truth)
+    print("max truth", truth[max_idx], "vs max approx", approx[max_idx])
+    print("++++++++++++++++++++++++++")
+    errors = np.abs((np.array(truth) - np.array(approx)) / np.array(truth))
     return sorted(errors)[math.ceil(len(truth) * 0.99)]
 
 
 def train_and_predict_nws(
-    h: Hash, train_inputs: np.array, train_outputs: np.array, test_inputs: np.array
+    h: Hash, train_inputs: np.array, train_outputs: np.array, test_inputs: np.array, sparse: bool
 ):
-    nws = NWS(hash=h, val_dim=1)
-    nws.train(train_inputs, train_outputs.reshape((-1, 1)))
-    return np.array(nws.predict(test_inputs)).reshape((-1,))
+    nws = NWS(hash=h, sparse=sparse)
+    nws.train(train_inputs, train_outputs)
+    return np.array(nws.predict(test_inputs)), nws.bytes()
 
 
 def train_and_predict_nwe(
@@ -128,6 +142,7 @@ def run(
     train_outputs: np.array,
     test_inputs: np.array,
     random_sampling=True,
+    sparse=False,
 ):
     input_dim = train_inputs.shape[-1]
     print("Input dim:", input_dim)
@@ -135,24 +150,27 @@ def run(
     hashes = [make_hash(input_dim) for make_hash in hash_factories]
     print("Finding truth...")
     truth = train_and_predict_nwe(kernel, train_inputs, train_outputs, test_inputs)
-    # plt.hist(truth, bins=100)
-    # plt.show()
+    
+    print(truth)
+    print("min truth", np.min(truth))
+    print("max truth", np.max(truth))
 
     print("Approximating truth...")
-    approxes = [
-        train_and_predict_nws(h, train_inputs, train_outputs, test_inputs)
+    approxes_and_mems = [
+        train_and_predict_nws(h, train_inputs, train_outputs, test_inputs, sparse)
         for h in tqdm(hashes)
     ]
-    # 4 = 4 bytes in a float, 2 = number of race sketches in NWS
-    mems = [h.rows() * h.range() * 4 * 2 for h in hashes]
 
+    approxes, mems = zip(*approxes_and_mems)
+    
     mapes = [mape(truth, approx) for approx in approxes]
     plt.plot([h.rows() ** 0.5 for h in hashes], mapes, ".-", label="NWS")
     plt.plot(range(1, 50), [1 / r for r in range(1, 50)], "-.", label="1/√R")
     plt.xlabel("√R")
     plt.ylabel("Relative error")
     plt.legend()
-    plt.show()
+    plt.savefig(CUR_DIR / f"assets/nws_relative_error_with_root_r.png")
+    plt.clf()
 
     maes = [mae(truth, approx) for approx in approxes]
     plt.plot([h.rows() ** 0.5 for h in hashes], maes, ".-", label="NWS")
@@ -160,32 +178,36 @@ def run(
     plt.xlabel("√R")
     plt.ylabel("Absolute error")
     plt.legend()
-    plt.show()
+    plt.savefig(CUR_DIR / f"assets/nws_absolute_error_with_root_r.png")
+    plt.clf()
 
     plt.plot(mems, mapes, ".-", label="NWS")
     plt.xlabel("Memory (Bytes)")
     plt.ylabel("Relative error")
     plt.legend()
     plt.show()
+    plt.savefig(CUR_DIR / f"assets/nws_relative_error_over_memory.png")
+    plt.clf()
 
     plt.plot(mems, mapes, ".-", label="NWS")
     plt.xlabel("Memory (Bytes)")
     plt.ylabel("Relative error")
     plt.xscale("sqrt")
     plt.legend()
-    plt.show()
-
-    plt.plot(mems, mapes, ".-", label="NWS")
-    plt.xlabel("Memory (Bytes)")
-    plt.ylabel("Relative error")
-    plt.yscale("log")
-    plt.legend()
-    plt.show()
+    plt.savefig(CUR_DIR / f"assets/nws_absolute_error_over_memory.png")
+    plt.clf()
 
     if random_sampling:
         print("Approximating truth with random samples...")
         # +1 for output
-        num_samples_for_mems = [int(mem / 4 / (input_dim + 1)) for mem in mems]
+        num_samples_for_mems = [min(int(mem / 4 / (input_dim + 1)), len(train_inputs)) for mem in mems]
+        end = len(num_samples_for_mems)
+        for i in range(1, len(num_samples_for_mems)):
+            if num_samples_for_mems[-1 - i] == num_samples_for_mems[-1]:
+                end -=1
+            else:
+                break
+        num_samples_for_mems = num_samples_for_mems[:end]
         random_approxes = [
             train_and_predict_rs(
                 kernel, train_inputs, train_outputs, test_inputs, num_samples
@@ -247,15 +269,5 @@ def run(
     plt.ylabel("Relative error")
     plt.xscale("sqrt")
     plt.legend()
-    plt.show()
-
-    if random_sampling:
-        plt.plot(random_mems, random_mapes, ".-", label="Random Sampling")
-    if distance:
-        plt.plot(ska_mems, ska_mapes, ".-", label="Sparse Kernel Approximation")
-    plt.xlabel("Memory (Bytes)")
-    plt.ylabel("Log Relative Error")
-    plt.yscale("log")
-    plt.xscale("sqrt")
-    plt.legend(loc="best", ncol=2)
-    plt.show()
+    plt.savefig(CUR_DIR / f"assets/all_relative_error_over_memory.png")
+    plt.clf()

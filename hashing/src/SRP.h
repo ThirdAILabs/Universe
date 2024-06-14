@@ -24,6 +24,8 @@ class SignedRandomProjection final : public HashFunction {
   void hashSingleDense(const float* values, uint32_t dim,
                        uint32_t* output) const override;
 
+  uint32_t hashSingleDenseRow(const float* values, uint32_t row) const;
+
   std::unique_ptr<HashFunction> copyWithNewSeeds() const final {
     return std::make_unique<SignedRandomProjection>(
         /* input_dim= */ _dim, /* srps_per_table= */ _srps_per_table,

@@ -132,21 +132,21 @@ void defineAutomlInModule(py::module_& module) {
       .def("hash", &L2Hash::hash, py::arg("input"));
 
   py::class_<RACE, std::shared_ptr<RACE>>(module, "RACE")
-      .def(py::init<const std::shared_ptr<Hash>&>(), py::arg("hash"))
+      .def(py::init<const std::shared_ptr<Hash>&, bool>(), py::arg("hash"), py::arg("sparse") = false)
       .def("update", &RACE::update, py::arg("key"), py::arg("value"))
       .def("query", &RACE::query, py::arg("key"))
-      .def("print", &RACE::print);
+      .def("print", &RACE::print)
+      .def("bytes", &RACE::bytesUsed);
 
   py::class_<NadarayaWatsonSketch, std::shared_ptr<NadarayaWatsonSketch>>(
       module, "NWS")
-      .def(py::init<const std::shared_ptr<Hash>&>(), py::arg("hash"))
+      .def(py::init<const std::shared_ptr<Hash>&, bool>(), py::arg("hash"), py::arg("sparse") = false)
       .def("train", &NadarayaWatsonSketch::train, py::arg("inputs"),
            py::arg("outputs"))
-      .def("train_parallel", &NadarayaWatsonSketch::trainParallel,
-           py::arg("inputs"), py::arg("outputs"), py::arg("threads"))
       .def("predict", &NadarayaWatsonSketch::predict, py::arg("inputs"))
       .def("predict_debug", &NadarayaWatsonSketch::predictDebug,
-           py::arg("inputs"));
+           py::arg("inputs"))
+      .def("bytes", &NadarayaWatsonSketch::bytesUsed);
 
   py::class_<Kernel, std::shared_ptr<Kernel>>(module, "Kernel")
       .def("on", &Kernel::on, py::arg("a"), py::arg("b"));

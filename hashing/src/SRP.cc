@@ -66,6 +66,23 @@ void SignedRandomProjection::hashSingleDense(const float* values, uint32_t dim,
   }
 }
 
+uint32_t SignedRandomProjection::hashSingleDenseRow(
+    const float* values, uint32_t row) const {
+  uint32_t output = 0;
+  for (uint32_t srp = 0; srp < _srps_per_table; srp++) {
+    double s = 0;
+    for (uint32_t srp_part = 0; srp_part < _sample_size; srp_part++) {
+      const uint32_t bit_index = row * _srps_per_table * _sample_size +
+                                  srp * _sample_size + srp_part;
+      s += static_cast<float>(_random_bits[bit_index]) *
+            values[_hash_indices[bit_index]];
+    }
+    const uint32_t to_add = (s > 0) << srp;
+    output += to_add;
+  }
+  return output;
+}
+
 void SignedRandomProjection::hashSingleSparse(const uint32_t* indices,
                                               const float* values,
                                               uint32_t length,

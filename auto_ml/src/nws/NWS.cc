@@ -1,5 +1,6 @@
 #include "NWS.h"
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <random>
@@ -45,6 +46,27 @@ std::vector<uint32_t> MockHash::hash(const std::vector<float>& input) const {
   throw std::invalid_argument("Input vector is unregistered.");
 }
 
+uint32_t MockHash::hashAt(const std::vector<float>& input, uint32_t row) const {
+  for (const auto& [registered_input, hashes] : _inputs_and_hashes) {
+    if (input.size() != registered_input.size()) {
+      throw std::invalid_argument("Input vector has wrong dimension.");
+    }
+    bool match = true;
+    for (size_t i = 0; i < input.size(); i++) {
+      if (input[i] != registered_input[i]) {
+        match = false;
+        continue;
+      }
+    }
+    if (match) {
+      return hashes[row];
+    }
+  }
+  throw std::invalid_argument("Input vector is unregistered.");
+}
+
+
+
 // For things like SRP that involves matrix multiplications, there are
 // probably faster ways to parallelize this.
 std::vector<uint32_t> SRP::hash(const std::vector<float>& input) const {
@@ -54,30 +76,41 @@ std::vector<uint32_t> SRP::hash(const std::vector<float>& input) const {
   return output;
 }
 
+uint32_t SRP::hashAt(const std::vector<float>& input, uint32_t row) const {
+  assert(input.size() == _srp.inputDim());
+  return _srp.hashSingleDenseRow(input.data(), row);
+}
+
 std::vector<uint32_t> L2Hash::hash(const std::vector<float>& input) const {
   std::vector<uint32_t> hashes(_rows);
   for (size_t row = 0; row < _rows; row++) {
-    std::vector<uint32_t> row_hashes(_hashes_per_row, 0);
-    for (size_t i = 0; i < _hashes_per_row; i++) {
-      const size_t idx = row * _hashes_per_row + i;
-      // Need explicit floor so negative numbers are rounded correctly.
-      // E.g. without the explicit floor, -1.5 is rounded to -1 instead of -2.
-      const int32_t signed_hash =
-          std::floor((dot(_projections[idx], input) + _biases[idx]) / _scale);
-      // Use bitwise OR rather than assignment to preserve bits
-      row_hashes[i] |= signed_hash;
-    }
-    hashing::defaultCompactHashes(
-        /* hashes= */ row_hashes.data(),
-        /* output_hashes= */ &hashes[row],
-        /* length_output= */ 1,
-        /* hashes_per_output_value= */ row_hashes.size());
-    if (_range) {
-      hashes[row] = (hashes[row] * _rehash_a[row] + _rehash_b[row]) %
-                    _prime_mod % *_range;
-    }
+    hashes[row] = hashAt(input, row);
   }
   return hashes;
+}
+
+uint32_t L2Hash::hashAt(const std::vector<float>& input, uint32_t row) const {
+  uint32_t hash = 0;
+  std::vector<uint32_t> row_hashes(_hashes_per_row, 0);
+  for (size_t i = 0; i < _hashes_per_row; i++) {
+    const size_t idx = row * _hashes_per_row + i;
+    // Need explicit floor so negative numbers are rounded correctly.
+    // E.g. without the explicit floor, -1.5 is rounded to -1 instead of -2.
+    const int32_t signed_hash =
+        std::floor((dot(_projections[idx], input) + _biases[idx]) / _scale);
+    // Use bitwise OR rather than assignment to preserve bits
+    row_hashes[i] |= signed_hash;
+  }
+  hashing::defaultCompactHashes(
+      /* hashes= */ row_hashes.data(),
+      /* output_hashes= */ &hash,
+      /* length_output= */ 1,
+      /* hashes_per_output_value= */ row_hashes.size());
+  if (_range) {
+    hash = (hash * _rehash_a[row] + _rehash_b[row]) %
+                  _prime_mod % *_range;
+  }
+  return hash;
 }
 
 std::vector<std::vector<float>> L2Hash::make_projections(
@@ -137,47 +170,68 @@ float L2Hash::dot(const std::vector<float>& a, const std::vector<float>& b) {
   return prod;
 }
 
-void RACE::update(const std::vector<float>& key, float value) {
-  assert(value.size() == _val_dim);
-  size_t skip_buckets = 0;
-  for (const uint32_t bucket : _hash->hash(key)) {
-    _arrays[skip_buckets + bucket] += value;
-    skip_buckets += _hash->range();
+void RACE::update(const std::vector<std::vector<float>>& keys, const std::vector<float>& values) {
+  if (!_arrays.empty()) {
+    // TODO(Geordie): Another opportunity to speed up: hash once instead of separately
+    // per top and bottom.
+#pragma omp parallel for default(none) shared(keys, values)
+    for (uint32_t row = 0; row < _hash->rows(); row++) {
+      const size_t offset = row * _hash->range();
+      for (size_t i = 0; i < keys.size(); i++) {
+        _arrays[offset + _hash->hashAt(keys[i], row)] += values[i];
+      }
+    }
+  }
+  if (!_sparse_arrays.empty()) {
+#pragma omp parallel for default(none) shared(keys, values)
+    for (uint32_t row = 0; row < _hash->rows(); row++) {
+      for (size_t i = 0; i < keys.size(); i++) {
+        _sparse_arrays[row][_hash->hashAt(keys[i], row)] += values[i];
+      }
+    }
   }
 }
 
 float RACE::query(const std::vector<float>& key) const {
   float value = 0;
-  size_t skip_buckets = 0;
-  for (const uint32_t bucket : _hash->hash(key)) {
-    value += _arrays[skip_buckets + bucket];
-    skip_buckets += _hash->range();
+  if (!_arrays.empty()) {
+    size_t skip_buckets = 0;
+    for (const uint32_t bucket : _hash->hash(key)) {
+      value += _arrays[skip_buckets + bucket];
+      skip_buckets += _hash->range();
+    }
+  }
+  if (!_sparse_arrays.empty()) {
+    size_t row = 0;
+    for (const uint32_t bucket : _hash->hash(key)) {
+      if (_sparse_arrays[row].count(bucket)) {
+        value += _sparse_arrays[row].at(bucket);
+      }
+      row++;
+    }
   }
   value /= _hash->rows();
   return value;
 }
 
 void RACE::debug(const std::vector<float>& key) const {
-  size_t row = 0;
-  size_t offset = 0;
-  for (const uint32_t bucket : _hash->hash(key)) {
-    std::cout << "row=" << row << " offset=" << offset << " bucket=" << bucket
-              << " value=" << _arrays[offset + bucket] << std::endl;
-    offset += _hash->range();
-    row++;
+  if (!_arrays.empty()) {
+    size_t row = 0;
+    size_t offset = 0;
+    for (const uint32_t bucket : _hash->hash(key)) {
+      std::cout << "row=" << row << " offset=" << offset << " bucket=" << bucket
+                << " value=" << _arrays[offset + bucket] << std::endl;
+      offset += _hash->range();
+      row++;
+    }
   }
-}
-
-void RACE::merge(const RACE& other, uint32_t threads) {
-  assert(other._hash == _hash);
-  const size_t per_thread = (_arrays.size() + threads - 1) / threads;
-#pragma omp parallel for default(none) shared(other, threads, per_thread)
-  for (uint32_t thread = 0; thread < threads; thread++) {
-    const size_t start = thread * per_thread;
-    const size_t end =
-        std::min<size_t>((thread + 1) * per_thread, _arrays.size());
-    for (size_t i = start; i < end; i++) {
-      _arrays[i] += other._arrays[i];
+  if (!_sparse_arrays.empty()) {
+    size_t row = 0;
+    for (const uint32_t bucket : _hash->hash(key)) {
+      const float val = _sparse_arrays[row].count(bucket) ? _sparse_arrays[row].at(bucket) : 0;
+      std::cout << "row=" << row << " bucket=" << bucket
+                << " value=" << val << std::endl;
+      row++;
     }
   }
 }
@@ -196,47 +250,9 @@ void RACE::print() const {
 void NadarayaWatsonSketch::train(const std::vector<std::vector<float>>& inputs,
                                  const std::vector<float>& outputs) {
   assert(inputs.size() == outputs.size());
-
-  for (size_t i = 0; i < inputs.size(); i++) {
-    _top.update(inputs[i], outputs[i]);
-    _bottom.update(inputs[i], 1.0);
-  }
-}
-
-void NadarayaWatsonSketch::trainParallel(
-    const std::vector<std::vector<float>>& inputs,
-    const std::vector<float>& outputs, uint32_t threads) {
-  assert(inputs.size() == outputs.size());
-
-  std::vector<RACE> tops;
-  std::vector<RACE> bottoms;
-  tops.reserve(threads);
-  bottoms.reserve(threads);
-  for (uint32_t thread = 0; thread < threads; thread++) {
-    tops.emplace_back(_top.hash());
-    bottoms.emplace_back(_bottom.hash());
-  }
-
-  const size_t per_thread = (inputs.size() + threads - 1) / threads;
-
-#pragma omp parallel for default(none) \
-    shared(inputs, outputs, threads, tops, bottoms, per_thread)
-  for (uint32_t thread = 0; thread < threads; thread++) {
-    const size_t start = thread * per_thread;
-    const size_t end =
-        std::min<size_t>((thread + 1) * per_thread, inputs.size());
-    for (size_t i = start; i < end; i++) {
-      tops[thread].update(inputs[i], outputs[i]);
-      bottoms[thread].update(inputs[i], 1.0);
-    }
-  }
-
-  for (const auto& top : tops) {
-    _top.merge(top, threads);
-  }
-  for (const auto& bottom : bottoms) {
-    _bottom.merge(bottom, threads);
-  }
+  const std::vector<float> ones(outputs.size(), 1.0);
+  _top.update(inputs, outputs);
+  _bottom.update(inputs, ones);
 }
 
 std::vector<float> NadarayaWatsonSketch::predict(

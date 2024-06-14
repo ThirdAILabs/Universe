@@ -4,8 +4,6 @@ from thirdai.bolt import SRP, L2Hash, SRPKernel, L2Kernel
 from matplotlib import pyplot as plt
 import os
 from pathlib import Path
-from lsh import PStableHash
-import tensorflow as tf
 
 
 CUR_DIR = Path(os.path.dirname(__file__))
@@ -86,19 +84,6 @@ def make_sweeping_l2_distance_vectors(num_vectors, dim):
     return np.array([start + dist * unit_delta for dist in distances])
 
 
-def make_ben_l2_hasher(input_dim, rows, scale):
-    tf.compat.v1.enable_eager_execution()
-    return PStableHash(dimension=input_dim, num_hashes=rows, scale=scale, p=2)
-
-
-def get_ben_l2_hashes(hasher: PStableHash, query):
-    tf.compat.v1.enable_eager_execution()
-    ar = np.array(query).astype(np.float32).reshape(1, -1)
-    val = tf.convert_to_tensor(ar, dtype=tf.float32)
-    h = hasher.hash(val)
-    return h.numpy()[0]
-
-
 def compute_theoretical_l2hash_probabilities(vector, matrix, bandwidth, power):
     kernel = L2Kernel(bandwidth, power)
     return np.array([kernel.on(vector, other) for other in matrix])
@@ -137,16 +122,7 @@ def test_l2hash():
                 plt.scatter(
                     l2_distances, collisions, label=f"{hashes_per_row=} {rows=}"
                 )
-                # ben_hash = make_ben_l2_hasher(input_dim, rows, scale)
-                # query_hashes = get_ben_l2_hashes(ben_hash, query_vector)
-                # collisions = [
-                #     percent_collisions(query_hashes, get_ben_l2_hashes(ben_hash, key))
-                #     for key in key_vectors
-                # ]
-                # plt.scatter(
-                #     l2_distances, collisions, label=f"Ben {hashes_per_row=} {rows=}"
-                # )
-
+                
             theoreticals = compute_theoretical_l2hash_probabilities(
                 query_vector, key_vectors, scale, hashes_per_row
             )

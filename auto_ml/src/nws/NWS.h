@@ -23,6 +23,7 @@ namespace thirdai::automl {
 class Hash {
  public:
   virtual std::vector<uint32_t> hash(const std::vector<float>& input) const = 0;
+  virtual uint32_t hashAt(const std::vector<float>& input, uint32_t row) const = 0;
   virtual std::string name() const = 0;
   virtual size_t rows() const = 0;
   virtual size_t range() const = 0;
@@ -36,6 +37,8 @@ class MockHash final : public Hash {
           registered_hashes);
 
   std::vector<uint32_t> hash(const std::vector<float>& input) const final;
+
+  uint32_t hashAt(const std::vector<float>& input, uint32_t row) const final;
 
   std::string name() const final { return "MockHash"; }
 
@@ -55,6 +58,8 @@ class SRP final : public Hash {
       : _srp(input_dim, hashes_per_row, rows, seed) {}
 
   std::vector<uint32_t> hash(const std::vector<float>& input) const final;
+
+  uint32_t hashAt(const std::vector<float>& input, uint32_t row) const final;
 
   std::string name() const final { return "SRP"; }
 
@@ -80,6 +85,8 @@ class L2Hash final : public Hash {
         _range(range) {}
 
   std::vector<uint32_t> hash(const std::vector<float>& input) const final;
+
+  uint32_t hashAt(const std::vector<float>& input, uint32_t row) const final;
 
   std::string name() const final { return "L2"; }
 
@@ -114,42 +121,55 @@ class L2Hash final : public Hash {
 
 class RACE {
  public:
-  explicit RACE(std::shared_ptr<Hash> hash)
-      : _arrays(hash->rows() * hash->range()), _hash(std::move(hash)) {}
+  explicit RACE(std::shared_ptr<Hash> hash, bool sparse=false)
+      : _arrays(sparse ? 0 : hash->rows() * hash->range()),
+        _sparse_arrays(sparse ? hash->rows() : 0),
+        _hash(std::move(hash)) {}
 
-  void update(const std::vector<float>& key, float value);
+  void update(const std::vector<std::vector<float>>& keys, const std::vector<float>& values);
 
   float query(const std::vector<float>& key) const;
 
   void debug(const std::vector<float>& key) const;
 
-  void merge(const RACE& other, uint32_t threads);
-
   auto hash() { return _hash; }
 
   void print() const;
 
+  size_t bytesUsed() const {
+    if (!_arrays.empty()) {
+      return _arrays.size() * 4;
+    }
+    size_t bytes = 0;
+    for (const auto& map : _sparse_arrays) {
+      // 4 bytes for key, 4 bytes for value.
+      // Doesn't account for other data structure overheads.
+      bytes += map.size() * 8;
+    }
+    return bytes;
+  }
+
  private:
   std::vector<float> _arrays;
+  std::vector<std::unordered_map<uint32_t, float>> _sparse_arrays;
   std::shared_ptr<Hash> _hash;
 };
 
 class NadarayaWatsonSketch {
  public:
-  explicit NadarayaWatsonSketch(const std::shared_ptr<Hash>& hash)
-      : _top(hash), _bottom(hash) {}
+  explicit NadarayaWatsonSketch(const std::shared_ptr<Hash>& hash, bool sparse)
+      : _top(hash, sparse), _bottom(hash, sparse) {}
 
   void train(const std::vector<std::vector<float>>& inputs,
              const std::vector<float>& outputs);
-
-  void trainParallel(const std::vector<std::vector<float>>& inputs,
-                     const std::vector<float>& outputs, uint32_t threads);
 
   std::vector<float> predict(
       const std::vector<std::vector<float>>& inputs) const;
 
   std::vector<float> predictDebug(
       const std::vector<std::vector<float>>& inputs) const;
+  
+  size_t bytesUsed() const { return _top.bytesUsed() + _bottom.bytesUsed(); }
 
  private:
   RACE _top, _bottom;
