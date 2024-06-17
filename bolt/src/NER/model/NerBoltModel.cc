@@ -69,10 +69,17 @@ bolt::ModelPtr NerBoltModel::initializeBoltModel(
   concat = bolt::Concatenate::make()->apply(
       std::vector<bolt::ComputationPtr>({tokens_embedding, weighted_sum}));
 
-  auto output =
-      bolt::FullyConnected::make(num_labels, concat->dim(), 1, "softmax",
-                                 /* sampling= */ nullptr, /* use_bias= */ true)
+
+  auto hidden =
+      bolt::FullyConnected::make(512, concat->dim(), 1, "relu",
+                                 /* sampling= */ nullptr, /* use_bias= */ false)
           ->apply(concat);
+
+
+  auto output =
+      bolt::FullyConnected::make(num_labels, hidden->dim(), 1, "softmax",
+                                 /* sampling= */ nullptr, /* use_bias= */ false)
+          ->apply(hidden);
 
   auto labels = bolt::Input::make(num_labels);
   auto loss = bolt::CategoricalCrossEntropy::make(output, labels);
