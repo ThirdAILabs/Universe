@@ -68,7 +68,7 @@ class NER : public std::enable_shared_from_this<NER> {
                          const std::vector<std::string>& val_metrics);
 
   std::vector<std::vector<std::vector<std::pair<std::string, float>>>>
-  getNerTags(std::vector<std::vector<std::string>>& tokens, uint32_t top_k);
+  getNerTags(const std::vector<std::string>& sentences, uint32_t top_k);
 
   ar::ConstArchivePtr toArchive() const;
 

@@ -160,9 +160,10 @@ metrics::History NerBoltModel::train(
 }
 
 std::vector<std::vector<std::vector<std::pair<std::string, float>>>>
-NerBoltModel::getTags(std::vector<std::vector<std::string>> tokens,
+NerBoltModel::getTags(const std::vector<std::string>& sentences,
                       uint32_t top_k) const {
-  return _classifier->getTags(tokens, top_k, _label_to_tag_map, _tag_to_label);
+  return _classifier->getTags(sentences, top_k, _label_to_tag_map,
+                              _tag_to_label);
 }
 
 ar::ConstArchivePtr NerBoltModel::toArchive() const {

@@ -371,9 +371,6 @@ std::vector<SentenceTags> UDTNer::predictTags(
     tokens.push_back(text::split(phrase, ' '));
   }
 
-  auto sentence_tokens = data::ArrayColumn<std::string>::make(
-      std::vector<std::vector<std::string>>{tokens});
-
   auto sentence_columns =
       data::ValueColumn<std::string>::make(std::vector<std::string>{sentences});
 
@@ -397,7 +394,7 @@ std::vector<SentenceTags> UDTNer::predictTags(
     auto scores = _model->forward(batch, sparse_inference).at(0);
 
     for (size_t i = 0; i < scores->batchSize(); i++) {
-      while (token_index == sentence_tokens->row(sentence_index).size()) {
+      while (token_index == tokens[sentence_index].size()) {
         sentence_index++;
         token_index = 0;
       }
@@ -416,9 +413,7 @@ std::vector<SentenceTags> UDTNer::predictTags(
         }
 
         bolt::NER::applyPunctAndStopWordFilter(
-            data.getArrayColumn<std::string>(_tokens_column)
-                ->row(sentence_index)[token_index],
-            tags, _label_to_tag[0]);
+            tokens[sentence_index][token_index], tags, _label_to_tag[0]);
 
         // If the default tag is the the top prediction but has a score < 0.9
         // then using the next top prediction improves accuracy.

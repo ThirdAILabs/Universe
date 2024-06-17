@@ -29,11 +29,28 @@ ColumnMap NerTokenFromStringArray::apply(ColumnMap columns,
                                          State& state) const {
   (void)state;
 
-  auto texts = columns.getArrayColumn<std::string>(_source_column);
+  auto text_columm = columns.getValueColumn<std::string>(_source_column);
+  ValueColumnBasePtr<std::string> tags_column;
+  if (_target_column) {
+    tags_column = columns.getValueColumn<std::string>(_target_column.value());
+  }
+  std::vector<std::vector<std::string>> text_token_vectors(
+      text_columm->numRows());
+  std::vector<std::vector<std::string>> tags_token_vectors(
+      text_columm->numRows());
+  for (size_t i = 0; i < text_columm->numRows(); i++) {
+    text_token_vectors[i] = text::split(text_columm->value(i), ' ');
+    if (_target_column) {
+      tags_token_vectors[i] = text::split(tags_column->value(i), ' ');
+    }
+  }
+
+  auto texts = ArrayColumn<std::string>::make(std::move(text_token_vectors));
   ArrayColumnBasePtr<std::string> tags;
   if (_target_column) {
-    tags = columns.getArrayColumn<std::string>(*_target_column);
+    tags = ArrayColumn<std::string>::make(std::move(tags_token_vectors));
   }
+
   auto sample_offsets = thirdai::data::computeOffsets(texts);
 
   std::vector<std::string> tokens(sample_offsets.back());

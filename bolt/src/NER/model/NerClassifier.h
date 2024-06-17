@@ -43,7 +43,7 @@ class NerClassifier {
                              size_t batch_size, bool shuffle) const;
 
   std::vector<PerTokenListPredictions> getTags(
-      std::vector<std::vector<std::string>> tokens, uint32_t top_k,
+      const std::vector<std::string>& sentences, uint32_t top_k,
       const std::unordered_map<uint32_t, std::string>& label_to_tag_map,
       const std::unordered_map<std::string, uint32_t>& tag_to_label_map) const;
 

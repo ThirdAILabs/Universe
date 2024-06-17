@@ -26,8 +26,8 @@ metrics::History NER::train(const dataset::DataSourcePtr& train_data,
 }
 
 std::vector<std::vector<std::vector<std::pair<std::string, float>>>>
-NER::getNerTags(std::vector<std::vector<std::string>>& tokens, uint32_t top_k) {
-  return _ner_backend_model->getTags(tokens, top_k);
+NER::getNerTags(const std::vector<std::string>& sentences, uint32_t top_k) {
+  return _ner_backend_model->getTags(sentences, top_k);
 }
 
 ar::ConstArchivePtr NER::toArchive() const {

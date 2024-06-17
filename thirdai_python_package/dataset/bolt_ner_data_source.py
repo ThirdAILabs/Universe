@@ -1,10 +1,11 @@
 import json
+import pandas as pd
 
 from thirdai.dataset.data_source import PyDataSource
 
 
 def tokenize_text(tokenizer, text):
-    tokens = tokenizer.encode(text)
+    tokens = tokenizer.encode(text.strip())
     return " ".join(map(str, tokens))
 
 
@@ -44,34 +45,24 @@ class NerDataSource(PyDataSource):
                 "Cannot load a datasource with either 'tokens_column' or 'tags_column' set to None. Please provide valid column names."
             )
 
-        with open(self.file_path, "r") as file:
-            for line in file:
+        dataframe = pd.read_csv(self.file_path)
 
-                json_obj = json.loads(line.strip())
-                if not all(
-                    column in json_obj
-                    for column in [self.tags_column, self.tokens_column]
-                ):
-                    raise ValueError(
-                        f"{self.tags_column} or {self.tokens_column} doesn't exist in the column, line: {line}"
-                    )
-                if self.pretrained:
-                    json_obj[self.tokens_column] = [
-                        tokenize_text(self.tokenizer, token)
-                        for token in json_obj[self.tokens_column]
-                    ]
+        yield f"{self.tokens_column},{self.tags_column}"
 
-                data = json.dumps(json_obj)
+        for source, target in zip(
+            dataframe[self.tokens_column], dataframe[self.tags_column]
+        ):
+            source = source.replace(",", "")
+            # Preprocess source text if using a pretrained model
+            if self.pretrained:
+                source = " ".join(tokenize_text(self.tokenizer, source))
 
-                yield data
+            yield f"{source},{target}"
 
-    def inference_featurizer(self, sentence_tokens_list):
+    def inference_featurizer(self, sentences):
         if self.pretrained:
-            return [
-                [tokenize_text(self.tokenizer, token) for token in sentence_tokens]
-                for sentence_tokens in sentence_tokens_list
-            ]
-        return sentence_tokens_list
+            return [tokenize_text(self.tokenizer, sentence) for sentence in sentences]
+        return sentences
 
     def resource_name(self) -> str:
         return self.file_path

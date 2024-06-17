@@ -18,13 +18,12 @@ def sample_training_data():
         ),
         ("The Eiffel Tower is in France", ["O", "B-LOC", "I-LOC", "O", "O", "B-LOC"]),
     ]
-    filename = "ner_data.json"
+    filename = "ner_data.csv"
     with open(filename, "w") as file:
+        file.write("source,target\n")
         for sentence, tags in sentences:
-            tokens = sentence.split()
-            data = {"source": tokens, "target": tags}
-            json_line = json.dumps(data)
-            file.write(json_line + "\n")
+            line = f"{sentence},{' '.join(tags)}"
+            file.write(line + "\n")
     return filename
 
 
@@ -84,14 +83,13 @@ def test_udt_ner_backend(sample_training_data):
         val_metrics=["loss"],
     )
 
-    texts = [
-        ["Ram", "is", "going", "to", "Delhi"],
-        ["Shyam", "is", "going", "to", "Kolhapur"],
-    ]
+    texts = ["Ram is going to Delhi", "Shyam is going to Kolhapur"]
 
     results = udt_ner_model.predict_batch(texts)
 
-    assert all([len(text) == len(result) for text, result in zip(texts, results)])
+    assert all(
+        [len(text.split(" ")) == len(result) for text, result in zip(texts, results)]
+    )
 
     udt_ner_model.save("ner_model")
     udt_ner_model = bolt.UniversalDeepTransformer.NER.load("ner_model")
@@ -135,13 +133,12 @@ def test_pretrained_ner_bolt_backend(sample_training_data, bolt_pretrained):
         val_metrics=["loss"],
     )
 
-    texts = [
-        ["Ram", "is", "going", "to", "Delhi"],
-        ["Shyam", "is", "going", "to", "Kolhapur"],
-    ]
+    texts = ["Ram is going to Delhi", "Shyam is going to Kolhapur"]
     results = bolt_ner_model.predict_batch(texts)
 
-    assert all([len(text) == len(result) for text, result in zip(texts, results)])
+    assert all(
+        [len(text.split(" ")) == len(result) for text, result in zip(texts, results)]
+    )
 
     bolt_ner_model.save("ner_model")
     bolt_ner_model = bolt.UniversalDeepTransformer.NER.load("ner_model")
@@ -189,12 +186,11 @@ def test_pretrained_ner_udt_backend(sample_training_data, udt_pretrained):
         val_metrics=["loss"],
     )
 
-    texts = [
-        ["Ram", "is", "going", "to", "Delhi"],
-        ["Shyam", "is", "going", "to", "Kolhapur"],
-    ]
+    texts = ["Ram is going to Delhi", "Shyam is going to Kolhapur"]
     results = udt_ner_model.predict_batch(texts)
-    assert all([len(text) == len(result) for text, result in zip(texts, results)])
+    assert all(
+        [len(text.split(" ")) == len(result) for text, result in zip(texts, results)]
+    )
 
     udt_ner_model.save("ner_model")
     udt_ner_model = bolt.UniversalDeepTransformer.NER.load("ner_model")

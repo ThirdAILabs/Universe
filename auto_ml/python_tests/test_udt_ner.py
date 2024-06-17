@@ -3,6 +3,7 @@ import os
 import random
 import re
 import string
+import pandas as pd
 
 import pytest
 from thirdai import bolt, data, dataset
@@ -27,6 +28,7 @@ def random_email():
 
 def generate_data(filename, n_rows):
     with open(filename, "w") as file:
+        file.write(f"{TOKENS},{TAGS}\n")
         for _ in range(n_rows):
             email_tokens = ["email", "is", random_email(), "for", "work"]
             email_tags = ["O", "O", "email", "O", "O"]
@@ -39,7 +41,13 @@ def generate_data(filename, n_rows):
                 TAGS: email_tags + credit_card_tags,
             }
 
-            file.write(json.dumps(sample) + "\n")
+            sample = (
+                " ".join(email_tokens + credit_card_tokens)
+                + ","
+                + " ".join(email_tags + credit_card_tags)
+            )
+
+            file.write(sample + "\n")
 
 
 @pytest.fixture(scope="session")
@@ -60,10 +68,11 @@ def ner_dataset():
 def load_eval_samples(test):
     samples = []
     labels = []
-    for line in open(test):
-        data = json.loads(line)
-        samples.append({TOKENS: " ".join(data[TOKENS])})
-        labels.append(data[TAGS])
+    df = pd.read_csv(test)
+
+    for tokens, tags in zip(df[TOKENS], df[TAGS]):
+        samples.append({TOKENS: tokens})
+        labels.append(tags.split(" "))
     return samples, labels
 
 
@@ -135,23 +144,21 @@ def test_udt_ner(ner_dataset):
     assert metrics["val_categorical_accuracy"][-1] >= 0.9
 
     acc_before_save = evaluate(model, test)
-    print(f"{acc_before_save=}")
     assert acc_before_save > 0.9
 
     save_path = "udt_ner_model.bolt"
     model.save(save_path)
 
     model = bolt.UniversalDeepTransformer.load(save_path)
+    print("loaded model")
     os.remove(save_path)
 
     acc_after_load = evaluate(model, test)
-    print(f"{acc_after_load=}")
     assert acc_after_load > 0.9
 
     model.train(test, epochs=1, learning_rate=0.001)
 
     acc_after_finetune = evaluate(model, test)
-    print(f"{acc_after_finetune=}")
     assert acc_after_finetune > 0.9
 
 

@@ -17,8 +17,7 @@ class NerModelInterface {
   virtual ~NerModelInterface() = default;
 
   virtual std::vector<std::vector<std::vector<std::pair<std::string, float>>>>
-  getTags(std::vector<std::vector<std::string>> tokens,
-          uint32_t top_k) const = 0;
+  getTags(const std::vector<std::string>& sentences, uint32_t top_k) const = 0;
 
   virtual metrics::History train(
       const dataset::DataSourcePtr& train_data, float learning_rate,

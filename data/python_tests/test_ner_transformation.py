@@ -31,8 +31,8 @@ def test_inequal_number_of_tokens_and_tags():
 
     columns = data.ColumnMap(
         {
-            "source": data.columns.StringArrayColumn([["I", "am", "Groot"]]),
-            "target": data.columns.StringArrayColumn([["O", "O", "EMAIL", "NAME"]]),
+            "source": data.columns.StringArrayColumn(["I am Groot"]),
+            "target": data.columns.StringArrayColumn(["O O EMAIL NAME"]),
         }
     )
 
@@ -59,8 +59,8 @@ def test_label_not_in_tag_map():
 
     columns = data.ColumnMap(
         {
-            "source": data.columns.StringArrayColumn([["I", "am", "Groot"]]),
-            "target": data.columns.StringArrayColumn([["O", "O", "RANDOM"]]),
+            "source": data.columns.StringArrayColumn(["I am Groot"]),
+            "target": data.columns.StringArrayColumn(["O O RANDOM"]),
         }
     )
 

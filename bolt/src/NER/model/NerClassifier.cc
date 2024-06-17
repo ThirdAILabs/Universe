@@ -1,6 +1,7 @@
 #include "NerClassifier.h"
 #include <bolt/src/NER/Defaults.h>
 #include <data/src/columns/ArrayColumns.h>
+#include <data/src/columns/ValueColumns.h>
 #include <data/src/transformations/ner/NerDyadicDataProcessor.h>
 #include <utils/text/Stopwords.h>
 #include <cctype>
@@ -63,9 +64,8 @@ metrics::History NerClassifier::train(
 data::Loader NerClassifier::getDataLoader(const dataset::DataSourcePtr& data,
                                           size_t batch_size,
                                           bool shuffle) const {
-  auto data_iter =
-      data::JsonIterator::make(data, {_tokens_column, _tags_column}, 1000);
-  return data::Loader(data_iter, _train_transforms, nullptr, _bolt_inputs,
+  auto csv_iter = data::CsvIterator::make(data, ',', 1000);
+  return data::Loader(csv_iter, _train_transforms, nullptr, _bolt_inputs,
                       {data::OutputColumns(_tags_column)},
                       /* batch_size= */ batch_size,
                       /* shuffle= */ shuffle, /* verbose= */ true,
@@ -73,19 +73,26 @@ data::Loader NerClassifier::getDataLoader(const dataset::DataSourcePtr& data,
 }
 
 std::vector<PerTokenListPredictions> NerClassifier::getTags(
-    std::vector<std::vector<std::string>> tokens, uint32_t top_k,
+    const std::vector<std::string>& sentences, uint32_t top_k,
     const std::unordered_map<uint32_t, std::string>& label_to_tag_map,
     const std::unordered_map<std::string, uint32_t>& tag_to_label_map) const {
+  std::vector<std::vector<std::string>> tokens;
+  tokens.reserve(sentences.size());
+  for (const auto& phrase : sentences) {
+    tokens.push_back(text::split(phrase, ' '));
+  }
+
   std::vector<PerTokenListPredictions> tags_and_scores;
-  tags_and_scores.reserve(tokens.size());
+  tags_and_scores.reserve(sentences.size());
 
   for (const auto& sub_vector : tokens) {
     PerTokenListPredictions predictions(sub_vector.size());
     tags_and_scores.push_back(predictions);
   }
-  data::ColumnMap data(data::ColumnMap(
-      {{_tokens_column, data::ArrayColumn<std::string>::make(std::move(tokens),
-                                                             std::nullopt)}}));
+
+  auto sentence_columns =
+      data::ValueColumn<std::string>::make(std::vector<std::string>{sentences});
+  auto data = data::ColumnMap({{_tokens_column, sentence_columns}});
 
   // featurize input data
   auto columns = _inference_transforms->applyStateless(data);
@@ -112,8 +119,7 @@ std::vector<PerTokenListPredictions> NerClassifier::getTags(
         token_level_predictions.pop();
       }
       applyPunctAndStopWordFilter(
-          data.getArrayColumn<std::string>(_tokens_column)
-              ->row(sub_vector_index)[token_index],
+          tokens[sub_vector_index][token_index],
           tags_and_scores[sub_vector_index][token_index],
           label_to_tag_map.at(0));
 
