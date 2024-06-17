@@ -1,7 +1,9 @@
 #include "CommonPatterns.h"
 #include <data/src/transformations/ner/rules/Pattern.h>
+#include <utils/text/StringManipulation.h>
 #include <optional>
 #include <stdexcept>
+#include <string>
 
 namespace thirdai::data::ner {
 
@@ -70,6 +72,40 @@ std::optional<ValidatorSubMatch> medicalLicenseLuhnCheck(
     return {{0, number.size()}};
   }
   return std::nullopt;
+}
+
+std::optional<ValidatorSubMatch> ipAddressValidator(const std::string& addr) {
+  if (addr.find(':') != std::string::npos) {
+    // ipv6
+    auto double_colon = addr.find("::");
+    if (double_colon != std::string::npos) {
+      if (addr.find("::", double_colon + 2) != std::string::npos) {
+        return std::nullopt;
+      }
+    } else {
+      auto parts = text::split(addr, ':');
+      if (parts.size() != 8) {
+        return std::nullopt;
+      }
+    }
+  } else {
+    // ipv4
+    auto parts = text::split(addr, '.');
+    if (parts.size() != 4) {
+      return std::nullopt;
+    }
+
+    for (auto part : parts) {
+      if (part.size() > 1 && part[0] == '0') {
+        return std::nullopt;
+      }
+      int value = std::stoi(part);
+      if (value < 0 || value > 255) {
+        return std::nullopt;
+      }
+    }
+  }
+  return ValidatorSubMatch(0, addr.size());
 }
 
 RulePtr creditCardPattern() {
@@ -227,6 +263,55 @@ RulePtr cvvPattern() {
       });
 }
 
+RulePtr usDriversLicensePattern() {
+  // https://ntsi.com/drivers-license-format/
+  return Pattern::make(
+      /*entity=*/"USDRIVERSLICENSE",
+      /*pattern=*/
+      R"(\b([A-Z][0-9]{3,6}|[A-Z][0-9]{5,9}|[A-Z][0-9]{6,8}|[A-Z][0-9]{4,8}|[A-Z][0-9]{9,11}|[A-Z]{1,2}[0-9]{5,6}|H[0-9]{8}|V[0-9]{6}|X[0-9]{8}|A-Z]{2}[0-9]{2,5}|[A-Z]{2}[0-9]{3,7}|[0-9]{2}[A-Z]{3}[0-9]{5,6}|[A-Z][0-9]{13,14}|[A-Z][0-9]{18}|[A-Z][0-9]{6}R|[A-Z][0-9]{9}|[A-Z][0-9]{1,12}|[0-9]{9}[A-Z]|[A-Z]{2}[0-9]{6}[A-Z]|[0-9]{8}[A-Z]{2}|[0-9]{3}[A-Z]{2}[0-9]{4}|[A-Z][0-9][A-Z][0-9][A-Z]|[0-9]{7,8}[A-Z])\b)",
+      /*pattern_score=*/0.1,
+      /*context_keywords=*/
+      {
+          {"drive", 0.5},
+          {"license", 0.5},
+          {"permit", 0.4},
+          {"driving", 0.3},
+          {"id", 0.4},
+          {"identification", 0.4},
+      });
+}
+
+RulePtr usPassportPattern() {
+  return Pattern::make(
+      /*entity=*/"USPASSPORT",
+      /*pattern=*/R"(\b([A-Z][0-9]{8}|[0-9]{9})\b)",
+      /*pattern_score*/ 0.1,
+      /*context_keywords=*/
+      {
+          {"passport", 0.7},
+          {"us", 0.3},
+          {"travel", 0.3},
+          {"united", 0.3},
+          {"states", 0.3},
+      });
+}
+
+RulePtr ipAddressPattern() {
+  // https://techhub.hpe.com/eginfolib/networking/docs/switches/5120si/cg/5998-8491_l3-ip-svcs_cg/content/436042795.htm#:~:text=An%20IPv6%20address%20is%20divided,%3A09C0%3A876A%3A130B.
+  return Pattern::make(
+      /*entity=*/"IPADDRESS",
+      /*pattern=*/
+      R"(\b(\d{1,3}(\.\d{1,3}){3}\b)|((::)?[\da-fA-F]{1,4}(:?:[\da-fA-F]{1,4}){0,7}(::|\b)))",
+      /*pattern_score=*/0.6,
+      /*context_keywords=*/
+      {
+          {"ip", 0.3},
+          {"address", 0.3},
+          {"internet", 0.2},
+      },
+      /*validator=*/ipAddressValidator);
+}
+
 RulePtr getRuleForEntity(const std::string& entity) {
   if (entity == "CREDITCARDNUMBER") {
     return creditCardPattern();
@@ -251,6 +336,15 @@ RulePtr getRuleForEntity(const std::string& entity) {
   }
   if (entity == "CREDITCARDCVV") {
     return cvvPattern();
+  }
+  if (entity == "USDRIVERSLICENSE") {
+    return usDriversLicensePattern();
+  }
+  if (entity == "USPASSPORT") {
+    return usPassportPattern();
+  }
+  if (entity == "IPADDRESS") {
+    return ipAddressPattern();
   }
 
   throw std::invalid_argument("No rule for entity '" + entity + "'.");

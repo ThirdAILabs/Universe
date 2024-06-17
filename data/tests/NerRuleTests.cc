@@ -157,6 +157,71 @@ TEST(NerRuleTests, Iban) {
   checkNoMatch(rule, "my iban is DE82 3704 0044 0532 0130 00.");
 }
 
+TEST(NerRuleTests, USDriversLicense) {
+  auto rule = usDriversLicensePattern();
+
+  checkMatch(rule, "my info is A123456 something else", "USDRIVERSLICENSE", 0.1,
+             "A123456");
+
+  checkMatch(rule, "license no. AB1234 ...", "USDRIVERSLICENSE", 0.6, "AB1234");
+
+  checkMatch(rule, "AB1234 is my id", "USDRIVERSLICENSE", 0.5, "AB1234");
+
+  checkNoMatch(rule, "my drivers license is 20ABCDE249 text");
+}
+
+TEST(NerRuleTests, USPassport) {
+  auto rule = usPassportPattern();
+
+  checkMatch(rule, "my number is C24002948", "USPASSPORT", 0.1, "C24002948");
+
+  checkMatch(rule, "my passport is 824002948", "USPASSPORT", 0.8, "824002948");
+
+  checkMatch(rule, "my travel# is 824002948 for the us", "USPASSPORT", 0.7,
+             "824002948");
+
+  checkNoMatch(rule, "my travel# is 8242948 for the us");
+}
+
+TEST(NerRuleTests, IPAddress) {
+  auto rule = ipAddressPattern();
+
+  checkMatch(rule, "something 123.2.49.50 something", "IPADDRESS", 0.6,
+             "123.2.49.50");
+
+  checkMatch(rule, "ip 123.2.49.50 address something", "IPADDRESS", 1.0,
+             "123.2.49.50");
+
+  checkNoMatch(rule, "something 123.2.492.50 something");
+
+  checkNoMatch(rule, "something 123.2.50 something");
+
+  checkNoMatch(rule, "something 123.02.50 something");
+
+  checkMatch(rule, "text 2001:0000:130F:0000:0000:09C0:876A:130B text",
+             "IPADDRESS", 0.6, "2001:0000:130F:0000:0000:09C0:876A:130B");
+
+  checkMatch(rule, "text 2001:0:130F:0:0:9C0:876A:130B text", "IPADDRESS", 0.6,
+             "2001:0:130F:0:0:9C0:876A:130B");
+
+  checkMatch(rule, "text 2001:0:130F::9C0:876A:130B text", "IPADDRESS", 0.6,
+             "2001:0:130F::9C0:876A:130B");
+
+  checkMatch(rule, "text ::130F:0:0:9C0:876A:130B text", "IPADDRESS", 0.6,
+             "::130F:0:0:9C0:876A:130B");
+
+  checkMatch(rule, "text 2001:0:130F:0:0:9C0:: text", "IPADDRESS", 0.6,
+             "2001:0:130F:0:0:9C0::");
+
+  checkNoMatch(rule, "text ::130F:0:0:9C0::876A:130B text");
+
+  checkNoMatch(rule, "text 130F:0:0:9C0::876A:130B:: text");
+
+  checkNoMatch(rule, "text 130F::0:0:9C0::876A:130B text");
+
+  checkNoMatch(rule, "text 130F:0:0:9C0:876A:130B text");
+}
+
 TEST(NerRuleTests, MultipleRules) {
   RulePtr rule = RuleCollection::make({
       creditCardPattern(),
