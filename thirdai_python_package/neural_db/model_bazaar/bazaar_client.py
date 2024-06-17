@@ -539,7 +539,6 @@ class ModelBazaar(Bazaar):
         """
         super().__init__(base_url, cache_dir)
         self._username = None
-        self._user_id = None
         self._access_token = None
         self._doc_types = ["local", "nfs", "s3"]
 
@@ -564,7 +563,6 @@ class ModelBazaar(Bazaar):
             password (str): The password of the user.
         """
         self.login(email=email, password=password)
-        self._user_id = self._login_instance.user_id
         self._access_token = self._login_instance.access_token
         self._username = self._login_instance.username
 
@@ -677,7 +675,7 @@ class ModelBazaar(Bazaar):
             docs.append(test_doc)
             file_details_list.append({"mode": "test", "location": doc_type})
 
-        url = urljoin(self._base_url, f"jobs/{self._user_id}/train")
+        url = urljoin(self._base_url, f"jobs/train")
         files = [
             (
                 ("files", open(file_path, "rb"))
@@ -845,7 +843,7 @@ class ModelBazaar(Bazaar):
             model (Model): The Model instance.
         """
 
-        url = urljoin(self._base_url, f"jobs/{self._user_id}/train-status")
+        url = urljoin(self._base_url, f"jobs/train-status")
 
         response = http_get_with_error(
             url,
@@ -896,9 +894,8 @@ class ModelBazaar(Bazaar):
         Returns:
             NeuralDBClient: A NeuralDBClient instance.
         """
-        url = urljoin(self._base_url, f"jobs/{self._user_id}/deploy")
+        url = urljoin(self._base_url, f"jobs/deploy")
         params = {
-            "user_id": self._user_id,
             "model_identifier": model_identifier,
             "deployment_name": deployment_name,
             "memory": memory,
@@ -931,7 +928,7 @@ class ModelBazaar(Bazaar):
         Args:
             ndb_client (NeuralDBClient): The NeuralDBClient instance.
         """
-        url = urljoin(self._base_url, f"jobs/{self._user_id}/deploy-status")
+        url = urljoin(self._base_url, f"jobs/deploy-status")
 
         params = {"deployment_identifier": ndb_client.deployment_identifier}
         while True:
@@ -954,7 +951,7 @@ class ModelBazaar(Bazaar):
         Args:
             ndb_client (NeuralDBClient): The NeuralDBClient instance.
         """
-        url = urljoin(self._base_url, f"jobs/{self._user_id}/undeploy")
+        url = urljoin(self._base_url, f"jobs/undeploy")
         params = {
             "deployment_identifier": ndb_client.deployment_identifier,
         }
@@ -971,12 +968,9 @@ class ModelBazaar(Bazaar):
         Returns:
             List[dict]: A list of dictionaries containing information about deployments.
         """
-        url = urljoin(self._base_url, f"jobs/{self._user_id}/list-deployments")
+        url = urljoin(self._base_url, f"jobs/list-deployments")
         response = http_get_with_error(
             url,
-            params={
-                "user_id": self._user_id,
-            },
             headers=auth_header(self._access_token),
         )
 
@@ -1009,7 +1003,7 @@ class ModelBazaar(Bazaar):
         Returns:
             NeuralDBClient: A NeuralDBClient instance.
         """
-        url = urljoin(self._base_url, f"jobs/{self._user_id}/deploy-status")
+        url = urljoin(self._base_url, f"jobs/deploy-status")
 
         response = http_get_with_error(
             url,

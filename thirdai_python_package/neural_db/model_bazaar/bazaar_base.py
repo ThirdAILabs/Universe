@@ -79,7 +79,6 @@ class BazaarEntry(BaseModel):
 class Login:
     base_url: str
     username: str
-    user_id: str
     access_token: str
 
     @staticmethod
@@ -96,9 +95,8 @@ class Login:
 
         content = json.loads(response.content)
         username = content["data"]["user"]["username"]
-        user_id = content["data"]["user"]["user_id"]
         access_token = content["data"]["access_token"]
-        return Login(base_url, username, user_id, access_token)
+        return Login(base_url, username, access_token)
 
 
 def auth_header(access_token):
@@ -175,7 +173,7 @@ class Bazaar:
         if self.is_logged_in():
             url = urljoin(
                 self._login_instance.base_url,
-                f"bazaar/{self._login_instance.user_id}/list",
+                "bazaar/list",
             )
             response = http_get_with_error(
                 url,
@@ -284,7 +282,7 @@ class Bazaar:
         if self.is_logged_in():
             url = urljoin(
                 self._login_instance.base_url,
-                f"bazaar/{self._login_instance.user_id}/model",
+                f"bazaar/model",
             )
             response = http_get_with_error(
                 url,
@@ -379,7 +377,7 @@ class Bazaar:
         if self.is_logged_in():
             url = urljoin(
                 self._login_instance.base_url,
-                f"bazaar/{self._login_instance.user_id}/download",
+                f"bazaar/download",
             )
             response = requests.get(
                 url,
@@ -458,7 +456,7 @@ class Bazaar:
         token_response = http_get_with_error(
             urljoin(
                 self._login_instance.base_url,
-                f"bazaar/{self._login_instance.user_id}/upload-token",
+                f"bazaar/upload-token",
             ),
             headers=auth_header(self._login_instance.access_token),
             params={
@@ -567,7 +565,7 @@ class Bazaar:
         delete_response = http_post_with_error(
             urljoin(
                 self._login_instance.base_url,
-                f"bazaar/{self._login_instance.user_id}/request-delete",
+                f"bazaar/request-delete",
             ),
             headers=auth_header(self._login_instance.access_token),
             json={
