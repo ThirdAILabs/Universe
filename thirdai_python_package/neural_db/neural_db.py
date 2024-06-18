@@ -825,7 +825,7 @@ class NeuralDB:
             List[List[Reference]]: Combines each result of db.search into a list.
         """
         if rerank and top_k_rerank < top_k:
-            raise ValueError("top_k_rerank should not be larger than top_k.")
+            raise ValueError("top_k_rerank should not be smaller than top_k.")
         matching_entities = None
         top_k_to_search = top_k_rerank if rerank else top_k
         if constraints:
