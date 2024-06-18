@@ -299,7 +299,7 @@ TEST(InvertedIndexTests, IndexExistingDocIdThrows) {
   try {
     index.index(ids, docs);
   } catch (const std::runtime_error& e) {
-    EXPECT_STREQ("Document with id 0 is already in InvertedIndex.", e.what());
+    EXPECT_STREQ("Document with id 0 is already indexed.", e.what());
     threw = true;
   }
   ASSERT_TRUE(threw);

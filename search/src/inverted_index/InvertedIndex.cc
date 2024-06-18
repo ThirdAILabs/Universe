@@ -19,6 +19,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -38,6 +39,29 @@ InvertedIndex::InvertedIndex(size_t max_docs_to_score, float idf_cutoff_frac,
   licensing::checkLicense();
 }
 
+InvertedIndex::NewShardConfig InvertedIndex::configureShards(
+    size_t n_new_docs) {
+  // Compute how new docs will be split among shards
+
+  std::vector<size_t> doc_offsets({0});
+  size_t start_shard_id = _shards.size();
+  size_t n_new_shards = 0;
+
+  if (!_shards.empty() && _shards.back().size() < _shard_size) {
+    start_shard_id--;
+    size_t n_docs = std::min(n_new_docs, _shard_size - _shards.back().size());
+    doc_offsets.push_back(n_docs);
+  }
+
+  for (size_t doc_offset = doc_offsets.back(); doc_offset < n_new_docs;
+       doc_offset += _shard_size) {
+    doc_offsets.push_back(std::min(doc_offset + _shard_size, n_new_docs));
+    n_new_shards++;
+  }
+
+  return {start_shard_id, n_new_shards, doc_offsets};
+}
+
 void InvertedIndex::index(const std::vector<DocId>& ids,
                           const std::vector<std::string>& docs) {
   if (ids.size() != docs.size()) {
@@ -52,7 +76,7 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
   for (DocId doc_id : ids) {
     if (containsDoc(doc_id)) {
       throw std::runtime_error("Document with id " + std::to_string(doc_id) +
-                               " is already in InvertedIndex.");
+                               " is already indexed.");
     }
   }
 
@@ -60,39 +84,28 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
 
   auto doc_lens_and_occurences = countTokenOccurences(docs);
 
-  // Compute how new docs will be split among shards
-
-  std::vector<size_t> doc_offsets({0});
-  size_t start_shard_id = _shards.size();
-  size_t n_new_shards = 0;
-
-  if (!_shards.empty() && _shards.back().size() < _shard_size) {
-    start_shard_id--;
-    size_t n_docs = std::min(docs.size(), _shard_size - _shards.back().size());
-    doc_offsets.push_back(n_docs);
-  }
-
-  for (size_t doc_offset = doc_offsets.back(); doc_offset < docs.size();
-       doc_offset += _shard_size) {
-    doc_offsets.push_back(std::min(doc_offset + _shard_size, docs.size()));
-    n_new_shards++;
-  }
+  auto shard_config = configureShards(docs.size());
 
   // Allocate new shards
-  _shards.resize(_shards.size() + n_new_shards);
-  std::vector<size_t> doc_lens(doc_offsets.size() - 1);
+  _shards.resize(_shards.size() + shard_config.n_new_shards);
+  std::vector<size_t> doc_lens(shard_config.doc_offsets.size() - 1);
+  size_t shard_doc_len = 0;
 
   std::exception_ptr error;
 
 // Process shards in parallel
 #pragma omp parallel for default(none)                 \
-    shared(start_shard_id, ids, doc_offsets, doc_lens, \
-           doc_lens_and_occurences, error)
-  for (size_t shard_id_offset = 0; shard_id_offset < doc_offsets.size() - 1;
+    shared(shard_config, ids, doc_lens, \
+           doc_lens_and_occurences, error) \
+    private(shard_doc_len) reduction (+:_sum_doc_lens) \
+    if (shard_config.doc_offsets.size() > 2)
+  for (size_t shard_id_offset = 0;
+       shard_id_offset < shard_config.doc_offsets.size() - 1;
        shard_id_offset++) {
-    auto& shard = _shards[start_shard_id + shard_id_offset];
-    size_t doc_start = doc_offsets[shard_id_offset];
-    size_t doc_end = doc_offsets[shard_id_offset + 1];
+    auto& shard = _shards[shard_config.start_shard_id + shard_id_offset];
+    size_t doc_start = shard_config.doc_offsets[shard_id_offset];
+    size_t doc_end = shard_config.doc_offsets[shard_id_offset + 1];
+    shard_doc_len = 0;
 
     for (size_t i = doc_start; i < doc_end; i++) {
       const DocId doc_id = ids[i];
@@ -100,12 +113,9 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
       const auto& occurrences = doc_lens_and_occurences[i].second;
 
       shard.insertDoc(doc_id, doc_len, occurrences);
-      doc_lens[shard_id_offset] += doc_len;
+      shard_doc_len += doc_len;
     }
-  }
-
-  for (size_t len : doc_lens) {
-    _sum_doc_lens += len;
+    _sum_doc_lens += shard_doc_len;
   }
 
   recomputeMetadata();
