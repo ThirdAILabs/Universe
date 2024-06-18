@@ -159,13 +159,6 @@ TEST(InvertedIndexTests, TestUpdate) {
 }
 
 void compareResults(std::vector<DocScore> a, std::vector<DocScore> b) {
-  // For some queries two docs may have the same score. For different numbers of
-  // shards the docs may have a different ordering when the score is the
-  // same. Sorting by doc ids if the scores are the same solves this, it only
-  // doesn't handle if a doc doesn't make the topk cuttoff because of this.
-  // Removing the last item by allowing the end to differ as long as the prior
-  // results match.
-
   auto sort = [](auto& vec) {
     std::sort(vec.begin(), vec.end(), [](const auto& x, const auto& y) {
       if (x.second == y.second) {
@@ -177,9 +170,6 @@ void compareResults(std::vector<DocScore> a, std::vector<DocScore> b) {
 
   sort(a);
   sort(b);
-
-  a.pop_back();
-  b.pop_back();
 
   ASSERT_EQ(a, b);
 }

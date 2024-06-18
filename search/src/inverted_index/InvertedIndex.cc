@@ -229,6 +229,9 @@ template <typename T>
 struct HighestScore {
   using Item = std::pair<T, float>;
   bool operator()(const Item& a, const Item& b) const {
+    if (a.second == b.second) {
+      return a.first < b.first;
+    }
     return a.second > b.second;
   }
 };
@@ -284,9 +287,9 @@ std::vector<DocScore> InvertedIndex::topk(
   top_scores.reserve(k + 1);
   const HighestScore<DocId> cmp;
 
-  for (const auto& [doc, score] : doc_scores) {
-    if (top_scores.size() < k || top_scores.front().second < score) {
-      top_scores.emplace_back(doc, score);
+  for (const auto& doc_score : doc_scores) {
+    if (top_scores.size() < k || cmp(doc_score, top_scores.front())) {
+      top_scores.push_back(doc_score);
       std::push_heap(top_scores.begin(), top_scores.end(), cmp);
     }
 
@@ -327,9 +330,9 @@ std::vector<DocScore> InvertedIndex::query(const std::string& query, uint32_t k,
   std::vector<DocScore> top_scores;
   top_scores.reserve(k + 1);
   for (const auto& shard_topk : shard_candidates) {
-    for (const auto& [doc, score] : shard_topk) {
-      if (top_scores.size() < k || top_scores.front().second < score) {
-        top_scores.emplace_back(doc, score);
+    for (const auto& doc_score : shard_topk) {
+      if (top_scores.size() < k || cmp(doc_score, top_scores.front())) {
+        top_scores.push_back(doc_score);
         std::push_heap(top_scores.begin(), top_scores.end(), cmp);
       }
 
@@ -365,7 +368,7 @@ std::vector<DocScore> InvertedIndex::rank(
   for (const auto& shard_topk : shard_candidates) {
     for (const auto& [doc, score] : shard_topk) {
       if (candidates.count(doc) &&
-          (top_scores.size() < k || top_scores.front().second < score)) {
+          (top_scores.size() < k || cmp({doc, score}, top_scores.front()))) {
         top_scores.emplace_back(doc, score);
         std::push_heap(top_scores.begin(), top_scores.end(), cmp);
       }
