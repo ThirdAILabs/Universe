@@ -506,7 +506,7 @@ def test_neural_db_rerank_search(all_local_docs):
         " Malorum by Cicero are also reproduced in their exact original form,"
         " accompanied by English versions from the 1914 translation by H. Rackham."
     )
-    results = db.search(query, top_k=10, rerank=True)
+    results = db.search(query, top_k=10, rerank=True, reranker="lexical")
 
     query_tokens = custom_tokenize(query)
     docs_tokens = [custom_tokenize(r.text) for r in results]
@@ -596,6 +596,7 @@ def test_neural_db_reranking_threshold(all_local_docs):
         query,
         top_k=10,
         rerank=True,
+        reranker="lexical",
         top_k_rerank=100,
         rerank_threshold=rerank_threshold,
     )

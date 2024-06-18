@@ -433,6 +433,7 @@ class NeuralDB:
         return self._savable_state.documents.sources()
 
     def save(self, save_to: Union[str, Path], on_progress: Callable = no_op) -> str:
+        delattr(self, "reranker_model")
         return self._savable_state.save(Path(save_to), on_progress)
 
     def _resume(
@@ -614,6 +615,7 @@ class NeuralDB:
         result_ids: List[Tuple[int, float, str]],
         top_k: int,
         rerank: bool,
+        reranker: str,
         rerank_threshold,
         top_k_threshold,
     ):
@@ -624,17 +626,20 @@ class NeuralDB:
             ref._retriever = retriever
             references.append(ref)
 
-        if rerank:
+        if rerank or reranker != None:
+            if reranker is None:
+                reranker = "semantic"
+
             keep, to_rerank = NeuralDB._split_references_for_reranking(
                 references,
                 rerank_threshold,
                 average_top_k_scores=top_k_threshold if top_k_threshold else top_k,
             )
 
-            ranker = thirdai.dataset.KeywordOverlapRanker()
-            reranked_indices, reranked_scores = ranker.rank(
-                query, [ref.text for ref in to_rerank]
+            reranked_indices, reranked_scores = self._rerank_references(
+                query, to_rerank, reranker
             )
+
             reranked_scores = NeuralDB._scale_reranked_scores(
                 original=[ref.score for ref in to_rerank],
                 reranked=reranked_scores,
@@ -647,6 +652,47 @@ class NeuralDB:
             references = (keep + reranked)[:top_k]
 
         return references
+
+    def _rerank_references(
+        self,
+        query,
+        to_rerank,
+        reranker,
+    ):
+        if len(to_rerank) == 0:
+            return [], []
+
+        if reranker == "semantic":
+            if not hasattr(self, "reranker_model"):
+                try:
+                    from transformers import AutoModelForSequenceClassification
+                except:
+                    raise ValueError(
+                        "Semantic reranking requires the 'transformers' package. Please run 'pip3 install transformers'"
+                    )
+                self.reranker_model = (
+                    AutoModelForSequenceClassification.from_pretrained(
+                        "jinaai/jina-reranker-v1-tiny-en",
+                        num_labels=1,
+                        trust_remote_code=True,
+                    )
+                )
+            scores = self.reranker_model.compute_score(
+                [[query, ref.text] for ref in to_rerank]
+            )
+            reranked_indices = np.argsort(scores)[::-1]
+            reranked_scores = np.sort(scores)[::-1]
+        elif reranker == "lexical":
+            ranker = thirdai.dataset.KeywordOverlapRanker()
+            reranked_indices, reranked_scores = ranker.rank(
+                query, [ref.text for ref in to_rerank]
+            )
+        else:
+            raise ValueError(
+                "Invalid argument for reranker. Options are 'semantic' and 'lexical'"
+            )
+
+        return reranked_indices, reranked_scores
 
     @staticmethod
     def _split_references_for_reranking(
@@ -689,6 +735,7 @@ class NeuralDB:
         top_k: int,
         constraints=None,
         rerank=False,
+        reranker=None,
         top_k_rerank=100,
         rerank_threshold=1.5,
         top_k_threshold=None,
@@ -744,6 +791,7 @@ class NeuralDB:
             top_k=top_k,
             constraints=constraints,
             rerank=rerank,
+            reranker=reranker,
             top_k_rerank=top_k_rerank,
             rerank_threshold=rerank_threshold,
             top_k_threshold=top_k_threshold,
@@ -758,6 +806,7 @@ class NeuralDB:
         top_k: int,
         constraints=None,
         rerank=False,
+        reranker=None,
         top_k_rerank=100,
         rerank_threshold=1.5,
         top_k_threshold=None,
@@ -774,6 +823,8 @@ class NeuralDB:
         Returns:
             List[List[Reference]]: Combines each result of db.search into a list.
         """
+        if rerank and top_k_rerank < top_k:
+            raise ValueError("top_k_rerank should not be larger than top_k.")
         matching_entities = None
         top_k_to_search = top_k_rerank if rerank else top_k
         if constraints:
@@ -796,7 +847,13 @@ class NeuralDB:
 
         return [
             self._get_query_references(
-                query, result_ids, top_k, rerank, rerank_threshold, top_k_threshold
+                query,
+                result_ids,
+                top_k,
+                rerank,
+                reranker,
+                rerank_threshold,
+                top_k_threshold,
             )
             for query, result_ids in zip(queries, queries_result_ids)
         ]
