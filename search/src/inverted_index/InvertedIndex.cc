@@ -62,12 +62,9 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
 
   for (size_t doc_offset = doc_offsets.back(); doc_offset < docs.size();
        doc_offset += _shard_size) {
-    doc_offsets.push_back(doc_offset);
-    n_new_shards += 1;
+    doc_offsets.push_back(std::min(doc_offset + _shard_size, docs.size()));
+    n_new_shards++;
   }
-
-  doc_offsets.push_back(docs.size());
-  n_new_shards += 1;
 
   // Allocate new shards
   _shards.resize(_shards.size() + n_new_shards);
