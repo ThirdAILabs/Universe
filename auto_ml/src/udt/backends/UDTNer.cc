@@ -152,7 +152,7 @@ std::shared_ptr<data::NerTokenizerUnigram> extractInputTransform(
     }
 
     return std::dynamic_pointer_cast<data::NerTokenizerUnigram>(
-        pipeline->transformations()[0]);
+        pipeline->transformations()[2]);
   }
 
   return nullptr;
