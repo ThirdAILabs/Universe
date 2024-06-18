@@ -11,8 +11,6 @@ class ScifactColdStartUDTBenchmark(UDTBenchmarkConfig):
     test_file = "scifact/tst_supervised.csv"
 
     target = "DOC_ID"
-    integer_target = True
-    n_target_classes = 5183
     delimiter = ","
 
     metrics = ["precision@1", "recall@5"]
@@ -26,7 +24,7 @@ class ScifactColdStartUDTBenchmark(UDTBenchmarkConfig):
     def get_data_types(path_prefix):
         return {
             "QUERY": bolt.types.text(contextual_encoding="local"),
-            "DOC_ID": bolt.types.categorical(delimiter=":"),
+            "DOC_ID": bolt.types.categorical(delimiter=":", n_classes=5183, type="int"),
         }
 
 
@@ -40,8 +38,6 @@ class CookingColdStartUDTBenchmark(UDTBenchmarkConfig):
     test_file = "catalog_recommender/cooking/reformatted_tst_supervised.csv"
 
     target = "LABEL_IDS"
-    integer_target = True
-    n_target_classes = 26109
     delimiter = ","
     model_config = {
         "inputs": ["input"],
@@ -75,6 +71,8 @@ class CookingColdStartUDTBenchmark(UDTBenchmarkConfig):
     @staticmethod
     def get_data_types(path_prefix):
         return {
-            "LABEL_IDS": bolt.types.categorical(delimiter=";"),
+            "LABEL_IDS": bolt.types.categorical(
+                delimiter=";", n_classes=26109, type="int"
+            ),
             "QUERY": bolt.types.text(contextual_encoding="local"),
         }

@@ -25,7 +25,7 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
     const ColumnDataTypes& input_data_types,
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
     const std::string& target_name, const SequenceDataTypePtr& target,
-    uint32_t n_target_classes, const TabularOptions& tabular_options,
+    const TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
     const config::ArgumentMap& user_args)
     : _target_name(target_name), _target(target) {
@@ -36,7 +36,7 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
   }
 
   _featurizer = std::make_shared<RecurrentFeaturizer>(
-      input_data_types, target_name, target, n_target_classes, tabular_options);
+      input_data_types, target_name, target, tabular_options);
 
   uint32_t output_dim = _featurizer->vocabSize() * target->max_length.value();
   if (model_config) {
@@ -53,6 +53,9 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
 
   _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
                                             defaults::FREEZE_HASH_TABLES);
+  std::cout
+      << "Initialized a UniversalDeepTransformer for Recurrence Classification"
+      << std::endl;
 }
 
 py::object UDTRecurrentClassifier::train(
@@ -126,10 +129,12 @@ py::object UDTRecurrentClassifier::evaluate(
 py::object UDTRecurrentClassifier::predict(const MapInput& sample,
                                            bool sparse_inference,
                                            bool return_predicted_class,
-                                           std::optional<uint32_t> top_k) {
+                                           std::optional<uint32_t> top_k,
+                                           const py::kwargs& kwargs) {
   throwIfSparseInference(sparse_inference);
   (void)return_predicted_class;
   (void)top_k;
+  (void)kwargs;
 
   const auto& vocab = _featurizer->vocab();
   size_t vocab_size = _featurizer->vocabSize();
@@ -182,10 +187,12 @@ struct PredictBatchProgress {
 py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
                                                 bool sparse_inference,
                                                 bool return_predicted_class,
-                                                std::optional<uint32_t> top_k) {
+                                                std::optional<uint32_t> top_k,
+                                                const py::kwargs& kwargs) {
   throwIfSparseInference(sparse_inference);
   (void)return_predicted_class;
   (void)top_k;
+  (void)kwargs;
 
   const auto& vocab = _featurizer->vocab();
   size_t vocab_size = _featurizer->vocabSize();
@@ -291,12 +298,14 @@ std::unique_ptr<UDTRecurrentClassifier> UDTRecurrentClassifier::fromArchive(
 
 UDTRecurrentClassifier::UDTRecurrentClassifier(const ar::Archive& archive)
     : _target_name(archive.str("target_name")),
-      _target(std::make_shared<SequenceDataType>(
-          archive.getAs<ar::Char>("target_delimiter"),
-          archive.getOpt<ar::U64>("max_length"))),
       _model(bolt::Model::fromArchive(*archive.get("model"))),
       _featurizer(RecurrentFeaturizer::fromArchive(*archive.get("featurizer"))),
-      _freeze_hash_tables(archive.boolean("freeze_hash_tables")) {}
+      _freeze_hash_tables(archive.boolean("freeze_hash_tables")) {
+  _target = std::make_shared<SequenceDataType>(
+      _model->outputs().at(0)->dim(),
+      archive.getAs<ar::Char>("target_delimiter"),
+      archive.getOpt<ar::U64>("max_length"));
+}
 
 template void UDTRecurrentClassifier::serialize(cereal::BinaryInputArchive&,
                                                 const uint32_t version);

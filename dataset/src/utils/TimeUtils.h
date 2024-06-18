@@ -31,7 +31,7 @@ class TimeObject {
     }
 
     std::stringstream error_ss;
-    error_ss << "[Time] Failed to parse the string '" << time_string
+    error_ss << "Failed to parse the string '" << time_string
              << "'. Expected a timestamp string in the '" << format
              << "' format.";
 

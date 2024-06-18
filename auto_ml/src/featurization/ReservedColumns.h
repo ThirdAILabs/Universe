@@ -48,4 +48,6 @@ const std::string RECURRENT_SEQUENCE = "__sequential_target__";
 
 const std::string SPLADE_TOKENS = "__splade_tokens__";
 
+const std::string NER_FEATURIZED_SENTENCE = "__featurized_sentence_tokens__";
+
 }  // namespace thirdai::automl

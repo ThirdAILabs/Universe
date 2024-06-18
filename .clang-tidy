@@ -57,6 +57,7 @@
 Checks: >
          -*, 
          abseil-*,
+         -abseil-string-find-str-contains,
          bugprone-*, -bugprone-narrowing-conversions, -bugprone-easily-swappable-parameters, -bugprone-implicit-widening-of-multiplication-result,
          cert-*-cpp, -cert-err58-cpp, -cert-msc50-cpp, -cert-msc51-cpp, 
          cert-*-c, -cert-err34-c, -cert-msc30-c, -cert-msc32-c,

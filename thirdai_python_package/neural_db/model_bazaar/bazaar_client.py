@@ -272,6 +272,58 @@ class NeuralDBClient:
         return json.loads(response.content)["data"]
 
     @check_deployment_decorator
+    def ainsert(self, documents: list[dict[str, Any]]):
+        """
+        Inserts documents into the ndb model asynchronously.
+
+        Args: Look at insert() for args.
+
+        Returns:
+            data (dict[str, str]): A dict containing the task id for the insertion
+
+        """
+
+        if not documents:
+            raise ValueError("Documents cannot be empty.")
+
+        files = []
+        for doc in documents:
+            if "path" in doc and ("location" not in doc or doc["location"] == "local"):
+                if not os.path.exists(doc["path"]):
+                    raise ValueError(
+                        f"Path {doc['path']} was provided but doesn't exist on the machine."
+                    )
+                files.append(("files", open(doc["path"], "rb")))
+
+        files.append(("documents", (None, json.dumps(documents), "application/json")))
+
+        response = http_post_with_error(
+            urljoin(self.base_url, "ainsert"),
+            files=files,
+            headers=auth_header(self.bazaar._access_token),
+        )
+
+        return json.loads(response.content)["data"]
+
+    @check_deployment_decorator
+    def task_status(self, task_id: str):
+        """
+        Gets the task for the given task_id
+
+        Args:
+            task_id (str): A task id
+
+        """
+
+        response = http_post_with_error(
+            urljoin(self.base_url, "task-status"),
+            params={"task_id": task_id},
+            headers=auth_header(self.bazaar._access_token),
+        )
+
+        return json.loads(response.content)["data"]
+
+    @check_deployment_decorator
     def delete(self, source_ids: List[str]):
         """
         Deletes documents from the ndb model using source ids.
@@ -298,6 +350,29 @@ class NeuralDBClient:
             json={"text_pairs": text_pairs},
             headers=auth_header(self.bazaar._access_token),
         )
+
+    @check_deployment_decorator
+    def save_model(self, override: bool = True, model_name: Optional[str] = None):
+
+        response = http_post_with_error(
+            urljoin(self.base_url, "save"),
+            json={"override": override, "model_name": model_name},
+            headers=auth_header(self.bazaar._access_token),
+        )
+
+        print("Successfully saved the model.")
+
+        content = response.json()["data"]
+
+        if content["new_model_id"]:
+            return Model(
+                model_identifier=create_model_identifier(
+                    model_name, self.bazaar._username
+                ),
+                model_id=content["new_model_id"],
+            )
+
+        return None
 
     @check_deployment_decorator
     def upvote(self, text_id_pairs: List[Dict[str, Union[str, int]]]):

@@ -49,7 +49,7 @@ ColumnDataTypes getTabularDataTypes() {
       // Categorical
       {"b", std::make_shared<CategoricalDataType>()},
       // Multi categorical
-      {"c", std::make_shared<CategoricalDataType>('-')},
+      {"c", std::make_shared<CategoricalDataType>(10, "int", '-')},
       // Numerical
       {"d", std::make_shared<NumericalDataType>(0.0, 1.0)},
       // Sequence

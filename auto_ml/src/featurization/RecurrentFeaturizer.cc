@@ -20,7 +20,6 @@ namespace thirdai::automl {
 RecurrentFeaturizer::RecurrentFeaturizer(const ColumnDataTypes& data_types,
                                          const std::string& target_name,
                                          const SequenceDataTypePtr& target,
-                                         uint32_t n_target_classes,
                                          const TabularOptions& tabular_options)
     : _delimiter(tabular_options.delimiter),
       _state(std::make_shared<data::State>()) {
@@ -33,16 +32,16 @@ RecurrentFeaturizer::RecurrentFeaturizer(const ColumnDataTypes& data_types,
       /* source_input_column= */ RECURRENT_SEQUENCE,
       /* target_input_column= */ target_name,
       /* source_output_column= */ RECURRENT_SEQUENCE,
-      /* target_output_column= */ FEATURIZED_LABELS, n_target_classes,
+      /* target_output_column= */ FEATURIZED_LABELS, target->expectNClasses(),
       target->max_length.value());
 
   std::tie(_augmenting_transform, _recurrence_augmentation) =
-      makeTransformation(data_types, target_name, target, n_target_classes,
-                         tabular_options, /*add_recurrence_augmentation=*/true);
+      makeTransformation(data_types, target_name, target, tabular_options,
+                         /*add_recurrence_augmentation=*/true);
 
   _non_augmenting_transform =
-      makeTransformation(data_types, target_name, target, n_target_classes,
-                         tabular_options, /*add_recurrence_augmentation=*/false)
+      makeTransformation(data_types, target_name, target, tabular_options,
+                         /*add_recurrence_augmentation=*/false)
           .first;
 
   _bolt_input_columns = {
@@ -53,16 +52,15 @@ RecurrentFeaturizer::RecurrentFeaturizer(const ColumnDataTypes& data_types,
 std::pair<data::TransformationPtr, std::shared_ptr<data::Recurrence>>
 RecurrentFeaturizer::makeTransformation(
     const ColumnDataTypes& data_types, const std::string& target_name,
-    const SequenceDataTypePtr& target, uint32_t n_target_classes,
-    const TabularOptions& tabular_options,
+    const SequenceDataTypePtr& target, const TabularOptions& tabular_options,
     bool add_recurrence_augmentation) const {
   auto [input_transforms, outputs] =
       nonTemporalTransformations(data_types, target_name, tabular_options);
 
   auto target_lookup = std::make_shared<data::StringIDLookup>(
       /* input_column= */ target_name, /* output_column= */ target_name,
-      /* vocab_key= */ TARGET_VOCAB, /* max_vocab_size= */ n_target_classes,
-      target->delimiter);
+      /* vocab_key= */ TARGET_VOCAB,
+      /* max_vocab_size= */ target->expectNClasses(), target->delimiter);
   input_transforms.push_back(target_lookup);
 
   auto target_encoding = std::make_shared<data::OffsetPositionTransform>(
@@ -76,7 +74,7 @@ RecurrentFeaturizer::makeTransformation(
         /* source_input_column= */ RECURRENT_SEQUENCE,
         /* target_input_column= */ target_name,
         /* source_output_column= */ RECURRENT_SEQUENCE,
-        /* target_output_column= */ FEATURIZED_LABELS, n_target_classes,
+        /* target_output_column= */ FEATURIZED_LABELS, target->expectNClasses(),
         target->max_length.value());
     input_transforms.push_back(recurrence);
   }

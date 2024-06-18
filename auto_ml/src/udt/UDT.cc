@@ -5,15 +5,16 @@
 #include <bolt/src/utils/Timer.h>
 #include <archive/src/Archive.h>
 #include <auto_ml/src/featurization/DataTypes.h>
+#include <auto_ml/src/pretrained/PretrainedBase.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/backends/DeprecatedUDTMachClassifier.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
 #include <auto_ml/src/udt/backends/UDTGraphClassifier.h>
 #include <auto_ml/src/udt/backends/UDTMach.h>
+#include <auto_ml/src/udt/backends/UDTNer.h>
 #include <auto_ml/src/udt/backends/UDTQueryReformulation.h>
 #include <auto_ml/src/udt/backends/UDTRecurrentClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
-#include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/CheckLicense.h>
@@ -37,30 +38,47 @@ struct BestScore {
   }
 };
 
-UDT::UDT(
-    ColumnDataTypes data_types,
-    const UserProvidedTemporalRelationships& temporal_tracking_relationships,
-    const std::string& target_col, std::optional<uint32_t> n_target_classes,
-    bool integer_target, std::string time_granularity, uint32_t lookahead,
-    char delimiter, const std::optional<std::string>& model_config,
-    const PretrainedBasePtr& pretrained_model,
-    const config::ArgumentMap& user_args) {
-  if (pretrained_model) {
-    if (!n_target_classes) {
-      throw std::invalid_argument(
-          "Must specify n_target_classes when using a pretrained model.");
+UDT::UDT(ColumnDataTypes data_types,
+         const UserProvidedTemporalRelationships& temporal_relationships,
+         const std::string& target, char delimiter,
+         const std::optional<std::string>& model_config,
+         const py::object& pretrained_model,
+         const config::ArgumentMap& user_args) {
+  if (!data_types.count(target)) {
+    throw std::invalid_argument("Target column '" + target +
+                                "' not found in data types.");
+  }
+
+  if (!pretrained_model.is_none()) {
+    if (auto categorical = asCategorical(data_types.at(target))) {
+      _backend = std::make_unique<UDTClassifier>(
+          data_types, categorical->expectNClasses(), categorical->isInteger(),
+          pretrained_model.cast<PretrainedBasePtr>(), delimiter, user_args);
+      return;
     }
-    _backend = std::make_unique<UDTClassifier>(
-        data_types, n_target_classes.value(), integer_target, pretrained_model,
-        delimiter, user_args);
-    return;
+    if (auto tags = asTokenTags(data_types.at(target))) {
+      auto udt = pretrained_model.cast<std::shared_ptr<UDT>>();
+      if (auto* udt_ner = dynamic_cast<UDTNer*>(udt->_backend.get())) {
+        _backend = std::make_unique<UDTNer>(data_types, tags, target, udt_ner,
+                                            user_args);
+        return;
+      }
+      throw std::invalid_argument(
+          "Only UDT NER models can be used as the base pretrained model for "
+          "NER tasks.");
+    }
+    throw std::invalid_argument(
+        "Pretrained models are only supported for classification or NER "
+        "tasks.");
   }
 
   TabularOptions tabular_options;
   tabular_options.contextual_columns = user_args.get<bool>(
       "contextual_columns", "boolean", defaults::CONTEXTUAL_COLUMNS);
-  tabular_options.time_granularity = std::move(time_granularity);
-  tabular_options.lookahead = lookahead;
+  tabular_options.time_granularity = user_args.get<std::string>(
+      "time_granularity", "str", defaults::TIME_GRANULARITY);
+  tabular_options.lookahead =
+      user_args.get<uint32_t>("lookahead", "integer", defaults::LOOKAHEAD);
   tabular_options.delimiter = delimiter;
   tabular_options.feature_hash_range = user_args.get<uint32_t>(
       "input_dim", "integer", defaults::FEATURE_HASH_RANGE);
@@ -71,31 +89,17 @@ UDT::UDT(
         user_args.get<uint32_t>("fhr", "integer");
   }
 
-  if (!data_types.count(target_col)) {
-    throw std::invalid_argument(
-        "Target column provided was not found in data_types.");
-  }
-
-  auto target = data_types.at(target_col);
-
   bool has_graph_inputs = hasGraphInputs(data_types);
-  auto as_categorical = asCategorical(target);
-  auto as_numerical = asNumerical(target);
-  auto as_sequence = asSequence(target);
-
-  if (as_categorical || as_sequence) {
-    if (!n_target_classes.has_value()) {
-      throw std::invalid_argument(
-          "The number of target classes must be specified for categorical "
-          "data.");
-    }
-  }
+  auto as_categorical = asCategorical(data_types.at(target));
+  auto as_numerical = asNumerical(data_types.at(target));
+  auto as_sequence = asSequence(data_types.at(target));
+  auto as_tags = asTokenTags(data_types.at(target));
+  auto as_text = asText(data_types.at(target));
 
   if (as_categorical && has_graph_inputs) {
     // TODO(Any): Add support for model config and user args
-    _backend = std::make_unique<UDTGraphClassifier>(
-        data_types, target_col, n_target_classes.value(), integer_target,
-        tabular_options);
+    _backend = std::make_unique<UDTGraphClassifier>(data_types, as_categorical,
+                                                    target, tabular_options);
   } else if (as_categorical && !has_graph_inputs) {
     bool use_mach =
         user_args.get<bool>("extreme_classification", "boolean",
@@ -104,54 +108,37 @@ UDT::UDT(
     if (use_mach) {
       if (user_args.get<bool>("v1", "boolean", false)) {
         _backend = std::make_unique<UDTMachClassifier>(
-            data_types, temporal_tracking_relationships, target_col,
-            as_categorical, n_target_classes.value(), integer_target,
+            data_types, temporal_relationships, target, as_categorical,
+            as_categorical->expectNClasses(), as_categorical->isInteger(),
             tabular_options, model_config, user_args);
       } else {
         _backend = std::make_unique<UDTMach>(
-            data_types, temporal_tracking_relationships, target_col,
-            as_categorical, n_target_classes.value(), integer_target,
+            data_types, temporal_relationships, target, as_categorical,
             tabular_options, model_config, user_args);
       }
     } else {
       _backend = std::make_unique<UDTClassifier>(
-          data_types, temporal_tracking_relationships, target_col,
-          as_categorical, n_target_classes.value(), integer_target,
+          data_types, temporal_relationships, target, as_categorical,
           tabular_options, model_config, user_args);
     }
   } else if (as_numerical && !has_graph_inputs) {
     _backend = std::make_unique<UDTRegression>(
-        data_types, temporal_tracking_relationships, target_col, as_numerical,
-        n_target_classes, tabular_options, model_config, user_args);
+        data_types, temporal_relationships, target, as_numerical,
+        as_numerical->explicit_granularity, tabular_options, model_config,
+        user_args);
   } else if (as_sequence && !has_graph_inputs) {
     _backend = std::make_unique<UDTRecurrentClassifier>(
-        data_types, temporal_tracking_relationships, target_col, as_sequence,
-        n_target_classes.value(), tabular_options, model_config, user_args);
+        data_types, temporal_relationships, target, as_sequence,
+        tabular_options, model_config, user_args);
+  } else if (as_tags) {
+    _backend = std::make_unique<UDTNer>(data_types, as_tags, target, nullptr,
+                                        user_args);
+  } else if (as_text) {
+    _backend = std::make_unique<UDTQueryReformulation>(
+        data_types, target, delimiter, model_config, user_args);
   } else {
-    throwUnsupportedUDTConfigurationError(as_categorical, as_numerical,
-                                          as_sequence, has_graph_inputs);
-  }
-}
-
-UDT::UDT(std::optional<std::string> incorrect_column_name,
-         std::string correct_column_name, const std::string& dataset_size,
-         bool use_spell_checker, char delimiter,
-         const std::optional<std::string>& model_config,
-         const config::ArgumentMap& user_args) {
-  _backend = std::make_unique<UDTQueryReformulation>(
-      std::move(incorrect_column_name), std::move(correct_column_name),
-      dataset_size, use_spell_checker, delimiter, model_config, user_args);
-}
-
-UDT::UDT(const std::string& file_format, uint32_t n_target_classes,
-         uint32_t input_dim, const std::optional<std::string>& model_config,
-         const config::ArgumentMap& user_args) {
-  if (text::lower(file_format) == "svm") {
-    _backend = std::make_unique<UDTSVMClassifier>(n_target_classes, input_dim,
-                                                  model_config, user_args);
-  } else {
-    throw std::invalid_argument("File format " + file_format +
-                                " is not supported.");
+    throwUnsupportedUDTConfigurationError(data_types.at(target),
+                                          has_graph_inputs);
   }
 }
 
@@ -214,11 +201,12 @@ py::object UDT::evaluate(const dataset::DataSourcePtr& data,
 
 py::object UDT::predict(const MapInput& sample, bool sparse_inference,
                         bool return_predicted_class,
-                        std::optional<uint32_t> top_k) {
+                        std::optional<uint32_t> top_k,
+                        const py::kwargs& kwargs) {
   bolt::utils::Timer timer;
 
   auto result = _backend->predict(sample, sparse_inference,
-                                  return_predicted_class, top_k);
+                                  return_predicted_class, top_k, kwargs);
 
   timer.stop();
   telemetry::client.trackPrediction(
@@ -229,11 +217,12 @@ py::object UDT::predict(const MapInput& sample, bool sparse_inference,
 
 py::object UDT::predictBatch(const MapInputBatch& sample, bool sparse_inference,
                              bool return_predicted_class,
-                             std::optional<uint32_t> top_k) {
+                             std::optional<uint32_t> top_k,
+                             const py::kwargs& kwargs) {
   bolt::utils::Timer timer;
 
   auto result = _backend->predictBatch(sample, sparse_inference,
-                                       return_predicted_class, top_k);
+                                       return_predicted_class, top_k, kwargs);
 
   timer.stop();
   telemetry::client.trackBatchPredictions(
@@ -355,7 +344,12 @@ bool UDT::hasGraphInputs(const ColumnDataTypes& data_types) {
       "learning problem) or 0 of both (for a non-graph learning problem). "
       "Instead, found " +
       std::to_string(neighbor_col_count) + " neighbor data types and " +
-      std::to_string(node_id_col_count) + " node id data types.");
+      std::to_string(node_id_col_count) +
+      " node id data types.\nRefer to "
+      "https://github.com/ThirdAILabs/Demos/blob/main/"
+      "universal_deep_transformer/graph_neural_networks/"
+      "GraphNodeClassification.ipynb for more details on how to use a "
+      "UniversalDeepTransformer for a Graph Classification Problem.");
 }
 
 std::unique_ptr<UDTBackend> backendFromArchive(const ar::Archive& archive) {
@@ -379,8 +373,8 @@ std::unique_ptr<UDTBackend> backendFromArchive(const ar::Archive& archive) {
   if (type == UDTRegression::type()) {
     return UDTRegression::fromArchive(archive);
   }
-  if (type == UDTSVMClassifier::type()) {
-    return UDTSVMClassifier::fromArchive(archive);
+  if (type == UDTNer::type()) {
+    return UDTNer::fromArchive(archive);
   }
   throw std::invalid_argument("Invalid backend type '" + type + "'.");
 }
@@ -427,28 +421,50 @@ void UDT::migrateToMachV2() {
   }
 }
 
-void UDT::throwUnsupportedUDTConfigurationError(
-    const CategoricalDataTypePtr& target_as_categorical,
-    const NumericalDataTypePtr& target_as_numerical,
-    const SequenceDataTypePtr& target_as_sequence, bool has_graph_inputs) {
+void UDT::throwUnsupportedUDTConfigurationError(const DataTypePtr& target,
+                                                bool has_graph_inputs) {
   std::stringstream error_msg;
-  error_msg << "Unsupported UDT configuration: ";
-
-  if (target_as_categorical) {
-    error_msg << "categorical target";
-  } else if (target_as_numerical) {
-    error_msg << "numerical target";
-  } else if (target_as_sequence) {
-    error_msg << "sequential target";
-  } else {
-    error_msg << "non numeric/categorical/sequential target";
-  }
+  error_msg << "Target data type " << target->typeName() << " is not valid";
 
   if (has_graph_inputs) {
-    error_msg << " with a graph dataset";
+    error_msg
+        << " for a UniversalDeepTransformer model with graph classification";
   }
+  error_msg << ".\nThe following target types are supported to initialize a "
+               "UniversalDeepTransformer: "
+            << std::endl
+            << std::endl;
+  error_msg << "* Graph Classification -> bolt.types.categorical(type='int', "
+               "n_classes=<num_classes>)"
+            << std::endl;
+  error_msg << "* Text or Tabular Classification -> "
+               "bolt.types.categorical(type='int' or 'str', "
+               "n_classes=<num_classes>)"
+            << std::endl;
+  error_msg << "* Extreme Classification -> bolt.types.categorical(type='int', "
+               "n_classes=<num_classes>)"
+            << std::endl;
+  error_msg << "* Regression -> "
+               "bolt.types.numerical(range=(<expected_lower_limit>, "
+               "<expected_upper_limit>))"
+            << std::endl;
+  error_msg << "* RecurrentClassifier -> "
+               "bolt.types.sequence(n_classes=<num_classes>, "
+               "max_length=<maximum_labels_in_sequence>)"
+            << std::endl;
+  error_msg << "* Named Entity Recognition -> "
+               "bolt.types.token_tags(tags=<list_of_tag_strings>, "
+               "default_tag=<ordinary_entity_tag>)"
+            << std::endl;
+  error_msg << "* Query Reformulation -> bolt.types.text()" << std::endl
+            << std::endl
+            << std::endl;
 
-  error_msg << ".";
+  error_msg << "Refer to https://thirdailabs.github.io/thirdaibolt.html for "
+               "more details on how to use a UniversalDeepTransformer model "
+               "for a specific task."
+            << std::endl;
+
   throw std::invalid_argument(error_msg.str());
 }
 

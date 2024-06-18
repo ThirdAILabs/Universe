@@ -13,7 +13,7 @@ def recursive_model(
     inputs=["1 2 3 4", "3 4 5"],
     outputs=["1\t2\t3\t4", "3\t4\t5"],
     output_delimiter="\t",
-    n_target_classes=5,
+    n_classes=5,
 ):
     data = ["input,output\n", *[f"{inp},{out}\n" for inp, out in zip(inputs, outputs)]]
 
@@ -23,10 +23,11 @@ def recursive_model(
     model = bolt.UniversalDeepTransformer(
         data_types={
             "input": bolt.types.sequence(),  # Delimiter defaults to " "
-            "output": bolt.types.sequence(max_length=4, delimiter=output_delimiter),
+            "output": bolt.types.sequence(
+                n_classes=n_classes, max_length=4, delimiter=output_delimiter
+            ),
         },
         target="output",
-        n_target_classes=n_target_classes,
     )
 
     model.train(TRAIN_FILE, learning_rate=0.01, epochs=10, verbose=False)
@@ -81,7 +82,7 @@ def test_udt_recurrence_long_output_does_not_break():
         inputs=["1 2 3 4", "3 4 5"],
         outputs=["1 2 3 4 5 6 7", "3 4 5 6 7 8 9"],
         output_delimiter=" ",
-        n_target_classes=9,
+        n_classes=9,
     )
     predictions = model.predict_batch([{"input": "1 2 3 4"}, {"input": "3 4 5"}])
     assert predictions == ["1 2 3 4", "3 4 5 6"]
@@ -111,7 +112,7 @@ def test_udt_recurrence_target_no_max_length_throws():
                 "output": bolt.types.sequence(),
             },
             target="output",
-            n_target_classes=4,
+            n_classes=4,
         )
 
 
@@ -126,5 +127,5 @@ def test_udt_recurrence_zero_max_length_throws():
                 "output": bolt.types.sequence(max_length=0),
             },
             target="output",
-            n_target_classes=4,
+            n_classes=4,
         )

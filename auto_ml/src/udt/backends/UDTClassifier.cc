@@ -47,22 +47,21 @@ UDTClassifier::UDTClassifier(
     const ColumnDataTypes& input_data_types,
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
     const std::string& target_name, CategoricalDataTypePtr target,
-    uint32_t n_target_classes, bool integer_target,
     const TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
     const config::ArgumentMap& user_args)
     : _classifier(utils::Classifier::make(
           utils::buildModel(
               /* input_dim= */ tabular_options.feature_hash_range,
-              /* output_dim= */ n_target_classes,
+              /* output_dim= */ target->expectNClasses(),
               /* args= */ user_args, /* model_config= */ model_config,
               /* use_sigmoid_bce = */
               user_args.get<bool>("sigmoid_bce", "boolean",
                                   defaults::USE_SIGMOID_BCE)),
           user_args.get<bool>("freeze_hash_tables", "boolean",
                               defaults::FREEZE_HASH_TABLES))) {
-  auto label_transform = labelTransformation(target_name, target,
-                                             n_target_classes, integer_target);
+  auto label_transform = labelTransformation(
+      target_name, target, target->expectNClasses(), target->isInteger());
 
   auto temporal_relationships = TemporalRelationshipsAutotuner::autotune(
       input_data_types, temporal_tracking_relationships,
@@ -79,6 +78,9 @@ UDTClassifier::UDTClassifier(
   _featurizer = std::make_shared<Featurizer>(
       input_data_types, temporal_relationships, target_name, label_transform,
       bolt_labels, tabular_options);
+
+  std::cout << "Initialized a UniversalDeepTransformer for Classification"
+            << std::endl;
 }
 
 std::pair<std::string, TextDataTypePtr> textDataType(
@@ -150,8 +152,7 @@ bolt::FullyConnectedPtr getFcLayer(const bolt::ModelPtr& model) {
 }
 
 bolt::ModelPtr buildModel(const bolt::EmbeddingPtr& emb,
-                          const bolt::FullyConnectedPtr& fc,
-                          uint32_t n_target_classes,
+                          const bolt::FullyConnectedPtr& fc, uint32_t n_classes,
                           bool disable_hidden_sparsity) {
   auto input = bolt::Input::make(emb->inputDim());
   auto hidden = emb->apply(input);
@@ -163,8 +164,7 @@ bolt::ModelPtr buildModel(const bolt::EmbeddingPtr& emb,
   }
 
   auto out = bolt::FullyConnected::make(
-      n_target_classes, hidden->dim(),
-      utils::autotuneSparsity(n_target_classes), "softmax");
+      n_classes, hidden->dim(), utils::autotuneSparsity(n_classes), "softmax");
   out->setName("output");
 
   auto output = out->apply(hidden);
@@ -176,7 +176,7 @@ bolt::ModelPtr buildModel(const bolt::EmbeddingPtr& emb,
 }
 
 UDTClassifier::UDTClassifier(const ColumnDataTypes& data_types,
-                             uint32_t n_target_classes, bool integer_target,
+                             uint32_t n_classes, bool integer_target,
                              const PretrainedBasePtr& pretrained_model,
                              char delimiter,
                              const config::ArgumentMap& user_args) {
@@ -186,7 +186,7 @@ UDTClassifier::UDTClassifier(const ColumnDataTypes& data_types,
   auto fc = !emb_only ? getFcLayer(pretrained_model->model()) : nullptr;
 
   auto model = buildModel(
-      emb, fc, n_target_classes,
+      emb, fc, n_classes,
       user_args.get<bool>("disable_hidden_sparsity", "boolean", true));
 
   _classifier = std::make_shared<utils::Classifier>(
@@ -207,8 +207,7 @@ UDTClassifier::UDTClassifier(const ColumnDataTypes& data_types,
 
   _featurizer = std::make_shared<Featurizer>(
       tokenizer, tokenizer,
-      labelTransformation(target_col, target_type, n_target_classes,
-                          integer_target),
+      labelTransformation(target_col, target_type, n_classes, integer_target),
       data::OutputColumnsList{
           data::OutputColumns(FEATURIZED_INDICES, FEATURIZED_VALUES)},
       data::OutputColumnsList{data::OutputColumns(
@@ -302,7 +301,9 @@ py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
 
 py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,
                                   bool return_predicted_class,
-                                  std::optional<uint32_t> top_k) {
+                                  std::optional<uint32_t> top_k,
+                                  const py::kwargs& kwargs) {
+  (void)kwargs;
   return _classifier->predict(_featurizer->featurizeInput(sample),
                               sparse_inference, return_predicted_class,
                               /* single= */ true, top_k);
@@ -311,7 +312,9 @@ py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,
 py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
                                        bool sparse_inference,
                                        bool return_predicted_class,
-                                       std::optional<uint32_t> top_k) {
+                                       std::optional<uint32_t> top_k,
+                                       const py::kwargs& kwargs) {
+  (void)kwargs;
   return _classifier->predict(_featurizer->featurizeInputBatch(samples),
                               sparse_inference, return_predicted_class,
                               /* single= */ false, top_k);
@@ -433,19 +436,19 @@ std::string UDTClassifier::className(uint32_t class_id) const {
 
 data::TransformationPtr UDTClassifier::labelTransformation(
     const std::string& target_name, CategoricalDataTypePtr& target_config,
-    uint32_t n_target_classes, bool integer_target) const {
+    uint32_t n_classes, bool integer_target) const {
   if (integer_target) {
     if (!target_config->delimiter) {
       return std::make_shared<data::StringToToken>(
-          target_name, FEATURIZED_LABELS, n_target_classes);
+          target_name, FEATURIZED_LABELS, n_classes);
     }
     return std::make_shared<data::StringToTokenArray>(
         target_name, FEATURIZED_LABELS, target_config->delimiter.value(),
-        n_target_classes);
+        n_classes);
   }
 
   return std::make_shared<data::StringIDLookup>(target_name, FEATURIZED_LABELS,
-                                                LABEL_VOCAB, n_target_classes,
+                                                LABEL_VOCAB, n_classes,
                                                 target_config->delimiter);
 }
 

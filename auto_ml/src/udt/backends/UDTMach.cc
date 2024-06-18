@@ -62,7 +62,6 @@ UDTMach::UDTMach(
     const ColumnDataTypes& input_data_types,
     const UserProvidedTemporalRelationships& temporal_tracking_relationships,
     const std::string& target_name, const CategoricalDataTypePtr& target_config,
-    uint32_t n_target_classes, bool integer_target,
     const TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
     config::ArgumentMap user_args)
@@ -83,10 +82,11 @@ UDTMach::UDTMach(
   }
 
   uint32_t num_buckets = user_args.get<uint32_t>(
-      "extreme_output_dim", "integer", autotuneMachOutputDim(n_target_classes));
+      "extreme_output_dim", "integer",
+      autotuneMachOutputDim(target_config->expectNClasses()));
   uint32_t num_hashes = user_args.get<uint32_t>(
       "extreme_num_hashes", "integer",
-      autotuneMachNumHashes(n_target_classes, num_buckets));
+      autotuneMachNumHashes(target_config->expectNClasses(), num_buckets));
 
   uint32_t softmax = user_args.get<bool>("softmax", "bool", false);
 
@@ -98,9 +98,10 @@ UDTMach::UDTMach(
       user_args.get<bool>("freeze_hash_tables", "boolean",
                           defaults::FREEZE_HASH_TABLES));
 
-  if (!integer_target) {
+  if (!target_config->isInteger()) {
     throw std::invalid_argument(
-        "Option 'integer_target=True' must be specified when using extreme "
+        "Option type='int' for the target data type must be specified when "
+        "using extreme "
         "classification options.");
   }
 
@@ -136,6 +137,10 @@ UDTMach::UDTMach(
 
     enableRlhf(num_balancing_docs, num_balancing_samples_per_doc);
   }
+
+  std::cout
+      << "Initialized a UniversalDeepTransformer for Extreme Classification"
+      << std::endl;
 }
 
 UDTMach::UDTMach(const MachInfo& mach_info)
@@ -242,16 +247,19 @@ py::object UDTMach::evaluate(const dataset::DataSourcePtr& data,
 
 py::object UDTMach::predict(const MapInput& sample, bool sparse_inference,
                             bool return_predicted_class,
-                            std::optional<uint32_t> top_k) {
-  auto output =
-      predictBatch({sample}, sparse_inference, return_predicted_class, top_k);
+                            std::optional<uint32_t> top_k,
+                            const py::kwargs& kwargs) {
+  auto output = predictBatch({sample}, sparse_inference, return_predicted_class,
+                             top_k, kwargs);
   return output.cast<py::list>()[0];
 }
 
 py::object UDTMach::predictBatch(const MapInputBatch& samples,
                                  bool sparse_inference,
                                  bool return_predicted_class,
-                                 std::optional<uint32_t> top_k) {
+                                 std::optional<uint32_t> top_k,
+                                 const py::kwargs& kwargs) {
+  (void)kwargs;
   return py::cast(predictBatchImpl(samples, sparse_inference,
                                    return_predicted_class, top_k));
 }

@@ -11,18 +11,14 @@
 #include <unordered_map>
 #include <utility>
 
-namespace thirdai::bolt {
-using PerTokenPredictions = std::vector<std::pair<uint32_t, float>>;
-using PerTokenListPredictions = std::vector<PerTokenPredictions>;
-
-class NerBackend;
-
-class NerBackend {
+namespace thirdai::bolt::NER {
+class NerModelInterface {
  public:
-  virtual ~NerBackend() = default;
+  virtual ~NerModelInterface() = default;
 
-  virtual std::vector<PerTokenListPredictions> getTags(
-      std::vector<std::vector<std::string>> tokens, uint32_t top_k) = 0;
+  virtual std::vector<std::vector<std::vector<std::pair<std::string, float>>>>
+  getTags(std::vector<std::vector<std::string>> tokens,
+          uint32_t top_k) const = 0;
 
   virtual metrics::History train(
       const dataset::DataSourcePtr& train_data, float learning_rate,
@@ -43,4 +39,5 @@ class NerBackend {
 
   virtual bolt::ModelPtr getBoltModel() = 0;
 };
-}  // namespace thirdai::bolt
+
+}  // namespace thirdai::bolt::NER

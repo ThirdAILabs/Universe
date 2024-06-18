@@ -33,22 +33,10 @@ namespace thirdai::automl::udt {
 class UDT {
  public:
   UDT(ColumnDataTypes data_types,
-      const UserProvidedTemporalRelationships& temporal_tracking_relationships,
-      const std::string& target_col, std::optional<uint32_t> n_target_classes,
-      bool integer_target, std::string time_granularity, uint32_t lookahead,
-      char delimiter, const std::optional<std::string>& model_config,
-      const PretrainedBasePtr& pretrained_model,
-      const config::ArgumentMap& user_args);
-
-  UDT(std::optional<std::string> incorrect_column_name,
-      std::string correct_column_name, const std::string& dataset_size,
-      bool use_spell_checker, char delimiter,
+      const UserProvidedTemporalRelationships& temporal_relationships,
+      const std::string& target, char delimiter,
       const std::optional<std::string>& model_config,
-      const config::ArgumentMap& user_args);
-
-  UDT(const std::string& file_format, uint32_t n_target_classes,
-      uint32_t input_dim, const std::optional<std::string>& model_config,
-      const config::ArgumentMap& user_args);
+      const py::object& pretrained_model, const config::ArgumentMap& user_args);
 
   py::object train(const dataset::DataSourcePtr& data, float learning_rate,
                    uint32_t epochs,
@@ -80,8 +68,8 @@ class UDT {
    * predicted classes if its a classification task instead of the activations.
    */
   py::object predict(const MapInput& sample, bool sparse_inference,
-                     bool return_predicted_class,
-                     std::optional<uint32_t> top_k);
+                     bool return_predicted_class, std::optional<uint32_t> top_k,
+                     const py::kwargs& kwargs);
 
   /**
    * Performs inference on a batch of samples in parallel and returns the
@@ -91,7 +79,8 @@ class UDT {
    */
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class,
-                          std::optional<uint32_t> top_k);
+                          std::optional<uint32_t> top_k,
+                          const py::kwargs& kwargs);
 
   py::object predictActivationsBatch(const MapInputBatch& samples,
                                      bool sparse_inference) {
@@ -527,10 +516,8 @@ class UDT {
 
   static bool hasGraphInputs(const ColumnDataTypes& data_types);
 
-  static void throwUnsupportedUDTConfigurationError(
-      const CategoricalDataTypePtr& target_as_categorical,
-      const NumericalDataTypePtr& target_as_numerical,
-      const SequenceDataTypePtr& target_as_sequence, bool has_graph_inputs);
+  static void throwUnsupportedUDTConfigurationError(const DataTypePtr& target,
+                                                    bool has_graph_inputs);
 
   friend class cereal::access;
 

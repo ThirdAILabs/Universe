@@ -20,9 +20,11 @@
 namespace thirdai::data {
 
 std::exception_ptr formatParseError(const std::string& row,
-                                    const std::string& column) {
-  return std::make_exception_ptr(std::invalid_argument(
-      "Invalid row '" + row + "' in column '" + column + "'."));
+                                    const std::string& column,
+                                    const std::string& type) {
+  return std::make_exception_ptr(
+      std::invalid_argument("Invalid row '" + row + "' in column '" + column +
+                            "'. Cannot cast '" + row + "' to " + type));
 }
 
 template <>
@@ -43,6 +45,11 @@ std::string typeName<int64_t>() {
 template <>
 std::string typeName<std::string>() {
   return "str";
+}
+
+template <typename T>
+std::string arrayTypeName() {
+  return typeName<T>() + " array";
 }
 
 template <>
@@ -84,7 +91,8 @@ ColumnMap CastToValue<T>::apply(ColumnMap columns, State& state) const {
       rows[i] = parse(str_column->value(i));
     } catch (...) {
 #pragma omp critical
-      error = formatParseError(str_column->value(i), _input_column_name);
+      error = formatParseError(str_column->value(i), _input_column_name,
+                               typeName<T>());
     }
   }
 
@@ -127,6 +135,11 @@ CastToValue<T>::CastToValue(const ar::Archive& archive)
 
 template <>
 uint32_t CastToValue<uint32_t>::parse(const std::string& row) const {
+  if (std::stol(row) < 0) {
+    throw std::invalid_argument("Value '" + row +
+                                "' cannot be cast to type uint32.");
+  }
+
   return std::stoul(row);
 }
 
@@ -249,7 +262,8 @@ ColumnMap CastToArray<T>::apply(ColumnMap columns, State& state) const {
       }
     } catch (...) {
 #pragma omp critical
-      error = formatParseError(str_column->value(i), _input_column_name);
+      error = formatParseError(str_column->value(i), _input_column_name,
+                               arrayTypeName<T>());
     }
   }
 
@@ -287,6 +301,11 @@ CastToArray<T>::CastToArray(const ar::Archive& archive)
 
 template <>
 uint32_t CastToArray<uint32_t>::parse(const std::string& row) const {
+  if (std::stol(row) < 0) {
+    throw std::invalid_argument("Value '" + row +
+                                "' cannot be cast to type uint32.");
+  }
+
   return std::stoul(row);
 }
 
@@ -370,9 +389,6 @@ template void CastToArray<uint32_t>::serialize(cereal::BinaryOutputArchive&);
 template void CastToArray<float>::serialize(cereal::BinaryInputArchive&);
 template void CastToArray<float>::serialize(cereal::BinaryOutputArchive&);
 
-template void CastToArray<std::string>::serialize(cereal::BinaryInputArchive&);
-template void CastToArray<std::string>::serialize(cereal::BinaryOutputArchive&);
-
 template class CastToArray<uint32_t>;
 template class CastToArray<float>;
 template class CastToArray<std::string>;
@@ -383,3 +399,4 @@ CEREAL_REGISTER_TYPE(thirdai::data::StringToToken)
 CEREAL_REGISTER_TYPE(thirdai::data::StringToTokenArray)
 CEREAL_REGISTER_TYPE(thirdai::data::StringToDecimal)
 CEREAL_REGISTER_TYPE(thirdai::data::StringToDecimalArray)
+CEREAL_REGISTER_TYPE(thirdai::data::StringToTimestamp)

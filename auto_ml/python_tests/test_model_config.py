@@ -190,9 +190,8 @@ def test_udt_model_config_override():
     deployment.dump_config(json.dumps(get_config()), CONFIG_FILE)
 
     udt_model = bolt.UniversalDeepTransformer(
-        data_types={"col": bolt.types.categorical()},
+        data_types={"col": bolt.types.categorical(n_classes=40)},
         target="col",
-        n_target_classes=40,
         model_config=CONFIG_FILE,
     )
     os.remove(CONFIG_FILE)
@@ -242,9 +241,8 @@ def test_model_config_output_dim_mismatch():
         match="Expected model with output dim 40, but the model config yielded a model with output dim 10.",
     ):
         bolt.UniversalDeepTransformer(
-            data_types={"col": bolt.types.categorical()},
+            data_types={"col": bolt.types.categorical(n_classes=40)},
             target="col",
-            n_target_classes=40,
             model_config=BAD_CONFIG_FILE,
         )
 
