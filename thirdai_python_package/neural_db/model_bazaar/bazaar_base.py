@@ -565,7 +565,7 @@ class Bazaar:
         delete_response = http_post_with_error(
             urljoin(
                 self._login_instance.base_url,
-                f"bazaar/request-delete",
+                f"bazaar/delete",
             ),
             headers=auth_header(self._login_instance.access_token),
             json={
