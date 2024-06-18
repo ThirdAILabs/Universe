@@ -413,21 +413,18 @@ config::ArgumentMap createArgumentMap(const py::dict& input_args) {
       bool success = false;
       try {
         std::vector<int32_t> value = v.cast<std::vector<int32_t>>();
-        std::cerr << name << " is vec<int>" << std::endl;
         args.insert(name, value);
         success = true;  // NOLINT (clang-tidy thinks this is unused)
       } catch (...) {
       }
       try {
         std::vector<std::string> value = v.cast<std::vector<std::string>>();
-        std::cerr << name << " is vec<str>" << std::endl;
         args.insert(name, value);
         success = true;  // NOLINT (clang-tidy thinks this is unused)
       } catch (...) {
       }
       try {
         auto value = v.cast<std::vector<dataset::TextTokenizerPtr>>();
-        std::cerr << name << " is vec<tokenizer>" << std::endl;
         args.insert(name, value);
         success = true;  // NOLINT (clang-tidy thinks this is unused)
       } catch (...) {

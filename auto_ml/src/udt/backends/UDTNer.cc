@@ -240,20 +240,20 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
   auto rule_entities = args.get<std::vector<std::string>>(
       "rules_for", "List[str]", std::vector<std::string>{});
 
-  if (rule_entities.empty()) {
+  if (!rule_entities.empty()) {
     _rule = data::ner::getRuleForEntities(rule_entities);
-#if THIRDAI_EXPOSE_ALL
-    std::cerr << "Using rules for tags:";
-    for (const auto& tag : rule_entities) {
-      std::cerr << " " << tag;
-    }
-    std::cerr << std::endl;
-#endif
     _label_to_tag =
         mapTagsToLabels(target->default_tag, target->tags, _rule->entities());
   } else {
     _label_to_tag = mapTagsToLabels(target->default_tag, target->tags);
   }
+
+#if THIRDAI_EXPOSE_ALL
+  std::cerr << "Rule Based Tags: " << text::join(rule_entities, ", ")
+            << std::endl;
+  std::cerr << "Model Based Tags: " << text::join(_label_to_tag, ", ")
+            << std::endl;
+#endif
 
   _model = buildModel(options.input_dim, options.emb_dim, _label_to_tag.size(),
                       options.pretrained_emb);
