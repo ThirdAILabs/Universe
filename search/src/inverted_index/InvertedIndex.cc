@@ -229,7 +229,7 @@ template <typename T>
 struct HighestScore {
   using Item = std::pair<T, float>;
   bool operator()(const Item& a, const Item& b) const {
-    // Sort by doc id if scores are equal so results are consistent
+    // Prioritize smaller doc id if scores are equal so results are consistent
     // regardless of how the index is sharded.
     if (a.second == b.second) {
       return a.first < b.first;
