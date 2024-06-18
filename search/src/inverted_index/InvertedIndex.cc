@@ -92,7 +92,11 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
 
   licensing::entitlements().verifyNoDataSourceRetrictions();
 
+  bolt::utils::Timer timer5;
   auto doc_lens_and_occurences = countTokenOccurences(docs);
+  std::cout << "Counting token occurrences took "
+            << timer5.elapsed<std::chrono::seconds>() << " seconds."
+            << std::endl;
 
   auto shard_config = configureShards(docs.size());
 
