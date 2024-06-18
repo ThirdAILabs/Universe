@@ -5,6 +5,8 @@ import re
 import string
 
 import pytest
+import pandas as pd
+
 from thirdai import bolt, data, dataset
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
@@ -27,6 +29,7 @@ def random_email():
 
 def generate_data(filename, n_rows):
     with open(filename, "w") as file:
+        file.write(f"{TOKENS},{TAGS}\n")
         for _ in range(n_rows):
             email_tokens = ["email", "is", random_email(), "for", "work"]
             email_tags = ["O", "O", "email", "O", "O"]
@@ -34,12 +37,13 @@ def generate_data(filename, n_rows):
             credit_card_tokens = ["credit", "card", "is", random_credit_card()]
             credit_card_tags = ["O", "O", "O", "credit_card"]
 
-            sample = {
-                TOKENS: email_tokens + credit_card_tokens,
-                TAGS: email_tags + credit_card_tags,
-            }
+            sample = (
+                " ".join(email_tokens + credit_card_tokens)
+                + ","
+                + " ".join(email_tags + credit_card_tags)
+            )
 
-            file.write(json.dumps(sample) + "\n")
+            file.write(sample + "\n")
 
 
 @pytest.fixture(scope="session")
@@ -60,10 +64,10 @@ def ner_dataset():
 def load_eval_samples(test):
     samples = []
     labels = []
-    for line in open(test):
-        data = json.loads(line)
-        samples.append({TOKENS: " ".join(data[TOKENS])})
-        labels.append(data[TAGS])
+    df = pd.read_csv(test)
+    for tokens, tags in zip(df[TOKENS], df[TAGS]):
+        samples.append({TOKENS: tokens})
+        labels.append(tags.split(" "))
     return samples, labels
 
 

@@ -17,6 +17,7 @@
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/Pipeline.h>
+#include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
 #include <data/src/transformations/ner/rules/CommonPatterns.h>
@@ -83,27 +84,34 @@ data::TransformationPtr makeTransformation(
   }
 
   auto transform =
-      data::Pipeline::make()
-          ->then(std::make_shared<data::NerTokenizerUnigram>(
-              /*tokens_column=*/tokens_column,
-              /*featurized_sentence_column=*/NER_FEATURIZED_SENTENCE,
-              /*target_column=*/target_column,
-              /*target_dim=*/target_dim,
-              /*dyadic_num_intervals=*/dyadic_num_intervals,
-              /*target_word_tokenizers=*/target_word_tokenizers,
-              /*feature_enhancement_config=*/feature_config,
-              /*tag_to_label=*/tag_to_label))
-          ->then(std::make_shared<data::TextTokenizer>(
-              /*input_column=*/NER_FEATURIZED_SENTENCE,
-              /*output_indices=*/NER_FEATURIZED_SENTENCE,
-              // TODO(Any): Should we specify output_values so that tokens are
-              // deduplicated?
-              /*output_values=*/std::nullopt,
-              /*tokenizer=*/
-              std::make_shared<dataset::NaiveSplitTokenizer>(
-                  dataset::NaiveSplitTokenizer()),
-              /*encoder=*/std::make_shared<dataset::NGramEncoder>(1),
-              /*lowercase=*/false, /*dim=*/input_dim));
+      data::Pipeline::make()->then(std::make_shared<data::StringToStringArray>(
+          tokens_column, tokens_column, ' ', std::nullopt));
+  if (!inference) {
+    transform = transform->then(std::make_shared<data::StringToStringArray>(
+        target_column.value(), target_column.value(), ' ', std::nullopt));
+  }
+
+  transform = transform
+                  ->then(std::make_shared<data::NerTokenizerUnigram>(
+                      /*tokens_column=*/tokens_column,
+                      /*featurized_sentence_column=*/NER_FEATURIZED_SENTENCE,
+                      /*target_column=*/target_column,
+                      /*target_dim=*/target_dim,
+                      /*dyadic_num_intervals=*/dyadic_num_intervals,
+                      /*target_word_tokenizers=*/target_word_tokenizers,
+                      /*feature_enhancement_config=*/feature_config,
+                      /*tag_to_label=*/tag_to_label))
+                  ->then(std::make_shared<data::TextTokenizer>(
+                      /*input_column=*/NER_FEATURIZED_SENTENCE,
+                      /*output_indices=*/NER_FEATURIZED_SENTENCE,
+                      // TODO(Any): Should we specify output_values so that
+                      // tokens are deduplicated?
+                      /*output_values=*/std::nullopt,
+                      /*tokenizer=*/
+                      std::make_shared<dataset::NaiveSplitTokenizer>(
+                          dataset::NaiveSplitTokenizer()),
+                      /*encoder=*/std::make_shared<dataset::NGramEncoder>(1),
+                      /*lowercase=*/false, /*dim=*/input_dim));
 
   return transform;
 }
@@ -370,9 +378,10 @@ std::vector<SentenceTags> UDTNer::predictTags(
     tokens.push_back(text::split(phrase, ' '));
   }
 
-  auto sentence_tokens = data::ArrayColumn<std::string>::make(
-      std::vector<std::vector<std::string>>{tokens});
-  auto data = data::ColumnMap({{_tokens_column, sentence_tokens}});
+  auto sentence_column =
+      data::ValueColumn<std::string>::make(std::vector<std::string>{sentences});
+
+  auto data = data::ColumnMap({{_tokens_column, sentence_column}});
 
   auto featurized = _inference_transform->applyStateless(data);
   auto tensors =
@@ -392,7 +401,7 @@ std::vector<SentenceTags> UDTNer::predictTags(
     auto scores = _model->forward(batch, sparse_inference).at(0);
 
     for (size_t i = 0; i < scores->batchSize(); i++) {
-      while (token_index == sentence_tokens->row(sentence_index).size()) {
+      while (token_index == tokens[sentence_index].size()) {
         sentence_index++;
         token_index = 0;
       }
@@ -411,9 +420,7 @@ std::vector<SentenceTags> UDTNer::predictTags(
         }
 
         bolt::NER::applyPunctAndStopWordFilter(
-            data.getArrayColumn<std::string>(_tokens_column)
-                ->row(sentence_index)[token_index],
-            tags, _label_to_tag[0]);
+            tokens[sentence_index][token_index], tags, _label_to_tag[0]);
 
         // If the default tag is the the top prediction but has a score < 0.9
         // then using the next top prediction improves accuracy.
