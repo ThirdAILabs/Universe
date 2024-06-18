@@ -664,6 +664,9 @@ class NeuralDB:
             return [], []
 
         if reranker == "semantic":
+            # We add the reranked_model attribute because we don't want to load 
+            # the model on every search. Even though its cached its still slow.
+            # We also make sure not to save the model with the neuraldb. 
             if not hasattr(self, "reranker_model"):
                 try:
                     from transformers import AutoModelForSequenceClassification
