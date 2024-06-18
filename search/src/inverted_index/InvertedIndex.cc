@@ -70,9 +70,12 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
   _shards.resize(_shards.size() + n_new_shards);
   std::vector<size_t> doc_lens(doc_offsets.size() - 1);
 
+  std::exception_ptr error;
+
 // Process shards in parallel
-#pragma omp parallel for default(none) shared( \
-    start_shard_id, ids, doc_offsets, doc_lens, doc_lens_and_occurences)
+#pragma omp parallel for default(none)                 \
+    shared(start_shard_id, ids, doc_offsets, doc_lens, \
+           doc_lens_and_occurences, error)
   for (size_t shard_id_offset = 0; shard_id_offset < doc_offsets.size() - 1;
        shard_id_offset++) {
     auto& shard = _shards[start_shard_id + shard_id_offset];
@@ -85,13 +88,19 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
       const auto& occurrences = doc_lens_and_occurences[i].second;
 
       if (shard.contains(doc_id)) {
-        throw std::runtime_error("Document with id " + std::to_string(doc_id) +
-                                 " is already in InvertedIndex.");
+#pragma omp critical
+        error = std::make_exception_ptr(
+            std::runtime_error("Document with id " + std::to_string(doc_id) +
+                               " is already in InvertedIndex."));
       }
 
       shard.insertDoc(doc_id, doc_len, occurrences);
       doc_lens[shard_id_offset] += doc_len;
     }
+  }
+
+  if (error) {
+    std::rethrow_exception(error);
   }
 
   for (size_t len : doc_lens) {
