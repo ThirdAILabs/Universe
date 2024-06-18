@@ -14,7 +14,6 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
-#include <string>
 #include <utility>
 
 namespace thirdai::data {
@@ -36,32 +35,12 @@ NerTokenizerUnigram::NerTokenizerUnigram(
 
 ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
   (void)state;
+
+  auto text_tokens = columns.getArrayColumn<std::string>(_tokens_column);
+
   ArrayColumnBasePtr<std::string> tags;
-
-  auto split_string_tokenizer = dataset::NaiveSplitTokenizer();
-
-  auto text = columns.getValueColumn<std::string>(_tokens_column);
-  std::optional<ValueColumnBasePtr<std::string>> tags_column;
-
   if (_target_column) {
-    tags_column = columns.getValueColumn<std::string>(_target_column.value());
-  }
-
-  std::vector<std::vector<std::string>> text_token_vectors(text->numRows());
-  std::vector<std::vector<std::string>> tags_token_vectors(text->numRows());
-  for (size_t i = 0; i < text->numRows(); i++) {
-    text_token_vectors[i] = split_string_tokenizer.toStrings(text->value(i));
-    if (_target_column) {
-      tags_token_vectors[i] =
-          split_string_tokenizer.toStrings(tags_column.value()->value(i));
-    }
-  }
-
-  auto text_tokens =
-      ArrayColumn<std::string>::make(std::move(text_token_vectors));
-
-  if (_target_column) {
-    tags = ArrayColumn<std::string>::make(std::move(tags_token_vectors));
+    tags = columns.getArrayColumn<std::string>(*_target_column);
   }
 
   auto sample_offsets = computeOffsets(text_tokens);
