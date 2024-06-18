@@ -120,7 +120,7 @@ def evaluate(model, test):
     return predict_acc
 
 
-def test_udt_ner(ner_dataset):
+def test_udt_ner_model(ner_dataset):
     train, test = ner_dataset
 
     model = bolt.UniversalDeepTransformer(
