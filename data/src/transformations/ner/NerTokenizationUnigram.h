@@ -11,6 +11,7 @@
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 
 namespace thirdai::data {
 
@@ -22,8 +23,8 @@ class NerTokenizerUnigram final : public Transformation {
       std::optional<uint32_t> target_dim, uint32_t dyadic_num_intervals,
       std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
       std::optional<FeatureEnhancementConfig> feature_enhancement_config,
-      std::optional<std::unordered_map<std::string, uint32_t>> tag_to_label =
-          std::nullopt);
+      std::unordered_map<std::string, uint32_t> tag_to_label,
+      std::unordered_set<std::string> ignored_tags);
 
   explicit NerTokenizerUnigram(const ar::Archive& archive);
 
@@ -39,12 +40,12 @@ class NerTokenizerUnigram final : public Transformation {
   }
 
   uint32_t findTagValueForString(const std::string& tag) const {
-    if (!_tag_to_label.has_value()) {
-      throw std::logic_error("Tag to Label is None");
+    if (_ignored_tags.count(tag)) {
+      return 0;
     }
-    const auto& tag_map = _tag_to_label.value();
-    if (tag_map.count(tag)) {
-      return tag_map.at(tag);
+
+    if (_tag_to_label.count(tag)) {
+      return _tag_to_label.at(tag);
     }
 
     throw std::out_of_range("String '" + tag +
@@ -66,7 +67,8 @@ class NerTokenizerUnigram final : public Transformation {
 
   NerDyadicDataProcessor _processor;
 
-  std::optional<std::unordered_map<std::string, uint32_t>> _tag_to_label;
+  std::unordered_map<std::string, uint32_t> _tag_to_label;
+  std::unordered_set<std::string> _ignored_tags;
 };
 
 }  // namespace thirdai::data

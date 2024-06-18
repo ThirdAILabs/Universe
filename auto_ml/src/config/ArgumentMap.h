@@ -50,7 +50,7 @@ class ArgumentMap {
   std::unordered_map<
       std::string,
       std::variant<bool, uint32_t, float, std::string, std::vector<int32_t>,
-                   data::FeatureEnhancementConfig,
+                   std::vector<std::string>, data::FeatureEnhancementConfig,
                    std::vector<dataset::TextTokenizerPtr>>>
       _arguments;
 };

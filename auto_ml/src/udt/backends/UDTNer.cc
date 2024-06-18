@@ -29,6 +29,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace thirdai::automl::udt {
 
@@ -68,7 +69,8 @@ data::TransformationPtr makeTransformation(
     const std::string& tokens_column, const std::vector<std::string>& tags,
     size_t input_dim, uint32_t dyadic_num_intervals,
     const std::vector<dataset::TextTokenizerPtr>& target_word_tokenizers,
-    const std::optional<data::FeatureEnhancementConfig>& feature_config) {
+    const std::optional<data::FeatureEnhancementConfig>& feature_config,
+    const data::ner::RulePtr& rule) {
   std::optional<std::string> target_column = tags_column;
   std::optional<size_t> target_dim = tags.size();
   if (inference) {
@@ -81,6 +83,12 @@ data::TransformationPtr makeTransformation(
     tag_to_label[tags[i]] = i;
   }
 
+  std::unordered_set<std::string> ignored_tags;
+  if (rule) {
+    auto rule_entities = rule->entities();
+    ignored_tags.insert(rule_entities.begin(), rule_entities.end());
+  }
+
   auto transform =
       data::Pipeline::make()
           ->then(std::make_shared<data::NerTokenizerUnigram>(
@@ -91,7 +99,8 @@ data::TransformationPtr makeTransformation(
               /*dyadic_num_intervals=*/dyadic_num_intervals,
               /*target_word_tokenizers=*/target_word_tokenizers,
               /*feature_enhancement_config=*/feature_config,
-              /*tag_to_label=*/tag_to_label))
+              /*tag_to_label=*/tag_to_label,
+              /*ignored_tags*/ ignored_tags))
           ->then(std::make_shared<data::TextTokenizer>(
               /*input_column=*/NER_FEATURIZED_SENTENCE,
               /*output_indices=*/NER_FEATURIZED_SENTENCE,
@@ -228,8 +237,18 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
     options = fromScratch(args);
   }
 
-  if (args.get<bool>("rules", "boolean", false)) {
-    _rule = data::ner::getRuleForEntities(defaults::NER_RULE_BASED_ENTITIES);
+  auto rule_entities = args.get<std::vector<std::string>>(
+      "rules_for", "List[str]", std::vector<std::string>{});
+
+  if (rule_entities.empty()) {
+    _rule = data::ner::getRuleForEntities(rule_entities);
+#if THIRDAI_EXPOSE_ALL
+    std::cerr << "Using rules for tags:";
+    for (const auto& tag : rule_entities) {
+      std::cerr << " " << tag;
+    }
+    std::cerr << std::endl;
+#endif
     _label_to_tag =
         mapTagsToLabels(target->default_tag, target->tags, _rule->entities());
   } else {
@@ -245,7 +264,7 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
       /*input_dim=*/options.input_dim,
       /*dyadic_num_intervals=*/options.dyadic_num_intervals,
       /*target_word_tokenizers=*/options.target_tokenizers,
-      /*feature_config=*/options.feature_config);
+      /*feature_config=*/options.feature_config, /*rule=*/_rule);
 
   _inference_transform = makeTransformation(
       /*inference=*/true, /*tags_column=*/_tags_column,
@@ -253,7 +272,7 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
       /*input_dim=*/options.input_dim,
       /*dyadic_num_intervals=*/options.dyadic_num_intervals,
       /*target_word_tokenizers=*/options.target_tokenizers,
-      /*feature_config=*/options.feature_config);
+      /*feature_config=*/options.feature_config, /*rule=*/_rule);
 
   std::cout << "Initialized a UniversalDeepTransformer for Token Classification"
             << std::endl;

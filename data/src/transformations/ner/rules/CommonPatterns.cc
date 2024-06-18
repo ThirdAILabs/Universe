@@ -268,7 +268,7 @@ RulePtr usDriversLicensePattern() {
   return Pattern::make(
       /*entity=*/"USDRIVERSLICENSE",
       /*pattern=*/
-      R"(\b([A-Z][0-9]{3,6}|[A-Z][0-9]{5,9}|[A-Z][0-9]{6,8}|[A-Z][0-9]{4,8}|[A-Z][0-9]{9,11}|[A-Z]{1,2}[0-9]{5,6}|H[0-9]{8}|V[0-9]{6}|X[0-9]{8}|A-Z]{2}[0-9]{2,5}|[A-Z]{2}[0-9]{3,7}|[0-9]{2}[A-Z]{3}[0-9]{5,6}|[A-Z][0-9]{13,14}|[A-Z][0-9]{18}|[A-Z][0-9]{6}R|[A-Z][0-9]{9}|[A-Z][0-9]{1,12}|[0-9]{9}[A-Z]|[A-Z]{2}[0-9]{6}[A-Z]|[0-9]{8}[A-Z]{2}|[0-9]{3}[A-Z]{2}[0-9]{4}|[A-Z][0-9][A-Z][0-9][A-Z]|[0-9]{7,8}[A-Z])\b)",
+      R"(\b([a-zA-Z][0-9]{3,6}|[a-zA-Z][0-9]{5,9}|[a-zA-Z][0-9]{6,8}|[a-zA-Z][0-9]{4,8}|[a-zA-Z][0-9]{9,11}|[a-zA-Z]{1,2}[0-9]{5,6}|H[0-9]{8}|V[0-9]{6}|X[0-9]{8}|a-zA-Z]{2}[0-9]{2,5}|[a-zA-Z]{2}[0-9]{3,7}|[0-9]{2}[a-zA-Z]{3}[0-9]{5,6}|[a-zA-Z][0-9]{13,14}|[a-zA-Z][0-9]{18}|[a-zA-Z][0-9]{6}R|[a-zA-Z][0-9]{9}|[a-zA-Z][0-9]{1,12}|[0-9]{9}[a-zA-Z]|[a-zA-Z]{2}[0-9]{6}[a-zA-Z]|[0-9]{8}[a-zA-Z]{2}|[0-9]{3}[a-zA-Z]{2}[0-9]{4}|[a-zA-Z][0-9][a-zA-Z][0-9][a-zA-Z]|[0-9]{7,8}[a-zA-Z])\b)",
       /*pattern_score=*/0.1,
       /*context_keywords=*/
       {
@@ -284,7 +284,7 @@ RulePtr usDriversLicensePattern() {
 RulePtr usPassportPattern() {
   return Pattern::make(
       /*entity=*/"USPASSPORT",
-      /*pattern=*/R"(\b([A-Z][0-9]{8}|[0-9]{9})\b)",
+      /*pattern=*/R"(\b([A-Za-z][0-9]{8}|[0-9]{9})\b)",
       /*pattern_score*/ 0.1,
       /*context_keywords=*/
       {

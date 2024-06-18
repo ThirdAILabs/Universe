@@ -158,7 +158,7 @@ def test_udt_ner_target_tokenizer_arg():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Invalid type for argument 'target_tokenizers'. Must be either List[int] or List[dataset.Tokenizer]."
+            "Invalid type for argument 'target_tokenizers'. Must be either List[int], List[str], or List[dataset.Tokenizer]."
         ),
     ):
         bolt.UniversalDeepTransformer(

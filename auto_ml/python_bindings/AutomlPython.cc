@@ -413,20 +413,29 @@ config::ArgumentMap createArgumentMap(const py::dict& input_args) {
       bool success = false;
       try {
         std::vector<int32_t> value = v.cast<std::vector<int32_t>>();
+        std::cerr << name << " is vec<int>" << std::endl;
+        args.insert(name, value);
+        success = true;  // NOLINT (clang-tidy thinks this is unused)
+      } catch (...) {
+      }
+      try {
+        std::vector<std::string> value = v.cast<std::vector<std::string>>();
+        std::cerr << name << " is vec<str>" << std::endl;
         args.insert(name, value);
         success = true;  // NOLINT (clang-tidy thinks this is unused)
       } catch (...) {
       }
       try {
         auto value = v.cast<std::vector<dataset::TextTokenizerPtr>>();
+        std::cerr << name << " is vec<tokenizer>" << std::endl;
         args.insert(name, value);
         success = true;  // NOLINT (clang-tidy thinks this is unused)
       } catch (...) {
       }
       if (!success) {
-        throw std::invalid_argument(
-            "Invalid type for argument '" + name +
-            "'. Must be either List[int] or List[dataset.Tokenizer].");
+        throw std::invalid_argument("Invalid type for argument '" + name +
+                                    "'. Must be either List[int], List[str], "
+                                    "or List[dataset.Tokenizer].");
       }
     } else if (py::isinstance<data::FeatureEnhancementConfig>(v)) {
       auto value = v.cast<data::FeatureEnhancementConfig>();

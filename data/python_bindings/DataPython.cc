@@ -44,6 +44,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace thirdai::data::python {
 
@@ -530,16 +531,19 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   py::class_<NerTokenizerUnigram, Transformation,
              std::shared_ptr<NerTokenizerUnigram>>(transformations_submodule,
                                                    "NerTokenizerUnigram")
-      .def(py::init<std::string, std::string, std::optional<std::string>,
-                    std::optional<uint32_t>, uint32_t,
-                    std::vector<dataset::TextTokenizerPtr>,
-                    std::optional<FeatureEnhancementConfig>,
-                    std::optional<std::unordered_map<std::string, uint32_t>>>(),
-           py::arg("tokens_column"), py::arg("featurized_sentence_column"),
-           py::arg("target_column"), py::arg("target_dim"),
-           py::arg("dyadic_num_intervals"), py::arg("target_word_tokenizers"),
-           py::arg("feature_enhancement_config") = std::nullopt,
-           py::arg("tag_to_label") = std::nullopt)
+      .def(
+          py::init<std::string, std::string, std::optional<std::string>,
+                   std::optional<uint32_t>, uint32_t,
+                   std::vector<dataset::TextTokenizerPtr>,
+                   std::optional<FeatureEnhancementConfig>,
+                   std::unordered_map<std::string, uint32_t>,
+                   std::unordered_set<std::string>>(),
+          py::arg("tokens_column"), py::arg("featurized_sentence_column"),
+          py::arg("target_column"), py::arg("target_dim"),
+          py::arg("dyadic_num_intervals"), py::arg("target_word_tokenizers"),
+          py::arg("feature_enhancement_config") = std::nullopt,
+          py::arg("tag_to_label") = std::unordered_map<std::string, uint32_t>{},
+          py::arg("ignored_tags") = std::unordered_set<std::string>{})
       .def("process_token", &NerTokenizerUnigram::processToken,
            py::arg("tokens"), py::arg("index"));
 #endif

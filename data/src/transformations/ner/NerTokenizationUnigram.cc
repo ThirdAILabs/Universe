@@ -24,14 +24,16 @@ NerTokenizerUnigram::NerTokenizerUnigram(
     std::optional<uint32_t> target_dim, uint32_t dyadic_num_intervals,
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
     std::optional<FeatureEnhancementConfig> feature_enhancement_config,
-    std::optional<std::unordered_map<std::string, uint32_t>> tag_to_label)
+    std::unordered_map<std::string, uint32_t> tag_to_label,
+    std::unordered_set<std::string> ignored_tags)
     : _tokens_column(std::move(tokens_column)),
       _featurized_sentence_column(std::move(featurized_sentence_column)),
       _target_column(std::move(target_column)),
       _target_dim(target_dim),
       _processor(std::move(target_word_tokenizers), dyadic_num_intervals,
                  std::move(feature_enhancement_config)),
-      _tag_to_label(std::move(tag_to_label)) {}
+      _tag_to_label(std::move(tag_to_label)),
+      _ignored_tags(std::move(ignored_tags)) {}
 
 ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
   (void)state;
@@ -73,7 +75,7 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
                 << "Please ensure each token has a corresponding tag.";
             throw std::out_of_range(error_message.str());
           }
-          if (_tag_to_label.has_value()) {
+          if (!_tag_to_label.empty()) {
             targets[featurized_sentence_offset] =
                 findTagValueForString(tags->row(i)[target]);
           } else {
@@ -118,10 +120,11 @@ ar::ConstArchivePtr NerTokenizerUnigram::toArchive() const {
 
   map->set("processor", _processor.toArchive());
 
-  if (_tag_to_label) {
-    map->set("tag_to_label",
-             ar::mapStrU64({_tag_to_label->begin(), _tag_to_label->end()}));
-  }
+  map->set("tag_to_label",
+           ar::mapStrU64({_tag_to_label.begin(), _tag_to_label.end()}));
+
+  map->set("ignored_tags",
+           ar::vecStr({_ignored_tags.begin(), _ignored_tags.end()}));
 
   return map;
 }
@@ -135,6 +138,10 @@ NerTokenizerUnigram::NerTokenizerUnigram(const ar::Archive& archive)
   if (archive.contains("tag_to_label")) {
     const auto& tag_to_label = archive.getAs<ar::MapStrU64>("tag_to_label");
     _tag_to_label = {tag_to_label.begin(), tag_to_label.end()};
+  }
+  if (archive.contains("ignored_tags")) {
+    const auto& ignored_tags = archive.getAs<ar::VecStr>("ignored_tags");
+    _ignored_tags = {ignored_tags.begin(), ignored_tags.end()};
   }
 }
 

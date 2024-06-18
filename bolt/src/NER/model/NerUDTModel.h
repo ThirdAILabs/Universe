@@ -9,6 +9,7 @@
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <memory>
+#include <unordered_set>
 
 namespace thirdai::bolt::NER {
 
@@ -50,7 +51,8 @@ class NerUDTModel final : public NerModelInterface {
             /*dyadic_num_intervals=*/_dyadic_num_intervals,
             /*target_word_tokenizers=*/_target_word_tokenizers,
             /*feature_enhancement_config=*/_feature_enhancement_config,
-            /*tag_to_label=*/_tag_to_label)});
+            /*tag_to_label=*/_tag_to_label,
+            /*ignored_tags=*/std::unordered_set<std::string>{})});
     transform = transform->then(std::make_shared<data::TextTokenizer>(
         /*input_column=*/_featurized_sentence_column,
         /*output_indices=*/_featurized_tokens_indices_column,
