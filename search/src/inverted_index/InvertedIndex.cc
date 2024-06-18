@@ -4,6 +4,7 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/types/vector.hpp>
+#include <bolt/src/utils/Timer.h>
 #include <archive/src/Archive.h>
 #include <archive/src/List.h>
 #include <archive/src/Map.h>
@@ -12,6 +13,7 @@
 #include <utils/text/PorterStemmer.h>
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <exception>
@@ -69,16 +71,24 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
         "Number of ids must match the number of docs in index.");
   }
 
+  bolt::utils::Timer timer1;
   if (std::unordered_set<DocId>(ids.begin(), ids.end()).size() != ids.size()) {
     throw std::runtime_error("There are multiple documents with the same id.");
   }
+  std::cout << "Checking duplicate IDs took "
+            << timer1.elapsed<std::chrono::seconds>() << " seconds."
+            << std::endl;
 
+  bolt::utils::Timer timer2;
   for (DocId doc_id : ids) {
     if (containsDoc(doc_id)) {
       throw std::runtime_error("Document with id " + std::to_string(doc_id) +
                                " is already indexed.");
     }
   }
+  std::cout << "Checking existing IDs took "
+            << timer2.elapsed<std::chrono::seconds>() << " seconds."
+            << std::endl;
 
   licensing::entitlements().verifyNoDataSourceRetrictions();
 
@@ -93,6 +103,7 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
 
   std::exception_ptr error;
 
+  bolt::utils::Timer timer3;
 // Process shards in parallel
 #pragma omp parallel for default(none)                 \
     shared(shard_config, ids, doc_lens, \
@@ -117,8 +128,15 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
     }
     _sum_doc_lens += shard_doc_len;
   }
+  std::cout << "Parallel insertion took "
+            << timer3.elapsed<std::chrono::seconds>() << " seconds."
+            << std::endl;
 
+  bolt::utils::Timer timer4;
   recomputeMetadata();
+  std::cout << "Metadata computation took "
+            << timer4.elapsed<std::chrono::seconds>() << " seconds."
+            << std::endl;
 }
 
 void InvertedIndex::Shard::insertDoc(
