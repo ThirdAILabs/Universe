@@ -4,9 +4,8 @@ import random
 import re
 import string
 
-import pytest
 import pandas as pd
-
+import pytest
 from thirdai import bolt, data, dataset
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
