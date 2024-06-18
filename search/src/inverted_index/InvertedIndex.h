@@ -104,6 +104,8 @@ class InvertedIndex {
 
   void computeIdfs();
 
+  bool containsDoc(DocId doc_id) const;
+
   inline float bm25(float idf, uint32_t cnt_in_doc, uint64_t doc_len) const {
     const float num = cnt_in_doc * (_k1 + 1);
     const float denom =

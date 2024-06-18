@@ -20,6 +20,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -42,6 +43,17 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
   if (ids.size() != docs.size()) {
     throw std::invalid_argument(
         "Number of ids must match the number of docs in index.");
+  }
+
+  if (std::unordered_set<DocId>(ids.begin(), ids.end()).size() != ids.size()) {
+    throw std::runtime_error("There are multiple documents with the same id.");
+  }
+
+  for (DocId doc_id : ids) {
+    if (containsDoc(doc_id)) {
+      throw std::runtime_error("Document with id " + std::to_string(doc_id) +
+                               " is already in InvertedIndex.");
+    }
   }
 
   licensing::entitlements().verifyNoDataSourceRetrictions();
@@ -87,20 +99,9 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
       const size_t doc_len = doc_lens_and_occurences[i].first;
       const auto& occurrences = doc_lens_and_occurences[i].second;
 
-      if (shard.contains(doc_id)) {
-#pragma omp critical
-        error = std::make_exception_ptr(
-            std::runtime_error("Document with id " + std::to_string(doc_id) +
-                               " is already in InvertedIndex."));
-      }
-
       shard.insertDoc(doc_id, doc_len, occurrences);
       doc_lens[shard_id_offset] += doc_len;
     }
-  }
-
-  if (error) {
-    std::rethrow_exception(error);
   }
 
   for (size_t len : doc_lens) {
@@ -117,6 +118,12 @@ void InvertedIndex::Shard::insertDoc(
     token_to_docs[token].emplace_back(doc_id, cnt);
   }
   doc_lens[doc_id] = len;
+}
+
+bool InvertedIndex::containsDoc(DocId doc_id) const {
+  return std::any_of(
+      _shards.begin(), _shards.end(),
+      [doc_id](const Shard& shard) { return shard.contains(doc_id); });
 }
 
 std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>>
