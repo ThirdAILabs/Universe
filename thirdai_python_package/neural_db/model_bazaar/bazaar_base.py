@@ -292,7 +292,7 @@ class Bazaar:
         else:
             url = urljoin(
                 self._base_url,
-                "bazaar/model",
+                "bazaar/public-model",
             )
             response = http_get_with_error(
                 url,
