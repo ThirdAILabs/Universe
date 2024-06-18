@@ -79,8 +79,18 @@ bool containsAlphabets(const std::string& input) {
   return std::any_of(input.begin(), input.end(), ::isalpha);
 }
 
-bool is_number(const std::string& s) {
-  return std::all_of(s.begin(), s.end(), ::isdigit);
+bool is_number_with_punct(const std::string& s) {
+  bool has_digit = false;
+
+  for (char c : s) {
+    if (std::isdigit(c)) {
+      has_digit = true;
+    } else if (!std::ispunct(c)) {
+      return false;
+    }
+  }
+
+  return has_digit;
 }
 
 bool luhnCheck(const std::string& number) {
@@ -115,7 +125,7 @@ std::string find_contiguous_numbers(const std::vector<std::string>& v,
     return "";
   }
 
-  if (!is_number(v[index])) {
+  if (!is_number_with_punct(v[index])) {
     return "";
   }
 
@@ -124,7 +134,7 @@ std::string find_contiguous_numbers(const std::vector<std::string>& v,
 
   std::vector<std::string> left_window, right_window;
   for (int i = index - 1; i >= start; --i) {
-    if (is_number(v[i])) {
+    if (is_number_with_punct(v[i])) {
       left_window.push_back(v[i]);
     } else {
       break;
@@ -134,7 +144,7 @@ std::string find_contiguous_numbers(const std::vector<std::string>& v,
   std::reverse(left_window.begin(), left_window.end());
 
   for (int i = index + 1; i <= end; ++i) {
-    if (is_number(v[i])) {
+    if (is_number_with_punct(v[i])) {
       right_window.push_back(v[i]);
     } else {
       break;
@@ -161,7 +171,8 @@ std::string getNumericalFeatures(const std::string& input) {
 
   if (!strippedInput.empty()) {
     // useful for credit cards or other account numbers
-    if (luhnCheck(strippedInput) || strippedInput.size() > 12) {
+    if ((luhnCheck(strippedInput) && strippedInput.size() >= 10) ||
+        strippedInput.size() > 12) {
       return "IS_ACCOUNT_NUMBER";
     }
 
