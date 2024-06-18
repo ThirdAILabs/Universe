@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <iterator>
 #include <random>
+#include <stdexcept>
 #include <vector>
 
 namespace thirdai::search::tests {
@@ -271,6 +272,61 @@ TEST(InvertedIndexTests, SaveLoad) {
   auto loaded_full_results = loaded_index->queryBatch(queries, /*k=*/5);
 
   ASSERT_EQ(original_full_results, loaded_full_results);
+}
+
+TEST(InvertedIndexTests, DuplicateDocIdThrows) {
+  InvertedIndex index = indexWithShardSize(5);
+  auto [ids, docs, _queries] =
+      makeDocsAndQueries(/* vocab_size= */ 100, /* n_docs= */ 100);
+  // Duplicate ID in arbitrary position.
+  ids[78] = 0;
+  bool threw = false;
+  try {
+    index.index(ids, docs);
+  } catch (const std::runtime_error& e) {
+    EXPECT_STREQ("There are multiple documents with the same id.", e.what());
+    threw = true;
+  }
+  ASSERT_TRUE(threw);
+}
+
+TEST(InvertedIndexTests, IndexExistingDocIdThrows) {
+  InvertedIndex index = indexWithShardSize(5);
+  auto [ids, docs, _queries] =
+      makeDocsAndQueries(/* vocab_size= */ 100, /* n_docs= */ 100);
+  index.index(ids, docs);
+  bool threw = false;
+  try {
+    index.index(ids, docs);
+  } catch (const std::runtime_error& e) {
+    EXPECT_STREQ("Document with id 0 is already in InvertedIndex.", e.what());
+    threw = true;
+  }
+  ASSERT_TRUE(threw);
+}
+
+TEST(InvertedIndexTests, FillsPartiallyFullShard) {
+  // Make sure that partially full shards are filled before adding new shards.
+  InvertedIndex index = indexWithShardSize(20);
+  auto [ids, docs, queries] =
+      makeDocsAndQueries(/* vocab_size= */ 1000, /* n_docs= */ 40);
+
+  // Insert first 5 elements. This partially fills the first shard.
+  index.index({ids.begin(), ids.begin() + 5}, {docs.begin(), docs.begin() + 5});
+  ASSERT_EQ(index.nShards(), 1);
+
+  // Insert the remaining 35 elements. If the sharding logic works correctly and
+  // fills the first shard completely before adding new shards, then there will
+  // be exactly 20 documents left to fully populate the second shard.
+  // If it doesn't work correctly, either there will be more than 2 shards
+  // or query() will return incorrect results.
+  index.index({ids.begin() + 5, ids.end()}, {docs.begin() + 5, docs.end()});
+  ASSERT_EQ(index.nShards(), 2);
+
+  for (size_t i = 0; i < queries.size(); i++) {
+    // Target Doc ID for i-th query is i.
+    ASSERT_EQ(index.query(queries[i], /* k= */ 1)[0].first, i);
+  }
 }
 
 }  // namespace thirdai::search::tests
