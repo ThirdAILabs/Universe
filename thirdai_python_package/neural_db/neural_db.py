@@ -433,7 +433,8 @@ class NeuralDB:
         return self._savable_state.documents.sources()
 
     def save(self, save_to: Union[str, Path], on_progress: Callable = no_op) -> str:
-        delattr(self, "reranker_model")
+        if hasattr(self, "reranker_model"):
+            delattr(self, "reranker_model")
         return self._savable_state.save(Path(save_to), on_progress)
 
     def _resume(
