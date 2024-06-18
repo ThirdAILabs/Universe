@@ -55,7 +55,8 @@ class NerDataSource(PyDataSource):
             source = source.replace(",", "")
             # Preprocess source text if using a pretrained model
             if self.pretrained:
-                source = " ".join(tokenize_text(self.tokenizer, source))
+                source = tokenize_text(self.tokenizer, source)
+                print(f"{source=}, {target=}")
 
             yield f"{source},{target}"
 
