@@ -5,10 +5,12 @@
 #include <bolt/src/NER/model/NerBackend.h>
 #include <bolt/src/nn/model/Model.h>
 #include <data/src/transformations/Pipeline.h>
+#include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <memory>
+#include <optional>
 
 namespace thirdai::bolt::NER {
 
@@ -41,8 +43,15 @@ class NerUDTModel final : public NerModelInterface {
     std::optional<size_t> target_dim =
         inference ? std::optional<size_t>{} : std::optional<size_t>{num_label};
 
-    auto transform = data::Pipeline::make(
-        {std::make_shared<thirdai::data::NerTokenizerUnigram>(
+    auto transform = data::Pipeline::make()->then(
+        std::make_shared<data::StringToStringArray>(
+            _tokens_column, _tokens_column, ' ', std::nullopt));
+    if (!inference) {
+      transform = transform->then(std::make_shared<data::StringToStringArray>(
+          target_column.value(), target_column.value(), ' ', std::nullopt));
+    }
+    transform =
+        transform->then(std::make_shared<thirdai::data::NerTokenizerUnigram>(
             /*tokens_column=*/_tokens_column,
             /*featurized_sentence_column=*/_featurized_sentence_column,
             /*target_column=*/target_column,
@@ -50,7 +59,7 @@ class NerUDTModel final : public NerModelInterface {
             /*dyadic_num_intervals=*/_dyadic_num_intervals,
             /*target_word_tokenizers=*/_target_word_tokenizers,
             /*feature_enhancement_config=*/_feature_enhancement_config,
-            /*tag_to_label=*/_tag_to_label)});
+            /*tag_to_label=*/_tag_to_label));
     transform = transform->then(std::make_shared<data::TextTokenizer>(
         /*input_column=*/_featurized_sentence_column,
         /*output_indices=*/_featurized_tokens_indices_column,
