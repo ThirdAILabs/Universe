@@ -16,6 +16,7 @@
 #include <data/src/ColumnMapIterator.h>
 #include <data/src/TensorConversion.h>
 #include <data/src/columns/ArrayColumns.h>
+#include <data/src/columns/Column.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/Transformation.h>
@@ -83,10 +84,10 @@ data::TransformationPtr makeTransformation(
     tag_to_label[tags[i]] = i;
   }
 
-  auto transform =
-      data::Pipeline::make()->then(std::make_shared<data::StringToStringArray>(
-          tokens_column, tokens_column, ' ', std::nullopt));
+  auto transform = data::Pipeline::make();
   if (!inference) {
+    transform = transform->then(std::make_shared<data::StringToStringArray>(
+        tokens_column, tokens_column, ' ', std::nullopt));
     transform = transform->then(std::make_shared<data::StringToStringArray>(
         target_column.value(), target_column.value(), ' ', std::nullopt));
   }
@@ -372,18 +373,26 @@ std::vector<SentenceTags> UDTNer::predictTags(
     const std::vector<std::string>& sentences, bool sparse_inference,
     uint32_t top_k, float o_threshold) {
   std::vector<std::vector<std::string>> tokens;
-  tokens.reserve(sentences.size());
-
-  for (const auto& phrase : sentences) {
-    tokens.push_back(text::split(phrase, ' '));
-  }
 
   auto sentence_column =
       data::ValueColumn<std::string>::make(std::vector<std::string>{sentences});
-
   auto data = data::ColumnMap({{_tokens_column, sentence_column}});
 
-  auto featurized = _inference_transform->applyStateless(data);
+  auto split_sentence_transform = data::StringToStringArray(
+      _tokens_column, _tokens_column, ' ', std::nullopt);
+  auto tokenized_sentences = split_sentence_transform.applyStateless(data);
+
+  data::ArrayColumnBasePtr<std::string> tokens_columns =
+      tokenized_sentences.getArrayColumn<std::string>(_tokens_column);
+  auto token_ptr =
+      std::dynamic_pointer_cast<data::ArrayColumn<std::string>>(tokens_columns);
+  if (token_ptr) {
+    tokens = token_ptr->data();
+  } else {
+    throw std::logic_error("Cannot convert sentences to tokens.");
+  }
+
+  auto featurized = _inference_transform->applyStateless(tokenized_sentences);
   auto tensors =
       data::toTensorBatches(featurized, _bolt_inputs, defaults::BATCH_SIZE);
 
