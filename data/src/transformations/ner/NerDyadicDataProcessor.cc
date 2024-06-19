@@ -22,6 +22,20 @@ std::string trimPunctuation(const std::string& str) {
   return str.substr(start, end - start + 1);
 }
 
+std::string trimWhiteSpace(const std::string& str) {
+  auto start = str.begin();
+  while (start != str.end() && std::isspace(*start)) {
+    start++;
+  }
+
+  auto end = str.end();
+  while (end != start && std::isspace(*(end - 1))) {
+    end--;
+  }
+
+  return std::string(start, end);
+}
+
 std::vector<std::string> cleanAndLowerCase(
     const std::vector<std::string>& tokens) {
   /*
@@ -65,8 +79,18 @@ bool containsAlphabets(const std::string& input) {
   return std::any_of(input.begin(), input.end(), ::isalpha);
 }
 
-bool is_number(const std::string& s) {
-  return std::all_of(s.begin(), s.end(), ::isdigit);
+bool is_number_with_punct(const std::string& s) {
+  bool has_digit = false;
+
+  for (char c : s) {
+    if (std::isdigit(c)) {
+      has_digit = true;
+    } else if (!std::ispunct(c)) {
+      return false;
+    }
+  }
+
+  return has_digit;
 }
 
 bool luhnCheck(const std::string& number) {
@@ -101,7 +125,7 @@ std::string find_contiguous_numbers(const std::vector<std::string>& v,
     return "";
   }
 
-  if (!is_number(v[index])) {
+  if (!is_number_with_punct(v[index])) {
     return "";
   }
 
@@ -110,7 +134,7 @@ std::string find_contiguous_numbers(const std::vector<std::string>& v,
 
   std::vector<std::string> left_window, right_window;
   for (int i = index - 1; i >= start; --i) {
-    if (is_number(v[i])) {
+    if (is_number_with_punct(v[i])) {
       left_window.push_back(v[i]);
     } else {
       break;
@@ -120,7 +144,7 @@ std::string find_contiguous_numbers(const std::vector<std::string>& v,
   std::reverse(left_window.begin(), left_window.end());
 
   for (int i = index + 1; i <= end; ++i) {
-    if (is_number(v[i])) {
+    if (is_number_with_punct(v[i])) {
       right_window.push_back(v[i]);
     } else {
       break;
@@ -132,11 +156,11 @@ std::string find_contiguous_numbers(const std::vector<std::string>& v,
 
   std::string result;
   for (const auto& s : left_window) {
-    result += s;
+    result += s + " ";
   }
-  result += v[index];
+  result += v[index] + " ";
   for (const auto& s : right_window) {
-    result += s;
+    result += s + " ";
   }
 
   return result;
@@ -146,35 +170,46 @@ std::string getNumericalFeatures(const std::string& input) {
   std::string strippedInput = stripNonDigits(input);
 
   if (!strippedInput.empty()) {
-    if (luhnCheck(strippedInput) || strippedInput.size() > 12) {
-      /*
-       * Useful for credit cards or iban numbers or other account numbers.
-       */
+    // useful for credit cards or other account numbers
+    if ((luhnCheck(strippedInput) && strippedInput.size() >= 10) ||
+        strippedInput.size() > 12) {
       return "IS_ACCOUNT_NUMBER";
     }
 
+    // if a token contains both alphabets and numbers, it is probably some uin
     if (containsAlphabets(input) && input.size() >= 6) {
       return "IS_UIN";
     }
 
-    if ((strippedInput.size() >= 9 && strippedInput.size() <= 12) ||
+    // ssn is generally in the format : xxx.xx.xxxx or xxx xx xxxx or xxxxxxxxx
+    if (strippedInput.size() == 9 &&
+        (input.size() == 9 || input.size() == 11)) {
+      return "SSN";
+    }
+
+    // phone numbers
+    if ((strippedInput.size() >= 10 && strippedInput.size() <= 12) ||
         input[0] == '+' || input[0] == '(' || input.back() == ')') {  // NOLINT
       return "MAYBE_PHONE";
+    }
+
+    /*zipcode (5 digits) or pincode (6 digits)*/
+    /*zipcode with extension*/
+    if ((strippedInput.size() <= 6 && strippedInput.size() >= 5) ||
+        (strippedInput.size() == 9 && input.size() == 10)) {
+      return "MAYBE_ZIP_CODE";
     }
 
     if (strippedInput.size() == input.size() && strippedInput.size() >= 5) {
       return "IS_NUMBER_OR_UIN";
     }
 
+    /*month or day or year(between 1800 to 2199)*/
     if ((strippedInput.size() <= 2 && std::stoi(strippedInput) <= 31) ||
         (strippedInput.size() == 4 &&
          (std::stoi(strippedInput.substr(0, 2)) <= 21 ||
           std::stoi(strippedInput.substr(0, 2)) >= 18))) {
       return "A_DATE";
-    }
-
-    if (strippedInput.size() <= 6 && strippedInput.size() >= 5) {
-      return "MAYBE_ZIP_CODE";
     }
   }
   return "";
@@ -227,11 +262,11 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
      * numbers, they probably form a single entity.
      */
     std::string surrounding_numbers =
-        find_contiguous_numbers(lower_cased_tokens, index);
+        trimWhiteSpace(find_contiguous_numbers(lower_cased_tokens, index));
     if (!surrounding_numbers.empty()) {
       auto numerical_features = getNumericalFeatures(surrounding_numbers);
       if (!numerical_features.empty()) {
-        extra_features = "CONTIGUOUS_NUMBER_" + numerical_features;
+        extra_features = numerical_features;
       }
     } else {
       auto numerical_features = getNumericalFeatures(current_token);
@@ -240,9 +275,7 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
       }
     }
 
-    if (extra_features == "CONTIGUOUS_NUMBER_IS_ACCOUNT_NUMBER" ||
-        extra_features == "CONTIGUOUS_NUMBER_IS_PHONE" ||
-        extra_features == "IS_ACCOUNT_NUMBER" || extra_features == "IS_PHONE") {
+    if (extra_features == "IS_ACCOUNT_NUMBER") {
       return extra_features;
     }
     extra_features += " ";
