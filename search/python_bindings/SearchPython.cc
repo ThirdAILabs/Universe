@@ -3,9 +3,11 @@
 #include <bolt/python_bindings/PybindUtils.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/stl.h>
+#include <search/src/AutoFlash.h>
 #include <search/src/inverted_index/FinetunableRetriever.h>
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <search/src/inverted_index/Tokenizer.h>
+#include <memory>
 
 namespace thirdai::search::python {
 
@@ -87,6 +89,26 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("soft_start") = true, py::arg("include_whole_words") = true,
            py::arg("stem") = true, py::arg("lowercase") = true)
       .def("tokenize", &WordKGrams::tokenize, py::arg("input"));
+
+  py::class_<AutoFlash, std::shared_ptr<AutoFlash>>(search_submodule, "Flash")
+      .def(py::init<const std::string&, TokenizerPtr>(),
+           py::arg("dataset_size"),
+           py::arg("tokenizer") = std::make_shared<WordKGrams>(
+               /* k= */ 4, /* soft_start= */ false,
+               /* include_whole_words= */ false, /* stem= */ false,
+               /* lowercase= */ true))
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, TokenizerPtr>(),
+           py::arg("hashes_per_table"), py::arg("num_tables"), py::arg("range"),
+           py::arg("reservoir_size"),
+           py::arg("tokenizer") = std::make_shared<WordKGrams>(
+               /* k= */ 4, /* soft_start= */ false,
+               /* include_whole_words= */ false, /* stem= */ false,
+               /* lowercase= */ true))
+      .def("index", &AutoFlash::index, py::arg("ids"), py::arg("docs"))
+      .def("query", &AutoFlash::queryBatch, py::arg("queries"), py::arg("k"))
+      .def("query", &AutoFlash::query, py::arg("query"), py::arg("k"))
+      .def("save", &AutoFlash::save, py::arg("filename"))
+      .def_static("load", &AutoFlash::load, py::arg("filename"));
 
   py::class_<InvertedIndex, std::shared_ptr<InvertedIndex>>(search_submodule,
                                                             "InvertedIndex")
