@@ -542,32 +542,32 @@ def test_neural_db_reranking(all_local_docs):
     # Reranking with rerank_threshold = 0 is the same as not reranking
     assert references_are_equal(
         db.search(query, top_k=100),
-        db.search(query, top_k=100, rerank=True, rerank_threshold=0, reranker="lexical"),
+        db.search(query, top_k=100, rerank=True, rerank_threshold=0),
     )
 
     # Reranking with rerank_threshold = None or inf equals reranking everything
     assert references_are_equal(
-        db.search(query, top_k=100, rerank=True, rerank_threshold=None, reranker="lexical"),
-        db.search(query, top_k=100, rerank=True, rerank_threshold=float("inf"), reranker="lexical"),
+        db.search(query, top_k=100, rerank=True, rerank_threshold=None),
+        db.search(query, top_k=100, rerank=True, rerank_threshold=float("inf")),
     )
 
     # Results are different with and without reranking
     assert not references_are_equal(
         db.search(query, top_k=100),
-        db.search(query, top_k=100, rerank=True, rerank_threshold=None, reranker="lexical"),
+        db.search(query, top_k=100, rerank=True, rerank_threshold=None),
     )
 
     # Assert that threshold top_k defaults to top_k
     assert references_are_equal(
-        db.search(query, top_k=10, rerank=True, rerank_threshold=1.5, reranker="lexical"),
+        db.search(query, top_k=10, rerank=True, rerank_threshold=1.5),
         db.search(
-            query, top_k=10, rerank=True, rerank_threshold=1.5, top_k_threshold=10, reranker="lexical"
+            query, top_k=10, rerank=True, rerank_threshold=1.5, top_k_threshold=10
         ),
     )
 
     # Scores are in descending order with and without ranking
     base_results = db.search(query, top_k=100)
-    reranked_results = db.search(query, top_k=100, rerank=True, rerank_threshold=None, reranker="lexical")
+    reranked_results = db.search(query, top_k=100, rerank=True, rerank_threshold=None)
     assert descending_order([ref.score for ref in base_results])
     assert descending_order([ref.score for ref in reranked_results])
     assert reranked_results[0].score <= base_results[0].score
