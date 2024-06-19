@@ -66,6 +66,7 @@ InvertedIndex::NewShardConfig InvertedIndex::configureShards(
 
 void InvertedIndex::index(const std::vector<DocId>& ids,
                           const std::vector<std::string>& docs) {
+  bolt::utils::Timer timer0;
   if (ids.size() != docs.size()) {
     throw std::invalid_argument(
         "Number of ids must match the number of docs in index.");
@@ -140,6 +141,10 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
   recomputeMetadata();
   std::cout << "Metadata computation took "
             << timer4.elapsed<std::chrono::seconds>() << " seconds."
+            << std::endl;
+
+  std::cout << "Indexing took a total of"
+            << timer0.elapsed<std::chrono::seconds>() << " seconds."
             << std::endl;
 }
 
