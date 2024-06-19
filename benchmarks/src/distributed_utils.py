@@ -51,22 +51,20 @@ def setup_ray(num_workers=2):
     return scaling_config
 
 
-def create_udt_model(n_target_classes, output_dim, num_hashes, embedding_dimension):
+def create_udt_model(n_classes, output_dim, num_hashes, embedding_dimension):
     from thirdai import bolt
 
     model = bolt.UniversalDeepTransformer(
         data_types={
             "QUERY": bolt.types.text(contextual_encoding="local"),
-            "DOC_ID": bolt.types.categorical(delimiter=":"),
+            "DOC_ID": bolt.types.categorical(
+                delimiter=":", n_classes=n_classes, type="int"
+            ),
         },
         target="DOC_ID",
-        n_target_classes=n_target_classes,
-        integer_target=True,
-        options={
-            "embedding_dimension": embedding_dimension,
-            "extreme_output_dim": output_dim,
-            "extreme_num_hashes": num_hashes,
-        },
+        embedding_dimension=embedding_dimension,
+        extreme_output_dim=output_dim,
+        extreme_num_hashes=num_hashes,
     )
     return model
 

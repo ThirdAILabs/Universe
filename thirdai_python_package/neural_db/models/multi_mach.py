@@ -9,7 +9,7 @@ from ..supervised_datasource import SupDataSource
 from ..trainer.training_progress_manager import TrainingProgressManager
 from ..utils import clean_text
 from .mach import Mach
-from .models import CancelState
+from .model_interface import CancelState
 
 
 def aggregate_ensemble_results(results):

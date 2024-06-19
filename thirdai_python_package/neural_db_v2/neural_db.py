@@ -9,7 +9,7 @@ from .core.retriever import Retriever
 from .core.supervised import SupervisedDataset
 from .core.types import Chunk, ChunkId, CustomIdSupervisedBatch, NewChunkBatch, Score
 from .documents import document_by_name
-from .retrievers import FinetunableRetriever, Mach
+from .retrievers import FinetunableRetriever, Mach, MachEnsemble
 
 
 class NeuralDB:
@@ -113,6 +113,7 @@ class NeuralDB:
         retriever_name_map = {
             FinetunableRetriever.__name__: FinetunableRetriever,
             Mach.__name__: Mach,
+            MachEnsemble.__name__: MachEnsemble,
         }
         if retriever_name not in retriever_name_map:
             raise ValueError(f"Class name {retriever_name} not found in registry.")

@@ -11,8 +11,6 @@ class ScifactMachUDTBenchmark(UDTBenchmarkConfig):
     test_file = "scifact/tst_supervised.csv"
 
     target = "DOC_ID"
-    integer_target = True
-    n_target_classes = 5183
     delimiter = ","
 
     num_epochs = 10
@@ -35,7 +33,7 @@ class ScifactMachUDTBenchmark(UDTBenchmarkConfig):
     def get_data_types(path_prefix):
         return {
             "QUERY": bolt.types.text(contextual_encoding="local"),
-            "DOC_ID": bolt.types.categorical(delimiter=":"),
+            "DOC_ID": bolt.types.categorical(delimiter=":", n_classes=5183, type="int"),
         }
 
 
@@ -46,8 +44,6 @@ class TrecCovidMachUDTBenchmark(UDTBenchmarkConfig):
     test_file = "trec-covid/tst_supervised.csv"
 
     target = "DOC_ID"
-    integer_target = True
-    n_target_classes = 171332
     delimiter = ","
 
     options = {
@@ -70,5 +66,7 @@ class TrecCovidMachUDTBenchmark(UDTBenchmarkConfig):
             "QUERY": bolt.types.text(
                 tokenizer="words-punct", contextual_encoding="local"
             ),
-            "DOC_ID": bolt.types.categorical(delimiter=":"),
+            "DOC_ID": bolt.types.categorical(
+                delimiter=":", n_classes=171332, type="int"
+            ),
         }

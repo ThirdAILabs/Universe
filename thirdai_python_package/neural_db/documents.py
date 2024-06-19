@@ -154,6 +154,7 @@ class Reference:
         retriever: str = None,
     ):
         self._id = element_id
+        self._id_in_document = element_id
         self._upvote_ids = upvote_ids if upvote_ids is not None else [element_id]
         self._text = text
         self._source = source
@@ -166,6 +167,10 @@ class Reference:
     @property
     def id(self):
         return self._id
+
+    @property
+    def id_in_document(self):
+        return self._id_in_document
 
     @property
     def upvote_ids(self):
@@ -1049,26 +1054,49 @@ class PDF(Extracted):
 
     Args:
         path (str): path to PDF file
-        chunk_size (int): The number of words in each chunk of text. Defaults to 100
-        stride (int): The number of words between each chunk of text. When stride <
-            chunk_size, the text chunks overlap. When stride = chunk_size, the
-            text chunks do not overlap. Defaults to 40 so adjacent chunks have a
-            60% overlap.
-        emphasize_first_words (int): The number of words at the beginning of the
-            document to be passed into NeuralDB as a strong signal. For example,
-            if your document starts with a descriptive title that is 3 words long,
-            then you can set emphasize_first_words to 3 so that NeuralDB captures
-            this strong signal. Defaults to 0.
-        ignore_header_footer (bool): whether the parser should remove headers and
-            footers. Defaults to True; headers and footers are removed by
-            default.
-        ignore_nonstandard_orientation (bool): whether the parser should remove lines
-            of text that have a nonstandard orientation, such as margins that
-            are oriented vertically. Defaults to True; lines with nonstandard
-            orientation are removed by default.
+        version (str): Either "v1" or "v2". If "v1", the parser splits the PDF
+            into paragraphs. If "v2", the parser creates overlapping chunks
+            comprised of entire lines from the PDF. "v2" does more data cleaning
+            and therefore supports more options, which are outlined below.
+        chunk_size (int): Only relevant if version = "v2".
+            The number of words in each chunk of text. Defaults to 100
+        stride (int): Only relevant if version = "v2". The number of words
+            between each chunk of text. When stride < chunk_size, the text
+            chunks overlap. When stride = chunk_size, the text chunks do not
+            overlap. Defaults to 40 so adjacent chunks have a 60% overlap.
+        emphasize_first_words (int): Only relevant if version = "v2".
+            The number of words at the beginning of the document to be passed
+            into NeuralDB as a strong signal. For example, if your document
+            starts with a descriptive title that is 3 words long, then you can
+            set emphasize_first_words to 3 so that NeuralDB captures this strong
+            signal. Defaults to 0.
+        ignore_header_footer (bool): Only relevant if version = "v2". Whether
+            the parser should remove headers and footers. Defaults to True;
+            headers and footers are removed by default.
+        ignore_nonstandard_orientation (bool): Only relevant if version = "v2".
+            Whether the parser should remove lines of text that have a
+            nonstandard orientation, such as margins that are oriented
+            vertically. Defaults to True; lines with nonstandard orientation are
+            removed by default.
         metadata (Dict[str, Any]): Optional, defaults to {}. Specifies metadata to
             associate with entities from this file. Queries to NeuralDB can provide
             constrains to restrict results based on the metadata.
+        on_disk (bool): If True, the processed chunks will be stored in a
+            lightweight on-disk database. Otherwise, processed chunks will be
+            stored in-memory. Defaults to False.
+        doc_keywords (str):  Only relevant if version = "v2". If provided, the
+            keywords will be prepended to every chunk in the document. It is
+            helpful for use cases where a NeuralDB instance contains multiple
+            documents. Defaults to an empty string.
+        emphasize_section_titles (bool): Only relevant if version = "v2". If
+            True, infers section titles based on font properties and prepends
+            the latest section title to each chunk. Defaults to False.
+        table_parsing (bool): Only relevant if version = "v2". If True, the
+            contents of a table are considered to be contained in a single line,
+            ensuring that any chunk that contains a table contains the entire
+            table. Defaults to False.
+        save_extra_info (bool): If True, the original PDF file will be saved in
+            .ndb checkpoint. Defaults to True.
     """
 
     def __init__(

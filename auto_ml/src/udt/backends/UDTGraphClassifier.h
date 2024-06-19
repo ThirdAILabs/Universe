@@ -10,8 +10,9 @@ namespace thirdai::automl::udt {
 class UDTGraphClassifier final : public UDTBackend {
  public:
   UDTGraphClassifier(const ColumnDataTypes& data_types,
-                     const std::string& target_col, uint32_t n_target_classes,
-                     bool integer_target, const TabularOptions& options);
+                     const CategoricalDataTypePtr& target_type,
+                     const std::string& target_col,
+                     const TabularOptions& options);
 
   explicit UDTGraphClassifier(const ar::Archive& archive);
 
@@ -30,8 +31,9 @@ class UDTGraphClassifier final : public UDTBackend {
                       py::kwargs kwargs) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
-                     bool return_predicted_class,
-                     std::optional<uint32_t> top_k) final {
+                     bool return_predicted_class, std::optional<uint32_t> top_k,
+                     const py::kwargs& kwargs) final {
+    (void)kwargs;
     return _classifier->predict(_featurizer->featurizeInput(sample),
                                 sparse_inference, return_predicted_class,
                                 /* single= */ true, top_k);
@@ -39,7 +41,9 @@ class UDTGraphClassifier final : public UDTBackend {
 
   py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
                           bool return_predicted_class,
-                          std::optional<uint32_t> top_k) final {
+                          std::optional<uint32_t> top_k,
+                          const py::kwargs& kwargs) final {
+    (void)kwargs;
     return _classifier->predict(_featurizer->featurizeInputBatch(samples),
                                 sparse_inference, return_predicted_class,
                                 /* single= */ false, top_k);

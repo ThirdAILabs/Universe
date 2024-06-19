@@ -24,7 +24,6 @@ def sample_training_data():
             tokens = sentence.split()
             data = {"source": tokens, "target": tags}
             json_line = json.dumps(data)
-            print(json_line)
             file.write(json_line + "\n")
     return filename
 

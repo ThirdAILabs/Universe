@@ -6,6 +6,7 @@ import zipfile
 
 import numpy as np
 import pandas as pd
+import requests
 from thirdai._thirdai import bolt
 
 from .beir_download_utils import (
@@ -18,9 +19,17 @@ from .beir_download_utils import (
 )
 
 
+def download_file(url, output_path):
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
+    with open(output_path, "wb") as file:
+        for chunk in response.iter_content(chunk_size=8192):
+            file.write(chunk)
+
+
 def _download_dataset(url, zip_file, check_existence, output_dir):
     if not os.path.exists(zip_file):
-        os.system(f"curl {url} --output {zip_file}")
+        download_file(url, zip_file)
 
     if any([not os.path.exists(must_exist) for must_exist in check_existence]):
         with zipfile.ZipFile(zip_file, "r") as zip_ref:
@@ -212,9 +221,7 @@ def prep_fraud_dataset(dataset_path, seed=42):
 
 
 def download_census_income(num_inference_samples=5, return_labels=False):
-    CENSUS_INCOME_BASE_DOWNLOAD_URL = (
-        "https://archive.ics.uci.edu/static/public/2/adult.zip"
-    )
+    CENSUS_INCOME_BASE_DOWNLOAD_URL = "https://www.dropbox.com/scl/fi/xg5jld8rj2h3yciduts6l/census-income.zip?rlkey=xo2zs5mtvbl917kgevok4fk1q&st=ehrcbkzo&dl=1"
     CENSUS_INCOME_ZIP = "./adult.zip"
     CENSUS_INCOME_DIR = "./adult"
     TRAIN_FILE = "./census_income_train.csv"
@@ -416,7 +423,7 @@ def prepare_query_reformulation_data(seed=42):
 def download_clinc_dataset(
     num_training_files=1, clinc_small=False, file_prefix="clinc"
 ):
-    CLINC_URL = "https://archive.ics.uci.edu/static/public/570/clinc150.zip"
+    CLINC_URL = "https://www.dropbox.com/scl/fi/doxyeurqxvgyperfqwk0r/clinc150.zip?rlkey=s4jfwbjzfwdfro2f82vnatldp&st=u0txk4xx&dl=1"
     CLINC_ZIP = "./clinc150_uci.zip"
     CLINC_DIR = "./clinc"
     MAIN_FILE = CLINC_DIR + "/clinc150_uci/data_full.json"
@@ -513,9 +520,7 @@ def download_brazilian_houses_dataset():
 def download_internet_ads_dataset(seed=42):
     random.seed(seed)
 
-    INTERNET_ADS_DOWNLOAD_URL = (
-        "https://archive.ics.uci.edu/static/public/51/internet+advertisements.zip"
-    )
+    INTERNET_ADS_DOWNLOAD_URL = "https://www.dropbox.com/scl/fi/ze6h56r9a2uy8mzpo14yf/internet-advertisements.zip?rlkey=lmgo50xhugjb4wrwblnynye1a&st=2dil84zs&dl=1"
     INTERNET_ADS_ZIP = "./internet+advertisements.zip"
     INTERNET_ADS_DIR = "./internet+advertisements"
     _download_dataset(
@@ -620,7 +625,7 @@ def download_yelp_chi_dataset(seed=42):
             col_name: bolt.types.numerical(col_range)
             for col_range, col_name in zip(numerical_col_ranges, numerical_col_names)
         },
-        "target": bolt.types.categorical(),
+        "target": bolt.types.categorical(n_classes=2, type="int"),
         "neighbors": bolt.types.neighbors(),
     }
 
@@ -635,9 +640,9 @@ def download_amazon_kaggle_product_catalog_sampled():
         )
 
     df = pd.read_csv(f"{os.getcwd()}/{TRAIN_FILE}")
-    n_target_classes = df.shape[0]
+    n_classes = df.shape[0]
 
-    return TRAIN_FILE, n_target_classes
+    return TRAIN_FILE, n_classes
 
 
 def download_agnews_dataset(corpus_file):
@@ -667,7 +672,7 @@ def download_beir_dataset(dataset):
     # we remap doc ids from 0 to N-1 so we can specify integer target in UDT
     # coldstart only works with integer target for now
     doc_ids_to_integers = remap_doc_ids(corpus)
-    n_target_classes = len(doc_ids_to_integers)
+    n_classes = len(doc_ids_to_integers)
 
     # Not all of the beir datasets come with a train split, some only have a test
     # split. In cases without a train split, we won't write a new supervised train file.
@@ -700,5 +705,5 @@ def download_beir_dataset(dataset):
         f"{dataset}/unsupervised.csv",
         trn_supervised,
         f"{dataset}/tst_supervised.csv",
-        n_target_classes,
+        n_classes,
     )

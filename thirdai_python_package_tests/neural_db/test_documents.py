@@ -432,17 +432,15 @@ def test_udt_cold_start_on_csv_document():
 
     (
         catalog_file,
-        n_target_classes,
+        n_classes,
     ) = demos.download_amazon_kaggle_product_catalog_sampled()
 
     model = bolt.UniversalDeepTransformer(
         data_types={
             "QUERY": bolt.types.text(),
-            "PRODUCT_ID": bolt.types.categorical(),
+            "PRODUCT_ID": bolt.types.categorical(n_classes=n_classes, type="int"),
         },
         target="PRODUCT_ID",
-        n_target_classes=n_target_classes,
-        integer_target=True,
     )
 
     data_source = documents.DocumentDataSource("PRODUCT_ID", "STRONG", "WEAK")

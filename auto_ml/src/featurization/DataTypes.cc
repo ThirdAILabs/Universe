@@ -1,6 +1,7 @@
 #include "DataTypes.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <memory>
 
 namespace thirdai::automl {
 
@@ -100,6 +101,10 @@ NeighborsDataTypePtr asNeighbors(const DataTypePtr& data_type) {
 
 NodeIDDataTypePtr asNodeID(const DataTypePtr& data_type) {
   return std::dynamic_pointer_cast<NodeIDDataType>(data_type);
+}
+
+TokenTagsDataTypePtr asTokenTags(const DataTypePtr& data_type) {
+  return std::dynamic_pointer_cast<TokenTagsDataType>(data_type);
 }
 
 }  // namespace thirdai::automl

@@ -19,7 +19,7 @@ class UDTRecurrentClassifier final : public UDTBackend {
       const ColumnDataTypes& input_data_types,
       const UserProvidedTemporalRelationships& temporal_tracking_relationships,
       const std::string& target_name, const SequenceDataTypePtr& target,
-      uint32_t n_target_classes, const TabularOptions& tabular_options,
+      const TabularOptions& tabular_options,
       const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
@@ -40,12 +40,13 @@ class UDTRecurrentClassifier final : public UDTBackend {
                       py::kwargs kwargs) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
-                     bool return_predicted_class,
-                     std::optional<uint32_t> top_k) final;
+                     bool return_predicted_class, std::optional<uint32_t> top_k,
+                     const py::kwargs& kwargs) final;
 
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class,
-                          std::optional<uint32_t> top_k) final;
+                          std::optional<uint32_t> top_k,
+                          const py::kwargs& kwargs) final;
 
   ModelPtr model() const final { return _model; }
 

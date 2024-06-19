@@ -20,7 +20,6 @@ class UDTBenchmarkConfig(ABC):
     test_file = None
 
     target = None
-    n_target_classes = None
     temporal_relationships = {}
     delimiter = ","
     model_config = None
@@ -28,7 +27,6 @@ class UDTBenchmarkConfig(ABC):
 
     learning_rate = None
     num_epochs = None
-    integer_target = False
     callbacks = []
     metrics = ["categorical_accuracy"]
     max_in_memory_batches = None
@@ -54,7 +52,6 @@ class YelpPolarityUDTConfig(UDTBenchmarkConfig):
     test_file = "udt_datasets/yelp_polarity/test.csv"
 
     target = "label"
-    n_target_classes = 2
     delimiter = "\t"
 
     learning_rate = 0.01
@@ -62,7 +59,7 @@ class YelpPolarityUDTConfig(UDTBenchmarkConfig):
 
     @staticmethod
     def get_data_types(path_prefix):
-        return {"text": bolt.types.text(), "label": bolt.types.categorical()}
+        return {"text": bolt.types.text(), "label": bolt.types.categorical(n_classes=2)}
 
 
 class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
@@ -73,7 +70,6 @@ class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
     test_file = "udt_datasets/amazon_polarity/amazon_polarity_content_test.csv"
 
     target = "label"
-    n_target_classes = 2
     delimiter = "\t"
 
     learning_rate = 0.01
@@ -81,7 +77,10 @@ class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
 
     @staticmethod
     def get_data_types(path_prefix):
-        return {"content": bolt.types.text(), "label": bolt.types.categorical()}
+        return {
+            "content": bolt.types.text(),
+            "label": bolt.types.categorical(n_classes=2),
+        }
 
 
 class CriteoUDTConfig(UDTBenchmarkConfig):
@@ -92,7 +91,6 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
     test_file = "udt_datasets/criteo/test_udt.csv"
 
     target = "label"
-    n_target_classes = 2
 
     learning_rate = 0.01
     num_epochs = 1
@@ -128,7 +126,7 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
             data_types[f"cat_{i+1}"] = bolt.types.categorical()
 
         # Add label column
-        data_types["label"] = bolt.types.categorical()
+        data_types["label"] = bolt.types.categorical(n_classes=2)
         return data_types
 
 
@@ -140,7 +138,6 @@ class InternetAdsUDTBenchmark(UDTBenchmarkConfig):
     test_file = "internet_ads/test_with_header.data"
 
     target = "label"
-    n_target_classes = 2
 
     learning_rate = 0.001
     num_epochs = 100
@@ -166,7 +163,7 @@ class InternetAdsUDTBenchmark(UDTBenchmarkConfig):
         for i in range(3, 1558):
             data_types[str(i)] = bolt.types.categorical()
 
-        data_types["label"] = bolt.types.categorical()
+        data_types["label"] = bolt.types.categorical(n_classes=2)
 
         return data_types
 
@@ -179,7 +176,6 @@ class FraudDetectionUDTBenchmark(UDTBenchmarkConfig):
     test_file = "fraud_detection/new_test.csv"
 
     target = "isFraud"
-    n_target_classes = 2
 
     learning_rate = 0.001
     num_epochs = 2
@@ -206,7 +202,7 @@ class FraudDetectionUDTBenchmark(UDTBenchmarkConfig):
             "nameDest": bolt.types.categorical(),
             "oldbalanceDest": bolt.types.numerical(range=(0, 356015890)),
             "newbalanceDest": bolt.types.numerical(range=(0, 356179279)),
-            "isFraud": bolt.types.categorical(),
+            "isFraud": bolt.types.categorical(n_classes=2),
             "isFlaggedFraud": bolt.types.categorical(),
         }
 
@@ -219,7 +215,6 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
     test_file = "wayfair/dev_raw_queries.txt"
 
     target = "labels"
-    n_target_classes = 931
     delimiter = "\t"
     model_config = {
         "inputs": ["input"],
@@ -255,7 +250,7 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
     @staticmethod
     def get_data_types(path_prefix):
         return {
-            "labels": bolt.types.categorical(delimiter=","),
+            "labels": bolt.types.categorical(delimiter=",", n_classes=931),
             "query": bolt.types.text(),
         }
 
@@ -272,7 +267,6 @@ class ForestCoverTypeUDTBenchmark(UDTBenchmarkConfig):
     test_file = "tabular_benchmarks/ForestCoverType/test_udt_no_index.csv"
 
     target = "col54"
-    n_target_classes = 7
     delimiter = ","
     options = {"contextual_columns": True}
 
@@ -281,7 +275,9 @@ class ForestCoverTypeUDTBenchmark(UDTBenchmarkConfig):
 
     @staticmethod
     def get_data_types(path_prefix):
-        return {f"col{i}": bolt.types.categorical() for i in range(55)}
+        types = {f"col{i}": bolt.types.categorical() for i in range(53)}
+        types["col54"] = bolt.types.categorical(n_classes=7)
+        return types
 
 
 class BlackFridayUDTBenchmark(UDTBenchmarkConfig):
@@ -292,7 +288,6 @@ class BlackFridayUDTBenchmark(UDTBenchmarkConfig):
     test_file = "tabular_regression/reg_cat/black_friday_test_no_index.csv"
 
     target = "Purchase"
-    n_target_classes = None
     delimiter = ","
     model_config = None
     options = {"contextual_columns": True}
@@ -335,7 +330,6 @@ class DiamondsUDTBenchmark(UDTBenchmarkConfig):
     test_file = "tabular_regression/reg_cat/diamonds_test_no_index.csv"
 
     target = "price"
-    n_target_classes = None
     delimiter = ","
 
     learning_rate = 0.001
@@ -378,7 +372,6 @@ class MercedesBenzGreenerUDTBenchmark(UDTBenchmarkConfig):
     test_file = "tabular_regression/reg_cat/Mercedes_Benz_Greener_Manufacturing_test_no_index.csv"
 
     target = "y"
-    n_target_classes = None
     delimiter = ","
 
     learning_rate = 0.001
@@ -419,7 +412,6 @@ class TranslitUDTBenchmark(UDTBenchmarkConfig):
     test_file = "lstm_translit/test_asm.csv"
 
     target = "output_seq"
-    n_target_classes = 26
     delimiter = ","
 
     num_epochs = 5
@@ -430,5 +422,7 @@ class TranslitUDTBenchmark(UDTBenchmarkConfig):
     def get_data_types(path_prefix):
         return {
             "input_seq": bolt.types.sequence(delimiter=" "),
-            "output_seq": bolt.types.sequence(max_length=30, delimiter=" "),
+            "output_seq": bolt.types.sequence(
+                n_classes=26, max_length=30, delimiter=" "
+            ),
         }

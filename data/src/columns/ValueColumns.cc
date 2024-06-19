@@ -81,9 +81,6 @@ template ValueColumnPtr<std::string> ValueColumn<std::string>::make(
 template ValueColumnPtr<int64_t> ValueColumn<int64_t>::make(
     std::vector<int64_t>&&);
 
-template ValueColumnPtr<uint32_t> ValueColumn<uint32_t>::make(
-    std::vector<uint32_t>&&);
-
 template <typename T>
 ColumnPtr ValueColumn<T>::permute(
     const std::vector<size_t>& permutation) const {

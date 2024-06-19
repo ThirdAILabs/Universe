@@ -148,8 +148,7 @@ def get_udt_census_income_model():
             "capital-loss": bolt.types.numerical(range=(0, 4356)),
             "hours-per-week": bolt.types.numerical(range=(1, 99)),
             "native-country": bolt.types.categorical(),
-            "label": bolt.types.categorical(),
+            "label": bolt.types.categorical(n_classes=2),
         },
         target="label",
-        n_target_classes=2,
     )

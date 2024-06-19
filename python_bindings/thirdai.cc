@@ -141,7 +141,7 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
       bolt_submodule);
   thirdai::bolt::python::addTextGenerationModels(bolt_submodule);
   thirdai::bolt::seismic::python::createSeismicSubmodule(bolt_submodule);
-  thirdai::bolt::python::addNERModels(bolt_submodule);
+  thirdai::bolt::NER::python::addNERModels(bolt_submodule);
 
   // Automl in Bolt
   thirdai::automl::python::defineAutomlInModule(bolt_submodule);

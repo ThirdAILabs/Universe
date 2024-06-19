@@ -329,6 +329,7 @@ set(THIRDAI_SOURCES
     bolt/src/inference/EmbFcInference.cc
     bolt/src/NER/model/NerUDTModel.cc
     bolt/src/NER/model/NerBoltModel.cc
+    bolt/src/NER/model/NerClassifier.cc
     bolt/src/NER/model/NER.cc
     bolt/src/text_generation/ContextualModel.cc
     bolt/src/text_generation/DyadicModel.cc
@@ -413,9 +414,13 @@ set(THIRDAI_SOURCES
     data/src/transformations/DyadicInterval.cc
     data/src/transformations/NextWordPrediction.cc
     data/src/transformations/SpladeAugmentation.cc
-    data/src/transformations/NerTokenFromStringArray.cc
+    data/src/transformations/ner/NerTokenFromStringArray.cc
     data/src/transformations/ner/NerTokenizationUnigram.cc
-    data/src/transformations/ner/UnigramDataProcessor.cc
+    data/src/transformations/ner/NerDyadicDataProcessor.cc
+    data/src/transformations/ner/rules/Rule.cc
+    data/src/transformations/ner/rules/Pattern.cc
+    data/src/transformations/ner/rules/CommonPatterns.cc
+    data/src/transformations/ner/rules/IBANPattern.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
@@ -425,6 +430,7 @@ set(THIRDAI_SOURCES
     data/src/rca/ExplanationMap.cc
     mach/src/MachRetriever.cc
     mach/src/MachConfig.cc
+    mach/src/EnsembleSearch.cc
     archive/src/Archive.cc
     archive/src/Map.cc
     archive/src/List.cc
@@ -535,9 +541,10 @@ pybind11_add_module(
   auto_ml/src/udt/backends/UDTRecurrentClassifier.cc
   auto_ml/src/udt/backends/UDTRegression.cc
   auto_ml/src/udt/backends/UDTQueryReformulation.cc
-  auto_ml/src/udt/backends/UDTSVMClassifier.cc
   auto_ml/src/udt/backends/UDTGraphClassifier.cc
+  auto_ml/src/udt/backends/UDTNer.cc
   auto_ml/src/udt/utils/Classifier.cc
+  auto_ml/src/udt/utils/KwargUtils.cc
   mach/python_bindings/MachPython.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)
