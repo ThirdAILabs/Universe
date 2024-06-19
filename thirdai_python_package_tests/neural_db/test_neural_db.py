@@ -479,6 +479,7 @@ def test_neural_db_delete_document_with_finetunable_retriever():
     assert 4 not in [result.id for result in results]
 
 
+@pytest.mark.unit
 def test_neural_db_rerank_search(all_local_docs):
     def char4(sentence):
         return [sentence[i : i + 4] for i in range(len(sentence) - 3)]
@@ -574,6 +575,7 @@ def test_neural_db_reranking(all_local_docs):
     assert reranked_results[-1].score >= base_results[-1].score
 
 
+@pytest.mark.unit
 def test_neural_db_reranking_threshold(all_local_docs):
     db = ndb.NeuralDB("user", retriever="mach")
     db.insert(all_local_docs, train=True, epochs=1)
