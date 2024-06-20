@@ -66,6 +66,7 @@ TransformationPtr Transformation::fromArchive(const ar::Archive& archive) {
   HANDLE_TYPE(CastToValue<int64_t>)
   HANDLE_TYPE(CastToArray<uint32_t>)
   HANDLE_TYPE(CastToArray<float>)
+  HANDLE_TYPE(CastToArray<std::string>)
   HANDLE_TYPE(StringConcat)
   HANDLE_TYPE(StringHash)
   HANDLE_TYPE(StringIDLookup)
