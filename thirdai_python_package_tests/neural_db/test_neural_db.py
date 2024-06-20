@@ -534,6 +534,7 @@ def descending_order(seq):
     return all(seq[i] >= seq[i + 1] for i in range(len(seq) - 1))
 
 
+@pytest.mark.unit
 def test_neural_db_reranking(all_local_docs):
     db = ndb.NeuralDB("user", retriever="mach")
     db.insert(all_local_docs, train=True, epochs=1)
