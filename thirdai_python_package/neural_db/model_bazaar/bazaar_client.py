@@ -1022,3 +1022,38 @@ class ModelBazaar(Bazaar):
             )
 
         raise Exception("The model isn't deployed...")
+
+    def update_model(self, model_name: str, base_model_identifier: str):
+        """
+        Creates a new model with give name by updating the existing model with RLHF Logs.
+
+        Args:
+            model_name (str): Name for the new model.
+            base_model_identifier (str): The identifier of the base model.
+
+        Returns:
+            Model: A Model instance.
+        """
+        url = urljoin(self._base_url, f"bazaar/rlhf-update-model")
+        response = http_post_with_error(
+            url,
+            params={
+                "model_identifier": base_model_identifier,
+                "model_name": model_name,
+            },
+            headers=auth_header(self._access_token),
+        )
+
+        response_content = json.loads(response.content)
+
+        if response_content["status"] != "success":
+            raise Exception(response_content["message"])
+
+        model = Model(
+            model_identifier=create_model_identifier(
+                model_name=model_name, author_username=self._username
+            ),
+            model_id=response_content["data"]["model_id"],
+        )
+
+        return model
