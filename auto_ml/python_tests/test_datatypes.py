@@ -50,3 +50,13 @@ def test_datatype_list_to_string():
         str(test_list)
         == '[{"type": "numerical", "range": [0, 1], "granularity": "m"}, {"type": "text"}, {"type": "categorical"}, {"type": "date"}]'
     )
+
+
+def test_token_tag_with_space():
+    tags = ["email", "credit card"]
+    default_tag = "O"
+
+    with pytest.raises(
+        ValueError, match="Tags with spaces are not allowed. Found tag: 'credit card'"
+    ):
+        token_tags = types.token_tags(tags=tags, default_tag=default_tag)
