@@ -364,7 +364,20 @@ std::string NerDyadicDataProcessor::processToken(
    * 3. Combine everything into a single string and return it.
    */
 
-  const std::string& target_token = tokens[index];
+  uint32_t n_alpha = 0;
+  uint32_t n_digit = 0;
+  uint32_t n_punct = 0;
+  std::string target_token = tokens[index];
+  for (char& c : target_token) {
+    if (std::isdigit(c)) {
+      c = '#';
+      n_digit++;
+    } else if (std::isalpha(c)) {
+      n_alpha++;
+    } else if (std::ispunct(c)) {
+      n_punct++;
+    }
+  }
 
   std::vector<std::string> tokenized_target_token;
 
@@ -390,6 +403,10 @@ std::string NerDyadicDataProcessor::processToken(
   if (_feature_enhancement_config.has_value()) {
     repr += " " + getExtraFeatures(tokens, index);
   }
+
+  repr += " " + std::to_string(n_alpha) + "_ALPHA";
+  repr += " " + std::to_string(n_digit) + "_DIGIT";
+  repr += " " + std::to_string(n_punct) + "_PUNCT";
 
   return repr;
 }
