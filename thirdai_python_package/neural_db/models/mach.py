@@ -11,6 +11,11 @@ import tqdm
 from thirdai import bolt, data, demos, search
 
 from ..documents import DocumentDataSource
+
+# This is unused, we only need this to ensure that old models can be loaded,
+# at which point this is removed. The import is here to ensure that on pyinstaller
+# builds this file is included in the binary since it is not imported anywhere.
+from ..inverted_index import InvertedIndex
 from ..supervised_datasource import SupDataSource
 from ..trainer.checkpoint_config import CheckpointConfig
 from ..trainer.training_progress_manager import (
