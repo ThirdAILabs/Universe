@@ -29,6 +29,11 @@ from .model_interface import (
     merge_results,
 )
 
+# This is unused, we only need this to ensure that old models can be loaded,
+# at which point this is removed. The import is here to ensure that on pyinstaller
+# builds this file is included in the binary since it is not imported anywhere.
+from ..inverted_index import InvertedIndex
+
 
 class EarlyStopWithMinEpochs(bolt.train.callbacks.Callback):
     def __init__(self, min_epochs, tracked_metric, metric_threshold):
