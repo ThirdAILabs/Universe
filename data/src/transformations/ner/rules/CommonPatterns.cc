@@ -114,7 +114,7 @@ RulePtr creditCardPattern() {
   return Pattern::make(
       /*entity=*/"CREDITCARDNUMBER",
       /*pattern=*/
-      R"(\b(([4613]\d{3})|(5[0-5]\d{2}))[- ]?(\d{3,4})[- ]?(\d{3,4})[- ]?(\d{3,5})\b)",
+      R"(\b(([24613]\d{3})|(5[0-5]\d{2}))[- ]?(\d{3,4})[- ]?(\d{3,4})[- ]?(\d{3,5})\b)",
       /*pattern_score=*/0.8,
       /*context_keywords=*/
       {
