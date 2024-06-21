@@ -2,10 +2,9 @@ import numpy as np
 import pytest
 import thirdai
 from ndb_utils import create_simple_dataset
+from test_neural_db import all_local_docs, descending_order, references_are_equal
 from thirdai import neural_db as ndb
 from thirdai.neural_db.models.mach_defaults import autotune_from_scratch_min_max_epochs
-
-from test_neural_db import descending_order, references_are_equal
 
 pytestmark = [pytest.mark.unit]
 
