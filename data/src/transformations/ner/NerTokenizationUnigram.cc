@@ -146,11 +146,6 @@ NerTokenizerUnigram::NerTokenizerUnigram(const ar::Archive& archive)
     const auto& ignored_tags = archive.getAs<ar::VecStr>("ignored_tags");
     _ignored_tags = {ignored_tags.begin(), ignored_tags.end()};
   }
-  std::cout << "ignored tags: ";
-  for (const auto& x : _ignored_tags) {
-    std::cout << x << ", ";
-  }
-  std::cout << std::endl;
 }
 
 }  // namespace thirdai::data
