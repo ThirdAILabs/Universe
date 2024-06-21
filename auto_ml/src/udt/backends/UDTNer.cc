@@ -32,6 +32,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -257,7 +258,8 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
     _rule = data::ner::getRuleForEntities(defaults::NER_RULE_BASED_ENTITIES);
   }
 
-  auto [_label_to_tag, ignored_tags] = mapTagsToLabels(
+  std::unordered_set<std::string> ignored_tags;
+  std::tie(_label_to_tag, ignored_tags) = mapTagsToLabels(
       target->default_tag, target->tags, _rule, ignore_rule_tags);
 
   _model = buildModel(options.input_dim, options.emb_dim, _label_to_tag.size(),
@@ -271,12 +273,6 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
       /*dyadic_num_intervals=*/options.dyadic_num_intervals,
       /*target_word_tokenizers=*/options.target_tokenizers,
       /*feature_config=*/options.feature_config);
-
-  std::cout << "udt ignored tags: ";
-  for (const auto& x : ignored_tags) {
-    std::cout << x << ", ";
-  }
-  std::cout << std::endl;
 
   _inference_transform = makeTransformation(
       /*inference=*/true, /*tags_column=*/_tags_column,
@@ -414,13 +410,9 @@ std::vector<SentenceTags> UDTNer::predictTags(
     throw std::logic_error("Cannot convert sentences to tokens.");
   }
 
-  std::cout << "token transform applied" << std::endl;
-
   auto featurized = _inference_transform->applyStateless(tokenized_sentences);
   auto tensors =
       data::toTensorBatches(featurized, _bolt_inputs, defaults::BATCH_SIZE);
-
-  std::cout << "inference transform applied" << std::endl;
 
   size_t sentence_index = 0;
   size_t token_index = 0;
@@ -429,9 +421,6 @@ std::vector<SentenceTags> UDTNer::predictTags(
   if (_rule) {
     rule_results = _rule->applyBatch(tokens);
   }
-
-  std::cout << "rules applied" << std::endl;
-
   std::vector<SentenceTags> output_tags(sentences.size());
 
   for (const auto& batch : tensors) {
@@ -451,6 +440,7 @@ std::vector<SentenceTags> UDTNer::predictTags(
 
         while (!top_labels.empty()) {
           float score = top_labels.top().first;
+
           auto tag = _label_to_tag.at(top_labels.top().second);
           top_labels.pop();
           tags.emplace_back(tag, score);
