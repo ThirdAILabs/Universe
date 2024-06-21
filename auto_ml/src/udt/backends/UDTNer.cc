@@ -22,6 +22,7 @@
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
 #include <data/src/transformations/ner/rules/CommonPatterns.h>
+#include <data/src/transformations/ner/rules/Rule.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <pybind11/stl.h>
 #include <utils/text/StringManipulation.h>
@@ -32,6 +33,8 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
+#include <utility>
 
 namespace thirdai::automl::udt {
 
@@ -69,7 +72,8 @@ bolt::ModelPtr buildModel(uint32_t input_dim, uint32_t emb_dim,
 data::TransformationPtr makeTransformation(
     bool inference, const std::string& tags_column,
     const std::string& tokens_column, const std::vector<std::string>& tags,
-    size_t input_dim, uint32_t dyadic_num_intervals,
+    const std::unordered_set<std::string>& ignored_tags, size_t input_dim,
+    uint32_t dyadic_num_intervals,
     const std::vector<dataset::TextTokenizerPtr>& target_word_tokenizers,
     const std::optional<data::FeatureEnhancementConfig>& feature_config) {
   std::optional<std::string> target_column = tags_column;
@@ -101,7 +105,8 @@ data::TransformationPtr makeTransformation(
                       /*dyadic_num_intervals=*/dyadic_num_intervals,
                       /*target_word_tokenizers=*/target_word_tokenizers,
                       /*feature_enhancement_config=*/feature_config,
-                      /*tag_to_label=*/tag_to_label))
+                      /*tag_to_label=*/tag_to_label,
+                      /*ignored_tags=*/ignored_tags))
                   ->then(std::make_shared<data::TextTokenizer>(
                       /*input_column=*/NER_FEATURIZED_SENTENCE,
                       /*output_indices=*/NER_FEATURIZED_SENTENCE,
@@ -133,16 +138,24 @@ std::string tokensColumn(ColumnDataTypes data_types,
   return data_types.begin()->first;
 }
 
-std::vector<std::string> mapTagsToLabels(
-    const std::string& default_tag, const std::vector<std::string>& tags,
-    const std::vector<std::string>& rule_tags = {}) {
+std::pair<std::vector<std::string>, std::unordered_set<std::string>>
+mapTagsToLabels(const std::string& default_tag,
+                const std::vector<std::string>& tags,
+                const data::ner::RulePtr& rule, bool ignore_rule_tags) {
+  auto rule_tags =
+      rule == nullptr ? std::vector<std::string>() : rule->entities();
+
   std::vector<std::string> all_tags = {default_tag};
+  std::unordered_set<std::string> ignored_tags;
+
   for (const auto& tag : tags) {
     if (std::find(rule_tags.begin(), rule_tags.end(), tag) == rule_tags.end()) {
       all_tags.push_back(tag);
+    } else if (ignore_rule_tags) {
+      ignored_tags.insert(tag);
     }
   }
-  return all_tags;
+  return {all_tags, ignored_tags};
 }
 
 std::shared_ptr<data::NerTokenizerUnigram> extractInputTransform(
@@ -238,10 +251,14 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
     options = fromScratch(args);
   }
 
+  bool ignore_rule_tags = args.get<bool>("ignore_rule_tags", "boolean", true);
+
   if (args.get<bool>("rules", "boolean", false)) {
     _rule = data::ner::getRuleForEntities(defaults::NER_RULE_BASED_ENTITIES);
   }
-  _label_to_tag = mapTagsToLabels(target->default_tag, target->tags);
+
+  auto [_label_to_tag, ignored_tags] = mapTagsToLabels(
+      target->default_tag, target->tags, _rule, ignore_rule_tags);
 
   _model = buildModel(options.input_dim, options.emb_dim, _label_to_tag.size(),
                       options.pretrained_emb);
@@ -249,14 +266,22 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
   _supervised_transform = makeTransformation(
       /*inference=*/false, /*tags_column=*/_tags_column,
       /*tokens_column=*/_tokens_column, _label_to_tag,
+      /*ignored_tags=*/ignored_tags,
       /*input_dim=*/options.input_dim,
       /*dyadic_num_intervals=*/options.dyadic_num_intervals,
       /*target_word_tokenizers=*/options.target_tokenizers,
       /*feature_config=*/options.feature_config);
 
+  std::cout << "udt ignored tags: ";
+  for (const auto& x : ignored_tags) {
+    std::cout << x << ", ";
+  }
+  std::cout << std::endl;
+
   _inference_transform = makeTransformation(
       /*inference=*/true, /*tags_column=*/_tags_column,
       /*tokens_column=*/_tokens_column, _label_to_tag,
+      /*ignored_tags=*/ignored_tags,
       /*input_dim=*/options.input_dim,
       /*dyadic_num_intervals=*/options.dyadic_num_intervals,
       /*target_word_tokenizers=*/options.target_tokenizers,
@@ -389,9 +414,13 @@ std::vector<SentenceTags> UDTNer::predictTags(
     throw std::logic_error("Cannot convert sentences to tokens.");
   }
 
+  std::cout << "token transform applied" << std::endl;
+
   auto featurized = _inference_transform->applyStateless(tokenized_sentences);
   auto tensors =
       data::toTensorBatches(featurized, _bolt_inputs, defaults::BATCH_SIZE);
+
+  std::cout << "inference transform applied" << std::endl;
 
   size_t sentence_index = 0;
   size_t token_index = 0;
@@ -400,6 +429,8 @@ std::vector<SentenceTags> UDTNer::predictTags(
   if (_rule) {
     rule_results = _rule->applyBatch(tokens);
   }
+
+  std::cout << "rules applied" << std::endl;
 
   std::vector<SentenceTags> output_tags(sentences.size());
 
