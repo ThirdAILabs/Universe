@@ -240,11 +240,8 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
 
   if (args.get<bool>("rules", "boolean", false)) {
     _rule = data::ner::getRuleForEntities(defaults::NER_RULE_BASED_ENTITIES);
-    _label_to_tag =
-        mapTagsToLabels(target->default_tag, target->tags, _rule->entities());
-  } else {
-    _label_to_tag = mapTagsToLabels(target->default_tag, target->tags);
   }
+  _label_to_tag = mapTagsToLabels(target->default_tag, target->tags);
 
   _model = buildModel(options.input_dim, options.emb_dim, _label_to_tag.size(),
                       options.pretrained_emb);
