@@ -543,9 +543,9 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
           py::arg("dyadic_num_intervals"), py::arg("target_word_tokenizers"),
           py::arg("feature_enhancement_config") = std::nullopt,
           py::arg("tag_to_label") = std::unordered_map<std::string, uint32_t>{},
-          py::arg("ignored_tags") = std::unordered_set<std::string>{})
-      .def("process_token", &NerTokenizerUnigram::processToken,
-           py::arg("tokens"), py::arg("index"));
+          py::arg("ignored_tags") = std::unordered_set<std::string>{});
+     //  .def("process_token", &NerTokenizerUnigram::processToken,
+     //       py::arg("tokens"), py::arg("index"));
 #endif
 
   py::class_<FeatureEnhancementConfig,

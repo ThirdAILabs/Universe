@@ -12,16 +12,6 @@
 
 namespace thirdai::data {
 
-std::string trimPunctuation(const std::string& str) {
-  const std::string punctuation = ".,?-!;:";
-  size_t start = str.find_first_not_of(punctuation);
-  if (start == std::string::npos) {
-    return str;
-  }
-  size_t end = str.find_last_not_of(punctuation);
-  return str.substr(start, end - start + 1);
-}
-
 std::string trimWhiteSpace(const std::string& str) {
   auto start = str.begin();
   while (start != str.end() && std::isspace(*start)) {
@@ -34,26 +24,6 @@ std::string trimWhiteSpace(const std::string& str) {
   }
 
   return std::string(start, end);
-}
-
-std::vector<std::string> cleanAndLowerCase(
-    const std::vector<std::string>& tokens) {
-  /*
-   * Converts the tokens to lower case and trims punctuations.
-   */
-  std::vector<std::string> lower_tokens(tokens.size());
-  std::transform(tokens.begin(), tokens.end(), lower_tokens.begin(),
-                 [](const std::string& token) {
-                   std::string lower_token;
-                   lower_token.reserve(token.size());
-                   std::transform(token.begin(), token.end(),
-                                  std::back_inserter(lower_token), ::tolower);
-                   return lower_token;
-                 });
-  for (auto& token : lower_tokens) {
-    token = trimPunctuation(token);
-  }
-  return lower_tokens;
 }
 
 bool containsKeywordInRange(const std::vector<std::string>& tokens,
@@ -205,18 +175,19 @@ std::string getNumericalFeatures(const std::string& input) {
     }
 
     /*month or day or year(between 1800 to 2199)*/
-    if ((strippedInput.size() <= 2 && std::stoi(strippedInput) <= 31) ||
-        (strippedInput.size() == 4 &&
-         (std::stoi(strippedInput.substr(0, 2)) <= 21 ||
-          std::stoi(strippedInput.substr(0, 2)) >= 18))) {
-      return "A_DATE";
-    }
+    // if ((strippedInput.size() <= 2 && std::stoi(strippedInput) <= 31) ||
+    //     (strippedInput.size() == 4 &&
+    //      (std::stoi(strippedInput.substr(0, 2)) <= 21 ||
+    //       std::stoi(strippedInput.substr(0, 2)) >= 18))) {
+    //   return "A_DATE";
+    // }
   }
   return "";
 }
 
 std::string NerDyadicDataProcessor::getExtraFeatures(
-    const std::vector<std::string>& tokens, uint32_t index) const {
+    const std::vector<std::string>& tokens, uint32_t index,
+    const std::vector<std::string>& lower_cased_tokens) const {
   if (!_feature_enhancement_config.has_value()) {
     return "";
   }
@@ -225,7 +196,6 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
 
   // clean the tokens to be able to match regex and apply heuristics
   std::string current_token = trimPunctuation(tokens[index]);
-  auto lower_cased_tokens = cleanAndLowerCase(tokens);
 
   /*
    * start, end, start_long are indices in the vector that mark the boundary of
@@ -240,21 +210,21 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
       (index > 5) ? (index - 6)
                   : 0;  // we need more context for phone numbers or uins
 
-  if (std::regex_match(lower_cased_tokens[index],
-                       _feature_enhancement_config->month_regex) ||
-      std::regex_match(lower_cased_tokens[index],
-                       _feature_enhancement_config->date_regex)) {
-    extra_features += "A_VALID_DATE ";
-    return extra_features;
-  }
+  // if (std::regex_match(lower_cased_tokens[index],
+  //                      _feature_enhancement_config->month_regex) ||
+  //     std::regex_match(lower_cased_tokens[index],
+  //                      _feature_enhancement_config->date_regex)) {
+  //   extra_features += "A_VALID_DATE ";
+  //   return extra_features;
+  // }
 
-  if (_feature_enhancement_config->find_emails) {
-    if (std::regex_match(lower_cased_tokens[index],
-                         _feature_enhancement_config->email_regex)) {
-      extra_features += "IS_VALID_EMAIL ";
-      return extra_features;
-    }
-  }
+  // if (_feature_enhancement_config->find_emails) {
+  //   if (std::regex_match(lower_cased_tokens[index],
+  //                        _feature_enhancement_config->email_regex)) {
+  //     extra_features += "IS_VALID_EMAIL ";
+  //     return extra_features;
+  //   }
+  // }
 
   if (_feature_enhancement_config->enhance_numerical_features) {
     /*
@@ -322,12 +292,12 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
     extra_features += "CONTAINS_LOCATION_WORDS ";
   }
 
-  if (_feature_enhancement_config->enhance_organization_features &&
-      containsKeywordInRange(
-          lower_cased_tokens, start, end,
-          _feature_enhancement_config->organization_keywords)) {
-    extra_features += "CONTAINS_ORGANIZATION_WORDS ";
-  }
+  // if (_feature_enhancement_config->enhance_organization_features &&
+  //     containsKeywordInRange(
+  //         lower_cased_tokens, start, end,
+  //         _feature_enhancement_config->organization_keywords)) {
+  //   extra_features += "CONTAINS_ORGANIZATION_WORDS ";
+  // }
   if (_feature_enhancement_config->find_phonenumbers &&
       containsKeywordInRange(lower_cased_tokens, start_long, end,
                              _feature_enhancement_config->contact_keywords)) {
@@ -355,7 +325,8 @@ std::shared_ptr<NerDyadicDataProcessor> NerDyadicDataProcessor::make(
 }
 
 std::string NerDyadicDataProcessor::processToken(
-    const std::vector<std::string>& tokens, uint32_t index) const {
+    const std::vector<std::string>& tokens, uint32_t index,
+    const std::vector<std::string>& lower_cased_tokens) const {
   /*
    * Returns a featurized string for the target token and it's context in the
    * sentence.
@@ -370,7 +341,7 @@ std::string NerDyadicDataProcessor::processToken(
   std::string target_token = tokens[index];
   for (char& c : target_token) {
     if (std::isdigit(c)) {
-      c = '#'; 
+      c = '#';
       n_digit++;
     } else if (std::isalpha(c)) {
       n_alpha++;
@@ -400,13 +371,13 @@ std::string NerDyadicDataProcessor::processToken(
   repr += generateDyadicWindows(tokens, index);
 
   if (_feature_enhancement_config.has_value()) {
-    repr += " " + getExtraFeatures(tokens, index);
+    repr += " " + getExtraFeatures(tokens, index, lower_cased_tokens);
   }
 
   repr += " " + std::to_string(n_alpha) + "_ALPHA";
   repr += " " + std::to_string(n_digit) + "_DIGIT";
   repr += " " + std::to_string(n_punct) + "_PUNCT";
-  
+
   return repr;
 }
 

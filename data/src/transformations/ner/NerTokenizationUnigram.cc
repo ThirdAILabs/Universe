@@ -18,6 +18,33 @@
 
 namespace thirdai::data {
 
+std::string trimPunctuation(const std::string& str) {
+  const std::string punctuation = ".,?-!;:";
+  size_t start = str.find_first_not_of(punctuation);
+  if (start == std::string::npos) {
+    return str;
+  }
+  size_t end = str.find_last_not_of(punctuation);
+  return str.substr(start, end - start + 1);
+}
+
+std::vector<std::string> cleanAndLowerCase(
+    const std::vector<std::string>& tokens) {
+  /*
+   * Converts the tokens to lower case and trims punctuations.
+   */
+  auto lower_tokens = tokens;
+  for (auto& token : lower_tokens) {
+    for (char& c : token) {
+      c = std::tolower(c);
+    }
+  }
+  for (auto& token : lower_tokens) {
+    token = trimPunctuation(token);
+  }
+  return lower_tokens;
+}
+
 NerTokenizerUnigram::NerTokenizerUnigram(
     std::string tokens_column, std::string featurized_sentence_column,
     std::optional<std::string> target_column,
@@ -60,10 +87,14 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
       size_t sample_offset = sample_offsets[i];
       std::vector<std::string> row_token_vectors =
           text_tokens->row(i).toVector();
+
+      auto lower_cased_tokens = cleanAndLowerCase(row_token_vectors);
+
       for (size_t target = 0; target < row_token_vectors.size(); target++) {
         size_t featurized_sentence_offset = sample_offset + target;
         featurized_sentences[featurized_sentence_offset] =
-            _processor.processToken(row_token_vectors, target);
+            _processor.processToken(row_token_vectors, target,
+                                    lower_cased_tokens);
         if (_target_column) {
           if (row_token_vectors.size() != tags->row(i).size()) {
             std::stringstream error_message;
