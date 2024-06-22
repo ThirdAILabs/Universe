@@ -1,6 +1,6 @@
 print("Loading labels...")
 from datasets import load_dataset
-ds = load_dataset("mteb/amazon_polarity", "en")
+ds = load_dataset("mteb/amazon_polarity", "default")
 train_labels = ds["train"]["label"]
 val_labels = ds["validation"]["label"]
 test_labels = ds["test"]["label"]

@@ -3,7 +3,7 @@ from utils import run_and_time
 def main(num_cpus):
     print("Downloading dataset...")
     from datasets import load_dataset
-    ds = load_dataset("mteb/amazon_polarity", "en")
+    ds = load_dataset("mteb/amazon_polarity", "default")
 
     print("Downloading model...")
     from sentence_transformers import SentenceTransformer
