@@ -64,4 +64,24 @@ std::vector<float> NadarayaWatsonEstimator::predict(
   return outputs;
 }
 
+void KernelMeans::train(std::vector<std::vector<float>> inputs) {
+  assert(inputs.size() == outputs.size());
+  _train_inputs = std::move(inputs);
+}
+
+std::vector<float> KernelMeans::predict(
+    const std::vector<std::vector<float>>& inputs) const {
+  std::vector<float> outputs(inputs.size());
+#pragma omp parallel for default(none) shared(inputs, outputs, std::cout)
+  for (size_t i = 0; i < inputs.size(); i++) {
+    float kernel_sum = 0;
+    for (const auto& train_input : _train_inputs) {
+      const float sim = _kernel->on(inputs[i], train_input);
+      kernel_sum += sim;
+    }
+    outputs[i] = kernel_sum / _train_inputs.size();
+  }
+  return outputs;
+}
+
 }  // namespace thirdai::automl

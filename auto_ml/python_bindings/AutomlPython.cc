@@ -164,6 +164,14 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("outputs"))
       .def("predict", &NadarayaWatsonEstimator::predict, py::arg("inputs"));
 
+  py::class_<KernelMeans, std::shared_ptr<KernelMeans>>(
+      module, "KernelMeans")
+      .def(py::init<const std::shared_ptr<Kernel>>(), py::arg("kernel"))
+      .def("train", &KernelMeans::train, py::arg("inputs"))
+      .def("predict", &KernelMeans::predict, py::arg("inputs"));
+
+  module.def("k_matrix", &kMatrix, py::arg("kernel"), py::arg("vectors"));
+
   py::class_<Distance, std::shared_ptr<Distance>>(module, "Distance")
       .def("between", &Distance::between, py::arg("a"), py::arg("b"));
 
@@ -174,14 +182,18 @@ void defineAutomlInModule(py::module_& module) {
                                                                 "L2Distance")
       .def(py::init<>());
 
-  py::class_<SparseKernelApproximation,
-             std::shared_ptr<SparseKernelApproximation>>(module, "SKA")
+  py::class_<SKASampler,
+             std::shared_ptr<SKASampler>>(module, "SKASampler")
       .def(py::init<const std::shared_ptr<Distance>,
                     std::vector<std::vector<float>>, std::vector<float>>(),
            py::arg("distance"), py::arg("train_inputs"),
            py::arg("train_outputs"))
-      .def("use", &SparseKernelApproximation::use, py::arg("k"))
-      .def("used_samples", &SparseKernelApproximation::usedSamples);
+      .def("use", &SKASampler::use, py::arg("k"))
+      .def("used_samples", &SKASampler::usedSamples);
+
+  py::class_<SparseKernelApproximation, std::shared_ptr<SparseKernelApproximation>>(module, "SKA")
+      .def(py::init<std::shared_ptr<Kernel>, std::vector<std::vector<float>>, std::vector<float>, std::vector<float>>(), py::arg("kernel"), py::arg("train_inputs"), py::arg("train_outputs"), py::arg("alphas"))
+      .def("predict", &SparseKernelApproximation::predict, py::arg("inputs"));
 
   py::class_<udt::UDT, std::shared_ptr<udt::UDT>>(module,
                                                   "UniversalDeepTransformer")

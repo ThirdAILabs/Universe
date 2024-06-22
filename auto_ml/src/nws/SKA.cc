@@ -30,7 +30,7 @@ float L2Distance::between(const std::vector<float>& a,
   return std::sqrt(sum_of_squares);
 }
 
-void SparseKernelApproximation::use(uint32_t k) {
+void SKASampler::use(uint32_t k) {
   assert(k >= _used_train_inputs.size());
   assert(k > 0);
   assert(k <= (_used_train_inputs.size() + _train_inputs.size()));
@@ -56,11 +56,43 @@ void SparseKernelApproximation::use(uint32_t k) {
   }
 }
 
-void SparseKernelApproximation::useSample(uint32_t sample_idx) {
+void SKASampler::useSample(uint32_t sample_idx) {
   _used_train_inputs.push_back(std::move(_train_inputs[sample_idx]));
   _used_train_outputs.push_back(_train_outputs[sample_idx]);
   _train_inputs.erase(sample_idx);
   _train_outputs.erase(sample_idx);
+}
+
+std::vector<float> SparseKernelApproximation::predict(const std::vector<std::vector<float>> &inputs) const {
+  std::vector<float> outputs(inputs.size());
+#pragma omp parallel for default(none) shared(inputs, outputs)
+  for (size_t i = 0; i < inputs.size(); i++) {
+    float num = 0, denom = 0;
+    for (size_t j = 0; j < _train_inputs.size(); j++) {
+      const float sim = _kernel->on(inputs[i], _train_inputs[j]);
+      num += _alphas[j] * sim * _train_outputs[j];
+      denom += _alphas[j] * sim;
+    }
+    outputs[i] = denom ? num / denom : 0;
+  }
+  return outputs;
+}
+
+std::vector<std::vector<float>> kMatrix(const std::shared_ptr<Kernel> &kernel, const std::vector<std::vector<float>>& vectors) {   
+  std::vector<std::vector<float>> output(vectors.size(), std::vector<float>(vectors.size()));
+#pragma omp parallel for default(none) shared(kernel, vectors, output)
+  for (uint32_t i = 0; i < vectors.size(); i++) {
+    for (uint32_t j = 0; j <= i; j++) {
+      output[i][j] = kernel->on(vectors[i], vectors[j]);
+    }
+  }
+#pragma omp parallel for default(none) shared(kernel, vectors, output)
+  for (uint32_t j = 0; j < vectors.size(); j++) {
+    for (uint32_t i = 0; i < j; i++) {
+      output[i][j] = output[j][i];
+    }
+  }
+  return output;
 }
 
 }  // namespace thirdai::automl

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <auto_ml/src/nws/NWE.h>
 #include <cassert>
 #include <limits>
 #include <memory>
@@ -29,9 +30,9 @@ class L2Distance final : public Distance {
                 const std::vector<float>& b) const final;
 };
 
-class SparseKernelApproximation {
+class SKASampler {
  public:
-  SparseKernelApproximation(std::shared_ptr<Distance> distance,
+  SKASampler(std::shared_ptr<Distance> distance,
                             std::vector<std::vector<float>> train_inputs,
                             std::vector<float> train_outputs)
       : _distance(std::move(distance)),
@@ -64,5 +65,25 @@ class SparseKernelApproximation {
   std::vector<std::vector<float>> _used_train_inputs;
   std::vector<float> _used_train_outputs;
 };
+
+class SparseKernelApproximation {
+ public:
+  explicit SparseKernelApproximation(
+    std::shared_ptr<Kernel> kernel, std::vector<std::vector<float>> train_inputs,
+    std::vector<float> train_outputs, std::vector<float> alphas)
+    : _kernel(std::move(kernel)), _train_inputs(std::move(train_inputs)),
+      _train_outputs(std::move(train_outputs)), _alphas(std::move(alphas)) {}
+  
+  std::vector<float> predict(
+      const std::vector<std::vector<float>>& inputs) const;
+
+ private:
+  std::shared_ptr<Kernel> _kernel;
+  std::vector<std::vector<float>> _train_inputs;
+  std::vector<float> _train_outputs;
+  std::vector<float> _alphas;
+};
+
+std::vector<std::vector<float>> kMatrix(const std::shared_ptr<Kernel>& kernel, const std::vector<std::vector<float>>& vectors);
 
 }  // namespace thirdai::automl

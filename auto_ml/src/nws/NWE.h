@@ -57,4 +57,19 @@ class NadarayaWatsonEstimator {
   std::shared_ptr<Kernel> _kernel;
 };
 
+class KernelMeans {
+ public:
+  explicit KernelMeans(std::shared_ptr<Kernel> kernel)
+      : _kernel(std::move(kernel)) {}
+
+  void train(std::vector<std::vector<float>> inputs);
+
+  std::vector<float> predict(
+      const std::vector<std::vector<float>>& inputs) const;
+
+ private:
+  std::vector<std::vector<float>> _train_inputs;
+  std::shared_ptr<Kernel> _kernel;
+};
+
 }  // namespace thirdai::automl
