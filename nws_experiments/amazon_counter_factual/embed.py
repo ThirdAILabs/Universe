@@ -14,19 +14,19 @@ def main(num_cpus):
     print("Preparing multi process pool...")
     pool, _ = run_and_time(lambda: model.start_multi_process_pool(['cpu'] * num_cpus))
 
-    def embed_train():
+    def embed_with_progress(data):
         batch_size = 100
         batches = []
-        for i in tqdm.tqdm(range(0, len(ds["train"]["text"]), batch_size)):
-            batches.append(model.encode_multi_process(ds["train"]["text"][i:i+batch_size], pool))
+        for i in tqdm.tqdm(range(0, len(data), batch_size)):
+            batches.append(model.encode_multi_process(data[i:i+batch_size], pool))
         return np.concatenate(batches)
 
     print("Embedding train text...")
-    train_embeddings, _ = run_and_time(embed_train)
+    train_embeddings, _ = run_and_time(lambda: embed_with_progress(ds["train"]["text"]))
     print("Embedding val text...")
-    val_embeddings, _ = run_and_time(lambda: model.encode_multi_process(ds["validation"]["text"], pool))
+    val_embeddings, _ = run_and_time(lambda: embed_with_progress(ds["validation"]["text"]))
     print("Embedding test text...")
-    test_embeddings, _ = run_and_time(lambda: model.encode_multi_process(ds["test"]["text"], pool))
+    test_embeddings, _ = run_and_time(lambda: embed_with_progress(ds["test"]["text"]))
 
     print("Closing pool...")
     model.stop_multi_process_pool(pool)
