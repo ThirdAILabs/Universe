@@ -1,0 +1,5 @@
+sentence_transformers
+transformers
+numpy
+scikit-learn
+datasets
