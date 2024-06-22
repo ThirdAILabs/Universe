@@ -15,7 +15,7 @@ def main(num_cpus):
     pool, _ = run_and_time(lambda: model.start_multi_process_pool(['cpu'] * num_cpus))
 
     def embed_with_progress(data):
-        batch_size = 1000
+        batch_size = 10_000
         batches = []
         for i in tqdm.tqdm(range(0, len(data), batch_size)):
             batches.append(model.encode_multi_process(data[i:i+batch_size], pool))
