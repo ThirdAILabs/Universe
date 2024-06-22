@@ -91,3 +91,9 @@ tags
 
 # OpenMP deps
 deps/openmp/*
+
+# Saved embeddings and labels
+*.np
+
+# Misc
+nws_experiments/distances.json
