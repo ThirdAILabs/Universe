@@ -18,7 +18,7 @@ def main(num_cpus):
         batch_size = 10_000
         batches = []
         for i in tqdm.tqdm(range(0, len(data), batch_size)):
-            batches.append(model.encode_multi_process(data[i:i+batch_size], pool))
+            batches.append(model.encode_multi_process(data[i:i+batch_size], pool, batch_size=256))
         return np.concatenate(batches)
 
     print("Embedding train text...")
