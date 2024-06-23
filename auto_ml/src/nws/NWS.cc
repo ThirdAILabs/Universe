@@ -187,11 +187,16 @@ void RACE::update(const std::vector<std::vector<float>>& keys, const std::vector
     for (uint32_t row = 0; row < _hash->rows(); row++) {
       for (size_t i = 0; i < keys.size(); i++) {
         uint32_t hash = _hash->hashAt(keys[i], row);
+        bool updated = false;
         for (auto& [key, value] : _sparse_arrays[row]) {
           if (key == hash) {
             value += values[i];
+            updated = true;
             break;
           }
+        }
+        if (!updated) {
+          updated.push_back({hash, 1.0})
         }
       }
     }
