@@ -196,7 +196,7 @@ void RACE::update(const std::vector<std::vector<float>>& keys, const std::vector
           }
         }
         if (!updated) {
-          _sparse_arrays[row].push_back({hash, 1.0})
+          _sparse_arrays[row].push_back({hash, 1.0});
         }
       }
     }
