@@ -129,7 +129,7 @@ class RACE {
 
   void update(const std::vector<std::vector<float>>& keys, const std::vector<std::vector<float>>& values);
 
-  float query(const std::vector<float>& key) const;
+  std::vector<float> query(const std::vector<float>& key) const;
 
   auto hash() { return _hash; }
 
@@ -157,8 +157,8 @@ class RACE {
 
 class NadarayaWatsonSketch {
  public:
-  explicit NadarayaWatsonSketch(const std::shared_ptr<Hash>& hash, bool sparse)
-      : _top(hash, sparse), _bottom(hash, sparse) {}
+  explicit NadarayaWatsonSketch(const std::shared_ptr<Hash>& hash, size_t output_dim, bool sparse)
+      : _top(hash, output_dim, sparse), _bottom(hash, 1, sparse) {}
 
   void train(const std::vector<std::vector<float>>& inputs,
              const std::vector<std::vector<float>>& outputs);
@@ -166,9 +166,6 @@ class NadarayaWatsonSketch {
   std::vector<std::vector<float>> predict(
       const std::vector<std::vector<float>>& inputs) const;
 
-  std::vector<float> predictDebug(
-      const std::vector<std::vector<float>>& inputs) const;
-  
   size_t bytesUsed() const { return _top.bytesUsed() + _bottom.bytesUsed(); }
 
  private:

@@ -208,12 +208,15 @@ void RACE::update(const std::vector<std::vector<float>>& keys, const std::vector
   }
 }
 
-float RACE::query(const std::vector<float>& key) const {
-  float value = 0;
+std::vector<float> RACE::query(const std::vector<float>& key) const {
+  std::vector<float> value(_value_dim, 0);
   if (!_arrays.empty()) {
     size_t skip_buckets = 0;
     for (const uint32_t bucket : _hash->hash(key)) {
-      value += _arrays[skip_buckets + bucket];
+      size_t val_start = _value_dim * (skip_buckets + bucket);
+      for (size_t val_dim = 0; val_dim < _value_dim; val_dim++) {
+        value[val_dim] += _arrays[val_start + val_dim];
+      }
       skip_buckets += _hash->range();
     }
   }
@@ -222,13 +225,17 @@ float RACE::query(const std::vector<float>& key) const {
     for (const uint32_t hash : _hash->hash(key)) {
       for (const auto& [key, bucket_value] : _sparse_arrays[row]) {
         if (key == hash) {
-          value += bucket_value;
+          for (size_t val_dim = 0; val_dim < _value_dim; val_dim++) {
+            value[val_dim] += bucket_value[val_dim];
+          }
         }
       }
       row++;
     }
   }
-  value /= _hash->rows();
+  for (float& val : value) {
+    val /= _hash->rows();
+  }
   return value;
 }
 
@@ -244,36 +251,29 @@ void RACE::print() const {
 }
 
 void NadarayaWatsonSketch::train(const std::vector<std::vector<float>>& inputs,
-                                 const std::vector<float>& outputs) {
+                                 const std::vector<std::vector<float>>& outputs) {
   assert(inputs.size() == outputs.size());
-  const std::vector<float> ones(outputs.size(), 1.0);
+  const std::vector<std::vector<float>> ones(outputs.size(), {1.0});
   _top.update(inputs, outputs);
   _bottom.update(inputs, ones);
 }
 
-std::vector<float> NadarayaWatsonSketch::predict(
+std::vector<std::vector<float>> NadarayaWatsonSketch::predict(
     const std::vector<std::vector<float>>& inputs) const {
-  std::vector<float> outputs(inputs.size());
+  std::vector<std::vector<float>> outputs(inputs.size());
 #pragma omp parallel for default(none) shared(inputs, outputs, std::cout)
   for (size_t i = 0; i < inputs.size(); i++) {
     auto top = _top.query(inputs[i]);
     auto bottom = _bottom.query(inputs[i]);
-    outputs[i] = bottom ? top / bottom : 0;
+    outputs[i] = top;
+    if (bottom[0]) {
+      for (float& top_val : top) {
+        top_val /= bottom[0];
+      }
+    }
   }
   return outputs;
 }
 
-std::vector<float> NadarayaWatsonSketch::predictDebug(
-    const std::vector<std::vector<float>>& inputs) const {
-  std::vector<float> outputs(inputs.size());
-  for (size_t i = 0; i < inputs.size(); i++) {
-    auto top = _top.query(inputs[i]);
-    auto bottom = _bottom.query(inputs[i]);
-    outputs[i] = bottom ? top / bottom : 0;
-    std::cout << "Top: " << top << std::endl;
-    std::cout << "Bottom: " << bottom << std::endl;
-  }
-  return outputs;
-}
 
 }  // namespace thirdai::automl
