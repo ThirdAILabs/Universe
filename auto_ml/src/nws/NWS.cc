@@ -170,7 +170,7 @@ float L2Hash::dot(const std::vector<float>& a, const std::vector<float>& b) {
   return prod;
 }
 
-void RACE::update(const std::vector<std::vector<float>>& keys, const std::vector<float>& values) {
+void RACE::update(const std::vector<std::vector<float>>& keys, const std::vector<std::vector<float>>& values) {
   if (!_arrays.empty()) {
     // TODO(Geordie): Another opportunity to speed up: hash once instead of separately
     // per top and bottom.
@@ -178,7 +178,10 @@ void RACE::update(const std::vector<std::vector<float>>& keys, const std::vector
     for (uint32_t row = 0; row < _hash->rows(); row++) {
       const size_t offset = row * _hash->range();
       for (size_t i = 0; i < keys.size(); i++) {
-        _arrays[offset + _hash->hashAt(keys[i], row)] += values[i];
+        size_t val_start = _value_dim * (offset + _hash->hashAt(keys[i], row));
+        for (size_t val_dim = 0; val_dim < _value_dim; val_dim++) {
+          _arrays[val_start + val_dim] += values[i][val_dim];
+        }
       }
     }
   }
@@ -186,54 +189,44 @@ void RACE::update(const std::vector<std::vector<float>>& keys, const std::vector
 #pragma omp parallel for default(none) shared(keys, values)
     for (uint32_t row = 0; row < _hash->rows(); row++) {
       for (size_t i = 0; i < keys.size(); i++) {
-        _sparse_arrays[row][_hash->hashAt(keys[i], row)] += values[i];
+        uint32_t hash = _hash->hashAt(keys[i], row);
+        auto& bucket = _sparse_arrays[row][hash];
+        bucket.resize(_value_dim);
+        for (size_t val_dim = 0; val_dim < _value_dim; val_dim++) {
+          bucket[val_dim] += values[i][val_dim];
+        }
       }
     }
   }
 }
 
-float RACE::query(const std::vector<float>& key) const {
-  float value = 0;
+std::vector<float> RACE::query(const std::vector<float>& key) const {
+  std::vector<float> value(_value_dim, 0);
   if (!_arrays.empty()) {
     size_t skip_buckets = 0;
     for (const uint32_t bucket : _hash->hash(key)) {
-      value += _arrays[skip_buckets + bucket];
+      size_t val_start = _value_dim * (skip_buckets + bucket);
+      for (size_t val_dim = 0; val_dim < _value_dim; val_dim++) {
+        value[val_dim] += _arrays[val_start + val_dim];
+      }
       skip_buckets += _hash->range();
     }
   }
   if (!_sparse_arrays.empty()) {
     size_t row = 0;
-    for (const uint32_t bucket : _hash->hash(key)) {
-      if (_sparse_arrays[row].count(bucket)) {
-        value += _sparse_arrays[row].at(bucket);
+    for (const uint32_t hash : _hash->hash(key)) {
+      if (_sparse_arrays[row].count(hash)) {
+        for (size_t val_dim = 0; val_dim < _value_dim; val_dim++) {
+          value[val_dim] += _sparse_arrays[row].at(hash)[val_dim];
+        }
       }
       row++;
     }
   }
-  value /= _hash->rows();
+  for (float& val : value) {
+    val /= _hash->rows();
+  }
   return value;
-}
-
-void RACE::debug(const std::vector<float>& key) const {
-  if (!_arrays.empty()) {
-    size_t row = 0;
-    size_t offset = 0;
-    for (const uint32_t bucket : _hash->hash(key)) {
-      std::cout << "row=" << row << " offset=" << offset << " bucket=" << bucket
-                << " value=" << _arrays[offset + bucket] << std::endl;
-      offset += _hash->range();
-      row++;
-    }
-  }
-  if (!_sparse_arrays.empty()) {
-    size_t row = 0;
-    for (const uint32_t bucket : _hash->hash(key)) {
-      const float val = _sparse_arrays[row].count(bucket) ? _sparse_arrays[row].at(bucket) : 0;
-      std::cout << "row=" << row << " bucket=" << bucket
-                << " value=" << val << std::endl;
-      row++;
-    }
-  }
 }
 
 void RACE::print() const {
@@ -248,36 +241,29 @@ void RACE::print() const {
 }
 
 void NadarayaWatsonSketch::train(const std::vector<std::vector<float>>& inputs,
-                                 const std::vector<float>& outputs) {
+                                 const std::vector<std::vector<float>>& outputs) {
   assert(inputs.size() == outputs.size());
-  const std::vector<float> ones(outputs.size(), 1.0);
+  const std::vector<std::vector<float>> ones(outputs.size(), {1.0});
   _top.update(inputs, outputs);
   _bottom.update(inputs, ones);
 }
 
-std::vector<float> NadarayaWatsonSketch::predict(
+std::vector<std::vector<float>> NadarayaWatsonSketch::predict(
     const std::vector<std::vector<float>>& inputs) const {
-  std::vector<float> outputs(inputs.size());
+  std::vector<std::vector<float>> outputs(inputs.size());
 #pragma omp parallel for default(none) shared(inputs, outputs, std::cout)
   for (size_t i = 0; i < inputs.size(); i++) {
     auto top = _top.query(inputs[i]);
     auto bottom = _bottom.query(inputs[i]);
-    outputs[i] = bottom ? top / bottom : 0;
+    outputs[i] = top;
+    if (bottom[0]) {
+      for (float& top_val : top) {
+        top_val /= bottom[0];
+      }
+    }
   }
   return outputs;
 }
 
-std::vector<float> NadarayaWatsonSketch::predictDebug(
-    const std::vector<std::vector<float>>& inputs) const {
-  std::vector<float> outputs(inputs.size());
-  for (size_t i = 0; i < inputs.size(); i++) {
-    auto top = _top.query(inputs[i]);
-    auto bottom = _bottom.query(inputs[i]);
-    outputs[i] = bottom ? top / bottom : 0;
-    std::cout << "Top: " << top << std::endl;
-    std::cout << "Bottom: " << bottom << std::endl;
-  }
-  return outputs;
-}
 
 }  // namespace thirdai::automl

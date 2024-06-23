@@ -121,16 +121,15 @@ class L2Hash final : public Hash {
 
 class RACE {
  public:
-  explicit RACE(std::shared_ptr<Hash> hash, bool sparse=false)
-      : _arrays(sparse ? 0 : hash->rows() * hash->range()),
+  explicit RACE(std::shared_ptr<Hash> hash, size_t value_dim, bool sparse=false)
+      : _arrays(sparse ? 0 : hash->rows() * hash->range() * value_dim),
         _sparse_arrays(sparse ? hash->rows() : 0),
-        _hash(std::move(hash)) {}
+        _hash(std::move(hash)),
+        _value_dim(value_dim) {}
 
-  void update(const std::vector<std::vector<float>>& keys, const std::vector<float>& values);
+  void update(const std::vector<std::vector<float>>& keys, const std::vector<std::vector<float>>& values);
 
-  float query(const std::vector<float>& key) const;
-
-  void debug(const std::vector<float>& key) const;
+  std::vector<float> query(const std::vector<float>& key) const;
 
   auto hash() { return _hash; }
 
@@ -151,24 +150,22 @@ class RACE {
 
  private:
   std::vector<float> _arrays;
-  std::vector<std::unordered_map<uint32_t, float>> _sparse_arrays;
+  std::vector<std::unordered_map<uint32_t, std::vector<float>>> _sparse_arrays;
   std::shared_ptr<Hash> _hash;
+  size_t _value_dim;
 };
 
 class NadarayaWatsonSketch {
  public:
-  explicit NadarayaWatsonSketch(const std::shared_ptr<Hash>& hash, bool sparse)
-      : _top(hash, sparse), _bottom(hash, sparse) {}
+  explicit NadarayaWatsonSketch(const std::shared_ptr<Hash>& hash, size_t output_dim, bool sparse)
+      : _top(hash, output_dim, sparse), _bottom(hash, 1, sparse) {}
 
   void train(const std::vector<std::vector<float>>& inputs,
-             const std::vector<float>& outputs);
+             const std::vector<std::vector<float>>& outputs);
 
-  std::vector<float> predict(
+  std::vector<std::vector<float>> predict(
       const std::vector<std::vector<float>>& inputs) const;
 
-  std::vector<float> predictDebug(
-      const std::vector<std::vector<float>>& inputs) const;
-  
   size_t bytesUsed() const { return _top.bytesUsed() + _bottom.bytesUsed(); }
 
  private:
