@@ -190,9 +190,18 @@ void RACE::update(const std::vector<std::vector<float>>& keys, const std::vector
     for (uint32_t row = 0; row < _hash->rows(); row++) {
       for (size_t i = 0; i < keys.size(); i++) {
         uint32_t hash = _hash->hashAt(keys[i], row);
-        auto& bucket = _sparse_arrays[row][hash];
-        for (size_t val_dim = 0; val_dim < _value_dim; val_dim++) {
-          bucket[val_dim] += values[i][val_dim];
+        bool updated = false;
+        for (auto& [key, value] : _sparse_arrays[row]) {
+          if (key == hash) {
+            for (size_t val_dim = 0; val_dim < _value_dim; val_dim++) {
+              value[val_dim] += values[i][val_dim];
+            }
+            updated = true;
+            break;
+          }
+        }
+        if (!updated) {
+          _sparse_arrays[row].push_back({hash, values[i]});
         }
       }
     }
@@ -214,9 +223,11 @@ std::vector<float> RACE::query(const std::vector<float>& key) const {
   if (!_sparse_arrays.empty()) {
     size_t row = 0;
     for (const uint32_t hash : _hash->hash(key)) {
-      if (_sparse_arrays[row].count(hash)) {
-        for (size_t val_dim = 0; val_dim < _value_dim; val_dim++) {
-          value[val_dim] += _sparse_arrays[row].at(hash)[val_dim];
+      for (const auto& [key, bucket_value] : _sparse_arrays[row]) {
+        if (key == hash) {
+          for (size_t val_dim = 0; val_dim < _value_dim; val_dim++) {
+            value[val_dim] += bucket_value[val_dim];
+          }
         }
       }
       row++;
