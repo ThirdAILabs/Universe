@@ -32,9 +32,9 @@ def main(num_cpus):
     model.stop_multi_process_pool(pool)
 
     print("Saving embeddings...")
-    train_embeddings.dump("train_embeddings.np")
-    val_embeddings.dump("val_embeddings.np")
-    test_embeddings.dump("test_embeddings.np")
+    train_embeddings.dump("/share/benito/nws/amazon_polarity/train_embeddings.np")
+    val_embeddings.dump("/share/benito/nws/amazon_polarity/val_embeddings.np")
+    test_embeddings.dump("/share/benito/nws/amazon_polarity/test_embeddings.np")
 
 
 if __name__ == "__main__":

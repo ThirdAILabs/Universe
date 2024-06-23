@@ -1,6 +1,8 @@
 from utils import run_and_time
 import tqdm
 import numpy as np
+import os
+
 
 def main(num_cpus):
     print("Downloading dataset...")
@@ -14,27 +16,35 @@ def main(num_cpus):
     print("Preparing multi process pool...")
     pool, _ = run_and_time(lambda: model.start_multi_process_pool(['cpu'] * num_cpus))
 
-    def embed_with_progress(data):
-        batch_size = 10_000
-        batches = []
+    def np_dump_size(filename):
+        try:
+            return len(np.load(filename, allow_pickle=True))
+        except:
+            return 0
+
+    def embed_with_progress(data, save_to):
+        batch_size = 3200
         for i in tqdm.tqdm(range(0, len(data), batch_size)):
-            batches.append(model.encode_multi_process(data[i:i+batch_size], pool, batch_size=256))
-        return np.concatenate(batches)
+            filename = f"{save_to}_{i}.np"
+            batch = data[i:i+batch_size]
+            if os.path.exists(filename) and (np_dump_size(filename) == len(batch)):
+                continue
+            embeddings = model.encode_multi_process(batch, pool, batch_size=32)
+            embeddings.dump(f"{save_to}_{i}.np")
 
-    print("Embedding train text...")
-    train_embeddings, _ = run_and_time(lambda: embed_with_progress(ds["train"]["text"]))
-    print("Embedding val text...")
-    val_embeddings, _ = run_and_time(lambda: embed_with_progress(ds["validation"]["text"]))
     print("Embedding test text...")
-    test_embeddings, _ = run_and_time(lambda: embed_with_progress(ds["test"]["text"]))
-
+    run_and_time(lambda: embed_with_progress(
+        data=ds["test"]["text"],
+        save_to="/share/benito/nws/amazon_polarity/test_embeddings"
+    ))
+    print("Embedding train text...")
+    run_and_time(lambda: embed_with_progress(
+        data=ds["train"]["text"],
+        save_to="/share/benito/nws/amazon_polarity/train_embeddings",
+    ))
+    
     print("Closing pool...")
     model.stop_multi_process_pool(pool)
-
-    print("Saving embeddings...")
-    train_embeddings.dump("train_embeddings.np")
-    val_embeddings.dump("val_embeddings.np")
-    test_embeddings.dump("test_embeddings.np")
 
 
 if __name__ == "__main__":
