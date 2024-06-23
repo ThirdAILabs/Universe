@@ -170,7 +170,7 @@ float L2Hash::dot(const std::vector<float>& a, const std::vector<float>& b) {
   return prod;
 }
 
-void RACE::update(const std::vector<std::vector<float>>& keys, const std::vector<float>& values) {
+void RACE::update(const std::vector<std::vector<float>>& keys, const std::vector<std::vector<float>>& values) {
   if (!_arrays.empty()) {
     // TODO(Geordie): Another opportunity to speed up: hash once instead of separately
     // per top and bottom.
@@ -178,7 +178,10 @@ void RACE::update(const std::vector<std::vector<float>>& keys, const std::vector
     for (uint32_t row = 0; row < _hash->rows(); row++) {
       const size_t offset = row * _hash->range();
       for (size_t i = 0; i < keys.size(); i++) {
-        _arrays[offset + _hash->hashAt(keys[i], row)] += values[i];
+        size_t val_start = _value_dim * (offset + _hash->hashAt(keys[i], row));
+        for (size_t val_dim = 0; val_dim < _value_dim; val_dim++) {
+          _arrays[val_start + val_dim] += values[i][val_dim];
+        }
       }
     }
   }
@@ -190,7 +193,9 @@ void RACE::update(const std::vector<std::vector<float>>& keys, const std::vector
         bool updated = false;
         for (auto& [key, value] : _sparse_arrays[row]) {
           if (key == hash) {
-            value += values[i];
+            for (size_t val_dim = 0; val_dim < _value_dim; val_dim++) {
+              value[val_dim] += values[i][val_dim];
+            }
             updated = true;
             break;
           }
