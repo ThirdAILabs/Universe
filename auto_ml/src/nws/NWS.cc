@@ -191,6 +191,7 @@ void RACE::update(const std::vector<std::vector<float>>& keys, const std::vector
       for (size_t i = 0; i < keys.size(); i++) {
         uint32_t hash = _hash->hashAt(keys[i], row);
         auto& bucket = _sparse_arrays[row][hash];
+        bucket.resize(_value_dim);
         for (size_t val_dim = 0; val_dim < _value_dim; val_dim++) {
           bucket[val_dim] += values[i][val_dim];
         }
