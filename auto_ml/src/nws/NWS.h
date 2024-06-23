@@ -150,7 +150,7 @@ class RACE {
 
  private:
   std::vector<float> _arrays;
-  std::vector<std::vector<std::pair<uint32_t, std::vector<float>>>> _sparse_arrays;
+  std::vector<std::unordered_map<uint32_t, std::vector<float>>> _sparse_arrays;
   std::shared_ptr<Hash> _hash;
   size_t _value_dim;
 };
