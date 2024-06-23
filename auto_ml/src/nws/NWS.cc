@@ -186,7 +186,13 @@ void RACE::update(const std::vector<std::vector<float>>& keys, const std::vector
 #pragma omp parallel for default(none) shared(keys, values)
     for (uint32_t row = 0; row < _hash->rows(); row++) {
       for (size_t i = 0; i < keys.size(); i++) {
-        _sparse_arrays[row][_hash->hashAt(keys[i], row)] += values[i];
+        uint32_t hash = _hash->hashAt(keys[i], row);
+        for (auto& [key, value] : _sparse_arrays[row]) {
+          if (key == hash) {
+            value += values[i];
+            break;
+          }
+        }
       }
     }
   }
@@ -203,37 +209,17 @@ float RACE::query(const std::vector<float>& key) const {
   }
   if (!_sparse_arrays.empty()) {
     size_t row = 0;
-    for (const uint32_t bucket : _hash->hash(key)) {
-      if (_sparse_arrays[row].count(bucket)) {
-        value += _sparse_arrays[row].at(bucket);
+    for (const uint32_t hash : _hash->hash(key)) {
+      for (const auto& [key, bucket_value] : _sparse_arrays[row]) {
+        if (key == hash) {
+          value += bucket_value;
+        }
       }
       row++;
     }
   }
   value /= _hash->rows();
   return value;
-}
-
-void RACE::debug(const std::vector<float>& key) const {
-  if (!_arrays.empty()) {
-    size_t row = 0;
-    size_t offset = 0;
-    for (const uint32_t bucket : _hash->hash(key)) {
-      std::cout << "row=" << row << " offset=" << offset << " bucket=" << bucket
-                << " value=" << _arrays[offset + bucket] << std::endl;
-      offset += _hash->range();
-      row++;
-    }
-  }
-  if (!_sparse_arrays.empty()) {
-    size_t row = 0;
-    for (const uint32_t bucket : _hash->hash(key)) {
-      const float val = _sparse_arrays[row].count(bucket) ? _sparse_arrays[row].at(bucket) : 0;
-      std::cout << "row=" << row << " bucket=" << bucket
-                << " value=" << val << std::endl;
-      row++;
-    }
-  }
 }
 
 void RACE::print() const {

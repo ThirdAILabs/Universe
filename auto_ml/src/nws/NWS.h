@@ -130,8 +130,6 @@ class RACE {
 
   float query(const std::vector<float>& key) const;
 
-  void debug(const std::vector<float>& key) const;
-
   auto hash() { return _hash; }
 
   void print() const;
@@ -151,7 +149,7 @@ class RACE {
 
  private:
   std::vector<float> _arrays;
-  std::vector<std::unordered_map<uint32_t, float>> _sparse_arrays;
+  std::vector<std::vector<std::pair<uint32_t, float>>> _sparse_arrays;
   std::shared_ptr<Hash> _hash;
 };
 
