@@ -538,10 +538,13 @@ UDTNer::UDTNer(const ar::Archive& archive)
     const auto& ignored_tags = archive.getAs<ar::VecStr>("ignored_tags");
     _ignored_tags = {ignored_tags.begin(), ignored_tags.end()};
   } else {
-    _ignored_tags = (_rule != nullptr) ? std::unordered_set<std::string>(
-                                             _rule->entities().begin(),
-                                             _rule->entities().end())
-                                       : std::unordered_set<std::string>();
+    if (_rule == nullptr) {
+      _ignored_tags = std::unordered_set<std::string>();
+    } else {
+      for (const auto& x : _rule->entities()) {
+        _ignored_tags.insert(x);
+      }
+    }
   }
 }
 

@@ -3,6 +3,7 @@
 #include <archive/src/List.h>
 #include <data/src/transformations/TextTokenizer.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
+#include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
@@ -20,20 +21,6 @@ std::string trimPunctuation(const std::string& str) {
   }
   size_t end = str.find_last_not_of(punctuation);
   return str.substr(start, end - start + 1);
-}
-
-std::string trimWhiteSpace(const std::string& str) {
-  auto start = str.begin();
-  while (start != str.end() && std::isspace(*start)) {
-    start++;
-  }
-
-  auto end = str.end();
-  while (end != start && std::isspace(*(end - 1))) {
-    end--;
-  }
-
-  return std::string(start, end);
 }
 
 std::vector<std::string> cleanAndLowerCase(
@@ -261,8 +248,8 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
      * If the current token is a number and has surrounding tokens that are also
      * numbers, they probably form a single entity.
      */
-    std::string surrounding_numbers =
-        trimWhiteSpace(find_contiguous_numbers(lower_cased_tokens, index));
+    std::string surrounding_numbers = text::stripWhitespace(
+        find_contiguous_numbers(lower_cased_tokens, index));
     if (!surrounding_numbers.empty()) {
       auto numerical_features = getNumericalFeatures(surrounding_numbers);
       if (!numerical_features.empty()) {
