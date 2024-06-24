@@ -262,7 +262,9 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
     _rule = data::ner::getRuleForEntities(defaults::NER_RULE_BASED_ENTITIES);
   }
 
-  std::tie(_label_to_tag, _ignored_tags) = mapTagsToLabels(
+  std::unordered_set<std::string> ignored_tags;
+
+  std::tie(_label_to_tag, ignored_tags) = mapTagsToLabels(
       target->default_tag, target->tags, _rule, ignore_rule_tags);
 
   _model = buildModel(options.input_dim, options.emb_dim, _label_to_tag.size(),
@@ -271,7 +273,7 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
   _supervised_transform = makeTransformation(
       /*inference=*/false, /*tags_column=*/_tags_column,
       /*tokens_column=*/_tokens_column, _label_to_tag,
-      /*ignored_tags=*/_ignored_tags,
+      /*ignored_tags=*/ignored_tags,
       /*input_dim=*/options.input_dim,
       /*dyadic_num_intervals=*/options.dyadic_num_intervals,
       /*target_word_tokenizers=*/options.target_tokenizers,
@@ -280,7 +282,7 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
   _inference_transform = makeTransformation(
       /*inference=*/true, /*tags_column=*/_tags_column,
       /*tokens_column=*/_tokens_column, _label_to_tag,
-      /*ignored_tags=*/_ignored_tags,
+      /*ignored_tags=*/ignored_tags,
       /*input_dim=*/options.input_dim,
       /*dyadic_num_intervals=*/options.dyadic_num_intervals,
       /*target_word_tokenizers=*/options.target_tokenizers,
@@ -505,9 +507,6 @@ ar::ConstArchivePtr UDTNer::toArchive(bool with_optimizer) const {
 
   map->set("label_to_tag", ar::vecStr(_label_to_tag));
 
-  map->set("ignored_tags",
-           ar::vecStr({_ignored_tags.begin(), _ignored_tags.end()}));
-
   if (_rule) {
     map->set("use_rules_for", ar::vecStr(_rule->entities()));
   }
@@ -532,19 +531,6 @@ UDTNer::UDTNer(const ar::Archive& archive)
   if (archive.contains("use_rules_for")) {
     _rule = data::ner::getRuleForEntities(
         archive.getAs<ar::VecStr>("use_rules_for"));
-  }
-
-  if (archive.contains("ignored_tags")) {
-    const auto& ignored_tags = archive.getAs<ar::VecStr>("ignored_tags");
-    _ignored_tags = {ignored_tags.begin(), ignored_tags.end()};
-  } else {
-    if (_rule == nullptr) {
-      _ignored_tags = std::unordered_set<std::string>();
-    } else {
-      for (const auto& x : _rule->entities()) {
-        _ignored_tags.insert(x);
-      }
-    }
   }
 }
 
