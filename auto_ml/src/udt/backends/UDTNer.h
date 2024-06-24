@@ -88,6 +88,8 @@ class UDTNer final : public UDTBackend {
   std::string _tags_column;
 
   std::vector<std::string> _label_to_tag;
+
+  std::unordered_set<std::string> _ignored_tags;
 };
 
 }  // namespace thirdai::automl::udt

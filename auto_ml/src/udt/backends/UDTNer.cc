@@ -27,6 +27,7 @@
 #include <pybind11/stl.h>
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
+#include <cstddef>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -88,6 +89,9 @@ data::TransformationPtr makeTransformation(
   for (size_t i = 0; i < tags.size(); i++) {
     tag_to_label[tags[i]] = i;
   }
+  for (const auto& tag : ignored_tags) {
+    tag_to_label[tag] = 0;
+  }
 
   auto transform = data::Pipeline::make();
   if (!inference) {
@@ -106,8 +110,7 @@ data::TransformationPtr makeTransformation(
                       /*dyadic_num_intervals=*/dyadic_num_intervals,
                       /*target_word_tokenizers=*/target_word_tokenizers,
                       /*feature_enhancement_config=*/feature_config,
-                      /*tag_to_label=*/tag_to_label,
-                      /*ignored_tags=*/ignored_tags))
+                      /*tag_to_label=*/tag_to_label))
                   ->then(std::make_shared<data::TextTokenizer>(
                       /*input_column=*/NER_FEATURIZED_SENTENCE,
                       /*output_indices=*/NER_FEATURIZED_SENTENCE,
@@ -150,7 +153,8 @@ mapTagsToLabels(const std::string& default_tag,
   std::unordered_set<std::string> ignored_tags;
 
   for (const auto& tag : tags) {
-    if (std::find(rule_tags.begin(), rule_tags.end(), tag) == rule_tags.end()) {
+    if (std::find(rule_tags.begin(), rule_tags.end(), tag) == rule_tags.end() ||
+        !ignore_rule_tags) {
       all_tags.push_back(tag);
     } else if (ignore_rule_tags) {
       ignored_tags.insert(tag);
@@ -258,8 +262,7 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
     _rule = data::ner::getRuleForEntities(defaults::NER_RULE_BASED_ENTITIES);
   }
 
-  std::unordered_set<std::string> ignored_tags;
-  std::tie(_label_to_tag, ignored_tags) = mapTagsToLabels(
+  std::tie(_label_to_tag, _ignored_tags) = mapTagsToLabels(
       target->default_tag, target->tags, _rule, ignore_rule_tags);
 
   _model = buildModel(options.input_dim, options.emb_dim, _label_to_tag.size(),
@@ -268,7 +271,7 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
   _supervised_transform = makeTransformation(
       /*inference=*/false, /*tags_column=*/_tags_column,
       /*tokens_column=*/_tokens_column, _label_to_tag,
-      /*ignored_tags=*/ignored_tags,
+      /*ignored_tags=*/_ignored_tags,
       /*input_dim=*/options.input_dim,
       /*dyadic_num_intervals=*/options.dyadic_num_intervals,
       /*target_word_tokenizers=*/options.target_tokenizers,
@@ -277,7 +280,7 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
   _inference_transform = makeTransformation(
       /*inference=*/true, /*tags_column=*/_tags_column,
       /*tokens_column=*/_tokens_column, _label_to_tag,
-      /*ignored_tags=*/ignored_tags,
+      /*ignored_tags=*/_ignored_tags,
       /*input_dim=*/options.input_dim,
       /*dyadic_num_intervals=*/options.dyadic_num_intervals,
       /*target_word_tokenizers=*/options.target_tokenizers,
@@ -449,17 +452,21 @@ std::vector<SentenceTags> UDTNer::predictTags(
         bolt::NER::applyPunctAndStopWordFilter(
             tokens[sentence_index][token_index], tags, _label_to_tag[0]);
 
-        // If the default tag is the the top prediction but has a score < 0.9
-        // then using the next top prediction improves accuracy.
-        float second_highest_tag_act = top_k > 0 ? tags[top_k - 1].second : 0;
+        // if the number of labels in the model is 1, we do not have to reverse
+        if (tags.size() > 1) {
+          // If the default tag is the the top prediction but has a score < 0.9
+          // then using the next top prediction improves accuracy.
+          float second_highest_tag_act = top_k > 0 ? tags[top_k - 1].second : 0;
 
-        if (tags.back().first == _label_to_tag[0] &&
-            tags.back().second < o_threshold && second_highest_tag_act > 0.05) {
-          tags.pop_back();
-          std::reverse(tags.begin(), tags.end());
-        } else {
-          std::reverse(tags.begin(), tags.end());
-          tags.pop_back();
+          if (tags.back().first == _label_to_tag[0] &&
+              tags.back().second < o_threshold &&
+              second_highest_tag_act > 0.05) {
+            tags.pop_back();
+            std::reverse(tags.begin(), tags.end());
+          } else {
+            std::reverse(tags.begin(), tags.end());
+            tags.pop_back();
+          }
         }
       }
       output_tags[sentence_index].push_back(tags);
@@ -498,6 +505,9 @@ ar::ConstArchivePtr UDTNer::toArchive(bool with_optimizer) const {
 
   map->set("label_to_tag", ar::vecStr(_label_to_tag));
 
+  map->set("ignored_tags",
+           ar::vecStr({_ignored_tags.begin(), _ignored_tags.end()}));
+
   if (_rule) {
     map->set("use_rules_for", ar::vecStr(_rule->entities()));
   }
@@ -522,6 +532,16 @@ UDTNer::UDTNer(const ar::Archive& archive)
   if (archive.contains("use_rules_for")) {
     _rule = data::ner::getRuleForEntities(
         archive.getAs<ar::VecStr>("use_rules_for"));
+  }
+
+  if (archive.contains("ignored_tags")) {
+    const auto& ignored_tags = archive.getAs<ar::VecStr>("ignored_tags");
+    _ignored_tags = {ignored_tags.begin(), ignored_tags.end()};
+  } else {
+    _ignored_tags = (_rule != nullptr) ? std::unordered_set<std::string>(
+                                             _rule->entities().begin(),
+                                             _rule->entities().end())
+                                       : std::unordered_set<std::string>();
   }
 }
 

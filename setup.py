@@ -241,6 +241,7 @@ setup(
             "ray",
             "grpcio",
             "unstructured[all-docs]<=0.10.20",
+            "faker",
         ]
         + neural_db_deps
         + neural_db_v2_deps,
