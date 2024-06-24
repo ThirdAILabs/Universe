@@ -415,3 +415,21 @@ def modify_graph_udt():
     bolt.UniversalDeepTransformer.index_nodes_on_data_source = (
         original_index_nodes_method
     )
+
+
+def modify_udt_builder():
+    from .udt_builder.task_detector import UDTBuilder
+
+    def wrapped_detect_and_build(
+        dataset_path: str, target_column: str, task: str = None, openai_key=None
+    ):
+        builder = UDTBuilder(openai_key=openai_key)
+        builder.detect(
+            dataset_path=dataset_path, target_column=target_column, task=task
+        )
+
+        model = builder.build()
+
+        return model
+
+    bolt.UniversalDeepTransformer.detect_and_build = wrapped_detect_and_build
