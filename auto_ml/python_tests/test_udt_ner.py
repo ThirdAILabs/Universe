@@ -6,8 +6,8 @@ import string
 
 import pandas as pd
 import pytest
-from thirdai import bolt, data, dataset
 from faker import Faker
+from thirdai import bolt, data, dataset
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
