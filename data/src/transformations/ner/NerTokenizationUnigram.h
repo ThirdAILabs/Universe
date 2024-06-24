@@ -11,7 +11,6 @@
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <stdexcept>
 #include <string>
-#include <unordered_set>
 
 namespace thirdai::data {
 
