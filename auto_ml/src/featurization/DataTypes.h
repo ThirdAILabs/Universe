@@ -295,7 +295,20 @@ struct NodeIDDataType : DataType {
 struct TokenTagsDataType : DataType {
   explicit TokenTagsDataType(std::vector<std::string> tags,
                              std::string default_tag = "O")
-      : tags(std::move(tags)), default_tag(std::move(default_tag)) {}
+      : tags(std::move(tags)), default_tag(std::move(default_tag)) {
+    if (this->default_tag.find(' ') != std::string::npos) {
+      throw std::invalid_argument(
+          "Tags with spaces are not allowed. Found tag: '" + this->default_tag +
+          "'");
+    }
+    // Check each tag in the list
+    for (const auto& tag : this->tags) {
+      if (tag.find(' ') != std::string::npos) {
+        throw std::invalid_argument(
+            "Tags with spaces are not allowed. Found tag: '" + tag + "'");
+      }
+    }
+  }
 
   std::string toString() const final { return R"({"type": "token tags"})"; }
 
