@@ -130,9 +130,6 @@ class TemplateStore:
 
 class UDTBuilder:
     def __init__(self, openai_key: str = None):
-        if openai_key == None:
-            print("Task detection using natural language disabled")
-
         self.template_store = (
             (
                 TemplateStore(
@@ -143,6 +140,9 @@ class UDTBuilder:
             if openai_key is not None
             else None
         )
+
+        if openai_key is not None:
+            print("Task detection using natural language enabled\n")
 
         self.name_to_template_map = {
             template.name: template for template in task_templates.supported_templates
@@ -178,12 +178,11 @@ class UDTBuilder:
                 f"2. Choose from the following list of available tasks:\n"
                 f"{template_names}\n"
                 f"To detect a different task, call the detect function again with:\n"
-                f"    .detect(\n"
+                f"    .detect_and_build(\n"
                 f"        dataset_path = {dataset_path},\n"
                 f"        target_column = {target_column},\n"
                 f"        task = 'your_selected_task' \n"
-                f"    )"
-                f"To proceed, call .build() on the builder. "
+                f"    )\n"
             )
         else:
             print(
@@ -193,7 +192,7 @@ class UDTBuilder:
                 f"2. Choose from the following list of available tasks:\n"
                 f"{template_names}\n"
                 f"For explicit task detection, call the detect function again with:\n"
-                f"    .detect(\n"
+                f"    .detect_and_build(\n"
                 f"        dataset_path = {dataset_path},\n"
                 f"        target_column = {target_column},\n"
                 f"        task = 'your_selected_task' \n"
@@ -226,7 +225,10 @@ class UDTBuilder:
                 "Cannot initialize a UniversalDeepTransformer with a NoneType template. Ensure that the builder has detected a valid template before calling build on it."
             )
         try:
-            self.model = self.detected_template.build()
+            self.initialized_template = self.detected_template(
+                self.target_column, self.dataframe
+            )
+            self.model = self.initialized_template.build()
         except Exception as ex:
             raise_exception_without_trace(ex.__str__())
 

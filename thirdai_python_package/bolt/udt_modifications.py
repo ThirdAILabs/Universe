@@ -7,6 +7,7 @@ import thirdai._thirdai.data as data
 import thirdai._thirdai.dataset as dataset
 
 from .udt_docs import *
+from .udt_builder.task_detector import UDTBuilder
 
 
 def _create_parquet_source(path):
@@ -418,7 +419,6 @@ def modify_graph_udt():
 
 
 def modify_udt_builder():
-    from .udt_builder.task_detector import UDTBuilder
 
     def wrapped_detect_and_build(
         dataset_path: str, target_column: str, task: str = None, openai_key=None
@@ -428,8 +428,10 @@ def modify_udt_builder():
             dataset_path=dataset_path, target_column=target_column, task=task
         )
 
-        model = builder.build()
+        if builder.detected_template == None:
+            return
 
+        model = builder.build()
         return model
 
     bolt.UniversalDeepTransformer.detect_and_build = wrapped_detect_and_build
