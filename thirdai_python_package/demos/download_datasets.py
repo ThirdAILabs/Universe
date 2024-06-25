@@ -20,7 +20,7 @@ from .beir_download_utils import (
 
 
 def download_file(url, output_path):
-    response = requests.get(url, stream=True)
+    response = requests.get(url, stream=True, verify=False)
     response.raise_for_status()
     with open(output_path, "wb") as file:
         for chunk in response.iter_content(chunk_size=8192):
