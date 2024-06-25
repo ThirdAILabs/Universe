@@ -27,7 +27,9 @@ def download_file(url, output_path, verify_certificate=True):
             file.write(chunk)
 
 
-def _download_dataset(url, zip_file, check_existence, output_dir, verify_certificate=True):
+def _download_dataset(
+    url, zip_file, check_existence, output_dir, verify_certificate=True
+):
     if not os.path.exists(zip_file):
         download_file(url, zip_file, verify_certificate)
 
@@ -71,7 +73,7 @@ def download_movielens():
         zip_file=MOVIELENS_ZIP,
         check_existence=[RATINGS_FILE, MOVIE_TITLES],
         output_dir=MOVIELENS_DIR,
-        verify_certificate=False
+        verify_certificate=False,
     )
 
     df = pd.read_csv(RATINGS_FILE, header=None, delimiter="::", engine="python")
