@@ -244,6 +244,14 @@ include_directories(deps)
 
 find_package(Python3 COMPONENTS Interpreter Development)
 
+# Installation instructions:
+# cd deps/rocksdb
+# make static_lib
+# make install
+include(FindRocksdb)
+find_package(Rocksdb REQUIRED)
+include_directories(${ROCKSDB_INCLUDE_DIR})
+
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt
     ON
@@ -484,7 +492,7 @@ add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(
   thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
-                 prometheus-cpp::pull utf8proc)
+                 prometheus-cpp::pull utf8proc ${ROCKSDB_LIBRARIES})
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto
