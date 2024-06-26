@@ -219,7 +219,7 @@ include_directories(deps/eigen)
 
 # Source dependencies
 add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
-add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
+# add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
 add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 add_subdirectory(deps/utf8proc EXCLUDE_FROM_ALL)
 
@@ -248,9 +248,24 @@ find_package(Python3 COMPONENTS Interpreter Development)
 # cd deps/rocksdb
 # make static_lib
 # make install
-include(FindRocksdb)
-find_package(Rocksdb REQUIRED)
-include_directories(${ROCKSDB_INCLUDE_DIR})
+# include(FindRocksdb)
+# find_package(Rocksdb REQUIRED)
+# include_directories(${ROCKSDB_INCLUDE_DIR})
+
+# message("DB STUFF BELOW")
+# message(${ROCKSDB_ROOT_DIR})
+# message(${ROCKSDB_INCLUDE_DIR})
+# message(${ROCKSDB_LIBRARIES})
+
+add_subdirectory(deps/rocksdb)
+
+# set(ROCKSDB_LIBRARIES /usr/local/lib/librocksdb.a)
+# set(ROCKSDB_INCLUDE_DIR /usr/local/include)
+# include_directories(${ROCKSDB_INCLUDE_DIR})
+
+if(NOT TARGET gtest)
+  add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
+endif()
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt
@@ -349,6 +364,7 @@ set(THIRDAI_SOURCES
     search/src/MaxFlashArray.cc
     search/src/Flash.cc
     search/src/inverted_index/InvertedIndex.cc
+    search/src/inverted_index/OnDiskIndex.cc
     search/src/inverted_index/FinetunableRetriever.cc
     search/src/inverted_index/Tokenizer.cc
     hashing/src/DensifiedMinHash.cc
@@ -492,7 +508,8 @@ add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(
   thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
-                 prometheus-cpp::pull utf8proc ${ROCKSDB_LIBRARIES})
+                 prometheus-cpp::pull utf8proc rocksdb)
+                #  prometheus-cpp::pull utf8proc ${ROCKSDB_LIBRARIES})
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto
