@@ -19,7 +19,7 @@
 namespace thirdai::data {
 
 std::string trimPunctuation(const std::string& str) {
-  const std::string punctuation = ".,?-!;:";
+  const std::string punctuation = ".,?-!;:[]{}&%";
   size_t start = str.find_first_not_of(punctuation);
   if (start == std::string::npos) {
     return str;
@@ -58,7 +58,8 @@ NerTokenizerUnigram::NerTokenizerUnigram(
       _target_column(std::move(target_column)),
       _target_dim(target_dim),
       _processor(std::move(target_word_tokenizers), dyadic_num_intervals,
-                 std::move(feature_enhancement_config)),
+                 std::move(feature_enhancement_config),
+                 target_column == std::nullopt),
       _tag_to_label(std::move(tag_to_label)),
       _ignored_tags(std::move(ignored_tags)) {}
 

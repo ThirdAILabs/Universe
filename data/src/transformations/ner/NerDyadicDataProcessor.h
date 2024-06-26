@@ -6,6 +6,7 @@
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <cstdint>
 #include <memory>
+#include <random>
 #include <regex>
 #include <string>
 #include <unordered_set>
@@ -100,7 +101,8 @@ class NerDyadicDataProcessor
   explicit NerDyadicDataProcessor(
       std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
       uint32_t dyadic_num_intervals,
-      std::optional<FeatureEnhancementConfig> feature_enhancement_config);
+      std::optional<FeatureEnhancementConfig> feature_enhancement_config,
+      bool for_inference);
 
   explicit NerDyadicDataProcessor(const ar::Archive& archive);
 
@@ -109,7 +111,8 @@ class NerDyadicDataProcessor
   static std::shared_ptr<NerDyadicDataProcessor> make(
       std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
       uint32_t dyadic_num_intervals,
-      std::optional<FeatureEnhancementConfig> feature_enhancement_config);
+      std::optional<FeatureEnhancementConfig> feature_enhancement_config,
+      bool for_inference);
 
   std::string processToken(
       const std::vector<std::string>& tokens, uint32_t index,
@@ -134,6 +137,8 @@ class NerDyadicDataProcessor
   std::vector<dataset::TextTokenizerPtr> _target_word_tokenizers;
   uint32_t _dyadic_num_intervals;
   std::optional<FeatureEnhancementConfig> _feature_enhancement_config;
+
+  bool _for_inference;
 
   std::string _target_prefix = "t_";
   std::string _dyadic_previous_prefix = "pp_";

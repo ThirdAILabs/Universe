@@ -15,6 +15,9 @@
 
 namespace thirdai::data {
 
+std::vector<std::string> cleanAndLowerCase(
+    const std::vector<std::string>& tokens);
+
 class NerTokenizerUnigram final : public Transformation {
  public:
   NerTokenizerUnigram(
@@ -34,10 +37,10 @@ class NerTokenizerUnigram final : public Transformation {
 
   static std::string type() { return "ner_tokenization_unigram"; }
 
-  // std::string processToken(const std::vector<std::string>& tokens,
-  //                          uint32_t index) const {
-  //   return _processor.processToken(tokens, index);
-  // }
+  std::string processToken(const std::vector<std::string>& tokens,
+                           uint32_t index) const {
+    return _processor.processToken(tokens, index, cleanAndLowerCase(tokens));
+  }
 
   uint32_t findTagValueForString(const std::string& tag) const {
     if (_ignored_tags.count(tag)) {

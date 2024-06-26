@@ -8,9 +8,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
-#include <regex>
+#include <random>
 
 namespace thirdai::data {
+
+std::mt19937 gen{std::random_device{}()};
+std::bernoulli_distribution dist{0.5};
 
 std::string trimWhiteSpace(const std::string& str) {
   auto start = str.begin();
@@ -310,18 +313,21 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
 NerDyadicDataProcessor::NerDyadicDataProcessor(
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
     uint32_t dyadic_num_intervals,
-    std::optional<FeatureEnhancementConfig> feature_enhancement_config)
+    std::optional<FeatureEnhancementConfig> feature_enhancement_config,
+    bool for_inference)
     : _target_word_tokenizers(std::move(target_word_tokenizers)),
       _dyadic_num_intervals(dyadic_num_intervals),
-      _feature_enhancement_config(std::move(feature_enhancement_config)) {}
+      _feature_enhancement_config(std::move(feature_enhancement_config)),
+      _for_inference(for_inference) {}
 
 std::shared_ptr<NerDyadicDataProcessor> NerDyadicDataProcessor::make(
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
     uint32_t dyadic_num_intervals,
-    std::optional<FeatureEnhancementConfig> feature_enhancement_config) {
+    std::optional<FeatureEnhancementConfig> feature_enhancement_config,
+    bool for_inference) {
   return std::make_shared<NerDyadicDataProcessor>(
       std::move(target_word_tokenizers), dyadic_num_intervals,
-      std::move(feature_enhancement_config));
+      std::move(feature_enhancement_config), for_inference);
 }
 
 std::string NerDyadicDataProcessor::processToken(
@@ -344,6 +350,11 @@ std::string NerDyadicDataProcessor::processToken(
       c = '#';
       n_digit++;
     } else if (std::isalpha(c)) {
+      // if (std::islower(c)) {
+      //   c = 'a';
+      // } else {
+      //   c = 'A';
+      // }
       n_alpha++;
     } else if (std::ispunct(c)) {
       n_punct++;
@@ -351,12 +362,14 @@ std::string NerDyadicDataProcessor::processToken(
   }
   std::vector<std::string> tokenized_target_token;
 
-  for (const auto& tokenizer : _target_word_tokenizers) {
-    auto tokens = tokenizer->toStrings(target_token);
-    tokenized_target_token.reserve(tokenized_target_token.size() +
-                                   tokens.size());
-    tokenized_target_token.insert(tokenized_target_token.end(), tokens.begin(),
-                                  tokens.end());
+  if (dist(gen) || _for_inference) {
+    for (const auto& tokenizer : _target_word_tokenizers) {
+      auto tokens = tokenizer->toStrings(target_token);
+      tokenized_target_token.reserve(tokenized_target_token.size() +
+                                     tokens.size());
+      tokenized_target_token.insert(tokenized_target_token.end(),
+                                    tokens.begin(), tokens.end());
+    }
   }
 
   /*
@@ -438,6 +451,8 @@ ar::ConstArchivePtr NerDyadicDataProcessor::toArchive() const {
   map->set("dyadic_previous_prefix", ar::str(_dyadic_previous_prefix));
   map->set("dyadic_next_prefix", ar::str(_dyadic_next_prefix));
 
+  map->set("for_inference", ar::boolean(_for_inference));
+
   return map;
 }
 
@@ -457,6 +472,12 @@ NerDyadicDataProcessor::NerDyadicDataProcessor(const ar::Archive& archive) {
   _target_prefix = archive.str("target_prefix");
   _dyadic_previous_prefix = archive.str("dyadic_previous_prefix");
   _dyadic_next_prefix = archive.str("dyadic_next_prefix");
+
+  if (archive.contains("for_inference")) {
+    _for_inference = archive.boolean("for_inference");
+  } else {
+    _for_inference = true;
+  }
 }
 
 }  // namespace thirdai::data
