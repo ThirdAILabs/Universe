@@ -1,6 +1,7 @@
 #pragma once
 
 #include <rocksdb/db.h>
+#include <search/src/inverted_index/InvertedIndex.h>
 #include <search/src/inverted_index/Tokenizer.h>
 #include <shared_mutex>
 #include <unordered_map>
@@ -12,12 +13,16 @@ using DocScore = std::pair<DocId, float>;
 
 class OnDiskIndex {
  public:
+  explicit OnDiskIndex(const std::string& path);
+
   void index(const std::vector<DocId>& ids,
              const std::vector<std::string>& docs);
 
   std::vector<DocScore> query(const std::string& query, uint32_t k);
 
   bool containsDoc(DocId doc_id) const;
+
+  ~OnDiskIndex();
 
  private:
   static inline float idf(size_t n_docs, size_t docs_w_token) {
@@ -56,13 +61,13 @@ class OnDiskIndex {
   void updateNDocsAndAvgLen(uint64_t sum_new_doc_lens, uint64_t n_new_docs);
 
   // Query variables
-  size_t _max_docs_to_score;
-  float _idf_cutoff_frac;
-  float _k1, _b;
+  size_t _max_docs_to_score = InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE;
+  float _idf_cutoff_frac = InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC;
+  float _k1 = InvertedIndex::DEFAULT_K1, _b = InvertedIndex::DEFAULT_B;
 
   std::vector<uint32_t> tokenize(const std::string& text) const;
 
-  TokenizerPtr _tokenizer;
+  TokenizerPtr _tokenizer = std::make_shared<DefaultTokenizer>();
 };
 
 }  // namespace thirdai::search

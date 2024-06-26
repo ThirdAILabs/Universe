@@ -15,6 +15,21 @@
 
 namespace thirdai::search {
 
+// NOLINTNEXTLINE
+#define ASSERT(status)                                                      \
+  if (!(status)) {                                                          \
+    throw std::invalid_argument(std::string("Error at ") + __FILE__ + ":" + \
+                                std::to_string(__LINE__));                  \
+  }
+
+OnDiskIndex::OnDiskIndex(const std::string& path) {
+  rocksdb::Options options;
+  options.create_if_missing = true;
+
+  rocksdb::Status status = rocksdb::DB::Open(options, path, &_db);
+  ASSERT(status.ok())
+}
+
 struct __attribute__((packed)) DocCount {
   uint64_t doc_id;
   uint32_t count;
@@ -89,9 +104,7 @@ void OnDiskIndex::index(const std::vector<DocId>& ids,
       auto merge_status = batch.Merge(
           key,
           rocksdb::Slice(reinterpret_cast<const char*>(&data), sizeof(data)));
-      if (!merge_status.ok()) {
-        throw std::invalid_argument("merge failed");
-      }
+      ASSERT(merge_status.ok())
     }
 
     sum_doc_lens += doc_len;
@@ -99,15 +112,11 @@ void OnDiskIndex::index(const std::vector<DocId>& ids,
         batch.Put(docIdKey(doc_id),
                   rocksdb::Slice(reinterpret_cast<const char*>(&doc_len),
                                  sizeof(doc_len)));
-    if (!put_status.ok()) {
-      throw std::invalid_argument("put failed");
-    }
+    ASSERT(put_status.ok())
   }
 
   auto status = _db->Write(rocksdb::WriteOptions(), &batch);
-  if (!status.ok()) {
-    throw std::invalid_argument("write failed");
-  }
+  ASSERT(status.ok())
 
   updateNDocsAndAvgLen(sum_doc_lens, ids.size());
 }
@@ -168,15 +177,16 @@ std::vector<DocScore> OnDiskIndex::query(const std::string& query, uint32_t k) {
         const float token_idf = idf(n_docs, docs_w_token);
         token_indexes_and_idfs.emplace_back(i, token_idf);
       }
-    } else if (!statuses[i].IsNotFound()) {
-      throw std::invalid_argument("MultiGet failed");
+    } else {
+      ASSERT(statuses[i].IsNotFound())
     }
   }
 
   std::sort(token_indexes_and_idfs.begin(), token_indexes_and_idfs.end(),
             HighestScore<size_t>{});
 
-  std::unordered_map<DocId, float> doc_scores;  // TODO(): cache doc lens here
+  // TODO(Nicholas): cache doc lens with score, to avoid duplicate lookups
+  std::unordered_map<DocId, float> doc_scores;
 
   for (const auto& [token_index, token_idf] : token_indexes_and_idfs) {
     const DocCount* counts =
@@ -202,20 +212,21 @@ bool OnDiskIndex::containsDoc(DocId doc_id) const {
   std::string value;
   auto status = _db->Get(rocksdb::ReadOptions(), docIdKey(doc_id), &value);
 
-  if (!status.ok() && !status.IsNotFound()) {
-    throw std::invalid_argument("Check failed");
-  }
+  ASSERT(status.ok() || status.IsNotFound())
 
   return status.ok();
+}
+
+OnDiskIndex::~OnDiskIndex() {
+  _db->Close();
+  delete _db;
 }
 
 uint32_t OnDiskIndex::getDocLen(DocId doc_id) {
   std::string value;
   auto status = _db->Get(rocksdb::ReadOptions(), docIdKey(doc_id), &value);
+  ASSERT(status.ok())
 
-  if (!status.ok()) {
-    throw std::invalid_argument("Get failed");
-  }
   assert(value.size() == sizeof(uint32_t));
 
   return *reinterpret_cast<const uint32_t*>(value.data());
