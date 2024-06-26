@@ -153,7 +153,8 @@ std::vector<DocScore> OnDiskIndex::query(const std::string& query, uint32_t k) {
 
   auto statuses = _db->MultiGet(rocksdb::ReadOptions(), keys, &values);
 
-  auto [n_docs, avg_doc_len] = getNDocsAndAvgLen();
+  const auto [n_docs, avg_doc_len] = getNDocsAndAvgLen();
+  const uint64_t max_docs_with_token = _idf_cutoff_frac * n_docs;
 
   std::vector<std::pair<size_t, float>> token_indexes_and_idfs;
   token_indexes_and_idfs.reserve(keys.size());
@@ -162,8 +163,9 @@ std::vector<DocScore> OnDiskIndex::query(const std::string& query, uint32_t k) {
       assert(values[i].size() % sizeof(DocCount) == 0);
 
       const size_t docs_w_token = values[i].size() / sizeof(DocCount);
-      const float token_idf = idf(n_docs, docs_w_token);
-      if (token_idf < _idf_cutoff) {
+
+      if (docs_w_token < max_docs_with_token) {
+        const float token_idf = idf(n_docs, docs_w_token);
         token_indexes_and_idfs.emplace_back(i, token_idf);
       }
     } else if (!statuses[i].IsNotFound()) {

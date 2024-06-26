@@ -57,7 +57,7 @@ class OnDiskIndex {
 
   // Query variables
   size_t _max_docs_to_score;
-  float _idf_cutoff;
+  float _idf_cutoff_frac;
   float _k1, _b;
 
   std::vector<uint32_t> tokenize(const std::string& text) const;
