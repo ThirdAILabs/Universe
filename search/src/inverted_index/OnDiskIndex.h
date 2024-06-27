@@ -21,7 +21,7 @@ class OnDiskIndex {
   void index(const std::vector<DocId>& ids,
              const std::vector<std::string>& docs);
 
-  std::vector<DocScore> query(const std::string& query, uint32_t k);
+  std::vector<DocScore> query(const std::string& query, uint32_t k) const;
 
   bool containsDoc(DocId doc_id) const;
 
@@ -57,7 +57,7 @@ class OnDiskIndex {
       const std::vector<std::unordered_map<HashedToken, uint32_t>>&
           token_counts);
 
-  uint32_t getDocLen(DocId doc_id);
+  uint32_t getDocLen(DocId doc_id) const;
 
   uint64_t getNDocs() const;
 

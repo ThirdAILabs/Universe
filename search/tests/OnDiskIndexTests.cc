@@ -6,15 +6,6 @@
 
 namespace thirdai::search::tests {
 
-inline void checkQueryOnDiskIndex(OnDiskIndex& index, const std::string& query,
-                                  const std::vector<DocId>& expected_ids) {
-  auto results = index.query(query, expected_ids.size());
-  ASSERT_EQ(results.size(), expected_ids.size());
-  for (size_t i = 0; i < expected_ids.size(); i++) {
-    ASSERT_EQ(results.at(i).first, expected_ids.at(i));
-  }
-}
-
 TEST(OnDiskIndexTests, BasicRetrieval) {
   std::string db_name = "tmp.db";
   OnDiskIndex index(db_name);
@@ -35,13 +26,13 @@ TEST(OnDiskIndexTests, BasicRetrieval) {
   // Docs 2 and 1 both contain the whole query, but doc 2 is shorter so it
   // ranks higher. Docs 6 and 8 both contain "c" but 6 is shorter so the query
   // terms are more frequent within it.
-  checkQueryOnDiskIndex(index, {"a b c"}, {2, 1, 6, 8});
+  checkQuery(index, {"a b c"}, {2, 1, 6, 8});
 
   // Docs 7 and 11 contain the whole query, but 7 contains "g" repeated so it
   // scores higher. Docs 6, 8, 1 contain 1 term of the query. However 1
   // contains "g" which occurs in fewer docs so it ranks higher. Between 6 and
   // 8, 6 is shorter so the query terms are more frequent within it.
-  checkQueryOnDiskIndex(index, {"f g"}, {7, 11, 1, 6, 8});
+  checkQuery(index, {"f g"}, {7, 11, 1, 6, 8});
 
   std::filesystem::remove_all(db_name);
 }
@@ -65,7 +56,7 @@ TEST(OnDiskIndexTests, LessFrequentTokensScoreHigher) {
   // and "j" it is better than doc 4 which contains "a" and "h", which is better
   // than doc 1 which contains "a" and "b". This ordering is based on
   // prioritizing less frequent tokens.
-  checkQueryOnDiskIndex(index, {"a b h j"}, {6, 4, 1});
+  checkQuery(index, {"a b h j"}, {6, 4, 1});
 
   std::filesystem::remove_all(db_name);
 }
@@ -85,7 +76,7 @@ TEST(OnDiskIndexTests, RepeatedTokensInDocs) {
   // but one has multiple occurences of a token from the query, then it is
   // ranked higher. This also checks that having more unique tokens is
   // preferable to have the same token repeated.
-  checkQueryOnDiskIndex(index, {"c a q"}, {1, 5, 3});
+  checkQuery(index, {"c a q"}, {1, 5, 3});
 
   std::filesystem::remove_all(db_name);
 }
@@ -101,7 +92,7 @@ TEST(OnDiskIndexTests, RepeatedTokensInQuery) {
   // All of the tokens in the query occur in 2 docs. Doc 4 has tokens "a" and
   // "q" from the query, doc 2 has tokens "a m" from the query. Doc 4 scores
   // higher because token "q" occurs more in the query than token "m".
-  checkQueryOnDiskIndex(index, {"q a q m"}, {4, 2});
+  checkQuery(index, {"q a q m"}, {4, 2});
 
   std::filesystem::remove_all(db_name);
 }
@@ -115,7 +106,7 @@ TEST(OnDiskIndexTests, ShorterDocsScoreHigherWithSameTokens) {
 
   // Both docs 2 and 3 contain 2 query tokens, but they form a higher fraction
   // within 2 than 3.
-  checkQueryOnDiskIndex(index, {"c a q"}, {2, 3});
+  checkQuery(index, {"c a q"}, {2, 3});
 
   std::filesystem::remove_all(db_name);
 }

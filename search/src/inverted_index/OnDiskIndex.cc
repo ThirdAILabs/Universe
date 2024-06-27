@@ -47,7 +47,10 @@ class AppendValues : public rocksdb::AssociativeMergeOperator {
       return true;
     }
 
-    // TODO(Nicholas): check for doc already existing?
+    // Note: this assumes that the doc_ids in the old and new values are
+    // disjoint. This is true because we check for duplicate doc_ids during
+    // indexing. If we add support for updates, then this needs to be modified
+    // to merge the 2 values based on doc_id.
 
     *new_value = std::string(existing_value->size() + value.size(), 0);
 
@@ -264,7 +267,8 @@ struct HighestScore {
   }
 };
 
-std::vector<DocScore> OnDiskIndex::query(const std::string& query, uint32_t k) {
+std::vector<DocScore> OnDiskIndex::query(const std::string& query,
+                                         uint32_t k) const {
   auto query_tokens = tokenize(query);
 
   std::vector<rocksdb::Slice> keys;
@@ -347,7 +351,7 @@ OnDiskIndex::~OnDiskIndex() {
   delete _db;
 }
 
-uint32_t OnDiskIndex::getDocLen(DocId doc_id) {
+uint32_t OnDiskIndex::getDocLen(DocId doc_id) const {
   std::string value;
   auto status =
       _db->Get(rocksdb::ReadOptions(), _counters, docIdKey(doc_id), &value);
