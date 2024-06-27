@@ -1,6 +1,7 @@
 #pragma once
 
 #include <rocksdb/db.h>
+#include <rocksdb/utilities/transaction_db.h>
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <search/src/inverted_index/Tokenizer.h>
 #include <shared_mutex>
@@ -66,7 +67,7 @@ class OnDiskIndex {
 
   void updateSumDocLens(uint64_t sum_new_doc_lens);
 
-  rocksdb::DB* _db;
+  rocksdb::TransactionDB* _db;
   rocksdb::ColumnFamilyHandle* _counters;
   rocksdb::ColumnFamilyHandle* _token_to_docs;
 

@@ -6,6 +6,7 @@
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
 #include <rocksdb/table.h>
+#include <rocksdb/utilities/write_batch_with_index.h>
 #include <rocksdb/write_batch.h>
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <algorithm>
@@ -104,21 +105,8 @@ OnDiskIndex::OnDiskIndex(const std::string& db_name) {
   rocksdb::Options options;
   options.create_if_missing = true;
 
-  // options.table_factory.reset(rocksdb::NewCuckooTableFactory());
-  // options.merge_operator = std::make_shared<AppendValues>();
-
-  // std::vector<rocksdb::ColumnFamilyDescriptor> column_families = {
-  //     rocksdb::ColumnFamilyDescriptor(rocksdb::kDefaultColumnFamilyName,
-  //                                     counter_options),
-  //     rocksdb::ColumnFamilyDescriptor("token_to_docs",
-  //     token_to_docs_options),
-  // };
-
-  // std::vector<rocksdb::ColumnFamilyHandle*> handles;
-  // rocksdb::Status status =
-  //     rocksdb::DB::Open(options, db_name, column_families, &handles, &_db);
-
-  auto status = rocksdb::DB::Open(options, db_name, &_db);
+  auto status = rocksdb::TransactionDB::Open(
+      options, rocksdb::TransactionDBOptions(), db_name, &_db);
   if (!status.ok()) {
     raiseError("Database creation", status);
   }
@@ -184,21 +172,30 @@ OnDiskIndex::countTokenOccurences(const std::vector<std::string>& docs) const {
 void OnDiskIndex::storeDocLens(const std::vector<DocId>& ids,
                                const std::vector<uint32_t>& doc_lens) {
   uint64_t sum_doc_lens = 0;
-  rocksdb::WriteBatch batch;
+
+  rocksdb::Transaction* txn = _db->BeginTransaction(rocksdb::WriteOptions());
 
   for (size_t i = 0; i < ids.size(); i++) {
     const DocId doc_id = ids[i];
     const uint32_t doc_len = doc_lens[i];
 
-    if (containsDoc(doc_id)) {
+    const std::string key = docIdKey(doc_id);
+
+    std::string unused_value;
+    auto get_status = txn->GetForUpdate(rocksdb::ReadOptions(), _counters, key,
+                                        &unused_value);
+    if (get_status.ok()) {
       throw std::runtime_error("Document with id " + std::to_string(doc_id) +
-                               " is already in InvertedIndex.");
+                               " is already indexed.");
+    }
+    if (!get_status.IsNotFound()) {
+      raiseError("check for doc", get_status);
     }
 
     auto put_status =
-        batch.Put(_counters, docIdKey(doc_id),
-                  rocksdb::Slice(reinterpret_cast<const char*>(&doc_len),
-                                 sizeof(doc_len)));
+        txn->Put(_counters, key,
+                 rocksdb::Slice(reinterpret_cast<const char*>(&doc_len),
+                                sizeof(doc_len)));
     if (!put_status.ok()) {
       raiseError("Add write to batch", put_status);
     }
@@ -206,9 +203,9 @@ void OnDiskIndex::storeDocLens(const std::vector<DocId>& ids,
     sum_doc_lens += doc_len;
   }
 
-  auto status = _db->Write(rocksdb::WriteOptions(), &batch);
+  auto status = txn->Commit();
   if (!status.ok()) {
-    raiseError("Write batch commit", status);
+    raiseError("Write txn commit", status);
   }
 
   updateNDocs(ids.size());
