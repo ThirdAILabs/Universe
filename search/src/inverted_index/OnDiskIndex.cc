@@ -24,9 +24,7 @@ void raiseError(const std::string& op, const rocksdb::Status& status) {
                            ".");
 }
 
-// The following might be more memory efficient.
-// struct __attribute__((packed)) DocCount {
-struct DocCount {
+struct __attribute__((packed)) DocCount {
   DocCount(DocId doc_id, uint32_t count) : doc_id(doc_id), count(count) {}
 
   DocId doc_id;
