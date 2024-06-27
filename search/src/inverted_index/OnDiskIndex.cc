@@ -105,28 +105,37 @@ class IncrementCounter : public rocksdb::AssociativeMergeOperator {
 OnDiskIndex::OnDiskIndex(const std::string& db_name) {
   rocksdb::Options options;
   options.create_if_missing = true;
+  options.create_missing_column_families = true;
 
-  auto status = rocksdb::TransactionDB::Open(
-      options, rocksdb::TransactionDBOptions(), db_name, &_db);
+  rocksdb::ColumnFamilyOptions counter_options;
+  counter_options.merge_operator = std::make_shared<IncrementCounter>();
+
+  rocksdb::ColumnFamilyOptions token_to_docs_options;
+  token_to_docs_options.merge_operator = std::make_shared<AppendValues>();
+
+  std::vector<rocksdb::ColumnFamilyDescriptor> column_families = {
+      rocksdb::ColumnFamilyDescriptor(rocksdb::kDefaultColumnFamilyName,
+                                      rocksdb::ColumnFamilyOptions()),
+      rocksdb::ColumnFamilyDescriptor("counters", counter_options),
+      rocksdb::ColumnFamilyDescriptor("token_to_docs", token_to_docs_options),
+  };
+
+  std::vector<rocksdb::ColumnFamilyHandle*> handles;
+
+  auto status =
+      rocksdb::TransactionDB::Open(options, rocksdb::TransactionDBOptions(),
+                                   db_name, column_families, &handles, &_db);
   if (!status.ok()) {
     raiseError("Database creation", status);
   }
 
-  rocksdb::ColumnFamilyOptions counter_options;
-  counter_options.merge_operator = std::make_shared<IncrementCounter>();
-  auto counter_status =
-      _db->CreateColumnFamily(counter_options, "counters", &_counters);
-  if (!counter_status.ok()) {
-    raiseError("Database creation", status);
+  if (handles.size() != 3) {
+    throw std::runtime_error("Expected 2 handles to be created. Received " +
+                             std::to_string(handles.size()) + " handles.");
   }
 
-  rocksdb::ColumnFamilyOptions token_to_docs_options;
-  token_to_docs_options.merge_operator = std::make_shared<AppendValues>();
-  auto token_to_docs_status = _db->CreateColumnFamily(
-      token_to_docs_options, "token_to_docs", &_token_to_docs);
-  if (!token_to_docs_status.ok()) {
-    raiseError("Database creation", status);
-  }
+  _counters = handles[1];
+  _token_to_docs = handles[2];
 }
 
 std::string docIdKey(uint64_t doc_id) {
