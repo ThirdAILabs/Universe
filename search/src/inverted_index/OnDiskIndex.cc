@@ -7,6 +7,7 @@
 #include <rocksdb/write_batch.h>
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <algorithm>
+#include <memory>
 #include <mutex>
 #include <shared_mutex>
 #include <stdexcept>
@@ -22,24 +23,17 @@ namespace thirdai::search {
                                 std::to_string(__LINE__));                  \
   }
 
-OnDiskIndex::OnDiskIndex(const std::string& path) {
-  rocksdb::Options options;
-  options.create_if_missing = true;
-
-  rocksdb::Status status = rocksdb::DB::Open(options, path, &_db);
-  ASSERT(status.ok())
-}
-
 struct __attribute__((packed)) DocCount {
   uint64_t doc_id;
   uint32_t count;
 };
 
 // https://github.com/facebook/rocksdb/wiki/Merge-Operator
-class AppendDocTokenCount final : public rocksdb::AssociativeMergeOperator {
+class AppendDocTokenCount : public rocksdb::AssociativeMergeOperator {
+ public:
   bool Merge(const rocksdb::Slice& key, const rocksdb::Slice* existing_value,
              const rocksdb::Slice& value, std::string* new_value,
-             rocksdb::Logger* logger) const final {
+             rocksdb::Logger* logger) const override {
     (void)key;
     (void)logger;
 
@@ -61,8 +55,19 @@ class AppendDocTokenCount final : public rocksdb::AssociativeMergeOperator {
     return true;
   }
 
-  const char* Name() const final { return "AppendDocTokenCount"; }
+  const char* Name() const override { return "AppendDocTokenCount"; }
 };
+
+OnDiskIndex::OnDiskIndex(const std::string& path) {
+  rocksdb::Options options;
+  options.create_if_missing = true;
+
+  options.merge_operator = std::make_shared<AppendDocTokenCount>();
+
+  rocksdb::Status status = rocksdb::DB::Open(options, path, &_db);
+
+  ASSERT(status.ok())
+}
 
 std::string docIdKey(uint64_t doc_id) {
   return "doc_" + std::to_string(doc_id);
@@ -163,7 +168,8 @@ std::vector<DocScore> OnDiskIndex::query(const std::string& query, uint32_t k) {
   auto statuses = _db->MultiGet(rocksdb::ReadOptions(), keys, &values);
 
   const auto [n_docs, avg_doc_len] = getNDocsAndAvgLen();
-  const uint64_t max_docs_with_token = _idf_cutoff_frac * n_docs;
+  const uint64_t max_docs_with_token =
+      std::max<uint64_t>(_idf_cutoff_frac * n_docs, 1000);
 
   std::vector<std::pair<size_t, float>> token_indexes_and_idfs;
   token_indexes_and_idfs.reserve(keys.size());
