@@ -58,18 +58,17 @@ class OnDiskIndex {
 
   uint32_t getDocLen(DocId doc_id);
 
+  uint64_t getNDocs() const;
+
+  void updateNDocs(uint64_t n_new_docs);
+
+  uint64_t getSumDocLens() const;
+
+  void updateSumDocLens(uint64_t sum_new_doc_lens);
+
   rocksdb::DB* _db;
-
-  // Cached state: Can be refreshed from db on load
-  std::shared_mutex _mutex;
-
-  uint64_t _sum_doc_lens = 0;
-  uint64_t _n_docs = 0;
-  float _avg_doc_len;
-
-  std::pair<uint64_t, float> getNDocsAndAvgLen();
-
-  void updateNDocsAndAvgLen(uint64_t sum_new_doc_lens, uint64_t n_new_docs);
+  rocksdb::ColumnFamilyHandle* _counters;
+  rocksdb::ColumnFamilyHandle* _token_to_docs;
 
   // Query variables
   uint64_t _max_docs_to_score = InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE;

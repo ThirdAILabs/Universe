@@ -33,7 +33,7 @@ struct DocCount {
 };
 
 // https://github.com/facebook/rocksdb/wiki/Merge-Operator
-class AppendDocTokenCount : public rocksdb::AssociativeMergeOperator {
+class AppendValues : public rocksdb::AssociativeMergeOperator {
  public:
   bool Merge(const rocksdb::Slice& key, const rocksdb::Slice* existing_value,
              const rocksdb::Slice& value, std::string* new_value,
@@ -62,15 +62,80 @@ class AppendDocTokenCount : public rocksdb::AssociativeMergeOperator {
   const char* Name() const override { return "AppendDocTokenCount"; }
 };
 
+template <typename T>
+bool deserialize(const rocksdb::Slice& value, T& output) {
+  if (value.size() != sizeof(T)) {
+    return false;
+  }
+  output = *reinterpret_cast<const T*>(value.data());
+  return true;
+}
+
+class IncrementCounter : public rocksdb::AssociativeMergeOperator {
+ public:
+  bool Merge(const rocksdb::Slice& key, const rocksdb::Slice* existing_value,
+             const rocksdb::Slice& value, std::string* new_value,
+             rocksdb::Logger* logger) const override {
+    (void)key;
+    (void)logger;
+
+    uint64_t counter = 0;
+    if (existing_value) {
+      if (!deserialize(*existing_value, counter)) {
+        return false;
+      }
+    }
+
+    uint64_t increment = 0;
+    if (!deserialize(value, increment)) {
+      return false;
+    }
+
+    *new_value = std::string(sizeof(uint64_t), 0);
+    *reinterpret_cast<uint64_t*>(new_value->data()) = counter + increment;
+
+    return true;
+  }
+
+  const char* Name() const override { return "IncrementCounter"; }
+};
+
 OnDiskIndex::OnDiskIndex(const std::string& db_name) {
   rocksdb::Options options;
   options.create_if_missing = true;
 
   // options.table_factory.reset(rocksdb::NewCuckooTableFactory());
-  options.merge_operator = std::make_shared<AppendDocTokenCount>();
+  // options.merge_operator = std::make_shared<AppendValues>();
 
-  rocksdb::Status status = rocksdb::DB::Open(options, db_name, &_db);
+  // std::vector<rocksdb::ColumnFamilyDescriptor> column_families = {
+  //     rocksdb::ColumnFamilyDescriptor(rocksdb::kDefaultColumnFamilyName,
+  //                                     counter_options),
+  //     rocksdb::ColumnFamilyDescriptor("token_to_docs",
+  //     token_to_docs_options),
+  // };
+
+  // std::vector<rocksdb::ColumnFamilyHandle*> handles;
+  // rocksdb::Status status =
+  //     rocksdb::DB::Open(options, db_name, column_families, &handles, &_db);
+
+  auto status = rocksdb::DB::Open(options, db_name, &_db);
   if (!status.ok()) {
+    raiseError("Database creation", status);
+  }
+
+  rocksdb::ColumnFamilyOptions counter_options;
+  counter_options.merge_operator = std::make_shared<IncrementCounter>();
+  auto counter_status =
+      _db->CreateColumnFamily(counter_options, "counters", &_counters);
+  if (!counter_status.ok()) {
+    raiseError("Database creation", status);
+  }
+
+  rocksdb::ColumnFamilyOptions token_to_docs_options;
+  token_to_docs_options.merge_operator = std::make_shared<AppendValues>();
+  auto token_to_docs_status = _db->CreateColumnFamily(
+      token_to_docs_options, "token_to_docs", &_token_to_docs);
+  if (!token_to_docs_status.ok()) {
     raiseError("Database creation", status);
   }
 }
@@ -131,7 +196,7 @@ void OnDiskIndex::storeDocLens(const std::vector<DocId>& ids,
     }
 
     auto put_status =
-        batch.Put(docIdKey(doc_id),
+        batch.Put(_counters, docIdKey(doc_id),
                   rocksdb::Slice(reinterpret_cast<const char*>(&doc_len),
                                  sizeof(doc_len)));
     if (!put_status.ok()) {
@@ -146,8 +211,8 @@ void OnDiskIndex::storeDocLens(const std::vector<DocId>& ids,
     raiseError("Write batch commit", status);
   }
 
-  updateNDocsAndAvgLen(/*sum_new_doc_lens=*/sum_doc_lens,
-                       /*n_new_docs=*/ids.size());
+  updateNDocs(ids.size());
+  updateSumDocLens(sum_doc_lens);
 }
 
 void OnDiskIndex::updateTokenToDocs(
@@ -182,7 +247,7 @@ void OnDiskIndex::updateTokenToDocs(
     // TODO(Nicholas): is it faster to just store the count per doc as a
     // unique key with <token>_<doc> -> cnt and then do prefix scans on
     // <token>_ to find the docs it occurs in?
-    auto merge_status = batch.Merge(key, value);
+    auto merge_status = batch.Merge(_token_to_docs, key, value);
     if (!merge_status.ok()) {
       raiseError("Add merge to batch", merge_status);
     }
@@ -213,10 +278,13 @@ std::vector<DocScore> OnDiskIndex::query(const std::string& query, uint32_t k) {
     keys.emplace_back(reinterpret_cast<const char*>(&token), sizeof(token));
   }
   values.resize(keys.size());
+  std::vector<rocksdb::ColumnFamilyHandle*> handles(keys.size(),
+                                                    _token_to_docs);
+  auto statuses = _db->MultiGet(rocksdb::ReadOptions(), handles, keys, &values);
 
-  auto statuses = _db->MultiGet(rocksdb::ReadOptions(), keys, &values);
+  const uint64_t n_docs = getNDocs();
+  const float avg_doc_len = static_cast<float>(getSumDocLens()) / n_docs;
 
-  const auto [n_docs, avg_doc_len] = getNDocsAndAvgLen();
   const uint64_t max_docs_with_token =
       std::max<uint64_t>(_idf_cutoff_frac * n_docs, 1000);
 
@@ -265,7 +333,8 @@ std::vector<DocScore> OnDiskIndex::query(const std::string& query, uint32_t k) {
 
 bool OnDiskIndex::containsDoc(DocId doc_id) const {
   std::string value;
-  auto status = _db->Get(rocksdb::ReadOptions(), docIdKey(doc_id), &value);
+  auto status =
+      _db->Get(rocksdb::ReadOptions(), _counters, docIdKey(doc_id), &value);
 
   if (!status.ok() && !status.IsNotFound()) {
     raiseError("DB read", status);
@@ -275,34 +344,76 @@ bool OnDiskIndex::containsDoc(DocId doc_id) const {
 }
 
 OnDiskIndex::~OnDiskIndex() {
+  _db->DestroyColumnFamilyHandle(_counters);
+  _db->DestroyColumnFamilyHandle(_token_to_docs);
   _db->Close();
   delete _db;
 }
 
 uint32_t OnDiskIndex::getDocLen(DocId doc_id) {
   std::string value;
-  auto status = _db->Get(rocksdb::ReadOptions(), docIdKey(doc_id), &value);
+  auto status =
+      _db->Get(rocksdb::ReadOptions(), _counters, docIdKey(doc_id), &value);
   if (!status.ok()) {
     raiseError("DB read", status);
   }
 
-  assert(value.size() == sizeof(uint32_t));
+  uint32_t len;
+  if (!deserialize(value, len)) {
+    throw std::invalid_argument("document length is corrupted");
+  }
 
-  return *reinterpret_cast<const uint32_t*>(value.data());
+  return len;
 }
 
-std::pair<uint64_t, float> OnDiskIndex::getNDocsAndAvgLen() {
-  std::shared_lock<std::shared_mutex> lock(_mutex);
-  return {_n_docs, _avg_doc_len};
+uint64_t OnDiskIndex::getNDocs() const {
+  std::string serialized;
+  auto status =
+      _db->Get(rocksdb::ReadOptions(), _counters, "n_docs", &serialized);
+  if (!status.ok()) {
+    raiseError("DB read", status);
+  }
+
+  uint64_t ndocs;
+  if (!deserialize(serialized, ndocs)) {
+    throw std::invalid_argument("Value of n_docs is corrupted.");
+  }
+  return ndocs;
 }
 
-void OnDiskIndex::updateNDocsAndAvgLen(uint64_t sum_new_doc_lens,
-                                       uint64_t n_new_docs) {
-  std::unique_lock<std::shared_mutex> lock(_mutex);
+void OnDiskIndex::updateNDocs(uint64_t n_new_docs) {
+  auto status =
+      _db->Merge(rocksdb::WriteOptions(), _counters, "n_docs",
+                 rocksdb::Slice(reinterpret_cast<const char*>(&n_new_docs),
+                                sizeof(uint64_t)));
+  if (!status.ok()) {
+    raiseError("DB merge", status);
+  }
+}
 
-  _n_docs += n_new_docs;
-  _sum_doc_lens += sum_new_doc_lens;
-  _avg_doc_len = static_cast<float>(_sum_doc_lens) / _n_docs;
+uint64_t OnDiskIndex::getSumDocLens() const {
+  std::string serialized;
+  auto status =
+      _db->Get(rocksdb::ReadOptions(), _counters, "sum_doc_lens", &serialized);
+  if (!status.ok()) {
+    raiseError("DB read", status);
+  }
+
+  uint64_t sum_doc_lens;
+  if (!deserialize(serialized, sum_doc_lens)) {
+    throw std::invalid_argument("Value of n_docs is corrupted.");
+  }
+  return sum_doc_lens;
+}
+
+void OnDiskIndex::updateSumDocLens(uint64_t sum_new_doc_lens) {
+  auto status = _db->Merge(
+      rocksdb::WriteOptions(), _counters, "sum_doc_lens",
+      rocksdb::Slice(reinterpret_cast<const char*>(&sum_new_doc_lens),
+                     sizeof(uint64_t)));
+  if (!status.ok()) {
+    raiseError("DB merge", status);
+  }
 }
 
 std::vector<HashedToken> OnDiskIndex::tokenize(const std::string& text) const {
