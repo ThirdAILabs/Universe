@@ -89,16 +89,11 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("stem") = true, py::arg("lowercase") = true)
       .def("tokenize", &WordKGrams::tokenize, py::arg("input"));
 
+  py::class_<IndexConfig>(search_submodule, "IndexConfig");  // NOLINT
+
   py::class_<InvertedIndex, std::shared_ptr<InvertedIndex>>(search_submodule,
                                                             "InvertedIndex")
-      .def(py::init<size_t, float, float, float, TokenizerPtr, size_t>(),
-           py::arg("max_docs_to_score") =
-               InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE,
-           py::arg("idf_cutoff_frac") = InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC,
-           py::arg("k1") = InvertedIndex::DEFAULT_K1,
-           py::arg("b") = InvertedIndex::DEFAULT_B,
-           py::arg("tokenizer") = std::make_shared<DefaultTokenizer>(),
-           py::arg("shard_size") = InvertedIndex::DEFAULT_SHARD_SIZE)
+      .def(py::init<const IndexConfig&>(), py::arg("config") = IndexConfig())
       .def("index", &InvertedIndex::index, py::arg("ids"), py::arg("docs"))
       .def("query", &InvertedIndex::queryBatch, py::arg("queries"),
            py::arg("k"))
@@ -153,8 +148,7 @@ void createSearchSubmodule(py::module_& module) {
       .def(py::init<float, uint32_t, uint32_t, size_t>(),
            py::arg("lambda") = FinetunableRetriever::DEFAULT_LAMBDA,
            py::arg("min_top_docs") = FinetunableRetriever::DEFAULT_MIN_TOP_DOCS,
-           py::arg("top_queries") = FinetunableRetriever::DEFAULT_TOP_QUERIES,
-           py::arg("shard_size") = InvertedIndex::DEFAULT_SHARD_SIZE)
+           py::arg("top_queries") = FinetunableRetriever::DEFAULT_TOP_QUERIES)
       .def("index", &FinetunableRetriever::index, py::arg("ids"),
            py::arg("docs"))
       .def("finetune", &FinetunableRetriever::finetune, py::arg("doc_ids"),

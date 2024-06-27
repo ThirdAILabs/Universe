@@ -12,7 +12,6 @@
 #include <algorithm>
 #include <memory>
 #include <mutex>
-#include <shared_mutex>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -102,7 +101,12 @@ class IncrementCounter : public rocksdb::AssociativeMergeOperator {
   const char* Name() const override { return "IncrementCounter"; }
 };
 
-OnDiskIndex::OnDiskIndex(const std::string& db_name) {
+OnDiskIndex::OnDiskIndex(const std::string& db_name, const IndexConfig& config)
+    : _max_docs_to_score(config.max_docs_to_score),
+      _max_token_occurrence_frac(config.max_token_occurrence_frac),
+      _k1(config.k1),
+      _b(config.b),
+      _tokenizer(config.tokenizer) {
   rocksdb::Options options;
   options.create_if_missing = true;
   options.create_missing_column_families = true;
@@ -294,7 +298,7 @@ std::vector<DocScore> OnDiskIndex::query(const std::string& query,
   const float avg_doc_len = static_cast<float>(getSumDocLens()) / n_docs;
 
   const uint64_t max_docs_with_token =
-      std::max<uint64_t>(_idf_cutoff_frac * n_docs, 1000);
+      std::max<uint64_t>(_max_token_occurrence_frac * n_docs, 1000);
 
   std::vector<std::pair<size_t, float>> token_indexes_and_idfs;
   token_indexes_and_idfs.reserve(keys.size());

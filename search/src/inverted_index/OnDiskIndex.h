@@ -4,7 +4,6 @@
 #include <rocksdb/utilities/transaction_db.h>
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <search/src/inverted_index/Tokenizer.h>
-#include <shared_mutex>
 #include <unordered_map>
 
 namespace thirdai::search {
@@ -16,7 +15,8 @@ using HashedToken = uint32_t;
 
 class OnDiskIndex {
  public:
-  explicit OnDiskIndex(const std::string& db_name);
+  explicit OnDiskIndex(const std::string& db_name,
+                       const IndexConfig& config = IndexConfig());
 
   void index(const std::vector<DocId>& ids,
              const std::vector<std::string>& docs);
@@ -67,18 +67,19 @@ class OnDiskIndex {
 
   void updateSumDocLens(uint64_t sum_new_doc_lens);
 
+  std::vector<HashedToken> tokenize(const std::string& text) const;
+
   rocksdb::TransactionDB* _db;
   rocksdb::ColumnFamilyHandle* _counters;
   rocksdb::ColumnFamilyHandle* _token_to_docs;
 
   // Query variables
-  uint64_t _max_docs_to_score = InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE;
-  float _idf_cutoff_frac = InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC;
-  float _k1 = InvertedIndex::DEFAULT_K1, _b = InvertedIndex::DEFAULT_B;
+  uint64_t _max_docs_to_score;
+  float _max_token_occurrence_frac;
+  float _k1;
+  float _b;
 
-  std::vector<HashedToken> tokenize(const std::string& text) const;
-
-  TokenizerPtr _tokenizer = std::make_shared<DefaultTokenizer>();
+  TokenizerPtr _tokenizer;
 };
 
 }  // namespace thirdai::search

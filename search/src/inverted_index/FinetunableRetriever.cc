@@ -25,13 +25,8 @@ constexpr size_t QUERY_INDEX_THRESHOLD = 10;
 
 FinetunableRetriever::FinetunableRetriever(float lambda, uint32_t min_top_docs,
                                            uint32_t top_queries,
-                                           size_t shard_size)
-    : _doc_index(std::make_shared<InvertedIndex>(
-          /*max_docs_to_score=*/InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE,
-          /*idf_cutoff_frac=*/InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC,
-          /*k1=*/InvertedIndex::DEFAULT_K1, /*b=*/InvertedIndex::DEFAULT_B,
-          /*tokenizer=*/std::make_shared<DefaultTokenizer>(),
-          /*shard_size=*/shard_size)),
+                                           const IndexConfig& config)
+    : _doc_index(std::make_shared<InvertedIndex>(config)),
       _query_index(std::make_shared<InvertedIndex>()),
       _lambda(lambda),
       _min_top_docs(min_top_docs),
