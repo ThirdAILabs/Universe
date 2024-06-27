@@ -260,6 +260,9 @@ option(WITH_TESTS OFF)
 option(WITH_BENCHMARK_TOOLS OFF)
 option(WITH_TOOLS OFF)
 
+# This is just so that we don't need to complile and link with this library.
+option(WITH_GFLAGS OFF)
+
 # This is so we can implement a MergeOperator:
 # https://github.com/facebook/rocksdb/issues/3811
 set(USE_RTTI "TRUE" CACHE STRING "")
