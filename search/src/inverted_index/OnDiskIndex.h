@@ -2,6 +2,7 @@
 
 #include <rocksdb/db.h>
 #include <rocksdb/utilities/transaction_db.h>
+#include <search/src/inverted_index/DbAdapter.h>
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <search/src/inverted_index/Tokenizer.h>
 #include <unordered_map>
@@ -22,10 +23,6 @@ class OnDiskIndex {
              const std::vector<std::string>& docs);
 
   std::vector<DocScore> query(const std::string& query, uint32_t k) const;
-
-  bool containsDoc(DocId doc_id) const;
-
-  ~OnDiskIndex();
 
  private:
   static inline float idf(size_t n_docs, size_t docs_w_token) {
@@ -49,29 +46,9 @@ class OnDiskIndex {
             std::vector<std::unordered_map<HashedToken, uint32_t>>>
   countTokenOccurences(const std::vector<std::string>& docs) const;
 
-  void storeDocLens(const std::vector<DocId>& ids,
-                    const std::vector<uint32_t>& doc_lens);
-
-  void updateTokenToDocs(
-      const std::vector<DocId>& ids,
-      const std::vector<std::unordered_map<HashedToken, uint32_t>>&
-          token_counts);
-
-  uint32_t getDocLen(DocId doc_id) const;
-
-  uint64_t getNDocs() const;
-
-  void updateNDocs(uint64_t n_new_docs);
-
-  uint64_t getSumDocLens() const;
-
-  void updateSumDocLens(uint64_t sum_new_doc_lens);
-
   std::vector<HashedToken> tokenize(const std::string& text) const;
 
-  rocksdb::TransactionDB* _db;
-  rocksdb::ColumnFamilyHandle* _counters;
-  rocksdb::ColumnFamilyHandle* _token_to_docs;
+  std::unique_ptr<DbAdapter> _db;
 
   // Query variables
   uint64_t _max_docs_to_score;

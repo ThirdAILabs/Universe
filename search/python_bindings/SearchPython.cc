@@ -145,7 +145,7 @@ void createSearchSubmodule(py::module_& module) {
 
   py::class_<FinetunableRetriever, std::shared_ptr<FinetunableRetriever>>(
       search_submodule, "FinetunableRetriever")
-      .def(py::init<float, uint32_t, uint32_t, size_t>(),
+      .def(py::init<float, uint32_t, uint32_t>(),
            py::arg("lambda") = FinetunableRetriever::DEFAULT_LAMBDA,
            py::arg("min_top_docs") = FinetunableRetriever::DEFAULT_MIN_TOP_DOCS,
            py::arg("top_queries") = FinetunableRetriever::DEFAULT_TOP_QUERIES)
