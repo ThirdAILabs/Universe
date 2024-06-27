@@ -16,12 +16,10 @@
 
 namespace thirdai::search {
 
-// NOLINTNEXTLINE
-#define ASSERT(status)                                                      \
-  if (!(status)) {                                                          \
-    throw std::invalid_argument(std::string("Error at ") + __FILE__ + ":" + \
-                                std::to_string(__LINE__));                  \
-  }
+void raiseError(const std::string& op, const rocksdb::Status& status) {
+  throw std::runtime_error(op + " failed with error: " + status.ToString() +
+                           ".");
+}
 
 struct __attribute__((packed)) DocCount {
   uint64_t doc_id;
@@ -58,15 +56,16 @@ class AppendDocTokenCount : public rocksdb::AssociativeMergeOperator {
   const char* Name() const override { return "AppendDocTokenCount"; }
 };
 
-OnDiskIndex::OnDiskIndex(const std::string& path) {
+OnDiskIndex::OnDiskIndex(const std::string& db_name) {
   rocksdb::Options options;
   options.create_if_missing = true;
 
   options.merge_operator = std::make_shared<AppendDocTokenCount>();
 
-  rocksdb::Status status = rocksdb::DB::Open(options, path, &_db);
-
-  ASSERT(status.ok())
+  rocksdb::Status status = rocksdb::DB::Open(options, db_name, &_db);
+  if (!status.ok()) {
+    raiseError("Database creation", status);
+  }
 }
 
 std::string docIdKey(uint64_t doc_id) {
@@ -109,7 +108,9 @@ void OnDiskIndex::index(const std::vector<DocId>& ids,
       auto merge_status = batch.Merge(
           key,
           rocksdb::Slice(reinterpret_cast<const char*>(&data), sizeof(data)));
-      ASSERT(merge_status.ok())
+      if (!merge_status.ok()) {
+        raiseError("Add merge to batch", merge_status);
+      }
     }
 
     sum_doc_lens += doc_len;
@@ -117,11 +118,15 @@ void OnDiskIndex::index(const std::vector<DocId>& ids,
         batch.Put(docIdKey(doc_id),
                   rocksdb::Slice(reinterpret_cast<const char*>(&doc_len),
                                  sizeof(doc_len)));
-    ASSERT(put_status.ok())
+    if (!put_status.ok()) {
+      raiseError("Add write to batch", put_status);
+    }
   }
 
   auto status = _db->Write(rocksdb::WriteOptions(), &batch);
-  ASSERT(status.ok())
+  if (!status.ok()) {
+    raiseError("Write batch commit", status);
+  }
 
   updateNDocsAndAvgLen(sum_doc_lens, ids.size());
 }
@@ -183,8 +188,8 @@ std::vector<DocScore> OnDiskIndex::query(const std::string& query, uint32_t k) {
         const float token_idf = idf(n_docs, docs_w_token);
         token_indexes_and_idfs.emplace_back(i, token_idf);
       }
-    } else {
-      ASSERT(statuses[i].IsNotFound())
+    } else if (!statuses[i].IsNotFound()) {
+      raiseError("DB batch get", statuses[i]);
     }
   }
 
@@ -218,7 +223,9 @@ bool OnDiskIndex::containsDoc(DocId doc_id) const {
   std::string value;
   auto status = _db->Get(rocksdb::ReadOptions(), docIdKey(doc_id), &value);
 
-  ASSERT(status.ok() || status.IsNotFound())
+  if (!status.ok() && !status.IsNotFound()) {
+    raiseError("DB read", status);
+  }
 
   return status.ok();
 }
@@ -231,7 +238,9 @@ OnDiskIndex::~OnDiskIndex() {
 uint32_t OnDiskIndex::getDocLen(DocId doc_id) {
   std::string value;
   auto status = _db->Get(rocksdb::ReadOptions(), docIdKey(doc_id), &value);
-  ASSERT(status.ok())
+  if (!status.ok()) {
+    raiseError("DB read", status);
+  }
 
   assert(value.size() == sizeof(uint32_t));
 

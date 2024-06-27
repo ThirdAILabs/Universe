@@ -13,7 +13,7 @@ using DocScore = std::pair<DocId, float>;
 
 class OnDiskIndex {
  public:
-  explicit OnDiskIndex(const std::string& path);
+  explicit OnDiskIndex(const std::string& db_name);
 
   void index(const std::vector<DocId>& ids,
              const std::vector<std::string>& docs);

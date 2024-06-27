@@ -5,6 +5,7 @@
 #include <pybind11/stl.h>
 #include <search/src/inverted_index/FinetunableRetriever.h>
 #include <search/src/inverted_index/InvertedIndex.h>
+#include <search/src/inverted_index/OnDiskIndex.h>
 #include <search/src/inverted_index/Tokenizer.h>
 
 namespace thirdai::search::python {
@@ -140,6 +141,12 @@ void createSearchSubmodule(py::module_& module) {
               return InvertedIndex::load_stream_cereal(input);
             }
           }));
+
+  py::class_<OnDiskIndex, std::shared_ptr<OnDiskIndex>>(search_submodule,
+                                                        "OnDiskIndex")
+      .def(py::init<const std::string&>(), py::arg("db_name"))
+      .def("index", &OnDiskIndex::index, py::arg("ids"), py::arg("docs"))
+      .def("query", &OnDiskIndex::query, py::arg("query"), py::arg("k"));
 
   py::class_<FinetunableRetriever, std::shared_ptr<FinetunableRetriever>>(
       search_submodule, "FinetunableRetriever")
