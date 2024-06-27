@@ -93,35 +93,6 @@ void OnDiskIndex::index(const std::vector<DocId>& ids,
   storeDocLens(ids, doc_lens);
 
   updateTokenToDocs(ids, token_counts);
-
-  // rocksdb::WriteBatch batch;
-  // for (size_t i = 0; i < docs.size(); i++) {
-  //   const DocId doc_id = ids[i];
-  //   const auto& occurences = token_counts[i];
-
-  //   for (const auto& [token, cnt] : occurences) {
-  //     rocksdb::Slice key(reinterpret_cast<const char*>(&token),
-  //     sizeof(token));
-
-  //     DocCount data{doc_id, cnt};
-
-  //     // TODO(Nicholas): is it faster to just store the count per doc as a
-  //     // unique key with <token>_<doc> -> cnt and then do prefix scans on
-  //     // <token>_ to find the docs it occurs in?
-  //     auto merge_status = batch.Merge(
-  //         key,
-  //         rocksdb::Slice(reinterpret_cast<const char*>(&data),
-  //         sizeof(data)));
-  //     if (!merge_status.ok()) {
-  //       raiseError("Add merge to batch", merge_status);
-  //     }
-  //   }
-  // }
-
-  // auto status = _db->Write(rocksdb::WriteOptions(), &batch);
-  // if (!status.ok()) {
-  //   raiseError("Write batch commit", status);
-  // }
 }
 
 std::pair<std::vector<uint32_t>,
