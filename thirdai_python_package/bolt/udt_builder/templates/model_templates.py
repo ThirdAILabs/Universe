@@ -4,9 +4,8 @@ import typing
 from collections import defaultdict
 import pandas as pd
 
-from thirdai import bolt
-
 from ..column_inferencing import column_detector
+import thirdai._thirdai.bolt as bolt
 
 
 class UDTDataTemplate:
@@ -18,12 +17,16 @@ class UDTDataTemplate:
 
     @staticmethod
     @abstractclassmethod
-    def model_initialization_typehint(target_column_name) -> str:
+    def model_initialization_typehint(target_column_name: str) -> str:
         pass
 
     @staticmethod
     @abstractclassmethod
-    def get_concrete_types(target_column, input_columns, dataframe):
+    def get_concrete_types(
+        target_column: column_detector.CategoricalColumn,
+        input_columns: typing.Dict[str, column_detector.Column],
+        dataframe: pd.DataFrame,
+    ):
         pass
 
 
@@ -42,7 +45,7 @@ class TabularClassificationTemplate(UDTDataTemplate):
     target_column_caster = column_detector.cast_to_categorical
 
     @staticmethod
-    def model_initialization_typehint(target_column_name) -> str:
+    def model_initialization_typehint(target_column_name: str) -> str:
         typehint = f"""
         Use the below code snippet to explicitly instantiate a model for Tabular Classification.
         
@@ -59,7 +62,11 @@ class TabularClassificationTemplate(UDTDataTemplate):
         return typehint
 
     @staticmethod
-    def get_concrete_types(target_column, input_columns, dataframe):
+    def get_concrete_types(
+        target_column: column_detector.CategoricalColumn,
+        input_columns: typing.Dict[str, column_detector.Column],
+        dataframe: pd.DataFrame,
+    ):
         if target_column is None:
             raise Exception(
                 f"Could not convert the specified target column into a valid categorical data type for TabularClassification."
@@ -82,7 +89,7 @@ class RegressionTemplate(UDTDataTemplate):
     target_column_caster = column_detector.cast_to_numerical
 
     @staticmethod
-    def model_initialization_typehint(target_column_name) -> str:
+    def model_initialization_typehint(target_column_name: str) -> str:
         typehint = f"""
         Use the below code snippet to explicitly instantiate a model for Tabular Classification.
         
@@ -99,7 +106,11 @@ class RegressionTemplate(UDTDataTemplate):
         return typehint
 
     @staticmethod
-    def get_concrete_types(target_column, input_columns, dataframe):
+    def get_concrete_types(
+        target_column: column_detector.CategoricalColumn,
+        input_columns: typing.Dict[str, column_detector.Column],
+        dataframe: pd.DataFrame,
+    ):
         if target_column is None:
             raise Exception(
                 f"Could not convert the specified target column into a valid numerical data type for Regression."
@@ -139,55 +150,37 @@ class TokenClassificationTemplate(UDTDataTemplate):
 
     @staticmethod
     def get_concrete_types(
-        target,
-        input_columns,
-        dataframe,
+        target_column: column_detector.CategoricalColumn,
+        input_columns: typing.Dict[str, column_detector.Column],
+        dataframe: pd.DataFrame,
     ):
 
-        if target is None:
+        if target_column is None:
             raise Exception(
                 f"Could not convert the specified target column into a valid categorical data type for Token Classification."
             )
 
-        def get_target_tags(
-            target: column_detector.CategoricalColumn, dataframe: pd.DataFrame
-        ):
-            tag_frequency_map = defaultdict(int)
-
-            def add_key_to_dict(dc, key):
-                if key.strip():
-                    dc[key] += 1
-
-            dataframe[target.column_name].apply(
-                lambda row: [
-                    add_key_to_dict(tag_frequency_map, key) for key in row.split(" ")
-                ]
-            )
-
-            sorted_tags = sorted(
-                tag_frequency_map.items(), key=lambda item: item[1], reverse=True
-            )
-            sorted_tag_keys = [tag for tag, freq in sorted_tags]
-
-            return sorted_tag_keys
-
-        detected_tags = get_target_tags(target, dataframe)
-
-        data_types = {}
-        data_types[target.column_name] = column_detector.TokenTags(
-            column_name=target.column_name,
-            default_tag=detected_tags[0],
-            named_tags=detected_tags[1:],
+        detected_tags = column_detector.get_frequency_sorted_unique_tokens(
+            target_column, dataframe
         )
 
-        if len(data_types[target.column_name].named_tags) > 250:
+        data_types = {}
+        data_types[target_column.column_name] = column_detector.TokenTags(
+            column_name=target_column.column_name,
+            default_tag=detected_tags[
+                0
+            ],  # most occuring tag is the default tag for NER
+            named_tags=detected_tags[1:],  # all other tags are named entities
+        )
+
+        if len(data_types[target_column.column_name].named_tags) > 250:
             raise Exception(
-                f"Unexpected Number of Unique Tags Detected in the column {len(data_types[target.column_name].named_tags)} for Token Classification. Ensure that the column is the correct column for tags."
+                f"Unexpected Number of Unique Tags Detected in the column {len(data_types[target_column.column_name].named_tags)} for Token Classification. Ensure that the column is the correct column for tags."
             )
 
         token_column_candidates = (
             column_detector.get_token_candidates_for_token_classification(
-                target, input_columns
+                target_column, input_columns
             )
         )
 
@@ -228,19 +221,19 @@ class QueryReformulationTemplate(UDTDataTemplate):
 
     @staticmethod
     def get_concrete_types(
-        target: column_detector.CategoricalColumn,
+        target_column: column_detector.CategoricalColumn,
         input_columns: typing.Dict[str, column_detector.Column],
         dataframe: pd.DataFrame,
     ):
 
-        if target is None:
+        if target_column is None:
             raise Exception(
                 f"Could not convert the specified target column into a valid categorical data type for Token Classification."
             )
 
         token_column_candidates = (
             column_detector.get_source_column_for_query_reformulation(
-                target, input_columns
+                target_column, input_columns
             )
         )
         if len(token_column_candidates) == 0:
@@ -254,8 +247,8 @@ class QueryReformulationTemplate(UDTDataTemplate):
             )
 
         data_types = {}
-        data_types[target.column_name] = column_detector.TextColumn(
-            column_name=target.column_name
+        data_types[target_column.column_name] = column_detector.TextColumn(
+            column_name=target_column.column_name
         )
 
         data_types[token_column_candidates[0].column_name] = token_column_candidates[0]
@@ -289,12 +282,12 @@ class RecurrentClassifierTemplate(UDTDataTemplate):
 
     @staticmethod
     def get_concrete_types(
-        target: column_detector.CategoricalColumn,
+        target_column: column_detector.CategoricalColumn,
         input_columns: typing.Dict[str, column_detector.Column],
         dataframe: pd.DataFrame,
     ):
 
-        if target is None:
+        if target_column is None:
             raise Exception(
                 f"Could not convert the specified target column into a valid sequence data type for RecurrentClassifier."
             )
@@ -316,11 +309,11 @@ class RecurrentClassifierTemplate(UDTDataTemplate):
             )
 
         data_types = {}
-        data_types[target.column_name] = column_detector.SequenceType(
-            column_name=target.column_name,
-            delimiter=target.delimiter,
-            estimated_n_classes=target.estimated_n_classes,
-            max_length=get_maximum_tokens_in_row(target, dataframe),
+        data_types[target_column.column_name] = column_detector.SequenceType(
+            column_name=target_column.column_name,
+            delimiter=target_column.delimiter,
+            estimated_n_classes=target_column.estimated_n_classes,
+            max_length=get_maximum_tokens_in_row(target_column, dataframe),
         )
 
         for column_name, column in input_columns.items():
@@ -362,7 +355,7 @@ class GraphClassificationTemplate(UDTDataTemplate):
 
     @staticmethod
     def get_concrete_types(
-        target: column_detector.CategoricalColumn,
+        target_column: column_detector.CategoricalColumn,
         input_columns: typing.Dict[str, column_detector.Column],
         dataframe: pd.DataFrame,
     ):

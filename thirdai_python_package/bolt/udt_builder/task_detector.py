@@ -76,7 +76,7 @@ def auto_inference_model_builder(target_column_name: str, dataframe: pd.DataFram
                 )
             )
 
-            if len(source_column_candidates) == 1:
+            if len(source_column_candidates) == 1 and target_column.token_type == "str":
                 return model_builder.ModelBuilder(
                     target_column_name,
                     dataframe,
@@ -271,3 +271,20 @@ class UDTBuilder:
             raise_exception_without_trace(ex.__str__())
 
         return self.model
+
+
+def detect_and_build(
+    dataset_path: str,
+    target: str,
+    task: str = None,
+    openai_key: str = None,
+    **kwargs,
+):
+    builder = UDTBuilder(openai_key=openai_key)
+    builder.detect(dataset_path=dataset_path, target_column=target, task=task)
+
+    if builder.model_builder == None:
+        return
+
+    model = builder.build()
+    return model

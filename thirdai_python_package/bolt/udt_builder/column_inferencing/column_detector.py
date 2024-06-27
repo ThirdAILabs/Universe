@@ -1,92 +1,9 @@
 import typing
-from dataclasses import dataclass
-
 import pandas as pd
-from thirdai import bolt
+from collections import defaultdict
 
-import utils
-
-
-@dataclass
-class Column:
-    column_name: str
-
-    def to_bolt(self):
-        raise NotImplementedError()
-
-
-@dataclass
-class CategoricalColumn(Column):
-    column_name: str
-    token_type: str
-    number_tokens_per_row: float
-    unique_tokens_per_row: float
-    estimated_n_classes: int
-
-    delimiter: typing.Optional[str] = None
-
-    def to_bolt(self, is_target_type=False):
-        return bolt.types.categorical(
-            type=self.token_type,
-            delimiter=self.delimiter,
-            n_classes=self.estimated_n_classes if is_target_type else None,
-        )
-
-
-@dataclass
-class NumericalColumn(Column):
-    column_name: str
-    minimum: float
-    maximum: float
-
-    def to_bolt(self):
-        return bolt.types.numerical((self.minimum, self.maximum))
-
-
-@dataclass
-class DateTimeColumn(Column):
-    column_name: str
-
-    def to_bolt(self):
-        return bolt.types.date()
-
-
-@dataclass
-class TextColumn(Column):
-    column_name: str
-
-    def to_bolt(self):
-        return bolt.types.text()
-
-
-@dataclass
-class TokenTags(Column):
-    default_tag: str
-    named_tags: typing.List[str]
-
-    def to_bolt(self):
-        return bolt.types.token_tags(tags=self.named_tags, default_tag=self.default_tag)
-
-
-@dataclass
-class SequenceType(Column):
-    column_name: str
-    delimiter: str
-    estimated_n_classes: int = None
-    max_length: int = None
-
-    def __post_init__(self):
-        if self.delimiter is None:
-            raise Exception(
-                "The delimiter for a sequence type column is None. Ensure that the entries in a column are valid sequences."
-            )
-
-    def to_bolt(self):
-        return bolt.types.sequence(
-            delimiter=self.delimiter,
-            n_classes=self.estimated_n_classes,
-            max_length=self.max_length,
-        )
+from . import utils
+from .columns import *
 
 
 def cast_to_categorical(column_name: str, column: pd.Series):
@@ -96,6 +13,9 @@ def cast_to_categorical(column_name: str, column: pd.Series):
 
     utils.cast_set_values(unique_values_in_column, token_data_type)
 
+    # For categorical columns, we can only get an estimate of the number of
+    # unique tokens since the user specified dataframe might not be comprehensive
+    # representation of the entire dataset.
     if token_data_type == "str" or token_data_type == "float":
         n_classes = len(unique_values_in_column)
         token_data_type = "str"
@@ -123,7 +43,14 @@ def cast_to_numerical(column_name: str, column: pd.Series):
 
 
 def detect_single_column_type(column_name, dataframe: pd.DataFrame):
+    """
+    We segment the column into 3 seperate types which are fairly dissimilar to one another :
+    1. DateTime Column
+    2. Numerical Column
+    3. Categorical Column
 
+    We use a bunch of heuristics to identify an Int Numerical Column from another Int Single Categorical Column. If the number of unique tokens in the column is high, then chances are that it is numerical.
+    """
     if utils._is_datetime_col(dataframe[column_name]):
         return DateTimeColumn(column_name=column_name)
 
@@ -143,13 +70,6 @@ def detect_single_column_type(column_name, dataframe: pd.DataFrame):
     uncomment this block and replace the previous if block to make numerical features for a column
     if the ratio of unique integers exceeds a certain threshold.
     
-    if (
-        categorical_column.delimiter == None
-        and categorical_column.token_type != 'str'
-    ):
-        if categorical_column.token_type == "float":
-            return cast_to_numerical(column_name, dataframe[column_name])
-
         if categorical_column.token_type == "int" and (
             categorical_column.unique_tokens_per_row > 0.6
             or categorical_column.estimated_n_classes > 100_000
@@ -182,13 +102,16 @@ def get_input_columns(target_column_name, dataframe: pd.DataFrame) -> typing.Dic
 def get_token_candidates_for_token_classification(
     target: CategoricalColumn,
     input_columns: typing.Dict[str, Column],
-) -> TextColumn:
+) -> typing.List[TextColumn]:
+    """
+    Returns a list of columns where each column is a candidate to be the token column for the specified target column (assuming the task is TokenClassification).
+    """
 
     if target.delimiter != " ":
         raise Exception("Expected the target column to be space seperated tags.")
 
     candidate_columns: typing.List[Column] = []
-    for column_name, column in input_columns.items():
+    for _, column in input_columns.items():
         if isinstance(column, CategoricalColumn):
             if (
                 column.delimiter == " "
@@ -203,12 +126,15 @@ def get_source_column_for_query_reformulation(
     target: CategoricalColumn,
     input_columns: typing.Dict[str, Column],
 ) -> TextColumn:
+    """
+    Returns a list of columns where each column is a candidate to be the source column for the specified target column (assuming the task is QueryClassification).
+    """
 
-    if target.delimiter != " ":
-        raise Exception("Expected the target column to be space seperated tags.")
+    if target.delimiter != " " and target.token_type != "str":
+        raise Exception("Expected the target column to be space seperated tokens.")
 
     candidate_columns: typing.List[CategoricalColumn] = []
-    for column_name, column in input_columns.items():
+    for _, column in input_columns.items():
         if isinstance(column, CategoricalColumn):
             if column.delimiter == " ":
                 ratio_source_to_target = (
@@ -220,3 +146,24 @@ def get_source_column_for_query_reformulation(
                 candidate_columns.append(TextColumn(column_name=column.column_name))
 
     return candidate_columns
+
+
+def get_frequency_sorted_unique_tokens(
+    target: CategoricalColumn, dataframe: pd.DataFrame
+):
+    tag_frequency_map = defaultdict(int)
+
+    def add_key_to_dict(dc, key):
+        if key.strip():
+            dc[key] += 1
+
+    dataframe[target.column_name].apply(
+        lambda row: [add_key_to_dict(tag_frequency_map, key) for key in row.split(" ")]
+    )
+
+    sorted_tags = sorted(
+        tag_frequency_map.items(), key=lambda item: item[1], reverse=True
+    )
+    sorted_tag_keys = [tag for tag, freq in sorted_tags]
+
+    return sorted_tag_keys

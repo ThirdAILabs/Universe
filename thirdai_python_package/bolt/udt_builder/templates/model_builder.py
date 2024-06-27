@@ -1,9 +1,6 @@
 from __future__ import annotations
-from abc import abstractclassmethod
-import typing
 
-
-from thirdai import bolt
+import thirdai._thirdai.bolt as bolt
 import pandas as pd
 
 from .model_templates import UDTDataTemplate
@@ -17,8 +14,8 @@ class ModelBuilder:
 
     @staticmethod
     def get_target_column(
-        target_column_name, dataframe: pd.DataFrame, casting_function
-    ):
+        target_column_name, dataframe: pd.DataFrame, casting_function: function
+    ) -> column_detector.CategoricalColumn:
         try:
             column = casting_function(target_column_name, dataframe[target_column_name])
             return column

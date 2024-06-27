@@ -3,7 +3,7 @@ from collections import defaultdict
 import copy
 
 import pandas as pd
-from thirdai import bolt
+import thirdai._thirdai.bolt as bolt
 
 from ..column_inferencing import column_detector
 

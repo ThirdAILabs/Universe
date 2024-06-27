@@ -7,7 +7,7 @@ import thirdai._thirdai.data as data
 import thirdai._thirdai.dataset as dataset
 
 from .udt_docs import *
-from .udt_builder.task_detector import UDTBuilder
+from .udt_builder.task_detector import detect_and_build
 
 
 def _create_parquet_source(path):
@@ -83,7 +83,7 @@ def modify_udt():
         logging_interval: Optional[int] = None,
         shuffle_reservoir_size: int = 64000,
         comm=None,
-        **kwargs
+        **kwargs,
     ):
         data_source = _create_data_source(filename)
 
@@ -107,7 +107,7 @@ def modify_udt():
             callbacks=callbacks,
             options=train_options,
             comm=comm,
-            **kwargs
+            **kwargs,
         )
 
     def wrapped_train_on_data_source(
@@ -122,7 +122,7 @@ def modify_udt():
         metrics: List[str] = [],
         logging_interval: Optional[int] = None,
         comm=None,
-        **kwargs
+        **kwargs,
     ):
         val_data, val_metrics, train_options = _process_validation_and_options(
             validation=None,
@@ -143,7 +143,7 @@ def modify_udt():
             callbacks=callbacks,
             options=train_options,
             comm=comm,
-            **kwargs
+            **kwargs,
         )
 
     def wrapped_evaluate(
@@ -152,7 +152,7 @@ def modify_udt():
         metrics: List[str] = [],
         use_sparse_inference: bool = False,
         verbose: bool = True,
-        **kwargs
+        **kwargs,
     ):
         data_source = _create_data_source(filename)
 
@@ -162,7 +162,7 @@ def modify_udt():
             metrics=metrics,
             sparse_inference=use_sparse_inference,
             verbose=verbose,
-            **kwargs
+            **kwargs,
         )
 
     def wrapped_evaluate_on_data_source(
@@ -171,7 +171,7 @@ def modify_udt():
         metrics: List[str] = [],
         use_sparse_inference: bool = False,
         verbose: bool = True,
-        **kwargs
+        **kwargs,
     ):
         return original_evaluate(
             self,
@@ -179,7 +179,7 @@ def modify_udt():
             metrics=metrics,
             sparse_inference=use_sparse_inference,
             verbose=verbose,
-            **kwargs
+            **kwargs,
         )
 
     def wrapped_cold_start(
@@ -201,7 +201,7 @@ def modify_udt():
         logging_interval: Optional[int] = None,
         comm=None,
         shuffle_reservoir_size: int = 64000,
-        **kwargs
+        **kwargs,
     ):
         data_source = _create_data_source(filename)
 
@@ -228,7 +228,7 @@ def modify_udt():
             callbacks=callbacks,
             options=train_options,
             comm=comm,
-            **kwargs
+            **kwargs,
         )
 
     def wrapped_cold_start_on_data_source(
@@ -248,7 +248,7 @@ def modify_udt():
         verbose: bool = True,
         logging_interval: Optional[int] = None,
         comm=None,
-        **kwargs
+        **kwargs,
     ):
         val_data, val_metrics, train_options = _process_validation_and_options(
             validation=None,
@@ -272,7 +272,7 @@ def modify_udt():
             callbacks=callbacks,
             options=train_options,
             comm=comm,
-            **kwargs
+            **kwargs,
         )
 
     delattr(bolt.UniversalDeepTransformer, "train")
@@ -418,51 +418,46 @@ def modify_graph_udt():
     )
 
 
-def modify_udt_constructor():
+original_udt = bolt.UniversalDeepTransformer
 
-    def wrapped_detect_and_build(
-        dataset_path: str,
-        target: str,
-        task: str = None,
-        openai_key: str = None,
-        **kwargs
+
+class WrappedUniversalDeepTransformer:
+
+    def __init__(
+        self,
+        target: str = None,
+        data_types: dict[str, bolt.types] = None,
+        dataset_path: str = None,
+        **kwargs,
     ):
-        builder = UDTBuilder(openai_key=openai_key)
-        builder.detect(dataset_path=dataset_path, target_column=target, task=task)
+        if target == None:
+            raise ValueError(
+                "The 'target' parameter is required but was not specified. Please "
+                "provide a valid target column name."
+            )
 
-        if builder.model_builder == None:
+        if data_types:
+            self.udt = original_udt(target=target, data_types=data_types, **kwargs)
             return
 
-        model = builder.build()
-        return model
+        if dataset_path:
+            self.udt = detect_and_build(
+                dataset_path=dataset_path,
+                target=target,
+                **kwargs,
+            )
+        else:
+            raise ValueError(
+                "Needs a valid target parameter and either data_types or dataset_path for constructing a model."
+            )
 
-    class WrappedUniversalDeepTransformer:
-        def __init__(self, **kwargs):
-            print("this is being called")
-
-            if kwargs.get("data_types") and kwargs.get("target"):
-                self.udt = bolt.UniversalDeepTransformer(
-                    data_types=kwargs["data_types"], target=kwargs["target"], **kwargs
-                )
-            elif kwargs.get("dataset_path") and kwargs.get("target"):
-                self.udt = wrapped_detect_and_build(
-                    dataset_path=kwargs["dataset_path"],
-                    target=kwargs["target"],
-                    **kwargs
-                )
-            else:
-                raise ValueError(
-                    "Needs a valid target parameter and either data_types or dataset_path for constructing a model."
-                )
-
-        def __getattribute__(self, name: str) -> Any:
-            return getattr(self.udt, name)
-
-        @classmethod
-        def __class_getitem__(cls, name):
-            return getattr(bolt.UniversalDeepTransformer, name)
-
-    original_udt = bolt.UniversalDeepTransformer
-
-    bolt.UniversalDeepTransformer.detect_and_build = wrapped_detect_and_build
-    bolt.UniversalDeepTransformer = WrappedUniversalDeepTransformer
+    def __getattribute__(self, name: str) -> Any:
+        # this acts as a router to the original bolt.UniversalDeepTransformer attributes
+        if name == "udt":
+            # Directly access the 'udt' attribute without going through the overridden __getattribute__
+            return object.__getattribute__(self, name)
+        else:
+            udt = object.__getattribute__(
+                self, "udt"
+            )  # Get 'udt' directly from the object dictionary
+            return getattr(udt, name)
