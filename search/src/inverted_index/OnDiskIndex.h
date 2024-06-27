@@ -11,6 +11,8 @@ namespace thirdai::search {
 using DocId = uint64_t;
 using DocScore = std::pair<DocId, float>;
 
+using HashedToken = uint32_t;
+
 class OnDiskIndex {
  public:
   explicit OnDiskIndex(const std::string& db_name);
@@ -42,8 +44,17 @@ class OnDiskIndex {
     return idf * num / denom;
   }
 
-  std::vector<std::pair<uint32_t, std::unordered_map<uint32_t, uint32_t>>>
+  std::pair<std::vector<uint32_t>,
+            std::vector<std::unordered_map<HashedToken, uint32_t>>>
   countTokenOccurences(const std::vector<std::string>& docs) const;
+
+  void storeDocLens(const std::vector<DocId>& ids,
+                    const std::vector<uint32_t>& doc_lens);
+
+  void updateTokenToDocs(
+      const std::vector<DocId>& ids,
+      const std::vector<std::unordered_map<HashedToken, uint32_t>>&
+          token_counts);
 
   uint32_t getDocLen(DocId doc_id);
 
@@ -61,11 +72,11 @@ class OnDiskIndex {
   void updateNDocsAndAvgLen(uint64_t sum_new_doc_lens, uint64_t n_new_docs);
 
   // Query variables
-  size_t _max_docs_to_score = InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE;
+  uint64_t _max_docs_to_score = InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE;
   float _idf_cutoff_frac = InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC;
   float _k1 = InvertedIndex::DEFAULT_K1, _b = InvertedIndex::DEFAULT_B;
 
-  std::vector<uint32_t> tokenize(const std::string& text) const;
+  std::vector<HashedToken> tokenize(const std::string& text) const;
 
   TokenizerPtr _tokenizer = std::make_shared<DefaultTokenizer>();
 };
