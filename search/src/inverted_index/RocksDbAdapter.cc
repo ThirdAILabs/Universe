@@ -270,7 +270,7 @@ uint64_t RocksDbAdapter::getSumDocLens() const {
 
   uint64_t sum_doc_lens;
   if (!deserialize(serialized, sum_doc_lens)) {
-    throw std::invalid_argument("Value of n_docs is corrupted.");
+    throw std::invalid_argument("Value of sum_doc_lens is corrupted.");
   }
   return sum_doc_lens;
 }
