@@ -266,7 +266,12 @@ option(WITH_GFLAGS OFF)
 # This is so we can implement a MergeOperator:
 # https://github.com/facebook/rocksdb/issues/3811
 set(USE_RTTI "TRUE" CACHE STRING "")
+
+option(ROCKSDB_BUILD_SHARED OFF)
+
 add_subdirectory(deps/rocksdb)
+include_directories(deps/rocksdb)
+include_directories(deps/rocksdb/include)
 
 # set(ROCKSDB_LIBRARIES /usr/local/lib/librocksdb.a) set(ROCKSDB_INCLUDE_DIR
 # /usr/local/include) include_directories(${ROCKSDB_INCLUDE_DIR})
