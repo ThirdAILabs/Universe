@@ -6,14 +6,14 @@ from .udt_modifications import (
     modify_graph_udt,
     modify_mach_udt,
     modify_udt,
-    modify_udt_builder,
+    modify_udt_constructor,
 )
 
 modify_udt()
 modify_graph_udt()
 modify_mach_udt()
 modify_ner()
-modify_udt_builder()
+modify_udt_constructor()
 
 try:
     # This is to prevent errors if torch or scipy are not installed.

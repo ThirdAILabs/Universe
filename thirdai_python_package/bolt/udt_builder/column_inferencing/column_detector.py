@@ -163,3 +163,60 @@ def detect_single_column_type(column_name, dataframe: pd.DataFrame):
         categorical_column = "str"
 
     return categorical_column
+
+
+def get_input_columns(target_column_name, dataframe: pd.DataFrame) -> typing.Dict:
+    input_data_types = {}
+
+    for col in dataframe.columns:
+        if col == target_column_name:
+            continue
+
+        input_data_types[col] = detect_single_column_type(
+            column_name=col, dataframe=dataframe
+        )
+
+    return input_data_types
+
+
+def get_token_candidates_for_token_classification(
+    target: CategoricalColumn,
+    input_columns: typing.Dict[str, Column],
+) -> TextColumn:
+
+    if target.delimiter != " ":
+        raise Exception("Expected the target column to be space seperated tags.")
+
+    candidate_columns: typing.List[Column] = []
+    for column_name, column in input_columns.items():
+        if isinstance(column, CategoricalColumn):
+            if (
+                column.delimiter == " "
+                and abs(column.number_tokens_per_row - target.number_tokens_per_row)
+                < 0.001
+            ):
+                candidate_columns.append(TextColumn(column_name=column.column_name))
+    return candidate_columns
+
+
+def get_source_column_for_query_reformulation(
+    target: CategoricalColumn,
+    input_columns: typing.Dict[str, Column],
+) -> TextColumn:
+
+    if target.delimiter != " ":
+        raise Exception("Expected the target column to be space seperated tags.")
+
+    candidate_columns: typing.List[CategoricalColumn] = []
+    for column_name, column in input_columns.items():
+        if isinstance(column, CategoricalColumn):
+            if column.delimiter == " ":
+                ratio_source_to_target = (
+                    column.number_tokens_per_row / target.number_tokens_per_row
+                )
+                if ratio_source_to_target > 1.5 or ratio_source_to_target < 0.66:
+                    continue
+
+                candidate_columns.append(TextColumn(column_name=column.column_name))
+
+    return candidate_columns

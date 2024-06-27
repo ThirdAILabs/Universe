@@ -5,9 +5,10 @@ from scipy.spatial.distance import cosine
 from openai import OpenAI
 import pickle
 
-import utils
-import task_templates
-import column_detector
+from .column_inferencing import utils
+from .templates import model_templates
+from .templates import model_builder
+from .column_inferencing import column_detector
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -30,23 +31,29 @@ def verify_dataframe(dataframe: pd.DataFrame, target_column_name: str, task: str
         raise Exception(f"Cannot detect a task for dataset with 0 rows.")
 
 
-def detect_task(target_column_name: str, dataframe: pd.DataFrame):
+def auto_inference_model_builder(target_column_name: str, dataframe: pd.DataFrame):
     # approx representation of a column
     target_column = column_detector.detect_single_column_type(
         target_column_name, dataframe
     )
 
-    input_columns = task_templates.get_input_columns(target_column_name, dataframe)
+    input_columns = column_detector.get_input_columns(target_column_name, dataframe)
 
     if isinstance(target_column, column_detector.NumericalColumn):
-        return task_templates.RegressionTemplate
+        return model_builder.ModelBuilder(
+            target_column_name,
+            dataframe,
+            target_column,
+            input_columns,
+            model_templates.RegressionTemplate,
+        )
 
     if isinstance(target_column, column_detector.CategoricalColumn):
 
         if target_column.number_tokens_per_row >= 4:
 
             token_column_candidates = (
-                task_templates.get_token_candidates_for_token_classification(
+                column_detector.get_token_candidates_for_token_classification(
                     target_column, input_columns
                 )
             )
@@ -55,18 +62,36 @@ def detect_task(target_column_name: str, dataframe: pd.DataFrame):
                 len(token_column_candidates) == 1
                 and target_column.unique_tokens_per_row * len(dataframe) < 250
             ):
-                return task_templates.TokenClassificationTemplate
+                return model_builder.ModelBuilder(
+                    target_column_name,
+                    dataframe,
+                    target_column,
+                    input_columns,
+                    model_templates.TokenClassificationTemplate,
+                )
 
             source_column_candidates = (
-                task_templates.get_source_column_for_query_reformulation(
+                column_detector.get_source_column_for_query_reformulation(
                     target_column, input_columns
                 )
             )
 
             if len(source_column_candidates) == 1:
-                return task_templates.QueryReformulationTemplate
+                return model_builder.ModelBuilder(
+                    target_column_name,
+                    dataframe,
+                    target_column,
+                    input_columns,
+                    model_templates.QueryReformulationTemplate,
+                )
 
-        return task_templates.TabularClassificationTemplate
+        return model_builder.ModelBuilder(
+            target_column_name,
+            dataframe,
+            target_column,
+            input_columns,
+            model_templates.TabularClassificationTemplate,
+        )
 
     raise Exception(
         "Could not automatically infer task using the provided column name and the template. The following target types are supported for classification : Numerical, Categorical, and Text. Verify that the target column has one of the following types or explicitly specify the task. Check out https://github.com/ThirdAILabs/Demos/tree/main/universal_deep_transformer to learn more about how to initialize and train a UniversalDeepTransformer."
@@ -83,7 +108,7 @@ class TemplateStore:
     def _compute_embeddings(self):
         embeddings = {}
         for template in self.templates:
-            text = f"name: {template.name}, description: {template.description}, keywords: {' '.join(template.keywords)}"
+            text = f"task: {template.task}, description: {template.description}, keywords: {' '.join(template.keywords)}"
             embeddings[template] = self._get_embedding(text)
         return embeddings
 
@@ -103,7 +128,7 @@ class TemplateStore:
         for template, embedding in self.embeddings.items():
             distance = cosine(query_embedding, embedding)
             all_distances.append(distance)
-            print(template.name, 1 - distance)
+            print(template.task, 1 - distance)
             if distance < closest_distance:
                 closest_distance = distance
                 closest_template = template
@@ -133,7 +158,7 @@ class UDTBuilder:
         self.template_store = (
             (
                 TemplateStore(
-                    task_templates.supported_templates,
+                    model_templates.supported_templates,
                     openai_client=OpenAI(api_key=openai_key),
                 )
             )
@@ -144,8 +169,8 @@ class UDTBuilder:
         if openai_key is not None:
             print("Task detection using natural language enabled\n")
 
-        self.name_to_template_map = {
-            template.name: template for template in task_templates.supported_templates
+        self.task_to_template_map = {
+            template.task: template for template in model_templates.supported_templates
         }
 
         self.detected_template = None
@@ -162,23 +187,23 @@ class UDTBuilder:
         self.dataframe = df
 
         template_names = "\n".join(
-            f"• {name}" for name in self.name_to_template_map.keys()
+            f"• {name}" for name in self.task_to_template_map.keys()
         )
 
         # try:
-        detected_template, _ = self._detect_template(
+        detected_model_builder, _ = self._detect_template(
             self.dataframe, self.target_column, task
         )
-        if detected_template is not None:
+        if detected_model_builder is not None:
 
             print(
-                f"Task detected: {detected_template.name}\n"
+                f"Task detected: {detected_model_builder.task}\n"
                 f"If this isn't the task you intended, you can:\n"
                 f"1. Provide a more specific problem type, or \n"
                 f"2. Choose from the following list of available tasks:\n"
                 f"{template_names}\n"
                 f"To detect a different task, call the detect function again with:\n"
-                f"    .detect_and_build(\n"
+                f"    bolt.UniversalDeepTransformer(\n"
                 f"        dataset_path = {dataset_path},\n"
                 f"        target_column = {target_column},\n"
                 f"        task = 'your_selected_task' \n"
@@ -192,43 +217,56 @@ class UDTBuilder:
                 f"2. Choose from the following list of available tasks:\n"
                 f"{template_names}\n"
                 f"For explicit task detection, call the detect function again with:\n"
-                f"    .detect_and_build(\n"
+                f"    bolt.UniversalDeepTransformer(\n"
                 f"        dataset_path = {dataset_path},\n"
                 f"        target_column = {target_column},\n"
                 f"        task = 'your_selected_task' \n"
                 f"    )",
             )
 
-        self.detected_template = detected_template
+        self.model_builder = detected_model_builder
 
     def _detect_template(self, dataframe, target_column: str, task: str):
 
         if task == None:
-            detected_template = detect_task(
-                target_column_name=target_column, dataframe=dataframe
+            return (
+                auto_inference_model_builder(
+                    target_column_name=target_column, dataframe=dataframe
+                ),
+                1,
             )
-            return detected_template, 1
 
-        if task in self.name_to_template_map:
-            detected_template = self.name_to_template_map[task]
-            return detected_template, 1
+        if task in self.task_to_template_map:
+            detected_template = self.task_to_template_map[task]
+            return (
+                model_builder.ModelBuilder.get_builder_from_raw_types(
+                    target_column, dataframe, detected_template
+                ),
+                1,
+            )
 
         if self.template_store is not None:
             detected_template, score = self.template_store.find_closest_template(task)
-            return detected_template, score
+
+            if detected_template is None:
+                return None, 0
+
+            return (
+                model_builder.ModelBuilder.get_builder_from_raw_types(
+                    target_column, dataframe, detected_template
+                ),
+                score,
+            )
 
         return None, 0
 
     def build(self):
-        if self.detected_template == None:
+        if self.model_builder == None:
             raise Exception(
                 "Cannot initialize a UniversalDeepTransformer with a NoneType template. Ensure that the builder has detected a valid template before calling build on it."
             )
         try:
-            self.initialized_template = self.detected_template(
-                self.target_column, self.dataframe
-            )
-            self.model = self.initialized_template.build()
+            self.model = self.model_builder.build()
         except Exception as ex:
             raise_exception_without_trace(ex.__str__())
 

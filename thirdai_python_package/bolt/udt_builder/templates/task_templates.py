@@ -5,7 +5,7 @@ import copy
 import pandas as pd
 from thirdai import bolt
 
-import column_detector
+from ..column_inferencing import column_detector
 
 
 def get_input_columns(target_column_name, dataframe: pd.DataFrame) -> typing.Dict:

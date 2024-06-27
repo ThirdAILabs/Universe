@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 import thirdai
@@ -418,20 +418,51 @@ def modify_graph_udt():
     )
 
 
-def modify_udt_builder():
+def modify_udt_constructor():
 
     def wrapped_detect_and_build(
-        dataset_path: str, target_column: str, task: str = None, openai_key=None
+        dataset_path: str,
+        target: str,
+        task: str = None,
+        openai_key: str = None,
+        **kwargs
     ):
         builder = UDTBuilder(openai_key=openai_key)
-        builder.detect(
-            dataset_path=dataset_path, target_column=target_column, task=task
-        )
+        builder.detect(dataset_path=dataset_path, target_column=target, task=task)
 
-        if builder.detected_template == None:
+        if builder.model_builder == None:
             return
 
         model = builder.build()
         return model
 
+    class WrappedUniversalDeepTransformer:
+        def __init__(self, **kwargs):
+            print("this is being called")
+
+            if kwargs.get("data_types") and kwargs.get("target"):
+                self.udt = bolt.UniversalDeepTransformer(
+                    data_types=kwargs["data_types"], target=kwargs["target"], **kwargs
+                )
+            elif kwargs.get("dataset_path") and kwargs.get("target"):
+                self.udt = wrapped_detect_and_build(
+                    dataset_path=kwargs["dataset_path"],
+                    target=kwargs["target"],
+                    **kwargs
+                )
+            else:
+                raise ValueError(
+                    "Needs a valid target parameter and either data_types or dataset_path for constructing a model."
+                )
+
+        def __getattribute__(self, name: str) -> Any:
+            return getattr(self.udt, name)
+
+        @classmethod
+        def __class_getitem__(cls, name):
+            return getattr(bolt.UniversalDeepTransformer, name)
+
+    original_udt = bolt.UniversalDeepTransformer
+
     bolt.UniversalDeepTransformer.detect_and_build = wrapped_detect_and_build
+    bolt.UniversalDeepTransformer = WrappedUniversalDeepTransformer
