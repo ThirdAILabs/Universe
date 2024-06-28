@@ -262,7 +262,7 @@ option(ROCKSDB_BUILD_SHARED OFF)
 # https://github.com/facebook/rocksdb/issues/3811
 set(USE_RTTI "TRUE" CACHE STRING "")
 add_subdirectory(deps/rocksdb)
-# include_directories(deps/rocksdb/include)
+include_directories(deps/rocksdb/include)
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt
