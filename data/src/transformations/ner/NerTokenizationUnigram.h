@@ -1,6 +1,7 @@
 #pragma once
 
 #include "NerDyadicDataProcessor.h"
+#include "NerTokenTagCounter.h"
 #include <archive/src/Archive.h>
 #include <data/src/ColumnMap.h>
 #include <data/src/columns/Column.h>
@@ -12,6 +13,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_set>
+#include <utility>
 
 namespace thirdai::data {
 
@@ -27,7 +29,8 @@ class NerTokenizerUnigram final : public Transformation {
       std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
       std::optional<FeatureEnhancementConfig> feature_enhancement_config,
       std::unordered_map<std::string, uint32_t> tag_to_label,
-      std::unordered_set<std::string> ignored_tags);
+      std::unordered_set<std::string> ignored_tags,
+      ner::TokenTagCounterPtr token_tag_counter);
 
   explicit NerTokenizerUnigram(const ar::Archive& archive);
 
@@ -57,6 +60,10 @@ class NerTokenizerUnigram final : public Transformation {
 
   const auto& processor() const { return _processor; }
 
+  void setTokenTagCounter(ner::TokenTagCounterPtr token_tag_counter) {
+    _token_tag_counter = std::move(token_tag_counter);
+  }
+
  private:
   /*
    * _tokens_column : the column containing the string tokens
@@ -72,6 +79,8 @@ class NerTokenizerUnigram final : public Transformation {
 
   std::unordered_map<std::string, uint32_t> _tag_to_label;
   std::unordered_set<std::string> _ignored_tags;
+
+  ner::TokenTagCounterPtr _token_tag_counter;
 };
 
 }  // namespace thirdai::data

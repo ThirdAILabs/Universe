@@ -17,6 +17,7 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/Transformation.h>
+#include <data/src/transformations/ner/NerTokenTagCounter.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
 #include <data/src/transformations/ner/rules/CommonPatterns.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
@@ -70,7 +71,8 @@ data::TransformationPtr makeTransformation(
     size_t input_dim, uint32_t dyadic_num_intervals,
     const std::vector<dataset::TextTokenizerPtr>& target_word_tokenizers,
     const std::optional<data::FeatureEnhancementConfig>& feature_config,
-    const data::ner::RulePtr& rule) {
+    const data::ner::RulePtr& rule,
+    data::ner::TokenTagCounterPtr token_tag_counter) {
   std::optional<std::string> target_column = tags_column;
   std::optional<size_t> target_dim = tags.size();
   if (inference) {
@@ -100,7 +102,8 @@ data::TransformationPtr makeTransformation(
               /*target_word_tokenizers=*/target_word_tokenizers,
               /*feature_enhancement_config=*/feature_config,
               /*tag_to_label=*/tag_to_label,
-              /*ignored_tags*/ ignored_tags))
+              /*ignored_tags*/ ignored_tags,
+              /*token_tag_counter=*/token_tag_counter))
           ->then(std::make_shared<data::TextTokenizer>(
               /*input_column=*/NER_FEATURIZED_SENTENCE,
               /*output_indices=*/NER_FEATURIZED_SENTENCE,
@@ -240,6 +243,18 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
   auto rule_entities = args.get<std::vector<std::string>>(
       "rules_for", "List[str]", std::vector<std::string>{});
 
+  bool use_token_tag_counter =
+      args.get<bool>("use_token_tag_counter", "bool", false);
+
+  if (use_token_tag_counter) {
+    std::unordered_map<std::string, uint32_t> tag_to_label;
+    for (size_t i = 0; i < _label_to_tag.size(); i++) {
+      tag_to_label[_label_to_tag[i]] = i;
+    }
+    _token_tag_counter = std::make_shared<data::ner::TokenTagCounter>(
+        args.get<uint32_t>("token_counter_bins", "uint32_t", 20), tag_to_label);
+  }
+
   if (!rule_entities.empty()) {
     _rule = data::ner::getRuleForEntities(rule_entities);
     _label_to_tag =
@@ -264,7 +279,8 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
       /*input_dim=*/options.input_dim,
       /*dyadic_num_intervals=*/options.dyadic_num_intervals,
       /*target_word_tokenizers=*/options.target_tokenizers,
-      /*feature_config=*/options.feature_config, /*rule=*/_rule);
+      /*feature_config=*/options.feature_config, /*rule=*/_rule,
+      _token_tag_counter);
 
   _inference_transform = makeTransformation(
       /*inference=*/true, /*tags_column=*/_tags_column,
@@ -272,7 +288,8 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
       /*input_dim=*/options.input_dim,
       /*dyadic_num_intervals=*/options.dyadic_num_intervals,
       /*target_word_tokenizers=*/options.target_tokenizers,
-      /*feature_config=*/options.feature_config, /*rule=*/_rule);
+      /*feature_config=*/options.feature_config, /*rule=*/_rule,
+      _token_tag_counter);
 
   std::cout << "Initialized a UniversalDeepTransformer for Token Classification"
             << std::endl;
@@ -487,6 +504,11 @@ ar::ConstArchivePtr UDTNer::toArchive(bool with_optimizer) const {
     map->set("use_rules_for", ar::vecStr(_rule->entities()));
   }
 
+  if (_token_tag_counter != nullptr) {
+    map->set("token_tag_counter", _token_tag_counter->toArchive());
+    std::cout << "Saved the token tag counter" << std::endl;
+  }
+
   return map;
 }
 
@@ -507,6 +529,12 @@ UDTNer::UDTNer(const ar::Archive& archive)
   if (archive.contains("use_rules_for")) {
     _rule = data::ner::getRuleForEntities(
         archive.getAs<ar::VecStr>("use_rules_for"));
+  }
+  if (archive.contains("token_tag_counter")) {
+    _token_tag_counter = std::make_shared<data::ner::TokenTagCounter>(
+        data::ner::TokenTagCounter(*archive.get("token_tag_counter")));
+
+    std::cout << "Loaded the Token Tag Counter" << std::endl;
   }
 }
 
