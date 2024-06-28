@@ -354,8 +354,11 @@ std::unordered_map<DocId, float> OnDiskIndex::scoreDocuments(
   std::sort(token_indexes_and_idfs.begin(), token_indexes_and_idfs.end(),
             HighestScore<size_t>{});
 
-  // TODO(Nicholas): cache doc lens with score, to avoid duplicate lookups
   std::unordered_map<DocId, float> doc_scores;
+
+  // This is used to cache the lens for docs that have already been seen to
+  // avoid the DB lookup. This speeds up query processing.
+  std::unordered_map<DocId, uint32_t> doc_lens;
 
   for (const auto& [token_index, token_idf] : token_indexes_and_idfs) {
     const DocCount* counts =
@@ -364,14 +367,26 @@ std::unordered_map<DocId, float> OnDiskIndex::scoreDocuments(
 
     for (size_t i = 0; i < docs_w_token; i++) {
       const DocId doc_id = counts[i].doc_id;
-      const uint32_t doc_len = getDocLen(doc_id);
 
-      // doc_len=0 indicates that the document has been deleted.
-      if (doc_len > 0 && (doc_scores.size() < _max_docs_to_score ||
-                          doc_scores.count(doc_id))) {
+      if (doc_scores.count(doc_id)) {
         const float score =
-            bm25(token_idf, counts[i].count, doc_len, avg_doc_len);
+            bm25(token_idf, counts[i].count, doc_lens.at(doc_id), avg_doc_len);
         doc_scores[counts[i].doc_id] += score;
+      } else if (doc_scores.size() < _max_docs_to_score) {
+        uint32_t doc_len;
+        if (doc_lens.count(doc_id)) {
+          doc_len = doc_lens.at(doc_id);
+        } else {
+          doc_len = getDocLen(doc_id);
+          doc_lens[doc_id] = doc_len;
+        }
+
+        if (doc_len > 0) {
+          // doc_len=0 indicates that the document has been deleted.
+          const float score =
+              bm25(token_idf, counts[i].count, doc_len, avg_doc_len);
+          doc_scores[counts[i].doc_id] += score;
+        }
       }
     }
   }
