@@ -90,6 +90,7 @@ class OnDiskIndex final : public Retriever {
   std::string _save_path;
 
   rocksdb::TransactionDB* _db;
+  rocksdb::ColumnFamilyHandle* _default;
   rocksdb::ColumnFamilyHandle* _counters;
   rocksdb::ColumnFamilyHandle* _token_to_docs;
 

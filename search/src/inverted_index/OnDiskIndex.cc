@@ -162,6 +162,7 @@ OnDiskIndex::OnDiskIndex(const std::string& save_path,
                              std::to_string(handles.size()) + " handles.");
   }
 
+  _default = handles[0];
   _counters = handles[1];
   _token_to_docs = handles[2];
 
@@ -422,6 +423,7 @@ void OnDiskIndex::remove(const std::vector<DocId>& ids) {
 }
 
 OnDiskIndex::~OnDiskIndex() {
+  _db->DestroyColumnFamilyHandle(_default);
   _db->DestroyColumnFamilyHandle(_counters);
   _db->DestroyColumnFamilyHandle(_token_to_docs);
   _db->Close();
