@@ -24,6 +24,8 @@ from ..trainer.training_progress_manager import (
 )
 from ..utils import clean_text, pickle_to
 from .finetunable_retriever import FinetunableRetriever
+from .on_disk_retriever import OnDiskRetriever
+
 from .mach_defaults import acc_to_stop, metric_to_track
 from .model_interface import (
     CancelState,
@@ -285,7 +287,7 @@ class Mach(Model):
         self.mach_index_seed = mach_index_seed
 
         if hybrid:
-            self.finetunable_retriever = FinetunableRetriever()
+            self.finetunable_retriever = OnDiskRetriever()
         else:
             self.finetunable_retriever = None
 
@@ -676,10 +678,10 @@ class Mach(Model):
             state["model_config"] = None
         if "finetunable_retriever" not in state:
             state["finetunable_retriever"] = None
-        if "inverted_index" in state:
-            state["finetunable_retriever"] = FinetunableRetriever(
-                search.FinetunableRetriever.train_from(state["inverted_index"].export())
-            )
+        # if "inverted_index" in state:
+        #     state["finetunable_retriever"] = FinetunableRetriever(
+        #         search.FinetunableRetriever.train_from(state["inverted_index"].export())
+        #     )
         self.__dict__.update(state)
 
     def supervised_training_impl(

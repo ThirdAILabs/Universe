@@ -12,6 +12,7 @@ from thirdai._thirdai import bolt, data
 from . import loggers, teachers
 from .documents import CSV, Document, DocumentManager, Reference
 from .models.finetunable_retriever import FinetunableRetriever
+from .models.on_disk_retriever import OnDiskRetriever
 from .models.mach import Mach
 from .models.mach_mixture_model import MachMixture
 from .models.model_interface import CancelState
@@ -93,6 +94,9 @@ class NeuralDB:
                 )
             if retriever == "finetunable_retriever":
                 model = FinetunableRetriever()
+            if retriever == "on_disk_retriever":
+                print("using on_disk_retriever")
+                model = OnDiskRetriever()
             elif retriever == "mach" or retriever == "hybrid":
                 if num_shards > 1 or num_models_per_shard > 1:
                     model = MachMixture(
