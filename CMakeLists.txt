@@ -281,6 +281,23 @@ include_directories(deps/rocksdb/include)
 #   add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
 # endif()
 
+
+# mongo-cxx-driver
+# TODO(pratik): needed to install libssl-dev libsasl2-dev libzstd-dev
+# Enforce the C++ standard, and disable extensions.
+if(NOT DEFINED CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 11)
+endif()
+
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(BUILD_SHARED_AND_STATIC_LIBS OFF CACHE BOOL "" FORCE)
+set(ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+add_definitions(-D_GNU_SOURCE)
+add_subdirectory(deps/mongo-cxx-driver)
+
+
+
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt
     ON
@@ -522,7 +539,7 @@ add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(
   thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
-                 prometheus-cpp::pull utf8proc rocksdb)
+                 prometheus-cpp::pull utf8proc rocksdb mongocxx_static)
 # prometheus-cpp::pull utf8proc ${ROCKSDB_LIBRARIES})
 
 if(${LICENSE_BUILD_FLAG_FOUND})
