@@ -201,7 +201,7 @@ void RocksDbAdapter::updateTokenToDocs(
 }
 
 std::vector<SerializedDocCountIterator> RocksDbAdapter::lookupDocs(
-    const std::vector<HashedToken>& query_tokens) const {
+    const std::vector<HashedToken>& query_tokens) {
   std::vector<rocksdb::Slice> keys;
   keys.reserve(query_tokens.size());
   std::vector<std::string> values;
@@ -229,7 +229,7 @@ std::vector<SerializedDocCountIterator> RocksDbAdapter::lookupDocs(
   return iters;
 }
 
-uint32_t RocksDbAdapter::getDocLen(DocId doc_id) const {
+uint32_t RocksDbAdapter::getDocLen(DocId doc_id) {
   std::string value;
   auto status =
       _db->Get(rocksdb::ReadOptions(), _counters, docIdKey(doc_id), &value);
@@ -245,7 +245,7 @@ uint32_t RocksDbAdapter::getDocLen(DocId doc_id) const {
   return len;
 }
 
-uint64_t RocksDbAdapter::getNDocs() const {
+uint64_t RocksDbAdapter::getNDocs() {
   std::string serialized;
   auto status =
       _db->Get(rocksdb::ReadOptions(), _counters, "n_docs", &serialized);
@@ -260,7 +260,7 @@ uint64_t RocksDbAdapter::getNDocs() const {
   return ndocs;
 }
 
-uint64_t RocksDbAdapter::getSumDocLens() const {
+uint64_t RocksDbAdapter::getSumDocLens() {
   std::string serialized;
   auto status =
       _db->Get(rocksdb::ReadOptions(), _counters, "sum_doc_lens", &serialized);

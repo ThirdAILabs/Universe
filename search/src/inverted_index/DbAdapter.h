@@ -52,13 +52,13 @@ class DbAdapter {
           token_to_new_docs) = 0;
 
   virtual std::vector<SerializedDocCountIterator> lookupDocs(
-      const std::vector<HashedToken>& query_tokens) const = 0;
+      const std::vector<HashedToken>& query_tokens) = 0;
 
-  virtual uint32_t getDocLen(DocId doc_id) const = 0;
+  virtual uint32_t getDocLen(DocId doc_id) = 0;
 
-  virtual uint64_t getNDocs() const = 0;
+  virtual uint64_t getNDocs() = 0;
 
-  virtual uint64_t getSumDocLens() const = 0;
+  virtual uint64_t getSumDocLens() = 0;
 
   virtual ~DbAdapter() = default;
 };

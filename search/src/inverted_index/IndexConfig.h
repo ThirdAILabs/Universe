@@ -17,6 +17,7 @@ struct IndexConfig {
   size_t shard_size = 10000000;
 
   TokenizerPtr tokenizer = std::make_shared<DefaultTokenizer>();
+  std::string db_adapter = "mongodb";
 };
 
 }  // namespace thirdai::search
