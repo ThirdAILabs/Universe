@@ -141,11 +141,14 @@ void createSearchSubmodule(py::module_& module) {
                                                         "OnDiskIndex")
       .def(py::init<const std::string&>(), py::arg("db_name"))
       .def("index", &OnDiskIndex::index, py::arg("ids"), py::arg("docs"))
-      .def("query", &OnDiskIndex::query, py::arg("query"), py::arg("k"));
+      .def("query", &OnDiskIndex::query, py::arg("query"), py::arg("k"),
+           py::arg("parallelize") = false)
+      .def("save", &OnDiskIndex::save, py::arg("filename"))
+      .def_static("load", &OnDiskIndex::load, py::arg("filename"));
 
   py::class_<FinetunableRetriever, std::shared_ptr<FinetunableRetriever>>(
       search_submodule, "FinetunableRetriever")
-      .def(py::init<float, uint32_t, uint32_t, size_t>(),
+      .def(py::init<float, uint32_t, uint32_t>(),
            py::arg("lambda") = FinetunableRetriever::DEFAULT_LAMBDA,
            py::arg("min_top_docs") = FinetunableRetriever::DEFAULT_MIN_TOP_DOCS,
            py::arg("top_queries") = FinetunableRetriever::DEFAULT_TOP_QUERIES)
@@ -158,19 +161,17 @@ void createSearchSubmodule(py::module_& module) {
       .def("query", &FinetunableRetriever::queryBatch, py::arg("queries"),
            py::arg("k"))
       .def("query", &FinetunableRetriever::query, py::arg("query"),
-           py::arg("k"))
+           py::arg("k"), py::arg("parallelize") = false)
       .def("rank", &FinetunableRetriever::rankBatch, py::arg("queries"),
            py::arg("candidates"), py::arg("k"))
       .def("rank", &FinetunableRetriever::rank, py::arg("query"),
-           py::arg("candidates"), py::arg("k"))
+           py::arg("candidates"), py::arg("k"), py::arg("parallelize") = false)
       .def("size", &FinetunableRetriever::size)
       .def("remove", &FinetunableRetriever::remove, py::arg("ids"))
-      .def("doc_index", &FinetunableRetriever::docIndex)
       .def_static("train_from", &FinetunableRetriever::trainFrom,
                   py::arg("index"))
       .def("save", &FinetunableRetriever::save, py::arg("filename"))
-      .def_static("load", &FinetunableRetriever::load, py::arg("filename"))
-      .def(bolt::python::getPickleFunction<FinetunableRetriever>());
+      .def_static("load", &FinetunableRetriever::load, py::arg("filename"));
 }
 
 }  // namespace thirdai::search::python

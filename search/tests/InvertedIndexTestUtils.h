@@ -11,7 +11,7 @@ namespace thirdai::search::tests {
 template <class Index>
 inline void checkQuery(const Index& index, const std::string& query,
                        const std::vector<DocId>& expected_ids) {
-  auto results = index.query(query, expected_ids.size());
+  auto results = index.query(query, expected_ids.size(), true);
   ASSERT_EQ(results.size(), expected_ids.size());
   for (size_t i = 0; i < expected_ids.size(); i++) {
     ASSERT_EQ(results.at(i).first, expected_ids.at(i));
@@ -22,7 +22,7 @@ template <class Index>
 inline void checkRank(const Index& index, const std::string& query,
                       const std::unordered_set<DocId>& candidates,
                       const std::vector<DocId>& expected_ids) {
-  auto results = index.rank(query, candidates, expected_ids.size());
+  auto results = index.rank(query, candidates, expected_ids.size(), true);
   ASSERT_EQ(results.size(), expected_ids.size());
   for (size_t i = 0; i < expected_ids.size(); i++) {
     ASSERT_EQ(results.at(i).first, expected_ids.at(i));

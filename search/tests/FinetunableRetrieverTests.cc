@@ -3,6 +3,7 @@
 #include <search/src/inverted_index/FinetunableRetriever.h>
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
+#include <filesystem>
 #include <iterator>
 #include <random>
 #include <vector>
@@ -110,13 +111,14 @@ TEST(FinetunableRetrieverTests, SaveLoad) {
                   {docs.begin(), docs.begin() + n_docs / 2});
   auto original_partial_results = retriever.queryBatch(queries, /*k=*/5);
 
-  auto archive = retriever.toArchive();
+  std::string save_path = "./finetunable_retriever.save";
+  retriever.save(save_path);
 
   retriever.index({ids.begin() + n_docs / 2, ids.end()},
                   {docs.begin() + n_docs / 2, docs.end()});
   auto original_full_results = retriever.queryBatch(queries, /*k=*/5);
 
-  auto loaded_retriever = FinetunableRetriever::fromArchive(*archive);
+  auto loaded_retriever = FinetunableRetriever::load(save_path);
 
   auto loaded_partial_results = loaded_retriever->queryBatch(queries, /*k=*/5);
 
@@ -127,6 +129,8 @@ TEST(FinetunableRetrieverTests, SaveLoad) {
   auto loaded_full_results = loaded_retriever->queryBatch(queries, /*k=*/5);
 
   ASSERT_EQ(original_full_results, loaded_full_results);
+
+  std::filesystem::remove_all(save_path);
 }
 
 }  // namespace thirdai::search::tests

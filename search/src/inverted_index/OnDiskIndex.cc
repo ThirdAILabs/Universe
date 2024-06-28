@@ -103,6 +103,8 @@ class IncrementCounter : public rocksdb::AssociativeMergeOperator {
   const char* Name() const override { return "IncrementCounter"; }
 };
 
+namespace {
+
 std::string dbName(const std::string& path) {
   return std::filesystem::path(path) / "db";
 }
@@ -110,6 +112,8 @@ std::string dbName(const std::string& path) {
 std::string metadataPath(const std::string& path) {
   return std::filesystem::path(path) / "metadata";
 }
+
+}  // namespace
 
 OnDiskIndex::OnDiskIndex(const std::string& save_path,
                          const IndexConfig& config)
@@ -121,6 +125,10 @@ OnDiskIndex::OnDiskIndex(const std::string& save_path,
       _tokenizer(config.tokenizer) {
   if (!std::filesystem::exists(save_path)) {
     std::filesystem::create_directories(save_path);
+  } else if (!std::filesystem::is_directory(save_path)) {
+    throw std::invalid_argument(
+        "Invalid save_path='" + save_path +
+        "'. It must be a directory or not exist and cannot be a file.");
   }
 
   rocksdb::Options options;
@@ -176,7 +184,7 @@ void OnDiskIndex::index(const std::vector<DocId>& ids,
 
   auto [doc_lens, token_counts] = countTokenOccurences(docs);
 
-  storeDocLens(ids, doc_lens);
+  storeDocLens(ids, doc_lens, /*check_for_existing=*/true);
 
   updateTokenToDocs(ids, token_counts);
 }
@@ -203,7 +211,8 @@ OnDiskIndex::countTokenOccurences(const std::vector<std::string>& docs) const {
 }
 
 void OnDiskIndex::storeDocLens(const std::vector<DocId>& ids,
-                               const std::vector<uint32_t>& doc_lens) {
+                               const std::vector<uint32_t>& doc_lens,
+                               bool check_for_existing) {
   uint64_t sum_doc_lens = 0;
 
   rocksdb::Transaction* txn = _db->BeginTransaction(rocksdb::WriteOptions());
@@ -214,15 +223,17 @@ void OnDiskIndex::storeDocLens(const std::vector<DocId>& ids,
 
     const std::string key = docIdKey(doc_id);
 
-    std::string unused_value;
-    auto get_status = txn->GetForUpdate(rocksdb::ReadOptions(), _counters, key,
-                                        &unused_value);
-    if (get_status.ok()) {
-      throw std::runtime_error("Document with id " + std::to_string(doc_id) +
-                               " is already indexed.");
-    }
-    if (!get_status.IsNotFound()) {
-      raiseError("check for doc", get_status);
+    if (check_for_existing) {
+      std::string unused_value;
+      auto get_status = txn->GetForUpdate(rocksdb::ReadOptions(), _counters,
+                                          key, &unused_value);
+      if (get_status.ok()) {
+        throw std::runtime_error("Document with id " + std::to_string(doc_id) +
+                                 " is already indexed.");
+      }
+      if (!get_status.IsNotFound()) {
+        raiseError("check for doc", get_status);
+      }
     }
 
     auto put_status =
@@ -297,8 +308,8 @@ struct HighestScore {
   }
 };
 
-std::vector<DocScore> OnDiskIndex::query(const std::string& query,
-                                         uint32_t k) const {
+std::unordered_map<DocId, float> OnDiskIndex::scoreDocuments(
+    const std::string& query) const {
   auto query_tokens = tokenize(query);
 
   std::vector<rocksdb::Slice> keys;
@@ -349,9 +360,11 @@ std::vector<DocScore> OnDiskIndex::query(const std::string& query,
 
     for (size_t i = 0; i < docs_w_token; i++) {
       const DocId doc_id = counts[i].doc_id;
+      const uint32_t doc_len = getDocLen(doc_id);
 
-      if (doc_scores.size() < _max_docs_to_score || doc_scores.count(doc_id)) {
-        const uint32_t doc_len = getDocLen(doc_id);
+      // doc_len=0 indicates that the document has been deleted.
+      if (doc_len > 0 && (doc_scores.size() < _max_docs_to_score ||
+                          doc_scores.count(doc_id))) {
         const float score =
             bm25(token_idf, counts[i].count, doc_len, avg_doc_len);
         doc_scores[counts[i].doc_id] += score;
@@ -359,7 +372,50 @@ std::vector<DocScore> OnDiskIndex::query(const std::string& query,
     }
   }
 
+  return doc_scores;
+}
+
+std::vector<DocScore> OnDiskIndex::query(const std::string& query, uint32_t k,
+                                         bool parallelize) const {
+  (void)parallelize;
+
+  auto doc_scores = scoreDocuments(query);
+
   return InvertedIndex::topk(doc_scores, k);
+}
+
+std::vector<DocScore> OnDiskIndex::rank(
+    const std::string& query, const std::unordered_set<DocId>& candidates,
+    uint32_t k, bool parallelize) const {
+  (void)parallelize;
+
+  auto doc_scores = scoreDocuments(query);
+
+  const HighestScore<DocId> cmp;
+  std::vector<DocScore> top_scores;
+  top_scores.reserve(k + 1);
+
+  for (const auto& [doc, score] : doc_scores) {
+    if (candidates.count(doc) &&
+        (top_scores.size() < k || top_scores.front().second < score)) {
+      top_scores.emplace_back(doc, score);
+      std::push_heap(top_scores.begin(), top_scores.end(), cmp);
+    }
+
+    if (top_scores.size() > k) {
+      std::pop_heap(top_scores.begin(), top_scores.end(), cmp);
+      top_scores.pop_back();
+    }
+  }
+
+  std::sort_heap(top_scores.begin(), top_scores.end(), cmp);
+
+  return top_scores;
+}
+
+void OnDiskIndex::remove(const std::vector<DocId>& ids) {
+  storeDocLens(ids, std::vector<uint32_t>(ids.size(), 0),
+               /*check_for_existing=*/false);
 }
 
 OnDiskIndex::~OnDiskIndex() {
@@ -440,15 +496,16 @@ std::vector<HashedToken> OnDiskIndex::tokenize(const std::string& text) const {
   return dataset::token_encoding::hashTokens(tokens);
 }
 
-void OnDiskIndex::save(const std::string& save_path) const {
-  if (!std::filesystem::exists(save_path)) {
-    std::filesystem::create_directories(save_path);
-  } else if (!std::filesystem::is_directory(save_path)) {
-    throw std::invalid_argument("Cannot save to '" + save_path +
-                                "'. File already exists.");
+void OnDiskIndex::save(const std::string& new_save_path) const {
+  if (std::filesystem::exists(new_save_path) &&
+      !std::filesystem::is_directory(new_save_path)) {
+    throw std::invalid_argument(
+        "Invalid save_path='" + new_save_path +
+        "'. It must be a directory or not exist and cannot be a file.");
   }
-  std::filesystem::copy(dbName(_save_path), save_path);
-  std::filesystem::copy(metadataPath(_save_path), save_path);
+
+  std::filesystem::copy(_save_path, new_save_path,
+                        std::filesystem::copy_options::recursive);
 }
 
 std::shared_ptr<OnDiskIndex> OnDiskIndex::load(const std::string& save_path) {

@@ -3,6 +3,7 @@
 #include <rocksdb/db.h>
 #include <rocksdb/utilities/transaction_db.h>
 #include <search/src/inverted_index/InvertedIndex.h>
+#include <search/src/inverted_index/Retriever.h>
 #include <search/src/inverted_index/Tokenizer.h>
 #include <unordered_map>
 
@@ -13,19 +14,30 @@ using DocScore = std::pair<DocId, float>;
 
 using HashedToken = uint32_t;
 
-class OnDiskIndex {
+class OnDiskIndex final : public Retriever {
  public:
   explicit OnDiskIndex(const std::string& save_path,
                        const IndexConfig& config = IndexConfig());
 
   void index(const std::vector<DocId>& ids,
-             const std::vector<std::string>& docs);
+             const std::vector<std::string>& docs) final;
 
-  std::vector<DocScore> query(const std::string& query, uint32_t k) const;
+  std::vector<DocScore> query(const std::string& query, uint32_t k,
+                              bool parallelize) const final;
 
-  void save(const std::string& save_path) const;
+  std::vector<DocScore> rank(const std::string& query,
+                             const std::unordered_set<DocId>& candidates,
+                             uint32_t k, bool parallelize) const final;
+
+  void remove(const std::vector<DocId>& ids) final;
+
+  size_t size() const final { return getNDocs(); }
+
+  void save(const std::string& new_save_path) const final;
 
   static std::shared_ptr<OnDiskIndex> load(const std::string& save_path);
+
+  std::string type() const final { return "on-disk"; }
 
   ~OnDiskIndex();
 
@@ -52,12 +64,16 @@ class OnDiskIndex {
   countTokenOccurences(const std::vector<std::string>& docs) const;
 
   void storeDocLens(const std::vector<DocId>& ids,
-                    const std::vector<uint32_t>& doc_lens);
+                    const std::vector<uint32_t>& doc_lens,
+                    bool check_for_existing);
 
   void updateTokenToDocs(
       const std::vector<DocId>& ids,
       const std::vector<std::unordered_map<HashedToken, uint32_t>>&
           token_counts);
+
+  std::unordered_map<DocId, float> scoreDocuments(
+      const std::string& query) const;
 
   uint32_t getDocLen(DocId doc_id) const;
 
