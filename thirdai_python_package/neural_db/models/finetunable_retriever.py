@@ -1,3 +1,4 @@
+import uuid
 from pathlib import Path
 from typing import Callable, List, Optional, Tuple
 
@@ -9,15 +10,20 @@ from .model_interface import InferSamples, Model, Predictions, add_retriever_tag
 
 
 class FinetunableRetriever(Model):
-    def __init__(self, retriever: Optional[search.FinetunableRetriever] = None):
-        self.retriever = retriever or search.FinetunableRetriever()
+    def __init__(
+        self, retriever: Optional[search.FinetunableRetriever] = None, on_disk=False
+    ):
+        save_path = None
+        if on_disk:
+            save_path = f"{uuid.uuid4()}.db"
+        self.retriever = retriever or search.FinetunableRetriever(save_path=save_path)
 
     def index_from_start(
         self,
         intro_documents: DocumentDataSource,
         on_progress: Callable = lambda *args, **kwargs: None,
         batch_size=100000,
-        **kwargs
+        **kwargs,
     ):
         docs = []
         ids = []

@@ -165,6 +165,9 @@ OnDiskIndex::OnDiskIndex(const std::string& save_path,
   _counters = handles[1];
   _token_to_docs = handles[2];
 
+  updateNDocs(0);
+  updateSumDocLens(0);
+
   auto metadata = dataset::SafeFileIO::ofstream(metadataPath(save_path));
   ar::serialize(config.toArchive(), metadata);
 }

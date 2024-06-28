@@ -7,6 +7,7 @@
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <search/src/inverted_index/OnDiskIndex.h>
 #include <search/src/inverted_index/Tokenizer.h>
+#include <optional>
 
 namespace thirdai::search::python {
 
@@ -148,10 +149,13 @@ void createSearchSubmodule(py::module_& module) {
 
   py::class_<FinetunableRetriever, std::shared_ptr<FinetunableRetriever>>(
       search_submodule, "FinetunableRetriever")
-      .def(py::init<float, uint32_t, uint32_t>(),
+      .def(py::init<float, uint32_t, uint32_t, const IndexConfig&,
+                    const std::optional<std::string>&>(),
            py::arg("lambda") = FinetunableRetriever::DEFAULT_LAMBDA,
            py::arg("min_top_docs") = FinetunableRetriever::DEFAULT_MIN_TOP_DOCS,
-           py::arg("top_queries") = FinetunableRetriever::DEFAULT_TOP_QUERIES)
+           py::arg("top_queries") = FinetunableRetriever::DEFAULT_TOP_QUERIES,
+           py::arg("config") = IndexConfig(),
+           py::arg("save_path") = std::nullopt)
       .def("index", &FinetunableRetriever::index, py::arg("ids"),
            py::arg("docs"))
       .def("finetune", &FinetunableRetriever::finetune, py::arg("doc_ids"),

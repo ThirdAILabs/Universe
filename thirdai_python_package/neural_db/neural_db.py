@@ -92,7 +92,7 @@ class NeuralDB:
                     " models per shard."
                 )
             if retriever == "finetunable_retriever":
-                model = FinetunableRetriever()
+                model = FinetunableRetriever(**kwargs)
             elif retriever == "mach" or retriever == "hybrid":
                 if num_shards > 1 or num_models_per_shard > 1:
                     model = MachMixture(
