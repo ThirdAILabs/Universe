@@ -74,10 +74,13 @@ class FinetunableRetriever(Model):
         return add_retriever_tag(results, "finetunable_retriever")
 
     def save_meta(self, directory: Path) -> None:
-        pass
+        self.retriever.save(str(directory))
 
     def load_meta(self, directory: Path):
-        pass
+        self.retriever = search.FinetunableRetriever.load(str(directory))
+
+    def __getstate__(self) -> object:
+        return {}
 
     def associate(self, pairs: List[Tuple[str, str]], retriever_strength=4, **kwargs):
         sources, targets = list(zip(*pairs))
