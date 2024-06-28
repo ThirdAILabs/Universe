@@ -91,8 +91,10 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
       auto lower_cased_tokens = cleanAndLowerCase(row_token_vectors);
       for (size_t token_index = 0; token_index < row_token_vectors.size();
            token_index++) {
-        _token_tag_counter->addTokenTag(lower_cased_tokens[token_index],
-                                        tags->row(i)[token_index], false);
+        if (!_ignored_tags.count(tags->row(i)[token_index])) {
+          _token_tag_counter->addTokenTag(lower_cased_tokens[token_index],
+                                          tags->row(i)[token_index]);
+        }
       }
     }
   }

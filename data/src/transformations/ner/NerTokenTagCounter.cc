@@ -4,6 +4,8 @@
 #include <archive/src/Map.h>
 #include <data/src/transformations/Tabular.h>
 #include <utils/text/StringManipulation.h>
+#include <cstdint>
+#include <stdexcept>
 #include <string>
 
 namespace thirdai::data::ner {
@@ -16,7 +18,7 @@ TokenTagCounter::TokenTagCounter(
   for (const auto& taglabel : _tag_to_label) {
     max_label = std::max(max_label, taglabel.second);
   }
-  _num_unique_counters = max_label;
+  _num_unique_counters = max_label + 1;
 
   _tag_encoders = std::vector<NumericalColumn>(_num_unique_counters);
   for (const auto& taglabel : _tag_to_label) {
@@ -25,10 +27,11 @@ TokenTagCounter::TokenTagCounter(
   }
 }
 
-void TokenTagCounter::addTokenTag(std::string token, const std::string& tag,
-                                  bool lower_case) {
-  if (lower_case) {
-    token = text::lower(token);
+void TokenTagCounter::addTokenTag(const std::string& token,
+                                  const std::string& tag) {
+  if (_tag_to_label.count(tag) == 0) {
+    throw std::invalid_argument("The tag " + tag +
+                                " is not present in the tag to label map.");
   }
 
   if (_token_counts.count(token)) {
@@ -94,8 +97,15 @@ ar::ConstArchivePtr TokenTagCounter::toArchive() const {
   map->set("tag_to_label",
            ar::mapStrU64({_tag_to_label.begin(), _tag_to_label.end()}));
   map->set("num_unique_counters", ar::u64(_num_unique_counters));
-  map->set("token_counts",
-           ar::mapStrVecU64({_token_counts.begin(), _token_counts.end()}));
+
+  ar::MapStrVecU64 token_counts;
+  for (const auto& [token, counts] : _token_counts) {
+    for (const auto& count : counts) {
+      token_counts[token].push_back(count);
+    }
+  }
+
+  map->set("token_counts", ar::mapStrVecU64(std::move(token_counts)));
 
   auto numerical_columns = ar::List::make();
   for (const auto& num_col : _tag_encoders) {
@@ -113,9 +123,17 @@ TokenTagCounter::TokenTagCounter(const ar::Archive& archive) {
   _num_unique_counters = archive.u64("num_unique_counters");
 
   const auto& token_counts = archive.getAs<ar::MapStrVecU64>("token_counts");
-  _token_counts = {token_counts.begin(), token_counts.end()};
 
-  for (const auto& num_col : archive.get("numerical_columns")->list()) {
+  for (const auto& [token, counts] : token_counts) {
+    std::vector<uint32_t> single_token_counts;
+    single_token_counts.reserve(_num_unique_counters);
+    for (const auto& count : counts) {
+      single_token_counts.push_back(count);
+    }
+    _token_counts[token] = single_token_counts;
+  }
+
+  for (const auto& num_col : archive.get("tag_encoders")->list()) {
     _tag_encoders.push_back(NumericalColumn(*num_col));
   }
 }

@@ -243,24 +243,23 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
   auto rule_entities = args.get<std::vector<std::string>>(
       "rules_for", "List[str]", std::vector<std::string>{});
 
-  bool use_token_tag_counter =
-      args.get<bool>("use_token_tag_counter", "bool", false);
-
-  if (use_token_tag_counter) {
-    std::unordered_map<std::string, uint32_t> tag_to_label;
-    for (size_t i = 0; i < _label_to_tag.size(); i++) {
-      tag_to_label[_label_to_tag[i]] = i;
-    }
-    _token_tag_counter = std::make_shared<data::ner::TokenTagCounter>(
-        args.get<uint32_t>("token_counter_bins", "uint32_t", 20), tag_to_label);
-  }
-
   if (!rule_entities.empty()) {
     _rule = data::ner::getRuleForEntities(rule_entities);
     _label_to_tag =
         mapTagsToLabels(target->default_tag, target->tags, _rule->entities());
   } else {
     _label_to_tag = mapTagsToLabels(target->default_tag, target->tags);
+  }
+
+  bool use_token_tag_counter =
+      args.get<bool>("use_token_tag_counter", "bool", false);
+  if (use_token_tag_counter) {
+    std::unordered_map<std::string, uint32_t> tag_to_label;
+    for (size_t i = 0; i < _label_to_tag.size(); i++) {
+      tag_to_label[_label_to_tag[i]] = i;
+    }
+    _token_tag_counter = std::make_shared<data::ner::TokenTagCounter>(
+        args.get<uint32_t>("token_counter_bins", "uint32_t", 10), tag_to_label);
   }
 
 #if THIRDAI_EXPOSE_ALL
@@ -534,7 +533,21 @@ UDTNer::UDTNer(const ar::Archive& archive)
     _token_tag_counter = std::make_shared<data::ner::TokenTagCounter>(
         data::ner::TokenTagCounter(*archive.get("token_tag_counter")));
 
-    std::cout << "Loaded the Token Tag Counter" << std::endl;
+    auto ner_transformation_supervised =
+        extractInputTransform(_supervised_transform);
+    if (ner_transformation_supervised) {
+      ner_transformation_supervised->setTokenTagCounter(_token_tag_counter);
+    } else {
+      throw std::logic_error("could not extract the supervised transform");
+    }
+
+    auto ner_transformation_inference =
+        extractInputTransform(_inference_transform);
+    if (ner_transformation_inference) {
+      ner_transformation_inference->setTokenTagCounter(_token_tag_counter);
+    } else {
+      throw std::logic_error("could not extract the inference transform");
+    }
   }
 }
 

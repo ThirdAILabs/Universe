@@ -12,7 +12,7 @@ class TokenTagCounter {
       uint32_t number_bins,
       std::unordered_map<std::string, uint32_t> tag_to_label);
 
-  void addTokenTag(std::string token, const std::string& tag, bool lower_case);
+  void addTokenTag(const std::string& token, const std::string& tag);
 
   int getTokenTagCount(const std::string& token, const std::string& tag) const;
 

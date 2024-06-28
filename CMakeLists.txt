@@ -416,6 +416,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/ner/NerTokenFromStringArray.cc
     data/src/transformations/ner/NerTokenizationUnigram.cc
     data/src/transformations/ner/NerDyadicDataProcessor.cc
+    data/src/transformations/ner/NerTokenTagCounter.cc
     data/src/transformations/ner/rules/Rule.cc
     data/src/transformations/ner/rules/Pattern.cc
     data/src/transformations/ner/rules/CommonPatterns.cc
@@ -461,6 +462,7 @@ set(THIRDAI_SOURCES
     utils/text/StringManipulation.cc
     utils/UUID.cc
     utils/Random.cc
+    utils/text/Stopwords.cc
     licensing/src/entitlements/RestrictionTree.cc
     licensing/src/entitlements/Entitlements.cc
     versioning/src/Versions.cc)

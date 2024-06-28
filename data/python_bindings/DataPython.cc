@@ -568,7 +568,8 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       .def("get_token_tag_count", &ner::TokenTagCounter::getTokenTagCount,
            py::arg("token"), py::arg("tag"))
       .def("add_token_tag", &ner::TokenTagCounter::addTokenTag,
-           py::arg("token"), py::arg("tag"), py::arg("lower_case"));
+           py::arg("token"), py::arg("tag"))
+      .def("encode", &ner::TokenTagCounter::getTokenEncoding, py::arg("token"));
 
   py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>>(
       transformations_submodule, "SpladeConfig")
