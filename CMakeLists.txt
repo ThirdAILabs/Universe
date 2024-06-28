@@ -383,6 +383,7 @@ set(THIRDAI_SOURCES
     search/src/inverted_index/InvertedIndex.cc
     search/src/inverted_index/OnDiskIndex.cc
     search/src/inverted_index/RocksDbAdapter.cc
+    search/src/inverted_index/MongoDbAdapter.cc
     search/src/inverted_index/FinetunableRetriever.cc
     search/src/inverted_index/Tokenizer.cc
     hashing/src/DensifiedMinHash.cc
