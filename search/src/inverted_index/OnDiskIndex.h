@@ -15,7 +15,7 @@ using HashedToken = uint32_t;
 
 class OnDiskIndex {
  public:
-  explicit OnDiskIndex(const std::string& db_name,
+  explicit OnDiskIndex(const std::string& save_path,
                        const IndexConfig& config = IndexConfig());
 
   void index(const std::vector<DocId>& ids,
@@ -23,7 +23,9 @@ class OnDiskIndex {
 
   std::vector<DocScore> query(const std::string& query, uint32_t k) const;
 
-  bool containsDoc(DocId doc_id) const;
+  void save(const std::string& save_path) const;
+
+  static std::shared_ptr<OnDiskIndex> load(const std::string& save_path);
 
   ~OnDiskIndex();
 
@@ -68,6 +70,8 @@ class OnDiskIndex {
   void updateSumDocLens(uint64_t sum_new_doc_lens);
 
   std::vector<HashedToken> tokenize(const std::string& text) const;
+
+  std::string _save_path;
 
   rocksdb::TransactionDB* _db;
   rocksdb::ColumnFamilyHandle* _counters;

@@ -1,5 +1,7 @@
 #include "OnDiskIndex.h"
 #include <bolt/src/utils/Timer.h>
+#include <archive/src/Archive.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <licensing/src/CheckLicense.h>
 #include <rocksdb/merge_operator.h>
@@ -10,8 +12,8 @@
 #include <rocksdb/write_batch.h>
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <algorithm>
+#include <filesystem>
 #include <memory>
-#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -101,12 +103,26 @@ class IncrementCounter : public rocksdb::AssociativeMergeOperator {
   const char* Name() const override { return "IncrementCounter"; }
 };
 
-OnDiskIndex::OnDiskIndex(const std::string& db_name, const IndexConfig& config)
-    : _max_docs_to_score(config.max_docs_to_score),
+std::string dbName(const std::string& path) {
+  return std::filesystem::path(path) / "db";
+}
+
+std::string metadataPath(const std::string& path) {
+  return std::filesystem::path(path) / "metadata";
+}
+
+OnDiskIndex::OnDiskIndex(const std::string& save_path,
+                         const IndexConfig& config)
+    : _save_path(save_path),
+      _max_docs_to_score(config.max_docs_to_score),
       _max_token_occurrence_frac(config.max_token_occurrence_frac),
       _k1(config.k1),
       _b(config.b),
       _tokenizer(config.tokenizer) {
+  if (!std::filesystem::exists(save_path)) {
+    std::filesystem::create_directories(save_path);
+  }
+
   rocksdb::Options options;
   options.create_if_missing = true;
   options.create_missing_column_families = true;
@@ -126,9 +142,9 @@ OnDiskIndex::OnDiskIndex(const std::string& db_name, const IndexConfig& config)
 
   std::vector<rocksdb::ColumnFamilyHandle*> handles;
 
-  auto status =
-      rocksdb::TransactionDB::Open(options, rocksdb::TransactionDBOptions(),
-                                   db_name, column_families, &handles, &_db);
+  auto status = rocksdb::TransactionDB::Open(
+      options, rocksdb::TransactionDBOptions(), dbName(save_path),
+      column_families, &handles, &_db);
   if (!status.ok()) {
     raiseError("Database creation", status);
   }
@@ -140,6 +156,9 @@ OnDiskIndex::OnDiskIndex(const std::string& db_name, const IndexConfig& config)
 
   _counters = handles[1];
   _token_to_docs = handles[2];
+
+  auto metadata = dataset::SafeFileIO::ofstream(metadataPath(save_path));
+  ar::serialize(config.toArchive(), metadata);
 }
 
 std::string docIdKey(uint64_t doc_id) {
@@ -343,18 +362,6 @@ std::vector<DocScore> OnDiskIndex::query(const std::string& query,
   return InvertedIndex::topk(doc_scores, k);
 }
 
-bool OnDiskIndex::containsDoc(DocId doc_id) const {
-  std::string value;
-  auto status =
-      _db->Get(rocksdb::ReadOptions(), _counters, docIdKey(doc_id), &value);
-
-  if (!status.ok() && !status.IsNotFound()) {
-    raiseError("DB read", status);
-  }
-
-  return status.ok();
-}
-
 OnDiskIndex::~OnDiskIndex() {
   _db->DestroyColumnFamilyHandle(_counters);
   _db->DestroyColumnFamilyHandle(_token_to_docs);
@@ -431,6 +438,24 @@ void OnDiskIndex::updateSumDocLens(uint64_t sum_new_doc_lens) {
 std::vector<HashedToken> OnDiskIndex::tokenize(const std::string& text) const {
   auto tokens = _tokenizer->tokenize(text);
   return dataset::token_encoding::hashTokens(tokens);
+}
+
+void OnDiskIndex::save(const std::string& save_path) const {
+  if (!std::filesystem::exists(save_path)) {
+    std::filesystem::create_directories(save_path);
+  } else if (!std::filesystem::is_directory(save_path)) {
+    throw std::invalid_argument("Cannot save to '" + save_path +
+                                "'. File already exists.");
+  }
+  std::filesystem::copy(dbName(_save_path), save_path);
+  std::filesystem::copy(metadataPath(_save_path), save_path);
+}
+
+std::shared_ptr<OnDiskIndex> OnDiskIndex::load(const std::string& save_path) {
+  auto metadata = dataset::SafeFileIO::ifstream(metadataPath(save_path));
+  auto config = IndexConfig::fromArchive(*ar::deserialize(metadata));
+
+  return std::make_shared<OnDiskIndex>(save_path, config);
 }
 
 }  // namespace thirdai::search

@@ -362,6 +362,7 @@ set(THIRDAI_SOURCES
     search/src/Flash.cc
     search/src/inverted_index/InvertedIndex.cc
     search/src/inverted_index/OnDiskIndex.cc
+    search/src/inverted_index/IndexConfig.cc
     search/src/inverted_index/FinetunableRetriever.cc
     search/src/inverted_index/Tokenizer.cc
     hashing/src/DensifiedMinHash.cc
