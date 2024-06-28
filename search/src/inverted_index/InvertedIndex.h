@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <archive/src/Archive.h>
+#include <search/src/inverted_index/IndexConfig.h>
 #include <search/src/inverted_index/Tokenizer.h>
 #include <utils/text/PorterStemmer.h>
 #include <utils/text/StringManipulation.h>
@@ -20,21 +21,7 @@ using DocScore = std::pair<DocId, float>;
 
 class InvertedIndex {
  public:
-  // The k1 and b defaults are the same as the defaults for BM25 in apache
-  // Lucene. The idf_cutoff_frac default is just what seemed to work fairly
-  // well in multiple experiments.
-  static constexpr size_t DEFAULT_MAX_DOCS_TO_SCORE = 10000;
-  static constexpr float DEFAULT_IDF_CUTOFF_FRAC = 0.2;
-  static constexpr float DEFAULT_K1 = 1.2;
-  static constexpr float DEFAULT_B = 0.75;
-  static constexpr size_t DEFAULT_SHARD_SIZE = 10000000;
-
-  explicit InvertedIndex(
-      size_t max_docs_to_score = DEFAULT_MAX_DOCS_TO_SCORE,
-      float idf_cutoff_frac = DEFAULT_IDF_CUTOFF_FRAC, float k1 = DEFAULT_K1,
-      float b = DEFAULT_B,
-      TokenizerPtr tokenizer = std::make_shared<DefaultTokenizer>(),
-      size_t shard_size = DEFAULT_SHARD_SIZE);
+  explicit InvertedIndex(const IndexConfig& config = IndexConfig());
 
   explicit InvertedIndex(const ar::Archive& archive);
 

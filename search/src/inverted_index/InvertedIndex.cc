@@ -23,15 +23,13 @@
 
 namespace thirdai::search {
 
-InvertedIndex::InvertedIndex(size_t max_docs_to_score, float idf_cutoff_frac,
-                             float k1, float b, TokenizerPtr tokenizer,
-                             size_t shard_size)
-    : _shard_size(shard_size),
-      _max_docs_to_score(max_docs_to_score),
-      _idf_cutoff_frac(idf_cutoff_frac),
-      _k1(k1),
-      _b(b),
-      _tokenizer(std::move(tokenizer)) {
+InvertedIndex::InvertedIndex(const IndexConfig& config)
+    : _shard_size(config.shard_size),
+      _max_docs_to_score(config.max_docs_to_score),
+      _idf_cutoff_frac(config.max_token_occurrence_frac),
+      _k1(config.k1),
+      _b(config.b),
+      _tokenizer(config.tokenizer) {
   licensing::checkLicense();
 }
 
@@ -455,7 +453,8 @@ ar::ConstArchivePtr InvertedIndex::toArchive() const {
 }
 
 InvertedIndex::InvertedIndex(const ar::Archive& archive)
-    : _shard_size(archive.getOr<ar::U64>("shard_size", DEFAULT_SHARD_SIZE)),
+    : _shard_size(
+          archive.getOr<ar::U64>("shard_size", IndexConfig().shard_size)),
       _max_docs_to_score(archive.u64("max_docs_to_score")),
       _idf_cutoff_frac(archive.f32("idf_cutoff_frac")),
       _sum_doc_lens(archive.u64("sum_doc_lens")),
@@ -556,7 +555,7 @@ void InvertedIndex::serialize(Archive& archive) {
   _shards.push_back(Shard());
   _shards[0].token_to_docs = std::move(token_to_docs);
   _shards[0].doc_lens = std::move(doc_lens);
-  _max_docs_to_score = DEFAULT_MAX_DOCS_TO_SCORE;
+  _max_docs_to_score = IndexConfig().max_docs_to_score;
 
   _tokenizer = std::make_shared<DefaultTokenizer>(stem, lowercase);
 }

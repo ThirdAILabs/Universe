@@ -244,13 +244,6 @@ include_directories(deps)
 
 find_package(Python3 COMPONENTS Interpreter Development)
 
-# Installation instructions: cd deps/rocksdb make static_lib make install
-# include(FindRocksdb) find_package(Rocksdb REQUIRED)
-# include_directories(${ROCKSDB_INCLUDE_DIR})
-
-# message("DB STUFF BELOW") message(${ROCKSDB_ROOT_DIR})
-# message(${ROCKSDB_INCLUDE_DIR}) message(${ROCKSDB_LIBRARIES})
-
 # Note: for local builds need to use clang++ not g++ because of pointer conversion 
 # error in rocksdb
 
@@ -263,6 +256,8 @@ option(WITH_TOOLS OFF)
 # This is just so that we don't need to complile and link with this library.
 option(WITH_GFLAGS OFF)
 
+option(ROCKSDB_BUILD_SHARED OFF)
+
 # This is so we can implement a MergeOperator:
 # https://github.com/facebook/rocksdb/issues/3811
 set(USE_RTTI "TRUE" CACHE STRING "")
@@ -270,16 +265,7 @@ set(USE_RTTI "TRUE" CACHE STRING "")
 option(ROCKSDB_BUILD_SHARED OFF)
 
 add_subdirectory(deps/rocksdb)
-include_directories(deps/rocksdb)
-include_directories(deps/rocksdb/include)
-
-# set(ROCKSDB_LIBRARIES /usr/local/lib/librocksdb.a) set(ROCKSDB_INCLUDE_DIR
-# /usr/local/include) include_directories(${ROCKSDB_INCLUDE_DIR})
-
-# This fixed an error, but it is solved by setting WITH_TESTS = OFF
-# if(NOT TARGET gtest)
-#   add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
-# endif()
+# include_directories(deps/rocksdb/include)
 
 
 # mongo-cxx-driver
@@ -396,6 +382,7 @@ set(THIRDAI_SOURCES
     search/src/Flash.cc
     search/src/inverted_index/InvertedIndex.cc
     search/src/inverted_index/OnDiskIndex.cc
+    search/src/inverted_index/RocksDbAdapter.cc
     search/src/inverted_index/FinetunableRetriever.cc
     search/src/inverted_index/Tokenizer.cc
     hashing/src/DensifiedMinHash.cc

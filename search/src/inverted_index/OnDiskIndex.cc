@@ -1,76 +1,30 @@
 #include "OnDiskIndex.h"
+#include <bolt/src/utils/Timer.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <licensing/src/CheckLicense.h>
 #include <rocksdb/merge_operator.h>
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
+#include <rocksdb/table.h>
+#include <rocksdb/utilities/write_batch_with_index.h>
 #include <rocksdb/write_batch.h>
 #include <search/src/inverted_index/InvertedIndex.h>
+#include <search/src/inverted_index/RocksDbAdapter.h>
 #include <algorithm>
 #include <memory>
-#include <mutex>
-#include <shared_mutex>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
 
 namespace thirdai::search {
 
-// NOLINTNEXTLINE
-#define ASSERT(status)                                                      \
-  if (!(status)) {                                                          \
-    throw std::invalid_argument(std::string("Error at ") + __FILE__ + ":" + \
-                                std::to_string(__LINE__));                  \
-  }
-
-struct __attribute__((packed)) DocCount {
-  uint64_t doc_id;
-  uint32_t count;
-};
-
-// https://github.com/facebook/rocksdb/wiki/Merge-Operator
-class AppendDocTokenCount : public rocksdb::AssociativeMergeOperator {
- public:
-  bool Merge(const rocksdb::Slice& key, const rocksdb::Slice* existing_value,
-             const rocksdb::Slice& value, std::string* new_value,
-             rocksdb::Logger* logger) const override {
-    (void)key;
-    (void)logger;
-
-    if (!existing_value) {
-      *new_value = value.ToString();
-      return true;
-    }
-
-    // TODO(Nicholas): check for doc already existing?
-
-    *new_value = std::string(existing_value->size() + value.size(), 0);
-
-    std::copy(existing_value->data(),
-              existing_value->data() + existing_value->size(),
-              new_value->data());
-    std::copy(value.data(), value.data() + value.size(),
-              new_value->data() + existing_value->size());
-
-    return true;
-  }
-
-  const char* Name() const override { return "AppendDocTokenCount"; }
-};
-
-OnDiskIndex::OnDiskIndex(const std::string& path) {
-  rocksdb::Options options;
-  options.create_if_missing = true;
-
-  options.merge_operator = std::make_shared<AppendDocTokenCount>();
-
-  rocksdb::Status status = rocksdb::DB::Open(options, path, &_db);
-
-  ASSERT(status.ok())
-}
-
-std::string docIdKey(uint64_t doc_id) {
-  return "doc_" + std::to_string(doc_id);
+OnDiskIndex::OnDiskIndex(const std::string& db_name, const IndexConfig& config)
+    : _max_docs_to_score(config.max_docs_to_score),
+      _max_token_occurrence_frac(config.max_token_occurrence_frac),
+      _k1(config.k1),
+      _b(config.b),
+      _tokenizer(config.tokenizer) {
+  _db = std::make_unique<RocksDbAdapter>(db_name);
 }
 
 void OnDiskIndex::index(const std::vector<DocId>& ids,
@@ -82,67 +36,41 @@ void OnDiskIndex::index(const std::vector<DocId>& ids,
 
   licensing::entitlements().verifyNoDataSourceRetrictions();
 
-  auto doc_lens_and_occurences = countTokenOccurences(docs);
+  auto [doc_lens, token_counts] = countTokenOccurences(docs);
 
-  rocksdb::WriteBatch batch;
+  _db->storeDocLens(ids, doc_lens);
 
-  uint64_t sum_doc_lens = 0;
-
-  for (size_t i = 0; i < docs.size(); i++) {
+  std::unordered_map<HashedToken, std::vector<DocCount>> coalesced_counts;
+  for (size_t i = 0; i < ids.size(); i++) {
     const DocId doc_id = ids[i];
-    const uint32_t doc_len = doc_lens_and_occurences[i].first;
-    const auto& occurences = doc_lens_and_occurences[i].second;
 
-    if (containsDoc(doc_id)) {
-      throw std::runtime_error("Document with id " + std::to_string(doc_id) +
-                               " is already in InvertedIndex.");
+    for (const auto& [token, count] : token_counts[i]) {
+      coalesced_counts[token].emplace_back(doc_id, count);
     }
-
-    for (const auto& [token, cnt] : occurences) {
-      rocksdb::Slice key(reinterpret_cast<const char*>(&token), sizeof(token));
-
-      DocCount data{doc_id, cnt};
-
-      // TODO(Nicholas): is it faster to just store the count per doc as a
-      // unique key with <token>_<doc> -> cnt and then do prefix scans on
-      // <token>_ to find the docs it occurs in?
-      auto merge_status = batch.Merge(
-          key,
-          rocksdb::Slice(reinterpret_cast<const char*>(&data), sizeof(data)));
-      ASSERT(merge_status.ok())
-    }
-
-    sum_doc_lens += doc_len;
-    auto put_status =
-        batch.Put(docIdKey(doc_id),
-                  rocksdb::Slice(reinterpret_cast<const char*>(&doc_len),
-                                 sizeof(doc_len)));
-    ASSERT(put_status.ok())
   }
 
-  auto status = _db->Write(rocksdb::WriteOptions(), &batch);
-  ASSERT(status.ok())
-
-  updateNDocsAndAvgLen(sum_doc_lens, ids.size());
+  _db->updateTokenToDocs(coalesced_counts);
 }
 
-std::vector<std::pair<uint32_t, std::unordered_map<uint32_t, uint32_t>>>
+std::pair<std::vector<uint32_t>,
+          std::vector<std::unordered_map<HashedToken, uint32_t>>>
 OnDiskIndex::countTokenOccurences(const std::vector<std::string>& docs) const {
-  std::vector<std::pair<uint32_t, std::unordered_map<uint32_t, uint32_t>>>
-      token_counts(docs.size());
+  std::vector<uint32_t> doc_lens(docs.size());
+  std::vector<std::unordered_map<uint32_t, uint32_t>> token_counts(docs.size());
 
-#pragma omp parallel for default(none) shared(docs, token_counts)
+#pragma omp parallel for default(none) shared(docs, doc_lens, token_counts)
   for (size_t i = 0; i < docs.size(); i++) {
     auto doc_tokens = tokenize(docs[i]);
+    doc_lens[i] = doc_tokens.size();
 
     std::unordered_map<uint32_t, uint32_t> counts;
     for (const auto& token : doc_tokens) {
       counts[token]++;
     }
-    token_counts[i] = {doc_tokens.size(), std::move(counts)};
+    token_counts[i] = std::move(counts);
   }
 
-  return token_counts;
+  return {std::move(doc_lens), std::move(token_counts)};
 }
 
 template <typename T>
@@ -153,38 +81,26 @@ struct HighestScore {
   }
 };
 
-std::vector<DocScore> OnDiskIndex::query(const std::string& query, uint32_t k) {
+std::vector<DocScore> OnDiskIndex::query(const std::string& query,
+                                         uint32_t k) const {
   auto query_tokens = tokenize(query);
 
-  std::vector<rocksdb::Slice> keys;
-  keys.reserve(query_tokens.size());
-  std::vector<std::string> values;
+  auto doc_count_iterators = _db->lookupDocs(query_tokens);
 
-  for (const auto& token : query_tokens) {
-    keys.emplace_back(reinterpret_cast<const char*>(&token), sizeof(token));
-  }
-  values.resize(keys.size());
+  const uint64_t n_docs = _db->getNDocs();
+  const float avg_doc_len = static_cast<float>(_db->getSumDocLens()) / n_docs;
 
-  auto statuses = _db->MultiGet(rocksdb::ReadOptions(), keys, &values);
-
-  const auto [n_docs, avg_doc_len] = getNDocsAndAvgLen();
   const uint64_t max_docs_with_token =
-      std::max<uint64_t>(_idf_cutoff_frac * n_docs, 1000);
+      std::max<uint64_t>(_max_token_occurrence_frac * n_docs, 1000);
 
   std::vector<std::pair<size_t, float>> token_indexes_and_idfs;
-  token_indexes_and_idfs.reserve(keys.size());
-  for (size_t i = 0; i < keys.size(); i++) {
-    if (statuses[i].ok()) {
-      assert(values[i].size() % sizeof(DocCount) == 0);
+  token_indexes_and_idfs.reserve(doc_count_iterators.size());
+  for (size_t i = 0; i < doc_count_iterators.size(); i++) {
+    size_t docs_w_token = doc_count_iterators[i].len();
 
-      const size_t docs_w_token = values[i].size() / sizeof(DocCount);
-
-      if (docs_w_token < max_docs_with_token) {
-        const float token_idf = idf(n_docs, docs_w_token);
-        token_indexes_and_idfs.emplace_back(i, token_idf);
-      }
-    } else {
-      ASSERT(statuses[i].IsNotFound())
+    if (docs_w_token < max_docs_with_token) {
+      const float token_idf = idf(n_docs, docs_w_token);
+      token_indexes_and_idfs.emplace_back(i, token_idf);
     }
   }
 
@@ -195,18 +111,14 @@ std::vector<DocScore> OnDiskIndex::query(const std::string& query, uint32_t k) {
   std::unordered_map<DocId, float> doc_scores;
 
   for (const auto& [token_index, token_idf] : token_indexes_and_idfs) {
-    const DocCount* counts =
-        reinterpret_cast<const DocCount*>(values[token_index].data());
-    const size_t docs_w_token = values[token_index].size() / sizeof(DocCount);
-
-    for (size_t i = 0; i < docs_w_token; i++) {
-      const DocId doc_id = counts[i].doc_id;
+    for (const auto& doc_count : doc_count_iterators[token_index]) {
+      const DocId doc_id = doc_count.doc_id;
 
       if (doc_scores.size() < _max_docs_to_score || doc_scores.count(doc_id)) {
-        const uint32_t doc_len = getDocLen(doc_id);
+        const uint32_t doc_len = _db->getDocLen(doc_id);
         const float score =
-            bm25(token_idf, counts[i].count, doc_len, avg_doc_len);
-        doc_scores[counts[i].doc_id] += score;
+            bm25(token_idf, doc_count.count, doc_len, avg_doc_len);
+        doc_scores[doc_count.doc_id] += score;
       }
     }
   }
@@ -214,45 +126,7 @@ std::vector<DocScore> OnDiskIndex::query(const std::string& query, uint32_t k) {
   return InvertedIndex::topk(doc_scores, k);
 }
 
-bool OnDiskIndex::containsDoc(DocId doc_id) const {
-  std::string value;
-  auto status = _db->Get(rocksdb::ReadOptions(), docIdKey(doc_id), &value);
-
-  ASSERT(status.ok() || status.IsNotFound())
-
-  return status.ok();
-}
-
-OnDiskIndex::~OnDiskIndex() {
-  _db->Close();
-  delete _db;
-}
-
-uint32_t OnDiskIndex::getDocLen(DocId doc_id) {
-  std::string value;
-  auto status = _db->Get(rocksdb::ReadOptions(), docIdKey(doc_id), &value);
-  ASSERT(status.ok())
-
-  assert(value.size() == sizeof(uint32_t));
-
-  return *reinterpret_cast<const uint32_t*>(value.data());
-}
-
-std::pair<uint64_t, float> OnDiskIndex::getNDocsAndAvgLen() {
-  std::shared_lock<std::shared_mutex> lock(_mutex);
-  return {_n_docs, _avg_doc_len};
-}
-
-void OnDiskIndex::updateNDocsAndAvgLen(uint64_t sum_new_doc_lens,
-                                       uint64_t n_new_docs) {
-  std::unique_lock<std::shared_mutex> lock(_mutex);
-
-  _n_docs += n_new_docs;
-  _sum_doc_lens += sum_new_doc_lens;
-  _avg_doc_len = static_cast<float>(_sum_doc_lens) / _n_docs;
-}
-
-std::vector<uint32_t> OnDiskIndex::tokenize(const std::string& text) const {
+std::vector<HashedToken> OnDiskIndex::tokenize(const std::string& text) const {
   auto tokens = _tokenizer->tokenize(text);
   return dataset::token_encoding::hashTokens(tokens);
 }

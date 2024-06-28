@@ -1,9 +1,10 @@
 #pragma once
 
 #include <rocksdb/db.h>
+#include <rocksdb/utilities/transaction_db.h>
+#include <search/src/inverted_index/DbAdapter.h>
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <search/src/inverted_index/Tokenizer.h>
-#include <shared_mutex>
 #include <unordered_map>
 
 namespace thirdai::search {
@@ -11,18 +12,17 @@ namespace thirdai::search {
 using DocId = uint64_t;
 using DocScore = std::pair<DocId, float>;
 
+using HashedToken = uint32_t;
+
 class OnDiskIndex {
  public:
-  explicit OnDiskIndex(const std::string& path);
+  explicit OnDiskIndex(const std::string& db_name,
+                       const IndexConfig& config = IndexConfig());
 
   void index(const std::vector<DocId>& ids,
              const std::vector<std::string>& docs);
 
-  std::vector<DocScore> query(const std::string& query, uint32_t k);
-
-  bool containsDoc(DocId doc_id) const;
-
-  ~OnDiskIndex();
+  std::vector<DocScore> query(const std::string& query, uint32_t k) const;
 
  private:
   static inline float idf(size_t n_docs, size_t docs_w_token) {
@@ -42,32 +42,21 @@ class OnDiskIndex {
     return idf * num / denom;
   }
 
-  std::vector<std::pair<uint32_t, std::unordered_map<uint32_t, uint32_t>>>
+  std::pair<std::vector<uint32_t>,
+            std::vector<std::unordered_map<HashedToken, uint32_t>>>
   countTokenOccurences(const std::vector<std::string>& docs) const;
 
-  uint32_t getDocLen(DocId doc_id);
+  std::vector<HashedToken> tokenize(const std::string& text) const;
 
-  rocksdb::DB* _db;
-
-  // Cached state: Can be refreshed from db on load
-  std::shared_mutex _mutex;
-
-  uint64_t _sum_doc_lens = 0;
-  uint64_t _n_docs = 0;
-  float _avg_doc_len;
-
-  std::pair<uint64_t, float> getNDocsAndAvgLen();
-
-  void updateNDocsAndAvgLen(uint64_t sum_new_doc_lens, uint64_t n_new_docs);
+  std::unique_ptr<DbAdapter> _db;
 
   // Query variables
-  size_t _max_docs_to_score = InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE;
-  float _idf_cutoff_frac = InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC;
-  float _k1 = InvertedIndex::DEFAULT_K1, _b = InvertedIndex::DEFAULT_B;
+  uint64_t _max_docs_to_score;
+  float _max_token_occurrence_frac;
+  float _k1;
+  float _b;
 
-  std::vector<uint32_t> tokenize(const std::string& text) const;
-
-  TokenizerPtr _tokenizer = std::make_shared<DefaultTokenizer>();
+  TokenizerPtr _tokenizer;
 };
 
 }  // namespace thirdai::search
