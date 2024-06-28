@@ -200,7 +200,7 @@ void RocksDbAdapter::updateTokenToDocs(
   }
 }
 
-std::vector<DocCountIterator> RocksDbAdapter::lookupDocs(
+std::vector<SerializedDocCountIterator> RocksDbAdapter::lookupDocs(
     const std::vector<HashedToken>& query_tokens) const {
   std::vector<rocksdb::Slice> keys;
   keys.reserve(query_tokens.size());
@@ -214,13 +214,13 @@ std::vector<DocCountIterator> RocksDbAdapter::lookupDocs(
                                                     _token_to_docs);
   auto statuses = _db->MultiGet(rocksdb::ReadOptions(), handles, keys, &values);
 
-  std::vector<DocCountIterator> iters;
+  std::vector<SerializedDocCountIterator> iters;
   iters.reserve(keys.size());
   for (size_t i = 0; i < keys.size(); i++) {
     if (statuses[i].ok()) {
-      iters.push_back(DocCountIterator(std::move(values[i])));
+      iters.push_back(SerializedDocCountIterator(std::move(values[i])));
     } else if (statuses[i].IsNotFound()) {
-      iters.push_back(DocCountIterator(""));
+      iters.push_back(SerializedDocCountIterator(""));
     } else {
       raiseError("DB batch get", statuses[i]);
     }

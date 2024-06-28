@@ -15,30 +15,31 @@ struct __attribute__((packed)) DocCount {
   uint32_t count;
 };
 
-class DocCountIterator {
+// TODO(Nicholas): this is specific to the doc count info being serialized into
+// a string, this makes sense if the data is returned from a keyvalue store, but
+// may not for other DBs. The reason it is done this way instead of converting
+// it into a std::vector<DocCount> is to avoid the extra data copies. This could
+// be made into an iterable interface to support returning other types of
+// iterators for non serialized data.
+class SerializedDocCountIterator {
  public:
-  explicit DocCountIterator(std::string&& serialized)
-      : _storage(std::move(serialized)) {
-    _data = reinterpret_cast<const DocCount*>(_storage.data());
-
-    if (_storage.size() % sizeof(DocCount) != 0) {
+  explicit SerializedDocCountIterator(std::string&& serialized)
+      : _serialized(std::move(serialized)) {
+    if (_serialized.size() % sizeof(DocCount) != 0) {
       throw std::runtime_error("Storage is corrupted.");
     }
-
-    _len = _storage.size() / sizeof(DocCount);
   }
 
-  size_t len() const { return _len; }
+  size_t len() const { return _serialized.size() / sizeof(DocCount); }
 
-  const auto* begin() const { return _data; }
+  const auto* begin() const {
+    return reinterpret_cast<const DocCount*>(_serialized.data());
+  }
 
-  const auto* end() const { return _data + _len; }
+  const auto* end() const { return begin() + len(); }
 
  private:
-  const DocCount* _data;
-  size_t _len;
-
-  std::string _storage;  // Serialized storage for the blob _data refers to.
+  std::string _serialized;  // Serialized storage for the blob _data refers to.
 };
 
 class DbAdapter {
@@ -50,7 +51,7 @@ class DbAdapter {
       const std::unordered_map<HashedToken, std::vector<DocCount>>&
           token_to_new_docs) = 0;
 
-  virtual std::vector<DocCountIterator> lookupDocs(
+  virtual std::vector<SerializedDocCountIterator> lookupDocs(
       const std::vector<HashedToken>& query_tokens) const = 0;
 
   virtual uint32_t getDocLen(DocId doc_id) const = 0;

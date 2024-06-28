@@ -17,7 +17,7 @@ class RocksDbAdapter final : public DbAdapter {
       const std::unordered_map<HashedToken, std::vector<DocCount>>&
           token_to_new_docs) final;
 
-  std::vector<DocCountIterator> lookupDocs(
+  std::vector<SerializedDocCountIterator> lookupDocs(
       const std::vector<HashedToken>& query_tokens) const final;
 
   uint32_t getDocLen(DocId doc_id) const final;
