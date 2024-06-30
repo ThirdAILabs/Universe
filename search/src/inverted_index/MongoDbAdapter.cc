@@ -11,7 +11,6 @@ using bsoncxx::types::b_null;
 namespace thirdai::search {
 
 MongoDbAdapter::MongoDbAdapter(const std::string& db_uri, const std::string& db_name) {
-    mongocxx::instance inst{};
     mongocxx::uri uri(db_uri);
     _client = mongocxx::client(uri);
     _db = _client[db_name];
@@ -35,7 +34,7 @@ void MongoDbAdapter::updateTokenToDocs(const std::unordered_map<HashedToken, std
     for (const auto& pair : token_to_new_docs) {
         for (const auto& doc_count : pair.second) {
             document builder{};
-            builder.append(kvp("token", static_cast<int32_t>(pair.first)));
+            builder.append(kvp("token", static_cast<int64_t>(pair.first)));
             document update_doc{};
             update_doc.append(
                 kvp("$push", make_document(
@@ -53,7 +52,7 @@ void MongoDbAdapter::updateTokenToDocs(const std::unordered_map<HashedToken, std
 std::vector<SerializedDocCountIterator> MongoDbAdapter::lookupDocs(const std::vector<HashedToken>& query_tokens) {
     std::vector<SerializedDocCountIterator> results;
     for (auto token : query_tokens) {
-        auto cursor = _tokens.find(make_document(kvp("token", static_cast<int32_t>(token))));
+        auto cursor = _tokens.find(make_document(kvp("token", bsoncxx::types::b_int64{static_cast<int64_t>(token)})));
         std::string serialized;
         for (auto&& doc : cursor) {
             auto docs = doc["docs"].get_array().value;
@@ -68,7 +67,7 @@ std::vector<SerializedDocCountIterator> MongoDbAdapter::lookupDocs(const std::ve
 }
 
 uint32_t MongoDbAdapter::getDocLen(DocId doc_id) {
-    auto result = _docs.find_one(make_document(kvp("doc_id", static_cast<int64_t>(doc_id))));
+    auto result = _docs.find_one(make_document(kvp("doc_id", bsoncxx::types::b_int64{static_cast<int64_t>(doc_id)})));
     if (result) {
         return result->view()["doc_len"].get_int32().value;
     }
@@ -89,7 +88,7 @@ uint64_t MongoDbAdapter::getSumDocLens() {
     ));
     auto cursor = _docs.aggregate(p);
     if (auto doc = cursor.begin(); doc != cursor.end()) {
-        return (*doc)["total"].get_int64().value;
+        return (*doc)["total"].get_int32().value;
     }
     return 0;
 }
