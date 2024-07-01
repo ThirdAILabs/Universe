@@ -143,18 +143,41 @@ void MongoDbAdapter::updateTokenToDocs(const std::unordered_map<HashedToken, std
 
 std::vector<SerializedDocCountIterator> MongoDbAdapter::lookupDocs(const std::vector<HashedToken>& query_tokens) {
     std::vector<SerializedDocCountIterator> results;
-    for (auto token : query_tokens) {
-        auto cursor = _tokens.find(make_document(kvp("token", bsoncxx::types::b_int64{static_cast<int64_t>(token)})));
-        std::string serialized;
-        for (auto&& doc : cursor) {
-            auto docs = doc["docs"].get_array().value;
-            for (auto&& d : docs) {
-                DocCount dc(d["doc_id"].get_int64().value, d["count"].get_int32().value);
-                serialized.append(reinterpret_cast<const char*>(&dc), sizeof(DocCount));
-            }
-        }
-        results.emplace_back(std::move(serialized));
+    
+    std::vector<bsoncxx::document::value> query_vec;
+
+    bsoncxx::builder::basic::array array_builder;
+    for (const auto& token : query_tokens) {
+        array_builder.append(static_cast<int64_t>(token));
     }
+
+    // TODO(pratik): $in here just reduces the round trip time, look for a way to run query in parallel
+    auto query = bsoncxx::builder::basic::make_document(
+        bsoncxx::builder::basic::kvp("token", 
+            bsoncxx::builder::basic::make_document(
+                bsoncxx::builder::basic::kvp("$in", array_builder.view())
+            )
+        )
+    );
+
+
+    auto cursor = _tokens.find(query.view());
+
+    std::unordered_map<int64_t, std::string> serialized_map;
+    for (auto&& doc : cursor) {
+        int64_t token = doc["token"].get_int64();
+        std::string& serialized = serialized_map[token];
+        auto docs = doc["docs"].get_array().value;
+        for (auto&& d : docs) {
+            DocCount dc(d["doc_id"].get_int64().value, d["count"].get_int32().value);
+            serialized.append(reinterpret_cast<const char*>(&dc), sizeof(DocCount));
+        }
+    }
+
+    for (const auto& token : query_tokens) {
+        results.emplace_back(std::move(serialized_map[token]));
+    }
+
     return results;
 }
 
