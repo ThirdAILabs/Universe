@@ -279,6 +279,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(BUILD_SHARED_AND_STATIC_LIBS OFF CACHE BOOL "" FORCE)
 set(ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+# So, that the wheel build doesnot require OpenSSL.
+set(ENABLE_SSL OFF)
+set(ENABLE_SASL OFF)
 add_definitions(-D_GNU_SOURCE)
 add_subdirectory(deps/mongo-cxx-driver)
 
