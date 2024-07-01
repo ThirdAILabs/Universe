@@ -1,7 +1,6 @@
 from __future__ import annotations
 from abc import abstractclassmethod
 import typing
-from collections import defaultdict
 import pandas as pd
 
 from ..column_inferencing import column_detector
@@ -93,6 +92,8 @@ class UDTDataTemplate:
             self.bolt_data_types[self.target_column_name] = self.target_column.to_bolt(
                 is_target_type=True
             )
+        else:
+            self.bolt_data_types[self.target_column_name] = self.target_column.to_bolt()
 
 
 class TabularClassificationTemplate(UDTDataTemplate):
@@ -435,43 +436,3 @@ supported_templates = [
     RecurrentClassifierTemplate,
     GraphClassificationTemplate,
 ]
-
-
-def query_gpt(prompt, model_name, client):
-    messages = [{"role": "user", "content": prompt}]
-    response = client.chat.completions.create(
-        model=model_name,
-        messages=messages,
-        temperature=0,
-    )
-    return response.choices[0].message.content
-
-
-def get_task_detection_prompt(query: str):
-    prompt = "I have 6 different task types. Here is the description of each of the task :- \n"
-    for task_id, task_template in enumerate(supported_templates):
-        prompt += f"{task_id} : Task : {task_template.task}, Description: {task_template.description}, Keywords : {' '.join(task_template.keywords)}\n"
-
-    prompt += (
-        "Which task amongst the above is the closest to the following problem : \n"
-        + query
-    )
-    prompt += (
-        "\nonly return the task number and nothing else (this is extremely important)."
-    )
-
-    return prompt
-
-
-def get_task_template_from_query(query: str, openai_client: OpenAI):
-    prompt = get_task_detection_prompt(query)
-
-    response = query_gpt(prompt, model_name="gpt-4", client=openai_client)
-    response = "".join([char for char in response if char.isdigit()])
-
-    try:
-        template_id = int(response)
-        return supported_templates[template_id]
-    except:
-        print("Oops ChatGPT wrong output")
-        return None

@@ -7,7 +7,7 @@ import thirdai._thirdai.data as data
 import thirdai._thirdai.dataset as dataset
 
 from .udt_docs import *
-from .udt_builder.task_detector import detect_and_build
+from .udt_builder.builder import detect_and_build
 
 
 def _create_parquet_source(path):

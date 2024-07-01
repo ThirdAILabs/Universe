@@ -1,12 +1,15 @@
 from __future__ import annotations
 import pandas as pd
-import numpy as np
-from scipy.spatial.distance import cosine
 from openai import OpenAI
-import pickle
 
-from .templates import model_templates
-from .templates.model_builder import ModelBuilder
+from .templates.model_templates import (
+    TabularClassificationTemplate,
+    RegressionTemplate,
+    TokenClassificationTemplate,
+    QueryReformulationTemplate,
+    supported_templates,
+)
+
 from .column_inferencing import column_detector
 import warnings
 
@@ -39,11 +42,10 @@ def auto_infer_model_builder(target_column_name: str, dataframe: pd.DataFrame):
     input_columns = column_detector.get_input_columns(target_column_name, dataframe)
 
     if isinstance(target_column, column_detector.NumericalColumn):
-        return ModelBuilder(
+        return RegressionTemplate(
             dataframe,
             target_column,
             input_columns,
-            model_templates.RegressionTemplate,
         )
 
     if isinstance(target_column, column_detector.CategoricalColumn):
@@ -60,11 +62,10 @@ def auto_infer_model_builder(target_column_name: str, dataframe: pd.DataFrame):
                 len(token_column_candidates) == 1
                 and target_column.unique_tokens_per_row * len(dataframe) < 250
             ):
-                return ModelBuilder(
+                return TokenClassificationTemplate(
                     dataframe,
                     target_column,
                     input_columns,
-                    model_templates.TokenClassificationTemplate,
                 )
 
             source_column_candidates = (
@@ -74,18 +75,16 @@ def auto_infer_model_builder(target_column_name: str, dataframe: pd.DataFrame):
             )
 
             if len(source_column_candidates) == 1 and target_column.token_type == "str":
-                return ModelBuilder(
+                return QueryReformulationTemplate(
                     dataframe,
                     target_column,
                     input_columns,
-                    model_templates.QueryReformulationTemplate,
                 )
 
-        return ModelBuilder(
+        return TabularClassificationTemplate(
             dataframe,
             target_column,
             input_columns,
-            model_templates.TabularClassificationTemplate,
         )
 
     raise Exception(
@@ -93,126 +92,41 @@ def auto_infer_model_builder(target_column_name: str, dataframe: pd.DataFrame):
     )
 
 
-class UDTBuilder:
-    def __init__(
-        self,
-        dataset_path: str,
-        target_column: str,
-        task: str = None,
-        openai_key: str = None,
-    ):
-        if openai_key is not None:
-            print("Task detection using natural language enabled\n")
-
-        self.openai_client = OpenAI(api_key=openai_key) if openai_key else None
-        self.task_to_template_map = {
-            template.task: template for template in model_templates.supported_templates
-        }
-
-        self.detect(dataset_path, target_column, task=task)
-
-    def detect(self, dataset_path: str, target_column: str, task=None):
-        df = pd.read_csv(dataset_path).dropna().astype(str)
-        verify_dataframe(df, target_column, task)
-
-        self.target_column = target_column
-        self.dataframe = df
-
-        template_names = "\n".join(
-            f"• {name}" for name in self.task_to_template_map.keys()
-        )
-
-        detected_model_builder = self._get_model_builder(
-            self.dataframe, self.target_column, task
-        )
-        if detected_model_builder is not None:
-
-            print(
-                f"Task detected: {detected_model_builder.task}\n"
-                f"If this isn't the task you intended, you can:\n"
-                f"1. Provide a more specific problem type, or \n"
-                f"2. Choose from the following list of available tasks:\n"
-                f"{template_names}\n"
-                f"To detect a different task, call the detect function again with:\n"
-                f"    bolt.UniversalDeepTransformer(\n"
-                f"        dataset_path = {dataset_path},\n"
-                f"        target_column = {target_column},\n"
-                f"        task = 'your_selected_task' \n"
-                f"    )\n"
-            )
-        else:
-            print(
-                f"Cannot detect the task. "
-                f"To automatically detect a task, you can:\n"
-                f"1. Provide a more specific problem type, or \n"
-                f"2. Choose from the following list of available tasks:\n"
-                f"{template_names}\n"
-                f"For explicit task detection, call the detect function again with:\n"
-                f"    bolt.UniversalDeepTransformer(\n"
-                f"        dataset_path = {dataset_path},\n"
-                f"        target_column = {target_column},\n"
-                f"        task = 'your_selected_task' \n"
-                f"    )",
-            )
-
-        self.model_builder = detected_model_builder
-
-    def _get_model_builder(self, dataframe, target_column: str, task: str):
-
-        if task == None:
-            return auto_infer_model_builder(
-                target_column_name=target_column, dataframe=dataframe
-            )
-
-        if task in self.task_to_template_map:
-            detected_template = self.task_to_template_map[task]
-            return ModelBuilder.from_raw_types(
-                target_column, dataframe, detected_template
-            )
-
-        if self.openai_client:
-            detected_template = model_templates.get_task_template_from_query(
-                task, self.openai_client
-            )
-
-            if detected_template is None:
-                return None, 0
-
-            return ModelBuilder.from_raw_types(
-                target_column, dataframe, detected_template
-            )
-
-        return None
-
-    def build(self):
-        if self.model_builder == None:
-            raise Exception(
-                "Cannot initialize a UniversalDeepTransformer with a NoneType model_builder. Ensure that the builder has detected a valid template before calling build on it."
-            )
-        try:
-            self.model = self.model_builder.build()
-        except Exception as ex:
-            raise_exception_without_trace(ex.__str__())
-
-        return self.model
+def query_gpt(prompt, model_name, client):
+    messages = [{"role": "user", "content": prompt}]
+    response = client.chat.completions.create(
+        model=model_name,
+        messages=messages,
+        temperature=0,
+    )
+    return response.choices[0].message.content
 
 
-def detect_and_build(
-    dataset_path: str,
-    target: str,
-    task: str = None,
-    openai_key: str = None,
-    **kwargs,
-):
-    builder = UDTBuilder(
-        dataset_path=dataset_path,
-        target_column=target,
-        task=task,
-        openai_key=openai_key,
+def get_task_detection_prompt(query: str):
+    prompt = "I have 6 different task types. Here is the description of each of the task :- \n"
+    for task_id, task_template in enumerate(supported_templates):
+        prompt += f"{task_id} : Task : {task_template.task}, Description: {task_template.description}, Keywords : {' '.join(task_template.keywords)}\n"
+
+    prompt += (
+        "Which task amongst the above is the closest to the following problem : \n"
+        + query
+    )
+    prompt += (
+        "\nonly return the task number and nothing else (this is extremely important)."
     )
 
-    if builder.model_builder == None:
-        raise Exception("Could not detect a valid task.")
+    return prompt
 
-    model = builder.build()
-    return model
+
+def get_task_template_from_query(query: str, openai_client: OpenAI):
+    prompt = get_task_detection_prompt(query)
+
+    response = query_gpt(prompt, model_name="gpt-4", client=openai_client)
+    response = "".join([char for char in response if char.isdigit()])
+
+    try:
+        template_id = int(response)
+        return supported_templates[template_id]
+    except:
+        print("Oops ChatGPT wrong output")
+        return None
