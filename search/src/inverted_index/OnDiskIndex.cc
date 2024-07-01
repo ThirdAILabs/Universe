@@ -32,12 +32,14 @@ enum class TokenStatus : uint32_t {
   Pruned = 1,
 };
 
-struct __attribute__((packed)) DocCount {
+struct DocCount {
   DocCount(DocId doc_id, uint32_t count) : doc_id(doc_id), count(count) {}
 
-  DocId doc_id;
-  uint32_t count;
+  DocId doc_id : 40;
+  uint32_t count : 24;
 };
+
+static_assert(sizeof(DocCount) == 8, "DocCount should be 8 bytes");
 
 // https://github.com/facebook/rocksdb/wiki/Merge-Operator
 class AppendDocCounts : public rocksdb::AssociativeMergeOperator {

@@ -9,9 +9,6 @@
 
 namespace thirdai::search {
 
-using DocId = uint64_t;
-using DocScore = std::pair<DocId, float>;
-
 using HashedToken = uint32_t;
 
 class OnDiskIndex final : public Retriever {

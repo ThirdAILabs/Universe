@@ -15,10 +15,6 @@
 
 namespace thirdai::search {
 
-using DocId = uint64_t;
-
-using DocScore = std::pair<DocId, float>;
-
 class InvertedIndex final : public Retriever {
  public:
   explicit InvertedIndex(const IndexConfig& config = IndexConfig());
