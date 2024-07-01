@@ -15,6 +15,7 @@ from .documents import (
     URL,
     Document,
     InMemoryText,
+    Kafka,
     Reference,
     SalesForce,
     SentenceLevelDOCX,

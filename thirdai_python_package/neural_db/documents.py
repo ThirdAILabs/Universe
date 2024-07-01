@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import dask.dataframe as dd
 import numpy as np
 import pandas as pd
+from kafka import KafkaConsumer
 from nltk.tokenize import sent_tokenize
 from office365.sharepoint.client_context import (
     ClientContext,
@@ -476,6 +477,89 @@ def metadata_with_source(metadata, source: str):
             "Document metadata cannot contain the key 'source'. 'source' is a reserved key."
         )
     return {**metadata, "source": source}
+
+
+class Kafka(Document):
+    def __init__(
+        self,
+        consumer: KafkaConsumer,
+        topic_name: str,
+        id_column: str,
+        strong_columns: List[str],
+        weak_columns: List[str] = [],
+        batch_size: int = 100000,
+    ):
+        self.consumer = consumer
+        self.topic_name = topic_name
+        self.num_rows = num_rows
+        self.id_column = id_column
+        self.strong_columns = strong_columns
+        self.weak_columns = weak_columns
+        self.batch_size = batch_size
+        # hash
+        sha1 = hashlib.sha1()
+        sha1.update(bytes(self.name, "utf-8"))
+        sha1.update(bytes(self.id_column, "utf-8"))
+        sha1.update(bytes(str(sorted(self.strong_columns)), "utf-8"))
+        sha1.update(bytes(str(sorted(self.weak_columns)), "utf-8"))
+        self._hash = sha1.hexdigest()
+
+    @property
+    def matched_constraints(self) -> Dict[str, ConstraintValue]:
+        return {}
+
+    # Just to satisfy the constraint
+    @property
+    def size(self) -> str:
+        return 1
+
+    @property
+    def source(self) -> str:
+        return self.topic_name
+
+    @property
+    def name(self):
+        return self.topic_name
+
+    @property
+    def hash(self):
+        return self._hash
+
+    def row_iterator(self):
+        while True:
+            records = self.consumer.poll(timeout_ms=1000, max_records=self.batch_size)
+            if records:
+                topic_records = list(
+                    filter(
+                        lambda item: item[0].topic == self.topic_name, records.items()
+                    )
+                )  # each element of item: TopicPartition, item[1]: [ConsumerRecord()]
+                if not topic_records:
+                    raise FileNotFoundError(
+                        f"No data found on the topic {self.topic_name}"
+                    )
+                topic_partition, consumer_records = topic_records[0]
+                for consumer_record in consumer_records:
+                    yield DocumentRow(
+                        element_id=consumer_record.value[self.id_column],
+                        strong=" ".join(
+                            [consumer_record.value[col] for col in self.strong_columns]
+                        ),
+                        weak=" ".join(
+                            [consumer_record.value[col] for col in self.weak_columns]
+                        ),
+                    )
+            else:
+                break
+
+    def reference(self, element_id: int) -> Reference:
+        return Reference(
+            document=self,
+            element_id=element_id,
+            text=str(element_id),
+            source=self.hash,
+            metadata={"id": element_id},
+        )
 
 
 class CSV(Document):
