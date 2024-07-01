@@ -53,6 +53,8 @@ class FinetunableRetriever {
       const std::vector<std::unordered_set<DocId>>& candidates,
       uint32_t k) const;
 
+  void prune() { _doc_index->prune(); }
+
   void remove(const std::vector<DocId>& ids);
 
   size_t size() const { return _doc_index->size(); }

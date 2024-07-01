@@ -172,6 +172,7 @@ void createSearchSubmodule(py::module_& module) {
       .def("rank", &FinetunableRetriever::rank, py::arg("query"),
            py::arg("candidates"), py::arg("k"), py::arg("parallelize") = false)
       .def("size", &FinetunableRetriever::size)
+      .def("prune", &FinetunableRetriever::prune)
       .def("remove", &FinetunableRetriever::remove, py::arg("ids"))
       .def_static("train_from", &FinetunableRetriever::trainFrom,
                   py::arg("index"))

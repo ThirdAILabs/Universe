@@ -43,6 +43,8 @@ class FinetunableRetriever(Model):
             self.retriever.index(ids=ids, docs=docs)
             on_progress(self.retriever.size() / intro_documents.size)
 
+        self.retriever.prune()
+
     def forget_documents(self) -> None:
         self.retriever = search.FinetunableRetriever()
 
