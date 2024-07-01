@@ -46,6 +46,20 @@ std::vector<std::string> cleanAndLowerCase(
   return lower_tokens;
 }
 
+// bool is_number_with_punct(const std::string& s) {
+//   bool has_digit = false;
+
+//   for (char c : s) {
+//     if (std::isdigit(c)) {
+//       has_digit = true;
+//     } else if (!std::ispunct(c)) {
+//       return false;
+//     }
+//   }
+
+//   return has_digit;
+// }
+
 NerTokenizerUnigram::NerTokenizerUnigram(
     std::string tokens_column, std::string featurized_sentence_column,
     std::optional<std::string> target_column,
@@ -91,7 +105,8 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
       auto lower_cased_tokens = cleanAndLowerCase(row_token_vectors);
       for (size_t token_index = 0; token_index < row_token_vectors.size();
            token_index++) {
-        if (!_ignored_tags.count(tags->row(i)[token_index])) {
+        if (!_ignored_tags.count(tags->row(i)[token_index]) &&
+            !is_number_with_punct(lower_cased_tokens[token_index])) {
           _token_tag_counter->addTokenTag(lower_cased_tokens[token_index],
                                           tags->row(i)[token_index]);
         }
@@ -116,7 +131,8 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
             _processor.processToken(row_token_vectors, target,
                                     lower_cased_tokens);
 
-        if (_token_tag_counter != nullptr) {
+        if (_token_tag_counter != nullptr &&
+            !is_number_with_punct(lower_cased_tokens[target])) {
           featurized_sentences[featurized_sentence_offset] +=
               _token_tag_counter->getTokenEncoding(lower_cased_tokens[target]);
         }

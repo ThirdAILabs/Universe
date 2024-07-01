@@ -53,13 +53,13 @@ struct NumericalColumn {
 
   ar::ConstArchivePtr toArchive() const;
 
- private:
   float _min;
   float _max;
   float _binsize;
   uint32_t _num_bins;
   uint32_t _salt;
 
+ private:
   friend class cereal::access;
   template <typename Archive>
   void serialize(Archive& archive) {

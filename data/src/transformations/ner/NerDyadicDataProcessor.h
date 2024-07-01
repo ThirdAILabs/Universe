@@ -14,6 +14,8 @@
 
 namespace thirdai::data {
 
+bool is_number_with_punct(const std::string& s);
+
 std::string trimPunctuation(const std::string& str);
 
 struct FeatureEnhancementConfig {
