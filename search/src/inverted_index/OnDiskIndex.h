@@ -38,7 +38,7 @@ class OnDiskIndex final : public Retriever {
 
   void prune() final;
 
-  ~OnDiskIndex();
+  ~OnDiskIndex() final;
 
  private:
   static inline float idf(size_t n_docs, size_t docs_w_token) {

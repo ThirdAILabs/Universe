@@ -498,8 +498,6 @@ void OnDiskIndex::prune() {
     raiseError("prune", status);
   }
 
-  // _db->Flush(rocksdb::FlushOptions());
-
   auto compact_status = _db->CompactRange(rocksdb::CompactRangeOptions(),
                                           _token_to_docs, nullptr, nullptr);
   if (!compact_status.ok()) {
