@@ -280,6 +280,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(BUILD_SHARED_AND_STATIC_LIBS OFF CACHE BOOL "" FORCE)
 set(ENABLE_TESTS OFF CACHE BOOL "" FORCE)
 # So, that the wheel build doesnot require OpenSSL.
+# TODO(pratik): must check whether licensing gets affected or not before merging.
 set(ENABLE_SSL OFF)
 set(ENABLE_SASL OFF)
 add_definitions(-D_GNU_SOURCE)
