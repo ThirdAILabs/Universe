@@ -26,7 +26,7 @@ class UDTDataTemplate:
         target_column: column_detector.CategoricalColumn,
         input_columns: typing.Dict[str, column_detector.Column],
         dataframe: pd.DataFrame,
-    ):
+    ) -> typing.Tuple[column_detector.Column, typing.Dict[str, column_detector.Column]]:
         pass
 
 
@@ -73,12 +73,11 @@ class TabularClassificationTemplate(UDTDataTemplate):
             )
 
         data_types = {}
-        data_types[target_column.column_name] = target_column
 
         for col in input_columns:
             data_types[col] = input_columns[col]
 
-        return data_types
+        return target_column, data_types
 
 
 class RegressionTemplate(UDTDataTemplate):
@@ -117,12 +116,11 @@ class RegressionTemplate(UDTDataTemplate):
             )
 
         data_types = {}
-        data_types[target_column.column_name] = target_column
 
         for col in input_columns:
             data_types[col] = input_columns[col]
 
-        return data_types
+        return target_column, data_types
 
 
 class TokenClassificationTemplate(UDTDataTemplate):
@@ -165,17 +163,18 @@ class TokenClassificationTemplate(UDTDataTemplate):
         )
 
         data_types = {}
-        data_types[target_column.column_name] = column_detector.TokenTags(
-            column_name=target_column.column_name,
+
+        concrete_target_column = column_detector.TokenTags(
+            name=target_column.name,
             default_tag=detected_tags[
                 0
             ],  # most occuring tag is the default tag for NER
             named_tags=detected_tags[1:],  # all other tags are named entities
         )
 
-        if len(data_types[target_column.column_name].named_tags) > 250:
+        if len(concrete_target_column.named_tags) > 250:
             raise Exception(
-                f"Unexpected Number of Unique Tags Detected in the column {len(data_types[target_column.column_name].named_tags)} for Token Classification. Ensure that the column is the correct column for tags."
+                f"Unexpected Number of Unique Tags Detected in the column {len(data_types[target_column.name].named_tags)} for Token Classification. Ensure that the column is the correct column for tags."
             )
 
         token_column_candidates = (
@@ -194,8 +193,8 @@ class TokenClassificationTemplate(UDTDataTemplate):
                 f"Found {len(token_column_candidates) } valid candidates for the token column in the dataset. "
             )
 
-        data_types[token_column_candidates[0].column_name] = token_column_candidates[0]
-        return data_types
+        data_types[token_column_candidates[0].name] = token_column_candidates[0]
+        return concrete_target_column, data_types
 
 
 class QueryReformulationTemplate(UDTDataTemplate):
@@ -243,16 +242,15 @@ class QueryReformulationTemplate(UDTDataTemplate):
 
         if len(token_column_candidates) > 1:
             raise Exception(
-                f"Found {len(token_column_candidates) } valid candidates for the token column in the dataset. The following columns are valid sources : {[column.column_name for column in token_column_candidates]}"
+                f"Found {len(token_column_candidates) } valid candidates for the token column in the dataset. The following columns are valid sources : {[column.name for column in token_column_candidates]}"
             )
 
         data_types = {}
-        data_types[target_column.column_name] = column_detector.TextColumn(
-            column_name=target_column.column_name
-        )
 
-        data_types[token_column_candidates[0].column_name] = token_column_candidates[0]
-        return data_types
+        concrete_target_column = column_detector.TextColumn(name=target_column.name)
+
+        data_types[token_column_candidates[0].name] = token_column_candidates[0]
+        return concrete_target_column, data_types
 
 
 class RecurrentClassifierTemplate(UDTDataTemplate):
@@ -295,7 +293,7 @@ class RecurrentClassifierTemplate(UDTDataTemplate):
         def get_maximum_tokens_in_row(
             column: column_detector.CategoricalColumn, dataframe: pd.DataFrame
         ):
-            token_counts = dataframe[column.column_name].apply(
+            token_counts = dataframe[column.name].apply(
                 lambda row: len(row.split(column.delimiter))
             )
 
@@ -309,8 +307,8 @@ class RecurrentClassifierTemplate(UDTDataTemplate):
             )
 
         data_types = {}
-        data_types[target_column.column_name] = column_detector.SequenceType(
-            column_name=target_column.column_name,
+        concrete_target_column = column_detector.SequenceType(
+            name=target_column.name,
             delimiter=target_column.delimiter,
             estimated_n_classes=target_column.estimated_n_classes,
             max_length=get_maximum_tokens_in_row(target_column, dataframe),
@@ -319,13 +317,13 @@ class RecurrentClassifierTemplate(UDTDataTemplate):
         for column_name, column in input_columns.items():
             if should_convert_to_sequence(column):
                 data_types[column_name] = column_detector.SequenceType(
-                    column_name=column_name,
+                    name=column_name,
                     delimiter=column.delimiter,
                 )
             else:
                 data_types[column_name] = input_columns[column_name]
 
-        return data_types
+        return concrete_target_column, data_types
 
 
 class GraphClassificationTemplate(UDTDataTemplate):
@@ -372,3 +370,16 @@ supported_templates = [
     RecurrentClassifierTemplate,
     GraphClassificationTemplate,
 ]
+
+
+def get_task_detection_prompt(
+    query : str
+):
+    prompt = "I have 6 different task types. Here is the description of each of the task :- \n"
+    for task_id, task_template in enumerate(supported_templates):
+        prompt += f"{task_id} : Task : {task_template.task}, Description: {task_template.description}, Keywords : {' '.join(task_template.keywords)}\n"
+    
+    prompt = "Which task amongst the above is the closest to the following problem : \n" + query
+    prompt = "\nonly return the task number and nothing else (this is extremely important)."
+    
+    return prompt

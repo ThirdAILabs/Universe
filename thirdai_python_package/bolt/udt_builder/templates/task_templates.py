@@ -22,53 +22,6 @@ def get_input_columns(target_column_name, dataframe: pd.DataFrame) -> typing.Dic
     return input_data_types
 
 
-def get_token_candidates_for_token_classification(
-    target: column_detector.CategoricalColumn,
-    input_columns: typing.Dict[str, column_detector.Column],
-) -> column_detector.TextColumn:
-
-    if target.delimiter != " ":
-        raise Exception("Expected the target column to be space seperated tags.")
-
-    candidate_columns: typing.List[column_detector.Column] = []
-    for column_name, column in input_columns.items():
-        if isinstance(column, column_detector.CategoricalColumn):
-            if (
-                column.delimiter == " "
-                and abs(column.number_tokens_per_row - target.number_tokens_per_row)
-                < 0.001
-            ):
-                candidate_columns.append(
-                    column_detector.TextColumn(column_name=column.column_name)
-                )
-    return candidate_columns
-
-
-def get_source_column_for_query_reformulation(
-    target: column_detector.CategoricalColumn,
-    input_columns: typing.Dict[str, column_detector.Column],
-) -> column_detector.TextColumn:
-
-    if target.delimiter != " ":
-        raise Exception("Expected the target column to be space seperated tags.")
-
-    candidate_columns: typing.List[column_detector.CategoricalColumn] = []
-    for column_name, column in input_columns.items():
-        if isinstance(column, column_detector.CategoricalColumn):
-            if column.delimiter == " ":
-                ratio_source_to_target = (
-                    column.number_tokens_per_row / target.number_tokens_per_row
-                )
-                if ratio_source_to_target > 1.5 or ratio_source_to_target < 0.66:
-                    continue
-
-                candidate_columns.append(
-                    column_detector.TextColumn(column_name=column.column_name)
-                )
-
-    return candidate_columns
-
-
 class ModelBuilderTemplate:
 
     @staticmethod
@@ -140,7 +93,7 @@ class TabularClassificationTemplate(ModelBuilderTemplate):
         self.bolt_data_types = {}
 
         for column_name, column in self.concrete_types.items():
-            if column_name == target_column.column_name:
+            if column_name == target_column.name:
                 self.bolt_data_types[column_name] = column.to_bolt(is_target_type=True)
             else:
                 self.bolt_data_types[column_name] = column.to_bolt()
@@ -167,7 +120,7 @@ class TabularClassificationTemplate(ModelBuilderTemplate):
             )
 
         data_types = {}
-        data_types[target.column_name] = target
+        data_types[target.name] = target
 
         for col in input_columns:
             data_types[col] = input_columns[col]
@@ -211,7 +164,7 @@ class RegressionTemplate(ModelBuilderTemplate):
             )
 
         data_types = {}
-        data_types[target.column_name] = target
+        data_types[target.name] = target
 
         for col in input_columns:
             data_types[col] = input_columns[col]
@@ -247,9 +200,7 @@ class TokenClassificationTemplate(ModelBuilderTemplate):
             message = ex.__str__()
 
             message = (
-                message
-                + "\n"
-                + self.model_initialization_typehint(target_column.column_name)
+                message + "\n" + self.model_initialization_typehint(target_column.name)
             )
 
             raise Exception(message) from None
@@ -290,39 +241,21 @@ class TokenClassificationTemplate(ModelBuilderTemplate):
                 f"Could not convert the specified target column into a valid categorical data type for Token Classification."
             )
 
-        def get_target_tags(
-            target: column_detector.CategoricalColumn, dataframe: pd.DataFrame
-        ):
-            tag_frequency_map = defaultdict(int)
-
-            def add_key_to_dict(dc, key):
-                if key.strip():
-                    dc[key] += 1
-
-            dataframe[target.column_name].apply(
-                lambda row: [
-                    add_key_to_dict(tag_frequency_map, key) for key in row.split(" ")
-                ]
-            )
-
-            sorted_tags = sorted(
-                tag_frequency_map.items(), key=lambda item: item[1], reverse=True
-            )
-            sorted_tag_keys = [tag for tag, freq in sorted_tags]
-
-            return sorted_tag_keys
-
-        detected_tags = get_target_tags(target, dataframe)
+        detected_tags = column_detector.get_frequency_sorted_unique_tokens(
+            target, dataframe
+        )
 
         data_types = {}
-        data_types[target.column_name] = column_detector.TokenTags(
-            column_name=target.column_name,
+        data_types[target.name] = column_detector.TokenTags(
+            name=target.name,
             default_tag=detected_tags[0],
             named_tags=detected_tags[1:],
         )
 
-        token_column_candidates = get_token_candidates_for_token_classification(
-            target, input_columns
+        token_column_candidates = (
+            column_detector.get_token_candidates_for_token_classification(
+                target, input_columns
+            )
         )
 
         if len(token_column_candidates) == 0:
@@ -335,7 +268,7 @@ class TokenClassificationTemplate(ModelBuilderTemplate):
                 f"Found {len(token_column_candidates) } valid candidates for the token column in the dataset. "
             )
 
-        data_types[token_column_candidates[0].column_name] = token_column_candidates[0]
+        data_types[token_column_candidates[0].name] = token_column_candidates[0]
         return data_types
 
 
@@ -378,9 +311,7 @@ class QueryReformulationTemplate(ModelBuilderTemplate):
             message = ex.__str__()
 
             message = (
-                message
-                + "\n"
-                + self.model_initialization_typehint(target_column.column_name)
+                message + "\n" + self.model_initialization_typehint(target_column.name)
             )
 
             raise Exception(message) from None
@@ -402,8 +333,10 @@ class QueryReformulationTemplate(ModelBuilderTemplate):
                 f"Could not convert the specified target column into a valid categorical data type for Token Classification."
             )
 
-        token_column_candidates = get_source_column_for_query_reformulation(
-            target, input_columns
+        token_column_candidates = (
+            column_detector.get_source_column_for_query_reformulation(
+                target, input_columns
+            )
         )
         if len(token_column_candidates) == 0:
             raise Exception(
@@ -412,15 +345,13 @@ class QueryReformulationTemplate(ModelBuilderTemplate):
 
         if len(token_column_candidates) > 1:
             raise Exception(
-                f"Found {len(token_column_candidates) } valid candidates for the token column in the dataset. The following columns are valid sources : {[column.column_name for column in token_column_candidates]}"
+                f"Found {len(token_column_candidates) } valid candidates for the token column in the dataset. The following columns are valid sources : {[column.name for column in token_column_candidates]}"
             )
 
         data_types = {}
-        data_types[target.column_name] = column_detector.TextColumn(
-            column_name=target.column_name
-        )
+        data_types[target.name] = column_detector.TextColumn(name=target.name)
 
-        data_types[token_column_candidates[0].column_name] = token_column_candidates[0]
+        data_types[token_column_candidates[0].name] = token_column_candidates[0]
         return data_types
 
 
@@ -448,7 +379,7 @@ class RecurrentClassifierTemplate(ModelBuilderTemplate):
         self.bolt_data_types = {}
 
         for column_name, column in self.concrete_types.items():
-            if column_name == target_column.column_name:
+            if column_name == target_column.name:
                 self.bolt_data_types[column_name] = column.to_bolt()
             else:
                 self.bolt_data_types[column_name] = column.to_bolt()
@@ -468,7 +399,7 @@ class RecurrentClassifierTemplate(ModelBuilderTemplate):
         def get_maximum_tokens_in_row(
             column: column_detector.CategoricalColumn, dataframe: pd.DataFrame
         ):
-            token_counts = dataframe[column.column_name].apply(
+            token_counts = dataframe[column.name].apply(
                 lambda row: len(row.split(column.delimiter))
             )
 
@@ -482,8 +413,8 @@ class RecurrentClassifierTemplate(ModelBuilderTemplate):
             )
 
         data_types = {}
-        data_types[target.column_name] = column_detector.SequenceType(
-            column_name=target.column_name,
+        data_types[target.name] = column_detector.SequenceType(
+            name=target.name,
             delimiter=target.delimiter,
             estimated_n_classes=target.estimated_n_classes,
             max_length=get_maximum_tokens_in_row(target, dataframe),
@@ -492,7 +423,7 @@ class RecurrentClassifierTemplate(ModelBuilderTemplate):
         for column_name, column in input_columns.items():
             if should_convert_to_sequence(column):
                 data_types[column_name] = column_detector.SequenceType(
-                    column_name=column_name,
+                    name=column_name,
                     delimiter=column.delimiter,
                 )
             else:

@@ -9,7 +9,7 @@ from .columns import *
 def cast_to_categorical(column_name: str, column: pd.Series):
     delimiter, token_row_ratio = utils.find_delimiter(column)
     unique_values_in_column = utils.get_unique_values(column, delimiter)
-    token_data_type = utils.get_numerical_data_type(unique_values_in_column)
+    token_data_type = utils.get_token_data_type(unique_values_in_column)
 
     utils.cast_set_values(unique_values_in_column, token_data_type)
 
@@ -23,7 +23,7 @@ def cast_to_categorical(column_name: str, column: pd.Series):
         n_classes = max(unique_values_in_column) + 1
 
     return CategoricalColumn(
-        column_name=column_name,
+        name=column_name,
         token_type=token_data_type,
         number_tokens_per_row=token_row_ratio,
         unique_tokens_per_row=len(unique_values_in_column) / len(column),
@@ -36,46 +36,37 @@ def cast_to_numerical(column_name: str, column: pd.Series):
     try:
         column = pd.to_numeric(column)
         return NumericalColumn(
-            column_name=column_name, minimum=min(column), maximum=max(column)
+            name=column_name, minimum=min(column), maximum=max(column)
         )
     except:
         return None
 
 
-def detect_single_column_type(column_name, dataframe: pd.DataFrame):
+def detect_single_column_type(
+    column_name, dataframe: pd.DataFrame
+) -> typing.Union[DateTimeColumn, NumericalColumn, CategoricalColumn]:
     """
-    We segment the column into 3 seperate types which are fairly dissimilar to one another :
-    1. DateTime Column
-    2. Numerical Column
-    3. Categorical Column
+    Identifies and classifies the type of a given column in a DataFrame into one of three distinct categories:
+    DateTime, Numerical, or Categorical.
+    """
 
-    We use a bunch of heuristics to identify an Int Numerical Column from another Int Single Categorical Column. If the number of unique tokens in the column is high, then chances are that it is numerical.
-    """
     if utils._is_datetime_col(dataframe[column_name]):
-        return DateTimeColumn(column_name=column_name)
+        return DateTimeColumn(name=column_name)
 
     categorical_column = cast_to_categorical(column_name, dataframe[column_name])
 
     if categorical_column.delimiter == None and categorical_column.token_type != "str":
         if categorical_column.token_type == "float":
-            return cast_to_numerical(column_name, dataframe[column_name])
+            numerical_column = cast_to_numerical(column_name, dataframe[column_name])
+            if numerical_column:
+                return numerical_column
 
         if (
             categorical_column.token_type == "int"
             and categorical_column.estimated_n_classes > 100_000
         ):
+            # If the number of unique tokens in the column is high, then chances are that it is numerical.
             return cast_to_numerical(column_name, dataframe[column_name])
-
-    """
-    uncomment this block and replace the previous if block to make numerical features for a column
-    if the ratio of unique integers exceeds a certain threshold.
-    
-        if categorical_column.token_type == "int" and (
-            categorical_column.unique_tokens_per_row > 0.6
-            or categorical_column.estimated_n_classes > 100_000
-        ):
-            return cast_to_numerical(column_name, dataframe[column_name])
-    """
 
     # the below condition means that there is a delimiter in the column. A column with multiple floats
     # in a single row will be treated as a string multicategorical column
@@ -85,7 +76,13 @@ def detect_single_column_type(column_name, dataframe: pd.DataFrame):
     return categorical_column
 
 
-def get_input_columns(target_column_name, dataframe: pd.DataFrame) -> typing.Dict:
+def get_input_columns(
+    target_column_name, dataframe: pd.DataFrame
+) -> typing.Dict[str, Column]:
+    """
+    Extracts the data types of columns in a given pandas DataFrame, excluding the specified target column.
+    """
+
     input_data_types = {}
 
     for col in dataframe.columns:
@@ -104,10 +101,13 @@ def get_token_candidates_for_token_classification(
     input_columns: typing.Dict[str, Column],
 ) -> typing.List[TextColumn]:
     """
-    Returns a list of columns where each column is a candidate to be the token column for the specified target column (assuming the task is TokenClassification).
+    Identifies candidate columns suitable as token columns for a TokenClassification task
+    where each token must have a corresponding tag.
+
+    Returns a list of candidates suitable to be the tokens column for the task.
     """
 
-    if target.delimiter != " ":
+    if target.delimiter != " " and target.token_type != "str":
         raise Exception("Expected the target column to be space seperated tags.")
 
     candidate_columns: typing.List[Column] = []
@@ -118,7 +118,7 @@ def get_token_candidates_for_token_classification(
                 and abs(column.number_tokens_per_row - target.number_tokens_per_row)
                 < 0.001
             ):
-                candidate_columns.append(TextColumn(column_name=column.column_name))
+                candidate_columns.append(TextColumn(name=column.name))
     return candidate_columns
 
 
@@ -127,7 +127,7 @@ def get_source_column_for_query_reformulation(
     input_columns: typing.Dict[str, Column],
 ) -> TextColumn:
     """
-    Returns a list of columns where each column is a candidate to be the source column for the specified target column (assuming the task is QueryClassification).
+    Returns a list of columns where each column is a candidate to be the source column for the specified target column.
     """
 
     if target.delimiter != " " and target.token_type != "str":
@@ -143,7 +143,7 @@ def get_source_column_for_query_reformulation(
                 if ratio_source_to_target > 1.5 or ratio_source_to_target < 0.66:
                     continue
 
-                candidate_columns.append(TextColumn(column_name=column.column_name))
+                candidate_columns.append(TextColumn(name=column.name))
 
     return candidate_columns
 
@@ -157,7 +157,7 @@ def get_frequency_sorted_unique_tokens(
         if key.strip():
             dc[key] += 1
 
-    dataframe[target.column_name].apply(
+    dataframe[target.name].apply(
         lambda row: [add_key_to_dict(tag_frequency_map, key) for key in row.split(" ")]
     )
 

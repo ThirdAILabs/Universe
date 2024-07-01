@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing
+
 import thirdai._thirdai.bolt as bolt
 import pandas as pd
 
@@ -8,55 +10,43 @@ from ..column_inferencing import column_detector
 
 
 class ModelBuilder:
-    name = "default"
-    keywords = set()
-    description = "default model"
-
-    @staticmethod
-    def get_target_column(
-        target_column_name, dataframe: pd.DataFrame, casting_function: function
-    ) -> column_detector.CategoricalColumn:
-        try:
-            column = casting_function(target_column_name, dataframe[target_column_name])
-            return column
-        except:
-            return None
 
     def __init__(
         self,
-        target_column_name,
-        dataframe,
-        target_column,
-        input_columns,
+        dataframe: pd.DataFrame,
+        target_column: column_detector.Column,
+        input_columns: typing.Dict[str, column_detector.Column],
         template: UDTDataTemplate,
     ):
-        self.target_column_name = target_column_name
         self.df = dataframe
-        self.target_column = target_column
-        self.input_columns = input_columns
         self.template = template
 
-        self.concrete_types = self.template.get_concrete_types(
-            self.target_column, self.input_columns, self.df
+        self.target_column, self.input_columns = self.template.get_concrete_types(
+            target_column, input_columns, self.df
         )
 
         self.bolt_data_types = {}
 
-        for column_name, column in self.concrete_types.items():
-            if column_name == target_column.column_name and isinstance(
-                self.concrete_types[target_column_name],
-                column_detector.CategoricalColumn,
-            ):
-                self.bolt_data_types[column_name] = column.to_bolt(is_target_type=True)
-            else:
-                self.bolt_data_types[column_name] = column.to_bolt()
+        for column_name, column in self.input_columns.items():
+            self.bolt_data_types[column_name] = column.to_bolt()
+
+        if isinstance(
+            self.target_column,
+            column_detector.CategoricalColumn,
+        ):
+            self.bolt_data_types[self.target_column_name] = self.target_column.to_bolt(
+                is_target_type=True
+            )
+
+    @property
+    def target_column_name(self):
+        return self.target_column.name
 
     def build(self):
         extreme_classification = False
 
-        target_column = self.target_column
-        if isinstance(target_column, column_detector.CategoricalColumn):
-            if target_column.estimated_n_classes > 100_000:
+        if isinstance(self.target_column, column_detector.CategoricalColumn):
+            if self.target_column.estimated_n_classes > 100_000:
                 extreme_classification = True
 
         self.model = bolt.UniversalDeepTransformer(
@@ -68,9 +58,7 @@ class ModelBuilder:
         return self.model
 
     @staticmethod
-    def get_builder_from_raw_types(
-        target_column_name, dataframe, template: UDTDataTemplate
-    ):
+    def from_raw_types(target_column_name, dataframe, template: UDTDataTemplate):
         try:
             target_column = template.target_column_caster(
                 target_column_name, dataframe[target_column_name]
@@ -83,9 +71,7 @@ class ModelBuilder:
 
         input_columns = column_detector.get_input_columns(target_column_name, dataframe)
 
-        return ModelBuilder(
-            target_column_name, dataframe, target_column, input_columns, template
-        )
+        return ModelBuilder(dataframe, target_column, input_columns, template)
 
     @property
     def task(self):

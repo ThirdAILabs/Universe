@@ -18,8 +18,8 @@ class Column:
 Target column for each task can be broadly categorized into two categories namely, Numerical Column and Categorical Column.
 
 Example : 
-1. Text columns is just a Categorical Column with a space delimiter 
-2. TokenTags is just a Categorical Column with a space delimiter 
+1. Text columns is just a Categorical Column with a space delimiter and higher number of unique tokens.
+2. TokenTags is just a Categorical Column with a space delimiter and a corresponding tokens column.
 3. Sequence Column is a Categorical Column with a custom delimiter.
 
 We can further cast the Categorical Column into relevant types like TokenTags depending upon the detected task. 
@@ -28,7 +28,6 @@ We can further cast the Categorical Column into relevant types like TokenTags de
 
 @dataclass
 class CategoricalColumn(Column):
-    column_name: str
     token_type: str
     number_tokens_per_row: float
     unique_tokens_per_row: float
@@ -47,7 +46,6 @@ class CategoricalColumn(Column):
 
 @dataclass
 class NumericalColumn(Column):
-    column_name: str
     minimum: float
     maximum: float
 
@@ -57,16 +55,12 @@ class NumericalColumn(Column):
 
 @dataclass
 class DateTimeColumn(Column):
-    column_name: str
-
     def to_bolt(self):
         return bolt.types.date()
 
 
 @dataclass
 class TextColumn(Column):
-    column_name: str
-
     def to_bolt(self):
         return bolt.types.text()
 
@@ -82,7 +76,6 @@ class TokenTags(Column):
 
 @dataclass
 class SequenceType(Column):
-    column_name: str
     delimiter: str
     estimated_n_classes: int = None
     max_length: int = None

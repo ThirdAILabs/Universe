@@ -5,9 +5,8 @@ from scipy.spatial.distance import cosine
 from openai import OpenAI
 import pickle
 
-from .column_inferencing import utils
 from .templates import model_templates
-from .templates import model_builder
+from .templates.model_builder import ModelBuilder
 from .column_inferencing import column_detector
 import warnings
 
@@ -40,8 +39,7 @@ def auto_inference_model_builder(target_column_name: str, dataframe: pd.DataFram
     input_columns = column_detector.get_input_columns(target_column_name, dataframe)
 
     if isinstance(target_column, column_detector.NumericalColumn):
-        return model_builder.ModelBuilder(
-            target_column_name,
+        return ModelBuilder(
             dataframe,
             target_column,
             input_columns,
@@ -62,8 +60,7 @@ def auto_inference_model_builder(target_column_name: str, dataframe: pd.DataFram
                 len(token_column_candidates) == 1
                 and target_column.unique_tokens_per_row * len(dataframe) < 250
             ):
-                return model_builder.ModelBuilder(
-                    target_column_name,
+                return ModelBuilder(
                     dataframe,
                     target_column,
                     input_columns,
@@ -77,16 +74,14 @@ def auto_inference_model_builder(target_column_name: str, dataframe: pd.DataFram
             )
 
             if len(source_column_candidates) == 1 and target_column.token_type == "str":
-                return model_builder.ModelBuilder(
-                    target_column_name,
+                return ModelBuilder(
                     dataframe,
                     target_column,
                     input_columns,
                     model_templates.QueryReformulationTemplate,
                 )
 
-        return model_builder.ModelBuilder(
-            target_column_name,
+        return ModelBuilder(
             dataframe,
             target_column,
             input_columns,
@@ -239,7 +234,7 @@ class UDTBuilder:
         if task in self.task_to_template_map:
             detected_template = self.task_to_template_map[task]
             return (
-                model_builder.ModelBuilder.get_builder_from_raw_types(
+                ModelBuilder.from_raw_types(
                     target_column, dataframe, detected_template
                 ),
                 1,
@@ -252,7 +247,7 @@ class UDTBuilder:
                 return None, 0
 
             return (
-                model_builder.ModelBuilder.get_builder_from_raw_types(
+                ModelBuilder.from_raw_types(
                     target_column, dataframe, detected_template
                 ),
                 score,

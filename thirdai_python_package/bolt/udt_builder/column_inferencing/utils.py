@@ -22,6 +22,9 @@ def _is_datetime_col(column: pd.Series) -> bool:
 
 
 def is_int(val: str) -> bool:
+    """
+    Checks if string can be cast to a valid float.
+    """
     try:
         casted_value = int(val)
         return True
@@ -30,6 +33,9 @@ def is_int(val: str) -> bool:
 
 
 def is_float(val: str) -> bool:
+    """
+    Checks if string can be cast to a valid float.
+    """
     try:
         casted_value = float(val)
         return True
@@ -38,13 +44,12 @@ def is_float(val: str) -> bool:
 
 
 def cast_set_values(values: set, target_type: str):
-    if target_type == "str":
-        return values
+    """Converts all elements in a set to a specified data type."""
 
-    if target_type not in {"int", "float"}:
+    if target_type not in {"int", "float", "str"}:
         raise ValueError(f"Unsupported target type: {target_type}")
 
-    type_map = {"int": int, "float": float}
+    type_map = {"int": int, "float": float, "str": str}
     cast_function = type_map[target_type]
 
     casted_values = {cast_function(val) for val in values}
@@ -52,7 +57,11 @@ def cast_set_values(values: set, target_type: str):
     values.update(casted_values)
 
 
-def get_numerical_data_type(values: set) -> str:
+def get_token_data_type(values: set) -> str:
+    """
+    Finds the most suitable numerical data type for a set of string values:
+    returns 'int' if all can be integers, 'float' if all are floats, otherwise 'str'.
+    """
     numerical_data_type = "int"
     for val in values:
         if not is_int(val):
@@ -83,6 +92,9 @@ def get_unique_values(column: pd.Series, delimiter: str) -> float:
 
 
 def find_delimiter(column: pd.Series) -> Tuple[Optional[str], float]:
+    """
+    Returns the most frequent delimiter in the series.
+    """
     ratios = {
         delimiter: _get_delimiter_ratio(column, delimiter)
         for delimiter in candidate_delimiters
