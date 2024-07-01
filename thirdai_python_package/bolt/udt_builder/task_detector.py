@@ -30,7 +30,7 @@ def verify_dataframe(dataframe: pd.DataFrame, target_column_name: str, task: str
         raise Exception(f"Cannot detect a task for dataset with 0 rows.")
 
 
-def auto_inference_model_builder(target_column_name: str, dataframe: pd.DataFrame):
+def auto_infer_model_builder(target_column_name: str, dataframe: pd.DataFrame):
     # approx representation of a column
     target_column = column_detector.detect_single_column_type(
         target_column_name, dataframe
@@ -93,89 +93,26 @@ def auto_inference_model_builder(target_column_name: str, dataframe: pd.DataFram
     )
 
 
-class TemplateStore:
-    def __init__(self, templates, openai_client: OpenAI):
-        self.templates = templates
-        self.openai_client = openai_client
-        self.embedding_model = "text-embedding-3-large"
-        self.embeddings = self._compute_embeddings()
-
-    def _compute_embeddings(self):
-        embeddings = {}
-        for template in self.templates:
-            text = f"task: {template.task}, description: {template.description}, keywords: {' '.join(template.keywords)}"
-            embeddings[template] = self._get_embedding(text)
-        return embeddings
-
-    def _get_embedding(self, text):
-        response = self.openai_client.embeddings.create(
-            model=self.embedding_model, input=text
-        )
-        embedding = response.data[0].embedding
-        return np.array(embedding)
-
-    def find_closest_template(self, query):
-        query_embedding = self._get_embedding(query)
-        closest_template = None
-        closest_distance = float("inf")
-        all_distances = []
-
-        for template, embedding in self.embeddings.items():
-            distance = cosine(query_embedding, embedding)
-            all_distances.append(distance)
-            print(template.task, 1 - distance)
-            if distance < closest_distance:
-                closest_distance = distance
-                closest_template = template
-
-        mean_distance = np.median(all_distances)
-
-        if (
-            abs(mean_distance - closest_distance) < 0.05
-            or (1 - closest_distance) < 0.35
-        ):
-            closest_template = None
-
-        return closest_template, 1 - closest_distance
-
-    def save(self, path):
-        with open(path, "wb") as f:
-            pickle.dump(self, f)
-
-    @staticmethod
-    def load(path) -> TemplateStore:
-        with open(path, "rb") as f:
-            return pickle.load(f)
-
-
 class UDTBuilder:
-    def __init__(self, openai_key: str = None):
-        self.template_store = (
-            (
-                TemplateStore(
-                    model_templates.supported_templates,
-                    openai_client=OpenAI(api_key=openai_key),
-                )
-            )
-            if openai_key is not None
-            else None
-        )
-
+    def __init__(
+        self,
+        dataset_path: str,
+        target_column: str,
+        task: str = None,
+        openai_key: str = None,
+    ):
         if openai_key is not None:
             print("Task detection using natural language enabled\n")
 
+        self.openai_client = OpenAI(api_key=openai_key) if openai_key else None
         self.task_to_template_map = {
             template.task: template for template in model_templates.supported_templates
         }
 
-        self.detected_template = None
-        self.model = None
-        self.target_column = None
-        self.dataframe = None
+        self.detect(dataset_path, target_column, task=task)
 
     def detect(self, dataset_path: str, target_column: str, task=None):
         df = pd.read_csv(dataset_path).dropna().astype(str)
-
         verify_dataframe(df, target_column, task)
 
         self.target_column = target_column
@@ -185,8 +122,7 @@ class UDTBuilder:
             f"• {name}" for name in self.task_to_template_map.keys()
         )
 
-        # try:
-        detected_model_builder, _ = self._detect_template(
+        detected_model_builder = self._get_model_builder(
             self.dataframe, self.target_column, task
         )
         if detected_model_builder is not None:
@@ -221,44 +157,37 @@ class UDTBuilder:
 
         self.model_builder = detected_model_builder
 
-    def _detect_template(self, dataframe, target_column: str, task: str):
+    def _get_model_builder(self, dataframe, target_column: str, task: str):
 
         if task == None:
-            return (
-                auto_inference_model_builder(
-                    target_column_name=target_column, dataframe=dataframe
-                ),
-                1,
+            return auto_infer_model_builder(
+                target_column_name=target_column, dataframe=dataframe
             )
 
         if task in self.task_to_template_map:
             detected_template = self.task_to_template_map[task]
-            return (
-                ModelBuilder.from_raw_types(
-                    target_column, dataframe, detected_template
-                ),
-                1,
+            return ModelBuilder.from_raw_types(
+                target_column, dataframe, detected_template
             )
 
         if self.template_store is not None:
-            detected_template, score = self.template_store.find_closest_template(task)
+            detected_template = model_templates.get_task_template_from_query(
+                task, self.openai_client
+            )
 
             if detected_template is None:
                 return None, 0
 
-            return (
-                ModelBuilder.from_raw_types(
-                    target_column, dataframe, detected_template
-                ),
-                score,
+            return ModelBuilder.from_raw_types(
+                target_column, dataframe, detected_template
             )
 
-        return None, 0
+        return None
 
     def build(self):
         if self.model_builder == None:
             raise Exception(
-                "Cannot initialize a UniversalDeepTransformer with a NoneType template. Ensure that the builder has detected a valid template before calling build on it."
+                "Cannot initialize a UniversalDeepTransformer with a NoneType model_builder. Ensure that the builder has detected a valid template before calling build on it."
             )
         try:
             self.model = self.model_builder.build()
@@ -279,7 +208,7 @@ def detect_and_build(
     builder.detect(dataset_path=dataset_path, target_column=target, task=task)
 
     if builder.model_builder == None:
-        return
+        raise Exception("Could not detect a valid task.")
 
     model = builder.build()
     return model

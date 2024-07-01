@@ -6,6 +6,7 @@ import pandas as pd
 
 from ..column_inferencing import column_detector
 import thirdai._thirdai.bolt as bolt
+from openai import OpenAI
 
 
 class UDTDataTemplate:
@@ -28,6 +29,70 @@ class UDTDataTemplate:
         dataframe: pd.DataFrame,
     ) -> typing.Tuple[column_detector.Column, typing.Dict[str, column_detector.Column]]:
         pass
+
+    @property
+    def target_column_name(self):
+        return self.target_column.name
+
+    @property
+    def task(self):
+        return self.task
+
+    def build(self):
+        extreme_classification = False
+
+        if isinstance(self.target_column, column_detector.CategoricalColumn):
+            if self.target_column.estimated_n_classes > 100_000:
+                extreme_classification = True
+
+        self.model = bolt.UniversalDeepTransformer(
+            data_types=self.bolt_data_types,
+            target=self.target_column_name,
+            extreme_classification=extreme_classification,
+        )
+
+        return self.model
+
+    @classmethod
+    def from_raw_types(cls, target_column_name, dataframe):
+        try:
+            target_column = cls.target_column_caster(
+                target_column_name, dataframe[target_column_name]
+            )
+        except:
+            target_column = None
+            raise Exception(
+                f"Could not convert the specified target column {target_column_name} into a valid datatype for {cls.task}. Make sure that the target column name is correct and is a valid data type for the specified task."
+            )
+
+        input_columns = column_detector.get_input_columns(target_column_name, dataframe)
+
+        return cls(dataframe, target_column, input_columns)
+
+    def __init__(
+        self,
+        dataframe: pd.DataFrame,
+        target_column: column_detector.Column,
+        input_columns: typing.Dict[str, column_detector.Column],
+    ):
+        self.df = dataframe
+
+        self.target_column, self.input_columns = self.get_concrete_types(
+            target_column, input_columns, self.df
+        )
+
+        self.bolt_data_types = {}
+
+        for column_name, column in self.input_columns.items():
+            self.bolt_data_types[column_name] = column.to_bolt()
+
+        if isinstance(
+            self.target_column,
+            column_detector.CategoricalColumn,
+        ):
+            self.bolt_data_types[self.target_column_name] = self.target_column.to_bolt(
+                is_target_type=True
+            )
 
 
 class TabularClassificationTemplate(UDTDataTemplate):
@@ -372,14 +437,40 @@ supported_templates = [
 ]
 
 
-def get_task_detection_prompt(
-    query : str
-):
+def query_gpt(prompt, model_name, client):
+    messages = [{"role": "user", "content": prompt}]
+    response = client.chat.completions.create(
+        model=model_name,
+        messages=messages,
+        temperature=0,
+    )
+    return response.choices[0].message.content
+
+
+def get_task_detection_prompt(query: str):
     prompt = "I have 6 different task types. Here is the description of each of the task :- \n"
     for task_id, task_template in enumerate(supported_templates):
         prompt += f"{task_id} : Task : {task_template.task}, Description: {task_template.description}, Keywords : {' '.join(task_template.keywords)}\n"
-    
-    prompt = "Which task amongst the above is the closest to the following problem : \n" + query
-    prompt = "\nonly return the task number and nothing else (this is extremely important)."
-    
+
+    prompt = (
+        "Which task amongst the above is the closest to the following problem : \n"
+        + query
+    )
+    prompt = (
+        "\nonly return the task number and nothing else (this is extremely important)."
+    )
+
     return prompt
+
+
+def get_task_template_from_query(query: str, openai_client: OpenAI):
+    prompt = get_task_detection_prompt(query)
+
+    response = query_gpt(prompt, model_name="gpt-4", client=openai_client)
+
+    try:
+        template_id = int(response)
+        return supported_templates[template_id]
+    except:
+        print("Oops ChatGPT wrong output")
+        return None
