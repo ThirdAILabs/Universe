@@ -491,13 +491,20 @@ void OnDiskIndex::prune() {
     }
   }
 
+  delete iter;
+
   auto status = _db->Write(rocksdb::WriteOptions(), &batch);
   if (!status.ok()) {
     raiseError("prune", status);
   }
 
-  _db->CompactRange(rocksdb::CompactRangeOptions(), _token_to_docs, nullptr,
-                    nullptr);
+  // _db->Flush(rocksdb::FlushOptions());
+
+  auto compact_status = _db->CompactRange(rocksdb::CompactRangeOptions(),
+                                          _token_to_docs, nullptr, nullptr);
+  if (!compact_status.ok()) {
+    raiseError("compact", compact_status);
+  }
 }
 
 OnDiskIndex::~OnDiskIndex() {
