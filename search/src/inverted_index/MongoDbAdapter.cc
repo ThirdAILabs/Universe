@@ -1,11 +1,17 @@
 #include "MongoDbAdapter.h"
+#include <bolt/src/utils/ProgressBar.h>
+#include <utils/Logging.h>
+#include <bolt/src/utils/Timer.h>
+
 #include <bsoncxx/builder/basic/document.hpp>
 #include <bsoncxx/json.hpp>
+#include <stdexcept>
 
 using bsoncxx::builder::basic::document;
 using bsoncxx::builder::basic::kvp;
 using bsoncxx::builder::basic::make_document;
 using bsoncxx::types::b_null;
+using mongocxx::model::update_one;
 
 
 namespace thirdai::search {
@@ -15,7 +21,17 @@ MongoDbAdapter::MongoDbAdapter(const std::string& db_uri, const std::string& db_
     _client = mongocxx::client(uri);
     _db = _client[db_name];
     _docs = _db["docs"];
+    _docs.create_index(
+        make_document(kvp("doc_id", 1)),
+        mongocxx::options::index{}.unique(true)
+    );
+
     _tokens = _db["tokens"];
+    _tokens.create_index(
+        make_document(kvp("token", 1)),
+        mongocxx::options::index{}.unique(true)
+    );
+        
 }
 
 void MongoDbAdapter::storeDocLens(const std::vector<DocId>& ids, const std::vector<uint32_t>& doc_lens) {
@@ -30,31 +46,98 @@ void MongoDbAdapter::storeDocLens(const std::vector<DocId>& ids, const std::vect
     }
 }
 
+std::string MongoDbAdapter::createFormattedLogLine(const std::string& operation, size_t batchSize, long long duration) {
+      std::ostringstream logStream;
+      logStream << operation << " - Batch Size: " << batchSize << ", Duration: " << duration << "s";
+      return logStream.str();
+    }
+
 void MongoDbAdapter::updateTokenToDocs(const std::unordered_map<HashedToken, std::vector<DocCount>>& token_to_new_docs) {
+    auto bar = ProgressBar::makeOptional(true, "train", token_to_new_docs.size());
+    size_t batch_size = 128000;
+    std::unordered_map<HashedToken, std::vector<bsoncxx::document::value>> token_updates;
+    size_t docs_processed = 0;
+
+    bolt::utils::Timer batch_timer;
+
     for (const auto& pair : token_to_new_docs) {
         for (const auto& doc_count : pair.second) {
-            document builder{};
-            builder.append(kvp("token", static_cast<int64_t>(pair.first)));
 
-            document update_doc{};
-            update_doc.append(
-                kvp("$push", make_document(
-                    kvp("docs", make_document(
-                        kvp("doc_id", static_cast<int64_t>(doc_count.doc_id)),
-                        kvp("count", static_cast<int32_t>(doc_count.count))
-                    ))
-                ))
-            );
+            bsoncxx::document::value doc_entry = make_document(
+                    kvp("doc_id", static_cast<int64_t>(doc_count.doc_id)),
+                    kvp("count", static_cast<int32_t>(doc_count.count))
+                );
+            token_updates[pair.first].push_back(std::move(doc_entry));
+            docs_processed++;
 
-            mongocxx::options::update options;
-            options.upsert(true);  // This will create the document if it doesn't exist
+            if (docs_processed >= batch_size) {
+                mongocxx::bulk_write bulk = _tokens.create_bulk_write();
+                for (const auto& [token, docs_list] : token_updates) {
+                    document builder{};
+                    builder.append(kvp("token", static_cast<int64_t>(token)));
+                    
+                    bsoncxx::builder::basic::array docs_array;
+                    for (const auto& doc : docs_list) {
+                        docs_array.append(doc);
+                    }
+                    document update_doc{};
+                    update_doc.append(kvp("$push", make_document(
+                        kvp("docs", make_document(
+                            kvp("$each", docs_array.extract())
+                        ))
+                    )));
 
-            auto result = _tokens.update_one(builder.extract(), update_doc.extract(), options);
-            if (!result) {
-                throw std::runtime_error("No document was updated or created.");
+                    mongocxx::model::update_one upsert_op{builder.extract(), update_doc.extract()};
+                    upsert_op.upsert(true);
+                    bulk.append(upsert_op);
+                }
+
+                auto result = bulk.execute();
+                if (!result) {
+                    throw std::runtime_error("Error with bulk update!");
+                }
+                batch_timer.stop();
+                std::string batch_time_log = createFormattedLogLine("Final bulk doc training", docs_processed, batch_timer.seconds());
+                logging::info(batch_time_log);
+                batch_timer = bolt::utils::Timer();
+                docs_processed = 0;
             }
         }
+
+        if (bar) {
+            bar->increment();
+        }
     }
+    mongocxx::bulk_write bulk = _tokens.create_bulk_write();
+    for (const auto& [token, docs_list] : token_updates) {
+        document builder{};
+        builder.append(kvp("token", static_cast<int64_t>(token)));
+        
+        bsoncxx::builder::basic::array docs_array;
+        for (const auto& doc : docs_list) {
+            docs_array.append(doc);
+        }
+
+        bsoncxx::builder::basic::document update_doc{};
+        update_doc.append(kvp("$push", make_document(
+            kvp("docs", make_document(
+                kvp("$each", docs_array.extract())
+            ))
+        )));
+        
+        mongocxx::model::update_one upsert_op{builder.extract(), update_doc.extract()};
+        upsert_op.upsert(true);
+        bulk.append(upsert_op);
+    }
+
+    auto result = bulk.execute();
+    if (!result) {
+        throw std::runtime_error("Error with bulk update!");
+    }
+    batch_timer.stop();
+    std::string batch_time_log = createFormattedLogLine("Final bulk doc training", docs_processed, batch_timer.seconds());
+    logging::info(batch_time_log);
+    
 }
 
 

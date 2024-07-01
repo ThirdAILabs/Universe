@@ -14,12 +14,9 @@
 namespace thirdai::search {
 
 class MongoDbAdapter final : public DbAdapter {
-
-
 public:
-
     mongocxx::instance global_instance{};
-    
+
     explicit MongoDbAdapter(const std::string& db_uri, const std::string& db_name);
 
     void storeDocLens(const std::vector<DocId>& ids, const std::vector<uint32_t>& doc_lens) final;
@@ -28,6 +25,8 @@ public:
     uint32_t getDocLen(DocId doc_id) final;
     uint64_t getNDocs() final;
     uint64_t getSumDocLens() final;
+
+    std::string createFormattedLogLine(const std::string& operation, size_t batchSize, long long duration);
 
 private:
     mongocxx::client _client;
