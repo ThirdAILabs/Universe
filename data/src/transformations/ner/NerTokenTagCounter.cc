@@ -4,7 +4,6 @@
 #include <archive/src/Map.h>
 #include <data/src/transformations/Tabular.h>
 #include <utils/text/StringManipulation.h>
-#include <cstddef>
 #include <cstdint>
 #include <stdexcept>
 #include <string>
@@ -86,27 +85,8 @@ std::string TokenTagCounter::getTokenEncoding(const std::string& token) const {
         num_token_counter > 0
             ? static_cast<float>(_token_counts.at(token)[i]) / num_token_counter
             : 0;
-    uint32_t bin;
-    uint32_t num_bins = _tag_encoders[0]._num_bins;
-    float binsize = (1.0 - 0.0) / num_bins;
-    if (ratio <= 0) {
-      bin = 0;
-    } else if (ratio >= 1) {
-      bin = num_bins - 1;
-    } else {
-      bin = (ratio - 0) / binsize;
-    }
-
-    if (bin == 0) {
-      encoding += " not_label_" + std::to_string(i);
-    } else {
-      for (uint32_t bincount = 0; bincount < bin; bincount++) {
-        encoding += " label_" + std::to_string(i);
-      }
-    }
-
-    // encoding +=
-    //     " " + std::to_string(_tag_encoders[i].encode(std::to_string(ratio)));
+    encoding +=
+        " " + std::to_string(_tag_encoders[i].encode(std::to_string(ratio)));
   }
 
   return encoding;
