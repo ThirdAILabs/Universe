@@ -39,6 +39,8 @@ class OnDiskIndex final : public Retriever {
 
   std::string type() const final { return "on-disk"; }
 
+  void prune();
+
   ~OnDiskIndex();
 
  private:

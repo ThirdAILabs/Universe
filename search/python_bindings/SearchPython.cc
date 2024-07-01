@@ -144,6 +144,7 @@ void createSearchSubmodule(py::module_& module) {
       .def("index", &OnDiskIndex::index, py::arg("ids"), py::arg("docs"))
       .def("query", &OnDiskIndex::query, py::arg("query"), py::arg("k"),
            py::arg("parallelize") = false)
+      .def("prune", &OnDiskIndex::prune)
       .def("save", &OnDiskIndex::save, py::arg("filename"))
       .def_static("load", &OnDiskIndex::load, py::arg("filename"));
 

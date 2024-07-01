@@ -25,6 +25,13 @@ void raiseError(const std::string& op, const rocksdb::Status& status) {
                            ".");
 }
 
+// Using uint32_t since this will be prepended to doc counts, and so uint32_t
+// ensures that it is still half-word aligned.
+enum class TokenStatus : uint32_t {
+  Default = 0,
+  Pruned = 1,
+};
+
 struct __attribute__((packed)) DocCount {
   DocCount(DocId doc_id, uint32_t count) : doc_id(doc_id), count(count) {}
 
@@ -33,7 +40,7 @@ struct __attribute__((packed)) DocCount {
 };
 
 // https://github.com/facebook/rocksdb/wiki/Merge-Operator
-class AppendValues : public rocksdb::AssociativeMergeOperator {
+class AppendDocCounts : public rocksdb::AssociativeMergeOperator {
  public:
   bool Merge(const rocksdb::Slice& key, const rocksdb::Slice* existing_value,
              const rocksdb::Slice& value, std::string* new_value,
@@ -42,7 +49,18 @@ class AppendValues : public rocksdb::AssociativeMergeOperator {
     (void)logger;
 
     if (!existing_value) {
-      *new_value = value.ToString();
+      *new_value = std::string(sizeof(TokenStatus) + value.size(), 0);
+
+      *reinterpret_cast<TokenStatus*>(new_value->data()) = TokenStatus::Default;
+
+      std::copy(value.data(), value.data() + value.size(),
+                new_value->data() + sizeof(TokenStatus));
+
+      return true;
+    }
+
+    auto status = *reinterpret_cast<const TokenStatus*>(existing_value->data());
+    if (status == TokenStatus::Pruned) {
       return true;
     }
 
@@ -139,7 +157,7 @@ OnDiskIndex::OnDiskIndex(const std::string& save_path,
   counter_options.merge_operator = std::make_shared<IncrementCounter>();
 
   rocksdb::ColumnFamilyOptions token_to_docs_options;
-  token_to_docs_options.merge_operator = std::make_shared<AppendValues>();
+  token_to_docs_options.merge_operator = std::make_shared<AppendDocCounts>();
 
   std::vector<rocksdb::ColumnFamilyDescriptor> column_families = {
       rocksdb::ColumnFamilyDescriptor(rocksdb::kDefaultColumnFamilyName,
@@ -312,6 +330,20 @@ struct HighestScore {
   }
 };
 
+inline bool isPruned(const std::string& value) {
+  auto status = *reinterpret_cast<const TokenStatus*>(value.data());
+  return status == TokenStatus::Pruned;
+}
+
+inline size_t docsWithToken(const rocksdb::Slice& value) {
+  assert((value.size() - sizeof(TokenStatus)) % sizeof(DocCount) == 0);
+  return (value.size() - sizeof(TokenStatus)) / sizeof(DocCount);
+}
+
+inline const DocCount* docCountPtr(const std::string& value) {
+  return reinterpret_cast<const DocCount*>(value.data() + sizeof(TokenStatus));
+}
+
 std::unordered_map<DocId, float> OnDiskIndex::scoreDocuments(
     const std::string& query) const {
   auto query_tokens = tokenize(query);
@@ -338,11 +370,9 @@ std::unordered_map<DocId, float> OnDiskIndex::scoreDocuments(
   token_indexes_and_idfs.reserve(keys.size());
   for (size_t i = 0; i < keys.size(); i++) {
     if (statuses[i].ok()) {
-      assert(values[i].size() % sizeof(DocCount) == 0);
+      const size_t docs_w_token = docsWithToken(values[i]);
 
-      const size_t docs_w_token = values[i].size() / sizeof(DocCount);
-
-      if (docs_w_token < max_docs_with_token) {
+      if (!isPruned(values[i]) && docs_w_token < max_docs_with_token) {
         const float token_idf = idf(n_docs, docs_w_token);
         token_indexes_and_idfs.emplace_back(i, token_idf);
       }
@@ -361,9 +391,8 @@ std::unordered_map<DocId, float> OnDiskIndex::scoreDocuments(
   std::unordered_map<DocId, uint32_t> doc_lens;
 
   for (const auto& [token_index, token_idf] : token_indexes_and_idfs) {
-    const DocCount* counts =
-        reinterpret_cast<const DocCount*>(values[token_index].data());
-    const size_t docs_w_token = values[token_index].size() / sizeof(DocCount);
+    const DocCount* counts = docCountPtr(values[token_index]);
+    const size_t docs_w_token = docsWithToken(values[token_index]);
 
     for (size_t i = 0; i < docs_w_token; i++) {
       const DocId doc_id = counts[i].doc_id;
@@ -435,6 +464,38 @@ std::vector<DocScore> OnDiskIndex::rank(
 void OnDiskIndex::remove(const std::vector<DocId>& ids) {
   storeDocLens(ids, std::vector<uint32_t>(ids.size(), 0),
                /*check_for_existing=*/false);
+}
+
+void OnDiskIndex::prune() {
+  uint64_t n_docs = getNDocs();
+
+  const uint64_t max_docs_with_token =
+      std::max<uint64_t>(_max_token_occurrence_frac * n_docs, 1000);
+
+  rocksdb::Iterator* iter =
+      _db->NewIterator(rocksdb::ReadOptions(), _token_to_docs);
+
+  rocksdb::WriteBatch batch;
+  TokenStatus prune = TokenStatus::Pruned;
+
+  for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
+    if (docsWithToken(iter->value()) > max_docs_with_token) {
+      auto write_status = batch.Put(
+          _token_to_docs, iter->key(),
+          rocksdb::Slice(reinterpret_cast<const char*>(&prune), sizeof(prune)));
+      if (!write_status.ok()) {
+        raiseError("add to write batch", write_status);
+      }
+    }
+  }
+
+  auto status = _db->Write(rocksdb::WriteOptions(), &batch);
+  if (!status.ok()) {
+    raiseError("prune", status);
+  }
+
+  _db->CompactRange(rocksdb::CompactRangeOptions(), _token_to_docs, nullptr,
+                    nullptr);
 }
 
 OnDiskIndex::~OnDiskIndex() {
