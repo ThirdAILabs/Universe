@@ -35,6 +35,7 @@ void MongoDbAdapter::updateTokenToDocs(const std::unordered_map<HashedToken, std
         for (const auto& doc_count : pair.second) {
             document builder{};
             builder.append(kvp("token", static_cast<int64_t>(pair.first)));
+
             document update_doc{};
             update_doc.append(
                 kvp("$push", make_document(
@@ -44,10 +45,18 @@ void MongoDbAdapter::updateTokenToDocs(const std::unordered_map<HashedToken, std
                     ))
                 ))
             );
-            _tokens.update_one(builder.extract(), update_doc.extract());
+
+            mongocxx::options::update options;
+            options.upsert(true);  // This will create the document if it doesn't exist
+
+            auto result = _tokens.update_one(builder.extract(), update_doc.extract(), options);
+            if (!result) {
+                throw std::runtime_error("No document was updated or created.");
+            }
         }
     }
 }
+
 
 std::vector<SerializedDocCountIterator> MongoDbAdapter::lookupDocs(const std::vector<HashedToken>& query_tokens) {
     std::vector<SerializedDocCountIterator> results;
