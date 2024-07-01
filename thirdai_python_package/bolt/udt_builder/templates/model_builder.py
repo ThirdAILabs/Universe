@@ -37,6 +37,8 @@ class ModelBuilder:
             self.bolt_data_types[self.target_column_name] = self.target_column.to_bolt(
                 is_target_type=True
             )
+        else:
+            self.bolt_data_types[self.target_column_name] = self.target_column.to_bolt()
 
     @property
     def target_column_name(self):

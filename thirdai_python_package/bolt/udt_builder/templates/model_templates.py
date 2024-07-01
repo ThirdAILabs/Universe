@@ -452,11 +452,11 @@ def get_task_detection_prompt(query: str):
     for task_id, task_template in enumerate(supported_templates):
         prompt += f"{task_id} : Task : {task_template.task}, Description: {task_template.description}, Keywords : {' '.join(task_template.keywords)}\n"
 
-    prompt = (
+    prompt += (
         "Which task amongst the above is the closest to the following problem : \n"
         + query
     )
-    prompt = (
+    prompt += (
         "\nonly return the task number and nothing else (this is extremely important)."
     )
 
@@ -467,6 +467,7 @@ def get_task_template_from_query(query: str, openai_client: OpenAI):
     prompt = get_task_detection_prompt(query)
 
     response = query_gpt(prompt, model_name="gpt-4", client=openai_client)
+    response = "".join([char for char in response if char.isdigit()])
 
     try:
         template_id = int(response)

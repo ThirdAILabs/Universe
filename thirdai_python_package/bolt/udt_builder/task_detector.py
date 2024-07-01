@@ -170,7 +170,7 @@ class UDTBuilder:
                 target_column, dataframe, detected_template
             )
 
-        if self.template_store is not None:
+        if self.openai_client:
             detected_template = model_templates.get_task_template_from_query(
                 task, self.openai_client
             )
@@ -204,8 +204,12 @@ def detect_and_build(
     openai_key: str = None,
     **kwargs,
 ):
-    builder = UDTBuilder(openai_key=openai_key)
-    builder.detect(dataset_path=dataset_path, target_column=target, task=task)
+    builder = UDTBuilder(
+        dataset_path=dataset_path,
+        target_column=target,
+        task=task,
+        openai_key=openai_key,
+    )
 
     if builder.model_builder == None:
         raise Exception("Could not detect a valid task.")

@@ -7,7 +7,7 @@ import thirdai._thirdai.bolt as bolt
 
 @dataclass
 class Column:
-    column_name: str
+    name: str
 
     @abstractclassmethod
     def to_bolt(self):
