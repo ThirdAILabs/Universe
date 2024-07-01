@@ -176,6 +176,7 @@ neural_db_deps = [
     "lxml[html_clean]",
     "openai",
     "tqdm",
+    "kafka-python",
 ]
 
 neural_db_v2_deps = ["pandas", "pandera"]
