@@ -6,6 +6,7 @@
 #include <bsoncxx/builder/basic/document.hpp>
 #include <bsoncxx/json.hpp>
 #include <stdexcept>
+#include <sstream> 
 
 using bsoncxx::builder::basic::document;
 using bsoncxx::builder::basic::kvp;
