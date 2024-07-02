@@ -51,7 +51,7 @@ void MongoDbAdapter::storeDocLens(const std::vector<DocId>& ids, const std::vect
 
 std::string MongoDbAdapter::createFormattedLogLine(const std::string& operation, size_t batchSize, long long duration) {
       std::ostringstream logStream;
-      logStream << operation << " - Batch Size: " << batchSize << ", Duration: " << duration << "s";
+      logStream << operation << " - Batch Size: " << batchSize << ", Duration: " << duration << "ms";
       return logStream.str();
     }
 
@@ -99,7 +99,7 @@ void MongoDbAdapter::updateTokenToDocs(const std::unordered_map<HashedToken, std
                     throw std::runtime_error("Error with bulk update!");
                 }
                 batch_timer.stop();
-                std::string batch_time_log = createFormattedLogLine("Final bulk doc training", docs_processed, batch_timer.seconds());
+                std::string batch_time_log = createFormattedLogLine("Final bulk doc training", docs_processed, batch_timer.milliseconds());
                 logging::info(batch_time_log);
                 batch_timer = bolt::utils::Timer();
                 docs_processed = 0;
@@ -137,7 +137,7 @@ void MongoDbAdapter::updateTokenToDocs(const std::unordered_map<HashedToken, std
         throw std::runtime_error("Error with bulk update!");
     }
     batch_timer.stop();
-    std::string batch_time_log = createFormattedLogLine("Final bulk doc training", docs_processed, batch_timer.seconds());
+    std::string batch_time_log = createFormattedLogLine("Final bulk doc training", docs_processed, batch_timer.milliseconds());
     logging::info(batch_time_log);
     
 }
@@ -160,10 +160,7 @@ std::vector<SerializedDocCountIterator> MongoDbAdapter::lookupDocs(const std::ve
     );
 
     auto cursor = _tokens.find(query.view());
-    query_timer.stop();
-    std::string query_time_log = createFormattedLogLine("Query Timing", 1, query_timer.milliseconds());
-    logging::info(query_time_log);
-
+    
     std::unordered_map<int64_t, std::string> serialized_map;
     for (auto&& doc : cursor) {
         int64_t token = doc["token"].get_int64();
@@ -178,6 +175,10 @@ std::vector<SerializedDocCountIterator> MongoDbAdapter::lookupDocs(const std::ve
     for (const auto& token : query_tokens) {
         results.emplace_back(std::move(serialized_map[token]));
     }
+    query_timer.stop();
+    std::string query_time_log = createFormattedLogLine("Query Timing", 1, query_timer.milliseconds());
+    logging::info(query_time_log);
+
 
     return results;
 }
