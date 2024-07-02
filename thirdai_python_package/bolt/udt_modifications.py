@@ -1,5 +1,5 @@
-from typing import Any, Dict, List, Optional, Tuple
 import types
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 import thirdai
@@ -7,8 +7,8 @@ import thirdai._thirdai.bolt as bolt
 import thirdai._thirdai.data as data
 import thirdai._thirdai.dataset as dataset
 
-from .udt_docs import *
 from .udt_builder.builder import detect_and_build
+from .udt_docs import *
 
 
 def _create_parquet_source(path):
