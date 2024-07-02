@@ -1,9 +1,7 @@
 import thirdai._thirdai.bolt
-
 from thirdai._thirdai.bolt import *
 
 from .ner_modifications import modify_ner
-
 from .udt_modifications import (
     modify_graph_udt,
     modify_mach_udt,
@@ -21,7 +19,6 @@ modify_wrapped_classifier()
 from .udt_modifications import (
     WrappedUniversalDeepTransformer as UniversalDeepTransformer,
 )
-
 
 try:
     # This is to prevent errors if torch or scipy are not installed.
