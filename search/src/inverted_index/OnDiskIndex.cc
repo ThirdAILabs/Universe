@@ -9,8 +9,8 @@
 #include <rocksdb/utilities/write_batch_with_index.h>
 #include <rocksdb/write_batch.h>
 #include <search/src/inverted_index/InvertedIndex.h>
-#include <search/src/inverted_index/RocksDbAdapter.h>
 #include <search/src/inverted_index/MongoDbAdapter.h>
+#include <search/src/inverted_index/RocksDbAdapter.h>
 #include <algorithm>
 #include <memory>
 #include <stdexcept>
@@ -25,10 +25,11 @@ OnDiskIndex::OnDiskIndex(const std::string& db_name, const IndexConfig& config)
       _k1(config.k1),
       _b(config.b),
       _tokenizer(config.tokenizer) {
-  if(config.db_adapter == "rocksdb"){
+  if (config.db_adapter == "rocksdb") {
     _db = std::make_unique<RocksDbAdapter>(db_name);
-  }else{
-    _db = std::make_unique<MongoDbAdapter>(config.db_uri, db_name, config.batch_size);
+  } else {
+    _db = std::make_unique<MongoDbAdapter>(config.db_uri, db_name,
+                                           config.batch_size);
   }
 }
 
