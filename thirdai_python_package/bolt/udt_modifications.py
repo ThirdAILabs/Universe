@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Optional, Tuple
+import types
 
 import pandas as pd
 import thirdai
@@ -432,8 +433,8 @@ class WrappedUniversalDeepTransformer:
     ):
         if target == None:
             raise ValueError(
-                "The 'target' parameter is required but was not specified. Please "
-                "provide a valid target column name."
+                "The 'target' parameter is required but was not specified. "
+                "Provide a valid target column name."
             )
 
         if data_types:
@@ -461,3 +462,10 @@ class WrappedUniversalDeepTransformer:
                 self, "udt"
             )  # Get 'udt' directly from the object dictionary
             return getattr(udt, name)
+
+
+def modify_wrapped_classifier():
+    for attr_name in dir(original_udt):
+        attr = getattr(original_udt, attr_name)
+        if isinstance(attr, types.BuiltinFunctionType):
+            setattr(WrappedUniversalDeepTransformer, attr_name, attr)
