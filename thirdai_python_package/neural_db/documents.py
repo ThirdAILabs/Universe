@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import dask.dataframe as dd
 import numpy as np
 import pandas as pd
-from kafka import KafkaConsumer
+from kafka import KafkaConsumer, TopicPartition
 from nltk.tokenize import sent_tokenize
 from office365.sharepoint.client_context import (
     ClientContext,
@@ -480,8 +480,6 @@ def metadata_with_source(metadata, source: str):
 
 
 class Kafka(Document):
-    MAX_DOCUMENT_SIZE = 100_000
-
     def __init__(
         self,
         consumer: KafkaConsumer,
@@ -497,13 +495,25 @@ class Kafka(Document):
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
         self.batch_size = batch_size
-        # hash
+
+        # hash calculation
         sha1 = hashlib.sha1()
         sha1.update(bytes(self.name, "utf-8"))
         sha1.update(bytes(self.id_column, "utf-8"))
         sha1.update(bytes(str(sorted(self.strong_columns)), "utf-8"))
         sha1.update(bytes(str(sorted(self.weak_columns)), "utf-8"))
         self._hash = sha1.hexdigest()
+
+        # size calculation
+        partitions = consumer.partitions_for_topic(topic_name)
+        self.total_message_count = 0
+        for partition in partitions:
+            tp = TopicPartition(topic_name, partition)
+            consumer.assign([tp])
+            consumer.seek_to_end(tp)
+            end_offset = consumer.position(tp)
+            self.total_message_count += end_offset
+            consumer.seek_to_beginning(tp)
 
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
@@ -512,7 +522,7 @@ class Kafka(Document):
     # Just to satisfy the constraint
     @property
     def size(self) -> str:
-        return Kafka.MAX_DOCUMENT_SIZE
+        return self.total_message_count
 
     @property
     def source(self) -> str:
@@ -538,9 +548,7 @@ class Kafka(Document):
                     )
                 )  # each element of item: [0] -> TopicPartition, [1] -> [ConsumerRecord(), ...]
                 if not topic_records:
-                    raise FileNotFoundError(
-                        f"No data found on the topic {self.topic_name}"
-                    )
+                    raise FileNotFoundError(f"No topic {self.topic_name} found.")
                 topic_partition, consumer_records = topic_records[0]
                 for consumer_record in consumer_records:
                     yield DocumentRow(

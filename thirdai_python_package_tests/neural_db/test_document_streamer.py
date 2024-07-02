@@ -1,10 +1,15 @@
 import json
-import os
 import shutil
-from pathlib import Path
 
 import pandas as pd
 import pytest
+from document_common_tests import (
+    assess_context_method,
+    assess_hash_property,
+    assess_name_property,
+    assess_reference_method,
+    assess_size_property,
+)
 from kafka import KafkaConsumer, KafkaProducer
 from ndb_utils import CSV_FILE, all_local_doc_getters
 from thirdai import neural_db as ndb
@@ -52,10 +57,11 @@ def create_kafka_doc():
 @pytest.mark.skip(reason="Needs kafka and zookeeper service to be running")
 def test_doc_property(produce_data, create_kafka_doc):
     kafka_doc = create_kafka_doc()
-
-    assert isinstance(kafka_doc.name, str)
-    assert isinstance(kafka_doc.hash, str)
-    assert isinstance(kafka_doc.source, str)
+    assess_size_property(kafka_doc)
+    assess_name_property(kafka_doc)
+    assess_hash_property(kafka_doc)
+    assess_reference_method(kafka_doc)
+    assess_context_method(kafka_doc)
 
 
 @pytest.mark.skip(reason="Needs kafka and zookeeper service to be running")
