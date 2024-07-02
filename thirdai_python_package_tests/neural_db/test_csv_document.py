@@ -148,7 +148,7 @@ def test_csv_with_explicit_columns_without_doc_id_column(make_csv_doc):
 
 
 @pytest.mark.parametrize("on_disk", [True, False])
-def test_csv_row_level_constraints(on_disk=False):
+def test_csv_row_level_constraints(on_disk):
     file = "row_constraint_temp.csv"
     pd.DataFrame(
         {
