@@ -515,7 +515,7 @@ class Kafka(Document):
         consumer.assign([tp])
         consumer.seek_to_end(tp)
         end_offset = consumer.position(tp)
-        self.total_message_count = end_offset
+        self.num_events = end_offset
         consumer.seek_to_beginning(tp)
 
     @property
@@ -525,7 +525,7 @@ class Kafka(Document):
     # Just to satisfy the constraint
     @property
     def size(self) -> str:
-        return self.total_message_count
+        return self.num_events
 
     @property
     def source(self) -> str:
