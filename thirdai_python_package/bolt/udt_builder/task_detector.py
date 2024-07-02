@@ -33,7 +33,19 @@ def verify_dataframe(dataframe: pd.DataFrame, target_column_name: str, task: str
         raise Exception(f"Cannot detect a task for dataset with 0 rows.")
 
 
-def auto_infer_model_builder(target_column_name: str, dataframe: pd.DataFrame):
+def auto_infer_task_template(target_column_name: str, dataframe: pd.DataFrame):
+    """
+    Analyzes the target column's data type and relationships with other columns in the dataframe to determine the most
+    relevant task type among four options: regression, token classification, query reformulation, and tabular classification.
+
+    Heuristics:
+    - If the target column contains numeric data, it infers a regression task.
+    - If the target column is categorical:
+        - If another column matches the exact number of tokens, it infers token classification.
+        - If another column has roughly the same but not exact number of tokens (tolerance is +/-30%), it infers query reformulation.
+        - If no such relationships are found, it defaults to tabular classification.
+    """
+
     # approx representation of a column
     target_column = column_detector.detect_single_column_type(
         target_column_name, dataframe
@@ -52,22 +64,31 @@ def auto_infer_model_builder(target_column_name: str, dataframe: pd.DataFrame):
 
         if target_column.number_tokens_per_row >= 4:
 
+            # check if task can be token classification
             token_column_candidates = (
                 column_detector.get_token_candidates_for_token_classification(
                     target_column, input_columns
                 )
             )
-
             if (
                 len(token_column_candidates) == 1
                 and target_column.unique_tokens_per_row * len(dataframe) < 250
             ):
+                concrete_target_column = (
+                    TokenClassificationTemplate.get_concrete_target(
+                        target_column, dataframe
+                    )
+                )
+                concrete_input_columns = {
+                    token_column_candidates[0].name: column_detector.TextColumn(
+                        name=token_column_candidates[0].name
+                    )
+                }
                 return TokenClassificationTemplate(
-                    dataframe,
-                    target_column,
-                    input_columns,
+                    dataframe, concrete_target_column, concrete_input_columns
                 )
 
+            # check if task can be query reformulation
             source_column_candidates = (
                 column_detector.get_source_column_for_query_reformulation(
                     target_column, input_columns
@@ -75,10 +96,16 @@ def auto_infer_model_builder(target_column_name: str, dataframe: pd.DataFrame):
             )
 
             if len(source_column_candidates) == 1 and target_column.token_type == "str":
+                concrete_target_column = column_detector.TextColumn(
+                    name=target_column.name
+                )
+                concrete_input_columns = {
+                    token_column_candidates[0].name: column_detector.TextColumn(
+                        name=token_column_candidates[0].name
+                    )
+                }
                 return QueryReformulationTemplate(
-                    dataframe,
-                    target_column,
-                    input_columns,
+                    dataframe, concrete_target_column, concrete_input_columns
                 )
 
         return TabularClassificationTemplate(
@@ -128,5 +155,5 @@ def get_task_template_from_query(query: str, openai_client: OpenAI):
         template_id = int(response)
         return supported_templates[template_id]
     except:
-        print("Oops ChatGPT wrong output")
+        print("Did not get a valid response from the LLM.")
         return None

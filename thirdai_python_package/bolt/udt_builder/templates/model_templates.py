@@ -54,19 +54,26 @@ class UDTDataTemplate:
 
     @classmethod
     def from_raw_types(cls, target_column_name, dataframe):
-        try:
-            target_column = cls.target_column_caster(
-                target_column_name, dataframe[target_column_name]
-            )
-        except:
-            target_column = None
+        raw_target_column = cls.target_column_caster(
+            target_column_name, dataframe[target_column_name]
+        )
+
+        if raw_target_column is None:
             raise Exception(
-                f"Could not convert the specified target column {target_column_name} into a valid datatype for {cls.task}. Make sure that the target column name is correct and is a valid data type for the specified task."
+                f"Could not convert the specified target column {target_column_name} into a valid datatype for {cls.task}. Make sure that the target column name is correct and is a valid data type for the specified task. \n{cls.model_initialization_typehint(target_column_name)}"
             )
 
-        input_columns = column_detector.get_input_columns(target_column_name, dataframe)
+        raw_input_columns = column_detector.get_input_columns(
+            target_column_name, dataframe
+        )
 
-        return cls(dataframe, target_column, input_columns)
+        concrete_target_column, concrete_input_columns = cls.get_concrete_types(
+            target_column=raw_target_column,
+            input_columns=raw_input_columns,
+            dataframe=dataframe,
+        )
+
+        return cls(dataframe, concrete_target_column, concrete_input_columns)
 
     def __init__(
         self,
@@ -76,9 +83,8 @@ class UDTDataTemplate:
     ):
         self.df = dataframe
 
-        self.target_column, self.input_columns = self.get_concrete_types(
-            target_column, input_columns, self.df
-        )
+        self.target_column = target_column
+        self.input_columns = input_columns
 
         self.bolt_data_types = {}
 
@@ -213,12 +219,10 @@ class TokenClassificationTemplate(UDTDataTemplate):
         return typehint
 
     @staticmethod
-    def get_concrete_types(
+    def get_concrete_target(
         target_column: column_detector.CategoricalColumn,
-        input_columns: typing.Dict[str, column_detector.Column],
         dataframe: pd.DataFrame,
-    ):
-
+    ) -> column_detector.TokenTags:
         if target_column is None:
             raise Exception(
                 f"Could not convert the specified target column into a valid categorical data type for Token Classification."
@@ -227,8 +231,6 @@ class TokenClassificationTemplate(UDTDataTemplate):
         detected_tags = column_detector.get_frequency_sorted_unique_tokens(
             target_column, dataframe
         )
-
-        data_types = {}
 
         concrete_target_column = column_detector.TokenTags(
             name=target_column.name,
@@ -240,8 +242,23 @@ class TokenClassificationTemplate(UDTDataTemplate):
 
         if len(concrete_target_column.named_tags) > 250:
             raise Exception(
-                f"Unexpected Number of Unique Tags Detected in the column {len(data_types[target_column.name].named_tags)} for Token Classification. Ensure that the column is the correct column for tags."
+                f"Very High Number of Unique Tags for Token Classification. Number of Unique Tags Detected in the column {concrete_target_column.name} is {len(concrete_target_column.named_tags)}. Ensure that the column is the correct column for tags."
             )
+
+        return concrete_target_column
+
+    @staticmethod
+    def get_concrete_types(
+        target_column: column_detector.CategoricalColumn,
+        input_columns: typing.Dict[str, column_detector.Column],
+        dataframe: pd.DataFrame,
+    ):
+
+        data_types = {}
+
+        concrete_target_column = TokenClassificationTemplate.get_concrete_target(
+            target_column, dataframe
+        )
 
         token_column_candidates = (
             column_detector.get_token_candidates_for_token_classification(
