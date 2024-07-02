@@ -49,6 +49,7 @@ def create_kafka_doc():
     )
 
 
+@pytest.mark.skip(reason="Needs kafka and zookeeper service to be running")
 def test_doc_property(produce_data, create_kafka_doc):
     kafka_doc = create_kafka_doc()
 
@@ -57,6 +58,7 @@ def test_doc_property(produce_data, create_kafka_doc):
     assert isinstance(kafka_doc.source, str)
 
 
+@pytest.mark.skip(reason="Needs kafka and zookeeper service to be running")
 def test_save_load_method(produce_data, create_kafka_doc):
     kafka_doc = create_kafka_doc()
     saved_path = "doc_save_dir"
@@ -68,6 +70,7 @@ def test_save_load_method(produce_data, create_kafka_doc):
         streamer = getattr(loaded_doc, loaded_doc._get_streamer_object_name)
 
 
+@pytest.mark.skip(reason="Needs kafka and zookeeper service to be running")
 def test_doc_equivalence(produce_data, create_kafka_doc):
     kafka_doc = create_kafka_doc()
     csv_doc = all_local_doc_getters[0]
