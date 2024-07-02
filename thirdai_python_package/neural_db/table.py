@@ -253,5 +253,5 @@ class SQLiteTable(Table):
 
     def apply_filter(self, table_filter: TableFilter):
         return table_filter.filter_sql_ids(
-            sqlite3.connect(self.db_path), SQLiteTable.TABLE_NAME
+            sqlite3.connect(self.db_path), SQLiteTable.TABLE_NAME, self.id_column
         )

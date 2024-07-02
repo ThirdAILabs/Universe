@@ -147,7 +147,7 @@ def test_csv_with_explicit_columns_without_doc_id_column(make_csv_doc):
     assert ids_are_row_numbers(doc)
 
 
-def test_csv_row_level_constraints():
+def csv_row_level_constraints(on_disk=False):
     file = "row_constraint_temp.csv"
     pd.DataFrame(
         {
@@ -156,7 +156,7 @@ def test_csv_row_level_constraints():
         }
     ).to_csv(file, index=False)
     try:
-        csv = ndb.CSV(file)
+        csv = ndb.CSV(file, on_disk=on_disk)
         matches = csv.filter_entity_ids(filters={"meta": ndb.EqualTo("position")})
         assert len(matches) == 1
         # We don't durectly assert the matching ID because ID assignment is an
@@ -166,3 +166,11 @@ def test_csv_row_level_constraints():
     except Exception as e:
         os.remove(file)
         raise e
+
+
+def test_csv_row_level_constraints():
+    csv_row_level_constraints()
+
+
+def test_csv_row_level_constraints_ondisk():
+    csv_row_level_constraints(on_disk=True)

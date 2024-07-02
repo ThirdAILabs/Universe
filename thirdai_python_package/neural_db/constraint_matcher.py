@@ -155,9 +155,16 @@ class TableFilter:
             filterer.sql_condition(column_name)
             for column_name, filterer in self.filters.items()
         )
-        return list(
-            pd.read_sql(f"select {id_column} from {table_name} where {condition}", con)
-        )
+
+        # Construct the SQL query
+        query = f"SELECT {id_column} FROM {table_name} WHERE {condition}"
+
+        # Execute the query and return the result as a list of integers
+        try:
+            result = pd.read_sql(query, con)
+            return result[id_column].tolist()
+        except Exception as e:
+            raise e
 
 
 class ConstraintValue:
