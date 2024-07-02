@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <iterator>
+#include <optional>
 #include <random>
 #include <vector>
 
@@ -100,13 +101,17 @@ TEST(FinetunableRetrieverTests, SyntheticDataset) {
   ASSERT_EQ(results, incremental_results);
 }
 
-TEST(FinetunableRetrieverTests, SaveLoad) {
+void testFinetunableRetrieverSaveLoad(bool on_disk) {
   size_t vocab_size = 1000;
   size_t n_docs = 100;
 
   auto [ids, docs, queries] = makeDocsAndQueries(vocab_size, n_docs);
 
-  FinetunableRetriever retriever;
+  std::optional<std::string> db_name = std::nullopt;
+  if (on_disk) {
+    db_name = "on_disk_finetunable_retriever";
+  }
+  FinetunableRetriever retriever(IndexConfig(), db_name);
   retriever.index({ids.begin(), ids.begin() + n_docs / 2},
                   {docs.begin(), docs.begin() + n_docs / 2});
   auto original_partial_results = retriever.queryBatch(queries, /*k=*/5);
@@ -131,6 +136,18 @@ TEST(FinetunableRetrieverTests, SaveLoad) {
   ASSERT_EQ(original_full_results, loaded_full_results);
 
   std::filesystem::remove_all(save_path);
+
+  if (on_disk) {
+    std::filesystem::remove_all(*db_name);
+  }
+}
+
+TEST(FinetunableRetrieverTests, SaveLoadInMemory) {
+  testFinetunableRetrieverSaveLoad(/*on_disk=*/false);
+}
+
+TEST(FinetunableRetrieverTests, SaveLoadOnDisk) {
+  testFinetunableRetrieverSaveLoad(/*on_disk=*/true);
 }
 
 }  // namespace thirdai::search::tests

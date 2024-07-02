@@ -69,7 +69,9 @@ class InvertedIndex final : public Retriever {
   static std::shared_ptr<InvertedIndex> load_stream_cereal(
       std::istream& istream);
 
-  std::string type() const final { return "in-memory"; }
+  std::string type() const final { return typeName(); }
+
+  static std::string typeName() { return "in-memory"; }
 
  private:
   std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>>

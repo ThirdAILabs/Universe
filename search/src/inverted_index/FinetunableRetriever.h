@@ -15,6 +15,11 @@ class FinetunableRetriever {
   static constexpr uint32_t DEFAULT_MIN_TOP_DOCS = 20;
   static constexpr uint32_t DEFAULT_TOP_QUERIES = 10;
 
+  explicit FinetunableRetriever(const IndexConfig& config,
+                                const std::optional<std::string>& save_path)
+      : FinetunableRetriever(DEFAULT_LAMBDA, DEFAULT_MIN_TOP_DOCS,
+                             DEFAULT_TOP_QUERIES, config, save_path) {}
+
   explicit FinetunableRetriever(
       float lambda = DEFAULT_LAMBDA,
       uint32_t min_top_docs = DEFAULT_MIN_TOP_DOCS,

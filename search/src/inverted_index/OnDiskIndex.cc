@@ -11,6 +11,7 @@
 #include <rocksdb/utilities/write_batch_with_index.h>
 #include <rocksdb/write_batch.h>
 #include <search/src/inverted_index/InvertedIndex.h>
+#include <search/src/inverted_index/Utils.h>
 #include <algorithm>
 #include <filesystem>
 #include <memory>
@@ -143,13 +144,9 @@ OnDiskIndex::OnDiskIndex(const std::string& save_path,
       _k1(config.k1),
       _b(config.b),
       _tokenizer(config.tokenizer) {
-  if (!std::filesystem::exists(save_path)) {
-    std::filesystem::create_directories(save_path);
-  } else if (!std::filesystem::is_directory(save_path)) {
-    throw std::invalid_argument(
-        "Invalid save_path='" + save_path +
-        "'. It must be a directory or not exist and cannot be a file.");
-  }
+  licensing::checkLicense();
+
+  createDirectory(save_path);
 
   rocksdb::Options options;
   options.create_if_missing = true;
@@ -323,14 +320,6 @@ void OnDiskIndex::updateTokenToDocs(
     raiseError("Write batch commit", status);
   }
 }
-
-template <typename T>
-struct HighestScore {
-  using Item = std::pair<T, float>;
-  bool operator()(const Item& a, const Item& b) const {
-    return a.second > b.second;
-  }
-};
 
 inline bool isPruned(const std::string& value) {
   auto status = *reinterpret_cast<const TokenStatus*>(value.data());
@@ -585,18 +574,17 @@ std::vector<HashedToken> OnDiskIndex::tokenize(const std::string& text) const {
 }
 
 void OnDiskIndex::save(const std::string& new_save_path) const {
-  if (std::filesystem::exists(new_save_path) &&
-      !std::filesystem::is_directory(new_save_path)) {
-    throw std::invalid_argument(
-        "Invalid save_path='" + new_save_path +
-        "'. It must be a directory or not exist and cannot be a file.");
-  }
+  licensing::entitlements().verifySaveLoad();
+
+  createDirectory(new_save_path);
 
   std::filesystem::copy(_save_path, new_save_path,
                         std::filesystem::copy_options::recursive);
 }
 
 std::shared_ptr<OnDiskIndex> OnDiskIndex::load(const std::string& save_path) {
+  licensing::entitlements().verifySaveLoad();
+
   auto metadata = dataset::SafeFileIO::ifstream(metadataPath(save_path));
   auto config = IndexConfig::fromArchive(*ar::deserialize(metadata));
 

@@ -34,7 +34,9 @@ class OnDiskIndex final : public Retriever {
 
   static std::shared_ptr<OnDiskIndex> load(const std::string& save_path);
 
-  std::string type() const final { return "on-disk"; }
+  std::string type() const final { return typeName(); }
+
+  static std::string typeName() { return "on-disk"; }
 
   void prune() final;
 

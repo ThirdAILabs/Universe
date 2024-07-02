@@ -3,7 +3,9 @@
 #include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <search/src/inverted_index/OnDiskIndex.h>
+#include <search/src/inverted_index/ShardedRetriever.h>
 #include <search/src/inverted_index/Tokenizer.h>
+#include <search/src/inverted_index/Utils.h>
 #include <algorithm>
 #include <filesystem>
 #include <memory>
@@ -43,15 +45,10 @@ FinetunableRetriever::FinetunableRetriever(
     const IndexConfig& config, const std::optional<std::string>& save_path)
     : _lambda(lambda), _min_top_docs(min_top_docs), _top_queries(top_queries) {
   if (save_path) {
-    if (!std::filesystem::exists(*save_path)) {
-      std::filesystem::create_directories(*save_path);
-    } else if (!std::filesystem::is_directory(*save_path)) {
-      throw std::invalid_argument(
-          "Invalid save_path='" + *save_path +
-          "'. It must be a directory or not exist and cannot be a file.");
-    }
+    createDirectory(*save_path);
+
     _doc_index =
-        std::make_shared<OnDiskIndex>(docIndexPath(*save_path), config);
+        std::make_shared<ShardedRetriever>(config, docIndexPath(*save_path));
     _query_index =
         std::make_shared<OnDiskIndex>(queryIndexPath(*save_path), config);
   } else {
@@ -270,13 +267,7 @@ std::string metadataPath(const std::string& save_path) {
 }  // namespace
 
 void FinetunableRetriever::save(const std::string& save_path) const {
-  if (!std::filesystem::exists(save_path)) {
-    std::filesystem::create_directories(save_path);
-  } else if (!std::filesystem::is_directory(save_path)) {
-    throw std::invalid_argument(
-        "Invalid save_path='" + save_path +
-        "'. It must be a directory or not exist and cannot be a file.");
-  }
+  createDirectory(save_path);
 
   _doc_index->save(docIndexPath(save_path));
   _query_index->save(queryIndexPath(save_path));
@@ -287,11 +278,14 @@ void FinetunableRetriever::save(const std::string& save_path) const {
 
 std::shared_ptr<Retriever> loadIndex(const std::string& type,
                                      const std::string& path) {
-  if (type == "in-memory") {
+  if (type == InvertedIndex::typeName()) {
     return InvertedIndex::load(path);
   }
-  if (type == "on-disk") {
+  if (type == OnDiskIndex::typeName()) {
     return OnDiskIndex::load(path);
+  }
+  if (type == ShardedRetriever::typeName()) {
+    return ShardedRetriever::load(path);
   }
   throw std::invalid_argument("Invalid retriever type '" + type + "'.");
 }

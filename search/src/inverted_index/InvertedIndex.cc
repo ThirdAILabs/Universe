@@ -9,6 +9,7 @@
 #include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <licensing/src/CheckLicense.h>
+#include <search/src/inverted_index/Utils.h>
 #include <utils/text/PorterStemmer.h>
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
@@ -195,14 +196,6 @@ void InvertedIndex::Shard::updateDoc(
   }
   doc_lens[doc_id] += extra_len;
 }
-
-template <typename T>
-struct HighestScore {
-  using Item = std::pair<T, float>;
-  bool operator()(const Item& a, const Item& b) const {
-    return a.second > b.second;
-  }
-};
 
 std::vector<std::pair<Token, float>> InvertedIndex::rankByIdf(
     const std::string& query) const {
