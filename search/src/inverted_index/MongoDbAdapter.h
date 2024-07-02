@@ -15,6 +15,7 @@ namespace thirdai::search {
 
 class MongoDbAdapter final : public DbAdapter {
 public:
+    // TODO(pratik): This may throw error creating multiple OnDiskIndesk.
     mongocxx::instance global_instance{};
 
     explicit MongoDbAdapter(const std::string& db_uri, const std::string& db_name, uint32_t bulk_update_batch_size=64000);
