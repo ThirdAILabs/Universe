@@ -55,7 +55,7 @@ std::string MongoDbAdapter::createFormattedLogLine(const std::string& operation,
 
 void MongoDbAdapter::updateTokenToDocs(const std::unordered_map<HashedToken, std::vector<DocCount>>& token_to_new_docs) {
     auto bar = ProgressBar::makeOptional(true, "train", token_to_new_docs.size());
-    size_t batch_size = 128000;
+    size_t batch_size = 32000;
     std::unordered_map<HashedToken, std::vector<bsoncxx::document::value>> token_updates;
     size_t docs_processed = 0;
 
