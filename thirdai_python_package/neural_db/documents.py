@@ -480,6 +480,8 @@ def metadata_with_source(metadata, source: str):
 
 
 class Kafka(Document):
+    MAX_DOCUMENT_SIZE = 100_000
+
     def __init__(
         self,
         consumer: KafkaConsumer,
@@ -487,11 +489,10 @@ class Kafka(Document):
         id_column: str,
         strong_columns: List[str],
         weak_columns: List[str] = [],
-        batch_size: int = 100000,
+        batch_size: int = 10000,
     ):
         self.consumer = consumer
         self.topic_name = topic_name
-        self.num_rows = num_rows
         self.id_column = id_column
         self.strong_columns = strong_columns
         self.weak_columns = weak_columns
@@ -511,7 +512,7 @@ class Kafka(Document):
     # Just to satisfy the constraint
     @property
     def size(self) -> str:
-        return 1
+        return Kafka.MAX_DOCUMENT_SIZE
 
     @property
     def source(self) -> str:
@@ -526,6 +527,8 @@ class Kafka(Document):
         return self._hash
 
     def row_iterator(self):
+        # TODO: raise error if number of rows > MAX_DOCUMENT_SIZE
+
         while True:
             records = self.consumer.poll(timeout_ms=1000, max_records=self.batch_size)
             if records:
@@ -533,7 +536,7 @@ class Kafka(Document):
                     filter(
                         lambda item: item[0].topic == self.topic_name, records.items()
                     )
-                )  # each element of item: TopicPartition, item[1]: [ConsumerRecord()]
+                )  # each element of item: [0] -> TopicPartition, [1] -> [ConsumerRecord(), ...]
                 if not topic_records:
                     raise FileNotFoundError(
                         f"No data found on the topic {self.topic_name}"
@@ -560,6 +563,18 @@ class Kafka(Document):
             source=self.hash,
             metadata={"id": element_id},
         )
+
+    @property
+    def _get_streamer_object_name(self):
+        return "consumer"
+
+    def __getstate__(self):
+        # Document Streamer are expected to remove their streaming(s) object
+        state = self.__dict__.copy()
+
+        del state[self._get_streamer_object_name]
+
+        return state
 
 
 class CSV(Document):
