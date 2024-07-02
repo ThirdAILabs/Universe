@@ -17,7 +17,7 @@ class MongoDbAdapter final : public DbAdapter {
 public:
     mongocxx::instance global_instance{};
 
-    explicit MongoDbAdapter(const std::string& db_uri, const std::string& db_name);
+    explicit MongoDbAdapter(const std::string& db_uri, const std::string& db_name, uint32_t bulk_update_batch_size=64000);
 
     void storeDocLens(const std::vector<DocId>& ids, const std::vector<uint32_t>& doc_lens) final;
     void updateTokenToDocs(const std::unordered_map<HashedToken, std::vector<DocCount>>& token_to_new_docs) final;
@@ -33,6 +33,8 @@ private:
     mongocxx::database _db;
     mongocxx::collection _docs;
     mongocxx::collection _tokens;
+
+    uint32_t _bulk_update_batch_size;
 };
 
 }  // namespace thirdai::search

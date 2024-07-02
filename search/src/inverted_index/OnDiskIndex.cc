@@ -28,8 +28,7 @@ OnDiskIndex::OnDiskIndex(const std::string& db_name, const IndexConfig& config)
   if(config.db_adapter == "rocksdb"){
     _db = std::make_unique<RocksDbAdapter>(db_name);
   }else{
-    // TODO(pratik): Add a way to input the config for OndiskIndex
-    _db = std::make_unique<MongoDbAdapter>("mongodb://localhost:27017", db_name);
+    _db = std::make_unique<MongoDbAdapter>(config.db_uri, db_name, config.batch_size);
   }
 }
 

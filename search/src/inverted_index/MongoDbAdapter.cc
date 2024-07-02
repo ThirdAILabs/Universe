@@ -17,7 +17,7 @@ using mongocxx::model::update_one;
 
 namespace thirdai::search {
 
-MongoDbAdapter::MongoDbAdapter(const std::string& db_uri, const std::string& db_name) {
+MongoDbAdapter::MongoDbAdapter(const std::string& db_uri, const std::string& db_name, uint32_t bulk_update_batch_size) {
     mongocxx::uri uri(db_uri);
     _client = mongocxx::client(uri);
     _db = _client[db_name];
@@ -32,6 +32,8 @@ MongoDbAdapter::MongoDbAdapter(const std::string& db_uri, const std::string& db_
         make_document(kvp("token", 1)),
         mongocxx::options::index{}.unique(true)
     );
+
+    _bulk_update_batch_size = bulk_update_batch_size;
         
 }
 
@@ -55,7 +57,6 @@ std::string MongoDbAdapter::createFormattedLogLine(const std::string& operation,
 
 void MongoDbAdapter::updateTokenToDocs(const std::unordered_map<HashedToken, std::vector<DocCount>>& token_to_new_docs) {
     auto bar = ProgressBar::makeOptional(true, "train", token_to_new_docs.size());
-    size_t batch_size = 128000;
     std::unordered_map<HashedToken, std::vector<bsoncxx::document::value>> token_updates;
     size_t docs_processed = 0;
 
@@ -71,7 +72,7 @@ void MongoDbAdapter::updateTokenToDocs(const std::unordered_map<HashedToken, std
             token_updates[pair.first].push_back(std::move(doc_entry));
             docs_processed++;
 
-            if (docs_processed >= batch_size) {
+            if (docs_processed >= _bulk_update_batch_size) {
                 mongocxx::bulk_write bulk = _tokens.create_bulk_write();
                 for (const auto& [token, docs_list] : token_updates) {
                     document builder{};
@@ -144,16 +145,12 @@ void MongoDbAdapter::updateTokenToDocs(const std::unordered_map<HashedToken, std
 
 std::vector<SerializedDocCountIterator> MongoDbAdapter::lookupDocs(const std::vector<HashedToken>& query_tokens) {
     std::vector<SerializedDocCountIterator> results;
-    
-    std::vector<bsoncxx::document::value> query_vec;
-
     bsoncxx::builder::basic::array array_builder;
     for (const auto& token : query_tokens) {
         array_builder.append(static_cast<int64_t>(token));
     }
 
     bolt::utils::Timer query_timer;
-    // TODO(pratik): $in here just reduces the round trip time, look for a way to run query in parallel
     auto query = bsoncxx::builder::basic::make_document(
         bsoncxx::builder::basic::kvp("token", 
             bsoncxx::builder::basic::make_document(
@@ -162,9 +159,7 @@ std::vector<SerializedDocCountIterator> MongoDbAdapter::lookupDocs(const std::ve
         )
     );
 
-
     auto cursor = _tokens.find(query.view());
-
     query_timer.stop();
     std::string query_time_log = createFormattedLogLine("Query Timing", 1, query_timer.milliseconds());
     logging::info(query_time_log);
@@ -186,6 +181,7 @@ std::vector<SerializedDocCountIterator> MongoDbAdapter::lookupDocs(const std::ve
 
     return results;
 }
+
 
 uint32_t MongoDbAdapter::getDocLen(DocId doc_id) {
     auto result = _docs.find_one(make_document(kvp("doc_id", bsoncxx::types::b_int64{static_cast<int64_t>(doc_id)})));
