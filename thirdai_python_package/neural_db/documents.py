@@ -6,7 +6,7 @@ import shutil
 import string
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import dask.dataframe as dd
 import numpy as np
@@ -480,11 +480,12 @@ def metadata_with_source(metadata, source: str):
 
 
 class Kafka(Document):
+    MAX_DOCUMENT_SIZE = 100_000
+
     def __init__(
         self,
         consumer: KafkaConsumer,
         topic_name: str,
-        partition: int,
         id_column: str,
         strong_columns: List[str],
         weak_columns: List[str] = [],
@@ -500,23 +501,21 @@ class Kafka(Document):
         # hash calculation
         sha1 = hashlib.sha1()
         sha1.update(bytes(self.name, "utf-8"))
-        sha1.update(bytes(str(partition), "utf-8"))
         sha1.update(bytes(self.id_column, "utf-8"))
         sha1.update(bytes(str(sorted(self.strong_columns)), "utf-8"))
         sha1.update(bytes(str(sorted(self.weak_columns)), "utf-8"))
         self._hash = sha1.hexdigest()
 
         # size calculation
-        available_partitions = consumer.partitions_for_topic(topic_name)
-        if partition not in available_partitions:
-            raise ValueError(f"{partition} not found in topic")
+        # self.num_events = 0
+        # available_partitions = consumer.partitions_for_topic(topic_name)
 
-        tp = TopicPartition(topic_name, partition)
-        consumer.assign([tp])
-        consumer.seek_to_end(tp)
-        end_offset = consumer.position(tp)
-        self.num_events = end_offset
-        consumer.seek_to_beginning(tp)
+        # for partition in available_partitions:
+        #     tp = TopicPartition(topic_name, partition)
+        #     consumer.assign([tp])
+        #     consumer.seek_to_end(tp)
+        #     self.num_events += consumer.position(tp)
+        #     consumer.seek_to_beginning(tp)
 
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
@@ -525,7 +524,7 @@ class Kafka(Document):
     # Just to satisfy the constraint
     @property
     def size(self) -> str:
-        return self.num_events
+        return Kafka.MAX_DOCUMENT_SIZE
 
     @property
     def source(self) -> str:
@@ -543,7 +542,7 @@ class Kafka(Document):
         # TODO: raise error if number of rows > MAX_DOCUMENT_SIZE
 
         while True:
-            records = self.consumer.poll(timeout_ms=1000, max_records=self.batch_size)
+            records = self.consumer.poll(timeout_ms=2000, max_records=self.batch_size)
             if records:
                 topic_records = list(
                     filter(
@@ -552,17 +551,23 @@ class Kafka(Document):
                 )  # each element of item: [0] -> TopicPartition, [1] -> [ConsumerRecord(), ...]
                 if not topic_records:
                     raise FileNotFoundError(f"No topic {self.topic_name} found.")
-                topic_partition, consumer_records = topic_records[0]
-                for consumer_record in consumer_records:
-                    yield DocumentRow(
-                        element_id=consumer_record.value[self.id_column],
-                        strong=" ".join(
-                            [consumer_record.value[col] for col in self.strong_columns]
-                        ),
-                        weak=" ".join(
-                            [consumer_record.value[col] for col in self.weak_columns]
-                        ),
-                    )
+                for topic_partition, consumer_records in topic_records:
+                    for consumer_record in consumer_records:
+                        yield DocumentRow(
+                            element_id=consumer_record.value[self.id_column],
+                            strong=" ".join(
+                                [
+                                    consumer_record.value[col]
+                                    for col in self.strong_columns
+                                ]
+                            ),
+                            weak=" ".join(
+                                [
+                                    consumer_record.value[col]
+                                    for col in self.weak_columns
+                                ]
+                            ),
+                        )
             else:
                 break
 
