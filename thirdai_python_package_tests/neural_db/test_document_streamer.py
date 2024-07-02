@@ -19,6 +19,7 @@ pytest = [pytest.mark.unit]
 TOPIC = "test"
 HOST = "localhost"
 PORT = 9092
+PARTITIONS = 1
 
 
 @pytest.fixture(scope="session")
@@ -30,7 +31,7 @@ def produce_data():
     )
 
     for v in data:
-        producer.send(topic=TOPIC, value=v)
+        producer.send(topic=TOPIC, value=v, partition=0)
     producer.flush()
     producer.close()
 

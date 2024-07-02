@@ -484,6 +484,7 @@ class Kafka(Document):
         self,
         consumer: KafkaConsumer,
         topic_name: str,
+        partition: int,
         id_column: str,
         strong_columns: List[str],
         weak_columns: List[str] = [],
@@ -499,21 +500,23 @@ class Kafka(Document):
         # hash calculation
         sha1 = hashlib.sha1()
         sha1.update(bytes(self.name, "utf-8"))
+        sha1.update(bytes(str(partition), "utf-8"))
         sha1.update(bytes(self.id_column, "utf-8"))
         sha1.update(bytes(str(sorted(self.strong_columns)), "utf-8"))
         sha1.update(bytes(str(sorted(self.weak_columns)), "utf-8"))
         self._hash = sha1.hexdigest()
 
         # size calculation
-        partitions = consumer.partitions_for_topic(topic_name)
-        self.total_message_count = 0
-        for partition in partitions:
-            tp = TopicPartition(topic_name, partition)
-            consumer.assign([tp])
-            consumer.seek_to_end(tp)
-            end_offset = consumer.position(tp)
-            self.total_message_count += end_offset
-            consumer.seek_to_beginning(tp)
+        available_partitions = consumer.partitions_for_topic(topic_name)
+        if partition not in available_partitions:
+            raise ValueError(f"{partition} not found in topic")
+
+        tp = TopicPartition(topic_name, partition)
+        consumer.assign([tp])
+        consumer.seek_to_end(tp)
+        end_offset = consumer.position(tp)
+        self.total_message_count = end_offset
+        consumer.seek_to_beginning(tp)
 
     @property
     def matched_constraints(self) -> Dict[str, ConstraintValue]:
