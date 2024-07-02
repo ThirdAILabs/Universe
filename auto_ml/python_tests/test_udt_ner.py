@@ -6,6 +6,7 @@ import string
 
 import pandas as pd
 import pytest
+from faker import Faker
 from thirdai import bolt, data, dataset
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
@@ -13,9 +14,12 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
 TOKENS = "tokens"
 TAGS = "tags"
 
+fake = Faker(seed=0)
+
 
 def random_credit_card():
-    return "-".join("".join(random.choices("0123456789", k=4)) for _ in range(4))
+    number_str = fake.credit_card_number(card_type="visa")
+    return number_str
 
 
 def random_email():
@@ -31,10 +35,10 @@ def generate_data(filename, n_rows):
         file.write(f"{TOKENS},{TAGS}\n")
         for _ in range(n_rows):
             email_tokens = ["email", "is", random_email(), "for", "work"]
-            email_tags = ["O", "O", "email", "O", "O"]
+            email_tags = ["O", "O", "EMAIL", "O", "O"]
 
             credit_card_tokens = ["credit", "card", "is", random_credit_card()]
-            credit_card_tags = ["O", "O", "O", "credit_card"]
+            credit_card_tags = ["O", "O", "O", "CREDITCARDNUMBER"]
 
             sample = (
                 " ".join(email_tokens + credit_card_tokens)
@@ -119,16 +123,24 @@ def evaluate(model, test):
     return predict_acc
 
 
-def test_udt_ner_model(ner_dataset):
+@pytest.mark.parametrize(
+    "use_rules,ignore_rule_tags",
+    [(True, True), (True, False), (False, True), (False, False)],
+)
+def test_udt_ner_model(ner_dataset, use_rules, ignore_rule_tags):
     train, test = ner_dataset
 
     model = bolt.UniversalDeepTransformer(
         data_types={
             TOKENS: bolt.types.text(),
-            TAGS: bolt.types.token_tags(tags=["email", "credit_card"], default_tag="O"),
+            TAGS: bolt.types.token_tags(
+                tags=["EMAIL", "CREDITCARDNUMBER"], default_tag="O"
+            ),
         },
         target=TAGS,
         embedding_dimension=500,
+        rules=use_rules,
+        ignore_rule_tags=ignore_rule_tags,
     )
 
     model.train(train, epochs=1, learning_rate=0.001, metrics=["categorical_accuracy"])
@@ -164,7 +176,9 @@ def test_udt_ner_from_pretrained(ner_dataset):
     pretrained_model = bolt.UniversalDeepTransformer(
         data_types={
             TOKENS: bolt.types.text(),
-            TAGS: bolt.types.token_tags(tags=["email", "credit_card"], default_tag="O"),
+            TAGS: bolt.types.token_tags(
+                tags=["EMAIL", "CREDITCARDNUMBER"], default_tag="O"
+            ),
         },
         target=TAGS,
         embedding_dimension=450,
@@ -173,7 +187,9 @@ def test_udt_ner_from_pretrained(ner_dataset):
     model = bolt.UniversalDeepTransformer(
         data_types={
             TOKENS: bolt.types.text(),
-            TAGS: bolt.types.token_tags(tags=["email", "credit_card"], default_tag="O"),
+            TAGS: bolt.types.token_tags(
+                tags=["EMAIL", "CREDITCARDNUMBER"], default_tag="O"
+            ),
         },
         target=TAGS,
         pretrained_model=pretrained_model,
