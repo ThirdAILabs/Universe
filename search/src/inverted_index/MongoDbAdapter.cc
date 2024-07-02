@@ -144,6 +144,8 @@ void MongoDbAdapter::updateTokenToDocs(const std::unordered_map<HashedToken, std
 
 std::vector<SerializedDocCountIterator> MongoDbAdapter::lookupDocs(const std::vector<HashedToken>& query_tokens) {
     std::vector<SerializedDocCountIterator> results;
+    
+    std::vector<bsoncxx::document::value> query_vec;
 
     bsoncxx::builder::basic::array array_builder;
     for (const auto& token : query_tokens) {
@@ -151,21 +153,20 @@ std::vector<SerializedDocCountIterator> MongoDbAdapter::lookupDocs(const std::ve
     }
 
     bolt::utils::Timer query_timer;
-
-    // Create the aggregation pipeline
-    mongocxx::pipeline pipeline;
-    pipeline.match(bsoncxx::builder::basic::make_document(
+    // TODO(pratik): $in here just reduces the round trip time, look for a way to run query in parallel
+    auto query = bsoncxx::builder::basic::make_document(
         bsoncxx::builder::basic::kvp("token", 
             bsoncxx::builder::basic::make_document(
                 bsoncxx::builder::basic::kvp("$in", array_builder.view())
             )
         )
-    ));
+    );
 
-    auto cursor = _tokens.aggregate(pipeline);
+
+    auto cursor = _tokens.find(query.view());
 
     query_timer.stop();
-    std::string query_time_log = createFormattedLogLine("Query Timing", 1, query_timer.seconds());
+    std::string query_time_log = createFormattedLogLine("Query Timing", 1, query_timer.milliseconds());
     logging::info(query_time_log);
 
     std::unordered_map<int64_t, std::string> serialized_map;
@@ -180,14 +181,11 @@ std::vector<SerializedDocCountIterator> MongoDbAdapter::lookupDocs(const std::ve
     }
 
     for (const auto& token : query_tokens) {
-        results.emplace_back(std::move(serialized_map[static_cast<int64_t>(token)]));
+        results.emplace_back(std::move(serialized_map[token]));
     }
 
     return results;
 }
-
-
-
 
 uint32_t MongoDbAdapter::getDocLen(DocId doc_id) {
     auto result = _docs.find_one(make_document(kvp("doc_id", bsoncxx::types::b_int64{static_cast<int64_t>(doc_id)})));
