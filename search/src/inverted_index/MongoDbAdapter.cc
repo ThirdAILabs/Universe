@@ -50,9 +50,9 @@ void MongoDbAdapter::storeDocLens(const std::vector<DocId>& ids, const std::vect
 }
 
 std::string MongoDbAdapter::createFormattedLogLine(const std::string& operation, size_t batchSize, long long duration) {
-      std::ostringstream logStream;
-      logStream << operation << " - Batch Size: " << batchSize << ", Duration: " << duration << "ms";
-      return logStream.str();
+      std::ostringstream log_stream;
+      log_stream << operation << " - Batch Size: " << batchSize << ", Duration: " << duration << "ms";
+      return log_stream.str();
     }
 
 void MongoDbAdapter::updateTokenToDocs(const std::unordered_map<HashedToken, std::vector<DocCount>>& token_to_new_docs) {
