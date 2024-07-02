@@ -147,7 +147,8 @@ def test_csv_with_explicit_columns_without_doc_id_column(make_csv_doc):
     assert ids_are_row_numbers(doc)
 
 
-def csv_row_level_constraints(on_disk=False):
+@pytest.mark.parametrize("on_disk", [True, False])
+def test_csv_row_level_constraints(on_disk=False):
     file = "row_constraint_temp.csv"
     pd.DataFrame(
         {
@@ -166,11 +167,3 @@ def csv_row_level_constraints(on_disk=False):
     except Exception as e:
         os.remove(file)
         raise e
-
-
-def test_csv_row_level_constraints():
-    csv_row_level_constraints()
-
-
-def test_csv_row_level_constraints_ondisk():
-    csv_row_level_constraints(on_disk=True)

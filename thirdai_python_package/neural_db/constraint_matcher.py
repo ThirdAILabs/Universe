@@ -160,11 +160,7 @@ class TableFilter:
         query = f"SELECT {id_column} FROM {table_name} WHERE {condition}"
 
         # Execute the query and return the result as a list of integers
-        try:
-            result = pd.read_sql(query, con)
-            return result[id_column].tolist()
-        except Exception as e:
-            raise e
+        return pd.read_sql(query, con)[id_column].tolist()
 
 
 class ConstraintValue:
