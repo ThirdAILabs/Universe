@@ -1,17 +1,18 @@
 from __future__ import annotations
+
+import warnings
+
 import pandas as pd
 from openai import OpenAI
 
+from .column_inferencing import column_detector
 from .templates.model_templates import (
-    TabularClassificationTemplate,
-    RegressionTemplate,
-    TokenClassificationTemplate,
     QueryReformulationTemplate,
+    RegressionTemplate,
+    TabularClassificationTemplate,
+    TokenClassificationTemplate,
     supported_templates,
 )
-
-from .column_inferencing import column_detector
-import warnings
 
 warnings.filterwarnings("ignore")
 

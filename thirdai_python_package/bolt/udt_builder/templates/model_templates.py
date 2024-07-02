@@ -1,11 +1,13 @@
 from __future__ import annotations
-from abc import abstractclassmethod
-import typing
-import pandas as pd
 
-from ..column_inferencing import column_detector
+import typing
+from abc import abstractclassmethod
+
+import pandas as pd
 import thirdai._thirdai.bolt as bolt
 from openai import OpenAI
+
+from ..column_inferencing import column_detector
 
 
 class UDTDataTemplate:

@@ -1,6 +1,7 @@
 import typing
-import pandas as pd
 from collections import defaultdict
+
+import pandas as pd
 
 from . import utils
 from .columns import *

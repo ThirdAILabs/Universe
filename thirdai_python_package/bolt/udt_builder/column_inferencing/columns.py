@@ -1,6 +1,6 @@
 import typing
-from dataclasses import dataclass
 from abc import abstractclassmethod
+from dataclasses import dataclass
 
 import thirdai._thirdai.bolt as bolt
 

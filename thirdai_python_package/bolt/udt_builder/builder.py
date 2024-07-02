@@ -1,14 +1,15 @@
-import pandas as pd
-from openai import OpenAI
 import typing
 
-from .templates.model_templates import supported_templates, UDTDataTemplate
+import pandas as pd
+from openai import OpenAI
+
 from .task_detector import (
-    verify_dataframe,
-    raise_exception_without_trace,
     auto_infer_task_template,
     get_task_template_from_query,
+    raise_exception_without_trace,
+    verify_dataframe,
 )
+from .templates.model_templates import UDTDataTemplate, supported_templates
 
 
 class UDTBuilder:
