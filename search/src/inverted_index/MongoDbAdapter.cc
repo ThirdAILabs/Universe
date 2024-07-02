@@ -55,7 +55,7 @@ std::string MongoDbAdapter::createFormattedLogLine(const std::string& operation,
 
 void MongoDbAdapter::updateTokenToDocs(const std::unordered_map<HashedToken, std::vector<DocCount>>& token_to_new_docs) {
     auto bar = ProgressBar::makeOptional(true, "train", token_to_new_docs.size());
-    size_t batch_size = 32000;
+    size_t batch_size = 128000;
     std::unordered_map<HashedToken, std::vector<bsoncxx::document::value>> token_updates;
     size_t docs_processed = 0;
 
@@ -98,7 +98,7 @@ void MongoDbAdapter::updateTokenToDocs(const std::unordered_map<HashedToken, std
                     throw std::runtime_error("Error with bulk update!");
                 }
                 batch_timer.stop();
-                std::string batch_time_log = createFormattedLogLine("Final bulk doc training", docs_processed, batch_timer.seconds());
+                std::string batch_time_log = createFormattedLogLine("Final bulk doc training", docs_processed, batch_timer.milliseconds());
                 logging::info(batch_time_log);
                 batch_timer = bolt::utils::Timer();
                 docs_processed = 0;
@@ -142,45 +142,58 @@ void MongoDbAdapter::updateTokenToDocs(const std::unordered_map<HashedToken, std
 }
 
 
-std::vector<SerializedDocCountIterator> MongoDbAdapter::lookupDocs(const std::vector<HashedToken>& query_tokens) {
-    std::vector<SerializedDocCountIterator> results;
-    
-    std::vector<bsoncxx::document::value> query_vec;
-
-    bsoncxx::builder::basic::array array_builder;
-    for (const auto& token : query_tokens) {
-        array_builder.append(static_cast<int64_t>(token));
-    }
-
-    // TODO(pratik): $in here just reduces the round trip time, look for a way to run query in parallel
-    auto query = bsoncxx::builder::basic::make_document(
-        bsoncxx::builder::basic::kvp("token", 
-            bsoncxx::builder::basic::make_document(
-                bsoncxx::builder::basic::kvp("$in", array_builder.view())
-            )
-        )
-    );
-
-
-    auto cursor = _tokens.find(query.view());
-
-    std::unordered_map<int64_t, std::string> serialized_map;
-    for (auto&& doc : cursor) {
-        int64_t token = doc["token"].get_int64();
-        std::string& serialized = serialized_map[token];
-        auto docs = doc["docs"].get_array().value;
-        for (auto&& d : docs) {
-            DocCount dc(d["doc_id"].get_int64().value, d["count"].get_int32().value);
-            serialized.append(reinterpret_cast<const char*>(&dc), sizeof(DocCount));
+    std::vector<SerializedDocCountIterator> MongoDbAdapter::lookupDocs(const std::vector<HashedToken>& query_tokens) {
+        std::vector<SerializedDocCountIterator> results;
+        
+        // Building an array for $in query
+        bsoncxx::builder::basic::array array_builder;
+        for (const auto& token : query_tokens) {
+            array_builder.append(static_cast<int64_t>(token));
         }
-    }
 
-    for (const auto& token : query_tokens) {
-        results.emplace_back(std::move(serialized_map[token]));
-    }
+        bolt::utils::Timer query_timer;
+        // Build the query document using indexed field 'token'
+        auto query = bsoncxx::builder::basic::make_document(
+            bsoncxx::builder::basic::kvp("token", 
+                bsoncxx::builder::basic::make_document(
+                    bsoncxx::builder::basic::kvp("$in", array_builder.view())
+                )
+            )
+        );
 
-    return results;
-}
+        // Define the projection to optimize data transfer
+        auto opts = mongocxx::options::find{};
+        opts.projection(bsoncxx::builder::basic::make_document(
+            bsoncxx::builder::basic::kvp("token", 1),
+            bsoncxx::builder::basic::kvp("docs", 1),
+            bsoncxx::builder::basic::kvp("_id", 0)  // Exclude _id if it's not needed
+        ));
+
+        
+        // Execute the find operation using the indexed field and projection
+        auto cursor = _tokens.find(query.view(), opts);
+        query_timer.stop();
+        std::string query_timer_log = createFormattedLogLine("Query Time", 1, query_timer.milliseconds());
+        logging::info(query_timer_log);
+
+        std::unordered_map<int64_t, std::string> serialized_map;
+        for (auto&& doc : cursor) {
+            int64_t token = doc["token"].get_int64();
+            std::string& serialized = serialized_map[token];
+            auto docs = doc["docs"].get_array().value;
+            for (auto&& d : docs) {
+                DocCount dc(d["doc_id"].get_int64().value, d["count"].get_int32().value);
+                serialized.append(reinterpret_cast<const char*>(&dc), sizeof(DocCount));
+            }
+        }
+
+        // Map results back to the provided tokens
+        for (const auto& token : query_tokens) {
+            results.emplace_back(std::move(serialized_map[token]));
+        }
+
+        return results;
+    }
 
 uint32_t MongoDbAdapter::getDocLen(DocId doc_id) {
     auto result = _docs.find_one(make_document(kvp("doc_id", bsoncxx::types::b_int64{static_cast<int64_t>(doc_id)})));
