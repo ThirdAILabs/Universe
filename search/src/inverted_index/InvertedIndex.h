@@ -106,6 +106,14 @@ class InvertedIndex {
 
   bool containsDoc(DocId doc_id) const;
 
+  struct NewShardConfig {
+    size_t start_shard_id;
+    size_t n_new_shards;
+    std::vector<size_t> doc_offsets;
+  };
+
+  NewShardConfig configureShards(size_t n_new_docs);
+
   inline float bm25(float idf, uint32_t cnt_in_doc, uint64_t doc_len) const {
     const float num = cnt_in_doc * (_k1 + 1);
     const float denom =

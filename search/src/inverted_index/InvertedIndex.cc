@@ -4,6 +4,7 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/types/vector.hpp>
+#include <bolt/src/utils/Timer.h>
 #include <archive/src/Archive.h>
 #include <archive/src/List.h>
 #include <archive/src/Map.h>
@@ -12,13 +13,18 @@
 #include <utils/text/PorterStemmer.h>
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <exception>
 #include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <unordered_map>
+#include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace thirdai::search {
@@ -35,37 +41,111 @@ InvertedIndex::InvertedIndex(size_t max_docs_to_score, float idf_cutoff_frac,
   licensing::checkLicense();
 }
 
+InvertedIndex::NewShardConfig InvertedIndex::configureShards(
+    size_t n_new_docs) {
+  // Compute how new docs will be split among shards
+
+  std::vector<size_t> doc_offsets({0});
+  size_t start_shard_id = _shards.size();
+  size_t n_new_shards = 0;
+
+  if (!_shards.empty() && _shards.back().size() < _shard_size) {
+    start_shard_id--;
+    size_t n_docs = std::min(n_new_docs, _shard_size - _shards.back().size());
+    doc_offsets.push_back(n_docs);
+  }
+
+  for (size_t doc_offset = doc_offsets.back(); doc_offset < n_new_docs;
+       doc_offset += _shard_size) {
+    doc_offsets.push_back(std::min(doc_offset + _shard_size, n_new_docs));
+    n_new_shards++;
+  }
+
+  return {start_shard_id, n_new_shards, doc_offsets};
+}
+
 void InvertedIndex::index(const std::vector<DocId>& ids,
                           const std::vector<std::string>& docs) {
+  bolt::utils::Timer timer0;
   if (ids.size() != docs.size()) {
     throw std::invalid_argument(
         "Number of ids must match the number of docs in index.");
   }
 
-  licensing::entitlements().verifyNoDataSourceRetrictions();
+  bolt::utils::Timer timer1;
+  if (std::unordered_set<DocId>(ids.begin(), ids.end()).size() != ids.size()) {
+    throw std::runtime_error("There are multiple documents with the same id.");
+  }
+  std::cout << "Checking duplicate IDs took "
+            << timer1.elapsed<std::chrono::seconds>() << " seconds."
+            << std::endl;
 
-  auto doc_lens_and_occurences = countTokenOccurences(docs);
-
-  for (size_t i = 0; i < docs.size(); i++) {
-    if (_shards.empty() || _shards.back().size() == _shard_size) {
-      _shards.push_back(Shard());
-    }
-
-    const DocId doc_id = ids[i];
-    const size_t doc_len = doc_lens_and_occurences[i].first;
-    const auto& occurences = doc_lens_and_occurences[i].second;
-
+  bolt::utils::Timer timer2;
+  for (DocId doc_id : ids) {
     if (containsDoc(doc_id)) {
       throw std::runtime_error("Document with id " + std::to_string(doc_id) +
-                               " is already in InvertedIndex.");
+                               " is already indexed.");
     }
-
-    _shards.back().insertDoc(doc_id, doc_len, occurences);
-
-    _sum_doc_lens += doc_len;
   }
+  std::cout << "Checking existing IDs took "
+            << timer2.elapsed<std::chrono::seconds>() << " seconds."
+            << std::endl;
 
+  licensing::entitlements().verifyNoDataSourceRetrictions();
+
+  bolt::utils::Timer timer5;
+  auto doc_lens_and_occurences = countTokenOccurences(docs);
+  std::cout << "Counting token occurrences took "
+            << timer5.elapsed<std::chrono::seconds>() << " seconds."
+            << std::endl;
+
+  auto shard_config = configureShards(docs.size());
+
+  // Allocate new shards
+  _shards.resize(_shards.size() + shard_config.n_new_shards);
+  std::vector<size_t> doc_lens(shard_config.doc_offsets.size() - 1);
+  size_t shard_doc_len = 0;
+
+  std::exception_ptr error;
+
+  bolt::utils::Timer timer3;
+// Process shards in parallel
+#pragma omp parallel for default(none)                 \
+    shared(shard_config, ids, doc_lens, \
+           doc_lens_and_occurences, error) \
+    private(shard_doc_len) reduction (+:_sum_doc_lens) \
+    if (shard_config.doc_offsets.size() > 2)
+  for (size_t shard_id_offset = 0;
+       shard_id_offset < shard_config.doc_offsets.size() - 1;
+       shard_id_offset++) {
+    auto& shard = _shards[shard_config.start_shard_id + shard_id_offset];
+    size_t doc_start = shard_config.doc_offsets[shard_id_offset];
+    size_t doc_end = shard_config.doc_offsets[shard_id_offset + 1];
+    shard_doc_len = 0;
+
+    for (size_t i = doc_start; i < doc_end; i++) {
+      const DocId doc_id = ids[i];
+      const size_t doc_len = doc_lens_and_occurences[i].first;
+      const auto& occurrences = doc_lens_and_occurences[i].second;
+
+      shard.insertDoc(doc_id, doc_len, occurrences);
+      shard_doc_len += doc_len;
+    }
+    _sum_doc_lens += shard_doc_len;
+  }
+  std::cout << "Parallel insertion took "
+            << timer3.elapsed<std::chrono::seconds>() << " seconds."
+            << std::endl;
+
+  bolt::utils::Timer timer4;
   recomputeMetadata();
+  std::cout << "Metadata computation took "
+            << timer4.elapsed<std::chrono::seconds>() << " seconds."
+            << std::endl;
+
+  std::cout << "Indexing took a total of"
+            << timer0.elapsed<std::chrono::seconds>() << " seconds."
+            << std::endl;
 }
 
 void InvertedIndex::Shard::insertDoc(
@@ -202,6 +282,11 @@ template <typename T>
 struct HighestScore {
   using Item = std::pair<T, float>;
   bool operator()(const Item& a, const Item& b) const {
+    // Prioritize smaller doc id if scores are equal so results are consistent
+    // regardless of how the index is sharded.
+    if (a.second == b.second) {
+      return a.first < b.first;
+    }
     return a.second > b.second;
   }
 };
@@ -257,9 +342,9 @@ std::vector<DocScore> InvertedIndex::topk(
   top_scores.reserve(k + 1);
   const HighestScore<DocId> cmp;
 
-  for (const auto& [doc, score] : doc_scores) {
-    if (top_scores.size() < k || top_scores.front().second < score) {
-      top_scores.emplace_back(doc, score);
+  for (const auto& doc_score : doc_scores) {
+    if (top_scores.size() < k || cmp(doc_score, top_scores.front())) {
+      top_scores.push_back(doc_score);
       std::push_heap(top_scores.begin(), top_scores.end(), cmp);
     }
 
@@ -300,9 +385,9 @@ std::vector<DocScore> InvertedIndex::query(const std::string& query, uint32_t k,
   std::vector<DocScore> top_scores;
   top_scores.reserve(k + 1);
   for (const auto& shard_topk : shard_candidates) {
-    for (const auto& [doc, score] : shard_topk) {
-      if (top_scores.size() < k || top_scores.front().second < score) {
-        top_scores.emplace_back(doc, score);
+    for (const auto& doc_score : shard_topk) {
+      if (top_scores.size() < k || cmp(doc_score, top_scores.front())) {
+        top_scores.push_back(doc_score);
         std::push_heap(top_scores.begin(), top_scores.end(), cmp);
       }
 
@@ -338,7 +423,7 @@ std::vector<DocScore> InvertedIndex::rank(
   for (const auto& shard_topk : shard_candidates) {
     for (const auto& [doc, score] : shard_topk) {
       if (candidates.count(doc) &&
-          (top_scores.size() < k || top_scores.front().second < score)) {
+          (top_scores.size() < k || cmp({doc, score}, top_scores.front()))) {
         top_scores.emplace_back(doc, score);
         std::push_heap(top_scores.begin(), top_scores.end(), cmp);
       }
