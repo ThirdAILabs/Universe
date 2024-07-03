@@ -174,11 +174,11 @@ void createSearchSubmodule(py::module_& module) {
       .def("query", &FinetunableRetriever::queryBatch, py::arg("queries"),
            py::arg("k"))
       .def("query", &FinetunableRetriever::query, py::arg("query"),
-           py::arg("k"), py::arg("parallelize") = false)
+           py::arg("k"), py::arg("parallelize") = true)
       .def("rank", &FinetunableRetriever::rankBatch, py::arg("queries"),
            py::arg("candidates"), py::arg("k"))
       .def("rank", &FinetunableRetriever::rank, py::arg("query"),
-           py::arg("candidates"), py::arg("k"), py::arg("parallelize") = false)
+           py::arg("candidates"), py::arg("k"), py::arg("parallelize") = true)
       .def("size", &FinetunableRetriever::size)
       .def("prune", &FinetunableRetriever::prune)
       .def("remove", &FinetunableRetriever::remove, py::arg("ids"))
