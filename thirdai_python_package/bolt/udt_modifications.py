@@ -7,7 +7,8 @@ import thirdai._thirdai.bolt as bolt
 import thirdai._thirdai.data as data
 import thirdai._thirdai.dataset as dataset
 
-from .udt_builder.builder import detect_and_build
+from .udt_builder.task_detector import detect_template, UDTDataTemplate
+
 from .udt_docs import *
 
 
@@ -419,12 +420,10 @@ def modify_graph_udt():
     )
 
 
-original_udt = bolt.UniversalDeepTransformer
+def modify_udt_constructor():
+    original_init = bolt.UniversalDeepTransformer.__init__
 
-
-class WrappedUniversalDeepTransformer:
-
-    def __init__(
+    def wrapped_init(
         self,
         target: str = None,
         data_types: dict[str, bolt.types] = None,
@@ -433,39 +432,31 @@ class WrappedUniversalDeepTransformer:
     ):
         if target == None:
             raise ValueError(
-                "The 'target' parameter is required but was not specified. "
-                "Provide a valid target column name."
+                "The 'target' parameter is required but was not specified. Please "
+                "provide a valid target column name."
             )
+        print(f"{kwargs=}")
 
         if data_types:
-            self.udt = original_udt(target=target, data_types=data_types, **kwargs)
-            return
+            return original_init(self, target=target, data_types=data_types, **kwargs)
 
         if dataset_path:
-            self.udt = detect_and_build(
+            detected_template: UDTDataTemplate = detect_template(
                 dataset_path=dataset_path,
                 target=target,
                 **kwargs,
             )
-        else:
-            raise ValueError(
-                "Needs a valid target parameter and either data_types or dataset_path for constructing a model."
+
+            return original_init(
+                self,
+                target=target,
+                data_types=detected_template.bolt_data_types,
+                extreme_classification=detected_template.extreme_classification,
+                **kwargs,
             )
 
-    def __getattribute__(self, name: str) -> Any:
-        # this acts as a router to the original bolt.UniversalDeepTransformer attributes
-        if name == "udt":
-            # Directly access the 'udt' attribute without going through the overridden __getattribute__
-            return object.__getattribute__(self, name)
-        else:
-            udt = object.__getattribute__(
-                self, "udt"
-            )  # Get 'udt' directly from the object dictionary
-            return getattr(udt, name)
+        raise ValueError(
+            "Needs a valid target parameter and either data_types or dataset_path for constructing a model."
+        )
 
-
-def modify_wrapped_classifier():
-    for attr_name in dir(original_udt):
-        attr = getattr(original_udt, attr_name)
-        if isinstance(attr, types.BuiltinFunctionType):
-            setattr(WrappedUniversalDeepTransformer, attr_name, attr)
+    bolt.UniversalDeepTransformer.__init__ = wrapped_init

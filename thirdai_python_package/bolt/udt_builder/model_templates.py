@@ -7,7 +7,7 @@ import pandas as pd
 import thirdai._thirdai.bolt as bolt
 from openai import OpenAI
 
-from ..column_inferencing import column_detector
+from .column_inferencing import column_detector
 
 
 class UDTDataTemplate:
@@ -38,6 +38,18 @@ class UDTDataTemplate:
     @property
     def task(self):
         return self.task
+
+    @property
+    def bolt_data_types(self):
+        return self._bolt_data_types
+
+    @property
+    def extreme_classification(self):
+        if isinstance(self.target_column, column_detector.CategoricalColumn):
+            if self.target_column.estimated_n_classes > 100_000:
+                return True
+
+        return False
 
     def build(self):
         extreme_classification = False
@@ -88,20 +100,22 @@ class UDTDataTemplate:
         self.target_column = target_column
         self.input_columns = input_columns
 
-        self.bolt_data_types = {}
+        self._bolt_data_types = {}
 
         for column_name, column in self.input_columns.items():
-            self.bolt_data_types[column_name] = column.to_bolt()
+            self._bolt_data_types[column_name] = column.to_bolt()
 
         if isinstance(
             self.target_column,
             column_detector.CategoricalColumn,
         ):
-            self.bolt_data_types[self.target_column_name] = self.target_column.to_bolt(
+            self._bolt_data_types[self.target_column_name] = self.target_column.to_bolt(
                 is_target_type=True
             )
         else:
-            self.bolt_data_types[self.target_column_name] = self.target_column.to_bolt()
+            self._bolt_data_types[self.target_column_name] = (
+                self.target_column.to_bolt()
+            )
 
 
 class TabularClassificationTemplate(UDTDataTemplate):
@@ -447,7 +461,7 @@ class GraphClassificationTemplate(UDTDataTemplate):
         )
 
 
-supported_templates = [
+SUPPORTED_TEMPLATES = [
     TabularClassificationTemplate,
     RegressionTemplate,
     TokenClassificationTemplate,
@@ -455,3 +469,9 @@ supported_templates = [
     RecurrentClassifierTemplate,
     GraphClassificationTemplate,
 ]
+
+TASK_TO_TEMPLATE_MAP: typing.Dict[str, UDTDataTemplate] = {
+    template.task: template for template in SUPPORTED_TEMPLATES
+}
+
+SUPPORTED_TASK_TYPES = list(TASK_TO_TEMPLATE_MAP.keys())

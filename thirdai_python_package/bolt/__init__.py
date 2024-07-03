@@ -6,19 +6,14 @@ from .udt_modifications import (
     modify_graph_udt,
     modify_mach_udt,
     modify_udt,
-    modify_wrapped_classifier,
+    modify_udt_constructor,
 )
 
 modify_udt()
 modify_graph_udt()
 modify_mach_udt()
 modify_ner()
-
-modify_wrapped_classifier()
-
-from .udt_modifications import (
-    WrappedUniversalDeepTransformer as UniversalDeepTransformer,
-)
+modify_udt_constructor()
 
 try:
     # This is to prevent errors if torch or scipy are not installed.

@@ -6,19 +6,18 @@ import pandas as pd
 from openai import OpenAI
 
 from .column_inferencing import column_detector
-from .templates.model_templates import (
+from .model_templates import (
     QueryReformulationTemplate,
     RegressionTemplate,
     TabularClassificationTemplate,
     TokenClassificationTemplate,
-    supported_templates,
+    SUPPORTED_TEMPLATES,
+    SUPPORTED_TASK_TYPES,
+    TASK_TO_TEMPLATE_MAP,
+    UDTDataTemplate,
 )
 
 warnings.filterwarnings("ignore")
-
-
-def raise_exception_without_trace(message):
-    raise Exception(message) from None
 
 
 def verify_dataframe(dataframe: pd.DataFrame, target_column_name: str, task: str):
@@ -132,7 +131,7 @@ def query_gpt(prompt, model_name, client):
 
 def get_task_detection_prompt(query: str):
     prompt = "I have 6 different task types. Here is the description of each of the task :- \n"
-    for task_id, task_template in enumerate(supported_templates):
+    for task_id, task_template in enumerate(SUPPORTED_TEMPLATES):
         prompt += f"{task_id} : Task : {task_template.task}, Description: {task_template.description}, Keywords : {' '.join(task_template.keywords)}\n"
 
     prompt += (
@@ -147,14 +146,95 @@ def get_task_detection_prompt(query: str):
 
 
 def get_task_template_from_query(query: str, openai_client: OpenAI):
-    prompt = get_task_detection_prompt(query)
+    if query in TASK_TO_TEMPLATE_MAP:
+        return TASK_TO_TEMPLATE_MAP[query]
 
-    response = query_gpt(prompt, model_name="gpt-4", client=openai_client)
-    response = "".join([char for char in response if char.isdigit()])
+    if openai_client:
+        prompt = get_task_detection_prompt(query)
+        response = query_gpt(prompt, model_name="gpt-4", client=openai_client)
+        response = "".join([char for char in response if char.isdigit()])
+        try:
+            template_id = int(response)
+            return SUPPORTED_TEMPLATES[template_id]
+        except:
+            print("Did not get a valid response from the LLM.")
+            return None
 
-    try:
-        template_id = int(response)
-        return supported_templates[template_id]
-    except:
-        print("Did not get a valid response from the LLM.")
-        return None
+    return None
+
+
+def get_template_from_task(
+    dataframe: pd.DataFrame, target_column: str, task: str, openai_client
+):
+    detected_template = get_task_template_from_query(
+        query=task, openai_client=openai_client
+    )
+
+    if detected_template:
+        return detected_template.from_raw_types(target_column, dataframe)
+
+    print(
+        "Could not detect the task type with the provided type. Enabling auto-inference on the dataframe."
+    )
+
+    return auto_infer_task_template(
+        target_column_name=target_column, dataframe=dataframe
+    )
+
+
+def detect_template(
+    dataset_path: str,
+    target: str,
+    task: str = None,
+    openai_key: str = None,
+    **kwargs,
+):
+    TEMPLATE_DETECTION_MESSAGE = """
+1. Provide more information about the task
+    bolt.UniversalDeepTransformer(
+        dataset_path = {dataset_path},
+        target_column = {target},
+        task = 'more information about the task'
+    )\n
+2. Choose from the following list of available tasks:
+{template_names}
+To detect a different task, call the detect function again with:
+    bolt.UniversalDeepTransformer(
+        dataset_path = {dataset_path},
+        target_column = {target},
+        task = 'your_selected_task'
+    )\n
+3. Explicitly specify the datatypes.
+ Check out https://github.com/ThirdAILabs/Demos/tree/main/universal_deep_transformer to learn how to initialize a model using explicit data types.
+"""
+
+    if openai_key is not None:
+        print("Task detection using natural language enabled\n")
+    openai_client = OpenAI(api_key=openai_key) if openai_key else None
+
+    df = pd.read_csv(dataset_path).dropna().astype(str)
+    verify_dataframe(df, target, task)
+
+    detected_template = get_template_from_task(df, target, task, openai_client)
+
+    template_names = "\n".join(f"• {name}" for name in SUPPORTED_TASK_TYPES)
+
+    if detected_template is not None:
+        print(
+            f"Task detected: {detected_template.task}\n"
+            f"If this isn't the task you intended, you can:\n"
+            + TEMPLATE_DETECTION_MESSAGE.format(
+                dataset_path=dataset_path, target=target, template_names=template_names
+            )
+        )
+
+    else:
+        print(
+            f"Cannot detect the task. \n"
+            f"To automatically detect a task, you can:\n"
+            + TEMPLATE_DETECTION_MESSAGE.format(
+                dataset_path=dataset_path, target=target, template_names=template_names
+            )
+        )
+
+    return detected_template
