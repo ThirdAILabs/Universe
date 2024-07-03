@@ -7,8 +7,7 @@ import thirdai._thirdai.bolt as bolt
 import thirdai._thirdai.data as data
 import thirdai._thirdai.dataset as dataset
 
-from .udt_builder.task_detector import detect_template, UDTDataTemplate
-
+from .udt_builder.task_detector import UDTDataTemplate, detect_template
 from .udt_docs import *
 
 

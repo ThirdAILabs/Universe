@@ -7,13 +7,13 @@ from openai import OpenAI
 
 from .column_inferencing import column_detector
 from .model_templates import (
+    SUPPORTED_TASK_TYPES,
+    SUPPORTED_TEMPLATES,
+    TASK_TO_TEMPLATE_MAP,
     QueryReformulationTemplate,
     RegressionTemplate,
     TabularClassificationTemplate,
     TokenClassificationTemplate,
-    SUPPORTED_TEMPLATES,
-    SUPPORTED_TASK_TYPES,
-    TASK_TO_TEMPLATE_MAP,
     UDTDataTemplate,
 )
 
