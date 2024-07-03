@@ -14,10 +14,22 @@ from sqlalchemy import (
     select,
 )
 
+engine_cache = {}
 
-def get_engine(db_path: str):
-    return create_engine(f"sqlite:///{db_path}")
+def get_engine(db_path):
+    if db_path not in engine_cache:
+        engine_cache[db_path] = create_engine(f"sqlite:///{db_path}")
+    return engine_cache[db_path]
 
+def clear_engine(db_path):
+    engine = engine_cache[db_path]
+    engine.dispose()
+    del engine_cache[db_path]
+    engine = None
+
+def clear_engines():
+    for db_path in engine_cache:
+        clear_engine(db_path)
 
 def infer_type(series: pd.Series):
     if pd_types.is_integer_dtype(series):
