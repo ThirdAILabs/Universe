@@ -261,8 +261,6 @@ option(ROCKSDB_BUILD_SHARED OFF)
 # This is so we can implement a MergeOperator:
 # https://github.com/facebook/rocksdb/issues/3811
 set(USE_RTTI "TRUE" CACHE STRING "")
-
-
 add_subdirectory(deps/rocksdb)
 # include_directories(deps/rocksdb/include)
 

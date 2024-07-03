@@ -55,55 +55,51 @@ std::string MongoDbAdapter::createFormattedLogLine(const std::string& operation,
 }
 
 void MongoDbAdapter::updateTokenToDocs(
-    const std::unordered_map<HashedToken, std::vector<DocCount>>&
-        token_to_new_docs) {
+    const std::unordered_map<HashedToken, std::vector<DocCount>>& token_to_new_docs) {
   auto bar = ProgressBar::makeOptional(true, "train", token_to_new_docs.size());
-  std::unordered_map<HashedToken, std::vector<bsoncxx::document::value>>
-      token_updates;
+  std::unordered_map<HashedToken, bsoncxx::builder::basic::array> token_updates;
   size_t docs_processed = 0;
 
   bolt::utils::Timer batch_timer;
+
+  // Lambda Function to process and append updates
+  auto processUpdates = [&](auto& bulk, auto& updates) {
+    for (auto& [token, docs_list] : updates) {
+      bsoncxx::builder::basic::document builder{};
+      builder.append(kvp("token", static_cast<int64_t>(token)));
+
+      bsoncxx::builder::basic::document update_doc{};
+      update_doc.append(
+          kvp("$push",
+              make_document(kvp("docs", make_document(kvp("$each", docs_list.extract()))))));
+
+      mongocxx::model::update_one upsert_op{builder.extract(), update_doc.extract()};
+      upsert_op.upsert(true);
+      bulk.append(upsert_op);
+    }
+  };
 
   for (const auto& pair : token_to_new_docs) {
     for (const auto& doc_count : pair.second) {
       bsoncxx::document::value doc_entry =
           make_document(kvp("doc_id", static_cast<int64_t>(doc_count.doc_id)),
                         kvp("count", static_cast<int32_t>(doc_count.count)));
-      token_updates[pair.first].push_back(std::move(doc_entry));
+      token_updates[pair.first].append(std::move(doc_entry));
       docs_processed++;
 
       if (docs_processed >= _bulk_update_batch_size) {
         mongocxx::bulk_write bulk = _tokens.create_bulk_write();
-        for (const auto& [token, docs_list] : token_updates) {
-          document builder{};
-          builder.append(kvp("token", static_cast<int64_t>(token)));
-
-          bsoncxx::builder::basic::array docs_array;
-          for (const auto& doc : docs_list) {
-            docs_array.append(doc);
-          }
-          document update_doc{};
-          update_doc.append(kvp(
-              "$push",
-              make_document(kvp(
-                  "docs", make_document(kvp("$each", docs_array.extract()))))));
-
-          mongocxx::model::update_one upsert_op{builder.extract(),
-                                                update_doc.extract()};
-          upsert_op.upsert(true);
-          bulk.append(upsert_op);
-        }
-
+        processUpdates(bulk, token_updates);
         auto result = bulk.execute();
         if (!result) {
           throw std::runtime_error("Error with bulk update!");
         }
         batch_timer.stop();
         std::string batch_time_log =
-            createFormattedLogLine("Final bulk doc training", docs_processed,
-                                   batch_timer.milliseconds());
+            createFormattedLogLine("Bulk doc training", docs_processed, batch_timer.milliseconds());
         logging::info(batch_time_log);
         batch_timer = bolt::utils::Timer();
+        token_updates.clear();
         docs_processed = 0;
       }
     }
@@ -112,37 +108,21 @@ void MongoDbAdapter::updateTokenToDocs(
       bar->increment();
     }
   }
-  mongocxx::bulk_write bulk = _tokens.create_bulk_write();
-  for (const auto& [token, docs_list] : token_updates) {
-    document builder{};
-    builder.append(kvp("token", static_cast<int64_t>(token)));
 
-    bsoncxx::builder::basic::array docs_array;
-    for (const auto& doc : docs_list) {
-      docs_array.append(doc);
+  if (!token_updates.empty()) {
+    mongocxx::bulk_write bulk = _tokens.create_bulk_write();
+    processUpdates(bulk, token_updates);
+    auto result = bulk.execute();
+    if (!result) {
+      throw std::runtime_error("Error with final bulk update!");
     }
-
-    bsoncxx::builder::basic::document update_doc{};
-    update_doc.append(
-        kvp("$push",
-            make_document(kvp(
-                "docs", make_document(kvp("$each", docs_array.extract()))))));
-
-    mongocxx::model::update_one upsert_op{builder.extract(),
-                                          update_doc.extract()};
-    upsert_op.upsert(true);
-    bulk.append(upsert_op);
+    batch_timer.stop();
+    std::string batch_time_log = createFormattedLogLine(
+        "Final bulk doc training", docs_processed, batch_timer.milliseconds());
+    logging::info(batch_time_log);
   }
-
-  auto result = bulk.execute();
-  if (!result) {
-    throw std::runtime_error("Error with bulk update!");
-  }
-  batch_timer.stop();
-  std::string batch_time_log = createFormattedLogLine(
-      "Final bulk doc training", docs_processed, batch_timer.milliseconds());
-  logging::info(batch_time_log);
 }
+
 
 std::vector<SerializedDocCountIterator> MongoDbAdapter::lookupDocs(
     const std::vector<HashedToken>& query_tokens) {

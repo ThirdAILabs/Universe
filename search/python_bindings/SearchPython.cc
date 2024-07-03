@@ -90,10 +90,13 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("stem") = true, py::arg("lowercase") = true)
       .def("tokenize", &WordKGrams::tokenize, py::arg("input"));
 
-  py::class_<IndexConfig>(search_submodule, "IndexConfig")
+  py::class_<DBAdapterConfig>(search_submodule, "DBAdapterConfig")
       .def(py::init<>())
       .def(py::init<const std::string&, uint32_t>(), py::arg("uri"),
            py::arg("batch"));
+
+  
+  py::class_<IndexConfig>(search_submodule, "IndexConfig");  // NOLINT
 
   py::class_<InvertedIndex, std::shared_ptr<InvertedIndex>>(search_submodule,
                                                             "InvertedIndex")
@@ -143,8 +146,8 @@ void createSearchSubmodule(py::module_& module) {
 
   py::class_<OnDiskIndex, std::shared_ptr<OnDiskIndex>>(search_submodule,
                                                         "OnDiskIndex")
-      .def(py::init<const std::string&, const IndexConfig&>(),
-           py::arg("db_name"), py::arg("index_config") = IndexConfig())
+      .def(py::init<const std::string&, const DBAdapterConfig&>(),
+           py::arg("db_name"), py::arg("db_adapter_config") = DBAdapterConfig())
       .def("index", &OnDiskIndex::index, py::arg("ids"), py::arg("docs"))
       .def("query", &OnDiskIndex::query, py::arg("query"), py::arg("k"));
 
