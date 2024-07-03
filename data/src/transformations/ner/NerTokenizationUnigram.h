@@ -42,6 +42,7 @@ class NerTokenizerUnigram final : public Transformation {
     if (!_tag_to_label.has_value()) {
       throw std::logic_error("Tag to Label is None");
     }
+
     auto tag_map = _tag_to_label.value();
     if (tag_map.count(tag)) {
       return tag_map.at(tag);

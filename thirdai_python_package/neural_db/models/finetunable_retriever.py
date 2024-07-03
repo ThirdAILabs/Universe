@@ -7,6 +7,7 @@ from thirdai import search
 from ..documents import DocumentDataSource
 from ..supervised_datasource import SupDataSource
 from .model_interface import InferSamples, Model, Predictions, add_retriever_tag
+from ..sql_helpers import clear_engines
 
 
 class FinetunableRetriever(Model):
@@ -37,6 +38,7 @@ class FinetunableRetriever(Model):
                 docs = []
                 ids = []
 
+                clear_engines()
                 on_progress(self.retriever.size() / intro_documents.size)
 
         if len(docs):

@@ -39,7 +39,7 @@ struct FeatureEnhancementConfig {
 
   std::unordered_set<std::string> identification_keywords = {
       "id",     "identity", "identification", "license",
-      "number", "code",     "identifier"};
+      "number", "code",     "identifier",     "ssn"};
 
   std::regex email_regex =
       std::regex(R"((^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z,.]{2,}$))");
