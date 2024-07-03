@@ -17,6 +17,8 @@ class UDTDataTemplate:
 
     target_column_caster: function
 
+    demo_link: str = None
+
     @staticmethod
     @abstractclassmethod
     def model_initialization_typehint(target_column_name: str) -> str:
@@ -73,9 +75,11 @@ class UDTDataTemplate:
         )
 
         if raw_target_column is None:
-            raise Exception(
-                f"Could not convert the specified target column {target_column_name} into a valid datatype for {cls.task}. Make sure that the target column name is correct and is a valid data type for the specified task. \n{cls.model_initialization_typehint(target_column_name)}"
-            )
+            exception_string = f"Could not convert the specified target column {target_column_name} into a valid datatype for {cls.task}. Make sure that the target column name is correct and is a valid data type for the specified task. \n{cls.model_initialization_typehint(target_column_name)}."
+
+            if cls.demo_link:
+                exception_string += f"\nCheck out the demo notebook {cls.demo_link} for more information on how to initialize a UniversalDeepTransformer for the task."
+            raise Exception(exception_string)
 
         raw_input_columns = column_detector.get_input_columns(
             target_column_name, dataframe
@@ -105,17 +109,9 @@ class UDTDataTemplate:
         for column_name, column in self.input_columns.items():
             self._bolt_data_types[column_name] = column.to_bolt()
 
-        if isinstance(
-            self.target_column,
-            column_detector.CategoricalColumn,
-        ):
-            self._bolt_data_types[self.target_column_name] = self.target_column.to_bolt(
-                is_target_type=True
-            )
-        else:
-            self._bolt_data_types[self.target_column_name] = (
-                self.target_column.to_bolt()
-            )
+        self._bolt_data_types[self.target_column_name] = self.target_column.to_bolt(
+            is_target_type=True
+        )
 
 
 class TabularClassificationTemplate(UDTDataTemplate):
@@ -132,6 +128,8 @@ class TabularClassificationTemplate(UDTDataTemplate):
 
     target_column_caster = column_detector.cast_to_categorical
 
+    demo_link = "https://github.com/ThirdAILabs/Demos/blob/main/universal_deep_transformer/tabular_classification/FraudDetection.ipynb"
+
     @staticmethod
     def model_initialization_typehint(target_column_name: str) -> str:
         typehint = f"""
@@ -144,7 +142,8 @@ class TabularClassificationTemplate(UDTDataTemplate):
                 "numerical_column" : bolt.types.numerical((min_value_in_column, max_value_in_column)),
                 "date_column" : bolt.types.datetime(),
                 
-            }}
+            }},
+            target = "{target_column_name}"
         )
         """
         return typehint
@@ -187,7 +186,8 @@ class RegressionTemplate(UDTDataTemplate):
                 "numerical" : bolt.types.numerical((min_value_in_column, max_value_in_column)),
                 "date_column" : bolt.types.datetime(),
                 "categorical_column" : bolt.types.categorical(type = "str" or "int", delimiter = None if 1 category per row else "column delimiter")
-            }}
+            }},
+            target = "{target_column_name}"
         )
         """
         return typehint
@@ -220,6 +220,8 @@ class TokenClassificationTemplate(UDTDataTemplate):
 
     target_column_caster = column_detector.cast_to_categorical
 
+    demo_link = "https://github.com/ThirdAILabs/Demos/blob/main/universal_deep_transformer/named_entity_recognition/train_your_own_ner_model.ipynb"
+
     @staticmethod
     def model_initialization_typehint(target_column_name):
         typehint = f"""
@@ -229,9 +231,11 @@ class TokenClassificationTemplate(UDTDataTemplate):
             data_types = {{
                 "{target_column_name}" : bolt.types.token_tags(default_tag = "default_tag", tags = List[named_tags]),
                 "source_column_name" : bolt.types.text()
-            }}
+            }},
+            target = "{target_column_name}"
         )
         """
+
         return typehint
 
     @staticmethod
@@ -303,6 +307,8 @@ class QueryReformulationTemplate(UDTDataTemplate):
 
     target_column_caster = column_detector.cast_to_categorical
 
+    demo_link = "https://github.com/ThirdAILabs/Demos/blob/main/universal_deep_transformer/QueryReformulation.ipynb"
+
     @staticmethod
     def model_initialization_typehint(target_column_name):
         typehint = f"""
@@ -312,7 +318,8 @@ class QueryReformulationTemplate(UDTDataTemplate):
             data_types = {{
                 "{target_column_name}" : bolt.types.text(),
                 "source_column_name" : bolt.types.text()
-            }}
+            }},
+            target = "{target_column_name}"
         )
         """
         return typehint
@@ -372,7 +379,8 @@ class RecurrentClassifierTemplate(UDTDataTemplate):
                 "numerical_column" : bolt.types.numerical((min_value_in_column, max_value_in_column)),
                 "date_column" : bolt.types.datetime(),
                 
-            }}
+            }},
+            target = "{target_column_name}"
         )
         """
         return typehint
@@ -432,6 +440,8 @@ class GraphClassificationTemplate(UDTDataTemplate):
 
     target_column_caster = column_detector.cast_to_categorical
 
+    demo_link = "https://github.com/ThirdAILabs/Demos/blob/main/universal_deep_transformer/graph_neural_networks/GraphNodeClassification.ipynb"
+
     @staticmethod
     def model_initialization_typehint(target_column_name):
         typehint = f"""
@@ -446,7 +456,8 @@ class GraphClassificationTemplate(UDTDataTemplate):
                 "text_column" : bolt.types.text(),
                 "numerical_column" : bolt.types.numerical((min_value_in_column, max_value_in_column)),
                 "date_column" : bolt.types.datetime(),
-            }}
+            }},
+            target = "{target_column_name}"
         )
         """
 
@@ -457,7 +468,7 @@ class GraphClassificationTemplate(UDTDataTemplate):
         dataframe: pd.DataFrame,
     ):
         raise Exception(
-            "Auto type inferencing for Graph Classifier Initialization is not yet supported. Refer to https://github.com/ThirdAILabs/Demos/blob/main/universal_deep_transformer/graph_neural_networks/GraphNodeClassification.ipynb on how to initialize a Graph Classifier."
+            f"Auto type inferencing for Graph Classifier Initialization is not yet supported. Refer to {GraphClassificationTemplate.demo_link} on how to initialize a Graph Classifier."
         )
 
 

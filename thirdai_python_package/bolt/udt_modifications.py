@@ -434,7 +434,6 @@ def modify_udt_constructor():
                 "The 'target' parameter is required but was not specified. Please "
                 "provide a valid target column name."
             )
-        print(f"{kwargs=}")
 
         if data_types:
             return original_init(self, target=target, data_types=data_types, **kwargs)

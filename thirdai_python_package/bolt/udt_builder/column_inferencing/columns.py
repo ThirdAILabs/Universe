@@ -10,7 +10,7 @@ class Column:
     name: str
 
     @abstractclassmethod
-    def to_bolt(self):
+    def to_bolt(self, **kwargs):
         pass
 
 
@@ -35,7 +35,7 @@ class CategoricalColumn(Column):
 
     delimiter: typing.Optional[str] = None
 
-    def to_bolt(self, is_target_type=False):
+    def to_bolt(self, is_target_type=False, **kwargs):
         # if the column is a target column, n_classes is required
         return bolt.types.categorical(
             type=self.token_type.__name__,
@@ -49,19 +49,19 @@ class NumericalColumn(Column):
     minimum: float
     maximum: float
 
-    def to_bolt(self):
+    def to_bolt(self, **kwargs):
         return bolt.types.numerical((self.minimum, self.maximum))
 
 
 @dataclass
 class DateTimeColumn(Column):
-    def to_bolt(self):
+    def to_bolt(self, **kwargs):
         return bolt.types.date()
 
 
 @dataclass
 class TextColumn(Column):
-    def to_bolt(self):
+    def to_bolt(self, **kwargs):
         return bolt.types.text()
 
 
@@ -70,7 +70,7 @@ class TokenTags(Column):
     default_tag: str
     named_tags: typing.List[str]
 
-    def to_bolt(self):
+    def to_bolt(self, **kwargs):
         return bolt.types.token_tags(tags=self.named_tags, default_tag=self.default_tag)
 
 
@@ -86,9 +86,9 @@ class SequenceType(Column):
                 "The delimiter for a sequence type column is None. Ensure that the entries in a column are valid sequences."
             )
 
-    def to_bolt(self):
+    def to_bolt(self, is_target_type=False, **kwargs):
         return bolt.types.sequence(
             delimiter=self.delimiter,
-            n_classes=self.estimated_n_classes,
-            max_length=self.max_length,
+            n_classes=self.estimated_n_classes if is_target_type else None,
+            max_length=self.max_length if is_target_type else None,
         )
