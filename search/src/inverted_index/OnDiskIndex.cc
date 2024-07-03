@@ -9,6 +9,7 @@
 #include <rocksdb/utilities/write_batch_with_index.h>
 #include <rocksdb/write_batch.h>
 #include <search/src/inverted_index/InvertedIndex.h>
+#include <search/src/inverted_index/MongoDbAdapter.h>
 #include <search/src/inverted_index/RocksDbAdapter.h>
 #include <algorithm>
 #include <memory>
@@ -18,13 +19,25 @@
 
 namespace thirdai::search {
 
-OnDiskIndex::OnDiskIndex(const std::string& db_name, const IndexConfig& config)
+OnDiskIndex::OnDiskIndex(const std::string& db_name,
+                         const DBAdapterConfig& db_adapter_config,
+                         const IndexConfig& config)
     : _max_docs_to_score(config.max_docs_to_score),
       _max_token_occurrence_frac(config.max_token_occurrence_frac),
       _k1(config.k1),
       _b(config.b),
       _tokenizer(config.tokenizer) {
-  _db = std::make_unique<RocksDbAdapter>(db_name);
+  if (db_adapter_config.db_adapter == "rocksdb") {
+    _db = std::make_unique<RocksDbAdapter>(db_name);
+  } else if (db_adapter_config.db_adapter == "mongodb") {
+    _db = std::make_unique<MongoDbAdapter>(db_adapter_config.db_uri, db_name,
+                                           db_adapter_config.batch_size);
+  } else {
+    throw std::invalid_argument(
+        "Invalid 'db_adapter' value. The 'db_adapter' must be either 'rocksdb' "
+        "or 'mongodb'. Please ensure you are using one of these supported "
+        "database types.");
+  }
 }
 
 void OnDiskIndex::index(const std::vector<DocId>& ids,

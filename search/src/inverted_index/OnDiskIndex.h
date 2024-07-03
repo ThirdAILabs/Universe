@@ -16,8 +16,10 @@ using HashedToken = uint32_t;
 
 class OnDiskIndex {
  public:
-  explicit OnDiskIndex(const std::string& db_name,
-                       const IndexConfig& config = IndexConfig());
+  explicit OnDiskIndex(
+      const std::string& db_name,
+      const DBAdapterConfig& db_adapter_config = DBAdapterConfig(),
+      const IndexConfig& config = IndexConfig());
 
   void index(const std::vector<DocId>& ids,
              const std::vector<std::string>& docs);

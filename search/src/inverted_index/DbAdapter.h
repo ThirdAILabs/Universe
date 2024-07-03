@@ -15,6 +15,19 @@ struct __attribute__((packed)) DocCount {
   uint32_t count;
 };
 
+struct DBAdapterConfig {
+  std::string db_adapter;
+  std::string db_uri;
+  uint32_t batch_size = 0;
+
+  DBAdapterConfig() : db_adapter("rocksdb") {}
+
+  DBAdapterConfig(std::string uri, uint32_t bulk_update_batch)
+      : db_adapter("mongodb"),
+        db_uri(std::move(uri)),
+        batch_size(bulk_update_batch) {}
+};
+
 // TODO(Nicholas): this is specific to the doc count info being serialized into
 // a string, this makes sense if the data is returned from a keyvalue store, but
 // may not for other DBs. The reason it is done this way instead of converting
@@ -52,13 +65,13 @@ class DbAdapter {
           token_to_new_docs) = 0;
 
   virtual std::vector<SerializedDocCountIterator> lookupDocs(
-      const std::vector<HashedToken>& query_tokens) const = 0;
+      const std::vector<HashedToken>& query_tokens) = 0;
 
-  virtual uint32_t getDocLen(DocId doc_id) const = 0;
+  virtual uint32_t getDocLen(DocId doc_id) = 0;
 
-  virtual uint64_t getNDocs() const = 0;
+  virtual uint64_t getNDocs() = 0;
 
-  virtual uint64_t getSumDocLens() const = 0;
+  virtual uint64_t getSumDocLens() = 0;
 
   virtual ~DbAdapter() = default;
 };

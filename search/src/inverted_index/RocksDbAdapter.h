@@ -18,13 +18,13 @@ class RocksDbAdapter final : public DbAdapter {
           token_to_new_docs) final;
 
   std::vector<SerializedDocCountIterator> lookupDocs(
-      const std::vector<HashedToken>& query_tokens) const final;
+      const std::vector<HashedToken>& query_tokens) final;
 
-  uint32_t getDocLen(DocId doc_id) const final;
+  uint32_t getDocLen(DocId doc_id) final;
 
-  uint64_t getNDocs() const final;
+  uint64_t getNDocs() final;
 
-  uint64_t getSumDocLens() const final;
+  uint64_t getSumDocLens() final;
 
   ~RocksDbAdapter();
 
