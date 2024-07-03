@@ -18,10 +18,14 @@ namespace thirdai::search {
 MongoDbAdapter::MongoDbAdapter(const std::string& db_uri,
                                const std::string& db_name,
                                uint32_t bulk_update_batch_size) {
-  mongocxx::uri uri(db_uri);
-  _client = mongocxx::client(uri);
+  // Initialize MongoDB URI and client, and select the database and collection.
+  mongocxx::uri uri(db_uri); // Parse MongoDB URI.
+  _client = mongocxx::client(uri);  // Connect to MongoDB with the URI.
   _db = _client[db_name];
+  // Set up collections and indices.
   _docs = _db["docs"];
+
+  // Create a unique index on the 'doc_id' field to prevent duplicate entries.
   _docs.create_index(make_document(kvp("doc_id", 1)),
                      mongocxx::options::index{}.unique(true));
 
@@ -37,6 +41,7 @@ MongoDbAdapter::MongoDbAdapter(const std::string& db_uri,
 
 
 void MongoDbAdapter::updateSumDocLens(int64_t additional_len) {
+    // Increment the 'sum_doc_lens' field in the metadata document using the $inc operator.
     _docs.update_one(
         make_document(kvp("doc_type", "metadata")),
         make_document(kvp("$inc", make_document(kvp("sum_doc_lens", additional_len))))
@@ -44,6 +49,7 @@ void MongoDbAdapter::updateSumDocLens(int64_t additional_len) {
 }
 
 
+// Method to store individual document lengths and update the metadata sum.
 void MongoDbAdapter::storeDocLens(const std::vector<DocId>& ids,
                                   const std::vector<uint32_t>& doc_lens) {
   if (ids.size() != doc_lens.size()) {
@@ -55,10 +61,12 @@ void MongoDbAdapter::storeDocLens(const std::vector<DocId>& ids,
     document builder{};
     builder.append(kvp("doc_id", static_cast<int64_t>(ids[i])),
                    kvp("doc_len", static_cast<int32_t>(doc_lens[i])));
+    // Insert each document's length into the collection.
     _docs.insert_one(builder.extract());
     sum_added_lens += doc_lens[i];
   }
 
+  // Update the cumulative sum of document lengths.
   updateSumDocLens(sum_added_lens);
 }
 
@@ -71,6 +79,7 @@ std::string MongoDbAdapter::createFormattedLogLine(const std::string& operation,
   return log_stream.str();
 }
 
+// Method to update token-document mappings in bulk.
 void MongoDbAdapter::updateTokenToDocs(
     const std::unordered_map<HashedToken, std::vector<DocCount>>& token_to_new_docs) {
   auto bar = ProgressBar::makeOptional(true, "train", token_to_new_docs.size());
@@ -82,15 +91,18 @@ void MongoDbAdapter::updateTokenToDocs(
   // Lambda Function to process and append updates
   auto processUpdates = [&](auto& bulk, auto& updates) {
     for (auto& [token, docs_list] : updates) {
+      // Prepare the update document for each token with new document counts.
       bsoncxx::builder::basic::document builder{};
       builder.append(kvp("token", static_cast<int64_t>(token)));
 
+      // Append the update operation to the bulk write setup.
       bsoncxx::builder::basic::document update_doc{};
       update_doc.append(
           kvp("$push",
               make_document(kvp("docs", make_document(kvp("$each", docs_list.extract()))))));
 
       mongocxx::model::update_one upsert_op{builder.extract(), update_doc.extract()};
+      // Update if exist else insert
       upsert_op.upsert(true);
       bulk.append(upsert_op);
     }
@@ -140,22 +152,27 @@ void MongoDbAdapter::updateTokenToDocs(
   }
 }
 
-
+// TODO(pratik): Can we use connection pool and multiple clients for speeding this up?
+// Retrieves and constructs iterators for documents associated with specific tokens.
 std::vector<SerializedDocCountIterator> MongoDbAdapter::lookupDocs(
     const std::vector<HashedToken>& query_tokens) {
   std::vector<SerializedDocCountIterator> results;
   bsoncxx::builder::basic::array array_builder;
+
+  // Build an array of tokens for querying.
   for (const auto& token : query_tokens) {
     array_builder.append(static_cast<int64_t>(token));
   }
 
   bolt::utils::Timer query_timer;
+  // Create a MongoDB query document using the $in operator to find documents containing any of the tokens.
   auto query =
       bsoncxx::builder::basic::make_document(bsoncxx::builder::basic::kvp(
           "token",
           bsoncxx::builder::basic::make_document(
               bsoncxx::builder::basic::kvp("$in", array_builder.view()))));
 
+  // Execute the query against the 'tokens' collection.
   auto cursor = _tokens.find(query.view());
 
   std::unordered_map<int64_t, std::string> serialized_map;
@@ -169,6 +186,7 @@ std::vector<SerializedDocCountIterator> MongoDbAdapter::lookupDocs(
     }
   }
 
+  // Package the serialized data into iterators for each queried token.
   for (const auto& token : query_tokens) {
     results.emplace_back(std::move(serialized_map[token]));
   }
@@ -181,15 +199,18 @@ std::vector<SerializedDocCountIterator> MongoDbAdapter::lookupDocs(
 }
 
 uint32_t MongoDbAdapter::getDocLen(DocId doc_id) {
+  // Query the 'docs' collection to find a document by its ID
   auto result = _docs.find_one(make_document(
       kvp("doc_id", bsoncxx::types::b_int64{static_cast<int64_t>(doc_id)})));
   if (result) {
+    // If the document is found, return its length.
     return result->view()["doc_len"].get_int32().value;
   }
   throw std::runtime_error("Document length not found.");
 }
 
 uint64_t MongoDbAdapter::getNDocs() {
+  // Use count_documents method to count all documents in the 'docs' collection.
   return _docs.count_documents(make_document());
 }
 
