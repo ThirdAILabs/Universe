@@ -1,6 +1,8 @@
 #pragma once
 
+#include <search/src/inverted_index/IndexConfig.h>
 #include <search/src/inverted_index/InvertedIndex.h>
+#include <search/src/inverted_index/Retriever.h>
 #include <unordered_map>
 
 namespace thirdai::search {
@@ -13,12 +15,17 @@ class FinetunableRetriever {
   static constexpr uint32_t DEFAULT_MIN_TOP_DOCS = 20;
   static constexpr uint32_t DEFAULT_TOP_QUERIES = 10;
 
-  explicit FinetunableRetriever(float lambda = DEFAULT_LAMBDA,
-                                uint32_t min_top_docs = DEFAULT_MIN_TOP_DOCS,
-                                uint32_t top_queries = DEFAULT_TOP_QUERIES,
-                                const IndexConfig& config = IndexConfig());
+  explicit FinetunableRetriever(const IndexConfig& config,
+                                const std::optional<std::string>& save_path)
+      : FinetunableRetriever(DEFAULT_LAMBDA, DEFAULT_MIN_TOP_DOCS,
+                             DEFAULT_TOP_QUERIES, config, save_path) {}
 
-  explicit FinetunableRetriever(const ar::Archive& archive);
+  explicit FinetunableRetriever(
+      float lambda = DEFAULT_LAMBDA,
+      uint32_t min_top_docs = DEFAULT_MIN_TOP_DOCS,
+      uint32_t top_queries = DEFAULT_TOP_QUERIES,
+      const IndexConfig& config = IndexConfig(),
+      const std::optional<std::string>& save_path = std::nullopt);
 
   static std::shared_ptr<FinetunableRetriever> trainFrom(
       const std::shared_ptr<InvertedIndex>& index) {
@@ -36,44 +43,44 @@ class FinetunableRetriever {
   void associate(const std::vector<std::string>& sources,
                  const std::vector<std::string>& targets, uint32_t strength);
 
-  std::vector<DocScore> query(const std::string& query, uint32_t k) const;
+  std::vector<DocScore> query(const std::string& query, uint32_t k,
+                              bool parallelize = true) const;
 
   std::vector<std::vector<DocScore>> queryBatch(
       const std::vector<std::string>& queries, uint32_t k) const;
 
   std::vector<DocScore> rank(const std::string& query,
                              const std::unordered_set<DocId>& candidates,
-                             uint32_t k) const;
+                             uint32_t k, bool parallelize = true) const;
 
   std::vector<std::vector<DocScore>> rankBatch(
       const std::vector<std::string>& queries,
       const std::vector<std::unordered_set<DocId>>& candidates,
       uint32_t k) const;
 
+  void prune() { _doc_index->prune(); }
+
   void remove(const std::vector<DocId>& ids);
-
-  ar::ConstArchivePtr toArchive() const;
-
-  static std::shared_ptr<FinetunableRetriever> fromArchive(
-      const ar::Archive& archive);
-
-  void save(const std::string& filename) const;
-
-  void save_stream(std::ostream& ostream) const;
 
   size_t size() const { return _doc_index->size(); }
 
-  std::shared_ptr<InvertedIndex> docIndex() { return _doc_index; }
+  void save(const std::string& save_path) const;
 
   static std::shared_ptr<FinetunableRetriever> load(
-      const std::string& filename);
-
-  static std::shared_ptr<FinetunableRetriever> load_stream(
-      std::istream& istream);
+      const std::string& save_path);
 
  private:
-  std::shared_ptr<InvertedIndex> _doc_index;
-  std::shared_ptr<InvertedIndex> _query_index;
+  explicit FinetunableRetriever(const std::string& save_path);
+
+  ar::ConstArchivePtr metadataToArchive() const;
+
+  void metadataFromArchive(const ar::Archive& archive);
+
+  std::shared_ptr<Retriever> _doc_index;
+  std::shared_ptr<Retriever> _query_index;
+
+  std::string _doc_index_type;
+  std::string _query_index_type;
 
   std::unordered_map<QueryId, std::vector<DocId>> _query_to_docs;
   std::unordered_map<DocId, std::vector<QueryId>> _doc_to_queries;

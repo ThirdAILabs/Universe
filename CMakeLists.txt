@@ -244,11 +244,11 @@ include_directories(deps)
 
 find_package(Python3 COMPONENTS Interpreter Development)
 
-# Note: for local builds need to use clang++ not g++ because of pointer conversion 
-# error in rocksdb
+# Note: for local builds need to use clang++ not g++ because of pointer
+# conversion error in rocksdb
 
-# These options are prevent rocksdb from linking gtest which causes a conflict with
-# our gtest library.
+# These options are prevent rocksdb from linking gtest which causes a conflict
+# with our gtest library.
 option(WITH_TESTS OFF)
 option(WITH_BENCHMARK_TOOLS OFF)
 option(WITH_TOOLS OFF)
@@ -260,9 +260,11 @@ option(ROCKSDB_BUILD_SHARED OFF)
 
 # This is so we can implement a MergeOperator:
 # https://github.com/facebook/rocksdb/issues/3811
-set(USE_RTTI "TRUE" CACHE STRING "")
+set(USE_RTTI
+    "TRUE"
+    CACHE STRING "")
 add_subdirectory(deps/rocksdb)
-# include_directories(deps/rocksdb/include)
+include_directories(deps/rocksdb/include)
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt
@@ -363,6 +365,8 @@ set(THIRDAI_SOURCES
     search/src/inverted_index/InvertedIndex.cc
     search/src/inverted_index/OnDiskIndex.cc
     search/src/inverted_index/RocksDbAdapter.cc
+    search/src/inverted_index/ShardedRetriever.cc
+    search/src/inverted_index/IndexConfig.cc
     search/src/inverted_index/FinetunableRetriever.cc
     search/src/inverted_index/Tokenizer.cc
     hashing/src/DensifiedMinHash.cc

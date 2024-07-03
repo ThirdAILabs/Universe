@@ -4,25 +4,42 @@
 #include <rocksdb/utilities/transaction_db.h>
 #include <search/src/inverted_index/DbAdapter.h>
 #include <search/src/inverted_index/InvertedIndex.h>
+#include <search/src/inverted_index/Retriever.h>
 #include <search/src/inverted_index/Tokenizer.h>
 #include <unordered_map>
 
 namespace thirdai::search {
 
-using DocId = uint64_t;
-using DocScore = std::pair<DocId, float>;
-
 using HashedToken = uint32_t;
 
-class OnDiskIndex {
+class OnDiskIndex final : public Retriever {
  public:
-  explicit OnDiskIndex(const std::string& db_name,
+  explicit OnDiskIndex(const std::string& save_path,
                        const IndexConfig& config = IndexConfig());
 
   void index(const std::vector<DocId>& ids,
-             const std::vector<std::string>& docs);
+             const std::vector<std::string>& docs) final;
 
-  std::vector<DocScore> query(const std::string& query, uint32_t k) const;
+  std::vector<DocScore> query(const std::string& query, uint32_t k,
+                              bool parallelize) const final;
+
+  std::vector<DocScore> rank(const std::string& query,
+                             const std::unordered_set<DocId>& candidates,
+                             uint32_t k, bool parallelize) const final;
+
+  void remove(const std::vector<DocId>& ids) final;
+
+  size_t size() const final { return _db->getNDocs(); }
+
+  void save(const std::string& new_save_path) const final;
+
+  static std::shared_ptr<OnDiskIndex> load(const std::string& save_path);
+
+  std::string type() const final { return typeName(); }
+
+  static std::string typeName() { return "on-disk"; }
+
+  void prune() final;
 
  private:
   static inline float idf(size_t n_docs, size_t docs_w_token) {
@@ -46,9 +63,14 @@ class OnDiskIndex {
             std::vector<std::unordered_map<HashedToken, uint32_t>>>
   countTokenOccurences(const std::vector<std::string>& docs) const;
 
+  std::unordered_map<DocId, float> scoreDocuments(
+      const std::string& query) const;
+
   std::vector<HashedToken> tokenize(const std::string& text) const;
 
   std::unique_ptr<DbAdapter> _db;
+
+  std::string _save_path;
 
   // Query variables
   uint64_t _max_docs_to_score;

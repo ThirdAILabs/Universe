@@ -8,12 +8,14 @@ namespace thirdai::search {
 using DocId = uint64_t;
 using HashedToken = uint32_t;
 
-struct __attribute__((packed)) DocCount {
+struct DocCount {
   DocCount(DocId doc_id, uint32_t count) : doc_id(doc_id), count(count) {}
 
-  DocId doc_id;
-  uint32_t count;
+  DocId doc_id : 40;
+  uint32_t count : 24;
 };
+
+static_assert(sizeof(DocCount) == 8, "DocCount should be 8 bytes");
 
 // TODO(Nicholas): this is specific to the doc count info being serialized into
 // a string, this makes sense if the data is returned from a keyvalue store, but
@@ -45,14 +47,19 @@ class SerializedDocCountIterator {
 class DbAdapter {
  public:
   virtual void storeDocLens(const std::vector<DocId>& ids,
-                            const std::vector<uint32_t>& doc_lens) = 0;
+                            const std::vector<uint32_t>& doc_lens,
+                            bool check_for_existing) = 0;
 
   virtual void updateTokenToDocs(
       const std::unordered_map<HashedToken, std::vector<DocCount>>&
           token_to_new_docs) = 0;
 
-  virtual std::vector<SerializedDocCountIterator> lookupDocs(
+  virtual std::vector<std::vector<DocCount>> lookupDocs(
       const std::vector<HashedToken>& query_tokens) const = 0;
+
+  virtual void prune(uint64_t max_docs_with_token) {
+    (void)max_docs_with_token;
+  }
 
   virtual uint32_t getDocLen(DocId doc_id) const = 0;
 

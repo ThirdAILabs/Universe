@@ -7,6 +7,7 @@
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <search/src/inverted_index/OnDiskIndex.h>
 #include <search/src/inverted_index/Tokenizer.h>
+#include <optional>
 
 namespace thirdai::search::python {
 
@@ -89,7 +90,14 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("stem") = true, py::arg("lowercase") = true)
       .def("tokenize", &WordKGrams::tokenize, py::arg("input"));
 
-  py::class_<IndexConfig>(search_submodule, "IndexConfig");  // NOLINT
+  py::class_<IndexConfig>(search_submodule, "IndexConfig")
+      .def(py::init([](size_t shard_size, TokenizerPtr tokenizer) {
+             IndexConfig config;
+             config.shard_size = shard_size;
+             config.tokenizer = std::move(tokenizer);
+             return config;
+           }),
+           py::arg("shard_size"), py::arg("tokenizer"));
 
   py::class_<InvertedIndex, std::shared_ptr<InvertedIndex>>(search_submodule,
                                                             "InvertedIndex")
@@ -139,16 +147,24 @@ void createSearchSubmodule(py::module_& module) {
 
   py::class_<OnDiskIndex, std::shared_ptr<OnDiskIndex>>(search_submodule,
                                                         "OnDiskIndex")
-      .def(py::init<const std::string&>(), py::arg("db_name"))
+      .def(py::init<const std::string&, const IndexConfig&>(),
+           py::arg("db_name"), py::arg("config") = IndexConfig())
       .def("index", &OnDiskIndex::index, py::arg("ids"), py::arg("docs"))
-      .def("query", &OnDiskIndex::query, py::arg("query"), py::arg("k"));
+      .def("query", &OnDiskIndex::query, py::arg("query"), py::arg("k"),
+           py::arg("parallelize") = false)
+      .def("prune", &OnDiskIndex::prune)
+      .def("save", &OnDiskIndex::save, py::arg("filename"))
+      .def_static("load", &OnDiskIndex::load, py::arg("filename"));
 
   py::class_<FinetunableRetriever, std::shared_ptr<FinetunableRetriever>>(
       search_submodule, "FinetunableRetriever")
-      .def(py::init<float, uint32_t, uint32_t>(),
+      .def(py::init<float, uint32_t, uint32_t, const IndexConfig&,
+                    const std::optional<std::string>&>(),
            py::arg("lambda") = FinetunableRetriever::DEFAULT_LAMBDA,
            py::arg("min_top_docs") = FinetunableRetriever::DEFAULT_MIN_TOP_DOCS,
-           py::arg("top_queries") = FinetunableRetriever::DEFAULT_TOP_QUERIES)
+           py::arg("top_queries") = FinetunableRetriever::DEFAULT_TOP_QUERIES,
+           py::arg("config") = IndexConfig(),
+           py::arg("save_path") = std::nullopt)
       .def("index", &FinetunableRetriever::index, py::arg("ids"),
            py::arg("docs"))
       .def("finetune", &FinetunableRetriever::finetune, py::arg("doc_ids"),
@@ -158,19 +174,18 @@ void createSearchSubmodule(py::module_& module) {
       .def("query", &FinetunableRetriever::queryBatch, py::arg("queries"),
            py::arg("k"))
       .def("query", &FinetunableRetriever::query, py::arg("query"),
-           py::arg("k"))
+           py::arg("k"), py::arg("parallelize") = true)
       .def("rank", &FinetunableRetriever::rankBatch, py::arg("queries"),
            py::arg("candidates"), py::arg("k"))
       .def("rank", &FinetunableRetriever::rank, py::arg("query"),
-           py::arg("candidates"), py::arg("k"))
+           py::arg("candidates"), py::arg("k"), py::arg("parallelize") = true)
       .def("size", &FinetunableRetriever::size)
+      .def("prune", &FinetunableRetriever::prune)
       .def("remove", &FinetunableRetriever::remove, py::arg("ids"))
-      .def("doc_index", &FinetunableRetriever::docIndex)
       .def_static("train_from", &FinetunableRetriever::trainFrom,
                   py::arg("index"))
       .def("save", &FinetunableRetriever::save, py::arg("filename"))
-      .def_static("load", &FinetunableRetriever::load, py::arg("filename"))
-      .def(bolt::python::getPickleFunction<FinetunableRetriever>());
+      .def_static("load", &FinetunableRetriever::load, py::arg("filename"));
 }
 
 }  // namespace thirdai::search::python

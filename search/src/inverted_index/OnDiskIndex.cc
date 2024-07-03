@@ -1,5 +1,7 @@
 #include "OnDiskIndex.h"
 #include <bolt/src/utils/Timer.h>
+#include <archive/src/Archive.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <licensing/src/CheckLicense.h>
 #include <rocksdb/merge_operator.h>
@@ -10,7 +12,9 @@
 #include <rocksdb/write_batch.h>
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <search/src/inverted_index/RocksDbAdapter.h>
+#include <search/src/inverted_index/Utils.h>
 #include <algorithm>
+#include <filesystem>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -18,13 +22,34 @@
 
 namespace thirdai::search {
 
-OnDiskIndex::OnDiskIndex(const std::string& db_name, const IndexConfig& config)
-    : _max_docs_to_score(config.max_docs_to_score),
+namespace {
+
+std::string dbName(const std::string& path) {
+  return std::filesystem::path(path) / "db";
+}
+
+std::string metadataPath(const std::string& path) {
+  return std::filesystem::path(path) / "metadata";
+}
+
+}  // namespace
+
+OnDiskIndex::OnDiskIndex(const std::string& save_path,
+                         const IndexConfig& config)
+    : _save_path(save_path),
+      _max_docs_to_score(config.max_docs_to_score),
       _max_token_occurrence_frac(config.max_token_occurrence_frac),
       _k1(config.k1),
       _b(config.b),
       _tokenizer(config.tokenizer) {
-  _db = std::make_unique<RocksDbAdapter>(db_name);
+  licensing::checkLicense();
+
+  createDirectory(save_path);
+
+  _db = std::make_unique<RocksDbAdapter>(dbName(save_path));
+
+  auto metadata = dataset::SafeFileIO::ofstream(metadataPath(save_path));
+  ar::serialize(config.toArchive(), metadata);
 }
 
 void OnDiskIndex::index(const std::vector<DocId>& ids,
@@ -38,7 +63,7 @@ void OnDiskIndex::index(const std::vector<DocId>& ids,
 
   auto [doc_lens, token_counts] = countTokenOccurences(docs);
 
-  _db->storeDocLens(ids, doc_lens);
+  _db->storeDocLens(ids, doc_lens, /*check_for_existing=*/true);
 
   std::unordered_map<HashedToken, std::vector<DocCount>> coalesced_counts;
   for (size_t i = 0; i < ids.size(); i++) {
@@ -73,19 +98,11 @@ OnDiskIndex::countTokenOccurences(const std::vector<std::string>& docs) const {
   return {std::move(doc_lens), std::move(token_counts)};
 }
 
-template <typename T>
-struct HighestScore {
-  using Item = std::pair<T, float>;
-  bool operator()(const Item& a, const Item& b) const {
-    return a.second > b.second;
-  }
-};
-
-std::vector<DocScore> OnDiskIndex::query(const std::string& query,
-                                         uint32_t k) const {
+std::unordered_map<DocId, float> OnDiskIndex::scoreDocuments(
+    const std::string& query) const {
   auto query_tokens = tokenize(query);
 
-  auto doc_count_iterators = _db->lookupDocs(query_tokens);
+  auto doc_counts = _db->lookupDocs(query_tokens);
 
   const uint64_t n_docs = _db->getNDocs();
   const float avg_doc_len = static_cast<float>(_db->getSumDocLens()) / n_docs;
@@ -94,10 +111,9 @@ std::vector<DocScore> OnDiskIndex::query(const std::string& query,
       std::max<uint64_t>(_max_token_occurrence_frac * n_docs, 1000);
 
   std::vector<std::pair<size_t, float>> token_indexes_and_idfs;
-  token_indexes_and_idfs.reserve(doc_count_iterators.size());
-  for (size_t i = 0; i < doc_count_iterators.size(); i++) {
-    size_t docs_w_token = doc_count_iterators[i].len();
-
+  token_indexes_and_idfs.reserve(doc_counts.size());
+  for (size_t i = 0; i < doc_counts.size(); i++) {
+    const auto docs_w_token = doc_counts[i].size();
     if (docs_w_token < max_docs_with_token) {
       const float token_idf = idf(n_docs, docs_w_token);
       token_indexes_and_idfs.emplace_back(i, token_idf);
@@ -107,28 +123,118 @@ std::vector<DocScore> OnDiskIndex::query(const std::string& query,
   std::sort(token_indexes_and_idfs.begin(), token_indexes_and_idfs.end(),
             HighestScore<size_t>{});
 
-  // TODO(Nicholas): cache doc lens with score, to avoid duplicate lookups
   std::unordered_map<DocId, float> doc_scores;
 
-  for (const auto& [token_index, token_idf] : token_indexes_and_idfs) {
-    for (const auto& doc_count : doc_count_iterators[token_index]) {
-      const DocId doc_id = doc_count.doc_id;
+  // This is used to cache the lens for docs that have already been seen to
+  // avoid the DB lookup. This speeds up query processing.
+  std::unordered_map<DocId, uint32_t> doc_lens;
 
-      if (doc_scores.size() < _max_docs_to_score || doc_scores.count(doc_id)) {
-        const uint32_t doc_len = _db->getDocLen(doc_id);
+  for (const auto& [token_index, token_idf] : token_indexes_and_idfs) {
+    const auto& counts = doc_counts[token_index];
+    const size_t docs_w_token = counts.size();
+
+    for (size_t i = 0; i < docs_w_token; i++) {
+      const DocId doc_id = counts[i].doc_id;
+
+      if (doc_scores.count(doc_id)) {
         const float score =
-            bm25(token_idf, doc_count.count, doc_len, avg_doc_len);
-        doc_scores[doc_count.doc_id] += score;
+            bm25(token_idf, counts[i].count, doc_lens.at(doc_id), avg_doc_len);
+        doc_scores[counts[i].doc_id] += score;
+      } else if (doc_scores.size() < _max_docs_to_score) {
+        uint32_t doc_len;
+        if (doc_lens.count(doc_id)) {
+          doc_len = doc_lens.at(doc_id);
+        } else {
+          doc_len = _db->getDocLen(doc_id);
+          doc_lens[doc_id] = doc_len;
+        }
+
+        if (doc_len > 0) {
+          // doc_len=0 indicates that the document has been deleted.
+          const float score =
+              bm25(token_idf, counts[i].count, doc_len, avg_doc_len);
+          doc_scores[counts[i].doc_id] += score;
+        }
       }
     }
   }
 
+  return doc_scores;
+}
+
+std::vector<DocScore> OnDiskIndex::query(const std::string& query, uint32_t k,
+                                         bool parallelize) const {
+  (void)parallelize;
+
+  auto doc_scores = scoreDocuments(query);
+
   return InvertedIndex::topk(doc_scores, k);
+}
+
+std::vector<DocScore> OnDiskIndex::rank(
+    const std::string& query, const std::unordered_set<DocId>& candidates,
+    uint32_t k, bool parallelize) const {
+  (void)parallelize;
+
+  auto doc_scores = scoreDocuments(query);
+
+  const HighestScore<DocId> cmp;
+  std::vector<DocScore> top_scores;
+  top_scores.reserve(k + 1);
+
+  for (const auto& [doc, score] : doc_scores) {
+    if (candidates.count(doc) &&
+        (top_scores.size() < k || top_scores.front().second < score)) {
+      top_scores.emplace_back(doc, score);
+      std::push_heap(top_scores.begin(), top_scores.end(), cmp);
+    }
+
+    if (top_scores.size() > k) {
+      std::pop_heap(top_scores.begin(), top_scores.end(), cmp);
+      top_scores.pop_back();
+    }
+  }
+
+  std::sort_heap(top_scores.begin(), top_scores.end(), cmp);
+
+  return top_scores;
+}
+
+void OnDiskIndex::remove(const std::vector<DocId>& ids) {
+  _db->storeDocLens(ids, std::vector<uint32_t>(ids.size(), 0),
+                    /*check_for_existing=*/false);
+}
+
+void OnDiskIndex::prune() {
+  uint64_t n_docs = _db->getNDocs();
+
+  const uint64_t max_docs_with_token =
+      std::max<uint64_t>(_max_token_occurrence_frac * n_docs, 1000);
+
+  _db->prune(max_docs_with_token);
 }
 
 std::vector<HashedToken> OnDiskIndex::tokenize(const std::string& text) const {
   auto tokens = _tokenizer->tokenize(text);
   return dataset::token_encoding::hashTokens(tokens);
+}
+
+void OnDiskIndex::save(const std::string& new_save_path) const {
+  licensing::entitlements().verifySaveLoad();
+
+  createDirectory(new_save_path);
+
+  std::filesystem::copy(_save_path, new_save_path,
+                        std::filesystem::copy_options::recursive);
+}
+
+std::shared_ptr<OnDiskIndex> OnDiskIndex::load(const std::string& save_path) {
+  licensing::entitlements().verifySaveLoad();
+
+  auto metadata = dataset::SafeFileIO::ifstream(metadataPath(save_path));
+  auto config = IndexConfig::fromArchive(*ar::deserialize(metadata));
+
+  return std::make_shared<OnDiskIndex>(save_path, config);
 }
 
 }  // namespace thirdai::search

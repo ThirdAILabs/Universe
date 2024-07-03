@@ -1,5 +1,6 @@
 #pragma once
 
+#include <archive/src/Archive.h>
 #include <search/src/inverted_index/Tokenizer.h>
 
 namespace thirdai::search {
@@ -17,6 +18,10 @@ struct IndexConfig {
   size_t shard_size = 10000000;
 
   TokenizerPtr tokenizer = std::make_shared<DefaultTokenizer>();
+
+  ar::ConstArchivePtr toArchive() const;
+
+  static IndexConfig fromArchive(const ar::Archive& archive);
 };
 
 }  // namespace thirdai::search

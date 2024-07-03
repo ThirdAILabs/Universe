@@ -16,8 +16,15 @@ std::string docIdKey(uint64_t doc_id) {
   return "doc_" + std::to_string(doc_id);
 }
 
+// Using uint32_t since this will be prepended to doc counts, and so uint32_t
+// ensures that it is still half-word aligned.
+enum class TokenStatus : uint32_t {
+  Default = 0,
+  Pruned = 1,
+};
+
 // https://github.com/facebook/rocksdb/wiki/Merge-Operator
-class AppendValues : public rocksdb::AssociativeMergeOperator {
+class AppendDocCounts : public rocksdb::AssociativeMergeOperator {
  public:
   bool Merge(const rocksdb::Slice& key, const rocksdb::Slice* existing_value,
              const rocksdb::Slice& value, std::string* new_value,
@@ -26,7 +33,18 @@ class AppendValues : public rocksdb::AssociativeMergeOperator {
     (void)logger;
 
     if (!existing_value) {
-      *new_value = value.ToString();
+      *new_value = std::string(sizeof(TokenStatus) + value.size(), 0);
+
+      *reinterpret_cast<TokenStatus*>(new_value->data()) = TokenStatus::Default;
+
+      std::copy(value.data(), value.data() + value.size(),
+                new_value->data() + sizeof(TokenStatus));
+
+      return true;
+    }
+
+    auto status = *reinterpret_cast<const TokenStatus*>(existing_value->data());
+    if (status == TokenStatus::Pruned) {
       return true;
     }
 
@@ -87,7 +105,7 @@ class IncrementCounter : public rocksdb::AssociativeMergeOperator {
   const char* Name() const override { return "IncrementCounter"; }
 };
 
-RocksDbAdapter::RocksDbAdapter(const std::string& db_name) {
+RocksDbAdapter::RocksDbAdapter(const std::string& save_path) {
   rocksdb::Options options;
   options.create_if_missing = true;
   options.create_missing_column_families = true;
@@ -96,7 +114,7 @@ RocksDbAdapter::RocksDbAdapter(const std::string& db_name) {
   counter_options.merge_operator = std::make_shared<IncrementCounter>();
 
   rocksdb::ColumnFamilyOptions token_to_docs_options;
-  token_to_docs_options.merge_operator = std::make_shared<AppendValues>();
+  token_to_docs_options.merge_operator = std::make_shared<AppendDocCounts>();
 
   std::vector<rocksdb::ColumnFamilyDescriptor> column_families = {
       rocksdb::ColumnFamilyDescriptor(rocksdb::kDefaultColumnFamilyName,
@@ -109,7 +127,7 @@ RocksDbAdapter::RocksDbAdapter(const std::string& db_name) {
 
   auto status =
       rocksdb::TransactionDB::Open(options, rocksdb::TransactionDBOptions(),
-                                   db_name, column_families, &handles, &_db);
+                                   save_path, column_families, &handles, &_db);
   if (!status.ok()) {
     raiseError("Database creation", status);
   }
@@ -119,12 +137,17 @@ RocksDbAdapter::RocksDbAdapter(const std::string& db_name) {
                              std::to_string(handles.size()) + " handles.");
   }
 
+  _default = handles[0];
   _counters = handles[1];
   _token_to_docs = handles[2];
+
+  updateNDocs(0);
+  updateSumDocLens(0);
 }
 
 void RocksDbAdapter::storeDocLens(const std::vector<DocId>& ids,
-                                  const std::vector<uint32_t>& doc_lens) {
+                                  const std::vector<uint32_t>& doc_lens,
+                                  bool check_for_existing) {
   uint64_t sum_doc_lens = 0;
 
   rocksdb::Transaction* txn = _db->BeginTransaction(rocksdb::WriteOptions());
@@ -135,15 +158,18 @@ void RocksDbAdapter::storeDocLens(const std::vector<DocId>& ids,
 
     const std::string key = docIdKey(doc_id);
 
-    std::string unused_value;
-    auto get_status = txn->GetForUpdate(rocksdb::ReadOptions(), _counters, key,
-                                        &unused_value);
-    if (get_status.ok()) {
-      throw std::runtime_error("Document with id " + std::to_string(doc_id) +
-                               " is already indexed.");
-    }
-    if (!get_status.IsNotFound()) {
-      raiseError("check for doc", get_status);
+    // TODO(Nicholas): decrement count delta
+    if (check_for_existing) {
+      std::string unused_value;
+      auto get_status = txn->GetForUpdate(rocksdb::ReadOptions(), _counters,
+                                          key, &unused_value);
+      if (get_status.ok()) {
+        throw std::runtime_error("Document with id " + std::to_string(doc_id) +
+                                 " is already indexed.");
+      }
+      if (!get_status.IsNotFound()) {
+        raiseError("check for doc", get_status);
+      }
     }
 
     auto put_status =
@@ -200,7 +226,21 @@ void RocksDbAdapter::updateTokenToDocs(
   }
 }
 
-std::vector<SerializedDocCountIterator> RocksDbAdapter::lookupDocs(
+inline bool isPruned(const std::string& value) {
+  auto status = *reinterpret_cast<const TokenStatus*>(value.data());
+  return status == TokenStatus::Pruned;
+}
+
+inline size_t docsWithToken(const rocksdb::Slice& value) {
+  assert((value.size() - sizeof(TokenStatus)) % sizeof(DocCount) == 0);
+  return (value.size() - sizeof(TokenStatus)) / sizeof(DocCount);
+}
+
+inline const DocCount* docCountPtr(const std::string& value) {
+  return reinterpret_cast<const DocCount*>(value.data() + sizeof(TokenStatus));
+}
+
+std::vector<std::vector<DocCount>> RocksDbAdapter::lookupDocs(
     const std::vector<HashedToken>& query_tokens) const {
   std::vector<rocksdb::Slice> keys;
   keys.reserve(query_tokens.size());
@@ -214,19 +254,58 @@ std::vector<SerializedDocCountIterator> RocksDbAdapter::lookupDocs(
                                                     _token_to_docs);
   auto statuses = _db->MultiGet(rocksdb::ReadOptions(), handles, keys, &values);
 
-  std::vector<SerializedDocCountIterator> iters;
-  iters.reserve(keys.size());
+  std::vector<std::vector<DocCount>> results;
+  results.reserve(keys.size());
   for (size_t i = 0; i < keys.size(); i++) {
     if (statuses[i].ok()) {
-      iters.push_back(SerializedDocCountIterator(std::move(values[i])));
+      if (isPruned(values[i])) {
+        results.push_back({});
+      } else {
+        const DocCount* ptr = docCountPtr(values[i]);
+        const size_t n_docs_w_token = docsWithToken(values[i]);
+        results.emplace_back(ptr, ptr + n_docs_w_token);
+      }
+
     } else if (statuses[i].IsNotFound()) {
-      iters.push_back(SerializedDocCountIterator(""));
+      results.push_back({});
     } else {
       raiseError("DB batch get", statuses[i]);
     }
   }
 
-  return iters;
+  return results;
+}
+
+void RocksDbAdapter::prune(uint64_t max_docs_with_token) {
+  rocksdb::Iterator* iter =
+      _db->NewIterator(rocksdb::ReadOptions(), _token_to_docs);
+
+  rocksdb::WriteBatch batch;
+  TokenStatus prune = TokenStatus::Pruned;
+
+  for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
+    if (docsWithToken(iter->value()) > max_docs_with_token) {
+      auto write_status = batch.Put(
+          _token_to_docs, iter->key(),
+          rocksdb::Slice(reinterpret_cast<const char*>(&prune), sizeof(prune)));
+      if (!write_status.ok()) {
+        raiseError("add to write batch", write_status);
+      }
+    }
+  }
+
+  delete iter;
+
+  auto status = _db->Write(rocksdb::WriteOptions(), &batch);
+  if (!status.ok()) {
+    raiseError("prune", status);
+  }
+
+  auto compact_status = _db->CompactRange(rocksdb::CompactRangeOptions(),
+                                          _token_to_docs, nullptr, nullptr);
+  if (!compact_status.ok()) {
+    raiseError("compact", compact_status);
+  }
 }
 
 uint32_t RocksDbAdapter::getDocLen(DocId doc_id) const {
@@ -296,6 +375,7 @@ void RocksDbAdapter::updateSumDocLens(uint64_t sum_new_doc_lens) {
 }
 
 RocksDbAdapter::~RocksDbAdapter() {
+  _db->DestroyColumnFamilyHandle(_default);
   _db->DestroyColumnFamilyHandle(_counters);
   _db->DestroyColumnFamilyHandle(_token_to_docs);
   _db->Close();

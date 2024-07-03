@@ -9,6 +9,7 @@
 #include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <licensing/src/CheckLicense.h>
+#include <search/src/inverted_index/Utils.h>
 #include <utils/text/PorterStemmer.h>
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
@@ -196,14 +197,6 @@ void InvertedIndex::Shard::updateDoc(
   doc_lens[doc_id] += extra_len;
 }
 
-template <typename T>
-struct HighestScore {
-  using Item = std::pair<T, float>;
-  bool operator()(const Item& a, const Item& b) const {
-    return a.second > b.second;
-  }
-};
-
 std::vector<std::pair<Token, float>> InvertedIndex::rankByIdf(
     const std::string& query) const {
   auto tokens = _tokenizer->tokenize(query);
@@ -350,39 +343,6 @@ std::vector<DocScore> InvertedIndex::rank(
   std::sort_heap(top_scores.begin(), top_scores.end(), cmp);
 
   return top_scores;
-}
-
-std::vector<std::vector<DocScore>> InvertedIndex::queryBatch(
-    const std::vector<std::string>& queries, uint32_t k) const {
-  std::vector<std::vector<DocScore>> scores(queries.size());
-
-#pragma omp parallel for default(none) \
-    shared(queries, scores, k) if (queries.size() > 1)
-  for (size_t i = 0; i < queries.size(); i++) {
-    scores[i] = query(queries[i], k, /*parallelize=*/false);
-  }
-
-  return scores;
-}
-
-std::vector<std::vector<DocScore>> InvertedIndex::rankBatch(
-    const std::vector<std::string>& queries,
-    const std::vector<std::unordered_set<DocId>>& candidates,
-    uint32_t k) const {
-  if (queries.size() != candidates.size()) {
-    throw std::invalid_argument(
-        "Number of queries must match number of candidate sets for ranking.");
-  }
-
-  std::vector<std::vector<DocScore>> scores(queries.size());
-
-#pragma omp parallel for default(none) \
-    shared(queries, candidates, scores, k) if (queries.size() > 1)
-  for (size_t i = 0; i < queries.size(); i++) {
-    scores[i] = rank(queries[i], candidates[i], k, /*parallelize=*/false);
-  }
-
-  return scores;
 }
 
 void InvertedIndex::remove(const std::vector<DocId>& ids) {

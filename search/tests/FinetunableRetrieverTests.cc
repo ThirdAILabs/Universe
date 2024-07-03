@@ -3,7 +3,9 @@
 #include <search/src/inverted_index/FinetunableRetriever.h>
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
+#include <filesystem>
 #include <iterator>
+#include <optional>
 #include <random>
 #include <vector>
 
@@ -99,24 +101,29 @@ TEST(FinetunableRetrieverTests, SyntheticDataset) {
   ASSERT_EQ(results, incremental_results);
 }
 
-TEST(FinetunableRetrieverTests, SaveLoad) {
+void testFinetunableRetrieverSaveLoad(bool on_disk) {
   size_t vocab_size = 1000;
   size_t n_docs = 100;
 
   auto [ids, docs, queries] = makeDocsAndQueries(vocab_size, n_docs);
 
-  FinetunableRetriever retriever;
+  std::optional<std::string> db_name = std::nullopt;
+  if (on_disk) {
+    db_name = "on_disk_finetunable_retriever";
+  }
+  FinetunableRetriever retriever(IndexConfig(), db_name);
   retriever.index({ids.begin(), ids.begin() + n_docs / 2},
                   {docs.begin(), docs.begin() + n_docs / 2});
   auto original_partial_results = retriever.queryBatch(queries, /*k=*/5);
 
-  auto archive = retriever.toArchive();
+  std::string save_path = "./finetunable_retriever.save";
+  retriever.save(save_path);
 
   retriever.index({ids.begin() + n_docs / 2, ids.end()},
                   {docs.begin() + n_docs / 2, docs.end()});
   auto original_full_results = retriever.queryBatch(queries, /*k=*/5);
 
-  auto loaded_retriever = FinetunableRetriever::fromArchive(*archive);
+  auto loaded_retriever = FinetunableRetriever::load(save_path);
 
   auto loaded_partial_results = loaded_retriever->queryBatch(queries, /*k=*/5);
 
@@ -127,6 +134,20 @@ TEST(FinetunableRetrieverTests, SaveLoad) {
   auto loaded_full_results = loaded_retriever->queryBatch(queries, /*k=*/5);
 
   ASSERT_EQ(original_full_results, loaded_full_results);
+
+  std::filesystem::remove_all(save_path);
+
+  if (on_disk) {
+    std::filesystem::remove_all(*db_name);
+  }
+}
+
+TEST(FinetunableRetrieverTests, SaveLoadInMemory) {
+  testFinetunableRetrieverSaveLoad(/*on_disk=*/false);
+}
+
+TEST(FinetunableRetrieverTests, SaveLoadOnDisk) {
+  testFinetunableRetrieverSaveLoad(/*on_disk=*/true);
 }
 
 }  // namespace thirdai::search::tests

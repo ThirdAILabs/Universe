@@ -199,7 +199,7 @@ TEST(InvertedIndexTests, SyntheticDataset) {
     // i-th query goes to i-th doc.
     ASSERT_EQ(results[i][0].first, i);
     // Check single query vs batch query consistency.
-    ASSERT_EQ(index.query(queries[i], /*k=*/topk), results[i]);
+    ASSERT_EQ(index.query(queries[i], /*k=*/topk, true), results[i]);
   }
 
   // Check that building index incrementally gets the same results.
