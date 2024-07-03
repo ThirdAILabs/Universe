@@ -95,7 +95,7 @@ def auto_infer_task_template(target_column_name: str, dataframe: pd.DataFrame):
                 )
             )
 
-            if len(source_column_candidates) == 1 and target_column.token_type == "str":
+            if len(source_column_candidates) == 1 and target_column.token_type == str:
                 concrete_target_column = column_detector.TextColumn(
                     name=target_column.name
                 )

@@ -12,14 +12,14 @@ def cast_to_categorical(column_name: str, column: pd.Series):
     unique_values_in_column = utils.get_unique_values(column, delimiter)
     token_data_type = utils.get_token_data_type(unique_values_in_column)
 
-    utils.cast_set_values(unique_values_in_column, token_data_type)
+    unique_values_in_column = {token_data_type(val) for val in unique_values_in_column}
 
     # For categorical columns, we can only get an estimate of the number of
     # unique tokens since the user specified dataframe might not be comprehensive
     # representation of the entire dataset.
-    if token_data_type == "str" or token_data_type == "float":
+    if token_data_type == str or token_data_type == float:
         n_classes = len(unique_values_in_column)
-        token_data_type = "str"
+        token_data_type = str
     else:
         n_classes = max(unique_values_in_column) + 1
 
@@ -56,14 +56,14 @@ def detect_single_column_type(
 
     categorical_column = cast_to_categorical(column_name, dataframe[column_name])
 
-    if categorical_column.delimiter == None and categorical_column.token_type != "str":
-        if categorical_column.token_type == "float":
+    if categorical_column.delimiter == None and categorical_column.token_type != str:
+        if categorical_column.token_type == float:
             numerical_column = cast_to_numerical(column_name, dataframe[column_name])
             if numerical_column:
                 return numerical_column
 
         if (
-            categorical_column.token_type == "int"
+            categorical_column.token_type == int
             and categorical_column.estimated_n_classes > 100_000
         ):
             # If the number of unique tokens in the column is high, then chances are that it is numerical.
@@ -71,8 +71,8 @@ def detect_single_column_type(
 
     # the below condition means that there is a delimiter in the column. A column with multiple floats
     # in a single row will be treated as a string multicategorical column
-    if categorical_column.token_type == "float":
-        categorical_column = "str"
+    if categorical_column.token_type == float:
+        categorical_column.token_type = str
 
     return categorical_column
 
@@ -108,16 +108,14 @@ def get_token_candidates_for_token_classification(
     Returns a list of candidates suitable to be the tokens column for the task.
     """
 
-    if target.delimiter != " " and target.token_type != "str":
+    if target.delimiter != " " and target.token_type != str:
         raise Exception("Expected the target column to be space seperated tags.")
 
     candidate_columns: typing.List[Column] = []
     for _, column in input_columns.items():
         if isinstance(column, CategoricalColumn):
-            if (
-                column.delimiter == " "
-                and abs(column.number_tokens_per_row - target.number_tokens_per_row)
-                < 0.001
+            if column.delimiter == " " and (
+                column.number_tokens_per_row == target.number_tokens_per_row
             ):
                 candidate_columns.append(TextColumn(name=column.name))
     return candidate_columns
@@ -131,7 +129,7 @@ def get_source_column_for_query_reformulation(
     Returns a list of columns where each column is a candidate to be the source column for the specified target column.
     """
 
-    if target.delimiter != " " and target.token_type != "str":
+    if target.delimiter != " " and target.token_type != str:
         raise Exception("Expected the target column to be space seperated tokens.")
 
     candidate_columns: typing.List[CategoricalColumn] = []
@@ -156,7 +154,7 @@ def get_frequency_sorted_unique_tokens(
 
     def add_key_to_dict(dc, key):
         if key.strip():
-            dc[key] += 1
+            dc[key.strip()] += 1
 
     dataframe[target.name].apply(
         lambda row: [add_key_to_dict(tag_frequency_map, key) for key in row.split(" ")]

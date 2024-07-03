@@ -28,7 +28,7 @@ We can further cast the Categorical Column into relevant types like TokenTags de
 
 @dataclass
 class CategoricalColumn(Column):
-    token_type: str
+    token_type: typing.Union[str, int, float]
     number_tokens_per_row: float
     unique_tokens_per_row: float
     estimated_n_classes: int
@@ -38,7 +38,7 @@ class CategoricalColumn(Column):
     def to_bolt(self, is_target_type=False):
         # if the column is a target column, n_classes is required
         return bolt.types.categorical(
-            type=self.token_type,
+            type=self.token_type.__name__,
             delimiter=self.delimiter,
             n_classes=self.estimated_n_classes if is_target_type else None,
         )
