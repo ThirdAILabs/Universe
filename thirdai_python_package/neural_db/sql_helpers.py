@@ -59,6 +59,7 @@ def df_to_sql(db_path: str, df: pd.DataFrame, table_name: str):
         dtype=types,
         if_exists="append",
     )
+    engine.dispose()
     return table
 
 
@@ -68,4 +69,6 @@ def select_as_df(db_path: str, table: Table, constraints: List[Any] = None):
     if constraints:
         for constraint in constraints:
             selection = selection.where(constraint)
-    return pd.read_sql(selection, engine)
+    df = pd.read_sql(selection, engine)
+    engine.dispose()
+    return df
