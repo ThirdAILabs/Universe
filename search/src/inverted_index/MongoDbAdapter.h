@@ -21,6 +21,7 @@ class MongoDbAdapter final : public DbAdapter {
   explicit MongoDbAdapter(const std::string& db_uri, const std::string& db_name,
                           uint32_t bulk_update_batch_size = 64000);
 
+  void updateSumDocLens(int64_t additional_len);
   void storeDocLens(const std::vector<DocId>& ids,
                     const std::vector<uint32_t>& doc_lens) final;
   void updateTokenToDocs(

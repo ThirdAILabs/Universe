@@ -25,6 +25,9 @@ MongoDbAdapter::MongoDbAdapter(const std::string& db_uri,
   _docs.create_index(make_document(kvp("doc_id", 1)),
                      mongocxx::options::index{}.unique(true));
 
+  // for storing sum
+  _docs.insert_one(make_document(kvp("doc_type", "metadata"), kvp("sum_doc_lens", 0)));
+
   _tokens = _db["tokens"];
   _tokens.create_index(make_document(kvp("token", 1)),
                        mongocxx::options::index{}.unique(true));
@@ -32,17 +35,31 @@ MongoDbAdapter::MongoDbAdapter(const std::string& db_uri,
   _bulk_update_batch_size = bulk_update_batch_size;
 }
 
+
+void MongoDbAdapter::updateSumDocLens(int64_t additional_len) {
+    _docs.update_one(
+        make_document(kvp("doc_type", "metadata")),
+        make_document(kvp("$inc", make_document(kvp("sum_doc_lens", additional_len))))
+    );
+}
+
+
 void MongoDbAdapter::storeDocLens(const std::vector<DocId>& ids,
                                   const std::vector<uint32_t>& doc_lens) {
   if (ids.size() != doc_lens.size()) {
     throw std::invalid_argument("IDs and document lengths must match in size.");
   }
+
+  int64_t sum_added_lens = 0;
   for (size_t i = 0; i < ids.size(); ++i) {
     document builder{};
     builder.append(kvp("doc_id", static_cast<int64_t>(ids[i])),
                    kvp("doc_len", static_cast<int32_t>(doc_lens[i])));
     _docs.insert_one(builder.extract());
+    sum_added_lens += doc_lens[i];
   }
+
+  updateSumDocLens(sum_added_lens);
 }
 
 std::string MongoDbAdapter::createFormattedLogLine(const std::string& operation,
@@ -177,14 +194,11 @@ uint64_t MongoDbAdapter::getNDocs() {
 }
 
 uint64_t MongoDbAdapter::getSumDocLens() {
-  mongocxx::pipeline p{};
-  p.group(make_document(kvp("_id", b_null{}),
-                        kvp("total", make_document(kvp("$sum", "$doc_len")))));
-  auto cursor = _docs.aggregate(p);
-  if (auto doc = cursor.begin(); doc != cursor.end()) {
-    return (*doc)["total"].get_int32().value;
-  }
-  return 0;
+    auto result = _docs.find_one(make_document(kvp("doc_type", "metadata")));
+    if (result) {
+        return result->view()["sum_doc_lens"].get_int64().value;
+    }
+    throw std::runtime_error("Metadata for sum of document lengths not found.");
 }
 
 }  // namespace thirdai::search
