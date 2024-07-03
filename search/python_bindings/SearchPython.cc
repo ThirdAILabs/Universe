@@ -95,7 +95,6 @@ void createSearchSubmodule(py::module_& module) {
       .def(py::init<const std::string&, uint32_t>(), py::arg("uri"),
            py::arg("batch"));
 
-  
   py::class_<IndexConfig>(search_submodule, "IndexConfig");  // NOLINT
 
   py::class_<InvertedIndex, std::shared_ptr<InvertedIndex>>(search_submodule,

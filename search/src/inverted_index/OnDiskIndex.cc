@@ -19,7 +19,9 @@
 
 namespace thirdai::search {
 
-OnDiskIndex::OnDiskIndex(const std::string& db_name, const DBAdapterConfig &db_adapter_config, const IndexConfig& config)
+OnDiskIndex::OnDiskIndex(const std::string& db_name,
+                         const DBAdapterConfig& db_adapter_config,
+                         const IndexConfig& config)
     : _max_docs_to_score(config.max_docs_to_score),
       _max_token_occurrence_frac(config.max_token_occurrence_frac),
       _k1(config.k1),
@@ -27,11 +29,14 @@ OnDiskIndex::OnDiskIndex(const std::string& db_name, const DBAdapterConfig &db_a
       _tokenizer(config.tokenizer) {
   if (db_adapter_config.db_adapter == "rocksdb") {
     _db = std::make_unique<RocksDbAdapter>(db_name);
-  } else if (db_adapter_config.db_adapter == "mongodb"){
+  } else if (db_adapter_config.db_adapter == "mongodb") {
     _db = std::make_unique<MongoDbAdapter>(db_adapter_config.db_uri, db_name,
                                            db_adapter_config.batch_size);
-  } else{
-        throw std::invalid_argument("Invalid 'db_adapter' value. The 'db_adapter' must be either 'rocksdb' or 'mongodb'. Please ensure you are using one of these supported database types.");
+  } else {
+    throw std::invalid_argument(
+        "Invalid 'db_adapter' value. The 'db_adapter' must be either 'rocksdb' "
+        "or 'mongodb'. Please ensure you are using one of these supported "
+        "database types.");
   }
 }
 

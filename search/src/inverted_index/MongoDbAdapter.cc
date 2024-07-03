@@ -19,7 +19,7 @@ MongoDbAdapter::MongoDbAdapter(const std::string& db_uri,
                                const std::string& db_name,
                                uint32_t bulk_update_batch_size) {
   // Initialize MongoDB URI and client, and select the database and collection.
-  mongocxx::uri uri(db_uri); // Parse MongoDB URI.
+  mongocxx::uri uri(db_uri);        // Parse MongoDB URI.
   _client = mongocxx::client(uri);  // Connect to MongoDB with the URI.
   _db = _client[db_name];
   // Set up collections and indices.
@@ -30,7 +30,8 @@ MongoDbAdapter::MongoDbAdapter(const std::string& db_uri,
                      mongocxx::options::index{}.unique(true));
 
   // for storing sum
-  _docs.insert_one(make_document(kvp("doc_type", "metadata"), kvp("sum_doc_lens", 0)));
+  _docs.insert_one(
+      make_document(kvp("doc_type", "metadata"), kvp("sum_doc_lens", 0)));
 
   _tokens = _db["tokens"];
   _tokens.create_index(make_document(kvp("token", 1)),
@@ -39,15 +40,14 @@ MongoDbAdapter::MongoDbAdapter(const std::string& db_uri,
   _bulk_update_batch_size = bulk_update_batch_size;
 }
 
-
 void MongoDbAdapter::updateSumDocLens(int64_t additional_len) {
-    // Increment the 'sum_doc_lens' field in the metadata document using the $inc operator.
-    _docs.update_one(
-        make_document(kvp("doc_type", "metadata")),
-        make_document(kvp("$inc", make_document(kvp("sum_doc_lens", additional_len))))
-    );
+  // Increment the 'sum_doc_lens' field in the metadata document using the $inc
+  // operator.
+  _docs.update_one(
+      make_document(kvp("doc_type", "metadata")),
+      make_document(
+          kvp("$inc", make_document(kvp("sum_doc_lens", additional_len)))));
 }
-
 
 // Method to store individual document lengths and update the metadata sum.
 void MongoDbAdapter::storeDocLens(const std::vector<DocId>& ids,
@@ -81,7 +81,8 @@ std::string MongoDbAdapter::createFormattedLogLine(const std::string& operation,
 
 // Method to update token-document mappings in bulk.
 void MongoDbAdapter::updateTokenToDocs(
-    const std::unordered_map<HashedToken, std::vector<DocCount>>& token_to_new_docs) {
+    const std::unordered_map<HashedToken, std::vector<DocCount>>&
+        token_to_new_docs) {
   auto bar = ProgressBar::makeOptional(true, "train", token_to_new_docs.size());
   std::unordered_map<HashedToken, bsoncxx::builder::basic::array> token_updates;
   size_t docs_processed = 0;
@@ -99,9 +100,11 @@ void MongoDbAdapter::updateTokenToDocs(
       bsoncxx::builder::basic::document update_doc{};
       update_doc.append(
           kvp("$push",
-              make_document(kvp("docs", make_document(kvp("$each", docs_list.extract()))))));
+              make_document(kvp(
+                  "docs", make_document(kvp("$each", docs_list.extract()))))));
 
-      mongocxx::model::update_one upsert_op{builder.extract(), update_doc.extract()};
+      mongocxx::model::update_one upsert_op{builder.extract(),
+                                            update_doc.extract()};
       // Update if exist else insert
       upsert_op.upsert(true);
       bulk.append(upsert_op);
@@ -124,8 +127,8 @@ void MongoDbAdapter::updateTokenToDocs(
           throw std::runtime_error("Error with bulk update!");
         }
         batch_timer.stop();
-        std::string batch_time_log =
-            createFormattedLogLine("Bulk doc training", docs_processed, batch_timer.milliseconds());
+        std::string batch_time_log = createFormattedLogLine(
+            "Bulk doc training", docs_processed, batch_timer.milliseconds());
         logging::info(batch_time_log);
         batch_timer = bolt::utils::Timer();
         token_updates.clear();
@@ -152,8 +155,9 @@ void MongoDbAdapter::updateTokenToDocs(
   }
 }
 
-// TODO(pratik): Can we use connection pool and multiple clients for speeding this up?
-// Retrieves and constructs iterators for documents associated with specific tokens.
+// TODO(pratik): Can we use connection pool and multiple clients for speeding
+// this up? Retrieves and constructs iterators for documents associated with
+// specific tokens.
 std::vector<SerializedDocCountIterator> MongoDbAdapter::lookupDocs(
     const std::vector<HashedToken>& query_tokens) {
   std::vector<SerializedDocCountIterator> results;
@@ -165,7 +169,8 @@ std::vector<SerializedDocCountIterator> MongoDbAdapter::lookupDocs(
   }
 
   bolt::utils::Timer query_timer;
-  // Create a MongoDB query document using the $in operator to find documents containing any of the tokens.
+  // Create a MongoDB query document using the $in operator to find documents
+  // containing any of the tokens.
   auto query =
       bsoncxx::builder::basic::make_document(bsoncxx::builder::basic::kvp(
           "token",
@@ -215,11 +220,11 @@ uint64_t MongoDbAdapter::getNDocs() {
 }
 
 uint64_t MongoDbAdapter::getSumDocLens() {
-    auto result = _docs.find_one(make_document(kvp("doc_type", "metadata")));
-    if (result) {
-        return result->view()["sum_doc_lens"].get_int64().value;
-    }
-    throw std::runtime_error("Metadata for sum of document lengths not found.");
+  auto result = _docs.find_one(make_document(kvp("doc_type", "metadata")));
+  if (result) {
+    return result->view()["sum_doc_lens"].get_int64().value;
+  }
+  throw std::runtime_error("Metadata for sum of document lengths not found.");
 }
 
 }  // namespace thirdai::search

@@ -20,15 +20,13 @@ struct DBAdapterConfig {
   std::string db_uri;
   uint32_t batch_size = 0;
 
-  DBAdapterConfig()
-      : db_adapter("rocksdb") {}
+  DBAdapterConfig() : db_adapter("rocksdb") {}
 
   DBAdapterConfig(std::string uri, uint32_t bulk_update_batch)
       : db_adapter("mongodb"),
         db_uri(std::move(uri)),
         batch_size(bulk_update_batch) {}
 };
-
 
 // TODO(Nicholas): this is specific to the doc count info being serialized into
 // a string, this makes sense if the data is returned from a keyvalue store, but
