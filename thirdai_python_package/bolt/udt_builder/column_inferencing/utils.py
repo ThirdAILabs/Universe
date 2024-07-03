@@ -1,5 +1,5 @@
 import warnings
-from typing import Optional, Union, Tuple
+from typing import Optional, Tuple, Union
 
 warnings.filterwarnings("ignore")
 import pandas as pd
