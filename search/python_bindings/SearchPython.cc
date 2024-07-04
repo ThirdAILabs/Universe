@@ -148,7 +148,7 @@ void createSearchSubmodule(py::module_& module) {
   py::class_<OnDiskIndex, std::shared_ptr<OnDiskIndex>>(search_submodule,
                                                         "OnDiskIndex")
       .def(py::init<const std::string&, const IndexConfig&>(),
-           py::arg("db_name"), py::arg("config") = IndexConfig())
+           py::arg("save_path"), py::arg("config") = IndexConfig())
       .def("index", &OnDiskIndex::index, py::arg("ids"), py::arg("docs"))
       .def("query", &OnDiskIndex::query, py::arg("query"), py::arg("k"),
            py::arg("parallelize") = false)

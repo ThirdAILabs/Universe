@@ -17,6 +17,9 @@ class OnDiskIndex final : public Retriever {
   explicit OnDiskIndex(const std::string& save_path,
                        const IndexConfig& config = IndexConfig());
 
+  OnDiskIndex(const std::string& save_path, std::unique_ptr<DbAdapter> db,
+              const IndexConfig& config);
+
   void index(const std::vector<DocId>& ids,
              const std::vector<std::string>& docs) final;
 

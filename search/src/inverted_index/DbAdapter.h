@@ -67,6 +67,10 @@ class DbAdapter {
 
   virtual uint64_t getSumDocLens() const = 0;
 
+  virtual void save(const std::string& save_path) const = 0;
+
+  virtual std::string type() const = 0;
+
   virtual ~DbAdapter() = default;
 };
 

@@ -29,6 +29,10 @@ class RocksDbAdapter final : public DbAdapter {
 
   uint64_t getSumDocLens() const final;
 
+  void save(const std::string& save_path) const final;
+
+  std::string type() const final { return "rocksdb"; }
+
   ~RocksDbAdapter();
 
  private:
@@ -40,6 +44,8 @@ class RocksDbAdapter final : public DbAdapter {
   rocksdb::ColumnFamilyHandle* _default;
   rocksdb::ColumnFamilyHandle* _counters;
   rocksdb::ColumnFamilyHandle* _token_to_docs;
+
+  std::string _save_path;
 };
 
 }  // namespace thirdai::search

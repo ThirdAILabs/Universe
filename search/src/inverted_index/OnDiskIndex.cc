@@ -1,6 +1,7 @@
 #include "OnDiskIndex.h"
 #include <bolt/src/utils/Timer.h>
 #include <archive/src/Archive.h>
+#include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <licensing/src/CheckLicense.h>
@@ -36,7 +37,13 @@ std::string metadataPath(const std::string& path) {
 
 OnDiskIndex::OnDiskIndex(const std::string& save_path,
                          const IndexConfig& config)
-    : _save_path(save_path),
+    : OnDiskIndex(save_path, nullptr, config) {}
+
+OnDiskIndex::OnDiskIndex(const std::string& save_path,
+                         std::unique_ptr<DbAdapter> db,
+                         const IndexConfig& config)
+    : _db(std::move(db)),
+      _save_path(save_path),
       _max_docs_to_score(config.max_docs_to_score),
       _max_token_occurrence_frac(config.max_token_occurrence_frac),
       _k1(config.k1),
@@ -46,10 +53,16 @@ OnDiskIndex::OnDiskIndex(const std::string& save_path,
 
   createDirectory(save_path);
 
-  _db = std::make_unique<RocksDbAdapter>(dbName(save_path));
+  if (!_db) {
+    _db = std::make_unique<RocksDbAdapter>(dbName(_save_path));
+  }
 
-  auto metadata = dataset::SafeFileIO::ofstream(metadataPath(save_path));
-  ar::serialize(config.toArchive(), metadata);
+  auto metadata = ar::Map::make();
+  metadata->set("config", config.toArchive());
+  metadata->set("db_type", ar::str(_db->type()));
+
+  auto metadata_file = dataset::SafeFileIO::ofstream(metadataPath(save_path));
+  ar::serialize(metadata, metadata_file);
 }
 
 void OnDiskIndex::index(const std::vector<DocId>& ids,
@@ -224,17 +237,28 @@ void OnDiskIndex::save(const std::string& new_save_path) const {
 
   createDirectory(new_save_path);
 
-  std::filesystem::copy(_save_path, new_save_path,
-                        std::filesystem::copy_options::recursive);
+  std::filesystem::copy(metadataPath(_save_path), new_save_path);
+
+  _db->save(dbName(new_save_path));
 }
 
 std::shared_ptr<OnDiskIndex> OnDiskIndex::load(const std::string& save_path) {
   licensing::entitlements().verifySaveLoad();
 
-  auto metadata = dataset::SafeFileIO::ifstream(metadataPath(save_path));
-  auto config = IndexConfig::fromArchive(*ar::deserialize(metadata));
+  auto metadata_file = dataset::SafeFileIO::ifstream(metadataPath(save_path));
+  auto metadata = ar::deserialize(metadata_file);
 
-  return std::make_shared<OnDiskIndex>(save_path, config);
+  auto config = IndexConfig::fromArchive(*metadata->get("config"));
+  std::string db_type = metadata->str("db_type");
+
+  std::unique_ptr<DbAdapter> db;
+  if (db_type == "rocksdb") {
+    db = std::make_unique<RocksDbAdapter>(dbName(save_path));
+  } else {
+    throw std::invalid_argument("Invalid db_type '" + db_type + "'.");
+  }
+
+  return std::make_shared<OnDiskIndex>(save_path, std::move(db), config);
 }
 
 }  // namespace thirdai::search

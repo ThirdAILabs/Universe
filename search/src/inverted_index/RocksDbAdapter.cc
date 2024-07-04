@@ -4,6 +4,7 @@
 #include <rocksdb/slice.h>
 #include <rocksdb/table.h>
 #include <rocksdb/write_batch.h>
+#include <filesystem>
 
 namespace thirdai::search {
 
@@ -105,7 +106,8 @@ class IncrementCounter : public rocksdb::AssociativeMergeOperator {
   const char* Name() const override { return "IncrementCounter"; }
 };
 
-RocksDbAdapter::RocksDbAdapter(const std::string& save_path) {
+RocksDbAdapter::RocksDbAdapter(const std::string& save_path)
+    : _save_path(save_path) {
   rocksdb::Options options;
   options.create_if_missing = true;
   options.create_missing_column_families = true;
@@ -372,6 +374,11 @@ void RocksDbAdapter::updateSumDocLens(uint64_t sum_new_doc_lens) {
   if (!status.ok()) {
     raiseError("DB merge", status);
   }
+}
+
+void RocksDbAdapter::save(const std::string& save_path) const {
+  std::filesystem::copy(_save_path, save_path,
+                        std::filesystem::copy_options::recursive);
 }
 
 RocksDbAdapter::~RocksDbAdapter() {
