@@ -43,11 +43,11 @@ class Table(ABC):
         pass
 
     @abstractmethod
-    def field(self, row_id: int, column: str):
+    def field(self, row_id: int, column: str, engine=None):
         pass
 
     @abstractmethod
-    def row_as_dict(self, row_id: int) -> dict:
+    def row_as_dict(self, row_id: int, engine=None) -> dict:
         pass
 
     @abstractmethod
@@ -99,11 +99,11 @@ class DaskDataFrameTable(Table):
         # Dask requires computation to convert index to a list
         return self.df.index.compute().to_list()
 
-    def field(self, row_id: int, column: str):
+    def field(self, row_id: int, column: str, engine=None):
         # For Dask, use .compute() to get actual values
         return self.df.loc[row_id][column].compute()
 
-    def row_as_dict(self, row_id: int) -> dict:
+    def row_as_dict(self, row_id: int, engine=None) -> dict:
         return self.row_id_to_dict[row_id]
 
     def range_rows_as_dicts(self, from_row_id: int, to_row_id: int) -> List[dict]:
@@ -145,12 +145,12 @@ class DataFrameTable(Table):
     def ids(self) -> List[int]:
         return self.df.index.to_list()
 
-    def field(self, row_id: int, column: str):
+    def field(self, row_id: int, column: str, engine=None):
         if column == self.df.index.name:
             return row_id
         return self.df[column].loc[row_id]
 
-    def row_as_dict(self, row_id: int) -> dict:
+    def row_as_dict(self, row_id: int, engine=None) -> dict:
         row = self.df.loc[row_id].to_dict()
         row[self.df.index.name] = row_id
         return row
@@ -203,18 +203,20 @@ class SQLiteTable(Table):
             table=self.sql_table.c[self.id_column],
         )[self.id_column]
 
-    def field(self, row_id: int, column: str):
+    def field(self, row_id: int, column: str, engine=None):
         return select_as_df(
             db_path=self.db_path,
             table=self.sql_table.c[column],
             constraints=[self.sql_table.c[self.id_column] == row_id],
+            engine=engine
         )[column][0]
 
-    def row_as_dict(self, row_id: int) -> dict:
+    def row_as_dict(self, row_id: int, engine=None) -> dict:
         return select_as_df(
             db_path=self.db_path,
             table=self.sql_table,
             constraints=[self.sql_table.c[self.id_column] == row_id],
+            engine=engine
         ).to_dict("records")[0]
 
     def range_rows_as_dicts(self, from_row_id: int, to_row_id: int) -> List[dict]:

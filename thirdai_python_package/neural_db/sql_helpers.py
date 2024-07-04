@@ -17,19 +17,7 @@ from sqlalchemy import (
 engine_cache = {}
 
 def get_engine(db_path):
-    if db_path not in engine_cache:
-        engine_cache[db_path] = create_engine(f"sqlite:///{db_path}")
-    return engine_cache[db_path]
-
-def clear_engine(db_path):
-    engine = engine_cache[db_path]
-    engine.dispose()
-    del engine_cache[db_path]
-    engine = None
-
-def clear_engines():
-    for db_path in engine_cache:
-        clear_engine(db_path)
+    return create_engine(f"sqlite:///{db_path}")
 
 def infer_type(series: pd.Series):
     if pd_types.is_integer_dtype(series):
@@ -71,13 +59,20 @@ def df_to_sql(db_path: str, df: pd.DataFrame, table_name: str):
         dtype=types,
         if_exists="append",
     )
+    engine.dispose()
     return table
 
 
-def select_as_df(db_path: str, table: Table, constraints: List[Any] = None):
-    engine = get_engine(db_path)
+def select_as_df(db_path: str, table: Table, constraints: List[Any] = None, engine=None):
+    new_engine = False
+    if not engine:
+        engine = get_engine(db_path)
+        new_engine = True
     selection = select(table)
     if constraints:
         for constraint in constraints:
             selection = selection.where(constraint)
-    return pd.read_sql(selection, engine)
+    df = pd.read_sql(selection, engine)
+    if new_engine:
+        engine.dispose()
+    return df

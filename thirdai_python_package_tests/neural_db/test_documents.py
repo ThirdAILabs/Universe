@@ -80,13 +80,13 @@ def prepare_documents_test():
             if element_id >= self._size:
                 raise ValueError("Out of range")
 
-        def strong_text(self, element_id: int) -> str:
+        def strong_text(self, element_id: int, engine=None) -> str:
             self.check_id(element_id)
             return MockDocument.expected_strong_text_for_id(
                 self._identifier, element_id
             )
 
-        def weak_text(self, element_id: int) -> str:
+        def weak_text(self, element_id: int, engine=None) -> str:
             self.check_id(element_id)
             return MockDocument.expected_weak_text_for_id(self._identifier, element_id)
 

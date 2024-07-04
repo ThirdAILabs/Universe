@@ -37,6 +37,7 @@ from .constraint_matcher import (
 from .parsing_utils import doc_parse, pdf_parse, sliding_pdf_parse, url_parse
 from .table import DaskDataFrameTable, DataFrameTable, SQLiteTable
 from .utils import hash_file, hash_string, requires_condition
+from .sql_helpers import get_engine
 
 
 class Reference:
@@ -93,14 +94,14 @@ class Document:
     def save_extra_info(self, value: bool):
         self._save_extra_info = value
 
-    def reference(self, element_id: int) -> Reference:
+    def reference(self, element_id: int, engine=None) -> Reference:
         raise NotImplementedError()
 
-    def strong_text(self, element_id: int) -> str:
-        return self.reference(element_id).text
+    def strong_text(self, element_id: int, engine=None) -> str:
+        return self.reference(element_id, engine=engine).text
 
-    def weak_text(self, element_id: int) -> str:
-        return self.reference(element_id).text
+    def weak_text(self, element_id: int, engine=None) -> str:
+        return self.reference(element_id, engine=engine).text
 
     def context(self, element_id: int, radius: int) -> str:
         window_start = max(0, element_id - radius)
@@ -115,12 +116,12 @@ class Document:
     def load_meta(self, directory: Path):
         pass
 
-    def row_iterator(self):
+    def row_iterator(self, engine=None):
         for i in range(self.size):
             yield DocumentRow(
                 element_id=i,
-                strong=self.strong_text(i),
-                weak=self.weak_text(i),
+                strong=self.strong_text(i, engine),
+                weak=self.weak_text(i, engine),
             )
 
     def save(self, directory: str):
@@ -244,9 +245,19 @@ class DocumentDataSource(PyDataSource):
 
     def row_iterator(self):
         for doc, start_id in self.documents:
-            for row in doc.row_iterator():
+            if isinstance(doc.table, SQLiteTable):
+                # engine = get_engine(doc.table.db_path)
+                engine=None
+            else:
+                engine = None
+            for row in doc.row_iterator(engine):
                 row.id = row.id + start_id
                 yield row
+
+            if engine:
+                # print(f"disposing engine for {doc.path}", flush=True)
+                engine.dispose()
+
 
     def indices(self):
         indices = []
@@ -733,15 +744,15 @@ class CSV(Document):
     def strong_text_from_row(self, row) -> str:
         return " ".join(str(row[col]) for col in self.strong_columns)
 
-    def strong_text(self, element_id: int) -> str:
-        row = self.table.row_as_dict(element_id)
+    def strong_text(self, element_id: int, engine=None) -> str:
+        row = self.table.row_as_dict(element_id, engine=engine)
         return self.strong_text_from_row(row)
 
     def weak_text_from_row(self, row) -> str:
         return " ".join(str(row[col]) for col in self.weak_columns)
 
-    def weak_text(self, element_id: int) -> str:
-        row = self.table.row_as_dict(element_id)
+    def weak_text(self, element_id: int, engine=None) -> str:
+        row = self.table.row_as_dict(element_id, engine=engine)
         return self.weak_text_from_row(row)
 
     def row_iterator(self):
@@ -929,15 +940,15 @@ class Extracted(Document):
     def all_entity_ids(self) -> List[int]:
         return list(range(self.size))
 
-    def strong_text(self, element_id: int) -> str:
+    def strong_text(self, element_id: int, engine=None) -> str:
         return (
             ""
             if not self.strong_column
-            else self.table.field(element_id, self.strong_column)
+            else self.table.field(element_id, self.strong_column, engine=engine)
         )
 
-    def weak_text(self, element_id: int) -> str:
-        return self.table.field(element_id, "para")
+    def weak_text(self, element_id: int, engine=None) -> str:
+        return self.table.field(element_id, "para", engine=engine)
 
     def show_fn(text, source, **kwargs):
         return text
@@ -1312,14 +1323,15 @@ class URL(Document):
     def all_entity_ids(self) -> List[int]:
         return list(range(self.size))
 
-    def strong_text(self, element_id: int) -> str:
+    def strong_text(self, element_id: int, engine=None) -> str:
         return self.table.field(
             row_id=element_id,
             column=self._strong_column if self._strong_column else "text",
+            engine=engine
         )
 
-    def weak_text(self, element_id: int) -> str:
-        return self.table.field(element_id, "text")
+    def weak_text(self, element_id: int, engine=None) -> str:
+        return self.table.field(element_id, "text", engine=engine)
 
     def reference(self, element_id: int) -> Reference:
         if element_id >= self.table.size:
@@ -2374,11 +2386,11 @@ class SentenceLevelExtracted(Extracted):
     def source(self) -> str:
         return str(self.path.absolute())
 
-    def strong_text(self, element_id: int) -> str:
-        return self.table.field(element_id, "sentence")
+    def strong_text(self, element_id: int, engine=None) -> str:
+        return self.table.field(element_id, "sentence", engine=engine)
 
-    def weak_text(self, element_id: int) -> str:
-        return self.table.field(element_id, "para")
+    def weak_text(self, element_id: int, engine=None) -> str:
+        return self.table.field(element_id, "para", engine=engine)
 
     def show_fn(text, source, **kwargs):
         return text
@@ -2555,11 +2567,11 @@ class InMemoryText(Document):
         )
         return self.table.apply_filter(table_filter)
 
-    def strong_text(self, element_id: int) -> str:
+    def strong_text(self, element_id: int, engine=None) -> str:
         return ""
 
-    def weak_text(self, element_id: int) -> str:
-        return self.table.field(element_id, "texts")
+    def weak_text(self, element_id: int, engine=None) -> str:
+        return self.table.field(element_id, "texts", engine=engine)
 
     def reference(self, element_id: int) -> Reference:
         if element_id >= self.table.size:

@@ -145,10 +145,10 @@ def build_local_sharepoint_doc():
         def size(self):
             return len(self.df)
 
-        def strong_text(self, element_id: int) -> str:
+        def strong_text(self, element_id: int, engine=None) -> str:
             return self.df.iloc[element_id][self.strong_column]
 
-        def weak_text(self, element_id: int) -> str:
+        def weak_text(self, element_id: int, engine=None) -> str:
             return self.df.iloc[element_id][self.weak_column]
 
     return CombinedDocument(ndb_docs=ndb_docs)
