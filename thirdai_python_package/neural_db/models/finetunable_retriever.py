@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Callable, List, Optional, Tuple
 
 from thirdai import search
-
 from ..documents import DocumentDataSource
 from ..supervised_datasource import SupDataSource
 from .model_interface import InferSamples, Model, Predictions, add_retriever_tag
@@ -16,7 +15,13 @@ class FinetunableRetriever(Model):
         save_path = None
         if on_disk:
             save_path = f"{uuid.uuid4()}.db"
-        self.retriever = retriever or search.FinetunableRetriever(save_path=save_path)
+        self.retriever = retriever or search.FinetunableRetriever(
+            save_path=save_path,
+            # Using the default value of shard_size from IndexConfig.cc
+            config=search.IndexConfig(
+                shard_size=10000000, tokenizer=search.WordKGrams()
+            ),
+        )
 
     def index_from_start(
         self,
