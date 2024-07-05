@@ -15,13 +15,17 @@ RocksDbReadOnlyAdapter::RocksDbReadOnlyAdapter(const std::string& save_path) {
   options.create_if_missing = false;
   options.create_missing_column_families = false;
 
+  rocksdb::ColumnFamilyOptions counter_options;
+  counter_options.merge_operator = std::make_shared<IncrementCounter>();
+
+  rocksdb::ColumnFamilyOptions token_to_docs_options;
+  token_to_docs_options.merge_operator = std::make_shared<AppendDocCounts>();
+
   std::vector<rocksdb::ColumnFamilyDescriptor> column_families = {
       rocksdb::ColumnFamilyDescriptor(rocksdb::kDefaultColumnFamilyName,
                                       rocksdb::ColumnFamilyOptions()),
-      rocksdb::ColumnFamilyDescriptor("counters",
-                                      rocksdb::ColumnFamilyOptions()),
-      rocksdb::ColumnFamilyDescriptor("token_to_docs",
-                                      rocksdb::ColumnFamilyOptions()),
+      rocksdb::ColumnFamilyDescriptor("counters", counter_options),
+      rocksdb::ColumnFamilyDescriptor("token_to_docs", token_to_docs_options),
   };
 
   std::vector<rocksdb::ColumnFamilyHandle*> handles;

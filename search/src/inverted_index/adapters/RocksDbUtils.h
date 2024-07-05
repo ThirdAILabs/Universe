@@ -1,5 +1,6 @@
 #pragma once
 
+#include <rocksdb/merge_operator.h>
 #include <rocksdb/slice.h>
 #include <rocksdb/status.h>
 #include <search/src/inverted_index/DbAdapter.h>
@@ -44,5 +45,78 @@ inline size_t docsWithToken(const rocksdb::Slice& value) {
 inline const DocCount* docCountPtr(const rocksdb::Slice& value) {
   return reinterpret_cast<const DocCount*>(value.data() + sizeof(TokenStatus));
 }
+
+// https://github.com/facebook/rocksdb/wiki/Merge-Operator
+class AppendDocCounts : public rocksdb::AssociativeMergeOperator {
+ public:
+  bool Merge(const rocksdb::Slice& key, const rocksdb::Slice* existing_value,
+             const rocksdb::Slice& value, std::string* new_value,
+             rocksdb::Logger* logger) const override {
+    (void)key;
+    (void)logger;
+
+    if (!existing_value) {
+      *new_value = std::string(sizeof(TokenStatus) + value.size(), 0);
+
+      *reinterpret_cast<TokenStatus*>(new_value->data()) = TokenStatus::Default;
+
+      std::copy(value.data(), value.data() + value.size(),
+                new_value->data() + sizeof(TokenStatus));
+
+      return true;
+    }
+
+    auto status = *reinterpret_cast<const TokenStatus*>(existing_value->data());
+    if (status == TokenStatus::Pruned) {
+      return true;
+    }
+
+    // Note: this assumes that the doc_ids in the old and new values are
+    // disjoint. This is true because we check for duplicate doc_ids during
+    // indexing. If we add support for updates, then this needs to be modified
+    // to merge the 2 values based on doc_id.
+
+    *new_value = std::string(existing_value->size() + value.size(), 0);
+
+    std::copy(existing_value->data(),
+              existing_value->data() + existing_value->size(),
+              new_value->data());
+    std::copy(value.data(), value.data() + value.size(),
+              new_value->data() + existing_value->size());
+
+    return true;
+  }
+
+  const char* Name() const override { return "AppendDocTokenCount"; }
+};
+
+class IncrementCounter : public rocksdb::AssociativeMergeOperator {
+ public:
+  bool Merge(const rocksdb::Slice& key, const rocksdb::Slice* existing_value,
+             const rocksdb::Slice& value, std::string* new_value,
+             rocksdb::Logger* logger) const override {
+    (void)key;
+    (void)logger;
+
+    uint64_t counter = 0;
+    if (existing_value) {
+      if (!deserialize(*existing_value, counter)) {
+        return false;
+      }
+    }
+
+    uint64_t increment = 0;
+    if (!deserialize(value, increment)) {
+      return false;
+    }
+
+    *new_value = std::string(sizeof(uint64_t), 0);
+    *reinterpret_cast<uint64_t*>(new_value->data()) = counter + increment;
+
+    return true;
+  }
+
+  const char* Name() const override { return "IncrementCounter"; }
+};
 
 }  // namespace thirdai::search
