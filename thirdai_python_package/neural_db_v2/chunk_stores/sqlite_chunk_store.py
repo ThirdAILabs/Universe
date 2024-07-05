@@ -58,7 +58,7 @@ class SqlLiteIterator:
         engine: Engine,
         min_insertion_chunk_id: int,
         max_insertion_chunk_id: int,
-        batch_size: int = 100,
+        max_in_memory_batches: int = 100,
     ):
         self.chunk_table = table
         self.engine = engine
@@ -69,15 +69,15 @@ class SqlLiteIterator:
         self.min_insertion_chunk_id = min_insertion_chunk_id
         self.max_insertion_chunk_id = max_insertion_chunk_id
 
-        self.batch_size = batch_size
+        self.max_in_memory_batches = max_in_memory_batches
 
     def __next__(self) -> Optional[ChunkBatch]:
         # The "next" call on the sql_row_iterator returns one row at a time
-        # despite fetching them in "batch_size" quantities from the database.
-        # Thus we call "next" "batch_size" times to pull out all the rows we want
+        # despite fetching them in "max_in_memory_batches" quantities from the database.
+        # Thus we call "next" "max_in_memory_batches" times to pull out all the rows we want
         sql_lite_batch = []
         try:
-            for _ in range(self.batch_size):
+            for _ in range(self.max_in_memory_batches):
                 sql_lite_batch.append(next(self.sql_row_iterator))
         except StopIteration:
             if not sql_lite_batch:
@@ -98,7 +98,7 @@ class SqlLiteIterator:
         )
         with self.engine.connect() as conn:
             result = conn.execute(stmt)
-            self.sql_row_iterator = result.yield_per(self.batch_size)
+            self.sql_row_iterator = result.yield_per(self.max_in_memory_batches)
         return self
 
 
@@ -229,9 +229,7 @@ class SQLiteChunkStore(ChunkStore):
             engine=self.engine,
             min_insertion_chunk_id=min_insertion_chunk_id,
             max_insertion_chunk_id=max_insertion_chunk_id,
-            batch_size=kwargs.get(
-                "sql_lite_iterator_batch_size", self.max_in_memory_batches
-            ),
+            max_in_memory_batches=self.max_in_memory_batches,
         )
 
         return inserted_chunks_iterator
