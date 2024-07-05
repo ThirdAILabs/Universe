@@ -260,17 +260,12 @@ std::vector<std::vector<DocCount>> RocksDbAdapter::lookupDocs(
   results.reserve(keys.size());
   for (size_t i = 0; i < keys.size(); i++) {
     if (statuses[i].ok()) {
-      if (isPruned(values[i])) {
-        results.push_back({});
-      } else {
+      if (!isPruned(values[i])) {
         const DocCount* ptr = docCountPtr(values[i]);
         const size_t n_docs_w_token = docsWithToken(values[i]);
         results.emplace_back(ptr, ptr + n_docs_w_token);
       }
-
-    } else if (statuses[i].IsNotFound()) {
-      results.push_back({});
-    } else {
+    } else if (!statuses[i].IsNotFound()) {
       raiseError("DB batch get", statuses[i]);
     }
   }
