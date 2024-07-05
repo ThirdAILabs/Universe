@@ -103,7 +103,7 @@ class SqlLiteIterator:
 
 
 class SQLiteChunkStore(ChunkStore):
-    def __init__(self, **kwargs):
+    def __init__(self, max_in_memory_batches=10000, **kwargs):
         super().__init__()
 
         self.db_name = f"{uuid.uuid4()}.db"
@@ -127,6 +127,8 @@ class SQLiteChunkStore(ChunkStore):
         self.metadata_table = None
 
         self.next_id = 0
+
+        self.max_in_memory_batches = max_in_memory_batches
 
     def _write_to_table(self, df: pd.DataFrame, table: Table):
         df.to_sql(
@@ -227,7 +229,9 @@ class SQLiteChunkStore(ChunkStore):
             engine=self.engine,
             min_insertion_chunk_id=min_insertion_chunk_id,
             max_insertion_chunk_id=max_insertion_chunk_id,
-            batch_size=kwargs.get("sql_lite_iterator_batch_size", 100),
+            batch_size=kwargs.get(
+                "sql_lite_iterator_batch_size", self.max_in_memory_batches
+            ),
         )
 
         return inserted_chunks_iterator
