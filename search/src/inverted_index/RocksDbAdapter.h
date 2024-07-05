@@ -3,6 +3,8 @@
 #include <rocksdb/db.h>
 #include <rocksdb/utilities/transaction_db.h>
 #include <search/src/inverted_index/DbAdapter.h>
+#include <search/src/inverted_index/Retriever.h>
+#include <unordered_set>
 
 namespace thirdai::search {
 
@@ -11,8 +13,7 @@ class RocksDbAdapter final : public DbAdapter {
   explicit RocksDbAdapter(const std::string& save_path);
 
   void storeDocLens(const std::vector<DocId>& ids,
-                    const std::vector<uint32_t>& doc_lens,
-                    bool check_for_existing) final;
+                    const std::vector<uint32_t>& doc_lens) final;
 
   void updateTokenToDocs(
       const std::unordered_map<HashedToken, std::vector<DocCount>>&
@@ -22,6 +23,8 @@ class RocksDbAdapter final : public DbAdapter {
       const std::vector<HashedToken>& query_tokens) const final;
 
   void prune(uint64_t max_docs_with_token) final;
+
+  void removeDocs(const std::unordered_set<DocId>& docs) final;
 
   uint32_t getDocLen(DocId doc_id) const final;
 

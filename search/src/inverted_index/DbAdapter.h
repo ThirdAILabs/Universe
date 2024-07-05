@@ -2,6 +2,7 @@
 
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <stdexcept>
+#include <unordered_set>
 
 namespace thirdai::search {
 
@@ -47,8 +48,7 @@ class SerializedDocCountIterator {
 class DbAdapter {
  public:
   virtual void storeDocLens(const std::vector<DocId>& ids,
-                            const std::vector<uint32_t>& doc_lens,
-                            bool check_for_existing) = 0;
+                            const std::vector<uint32_t>& doc_lens) = 0;
 
   virtual void updateTokenToDocs(
       const std::unordered_map<HashedToken, std::vector<DocCount>>&
@@ -60,6 +60,8 @@ class DbAdapter {
   virtual void prune(uint64_t max_docs_with_token) {
     (void)max_docs_with_token;
   }
+
+  virtual void removeDocs(const std::unordered_set<DocId>& docs) = 0;
 
   virtual uint32_t getDocLen(DocId doc_id) const = 0;
 

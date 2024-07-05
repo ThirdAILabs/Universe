@@ -148,8 +148,7 @@ RocksDbAdapter::RocksDbAdapter(const std::string& save_path)
 }
 
 void RocksDbAdapter::storeDocLens(const std::vector<DocId>& ids,
-                                  const std::vector<uint32_t>& doc_lens,
-                                  bool check_for_existing) {
+                                  const std::vector<uint32_t>& doc_lens) {
   uint64_t sum_doc_lens = 0;
 
   rocksdb::Transaction* txn = _db->BeginTransaction(rocksdb::WriteOptions());
@@ -160,18 +159,15 @@ void RocksDbAdapter::storeDocLens(const std::vector<DocId>& ids,
 
     const std::string key = docIdKey(doc_id);
 
-    // TODO(Nicholas): decrement count delta
-    if (check_for_existing) {
-      std::string unused_value;
-      auto get_status = txn->GetForUpdate(rocksdb::ReadOptions(), _counters,
-                                          key, &unused_value);
-      if (get_status.ok()) {
-        throw std::runtime_error("Document with id " + std::to_string(doc_id) +
-                                 " is already indexed.");
-      }
-      if (!get_status.IsNotFound()) {
-        raiseError("check for doc", get_status);
-      }
+    std::string unused_value;
+    auto get_status = txn->GetForUpdate(rocksdb::ReadOptions(), _counters, key,
+                                        &unused_value);
+    if (get_status.ok()) {
+      throw std::runtime_error("Document with id " + std::to_string(doc_id) +
+                               " is already indexed.");
+    }
+    if (!get_status.IsNotFound()) {
+      raiseError("check for doc", get_status);
     }
 
     auto put_status =
@@ -238,7 +234,7 @@ inline size_t docsWithToken(const rocksdb::Slice& value) {
   return (value.size() - sizeof(TokenStatus)) / sizeof(DocCount);
 }
 
-inline const DocCount* docCountPtr(const std::string& value) {
+inline const DocCount* docCountPtr(const rocksdb::Slice& value) {
   return reinterpret_cast<const DocCount*>(value.data() + sizeof(TokenStatus));
 }
 
@@ -302,6 +298,52 @@ void RocksDbAdapter::prune(uint64_t max_docs_with_token) {
                                           _token_to_docs, nullptr, nullptr);
   if (!compact_status.ok()) {
     raiseError("compact", compact_status);
+  }
+}
+
+void RocksDbAdapter::removeDocs(const std::unordered_set<DocId>& docs) {
+  rocksdb::Transaction* txn = _db->BeginTransaction(rocksdb::WriteOptions());
+
+  for (const auto& doc : docs) {
+    auto delete_status = txn->Delete(_counters, docIdKey(doc));
+    if (!delete_status.ok()) {
+      raiseError("remove doc", delete_status);
+    }
+  }
+
+  rocksdb::Iterator* iter =
+      txn->GetIterator(rocksdb::ReadOptions(), _token_to_docs);
+
+  for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
+    auto curr_value = iter->value();
+    std::string new_value;
+    new_value.reserve(curr_value.size());
+
+    new_value.append(curr_value.data(), sizeof(TokenStatus));
+
+    const DocCount* doc_counts = docCountPtr(curr_value);
+    const size_t docs_w_token = docsWithToken(curr_value);
+
+    for (size_t i = 0; i < docs_w_token; i++) {
+      if (!docs.count(doc_counts[i].doc_id)) {
+        new_value.append(reinterpret_cast<const char*>(doc_counts + i),
+                         sizeof(DocCount));
+      }
+    }
+
+    if (new_value.size() < curr_value.size()) {
+      auto put_status = txn->Put(_token_to_docs, iter->key(), new_value);
+      if (!put_status.ok()) {
+        raiseError("remove doc", put_status);
+      }
+    }
+  }
+
+  delete iter;
+
+  auto status = txn->Commit();
+  if (!status.ok()) {
+    raiseError("remove doc", status);
   }
 }
 

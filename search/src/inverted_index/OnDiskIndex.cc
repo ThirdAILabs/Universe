@@ -76,7 +76,7 @@ void OnDiskIndex::index(const std::vector<DocId>& ids,
 
   auto [doc_lens, token_counts] = countTokenOccurences(docs);
 
-  _db->storeDocLens(ids, doc_lens, /*check_for_existing=*/true);
+  _db->storeDocLens(ids, doc_lens);
 
   std::unordered_map<HashedToken, std::vector<DocCount>> coalesced_counts;
   for (size_t i = 0; i < ids.size(); i++) {
@@ -162,12 +162,9 @@ std::unordered_map<DocId, float> OnDiskIndex::scoreDocuments(
           doc_lens[doc_id] = doc_len;
         }
 
-        if (doc_len > 0) {
-          // doc_len=0 indicates that the document has been deleted.
-          const float score =
-              bm25(token_idf, counts[i].count, doc_len, avg_doc_len);
-          doc_scores[counts[i].doc_id] += score;
-        }
+        const float score =
+            bm25(token_idf, counts[i].count, doc_len, avg_doc_len);
+        doc_scores[counts[i].doc_id] += score;
       }
     }
   }
@@ -214,8 +211,7 @@ std::vector<DocScore> OnDiskIndex::rank(
 }
 
 void OnDiskIndex::remove(const std::vector<DocId>& ids) {
-  _db->storeDocLens(ids, std::vector<uint32_t>(ids.size(), 0),
-                    /*check_for_existing=*/false);
+  _db->removeDocs({ids.begin(), ids.end()});
 }
 
 void OnDiskIndex::prune() {
