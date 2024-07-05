@@ -12,8 +12,9 @@
 #include <rocksdb/utilities/write_batch_with_index.h>
 #include <rocksdb/write_batch.h>
 #include <search/src/inverted_index/InvertedIndex.h>
-#include <search/src/inverted_index/RocksDbAdapter.h>
 #include <search/src/inverted_index/Utils.h>
+#include <search/src/inverted_index/adapters/RocksDbAdapter.h>
+#include <search/src/inverted_index/adapters/RocksDbReadOnlyAdapter.h>
 #include <algorithm>
 #include <filesystem>
 #include <memory>
@@ -238,7 +239,8 @@ void OnDiskIndex::save(const std::string& new_save_path) const {
   _db->save(dbName(new_save_path));
 }
 
-std::shared_ptr<OnDiskIndex> OnDiskIndex::load(const std::string& save_path) {
+std::shared_ptr<OnDiskIndex> OnDiskIndex::load(const std::string& save_path,
+                                               bool read_only) {
   licensing::entitlements().verifySaveLoad();
 
   auto metadata_file = dataset::SafeFileIO::ifstream(metadataPath(save_path));
@@ -249,7 +251,12 @@ std::shared_ptr<OnDiskIndex> OnDiskIndex::load(const std::string& save_path) {
 
   std::unique_ptr<DbAdapter> db;
   if (db_type == "rocksdb") {
-    db = std::make_unique<RocksDbAdapter>(dbName(save_path));
+    if (read_only) {
+      db = std::make_unique<RocksDbReadOnlyAdapter>(dbName(save_path));
+    } else {
+      db = std::make_unique<RocksDbAdapter>(dbName(save_path));
+    }
+
   } else {
     throw std::invalid_argument("Invalid db_type '" + db_type + "'.");
   }

@@ -40,14 +40,15 @@ class ShardedRetriever final : public Retriever {
 
   void save(const std::string& new_save_path) const final;
 
-  static std::shared_ptr<ShardedRetriever> load(const std::string& save_path);
+  static std::shared_ptr<ShardedRetriever> load(const std::string& save_path,
+                                                bool read_only);
 
   std::string type() const final { return typeName(); }
 
   static std::string typeName() { return "sharded-retriever"; }
 
  private:
-  explicit ShardedRetriever(const std::string& save_path);
+  explicit ShardedRetriever(const std::string& save_path, bool read_only);
 
   std::shared_ptr<RetrieverFactory> _factory;
   IndexConfig _config;

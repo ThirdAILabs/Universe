@@ -16,11 +16,15 @@ namespace thirdai::search {
 
 class OnDiskFactory final : public RetrieverFactory {
  public:
-  explicit OnDiskFactory(std::string save_path)
-      : _save_path(std::move(save_path)) {}
+  explicit OnDiskFactory(std::string save_path, bool read_only)
+      : _save_path(std::move(save_path)), _read_only(read_only) {}
 
   std::shared_ptr<Retriever> create(const IndexConfig& config,
                                     size_t shard_id) const final {
+    if (_read_only) {
+      throw std::invalid_argument(
+          "Cannot create new shards in read only mode.");
+    }
     return std::make_shared<OnDiskIndex>(
         std::filesystem::path(_save_path) /
             ("shard_" + std::to_string(shard_id)),
@@ -28,13 +32,14 @@ class OnDiskFactory final : public RetrieverFactory {
   }
 
   std::shared_ptr<Retriever> load(const std::string& path) const final {
-    return OnDiskIndex::load(path);
+    return OnDiskIndex::load(path, _read_only);
   }
 
   std::string type() const final { return OnDiskIndex::typeName(); }
 
  private:
   std::string _save_path;
+  bool _read_only;
 };
 
 class InMemoryFactory final : public RetrieverFactory {
@@ -56,7 +61,7 @@ ShardedRetriever::ShardedRetriever(IndexConfig config,
                                    const std::optional<std::string>& save_path)
     : _config(std::move(config)), _shard_size(config.shard_size) {
   if (save_path) {
-    _factory = std::make_shared<OnDiskFactory>(*save_path);
+    _factory = std::make_shared<OnDiskFactory>(*save_path, /*read_only=*/false);
   } else {
     _factory = std::make_shared<InMemoryFactory>();
   }
@@ -183,7 +188,8 @@ void ShardedRetriever::save(const std::string& new_save_path) const {
   ar::serialize(metadata, metadata_file);
 }
 
-ShardedRetriever::ShardedRetriever(const std::string& save_path) {
+ShardedRetriever::ShardedRetriever(const std::string& save_path,
+                                   bool read_only) {
   auto metadata_file = dataset::SafeFileIO::ifstream(
       std::filesystem::path(save_path) / "metadata");
   auto metadata = ar::deserialize(metadata_file);
@@ -195,7 +201,7 @@ ShardedRetriever::ShardedRetriever(const std::string& save_path) {
   auto type = metadata->str("type");
 
   if (type == OnDiskIndex::typeName()) {
-    _factory = std::make_shared<OnDiskFactory>(save_path);
+    _factory = std::make_shared<OnDiskFactory>(save_path, read_only);
   } else if (type == InvertedIndex::typeName()) {
     _factory = std::make_shared<InMemoryFactory>();
   } else {
@@ -209,8 +215,9 @@ ShardedRetriever::ShardedRetriever(const std::string& save_path) {
 }
 
 std::shared_ptr<ShardedRetriever> ShardedRetriever::load(
-    const std::string& save_path) {
-  return std::shared_ptr<ShardedRetriever>(new ShardedRetriever(save_path));
+    const std::string& save_path, bool read_only) {
+  return std::shared_ptr<ShardedRetriever>(
+      new ShardedRetriever(save_path, read_only));
 }
 
 }  // namespace thirdai::search

@@ -277,31 +277,33 @@ void FinetunableRetriever::save(const std::string& save_path) const {
 }
 
 std::shared_ptr<Retriever> loadIndex(const std::string& type,
-                                     const std::string& path) {
+                                     const std::string& path, bool read_only) {
   if (type == InvertedIndex::typeName()) {
     return InvertedIndex::load(path);
   }
   if (type == OnDiskIndex::typeName()) {
-    return OnDiskIndex::load(path);
+    return OnDiskIndex::load(path, read_only);
   }
   if (type == ShardedRetriever::typeName()) {
-    return ShardedRetriever::load(path);
+    return ShardedRetriever::load(path, read_only);
   }
   throw std::invalid_argument("Invalid retriever type '" + type + "'.");
 }
 
-FinetunableRetriever::FinetunableRetriever(const std::string& save_path) {
+FinetunableRetriever::FinetunableRetriever(const std::string& save_path,
+                                           bool read_only) {
   auto metadata = dataset::SafeFileIO::ifstream(metadataPath(save_path));
   metadataFromArchive(*ar::deserialize(metadata));
 
-  _doc_index = loadIndex(_doc_index_type, docIndexPath(save_path));
-  _query_index = loadIndex(_query_index_type, queryIndexPath(save_path));
+  _doc_index = loadIndex(_doc_index_type, docIndexPath(save_path), read_only);
+  _query_index =
+      loadIndex(_query_index_type, queryIndexPath(save_path), read_only);
 }
 
 std::shared_ptr<FinetunableRetriever> FinetunableRetriever::load(
-    const std::string& save_path) {
+    const std::string& save_path, bool read_only) {
   return std::shared_ptr<FinetunableRetriever>(
-      new FinetunableRetriever(save_path));
+      new FinetunableRetriever(save_path, read_only));
 }
 
 }  // namespace thirdai::search

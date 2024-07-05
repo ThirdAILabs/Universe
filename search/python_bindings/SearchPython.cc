@@ -154,7 +154,8 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("parallelize") = false)
       .def("prune", &OnDiskIndex::prune)
       .def("save", &OnDiskIndex::save, py::arg("filename"))
-      .def_static("load", &OnDiskIndex::load, py::arg("filename"));
+      .def_static("load", &OnDiskIndex::load, py::arg("filename"),
+                  py::arg("read_only") = false);
 
   py::class_<FinetunableRetriever, std::shared_ptr<FinetunableRetriever>>(
       search_submodule, "FinetunableRetriever")
@@ -185,7 +186,8 @@ void createSearchSubmodule(py::module_& module) {
       .def_static("train_from", &FinetunableRetriever::trainFrom,
                   py::arg("index"))
       .def("save", &FinetunableRetriever::save, py::arg("filename"))
-      .def_static("load", &FinetunableRetriever::load, py::arg("filename"));
+      .def_static("load", &FinetunableRetriever::load, py::arg("filename"),
+                  py::arg("read_only") = false);
 }
 
 }  // namespace thirdai::search::python

@@ -126,6 +126,7 @@ class NeuralDB:
         checkpoint_path: str,
         user_id: str = "user",
         on_progress: Callable = no_op,
+        **kwargs,
     ):
         """
         Constructs a NeuralDB from a checkpoint. This can be used save and reload
@@ -140,7 +141,7 @@ class NeuralDB:
             A NeuralDB.
         """
         checkpoint_path = Path(checkpoint_path)
-        savable_state = State.load(checkpoint_path, on_progress)
+        savable_state = State.load(checkpoint_path, on_progress, **kwargs)
         if savable_state.model and savable_state.model.get_model():
             savable_state.model.set_mach_sampling_threshold(0.01)
         if not isinstance(savable_state.logger, loggers.LoggerList):

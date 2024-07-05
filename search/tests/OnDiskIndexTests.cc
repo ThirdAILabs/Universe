@@ -204,7 +204,7 @@ TEST(OnDiskIndexTests, SaveLoad) {
               {docs.begin() + n_docs / 2, docs.end()});
   auto original_full_results = index.queryBatch(queries, /*k=*/5);
 
-  auto loaded_index = OnDiskIndex::load(save_path);
+  auto loaded_index = OnDiskIndex::load(save_path, false);
 
   auto loaded_partial_results = loaded_index->queryBatch(queries, /*k=*/5);
 

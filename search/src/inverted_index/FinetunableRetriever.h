@@ -67,10 +67,10 @@ class FinetunableRetriever {
   void save(const std::string& save_path) const;
 
   static std::shared_ptr<FinetunableRetriever> load(
-      const std::string& save_path);
+      const std::string& save_path, bool read_only);
 
  private:
-  explicit FinetunableRetriever(const std::string& save_path);
+  explicit FinetunableRetriever(const std::string& save_path, bool read_only);
 
   ar::ConstArchivePtr metadataToArchive() const;
 

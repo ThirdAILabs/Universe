@@ -84,8 +84,8 @@ class FinetunableRetriever(Model):
     def save_meta(self, directory: Path) -> None:
         self.retriever.save(str(directory))
 
-    def load_meta(self, directory: Path):
-        self.retriever = search.FinetunableRetriever.load(str(directory))
+    def load_meta(self, directory: Path, read_only: bool = False):
+        self.retriever = search.FinetunableRetriever.load(str(directory), read_only)
 
     def __getstate__(self) -> object:
         return {}
