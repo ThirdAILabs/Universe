@@ -1,5 +1,9 @@
 #include "Pattern.h"
+#include <archive/src/Archive.h>
+#include <data/src/transformations/ner/rules/CommonPatterns.h>
+#include <cstddef>
 #include <iostream>
+#include <memory>
 #include <regex>
 #include <string_view>
 
@@ -10,6 +14,7 @@ Pattern::Pattern(std::string entity, const std::string& pattern,
                  std::vector<std::pair<std::string, float>> context_keywords,
                  ValidatorFn validator)
     : _entity(std::move(entity)),
+      _pattern_string(pattern),
       _pattern(pattern),
       _pattern_score(pattern_score),
       _context_keywords(std::move(context_keywords)),
@@ -79,6 +84,30 @@ std::vector<MatchResult> Pattern::apply(const std::string& phrase) const {
   }
 
   return results;
+}
+
+Pattern::Pattern(const ar::Archive& archive) : _validator(nullptr) {
+  _entity = archive.str("entity");
+
+  if (common_entities.count(_entity)) {
+    auto pattern = std::static_pointer_cast<Pattern>(getRuleForEntity(_entity));
+    _pattern_string = pattern->_pattern_string;
+    _pattern = pattern->_pattern;
+    _pattern_score = pattern->_pattern_score;
+    _context_keywords = pattern->_context_keywords;
+    _validator = pattern->_validator;
+    return;
+  }
+
+  _pattern_string = archive.str("pattern_string");
+  _pattern = std::regex(_pattern_string);
+  _pattern_score = archive.f32("pattern_score");
+
+  auto keywords = archive.getAs<ar::VecStr>("context_keywords");
+  auto scores = archive.getAs<ar::VecF32>("context_keywords_scores");
+  for (size_t i = 0; i < keywords.size(); ++i) {
+    _context_keywords.push_back({keywords[i], scores[i]});
+  }
 }
 
 }  // namespace thirdai::data::ner

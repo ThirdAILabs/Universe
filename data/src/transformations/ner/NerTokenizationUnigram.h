@@ -54,6 +54,12 @@ class NerTokenizerUnigram final : public Transformation {
 
   const auto& processor() const { return _processor; }
 
+  void addNewTagLabelEntry(const std::string& tag, uint32_t label) {
+    if (_tag_to_label) {
+      _tag_to_label.value()[tag] = label;
+    }
+  }
+
  private:
   /*
    * _tokens_column : the column containing the string tokens
