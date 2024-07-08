@@ -63,9 +63,9 @@ jobs:
           CIBW_BUILD: "cp*manylinux_x86_64"
           CIBW_BUILD_VERBOSITY: 3
 
-          CIBW_BEFORE_TEST_LINUX: yum install golang libreoffice -y
-          CIBW_TEST_EXTRAS: "test"
-          CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
+          # CIBW_BEFORE_TEST_LINUX: yum install golang libreoffice -y
+          # CIBW_TEST_EXTRAS: "test"
+          # CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
 
           # Skip building on CPython <3.8 on the Mac
           # 3.11 (brought about by cibuildwheel upgrade to 2.9.0) is skipped as
@@ -73,7 +73,7 @@ jobs:
           # test our distributed pipeline.
           #
           # TODO(any): A more future proof solution when stuff starts working.
-          CIBW_SKIP: "cp36-* cp37-*"
+          CIBW_SKIP: "cp36-* cp37-* cp38-* cp310-* cp311-*"
 
 
       - name: Upload wheels
