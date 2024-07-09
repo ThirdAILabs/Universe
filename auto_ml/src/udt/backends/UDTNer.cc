@@ -500,7 +500,7 @@ ar::ConstArchivePtr UDTNer::toArchive(bool with_optimizer) const {
   map->set("label_to_tag", ar::vecStr(_label_to_tag));
 
   if (_rule) {
-    map->set("use_rules_for", ar::vecStr(_rule->entities()));
+    map->set("rules", _rule->toArchive());
   }
 
   if (_token_tag_counter != nullptr) {
@@ -526,8 +526,8 @@ UDTNer::UDTNer(const ar::Archive& archive)
       _tags_column(archive.str("tags_column")),
       _label_to_tag(archive.getAs<ar::VecStr>("label_to_tag")) {
   if (archive.contains("use_rules_for")) {
-    _rule = data::ner::getRuleForEntities(
-        archive.getAs<ar::VecStr>("use_rules_for"));
+    _rule = std::make_shared<data::ner::RuleCollection>(
+        data::ner::RuleCollection(*archive.get("rules")));
   }
   if (archive.contains("token_tag_counter")) {
     _token_tag_counter = std::make_shared<data::ner::TokenTagCounter>(

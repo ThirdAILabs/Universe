@@ -29,6 +29,7 @@
 #include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <data/src/transformations/ner/NerTokenTagCounter.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
+#include <data/src/transformations/ner/rules/Pattern.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
@@ -558,6 +559,14 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("organization_features"), py::arg("case_features"),
            py::arg("numerical_features"), py::arg("emails"),
            py::arg("phone_numbers"));
+
+  py::class_<ner::Pattern, std::shared_ptr<ner::Pattern>>(
+      transformations_submodule, "Pattern")
+      .def(py::init([](const std::string& entity, const std::string& pattern,
+                       float pattern_score) {
+             return ner::Pattern::make(entity, pattern, pattern_score);
+           }),
+           py::arg("score"), py::arg("pattern"), py::arg("pattern_score"));
 
   py::class_<ner::TokenTagCounter, ner::TokenTagCounterPtr>(
       transformations_submodule, "NerTokenTagCounter")

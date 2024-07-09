@@ -1,6 +1,7 @@
 #pragma once
 
 #include <data/src/transformations/ner/rules/Rule.h>
+#include <unordered_set>
 
 namespace thirdai::data::ner {
 
@@ -30,4 +31,8 @@ RulePtr getRuleForEntity(const std::string& entity);
 
 RulePtr getRuleForEntities(const std::vector<std::string>& entities);
 
+inline std::unordered_set<std::string> common_entities = {
+    "CREDITCARDNUMBER", "EMAIL", "MEDICAL_LICENSE",
+    "BANK_NUMBER",      "SSN",   "IBAN",
+    "CREDITCARDCVV"};
 }  // namespace thirdai::data::ner

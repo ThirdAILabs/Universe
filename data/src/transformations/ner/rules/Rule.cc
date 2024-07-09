@@ -1,8 +1,8 @@
 #include "Rule.h"
+#include <data/src/transformations/ner/rules/Pattern.h>
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <iterator>
-#include <regex>
 #include <unordered_set>
 
 namespace thirdai::data::ner {
@@ -84,6 +84,25 @@ std::vector<std::string> RuleCollection::entities() const {
     entities.insert(rule_entities.begin(), rule_entities.end());
   }
   return {entities.begin(), entities.end()};
+}
+
+ar::ConstArchivePtr RuleCollection::toArchive() const {
+  auto map = ar::Map::make();
+  auto rules = ar::List::make();
+  for (const auto& rule : _rules) {
+    rules->append(rule->toArchive());
+  }
+
+  map->set("rules", rules);
+  return map;
+}
+
+RuleCollection::RuleCollection(const ar::Archive& archive) {
+  _rules.clear();
+  for (const auto& rule : archive.get("rules")->list()) {
+    std::shared_ptr<Rule> rule_ptr = std::make_shared<Pattern>(*rule);
+    _rules.push_back(rule_ptr);
+  }
 }
 
 }  // namespace thirdai::data::ner

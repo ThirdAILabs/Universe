@@ -58,6 +58,10 @@ class NerTokenizerUnigram final : public Transformation {
                             "' not found in the specified tags list.");
   }
 
+  void addNewTagLabelEntry(const std::string& tag, uint32_t label) {
+    _tag_to_label[tag] = label;
+  }
+
   const auto& processor() const { return _processor; }
 
   void setTokenTagCounter(ner::TokenTagCounterPtr token_tag_counter) {

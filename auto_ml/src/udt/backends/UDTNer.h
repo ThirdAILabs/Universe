@@ -1,18 +1,25 @@
 #pragma once
-
+#include <bolt/src/layers/FullyConnectedLayer.h>
+#include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
+#include <bolt/src/nn/ops/Embedding.h>
+#include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Input.h>
 #include <archive/src/Archive.h>
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <data/src/transformations/ner/NerTokenTagCounter.h>
 #include <data/src/transformations/ner/rules/Rule.h>
 #include <string>
 #include <unordered_map>
-
 namespace thirdai::automl::udt {
 
 using TokenTags = std::vector<std::pair<std::string, float>>;
 using SentenceTags = std::vector<TokenTags>;
+
+std::shared_ptr<data::NerTokenizerUnigram> extractInputTransform(
+    const data::TransformationPtr& transform);
 
 class UDTNer final : public UDTBackend {
  public:
@@ -70,6 +77,84 @@ class UDTNer final : public UDTBackend {
       uint32_t top_k, float o_threshold);
 
   struct NerOptions;
+
+  void addNerRule(const std::shared_ptr<data::ner::Pattern>& new_rule) final {
+    if (_rule != nullptr) {
+      for (const auto& existing_rule : _rule->entities()) {
+        if (existing_rule == new_rule->entities()[0]) {
+          throw std::logic_error(
+              "Entity already present. Cannot add a new rule for the entity " +
+              existing_rule);
+        }
+      }
+      _rule->addRule(new_rule);
+    } else {
+      std::vector<data::ner::RulePtr> rule_vector = {new_rule};
+      _rule = std::make_shared<data::ner::RuleCollection>(rule_vector);
+    }
+    auto supervised_unigram_transform =
+        extractInputTransform(_supervised_transform);
+    supervised_unigram_transform->addNewTagLabelEntry(new_rule->entities()[0],
+                                                      0);
+  }
+
+  void addNewEntityToModel(const std::string& entity) final {
+    auto supervised_unigram_transform =
+        extractInputTransform(_supervised_transform);
+    for (const auto& existing_entities : _label_to_tag) {
+      if (existing_entities == entity) {
+        throw std::logic_error(
+            "Entity already a part of the model. Cannot make a new model with "
+            "the entity " +
+            entity);
+      }
+    }
+
+    _label_to_tag.push_back(entity);
+
+    auto fc_layer =
+        bolt::FullyConnected::cast(_model->opExecutionOrder().at(1));
+    auto embedding_layer =
+        bolt::Embedding::cast(_model->opExecutionOrder().at(0));
+
+    auto input = bolt::Input::make(embedding_layer->inputDim());
+    // auto emb_op = bolt::Embedding::make(
+    //     embedding_layer->dim(), embedding_layer->inputDim(), "relu", true);
+
+    auto hidden = embedding_layer->apply(input);
+
+    auto output_layer = bolt::FullyConnected::make(
+        _label_to_tag.size(), hidden->dim(), 1, "softmax", nullptr, true);
+
+    {
+      const float* weight_start = output_layer->weightsPtr();
+      int weight_size = output_layer->dim() * output_layer->inputDim();
+      std::vector<float> new_weights(weight_start, weight_start + weight_size);
+
+      const float* biases_start = output_layer->weightsPtr();
+      int biases_size = output_layer->dim() * output_layer->inputDim();
+      std::vector<float> new_biases(biases_start, biases_start + biases_size);
+
+      const float* old_weights = fc_layer->weightsPtr();
+      const float* old_biases = fc_layer->biasesPtr();
+      for (size_t i = 0; i < fc_layer->dim() * fc_layer->inputDim(); i++) {
+        new_weights[i] = old_weights[i];
+      }
+      for (size_t i = 0; i < fc_layer->dim(); ++i) {
+        new_biases[i] = old_biases[i];
+      }
+
+      output_layer->setWeights(new_weights.data());
+      output_layer->setBiases(new_biases.data());
+    }
+
+    auto output = output_layer->apply(hidden);
+
+    auto labels = bolt::Input::make(output->dim());
+    auto loss = bolt::CategoricalCrossEntropy::make(output, labels);
+
+    _model = bolt::Model::make({input}, {output}, {loss});
+  }
 
   static NerOptions fromPretrained(const UDTNer* pretrained_model);
 
