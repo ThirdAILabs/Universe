@@ -563,10 +563,10 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   py::class_<ner::Pattern, std::shared_ptr<ner::Pattern>>(
       transformations_submodule, "Pattern")
       .def(py::init([](const std::string& entity, const std::string& pattern,
-                       float pattern_score) {
-             return ner::Pattern::make(entity, pattern, pattern_score);
+                       float score) {
+             return ner::Pattern::make(entity, pattern, score);
            }),
-           py::arg("score"), py::arg("pattern"), py::arg("pattern_score"));
+           py::arg("entity"), py::arg("pattern"), py::arg("score"));
 
   py::class_<ner::TokenTagCounter, ner::TokenTagCounterPtr>(
       transformations_submodule, "NerTokenTagCounter")

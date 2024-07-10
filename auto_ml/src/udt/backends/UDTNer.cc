@@ -525,7 +525,7 @@ UDTNer::UDTNer(const ar::Archive& archive)
       _tokens_column(archive.str("tokens_column")),
       _tags_column(archive.str("tags_column")),
       _label_to_tag(archive.getAs<ar::VecStr>("label_to_tag")) {
-  if (archive.contains("use_rules_for")) {
+  if (archive.contains("rules")) {
     _rule = std::make_shared<data::ner::RuleCollection>(
         data::ner::RuleCollection(*archive.get("rules")));
   }
