@@ -57,7 +57,9 @@ class FinetunableRetriever(Retriever):
             texts = texts.to_list()
             time.sleep(3)
 
-            self.retriever.index(ids=ids, docs=texts.to_list())
+            print("ACTUAL INDEXING")
+
+            self.retriever.index(ids=ids, docs=texts)
 
     def supervised_train(self, samples: Iterable[SupervisedBatch], **kwargs):
         for batch in samples:
