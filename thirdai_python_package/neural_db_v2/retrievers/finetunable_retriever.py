@@ -39,7 +39,12 @@ class FinetunableRetriever(Retriever):
 
     def insert(self, chunks: Iterable[ChunkBatch], **kwargs):
         print("starting retriever insert")
+        import time
+        time.sleep(3)
+        print("starting retriever for loop")
         for batch in chunks:
+            time.sleep(3)
+            print("indexing call")
             texts = batch.keywords + " " + batch.text
 
             self.retriever.index(ids=batch.chunk_id.to_list(), docs=texts.to_list())
