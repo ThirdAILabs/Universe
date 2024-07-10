@@ -144,10 +144,10 @@ std::string getNumericalFeatures(const std::string& input) {
 
   if (!strippedInput.empty()) {
     // useful for credit cards or other account numbers
-    if ((luhnCheck(strippedInput) && strippedInput.size() >= 10) ||
-        strippedInput.size() > 12) {
-      return "IS_ACCOUNT_NUMBER";
-    }
+    // if ((luhnCheck(strippedInput) && strippedInput.size() >= 10) ||
+    //     strippedInput.size() > 12) {
+    //   return "IS_ACCOUNT_NUMBER";
+    // }
 
     // if a token contains both alphabets and numbers, it is probably some uin
     if (containsAlphabets(input) && input.size() >= 6) {
