@@ -39,18 +39,23 @@ class PandasChunkStore(ChunkStore):
                 self.custom_id_map[custom_id] = chunk_id
 
     def insert(self, chunks: Iterable[NewChunkBatch], **kwargs) -> Iterable[ChunkBatch]:
+        print("Starting pandas chunk store insert")
         all_chunks = [self.chunk_df]
         all_metadata = [self.metadata_df]
         output_batches = []
         for batch in chunks:
+            print("starting chunk for loop")
             chunk_ids = pd.Series(
                 np.arange(self.next_id, self.next_id + len(batch), dtype=np.int64)
             )
             self.next_id += len(batch)
 
+            print("creating chunk df")
+
             chunk_df = batch.to_df()
             chunk_df["chunk_id"] = chunk_ids
 
+            print("appending to all chunks")
             all_chunks.append(chunk_df)
 
             if batch.metadata is not None:
@@ -60,13 +65,17 @@ class PandasChunkStore(ChunkStore):
 
             self._update_custom_ids(batch.custom_id, chunk_ids)
 
+            print("appending chunk batch to output_batched")
             output_batches.append(
                 ChunkBatch(chunk_id=chunk_ids, text=batch.text, keywords=batch.keywords)
             )
+            print("end of loop ")
 
+        print("concat for chunk df")
         self.chunk_df = pd.concat(all_chunks)
         self.chunk_df.set_index("chunk_id", inplace=True, drop=False)
 
+        print("concat for metadata df")
         self.metadata_df = pd.concat(all_metadata)
 
         if not self.metadata_df.empty:

@@ -34,6 +34,7 @@ class FinetunableRetriever(Retriever):
         )
 
     def insert(self, chunks: Iterable[ChunkBatch], **kwargs):
+        print("starting retriever insert")
         for batch in chunks:
             texts = batch.keywords + " " + batch.text
 
