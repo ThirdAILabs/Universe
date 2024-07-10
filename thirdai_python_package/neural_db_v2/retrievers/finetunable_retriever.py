@@ -7,9 +7,13 @@ from ..core.types import ChunkBatch, ChunkId, Score, SupervisedBatch
 
 
 class FinetunableRetriever(Retriever):
-    def __init__(self, **kwargs):
+    def __init__(self, on_disk=False, **kwargs):
         super().__init__()
-        self.retriever = search.FinetunableRetriever()
+        import uuid
+        save_path = None
+        if on_disk:
+            save_path = f"{uuid.uuid4()}.db"
+        self.retriever = search.FinetunableRetriever(save_path=save_path)
 
     def search(
         self, queries: List[str], top_k: int, **kwargs
