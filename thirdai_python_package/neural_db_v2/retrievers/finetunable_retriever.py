@@ -42,12 +42,22 @@ class FinetunableRetriever(Retriever):
         import time
         time.sleep(3)
         print("starting retriever for loop")
+        print(len(chunks))
         for batch in chunks:
             time.sleep(3)
             print("indexing call")
             texts = batch.keywords + " " + batch.text
+            time.sleep(3)
 
-            self.retriever.index(ids=batch.chunk_id.to_list(), docs=texts.to_list())
+            print("CREATING IDS")
+            ids = batch.chunk_id.to_list()
+            time.sleep(3)
+
+            print("CREATING TEXTS")
+            texts = texts.to_list()
+            time.sleep(3)
+
+            self.retriever.index(ids=ids, docs=texts.to_list())
 
     def supervised_train(self, samples: Iterable[SupervisedBatch], **kwargs):
         for batch in samples:
