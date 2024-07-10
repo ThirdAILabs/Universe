@@ -377,7 +377,7 @@ def test_chunk_store_remapping(chunk_store, id_type):
 
 
 def test_sql_lite_chunk_store_batching():
-    store = SQLiteChunkStore()
+    store = SQLiteChunkStore(max_in_memory_batches=2)
 
     new_batch = NewChunkBatch(
         custom_id=None,
@@ -389,8 +389,8 @@ def test_sql_lite_chunk_store_batching():
         ),
     )
 
-    inserted_batches_1 = store.insert([new_batch], sql_lite_iterator_batch_size=2)
-    inserted_batches_2 = store.insert([new_batch], sql_lite_iterator_batch_size=2)
+    inserted_batches_1 = store.insert([new_batch])
+    inserted_batches_2 = store.insert([new_batch])
 
     def assert_lens(inserted_batches):
         num_batches = 0
