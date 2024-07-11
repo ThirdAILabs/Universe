@@ -70,6 +70,7 @@ jobs:
           CIBW_BUILD: "cp*macosx_x86_64"
           CIBW_BUILD_VERBOSITY: 3
 
+          CIBW_BEFORE_TEST_MACOS: pip install --upgrade pip
           CIBW_TEST_EXTRAS: "test"
           CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
 
