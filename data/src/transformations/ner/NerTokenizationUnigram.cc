@@ -114,6 +114,10 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
     }
   }
 
+  // if (_target_column) {
+  //   std::cout << "Completed token tags counter modifications" << std::endl;
+  // }
+
 #pragma omp parallel for default(none)                                       \
     shared(text_tokens, sample_offsets, featurized_sentences, targets, tags, \
            error) if (text_tokens->numRows() > 1)

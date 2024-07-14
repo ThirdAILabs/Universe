@@ -70,7 +70,8 @@ float TokenTagCounter::getTokenTagRatio(const std::string& token,
 
 std::string TokenTagCounter::getTokenEncoding(const std::string& token) const {
   if (!_token_counts.count(token)) {
-    return " UNIQUE";
+    // return " UNIQUE";
+    return "";
   }
 
   std::string encoding;

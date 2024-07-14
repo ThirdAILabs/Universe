@@ -394,6 +394,34 @@ py::object UDTNer::predictBatch(const MapInputBatch& samples,
   return py::cast(tags);
 }
 
+bool containsAlphabets(const std::string& input) {
+  return std::any_of(input.begin(), input.end(), ::isalpha);
+}
+
+void applyLocationFilter(SentenceTags& sentence_tags,
+                         const std::vector<std::string>& tokens) {
+  for (size_t i = 0; i < sentence_tags.size(); ++i) {
+    if (sentence_tags[i][0].first != "LOCATION" ||
+        containsAlphabets(tokens[i])) {
+      continue;
+    }
+
+    bool has_location_context = false;
+
+    if (i > 0 && sentence_tags[i - 1][0].first == "LOCATION") {
+      has_location_context = true;
+    }
+    if (i < sentence_tags.size() - 1 &&
+        sentence_tags[i + 1][0].first == "LOCATION") {
+      has_location_context = true;
+    }
+
+    if (!has_location_context) {
+      sentence_tags[i][0].first = "O";
+    }
+  }
+}
+
 std::vector<SentenceTags> UDTNer::predictTags(
     const std::vector<std::string>& sentences, bool sparse_inference,
     uint32_t top_k, float o_threshold) {
@@ -466,6 +494,9 @@ std::vector<SentenceTags> UDTNer::predictTags(
 
       token_index++;
     }
+  }
+  for (size_t i = 0; i < output_tags.size(); i++) {
+    applyLocationFilter(output_tags[i], tokens[i]);
   }
 
   return output_tags;
