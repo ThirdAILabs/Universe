@@ -123,7 +123,8 @@ void testFinetunableRetrieverSaveLoad(bool on_disk) {
                   {docs.begin() + n_docs / 2, docs.end()});
   auto original_full_results = retriever.queryBatch(queries, /*k=*/5);
 
-  auto loaded_retriever = FinetunableRetriever::load(save_path);
+  auto loaded_retriever =
+      FinetunableRetriever::load(save_path, /*read_only=*/false);
 
   auto loaded_partial_results = loaded_retriever->queryBatch(queries, /*k=*/5);
 
