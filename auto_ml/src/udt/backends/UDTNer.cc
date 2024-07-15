@@ -398,6 +398,48 @@ bool containsAlphabets(const std::string& input) {
   return std::any_of(input.begin(), input.end(), ::isalpha);
 }
 
+uint32_t find_max_contiguous_window(const SentenceTags& sentence_tags,
+                                    uint32_t index,
+                                    const std::string& tag_to_find) {
+  int count = 0;
+
+  // Check right from the index
+  for (size_t i = index; i < sentence_tags.size(); ++i) {
+    if (sentence_tags[i].empty() || sentence_tags[i][0].first != tag_to_find) {
+      break;
+    }
+    count++;
+  }
+
+  return count - 1;
+}
+
+void apply_consecutive_tag_filter(SentenceTags& sentence_tags,
+                                  const std::string& target_tag,
+                                  uint32_t filter_size) {
+  size_t index = 0;
+
+  while (index < sentence_tags.size()) {
+    const std::string& tag =
+        sentence_tags[index].empty() ? "" : sentence_tags[index][0].first;
+
+    if (tag == target_tag) {
+      uint32_t window_size =
+          find_max_contiguous_window(sentence_tags, index, target_tag);
+
+      if (window_size + 1 < filter_size) {
+        for (uint32_t i = 0; i <= window_size; ++i) {
+          sentence_tags[index + i] = {{"O", 1.0}};
+        }
+      }
+
+      index += window_size + 1;
+    } else {
+      index++;
+    }
+  }
+}
+
 void applyLocationFilter(SentenceTags& sentence_tags,
                          const std::vector<std::string>& tokens) {
   for (size_t i = 0; i < sentence_tags.size(); ++i) {
@@ -497,6 +539,10 @@ std::vector<SentenceTags> UDTNer::predictTags(
   }
   for (size_t i = 0; i < output_tags.size(); i++) {
     applyLocationFilter(output_tags[i], tokens[i]);
+    apply_consecutive_tag_filter(output_tags[i], "LOCATION",
+                                 defaults::NER_MIN_LOCATION_TAGS);
+    apply_consecutive_tag_filter(output_tags[i], "NAME",
+                                 defaults::NER_MIN_NAME_TAGS);
   }
 
   return output_tags;
