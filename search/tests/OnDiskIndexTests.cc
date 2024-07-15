@@ -4,12 +4,16 @@
 #include <search/src/inverted_index/OnDiskIndex.h>
 #include <cstdlib>
 #include <filesystem>
+#include <random>
 
 namespace thirdai::search::tests {
 
 class OnDiskIndexTests : public ::testing::Test {
  public:
-  OnDiskIndexTests() : _prefix("tmp_" + std::to_string(rand()) + "_") {}
+  OnDiskIndexTests() {
+    std::mt19937 rng(time(0));
+    _prefix = "tmp_" + std::to_string(rng()) + "_";
+  }
 
   void TearDown() final {
     for (const auto& db : _dbs_created) {
