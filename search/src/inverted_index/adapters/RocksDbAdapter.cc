@@ -88,6 +88,7 @@ void RocksDbAdapter::storeDocLens(const std::vector<DocId>& ids,
   if (!status.ok()) {
     raiseError("Write txn commit", status);
   }
+  delete txn;
 
   updateNDocs(ids.size());
   updateSumDocLens(sum_doc_lens);
