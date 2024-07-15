@@ -32,7 +32,7 @@ inline bool deserialize(const rocksdb::Slice& value, T& output) {
   return true;
 }
 
-inline bool isPruned(const std::string& value) {
+inline bool isPruned(const rocksdb::Slice& value) {
   auto status = *reinterpret_cast<const TokenStatus*>(value.data());
   return status == TokenStatus::Pruned;
 }
@@ -66,8 +66,8 @@ class AppendDocCounts : public rocksdb::AssociativeMergeOperator {
       return true;
     }
 
-    auto status = *reinterpret_cast<const TokenStatus*>(existing_value->data());
-    if (status == TokenStatus::Pruned) {
+    if (isPruned(*existing_value)) {
+      *new_value = existing_value->ToString();
       return true;
     }
 
@@ -76,13 +76,11 @@ class AppendDocCounts : public rocksdb::AssociativeMergeOperator {
     // indexing. If we add support for updates, then this needs to be modified
     // to merge the 2 values based on doc_id.
 
-    *new_value = std::string(existing_value->size() + value.size(), 0);
+    *new_value = std::string();
+    new_value->reserve(existing_value->size() + value.size());
 
-    std::copy(existing_value->data(),
-              existing_value->data() + existing_value->size(),
-              new_value->data());
-    std::copy(value.data(), value.data() + value.size(),
-              new_value->data() + existing_value->size());
+    new_value->append(existing_value->data(), existing_value->size());
+    new_value->append(value.data(), value.size());
 
     return true;
   }
