@@ -471,10 +471,26 @@ void applyPhoneFilter(SentenceTags& sentence_tags,
                       const std::vector<std::string>& tokens) {
   for (size_t i = 0; i < sentence_tags.size(); ++i) {
     std::string digits = data::stripNonDigits(tokens[i]);
+    if (sentence_tags[i][0].first == "PHONENUMBER" &&
+        containsAlphabets(tokens[i], 'x')) {
+      sentence_tags[i][0].first = "O";
+      sentence_tags[i][0].second = 1;
+    }
+    if (sentence_tags[i][0].first == "PHONENUMBER" &&
+        (digits.size() == 2 || digits.size() == 5 || digits.size() > 15)) {
+      sentence_tags[i][0].first = "O";
+      sentence_tags[i][0].second = 1;
+    }
+  }
+}
 
-    if (sentence_tags[i][0].first != "PHONENUMBER" ||
-        !containsAlphabets(tokens[i], 'x') || digits.size() == 2 ||
-        digits.size() == 5 || digits.size() == 8 || digits.size() > 14) {
+void applySSNFilter(SentenceTags& sentence_tags,
+                    const std::vector<std::string>& tokens) {
+  for (size_t i = 0; i < sentence_tags.size(); ++i) {
+    std::string digits = data::stripNonDigits(tokens[i]);
+
+    if (sentence_tags[i][0].first != "SSN" || !containsAlphabets(tokens[i]) ||
+        digits.size() == 8 || digits.size() > 9) {
       continue;
     }
     sentence_tags[i][0].first = "O";
@@ -562,6 +578,7 @@ std::vector<SentenceTags> UDTNer::predictTags(
     apply_consecutive_tag_filter(output_tags[i], "NAME",
                                  defaults::NER_MIN_NAME_TAGS);
     applyPhoneFilter(output_tags[i], tokens[i]);
+    applySSNFilter(output_tags[i], tokens[i]);
   }
 
   return output_tags;

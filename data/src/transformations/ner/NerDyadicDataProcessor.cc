@@ -48,8 +48,10 @@ std::string stripNonDigits(const std::string& input) {
   return digits;
 }
 
-bool containsAlphabets(const std::string& input) {
-  return std::any_of(input.begin(), input.end(), ::isalpha);
+bool containsAlphabets(const std::string& input, char exclude = '\0') {
+  return std::any_of(input.begin(), input.end(), [exclude](char c) {
+    return std::isalpha(c) && c != exclude;
+  });
 }
 
 bool is_number_with_punct(const std::string& s) {
@@ -58,7 +60,7 @@ bool is_number_with_punct(const std::string& s) {
   for (char c : s) {
     if (std::isdigit(c)) {
       has_digit = true;
-    } else if (!std::ispunct(c)) {
+    } else if (!std::ispunct(c) && c != 'x') {
       return false;
     }
   }
@@ -144,13 +146,13 @@ std::string getNumericalFeatures(const std::string& input) {
 
   if (!strippedInput.empty()) {
     // useful for credit cards or other account numbers
-    if ((luhnCheck(strippedInput) && strippedInput.size() >= 10) ||
-        strippedInput.size() > 12) {
-      return "IS_ACCOUNT_NUMBER";
-    }
+    // if ((luhnCheck(strippedInput) && strippedInput.size() >= 10) ||
+    //     strippedInput.size() > 12) {
+    //   return "IS_ACCOUNT_NUMBER";
+    // }
 
     // if a token contains both alphabets and numbers, it is probably some uin
-    if (containsAlphabets(input) && input.size() >= 6) {
+    if (containsAlphabets(input, 'x') && input.size() >= 6) {
       return "IS_UIN";
     }
 
@@ -161,7 +163,7 @@ std::string getNumericalFeatures(const std::string& input) {
     }
 
     // phone numbers
-    if ((strippedInput.size() >= 10 && strippedInput.size() <= 12) ||
+    if ((strippedInput.size() >= 10 && strippedInput.size() <= 16) ||
         input[0] == '+' || input[0] == '(' || input.back() == ')') {  // NOLINT
       return "MAYBE_PHONE";
     }
