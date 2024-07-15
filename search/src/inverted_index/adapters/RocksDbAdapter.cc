@@ -131,15 +131,15 @@ std::vector<std::vector<DocCount>> RocksDbAdapter::lookupDocs(
     const std::vector<HashedToken>& query_tokens) const {
   std::vector<rocksdb::Slice> keys;
   keys.reserve(query_tokens.size());
-  std::vector<std::string> values;
 
   for (const auto& token : query_tokens) {
     keys.emplace_back(reinterpret_cast<const char*>(&token), sizeof(token));
   }
-  values.resize(keys.size());
-  std::vector<rocksdb::ColumnFamilyHandle*> handles(keys.size(),
-                                                    _token_to_docs);
-  auto statuses = _db->MultiGet(rocksdb::ReadOptions(), handles, keys, &values);
+  std::vector<rocksdb::PinnableSlice> values(keys.size());
+  std::vector<rocksdb::Status> statuses(keys.size());
+
+  _db->MultiGet(rocksdb::ReadOptions(), _token_to_docs, keys.size(),
+                keys.data(), values.data(), statuses.data());
 
   std::vector<std::vector<DocCount>> results;
   results.reserve(keys.size());

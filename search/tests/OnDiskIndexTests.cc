@@ -2,12 +2,32 @@
 #include <gtest/gtest.h>
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <search/src/inverted_index/OnDiskIndex.h>
+#include <cstdlib>
 #include <filesystem>
 
 namespace thirdai::search::tests {
 
-TEST(OnDiskIndexTests, BasicRetrieval) {
-  std::string db_name = "tmp.db";
+class OnDiskIndexTests : public ::testing::Test {
+ public:
+  void TearDown() final {
+    for (const auto& db : _dbs_created) {
+      std::filesystem::remove_all(db);
+    }
+  }
+
+  std::string tmpDbName() {
+    std::string name = "tmp_db_" + std::to_string(_dbs_created.size()) + "_" +
+                       std::to_string(rand());
+    _dbs_created.push_back(name);
+    return name;
+  }
+
+ private:
+  std::vector<std::string> _dbs_created;
+};
+
+TEST_F(OnDiskIndexTests, BasicRetrieval) {
+  std::string db_name = tmpDbName();
   OnDiskIndex index(db_name);
 
   index.index({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, {{"a b c d e g"},
@@ -40,12 +60,10 @@ TEST(OnDiskIndexTests, BasicRetrieval) {
   // These candidates are a subset of the original results plus docs 5 & 2 which
   // score 0 are added to test they are not returned.
   checkRank(index, {"f g"}, {8, 5, 6, 2, 7}, {7, 6, 8});
-
-  std::filesystem::remove_all(db_name);
 }
 
-TEST(OnDiskIndexTests, LessFrequentTokensScoreHigher) {
-  std::string db_name = "tmp.db";
+TEST_F(OnDiskIndexTests, LessFrequentTokensScoreHigher) {
+  std::string db_name = tmpDbName();
   OnDiskIndex index(db_name);
 
   index.index({1, 2, 3, 4, 5, 6, 7}, {
@@ -64,12 +82,10 @@ TEST(OnDiskIndexTests, LessFrequentTokensScoreHigher) {
   // than doc 1 which contains "a" and "b". This ordering is based on
   // prioritizing less frequent tokens.
   checkQuery(index, {"a b h j"}, {6, 4, 1});
-
-  std::filesystem::remove_all(db_name);
 }
 
-TEST(OnDiskIndexTests, RepeatedTokensInDocs) {
-  std::string db_name = "tmp.db";
+TEST_F(OnDiskIndexTests, RepeatedTokensInDocs) {
+  std::string db_name = tmpDbName();
   OnDiskIndex index(db_name);
 
   index.index(
@@ -84,12 +100,10 @@ TEST(OnDiskIndexTests, RepeatedTokensInDocs) {
   // ranked higher. This also checks that having more unique tokens is
   // preferable to have the same token repeated.
   checkQuery(index, {"c a q"}, {1, 5, 3});
-
-  std::filesystem::remove_all(db_name);
 }
 
-TEST(OnDiskIndexTests, RepeatedTokensInQuery) {
-  std::string db_name = "tmp.db";
+TEST_F(OnDiskIndexTests, RepeatedTokensInQuery) {
+  std::string db_name = tmpDbName();
   OnDiskIndex index(db_name);
 
   index.index(
@@ -100,12 +114,10 @@ TEST(OnDiskIndexTests, RepeatedTokensInQuery) {
   // "q" from the query, doc 2 has tokens "a m" from the query. Doc 4 scores
   // higher because token "q" occurs more in the query than token "m".
   checkQuery(index, {"q a q m"}, {4, 2});
-
-  std::filesystem::remove_all(db_name);
 }
 
-TEST(OnDiskIndexTests, ShorterDocsScoreHigherWithSameTokens) {
-  std::string db_name = "tmp.db";
+TEST_F(OnDiskIndexTests, ShorterDocsScoreHigherWithSameTokens) {
+  std::string db_name = tmpDbName();
   OnDiskIndex index(db_name);
 
   index.index({1, 2, 3, 4, 5},
@@ -114,12 +126,10 @@ TEST(OnDiskIndexTests, ShorterDocsScoreHigherWithSameTokens) {
   // Both docs 2 and 3 contain 2 query tokens, but they form a higher fraction
   // within 2 than 3.
   checkQuery(index, {"c a q"}, {2, 3});
-
-  std::filesystem::remove_all(db_name);
 }
 
-TEST(OnDiskIndexTests, DocRemoval) {
-  std::string db_name = "tmp.db";
+TEST_F(OnDiskIndexTests, DocRemoval) {
+  std::string db_name = tmpDbName();
   OnDiskIndex index(db_name);
 
   index.index({1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, {{"a b c d e"},
@@ -136,19 +146,16 @@ TEST(OnDiskIndexTests, DocRemoval) {
   checkQuery(index, {"a b c d e"}, {1, 2, 3, 4, 5});
   index.remove({2, 4});
   checkQuery(index, {"a b c d e"}, {1, 3, 5});
-
-  std::filesystem::remove_all(db_name);
 }
 
-TEST(OnDiskIndexTests, SyntheticDataset) {
+TEST_F(OnDiskIndexTests, SyntheticDataset) {
   size_t vocab_size = 10000;
   size_t n_docs = 1000;
   size_t topk = 10;
 
   auto [ids, docs, queries] = makeDocsAndQueries(vocab_size, n_docs);
 
-  std::string db1_name = "tmp1.db";
-  OnDiskIndex index(db1_name);
+  OnDiskIndex index(tmpDbName());
 
   index.index(ids, docs);
 
@@ -162,8 +169,7 @@ TEST(OnDiskIndexTests, SyntheticDataset) {
   }
 
   // Check that building index incrementally gets the same results.
-  std::string db2_name = "tmp2.db";
-  OnDiskIndex incremental_index(db2_name);
+  OnDiskIndex incremental_index(tmpDbName());
 
   size_t n_chunks = 10;
   size_t chunksize = n_docs / n_chunks;
@@ -178,26 +184,22 @@ TEST(OnDiskIndexTests, SyntheticDataset) {
     ASSERT_EQ(original_results[i],
               incremental_index.query(queries[i], topk, true));
   }
-
-  std::filesystem::remove_all(db1_name);
-  std::filesystem::remove_all(db2_name);
 }
 
-TEST(OnDiskIndexTests, SaveLoad) {
+TEST_F(OnDiskIndexTests, SaveLoad) {
   size_t vocab_size = 1000;
   size_t n_docs = 100;
 
   auto [ids, docs, queries] = makeDocsAndQueries(vocab_size, n_docs);
 
-  std::string db_name = "tmp.db";
-  OnDiskIndex index(db_name);
+  OnDiskIndex index(tmpDbName());
 
   index.index({ids.begin(), ids.begin() + n_docs / 2},
               {docs.begin(), docs.begin() + n_docs / 2});
 
   auto original_partial_results = index.queryBatch(queries, /*k=*/5);
 
-  std::string save_path = "./tmp.db.save";
+  std::string save_path = tmpDbName();
   index.save(save_path);
 
   index.index({ids.begin() + n_docs / 2, ids.end()},
@@ -215,9 +217,6 @@ TEST(OnDiskIndexTests, SaveLoad) {
   auto loaded_full_results = loaded_index->queryBatch(queries, /*k=*/5);
 
   ASSERT_EQ(original_full_results, loaded_full_results);
-
-  std::filesystem::remove_all(db_name);
-  std::filesystem::remove_all(save_path);
 }
 
 }  // namespace thirdai::search::tests
