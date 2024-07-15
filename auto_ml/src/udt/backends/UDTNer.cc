@@ -17,6 +17,7 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/Transformation.h>
+#include <data/src/transformations/ner/NerDyadicDataProcessor.h>
 #include <data/src/transformations/ner/NerTokenTagCounter.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
 #include <data/src/transformations/ner/rules/CommonPatterns.h>
@@ -394,8 +395,10 @@ py::object UDTNer::predictBatch(const MapInputBatch& samples,
   return py::cast(tags);
 }
 
-bool containsAlphabets(const std::string& input) {
-  return std::any_of(input.begin(), input.end(), ::isalpha);
+bool containsAlphabets(const std::string& input, char exclude = '\0') {
+  return std::any_of(input.begin(), input.end(), [exclude](char c) {
+    return std::isalpha(c) && c != exclude;
+  });
 }
 
 uint32_t find_max_contiguous_window(const SentenceTags& sentence_tags,
@@ -461,6 +464,21 @@ void applyLocationFilter(SentenceTags& sentence_tags,
     if (!has_location_context) {
       sentence_tags[i][0].first = "O";
     }
+  }
+}
+
+void applyPhoneFilter(SentenceTags& sentence_tags,
+                      const std::vector<std::string>& tokens) {
+  for (size_t i = 0; i < sentence_tags.size(); ++i) {
+    std::string digits = data::stripNonDigits(tokens[i]);
+
+    if (sentence_tags[i][0].first != "PHONENUMBER" ||
+        !containsAlphabets(tokens[i], 'x') || digits.size() == 2 ||
+        digits.size() == 5 || digits.size() == 8 || digits.size() > 14) {
+      continue;
+    }
+    sentence_tags[i][0].first = "O";
+    sentence_tags[i][0].second = 1;
   }
 }
 
@@ -543,6 +561,7 @@ std::vector<SentenceTags> UDTNer::predictTags(
                                  defaults::NER_MIN_LOCATION_TAGS);
     apply_consecutive_tag_filter(output_tags[i], "NAME",
                                  defaults::NER_MIN_NAME_TAGS);
+    applyPhoneFilter(output_tags[i], tokens[i]);
   }
 
   return output_tags;

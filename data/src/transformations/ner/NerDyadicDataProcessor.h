@@ -18,6 +18,8 @@ bool is_number_with_punct(const std::string& s);
 
 std::string trimPunctuation(const std::string& str);
 
+std::string stripNonDigits(const std::string& input);
+
 struct FeatureEnhancementConfig {
   bool enhance_names = true;
   bool enhance_location_features = true;
