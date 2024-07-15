@@ -9,6 +9,8 @@ namespace thirdai::search::tests {
 
 class OnDiskIndexTests : public ::testing::Test {
  public:
+  OnDiskIndexTests() : _prefix("tmp_" + std::to_string(rand()) + "_") {}
+
   void TearDown() final {
     for (const auto& db : _dbs_created) {
       std::filesystem::remove_all(db);
@@ -16,13 +18,13 @@ class OnDiskIndexTests : public ::testing::Test {
   }
 
   std::string tmpDbName() {
-    std::string name = "tmp_db_" + std::to_string(_dbs_created.size()) + "_" +
-                       std::to_string(rand());
+    std::string name = _prefix + std::to_string(_dbs_created.size()) + ".db";
     _dbs_created.push_back(name);
     return name;
   }
 
  private:
+  std::string _prefix;
   std::vector<std::string> _dbs_created;
 };
 
