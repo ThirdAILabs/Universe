@@ -13,7 +13,7 @@ struct DocCount {
 
   DocId doc_id : 40;
   uint32_t count : 24;
-};
+} __attribute__((packed));
 
 static_assert(sizeof(DocCount) == 8);
 

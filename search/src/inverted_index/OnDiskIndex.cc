@@ -27,11 +27,11 @@ namespace thirdai::search {
 namespace {
 
 std::string dbName(const std::string& path) {
-  return std::filesystem::path(path) / "db";
+  return (std::filesystem::path(path) / "db").string();
 }
 
 std::string metadataPath(const std::string& path) {
-  return std::filesystem::path(path) / "metadata";
+  return (std::filesystem::path(path) / "metadata").string();
 }
 
 }  // namespace

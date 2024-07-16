@@ -31,11 +31,11 @@ constexpr size_t QUERY_INDEX_THRESHOLD = 1;
 namespace {
 
 std::string docIndexPath(const std::string& save_path) {
-  return std::filesystem::path(save_path) / "primary";
+  return (std::filesystem::path(save_path) / "primary").string();
 }
 
 std::string queryIndexPath(const std::string& save_path) {
-  return std::filesystem::path(save_path) / "secondary";
+  return (std::filesystem::path(save_path) / "secondary").string();
 }
 
 }  // namespace
@@ -261,7 +261,7 @@ void FinetunableRetriever::metadataFromArchive(const ar::Archive& archive) {
 namespace {
 
 std::string metadataPath(const std::string& save_path) {
-  return std::filesystem::path(save_path) / "metadata";
+  return (std::filesystem::path(save_path) / "metadata").string();
 }
 
 }  // namespace

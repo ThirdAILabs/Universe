@@ -173,7 +173,8 @@ void ShardedRetriever::save(const std::string& new_save_path) const {
   std::vector<std::string> saved_shards;
   for (size_t i = 0; i < _shards.size(); i++) {
     std::string shard_file = "shard_" + std::to_string(i);
-    _shards[i]->save(std::filesystem::path(new_save_path) / shard_file);
+    _shards[i]->save(
+        (std::filesystem::path(new_save_path) / shard_file).string());
     saved_shards.push_back(shard_file);
   }
 
@@ -184,14 +185,14 @@ void ShardedRetriever::save(const std::string& new_save_path) const {
   metadata->set("shard_size", ar::u64(_shard_size));
 
   auto metadata_file = dataset::SafeFileIO::ofstream(
-      std::filesystem::path(new_save_path) / "metadata");
+      (std::filesystem::path(new_save_path) / "metadata").string());
   ar::serialize(metadata, metadata_file);
 }
 
 ShardedRetriever::ShardedRetriever(const std::string& save_path,
                                    bool read_only) {
   auto metadata_file = dataset::SafeFileIO::ifstream(
-      std::filesystem::path(save_path) / "metadata");
+      (std::filesystem::path(save_path) / "metadata").string());
   auto metadata = ar::deserialize(metadata_file);
 
   _shard_size = metadata->u64("shard_size");
@@ -209,8 +210,8 @@ ShardedRetriever::ShardedRetriever(const std::string& save_path,
   }
 
   for (const auto& shard_file : metadata->getAs<ar::VecStr>("shards")) {
-    _shards.push_back(
-        _factory->load(std::filesystem::path(save_path) / shard_file));
+    _shards.push_back(_factory->load(
+        (std::filesystem::path(save_path) / shard_file).string()));
   }
 }
 
