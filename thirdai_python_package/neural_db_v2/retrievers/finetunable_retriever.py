@@ -37,8 +37,7 @@ class FinetunableRetriever(Retriever):
         for chunk in chunks:
             # Indexing in batches within a chunk reduces the RAM usage significantly
             # for large chunks
-            i = 0
-            while i < len(chunk):
+            for i in range(0, len(chunk), index_batch_size):
                 ids = chunk.chunk_id[i : i + index_batch_size]
                 texts = (
                     chunk.keywords[i : i + index_batch_size]
