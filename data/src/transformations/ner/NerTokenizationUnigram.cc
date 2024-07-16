@@ -7,11 +7,12 @@
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/ner/NerDyadicDataProcessor.h>
 #include <data/src/transformations/ner/NerTokenFromStringArray.h>
+#include <data/src/transformations/ner/NerTokenTagCounter.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
-#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -19,7 +20,7 @@
 namespace thirdai::data {
 
 std::string trimPunctuation(const std::string& str) {
-  const std::string punctuation = ".,?-!;:";
+  const std::string punctuation = ".,?-!;:[]{}&%";
   size_t start = str.find_first_not_of(punctuation);
   if (start == std::string::npos) {
     return str;
@@ -45,6 +46,20 @@ std::vector<std::string> cleanAndLowerCase(
   return lower_tokens;
 }
 
+// bool is_number_with_punct(const std::string& s) {
+//   bool has_digit = false;
+
+//   for (char c : s) {
+//     if (std::isdigit(c)) {
+//       has_digit = true;
+//     } else if (!std::ispunct(c)) {
+//       return false;
+//     }
+//   }
+
+//   return has_digit;
+// }
+
 NerTokenizerUnigram::NerTokenizerUnigram(
     std::string tokens_column, std::string featurized_sentence_column,
     std::optional<std::string> target_column,
@@ -52,15 +67,18 @@ NerTokenizerUnigram::NerTokenizerUnigram(
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
     std::optional<FeatureEnhancementConfig> feature_enhancement_config,
     std::unordered_map<std::string, uint32_t> tag_to_label,
-    std::unordered_set<std::string> ignored_tags)
+    std::unordered_set<std::string> ignored_tags,
+    ner::TokenTagCounterPtr token_tag_counter)
     : _tokens_column(std::move(tokens_column)),
       _featurized_sentence_column(std::move(featurized_sentence_column)),
       _target_column(std::move(target_column)),
       _target_dim(target_dim),
       _processor(std::move(target_word_tokenizers), dyadic_num_intervals,
-                 std::move(feature_enhancement_config)),
+                 std::move(feature_enhancement_config),
+                 target_column == std::nullopt),
       _tag_to_label(std::move(tag_to_label)),
-      _ignored_tags(std::move(ignored_tags)) {}
+      _ignored_tags(std::move(ignored_tags)),
+      _token_tag_counter(std::move(token_tag_counter)) {}
 
 ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
   (void)state;
@@ -79,6 +97,27 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr error;
 
+  if (_token_tag_counter != nullptr && _target_column.has_value()) {
+    for (size_t i = 0; i < text_tokens->numRows(); i += 1) {
+      std::vector<std::string> row_token_vectors =
+          text_tokens->row(i).toVector();
+
+      auto lower_cased_tokens = cleanAndLowerCase(row_token_vectors);
+      for (size_t token_index = 0; token_index < row_token_vectors.size();
+           token_index++) {
+        if (!_ignored_tags.count(tags->row(i)[token_index]) &&
+            !is_number_with_punct(lower_cased_tokens[token_index])) {
+          _token_tag_counter->addTokenTag(lower_cased_tokens[token_index],
+                                          tags->row(i)[token_index]);
+        }
+      }
+    }
+  }
+
+  // if (_target_column) {
+  //   std::cout << "Completed token tags counter modifications" << std::endl;
+  // }
+
 #pragma omp parallel for default(none)                                       \
     shared(text_tokens, sample_offsets, featurized_sentences, targets, tags, \
            error) if (text_tokens->numRows() > 1)
@@ -95,6 +134,13 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
         featurized_sentences[featurized_sentence_offset] =
             _processor.processToken(row_token_vectors, target,
                                     lower_cased_tokens);
+
+        if (_token_tag_counter != nullptr &&
+            !is_number_with_punct(lower_cased_tokens[target])) {
+          featurized_sentences[featurized_sentence_offset] +=
+              _token_tag_counter->getTokenEncoding(lower_cased_tokens[target]);
+        }
+
         if (_target_column) {
           if (row_token_vectors.size() != tags->row(i).size()) {
             std::stringstream error_message;

@@ -151,4 +151,8 @@ constexpr bool USE_SPELL_CHECKER = false;
 // Determines size of flash tables in SpellChecker
 constexpr const char* QUERY_REFORMULATION_SIZE = "medium";
 
+constexpr uint32_t NER_MIN_LOCATION_TAGS = 3;
+
+constexpr uint32_t NER_MIN_NAME_TAGS = 2;
+
 }  // namespace thirdai::automl::udt::defaults

@@ -17,6 +17,8 @@
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/Transformation.h>
+#include <data/src/transformations/ner/NerDyadicDataProcessor.h>
+#include <data/src/transformations/ner/NerTokenTagCounter.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
 #include <data/src/transformations/ner/rules/CommonPatterns.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
@@ -26,6 +28,7 @@
 #include <iterator>
 #include <memory>
 #include <optional>
+#include <regex>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -70,7 +73,8 @@ data::TransformationPtr makeTransformation(
     size_t input_dim, uint32_t dyadic_num_intervals,
     const std::vector<dataset::TextTokenizerPtr>& target_word_tokenizers,
     const std::optional<data::FeatureEnhancementConfig>& feature_config,
-    const data::ner::RulePtr& rule) {
+    const data::ner::RulePtr& rule,
+    data::ner::TokenTagCounterPtr token_tag_counter) {
   std::optional<std::string> target_column = tags_column;
   std::optional<size_t> target_dim = tags.size();
   if (inference) {
@@ -100,7 +104,8 @@ data::TransformationPtr makeTransformation(
               /*target_word_tokenizers=*/target_word_tokenizers,
               /*feature_enhancement_config=*/feature_config,
               /*tag_to_label=*/tag_to_label,
-              /*ignored_tags*/ ignored_tags))
+              /*ignored_tags*/ ignored_tags,
+              /*token_tag_counter=*/token_tag_counter))
           ->then(std::make_shared<data::TextTokenizer>(
               /*input_column=*/NER_FEATURIZED_SENTENCE,
               /*output_indices=*/NER_FEATURIZED_SENTENCE,
@@ -248,6 +253,17 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
     _label_to_tag = mapTagsToLabels(target->default_tag, target->tags);
   }
 
+  bool use_token_tag_counter =
+      args.get<bool>("use_token_tag_counter", "bool", false);
+  if (use_token_tag_counter) {
+    std::unordered_map<std::string, uint32_t> tag_to_label;
+    for (size_t i = 0; i < _label_to_tag.size(); i++) {
+      tag_to_label[_label_to_tag[i]] = i;
+    }
+    _token_tag_counter = std::make_shared<data::ner::TokenTagCounter>(
+        args.get<uint32_t>("token_counter_bins", "uint32_t", 10), tag_to_label);
+  }
+
 #if THIRDAI_EXPOSE_ALL
   std::cerr << "Rule Based Tags: " << text::join(rule_entities, ", ")
             << std::endl;
@@ -264,7 +280,8 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
       /*input_dim=*/options.input_dim,
       /*dyadic_num_intervals=*/options.dyadic_num_intervals,
       /*target_word_tokenizers=*/options.target_tokenizers,
-      /*feature_config=*/options.feature_config, /*rule=*/_rule);
+      /*feature_config=*/options.feature_config, /*rule=*/_rule,
+      _token_tag_counter);
 
   _inference_transform = makeTransformation(
       /*inference=*/true, /*tags_column=*/_tags_column,
@@ -272,7 +289,8 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
       /*input_dim=*/options.input_dim,
       /*dyadic_num_intervals=*/options.dyadic_num_intervals,
       /*target_word_tokenizers=*/options.target_tokenizers,
-      /*feature_config=*/options.feature_config, /*rule=*/_rule);
+      /*feature_config=*/options.feature_config, /*rule=*/_rule,
+      _token_tag_counter);
 
   std::cout << "Initialized a UniversalDeepTransformer for Token Classification"
             << std::endl;
@@ -378,6 +396,133 @@ py::object UDTNer::predictBatch(const MapInputBatch& samples,
   return py::cast(tags);
 }
 
+bool containsAlphabets(const std::string& input, char exclude = '\0') {
+  return std::any_of(input.begin(), input.end(), [exclude](char c) {
+    return std::isalpha(c) && c != exclude;
+  });
+}
+
+uint32_t find_max_contiguous_window(const SentenceTags& sentence_tags,
+                                    uint32_t index,
+                                    const std::string& tag_to_find) {
+  int count = 0;
+
+  // Check right from the index
+  for (size_t i = index; i < sentence_tags.size(); ++i) {
+    if (sentence_tags[i].empty() || sentence_tags[i][0].first != tag_to_find) {
+      break;
+    }
+    count++;
+  }
+
+  return count - 1;
+}
+
+void apply_consecutive_tag_filter(SentenceTags& sentence_tags,
+                                  const std::string& target_tag,
+                                  uint32_t filter_size) {
+  size_t index = 0;
+
+  while (index < sentence_tags.size()) {
+    const std::string& tag =
+        sentence_tags[index].empty() ? "" : sentence_tags[index][0].first;
+
+    if (tag == target_tag) {
+      uint32_t window_size =
+          find_max_contiguous_window(sentence_tags, index, target_tag);
+
+      if (window_size + 1 < filter_size) {
+        for (uint32_t i = 0; i <= window_size; ++i) {
+          sentence_tags[index + i] = {{"O", 1.0}};
+        }
+      }
+
+      index += window_size + 1;
+    } else {
+      index++;
+    }
+  }
+}
+
+void applyLocationFilter(SentenceTags& sentence_tags,
+                         const std::vector<std::string>& tokens) {
+  for (size_t i = 0; i < sentence_tags.size(); ++i) {
+    if (sentence_tags[i][0].first != "LOCATION" ||
+        containsAlphabets(tokens[i])) {
+      continue;
+    }
+
+    bool has_location_context = false;
+
+    if (i > 0 && sentence_tags[i - 1][0].first == "LOCATION") {
+      has_location_context = true;
+    }
+    if (i < sentence_tags.size() - 1 &&
+        sentence_tags[i + 1][0].first == "LOCATION") {
+      has_location_context = true;
+    }
+
+    if (!has_location_context) {
+      sentence_tags[i][0].first = "O";
+    }
+  }
+}
+
+void applyPhoneFilter(SentenceTags& sentence_tags,
+                      const std::vector<std::string>& tokens) {
+  for (size_t i = 0; i < sentence_tags.size(); ++i) {
+    std::string digits = data::stripNonDigits(tokens[i]);
+    if (sentence_tags[i][0].first == "PHONENUMBER" &&
+        containsAlphabets(tokens[i], 'x')) {
+      sentence_tags[i][0].first = "O";
+      sentence_tags[i][0].second = 1;
+      continue;
+    }
+    if (sentence_tags[i][0].first == "PHONENUMBER" &&
+        (digits.size() == 2 || digits.size() == 5 || digits.size() > 15)) {
+      sentence_tags[i][0].first = "O";
+      sentence_tags[i][0].second = 1;
+    }
+  }
+}
+
+void UDTNer::applySSNFilter(SentenceTags& sentence_tags,
+                            const std::vector<std::string>& tokens) {
+  size_t i = 0;
+  while (i < sentence_tags.size()) {
+    std::string digits = data::stripNonDigits(tokens[i]);
+
+    if (sentence_tags[i][0].first != "SSN") {
+      i++;
+      continue;
+    }
+
+    if (sentence_tags[i][0].first == "SSN" &&
+        (containsAlphabets(tokens[i]) || digits.size() == 8 ||
+         digits.size() > 9)) {
+      sentence_tags[i][0].first = "O";
+      sentence_tags[i][0].second = 1;
+      i++;
+      continue;
+    }
+
+    uint32_t win = find_max_contiguous_window(sentence_tags, i, "SSN") + 1;
+
+    std::string ssn_string = tokens[i];
+    for (uint32_t index = 1; index < win; index++) {
+      ssn_string += " " + tokens[i + index];
+    }
+
+    if (!std::regex_match(ssn_string, _ssn_regex)) {
+      for (uint32_t index = 0; index < win; index++) {
+        sentence_tags[i + index][0].first = "O";
+        sentence_tags[i + index][0].second = 1;
+      }
+    }
+    i += win;
+  }
+}
+
 std::vector<SentenceTags> UDTNer::predictTags(
     const std::vector<std::string>& sentences, bool sparse_inference,
     uint32_t top_k, float o_threshold) {
@@ -452,6 +597,17 @@ std::vector<SentenceTags> UDTNer::predictTags(
     }
   }
 
+  // #pragma omp parallel for default(none) shared(output_tags, tokens)
+  for (size_t i = 0; i < output_tags.size(); i++) {
+    applyLocationFilter(output_tags[i], tokens[i]);
+    apply_consecutive_tag_filter(output_tags[i], "LOCATION",
+                                 defaults::NER_MIN_LOCATION_TAGS);
+    apply_consecutive_tag_filter(output_tags[i], "NAME",
+                                 defaults::NER_MIN_NAME_TAGS);
+    applyPhoneFilter(output_tags[i], tokens[i]);
+    applySSNFilter(output_tags[i], tokens[i]);
+  }
+
   return output_tags;
 }
 
@@ -487,6 +643,11 @@ ar::ConstArchivePtr UDTNer::toArchive(bool with_optimizer) const {
     map->set("use_rules_for", ar::vecStr(_rule->entities()));
   }
 
+  if (_token_tag_counter != nullptr) {
+    map->set("token_tag_counter", _token_tag_counter->toArchive());
+    std::cout << "Saved the token tag counter" << std::endl;
+  }
+
   return map;
 }
 
@@ -507,6 +668,26 @@ UDTNer::UDTNer(const ar::Archive& archive)
   if (archive.contains("use_rules_for")) {
     _rule = data::ner::getRuleForEntities(
         archive.getAs<ar::VecStr>("use_rules_for"));
+  }
+  if (archive.contains("token_tag_counter")) {
+    _token_tag_counter = std::make_shared<data::ner::TokenTagCounter>(
+        data::ner::TokenTagCounter(*archive.get("token_tag_counter")));
+
+    auto ner_transformation_supervised =
+        extractInputTransform(_supervised_transform);
+    if (ner_transformation_supervised) {
+      ner_transformation_supervised->setTokenTagCounter(_token_tag_counter);
+    } else {
+      throw std::logic_error("could not extract the supervised transform");
+    }
+
+    auto ner_transformation_inference =
+        extractInputTransform(_inference_transform);
+    if (ner_transformation_inference) {
+      ner_transformation_inference->setTokenTagCounter(_token_tag_counter);
+    } else {
+      throw std::logic_error("could not extract the inference transform");
+    }
   }
 }
 

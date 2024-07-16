@@ -4,7 +4,9 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
+#include <data/src/transformations/ner/NerTokenTagCounter.h>
 #include <data/src/transformations/ner/rules/Rule.h>
+#include <regex>
 #include <string>
 #include <unordered_map>
 
@@ -74,6 +76,9 @@ class UDTNer final : public UDTBackend {
 
   static NerOptions fromScratch(const config::ArgumentMap& args);
 
+  void applySSNFilter(SentenceTags& sentence_tags,
+                      const std::vector<std::string>& tokens);
+
   bolt::ModelPtr _model;
 
   data::ner::RulePtr _rule;
@@ -87,6 +92,11 @@ class UDTNer final : public UDTBackend {
   std::string _tags_column;
 
   std::vector<std::string> _label_to_tag;
+
+  thirdai::data::ner::TokenTagCounterPtr _token_tag_counter;
+
+  std::regex _ssn_regex =
+      std::regex(R"(\b([0-9]{3})([- .]+)([0-9]{2})([- .]+)([0-9]{4})\b)");
 };
 
 }  // namespace thirdai::automl::udt

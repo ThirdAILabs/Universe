@@ -52,7 +52,8 @@ class NerUDTModel final : public NerModelInterface {
             /*target_word_tokenizers=*/_target_word_tokenizers,
             /*feature_enhancement_config=*/_feature_enhancement_config,
             /*tag_to_label=*/_tag_to_label,
-            /*ignored_tags=*/std::unordered_set<std::string>{})});
+            /*ignored_tags=*/std::unordered_set<std::string>{},
+            /*token_tag_counter=*/nullptr)});
     transform = transform->then(std::make_shared<data::TextTokenizer>(
         /*input_column=*/_featurized_sentence_column,
         /*output_indices=*/_featurized_tokens_indices_column,
