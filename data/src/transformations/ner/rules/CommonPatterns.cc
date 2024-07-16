@@ -1,6 +1,7 @@
 #include "CommonPatterns.h"
 #include <data/src/transformations/ner/rules/Pattern.h>
 #include <utils/text/StringManipulation.h>
+#include <iostream>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -227,7 +228,7 @@ RulePtr ssnPattern() {
   return Pattern::make(
       /*entity=*/"SSN",
       /*pattern=*/
-      R"(\b([0-9]{3})([- ]?)([0-9]{2})([- ]?)([0-9]{4})\b)",
+      R"(\b([0-9]{3})([- .]+)([0-9]{2})([- .]+)([0-9]{4})\b)",
       /*pattern_score=*/0.4,
       /*context_keywords=*/
       {

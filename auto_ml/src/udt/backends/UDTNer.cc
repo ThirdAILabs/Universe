@@ -28,6 +28,7 @@
 #include <iterator>
 #include <memory>
 #include <optional>
+#include <regex>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -475,6 +476,7 @@ void applyPhoneFilter(SentenceTags& sentence_tags,
         containsAlphabets(tokens[i], 'x')) {
       sentence_tags[i][0].first = "O";
       sentence_tags[i][0].second = 1;
+      continue;
     }
     if (sentence_tags[i][0].first == "PHONENUMBER" &&
         (digits.size() == 2 || digits.size() == 5 || digits.size() > 15)) {
@@ -484,17 +486,40 @@ void applyPhoneFilter(SentenceTags& sentence_tags,
   }
 }
 
-void applySSNFilter(SentenceTags& sentence_tags,
-                    const std::vector<std::string>& tokens) {
-  for (size_t i = 0; i < sentence_tags.size(); ++i) {
+void UDTNer::applySSNFilter(SentenceTags& sentence_tags,
+                            const std::vector<std::string>& tokens) {
+  size_t i = 0;
+  while (i < sentence_tags.size()) {
     std::string digits = data::stripNonDigits(tokens[i]);
 
-    if (sentence_tags[i][0].first != "SSN" || !containsAlphabets(tokens[i]) ||
-        digits.size() == 8 || digits.size() > 9) {
+    if (sentence_tags[i][0].first != "SSN") {
+      i++;
       continue;
     }
-    sentence_tags[i][0].first = "O";
-    sentence_tags[i][0].second = 1;
+
+    if (sentence_tags[i][0].first == "SSN" &&
+        (containsAlphabets(tokens[i]) || digits.size() == 8 ||
+         digits.size() > 9)) {
+      sentence_tags[i][0].first = "O";
+      sentence_tags[i][0].second = 1;
+      i++;
+      continue;
+    }
+
+    uint32_t win = find_max_contiguous_window(sentence_tags, i, "SSN") + 1;
+
+    std::string ssn_string = tokens[i];
+    for (uint32_t index = 1; index < win; index++) {
+      ssn_string += " " + tokens[i + index];
+    }
+
+    if (!std::regex_match(ssn_string, _ssn_regex)) {
+      for (uint32_t index = 0; index < win; index++) {
+        sentence_tags[i + index][0].first = "O";
+        sentence_tags[i + index][0].second = 1;
+      }
+    }
+    i += win;
   }
 }
 
@@ -571,6 +596,8 @@ std::vector<SentenceTags> UDTNer::predictTags(
       token_index++;
     }
   }
+
+  // #pragma omp parallel for default(none) shared(output_tags, tokens)
   for (size_t i = 0; i < output_tags.size(); i++) {
     applyLocationFilter(output_tags[i], tokens[i]);
     apply_consecutive_tag_filter(output_tags[i], "LOCATION",
