@@ -134,6 +134,9 @@ class ChunkBatch:
         if len(self.text) == 0:
             raise ValueError("Cannot create empty ChunkBatch.")
 
+    def __len__(self):
+        return len(self.text)
+
     def to_df(self):
         return pd.DataFrame(self.__dict__)
 
