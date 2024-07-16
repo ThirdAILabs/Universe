@@ -15,6 +15,8 @@ class RetrieverFactory {
   virtual std::shared_ptr<Retriever> load(const std::string& path) const = 0;
 
   virtual std::string type() const = 0;
+
+  virtual ~RetrieverFactory() = default;
 };
 
 class ShardedRetriever final : public Retriever {

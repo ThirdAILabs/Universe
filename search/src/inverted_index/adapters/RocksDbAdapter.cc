@@ -235,6 +235,8 @@ void RocksDbAdapter::removeDocs(const std::unordered_set<DocId>& docs) {
   if (!status.ok()) {
     raiseError("remove doc", status);
   }
+
+  delete txn;
 }
 
 uint32_t RocksDbAdapter::getDocLen(DocId doc_id) const {
