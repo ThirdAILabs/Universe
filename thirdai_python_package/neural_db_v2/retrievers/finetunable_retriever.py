@@ -33,11 +33,14 @@ class FinetunableRetriever(Retriever):
             sources=sources, targets=targets, strength=associate_strength
         )
 
-    def insert(self, chunks: Iterable[ChunkBatch], **kwargs):
-        for batch in chunks:
-            texts = batch.keywords + " " + batch.text
-
-            self.retriever.index(ids=batch.chunk_id.to_list(), docs=texts.to_list())
+    def insert(self, chunks: Iterable[ChunkBatch], index_batch_size=100000, **kwargs):
+        for chunk in chunks:
+            i = 0
+            while i < len(chunk):
+                ids = chunk.chunk_id[i : i + index_batch_size]
+                texts = chunk.keywords[i : i + index_batch_size] + " " + chunk.text[i : i + index_batch_size]
+                self.retriever.index(ids=ids.to_list(), docs=texts.to_list())
+                i += index_batch_size
 
     def supervised_train(self, samples: Iterable[SupervisedBatch], **kwargs):
         for batch in samples:
