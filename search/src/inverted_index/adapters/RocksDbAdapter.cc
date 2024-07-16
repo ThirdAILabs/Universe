@@ -34,7 +34,7 @@ RocksDbAdapter::RocksDbAdapter(const std::string& save_path)
       rocksdb::TransactionDB::Open(options, rocksdb::TransactionDBOptions(),
                                    save_path, column_families, &handles, &_db);
   if (!status.ok()) {
-    raiseError("Database creation", status);
+    raiseError(status, "open database");
   }
 
   if (handles.size() != 3) {
@@ -70,7 +70,7 @@ void RocksDbAdapter::storeDocLens(const std::vector<DocId>& ids,
                                " is already indexed.");
     }
     if (!get_status.IsNotFound()) {
-      raiseError("check for doc", get_status);
+      raiseError(get_status, "txn get");
     }
 
     auto put_status =
@@ -78,7 +78,7 @@ void RocksDbAdapter::storeDocLens(const std::vector<DocId>& ids,
                  rocksdb::Slice(reinterpret_cast<const char*>(&doc_len),
                                 sizeof(doc_len)));
     if (!put_status.ok()) {
-      raiseError("Add write to batch", put_status);
+      raiseError(put_status, "txn put");
     }
 
     sum_doc_lens += doc_len;
@@ -86,7 +86,7 @@ void RocksDbAdapter::storeDocLens(const std::vector<DocId>& ids,
 
   auto status = txn->Commit();
   if (!status.ok()) {
-    raiseError("Write txn commit", status);
+    raiseError(status, "txn commit");
   }
   delete txn;
 
@@ -118,13 +118,13 @@ void RocksDbAdapter::updateTokenToDocs(
     // <token>_ to find the docs it occurs in?
     auto merge_status = batch.Merge(_token_to_docs, key, value);
     if (!merge_status.ok()) {
-      raiseError("Add merge to batch", merge_status);
+      raiseError(merge_status, "add merge to batch");
     }
   }
 
   auto status = _db->Write(rocksdb::WriteOptions(), &batch);
   if (!status.ok()) {
-    raiseError("Write batch commit", status);
+    raiseError(status, "write batch");
   }
 }
 
@@ -152,7 +152,7 @@ std::vector<std::vector<DocCount>> RocksDbAdapter::lookupDocs(
         results.emplace_back(ptr, ptr + n_docs_w_token);
       }
     } else if (!statuses[i].IsNotFound()) {
-      raiseError("DB batch get", statuses[i]);
+      raiseError(statuses[i], "batch get");
     }
   }
 
@@ -172,7 +172,7 @@ void RocksDbAdapter::prune(uint64_t max_docs_with_token) {
           _token_to_docs, iter->key(),
           rocksdb::Slice(reinterpret_cast<const char*>(&prune), sizeof(prune)));
       if (!write_status.ok()) {
-        raiseError("add to write batch", write_status);
+        raiseError(write_status, "add put to batch");
       }
     }
   }
@@ -181,13 +181,13 @@ void RocksDbAdapter::prune(uint64_t max_docs_with_token) {
 
   auto status = _db->Write(rocksdb::WriteOptions(), &batch);
   if (!status.ok()) {
-    raiseError("prune", status);
+    raiseError(status, "write batch");
   }
 
   auto compact_status = _db->CompactRange(rocksdb::CompactRangeOptions(),
                                           _token_to_docs, nullptr, nullptr);
   if (!compact_status.ok()) {
-    raiseError("compact", compact_status);
+    raiseError(compact_status, "compact");
   }
 }
 
@@ -197,7 +197,7 @@ void RocksDbAdapter::removeDocs(const std::unordered_set<DocId>& docs) {
   for (const auto& doc : docs) {
     auto delete_status = txn->Delete(_counters, docIdKey(doc));
     if (!delete_status.ok()) {
-      raiseError("remove doc", delete_status);
+      raiseError(delete_status, "txn delete");
     }
   }
 
@@ -224,7 +224,7 @@ void RocksDbAdapter::removeDocs(const std::unordered_set<DocId>& docs) {
     if (new_value.size() < curr_value.size()) {
       auto put_status = txn->Put(_token_to_docs, iter->key(), new_value);
       if (!put_status.ok()) {
-        raiseError("remove doc", put_status);
+        raiseError(put_status, "txn put");
       }
     }
   }
@@ -233,7 +233,7 @@ void RocksDbAdapter::removeDocs(const std::unordered_set<DocId>& docs) {
 
   auto status = txn->Commit();
   if (!status.ok()) {
-    raiseError("remove doc", status);
+    raiseError(status, "txn commit");
   }
 
   delete txn;
@@ -244,7 +244,7 @@ uint32_t RocksDbAdapter::getDocLen(DocId doc_id) const {
   auto status =
       _db->Get(rocksdb::ReadOptions(), _counters, docIdKey(doc_id), &value);
   if (!status.ok()) {
-    raiseError("DB read", status);
+    raiseError(status, "get");
   }
 
   uint32_t len;
@@ -260,7 +260,7 @@ uint64_t RocksDbAdapter::getNDocs() const {
   auto status =
       _db->Get(rocksdb::ReadOptions(), _counters, "n_docs", &serialized);
   if (!status.ok()) {
-    raiseError("DB read", status);
+    raiseError(status, "get");
   }
 
   uint64_t ndocs;
@@ -275,7 +275,7 @@ uint64_t RocksDbAdapter::getSumDocLens() const {
   auto status =
       _db->Get(rocksdb::ReadOptions(), _counters, "sum_doc_lens", &serialized);
   if (!status.ok()) {
-    raiseError("DB read", status);
+    raiseError(status, "get");
   }
 
   uint64_t sum_doc_lens;
@@ -291,7 +291,7 @@ void RocksDbAdapter::updateNDocs(uint64_t n_new_docs) {
                  rocksdb::Slice(reinterpret_cast<const char*>(&n_new_docs),
                                 sizeof(uint64_t)));
   if (!status.ok()) {
-    raiseError("DB merge", status);
+    raiseError(status, "merge");
   }
 }
 
@@ -301,7 +301,7 @@ void RocksDbAdapter::updateSumDocLens(uint64_t sum_new_doc_lens) {
       rocksdb::Slice(reinterpret_cast<const char*>(&sum_new_doc_lens),
                      sizeof(uint64_t)));
   if (!status.ok()) {
-    raiseError("DB merge", status);
+    raiseError(status, "merge");
   }
 }
 

@@ -33,7 +33,7 @@ RocksDbReadOnlyAdapter::RocksDbReadOnlyAdapter(const std::string& save_path) {
   auto status = rocksdb::DB::OpenForReadOnly(options, save_path,
                                              column_families, &handles, &_db);
   if (!status.ok()) {
-    raiseError("Database creation", status);
+    raiseError(status, "open database");
   }
 
   if (handles.size() != 3) {
@@ -64,15 +64,15 @@ std::vector<std::vector<DocCount>> RocksDbReadOnlyAdapter::lookupDocs(
     const std::vector<HashedToken>& query_tokens) const {
   std::vector<rocksdb::Slice> keys;
   keys.reserve(query_tokens.size());
-  std::vector<std::string> values;
 
   for (const auto& token : query_tokens) {
     keys.emplace_back(reinterpret_cast<const char*>(&token), sizeof(token));
   }
-  values.resize(keys.size());
-  std::vector<rocksdb::ColumnFamilyHandle*> handles(keys.size(),
-                                                    _token_to_docs);
-  auto statuses = _db->MultiGet(rocksdb::ReadOptions(), handles, keys, &values);
+  std::vector<rocksdb::PinnableSlice> values(keys.size());
+  std::vector<rocksdb::Status> statuses(keys.size());
+
+  _db->MultiGet(rocksdb::ReadOptions(), _token_to_docs, keys.size(),
+                keys.data(), values.data(), statuses.data());
 
   std::vector<std::vector<DocCount>> results;
   results.reserve(keys.size());
@@ -84,7 +84,7 @@ std::vector<std::vector<DocCount>> RocksDbReadOnlyAdapter::lookupDocs(
         results.emplace_back(ptr, ptr + n_docs_w_token);
       }
     } else if (!statuses[i].IsNotFound()) {
-      raiseError("DB batch get", statuses[i]);
+      raiseError(statuses[i], "batch get");
     }
   }
 
@@ -106,7 +106,7 @@ uint32_t RocksDbReadOnlyAdapter::getDocLen(DocId doc_id) const {
   auto status =
       _db->Get(rocksdb::ReadOptions(), _counters, docIdKey(doc_id), &value);
   if (!status.ok()) {
-    raiseError("DB read", status);
+    raiseError(status, "get");
   }
 
   uint32_t len;
@@ -122,7 +122,7 @@ uint64_t RocksDbReadOnlyAdapter::getNDocs() const {
   auto status =
       _db->Get(rocksdb::ReadOptions(), _counters, "n_docs", &serialized);
   if (!status.ok()) {
-    raiseError("DB read", status);
+    raiseError(status, "get");
   }
 
   uint64_t ndocs;
@@ -137,7 +137,7 @@ uint64_t RocksDbReadOnlyAdapter::getSumDocLens() const {
   auto status =
       _db->Get(rocksdb::ReadOptions(), _counters, "sum_doc_lens", &serialized);
   if (!status.ok()) {
-    raiseError("DB read", status);
+    raiseError(status, "get");
   }
 
   uint64_t sum_doc_lens;

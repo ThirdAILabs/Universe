@@ -1,7 +1,6 @@
 #pragma once
 
 #include <search/src/inverted_index/InvertedIndex.h>
-#include <stdexcept>
 #include <unordered_set>
 
 namespace thirdai::search {
@@ -16,34 +15,7 @@ struct DocCount {
   uint32_t count : 24;
 };
 
-static_assert(sizeof(DocCount) == 8, "DocCount should be 8 bytes");
-
-// TODO(Nicholas): this is specific to the doc count info being serialized into
-// a string, this makes sense if the data is returned from a keyvalue store, but
-// may not for other DBs. The reason it is done this way instead of converting
-// it into a std::vector<DocCount> is to avoid the extra data copies. This could
-// be made into an iterable interface to support returning other types of
-// iterators for non serialized data.
-class SerializedDocCountIterator {
- public:
-  explicit SerializedDocCountIterator(std::string&& serialized)
-      : _serialized(std::move(serialized)) {
-    if (_serialized.size() % sizeof(DocCount) != 0) {
-      throw std::runtime_error("Storage is corrupted.");
-    }
-  }
-
-  size_t len() const { return _serialized.size() / sizeof(DocCount); }
-
-  const auto* begin() const {
-    return reinterpret_cast<const DocCount*>(_serialized.data());
-  }
-
-  const auto* end() const { return begin() + len(); }
-
- private:
-  std::string _serialized;  // Serialized storage for the blob _data refers to.
-};
+static_assert(sizeof(DocCount) == 8);
 
 class DbAdapter {
  public:

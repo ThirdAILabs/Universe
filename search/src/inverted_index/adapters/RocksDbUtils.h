@@ -4,16 +4,20 @@
 #include <rocksdb/slice.h>
 #include <rocksdb/status.h>
 #include <search/src/inverted_index/DbAdapter.h>
+#include <search/src/inverted_index/Retriever.h>
 
 namespace thirdai::search {
 
-inline void raiseError(const std::string& op, const rocksdb::Status& status) {
-  throw std::runtime_error(op + " failed with error: " + status.ToString() +
-                           ".");
+inline void raiseError(const rocksdb::Status& status, const std::string& op) {
+  throw std::runtime_error(status.ToString() + op);
 }
 
-inline std::string docIdKey(uint64_t doc_id) {
-  return "doc_" + std::to_string(doc_id);
+inline std::string docIdKey(DocId doc_id) {
+  std::string key;
+  key.reserve(sizeof(DocId) + 1);
+  key.append("D");
+  key.append(reinterpret_cast<const char*>(&doc_id), sizeof(DocId));
+  return key;
 }
 
 // Using uint32_t since this will be prepended to doc counts, and so uint32_t
