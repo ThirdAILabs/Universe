@@ -36,7 +36,7 @@ class RocksDbReadOnlyAdapter final : public DbAdapter {
 
   std::string type() const final { return "rocks-db-read-only"; }
 
-  ~RocksDbReadOnlyAdapter();
+  ~RocksDbReadOnlyAdapter() final;
 
  private:
   rocksdb::DB* _db;

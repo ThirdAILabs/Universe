@@ -5,14 +5,18 @@
 #include <cstdlib>
 #include <filesystem>
 #include <random>
+#include <string>
 
 namespace thirdai::search::tests {
 
 class OnDiskIndexTests : public ::testing::Test {
  public:
   OnDiskIndexTests() {
-    std::mt19937 rng(time(0));
-    _prefix = "tmp_" + std::to_string(rng()) + "_";
+    std::mt19937 process_rng(getpid());  // To handle parallel tests
+    std::mt19937 time_rng(getpid());     // To handle parallel tests
+
+    _prefix = "tmp_" + std::to_string(process_rng()) + "_" +
+              std::to_string(time_rng()) + "_";
   }
 
   void TearDown() final {

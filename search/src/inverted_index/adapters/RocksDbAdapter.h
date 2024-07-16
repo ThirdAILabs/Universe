@@ -36,7 +36,7 @@ class RocksDbAdapter final : public DbAdapter {
 
   std::string type() const final { return "rocksdb"; }
 
-  ~RocksDbAdapter();
+  ~RocksDbAdapter() final;
 
  private:
   void updateNDocs(uint64_t n_new_docs);
