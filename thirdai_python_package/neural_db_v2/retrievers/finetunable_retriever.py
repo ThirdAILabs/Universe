@@ -35,6 +35,8 @@ class FinetunableRetriever(Retriever):
 
     def insert(self, chunks: Iterable[ChunkBatch], index_batch_size=100000, **kwargs):
         for chunk in chunks:
+            # Indexing in batches within a chunk reduces the RAM usage significantly
+            # for large chunks
             i = 0
             while i < len(chunk):
                 ids = chunk.chunk_id[i : i + index_batch_size]
