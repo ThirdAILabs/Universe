@@ -85,10 +85,11 @@ class FinetunableRetriever(Model):
         self.retriever.save(str(directory))
 
     def load_meta(self, directory: Path, read_only: bool = False):
-        self.retriever = search.FinetunableRetriever.load(str(directory), read_only)
+        if not self.retriever:
+            self.retriever = search.FinetunableRetriever.load(str(directory), read_only)
 
     def __getstate__(self) -> object:
-        return {}
+        return {"retriever": None}
 
     def associate(self, pairs: List[Tuple[str, str]], retriever_strength=4, **kwargs):
         sources, targets = list(zip(*pairs))

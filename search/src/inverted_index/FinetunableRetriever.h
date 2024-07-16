@@ -69,12 +69,23 @@ class FinetunableRetriever {
   static std::shared_ptr<FinetunableRetriever> load(
       const std::string& save_path, bool read_only);
 
+  // This is deprecated, it is only for compatability loading old models since
+  // we need a load/save stream method to define the pickle function.
+  void save_stream(std::ostream& ostream) const;
+
+  // This is deprecated, it is only for compatability loading old models.
+  static std::shared_ptr<FinetunableRetriever> load_stream(
+      std::istream& istream);
+
  private:
   explicit FinetunableRetriever(const std::string& save_path, bool read_only);
 
   ar::ConstArchivePtr metadataToArchive() const;
 
   void metadataFromArchive(const ar::Archive& archive);
+
+  // This is deprecated, it is only for compatability loading old models.
+  explicit FinetunableRetriever(const ar::Archive& archive);
 
   std::shared_ptr<Retriever> _doc_index;
   std::shared_ptr<Retriever> _query_index;

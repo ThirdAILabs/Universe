@@ -306,4 +306,29 @@ std::shared_ptr<FinetunableRetriever> FinetunableRetriever::load(
       new FinetunableRetriever(save_path, read_only));
 }
 
+void FinetunableRetriever::save_stream(std::ostream& ostream) const {
+  (void)ostream;
+  (void)this;  // Otherwise clang-tidy wants this to be static.
+  throw std::invalid_argument(
+      "Pickling is not supported for FinetunableRetriever.");
+}
+
+FinetunableRetriever::FinetunableRetriever(const ar::Archive& archive)
+    : _doc_index(InvertedIndex::fromArchive(*archive.get("doc_index"))),
+      _query_index(InvertedIndex::fromArchive(*archive.get("query_index"))),
+      _query_to_docs(archive.getAs<ar::MapU64VecU64>("query_to_docs")),
+      _doc_to_queries(archive.getAs<ar::MapU64VecU64>("doc_to_queries")),
+      _next_query_id(archive.u64("next_query_id")),
+      _lambda(archive.f32("lambda")),
+      _min_top_docs(archive.u64("min_top_docs")),
+      _top_queries(archive.u64("top_queries")) {}
+
+std::shared_ptr<FinetunableRetriever> FinetunableRetriever::load_stream(
+    std::istream& istream) {
+  auto archive = ar::deserialize(istream);
+
+  return std::shared_ptr<FinetunableRetriever>(
+      new FinetunableRetriever(*archive));
+}
+
 }  // namespace thirdai::search

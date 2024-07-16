@@ -187,7 +187,9 @@ void createSearchSubmodule(py::module_& module) {
                   py::arg("index"))
       .def("save", &FinetunableRetriever::save, py::arg("filename"))
       .def_static("load", &FinetunableRetriever::load, py::arg("filename"),
-                  py::arg("read_only") = false);
+                  py::arg("read_only") = false)
+      // This is deprecated, it is only for compatability loading old models.
+      .def(bolt::python::getPickleFunction<FinetunableRetriever>());
 }
 
 }  // namespace thirdai::search::python
