@@ -45,7 +45,6 @@ class FinetunableRetriever(Retriever):
                     + chunk.text[i : i + index_batch_size]
                 )
                 self.retriever.index(ids=ids.to_list(), docs=texts.to_list())
-                i += index_batch_size
 
     def supervised_train(self, samples: Iterable[SupervisedBatch], **kwargs):
         for batch in samples:
