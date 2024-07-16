@@ -53,21 +53,6 @@ class UDTDataTemplate:
 
         return False
 
-    def build(self):
-        extreme_classification = False
-
-        if isinstance(self.target_column, column_detector.CategoricalColumn):
-            if self.target_column.estimated_n_classes > 100_000:
-                extreme_classification = True
-
-        self.model = bolt.UniversalDeepTransformer(
-            data_types=self.bolt_data_types,
-            target=self.target_column_name,
-            extreme_classification=extreme_classification,
-        )
-
-        return self.model
-
     @classmethod
     def from_raw_types(cls, target_column_name, dataframe):
         raw_target_column = cls.target_column_caster(
