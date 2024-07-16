@@ -38,7 +38,11 @@ class FinetunableRetriever(Retriever):
             i = 0
             while i < len(chunk):
                 ids = chunk.chunk_id[i : i + index_batch_size]
-                texts = chunk.keywords[i : i + index_batch_size] + " " + chunk.text[i : i + index_batch_size]
+                texts = (
+                    chunk.keywords[i : i + index_batch_size]
+                    + " "
+                    + chunk.text[i : i + index_batch_size]
+                )
                 self.retriever.index(ids=ids.to_list(), docs=texts.to_list())
                 i += index_batch_size
 
