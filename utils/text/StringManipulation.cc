@@ -141,22 +141,41 @@ std::vector<std::string> tokenizeSentence(const std::string& sentence) {
   return tokenizeSentenceUnicodeUnsafe(sentence);
 }
 
+std::string fromWideString(const std::wstring& wstr) {
+    std::string result;
+    for (wchar_t const wc : wstr) {
+        char buffer[4];
+        utf8proc_ssize_t const bytes = utf8proc_encode_char(wc, reinterpret_cast<utf8proc_uint8_t*>(buffer));
+        if (bytes > 0) {
+            result.append(buffer, bytes);
+        }
+    }
+    return result;
+}
+
 std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
-  utils::validateGreaterThanZero(k, "k for Char-k grams");
+    utils::validateGreaterThanZero(k, "k for Char-k grams");
 
-  std::string text_str(text);
-  if (text_str.empty()) {
-    return {};
-  }
+    std::wstring wideText = toUnicode(std::string(text));
+    if (wideText.empty()) {
+        return {};
+    }
 
-  std::vector<std::string> char_k_grams;
-  size_t n_kgrams = text_str.size() >= k ? text_str.size() - (k - 1) : 1;
-  size_t len = std::min(text_str.size(), static_cast<size_t>(k));
-  for (uint32_t offset = 0; offset < n_kgrams; offset++) {
-    char_k_grams.push_back(text_str.substr(offset, len));
-  }
+    std::cout << "Printing" << std::endl;
 
-  return char_k_grams;
+    std::cout << fromWideString(wideText) << std::endl;
+
+    std::vector<std::string> char_k_grams;
+    size_t const n_kgrams = wideText.size() >= k ? wideText.size() - (k - 1) : 1;
+
+    for (size_t offset = 0; offset < n_kgrams; ++offset) {
+        std::wstring const kgram = wideText.substr(offset, k);
+        std::cout << fromWideString(kgram) << std::endl;
+        char_k_grams.push_back(fromWideString(kgram));
+    }
+    std::cout << "Done Printing" << std::endl;
+
+    return char_k_grams;
 }
 
 std::vector<std::string> wordLevelCharKGrams(
