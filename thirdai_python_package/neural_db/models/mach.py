@@ -315,6 +315,7 @@ class Mach(Model):
 
     def save(self, path: Path):
         pickle_to(self, filepath=path)
+        self.save_meta(path.parent / "model")
 
     def get_model(self) -> bolt.UniversalDeepTransformer:
         return self.model
