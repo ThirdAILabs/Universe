@@ -8,6 +8,6 @@ def test_inverted_index_kgram_tokenizer():
     tests are written in C++.
     """
 
-    index = InvertedIndex(IndexConfig(tokenizer=WordKGrams()))
+    index = InvertedIndex(IndexConfig(shard_size=1000, tokenizer=WordKGrams()))
     index.index(ids=[0, 1], docs=["Numero uno", "Numero dos"])
     assert index.query(query="Numero uno", k=1)[0][0] == 0
