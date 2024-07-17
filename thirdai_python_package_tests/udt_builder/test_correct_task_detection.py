@@ -68,7 +68,10 @@ class CommonTemplate:
         self.verify_template(detected_template)
 
         model = bolt.UniversalDeepTransformer(
-            target=target_col, data_types=detected_template.bolt_data_types
+            target=target_col,
+            data_types=detected_template.bolt_data_types,
+            fhr=1000,
+            embedding_dimension=200,
         )
 
         model.train("temp.csv", epochs=1, learning_rate=1e-3)
