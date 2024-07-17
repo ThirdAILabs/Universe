@@ -104,7 +104,10 @@ std::vector<std::string> tokenizeSentenceUnicodeSafe(
   // \s : whitespace
   // Together: match strings of at least one alphanumeric character or a single
   // non-alphanumeric non-whitespace character
-  std::wregex regex(LR"([A-Za-zÀ-ÖØ-öø-ÿ0-9\u0900-\u097F]+|[^A-Za-zÀ-ÖØ-öø-ÿ0-9\s\u0900-\u097F])");
+  // Note(pratik): Added the unicode range for devanigiri for better devanigiri
+  // tokenization [\u0900-\u097F]
+  std::wregex regex(
+      LR"([A-Za-zÀ-ÖØ-öø-ÿ0-9\u0900-\u097F]+|[^A-Za-zÀ-ÖØ-öø-ÿ0-9\s\u0900-\u097F])");
 
   std::wcregex_iterator iter(sentence.data(), sentence.data() + sentence.size(),
                              regex);
@@ -142,34 +145,35 @@ std::vector<std::string> tokenizeSentence(const std::string& sentence) {
 }
 
 std::string fromWideString(const std::wstring& wstr) {
-    std::string result;
-    for (wchar_t const wc : wstr) {
-        char buffer[4];
-        utf8proc_ssize_t const bytes = utf8proc_encode_char(wc, reinterpret_cast<utf8proc_uint8_t*>(buffer));
-        if (bytes > 0) {
-            result.append(buffer, bytes);
-        }
+  std::string result;
+  for (wchar_t const wc : wstr) {
+    char buffer[4];
+    utf8proc_ssize_t const bytes =
+        utf8proc_encode_char(wc, reinterpret_cast<utf8proc_uint8_t*>(buffer));
+    if (bytes > 0) {
+      result.append(buffer, bytes);
     }
-    return result;
+  }
+  return result;
 }
 
 std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
-    utils::validateGreaterThanZero(k, "k for Char-k grams");
+  utils::validateGreaterThanZero(k, "k for Char-k grams");
 
-    std::wstring wideText = toUnicode(std::string(text));
-    if (wideText.empty()) {
-        return {};
-    }
+  std::wstring wideText = toUnicode(std::string(text));
+  if (wideText.empty()) {
+    return {};
+  }
 
-    std::vector<std::string> char_k_grams;
-    size_t const n_kgrams = wideText.size() >= k ? wideText.size() - (k - 1) : 1;
+  std::vector<std::string> char_k_grams;
+  size_t const n_kgrams = wideText.size() >= k ? wideText.size() - (k - 1) : 1;
 
-    for (size_t offset = 0; offset < n_kgrams; ++offset) {
-        std::wstring const kgram = wideText.substr(offset, k);
-        char_k_grams.push_back(fromWideString(kgram));
-    }
+  for (size_t offset = 0; offset < n_kgrams; ++offset) {
+    std::wstring const kgram = wideText.substr(offset, k);
+    char_k_grams.push_back(fromWideString(kgram));
+  }
 
-    return char_k_grams;
+  return char_k_grams;
 }
 
 std::vector<std::string> wordLevelCharKGrams(
