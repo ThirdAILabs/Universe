@@ -11,10 +11,10 @@ from .model_templates import (
     SUPPORTED_TEMPLATES,
     TASK_TO_TEMPLATE_MAP,
     QueryReformulationTemplate,
+    RecurrentClassifierTemplate,
     RegressionTemplate,
     TabularClassificationTemplate,
     TokenClassificationTemplate,
-    RecurrentClassifierTemplate,
     UDTDataTemplate,
 )
 
@@ -74,30 +74,22 @@ def auto_infer_task_template(target_column_name: str, dataframe: pd.DataFrame):
     input_columns = column_detector.get_input_columns(target_column_name, dataframe)
 
     if isinstance(target_column, column_detector.NumericalColumn):
-        return RegressionTemplate(
-            dataframe,
-            target_column,
-            input_columns,
-        )
+        return RegressionTemplate(dataframe, target_column, input_columns)
 
     if isinstance(target_column, column_detector.CategoricalColumn):
 
         if target_column.token_type == str and target_column.number_tokens_per_row >= 4:
 
             # check if task can be token classification
-            token_column_candidates = (
-                column_detector.get_token_candidates_for_token_classification(
-                    target_column, input_columns
-                )
+            token_column_candidates = column_detector.get_token_candidates_for_token_classification(
+                target_column, input_columns
             )
             if (
                 len(token_column_candidates) == 1
                 and target_column.unique_tokens_per_row * len(dataframe) < 250
             ):
-                concrete_target_column = (
-                    TokenClassificationTemplate.get_concrete_target(
-                        target_column, dataframe
-                    )
+                concrete_target_column = TokenClassificationTemplate.get_concrete_target(
+                    target_column, dataframe
                 )
                 concrete_input_columns = {
                     token_column_candidates[0].name: column_detector.TextColumn(
@@ -109,10 +101,8 @@ def auto_infer_task_template(target_column_name: str, dataframe: pd.DataFrame):
                 )
 
             # check if task can be query reformulation
-            source_column_candidates = (
-                column_detector.get_source_column_for_query_reformulation(
-                    target_column, input_columns
-                )
+            source_column_candidates = column_detector.get_source_column_for_query_reformulation(
+                target_column, input_columns
             )
 
             if len(source_column_candidates) == 1:
@@ -128,11 +118,7 @@ def auto_infer_task_template(target_column_name: str, dataframe: pd.DataFrame):
                     dataframe, concrete_target_column, concrete_input_columns
                 )
 
-        return TabularClassificationTemplate(
-            dataframe,
-            target_column,
-            input_columns,
-        )
+        return TabularClassificationTemplate(dataframe, target_column, input_columns)
 
     raise Exception(
         "Could not automatically infer task using the provided column name and the template. The following target types are supported for classification : Numerical, Categorical, and Text. Verify that the target column has one of the following types or explicitly specify the task. Check out https://github.com/ThirdAILabs/Demos/tree/main/universal_deep_transformer to learn more about how to initialize and train a UniversalDeepTransformer."
@@ -142,9 +128,7 @@ def auto_infer_task_template(target_column_name: str, dataframe: pd.DataFrame):
 def query_gpt(prompt, model_name, client):
     messages = [{"role": "user", "content": prompt}]
     response = client.chat.completions.create(
-        model=model_name,
-        messages=messages,
-        temperature=0,
+        model=model_name, messages=messages, temperature=0
     )
     return response.choices[0].message.content
 
@@ -164,10 +148,7 @@ def get_task_detection_prompt(query: str):
 
 
 def get_template_from_query(
-    query: str,
-    openai_client: OpenAI,
-    target_column: str,
-    dataframe: pd.DataFrame,
+    query: str, openai_client: OpenAI, target_column: str, dataframe: pd.DataFrame
 ):
     detected_template = None
 
@@ -196,11 +177,7 @@ def get_template_from_query(
 
 
 def detect_template(
-    dataset_path: str,
-    target: str,
-    task: str = None,
-    openai_key: str = None,
-    **kwargs,
+    dataset_path: str, target: str, task: str = None, openai_key: str = None, **kwargs
 ):
     if openai_key is not None and task is not None:
         print("Task detection using natural language enabled\n")

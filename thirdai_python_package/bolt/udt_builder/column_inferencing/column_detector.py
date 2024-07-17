@@ -104,8 +104,7 @@ def get_input_columns(
 
 
 def get_token_candidates_for_token_classification(
-    target: CategoricalColumn,
-    input_columns: typing.Dict[str, Column],
+    target: CategoricalColumn, input_columns: typing.Dict[str, Column]
 ) -> typing.List[TextColumn]:
     """
     Identifies candidate columns suitable as token columns for a TokenClassification task
@@ -130,8 +129,7 @@ def get_token_candidates_for_token_classification(
 
 
 def get_source_column_for_query_reformulation(
-    target: CategoricalColumn,
-    input_columns: typing.Dict[str, Column],
+    target: CategoricalColumn, input_columns: typing.Dict[str, Column]
 ) -> TextColumn:
     """
     Returns a list of columns where each column is a candidate to be the source column for the specified target column.
