@@ -25,7 +25,7 @@ class InvertedIndex final : public Retriever {
              const std::vector<std::string>& docs) final;
 
   void update(const std::vector<DocId>& ids,
-              const std::vector<std::string>& extra_tokens);
+              const std::vector<std::string>& extra_tokens) final;
 
   std::vector<DocScore> query(const std::string& query, uint32_t k,
                               bool parallelize) const final;

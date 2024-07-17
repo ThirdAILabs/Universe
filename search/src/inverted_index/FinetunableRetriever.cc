@@ -26,7 +26,7 @@ namespace thirdai::search {
  * the query index, just the query index isn't used until this threshold of
  * samples is reached.
  */
-constexpr size_t QUERY_INDEX_THRESHOLD = 1;
+constexpr size_t QUERY_INDEX_THRESHOLD = 10;
 
 namespace {
 
@@ -80,18 +80,17 @@ void FinetunableRetriever::finetune(
 
   _query_index->index(query_ids, queries);
 
-  // if (_query_index->size() < QUERY_INDEX_THRESHOLD) {
-  //   std::vector<DocId> flattened_doc_ids;
-  //   std::vector<std::string> flattened_queries;
-  //   for (size_t i = 0; i < doc_ids.size(); i++) {
-  //     const auto& ids = doc_ids[i];
-  //     flattened_doc_ids.insert(flattened_doc_ids.end(), ids.begin(),
-  //     ids.end()); flattened_queries.insert(flattened_queries.end(),
-  //     ids.size(), queries[i]);
-  //   }
+  if (_query_index->size() < QUERY_INDEX_THRESHOLD) {
+    std::vector<DocId> flattened_doc_ids;
+    std::vector<std::string> flattened_queries;
+    for (size_t i = 0; i < doc_ids.size(); i++) {
+      const auto& ids = doc_ids[i];
+      flattened_doc_ids.insert(flattened_doc_ids.end(), ids.begin(), ids.end());
+      flattened_queries.insert(flattened_queries.end(), ids.size(), queries[i]);
+    }
 
-  //   _doc_index->update(flattened_doc_ids, flattened_queries);
-  // }
+    _doc_index->update(flattened_doc_ids, flattened_queries);
+  }
 
   _next_query_id += query_ids.size();
 }

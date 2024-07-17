@@ -13,6 +13,14 @@ class Retriever {
   virtual void index(const std::vector<DocId>& ids,
                      const std::vector<std::string>& docs) = 0;
 
+  // This method is only used for early upvotes since the secondary query index
+  // doesn't work well with only a couple of upvotes. Hence it is optional.
+  virtual void update(const std::vector<DocId>& ids,
+                      const std::vector<std::string>& extra_tokens) {
+    (void)ids;
+    (void)extra_tokens;
+  }
+
   virtual std::vector<DocScore> query(const std::string& query, uint32_t k,
                                       bool parallelize) const = 0;
 
