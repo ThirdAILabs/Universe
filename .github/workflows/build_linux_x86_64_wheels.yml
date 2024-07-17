@@ -45,9 +45,15 @@ jobs:
             CMAKE_ARGS="-DOPENSSL_ROOT_DIR:PATH=/usr/lib64/openssl11;/usr/include/openssl11"
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
          
-          CIBW_BEFORE_BUILD_LINUX: >
-            yum update -y && yum clean all &&
-            yum install openssl11-devel -y &&
+          # TODO: Upgrade distro to supported version.
+          # CentOS 7 is deprecated, and the following commmands are a workaround to still use that version.
+          # https://serverfault.com/questions/1161816/mirrorlist-centos-org-no-longer-resolve
+          CIBW_BEFORE_BUILD_LINUX: |
+            sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo
+            sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo
+            sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo
+            yum update -y && yum clean all
+            yum install openssl11-devel -y
             yum install -y libxslt-devel libxml2-devel
 
           # Online compile cpython wheels (pytorch does this too), no big 
@@ -57,7 +63,9 @@ jobs:
           CIBW_BUILD: "cp*manylinux_x86_64"
           CIBW_BUILD_VERBOSITY: 3
 
-          CIBW_BEFORE_TEST_LINUX: yum install golang libreoffice -y
+          CIBW_BEFORE_TEST_LINUX: |
+            yum install golang libreoffice -y
+            pip install --upgrade pip
           CIBW_TEST_EXTRAS: "test"
           CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
 
