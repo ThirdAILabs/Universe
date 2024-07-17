@@ -374,7 +374,7 @@ def test_chunk_store_remapping(chunk_store, id_type):
 
 
 def test_sql_lite_chunk_store_batching():
-    store = SQLiteChunkStore(max_in_memory_batches=2)
+    store = SQLiteChunkStore()
 
     new_batch = NewChunkBatch(
         custom_id=None,
