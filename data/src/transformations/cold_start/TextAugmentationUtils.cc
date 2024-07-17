@@ -40,8 +40,8 @@ ColumnMap TextAugmentationBase::apply(ColumnMap columns, State& state) const {
 
   std::exception_ptr exception = nullptr;
 
-#pragma omp parallel for default(none) \
-    shared(strong_column, weak_column, augmented_data, perm, exception)
+// #pragma omp parallel for default(none) 
+//     shared(strong_column, weak_column, augmented_data, perm, exception)
   for (uint64_t row_id = 0; row_id < strong_column->numRows(); row_id++) {
     try {
       std::string strong_text = strong_column->value(row_id);
@@ -50,17 +50,17 @@ ColumnMap TextAugmentationBase::apply(ColumnMap columns, State& state) const {
       std::vector<std::string> augmented_samples =
           augmentSingleRow(strong_text, weak_text, /* row_id_salt= */ row_id);
 
-#pragma omp critical
-      {
+// #pragma omp critical
+//       {
         for (auto& sample : augmented_samples) {
           if (!sample.empty()) {
             augmented_data.emplace_back(std::move(sample));
             perm.push_back(row_id);
           }
         }
-      }
+      // }
     } catch (std::exception& e) {
-#pragma omp critical
+// #pragma omp critical
       exception = std::current_exception();
     }
   }

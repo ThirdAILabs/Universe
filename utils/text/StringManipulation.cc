@@ -104,7 +104,7 @@ std::vector<std::string> tokenizeSentenceUnicodeSafe(
   // \s : whitespace
   // Together: match strings of at least one alphanumeric character or a single
   // non-alphanumeric non-whitespace character
-  std::wregex regex(LR"([A-Za-zÀ-ÖØ-öø-ÿ0-9]+|[^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s])");
+  std::wregex regex(LR"([A-Za-zÀ-ÖØ-öø-ÿ0-9\u0900-\u097F]+|[^A-Za-zÀ-ÖØ-öø-ÿ0-9\s\u0900-\u097F])");
 
   std::wcregex_iterator iter(sentence.data(), sentence.data() + sentence.size(),
                              regex);
@@ -161,19 +161,19 @@ std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
         return {};
     }
 
-    std::cout << "Printing" << std::endl;
+    // std::cout << "Printing" << std::endl;
 
-    std::cout << fromWideString(wideText) << std::endl;
+    // std::cout << fromWideString(wideText) << std::endl;
 
     std::vector<std::string> char_k_grams;
     size_t const n_kgrams = wideText.size() >= k ? wideText.size() - (k - 1) : 1;
 
     for (size_t offset = 0; offset < n_kgrams; ++offset) {
         std::wstring const kgram = wideText.substr(offset, k);
-        std::cout << fromWideString(kgram) << std::endl;
+        // std::cout << fromWideString(kgram) << std::endl;
         char_k_grams.push_back(fromWideString(kgram));
     }
-    std::cout << "Done Printing" << std::endl;
+    // std::cout << "Done Printing" << std::endl;
 
     return char_k_grams;
 }

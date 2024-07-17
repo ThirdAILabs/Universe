@@ -48,13 +48,13 @@ ColumnMap TextTokenizer::apply(ColumnMap columns, State& state) const {
       string = text::lower(string);
     }
 
-    std::cout << string << std::endl;
+    // std::cout << string << std::endl;
     std::vector<uint32_t> tokens = _tokenizer->tokenize(string);
 
-    for(uint32_t i=0; i<tokens.size(); i+=1){
-      std::cout << tokens[i] << " <> ";
-    }
-    std::cout << std::endl;
+    // for(uint32_t i=0; i<tokens.size(); i+=1){
+    //   std::cout << tokens[i] << " <> ";
+    // }
+    // std::cout << std::endl;
 
     std::vector<uint32_t> indices = _encoder->encode(tokens);
     dataset::token_encoding::mod(indices, _dim);
