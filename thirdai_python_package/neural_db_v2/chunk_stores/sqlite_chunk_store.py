@@ -379,11 +379,11 @@ class SQLiteChunkStore(ChunkStore):
             max_id = result.scalar()
             obj.next_id = (max_id or 0) + 1
 
-        with obj.engine.connect() as conn:
             chunk_count = conn.execute(
                 select(func.count()).select_from(obj.chunk_table)
             ).scalar()
 
+        # read the custom_id_type
         if chunk_count == 0:
             obj.custom_id_type = CustomIDType.NotSet
         elif obj.custom_id_table is None:
