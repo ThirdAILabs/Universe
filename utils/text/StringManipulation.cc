@@ -161,19 +161,13 @@ std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
         return {};
     }
 
-    // std::cout << "Printing" << std::endl;
-
-    // std::cout << fromWideString(wideText) << std::endl;
-
     std::vector<std::string> char_k_grams;
     size_t const n_kgrams = wideText.size() >= k ? wideText.size() - (k - 1) : 1;
 
     for (size_t offset = 0; offset < n_kgrams; ++offset) {
         std::wstring const kgram = wideText.substr(offset, k);
-        // std::cout << fromWideString(kgram) << std::endl;
         char_k_grams.push_back(fromWideString(kgram));
     }
-    // std::cout << "Done Printing" << std::endl;
 
     return char_k_grams;
 }
