@@ -65,8 +65,8 @@ class SqlLiteIterator:
         self.engine = engine
 
         # Since assigned chunk_ids are contiguous, each SqlLiteIterator can search
-        # through a range of chunk_ids. We need a min and a max we do an insertion
-        # while another iterator still exists
+        # through a range of chunk_ids. We need a min and a max in the case
+        # we do an insertion while another iterator instance still exists
         self.min_insertion_chunk_id = min_insertion_chunk_id
         self.max_insertion_chunk_id = max_insertion_chunk_id
 
