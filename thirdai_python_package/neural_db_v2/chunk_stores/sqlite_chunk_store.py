@@ -18,6 +18,7 @@ from sqlalchemy import (
     create_engine,
     delete,
     func,
+    inspect,
     select,
     text,
 )
@@ -377,5 +378,26 @@ class SQLiteChunkStore(ChunkStore):
             result = conn.execute(select(func.max(obj.chunk_table.c.chunk_id)))
             max_id = result.scalar()
             obj.next_id = (max_id or 0) + 1
+
+        with obj.engine.connect() as conn:
+            chunk_count = conn.execute(
+                select(func.count()).select_from(obj.chunk_table)
+            ).scalar()
+
+        if chunk_count == 0:
+            obj.custom_id_type = CustomIDType.NotSet
+        elif obj.custom_id_table is None:
+            obj.custom_id_type = CustomIDType.NoneType
+        else:
+            inspector = inspect(obj.engine)
+            col_type = inspector.get_columns(
+                "neural_db_custom_ids", column_name="custom_id"
+            )[0]["type"]
+            if isinstance(col_type, Integer):
+                obj.custom_id_type = CustomIDType.Integer
+            elif isinstance(col_type, String):
+                obj.custom_id_type = CustomIDType.String
+            else:
+                raise ValueError("Cannot read custom id table type.")
 
         return obj
