@@ -7,6 +7,7 @@ from .udt_modifications import (
     modify_mach_udt,
     modify_udt,
     modify_udt_constructor,
+    # these two are exposed to make it easier to write test cases.
 )
 
 modify_udt()

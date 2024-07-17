@@ -114,8 +114,10 @@ def get_token_candidates_for_token_classification(
     candidate_columns: typing.List[Column] = []
     for _, column in input_columns.items():
         if isinstance(column, CategoricalColumn):
-            if column.delimiter == " " and (
-                column.number_tokens_per_row == target.number_tokens_per_row
+            if (
+                column.delimiter == " "
+                and (column.number_tokens_per_row == target.number_tokens_per_row)
+                and column.token_type == str
             ):
                 candidate_columns.append(TextColumn(name=column.name))
     return candidate_columns
@@ -139,7 +141,11 @@ def get_source_column_for_query_reformulation(
                 ratio_source_to_target = (
                     column.number_tokens_per_row / target.number_tokens_per_row
                 )
-                if ratio_source_to_target > 1.5 or ratio_source_to_target < 0.66:
+                if (
+                    ratio_source_to_target > 1.5
+                    or ratio_source_to_target < 0.66
+                    or column.token_type != str
+                ):
                     continue
 
                 candidate_columns.append(TextColumn(name=column.name))

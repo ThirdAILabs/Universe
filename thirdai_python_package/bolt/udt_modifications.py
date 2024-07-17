@@ -7,7 +7,7 @@ import thirdai._thirdai.bolt as bolt
 import thirdai._thirdai.data as data
 import thirdai._thirdai.dataset as dataset
 
-from .udt_builder.task_detector import UDTDataTemplate, detect_template
+from .udt_builder import task_detector
 from .udt_docs import *
 
 
@@ -425,7 +425,7 @@ def modify_udt_constructor():
     def wrapped_init(
         self,
         target: str = None,
-        data_types: dict[str, bolt.types] = None,
+        data_types=None,
         dataset_path: str = None,
         **kwargs,
     ):
@@ -439,10 +439,12 @@ def modify_udt_constructor():
             return original_init(self, target=target, data_types=data_types, **kwargs)
 
         if dataset_path:
-            detected_template: UDTDataTemplate = detect_template(
-                dataset_path=dataset_path,
-                target=target,
-                **kwargs,
+            detected_template: task_detector.UDTDataTemplate = (
+                task_detector.detect_template(
+                    dataset_path=dataset_path,
+                    target=target,
+                    **kwargs,
+                )
             )
 
             return original_init(

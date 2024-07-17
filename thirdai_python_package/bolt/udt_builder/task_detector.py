@@ -17,6 +17,25 @@ from .model_templates import (
     UDTDataTemplate,
 )
 
+TEMPLATE_DETECTION_MESSAGE = """
+1. Provide more information about the task
+    bolt.UniversalDeepTransformer(
+        dataset_path = {dataset_path},
+        target_column = {target},
+        task = 'more information about the task'
+    )\n
+2. Choose from the following list of available tasks:
+{template_names}
+To detect a different task, call the detect function again with:
+    bolt.UniversalDeepTransformer(
+        dataset_path = {dataset_path},
+        target_column = {target},
+        task = 'your_selected_task'
+    )\n
+3. Explicitly specify the datatypes.
+ Check out https://github.com/ThirdAILabs/Demos/tree/main/universal_deep_transformer to learn how to initialize a model using explicit data types.
+"""
+
 warnings.filterwarnings("ignore")
 
 
@@ -138,14 +157,12 @@ def get_task_detection_prompt(query: str):
         "Which task amongst the above is the closest to the following problem : \n"
         + query
     )
-    prompt += (
-        "\nonly return the task number and nothing else (this is extremely important)."
-    )
+    prompt += "\nonly return the task number (as an int) and nothing else (this is extremely important)."
 
     return prompt
 
 
-def get_task_template_from_query(query: str, openai_client: OpenAI):
+def get_template_from_query(query: str, openai_client: OpenAI):
     if query in TASK_TO_TEMPLATE_MAP:
         return TASK_TO_TEMPLATE_MAP[query]
 
@@ -163,25 +180,6 @@ def get_task_template_from_query(query: str, openai_client: OpenAI):
     return None
 
 
-def get_template_from_task(
-    dataframe: pd.DataFrame, target_column: str, task: str, openai_client
-):
-    detected_template = get_task_template_from_query(
-        query=task, openai_client=openai_client
-    )
-
-    if detected_template:
-        return detected_template.from_raw_types(target_column, dataframe)
-
-    print(
-        "Could not detect the task type with the provided type. Enabling auto-inference on the dataframe."
-    )
-
-    return auto_infer_task_template(
-        target_column_name=target_column, dataframe=dataframe
-    )
-
-
 def detect_template(
     dataset_path: str,
     target: str,
@@ -189,25 +187,6 @@ def detect_template(
     openai_key: str = None,
     **kwargs,
 ):
-    TEMPLATE_DETECTION_MESSAGE = """
-1. Provide more information about the task
-    bolt.UniversalDeepTransformer(
-        dataset_path = {dataset_path},
-        target_column = {target},
-        task = 'more information about the task'
-    )\n
-2. Choose from the following list of available tasks:
-{template_names}
-To detect a different task, call the detect function again with:
-    bolt.UniversalDeepTransformer(
-        dataset_path = {dataset_path},
-        target_column = {target},
-        task = 'your_selected_task'
-    )\n
-3. Explicitly specify the datatypes.
- Check out https://github.com/ThirdAILabs/Demos/tree/main/universal_deep_transformer to learn how to initialize a model using explicit data types.
-"""
-
     if openai_key is not None:
         print("Task detection using natural language enabled\n")
     openai_client = OpenAI(api_key=openai_key) if openai_key else None
@@ -215,26 +194,20 @@ To detect a different task, call the detect function again with:
     df = pd.read_csv(dataset_path).dropna().astype(str)
     verify_dataframe(df, target, task)
 
-    detected_template = get_template_from_task(df, target, task, openai_client)
+    detected_template = get_template_from_query(query=task, openai_client=openai_client)
+    if detected_template is None:
+        print("Enabling auto-inference on the dataframe.")
+        detected_template = auto_infer_task_template(
+            target_column_name=target, dataframe=df
+        )
 
     template_names = "\n".join(f"• {name}" for name in SUPPORTED_TASK_TYPES)
-
-    if detected_template is not None:
-        print(
-            f"Task detected: {detected_template.task}\n"
-            f"If this isn't the task you intended, you can:\n"
-            + TEMPLATE_DETECTION_MESSAGE.format(
-                dataset_path=dataset_path, target=target, template_names=template_names
-            )
+    print(
+        f"Task detected: {detected_template.task}\n"
+        f"If this isn't the task you intended, you can:\n"
+        + TEMPLATE_DETECTION_MESSAGE.format(
+            dataset_path=dataset_path, target=target, template_names=template_names
         )
-
-    else:
-        print(
-            f"Cannot detect the task. \n"
-            f"To automatically detect a task, you can:\n"
-            + TEMPLATE_DETECTION_MESSAGE.format(
-                dataset_path=dataset_path, target=target, template_names=template_names
-            )
-        )
+    )
 
     return detected_template
