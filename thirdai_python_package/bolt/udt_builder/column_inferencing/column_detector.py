@@ -7,7 +7,9 @@ from . import utils
 from .columns import *
 
 
-def cast_to_categorical(column_name: str, column: pd.Series):
+def cast_to_categorical(
+    column_name: str, column: pd.Series, cast_float_to_str: bool = True
+):
     delimiter, token_row_ratio = utils.find_delimiter(column)
     unique_values_in_column = utils.get_unique_values(column, delimiter)
     token_data_type = utils.get_token_data_type(unique_values_in_column)
@@ -19,9 +21,11 @@ def cast_to_categorical(column_name: str, column: pd.Series):
     # representation of the entire dataset.
     if token_data_type == str or token_data_type == float:
         n_classes = len(unique_values_in_column)
-        token_data_type = str
     else:
         n_classes = max(unique_values_in_column) + 1
+
+    if token_data_type == float and cast_float_to_str:
+        token_data_type = str
 
     return CategoricalColumn(
         name=column_name,
@@ -54,7 +58,9 @@ def detect_single_column_type(
     if utils._is_datetime_col(dataframe[column_name]):
         return DateTimeColumn(name=column_name)
 
-    categorical_column = cast_to_categorical(column_name, dataframe[column_name])
+    categorical_column = cast_to_categorical(
+        column_name, dataframe[column_name], cast_float_to_str=False
+    )
 
     if categorical_column.delimiter == None and categorical_column.token_type != str:
         if categorical_column.token_type == float:

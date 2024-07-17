@@ -14,6 +14,7 @@ from .model_templates import (
     RegressionTemplate,
     TabularClassificationTemplate,
     TokenClassificationTemplate,
+    RecurrentClassifierTemplate,
     UDTDataTemplate,
 )
 
@@ -81,7 +82,7 @@ def auto_infer_task_template(target_column_name: str, dataframe: pd.DataFrame):
 
     if isinstance(target_column, column_detector.CategoricalColumn):
 
-        if target_column.number_tokens_per_row >= 4:
+        if target_column.token_type == str and target_column.number_tokens_per_row >= 4:
 
             # check if task can be token classification
             token_column_candidates = (
@@ -114,13 +115,13 @@ def auto_infer_task_template(target_column_name: str, dataframe: pd.DataFrame):
                 )
             )
 
-            if len(source_column_candidates) == 1 and target_column.token_type == str:
+            if len(source_column_candidates) == 1:
                 concrete_target_column = column_detector.TextColumn(
                     name=target_column.name
                 )
                 concrete_input_columns = {
-                    token_column_candidates[0].name: column_detector.TextColumn(
-                        name=token_column_candidates[0].name
+                    source_column_candidates[0].name: column_detector.TextColumn(
+                        name=source_column_candidates[0].name
                     )
                 }
                 return QueryReformulationTemplate(
@@ -162,9 +163,19 @@ def get_task_detection_prompt(query: str):
     return prompt
 
 
-def get_template_from_query(query: str, openai_client: OpenAI):
+def get_template_from_query(
+    query: str,
+    openai_client: OpenAI,
+    target_column: str,
+    dataframe: pd.DataFrame,
+):
+    detected_template = None
+
+    if query is None:
+        return None
+
     if query in TASK_TO_TEMPLATE_MAP:
-        return TASK_TO_TEMPLATE_MAP[query]
+        detected_template = TASK_TO_TEMPLATE_MAP[query]
 
     if openai_client:
         prompt = get_task_detection_prompt(query)
@@ -172,12 +183,16 @@ def get_template_from_query(query: str, openai_client: OpenAI):
         response = "".join([char for char in response if char.isdigit()])
         try:
             template_id = int(response)
-            return SUPPORTED_TEMPLATES[template_id]
+            detected_template = SUPPORTED_TEMPLATES[template_id]
         except:
             print("Did not get a valid response from the LLM.")
             return None
 
-    return None
+    return (
+        detected_template.from_raw_types(target_column, dataframe)
+        if detected_template
+        else None
+    )
 
 
 def detect_template(
@@ -187,14 +202,16 @@ def detect_template(
     openai_key: str = None,
     **kwargs,
 ):
-    if openai_key is not None:
+    if openai_key is not None and task is not None:
         print("Task detection using natural language enabled\n")
     openai_client = OpenAI(api_key=openai_key) if openai_key else None
 
     df = pd.read_csv(dataset_path).dropna().astype(str)
     verify_dataframe(df, target, task)
 
-    detected_template = get_template_from_query(query=task, openai_client=openai_client)
+    detected_template = get_template_from_query(
+        query=task, openai_client=openai_client, target_column=target, dataframe=df
+    )
     if detected_template is None:
         print("Enabling auto-inference on the dataframe.")
         detected_template = auto_infer_task_template(
