@@ -17,6 +17,7 @@ from sqlalchemy import (
     Table,
     create_engine,
     delete,
+    func,
     select,
     text,
 )
@@ -103,7 +104,7 @@ class SqlLiteIterator:
 
 
 class SQLiteChunkStore(ChunkStore):
-    def __init__(self, max_in_memory_batches=10000, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__()
 
         self.db_name = f"{uuid.uuid4()}.db"
@@ -127,8 +128,6 @@ class SQLiteChunkStore(ChunkStore):
         self.metadata_table = None
 
         self.next_id = 0
-
-        self.max_in_memory_batches = max_in_memory_batches
 
     def _write_to_table(self, df: pd.DataFrame, table: Table):
         df.to_sql(
@@ -204,7 +203,9 @@ class SQLiteChunkStore(ChunkStore):
         metadata["chunk_id"] = chunk_ids
         self._write_to_table(df=metadata, table=self.metadata_table)
 
-    def insert(self, chunks: Iterable[NewChunkBatch], **kwargs) -> Iterable[ChunkBatch]:
+    def insert(
+        self, chunks: Iterable[NewChunkBatch], max_in_memory_batches=10000, **kwargs
+    ) -> Iterable[ChunkBatch]:
         min_insertion_chunk_id = self.next_id
         for batch in chunks:
             chunk_ids = pd.Series(
@@ -229,7 +230,7 @@ class SQLiteChunkStore(ChunkStore):
             engine=self.engine,
             min_insertion_chunk_id=min_insertion_chunk_id,
             max_insertion_chunk_id=max_insertion_chunk_id,
-            max_in_memory_batches=self.max_in_memory_batches,
+            max_in_memory_batches=max_in_memory_batches,
         )
 
         return inserted_chunks_iterator
@@ -345,24 +346,36 @@ class SQLiteChunkStore(ChunkStore):
         return remapped_batches
 
     def save(self, path: str):
-        os.makedirs(path)
-        db_target_path = os.path.join(path, self.db_name)
-        shutil.copyfile(self.db_name, db_target_path)
-
-        contents = {k: v for k, v in self.__dict__.items() if k != "engine"}
-        pickle_path = os.path.join(path, "object.pkl")
-        pickle_to(contents, pickle_path)
+        shutil.copyfile(self.db_name, path)
 
     @classmethod
     def load(cls, path: str):
-        pickle_path = os.path.join(path, "object.pkl")
-        contents = unpickle_from(pickle_path)
-
         obj = cls.__new__(cls)
-        obj.__dict__.update(contents)
 
-        db_name = os.path.basename(obj.db_name)
-        obj.db_name = os.path.join(path, db_name)
+        obj.db_name = path
         obj.engine = create_engine(f"sqlite:///{obj.db_name}")
+
+        obj.metadata = MetaData()
+        obj.metadata.reflect(bind=obj.engine)
+
+        if "neural_db_chunks" in obj.metadata.tables:
+            obj.chunk_table = obj.metadata.tables["neural_db_chunks"]
+        else:
+            raise ValueError("neural_db_chunks table is missing in the database.")
+
+        if "neural_db_custom_ids" in obj.metadata.tables:
+            obj.custom_id_table = obj.metadata.tables["neural_db_custom_ids"]
+        else:
+            obj.custom_id_table = None
+
+        if "neural_db_metadata" in obj.metadata.tables:
+            obj.metadata_table = obj.metadata.tables["neural_db_metadata"]
+        else:
+            obj.metadata_table = None
+
+        with obj.engine.connect() as conn:
+            result = conn.execute(select(func.max(obj.chunk_table.c.chunk_id)))
+            max_id = result.scalar()
+            obj.next_id = (max_id or 0) + 1
 
         return obj
