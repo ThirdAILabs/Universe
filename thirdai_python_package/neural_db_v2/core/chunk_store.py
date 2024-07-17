@@ -9,8 +9,8 @@ from .types import (
     ChunkBatch,
     ChunkId,
     CustomIdSupervisedBatch,
-    NewChunkBatch,
     SupervisedBatch,
+    VersionedNewChunkBatch,
 )
 
 
@@ -28,7 +28,9 @@ class ChunkStore(ABC):
         self.custom_id_type = CustomIDType.NotSet
 
     @abstractmethod
-    def insert(self, chunks: Iterable[NewChunkBatch], **kwargs) -> Iterable[ChunkBatch]:
+    def insert(
+        self, chunks: Iterable[VersionedNewChunkBatch], **kwargs
+    ) -> Iterable[ChunkBatch]:
         raise NotImplementedError
 
     @abstractmethod
@@ -47,6 +49,14 @@ class ChunkStore(ABC):
     def remap_custom_ids(
         self, samples: Iterable[CustomIdSupervisedBatch]
     ) -> Iterable[SupervisedBatch]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_doc_chunks(self, doc_id: str, before_version: int) -> Set[ChunkId]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def max_version_for_doc(self, doc_id: str) -> int:
         raise NotImplementedError
 
     def _set_or_validate_custom_id_type(self, custom_ids):

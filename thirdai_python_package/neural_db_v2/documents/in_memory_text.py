@@ -1,4 +1,4 @@
-from typing import Iterable, List
+from typing import Any, Dict, Iterable, Optional
 
 import pandas as pd
 
@@ -10,13 +10,14 @@ from .utils import join_metadata, series_from_value
 class InMemoryText(Document):
     def __init__(
         self,
-        document_name,
-        text=[],
-        chunk_metadata=None,
-        doc_metadata=None,
-        custom_id=None,
+        document_name: str,
+        text: Iterable[str] = [],
+        chunk_metadata: Optional[pd.DataFrame] = None,
+        doc_metadata: Optional[Dict[str, Any]] = None,
+        custom_id: Iterable[str] | Iterable[int] = None,
+        doc_id: Optional[str] = None,
     ):
-        super().__init__()
+        super().__init__(doc_id=doc_id)
 
         self.document_name = document_name
         self.text = pd.Series(text)

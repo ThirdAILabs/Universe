@@ -13,8 +13,8 @@ Score = float
 
 
 @dataclass
-class NewChunk:
-    """A chunk that has not been assigned a unique ID."""
+class Chunk:
+    """A chunk that has been assigned a unique ID."""
 
     # An optional identifier supplied by the user.
     custom_id: Union[str, int, None]
@@ -31,10 +31,11 @@ class NewChunk:
     # Parent document name
     document: str
 
+    # UUID for the document
+    doc_id: str
 
-@dataclass
-class Chunk(NewChunk):
-    """A chunk that has been assigned a unique ID."""
+    # Version of the document
+    doc_version: int
 
     # A unique identifier assigned by a chunk store.
     chunk_id: ChunkId
@@ -88,22 +89,28 @@ class NewChunkBatch:
     def __len__(self):
         return len(self.text)
 
-    def __getitem__(self, i: int):
-        return NewChunk(
-            custom_id=self.custom_id[i] if self.custom_id is not None else None,
-            text=self.text[i],
-            keywords=self.keywords[i],
-            metadata=(
-                self.metadata.iloc[i].to_dict() if self.metadata is not None else None
-            ),
-            document=self.document[i],
-        )
+
+@dataclass
+class VersionedNewChunkBatch(NewChunkBatch):
+    doc_id: pd.Series[str]
+    doc_version: pd.Series[int]
+
+    def __post_init__(self):
+        super().__post_init__()
+
+        assert isinstance(self.doc_id, pd.Series)
+        assert isinstance(self.doc_version, pd.Series)
+
+        assert len(self.doc_id) == len(self.text)
+        assert len(self.doc_version) == len(self.text)
 
     def to_df(self):
         columns = {
             "text": self.text,
             "keywords": self.keywords,
             "document": self.document,
+            "doc_id": self.doc_id,
+            "doc_version": self.doc_version,
         }
         if self.custom_id is not None:
             columns["custom_id"] = self.custom_id

@@ -7,8 +7,16 @@ from .core.chunk_store import ChunkStore
 from .core.documents import Document
 from .core.retriever import Retriever
 from .core.supervised import SupervisedDataset
-from .core.types import Chunk, ChunkId, CustomIdSupervisedBatch, NewChunkBatch, Score
+from .core.types import (
+    Chunk,
+    ChunkId,
+    CustomIdSupervisedBatch,
+    NewChunkBatch,
+    Score,
+    VersionedNewChunkBatch,
+)
 from .documents import document_by_name
+from .documents.utils import series_from_value
 from .retrievers import FinetunableRetriever, Mach, MachEnsemble
 
 
@@ -39,8 +47,18 @@ class NeuralDB:
 
         def chunk_generator():
             for doc in docs:
+                doc_id = doc.doc_id()
+                doc_version = self.chunk_store.max_version_for_doc(doc_id) + 1
                 for chunk in doc.chunks():
-                    yield chunk
+                    yield VersionedNewChunkBatch(
+                        custom_id=chunk.custom_id,
+                        text=chunk.text,
+                        keywords=chunk.keywords,
+                        metadata=chunk.metadata,
+                        document=chunk.document,
+                        doc_id=series_from_value(doc_id, len(chunk)),
+                        doc_version=series_from_value(doc_version, len(chunk)),
+                    )
 
         self.insert_chunks(chunk_generator(), **kwargs)
 
@@ -70,6 +88,18 @@ class NeuralDB:
     def delete(self, chunk_ids: List[ChunkId]):
         self.chunk_store.delete(chunk_ids)
         self.retriever.delete(chunk_ids)
+
+    def delete_doc(self, doc_id: str, keep_latest_version: bool = False):
+        before_version = (
+            self.chunk_store.max_version_for_doc(doc_id)
+            if keep_latest_version
+            else float("inf")
+        )
+        chunk_ids = self.chunk_store.get_doc_chunks(
+            doc_id=doc_id, before_version=before_version
+        )
+        self.retriever.delete(chunk_ids)
+        self.chunk_store.delete(chunk_ids)
 
     def upvote(self, queries: List[str], chunk_ids: List[ChunkId], **kwargs):
         self.retriever.upvote(queries, chunk_ids, **kwargs)

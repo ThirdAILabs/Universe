@@ -112,6 +112,8 @@ class PandasChunkStore(ChunkStore):
                     metadata=metadata,
                     document=row.document,
                     chunk_id=row.chunk_id,
+                    doc_id=row.doc_id,
+                    doc_version=row.doc_version,
                 )
             )
         return output_chunks
@@ -166,6 +168,17 @@ class PandasChunkStore(ChunkStore):
             )
             for batch in samples
         ]
+
+    def get_doc_chunks(self, doc_id: str, before_version: int) -> Set[ChunkId]:
+        return set(
+            self.chunk_df["chunk_id"][
+                (self.chunk_df["doc_id"] == doc_id)
+                & (self.chunk_df["doc_version"] < before_version)
+            ]
+        )
+
+    def max_version_for_doc(self, doc_id: str) -> int:
+        return self.chunk_df["doc_version"][self.chunk_df["doc_id"] == doc_id].max()
 
     @staticmethod
     def object_pickle_path(path):

@@ -17,6 +17,7 @@ from sqlalchemy import (
     Table,
     create_engine,
     delete,
+    func,
     select,
     text,
 )
@@ -28,8 +29,8 @@ from ..core.types import (
     ChunkBatch,
     ChunkId,
     CustomIdSupervisedBatch,
-    NewChunkBatch,
     SupervisedBatch,
+    VersionedNewChunkBatch,
 )
 from .constraints import Constraint
 
@@ -119,6 +120,8 @@ class SQLiteChunkStore(ChunkStore):
             Column("text", String),
             Column("keywords", String),
             Column("document", String),
+            Column("doc_id", String),
+            Column("doc_version", Integer),
         )
         self.metadata.create_all(self.engine)
 
@@ -204,7 +207,9 @@ class SQLiteChunkStore(ChunkStore):
         metadata["chunk_id"] = chunk_ids
         self._write_to_table(df=metadata, table=self.metadata_table)
 
-    def insert(self, chunks: Iterable[NewChunkBatch], **kwargs) -> Iterable[ChunkBatch]:
+    def insert(
+        self, chunks: Iterable[VersionedNewChunkBatch], **kwargs
+    ) -> Iterable[ChunkBatch]:
         min_insertion_chunk_id = self.next_id
         for batch in chunks:
             chunk_ids = pd.Series(
@@ -268,6 +273,8 @@ class SQLiteChunkStore(ChunkStore):
                     document=row.document,
                     chunk_id=row.chunk_id,
                     metadata=None,
+                    doc_id=row.doc_id,
+                    doc_version=row.doc_version,
                 )
 
             if self.metadata_table is not None:
@@ -343,6 +350,25 @@ class SQLiteChunkStore(ChunkStore):
             )
 
         return remapped_batches
+
+    def get_doc_chunks(self, doc_id: str, before_version: int) -> Set[ChunkId]:
+        stmt = select(self.chunk_table.c.chunk_id).where(
+            self.chunk_table.c.doc_id
+            == doc_id & self.chunk_table.c.doc_version
+            < before_version
+        )
+
+        with self.engine.connect() as conn:
+            return set(row.chunk_id for row in conn.execute(stmt))
+
+    def max_version_for_doc(self, doc_id: str) -> int:
+        stmt = select(func.max(self.chunk_table.c.doc_version)).where(
+            self.chunk_table.c.doc_id == doc_id
+        )
+
+        with self.engine.connect() as conn:
+            result = conn.execute(stmt)
+            return result.scalar() or 0
 
     def save(self, path: str):
         os.makedirs(path)

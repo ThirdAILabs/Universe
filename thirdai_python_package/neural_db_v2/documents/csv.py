@@ -1,4 +1,4 @@
-from typing import Iterable, List
+from typing import Any, Dict, Iterable, List, Optional
 
 import pandas as pd
 
@@ -33,14 +33,15 @@ def concat_str_columns(df: pd.DataFrame, columns: List[str]):
 class CSV(Document):
     def __init__(
         self,
-        path,
-        text_columns=[],
-        keyword_columns=[],
-        custom_id_column=None,
-        doc_metadata=None,
-        max_rows=10_000_000,
+        path: str,
+        text_columns: List[str] = [],
+        keyword_columns: List[str] = [],
+        custom_id_column: str = None,
+        doc_metadata: Optional[Dict[str, Any]] = None,
+        max_rows: int = 10_000_000,
+        doc_id: Optional[str] = None,
     ):
-        super().__init__()
+        super().__init__(doc_id=doc_id)
 
         self.path = path
         self.text_columns = text_columns
