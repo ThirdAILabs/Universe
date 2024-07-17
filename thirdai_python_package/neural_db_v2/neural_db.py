@@ -57,11 +57,13 @@ class NeuralDB:
         else:
             choices = self.chunk_store.filter_chunk_ids(constraints, **kwargs)
             # TODO is there a better way that duplicating the constraints here
-            results = self.retriever.rank(queries, [choices for _ in queries], **kwargs)
+            results = self.retriever.rank(
+                queries, [choices for _ in queries], top_k, **kwargs
+            )
 
         chunk_results = []
         for query_results in results:
-            chunk_ids, scores = [list(tup) for tup in zip(*query_results)]
+            chunk_ids, scores = [list(tup)[:top_k] for tup in zip(*query_results)]
             chunks = self.chunk_store.get_chunks(chunk_ids)
             chunk_results.append(list(zip(chunks, scores)))
 
