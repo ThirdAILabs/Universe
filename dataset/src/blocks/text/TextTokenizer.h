@@ -134,7 +134,19 @@ class CharKGramTokenizer : public TextTokenizer {
   }
 
   std::vector<uint32_t> tokenize(const std::string& input) final {
-    return token_encoding::hashTokens(text::charKGrams(input, _k));
+    auto tokens = text::charKGrams(input, _k);
+    std::cout << "Char-4 Tokens" << std::endl;
+    for(const auto &token: tokens){
+      std::cout << token << std::endl;
+    }
+    std::cout << "Char-4 Tokens" << std::endl;
+    auto hash_tokens = token_encoding::hashTokens(tokens);
+    std::cout << "Hash Tokens: " << std::endl;
+    for(const auto & hash_token : hash_tokens){
+      std::cout << hash_token << " <><> " << std::endl;
+    }
+    std::cout << "Printing Hash tokens Done!" << std::endl;
+    return hash_tokens;
   }
 
   std::vector<std::string> toStrings(const std::string& input) final {
