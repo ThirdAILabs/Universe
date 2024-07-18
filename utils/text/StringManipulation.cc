@@ -144,19 +144,6 @@ std::vector<std::string> tokenizeSentence(const std::string& sentence) {
   return tokenizeSentenceUnicodeUnsafe(sentence);
 }
 
-std::string fromWideString(const std::wstring& wstr) {
-  std::string result;
-  for (wchar_t const wc : wstr) {
-    char buffer[4];
-    utf8proc_ssize_t const bytes =
-        utf8proc_encode_char(wc, reinterpret_cast<utf8proc_uint8_t*>(buffer));
-    if (bytes > 0) {
-      result.append(buffer, bytes);
-    }
-  }
-  return result;
-}
-
 std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
   utils::validateGreaterThanZero(k, "k for Char-k grams");
 
@@ -171,7 +158,7 @@ std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
 
   for (size_t offset = 0; offset < n_kgrams; offset++) {
     const std::wstring kgram = wide_text.substr(offset, k);
-    char_k_grams.push_back(fromWideString(kgram));
+    char_k_grams.push_back(fromUnicode(kgram));
   }
 
   return char_k_grams;
