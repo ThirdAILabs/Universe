@@ -122,14 +122,9 @@ class PandasChunkStore(ChunkStore):
 
         return set(self.chunk_df[condition]["chunk_id"])
 
-    @staticmethod
-    def object_pickle_path(path):
-        return os.path.join(path, "object.pkl")
-
     def save(self, path: str):
-        os.makedirs(path)
-        pickle_to(self, self.object_pickle_path(path))
+        pickle_to(self, path)
 
     @classmethod
     def load(cls, path: str):
-        return unpickle_from(PandasChunkStore.object_pickle_path(path))
+        return unpickle_from(path)

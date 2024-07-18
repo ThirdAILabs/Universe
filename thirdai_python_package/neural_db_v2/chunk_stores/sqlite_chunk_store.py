@@ -17,6 +17,8 @@ from sqlalchemy import (
     Table,
     create_engine,
     delete,
+    func,
+    inspect,
     select,
     text,
 )
@@ -57,8 +59,8 @@ class SqlLiteIterator:
         self.engine = engine
 
         # Since assigned chunk_ids are contiguous, each SqlLiteIterator can search
-        # through a range of chunk_ids. We need a min and a max we do an insertion
-        # while another iterator still exists
+        # through a range of chunk_ids. We need a min and a max in the case
+        # we do an insertion while another iterator instance still exists
         self.min_insertion_chunk_id = min_insertion_chunk_id
         self.max_insertion_chunk_id = max_insertion_chunk_id
 
@@ -96,7 +98,7 @@ class SqlLiteIterator:
 
 
 class SQLiteChunkStore(ChunkStore):
-    def __init__(self, max_in_memory_batches=10000, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__()
 
         self.db_name = f"{uuid.uuid4()}.db"
@@ -117,8 +119,6 @@ class SQLiteChunkStore(ChunkStore):
         self.metadata_table = None
 
         self.next_id = 0
-
-        self.max_in_memory_batches = max_in_memory_batches
 
     def _write_to_table(self, df: pd.DataFrame, table: Table):
         df.to_sql(
@@ -171,7 +171,10 @@ class SQLiteChunkStore(ChunkStore):
         self._write_to_table(df=metadata, table=self.metadata_table)
 
     def insert(
-        self, chunks: Iterable[Iterable[NewChunkBatch]], **kwargs
+        self,
+        chunks: Iterable[Iterable[NewChunkBatch]],
+        max_in_memory_batches=10000,
+        **kwargs,
     ) -> Tuple[Iterable[ChunkBatch], Iterable[InsertedDocMetadata]]:
         min_insertion_chunk_id = self.next_id
 
@@ -202,7 +205,7 @@ class SQLiteChunkStore(ChunkStore):
             engine=self.engine,
             min_insertion_chunk_id=min_insertion_chunk_id,
             max_insertion_chunk_id=max_insertion_chunk_id,
-            max_in_memory_batches=self.max_in_memory_batches,
+            max_in_memory_batches=max_in_memory_batches,
         )
 
         return inserted_chunks_iterator, doc_metadata
@@ -280,24 +283,57 @@ class SQLiteChunkStore(ChunkStore):
         return chunk_ids
 
     def save(self, path: str):
-        os.makedirs(path)
-        db_target_path = os.path.join(path, self.db_name)
-        shutil.copyfile(self.db_name, db_target_path)
-
-        contents = {k: v for k, v in self.__dict__.items() if k != "engine"}
-        pickle_path = os.path.join(path, "object.pkl")
-        pickle_to(contents, pickle_path)
+        shutil.copyfile(self.db_name, path)
 
     @classmethod
     def load(cls, path: str):
-        pickle_path = os.path.join(path, "object.pkl")
-        contents = unpickle_from(pickle_path)
-
         obj = cls.__new__(cls)
-        obj.__dict__.update(contents)
 
-        db_name = os.path.basename(obj.db_name)
-        obj.db_name = os.path.join(path, db_name)
+        obj.db_name = path
         obj.engine = create_engine(f"sqlite:///{obj.db_name}")
+
+        obj.metadata = MetaData()
+        obj.metadata.reflect(bind=obj.engine)
+
+        if "neural_db_chunks" in obj.metadata.tables:
+            obj.chunk_table = obj.metadata.tables["neural_db_chunks"]
+        else:
+            raise ValueError("neural_db_chunks table is missing in the database.")
+
+        if "neural_db_custom_ids" in obj.metadata.tables:
+            obj.custom_id_table = obj.metadata.tables["neural_db_custom_ids"]
+        else:
+            obj.custom_id_table = None
+
+        if "neural_db_metadata" in obj.metadata.tables:
+            obj.metadata_table = obj.metadata.tables["neural_db_metadata"]
+        else:
+            obj.metadata_table = None
+
+        with obj.engine.connect() as conn:
+            result = conn.execute(select(func.max(obj.chunk_table.c.chunk_id)))
+            max_id = result.scalar()
+            obj.next_id = (max_id or 0) + 1
+
+            chunk_count = conn.execute(
+                select(func.count()).select_from(obj.chunk_table)
+            ).scalar()
+
+        # read the custom_id_type
+        if chunk_count == 0:
+            obj.custom_id_type = CustomIDType.NotSet
+        elif obj.custom_id_table is None:
+            obj.custom_id_type = CustomIDType.NoneType
+        else:
+            inspector = inspect(obj.engine)
+            col_type = inspector.get_columns(
+                "neural_db_custom_ids", column_name="custom_id"
+            )[0]["type"]
+            if isinstance(col_type, Integer):
+                obj.custom_id_type = CustomIDType.Integer
+            elif isinstance(col_type, String):
+                obj.custom_id_type = CustomIDType.String
+            else:
+                raise ValueError("Cannot read custom id table type.")
 
         return obj
