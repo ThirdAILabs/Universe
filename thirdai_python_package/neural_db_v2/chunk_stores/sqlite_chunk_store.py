@@ -3,7 +3,7 @@ import os
 import shutil
 import uuid
 from functools import reduce
-from typing import Dict, Iterable, List, Optional, Set
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -22,15 +22,8 @@ from sqlalchemy import (
 )
 from thirdai.neural_db.utils import pickle_to, unpickle_from
 
-from ..core.chunk_store import ChunkStore, CustomIDType
-from ..core.types import (
-    Chunk,
-    ChunkBatch,
-    ChunkId,
-    CustomIdSupervisedBatch,
-    NewChunkBatch,
-    SupervisedBatch,
-)
+from ..core.chunk_store import ChunkStore
+from ..core.types import Chunk, ChunkBatch, ChunkId, InsertedDocMetadata, NewChunkBatch
 from .constraints import Constraint
 
 
@@ -115,14 +108,11 @@ class SQLiteChunkStore(ChunkStore):
             "neural_db_chunks",
             self.metadata,
             Column("chunk_id", Integer, primary_key=True),
-            Column("custom_id", Integer),
             Column("text", String),
             Column("keywords", String),
             Column("document", String),
         )
         self.metadata.create_all(self.engine)
-
-        self.custom_id_table = None
 
         self.metadata_table = None
 
@@ -138,30 +128,6 @@ class SQLiteChunkStore(ChunkStore):
             if_exists="append",
             index=False,
         )
-
-    def _create_custom_id_table(self):
-        custom_id_dtype = (
-            Integer if self.custom_id_type == CustomIDType.Integer else String
-        )
-        self.custom_id_table = Table(
-            "neural_db_custom_ids",
-            self.metadata,
-            Column("custom_id", custom_id_dtype, primary_key=True),
-            Column("chunk_id", Integer),
-        )
-        self.metadata.create_all(self.engine)
-
-    def _update_custom_ids(self, custom_ids, chunk_ids):
-        self._set_or_validate_custom_id_type(custom_ids)
-
-        if custom_ids is not None:
-            if self.custom_id_table is None:
-                self._create_custom_id_table()
-
-            custom_id_df = pd.DataFrame(
-                {"custom_id": custom_ids, "chunk_id": chunk_ids}
-            )
-            self._write_to_table(df=custom_id_df, table=self.custom_id_table)
 
     def _add_metadata_column(self, column: Column):
         column_name = column.compile(dialect=self.engine.dialect)
@@ -204,23 +170,30 @@ class SQLiteChunkStore(ChunkStore):
         metadata["chunk_id"] = chunk_ids
         self._write_to_table(df=metadata, table=self.metadata_table)
 
-    def insert(self, chunks: Iterable[NewChunkBatch], **kwargs) -> Iterable[ChunkBatch]:
+    def insert(
+        self, chunks: Iterable[Iterable[NewChunkBatch]], **kwargs
+    ) -> Tuple[Iterable[ChunkBatch], Iterable[InsertedDocMetadata]]:
         min_insertion_chunk_id = self.next_id
-        for batch in chunks:
-            chunk_ids = pd.Series(
-                np.arange(self.next_id, self.next_id + len(batch), dtype=np.int64)
-            )
-            self.next_id += len(batch)
 
-            chunk_df = batch.to_df()
-            chunk_df["chunk_id"] = chunk_ids
+        doc_metadata = []
+        for doc_chunks in chunks:
+            doc_chunk_ids = []
+            for batch in doc_chunks:
+                chunk_ids = pd.Series(
+                    np.arange(self.next_id, self.next_id + len(batch), dtype=np.int64)
+                )
+                self.next_id += len(batch)
+                doc_chunk_ids.extend(chunk_ids)
 
-            self._update_custom_ids(custom_ids=batch.custom_id, chunk_ids=chunk_ids)
+                chunk_df = batch.to_df()
+                chunk_df["chunk_id"] = chunk_ids
 
-            if batch.metadata is not None:
-                self._store_metadata(batch.metadata, chunk_ids=chunk_ids)
+                if batch.metadata is not None:
+                    self._store_metadata(batch.metadata, chunk_ids=chunk_ids)
 
-            self._write_to_table(df=chunk_df, table=self.chunk_table)
+                self._write_to_table(df=chunk_df, table=self.chunk_table)
+
+            doc_metadata.append(InsertedDocMetadata(chunk_ids=doc_chunk_ids))
 
         max_insertion_chunk_id = self.next_id
 
@@ -232,7 +205,7 @@ class SQLiteChunkStore(ChunkStore):
             max_in_memory_batches=self.max_in_memory_batches,
         )
 
-        return inserted_chunks_iterator
+        return inserted_chunks_iterator, doc_metadata
 
     def delete(self, chunk_ids: List[ChunkId]):
         with self.engine.begin() as conn:
@@ -247,12 +220,6 @@ class SQLiteChunkStore(ChunkStore):
                 )
                 conn.execute(delete_metadata)
 
-            if self.custom_id_table is not None:
-                delete_chunk_ids = delete(self.custom_id_table).where(
-                    self.custom_id_table.c.chunk_id.in_(chunk_ids)
-                )
-                conn.execute(delete_chunk_ids)
-
     def get_chunks(self, chunk_ids: List[ChunkId], **kwargs) -> List[Chunk]:
         id_to_chunk = {}
 
@@ -262,7 +229,6 @@ class SQLiteChunkStore(ChunkStore):
             )
             for row in conn.execute(chunk_stmt).all():
                 id_to_chunk[row.chunk_id] = Chunk(
-                    custom_id=row.custom_id,
                     text=row.text,
                     keywords=row.keywords,
                     document=row.document,
@@ -312,37 +278,6 @@ class SQLiteChunkStore(ChunkStore):
                 chunk_ids.add(row.chunk_id)
 
         return chunk_ids
-
-    def remap_custom_ids(
-        self, samples: Iterable[CustomIdSupervisedBatch]
-    ) -> Iterable[SupervisedBatch]:
-        remapped_batches = []
-
-        if self.custom_id_table is None:
-            raise ValueError(f"Chunk Store does not contain custom ids.")
-
-        for batch in samples:
-            chunk_ids = []
-            with self.engine.connect() as conn:
-                for custom_ids in batch.custom_id:
-                    sample_ids = []
-                    for custom_id in custom_ids:
-                        stmt = select(self.custom_id_table.c.chunk_id).where(
-                            self.custom_id_table.c.custom_id == custom_id
-                        )
-                        if result := conn.execute(stmt).first():
-                            sample_ids.append(result.chunk_id)
-                        else:
-                            raise ValueError(
-                                f"Could not find chunk with custom id {custom_id}."
-                            )
-                    chunk_ids.append(sample_ids)
-
-            remapped_batches.append(
-                SupervisedBatch(query=batch.query, chunk_id=pd.Series(chunk_ids))
-            )
-
-        return remapped_batches
 
     def save(self, path: str):
         os.makedirs(path)

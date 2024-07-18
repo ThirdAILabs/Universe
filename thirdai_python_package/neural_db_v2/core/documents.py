@@ -8,3 +8,6 @@ class Document(ABC):
     @abstractmethod
     def chunks(self) -> Iterable[NewChunkBatch]:
         raise NotImplementedError
+
+    def __iter__(self) -> Iterable[NewChunkBatch]:
+        return iter(self.chunks())
