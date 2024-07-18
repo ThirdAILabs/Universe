@@ -52,6 +52,29 @@ class AnyOf(Filter[ItemT]):
         )
 
 
+class NoneOf(Filter[ItemT]):
+    def __init__(self, values: Iterable[Any]):
+        self.values = values
+
+    def filter(self, value_to_items: ItemConstraintIndex) -> Set[ItemT]:
+        matches = set()
+        for value in value_to_items:
+            if value not in self.values:
+                matches = matches.union(value_to_items[value])
+        return matches
+
+    def filter_df_column(self, df: pd.DataFrame, column_name: str):
+        return df[~df[column_name].isin(self.values)]
+
+    def sql_condition(self, column_name: str):
+        formatted_values = [format_value_for_sql(val) for val in self.values]
+        return (
+            "("
+            + " and ".join(f"{column_name}!={val}" for val in formatted_values)
+            + ")"
+        )
+
+
 class EqualTo(AnyOf[ItemT]):
     def __init__(self, value: Any):
         super().__init__([value])
