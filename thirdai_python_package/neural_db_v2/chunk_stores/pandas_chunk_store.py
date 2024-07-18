@@ -178,7 +178,8 @@ class PandasChunkStore(ChunkStore):
         )
 
     def max_version_for_doc(self, doc_id: str) -> int:
-        return self.chunk_df["doc_version"][self.chunk_df["doc_id"] == doc_id].max()
+        version = self.chunk_df["doc_version"][self.chunk_df["doc_id"] == doc_id].max()
+        return 0 if np.isnan(version) else version
 
     @staticmethod
     def object_pickle_path(path):

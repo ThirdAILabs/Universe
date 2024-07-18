@@ -353,9 +353,8 @@ class SQLiteChunkStore(ChunkStore):
 
     def get_doc_chunks(self, doc_id: str, before_version: int) -> Set[ChunkId]:
         stmt = select(self.chunk_table.c.chunk_id).where(
-            self.chunk_table.c.doc_id
-            == doc_id & self.chunk_table.c.doc_version
-            < before_version
+            (self.chunk_table.c.doc_id == doc_id)
+            & (self.chunk_table.c.doc_version < before_version)
         )
 
         with self.engine.connect() as conn:

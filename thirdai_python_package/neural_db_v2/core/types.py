@@ -92,8 +92,8 @@ class NewChunkBatch:
 
 @dataclass
 class VersionedNewChunkBatch(NewChunkBatch):
-    doc_id: pd.Series[str]
-    doc_version: pd.Series[int]
+    doc_id: pt.Series[str]
+    doc_version: pt.Series[int]
 
     def __post_init__(self):
         super().__post_init__()
