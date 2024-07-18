@@ -160,7 +160,7 @@ std::string fromWideString(const std::wstring& wstr) {
 std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
   utils::validateGreaterThanZero(k, "k for Char-k grams");
 
-  std::wstring wideText = toUnicode(std::string(text));
+  std::wstring wide_text = toUnicode(std::string(text));
   if (wideText.empty()) {
     return {};
   }
