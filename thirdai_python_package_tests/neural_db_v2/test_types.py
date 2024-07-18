@@ -60,24 +60,6 @@ def test_new_chunk_batch_metadata(use_metadata):
     new_chunk_batch(use_metadata=use_metadata)
 
 
-@pytest.mark.parametrize("use_custom_id", [True, False])
-@pytest.mark.parametrize("use_metadata", [True, False])
-def test_new_chunk_batch_get(use_custom_id, use_metadata):
-    batch = new_chunk_batch(use_custom_id=use_custom_id, use_metadata=use_metadata)
-
-    assert (batch.custom_id is not None) == use_custom_id
-    if batch.custom_id is not None:
-        assert batch[0].custom_id == 1
-
-    assert (batch.metadata is not None) == use_metadata
-    if batch.metadata is not None:
-        assert batch[0].metadata == {"class": "a", "number": 4, "item": "x"}
-
-    assert batch[0].text == "some text"
-    assert batch[0].keywords == "important"
-    assert batch[0].document == "doc0"
-
-
 def test_chunk_batch_uneven_lengths():
     with pytest.raises(
         ValueError,

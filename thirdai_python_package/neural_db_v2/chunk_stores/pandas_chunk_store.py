@@ -23,7 +23,20 @@ class PandasChunkStore(ChunkStore):
     def __init__(self, **kwargs):
         super().__init__()
 
-        self.chunk_df = pd.DataFrame()
+        self.chunk_df = pd.DataFrame(
+            {
+                col: []
+                for col in [
+                    "chunk_id",
+                    "custom_id",
+                    "text",
+                    "keywords",
+                    "document",
+                    "doc_id",
+                    "doc_version",
+                ]
+            }
+        )
 
         self.custom_id_map = {}
 
