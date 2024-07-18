@@ -166,7 +166,8 @@ std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
   }
 
   std::vector<std::string> char_k_grams;
-  const size_t n_kgrams = wide_text.size() >= k ? wide_text.size() - (k - 1) : 1;
+  const size_t n_kgrams =
+      wide_text.size() >= k ? wide_text.size() - (k - 1) : 1;
 
   for (size_t offset = 0; offset < n_kgrams; offset++) {
     const std::wstring kgram = wide_text.substr(offset, k);
