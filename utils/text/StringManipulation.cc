@@ -147,18 +147,16 @@ std::vector<std::string> tokenizeSentence(const std::string& sentence) {
 std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
   utils::validateGreaterThanZero(k, "k for Char-k grams");
 
-  std::wstring wide_text = toUnicode(std::string(text));
-  if (wide_text.empty()) {
+  std::string text_str(text);
+  if (text_str.empty()) {
     return {};
   }
 
   std::vector<std::string> char_k_grams;
-  const size_t n_kgrams =
-      wide_text.size() >= k ? wide_text.size() - (k - 1) : 1;
-
-  for (size_t offset = 0; offset < n_kgrams; offset++) {
-    const std::wstring kgram = wide_text.substr(offset, k);
-    char_k_grams.push_back(fromUnicode(kgram));
+  size_t n_kgrams = text_str.size() >= k ? text_str.size() - (k - 1) : 1;
+  size_t len = std::min(text_str.size(), static_cast<size_t>(k));
+  for (uint32_t offset = 0; offset < n_kgrams; offset++) {
+    char_k_grams.push_back(text_str.substr(offset, len));
   }
 
   return char_k_grams;
