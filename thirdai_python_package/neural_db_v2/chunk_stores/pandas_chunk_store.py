@@ -194,14 +194,9 @@ class PandasChunkStore(ChunkStore):
         version = self.chunk_df["doc_version"][self.chunk_df["doc_id"] == doc_id].max()
         return 0 if np.isnan(version) else version
 
-    @staticmethod
-    def object_pickle_path(path):
-        return os.path.join(path, "object.pkl")
-
     def save(self, path: str):
-        os.makedirs(path)
-        pickle_to(self, self.object_pickle_path(path))
+        pickle_to(self, path)
 
     @classmethod
     def load(cls, path: str):
-        return unpickle_from(PandasChunkStore.object_pickle_path(path))
+        return unpickle_from(path)
