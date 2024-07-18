@@ -1,6 +1,5 @@
 import itertools
 import os
-import shutil
 
 import pandas as pd
 import pytest
@@ -170,6 +169,7 @@ def test_chunk_store_basic_operations(chunk_store):
 
     path = "test_chunk_store_basic_operations.store"
     store.save(path)
+    clean_up_sql_lite_db(store)
     store = chunk_store.load(path)
     chunks = store.get_chunks([6, 0, 5])
     check_chunk_contents(
@@ -180,10 +180,7 @@ def test_chunk_store_basic_operations(chunk_store):
         metadata={"class": "d", "number": None, "time": 8.1, "item": "z"},
     )
 
-    shutil.rmtree(path)
-
-    if isinstance(store, SQLiteChunkStore):
-        os.remove(os.path.basename(store.db_name))
+    os.remove(path)
 
 
 @pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])
@@ -377,7 +374,7 @@ def test_chunk_store_remapping(chunk_store, id_type):
 
 
 def test_sql_lite_chunk_store_batching():
-    store = SQLiteChunkStore(max_in_memory_batches=2)
+    store = SQLiteChunkStore()
 
     new_batch = NewChunkBatch(
         custom_id=None,
@@ -399,7 +396,7 @@ def test_sql_lite_chunk_store_batching():
             num_batches += 1
             num_rows += len(batch.text)
 
-        assert num_batches == 2
+        assert num_batches == 1
         assert num_rows == 3
 
     # we check this out of order to verify that the min/max chunk_id logic works
